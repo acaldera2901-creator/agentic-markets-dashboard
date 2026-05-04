@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_CHAT_ID: str = ""
 
+    BALLDONTLIE_API_KEY: str = ""
+    PREDICTION_HUNT_API_KEY: str = ""
+    RAPIDAPI_KEY: str = ""
+    POLYMARKET_PRIVATE_KEY: str = ""
+
     PAPER_TRADING: bool = True
     BANKROLL: float = 500.0
     MAX_BET_FRACTION: float = 0.02
