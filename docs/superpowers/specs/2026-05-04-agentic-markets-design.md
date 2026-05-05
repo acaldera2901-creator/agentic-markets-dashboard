@@ -1,216 +1,201 @@
 # Agentic Markets — Football Prediction Trading Desk
-**Date:** 2026-05-04  
-**Status:** Approved  
+**Aggiornato:** 2026-05-06
+**Status:** Operativo (Paper Mode)
 
 ---
 
-## Problema
+## Architettura Reale (come funziona ora)
 
-I prediction market calcistici (Betfair Exchange, bookmaker tradizionali) presentano inefficienze sistematiche che un umano non può sfruttare: troppi dati da processare in real-time, finestre di arbitraggio da secondi, bias cognitivi. Un sistema multi-agente AI può identificare ed eseguire queste opportunità in autonomia.
-
----
-
-## Soluzione
-
-Un trading desk autonomo composto da 7 agenti Python indipendenti che comunicano via Redis, con Claude API come cervello decisionale. Il primo mercato target è il calcio mondiale (campionati di rilevanza: Premier League, Serie A, La Liga, Bundesliga, Ligue 1, Champions League, Europa League, Conference League).
-
----
-
-## Architettura
-
-**Pattern:** Microservizi con message queue (Redis Streams).  
-Ogni agente è un processo Python separato con heartbeat monitoring. Nessuna dipendenza diretta tra agenti — comunicano solo via Redis.
+Il sistema è **ibrido**: una parte gira su Vercel (dashboard pubblica, sempre online) e una parte gira localmente su Mac (agenti Python che usano Redis + Betfair).
 
 ```
-DATA LAYER (API-Football · The Odds API · Betfair WS · Scraper)
-                         │
-                      Redis  ← message bus + cache
-         ┌───────────────┼───────────────┐
-    Model Agent    Analyst Agent   Strategist Agent
-         └───────────────┼───────────────┘
-                    Risk Manager
-                         │
-                    Trader Agent ──→ Betfair Exchange + Polymarket
-                         │
-                   Monitor Agent ──→ Telegram · PostgreSQL · Dashboard
+╔══════════════════════════════════════════════════════════════╗
+║  VERCEL (sempre online — Next.js 16)                        ║
+║                                                              ║
+║  Dashboard → /api/predictions  → football-data.org          ║
+║                                → The Odds API               ║
+║                                → Understat (xG)             ║
+║                                → API-Football (injuries)     ║
+║                                → OpenWeatherMap             ║
+║                                → Neon PostgreSQL             ║
+║                                                              ║
+║  Dixon-Coles + Pi Rating + xG calcolati server-side Vercel  ║
+╚══════════════════════════════════════════════════════════════╝
+                         ↕ heartbeat POST ogni 30s
+╔══════════════════════════════════════════════════════════════╗
+║  LOCALE (python run.py — Mac)                               ║
+║                                                              ║
+║  DataCollector → Redis → ModelAgent → AnalystAgent          ║
+║  StrategistAgent → RiskManagerAgent → TraderAgent → Betfair  ║
+║  ResearchAgent → Ollama (llama3.2) → /api/research (Neon)  ║
+║  AHCollectorAgent → Pinnacle/SBOBet → Redis ah:odds         ║
+║  MonitorAgent → PSI check · Monte Carlo · Telegram alerts   ║
+╚══════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## Data Layer
+## Cosa usa cosa
 
-### Dati Statistici (ogni 15min + pre-match)
-- **API-Football**: fixtures, lineups, form, xG, head-to-head, infortuni
-- **football-data.org**: fallback gratuito per dati storici
+### Dashboard Vercel (NON usa Ollama, NON dipende dagli agenti Python)
+- **Dixon-Coles model**: implementato in TypeScript, gira su Vercel serverless
+- **Pi Rating**: calcolato da historical results in-process su Vercel
+- **xG data**: Understat (scraping Python-side in Next.js via fetch)
+- **Odds**: The Odds API (fetch diretto da Next.js)
+- **Injuries/Predictions**: API-Football (fetch diretto)
+- **Weather**: OpenWeatherMap
+- **AI Research summaries**: scritti dagli agenti Python via Ollama, salvati su Neon, letti dalla dashboard
 
-### Dati di Mercato (real-time)
-- **The Odds API**: quote da 40+ bookmaker, aggiornate ogni 5min
-- **Betfair Exchange API**: orderbook live, volume, movimento quote (WebSocket)
-- **Polymarket API**: eventi major (Mondiale, Europei, CL winner)
-
-### Dati di Sentiment (pre-match)
-- Scraper news: BBC Sport, Sky Sport, transfermarkt
-- X/Twitter API: sentiment hashtag partita nelle 6h pre-kick off
-- RSS conferenze stampa: lineup hints, dichiarazioni allenatori
-
-### Modello Probabilistico
-- **Dixon-Coles** corretto per home advantage + forma recente (finestra mobile 10 partite)
-- Output: `P(home_win)`, `P(draw)`, `P(away_win)` per ogni match
-- Value bet identificata quando: `edge = model_probability - market_implied_probability > 3%`
-- Retraining automatico ogni domenica notte con risultati settimana
-
----
-
-## Agent Layer
-
-### 1. Data Collector Agent
-- Loop ogni 15min (ogni 1min nelle 2h pre-match)
-- Fetcha API-Football + The Odds API + sentiment
-- Normalizza e pubblica su Redis Stream `market:data`
-- Nessuna AI — solo raccolta e normalizzazione
-
-### 2. Model Agent
-- Ascolta `market:data`, ricalcola Dixon-Coles su ogni aggiornamento
-- Pubblica probabilità su `model:probabilities`
-- Mantiene storia parametri modello in PostgreSQL
-
-### 3. Analyst Agent *(Claude-powered)*
-- Ascolta `model:probabilities` + feed mercato Betfair
-- Identifica: value bet (edge > 3%), arbitraggio cross-venue, steam moves
-- Pubblica opportunità rankate su `analyst:opportunities`
-
-### 4. Strategist Agent *(Claude-powered)*
-- Legge `analyst:opportunities` + contesto partita
-- Formula thesis testuale per ogni trade
-- Filtra false positives, pubblica su `strategy:approved`
-
-### 5. Risk Manager Agent
-- Kelly Criterion per sizing: `f = edge / (odds - 1)`
-- Hard limits: max 2% bankroll per bet, max 10% esposizione totale
-- Blocca nuovi bet se drawdown mensile > 15%
-- Pubblica ordini dimensionati su `risk:orders`
-
-### 6. Trader Agent
-- Esegue su Betfair Exchange via `betfairlightweight` SDK
-- Gestisce placement, monitoring posizione, cash-out automatico se thesis invalidata
-- Pubblica risultati su `trader:executions`
-
-### 7. Monitor Agent *(watchdog)*
-- **Heartbeat**: ogni agente pubblica ping ogni 30s su `health:<agent_name>`. Se manca per 60s → restart automatico + alert Telegram
-- **Anomaly detection**: probabilità > 1.0, bet fuori limiti Kelly, silenzio anomalo su giornate con partite live
-- **P&L tracking**: win rate per campionato, drawdown, ROI real-time
-- **Log aggregation**: centralizzata su file + PostgreSQL
-- **Dashboard**: FastAPI con stato real-time ogni agente
-- Report Telegram quotidiano alle 8:00
+### Agenti Python (girano SOLO in locale con `python run.py`)
+- **DataCollector**: raccoglie fixture e odds → pubblica su Redis `market:data`
+- **ModelAgent**: Dixon-Coles locale + conformal prediction → `model:probabilities`
+- **AnalystAgent**: calcola edge, filtra per MIN_EDGE → `analyst:opportunities`
+- **StrategistAgent**: conviction score (Claude API o rule-based) → `strategy:approved`
+- **RiskManagerAgent**: Kelly sizing, adaptive edge, data completeness gate → `risk:orders`
+- **TraderAgent**: paper/live execution su Betfair + Telegram alert → `trader:executions`
+- **MonitorAgent**: heartbeat check, PSI drift, Monte Carlo domenicale, report Telegram
+- **ResearchAgent**: Ollama llama3.2 → analisi match → POST `/api/research` (Neon)
+- **AHCollectorAgent** (S7): Asian Handicap da Pinnacle/SBOBet/OddsAPI → `ah:odds`
 
 ---
 
-## Error Handling
+## Modelli Statistici
 
-| Scenario | Risposta |
-|---|---|
-| API-Football down | Fallback su football-data.org |
-| Betfair rifiuta ordine | Retry 3x con backoff esponenziale, poi skip + notifica |
-| Claude API timeout | Usa last known output, log critico, Monitor allerta |
-| Agente crashed | Monitor rileva heartbeat mancante → restart entro 60s |
-| Drawdown > 15% | RiskManager blocca tutti gli ordini, alert immediato |
-| Quote cambiate pre-execution | Trader ricontrolla edge, cancella se edge < 1% |
+### Dixon-Coles (principale)
+- Regressione Poisson su risultati storici (max 12 mesi)
+- Parametri: attack/defense per team, home advantage, rho (correlazione score basso)
+- Output: p_home, p_draw, p_away + lambda_home, lambda_away
 
----
+### Conformal Prediction (uncertainty)
+- Calibrato sull'ultimo 20% della history per league
+- Output: [ci_low, ci_high] per ogni probabilità
+- Gate: skip bet se width > MAX_CONFIDENCE_INTERVAL_WIDTH (0.15)
 
-## Tech Stack
-
-| Layer | Tecnologia |
-|---|---|
-| Linguaggio | Python 3.11+ |
-| Message bus | Redis 7 (Streams + Pub/Sub) |
-| Database | PostgreSQL 16 |
-| Agent AI | Claude API (claude-sonnet-4-6) con prompt caching |
-| Betfair | `betfairlightweight` Python SDK |
-| Odds data | The Odds API (REST) |
-| Football data | API-Football (REST) |
-| Sentiment | `feedparser` + `tweepy` + `httpx` |
-| Modello statistico | `scipy` + `numpy` (Dixon-Coles custom) |
-| Notifications | `python-telegram-bot` |
-| Dashboard | FastAPI + WebSocket |
-| Local dev | Docker Compose |
-| VPS deploy | Docker + systemd |
+### Pi Rating (forza relativa)
+- Elo-style aggiornato dopo ogni partita
+- Influenza predizione: affianca Dixon-Coles nel reasoning
 
 ---
 
-## Struttura Progetto
+## Value Engine
 
 ```
-agentic-markets/
-├── agents/
-│   ├── data_collector.py
-│   ├── model.py
-│   ├── analyst.py
-│   ├── strategist.py
-│   ├── risk_manager.py
-│   ├── trader.py
-│   └── monitor.py
-├── core/
-│   ├── redis_client.py
-│   ├── db.py
-│   ├── betfair_client.py
-│   ├── odds_api_client.py
-│   └── claude_client.py
-├── models/
-│   └── dixon_coles.py
-├── dashboard/
-│   └── main.py
-├── config/
-│   └── settings.py
-├── docker-compose.yml
-├── .env.example
-└── run.py
+edge = p_model - p_implied_market
+p_implied_market = 1 / odds
+
+stake = min(kelly_fraction × kelly_full, max_bet_pct × bankroll)
+      = min(0.25 × (edge / (odds-1)) × bankroll, 0.03 × bankroll)
+
+edge_threshold:
+  Pinnacle/sharp source → 2% (EDGE_MIN_SHARP)
+  Altri bookmaker       → 5% (EDGE_MIN_SOFT)
+
+Gate di qualità:
+  data_completeness_score < 0.75 → dead letter queue, no bet
+  ci_width > 0.15               → skip bet (alta incertezza)
+  monthly_drawdown > 15%        → blocco totale
 ```
 
 ---
 
-## Roadmap (fasi unificate)
+## Fonti Dati Attive
 
-### Sprint Unico — MVP + Multi-agent (3-4 settimane)
-
-**Settimana 1**
-- Setup Docker Compose (Redis + PostgreSQL)
-- Data Collector + Model Agent (Dixon-Coles)
-- Paper trading attivo su Serie A + Premier League
-
-**Settimana 2**
-- Analyst + Strategist + Risk Manager
-- Pipeline sentiment
-- Monitor Agent con heartbeat e auto-restart
-
-**Settimana 3**
-- Trader Agent in paper mode
-- Dashboard FastAPI
-- Backtesting su stagione precedente
-
-**Settimana 4**
-- Tuning soglie (edge threshold, Kelly fraction)
-- Validazione win rate > 55% su paper trading
-- Preparazione deploy VPS
-
-### Fase successiva — Live su VPS
-- Deploy Docker su Hetzner
-- `PAPER_TRADING = False` con bankroll iniziale €200-500
+| Fonte | Cosa fornisce | Dove usata |
+|-------|--------------|------------|
+| football-data.org | Fixtures, storia (365gg) | Vercel + Python |
+| The Odds API | Quote H2H da 40+ bmaker | Vercel + Python |
+| Understat | xG, xGA, npxG per squadra | Vercel |
+| API-Football | Infortuni, predizioni indip. | Vercel |
+| OpenWeatherMap | Meteo stadio match-day | Vercel |
+| Ollama (locale) | AI narrative research | Python ResearchAgent |
+| Betfair Exchange | Esecuzione bet, orderbook | Python TraderAgent |
+| Pinnacle/SBOBet (S7) | Asian Handicap lines | Python AHCollectorAgent |
 
 ---
 
-## Paper Trading Mode
+## Database (Neon PostgreSQL)
 
-```python
-PAPER_TRADING = True  # False = denaro reale
+```sql
+match_predictions    -- previsioni calcolate (con enrichment JSONB)
+bets                 -- esecuzioni paper/live
+match_research       -- AI summaries da Ollama
+agent_heartbeats     -- status agenti Python
+dead_letter_predictions  -- predizioni con dati incompleti
+monte_carlo_results  -- simulazioni bankroll domenicali
+understat_cache      -- cache xG per league (6h TTL)
 ```
 
-Con `True`: Trader simula senza chiamare Betfair, P&L virtuale in PostgreSQL. Switch a produzione = una variabile.
+---
+
+## Variabili d'Ambiente Necessarie
+
+### Vercel (.env.local nella dashboard)
+```
+DATABASE_URL          # Neon PostgreSQL
+FOOTBALL_DATA_ORG_API_KEY
+API_FOOTBALL_KEY
+ODDS_API_KEY
+OPENWEATHERMAP_API_KEY
+RESEARCH_SECRET       # condiviso con Python per auth /api/research e /api/health
+```
+
+### Python (.env nella root del progetto)
+```
+DASHBOARD_URL=https://agentic-markets-roan.vercel.app  # IMPORTANTE: deve puntare a Vercel
+RESEARCH_SECRET       # stesso segreto della dashboard
+REDIS_URL             # Redis locale o cloud
+DATABASE_URL          # stesso Neon
+TELEGRAM_BOT_TOKEN    # per alerts
+TELEGRAM_CHAT_ID
+BETFAIR_APP_KEY / USERNAME / PASSWORD
+ANTHROPIC_API_KEY     # opzionale: se non settato, fallback rule-based
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+BANKROLL=500.0
+KELLY_FRACTION=0.25
+MAX_BET_PCT=0.03
+```
 
 ---
 
-## Metriche di Successo
+## Come Avviare
 
-- **Uptime**: > 99%, latenza detection→execution < 10s
-- **Modello**: edge medio > 3%, ROI paper trading > 5% mensile
-- **Rischio**: drawdown mensile mai > 15% bankroll
+```bash
+# 1. Avvia Redis
+docker-compose up -d redis
+
+# 2. Avvia Ollama (per AI research)
+ollama serve
+ollama pull llama3.2
+
+# 3. Avvia tutti gli agenti Python
+cd ~/Desktop/sistema-andrea/agentic-markets
+python run.py
+
+# Dashboard: sempre disponibile su https://agentic-markets-roan.vercel.app
+```
+
+---
+
+## Monitoring Attivo
+
+- **Heartbeat**: ogni agente posta su `/api/health` ogni 30s → dashboard mostra alive/stale/offline
+- **PSI**: Population Stability Index su 4 feature ogni 24h → WARNING se > 0.1
+- **Monte Carlo**: ogni domenica notte — P5/P50/P95 su 500 bet × 1000 sim
+- **Telegram**: alert in tempo reale su value bet piazzate (edge > 3%)
+- **Daily report**: ogni mattina alle 8 UTC via Telegram
+
+---
+
+## Stato Attuale (2026-05-06)
+
+- ✅ Dashboard Vercel operativa con Dixon-Coles + Pi Rating + xG
+- ✅ Conformal prediction calibrata per league
+- ✅ Adaptive Kelly + edge tier (sharp/soft)
+- ✅ Agent heartbeat via DB
+- ✅ AHCollectorAgent (S7) implementato
+- ✅ PSI monitoring + Monte Carlo in MonitorAgent
+- ✅ Telegram value bet alerts
+- ⏳ Agenti Python: richiedono `python run.py` in locale
+- ⏳ Ollama: richiede `ollama serve` in locale
+- ⏳ Champion/challenger model: struttura pronta, da testare su 200+ predizioni

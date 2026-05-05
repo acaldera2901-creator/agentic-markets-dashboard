@@ -185,217 +185,288 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── Prediction "Why" Reasoning ───────────────────────────────────────────────
 
-function WhyReasoning({ p }: { p: Prediction }) {
-  const e = p.enrichment ?? {};
-  const reasons: string[] = [];
+interface Reason { icon: string; text: string; highlight?: boolean }
 
-  if (p.edge != null && p.edge > 0.03) {
-    reasons.push(`📊 Model edge +${(p.edge * 100).toFixed(1)}% vs market on ${p.best_selection}`);
+function buildReasons(p: Prediction): Reason[] {
+  const e = p.enrichment ?? {};
+  const reasons: Reason[] = [];
+
+  // Always: Dixon-Coles model output
+  const leader = p.p_home > p.p_draw && p.p_home > p.p_away ? "HOME" : p.p_draw > p.p_away ? "DRAW" : "AWAY";
+  const leaderPct = leader === "HOME" ? p.p_home : leader === "DRAW" ? p.p_draw : p.p_away;
+  reasons.push({
+    icon: "🧠",
+    text: `Dixon-Coles model: ${leader} favoured at ${pct(leaderPct)} — λ ${p.lambda_home?.toFixed(2) ?? "?"} (home) vs ${p.lambda_away?.toFixed(2) ?? "?"} (away)`,
+  });
+
+  // Edge vs market
+  if (p.edge != null && p.odds_home != null) {
+    if (p.edge > 0.03) {
+      reasons.push({
+        icon: "💰",
+        text: `Value bet: model sees +${(p.edge * 100).toFixed(1)}% edge on ${p.best_selection} (model ${pct(leaderPct)} vs market implied ${pct(1 / (p.best_selection === "HOME" ? p.odds_home! : p.best_selection === "DRAW" ? p.odds_draw! : p.odds_away!))})`,
+        highlight: true,
+      });
+    } else if (Math.abs(p.edge) < 0.01) {
+      reasons.push({ icon: "⚖️", text: `Model and market roughly agree — edge near zero (${(p.edge * 100).toFixed(1)}%)` });
+    } else {
+      reasons.push({ icon: "📉", text: `Market offers better price: model sees ${(p.edge * 100).toFixed(1)}% edge on ${p.best_selection} (no value currently)` });
+    }
+  } else {
+    reasons.push({ icon: "❓", text: "No market odds available — edge cannot be computed" });
   }
 
-  const selProb = p.best_selection === "HOME" ? p.p_home
-    : p.best_selection === "DRAW" ? p.p_draw : p.p_away;
-  const selOdds = p.best_selection === "HOME" ? p.odds_home
-    : p.best_selection === "DRAW" ? p.odds_draw : p.odds_away;
-  if (selOdds && selProb) {
-    const implied = 1 / selOdds;
-    if (selProb > implied) {
-      reasons.push(`🎯 Model: ${pct(selProb)} vs market: ${pct(implied)} (+${pct(selProb - implied)} edge)`);
+  // Pi Rating strength comparison
+  if (e.pi_home != null || e.pi_away != null) {
+    const piH = e.pi_home ?? 0;
+    const piA = e.pi_away ?? 0;
+    const diff = piH - piA;
+    if (Math.abs(diff) > 20) {
+      reasons.push({
+        icon: "⚡",
+        text: `Pi Rating: ${diff > 0 ? "HOME" : "AWAY"} stronger by ${Math.abs(diff)} points (home ${piH > 0 ? "+" : ""}${piH} / away ${piA > 0 ? "+" : ""}${piA})`,
+        highlight: Math.abs(diff) > 80,
+      });
+    } else {
+      reasons.push({ icon: "⚡", text: `Pi Rating: teams evenly matched (home ${piH > 0 ? "+" : ""}${piH} / away ${piA > 0 ? "+" : ""}${piA})` });
     }
   }
 
-  const piDiff = (e.pi_home ?? 0) - (e.pi_away ?? 0);
-  if (Math.abs(piDiff) > 50) {
-    reasons.push(piDiff > 0
-      ? `⚡ Pi Rating: Home significantly stronger (+${piDiff})`
-      : `⚡ Pi Rating: Away significantly stronger (+${-piDiff})`);
+  // xG form
+  if (e.xg_home != null && e.xg_away != null) {
+    const diff = e.xg_home - e.xg_away;
+    if (Math.abs(diff) > 0.3) {
+      reasons.push({
+        icon: "⚽",
+        text: `xG trend: ${diff > 0 ? "HOME" : "AWAY"} creating more chances — home ${e.xg_home.toFixed(2)} xG vs away ${e.xg_away.toFixed(2)} xG per game`,
+        highlight: Math.abs(diff) > 0.6,
+      });
+    } else {
+      reasons.push({ icon: "⚽", text: `xG balanced: home ${e.xg_home.toFixed(2)} vs away ${e.xg_away.toFixed(2)} xG per game` });
+    }
+    // xGA (defensive strength)
+    if (e.xga_home != null && e.xga_away != null) {
+      const defDiff = e.xga_away - e.xga_home; // positive = home has better defense
+      if (Math.abs(defDiff) > 0.3) {
+        reasons.push({
+          icon: "🛡️",
+          text: `Defense: ${defDiff > 0 ? "HOME concedes less" : "AWAY concedes less"} — home concedes ${e.xga_home.toFixed(2)} vs away ${e.xga_away.toFixed(2)} xGA`,
+        });
+      }
+    }
   }
 
-  const xgDiff = (e.xg_home ?? 0) - (e.xg_away ?? 0);
-  if (Math.abs(xgDiff) > 0.3) {
-    reasons.push(xgDiff > 0
-      ? `⚽ xG advantage: Home (${e.xg_home?.toFixed(2)} vs ${e.xg_away?.toFixed(2)})`
-      : `⚽ xG advantage: Away (${e.xg_away?.toFixed(2)} vs ${e.xg_home?.toFixed(2)})`);
-  }
-
+  // Form
   const formH = e.form_home ?? "";
   const formA = e.form_away ?? "";
-  const homeWins = (formH.match(/W/g) || []).length;
-  const awayWins = (formA.match(/W/g) || []).length;
-  if (homeWins >= 3 || awayWins >= 3) {
-    reasons.push(homeWins >= 3
-      ? `🔥 Home in hot form: ${formH.split("").join(" ")}`
-      : `🔥 Away in hot form: ${formA.split("").join(" ")}`);
-  }
-
-  if ((e.injuries_home?.length ?? 0) > 2) {
-    reasons.push(`🚑 Home missing ${e.injuries_home!.length} key players`);
-  }
-  if ((e.injuries_away?.length ?? 0) > 2) {
-    reasons.push(`🚑 Away missing ${e.injuries_away!.length} key players`);
-  }
-
-  if (e.api_pct_home != null && p.p_home > 0) {
-    const modelAdv = p.p_home - e.api_pct_home / 100;
-    if (Math.abs(modelAdv) > 0.08) {
-      reasons.push(modelAdv > 0
-        ? `🤖 Dixon-Coles overweights home vs API-Football (${e.api_pct_home}%)`
-        : `🤖 Dixon-Coles underweights home vs API-Football (${e.api_pct_home}%)`);
+  if (formH || formA) {
+    const homeWins = (formH.match(/W/g) || []).length;
+    const awayWins = (formA.match(/W/g) || []).length;
+    const homeLosses = (formH.match(/L/g) || []).length;
+    const awayLosses = (formA.match(/L/g) || []).length;
+    if (homeWins >= 4) {
+      reasons.push({ icon: "🔥", text: `Home on fire: ${homeWins}W in last ${formH.length} games (${formH.split("").join(" ")})`, highlight: true });
+    } else if (awayWins >= 4) {
+      reasons.push({ icon: "🔥", text: `Away on fire: ${awayWins}W in last ${formA.length} games (${formA.split("").join(" ")})`, highlight: true });
+    } else if (homeLosses >= 4) {
+      reasons.push({ icon: "📉", text: `Home poor form: ${homeLosses}L in last ${formH.length} games (${formH.split("").join(" ")})` });
+    } else if (awayLosses >= 4) {
+      reasons.push({ icon: "📉", text: `Away poor form: ${awayLosses}L in last ${formA.length} games (${formA.split("").join(" ")})` });
+    } else {
+      reasons.push({ icon: "📋", text: `Form: HOME ${formH.split("").join(" ") || "n/a"} · AWAY ${formA.split("").join(" ") || "n/a"}` });
     }
   }
 
-  if (reasons.length === 0) return null;
+  // Injuries impact
+  const injH = e.injuries_home?.length ?? 0;
+  const injA = e.injuries_away?.length ?? 0;
+  if (injH > 0 || injA > 0) {
+    if (injH > injA + 1) {
+      reasons.push({ icon: "🚑", text: `Home significantly more injured: ${injH} vs ${injA} — ${e.injuries_home!.slice(0, 2).join(", ")}`, highlight: injH > 3 });
+    } else if (injA > injH + 1) {
+      reasons.push({ icon: "🚑", text: `Away significantly more injured: ${injA} vs ${injH} — ${e.injuries_away!.slice(0, 2).join(", ")}`, highlight: injA > 3 });
+    } else {
+      reasons.push({ icon: "🚑", text: `Injuries balanced: home ${injH} · away ${injA} players out` });
+    }
+  }
+
+  // API-Football independent model comparison
+  if (e.api_pct_home != null) {
+    const dixonHome = Math.round(p.p_home * 100);
+    const apiHome = e.api_pct_home;
+    const discrepancy = Math.abs(dixonHome - apiHome);
+    if (discrepancy >= 8) {
+      reasons.push({
+        icon: "🔎",
+        text: `Models diverge on HOME: Dixon-Coles says ${dixonHome}% vs API-Football ${apiHome}% — discrepancy of ${discrepancy}pp warrants extra caution`,
+        highlight: discrepancy >= 15,
+      });
+    } else {
+      reasons.push({
+        icon: "✅",
+        text: `API-Football confirms: HOME ${apiHome}% (our model: ${dixonHome}%) — models agree`,
+      });
+    }
+    if (e.api_advice) {
+      reasons.push({ icon: "💬", text: `API-Football advice: "${e.api_advice}"` });
+    }
+  }
+
+  // Weather impact
+  if (e.weather) {
+    const w = e.weather;
+    if (w.wind > 8 || w.rain > 3) {
+      reasons.push({
+        icon: "🌧️",
+        text: `Weather risk: ${w.temp}°C, wind ${w.wind}m/s, rain ${w.rain}mm — may reduce total goals scored`,
+        highlight: w.wind > 12 || w.rain > 8,
+      });
+    }
+  }
+
+  // AI narrative
+  if (e.research) {
+    reasons.push({ icon: "🤖", text: `AI research: ${e.research}` });
+  }
+
+  return reasons;
+}
+
+function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
+  const reasons = buildReasons(p);
   return (
-    <div className="space-y-1.5 pt-2 border-t border-white/5">
-      <span className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider">Why this prediction</span>
-      {reasons.map((r, i) => (
-        <div key={i} className="text-[11px] text-gray-300 font-mono">{r}</div>
-      ))}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="glass-card max-w-lg w-full max-h-[80vh] overflow-y-auto p-5 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</div>
+            <div className="font-bold text-white text-base mt-0.5">
+              {p.home_team} <span className="text-gray-500 font-normal">vs</span> {p.away_team}
+            </div>
+            <div className="text-xs text-gray-500 font-mono mt-0.5">{fmtKickoff(p.kickoff)}</div>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-white text-xl font-mono shrink-0">✕</button>
+        </div>
+
+        {/* Probabilities */}
+        <div className="space-y-1.5">
+          <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400" odds={p.odds_home}
+            isValue={p.best_selection === "HOME" && (p.edge ?? 0) > 0.03} />
+          <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400" odds={p.odds_draw}
+            isValue={p.best_selection === "DRAW" && (p.edge ?? 0) > 0.03} />
+          <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400" odds={p.odds_away}
+            isValue={p.best_selection === "AWAY" && (p.edge ?? 0) > 0.03} />
+        </div>
+
+        {/* Why section */}
+        <div className="space-y-2">
+          <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider border-b border-white/10 pb-1">
+            Perché questa previsione
+          </div>
+          {reasons.map((r, i) => (
+            <div key={i} className={`flex gap-2 text-[11px] font-mono leading-relaxed ${r.highlight ? "text-white" : "text-gray-400"}`}>
+              <span className="shrink-0 w-4">{r.icon}</span>
+              <span>{r.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer stats */}
+        <div className="flex items-center justify-between text-[10px] text-gray-600 font-mono pt-2 border-t border-white/5">
+          <span>λ home {p.lambda_home?.toFixed(2) ?? "?"}</span>
+          <span>λ away {p.lambda_away?.toFixed(2) ?? "?"}</span>
+          <span>{p.model_matches ?? "?"} training matches</span>
+        </div>
+      </div>
     </div>
   );
 }
 
 function PredictionCard({ p }: { p: Prediction }) {
-  const [expanded, setExpanded] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
   const hasOdds = p.odds_home != null;
   const isValueBet = p.edge != null && p.edge > 0.03;
   const e = p.enrichment ?? {};
-  const hasEnrichment = Object.keys(e).length > 0;
 
   return (
-    <div className={`glass-card p-4 space-y-3 ${isValueBet ? "border-green-400/40" : ""}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <span className="text-xs font-mono text-gray-500">
-            {LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}
-          </span>
-          <div className="text-sm font-bold text-white mt-0.5">
-            {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
+    <>
+      <div
+        className={`glass-card p-4 space-y-3 cursor-pointer hover:border-cyan-400/30 transition-colors ${isValueBet ? "border-green-400/40" : ""}`}
+        onClick={() => setShowWhy(true)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <span className="text-xs font-mono text-gray-500">
+              {LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}
+            </span>
+            <div className="text-sm font-bold text-white mt-0.5">
+              {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            {isValueBet && (
+              <span className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono">
+                +EV {p.best_selection}
+              </span>
+            )}
+            {e.research && (
+              <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">
+                🤖 AI
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          {isValueBet && (
-            <span className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono">
-              +EV {p.best_selection}
-            </span>
-          )}
-          {e.research && (
-            <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">
-              🤖 AI
-            </span>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-500 font-mono">{fmtKickoff(p.kickoff)}</div>
+          {e.weather && (
+            <div className="flex items-center gap-1 text-xs font-mono text-gray-400">
+              <span>{e.weather.icon}</span>
+              <span>{e.weather.temp}°C</span>
+              {e.weather.wind > 6 && <span className="text-yellow-400">💨{e.weather.wind}m/s</span>}
+              {e.weather.rain > 0 && <span className="text-blue-400">🌧️{e.weather.rain}mm</span>}
+            </div>
           )}
         </div>
-      </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-500 font-mono">{fmtKickoff(p.kickoff)}</div>
-        {e.weather && (
-          <div className="flex items-center gap-1 text-xs font-mono text-gray-400">
-            <span>{e.weather.icon}</span>
-            <span>{e.weather.temp}°C</span>
-            {e.weather.wind > 6 && <span className="text-yellow-400">💨{e.weather.wind}m/s</span>}
-            {e.weather.rain > 0 && <span className="text-blue-400">🌧️{e.weather.rain}mm</span>}
+        <div className="space-y-1.5">
+          <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
+            odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
+          <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
+            odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
+          <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
+            odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
+        </div>
+
+        {(e.form_home || e.form_away) && (
+          <div className="space-y-1">
+            <FormRow label="HOME" form={e.form_home} />
+            <FormRow label="AWAY" form={e.form_away} />
           </div>
         )}
-      </div>
 
-      <div className="space-y-1.5">
-        <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
-          odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-        <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
-          odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-        <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
-          odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
-      </div>
-
-      {(e.form_home || e.form_away) && (
-        <div className="space-y-1">
-          <FormRow label="HOME" form={e.form_home} />
-          <FormRow label="AWAY" form={e.form_away} />
+        {/* Tap hint */}
+        <div className="text-[10px] text-gray-700 font-mono text-center">
+          tap to see why →
         </div>
-      )}
 
-      {/* Inline "Why" reasoning for value bets */}
-      {isValueBet && <WhyReasoning p={p} />}
-
-      {hasEnrichment && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full text-xs font-mono text-gray-600 hover:text-gray-400 transition text-center py-0.5"
-        >
-          {expanded ? "▲ less" : "▼ xG · injuries · AI analysis"}
-        </button>
-      )}
-
-      {expanded && (
-        <div className="space-y-3 pt-1 border-t border-white/5">
-          {(e.xg_home != null || e.xg_away != null) && (
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Expected Goals</span>
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="text-emerald-400">
-                  HOME xG: {e.xg_home?.toFixed(2)} · xGA: {e.xga_home?.toFixed(2)}
-                </div>
-                <div className="text-rose-400">
-                  AWAY xG: {e.xg_away?.toFixed(2)} · xGA: {e.xga_away?.toFixed(2)}
-                </div>
-              </div>
-            </div>
+        <div className="flex items-center justify-between text-xs text-gray-600 font-mono pt-1 border-t border-white/5">
+          <span>λ {p.lambda_home?.toFixed(1) ?? "?"} – {p.lambda_away?.toFixed(1) ?? "?"}</span>
+          {p.edge != null && (
+            <span className={p.edge > 0 ? "text-green-500" : "text-red-500"}>
+              edge {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
+            </span>
           )}
-
-          {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Injuries</span>
-              {(e.injuries_home?.length ?? 0) > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-[10px] text-gray-500 font-mono">🏠</span>
-                  {e.injuries_home!.slice(0, 4).map((inj, i) => (
-                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300 font-mono">{inj}</span>
-                  ))}
-                </div>
-              )}
-              {(e.injuries_away?.length ?? 0) > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-[10px] text-gray-500 font-mono">✈️</span>
-                  {e.injuries_away!.slice(0, 4).map((inj, i) => (
-                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300 font-mono">{inj}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {e.api_pct_home != null && (
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">API-Football</span>
-              <div className="flex gap-2 text-xs font-mono">
-                <span className="text-cyan-400">{e.api_pct_home}%</span>
-                <span className="text-yellow-400">{e.api_pct_draw}%</span>
-                <span className="text-fuchsia-400">{e.api_pct_away}%</span>
-              </div>
-              {e.api_advice && <div className="text-[10px] text-gray-400 italic">{e.api_advice}</div>}
-            </div>
-          )}
-
-          {e.research && (
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono text-purple-400 uppercase tracking-wider">🤖 AI Research</span>
-              <p className="text-[11px] text-gray-300 leading-relaxed">{e.research}</p>
-            </div>
-          )}
+          <span>{p.model_matches ?? "?"} matches</span>
         </div>
-      )}
-
-      <div className="flex items-center justify-between text-xs text-gray-600 font-mono pt-1 border-t border-white/5">
-        <span>λ {p.lambda_home?.toFixed(1) ?? "?"} – {p.lambda_away?.toFixed(1) ?? "?"}</span>
-        {p.edge != null && (
-          <span className={p.edge > 0 ? "text-green-500" : "text-red-500"}>
-            edge {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
-          </span>
-        )}
-        <span>{p.model_matches ?? "?"} matches</span>
       </div>
-    </div>
+
+      {showWhy && <WhyPanel p={p} onClose={() => setShowWhy(false)} />}
+    </>
   );
 }
 
@@ -414,8 +485,31 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
     AHCollectorAgent: "Asian Handicap odds from Pinnacle/SBOBet (S7)",
   };
 
+  const anyOnline = agents.some((a) => a.status !== "offline");
+
   return (
     <div className="space-y-4">
+      {/* Architecture note */}
+      <div className="glass-card p-4 border-cyan-400/10">
+        <div className="text-xs font-mono text-gray-400 space-y-1 leading-relaxed">
+          <div className="text-cyan-400 font-bold mb-2">Architettura ibrida</div>
+          <div>
+            <span className="text-cyan-300">Dashboard (Vercel)</span> — Dixon-Coles · Pi Rating · xG · API-Football · Odds.
+            Sempre online, non dipende dagli agenti Python.
+          </div>
+          <div>
+            <span className="text-fuchsia-300">Agenti Python (locale)</span> — Analisi in tempo reale, Betfair execution,
+            Ollama AI summaries. Devono girare su questo Mac con <code className="text-yellow-300">python run.py</code>.
+          </div>
+          {!anyOnline && (
+            <div className="mt-2 text-yellow-400 border border-yellow-400/20 rounded px-2 py-1">
+              ⚠️ Nessun agente attivo. Avvia il sistema con <code>python run.py</code> nella cartella del progetto.
+              Gli agenti invieranno heartbeat ogni 30s a questo dashboard.
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {agents.map((agent) => (
           <div key={agent.name} className={`glass-card p-4 space-y-2 ${
