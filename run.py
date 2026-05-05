@@ -7,6 +7,8 @@ from agents.strategist import StrategistAgent
 from agents.risk_manager import RiskManagerAgent
 from agents.trader import TraderAgent
 from agents.monitor import MonitorAgent
+from agents.research import ResearchAgent
+from agents.ah_collector import AHCollectorAgent
 from core.db import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +24,8 @@ async def main():
         RiskManagerAgent(),
         TraderAgent(),
         MonitorAgent(),
+        ResearchAgent(),
+        AHCollectorAgent(),
     ]
     await asyncio.gather(*[agent.run() for agent in agents])
 

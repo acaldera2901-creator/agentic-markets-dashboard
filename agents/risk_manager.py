@@ -4,20 +4,51 @@ from agents.base import BaseAgent
 from core.redis_client import consume, publish
 from config.settings import settings
 
+# Features used for data completeness scoring
+EXPECTED_FEATURES = [
+    "match_id", "league", "home_team", "away_team", "kickoff",
+    "edge", "odds", "selection", "confidence", "p_home", "p_draw", "p_away",
+]
+
 
 def kelly_stake(
     edge: float,
     odds: float,
     bankroll: float,
-    kelly_fraction: float,
-    max_fraction: float | None = None,
+    kelly_fraction: float = None,
+    max_bet_pct: float = None,
 ) -> float:
+    """
+    Fractional Kelly sizing with absolute cap.
+    stake = min(kelly_fraction × kelly_full, max_bet_pct × bankroll)
+    """
     if edge <= 0:
         return 0.0
-    kelly = edge / (odds - 1)
-    stake = kelly * kelly_fraction * bankroll
-    cap = (max_fraction if max_fraction is not None else settings.MAX_BET_FRACTION) * bankroll
-    return min(stake, cap)
+    kelly_fraction = kelly_fraction if kelly_fraction is not None else settings.KELLY_FRACTION
+    max_bet_pct = max_bet_pct if max_bet_pct is not None else settings.MAX_BET_PCT
+    kelly_full = edge / (odds - 1)
+    fractional = kelly_full * kelly_fraction * bankroll
+    cap = max_bet_pct * bankroll
+    return min(fractional, cap)
+
+
+def resolve_edge_threshold(data: dict) -> tuple[float, str]:
+    """
+    Returns (min_edge, market_efficiency_tier) based on odds source.
+    Pinnacle / sharp lines → tighter edge requirement.
+    """
+    notes = str(data.get("notes", "")).lower()
+    source = str(data.get("source", "")).lower()
+    if "pinnacle" in notes or "pinnacle" in source:
+        return settings.EDGE_MIN_SHARP, "sharp"
+    return settings.EDGE_MIN_SOFT, "soft"
+
+
+def data_completeness_score(data: dict) -> tuple[float, list[str]]:
+    """Returns (score 0-1, list of missing fields)."""
+    missing = [f for f in EXPECTED_FEATURES if not data.get(f)]
+    score = (len(EXPECTED_FEATURES) - len(missing)) / len(EXPECTED_FEATURES)
+    return round(score, 3), missing
 
 
 def is_within_limits(current_exposure: float, new_stake: float, bankroll: float, max_exposure: float) -> bool:
@@ -43,25 +74,100 @@ class RiskManagerAgent(BaseAgent):
                 self.logger.warning("monthly drawdown limit hit — blocking all new bets")
                 return
 
+            # Data completeness gate
+            completeness, missing = data_completeness_score(data)
+            if completeness < settings.MIN_DATA_COMPLETENESS:
+                self.logger.warning(
+                    f"data completeness {completeness:.0%} < {settings.MIN_DATA_COMPLETENESS:.0%} "
+                    f"— missing: {missing} — skipping {data.get('home_team')} vs {data.get('away_team')}"
+                )
+                await self._log_dead_letter(data, missing, completeness)
+                return
+
+            # Confidence interval gate (conformal prediction)
+            ci_low = float(data.get("ci_low", 0))
+            ci_high = float(data.get("ci_high", 1))
+            ci_width = ci_high - ci_low
+            if ci_width > settings.MAX_CONFIDENCE_INTERVAL_WIDTH:
+                self.logger.info(
+                    f"CI width {ci_width:.3f} > {settings.MAX_CONFIDENCE_INTERVAL_WIDTH} — "
+                    f"high uncertainty, skipping {data.get('home_team')} vs {data.get('away_team')}"
+                )
+                return
+
             edge = float(data["edge"])
             odds = float(data["odds"])
-            stake = kelly_stake(edge, odds, settings.BANKROLL, settings.KELLY_FRACTION)
+
+            # Adaptive edge threshold by market tier
+            edge_threshold, tier = resolve_edge_threshold(data)
+            if edge < edge_threshold:
+                self.logger.info(
+                    f"edge {edge:.3f} < {edge_threshold:.3f} ({tier}) — "
+                    f"skipping {data.get('home_team')} vs {data.get('away_team')}"
+                )
+                return
+
+            stake = kelly_stake(edge, odds, settings.BANKROLL)
 
             if stake < 1.0:
                 self.logger.info(f"stake too small ({stake:.2f}), skipping")
                 return
 
             if not is_within_limits(self._current_exposure, stake, settings.BANKROLL, settings.MAX_TOTAL_EXPOSURE):
-                self.logger.warning(f"exposure limit reached, skipping {data['home_team']} vs {data['away_team']}")
+                self.logger.warning(
+                    f"exposure limit reached, skipping {data.get('home_team')} vs {data.get('away_team')}"
+                )
                 return
 
             order = {
                 **data,
                 "stake": str(round(stake, 2)),
+                "market_efficiency_tier": tier,
+                "data_completeness": str(completeness),
+                "ci_low": str(ci_low),
+                "ci_high": str(ci_high),
                 "sized_at": datetime.utcnow().isoformat(),
             }
             self._current_exposure += stake / settings.BANKROLL
             await publish("risk:orders", order)
-            self.logger.info(f"order approved: {data['home_team']} vs {data['away_team']} stake={stake:.2f}")
+            self.logger.info(
+                f"order: {data.get('home_team')} vs {data.get('away_team')} "
+                f"stake={stake:.2f} tier={tier} edge={edge:.3f} "
+                f"CI=[{ci_low:.2f},{ci_high:.2f}] completeness={completeness:.0%}"
+            )
         except Exception as e:
             self.logger.error(f"risk manager error: {e}")
+
+    async def _log_dead_letter(self, data: dict, missing: list, score: float) -> None:
+        """Log incomplete predictions to dead letter queue for debugging."""
+        try:
+            from core.db import AsyncSessionLocal
+            from sqlalchemy import text
+            async with AsyncSessionLocal() as session:
+                await session.execute(
+                    text("""
+                        CREATE TABLE IF NOT EXISTS dead_letter_predictions (
+                            id SERIAL PRIMARY KEY,
+                            match_id VARCHAR,
+                            data JSONB,
+                            missing_fields TEXT[],
+                            completeness_score FLOAT,
+                            logged_at TIMESTAMPTZ DEFAULT NOW()
+                        )
+                    """)
+                )
+                await session.execute(
+                    text("""
+                        INSERT INTO dead_letter_predictions (match_id, data, missing_fields, completeness_score)
+                        VALUES (:match_id, :data::jsonb, :missing, :score)
+                    """),
+                    {
+                        "match_id": data.get("match_id", ""),
+                        "data": str(data),
+                        "missing": missing,
+                        "score": score,
+                    }
+                )
+                await session.commit()
+        except Exception as e:
+            self.logger.debug(f"dead letter log failed: {e}")

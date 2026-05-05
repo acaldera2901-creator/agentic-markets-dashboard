@@ -1,11 +1,14 @@
 import asyncio
 import json
+import traceback
 from datetime import datetime, timezone, timedelta
 from agents.base import BaseAgent
 from core.redis_client import publish
-from core.football_api_client import get_fixtures, LEAGUE_IDS
-from core.odds_api_client import get_odds
+from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGUE_IDS
+from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
+from core.odds_api_client import get_odds, normalize_name
 from config.settings import settings
+
 
 class DataCollectorAgent(BaseAgent):
     def __init__(self):
@@ -17,7 +20,7 @@ class DataCollectorAgent(BaseAgent):
             try:
                 await self._collect_cycle()
             except Exception as e:
-                self.logger.error(f"collection error: {e}")
+                self.logger.error(f"collection error: {e}\n{traceback.format_exc()}")
             interval = self._next_interval()
             self.logger.info(f"sleeping {interval}s until next cycle")
             await asyncio.sleep(interval)
@@ -37,20 +40,41 @@ class DataCollectorAgent(BaseAgent):
                 continue
         return False
 
+    async def _fetch_fixtures(self, league_code: str, league_id: int) -> list:
+        """Prefer football-data.org (free, no daily cap); fall back to API-Football."""
+        fdorg_key = settings.FOOTBALL_DATA_ORG_API_KEY
+        if fdorg_key and league_code in FREE_TIER_CODES:
+            fixtures = await fdorg_fixtures(league_code, fdorg_key)
+            if fixtures:
+                return fixtures
+
+        # fallback: API-Football (100 req/day)
+        if settings.API_FOOTBALL_KEY:
+            season = datetime.now().year
+            return await apifootball_fixtures(league_id, season)
+        return []
+
     async def _collect_cycle(self) -> None:
-        season = datetime.now().year
         self._upcoming_kickoffs = []
         for league_code, league_id in LEAGUE_IDS.items():
-            fixtures = await get_fixtures(league_id, season)
-            odds_list = await get_odds(league_code)
-            odds_map = {o.get("home_team", "") + "|" + o.get("away_team", ""): o for o in odds_list}
-
-            for fixture in fixtures:
-                event = self._build_event(fixture, odds_map, league_code)
-                if event:
-                    self._upcoming_kickoffs.append(event["kickoff"])
-                    await publish("market:data", {"payload": json.dumps(event)})
-                    self.logger.debug(f"published {event['home_team']} vs {event['away_team']}")
+            try:
+                fixtures = await self._fetch_fixtures(league_code, league_id)
+                odds_list = await get_odds(league_code)
+                odds_map = {
+                    o.get("home_team_normalized", "") + "|" + o.get("away_team_normalized", ""): o
+                    for o in odds_list
+                }
+                published = 0
+                for fixture in fixtures:
+                    event = self._build_event(fixture, odds_map, league_code)
+                    if event:
+                        self._upcoming_kickoffs.append(event["kickoff"])
+                        await publish("market:data", {"payload": json.dumps(event)})
+                        published += 1
+                if published:
+                    self.logger.info(f"published {published} fixtures for {league_code}")
+            except Exception as e:
+                self.logger.error(f"error collecting {league_code}: {e}\n{traceback.format_exc()}")
 
     def _build_event(self, fixture: dict, odds_map: dict, league: str) -> dict | None:
         try:
@@ -60,7 +84,7 @@ class DataCollectorAgent(BaseAgent):
             kickoff = fixture["fixture"]["date"]
             match_id = str(fixture["fixture"]["id"])
 
-            odds_key = f"{home}|{away}"
+            odds_key = f"{normalize_name(home)}|{normalize_name(away)}"
             odds_data = odds_map.get(odds_key, {})
 
             return {
@@ -70,7 +94,7 @@ class DataCollectorAgent(BaseAgent):
                 "away_team": away,
                 "kickoff": kickoff,
                 "odds": odds_data,
-                "collected_at": datetime.utcnow().isoformat(),
+                "collected_at": datetime.now(timezone.utc).isoformat(),
             }
         except (KeyError, TypeError):
             return None
