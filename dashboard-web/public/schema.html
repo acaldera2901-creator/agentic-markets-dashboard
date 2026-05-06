@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Agentic Markets — Architecture v4.0</title>
+<title>Agentic Markets — Architecture v5.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -704,32 +704,31 @@ function selectNode(id) {
 
 function renderOverview() {
   document.getElementById('p-eyebrow').textContent = 'SYSTEM OVERVIEW';
-  document.getElementById('p-title').textContent = 'Agentic Markets v4.0';
-  document.getElementById('p-sub').textContent = '8 agenti · 6 leghe · 53 mercati Betfair · paper trading';
+  document.getElementById('p-title').textContent = 'Agentic Markets v5.0';
+  document.getElementById('p-sub').textContent = '9 agenti · 6 leghe · 53 mercati Betfair · League & Match Context Module · paper trading';
   document.getElementById('p-body').innerHTML = `
     <h5>Hot path (Betfair → value bet)</h5>
     <div class="codeblock">Betfair Exchange (PRIMARY)
 → DataCollectorAgent (fuzzy match cross-lingua)
 → Redis market:data
 → ModelAgent (Dixon-Coles + Pi Rating + xG)
+   └─ ContextService v5.0
+      ├─ LeagueStrengthAnalyzer (tier 1-5)
+      ├─ LeagueOddsProfiler (anomaly detect)
+      ├─ LeaguePredictabilityTracker (CLV/Brier)
+      ├─ MatchTypeClassifier (derby/title/relegation…)
+      └─ CompetitionTypeFactors (stake penalty)
 → AnalystAgent (edge = p - 1/odds)
 → StrategistAgent (conviction ≥ 6)
-→ RiskManagerAgent (Kelly f=0.25)
+→ RiskManagerAgent (Kelly f=0.25 + context penalty)
 → TraderAgent (paper → Neon DB)</div>
-    <h5>Value bets oggi (paper · 06/05)</h5>
-    <div class="ev-row">
-      <div>
-        <div class="match">Bayern Munich v PSG · CL Semifinale</div>
-        <div class="meta">PSG away · odds 4.50 · 21:00 CET</div>
-      </div>
-      <div><div class="edge">+4.0%</div><div class="meta">~3.80€</div></div>
-    </div>
-    <div class="ev-row">
-      <div>
-        <div class="match">10 bet SA / La Liga · mattina</div>
-        <div class="meta">piazzate alle 10:48 · exposure €50 raggiunto</div>
-      </div>
-      <div><div class="edge" style="color:var(--amber)">done</div><div class="meta">paper ✓</div></div>
+    <h5>Novità v5.0 — Context Module</h5>
+    <div class="kv">
+      <span>LeagueStrengthAnalyzer</span><b style="color:var(--green)">tier 1–5</b>
+      <span>LeagueOddsProfiler</span><b style="color:var(--green)">anomaly σ=1.5</b>
+      <span>LeaguePredictabilityTracker</span><b style="color:var(--green)">CLV + Brier</b>
+      <span>MatchTypeClassifier</span><b style="color:var(--green)">10 tipi</b>
+      <span>CompetitionTypeFactors</span><b style="color:var(--green)">stake penalty</b>
     </div>
     <h5>Metriche sistema</h5>
     <div class="kv">
@@ -740,7 +739,7 @@ function renderOverview() {
       <span>Edge min (sharp)</span><b>2%</b>
       <span>Edge min (soft)</span><b>5%</b>
       <span>Drawdown block</span><b style="color:var(--red)">15%/mese</b>
-      <span>Brier SA</span><b>0.204</b>
+      <span>DERBY penalty</span><b style="color:var(--amber)">-30% stake</b>
     </div>
     <h5>Hint</h5>
     <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.55">Clicca un nodo per dettagli, schema e payload. Hover per evidenziare connessioni. Clicca una lega nel canvas per dettagli mercato.</p>

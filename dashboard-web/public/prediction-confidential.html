@@ -2,343 +2,517 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Agentic Markets — Professional AI Trading Desk · Investment Pitch</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Markets — Investment Pitch · Round 1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #050a15;
-      --card: rgba(12, 20, 35, 0.65);
-      --cyan: #00e5ff;
-      --magenta: #ff5cf2;
-      --violet: #9b8cff;
-      --amber: #ffb547;
-      --green: #32e0a0;
-      --text: #f0f4ff;
-      --dim: rgba(240,244,255,0.55);
-      --border: rgba(0,229,255,0.2);
+      --bg:      #05080f;
+      --bg2:     #080c16;
+      --panel:   rgba(10,15,28,0.7);
+      --cyan:    #00e5ff;
+      --cyan2:   #7df9ff;
+      --green:   #32e0a0;
+      --green2:  #00ff88;
+      --violet:  #9b8cff;
+      --amber:   #ffb547;
+      --text:    #e8eef8;
+      --muted:   rgba(232,238,248,0.55);
+      --dim:     rgba(232,238,248,0.3);
+      --border:  rgba(0,229,255,0.15);
+      --border2: rgba(0,229,255,0.3);
     }
 
+    html { scroll-behavior: smooth; }
+
     body {
-      background: radial-gradient(circle at 20% 30%, #0a0f1a, #03060c);
+      background: var(--bg);
       font-family: 'Inter', 'Space Grotesk', sans-serif;
       color: var(--text);
-      line-height: 1.4;
+      line-height: 1.5;
+      min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* animated grid background */
-    .bg-grid {
+    /* Ambient background */
+    body::before {
+      content: '';
       position: fixed;
       inset: 0;
-      background-image: linear-gradient(var(--border) 1px, transparent 1px),
-                        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 48px 48px;
-      mask: radial-gradient(circle at 80% 20%, black 30%, transparent 80%);
+      background:
+        radial-gradient(ellipse 1000px 600px at 75% -5%,  rgba(0,229,255,.07)  0%, transparent 70%),
+        radial-gradient(ellipse  700px 500px at -10% 80%, rgba(155,140,255,.06) 0%, transparent 70%),
+        radial-gradient(ellipse  500px 400px at 50% 50%,  rgba(50,224,160,.03) 0%, transparent 60%);
       pointer-events: none;
       z-index: 0;
-      animation: drift 40s linear infinite;
     }
-    @keyframes drift { 0% { background-position: 0 0; } 100% { background-position: 48px 48px; } }
 
-    .container {
+    /* Grid overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black, transparent);
+      pointer-events: none;
+      z-index: 0;
+      animation: grid-drift 60s linear infinite;
+    }
+    @keyframes grid-drift { to { background-position: 48px 48px; } }
+
+    .wrap {
       position: relative;
-      z-index: 2;
-      max-width: 1300px;
+      z-index: 1;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 2rem 1.5rem;
+      padding: 2.5rem 1.5rem 4rem;
     }
 
-    section { margin-bottom: 4rem; }
+    /* ── Section spacing ── */
+    section { margin-bottom: 4.5rem; }
 
-    h1 {
-      font-size: 3rem;
+    /* ── Typography ── */
+    .overline {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--cyan); opacity: .8;
+    }
+    .overline::before { content: ''; display: block; width: 20px; height: 1px; background: var(--cyan); }
+
+    h1.hero-title {
+      font-size: clamp(2.8rem, 7vw, 5rem);
       font-weight: 800;
-      background: linear-gradient(135deg, #fff, var(--cyan));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 20%, var(--cyan) 60%, var(--violet) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
     }
 
-    h2 {
-      font-size: 1.8rem;
-      margin-bottom: 1.2rem;
-      border-left: 4px solid var(--cyan);
-      padding-left: 1rem;
-      font-weight: 600;
+    h2.section-title {
+      font-size: 1.5rem; font-weight: 700;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    h2.section-title::after {
+      content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent);
     }
 
+    /* ── Glass card ── */
     .glass {
-      background: var(--card);
-      backdrop-filter: blur(12px);
+      background: var(--panel);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--border);
-      border-radius: 1.5rem;
-      transition: all 0.2s ease;
+      border-radius: 1.25rem;
+      transition: border-color .2s, box-shadow .2s, transform .2s;
     }
     .glass:hover {
-      border-color: var(--cyan);
-      transform: translateY(-3px);
-      box-shadow: 0 0 20px rgba(0,229,255,0.2);
+      border-color: var(--border2);
+      box-shadow: 0 0 28px rgba(0,229,255,.1);
+      transform: translateY(-2px);
+    }
+    .glass-static {
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
     }
 
+    /* ── Badges ── */
     .badge {
-      display: inline-block;
-      background: rgba(0,229,255,0.12);
-      border: 1px solid var(--border);
-      padding: 0.2rem 0.8rem;
-      border-radius: 40px;
-      font-size: 0.7rem;
-      font-family: monospace;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: .3rem .9rem; border-radius: 99px;
+      border: 1px solid var(--border2);
+      background: rgba(0,229,255,.08);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem; color: var(--cyan);
+    }
+    .badge-green {
+      border-color: rgba(50,224,160,.4);
+      background: rgba(50,224,160,.08);
+      color: var(--green);
+    }
+    .badge-violet {
+      border-color: rgba(155,140,255,.4);
+      background: rgba(155,140,255,.08);
+      color: var(--violet);
+    }
+    .badge-amber {
+      border-color: rgba(255,181,71,.4);
+      background: rgba(255,181,71,.08);
+      color: var(--amber);
     }
 
-    /* agent grid */
-    .agent-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
-
-    /* kpi row */
-    .kpi-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
+    /* ── KPI cards ── */
+    .kpi-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
     .kpi-card {
-      background: var(--card);
-      border-radius: 1.2rem;
-      padding: 1rem;
-      text-align: center;
-      flex: 1;
+      background: var(--panel);
       border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.2rem 1rem;
+      text-align: center;
+      transition: border-color .2s, transform .2s;
     }
+    .kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+    .kpi-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.8rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .kpi-label { font-size: .72rem; color: var(--muted); margin-top: .4rem; font-weight: 500; }
 
-    /* cost table professional */
-    .cost-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
+    /* ── Tables ── */
+    .styled-table {
+      width: 100%; border-collapse: collapse;
+      font-size: .82rem;
     }
-    .cost-table th, .cost-table td {
-      padding: 0.6rem;
-      border-bottom: 1px solid var(--border);
+    .styled-table thead th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .12em;
+      color: var(--cyan); padding: .75rem .8rem;
+      border-bottom: 1px solid var(--border2);
       text-align: left;
     }
-    .cost-table th { color: var(--cyan); font-weight: 600; }
-    .cost-table td:last-child, .cost-table th:last-child { text-align: right; }
-
-    .highlight-monthly {
-      background: rgba(0,229,255,0.12);
-      border-left: 3px solid var(--cyan);
-      border-radius: 1rem;
-      padding: 1rem;
-      margin: 1rem 0;
-      text-align: center;
-      font-weight: 500;
+    .styled-table tbody td {
+      padding: .6rem .8rem;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      color: var(--muted);
+      vertical-align: middle;
+    }
+    .styled-table tbody td:last-child { text-align: right; font-family: 'JetBrains Mono', monospace; }
+    .styled-table tbody tr:hover td { background: rgba(0,229,255,.03); color: var(--text); }
+    .styled-table .category-row td {
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--cyan); background: rgba(0,229,255,.05);
+      border-bottom: 1px solid var(--border);
+      padding: .5rem .8rem; font-weight: 600;
+    }
+    .styled-table .total-row td {
+      border-top: 2px solid var(--border2);
+      color: var(--text); font-weight: 700;
+      padding: .9rem .8rem;
+    }
+    .styled-table .total-row td:last-child { color: var(--green); font-size: 1rem; }
+    .styled-table .subtotal-row td {
+      border-top: 1px solid var(--border);
+      color: var(--text); font-weight: 600;
+      padding: .75rem .8rem;
     }
 
-    .schema-flow {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.5rem;
-      margin: 1.5rem 0;
-    }
-    .flow-layer {
-      background: rgba(5,10,21,0.7);
-      border-radius: 1rem;
-      padding: 0.6rem 0.8rem;
-      min-width: 110px;
-      text-align: center;
+    /* ── Roadmap cards ── */
+    .roadmap-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .roadmap-card {
+      background: var(--panel);
       border: 1px solid var(--border);
-      font-size: 0.75rem;
+      border-radius: 1.2rem;
+      padding: 1.5rem;
+      position: relative; overflow: hidden;
+      transition: border-color .2s, transform .2s;
     }
-    .arrow {
-      color: var(--cyan);
-      font-size: 1.2rem;
-      align-self: center;
+    .roadmap-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .roadmap-card.r1::before { background: linear-gradient(90deg, var(--cyan), var(--green)); }
+    .roadmap-card.r2::before { background: linear-gradient(90deg, var(--violet), var(--cyan)); }
+    .roadmap-card.r3::before { background: linear-gradient(90deg, var(--amber), var(--violet)); }
+    .roadmap-card:hover { border-color: var(--border2); transform: translateY(-3px); }
+    .roadmap-round { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--muted); margin-bottom: .5rem; }
+    .roadmap-amount { font-size: 1.5rem; font-weight: 800; margin-bottom: .3rem; }
+    .roadmap-title { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; }
+    .roadmap-items { list-style: none; }
+    .roadmap-items li {
+      font-size: .8rem; color: var(--muted); padding: .3rem 0;
+      display: flex; align-items: flex-start; gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .roadmap-items li:last-child { border-bottom: none; }
+    .roadmap-items li span.ico { flex-shrink: 0; font-size: .9rem; }
+
+    /* ── Hero investment highlight ── */
+    .invest-highlight {
+      background: linear-gradient(135deg, rgba(0,229,255,.08), rgba(50,224,160,.06));
+      border: 1px solid rgba(50,224,160,.3);
+      border-radius: 1.2rem;
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+    .invest-amount {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--green2), var(--cyan));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
     }
 
-    .btn-cta {
-      background: linear-gradient(90deg, #0ff, #a0f);
-      border: none;
-      color: #03060c;
-      font-weight: 800;
-      padding: 0.8rem 2rem;
-      border-radius: 60px;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 1rem;
+    /* ── Team grid ── */
+    .team-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; }
+    .team-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 1.2rem;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      min-width: 200px; flex: 1;
+      max-width: 280px;
     }
-    .btn-cta:hover { transform: scale(1.02); box-shadow: 0 0 20px #0ff; }
+    .team-role {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
+      color: var(--cyan); margin-bottom: .5rem;
+    }
+    .team-emoji { font-size: 2rem; margin-bottom: .5rem; }
+    .team-desc { font-size: .8rem; color: var(--muted); }
 
-    @media (max-width: 760px) {
-      .container { padding: 1rem; }
-      h1 { font-size: 2rem; }
-      .cost-table { font-size: 0.7rem; }
-      .schema-flow { flex-direction: column; align-items: stretch; }
-      .arrow { transform: rotate(90deg); margin: 0 auto; }
+    /* ── CTA ── */
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: .9rem 2.5rem; border-radius: 99px; border: none;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+      color: #03060c; font-weight: 800; font-size: 1rem; cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      font-family: 'Inter', sans-serif;
     }
+    .cta-btn:hover { transform: scale(1.03); box-shadow: 0 0 30px rgba(0,229,255,.4); }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .wrap { padding: 1.2rem 1rem 3rem; }
+      h1.hero-title { font-size: 2.4rem; }
+      .invest-amount { font-size: 2rem; }
+      .styled-table { font-size: .72rem; }
+    }
+
+    /* ── Separator ── */
+    .sep { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 3rem 0; }
+
+    /* ── Checkmark list ── */
+    .check-list { list-style: none; space-y: .5rem; }
+    .check-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: .85rem; color: var(--muted); padding: .35rem 0;
+    }
+    .check-list li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
   </style>
 </head>
 <body>
-<div class="bg-grid"></div>
-<div class="container">
+<div class="wrap">
 
-  <!-- HERO -->
-  <section style="text-align: center;">
-    <div class="badge" style="margin-bottom: 1rem;">🤖 PROFESSIONAL GRADE · PRE‑SEED 145K€</div>
-    <h1>Agentic Markets</h1>
-    <p style="font-size: 1.2rem; max-width: 700px; margin: 1rem auto;">Autonomous trading desk for prediction markets — 5 AI agents, &lt;2s latency, professional infrastructure</p>
-    <div style="display: flex; gap: 0.8rem; justify-content: center; margin-top: 1rem;">
-      <span class="badge">⚡ &lt;2s latency</span>
-      <span class="badge">🧠 multi‑agent coordination</span>
-      <span class="badge">📈 native arbitrage</span>
+  <!-- ── HERO ── -->
+  <section style="text-align:center; padding-top: 1rem;">
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:.6rem; margin-bottom:1.5rem;">
+      <span class="badge">🤖 Autonomous AI Trading Desk</span>
+      <span class="badge badge-green">Round 1 · 145.000 €</span>
+      <span class="badge badge-violet">8–10% Equity</span>
+      <span class="badge" style="color:var(--muted); border-color:var(--border);">Confidential · May 2026</span>
     </div>
-    <div class="glass" style="margin-top: 2rem; padding: 1.2rem;">
-      <div style="font-size: 2rem; font-weight: 800;">145.000 €</div>
-      <div>investment ask · 8‑10% equity · pre‑money €1.5M</div>
-      <div class="highlight-monthly" style="margin-top: 1rem;">
-        💰 <strong>Monthly operational cost (professional stack): 1.370 €</strong><br>
-        <span style="font-size: 0.8rem;">Top‑tier data providers, enterprise APIs, high‑availability infrastructure</span>
+
+    <h1 class="hero-title" style="margin-bottom:.75rem;">Agentic Markets</h1>
+    <p style="font-size:1.1rem; color:var(--muted); max-width:600px; margin:.5rem auto 2.5rem;">
+      5 AI agents · &lt;2s latency · multi-sport expansion · prediction market automation
+    </p>
+
+    <!-- Core KPIs -->
+    <div class="kpi-grid" style="max-width:800px; margin:0 auto 2.5rem;">
+      <div class="kpi-card">
+        <div class="kpi-num">145k€</div>
+        <div class="kpi-label">Round 1 raise</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">1.5M€</div>
+        <div class="kpi-label">Pre-money valuation</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">1.371€</div>
+        <div class="kpi-label">Monthly opex (pro stack)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">12+</div>
+        <div class="kpi-label">Months runway</div>
+      </div>
+    </div>
+
+    <div class="invest-highlight" style="max-width:600px; margin:0 auto;">
+      <div style="font-size:.75rem; font-family:'JetBrains Mono',monospace; color:var(--cyan); letter-spacing:.15em; margin-bottom:.5rem;">TOTAL INVESTMENT REQUEST</div>
+      <div class="invest-amount">145.000 €</div>
+      <div style="font-size:.85rem; color:var(--muted); margin-top:.5rem;">
+        for 8–10% equity · pre-money €1.5M · 12-month runway to live multi-sport
       </div>
     </div>
   </section>
 
-  <!-- PROBLEM + SOLUTION (AGENTS) -->
+  <!-- ── MULTI-ROUND ROADMAP ── -->
   <section>
-    <h2>The problem</h2>
-    <div class="kpi-row">
-      <div class="kpi-card">📊 <strong>Data overload</strong><br><span style="font-size:0.75rem;">News, orderbook, sentiment – impossible manually</span></div>
-      <div class="kpi-card">⏱️ <strong>2‑5 sec windows</strong><br><span style="font-size:0.75rem;">Arbitrage disappears before human reacts</span></div>
-      <div class="kpi-card">🧠 <strong>Cognitive biases</strong><br><span style="font-size:0.75rem;">FOMO, overconfidence, loss aversion</span></div>
-      <div class="kpi-card">🔗 <strong>Fragmented liquidity</strong><br><span style="font-size:0.75rem;">Polymarket, Kalshi, PredictIt – no unified view</span></div>
+    <div class="overline" style="margin-bottom:.75rem;">Strategic roadmap</div>
+    <h2 class="section-title">Multi-Round Expansion</h2>
+    <div class="roadmap-grid">
+      <div class="roadmap-card r1">
+        <div class="roadmap-round">Round 1 · 6 months to launch</div>
+        <div class="roadmap-amount" style="color:var(--cyan);">145.000 €</div>
+        <div class="roadmap-title">Launch & Expand Sports</div>
+        <ul class="roadmap-items">
+          <li><span class="ico">⚽</span> Football live &amp; profitable (Serie A, PL, La Liga, Bundesliga, Ligue 1)</li>
+          <li><span class="ico">➕</span> Tennis, NBA, F1, MotoGP integration</li>
+          <li><span class="ico">📊</span> Real-time dashboard · 5 agents fully operational</li>
+          <li><span class="ico">🛡️</span> League &amp; Match Context Module (v5.0 architecture)</li>
+          <li><span class="ico">🤖</span> Dixon-Coles + AI narrative research</li>
+        </ul>
+      </div>
+      <div class="roadmap-card r2">
+        <div class="roadmap-round">Round 2 · 12 months after R1</div>
+        <div class="roadmap-amount" style="color:var(--violet);">500.000 €</div>
+        <div class="roadmap-title">Casino &amp; Events</div>
+        <ul class="roadmap-items">
+          <li><span class="ico">🃏</span> Blackjack + Poker AI agents</li>
+          <li><span class="ico">🎲</span> Polymarket: elections, crypto, macro events</li>
+          <li><span class="ico">🌍</span> 10+ sport leagues globally</li>
+          <li><span class="ico">📈</span> CLV tracking &amp; model calibration at scale</li>
+        </ul>
+      </div>
+      <div class="roadmap-card r3">
+        <div class="roadmap-round">Round 3 · 24 months after R1</div>
+        <div class="roadmap-amount" style="color:var(--amber);">2.000.000 €</div>
+        <div class="roadmap-title">Global Scale</div>
+        <ul class="roadmap-items">
+          <li><span class="ico">💱</span> Forex &amp; crypto trading integration</li>
+          <li><span class="ico">🧠</span> Full multi-asset AI trading desk</li>
+          <li><span class="ico">🇺🇸</span> US expansion · Kalshi &amp; PredictIt</li>
+          <li><span class="ico">🏦</span> Institutional-grade risk management</li>
+        </ul>
+      </div>
     </div>
-
-    <h2 style="margin-top: 2rem;">The solution: 5 specialized agents</h2>
-    <div class="agent-grid">
-      <div class="glass" style="padding: 1rem; text-align: center;">🕵️<br><strong>Analyst</strong><br><span style="font-size:0.7rem;">news, orderbook, volumes</span></div>
-      <div class="glass" style="padding: 1rem; text-align: center;">📈<br><strong>Strategist</strong><br><span style="font-size:0.7rem;">mispricing & thesis</span></div>
-      <div class="glass" style="padding: 1rem; text-align: center;">🛡️<br><strong>Risk Manager</strong><br><span style="font-size:0.7rem;">Kelly sizing, stop‑loss</span></div>
-      <div class="glass" style="padding: 1rem; text-align: center;">💰<br><strong>Trader</strong><br><span style="font-size:0.7rem;">execution &lt;1s</span></div>
-      <div class="glass" style="padding: 1rem; text-align: center;">🔍<br><strong>Arbitrageur</strong><br><span style="font-size:0.7rem;">cross‑market spreads</span></div>
-    </div>
-    <p class="dim" style="text-align: center;">✨ Distributed intelligence – agents collaborate in milliseconds.</p>
   </section>
 
-  <!-- PROFESSIONAL COSTS (MONTHLY) -->
+  <!-- ── MONTHLY OPERATING COSTS ── -->
   <section>
-    <h2>Professional‑grade monthly costs</h2>
-    <div class="glass" style="padding: 0; overflow-x: auto;">
-      <table class="cost-table">
-        <thead><tr><th>Service</th><th>Plan / Features</th><th>€/month</th></tr></thead>
+    <div class="overline" style="margin-bottom:.75rem;">Round 1 infrastructure</div>
+    <h2 class="section-title">Professional Monthly Stack</h2>
+    <div class="glass-static" style="overflow-x:auto;">
+      <table class="styled-table">
+        <thead>
+          <tr><th>Service</th><th>Plan / Description</th><th>€/month</th></tr>
+        </thead>
         <tbody>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>📡 Data providers (top tier)</strong></th></tr>
-          <tr><td>SportMonks (football data)</th><td>Pro + Odds + xG Advanced + Predictions + WebSocket live</th><td>299 €</th></tr>
-          <tr><td>The Odds API (Pinnacle, Bet365, etc.)</th><td>Business plan – 50 req/sec, 100+ bookmakers</th><td>149 €</th></tr>
-          <tr><td>API‑Football (rapidapi)</th><td>Ultra – 500 req/min, lineups, injuries, predictions</th><td>89 €</th></tr>
-          <tr><td>OpenWeatherMap One Call 3.0</th><td>10k calls/day, historical + forecast</th><td>25 €</th></tr>
-          <tr><td>Perplexity API / Tavily</th><td>Pro – 5k queries/month, real‑time news</th><td>59 €</th></tr>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>🧠 AI & ML infrastructure</strong></th></tr>
-          <tr><td>Claude 3.5 Sonnet + Haiku (Anthropic)</th><td>20 req/min, optimized caching, mix sonnet/haiku</th><td>220 €</th></tr>
-          <tr><td>OpenAI GPT‑4o mini (fallback)</th><td>redundancy & integration</th><td>30 €</th></tr>
-          <tr><td>Modal / RunPod</th><td>GPU spot (A10G) – 100 hours/month for custom models</th><td>120 €</th></tr>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>☁️ Servers & network</strong></th></tr>
-          <tr><td colspan="2">High‑performance VPS (Hetzner)<br>Secondary VPS (failover/load balancing)</td><td>45 € + 45 €</td></tr>
-          <tr><td colspan="2">VPN business (Tailscale / ZeroTier)<br>CDN + object storage (Backblaze B2 + Cloudflare)</td><td>10 € + 12 €</td></tr>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>🗄️ Databases & data engineering</strong></th></tr>
-          <tr><td colspan="2">Supabase (Postgres) – Pro<br>TimescaleDB (time‑series metrics, self‑hosted)<br>Redis Enterprise cloud – 5GB</td><td>25 € + 0 € + 15 €</td></tr>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>📊 Monitoring & logging</strong></th></tr>
-          <tr><td colspan="2">Grafana Cloud (small pro)<br>Better Uptime / Checkly (growth plan)</td><td>49 € + 19 €</td></tr>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>🎨 Frontend & dashboard</strong></th></tr>
-          <tr><td colspan="2">Vercel Pro (React dashboard)<br>Retool (internal monitoring business)</td><td>20 € + 30 €</td></tr>
-          <tr><td colspan="3" style="background:rgba(0,229,255,0.08);"><strong>👥 Team, security & compliance</strong></th></tr>
-          <tr><td colspan="2">Google Workspace (business)<br>Slack / Notion (plus)<br>SentinelOne (malware/AV, 2 VPS)</td><td>12 € + 15 € + 18 €</td></tr>
-          <tr style="border-top: 2px solid var(--cyan);"><td><strong>TOTAL MONTHLY OPERATIONAL COST</strong></th><td></th><td style="font-weight:800; color:var(--green)"><strong>1.371 €</strong></td></tr>
+          <tr class="category-row"><td colspan="3">📡 Data Providers — Football + Multi-sport</td></tr>
+          <tr><td>SportMonks</td><td>Pro + Odds + xG + Tennis, NBA, F1, MotoGP packages</td><td>299 €</td></tr>
+          <tr><td>The Odds API</td><td>Business — 50 req/sec, 100+ bookmakers</td><td>149 €</td></tr>
+          <tr><td>API-Football + Tennis API + NBA API</td><td>Ultra multi-sport bundle</td><td>120 €</td></tr>
+          <tr><td>OpenWeatherMap One Call 3.0</td><td>10k calls/day</td><td>25 €</td></tr>
+          <tr><td>Perplexity API (news + research)</td><td>Pro — 5k queries/month</td><td>59 €</td></tr>
+          <tr class="category-row"><td colspan="3">🧠 AI & ML</td></tr>
+          <tr><td>Claude Sonnet + Haiku (Anthropic)</td><td>20 req/min, prompt caching</td><td>220 €</td></tr>
+          <tr><td>OpenAI GPT-4o mini (fallback)</td><td>Redundancy layer</td><td>30 €</td></tr>
+          <tr><td>Modal / RunPod GPU</td><td>100 hours/month A10G</td><td>120 €</td></tr>
+          <tr class="category-row"><td colspan="3">☁️ Servers & Network</td></tr>
+          <tr><td>High-performance VPS (Hetzner) + failover</td><td>8 vCPU · 32 GB RAM each</td><td>90 €</td></tr>
+          <tr><td>VPN + CDN + Object Storage</td><td>Tailscale · Backblaze · Cloudflare</td><td>22 €</td></tr>
+          <tr class="category-row"><td colspan="3">🗄️ Databases & Engineering</td></tr>
+          <tr><td>Supabase Pro + Timescale + Redis</td><td>Postgres, time-series, caching</td><td>40 €</td></tr>
+          <tr class="category-row"><td colspan="3">📊 Monitoring & Dashboard</td></tr>
+          <tr><td>Grafana Cloud + Better Uptime</td><td>Metrics, logs, alerts</td><td>68 €</td></tr>
+          <tr><td>Vercel Pro + Retool</td><td>Frontend &amp; internal tools</td><td>50 €</td></tr>
+          <tr class="category-row"><td colspan="3">👥 Team & Security</td></tr>
+          <tr><td>Google Workspace + Slack + Notion + SentinelOne</td><td>Collaboration &amp; security</td><td>45 €</td></tr>
+          <tr class="category-row"><td colspan="3">🌐 Digital Assets (annualised)</td></tr>
+          <tr><td>agenticmarkets.com + .ai + agentic-trading.io + predict-agent.com</td><td>62 €/year annualised</td><td>5 €</td></tr>
+          <tr class="total-row"><td><strong>Total Monthly Operational Cost</strong></td><td></td><td><strong>1.371 €</strong></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="dim" style="margin-top: 0.5rem;">* Annual operational = 16.452 €. Excluding salaries, trading capital, legal, and buffer.</p>
+    <p style="font-size:.75rem; color:var(--dim); margin-top:.75rem; font-family:'JetBrains Mono',monospace;">
+      * Annual operational = 16.452 €. Excluding salaries, trading capital, legal &amp; contingency buffer.
+    </p>
   </section>
 
-  <!-- ANNUAL BREAKDOWN + INVESTMENT ASK -->
+  <!-- ── 12-MONTH BUDGET ── -->
   <section>
-    <h2>12‑month professional budget & investment ask</h2>
-    <div class="glass" style="padding: 1rem;">
-      <table class="cost-table" style="margin-bottom: 1rem;">
-        <tr><td style="width:70%">Operational costs (as above)</td><td style="text-align:right">16.452 €</td></tr>
-        <tr><td>Founders' salaries (2 × 2.500 €/month gross × 12)</td><td style="text-align:right">60.000 €</td></tr>
-        <tr><td>Specialist legal & compliance (AI, prediction markets, risk)</td><td style="text-align:right">15.000 €</td></tr>
-        <tr><td>Trading liquidity (Polymarket / Kalshi initial capital)</td><td style="text-align:right">20.000 €</td></tr>
-        <tr><td>Risk capital buffer</td><td style="text-align:right">8.000 €</td></tr>
-        <tr><td>Hardware, backups, disaster recovery</td><td style="text-align:right">3.000 €</td></tr>
-        <tr><td>Marketing, events, early traction budget</td><td style="text-align:right">10.000 €</td></tr>
-        <tr style="border-top:1px solid var(--border);"><td><strong>Total projected spend (12 months)</strong></td><td style="text-align:right"><strong>132.452 €</strong></td><tr>
-        <tr><td>Contingency (10% for API overage, upgrades)</td><td style="text-align:right">13.245 €</td></tr>
-        <tr style="border-top:2px solid var(--cyan); background:rgba(0,229,255,0.05);"><td><strong>FULL INVESTMENT REQUEST</strong></td><td style="text-align:right"><strong style="color:var(--green)">145.000 €</strong></td></tr>
+    <div class="overline" style="margin-bottom:.75rem;">Round 1 allocation</div>
+    <h2 class="section-title">12-Month Budget Breakdown</h2>
+    <div class="glass-static" style="overflow-x:auto;">
+      <table class="styled-table">
+        <thead>
+          <tr><th style="width:65%">Budget Line</th><th>Notes</th><th>Amount</th></tr>
+        </thead>
+        <tbody>
+          <tr class="category-row"><td colspan="3">🏗️ Operations</td></tr>
+          <tr><td>Infra + APIs · 12 months</td><td>full professional stack</td><td>16.452 €</td></tr>
+          <tr><td>Digital assets — domains &amp; registrations</td><td>agenticmarkets.com/.ai · agentic-trading.io · predict-agent.com</td><td>62 €</td></tr>
+          <tr class="category-row"><td colspan="3">👥 People</td></tr>
+          <tr><td>Founders' salaries — 2 × 2.500 €/month × 12</td><td>CTO + CEO</td><td>60.000 €</td></tr>
+          <tr class="category-row"><td colspan="3">⚖️ Legal & Compliance</td></tr>
+          <tr><td>Legal &amp; compliance</td><td>AI, prediction markets, multi-sport licensing</td><td>15.000 €</td></tr>
+          <tr class="category-row"><td colspan="3">💰 Capital & Risk</td></tr>
+          <tr><td>Trading liquidity</td><td>Polymarket / Kalshi initial capital</td><td>20.000 €</td></tr>
+          <tr><td>Risk capital buffer</td><td>drawdown protection</td><td>8.000 €</td></tr>
+          <tr class="category-row"><td colspan="3">📣 Growth</td></tr>
+          <tr><td>Hardware, backups, disaster recovery</td><td>bare metal + offsite backups</td><td>3.000 €</td></tr>
+          <tr><td>Marketing, events, sports partnerships</td><td>early traction</td><td>10.000 €</td></tr>
+          <tr class="subtotal-row"><td><strong>Total projected spend</strong></td><td></td><td><strong>132.514 €</strong></td></tr>
+          <tr><td>Contingency (10% — API overage, upgrades)</td><td></td><td>13.251 €</td></tr>
+          <tr class="total-row"><td><strong>ROUND 1 INVESTMENT REQUEST</strong></td><td>8–10% equity · pre-money €1.5M</td><td><strong>145.000 €</strong></td></tr>
+        </tbody>
       </table>
-      <div class="highlight-monthly">
-        ✅ <strong>Runway 12+ months</strong> with top‑tier data and high‑availability infrastructure.<br>
-        ✅ Real liquidity and risk capital – not paper trading promises.<br>
-        ✅ Built by AI engineers with prediction markets experience.
+    </div>
+
+    <div style="display:grid; gap:.75rem; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); margin-top:1.5rem;">
+      <div class="glass" style="padding:1rem 1.25rem;">
+        <ul class="check-list">
+          <li>Runway 12+ months — launch football, expand to tennis, NBA, F1, MotoGP</li>
+          <li>Real liquidity and risk capital — not paper trading</li>
+          <li>Clear path to Round 2 (500k€) and Round 3 (2M€)</li>
+        </ul>
+      </div>
+      <div class="glass" style="padding:1rem 1.25rem;">
+        <ul class="check-list">
+          <li>5-agent autonomous pipeline with &lt;2s execution latency</li>
+          <li>League &amp; Match Context Module v5.0 — adaptive risk sizing</li>
+          <li>Dixon-Coles + Pi Rating + xG + conformal prediction intervals</li>
+        </ul>
       </div>
     </div>
   </section>
 
-  <!-- ARCHITECTURE SCHEMA (visual flow) -->
+  <!-- ── TEAM ── -->
   <section>
-    <h2>Professional architecture</h2>
-    <div class="schema-flow">
-      <div class="flow-layer">📡 Premium APIs<br>SportMonks, OddsAPI, etc.</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">🔄 High‑Availability<br>Collectors (6 agents)</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">🗄️ ETL + Data Lake<br>Timescale + Postgres</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">📐 Feature Store<br>Redis + 48+ features</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">🧠 Predictor Agent<br>Orchestrator</div>
-    </div>
-    <div class="schema-flow">
-      <div class="flow-layer">🌲 Parallel Models<br>CatBoost, Poisson, Bayes</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">🔗 Ensemble<br>Stacking + Isotonic</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">💰 Value Engine<br>Edge ≥3% · Kelly</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">⚡ Live Execution<br>Polymarket / Kalshi</div>
-      <div class="arrow">→</div>
-      <div class="flow-layer">🖥️ Real‑time Dashboard<br>React + Grafana</div>
-    </div>
-    <p class="dim" style="text-align: center; margin-top: 0.5rem;">🎯 Hot path latency: from OddsAPI sharp → collector → Pi Ratings → feature hub → predictor → value detector → trade execution in <strong>&lt;2 seconds</strong></p>
-  </section>
-
-  <!-- ROADMAP 6 WEEKS -->
-  <section>
-    <h2>Roadmap – live in 6 weeks</h2>
-    <div class="kpi-row">
-      <div class="kpi-card"><strong>Week 1‑2</strong><br>MVP single agent, MCP, paper trading on Polymarket</div>
-      <div class="kpi-card"><strong>Week 3‑4</strong><br>5 agents collaboration, backtesting, risk module</div>
-      <div class="kpi-card"><strong>Week 5‑6</strong><br>Live deployment with 20k€ liquidity, dashboard, monitoring</div>
-    </div>
-    <div class="highlight-monthly">✨ Not 6 months — 6 weeks. Paper trading first, zero risk for investors.</div>
-  </section>
-
-  <!-- TEAM & CALL TO ACTION (UPDATED with correct descriptions) -->
-  <section style="text-align: center;">
-    <div class="glass" style="padding: 2rem;">
-      <h2 style="border-left: none;">We’re not building a bot.<br>We’re building an <span style="color:var(--cyan)">autonomous trading desk</span>.</h2>
-      <div style="display: flex; gap: 1rem; justify-content: center; margin: 1.5rem 0; flex-wrap: wrap;">
-        <div><strong>🔧 CTO</strong><br>3+ years AI, IT, trading, APIs</div>
-        <div><strong>📊 CEO</strong><br>legal, compliance, fundraising, Sales and Marketing</div>
+    <div class="overline" style="margin-bottom:.75rem;">Founding team</div>
+    <h2 class="section-title">The People Behind It</h2>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-emoji">🔧</div>
+        <div class="team-role">CTO</div>
+        <div style="font-weight:600; margin-bottom:.5rem;">Technical Co-Founder</div>
+        <div class="team-desc">3+ years AI, ML engineering, trading systems, REST APIs. Architect of the 9-agent pipeline and context module.</div>
       </div>
-      <button class="btn-cta" onclick="alert('Request data room: agenticmarkets-CB@proton.me\n\nWe will share full financial model and architecture.')">🎰 REQUEST DATA ROOM — 145k€ LEAD</button>
-      <p style="margin-top: 1.5rem; font-size: 0.7rem;">📧 <strong>agenticmarkets-CB@proton.me</strong>  ·  Confidential pitch · May 2026</p>
+      <div class="team-card">
+        <div class="team-emoji">📊</div>
+        <div class="team-role">CEO</div>
+        <div style="font-weight:600; margin-bottom:.5rem;">Business Co-Founder</div>
+        <div class="team-desc">Legal, compliance, fundraising, B2B sales and partnerships. Prediction market licensing expertise.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ── -->
+  <section style="text-align:center;">
+    <div class="glass" style="padding:2.5rem 2rem; max-width:700px; margin:0 auto;">
+      <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:1rem; line-height:1.3;">
+        We're not building a bot.<br>
+        We're building a <span style="color:var(--cyan)">multi-sport, multi-asset<br>autonomous trading desk</span>.
+      </h2>
+      <p style="color:var(--muted); font-size:.9rem; margin-bottom:2rem; max-width:480px; margin-left:auto; margin-right:auto;">
+        5 AI agents · Dixon-Coles model · conformal prediction · CLV tracking · fractional Kelly sizing.<br>
+        Round 1 open now.
+      </p>
+      <button class="cta-btn" onclick="navigator.clipboard?.writeText('agenticmarkets-CB@proton.me'); alert('Email copied!\n\nagenticmarkets-CB@proton.me\n\nRound 1: 145k€ for 8-10% equity. Full financial model available on request.')">
+        🎰 Request Round 1 Data Room
+      </button>
+      <p style="margin-top:1.5rem; font-size:.72rem; color:var(--dim); font-family:'JetBrains Mono',monospace;">
+        📧 agenticmarkets-CB@proton.me · Confidential Investment Pitch · May 2026
+      </p>
     </div>
   </section>
 

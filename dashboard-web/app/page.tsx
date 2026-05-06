@@ -83,6 +83,7 @@ interface Prediction {
   best_selection: string | null;
   model_matches: number | null;
   computed_at: string;
+  match_type?: string | null;
   enrichment?: PredictionEnrichment | null;
 }
 
@@ -93,13 +94,63 @@ interface AgentStatus {
   age_seconds: number | null;
 }
 
+interface HistoryMatch {
+  match_id: string;
+  league: string;
+  league_name: string;
+  home_team: string;
+  away_team: string;
+  kickoff: string;
+  p_home: number;
+  p_draw: number;
+  p_away: number;
+  odds_home: number | null;
+  odds_draw: number | null;
+  odds_away: number | null;
+  edge: number | null;
+  best_selection: string | null;
+  bet_selection: string | null;
+  bet_status: string | null;
+  bet_stake: number | null;
+  bet_odds: number | null;
+}
+
+interface HistoryStats {
+  total_matches: number;
+  bets_placed: number;
+  won: number;
+  lost: number;
+  pending: number;
+  accuracy: string;
+  roi: string;
+  model_accuracy: string;
+  total_return: string;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LEAGUE_FLAGS: Record<string, string> = {
   PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "⭐", EL: "🟠",
 };
 
-const TABS = ["predictions", "bets", "agents"] as const;
+const LEAGUE_IMPORTANCE: Record<string, number> = {
+  CL: 5, EL: 4, PL: 3, SA: 3, PD: 3, BL1: 3, FL1: 3,
+};
+
+const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
+  DERBY:              { label: "Derby",          color: "text-red-400 border-red-400/40 bg-red-400/10",        priority: 5 },
+  TITLE_DECIDER:      { label: "Title",          color: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10", priority: 4 },
+  RELEGATION:         { label: "Relegation",     color: "text-orange-400 border-orange-400/40 bg-orange-400/10", priority: 4 },
+  NEUTRAL_VENUE:      { label: "Neutral",        color: "text-blue-400 border-blue-400/40 bg-blue-400/10",     priority: 3 },
+  CUP_SPILLOVER:      { label: "Cup",            color: "text-violet-400 border-violet-400/40 bg-violet-400/10", priority: 3 },
+  SHORT_REST:         { label: "Short Rest",     color: "text-amber-400 border-amber-400/40 bg-amber-400/10",  priority: 2 },
+  EUROPEAN_HANGOVER:  { label: "EU Hangover",   color: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",     priority: 2 },
+  DEAD_RUBBER:        { label: "Dead Rubber",    color: "text-gray-500 border-gray-500/40 bg-gray-500/10",     priority: 1 },
+  ROTATION:           { label: "Rotation",       color: "text-gray-500 border-gray-500/40 bg-gray-500/10",     priority: 1 },
+  STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
+};
+
+const TABS = ["predictions", "bets", "history", "agents"] as const;
 type Tab = typeof TABS[number];
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -119,6 +170,14 @@ function timeAgo(utc: string) {
   if (diff < 60) return `${diff}m ago`;
   const h = Math.floor(diff / 60);
   return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
+}
+
+function matchImportance(p: Prediction | HistoryMatch): number {
+  const leaguePrio = LEAGUE_IMPORTANCE[p.league] ?? 2;
+  const edgePrio = (p.edge ?? 0) > 0.05 ? 2 : (p.edge ?? 0) > 0.02 ? 1 : 0;
+  const mt = "match_type" in p ? (p.match_type ?? "") : "";
+  const typePrio = MATCH_TYPE_META[mt as string]?.priority ?? 0;
+  return leaguePrio + edgePrio + typePrio;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -183,6 +242,17 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function MatchTypeBadge({ matchType }: { matchType?: string | null }) {
+  if (!matchType || matchType === "STANDARD" || matchType === "ROTATION") return null;
+  const meta = MATCH_TYPE_META[matchType];
+  if (!meta) return null;
+  return (
+    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${meta.color}`}>
+      {meta.label}
+    </span>
+  );
+}
+
 // ─── Prediction "Why" Reasoning ───────────────────────────────────────────────
 
 interface Reason { icon: string; text: string; highlight?: boolean }
@@ -191,7 +261,6 @@ function buildReasons(p: Prediction): Reason[] {
   const e = p.enrichment ?? {};
   const reasons: Reason[] = [];
 
-  // Always: Dixon-Coles model output
   const leader = p.p_home > p.p_draw && p.p_home > p.p_away ? "HOME" : p.p_draw > p.p_away ? "DRAW" : "AWAY";
   const leaderPct = leader === "HOME" ? p.p_home : leader === "DRAW" ? p.p_draw : p.p_away;
   reasons.push({
@@ -199,7 +268,6 @@ function buildReasons(p: Prediction): Reason[] {
     text: `Dixon-Coles model: ${leader} favoured at ${pct(leaderPct)} — λ ${p.lambda_home?.toFixed(2) ?? "?"} (home) vs ${p.lambda_away?.toFixed(2) ?? "?"} (away)`,
   });
 
-  // Edge vs market
   if (p.edge != null && p.odds_home != null) {
     if (p.edge > 0.03) {
       reasons.push({
@@ -216,7 +284,6 @@ function buildReasons(p: Prediction): Reason[] {
     reasons.push({ icon: "❓", text: "No market odds available — edge cannot be computed" });
   }
 
-  // Pi Rating strength comparison
   if (e.pi_home != null || e.pi_away != null) {
     const piH = e.pi_home ?? 0;
     const piA = e.pi_away ?? 0;
@@ -232,7 +299,6 @@ function buildReasons(p: Prediction): Reason[] {
     }
   }
 
-  // xG form
   if (e.xg_home != null && e.xg_away != null) {
     const diff = e.xg_home - e.xg_away;
     if (Math.abs(diff) > 0.3) {
@@ -244,9 +310,8 @@ function buildReasons(p: Prediction): Reason[] {
     } else {
       reasons.push({ icon: "⚽", text: `xG balanced: home ${e.xg_home.toFixed(2)} vs away ${e.xg_away.toFixed(2)} xG per game` });
     }
-    // xGA (defensive strength)
     if (e.xga_home != null && e.xga_away != null) {
-      const defDiff = e.xga_away - e.xga_home; // positive = home has better defense
+      const defDiff = e.xga_away - e.xga_home;
       if (Math.abs(defDiff) > 0.3) {
         reasons.push({
           icon: "🛡️",
@@ -256,7 +321,6 @@ function buildReasons(p: Prediction): Reason[] {
     }
   }
 
-  // Form
   const formH = e.form_home ?? "";
   const formA = e.form_away ?? "";
   if (formH || formA) {
@@ -277,7 +341,6 @@ function buildReasons(p: Prediction): Reason[] {
     }
   }
 
-  // Injuries impact
   const injH = e.injuries_home?.length ?? 0;
   const injA = e.injuries_away?.length ?? 0;
   if (injH > 0 || injA > 0) {
@@ -290,7 +353,6 @@ function buildReasons(p: Prediction): Reason[] {
     }
   }
 
-  // API-Football independent model comparison
   if (e.api_pct_home != null) {
     const dixonHome = Math.round(p.p_home * 100);
     const apiHome = e.api_pct_home;
@@ -302,17 +364,13 @@ function buildReasons(p: Prediction): Reason[] {
         highlight: discrepancy >= 15,
       });
     } else {
-      reasons.push({
-        icon: "✅",
-        text: `API-Football confirms: HOME ${apiHome}% (our model: ${dixonHome}%) — models agree`,
-      });
+      reasons.push({ icon: "✅", text: `API-Football confirms: HOME ${apiHome}% (our model: ${dixonHome}%) — models agree` });
     }
     if (e.api_advice) {
       reasons.push({ icon: "💬", text: `API-Football advice: "${e.api_advice}"` });
     }
   }
 
-  // Weather impact
   if (e.weather) {
     const w = e.weather;
     if (w.wind > 8 || w.rain > 3) {
@@ -324,7 +382,6 @@ function buildReasons(p: Prediction): Reason[] {
     }
   }
 
-  // AI narrative
   if (e.research) {
     reasons.push({ icon: "🤖", text: `AI research: ${e.research}` });
   }
@@ -340,7 +397,6 @@ function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
         className="glass-card max-w-lg w-full max-h-[80vh] overflow-y-auto p-5 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</div>
@@ -348,11 +404,11 @@ function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
               {p.home_team} <span className="text-gray-500 font-normal">vs</span> {p.away_team}
             </div>
             <div className="text-xs text-gray-500 font-mono mt-0.5">{fmtKickoff(p.kickoff)}</div>
+            {p.match_type && <MatchTypeBadge matchType={p.match_type} />}
           </div>
           <button onClick={onClose} className="text-gray-600 hover:text-white text-xl font-mono shrink-0">✕</button>
         </div>
 
-        {/* Probabilities */}
         <div className="space-y-1.5">
           <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400" odds={p.odds_home}
             isValue={p.best_selection === "HOME" && (p.edge ?? 0) > 0.03} />
@@ -362,7 +418,6 @@ function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
             isValue={p.best_selection === "AWAY" && (p.edge ?? 0) > 0.03} />
         </div>
 
-        {/* Why section */}
         <div className="space-y-2">
           <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider border-b border-white/10 pb-1">
             Perché questa previsione
@@ -375,7 +430,6 @@ function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
           ))}
         </div>
 
-        {/* Footer stats */}
         <div className="flex items-center justify-between text-[10px] text-gray-600 font-mono pt-2 border-t border-white/5">
           <span>λ home {p.lambda_home?.toFixed(2) ?? "?"}</span>
           <span>λ away {p.lambda_away?.toFixed(2) ?? "?"}</span>
@@ -413,6 +467,9 @@ function PredictionCard({ p }: { p: Prediction }) {
                 +EV {p.best_selection}
               </span>
             )}
+            {p.match_type && p.match_type !== "STANDARD" && (
+              <MatchTypeBadge matchType={p.match_type} />
+            )}
             {e.research && (
               <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">
                 🤖 AI
@@ -449,10 +506,7 @@ function PredictionCard({ p }: { p: Prediction }) {
           </div>
         )}
 
-        {/* Tap hint */}
-        <div className="text-[10px] text-gray-700 font-mono text-center">
-          tap to see why →
-        </div>
+        <div className="text-[10px] text-gray-700 font-mono text-center">tap to see why →</div>
 
         <div className="flex items-center justify-between text-xs text-gray-600 font-mono pt-1 border-t border-white/5">
           <span>λ {p.lambda_home?.toFixed(1) ?? "?"} – {p.lambda_away?.toFixed(1) ?? "?"}</span>
@@ -475,10 +529,10 @@ function PredictionCard({ p }: { p: Prediction }) {
 function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
   const AGENT_ROLES: Record<string, string> = {
     DataCollector: "Fetches fixtures, odds, history from all data sources",
-    ModelAgent: "Runs Dixon-Coles Poisson model to compute match probabilities",
+    ModelAgent: "Runs Dixon-Coles Poisson model + League & Match Context Module",
     AnalystAgent: "Identifies value bets by comparing model vs market odds",
     StrategistAgent: "Evaluates opportunities, assigns conviction score 0-10",
-    RiskManagerAgent: "Kelly sizing, exposure limits, data quality gates",
+    RiskManagerAgent: "Kelly sizing, exposure limits, competition type penalties",
     TraderAgent: "Executes bets on Betfair (paper or live)",
     MonitorAgent: "Heartbeat monitoring, PSI drift detection, Telegram alerts",
     ResearchAgent: "Generates AI match analysis via Ollama local LLM",
@@ -489,22 +543,20 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Architecture note */}
       <div className="glass-card p-4 border-cyan-400/10">
         <div className="text-xs font-mono text-gray-400 space-y-1 leading-relaxed">
-          <div className="text-cyan-400 font-bold mb-2">Architettura ibrida</div>
+          <div className="text-cyan-400 font-bold mb-2">Architettura ibrida v5.0</div>
           <div>
             <span className="text-cyan-300">Dashboard (Vercel)</span> — Dixon-Coles · Pi Rating · xG · API-Football · Odds.
             Sempre online, non dipende dagli agenti Python.
           </div>
           <div>
-            <span className="text-fuchsia-300">Agenti Python (locale)</span> — Analisi in tempo reale, Betfair execution,
-            Ollama AI summaries. Devono girare su questo Mac con <code className="text-yellow-300">python run.py</code>.
+            <span className="text-fuchsia-300">Agenti Python (locale)</span> — Analisi real-time, League &amp; Match Context Module,
+            Betfair execution, Ollama AI. Avvia con <code className="text-yellow-300">python run.py</code>.
           </div>
           {!anyOnline && (
             <div className="mt-2 text-yellow-400 border border-yellow-400/20 rounded px-2 py-1">
               ⚠️ Nessun agente attivo. Avvia il sistema con <code>python run.py</code> nella cartella del progetto.
-              Gli agenti invieranno heartbeat ogni 30s a questo dashboard.
             </div>
           )}
         </div>
@@ -535,30 +587,30 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
               {AGENT_ROLES[agent.name] ?? "Multi-agent system component"}
             </p>
             <div className="text-[10px] text-gray-600 font-mono">
-              {agent.last_seen
-                ? `Last seen: ${timeAgo(agent.last_seen)}`
-                : "No heartbeat received"}
+              {agent.last_seen ? `Last seen: ${timeAgo(agent.last_seen)}` : "No heartbeat received"}
               {agent.age_seconds != null && ` (${agent.age_seconds}s ago)`}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Agent pipeline diagram */}
       <div className="glass-card p-4">
-        <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">Pipeline Flow</h3>
+        <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">Pipeline Flow v5.0</h3>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400">
           {[
-            "DataCollector", "→", "ModelAgent", "→", "AnalystAgent", "→",
-            "StrategistAgent", "→", "RiskManagerAgent", "→", "TraderAgent",
+            "DataCollector", "→", "ModelAgent", "→", "ContextService", "→",
+            "AnalystAgent", "→", "StrategistAgent", "→", "RiskManagerAgent", "→", "TraderAgent",
           ].map((item, i) => (
-            <span key={i} className={item === "→" ? "text-gray-600" : "text-cyan-300"}>{item}</span>
+            <span key={i} className={item === "→" ? "text-gray-600" : item === "ContextService" ? "text-green-300" : "text-cyan-300"}>{item}</span>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400 mt-2">
           {["AHCollectorAgent", "→", "AH Odds", "·", "ResearchAgent", "→", "AI Summaries", "·", "MonitorAgent", "→", "Alerts + PSI"].map((item, i) => (
             <span key={i} className={["→", "·"].includes(item) ? "text-gray-600" : "text-fuchsia-300"}>{item}</span>
           ))}
+        </div>
+        <div className="mt-3 text-[10px] text-gray-600 font-mono">
+          ContextService v5.0: LeagueStrengthAnalyzer · LeagueOddsProfiler · LeaguePredictabilityTracker · MatchTypeClassifier · CompetitionTypeFactors
         </div>
       </div>
     </div>
@@ -581,7 +633,6 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
 
   return (
     <div className="space-y-6">
-      {/* Summary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Bets", value: String(summary.total_bets), color: "text-white" },
@@ -596,7 +647,6 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
         ))}
       </div>
 
-      {/* League P&L breakdown */}
       {leaguePnl.length > 0 && (
         <div className="glass-card p-4">
           <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">P&L by League</h3>
@@ -621,7 +671,6 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
         </div>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         {["all", "won", "lost", "pending"].map((s) => (
           <button key={s} onClick={() => setFilter(s)}
@@ -639,7 +688,6 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
         </button>
       </div>
 
-      {/* Bets table */}
       {filtered.length === 0 ? (
         <div className="glass-card p-8 text-center text-gray-400 font-mono">No bets match filters</div>
       ) : (
@@ -653,14 +701,10 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-white">
-                      {bet.home_team && bet.away_team
-                        ? `${bet.home_team} vs ${bet.away_team}`
-                        : bet.match_external_id}
+                      {bet.home_team && bet.away_team ? `${bet.home_team} vs ${bet.away_team}` : bet.match_external_id}
                     </span>
                     {bet.league && (
-                      <span className="text-xs text-gray-500 font-mono">
-                        {LEAGUE_FLAGS[bet.league] ?? "⚽"} {bet.league}
-                      </span>
+                      <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[bet.league] ?? "⚽"} {bet.league}</span>
                     )}
                     <span className={`text-xs font-mono ${bet.paper ? "text-yellow-400" : "text-green-400"}`}>
                       [{bet.paper ? "PAPER" : "LIVE"}]
@@ -689,9 +733,7 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
                   )}
                 </div>
               </div>
-              <div className="text-[10px] text-gray-700 font-mono mt-2">
-                Placed: {timeAgo(bet.placed_at)}
-              </div>
+              <div className="text-[10px] text-gray-700 font-mono mt-2">Placed: {timeAgo(bet.placed_at)}</div>
             </div>
           ))}
         </div>
@@ -700,7 +742,189 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
   );
 }
 
+// ─── History Tab ──────────────────────────────────────────────────────────────
+
+function HistoryTab({ history, stats, loading }: {
+  history: HistoryMatch[];
+  stats: HistoryStats | null;
+  loading: boolean;
+}) {
+  const [leagueFilter, setLeagueFilter] = useState("ALL");
+  const [resultFilter, setResultFilter] = useState("all");
+
+  const allLeagues = [...new Set(history.map((h) => h.league))];
+
+  const filtered = history.filter((h) => {
+    if (leagueFilter !== "ALL" && h.league !== leagueFilter) return false;
+    if (resultFilter === "bet" && !h.bet_status) return false;
+    if (resultFilter === "won" && h.bet_status !== "won") return false;
+    if (resultFilter === "lost" && h.bet_status !== "lost") return false;
+    if (resultFilter === "no-bet" && h.bet_status) return false;
+    return true;
+  });
+
+  const getBetOutcomeColor = (h: HistoryMatch) => {
+    if (!h.bet_status) return "border-white/10";
+    if (h.bet_status === "won") return "border-green-400/30";
+    if (h.bet_status === "lost") return "border-red-400/30";
+    return "border-yellow-400/20";
+  };
+
+  const getModelCorrectness = (h: HistoryMatch) => {
+    if (!h.bet_status || h.bet_status === "pending") return null;
+    return h.bet_status === "won";
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Stats strip */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+          {[
+            { label: "Matches", value: String(stats.total_matches), color: "text-white" },
+            { label: "Bets Placed", value: String(stats.bets_placed), color: "text-cyan-300" },
+            { label: "Won", value: String(stats.won), color: "text-green-400" },
+            { label: "Lost", value: String(stats.lost), color: "text-red-400" },
+            { label: "Hit Rate", value: `${stats.accuracy}%`, color: "text-yellow-400" },
+            { label: "ROI", value: `${Number(stats.roi) >= 0 ? "+" : ""}${stats.roi}%`, color: Number(stats.roi) >= 0 ? "text-green-400" : "text-red-400" },
+            { label: "Return", value: `${Number(stats.total_return) >= 0 ? "+" : ""}${stats.total_return}€`, color: Number(stats.total_return) >= 0 ? "text-green-400" : "text-red-400" },
+          ].map((kpi) => (
+            <div key={kpi.label} className="glass-card p-3 text-center">
+              <div className={`text-lg font-black ${kpi.color}`}>{kpi.value}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5 font-mono">{kpi.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1 flex-wrap">
+          {[
+            { key: "all", label: "All matches" },
+            { key: "bet", label: "With bet" },
+            { key: "won", label: "Won" },
+            { key: "lost", label: "Lost" },
+            { key: "no-bet", label: "No bet placed" },
+          ].map((f) => (
+            <button key={f.key} onClick={() => setResultFilter(f.key)}
+              className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
+                resultFilter === f.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+              }`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {["ALL", ...allLeagues].map((l) => (
+            <button key={l} onClick={() => setLeagueFilter(l)}
+              className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
+                leagueFilter === l ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
+              }`}>
+              {LEAGUE_FLAGS[l] ?? ""} {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 text-[10px] font-mono text-gray-500">
+        <span><span className="inline-block w-3 h-3 rounded-full bg-green-400/50 mr-1 align-middle"></span>Bet won</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-red-400/50 mr-1 align-middle"></span>Bet lost</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-yellow-400/50 mr-1 align-middle"></span>Pending</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-gray-600 mr-1 align-middle"></span>No bet placed</span>
+      </div>
+
+      {loading ? (
+        <div className="glass-card p-12 text-center text-gray-400 font-mono">
+          <div className="animate-pulse">Loading last 30 days history…</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="glass-card p-8 text-center text-gray-400 font-mono">
+          {history.length === 0 ? "No historical data yet — place some bets first" : "No matches for selected filters"}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((h) => {
+            const correct = getModelCorrectness(h);
+            return (
+              <div key={h.match_id} className={`glass-card p-3 ${getBetOutcomeColor(h)}`}>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  {/* Match info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[h.league] ?? "⚽"} {h.league}</span>
+                      <span className="text-sm font-bold text-white">
+                        {h.home_team} <span className="text-gray-500 font-normal text-xs">vs</span> {h.away_team}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">{fmtKickoff(h.kickoff)}</div>
+                  </div>
+
+                  {/* Model prediction */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-600 font-mono">Model prediction</div>
+                      <div className="text-xs font-mono text-cyan-300">{h.best_selection ?? "—"}</div>
+                      {h.edge != null && (
+                        <div className={`text-[10px] font-mono ${h.edge > 0 ? "text-green-500" : "text-gray-500"}`}>
+                          edge {h.edge > 0 ? "+" : ""}{(h.edge * 100).toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bet info + result */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {h.bet_status ? (
+                      <div className="text-right">
+                        <div className="text-[10px] text-gray-600 font-mono">
+                          Bet: {h.bet_selection} @ {h.bet_odds?.toFixed(2)}
+                        </div>
+                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                          <StatusBadge status={h.bet_status} />
+                          {correct !== null && (
+                            <span className={`text-[10px] font-mono ${correct ? "text-green-400" : "text-red-400"}`}>
+                              {correct ? "✓ model correct" : "✗ model wrong"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-gray-600 font-mono">no bet placed</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Probability mini-bar */}
+                <div className="flex gap-1 mt-2">
+                  {[
+                    { label: "H", p: h.p_home, color: "bg-cyan-400" },
+                    { label: "D", p: h.p_draw, color: "bg-yellow-400" },
+                    { label: "A", p: h.p_away, color: "bg-fuchsia-400" },
+                  ].map(({ label, p, color }) => (
+                    <div key={label} className="flex items-center gap-1 flex-1">
+                      <span className="text-[9px] text-gray-600 font-mono w-3">{label}</span>
+                      <div className="flex-1 bg-white/5 rounded-full h-1 overflow-hidden">
+                        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.round(p * 100)}%` }} />
+                      </div>
+                      <span className="text-[9px] text-gray-600 font-mono w-6 text-right">{Math.round(p * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Predictions Tab ──────────────────────────────────────────────────────────
+
+type SortMode = "kickoff_asc" | "kickoff_desc" | "edge_desc" | "importance_desc";
+type ImportanceFilter = "all" | "european" | "top5" | "value";
 
 function PredictionsTab({
   predictions, computedAt, loading, refreshing, onRefresh,
@@ -713,17 +937,39 @@ function PredictionsTab({
 }) {
   const [leagueFilter, setLeagueFilter] = useState("ALL");
   const [valueOnly, setValueOnly] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("kickoff_asc");
+  const [importanceFilter, setImportanceFilter] = useState<ImportanceFilter>("all");
+  const [matchTypeFilter, setMatchTypeFilter] = useState("ALL");
 
   const allLeagues = [...new Set(predictions.map((p) => p.league))];
-  const filtered = predictions.filter((p) => {
-    if (leagueFilter !== "ALL" && p.league !== leagueFilter) return false;
-    if (valueOnly && (p.edge == null || p.edge <= 0.03)) return false;
-    return true;
-  });
+  const allMatchTypes = [...new Set(predictions.map((p) => p.match_type ?? "STANDARD").filter(Boolean))];
+  const hasMatchTypes = allMatchTypes.some((t) => t !== "STANDARD" && t !== "ROTATION");
+
+  const filtered = predictions
+    .filter((p) => {
+      if (leagueFilter !== "ALL" && p.league !== leagueFilter) return false;
+      if (valueOnly && (p.edge == null || p.edge <= 0.03)) return false;
+      if (importanceFilter === "european" && !["CL", "EL"].includes(p.league)) return false;
+      if (importanceFilter === "top5" && !["PL", "SA", "PD", "BL1", "FL1"].includes(p.league)) return false;
+      if (importanceFilter === "value" && (p.edge == null || p.edge <= 0.03)) return false;
+      if (matchTypeFilter !== "ALL" && (p.match_type ?? "STANDARD") !== matchTypeFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortMode) {
+        case "kickoff_asc":  return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
+        case "kickoff_desc": return new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime();
+        case "edge_desc":    return (b.edge ?? -1) - (a.edge ?? -1);
+        case "importance_desc": return matchImportance(b) - matchImportance(a);
+        default: return 0;
+      }
+    });
+
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
 
   return (
     <div className="space-y-4">
+      {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-xs text-gray-500 font-mono">
           Dixon-Coles · Pi Rating · xG · Form · next 30 days ·{" "}
@@ -738,21 +984,85 @@ function PredictionsTab({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button onClick={() => setValueOnly(!valueOnly)}
-          className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-            valueOnly ? "border-green-400 text-green-400 bg-green-400/10" : "border-white/10 text-gray-400 hover:border-green-400/40"
-          }`}>
-          +EV Only
-        </button>
-        {["ALL", ...allLeagues].map((l) => (
-          <button key={l} onClick={() => setLeagueFilter(l)}
-            className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-              leagueFilter === l ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+      {/* Filter bar */}
+      <div className="glass-card p-3 space-y-3">
+        {/* Row 1: Sort + Importance */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">Sort</span>
+          {([
+            { key: "kickoff_asc", label: "Closest first" },
+            { key: "kickoff_desc", label: "Farthest first" },
+            { key: "edge_desc", label: "Best edge" },
+            { key: "importance_desc", label: "Most important" },
+          ] as { key: SortMode; label: string }[]).map((s) => (
+            <button key={s.key} onClick={() => setSortMode(s.key)}
+              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
+                sortMode === s.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+              }`}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Row 2: Importance / category */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">Cat.</span>
+          {([
+            { key: "all", label: "All" },
+            { key: "european", label: "⭐ European" },
+            { key: "top5", label: "Top 5 leagues" },
+            { key: "value", label: "+EV only" },
+          ] as { key: ImportanceFilter; label: string }[]).map((f) => (
+            <button key={f.key} onClick={() => setImportanceFilter(f.key)}
+              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
+                importanceFilter === f.key ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
+              }`}>
+              {f.label}
+            </button>
+          ))}
+          <button onClick={() => setValueOnly(!valueOnly)}
+            className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
+              valueOnly ? "border-green-400 text-green-400 bg-green-400/10" : "border-white/10 text-gray-400 hover:border-green-400/40"
             }`}>
-            {LEAGUE_FLAGS[l] ?? ""} {l}
+            +EV Only
           </button>
-        ))}
+        </div>
+
+        {/* Row 3: League filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">League</span>
+          {["ALL", ...allLeagues].map((l) => (
+            <button key={l} onClick={() => setLeagueFilter(l)}
+              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
+                leagueFilter === l ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+              }`}>
+              {LEAGUE_FLAGS[l] ?? ""} {l}
+            </button>
+          ))}
+        </div>
+
+        {/* Row 4: Match type filter (only shown if Python pipeline provides types) */}
+        {hasMatchTypes && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">Type</span>
+            {["ALL", ...allMatchTypes].map((t) => (
+              <button key={t} onClick={() => setMatchTypeFilter(t)}
+                className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
+                  matchTypeFilter === t
+                    ? "border-amber-400 text-amber-300 bg-amber-400/10"
+                    : "border-white/10 text-gray-400 hover:border-amber-400/40"
+                }`}>
+                {t === "ALL" ? "All types" : (MATCH_TYPE_META[t]?.label ?? t)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Results count */}
+        <div className="text-[10px] text-gray-600 font-mono">
+          Showing {filtered.length} of {predictions.length} predictions
+          {valueBets.length > 0 && ` · ${valueBets.length} value bets`}
+        </div>
       </div>
 
       {loading ? (
@@ -783,8 +1093,11 @@ export default function Dashboard() {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [computedAt, setComputedAt] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryMatch[]>([]);
+  const [historyStats, setHistoryStats] = useState<HistoryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
 
@@ -823,6 +1136,18 @@ export default function Dashboard() {
     } catch { /**/ }
   }, []);
 
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const resp = await fetch("/api/history");
+      if (resp.ok) {
+        const data = await resp.json();
+        setHistory(data.history ?? []);
+        setHistoryStats(data.stats ?? null);
+      }
+    } catch { /**/ } finally { setHistoryLoading(false); }
+  }, []);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -841,6 +1166,13 @@ export default function Dashboard() {
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); };
   }, [fetchData, fetchPredictions, fetchAgents]);
 
+  // Fetch history when tab is first opened
+  useEffect(() => {
+    if (tab === "history" && history.length === 0) {
+      fetchHistory();
+    }
+  }, [tab, history.length, fetchHistory]);
+
   const pnl = summary?.pnl ?? 0;
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
   const aliveAgents = agents.filter((a) => a.status === "alive").length;
@@ -851,7 +1183,7 @@ export default function Dashboard() {
       {/* Header */}
       <section className="text-center space-y-3">
         <div className="inline-block px-4 py-1 rounded-full border border-cyan-400 text-cyan-300 text-xs font-mono tracking-wider">
-          MULTI-AGENT AI · FOOTBALL PREDICTION MARKETS
+          MULTI-AGENT AI · FOOTBALL PREDICTION MARKETS · v5.0
         </div>
         <h1 className="text-5xl md:text-6xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-fuchsia-400 to-blue-500">
           Agentic Markets
@@ -878,16 +1210,17 @@ export default function Dashboard() {
       </section>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-white/10">
-        {(["predictions", "bets", "agents"] as Tab[]).map((t) => (
+      <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
+        {(["predictions", "bets", "history", "agents"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-mono uppercase tracking-wider transition border-b-2 -mb-px ${
+            className={`px-4 py-2 text-xs font-mono uppercase tracking-wider transition border-b-2 -mb-px whitespace-nowrap ${
               tab === t
                 ? "border-cyan-400 text-cyan-300"
                 : "border-transparent text-gray-500 hover:text-gray-300"
             }`}>
             {t === "predictions" && `Predictions (${valueBets.length > 0 ? `+EV:${valueBets.length}` : predictions.length})`}
             {t === "bets" && `Bets (${summary?.total_bets ?? 0})`}
+            {t === "history" && `Last 30 Days (${historyStats?.total_matches ?? history.length})`}
             {t === "agents" && `Agents (${aliveAgents}/${totalAgents} alive)`}
           </button>
         ))}
@@ -909,10 +1242,17 @@ export default function Dashboard() {
           win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
         }} leaguePnl={leaguePnl} />
       )}
+      {tab === "history" && (
+        <HistoryTab
+          history={history}
+          stats={historyStats}
+          loading={historyLoading}
+        />
+      )}
       {tab === "agents" && <AgentStatusTab agents={agents} />}
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
-        Agentic Markets · Dixon-Coles · Pi Rating · xG · 9-Agent AI System · PAPER MODE
+        Agentic Markets v5.0 · Dixon-Coles · Pi Rating · xG · League & Match Context · 9-Agent AI System · PAPER MODE
       </footer>
     </main>
   );
