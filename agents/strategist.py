@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from agents.base import BaseAgent
 from core.redis_client import consume, publish
+from core.telegram_client import is_near_kickoff
 from config.settings import settings
 
 STRATEGIST_SYSTEM = """You are the Head of Strategy at a quantitative prediction market trading desk.
@@ -31,6 +32,17 @@ class StrategistAgent(BaseAgent):
                     f"rejected: {data['home_team']} vs {data['away_team']} "
                     f"conviction={result.get('conviction')}"
                 )
+                if is_near_kickoff(data.get("kickoff", "")):
+                    from core.telegram_client import send, match_header
+                    conviction = result.get("conviction", 0)
+                    await send(
+                        f"⚪ <b>NESSUN BET</b> — conviction bassa\n"
+                        f"{match_header(data)}\n"
+                        f"🎯 {data.get('selection','?').upper()} @ {float(data.get('odds',0)):.2f}  "
+                        f"edge +{float(data.get('edge',0))*100:.1f}%\n"
+                        f"⭐ Conviction: <b>{conviction}/10</b>  (soglia: 6)\n"
+                        f"📝 {result.get('thesis','')[:120]}"
+                    )
                 return
 
             approved = {

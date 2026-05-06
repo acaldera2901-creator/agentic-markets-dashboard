@@ -72,7 +72,6 @@ async def get_odds(league: str) -> List[Dict]:
                 "regions": "eu,uk",
                 "markets": "h2h",
                 "oddsFormat": "decimal",
-                "bookmakers": "betfair,pinnacle,bet365",
             },
             timeout=15.0,
         )

@@ -3,7 +3,16 @@ import json
 from datetime import datetime
 from agents.base import BaseAgent
 from core.redis_client import consume, publish
+from core.telegram_client import is_near_kickoff
 from config.settings import settings
+
+
+def _edge_threshold(data: dict) -> tuple[float, str]:
+    notes = str(data.get("notes", "")).lower()
+    source = str(data.get("source", "")).lower()
+    if any(k in notes or k in source for k in ("pinnacle", "betfair", "exchange", "sharp")):
+        return settings.EDGE_MIN_SHARP, "sharp"
+    return settings.EDGE_MIN_SOFT, "soft"
 
 ANALYST_SYSTEM = """You are a quantitative football analyst for a prediction market trading desk.
 You receive probability estimates from a Dixon-Coles Poisson model and current market odds.
@@ -45,6 +54,16 @@ class AnalystAgent(BaseAgent):
             best_edge = edges[best_sel]
 
             if best_edge < settings.MIN_EDGE:
+                if is_near_kickoff(data.get("kickoff", "")):
+                    from core.telegram_client import send, match_header
+                    edge_threshold, tier = _edge_threshold(data)
+                    await send(
+                        f"⚪ <b>NESSUN BET</b> — edge insufficiente\n"
+                        f"{match_header(data)}\n"
+                        f"📊 p_home={p_home:.0%}  p_draw={p_draw:.0%}  p_away={p_away:.0%}\n"
+                        f"📉 Edge migliore: <b>{best_sel} +{best_edge*100:.1f}%</b>\n"
+                        f"🔻 Soglia {tier}: {edge_threshold*100:.0f}% — non raggiunta"
+                    )
                 return
 
             assessment = await self._assess(data, market_odds, best_sel, best_edge)
@@ -54,6 +73,7 @@ class AnalystAgent(BaseAgent):
                 )
                 return
 
+            bookmaker_source = odds_raw.get("bookmaker", "")
             opportunity = {
                 "match_id": data["match_id"],
                 "league": data["league"],
@@ -72,6 +92,7 @@ class AnalystAgent(BaseAgent):
                 "ci_width": data.get("ci_width", "1"),
                 "confidence": str(assessment.get("confidence", 0.7)),
                 "notes": assessment.get("notes", ""),
+                "source": bookmaker_source,
                 "found_at": datetime.utcnow().isoformat(),
             }
             await publish("analyst:opportunities", opportunity)

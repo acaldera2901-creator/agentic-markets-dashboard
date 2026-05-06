@@ -182,6 +182,119 @@ def place_bet(market_id: str, selection_id: int, odds: float, stake: float) -> d
     return result
 
 
+def get_all_odds_for_league(league_code: str) -> list[dict]:
+    """
+    Fetch Betfair best-back prices for all upcoming matches in a league.
+    Returns a list in the same normalized format as odds_api_client.get_odds().
+    """
+    if not is_configured():
+        return []
+    try:
+        markets = list_markets(league_code, days_ahead=14)
+        market_ids = [m["marketId"] for m in markets]
+        if not market_ids:
+            return []
+        # Fetch all books in one call
+        all_books = _call("listMarketBook", {
+            "marketIds": market_ids,
+            "priceProjection": {
+                "priceData": ["EX_BEST_OFFERS"],
+                "exBestOffersOverrides": {"bestPricesDepth": 1},
+            },
+        })
+        # Index books by market_id
+        book_by_id = {b["marketId"]: b for b in all_books}
+        results = []
+        for market in markets:
+            mid = market["marketId"]
+            book = book_by_id.get(mid)
+            if not book:
+                continue
+            runners_info = {r["selectionId"]: r["runnerName"] for r in market.get("runners", [])}
+            prices: dict[int, float] = {}
+            for runner in book.get("runners", []):
+                sel_id = runner.get("selectionId")
+                backs = runner.get("ex", {}).get("availableToBack", [])
+                if backs:
+                    prices[sel_id] = backs[0]["price"]
+            # Identify home/draw/away by runner name (Draw is always "The Draw" on Betfair)
+            oh = od = oa = 0.0
+            home_name = away_name = ""
+            for sel_id, name in runners_info.items():
+                p = prices.get(sel_id, 0)
+                if "draw" in name.lower() or name == "The Draw":
+                    od = p
+                elif not home_name:
+                    home_name = name
+                    oh = p
+                else:
+                    away_name = name
+                    oa = p
+            if not (oh and od and oa):
+                continue
+            margin = round(1 / oh + 1 / od + 1 / oa - 1, 4)
+            results.append({
+                "home_team": home_name,
+                "away_team": away_name,
+                "home_team_normalized": _norm(home_name),
+                "away_team_normalized": _norm(away_name),
+                "odds_home": oh,
+                "odds_draw": od,
+                "odds_away": oa,
+                "bookmaker": "betfair_exchange",
+                "margin": margin,
+            })
+        return results
+    except Exception as e:
+        logger.warning(f"get_all_odds_for_league {league_code} error: {e}")
+        return []
+
+
+def get_match_odds_for_pipeline(home_team: str, away_team: str, league_code: str) -> dict | None:
+    """
+    Fetch Betfair best-back prices for a match and return in the same normalized format
+    as odds_api_client.get_odds() — i.e. {odds_home, odds_draw, odds_away, bookmaker, margin}.
+    Returns None if market not found or Betfair not configured.
+    """
+    if not is_configured():
+        return None
+    try:
+        market_info = find_market(home_team, away_team, league_code)
+        if not market_info:
+            return None
+        runner_map = market_info["runner_map"]
+        book = get_market_odds(market_info["market_id"])
+        if not book:
+            return None
+        # Index prices by selectionId
+        prices: dict[int, float] = {}
+        for runner in book[0].get("runners", []):
+            sel_id = runner.get("selectionId")
+            backs = runner.get("ex", {}).get("availableToBack", [])
+            if backs:
+                prices[sel_id] = backs[0]["price"]
+        oh = prices.get(runner_map.get("home"), 0)
+        od = prices.get(runner_map.get("draw"), 0)
+        oa = prices.get(runner_map.get("away"), 0)
+        if not (oh and od and oa):
+            return None
+        margin = round(1 / oh + 1 / od + 1 / oa - 1, 4)
+        return {
+            "home_team": home_team,
+            "away_team": away_team,
+            "home_team_normalized": _norm(home_team),
+            "away_team_normalized": _norm(away_team),
+            "odds_home": oh,
+            "odds_draw": od,
+            "odds_away": oa,
+            "bookmaker": "betfair_exchange",
+            "margin": margin,
+        }
+    except Exception as e:
+        logger.warning(f"get_match_odds_for_pipeline error: {e}")
+        return None
+
+
 def cash_out(market_id: str, selection_id: int, current_odds: float, original_stake: float) -> dict:
     lay_stake = round(original_stake * 0.95, 2)
     return _call("placeOrders", {

@@ -7,6 +7,7 @@ from core.football_api_client import get_historical_results as apifootball_histo
 from core.football_data_org_client import get_historical_results as fdorg_history, FREE_TIER_CODES
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
+from context.context_service import ContextService
 from config.settings import settings
 
 
@@ -15,6 +16,7 @@ class ModelAgent(BaseAgent):
         super().__init__("ModelAgent")
         self._models: dict[str, DixonColesModel] = {}
         self._history: dict[str, list] = {}  # league → parsed match results for conformal
+        self._context_svc = ContextService()
 
     async def _main_loop(self) -> None:
         await self._bootstrap_models()
@@ -66,6 +68,20 @@ class ModelAgent(BaseAgent):
                             f"conformal calibrated for {league_code} on {len(cal_probs)} matches"
                         )
 
+                    # Carica storia campionato nel ContextService
+                    raw_matches = [
+                        {
+                            "home_goals": m["home_goals"],
+                            "away_goals": m["away_goals"],
+                            "result": (
+                                "home" if m["home_goals"] > m["away_goals"]
+                                else "away" if m["away_goals"] > m["home_goals"]
+                                else "draw"
+                            ),
+                        }
+                        for m in training
+                    ]
+                    self._context_svc.load_league_history(league_code, league_code, raw_matches)
                     self.logger.info(f"fitted model for {league_code} on {len(training)} matches")
                 else:
                     self.logger.warning(f"insufficient data for {league_code}: {len(training)} matches")
@@ -128,6 +144,24 @@ class ModelAgent(BaseAgent):
                 "odds": json.dumps(payload.get("odds", {})),
                 "computed_at": datetime.now(timezone.utc).isoformat(),
             }
+
+            # Arricchisci con contesto campionato/partita
+            ctx_input = {
+                "home_team": home, "away_team": away, "league": league,
+                "match_id": payload["match_id"],
+                "kickoff": payload["kickoff"],
+                "confidence": max(p_home, p_draw, p_away),
+            }
+            ctx = self._context_svc.enrich(ctx_input)
+            result["match_type"] = ctx["match_type"]
+            result["league_tier"] = str(ctx.get("league_tier") or "")
+            result["league_confidence_level"] = ctx["league_confidence_level"]
+            result["bet_filter_active"] = str(ctx["bet_filter_active"])
+            result["auto_skip_reason"] = ctx.get("auto_skip_reason") or ""
+            result["odds_anomaly"] = str(ctx.get("odds_anomaly", False))
+            result["data_completeness"] = str(ctx["data_completeness"])
+            result["market_efficiency"] = str(ctx.get("market_efficiency") or "")
+
             await publish("model:probabilities", result)
         except Exception as e:
             self.logger.error(f"processing error: {e}")

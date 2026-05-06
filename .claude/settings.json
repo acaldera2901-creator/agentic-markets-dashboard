@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/calde/Desktop/sistema-andrea/agentic-markets && git status --porcelain | grep -qE '.' && git add -A && git commit -m \"autosave $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true",
+            "statusMessage": "Autosalvataggio checkpoint git...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

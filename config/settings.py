@@ -57,6 +57,15 @@ class Settings(BaseSettings):
     # Telegram alerting threshold
     TELEGRAM_VALUE_EDGE_THRESHOLD: float = 0.03
 
+    # League & Match Context module
+    DERBY_THRESHOLD: float = 0.75          # fuzzy name similarity threshold for derby detection
+    CONTEXT_CACHE_TTL_H: int = 6           # hours before re-computing league/match context
+    MIN_LEAGUE_MATCHES: int = 20           # min matches in DB before league strength is trusted
+    PREDICTABILITY_MIN_BETS: int = 50      # min bet prima di valutare hit_rate
+    PREDICTABILITY_HIT_RATE_MIN: float = 0.45  # soglia filtro automatico
+    CLV_MIN_ACCEPTABLE: float = 0.0        # CLV negativo → sospensione consigliata
+    LEAGUE_TIER_TOP5: list[str] = ["PL", "SA", "PD", "BL1", "FL1"]
+
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1
     PSI_CRITICAL_THRESHOLD: float = 0.2

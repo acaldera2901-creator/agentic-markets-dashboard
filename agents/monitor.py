@@ -195,6 +195,14 @@ class MonitorAgent(BaseAgent):
         """Compute PSI for key features comparing baseline vs last 7 days."""
         try:
             async with AsyncSessionLocal() as session:
+                # Check table exists before querying
+                tbl_check = await session.execute(
+                    text("SELECT to_regclass('public.match_predictions')")
+                )
+                if tbl_check.scalar() is None:
+                    self.logger.debug("PSI: match_predictions table not in local DB — skipping")
+                    return
+
                 # Baseline: first 30 days of predictions
                 baseline_rows = await session.execute(
                     text("""

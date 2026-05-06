@@ -1,13 +1,25 @@
 import asyncio
 import json
 import traceback
+import unicodedata
+from difflib import SequenceMatcher
 from datetime import datetime, timezone, timedelta
 from agents.base import BaseAgent
 from core.redis_client import publish
 from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGUE_IDS
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
 from core.odds_api_client import get_odds, normalize_name
+from core.betfair_client import get_all_odds_for_league, is_configured as betfair_configured
 from config.settings import settings
+
+
+def _ascii_lower(s: str) -> str:
+    """Strip diacritics and lowercase — handles München↔Munich type mismatches."""
+    return unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii').lower().strip()
+
+
+def _name_sim(a: str, b: str) -> float:
+    return SequenceMatcher(None, _ascii_lower(a), _ascii_lower(b)).ratio()
 
 
 class DataCollectorAgent(BaseAgent):
@@ -59,11 +71,30 @@ class DataCollectorAgent(BaseAgent):
         for league_code, league_id in LEAGUE_IDS.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
-                odds_list = await get_odds(league_code)
-                odds_map = {
-                    o.get("home_team_normalized", "") + "|" + o.get("away_team_normalized", ""): o
-                    for o in odds_list
-                }
+                # Primary odds source: Betfair Exchange (live, sharpest prices)
+                # The Odds API is a fallback (monthly quota often exhausted)
+                odds_map: dict = {}
+                if betfair_configured():
+                    try:
+                        bf_list = await asyncio.to_thread(get_all_odds_for_league, league_code)
+                    except Exception as bf_err:
+                        self.logger.warning(f"Betfair odds error {league_code}: {bf_err}")
+                        bf_list = []
+                    if bf_list:
+                        self.logger.info(f"Betfair {league_code}: {len(bf_list)} markets")
+                        odds_map = {
+                            o["home_team_normalized"] + "|" + o["away_team_normalized"]: o
+                            for o in bf_list
+                        }
+                # Supplement with Odds API if Betfair had no markets for this league
+                if not odds_map:
+                    odds_list = await get_odds(league_code)
+                    odds_map = {
+                        o.get("home_team_normalized","") + "|" + o.get("away_team_normalized",""): o
+                        for o in odds_list
+                    }
+                    if odds_map:
+                        self.logger.info(f"OddsAPI {league_code}: {len(odds_map)} markets")
                 published = 0
                 for fixture in fixtures:
                     event = self._build_event(fixture, odds_map, league_code)
@@ -85,7 +116,20 @@ class DataCollectorAgent(BaseAgent):
             match_id = str(fixture["fixture"]["id"])
 
             odds_key = f"{normalize_name(home)}|{normalize_name(away)}"
-            odds_data = odds_map.get(odds_key, {})
+            odds_data = odds_map.get(odds_key)
+
+            # Fuzzy fallback: substring + similarity (handles umlaut mismatches like München↔Munich,
+            # abbreviations like "Paris St-G"↔"Paris Saint-Germain", and suffix variants)
+            if not odds_data:
+                home_n = normalize_name(home)
+                away_n = normalize_name(away)
+                for key, val in odds_map.items():
+                    k_home, _, k_away = key.partition("|")
+                    home_ok = (k_home in home_n or home_n in k_home or _name_sim(home_n, k_home) >= 0.65)
+                    away_ok = (k_away in away_n or away_n in k_away or _name_sim(away_n, k_away) >= 0.65)
+                    if home_ok and away_ok:
+                        odds_data = val
+                        break
 
             return {
                 "match_id": match_id,
@@ -93,7 +137,7 @@ class DataCollectorAgent(BaseAgent):
                 "home_team": home,
                 "away_team": away,
                 "kickoff": kickoff,
-                "odds": odds_data,
+                "odds": odds_data or {},
                 "collected_at": datetime.now(timezone.utc).isoformat(),
             }
         except (KeyError, TypeError):
