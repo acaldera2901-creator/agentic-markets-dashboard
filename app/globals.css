@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+:root {
+  --background: #03050b;
+  --foreground: #e2e8f0;
+  --cyan: #00ffff;
+  --fuchsia: #e879f9;
+  --card-bg: rgba(12, 20, 35, 0.8);
+  --card-border: rgba(0, 255, 255, 0.2);
+}
+
+body {
+  background: radial-gradient(circle at 10% 20%, #0a0f1f, #03050b);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+.neon-text {
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
