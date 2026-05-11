@@ -927,12 +927,13 @@ type SortMode = "kickoff_asc" | "kickoff_desc" | "edge_desc" | "importance_desc"
 type ImportanceFilter = "all" | "european" | "top5" | "value";
 
 function PredictionsTab({
-  predictions, computedAt, loading, refreshing, onRefresh,
+  predictions, computedAt, loading, refreshing, isStale, onRefresh,
 }: {
   predictions: Prediction[];
   computedAt: string | null;
   loading: boolean;
   refreshing: boolean;
+  isStale: boolean;
   onRefresh: () => void;
 }) {
   const [leagueFilter, setLeagueFilter] = useState("ALL");
@@ -983,6 +984,11 @@ function PredictionsTab({
           {refreshing ? "Computing…" : "↻ Refresh"}
         </button>
       </div>
+      {isStale && !loading && (
+        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-yellow-400/30 bg-yellow-400/5 text-xs font-mono text-yellow-400">
+          <span>⚠️ Predictions older than 1 hour — click Refresh to recompute (takes ~90s)</span>
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="glass-card p-3 space-y-3">
@@ -1097,6 +1103,7 @@ export default function Dashboard() {
   const [historyStats, setHistoryStats] = useState<HistoryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(true);
+  const [predStale, setPredStale] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
@@ -1122,6 +1129,7 @@ export default function Dashboard() {
         const data = await resp.json();
         setPredictions(data.predictions ?? []);
         setComputedAt(data.computed_at ?? null);
+        setPredStale(data.is_stale ?? false);
       }
     } catch { /**/ } finally { setPredLoading(false); }
   }, []);
@@ -1233,6 +1241,7 @@ export default function Dashboard() {
           computedAt={computedAt}
           loading={predLoading}
           refreshing={refreshing}
+          isStale={predStale}
           onRefresh={handleRefresh}
         />
       )}

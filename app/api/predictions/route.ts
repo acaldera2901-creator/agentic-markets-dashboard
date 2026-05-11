@@ -349,16 +349,6 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
 export async function GET() {
   await ensureTables();
 
-  const freshCheck = await dbQuery<{ cnt: string }>(
-    `SELECT COUNT(*) as cnt FROM match_predictions
-     WHERE kickoff > NOW() AND computed_at > NOW() - INTERVAL '1 hour'`
-  );
-  const freshCount = Number(freshCheck[0]?.cnt ?? 0);
-
-  if (freshCount === 0) {
-    await computeAndStore();
-  }
-
   const predictions = await dbQuery(
     `SELECT * FROM match_predictions
      WHERE kickoff > NOW()
@@ -371,13 +361,20 @@ export async function GET() {
      FROM match_predictions WHERE kickoff > NOW()`
   );
 
+  const computedAt = meta[0]?.ts ?? null;
+  const ageMinutes = computedAt
+    ? (Date.now() - new Date(computedAt).getTime()) / 60_000
+    : Infinity;
+  const isStale = ageMinutes > 60;
+
   return NextResponse.json(
     {
       predictions,
-      computed_at: meta[0]?.ts ?? null,
+      computed_at: computedAt,
       count: Number(meta[0]?.cnt ?? 0),
+      is_stale: isStale,
     },
-    { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=60" } }
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } }
   );
 }
 
