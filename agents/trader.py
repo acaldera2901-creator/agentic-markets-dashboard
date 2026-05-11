@@ -27,28 +27,29 @@ class TraderAgent(BaseAgent):
             except Exception as e:
                 self.logger.warning(f"Telegram init failed: {e}")
 
-    async def _send_value_bet_alert(self, order: dict) -> None:
-        """Send Telegram alert for value bets above edge threshold."""
+    async def _send_bet_placed_alert(self, order: dict, bet_id: str, bf_result: dict | None = None) -> None:
+        """Single Telegram alert sent only after bet is confirmed placed."""
         if not self._bot or not settings.TELEGRAM_CHAT_ID:
             return
         try:
             edge = float(order.get("edge", 0))
             if edge < settings.TELEGRAM_VALUE_EDGE_THRESHOLD:
                 return
-            ci_low = float(order.get("ci_low", 0))
-            ci_high = float(order.get("ci_high", 1))
             match = f"{order.get('home_team')} vs {order.get('away_team')}"
             sel = order.get("selection", "?").upper()
             odds = float(order.get("odds", 0))
             stake = float(order.get("stake", 0))
-            p_sel = order.get("p_home" if sel == "HOME" else "p_draw" if sel == "DRAW" else "p_away", 0)
-            tier = order.get("market_efficiency_tier", "soft")
+            p_sel = float(order.get("p_home" if sel == "HOME" else "p_draw" if sel == "DRAW" else "p_away", 0))
             mode = "PAPER" if settings.PAPER_TRADING else "LIVE"
+            bf_id = ""
+            if bf_result:
+                reports = bf_result.get("instructionReports", [])
+                bf_id = reports[0].get("betId", "") if reports else ""
+            id_line = f"BetID: {bf_id}" if bf_id else f"DB#{bet_id}"
             msg = (
-                f"🎯 [{mode}] {match}\n"
-                f"Bet: {sel} | p={float(p_sel):.2f} | Odds={odds:.2f}\n"
-                f"Edge=+{edge*100:.1f}% | Stake={stake:.2f}u\n"
-                f"Conf: [{ci_low:.2f}-{ci_high:.2f}] | Tier: {tier}"
+                f"✅ [{mode}] {match}\n"
+                f"{sel} @ {odds:.2f}  |  p={p_sel:.2f}  |  Edge +{edge*100:.1f}%\n"
+                f"Stake: {stake:.2f}€  |  {id_line}"
             )
             await self._bot.send_message(chat_id=settings.TELEGRAM_CHAT_ID, text=msg)
         except Exception as e:
@@ -82,9 +83,15 @@ class TraderAgent(BaseAgent):
         market_id, runner_id = await asyncio.get_event_loop().run_in_executor(
             None, self._lookup_betfair, order
         )
+        kickoff = str(order.get("kickoff", ""))
         async with AsyncSessionLocal() as session:
             bet = Bet(
                 match_external_id=order["match_id"],
+                home_team=order.get("home_team", ""),
+                away_team=order.get("away_team", ""),
+                kickoff=kickoff,
+                league=order.get("league", ""),
+                matchday_id=kickoff[:10] if kickoff else "",
                 selection=order["selection"],
                 odds=float(order["odds"]),
                 stake=float(order["stake"]),
@@ -106,7 +113,7 @@ class TraderAgent(BaseAgent):
             "executed_at": datetime.utcnow().isoformat(),
         }
         await publish("trader:executions", execution)
-        await self._send_value_bet_alert(order)
+        await self._send_bet_placed_alert(order, str(bet.id))
         bf_info = f" [BF:{market_id}]" if market_id else ""
         self.logger.info(
             f"[PAPER] placed: {order['home_team']} vs {order['away_team']} "
@@ -121,27 +128,55 @@ class TraderAgent(BaseAgent):
             market_id, runner_id = await asyncio.get_event_loop().run_in_executor(
                 None, self._lookup_betfair, order
             )
-        result = place_bet(
-            market_id=market_id,
-            selection_id=runner_id,
-            odds=float(order["odds"]),
-            stake=float(order["stake"]),
+
+        if not market_id or not runner_id:
+            self.logger.error(
+                f"[LIVE] market not found on Betfair: "
+                f"{order.get('home_team')} vs {order.get('away_team')}"
+            )
+            return
+
+        result = await asyncio.get_event_loop().run_in_executor(
+            None, place_bet,
+            market_id, runner_id, float(order["odds"]), float(order["stake"])
         )
+
+        # Verify Betfair confirmed the bet
+        bf_status = result.get("status", "FAILURE")
+        reports = result.get("instructionReports", [])
+        bf_bet_id = reports[0].get("betId", "") if reports else ""
+        if bf_status != "SUCCESS" or not bf_bet_id:
+            err = result.get("errorCode", "UNKNOWN")
+            self.logger.error(
+                f"[LIVE] Betfair rejected bet: "
+                f"{order.get('home_team')} vs {order.get('away_team')} — {err} | full: {result}"
+            )
+            return
+
+        kickoff = str(order.get("kickoff", ""))
         async with AsyncSessionLocal() as session:
             bet = Bet(
                 match_external_id=order["match_id"],
+                home_team=order.get("home_team", ""),
+                away_team=order.get("away_team", ""),
+                kickoff=kickoff,
+                league=order.get("league", ""),
+                matchday_id=kickoff[:10] if kickoff else "",
                 selection=order["selection"],
                 odds=float(order["odds"]),
                 stake=float(order["stake"]),
                 paper=False,
                 status="pending",
                 thesis=order.get("thesis", ""),
-                betfair_bet_id=str(result.get("betId", "")),
+                betfair_bet_id=bf_bet_id,
                 placed_at=datetime.utcnow(),
             )
             session.add(bet)
             await session.commit()
 
         await publish("trader:executions", {**order, "paper": "false", "executed_at": datetime.utcnow().isoformat()})
-        await self._send_value_bet_alert(order)
-        self.logger.info(f"[LIVE] placed: {order['home_team']} vs {order['away_team']} stake={order['stake']}")
+        await self._send_bet_placed_alert(order, str(bet.id), result)
+        self.logger.info(
+            f"[LIVE] placed: {order['home_team']} vs {order['away_team']} "
+            f"stake={order['stake']} betId={bf_bet_id}"
+        )
