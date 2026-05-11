@@ -320,8 +320,11 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
          ON CONFLICT (match_id) DO UPDATE SET
            p_home=EXCLUDED.p_home, p_draw=EXCLUDED.p_draw, p_away=EXCLUDED.p_away,
            lambda_home=EXCLUDED.lambda_home, lambda_away=EXCLUDED.lambda_away,
-           odds_home=EXCLUDED.odds_home, odds_draw=EXCLUDED.odds_draw, odds_away=EXCLUDED.odds_away,
-           edge=EXCLUDED.edge, best_selection=EXCLUDED.best_selection,
+           odds_home=COALESCE(EXCLUDED.odds_home, match_predictions.odds_home),
+           odds_draw=COALESCE(EXCLUDED.odds_draw, match_predictions.odds_draw),
+           odds_away=COALESCE(EXCLUDED.odds_away, match_predictions.odds_away),
+           edge=COALESCE(EXCLUDED.edge, match_predictions.edge),
+           best_selection=COALESCE(EXCLUDED.best_selection, match_predictions.best_selection),
            model_matches=EXCLUDED.model_matches, enrichment=EXCLUDED.enrichment,
            computed_at=NOW()`,
         [
