@@ -446,6 +446,17 @@ function PredictionCard({ p }: { p: Prediction }) {
   const isValueBet = p.edge != null && p.edge > 0.03;
   const e = p.enrichment ?? {};
 
+  const betRec = isValueBet && hasOdds && p.best_selection ? (() => {
+    const selOdds = p.best_selection === "HOME" ? p.odds_home : p.best_selection === "DRAW" ? p.odds_draw : p.odds_away;
+    const selP = p.best_selection === "HOME" ? p.p_home : p.best_selection === "DRAW" ? p.p_draw : p.p_away;
+    if (!selOdds || selP == null) return null;
+    const b = selOdds - 1;
+    const q = 1 - selP;
+    const kelly = Math.max(0, (b * selP - q) / b);
+    const stake = Math.min(15, Math.max(1, Math.round(kelly * 0.25 * 500)));
+    return { selOdds, stake };
+  })() : null;
+
   return (
     <>
       <div
@@ -503,6 +514,23 @@ function PredictionCard({ p }: { p: Prediction }) {
           <div className="space-y-1">
             <FormRow label="HOME" form={e.form_home} />
             <FormRow label="AWAY" form={e.form_away} />
+          </div>
+        )}
+
+        {betRec && (
+          <div className="rounded-lg border border-green-400/40 bg-green-400/5 px-3 py-2.5 flex items-center gap-3 mt-1">
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] font-mono text-green-400/50 uppercase tracking-widest mb-1">Scommetti</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-sm font-bold text-green-400 font-mono">{p.best_selection}</span>
+                <span className="text-sm font-mono text-white/80">@ {betRec.selOdds.toFixed(2)}</span>
+                <span className="text-[10px] font-mono text-green-400/60 ml-auto">edge +{((p.edge ?? 0) * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+            <div className="text-right shrink-0 border-l border-green-400/20 pl-3">
+              <div className="text-lg font-bold text-white font-mono">€{betRec.stake}</div>
+              <div className="text-[9px] font-mono text-green-400/50 uppercase tracking-wider">stake</div>
+            </div>
           </div>
         )}
 
