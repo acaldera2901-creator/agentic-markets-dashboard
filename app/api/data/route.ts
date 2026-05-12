@@ -30,7 +30,7 @@ export async function GET() {
       SELECT b.*, mp.home_team, mp.away_team, mp.league, mp.league_name,
              mp.kickoff, mp.enrichment
       FROM bets b
-      LEFT JOIN match_predictions mp ON b.match_external_id = mp.match_id
+      LEFT JOIN match_predictions mp ON b.match_external_id::text = mp.match_id::text
       ORDER BY b.placed_at DESC
       LIMIT 100
     `),
@@ -53,7 +53,7 @@ export async function GET() {
         COUNT(CASE WHEN b.status = 'lost' THEN 1 END) as lost,
         COALESCE(SUM(CASE WHEN b.status = 'won' THEN b.stake * (b.odds - 1) WHEN b.status = 'lost' THEN -b.stake ELSE 0 END), 0) as pnl
       FROM bets b
-      LEFT JOIN match_predictions mp ON b.match_external_id = mp.match_id
+      LEFT JOIN match_predictions mp ON b.match_external_id::text = mp.match_id::text
       GROUP BY COALESCE(mp.league, 'unknown')
       ORDER BY pnl DESC
     `),

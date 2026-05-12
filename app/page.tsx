@@ -701,7 +701,10 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-white">
-                      {bet.home_team && bet.away_team ? `${bet.home_team} vs ${bet.away_team}` : bet.match_external_id}
+                      {bet.home_team && bet.away_team
+                        ? `${bet.home_team} vs ${bet.away_team}`
+                        : <span className="text-gray-400">Match <span className="text-cyan-400 font-mono">#{bet.match_external_id}</span></span>
+                      }
                     </span>
                     {bet.league && (
                       <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[bet.league] ?? "⚽"} {bet.league}</span>
@@ -1092,7 +1095,6 @@ function PredictionsTab({
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [tab, setTab] = useState<Tab>("predictions");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [leaguePnl, setLeaguePnl] = useState<LeaguePnl[]>([]);
@@ -1168,18 +1170,12 @@ export default function Dashboard() {
     fetchData();
     fetchPredictions();
     fetchAgents();
+    fetchHistory();
     const dataInt = setInterval(fetchData, 30_000);
     const predInt = setInterval(fetchPredictions, 3_600_000);
     const agentInt = setInterval(fetchAgents, 60_000);
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); };
-  }, [fetchData, fetchPredictions, fetchAgents]);
-
-  // Fetch history when tab is first opened
-  useEffect(() => {
-    if (tab === "history" && history.length === 0) {
-      fetchHistory();
-    }
-  }, [tab, history.length, fetchHistory]);
+  }, [fetchData, fetchPredictions, fetchAgents, fetchHistory]);
 
   const pnl = summary?.pnl ?? 0;
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
@@ -1217,25 +1213,16 @@ export default function Dashboard() {
         ))}
       </section>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
-        {(["predictions", "bets", "history", "agents"] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-mono uppercase tracking-wider transition border-b-2 -mb-px whitespace-nowrap ${
-              tab === t
-                ? "border-cyan-400 text-cyan-300"
-                : "border-transparent text-gray-500 hover:text-gray-300"
-            }`}>
-            {t === "predictions" && `Predictions (${valueBets.length > 0 ? `+EV:${valueBets.length}` : predictions.length})`}
-            {t === "bets" && `Bets (${summary?.total_bets ?? 0})`}
-            {t === "history" && `Last 30 Days (${historyStats?.total_matches ?? history.length})`}
-            {t === "agents" && `Agents (${aliveAgents}/${totalAgents} alive)`}
-          </button>
-        ))}
-      </div>
+      {/* Agent Status */}
+      <section>
+        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">AGENT STATUS
+          <span className="text-sm font-normal text-gray-500 ml-3">{aliveAgents}/{totalAgents} alive</span>
+        </h2>
+        <AgentStatusTab agents={agents} />
+      </section>
 
-      {/* Tab content */}
-      {tab === "predictions" && (
+      {/* Upcoming Predictions */}
+      <section>
         <PredictionsTab
           predictions={predictions}
           computedAt={computedAt}
@@ -1244,24 +1231,61 @@ export default function Dashboard() {
           isStale={predStale}
           onRefresh={handleRefresh}
         />
-      )}
-      {tab === "bets" && (
+      </section>
+
+      {/* Past Matches — Calendar */}
+      <section>
+        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">PAST MATCHES — LAST 30 DAYS
+          {historyStats && (
+            <span className="text-sm font-normal text-gray-500 ml-3">
+              {historyStats.total_matches} matches · {historyStats.bets_placed} bets placed · ROI {Number(historyStats.roi) >= 0 ? "+" : ""}{historyStats.roi}%
+            </span>
+          )}
+        </h2>
+        <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
+      </section>
+
+      {/* Recent Bets */}
+      <section>
+        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">RECENT BETS
+          <span className="text-sm font-normal text-gray-500 ml-3">{summary?.total_bets ?? 0} total · {summary?.win_rate ?? "0"}% win rate</span>
+        </h2>
         <BetsTab bets={bets} summary={summary ?? {
           total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
           win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
         }} leaguePnl={leaguePnl} />
-      )}
-      {tab === "history" && (
-        <HistoryTab
-          history={history}
-          stats={historyStats}
-          loading={historyLoading}
-        />
-      )}
-      {tab === "agents" && <AgentStatusTab agents={agents} />}
+      </section>
+
+      {/* Data Sources */}
+      <section>
+        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">DATA SOURCES</h2>
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            { key: "FD", name: "football-data.org", desc: "PL / SA / PD / BL1 / FL1 / CL / EL — fixtures and history", status: "live" },
+            { key: "BF", name: "Betfair Reader", desc: "Exchange odds readout / best available price tracking", status: "live" },
+            { key: "OD", name: "The Odds API", desc: "Pinnacle / Bet365 / exchange comparison layer", status: "live" },
+            { key: "DC", name: "Dixon-Coles", desc: "Poisson regression / team strengths / 365-day window", status: "running" },
+            { key: "PM", name: "Polymarket", desc: "Football prediction markets / CLOB API", status: "demo" },
+            { key: "AI", name: "Research Layer", desc: "Monitor / Research / AHCollector signal audit", status: "running" },
+          ].map(({ key, name, desc, status }) => (
+            <div key={key} className="glass-card p-4 flex items-center gap-3">
+              <span className="text-sm font-mono text-cyan-300 w-8 shrink-0">{key}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm text-white">{name}</div>
+                <div className="text-xs text-gray-400 truncate">{desc}</div>
+              </div>
+              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border font-mono ${
+                status === "live" ? "border-green-400/40 text-green-400 bg-green-400/10" :
+                status === "running" ? "border-green-400/40 text-green-400 bg-green-400/10" :
+                "border-yellow-400/40 text-yellow-400 bg-yellow-400/10"
+              }`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
-        Agentic Markets v5.0 · Dixon-Coles · Pi Rating · xG · League & Match Context · 9-Agent AI System · PAPER MODE
+        Agentic Markets / Dixon-Coles Football Prediction Desk / LIVE DEMO MODE
       </footer>
     </main>
   );
