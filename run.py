@@ -9,6 +9,12 @@ from agents.trader import TraderAgent
 from agents.monitor import MonitorAgent
 from agents.research import ResearchAgent
 from agents.ah_collector import AHCollectorAgent
+from agents.result_settlement import ResultSettlementAgent
+from agents.tennis_data_collector import TennisDataCollectorAgent
+from agents.tennis_model_agent import TennisModelAgent
+from agents.tennis_analyst import TennisAnalystAgent
+from agents.tennis_risk_manager import TennisRiskManagerAgent
+from agents.tennis_trader import TennisTraderAgent
 from core.db import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +23,7 @@ logging.basicConfig(level=logging.INFO)
 async def main():
     await init_db()
     agents = [
+        # Football pipeline
         DataCollectorAgent(),
         ModelAgent(),
         AnalystAgent(),
@@ -26,6 +33,13 @@ async def main():
         MonitorAgent(),
         ResearchAgent(),
         AHCollectorAgent(),
+        ResultSettlementAgent(),
+        # Tennis pipeline
+        TennisDataCollectorAgent(),
+        TennisModelAgent(),
+        TennisAnalystAgent(),
+        TennisRiskManagerAgent(),
+        TennisTraderAgent(),
     ]
     await asyncio.gather(*[agent.run() for agent in agents])
 

@@ -44,9 +44,16 @@ class Settings(BaseSettings):
     MAX_MONTHLY_DRAWDOWN: float = 0.15
 
     # Edge thresholds by market efficiency tier
-    MIN_EDGE: float = 0.03           # default / fallback
-    EDGE_MIN_SHARP: float = 0.02     # Pinnacle / sharp books
-    EDGE_MIN_SOFT: float = 0.05      # softer bookmakers
+    MIN_EDGE: float = 0.05           # default / fallback (raised from 0.03)
+    EDGE_MIN_SHARP: float = 0.04     # Pinnacle / sharp books (raised from 0.02)
+    EDGE_MIN_SOFT: float = 0.07      # softer bookmakers (raised from 0.05)
+
+    # Short-odds guard: heavy favourites require extra edge due to compounded variance
+    SHORT_ODDS_THRESHOLD: float = 1.50   # odds below this trigger the stricter gate
+    MIN_EDGE_SHORT_ODDS: float = 0.08    # minimum edge required when odds < SHORT_ODDS_THRESHOLD
+
+    # Duplicate bet protection
+    MAX_BETS_PER_MATCH: int = 1          # max pending bets allowed per match_external_id
 
     # Confidence-interval gate: skip bet if (p_high - p_low) > this value
     MAX_CONFIDENCE_INTERVAL_WIDTH: float = 0.15
@@ -55,7 +62,7 @@ class Settings(BaseSettings):
     MIN_DATA_COMPLETENESS: float = 0.75
 
     # Telegram alerting threshold
-    TELEGRAM_VALUE_EDGE_THRESHOLD: float = 0.03
+    TELEGRAM_VALUE_EDGE_THRESHOLD: float = 0.05
 
     # League & Match Context module
     DERBY_THRESHOLD: float = 0.75          # fuzzy name similarity threshold for derby detection
@@ -73,6 +80,13 @@ class Settings(BaseSettings):
     # Champion/Challenger traffic split for shadow testing
     CHALLENGER_TRAFFIC_PCT: float = 0.10   # 10% to challenger model
     CHALLENGER_MIN_PREDICTIONS: int = 200  # promote after this many predictions
+
+    # Tennis-specific parameters
+    TENNIS_BANKROLL: float = 500.0
+    TENNIS_MIN_EDGE: float = 0.04          # 4% minimum edge tennis
+    TENNIS_MAX_BET_PCT: float = 0.03       # 3% bankroll cap
+    TENNIS_DRAWDOWN_LIMIT: float = 0.12    # 12% monthly drawdown block
+    TENNIS_KELLY_FRACTION: float = 0.25
 
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
