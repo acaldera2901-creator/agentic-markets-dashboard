@@ -150,8 +150,34 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-const TABS = ["predictions", "bets", "history", "agents"] as const;
+const TABS = ["predictions", "tennis", "bets", "history", "agents"] as const;
 type Tab = typeof TABS[number];
+
+// ─── Tennis Types ─────────────────────────────────────────────────────────────
+
+interface TennisMatch {
+  id: string;
+  player1: string;
+  player2: string;
+  tournament: string;
+  surface: "CLAY" | "GRASS" | "HARD";
+  round: string;
+  scheduled: string;
+  p1: number;
+  p2: number;
+  odds_p1: number;
+  odds_p2: number;
+  edge: number | null;
+  best_selection: "P1" | "P2" | null;
+  model: string;
+}
+
+interface TennisSummary {
+  total_today: number;
+  value_bets: number;
+  markets_active: number;
+  pnl: number;
+}
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -549,6 +575,195 @@ function PredictionCard({ p }: { p: Prediction }) {
 
       {showWhy && <WhyPanel p={p} onClose={() => setShowWhy(false)} />}
     </>
+  );
+}
+
+// ─── Tennis Tab ───────────────────────────────────────────────────────────────
+
+const SURFACE_META: Record<string, { label: string; color: string }> = {
+  CLAY:  { label: "CLAY",  color: "text-orange-400 border-orange-400/40 bg-orange-400/10" },
+  GRASS: { label: "GRASS", color: "text-green-400 border-green-400/40 bg-green-400/10" },
+  HARD:  { label: "HARD",  color: "text-blue-400 border-blue-400/40 bg-blue-400/10" },
+};
+
+function TennisMatchCard({ m }: { m: TennisMatch }) {
+  const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
+  const isValue = m.edge != null && m.edge > 0.025;
+  const scheduledDate = new Date(m.scheduled).toLocaleDateString("it-IT", {
+    weekday: "short", day: "numeric", month: "short",
+    hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome",
+  });
+
+  return (
+    <div className={`glass-card p-4 space-y-3 ${isValue ? "border-green-400/40" : ""}`}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${surface.color}`}>
+              {surface.label}
+            </span>
+            <span className="text-xs text-gray-500 font-mono">{m.tournament}</span>
+            <span className="text-[10px] text-gray-600 font-mono">{m.round}</span>
+          </div>
+          <div className="text-sm font-bold text-white mt-1">
+            {m.player1} <span className="text-gray-500 font-normal">vs</span> {m.player2}
+          </div>
+          <div className="text-xs text-gray-600 font-mono mt-0.5">{scheduledDate}</div>
+        </div>
+        {isValue && (
+          <span className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono shrink-0">
+            +EV {m.best_selection}
+          </span>
+        )}
+      </div>
+
+      {/* Probability bars */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono w-24 shrink-0 text-cyan-400 truncate">{m.player1.split(" ").pop()}</span>
+          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+            <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${Math.round(m.p1 * 100)}%` }} />
+          </div>
+          <span className="text-xs font-mono w-8 text-right text-cyan-400">{Math.round(m.p1 * 100)}%</span>
+          <span className="text-xs font-mono text-gray-500 w-10 text-right">{m.odds_p1.toFixed(2)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono w-24 shrink-0 text-fuchsia-400 truncate">{m.player2.split(" ").pop()}</span>
+          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+            <div className="h-full rounded-full bg-fuchsia-400 transition-all" style={{ width: `${Math.round(m.p2 * 100)}%` }} />
+          </div>
+          <span className="text-xs font-mono w-8 text-right text-fuchsia-400">{Math.round(m.p2 * 100)}%</span>
+          <span className="text-xs font-mono text-gray-500 w-10 text-right">{m.odds_p2.toFixed(2)}</span>
+        </div>
+      </div>
+
+      {/* Edge */}
+      <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
+        <span className="text-gray-600">{m.model}</span>
+        {m.edge != null && m.edge > 0 ? (
+          <span className={isValue ? "text-green-400" : "text-gray-500"}>
+            edge +{(m.edge * 100).toFixed(1)}%
+          </span>
+        ) : (
+          <span className="text-gray-600">no edge</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TennisTab() {
+  const [matches, setMatches] = useState<TennisMatch[]>([]);
+  const [summary, setSummary] = useState<TennisSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [computedAt, setComputedAt] = useState<string | null>(null);
+  const [surfaceFilter, setSurfaceFilter] = useState<string>("ALL");
+
+  useEffect(() => {
+    fetch("/api/tennis")
+      .then((r) => r.json())
+      .then((data) => {
+        setMatches(data.matches ?? []);
+        setSummary(data.summary ?? null);
+        setComputedAt(data.computed_at ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const surfaces = ["ALL", ...Array.from(new Set(matches.map((m) => m.surface)))];
+  const filtered = surfaceFilter === "ALL" ? matches : matches.filter((m) => m.surface === surfaceFilter);
+  const valueBets = matches.filter((m) => m.edge != null && m.edge > 0.025);
+  const pnl = summary?.pnl ?? 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="inline-block px-3 py-0.5 rounded-full border border-amber-400/50 text-amber-300 text-xs font-mono tracking-wider">
+            Tennis AI v2.0 · ATP + WTA · Betfair Exchange
+          </div>
+          {computedAt && (
+            <p className="text-xs text-gray-500 font-mono mt-1">
+              computed {timeAgo(computedAt)} · {matches.length} matches loaded
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Matches Today",     value: String(summary?.total_today ?? matches.length), color: "text-white" },
+          { label: "Value Bets",        value: String(valueBets.length),  color: "text-green-400" },
+          { label: "P&L Tennis",        value: `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`, color: pnl >= 0 ? "text-green-400" : "text-red-400" },
+          { label: "Betfair Markets",   value: String(summary?.markets_active ?? 0), color: "text-amber-300" },
+        ].map((kpi) => (
+          <div key={kpi.label} className="glass-card p-4 text-center">
+            <div className={`text-xl font-black ${kpi.color}`}>{kpi.value}</div>
+            <div className="text-xs text-gray-400 mt-0.5">{kpi.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Surface filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider">Surface</span>
+        {surfaces.map((s) => (
+          <button key={s} onClick={() => setSurfaceFilter(s)}
+            className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
+              surfaceFilter === s
+                ? "border-amber-400 text-amber-300 bg-amber-400/10"
+                : "border-white/10 text-gray-400 hover:border-amber-400/40"
+            }`}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Match list */}
+      {loading ? (
+        <div className="glass-card p-12 text-center text-gray-400 font-mono">
+          <div className="animate-pulse">Loading tennis predictions…</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="glass-card p-8 text-center text-gray-400 font-mono">No matches available</div>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map((m) => <TennisMatchCard key={m.id} m={m} />)}
+        </div>
+      )}
+
+      {/* Agent status */}
+      <div className="glass-card p-4">
+        <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider mb-3">Tennis Agents Status</h3>
+        <div className="grid md:grid-cols-3 gap-3">
+          {[
+            { name: "TennisDataCollector", desc: "Betfair tennis markets · 5min cycle" },
+            { name: "TennisModelAgent",    desc: "Elo Surface · Serve & Return · Fatigue" },
+            { name: "TennisTraderAgent",   desc: "PAPER mode · Neon DB · Telegram alerts" },
+          ].map((agent) => (
+            <div key={agent.name} className="glass-card p-3 border-red-400/20 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono">{agent.name}</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-red-400" />
+                  <span className="text-xs font-mono text-red-400">OFFLINE</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-500 font-mono">{agent.desc}</p>
+              <div className="text-[9px] text-gray-600 font-mono">Backend not started · run python run.py</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <footer className="text-center text-xs text-gray-600 font-mono pb-4">
+        Tennis AI v2.0 · Elo Surface · Serve &amp; Return · Fatigue · Betfair Exchange · PAPER MODE
+      </footer>
+    </div>
   );
 }
 
@@ -1123,6 +1338,7 @@ function PredictionsTab({
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  const [tab, setTab] = useState<Tab>("predictions");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [leaguePnl, setLeaguePnl] = useState<LeaguePnl[]>([]);
@@ -1198,12 +1414,18 @@ export default function Dashboard() {
     fetchData();
     fetchPredictions();
     fetchAgents();
-    fetchHistory();
     const dataInt = setInterval(fetchData, 30_000);
     const predInt = setInterval(fetchPredictions, 3_600_000);
     const agentInt = setInterval(fetchAgents, 60_000);
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); };
-  }, [fetchData, fetchPredictions, fetchAgents, fetchHistory]);
+  }, [fetchData, fetchPredictions, fetchAgents]);
+
+  // Fetch history when tab is first opened
+  useEffect(() => {
+    if (tab === "history" && history.length === 0) {
+      fetchHistory();
+    }
+  }, [tab, history.length, fetchHistory]);
 
   const pnl = summary?.pnl ?? 0;
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
@@ -1241,16 +1463,27 @@ export default function Dashboard() {
         ))}
       </section>
 
-      {/* Agent Status */}
-      <section>
-        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">AGENT STATUS
-          <span className="text-sm font-normal text-gray-500 ml-3">{aliveAgents}/{totalAgents} alive</span>
-        </h2>
-        <AgentStatusTab agents={agents} />
-      </section>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
+        {(["predictions", "tennis", "bets", "history", "agents"] as Tab[]).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`px-4 py-2 text-xs font-mono uppercase tracking-wider transition border-b-2 -mb-px whitespace-nowrap ${
+              tab === t
+                ? t === "tennis" ? "border-amber-400 text-amber-300" : "border-cyan-400 text-cyan-300"
+                : "border-transparent text-gray-500 hover:text-gray-300"
+            }`}>
+            {t === "predictions" && `Predictions (${valueBets.length > 0 ? `+EV:${valueBets.length}` : predictions.length})`}
+            {t === "tennis" && "🎾 Tennis"}
+            {t === "bets" && `Bets (${summary?.total_bets ?? 0})`}
+            {t === "history" && `Last 30 Days (${historyStats?.total_matches ?? history.length})`}
+            {t === "agents" && `Agents (${aliveAgents}/${totalAgents} alive)`}
+          </button>
+        ))}
+      </div>
 
-      {/* Upcoming Predictions */}
-      <section>
+      {/* Tab content */}
+      {tab === "tennis" && <TennisTab />}
+      {tab === "predictions" && (
         <PredictionsTab
           predictions={predictions}
           computedAt={computedAt}
@@ -1259,61 +1492,24 @@ export default function Dashboard() {
           isStale={predStale}
           onRefresh={handleRefresh}
         />
-      </section>
-
-      {/* Past Matches — Calendar */}
-      <section>
-        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">PAST MATCHES — LAST 30 DAYS
-          {historyStats && (
-            <span className="text-sm font-normal text-gray-500 ml-3">
-              {historyStats.total_matches} matches · {historyStats.bets_placed} bets placed · ROI {Number(historyStats.roi) >= 0 ? "+" : ""}{historyStats.roi}%
-            </span>
-          )}
-        </h2>
-        <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
-      </section>
-
-      {/* Recent Bets */}
-      <section>
-        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">RECENT BETS
-          <span className="text-sm font-normal text-gray-500 ml-3">{summary?.total_bets ?? 0} total · {summary?.win_rate ?? "0"}% win rate</span>
-        </h2>
+      )}
+      {tab === "bets" && (
         <BetsTab bets={bets} summary={summary ?? {
           total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
           win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
         }} leaguePnl={leaguePnl} />
-      </section>
-
-      {/* Data Sources */}
-      <section>
-        <h2 className="text-xl font-bold text-cyan-300 mb-4 font-mono">DATA SOURCES</h2>
-        <div className="grid md:grid-cols-3 gap-4">
-          {[
-            { key: "FD", name: "football-data.org", desc: "PL / SA / PD / BL1 / FL1 / CL / EL — fixtures and history", status: "live" },
-            { key: "BF", name: "Betfair Reader", desc: "Exchange odds readout / best available price tracking", status: "live" },
-            { key: "OD", name: "The Odds API", desc: "Pinnacle / Bet365 / exchange comparison layer", status: "live" },
-            { key: "DC", name: "Dixon-Coles", desc: "Poisson regression / team strengths / 365-day window", status: "running" },
-            { key: "PM", name: "Polymarket", desc: "Football prediction markets / CLOB API", status: "demo" },
-            { key: "AI", name: "Research Layer", desc: "Monitor / Research / AHCollector signal audit", status: "running" },
-          ].map(({ key, name, desc, status }) => (
-            <div key={key} className="glass-card p-4 flex items-center gap-3">
-              <span className="text-sm font-mono text-cyan-300 w-8 shrink-0">{key}</span>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm text-white">{name}</div>
-                <div className="text-xs text-gray-400 truncate">{desc}</div>
-              </div>
-              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border font-mono ${
-                status === "live" ? "border-green-400/40 text-green-400 bg-green-400/10" :
-                status === "running" ? "border-green-400/40 text-green-400 bg-green-400/10" :
-                "border-yellow-400/40 text-yellow-400 bg-yellow-400/10"
-              }`}>{status}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      )}
+      {tab === "history" && (
+        <HistoryTab
+          history={history}
+          stats={historyStats}
+          loading={historyLoading}
+        />
+      )}
+      {tab === "agents" && <AgentStatusTab agents={agents} />}
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
-        Agentic Markets / Dixon-Coles Football Prediction Desk / LIVE DEMO MODE
+        Agentic Markets v5.0 · Dixon-Coles · Pi Rating · xG · League & Match Context · 9-Agent AI System · PAPER MODE
       </footer>
     </main>
   );
