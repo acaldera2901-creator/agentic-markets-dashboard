@@ -8,7 +8,15 @@ from core.football_data_org_client import get_historical_results as fdorg_histor
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
 from context.context_service import ContextService
+from core.db import persist_league_profile, persist_match_classification
+from learning.season_phase import SeasonPhaseAdapter
 from config.settings import settings
+
+# Expected matches per season per league (home + away; 20-team league = 380 total)
+_LEAGUE_TOTAL_MATCHES: dict[str, int] = {
+    "PL": 380, "SA": 380, "PD": 380, "BL1": 306,
+    "FL1": 380, "CL": 125, "EL": 96, "ECL": 96,
+}
 
 
 class ModelAgent(BaseAgent):
@@ -17,6 +25,7 @@ class ModelAgent(BaseAgent):
         self._models: dict[str, DixonColesModel] = {}
         self._history: dict[str, list] = {}  # league → parsed match results for conformal
         self._context_svc = ContextService()
+        self._phase_adapter = SeasonPhaseAdapter()
 
     async def _main_loop(self) -> None:
         await self._bootstrap_models()
@@ -33,7 +42,8 @@ class ModelAgent(BaseAgent):
             if results:
                 return results
         if settings.API_FOOTBALL_KEY:
-            season = datetime.now().year
+            now = datetime.now()
+            season = now.year if now.month >= 8 else now.year - 1
             return await apifootball_history(league_id, season)
         return []
 
@@ -81,7 +91,12 @@ class ModelAgent(BaseAgent):
                         }
                         for m in training
                     ]
-                    self._context_svc.load_league_history(league_code, league_code, raw_matches)
+                    profile = self._context_svc.load_league_history(league_code, league_code, raw_matches)
+                    if profile:
+                        try:
+                            await persist_league_profile(profile)
+                        except Exception as db_err:
+                            self.logger.warning(f"league profile DB persist failed for {league_code}: {db_err}")
                     self.logger.info(f"fitted model for {league_code} on {len(training)} matches")
                 else:
                     self.logger.warning(f"insufficient data for {league_code}: {len(training)} matches")
@@ -162,6 +177,22 @@ class ModelAgent(BaseAgent):
             result["data_completeness"] = str(ctx["data_completeness"])
             result["market_efficiency"] = str(ctx.get("market_efficiency") or "")
 
+            # Season phase detection — uses training set size as matchday proxy
+            n_played = len(self._history.get(league, []))
+            total = _LEAGUE_TOTAL_MATCHES.get(league, 380)
+            phase = self._phase_adapter.detect_phase(n_played, total)
+            phase_cfg = self._phase_adapter.get_config(phase)
+            result["season_phase"] = phase.value
+            result["phase_stake_multiplier"] = str(phase_cfg.stake_multiplier)
+            result["phase_edge_boost"] = str(phase_cfg.edge_min_boost)
+            result["phase_dead_rubber_skip"] = str(phase_cfg.dead_rubber_auto_skip)
+
             await publish("model:probabilities", result)
+
+            # Persist match classification asynchronously (best-effort)
+            try:
+                await persist_match_classification({**ctx_input, **ctx})
+            except Exception as db_err:
+                self.logger.debug(f"match classification persist skipped: {db_err}")
         except Exception as e:
             self.logger.error(f"processing error: {e}")

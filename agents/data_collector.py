@@ -62,7 +62,9 @@ class DataCollectorAgent(BaseAgent):
 
         # fallback: API-Football (100 req/day)
         if settings.API_FOOTBALL_KEY:
-            season = datetime.now().year
+            now = datetime.now()
+            # Seasons start Aug/Sep — before August we're still in the previous season
+            season = now.year if now.month >= 8 else now.year - 1
             return await apifootball_fixtures(league_id, season)
         return []
 
