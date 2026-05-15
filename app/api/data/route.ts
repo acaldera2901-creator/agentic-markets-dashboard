@@ -36,13 +36,13 @@ export async function GET() {
     `),
     queryDB<StatRow>(`
       SELECT
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'won' THEN 1 END) as won,
-        COUNT(CASE WHEN status = 'lost' THEN 1 END) as lost,
-        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-        COALESCE(SUM(CASE WHEN status = 'won' THEN stake * (odds - 1) WHEN status = 'lost' THEN -stake ELSE 0 END), 0) as pnl,
-        AVG(odds) as avg_odds,
-        AVG(stake) as avg_stake
+        COUNT(*) FILTER (WHERE status IN ('pending','won','lost')) as total,
+        COUNT(*) FILTER (WHERE status = 'won') as won,
+        COUNT(*) FILTER (WHERE status = 'lost') as lost,
+        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+        COALESCE(SUM(CASE WHEN status = 'won' THEN stake*(odds-1) WHEN status='lost' THEN -stake ELSE 0 END), 0) as pnl,
+        AVG(odds) FILTER (WHERE status IN ('pending','won','lost')) as avg_odds,
+        AVG(stake) FILTER (WHERE status IN ('pending','won','lost')) as avg_stake
       FROM bets
     `),
     queryDB(`

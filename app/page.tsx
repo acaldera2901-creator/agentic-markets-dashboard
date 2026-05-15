@@ -1196,12 +1196,17 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
 // ─── Bets Tab ─────────────────────────────────────────────────────────────────
 
+const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled"];
+
 function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; leaguePnl: LeaguePnl[] }) {
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<string>("live");
   const [paperOnly, setPaperOnly] = useState(false);
 
-  const filtered = bets.filter((b) => {
-    if (filter !== "all" && b.status !== filter) return false;
+  const realBets   = bets.filter((b) => !FAILED_STATUSES.includes(b.status));
+  const failedBets = bets.filter((b) => FAILED_STATUSES.includes(b.status));
+
+  const filtered = (filter === "failed" ? failedBets : realBets).filter((b) => {
+    if (filter !== "live" && filter !== "failed" && b.status !== filter) return false;
     if (paperOnly && !b.paper) return false;
     return true;
   });
@@ -1249,14 +1254,27 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {["all", "won", "lost", "pending"].map((s) => (
-          <button key={s} onClick={() => setFilter(s)}
+        {[
+          { key: "live",    label: "Live bets" },
+          { key: "pending", label: "Pending" },
+          { key: "won",     label: "Won" },
+          { key: "lost",    label: "Lost" },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setFilter(key)}
             className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-              filter === s ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+              filter === key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
             }`}>
-            {s}
+            {label}
           </button>
         ))}
+        {failedBets.length > 0 && (
+          <button onClick={() => setFilter("failed")}
+            className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
+              filter === "failed" ? "border-red-400 text-red-300 bg-red-400/10" : "border-white/10 text-gray-500 hover:border-red-400/30"
+            }`}>
+            Failed ({failedBets.length})
+          </button>
+        )}
         <button onClick={() => setPaperOnly(!paperOnly)}
           className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
             paperOnly ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-white/10 text-gray-400"
@@ -1316,6 +1334,8 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
                     <span className={`text-sm font-bold font-mono ${bet.profit_loss >= 0 ? "text-green-400" : "text-red-400"}`}>
                       {bet.profit_loss >= 0 ? "+" : ""}{bet.profit_loss.toFixed(2)}€
                     </span>
+                  ) : FAILED_STATUSES.includes(bet.status) ? (
+                    <span className="text-xs text-gray-600 font-mono">—</span>
                   ) : (
                     <span className="text-xs text-gray-600 font-mono">pending</span>
                   )}
@@ -1800,7 +1820,7 @@ export default function Dashboard() {
   const tennisValueBets = tennisMatches.filter((m) => m.edge != null && m.edge > 0.03);
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "overview", label: "Edge Desk", value: String(valueBets.length + tennisValueBets.length), tone: "green" },
-    { tab: "bets", label: "My Bets", value: String(summary?.total_bets ?? 0) },
+    { tab: "bets", label: "My Bets", value: String(summary?.pending ?? 0), tone: (summary?.pending ?? 0) > 0 ? "green" : undefined },
     { tab: "history", label: "History", value: String(historyStats?.total_matches ?? history.length) },
     { tab: "agents", label: "Agents", value: `${aliveAgents}/${totalAgents}` },
   ];
