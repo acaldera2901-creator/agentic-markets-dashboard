@@ -24,6 +24,7 @@ interface Bet {
   paper: boolean;
   status: string;
   profit_loss: number | null;
+  betfair_bet_id?: string | null;
   placed_at: string;
   thesis?: string;
   home_team?: string;
@@ -150,8 +151,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-const TABS = ["predictions", "tennis", "bets", "history", "agents"] as const;
-type Tab = typeof TABS[number];
+type Tab = "overview" | "predictions" | "tennis" | "bets" | "history" | "agents";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -179,6 +179,21 @@ interface TennisSummary {
   pnl: number;
 }
 
+type SlipSelection = {
+  id: string;
+  sport: "Football" | "Tennis";
+  event: string;
+  league: string;
+  kickoff: string;
+  market: string;
+  selection: string;
+  odds: number;
+  modelProbability: number;
+  edge: number | null;
+  confidence: number;
+  recommendedStake: number;
+};
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function pct(v: number) { return `${Math.round(v * 100)}%`; }
@@ -204,6 +219,17 @@ function matchImportance(p: Prediction | HistoryMatch): number {
   const mt = "match_type" in p ? (p.match_type ?? "") : "";
   const typePrio = MATCH_TYPE_META[mt as string]?.priority ?? 0;
   return leaguePrio + edgePrio + typePrio;
+}
+
+function confidenceFromEdge(edge: number | null, probability: number) {
+  const edgeScore = Math.min(45, Math.max(0, (edge ?? 0) * 700));
+  const probScore = Math.min(35, Math.max(0, (probability - 0.35) * 100));
+  return Math.round(Math.min(95, 20 + edgeScore + probScore));
+}
+
+function stakeFromEdge(edge: number | null, confidence: number) {
+  if (!edge || edge <= 0) return 0;
+  return Math.min(25, Math.max(2, Math.round(edge * confidence * 3) / 2));
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -259,6 +285,8 @@ function StatusBadge({ status }: { status: string }) {
     won: "text-green-400 border-green-400/40 bg-green-400/10",
     lost: "text-red-400 border-red-400/40 bg-red-400/10",
     pending: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10",
+    execution_rejected: "text-red-300 border-red-400/40 bg-red-400/10",
+    expired_unconfirmed: "text-gray-400 border-gray-500/40 bg-gray-500/10",
     voided: "text-gray-400 border-gray-400/40 bg-gray-400/10",
   };
   return (
@@ -276,6 +304,278 @@ function MatchTypeBadge({ matchType }: { matchType?: string | null }) {
     <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${meta.color}`}>
       {meta.label}
     </span>
+  );
+}
+
+function OddsButton({
+  label,
+  odds,
+  probability,
+  active,
+  onClick,
+}: {
+  label: string;
+  odds: number | null;
+  probability: number;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className={`odds-button ${active ? "is-value" : ""}`} disabled={odds == null} onClick={onClick}>
+      <span>{label}</span>
+      <strong>{odds == null ? "—" : odds.toFixed(2)}</strong>
+      <em>{pct(probability)}</em>
+    </button>
+  );
+}
+
+function FootballMarketRow({ p, onSelect }: { p: Prediction; onSelect: (selection: SlipSelection) => void }) {
+  const options = [
+    { key: "HOME", label: "1", odds: p.odds_home, probability: p.p_home, name: p.home_team },
+    { key: "DRAW", label: "X", odds: p.odds_draw, probability: p.p_draw, name: "Draw" },
+    { key: "AWAY", label: "2", odds: p.odds_away, probability: p.p_away, name: p.away_team },
+  ];
+
+  return (
+    <div className="market-row">
+      <div className="event-cell">
+        <div className="event-meta">
+          <span>{LEAGUE_FLAGS[p.league] ?? "FB"} {p.league}</span>
+          <span>{fmtKickoff(p.kickoff)}</span>
+          <MatchTypeBadge matchType={p.match_type} />
+        </div>
+        <strong>{p.home_team}</strong>
+        <strong>{p.away_team}</strong>
+      </div>
+      <div className="model-cell">
+        <span>Model</span>
+        <strong>{p.best_selection ?? "WAIT"}</strong>
+        <em className={(p.edge ?? 0) > 0.03 ? "text-green-300" : "text-gray-500"}>
+          {p.edge == null ? "no edge" : `${p.edge > 0 ? "+" : ""}${(p.edge * 100).toFixed(1)}%`}
+        </em>
+      </div>
+      <div className="odds-grid football">
+        {options.map((o) => {
+          const confidence = confidenceFromEdge(p.best_selection === o.key ? p.edge : null, o.probability);
+          return (
+            <OddsButton
+              key={o.key}
+              label={o.label}
+              odds={o.odds}
+              probability={o.probability}
+              active={p.best_selection === o.key && (p.edge ?? 0) > 0.03}
+              onClick={() => o.odds != null && onSelect({
+                id: p.match_id,
+                sport: "Football",
+                event: `${p.home_team} vs ${p.away_team}`,
+                league: p.league,
+                kickoff: p.kickoff,
+                market: "1X2",
+                selection: o.name,
+                odds: o.odds,
+                modelProbability: o.probability,
+                edge: p.best_selection === o.key ? p.edge : null,
+                confidence,
+                recommendedStake: stakeFromEdge(p.best_selection === o.key ? p.edge : null, confidence),
+              })}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TennisMarketRow({ m, onSelect }: { m: TennisMatch; onSelect: (selection: SlipSelection) => void }) {
+  const options = [
+    { key: "P1", label: "P1", odds: m.odds_p1, probability: m.p1, name: m.player1 },
+    { key: "P2", label: "P2", odds: m.odds_p2, probability: m.p2, name: m.player2 },
+  ] as const;
+
+  return (
+    <div className="market-row tennis-row">
+      <div className="event-cell">
+        <div className="event-meta">
+          <span>TN {m.surface}</span>
+          <span>{fmtKickoff(m.scheduled)}</span>
+          <span>{m.round}</span>
+        </div>
+        <strong>{m.player1}</strong>
+        <strong>{m.player2}</strong>
+      </div>
+      <div className="model-cell">
+        <span>{m.tournament}</span>
+        <strong>{m.best_selection ?? "WAIT"}</strong>
+        <em className={(m.edge ?? 0) > 0.025 ? "text-green-300" : "text-gray-500"}>
+          {m.edge == null ? "no edge" : `${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%`}
+        </em>
+      </div>
+      <div className="odds-grid tennis">
+        {options.map((o) => {
+          const confidence = confidenceFromEdge(m.best_selection === o.key ? m.edge : null, o.probability);
+          return (
+            <OddsButton
+              key={o.key}
+              label={o.label}
+              odds={o.odds}
+              probability={o.probability}
+              active={m.best_selection === o.key && (m.edge ?? 0) > 0.025}
+              onClick={() => onSelect({
+                id: m.id,
+                sport: "Tennis",
+                event: `${m.player1} vs ${m.player2}`,
+                league: m.tournament,
+                kickoff: m.scheduled,
+                market: "Match Winner",
+                selection: o.name,
+                odds: o.odds,
+                modelProbability: o.probability,
+                edge: m.best_selection === o.key ? m.edge : null,
+                confidence,
+                recommendedStake: stakeFromEdge(m.best_selection === o.key ? m.edge : null, confidence),
+              })}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SportsbookBoard({
+  predictions,
+  tennisMatches,
+  onSelect,
+}: {
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  onSelect: (selection: SlipSelection) => void;
+}) {
+  const footballValue = predictions
+    .filter((p) => p.edge != null && p.edge > 0.03)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
+  const tennisValue = tennisMatches
+    .filter((m) => m.edge != null && m.edge > 0.025)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
+  const footballRows = footballValue.length ? footballValue : predictions.slice(0, 8);
+  const tennisRows = tennisValue.length ? tennisValue : tennisMatches.slice(0, 6);
+
+  return (
+    <div className="sportsbook-board">
+      <div className="board-header">
+        <div>
+          <p className="eyebrow">Market board</p>
+          <h2>Best available edges</h2>
+        </div>
+        <div className="board-chips">
+          <span>+EV first</span>
+          <span>1X2</span>
+          <span>Match winner</span>
+        </div>
+      </div>
+
+      <section className="market-section">
+        <div className="market-section-title">
+          <span>Football</span>
+          <em>{footballValue.length} value / {predictions.length} markets</em>
+        </div>
+        {footballRows.length ? (
+          <div className="market-list">
+            {footballRows.map((p) => <FootballMarketRow key={p.match_id} p={p} onSelect={onSelect} />)}
+          </div>
+        ) : (
+          <div className="book-empty">Football markets loading. Hit refresh if the board stays empty.</div>
+        )}
+      </section>
+
+      <section className="market-section">
+        <div className="market-section-title amber">
+          <span>Tennis</span>
+          <em>{tennisValue.length} value / {tennisMatches.length} matches</em>
+        </div>
+        {tennisRows.length ? (
+          <div className="market-list">
+            {tennisRows.map((m) => <TennisMarketRow key={m.id} m={m} onSelect={onSelect} />)}
+          </div>
+        ) : (
+          <div className="book-empty">Tennis markets loading. Fallback data appears when API is ready.</div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function BetSlip({ selection, onClear }: { selection: SlipSelection | null; onClear: () => void }) {
+  const [stake, setStake] = useState(() => selection?.recommendedStake ? String(selection.recommendedStake) : "10");
+  const stakeNumber = Number(stake) || 0;
+  const returns = selection ? stakeNumber * selection.odds : 0;
+  const profit = selection ? returns - stakeNumber : 0;
+  const ev = selection ? (selection.modelProbability * profit) - ((1 - selection.modelProbability) * stakeNumber) : 0;
+  const isFootballLive = selection?.sport === "Football";
+
+  return (
+    <aside className="betslip">
+      <div className="betslip-head">
+        <div>
+          <p className="eyebrow">Bet slip</p>
+          <h3>{isFootballLive ? "Live ticket" : "Signal ticket"}</h3>
+        </div>
+        {selection && <button onClick={onClear}>Clear</button>}
+      </div>
+
+      {!selection ? (
+        <div className="betslip-empty">
+          <strong>No selection</strong>
+          <span>Click an odds cell from the unified market board to inspect execution quality.</span>
+        </div>
+      ) : (
+        <div className="betslip-ticket">
+          <div className="ticket-top">
+            <span>{selection.sport}</span>
+            <em>{selection.market}</em>
+          </div>
+          <h4>{selection.event}</h4>
+          <div className="ticket-line">
+            <span>Selection</span>
+            <strong>{selection.selection}</strong>
+          </div>
+          <div className="ticket-line">
+            <span>Odds</span>
+            <strong>{selection.odds.toFixed(2)}</strong>
+          </div>
+          <div className="ticket-line">
+            <span>Model probability</span>
+            <strong>{pct(selection.modelProbability)}</strong>
+          </div>
+          <div className="ticket-line">
+            <span>Edge</span>
+            <strong className={(selection.edge ?? 0) > 0 ? "text-green-300" : "text-gray-400"}>
+              {selection.edge == null ? "market only" : `${selection.edge > 0 ? "+" : ""}${(selection.edge * 100).toFixed(1)}%`}
+            </strong>
+          </div>
+          <label className="stake-input">
+            <span>Stake</span>
+            <input value={stake} onChange={(e) => setStake(e.target.value)} inputMode="decimal" />
+          </label>
+          <div className="ticket-summary">
+            <div>
+              <span>Return</span>
+              <strong>{returns.toFixed(2)}€</strong>
+            </div>
+            <div>
+              <span>EV</span>
+              <strong className={ev >= 0 ? "text-green-300" : "text-red-300"}>{ev >= 0 ? "+" : ""}{ev.toFixed(2)}€</strong>
+            </div>
+          </div>
+          <button className="place-live">{isFootballLive ? "Football live on Betfair" : "Tennis signal only"}</button>
+          <p className="ticket-note">
+            {isFootballLive
+              ? "Football execution is live through TraderAgent, RiskManager guardrails and Betfair confirmation."
+              : "Tennis is in paper mode. Settlement loop is live — Elo ratings update on each closed market."}
+          </p>
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -653,24 +953,20 @@ function TennisMatchCard({ m }: { m: TennisMatch }) {
   );
 }
 
-function TennisTab() {
-  const [matches, setMatches] = useState<TennisMatch[]>([]);
-  const [summary, setSummary] = useState<TennisSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [computedAt, setComputedAt] = useState<string | null>(null);
+function TennisTab({
+  matches,
+  summary,
+  loading,
+  computedAt,
+  agents = [],
+}: {
+  matches: TennisMatch[];
+  summary: TennisSummary | null;
+  loading: boolean;
+  computedAt: string | null;
+  agents?: AgentStatus[];
+}) {
   const [surfaceFilter, setSurfaceFilter] = useState<string>("ALL");
-
-  useEffect(() => {
-    fetch("/api/tennis")
-      .then((r) => r.json())
-      .then((data) => {
-        setMatches(data.matches ?? []);
-        setSummary(data.summary ?? null);
-        setComputedAt(data.computed_at ?? null);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   const surfaces = ["ALL", ...Array.from(new Set(matches.map((m) => m.surface)))];
   const filtered = surfaceFilter === "ALL" ? matches : matches.filter((m) => m.surface === surfaceFilter);
@@ -736,32 +1032,46 @@ function TennisTab() {
         </div>
       )}
 
-      {/* Agent status */}
+      {/* Agent status — live from heartbeat DB */}
       <div className="glass-card p-4">
-        <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider mb-3">Tennis Agents Status</h3>
+        <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider mb-3">
+          Tennis Pipeline · 6 Agents
+        </h3>
         <div className="grid md:grid-cols-3 gap-3">
           {[
-            { name: "TennisDataCollector", desc: "Betfair tennis markets · 5min cycle" },
-            { name: "TennisModelAgent",    desc: "Elo Surface · Serve & Return · Fatigue" },
-            { name: "TennisTraderAgent",   desc: "PAPER mode · Neon DB · Telegram alerts" },
-          ].map((agent) => (
-            <div key={agent.name} className="glass-card p-3 border-red-400/20 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white font-mono">{agent.name}</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-red-400" />
-                  <span className="text-xs font-mono text-red-400">OFFLINE</span>
+            { key: "TennisDataCollectorAgent", label: "DataCollector",  desc: "Betfair tennis markets · 5min cycle" },
+            { key: "TennisModelAgent",          label: "ModelAgent",     desc: "Elo Surface v2 · clay/grass/hard · 2966 players" },
+            { key: "TennisAnalystAgent",         label: "Analyst",       desc: "Value edge · 4% threshold · market comparison" },
+            { key: "TennisRiskManagerAgent",     label: "RiskManager",   desc: "Quarter-Kelly sizing · 20% cap · drawdown gate" },
+            { key: "TennisTraderAgent",          label: "Trader",        desc: "Paper bets · Neon DB · Telegram alerts" },
+            { key: "TennisSettlementAgent",      label: "Settlement",    desc: "Betfair CLOSED → Elo update → P&L loop" },
+          ].map(({ key, label, desc }) => {
+            const a = agents.find((ag) => ag.name === key);
+            const st = a?.status ?? "offline";
+            const dotCls = st === "alive" ? "bg-green-400 animate-pulse" : st === "stale" ? "bg-yellow-400" : "bg-red-400";
+            const txtCls = st === "alive" ? "text-green-400" : st === "stale" ? "text-yellow-400" : "text-red-400";
+            const borderCls = st === "alive" ? "border-green-400/20" : st === "stale" ? "border-yellow-400/20" : "border-red-400/20";
+            return (
+              <div key={key} className={`glass-card p-3 space-y-1 ${borderCls}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white font-mono">{label}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${dotCls}`} />
+                    <span className={`text-xs font-mono ${txtCls}`}>{st.toUpperCase()}</span>
+                  </div>
                 </div>
+                <p className="text-[10px] text-gray-500 font-mono">{desc}</p>
+                {a?.last_seen
+                  ? <div className="text-[9px] text-gray-600 font-mono">Last seen: {timeAgo(a.last_seen)}</div>
+                  : <div className="text-[9px] text-gray-600 font-mono">No heartbeat yet</div>}
               </div>
-              <p className="text-[10px] text-gray-500 font-mono">{agent.desc}</p>
-              <div className="text-[9px] text-gray-600 font-mono">Backend not started · run python run.py</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       <footer className="text-center text-xs text-gray-600 font-mono pb-4">
-        Tennis AI v2.0 · Elo Surface · Serve &amp; Return · Fatigue · Betfair Exchange · PAPER MODE
+        Tennis AI v2.0 · Elo Surface v2 · 2,966 players · Settlement loop live · Paper mode
       </footer>
     </div>
   );
@@ -771,15 +1081,24 @@ function TennisTab() {
 
 function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
   const AGENT_ROLES: Record<string, string> = {
-    DataCollector: "Fetches fixtures, odds, history from all data sources",
-    ModelAgent: "Runs Dixon-Coles Poisson model + League & Match Context Module",
-    AnalystAgent: "Identifies value bets by comparing model vs market odds",
-    StrategistAgent: "Evaluates opportunities, assigns conviction score 0-10",
-    RiskManagerAgent: "Kelly sizing, exposure limits, competition type penalties",
-    TraderAgent: "Executes bets on Betfair (paper or live)",
-    MonitorAgent: "Heartbeat monitoring, PSI drift detection, Telegram alerts",
-    ResearchAgent: "Generates AI match analysis via Ollama local LLM",
-    AHCollectorAgent: "Asian Handicap odds from Pinnacle/SBOBet (S7)",
+    // Football
+    DataCollector:          "Fetches fixtures, odds, history from all data sources",
+    ModelAgent:             "Runs Dixon-Coles Poisson model + League & Match Context Module",
+    AnalystAgent:           "Identifies value bets by comparing model vs market odds",
+    StrategistAgent:        "Evaluates opportunities, assigns conviction score 0-10",
+    RiskManagerAgent:       "Kelly sizing, exposure limits, drawdown circuit breaker",
+    TraderAgent:            "Executes approved football orders on Betfair Exchange (live)",
+    MonitorAgent:           "Heartbeat monitoring, PSI drift detection, Telegram alerts",
+    ResearchAgent:          "Generates AI match analysis via Ollama local LLM",
+    AHCollectorAgent:       "Asian Handicap odds from Pinnacle/SBOBet",
+    ResultSettlementAgent:  "Polls Betfair for settled football markets, updates bet P&L",
+    // Tennis
+    TennisDataCollectorAgent: "Betfair tennis markets · 5-min polling cycle",
+    TennisModelAgent:         "Elo Surface v2 · clay/grass/hard · 2,966 players bootstrapped",
+    TennisAnalystAgent:       "Value edge detection · 4% threshold · market comparison",
+    TennisRiskManagerAgent:   "Quarter-Kelly sizing · 20% bankroll cap · drawdown gate",
+    TennisTraderAgent:        "Paper bets · Neon DB · Betfair Exchange dedup guard",
+    TennisSettlementAgent:    "CLOSED market → winner → Elo.update() → P&L settlement loop",
   };
 
   const anyOnline = agents.some((a) => a.status !== "offline");
@@ -838,18 +1157,33 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
       </div>
 
       <div className="glass-card p-4">
-        <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">Pipeline Flow v5.0</h3>
+        <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">Pipeline Flow · 16 Agents</h3>
+        <div className="text-[10px] text-gray-500 font-mono mb-1 uppercase tracking-wider">⚽ Football</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400">
           {[
             "DataCollector", "→", "ModelAgent", "→", "ContextService", "→",
-            "AnalystAgent", "→", "StrategistAgent", "→", "RiskManagerAgent", "→", "TraderAgent",
+            "AnalystAgent", "→", "StrategistAgent", "→", "RiskManagerAgent", "→", "TraderAgent", "→", "ResultSettlement",
           ].map((item, i) => (
-            <span key={i} className={item === "→" ? "text-gray-600" : item === "ContextService" ? "text-green-300" : "text-cyan-300"}>{item}</span>
+            <span key={i} className={
+              item === "→" ? "text-gray-600" :
+              item === "ContextService" ? "text-green-300" :
+              item === "ResultSettlement" ? "text-emerald-400" :
+              "text-cyan-300"
+            }>{item}</span>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400 mt-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400 mt-1">
           {["AHCollectorAgent", "→", "AH Odds", "·", "ResearchAgent", "→", "AI Summaries", "·", "MonitorAgent", "→", "Alerts + PSI"].map((item, i) => (
             <span key={i} className={["→", "·"].includes(item) ? "text-gray-600" : "text-fuchsia-300"}>{item}</span>
+          ))}
+        </div>
+        <div className="text-[10px] text-gray-500 font-mono mb-1 mt-3 uppercase tracking-wider">🎾 Tennis</div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400">
+          {[
+            "TennisDataCollector", "→", "TennisModel", "→", "TennisAnalyst", "→",
+            "TennisRiskManager", "→", "TennisTrader", "→", "TennisSettlement",
+          ].map((item, i) => (
+            <span key={i} className={item === "→" ? "text-gray-600" : "text-amber-300"}>{item}</span>
           ))}
         </div>
         <div className="mt-3 text-[10px] text-gray-600 font-mono">
@@ -927,7 +1261,7 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
           className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
             paperOnly ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-white/10 text-gray-400"
           }`}>
-          Paper only
+          Demo only
         </button>
       </div>
 
@@ -935,10 +1269,18 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
         <div className="glass-card p-8 text-center text-gray-400 font-mono">No bets match filters</div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((bet) => (
+          {filtered.map((bet) => {
+            const hasBetfairConfirmation = !bet.paper && Boolean(bet.betfair_bet_id);
+            const executionLabel = bet.paper ? "DEMO" : hasBetfairConfirmation ? "LIVE" : "UNCONFIRMED";
+            const executionClass = bet.paper
+              ? "text-yellow-400"
+              : hasBetfairConfirmation
+                ? "text-green-400"
+                : "text-red-300";
+            return (
             <div key={bet.id} className={`glass-card p-4 ${
               bet.status === "won" ? "border-green-400/20" :
-              bet.status === "lost" ? "border-red-400/20" : ""
+              bet.status === "lost" || bet.status === "execution_rejected" ? "border-red-400/20" : ""
             }`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
@@ -952,8 +1294,8 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
                     {bet.league && (
                       <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[bet.league] ?? "⚽"} {bet.league}</span>
                     )}
-                    <span className={`text-xs font-mono ${bet.paper ? "text-yellow-400" : "text-green-400"}`}>
-                      [{bet.paper ? "PAPER" : "LIVE"}]
+                    <span className={`text-xs font-mono ${executionClass}`}>
+                      [{executionLabel}]
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
@@ -981,7 +1323,8 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
               </div>
               <div className="text-[10px] text-gray-700 font-mono mt-2">Placed: {timeAgo(bet.placed_at)}</div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -1338,17 +1681,22 @@ function PredictionsTab({
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [tab, setTab] = useState<Tab>("predictions");
+  const [tab, setTab] = useState<Tab>("overview");
+  const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [leaguePnl, setLeaguePnl] = useState<LeaguePnl[]>([]);
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [tennisMatches, setTennisMatches] = useState<TennisMatch[]>([]);
+  const [tennisSummary, setTennisSummary] = useState<TennisSummary | null>(null);
+  const [tennisComputedAt, setTennisComputedAt] = useState<string | null>(null);
   const [computedAt, setComputedAt] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryMatch[]>([]);
   const [historyStats, setHistoryStats] = useState<HistoryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(true);
+  const [tennisLoading, setTennisLoading] = useState(true);
   const [predStale, setPredStale] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -1390,6 +1738,19 @@ export default function Dashboard() {
     } catch { /**/ }
   }, []);
 
+  const fetchTennis = useCallback(async () => {
+    setTennisLoading(true);
+    try {
+      const resp = await fetch("/api/tennis");
+      if (resp.ok) {
+        const data = await resp.json();
+        setTennisMatches(data.matches ?? []);
+        setTennisSummary(data.summary ?? null);
+        setTennisComputedAt(data.computed_at ?? null);
+      }
+    } catch { /**/ } finally { setTennisLoading(false); }
+  }, []);
+
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
@@ -1411,105 +1772,144 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-    fetchPredictions();
-    fetchAgents();
+    queueMicrotask(() => {
+      void fetchData();
+      void fetchPredictions();
+      void fetchAgents();
+      void fetchTennis();
+    });
     const dataInt = setInterval(fetchData, 30_000);
     const predInt = setInterval(fetchPredictions, 3_600_000);
     const agentInt = setInterval(fetchAgents, 60_000);
-    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); };
-  }, [fetchData, fetchPredictions, fetchAgents]);
+    const tennisInt = setInterval(fetchTennis, 120_000);
+    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); };
+  }, [fetchData, fetchPredictions, fetchAgents, fetchTennis]);
 
   // Fetch history when tab is first opened
   useEffect(() => {
     if (tab === "history" && history.length === 0) {
-      fetchHistory();
+      queueMicrotask(() => void fetchHistory());
     }
   }, [tab, history.length, fetchHistory]);
 
   const pnl = summary?.pnl ?? 0;
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
   const aliveAgents = agents.filter((a) => a.status === "alive").length;
-  const totalAgents = agents.length || 9;
+  const totalAgents = agents.length || 16;
+
+  const tennisValueBets = tennisMatches.filter((m) => m.edge != null && m.edge > 0.03);
+  const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
+    { tab: "overview", label: "Edge Desk", value: String(valueBets.length + tennisValueBets.length), tone: "green" },
+    { tab: "bets", label: "My Bets", value: String(summary?.total_bets ?? 0) },
+    { tab: "history", label: "History", value: String(historyStats?.total_matches ?? history.length) },
+    { tab: "agents", label: "Agents", value: `${aliveAgents}/${totalAgents}` },
+  ];
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-10 space-y-8">
-      {/* Header */}
-      <section className="text-center space-y-3">
-        <div className="inline-block px-4 py-1 rounded-full border border-cyan-400 text-cyan-300 text-xs font-mono tracking-wider">
-          MULTI-AGENT AI · FOOTBALL PREDICTION MARKETS · v5.0
+    <main className="sportsbook-shell">
+      <section className="book-topbar">
+        <div>
+          <p className="eyebrow">Agentic Markets OS</p>
+          <h1>Sportsbook Edge Desk</h1>
         </div>
-        <h1 className="text-5xl md:text-6xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-fuchsia-400 to-blue-500">
-          Agentic Markets
-        </h1>
-        <p className="text-gray-400 text-xs font-mono">
-          Last update: {lastUpdate || "—"} · Auto-refresh 30s
-        </p>
+        <div className="topbar-stats">
+          <span>Live bankroll</span>
+          <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"}>{loading ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}</strong>
+          <span>Betfair live</span>
+          <span>{lastUpdate || "not synced"}</span>
+          <span>{aliveAgents}/{totalAgents} agents</span>
+        </div>
       </section>
 
-      {/* Global KPI strip */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: "Total Bets", value: loading ? "—" : String(summary?.total_bets ?? 0), color: "text-white" },
-          { label: "Win Rate", value: loading ? "—" : `${summary?.win_rate ?? "0"}%`, color: "text-cyan-300" },
-          { label: "P&L", value: loading ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`, color: pnl >= 0 ? "text-green-400" : "text-red-400" },
-          { label: "Value Bets", value: String(valueBets.length), color: "text-green-400" },
-          { label: "Agents", value: `${aliveAgents}/${totalAgents}`, color: aliveAgents === totalAgents ? "text-green-400" : "text-yellow-400" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="glass-card p-4 text-center">
-            <div className={`text-xl font-black ${kpi.color}`}>{kpi.value}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{kpi.label}</div>
-          </div>
-        ))}
-      </section>
-
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
-        {(["predictions", "tennis", "bets", "history", "agents"] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-mono uppercase tracking-wider transition border-b-2 -mb-px whitespace-nowrap ${
-              tab === t
-                ? t === "tennis" ? "border-amber-400 text-amber-300" : "border-cyan-400 text-cyan-300"
-                : "border-transparent text-gray-500 hover:text-gray-300"
-            }`}>
-            {t === "predictions" && `Predictions (${valueBets.length > 0 ? `+EV:${valueBets.length}` : predictions.length})`}
-            {t === "tennis" && "🎾 Tennis"}
-            {t === "bets" && `Bets (${summary?.total_bets ?? 0})`}
-            {t === "history" && `Last 30 Days (${historyStats?.total_matches ?? history.length})`}
-            {t === "agents" && `Agents (${aliveAgents}/${totalAgents} alive)`}
+      <section className="book-layout">
+        <aside className="sports-rail">
+          <div className="rail-title">Sports</div>
+          {navItems.map((item) => (
+            <button key={item.tab} className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`} onClick={() => setTab(item.tab)}>
+              <span>{item.label}</span>
+              {item.value && <strong>{item.value}</strong>}
+            </button>
+          ))}
+          <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? "Computing..." : "Refresh odds"}
           </button>
-        ))}
-      </div>
+          <div className="rail-note">
+            <strong>Live football</strong>
+            <span>Football orders go live through RiskManager → TraderAgent → Betfair Exchange. Tennis is paper mode — settlement loop active.</span>
+          </div>
+        </aside>
 
-      {/* Tab content */}
-      {tab === "tennis" && <TennisTab />}
-      {tab === "predictions" && (
-        <PredictionsTab
-          predictions={predictions}
-          computedAt={computedAt}
-          loading={predLoading}
-          refreshing={refreshing}
-          isStale={predStale}
-          onRefresh={handleRefresh}
+        <section className="book-main">
+          <div className="book-main-head">
+            <div>
+              <p className="eyebrow">{tab === "overview" ? "Live sportsbook" : navItems.find((n) => n.tab === tab)?.label}</p>
+              <h2>
+                {tab === "overview" && "Markets"}
+                {tab === "predictions" && "Football markets"}
+                {tab === "tennis" && "Tennis markets"}
+                {tab === "bets" && "My bets"}
+                {tab === "history" && "Settled history"}
+                {tab === "agents" && "Agent health"}
+              </h2>
+            </div>
+            <div className="book-head-kpis">
+              <span>{predictions.length + tennisMatches.length} events</span>
+              <span>{valueBets.length + tennisValueBets.length} +EV</span>
+              <span>{loading ? "—" : `${summary?.win_rate ?? "0"}% win`}</span>
+            </div>
+          </div>
+
+          {tab === "overview" && (
+            <SportsbookBoard
+              predictions={predictions}
+              tennisMatches={tennisMatches}
+              onSelect={setSlipSelection}
+            />
+          )}
+          {tab === "tennis" && (
+            <TennisTab
+              matches={tennisMatches}
+              summary={tennisSummary}
+              loading={tennisLoading}
+              computedAt={tennisComputedAt}
+              agents={agents}
+            />
+          )}
+          {tab === "predictions" && (
+            <PredictionsTab
+              predictions={predictions}
+              computedAt={computedAt}
+              loading={predLoading}
+              refreshing={refreshing}
+              isStale={predStale}
+              onRefresh={handleRefresh}
+            />
+          )}
+          {tab === "bets" && (
+            <BetsTab bets={bets} summary={summary ?? {
+              total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
+              win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
+            }} leaguePnl={leaguePnl} />
+          )}
+          {tab === "history" && (
+            <HistoryTab
+              history={history}
+              stats={historyStats}
+              loading={historyLoading}
+            />
+          )}
+          {tab === "agents" && <AgentStatusTab agents={agents} />}
+        </section>
+
+        <BetSlip
+          key={slipSelection ? `${slipSelection.sport}-${slipSelection.id}-${slipSelection.selection}` : "empty-slip"}
+          selection={slipSelection}
+          onClear={() => setSlipSelection(null)}
         />
-      )}
-      {tab === "bets" && (
-        <BetsTab bets={bets} summary={summary ?? {
-          total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
-          win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
-        }} leaguePnl={leaguePnl} />
-      )}
-      {tab === "history" && (
-        <HistoryTab
-          history={history}
-          stats={historyStats}
-          loading={historyLoading}
-        />
-      )}
-      {tab === "agents" && <AgentStatusTab agents={agents} />}
+      </section>
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
-        Agentic Markets v5.0 · Dixon-Coles · Pi Rating · xG · League & Match Context · 9-Agent AI System · PAPER MODE
+        Agentic Markets OS v5.3 · 16 Agents · Football Live Betfair Exchange · Tennis Paper Mode
       </footer>
     </main>
   );

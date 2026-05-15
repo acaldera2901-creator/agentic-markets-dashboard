@@ -31,8 +31,13 @@ async function ensureTable() {
 }
 
 const KNOWN_AGENTS = [
+  // Football pipeline
   "DataCollector", "ModelAgent", "AnalystAgent", "StrategistAgent",
-  "RiskManagerAgent", "TraderAgent", "MonitorAgent", "ResearchAgent", "AHCollectorAgent",
+  "RiskManagerAgent", "TraderAgent", "MonitorAgent", "ResearchAgent",
+  "AHCollectorAgent", "ResultSettlementAgent",
+  // Tennis pipeline
+  "TennisDataCollectorAgent", "TennisModelAgent", "TennisAnalystAgent",
+  "TennisRiskManagerAgent", "TennisTraderAgent", "TennisSettlementAgent",
 ];
 
 function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {
