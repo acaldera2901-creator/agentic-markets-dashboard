@@ -255,6 +255,9 @@ class TennisPrediction(Base):
     best_selection = Column(String, nullable=True)
     model_version = Column(String, default="elo_v1")
     computed_at = Column(DateTime, default=datetime.datetime.utcnow)
+    outcome = Column(String, nullable=True)      # "P1_WIN" or "P2_WIN"
+    winner = Column(String, nullable=True)        # winning player name
+    settled_at = Column(DateTime, nullable=True)
 
 
 class TennisBet(Base):
