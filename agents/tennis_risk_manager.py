@@ -34,7 +34,7 @@ class TennisRiskManagerAgent(BaseAgent):
             self.logger.warning("TennisRiskManager: drawdown limit reached — blocking all bets")
             return
 
-        TENNIS_MAX_BET_PCT = getattr(settings, "TENNIS_MAX_BET_PCT", 0.03)
+        TENNIS_MAX_BET_PCT = getattr(settings, "TENNIS_MAX_BET_PCT", 0.20)
         TENNIS_KELLY_FRACTION = getattr(settings, "TENNIS_KELLY_FRACTION", 0.25)
 
         orders = []
@@ -48,7 +48,7 @@ class TennisRiskManagerAgent(BaseAgent):
             # kelly_stake signature: (edge, odds, bankroll, kelly_fraction, max_bet_pct)
             stake = kelly_stake(edge, odds, bankroll, TENNIS_KELLY_FRACTION, TENNIS_MAX_BET_PCT)
             stake = min(stake, bankroll * TENNIS_MAX_BET_PCT)
-            stake = max(stake, 1.0)
+            stake = max(stake, 2.0)  # Betfair exchange minimum
             stake = round(stake, 2)
 
             orders.append({

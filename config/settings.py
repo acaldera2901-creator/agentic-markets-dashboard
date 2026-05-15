@@ -36,10 +36,10 @@ class Settings(BaseSettings):
 
     # Trading parameters — fully explicit and configurable
     PAPER_TRADING: bool = True
-    BANKROLL: float = 500.0
+    BANKROLL: float = 10.0            # default 10€ live test — override in .env
     KELLY_FRACTION: float = 0.25     # fractional Kelly multiplier (0.25 = quarter-Kelly)
-    MAX_BET_PCT: float = 0.03        # hard cap: 3% of bankroll per bet
-    MAX_BET_FRACTION: float = 0.02   # legacy alias — use MAX_BET_PCT
+    MAX_BET_PCT: float = 0.20        # 20% cap (2€ on 10€ bankroll) — risk engine also reads yaml
+    MAX_BET_FRACTION: float = 0.20   # legacy alias — use MAX_BET_PCT
     MAX_TOTAL_EXPOSURE: float = 0.10
     MAX_MONTHLY_DRAWDOWN: float = 0.15
 
@@ -82,9 +82,9 @@ class Settings(BaseSettings):
     CHALLENGER_MIN_PREDICTIONS: int = 200  # promote after this many predictions
 
     # Tennis-specific parameters
-    TENNIS_BANKROLL: float = 500.0
+    TENNIS_BANKROLL: float = 10.0           # mirrors BANKROLL — kept separate for future split
     TENNIS_MIN_EDGE: float = 0.04          # 4% minimum edge tennis
-    TENNIS_MAX_BET_PCT: float = 0.03       # 3% bankroll cap
+    TENNIS_MAX_BET_PCT: float = 0.20       # 20% cap → 2€ on 10€ bankroll (Betfair minimum)
     TENNIS_DRAWDOWN_LIMIT: float = 0.12    # 12% monthly drawdown block
     TENNIS_KELLY_FRACTION: float = 0.25
 
