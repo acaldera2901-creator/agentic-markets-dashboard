@@ -8,6 +8,13 @@ interface HeartbeatRow {
   status_detail: string | null;
 }
 
+interface TennisActivityRow {
+  latest_prediction: string | null;
+  latest_signal: string | null;
+  predictions: string;
+  signals: string;
+}
+
 async function dbQuery<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
   if (!DB_URL) return [];
   try {
@@ -30,15 +37,19 @@ async function ensureTable() {
   `);
 }
 
-const KNOWN_AGENTS = [
-  // Football pipeline
+const CORE_AGENTS = [
   "DataCollector", "ModelAgent", "AnalystAgent", "StrategistAgent",
   "RiskManagerAgent", "TraderAgent", "MonitorAgent", "ResearchAgent",
   "AHCollectorAgent", "ResultSettlementAgent",
-  // Tennis pipeline
+];
+
+const SIGNAL_ONLY_AGENTS = [
   "TennisDataCollectorAgent", "TennisModelAgent", "TennisAnalystAgent",
   "TennisRiskManagerAgent", "TennisTraderAgent", "TennisSettlementAgent",
 ];
+
+const KNOWN_AGENTS = [...CORE_AGENTS, ...SIGNAL_ONLY_AGENTS];
+const TENNIS_SIGNAL_FRESH_SECONDS = 60 * 60;
 
 function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {
   if (!lastSeen) return "offline";
@@ -49,9 +60,26 @@ function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {
 export async function GET() {
   await ensureTable();
 
-  const rows = await dbQuery<HeartbeatRow>(
-    `SELECT agent_name, last_seen, status_detail FROM agent_heartbeats`
-  );
+  const [rows, tennisActivityRows] = await Promise.all([
+    dbQuery<HeartbeatRow>(
+      `SELECT agent_name, last_seen, status_detail FROM agent_heartbeats`
+    ),
+    dbQuery<TennisActivityRow>(`
+      SELECT
+        (SELECT MAX(computed_at) FROM tennis_predictions) AS latest_prediction,
+        (SELECT MAX(placed_at) FROM tennis_bets) AS latest_signal,
+        (SELECT COUNT(*) FROM tennis_predictions) AS predictions,
+        (SELECT COUNT(*) FROM tennis_bets) AS signals
+    `),
+  ]);
+
+  const tennisActivity = tennisActivityRows[0];
+  const latestTennisAt = [tennisActivity?.latest_prediction, tennisActivity?.latest_signal]
+    .filter(Boolean)
+    .map((value) => new Date(value as string).getTime())
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => b - a)[0];
+  const tennisActive = latestTennisAt ? (Date.now() - latestTennisAt) / 1000 < TENNIS_SIGNAL_FRESH_SECONDS : false;
 
   const hbMap: Record<string, HeartbeatRow> = {};
   for (const r of rows) hbMap[r.agent_name] = r;
@@ -60,21 +88,47 @@ export async function GET() {
     const row = hbMap[name];
     const lastSeen = row?.last_seen ?? null;
     const ageSec = lastSeen ? Math.round((Date.now() - new Date(lastSeen).getTime()) / 1000) : null;
+    const isTennis = SIGNAL_ONLY_AGENTS.includes(name);
+    const inferredTennisStatus = isTennis && tennisActive ? "alive" : "offline";
     return {
       name,
-      status: parseStatus(lastSeen),
+      status: lastSeen ? parseStatus(lastSeen) : inferredTennisStatus,
       last_seen: lastSeen,
       age_seconds: ageSec,
-      detail: row?.status_detail ?? null,
+      detail: row?.status_detail ?? (
+        isTennis && tennisActive
+          ? `Tennis signal pipeline active: ${tennisActivity?.predictions ?? 0} predictions, ${tennisActivity?.signals ?? 0} signals.`
+          : null
+      ),
     };
   });
 
-  const alive = agents.filter((a) => a.status === "alive").length;
-  const offline = agents.filter((a) => a.status === "offline").length;
+  const coreAgents = agents.filter((a) => CORE_AGENTS.includes(a.name));
+  const coreAlive = coreAgents.filter((a) => a.status === "alive").length;
+  const coreOffline = coreAgents.filter((a) => a.status === "offline").length;
+  const coreStale = coreAgents.filter((a) => a.status === "stale").length;
+  const signalAgents = agents.filter((a) => SIGNAL_ONLY_AGENTS.includes(a.name));
+  const signalAlive = signalAgents.filter((a) => a.status === "alive").length;
+  const signalOffline = signalAgents.filter((a) => a.status === "offline").length;
 
   return NextResponse.json({
-    status: offline > 0 ? "degraded" : alive < KNOWN_AGENTS.length ? "warning" : "ok",
+    status: coreOffline > 0 ? "degraded" : coreStale > 0 ? "warning" : "ok",
     timestamp: new Date().toISOString(),
+    core: {
+      total: CORE_AGENTS.length,
+      alive: coreAlive,
+      stale: coreStale,
+      offline: coreOffline,
+    },
+    signal_only: {
+      total: SIGNAL_ONLY_AGENTS.length,
+      alive: signalAlive,
+      offline: signalOffline,
+      mode: tennisActive ? "active_signal" : "gated",
+      latest_activity: latestTennisAt ? new Date(latestTennisAt).toISOString() : null,
+      predictions: Number(tennisActivity?.predictions ?? 0),
+      signals: Number(tennisActivity?.signals ?? 0),
+    },
     agents,
   });
 }

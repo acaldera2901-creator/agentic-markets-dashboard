@@ -252,6 +252,47 @@ button:disabled {
   gap: 10px;
 }
 
+.client-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.client-summary-strip > div,
+.client-status-card,
+.client-callout,
+.client-system-list > div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.client-summary-strip > div {
+  min-height: 96px;
+  padding: 12px;
+  display: grid;
+  align-content: space-between;
+  gap: 7px;
+}
+
+.client-summary-strip strong {
+  display: block;
+  color: #f8fafc;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.client-summary-strip em,
+.client-status-card em,
+.client-system-list span {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
 .market-section {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -550,9 +591,104 @@ button:disabled {
   letter-spacing: 0.08em;
 }
 
+.place-live.is-review {
+  background: #e5e7eb;
+  border-color: rgba(226, 232, 240, 0.5);
+  color: #020617;
+}
+
+.place-live.is-disabled {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.38);
+  color: #fde68a;
+}
+
 .ticket-note {
   margin: 0;
   line-height: 1.45;
+}
+
+.client-status {
+  display: grid;
+  gap: 10px;
+}
+
+.client-callout {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.client-callout h3 {
+  margin: 3px 0 0;
+  color: #f8fafc;
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.client-callout p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.client-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.client-status-card {
+  min-height: 128px;
+  padding: 12px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+}
+
+.client-status-card.good {
+  border-color: rgba(66, 215, 125, 0.28);
+}
+
+.client-status-card.warn {
+  border-color: rgba(251, 191, 36, 0.32);
+}
+
+.client-status-card span {
+  color: var(--muted-2);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.client-status-card strong {
+  color: #f8fafc;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.client-system-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.client-system-list > div {
+  min-height: 90px;
+  padding: 14px;
+}
+
+.client-system-list strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #f8fafc;
 }
 
 .glass-card {
@@ -629,6 +765,11 @@ button:disabled {
     grid-template-columns: 160px minmax(0, 1fr);
   }
 
+  .client-summary-strip,
+  .client-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .betslip {
     position: static;
     grid-column: 1 / -1;
@@ -675,6 +816,11 @@ button:disabled {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .client-callout,
+  .client-system-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 620px) {
@@ -685,7 +831,9 @@ button:disabled {
 
   .odds-grid.football,
   .odds-grid.tennis,
-  .ticket-summary {
+  .ticket-summary,
+  .client-summary-strip,
+  .client-status-grid {
     grid-template-columns: 1fr;
   }
 }

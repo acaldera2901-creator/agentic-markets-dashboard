@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const DB_URL = process.env.DATABASE_URL;
+
 type TennisPredictionInput = {
   match_id?: string;
   id?: string;
@@ -27,6 +29,23 @@ type TennisPrediction = ReturnType<typeof normalizePrediction>;
 type RedisTennisPayload = {
   predictions?: TennisPredictionInput[];
   computed_at?: string;
+};
+
+type DbTennisPrediction = {
+  match_id: string;
+  tournament: string | null;
+  surface: string | null;
+  player1: string;
+  player2: string;
+  scheduled_at: string | null;
+  p1: number | null;
+  p2: number | null;
+  odds_p1: number | null;
+  odds_p2: number | null;
+  edge: number | null;
+  best_selection: string | null;
+  model_version: string | null;
+  computed_at: string | null;
 };
 
 const PLACEHOLDER_MATCHES = [
@@ -151,6 +170,48 @@ async function getFromRedis(): Promise<RedisTennisPayload | null> {
   }
 }
 
+async function dbQuery<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  if (!DB_URL) return [];
+  try {
+    const { neon } = await import("@neondatabase/serverless");
+    const db = neon(DB_URL);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return ((await (db as any).query(sql, params)) ?? []) as T[];
+  } catch {
+    return [];
+  }
+}
+
+async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; computed_at?: string } | null> {
+  const rows = await dbQuery<DbTennisPrediction>(`
+    SELECT match_id, tournament, surface, player1, player2, scheduled_at,
+           p1, p2, odds_p1, odds_p2, edge, best_selection, model_version, computed_at
+    FROM tennis_predictions
+    ORDER BY computed_at DESC
+    LIMIT 80
+  `);
+  if (!rows.length) return null;
+
+  return {
+    predictions: rows.map((row) => ({
+      match_id: row.match_id,
+      player1: row.player1,
+      player2: row.player2,
+      tournament: row.tournament || "",
+      surface: row.surface || "hard",
+      scheduled_at: row.scheduled_at || "",
+      p1: Number(row.p1 ?? 0.5),
+      p2: Number(row.p2 ?? 0.5),
+      odds_p1: row.odds_p1 == null ? null : Number(row.odds_p1),
+      odds_p2: row.odds_p2 == null ? null : Number(row.odds_p2),
+      edge: row.edge == null ? null : Number(row.edge),
+      best_selection: row.best_selection,
+      model_version: row.model_version || "elo_surface_v2",
+    })),
+    computed_at: rows[0]?.computed_at || undefined,
+  };
+}
+
 function normalizePrediction(p: TennisPredictionInput) {
   return {
     id: p.match_id || p.id || "",
@@ -190,6 +251,25 @@ export async function GET() {
       status: "paper",
       computed_at: redisData.computed_at || now,
       source: "redis",
+    });
+  }
+
+  const dbData = await getFromDb();
+  if (dbData && Array.isArray(dbData.predictions) && dbData.predictions.length > 0) {
+    const matches: TennisPrediction[] = dbData.predictions.map(normalizePrediction);
+    const summary = {
+      total_today: matches.length,
+      value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
+      markets_active: matches.length,
+      pnl: 0.0,
+      source: "database",
+    };
+    return NextResponse.json({
+      matches,
+      summary,
+      status: "signal",
+      computed_at: dbData.computed_at || now,
+      source: "database",
     });
   }
 

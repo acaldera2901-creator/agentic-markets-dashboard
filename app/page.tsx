@@ -567,15 +567,64 @@ function BetSlip({ selection, onClear }: { selection: SlipSelection | null; onCl
               <strong className={ev >= 0 ? "text-green-300" : "text-red-300"}>{ev >= 0 ? "+" : ""}{ev.toFixed(2)}€</strong>
             </div>
           </div>
-          <button className="place-live">{isFootballLive ? "Football live on Betfair" : "Tennis signal only"}</button>
+          <button className={`place-live ${isFootballLive ? "is-review" : "is-disabled"}`}>
+            {isFootballLive ? "Review football order" : "Save tennis signal"}
+          </button>
           <p className="ticket-note">
             {isFootballLive
-              ? "Football execution is live through TraderAgent, RiskManager guardrails and Betfair confirmation."
-              : "Tennis is in paper mode. Settlement loop is live — Elo ratings update on each closed market."}
+              ? "Football can execute live only after risk approval and Betfair returns a confirmed betId."
+              : "Tennis is signal-only until runner mapping is fully verified for live execution."}
           </p>
         </div>
       )}
     </aside>
+  );
+}
+
+function ClientInsightStrip({
+  summary,
+  predictions,
+  tennisMatches,
+  bets,
+  computedAt,
+  tennisComputedAt,
+}: {
+  summary: Summary | null;
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  bets: Bet[];
+  computedAt: string | null;
+  tennisComputedAt: string | null;
+}) {
+  const footballValue = predictions.filter((p) => p.edge != null && p.edge > 0.03).length;
+  const tennisValue = tennisMatches.filter((m) => m.edge != null && m.edge > 0.025).length;
+  const liveConfirmed = bets.filter((b) => !b.paper && Boolean(b.betfair_bet_id)).length;
+  const rejected = bets.filter((b) => FAILED_STATUSES.includes(b.status)).length;
+  const pnl = summary?.pnl ?? 0;
+
+  return (
+    <section className="client-summary-strip" aria-label="Client desk summary">
+      <div>
+        <span className="metric-label">Session P&L</span>
+        <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"}>{`${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}</strong>
+        <em>{summary?.pending ?? 0} pending bets</em>
+      </div>
+      <div>
+        <span className="metric-label">Football Edge</span>
+        <strong>{footballValue}</strong>
+        <em>{computedAt ? `updated ${timeAgo(computedAt)}` : "waiting for markets"}</em>
+      </div>
+      <div>
+        <span className="metric-label">Tennis Signals</span>
+        <strong>{tennisValue}</strong>
+        <em>{tennisComputedAt ? `updated ${timeAgo(tennisComputedAt)}` : "signal layer active"}</em>
+      </div>
+      <div>
+        <span className="metric-label">Execution Quality</span>
+        <strong>{liveConfirmed}</strong>
+        <em>{rejected ? `${rejected} blocked/rejected safely` : "betId required for live"}</em>
+      </div>
+    </section>
   );
 }
 
@@ -1190,6 +1239,90 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
           ContextService v5.0: LeagueStrengthAnalyzer · LeagueOddsProfiler · LeaguePredictabilityTracker · MatchTypeClassifier · CompetitionTypeFactors
         </div>
       </div>
+    </div>
+  );
+}
+
+function ClientStatusTab({
+  agents,
+  bets,
+  tennisSummary,
+  computedAt,
+  tennisComputedAt,
+}: {
+  agents: AgentStatus[];
+  bets: Bet[];
+  tennisSummary: TennisSummary | null;
+  computedAt: string | null;
+  tennisComputedAt: string | null;
+}) {
+  const footballAgents = agents.filter((a) => !a.name.startsWith("Tennis"));
+  const tennisAgents = agents.filter((a) => a.name.startsWith("Tennis"));
+  const footballAlive = footballAgents.filter((a) => a.status === "alive").length;
+  const tennisAlive = tennisAgents.filter((a) => a.status === "alive").length;
+  const confirmedLive = bets.filter((b) => !b.paper && Boolean(b.betfair_bet_id)).length;
+  const blocked = bets.filter((b) => FAILED_STATUSES.includes(b.status)).length;
+
+  const rows = [
+    {
+      title: "Football execution",
+      value: footballAgents.length ? `${footballAlive}/${footballAgents.length} online` : "checking",
+      detail: "Live orders are valid only when Betfair confirms a betId.",
+      tone: footballAlive === footballAgents.length && footballAgents.length > 0 ? "good" : "warn",
+    },
+    {
+      title: "Tennis signal layer",
+      value: tennisAgents.length ? `${tennisAlive}/${tennisAgents.length} active` : "active signal",
+      detail: `${tennisSummary?.value_bets ?? 0} value signals from ${tennisSummary?.markets_active ?? 0} active markets.`,
+      tone: "good",
+    },
+    {
+      title: "Execution audit",
+      value: `${confirmedLive} confirmed`,
+      detail: blocked ? `${blocked} orders blocked or rejected safely.` : "Every live bet must be traceable to Betfair.",
+      tone: blocked ? "warn" : "good",
+    },
+    {
+      title: "Data freshness",
+      value: computedAt ? timeAgo(computedAt) : "syncing",
+      detail: tennisComputedAt ? `Tennis updated ${timeAgo(tennisComputedAt)}.` : "Tennis database fallback is enabled.",
+      tone: "neutral",
+    },
+  ];
+
+  return (
+    <div className="client-status">
+      <section className="client-callout">
+        <div>
+          <p className="eyebrow">Client status</p>
+          <h3>Only decision-critical health is shown here.</h3>
+        </div>
+        <p>
+          The desk hides internal agent noise and surfaces four client questions:
+          can we trade, are signals fresh, did Betfair confirm, and what is blocked for safety.
+        </p>
+      </section>
+
+      <section className="client-status-grid">
+        {rows.map((row) => (
+          <article key={row.title} className={`client-status-card ${row.tone}`}>
+            <span>{row.title}</span>
+            <strong>{row.value}</strong>
+            <em>{row.detail}</em>
+          </article>
+        ))}
+      </section>
+
+      <section className="client-system-list">
+        <div>
+          <strong>Client sees</strong>
+          <span>Market board, bet slip, active bets, settled history, execution confirmation.</span>
+        </div>
+        <div>
+          <strong>Client does not need</strong>
+          <span>Python process names, internal pipeline steps, optimizer jargon, raw heartbeat spam.</span>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1822,7 +1955,7 @@ export default function Dashboard() {
     { tab: "overview", label: "Edge Desk", value: String(valueBets.length + tennisValueBets.length), tone: "green" },
     { tab: "bets", label: "My Bets", value: String(summary?.pending ?? 0), tone: (summary?.pending ?? 0) > 0 ? "green" : undefined },
     { tab: "history", label: "History", value: String(historyStats?.total_matches ?? history.length) },
-    { tab: "agents", label: "Agents", value: `${aliveAgents}/${totalAgents}` },
+    { tab: "agents", label: "Status", value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
   ];
 
   return (
@@ -1833,11 +1966,11 @@ export default function Dashboard() {
           <h1>Sportsbook Edge Desk</h1>
         </div>
         <div className="topbar-stats">
-          <span>Live bankroll</span>
+          <span>Session P&L</span>
           <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"}>{loading ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}</strong>
-          <span>Betfair live</span>
-          <span>{lastUpdate || "not synced"}</span>
-          <span>{aliveAgents}/{totalAgents} agents</span>
+          <span>Football live gate</span>
+          <span>Tennis signal active</span>
+          <span>{lastUpdate || "syncing"}</span>
         </div>
       </section>
 
@@ -1854,22 +1987,22 @@ export default function Dashboard() {
             {refreshing ? "Computing..." : "Refresh odds"}
           </button>
           <div className="rail-note">
-            <strong>Live football</strong>
-            <span>Football orders go live through RiskManager → TraderAgent → Betfair Exchange. Tennis is paper mode — settlement loop active.</span>
+            <strong>Client rule</strong>
+            <span>Football is live only with Betfair betId. Tennis remains signal-only until execution mapping is fully verified.</span>
           </div>
         </aside>
 
         <section className="book-main">
           <div className="book-main-head">
             <div>
-              <p className="eyebrow">{tab === "overview" ? "Live sportsbook" : navItems.find((n) => n.tab === tab)?.label}</p>
+              <p className="eyebrow">{tab === "overview" ? "Client sportsbook" : navItems.find((n) => n.tab === tab)?.label}</p>
               <h2>
-                {tab === "overview" && "Markets"}
+                {tab === "overview" && "Best decisions now"}
                 {tab === "predictions" && "Football markets"}
                 {tab === "tennis" && "Tennis markets"}
                 {tab === "bets" && "My bets"}
                 {tab === "history" && "Settled history"}
-                {tab === "agents" && "Agent health"}
+                {tab === "agents" && "Desk status"}
               </h2>
             </div>
             <div className="book-head-kpis">
@@ -1880,11 +2013,21 @@ export default function Dashboard() {
           </div>
 
           {tab === "overview" && (
-            <SportsbookBoard
-              predictions={predictions}
-              tennisMatches={tennisMatches}
-              onSelect={setSlipSelection}
-            />
+            <>
+              <ClientInsightStrip
+                summary={summary}
+                predictions={predictions}
+                tennisMatches={tennisMatches}
+                bets={bets}
+                computedAt={computedAt}
+                tennisComputedAt={tennisComputedAt}
+              />
+              <SportsbookBoard
+                predictions={predictions}
+                tennisMatches={tennisMatches}
+                onSelect={setSlipSelection}
+              />
+            </>
           )}
           {tab === "tennis" && (
             <TennisTab
@@ -1918,7 +2061,15 @@ export default function Dashboard() {
               loading={historyLoading}
             />
           )}
-          {tab === "agents" && <AgentStatusTab agents={agents} />}
+          {tab === "agents" && (
+            <ClientStatusTab
+              agents={agents}
+              bets={bets}
+              tennisSummary={tennisSummary}
+              computedAt={computedAt}
+              tennisComputedAt={tennisComputedAt}
+            />
+          )}
         </section>
 
         <BetSlip
@@ -1929,7 +2080,7 @@ export default function Dashboard() {
       </section>
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
-        Agentic Markets OS v5.3 · 16 Agents · Football Live Betfair Exchange · Tennis Paper Mode
+        Sportsbook Edge Desk · client view · verified execution only · tennis signal layer
       </footer>
     </main>
   );
