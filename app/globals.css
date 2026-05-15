@@ -1,18 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #070a0f;
-  --panel: #101722;
-  --panel-2: #151d2a;
-  --panel-3: #1b2433;
-  --line: rgba(148, 163, 184, 0.18);
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --muted-2: #64748b;
-  --green: #42d77d;
-  --cyan: #22d3ee;
-  --amber: #fbbf24;
-  --red: #f87171;
+  --bg:      #020407;
+  --bg-2:    #040810;
+  --panel:   #07101E;
+  --panel-2: #0B1628;
+  --panel-3: #111E34;
+  --panel-4: #18263F;
+  --line:    rgba(255,255,255,0.055);
+  --line-2:  rgba(255,255,255,0.10);
+
+  --cyan:   #00CFFF;
+  --green:  #00E87A;
+  --amber:  #FFB600;
+  --red:    #FF2D55;
+  --violet: #9B5FFF;
+
+  --text:   rgba(255,255,255,0.90);
+  --muted:  rgba(255,255,255,0.46);
+  --muted-2:rgba(255,255,255,0.22);
 }
 
 * {
@@ -25,6 +31,10 @@ body {
   color: var(--text);
   background: var(--bg);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-image:
+    radial-gradient(ellipse 800px 600px at 50% 0%, rgba(0,207,255,0.055) 0%, transparent 70%),
+    radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 28px 28px;
 }
 
 button,
@@ -41,6 +51,25 @@ button:disabled {
   opacity: 0.45;
 }
 
+/* ── Animations ─────────────────────────────────────────────── */
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(0.85); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,232,122,0.2); }
+  50%       { box-shadow: 0 0 18px rgba(0,232,122,0.4); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Topbar ──────────────────────────────────────────────────── */
+
 .sportsbook-shell {
   width: min(1760px, calc(100% - 24px));
   margin: 0 auto;
@@ -50,15 +79,48 @@ button:disabled {
 }
 
 .book-topbar {
+  position: relative;
   min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
+  padding: 12px 18px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: linear-gradient(180deg, #111827, #0c111a);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0A1628, #081220, #0A1628);
+  border-bottom: 1px solid transparent;
+  overflow: hidden;
+}
+
+.book-topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding-bottom: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan) 30%, var(--amber) 70%, transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  bottom: 0;
+  top: auto;
+  height: 1px;
+  padding: 0;
+  pointer-events: none;
+}
+
+.book-topbar::after {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 120px;
+  background: radial-gradient(ellipse, rgba(0,207,255,0.08), transparent 70%);
+  pointer-events: none;
 }
 
 .book-topbar h1 {
@@ -69,6 +131,41 @@ button:disabled {
   font-weight: 950;
   letter-spacing: 0;
 }
+
+.neon-text {
+  text-shadow: 0 0 20px rgba(0,207,255,0.5);
+}
+
+/* ── Live badge ──────────────────────────────────────────────── */
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,45,85,0.4);
+  border-radius: 999px;
+  background: rgba(255,45,85,0.08);
+  color: #FF6B8A;
+  font-size: 10px;
+  font-weight: 900;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.live-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--red);
+}
+
+/* ── Eyebrow / labels ────────────────────────────────────────── */
 
 .eyebrow,
 .rail-title,
@@ -82,6 +179,8 @@ button:disabled {
   text-transform: uppercase;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
+
+/* ── Topbar stats pills ──────────────────────────────────────── */
 
 .topbar-stats,
 .book-head-kpis,
@@ -103,12 +202,14 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.8);
-  color: #cbd5e1;
+  background: rgba(7,16,30,0.8);
+  color: rgba(255,255,255,0.65);
   font-size: 11px;
   font-weight: 850;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
+
+/* ── Layout ──────────────────────────────────────────────────── */
 
 .book-layout {
   display: grid;
@@ -122,8 +223,12 @@ button:disabled {
 .betslip,
 .glass-card {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--panel);
+}
+
+.glass-card:hover {
+  border-color: var(--line-2);
 }
 
 .sports-rail,
@@ -131,6 +236,8 @@ button:disabled {
   position: sticky;
   top: 10px;
 }
+
+/* ── Rail / nav ──────────────────────────────────────────────── */
 
 .sports-rail {
   padding: 10px;
@@ -153,11 +260,12 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #cbd5e1;
+  color: rgba(255,255,255,0.65);
   background: transparent;
   text-align: left;
   font-size: 13px;
   font-weight: 800;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .rail-item strong {
@@ -178,37 +286,43 @@ button:disabled {
 }
 
 .rail-item.is-active {
-  border-color: rgba(34, 211, 238, 0.34);
-  background: rgba(34, 211, 238, 0.11);
-  color: #e0faff;
+  border-color: rgba(0,207,255,0.38);
+  background: rgba(0,207,255,0.07);
+  color: var(--cyan);
 }
 
 .rail-item.is-active.green {
-  border-color: rgba(66, 215, 125, 0.34);
-  background: rgba(66, 215, 125, 0.11);
+  border-color: rgba(0,232,122,0.38);
+  background: rgba(0,232,122,0.07);
+  color: var(--green);
 }
 
 .rail-item.is-active.amber {
-  border-color: rgba(251, 191, 36, 0.34);
-  background: rgba(251, 191, 36, 0.11);
+  border-color: rgba(255,182,0,0.38);
+  background: rgba(255,182,0,0.07);
+  color: var(--amber);
 }
 
 .rail-refresh {
   margin-top: 6px;
   justify-content: center;
-  border-color: rgba(66, 215, 125, 0.34);
-  color: #bbf7d0;
-  background: rgba(66, 215, 125, 0.09);
+  border-color: rgba(0,232,122,0.34);
+  color: rgba(0,232,122,0.85);
+  background: rgba(0,232,122,0.06);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   text-transform: uppercase;
+}
+
+.rail-refresh:hover {
+  background: rgba(0,232,122,0.12);
 }
 
 .rail-note {
   margin-top: 6px;
   padding: 10px;
   border-radius: 7px;
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0,0,0,0.18);
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
@@ -220,9 +334,11 @@ button:disabled {
 }
 
 .rail-note strong {
-  color: #f8fafc;
+  color: rgba(255,255,255,0.9);
   margin-bottom: 3px;
 }
+
+/* ── Book main ───────────────────────────────────────────────── */
 
 .book-main {
   min-width: 0;
@@ -247,10 +363,47 @@ button:disabled {
   font-weight: 950;
 }
 
+/* ── Desk status pill ────────────────────────────────────────── */
+
+.desk-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: rgba(203,213,225,0.9);
+  background: rgba(7,16,30,0.7);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--amber);
+  box-shadow: 0 0 12px rgba(255,182,0,0.55);
+}
+
+.desk-status-pill.is-online .status-dot {
+  background: var(--green);
+  box-shadow: 0 0 12px rgba(0,232,122,0.65);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Sportsbook board ────────────────────────────────────────── */
+
 .sportsbook-board {
   display: grid;
   gap: 10px;
 }
+
+/* ── Client summary strip ────────────────────────────────────── */
 
 .client-summary-strip {
   display: grid;
@@ -278,7 +431,7 @@ button:disabled {
 
 .client-summary-strip strong {
   display: block;
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
   font-size: clamp(1.3rem, 2vw, 1.8rem);
   line-height: 1;
   font-weight: 950;
@@ -293,11 +446,13 @@ button:disabled {
   line-height: 1.4;
 }
 
+/* ── Market section ──────────────────────────────────────────── */
+
 .market-section {
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
-  background: #0c111a;
+  background: var(--bg-2);
 }
 
 .market-section-title {
@@ -307,16 +462,16 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #172231, #111827);
+  background: linear-gradient(180deg, #0B1A2E, #091422);
 }
 
 .market-section-title span {
-  color: #e0faff;
+  color: rgba(224,250,255,0.95);
   font-weight: 950;
 }
 
 .market-section-title.amber span {
-  color: #fde68a;
+  color: rgba(255,220,130,0.95);
 }
 
 .market-section-title em {
@@ -337,7 +492,8 @@ button:disabled {
   gap: 10px;
   align-items: center;
   padding: 9px 10px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.12s;
 }
 
 .market-row:last-child {
@@ -345,7 +501,7 @@ button:disabled {
 }
 
 .market-row:hover {
-  background: rgba(148, 163, 184, 0.045);
+  background: rgba(255,255,255,0.025);
 }
 
 .event-cell {
@@ -357,7 +513,7 @@ button:disabled {
 .event-cell strong {
   min-width: 0;
   overflow: hidden;
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
   font-size: 14px;
   line-height: 1.1;
   text-overflow: ellipsis;
@@ -383,7 +539,7 @@ button:disabled {
 }
 
 .model-cell strong {
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
   font-size: 12px;
 }
 
@@ -392,6 +548,8 @@ button:disabled {
   font-size: 11px;
   font-weight: 900;
 }
+
+/* ── Odds grid ───────────────────────────────────────────────── */
 
 .odds-grid {
   display: grid;
@@ -407,15 +565,16 @@ button:disabled {
 }
 
 .odds-button {
-  min-height: 54px;
+  min-height: 60px;
   padding: 7px 6px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid var(--line);
   border-radius: 7px;
   display: grid;
   gap: 1px;
-  background: #182231;
-  color: #dbeafe;
+  background: var(--panel-3);
+  color: rgba(219,234,254,0.9);
   text-align: center;
+  transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .odds-button span,
@@ -428,20 +587,24 @@ button:disabled {
 }
 
 .odds-button strong {
-  color: #f8fafc;
-  font-size: 16px;
+  color: rgba(248,250,252,0.95);
+  font-size: 20px;
   font-weight: 950;
 }
 
 .odds-button:hover {
-  border-color: rgba(34, 211, 238, 0.34);
-  background: #1f2b3d;
+  transform: translateY(-1px);
+  border-color: rgba(0,207,255,0.42);
+  box-shadow: 0 4px 16px rgba(0,207,255,0.12);
 }
 
 .odds-button.is-value {
-  border-color: rgba(66, 215, 125, 0.46);
-  background: rgba(66, 215, 125, 0.13);
+  border-color: rgba(0,232,122,0.5);
+  background: linear-gradient(180deg, rgba(0,232,122,0.1), rgba(0,232,122,0.06));
+  animation: glow-pulse 3s ease-in-out infinite;
 }
+
+/* ── Book empty ──────────────────────────────────────────────── */
 
 .book-empty {
   padding: 24px;
@@ -449,6 +612,8 @@ button:disabled {
   text-align: center;
   font-size: 13px;
 }
+
+/* ── Betslip ─────────────────────────────────────────────────── */
 
 .betslip {
   padding: 10px;
@@ -486,14 +651,14 @@ button:disabled {
   align-content: center;
   gap: 8px;
   padding: 24px;
-  border: 1px dashed rgba(148, 163, 184, 0.22);
+  border: 1px dashed rgba(255,255,255,0.12);
   border-radius: 8px;
   color: var(--muted);
   text-align: center;
 }
 
 .betslip-empty strong {
-  color: #f8fafc;
+  color: rgba(248,250,252,0.9);
 }
 
 .betslip-ticket {
@@ -545,7 +710,7 @@ button:disabled {
 
 .ticket-line strong,
 .ticket-summary strong {
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
   font-size: 13px;
 }
 
@@ -557,13 +722,20 @@ button:disabled {
 .stake-input input {
   width: 100%;
   height: 42px;
-  border: 1px solid rgba(66, 215, 125, 0.34);
+  border: 1px solid rgba(0,232,122,0.30);
   border-radius: 7px;
-  background: #070a0f;
-  color: #f8fafc;
+  background: var(--bg);
+  color: rgba(248,250,252,0.95);
   padding: 0 12px;
   font-size: 18px;
   font-weight: 900;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.stake-input input:focus {
+  border-color: rgba(0,232,122,0.6);
+  box-shadow: 0 0 0 3px rgba(0,232,122,0.08);
 }
 
 .ticket-summary {
@@ -580,33 +752,47 @@ button:disabled {
   background: var(--panel-2);
 }
 
+/* ── Place button ────────────────────────────────────────────── */
+
 .place-live {
   min-height: 44px;
-  border: 1px solid rgba(66, 215, 125, 0.45);
+  border: 1px solid rgba(0,232,122,0.45);
   border-radius: 7px;
-  background: var(--green);
-  color: #031109;
+  background: linear-gradient(135deg, #00E87A, #00C060);
+  color: #020a04;
   font-weight: 950;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+
+.place-live:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0,232,122,0.3);
 }
 
 .place-live.is-review {
-  background: #e5e7eb;
-  border-color: rgba(226, 232, 240, 0.5);
-  color: #020617;
+  background: linear-gradient(135deg, #F0F4FF, #DCE4FF);
+  border-color: rgba(220,228,255,0.5);
+  color: #0a0d1a;
+}
+
+.place-live.is-review:hover {
+  box-shadow: 0 6px 20px rgba(220,228,255,0.25);
 }
 
 .place-live.is-disabled {
-  background: rgba(251, 191, 36, 0.12);
-  border-color: rgba(251, 191, 36, 0.38);
-  color: #fde68a;
+  background: rgba(255,182,0,0.08);
+  border-color: rgba(255,182,0,0.30);
+  color: var(--amber);
 }
 
 .ticket-note {
   margin: 0;
   line-height: 1.45;
 }
+
+/* ── Client status ───────────────────────────────────────────── */
 
 .client-status {
   display: grid;
@@ -623,7 +809,7 @@ button:disabled {
 
 .client-callout h3 {
   margin: 3px 0 0;
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
   font-size: clamp(1.3rem, 2.5vw, 2rem);
   line-height: 1;
   font-weight: 950;
@@ -651,11 +837,11 @@ button:disabled {
 }
 
 .client-status-card.good {
-  border-color: rgba(66, 215, 125, 0.28);
+  border-color: rgba(0,232,122,0.28);
 }
 
 .client-status-card.warn {
-  border-color: rgba(251, 191, 36, 0.32);
+  border-color: rgba(255,182,0,0.32);
 }
 
 .client-status-card span {
@@ -668,7 +854,7 @@ button:disabled {
 }
 
 .client-status-card strong {
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
   font-size: 1.35rem;
   line-height: 1;
   font-weight: 950;
@@ -688,17 +874,10 @@ button:disabled {
 .client-system-list strong {
   display: block;
   margin-bottom: 6px;
-  color: #f8fafc;
+  color: rgba(248,250,252,0.95);
 }
 
-.glass-card {
-  background: var(--panel);
-  box-shadow: none;
-}
-
-.glass-card:hover {
-  border-color: rgba(34, 211, 238, 0.28);
-}
+/* ── KPI card / metric ───────────────────────────────────────── */
 
 .command-metric,
 .kpi-card {
@@ -726,39 +905,7 @@ button:disabled {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.desk-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 28px;
-  padding: 0 9px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: #cbd5e1;
-  background: rgba(15, 23, 42, 0.7);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--amber);
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.55);
-}
-
-.desk-status-pill.is-online .status-dot {
-  background: var(--green);
-  box-shadow: 0 0 12px rgba(66, 215, 125, 0.65);
-}
-
-.neon-text {
-  text-shadow: 0 0 16px rgba(34, 211, 238, 0.45);
-}
+/* ── Responsive ──────────────────────────────────────────────── */
 
 @media (max-width: 1200px) {
   .book-layout {

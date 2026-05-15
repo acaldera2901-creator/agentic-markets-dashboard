@@ -1952,24 +1952,29 @@ export default function Dashboard() {
 
   const tennisValueBets = tennisMatches.filter((m) => m.edge != null && m.edge > 0.03);
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
-    { tab: "overview", label: "Edge Desk", value: String(valueBets.length + tennisValueBets.length), tone: "green" },
-    { tab: "bets", label: "My Bets", value: String(summary?.pending ?? 0), tone: (summary?.pending ?? 0) > 0 ? "green" : undefined },
-    { tab: "history", label: "History", value: String(historyStats?.total_matches ?? history.length) },
-    { tab: "agents", label: "Status", value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
+    { tab: "overview",     label: "Edge Desk",  value: String(valueBets.length + tennisValueBets.length), tone: "green" },
+    { tab: "predictions",  label: "Football",   value: String(predictions.length) },
+    { tab: "tennis",       label: "Tennis",     value: String(tennisMatches.length), tone: "amber" },
+    { tab: "bets",         label: "My Bets",    value: String(summary?.pending ?? 0), tone: (summary?.pending ?? 0) > 0 ? "green" : undefined },
+    { tab: "history",      label: "History",    value: String(historyStats?.total_matches ?? history.length) },
+    { tab: "agents",       label: "Status",     value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
   ];
 
   return (
     <main className="sportsbook-shell">
       <section className="book-topbar">
         <div>
-          <p className="eyebrow">Agentic Markets OS</p>
-          <h1>Sportsbook Edge Desk</h1>
+          <p className="eyebrow">Agentic Markets</p>
+          <h1>Sportsbook <span className="neon-text">Edge Desk</span></h1>
         </div>
         <div className="topbar-stats">
-          <span>Session P&L</span>
-          <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"}>{loading ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}</strong>
-          <span>Football live gate</span>
-          <span>Tennis signal active</span>
+          <div className="live-badge">LIVE</div>
+          <span>P&amp;L</span>
+          <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"} style={{fontFamily:"ui-monospace,monospace", fontSize:"14px"}}>
+            {loading ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}
+          </strong>
+          <span>{predictions.length + tennisMatches.length} events</span>
+          <span>{valueBets.length + tennisValueBets.length > 0 ? `${valueBets.length + tennisValueBets.length} +EV` : "scanning"}</span>
           <span>{lastUpdate || "syncing"}</span>
         </div>
       </section>
@@ -1998,9 +2003,9 @@ export default function Dashboard() {
               <p className="eyebrow">{tab === "overview" ? "Client sportsbook" : navItems.find((n) => n.tab === tab)?.label}</p>
               <h2>
                 {tab === "overview" && "Best decisions now"}
-                {tab === "predictions" && "Football markets"}
-                {tab === "tennis" && "Tennis markets"}
-                {tab === "bets" && "My bets"}
+                {tab === "predictions" && "Football · Dixon-Coles + Pi Rating"}
+                {tab === "tennis" && "Tennis · Elo Surface v2"}
+                {tab === "bets" && "My bets · execution log"}
                 {tab === "history" && "Settled history"}
                 {tab === "agents" && "Desk status"}
               </h2>
