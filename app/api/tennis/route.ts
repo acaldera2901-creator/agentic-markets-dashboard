@@ -2,6 +2,33 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+type TennisPredictionInput = {
+  match_id?: string;
+  id?: string;
+  player1?: string;
+  player2?: string;
+  tournament?: string;
+  surface?: string;
+  round?: string;
+  scheduled_at?: string;
+  scheduled?: string;
+  p1?: number;
+  p2?: number;
+  odds_p1?: number | null;
+  odds_p2?: number | null;
+  edge?: number | null;
+  best_selection?: string | null;
+  model_version?: string;
+  model?: string;
+};
+
+type TennisPrediction = ReturnType<typeof normalizePrediction>;
+
+type RedisTennisPayload = {
+  predictions?: TennisPredictionInput[];
+  computed_at?: string;
+};
+
 const PLACEHOLDER_MATCHES = [
   {
     id: "RG2026_SF1",
@@ -101,7 +128,7 @@ const PLACEHOLDER_MATCHES = [
   },
 ];
 
-async function getFromRedis(): Promise<any | null> {
+async function getFromRedis(): Promise<RedisTennisPayload | null> {
   const kvUrl = process.env.KV_URL || process.env.UPSTASH_REDIS_REST_URL || "";
   const kvToken =
     process.env.KV_REST_API_TOKEN ||
@@ -118,13 +145,13 @@ async function getFromRedis(): Promise<any | null> {
     if (!res.ok) return null;
     const data = await res.json();
     if (!data.result) return null;
-    return JSON.parse(data.result);
+    return JSON.parse(data.result) as RedisTennisPayload;
   } catch {
     return null;
   }
 }
 
-function normalizePrediction(p: any) {
+function normalizePrediction(p: TennisPredictionInput) {
   return {
     id: p.match_id || p.id || "",
     player1: p.player1 || "",
@@ -149,10 +176,10 @@ export async function GET() {
   const redisData = await getFromRedis();
 
   if (redisData && Array.isArray(redisData.predictions) && redisData.predictions.length > 0) {
-    const matches = redisData.predictions.map(normalizePrediction);
+    const matches: TennisPrediction[] = redisData.predictions.map(normalizePrediction);
     const summary = {
       total_today: matches.length,
-      value_bets: matches.filter((m: any) => m.edge != null && m.edge > 0.025).length,
+      value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
       markets_active: matches.length,
       pnl: 0.0,
       source: "live",
