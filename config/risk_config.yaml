@@ -42,4 +42,6 @@ stake:
   max_bet_pct: 0.20          # secondary pct cap (20% of bankroll) — safety net when bankroll grows
 
 ci_width:
-  max_ci_width: 1.0          # CI width ≥ this → factor = 0; 0 → factor = 1.0
+  max_ci_width: 1.5          # CI width ≥ this → factor = 0; 0 → factor = 1.0
+  # Football conformal q_hat ≈ 0.45-0.55 → typical width ≈ 0.9-1.1
+  # 1.0 blocked everything but heavy favourites; 1.5 gives partial credit to balanced matches
