@@ -62,8 +62,10 @@ def get_tennis_catalogue_by_ids(market_ids: list[str]) -> list[dict]:
 
 def get_settled_results(market_ids: list[str]) -> dict[str, str | None]:
     """
-    For each market_id return the selectionId (str) of the WINNER runner,
-    or None if the market is not yet CLOSED.
+    For each market_id return "P1", "P2", or None.
+    P1/P2 = runner position (0-indexed) in the market book — matches the
+    player1/player2 order stored in TennisPrediction.
+    Returns None for markets not yet CLOSED.
     """
     if not market_ids:
         return {}
@@ -74,30 +76,18 @@ def get_settled_results(market_ids: list[str]) -> dict[str, str | None]:
         if book.get("status") != "CLOSED":
             results[mid] = None
             continue
-        winner_sel = None
-        for runner in book.get("runners", []):
+        winner_pos = None
+        for i, runner in enumerate(book.get("runners", [])):
             if runner.get("status") == "WINNER":
-                winner_sel = str(runner.get("selectionId"))
+                winner_pos = i
                 break
-        results[mid] = winner_sel
+        if winner_pos == 0:
+            results[mid] = "P1"
+        elif winner_pos == 1:
+            results[mid] = "P2"
+        else:
+            results[mid] = None
     return results
-
-
-def get_runner_name_map(market_ids: list[str]) -> dict[str, dict[str, str]]:
-    """
-    Returns {market_id: {str(selection_id): runner_name}} for given market IDs.
-    """
-    if not market_ids:
-        return {}
-    catalogues = get_tennis_catalogue_by_ids(market_ids)
-    result: dict[str, dict[str, str]] = {}
-    for cat in catalogues:
-        mid = cat.get("marketId", "")
-        result[mid] = {
-            str(r.get("selectionId", "")): r.get("runnerName", "")
-            for r in cat.get("runners", [])
-        }
-    return result
 
 
 def get_all_tennis_markets() -> list[dict]:

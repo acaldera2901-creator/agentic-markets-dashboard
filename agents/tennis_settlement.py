@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from agents.base import BaseAgent
 from core.betfair_client import is_configured
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
-from core.tennis_betfair_client import get_settled_results, get_runner_name_map
+from core.tennis_betfair_client import get_settled_results
 from models.elo_surface import EloSurfaceModel
 from sqlalchemy import select
 
@@ -80,35 +80,24 @@ class TennisSettlementAgent(BaseAgent):
             self.logger.error(f"get_settled_results error: {e}")
             return 0
 
-        settled_ids = [mid for mid, sel in settled.items() if sel]
-        if not settled_ids:
-            return 0
-
-        try:
-            runner_names = get_runner_name_map(settled_ids)
-        except Exception as e:
-            self.logger.error(f"get_runner_name_map error: {e}")
-            return 0
-
         count = 0
-        for mid in settled_ids:
+        for mid, position in settled.items():
+            if not position:
+                continue
             pred = pred_by_id.get(mid)
             if not pred:
                 continue
 
-            winner_sel = settled[mid]
-            name_map = runner_names.get(mid, {})
-            winner_name = name_map.get(winner_sel, "")
+            # position is "P1" or "P2" — runner order matches player1/player2
+            if position == "P1":
+                outcome = "P1_WIN"
+                winner_name = pred.player1
+                loser_name = pred.player2
+            else:
+                outcome = "P2_WIN"
+                winner_name = pred.player2
+                loser_name = pred.player1
 
-            outcome = self._resolve_outcome(winner_name, pred.player1, pred.player2)
-            if not outcome:
-                self.logger.warning(
-                    f"[SETTLEMENT] cannot match '{winner_name}' to "
-                    f"'{pred.player1}'/'{pred.player2}' (market={mid})"
-                )
-                continue
-
-            loser_name = pred.player2 if outcome == "P1_WIN" else pred.player1
             surface = pred.surface or "hard"
             self._elo.update(winner_name, loser_name, surface)
 
@@ -122,22 +111,6 @@ class TennisSettlementAgent(BaseAgent):
             count += 1
 
         return count
-
-    @staticmethod
-    def _resolve_outcome(winner_name: str, player1: str, player2: str) -> str | None:
-        if not winner_name:
-            return None
-        if winner_name == player1:
-            return "P1_WIN"
-        if winner_name == player2:
-            return "P2_WIN"
-        # Fuzzy fallback: last-name match
-        w_parts = set(winner_name.lower().split())
-        if w_parts & set(player1.lower().split()):
-            return "P1_WIN"
-        if w_parts & set(player2.lower().split()):
-            return "P2_WIN"
-        return None
 
     async def _update_prediction(self, pred_id: int, outcome: str, winner: str):
         async with AsyncSessionLocal() as session:
