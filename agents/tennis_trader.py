@@ -46,12 +46,25 @@ class TennisTraderAgent(BaseAgent):
 
     async def _execute_paper(self, order: dict):
         from core.db import AsyncSessionLocal, TennisBet
+        from sqlalchemy import select
 
         player_name = order.get("player1") if order.get("best_selection") == "P1" else order.get("player2")
         odds = order.get("odds_p1") if order.get("best_selection") == "P1" else order.get("odds_p2")
 
         try:
             async with AsyncSessionLocal() as session:
+                existing = await session.execute(
+                    select(TennisBet).where(
+                        TennisBet.match_id == order["match_id"],
+                        TennisBet.status == "pending",
+                    )
+                )
+                if existing.scalar_one_or_none():
+                    self.logger.warning(
+                        f"[TENNIS] duplicate skipped: pending bet already exists for "
+                        f"{order.get('player1')} vs {order.get('player2')} ({order['match_id']})"
+                    )
+                    return
                 bet = TennisBet(
                     match_id=order["match_id"],
                     selection=order.get("best_selection", "P1"),
@@ -64,7 +77,7 @@ class TennisTraderAgent(BaseAgent):
                 session.add(bet)
                 await session.commit()
                 self.logger.info(
-                    f"PAPER bet: {player_name} @ {odds:.2f} "
+                    f"TENNIS signal: {player_name} @ {odds:.2f} "
                     f"stake={order.get('stake'):.2f}€ edge={order.get('edge', 0):.1%}"
                 )
                 await self._send_alert(order, player_name, odds)
@@ -79,7 +92,7 @@ class TennisTraderAgent(BaseAgent):
             return
         try:
             msg = (
-                f"🎾 [PAPER] TENNIS BET\n"
+                f"🎾 [SIGNAL] TENNIS EDGE\n"
                 f"{order.get('player1')} vs {order.get('player2')}\n"
                 f"▶ {player} @ {odds:.2f}  |  Edge +{edge*100:.1f}%\n"
                 f"Stake: {order.get('stake', 0):.2f}€  |  {order.get('tournament', '')} ({order.get('surface', '').upper()})"

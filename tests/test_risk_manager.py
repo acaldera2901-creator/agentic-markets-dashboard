@@ -17,10 +17,11 @@ class TestKellyStake:
         assert kelly_stake(-0.05, 2.0, 500.0) == 0.0
 
     def test_full_kelly_formula(self):
-        # edge=0.10, odds=2.0, kelly_full=0.10/(2-1)=0.10
-        # fractional = 0.10 * 0.25 * 500 = 12.50
+        # Standard Kelly: f* = edge*odds / (odds-1)
+        # edge=0.10, odds=2.0 → kelly_full = 0.10*2.0/(2-1) = 0.20
+        # fractional = 0.20 * 0.25 * 500 = 25.0
         stake = kelly_stake(0.10, 2.0, 500.0, kelly_fraction=0.25, max_bet_pct=0.10)
-        assert stake == pytest.approx(12.50, rel=1e-3)
+        assert stake == pytest.approx(25.0, rel=1e-3)
 
     def test_cap_applied(self):
         # Very large edge → stake capped at max_bet_pct * bankroll
@@ -34,8 +35,10 @@ class TestKellyStake:
         assert fractional < full
 
     def test_legacy_test_still_passes(self):
+        # Standard Kelly: edge=0.05, odds=3.0 → kelly_full = 0.05*3.0/(3-1) = 0.075
+        # fractional = 0.075 * 0.25 * 500 = 9.375 → capped at max_bet_pct(3%)*500 = 15
         stake = kelly_stake(edge=0.05, odds=3.0, bankroll=500.0, kelly_fraction=0.25)
-        assert abs(stake - 3.125) < 0.1  # allow for cap rounding
+        assert abs(stake - 9.375) < 0.1
 
     def test_legacy_capped_at_max_fraction(self):
         stake = kelly_stake(edge=0.4, odds=2.0, bankroll=500.0, kelly_fraction=0.25, max_bet_pct=0.02)
