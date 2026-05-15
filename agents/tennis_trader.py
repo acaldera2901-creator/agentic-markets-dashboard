@@ -59,7 +59,7 @@ class TennisTraderAgent(BaseAgent):
                         TennisBet.status == "pending",
                     )
                 )
-                if existing.scalar_one_or_none():
+                if existing.scalars().first():
                     self.logger.warning(
                         f"[TENNIS] duplicate skipped: pending bet already exists for "
                         f"{order.get('player1')} vs {order.get('player2')} ({order['match_id']})"
