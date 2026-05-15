@@ -1897,9 +1897,10 @@ export default function Dashboard() {
       const resp = await fetch("/api/tennis");
       if (resp.ok) {
         const data = await resp.json();
-        setTennisMatches(data.matches ?? []);
-        setTennisSummary(data.summary ?? null);
-        setTennisComputedAt(data.computed_at ?? null);
+        const isPlaceholder = data.source === "placeholder" || data.is_placeholder === true;
+        setTennisMatches(isPlaceholder ? [] : (data.matches ?? []));
+        setTennisSummary(isPlaceholder ? null : (data.summary ?? null));
+        setTennisComputedAt(isPlaceholder ? null : (data.computed_at ?? null));
       }
     } catch { /**/ } finally { setTennisLoading(false); }
   }, []);

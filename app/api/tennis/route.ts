@@ -275,9 +275,9 @@ export async function GET() {
 
   // Fallback to placeholder data — live mode requires Redis/Upstash connection
   const summary = {
-    total_today: 12,
-    value_bets: PLACEHOLDER_MATCHES.filter((m) => m.edge != null && m.edge > 0.025).length,
-    markets_active: 28,
+    total_today: 0,
+    value_bets: 0,
+    markets_active: 0,
     pnl: 0.0,
     source: "placeholder",
   };
@@ -285,8 +285,9 @@ export async function GET() {
   return NextResponse.json({
     matches: PLACEHOLDER_MATCHES,
     summary,
-    status: "paper",
+    status: "offline",
     computed_at: now,
     source: "placeholder",
+    is_placeholder: true,
   });
 }
