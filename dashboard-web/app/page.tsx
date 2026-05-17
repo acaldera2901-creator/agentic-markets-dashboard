@@ -1366,14 +1366,14 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
   tennisBetSummary?: TennisBetSummary | null;
 }) {
   const [filter, setFilter] = useState<string>("live");
-  const [paperOnly, setPaperOnly] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   const realBets   = bets.filter((b) => !FAILED_STATUSES.includes(b.status));
   const failedBets = bets.filter((b) => FAILED_STATUSES.includes(b.status));
 
   const filtered = (filter === "failed" ? failedBets : realBets).filter((b) => {
     if (filter !== "live" && filter !== "failed" && b.status !== filter) return false;
-    if (paperOnly && !b.paper) return false;
+    if (!showDemo && b.paper) return false;
     return true;
   });
 
@@ -1441,11 +1441,11 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
             Failed ({failedBets.length})
           </button>
         )}
-        <button onClick={() => setPaperOnly(!paperOnly)}
+        <button onClick={() => setShowDemo(!showDemo)}
           className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-            paperOnly ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-white/10 text-gray-400"
+            showDemo ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-white/10 text-gray-400"
           }`}>
-          Demo only
+          {showDemo ? "Hide Demo" : "Show Demo"}
         </button>
       </div>
 
@@ -1515,10 +1515,10 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
       )}
 
       {/* ── Tennis Bets ── */}
-      {tennisBets.length > 0 && (
+      {tennisBets.filter((tb) => showDemo || !tb.paper).length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider">🎾 Tennis Signals</h3>
+            <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider">🎾 Tennis Bets</h3>
             {tennisBetSummary && (
               <span className="text-xs font-mono text-gray-500">
                 {tennisBetSummary.pending} open · {tennisBetSummary.won}W/{tennisBetSummary.lost}L ·{" "}
@@ -1528,7 +1528,7 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
               </span>
             )}
           </div>
-          {tennisBets.slice(0, 30).map((tb) => (
+          {tennisBets.filter((tb) => showDemo || !tb.paper).slice(0, 30).map((tb) => (
             <div key={tb.id} className={`glass-card p-4 ${
               tb.status === "won" ? "border-green-400/20" :
               tb.status === "lost" ? "border-red-400/20" : ""
