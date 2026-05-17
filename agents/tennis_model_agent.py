@@ -34,9 +34,30 @@ class TennisModelAgent(BaseAgent):
         self.model_version = "elo_v2"
 
     async def _main_loop(self) -> None:
+        await self._load_elo_ratings()
         while self._running:
             await self._compute_cycle()
             await asyncio.sleep(300)
+
+    async def _load_elo_ratings(self) -> None:
+        try:
+            from core.db import AsyncSessionLocal, EloRating
+            from sqlalchemy import select
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(select(EloRating))
+                rows = result.scalars().all()
+                for row in rows:
+                    self.elo.ratings[row.player] = {
+                        "overall": row.overall, "clay": row.clay,
+                        "grass": row.grass, "hard": row.hard,
+                        "clay_matches": row.clay_matches,
+                        "grass_matches": row.grass_matches,
+                        "hard_matches": row.hard_matches,
+                        "matches": row.matches,
+                    }
+            self.logger.info(f"TennisModelAgent: loaded {len(self.elo.ratings)} Elo ratings from DB")
+        except Exception as e:
+            self.logger.error(f"_load_elo_ratings failed: {e}")
 
     async def _compute_cycle(self):
         r = await get_redis()
@@ -111,7 +132,23 @@ class TennisModelAgent(BaseAgent):
             "best_selection": best_selection,
             "model_version": self.model_version,
             "computed_at": datetime.now(timezone.utc).isoformat(),
+            "selection_id_p1": market.get("selection_id_p1"),
+            "selection_id_p2": market.get("selection_id_p2"),
         }
+
+    @staticmethod
+    def _parse_datetime(value):
+        if isinstance(value, datetime) or value is None:
+            return value
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return parsed
+        except ValueError:
+            return None
 
     def _infer_surface(self, competition: str) -> str:
         comp_lower = competition.lower()
@@ -136,14 +173,15 @@ class TennisModelAgent(BaseAgent):
                         surface=p.get("surface", "hard"),
                         player1=p["player1"],
                         player2=p["player2"],
-                        scheduled_at=p.get("scheduled_at"),
+                        scheduled_at=self._parse_datetime(p.get("scheduled_at")),
                         p1=p["p1"], p2=p["p2"],
                         odds_p1=p.get("odds_p1"), odds_p2=p.get("odds_p2"),
                         edge=p.get("edge"),
                         best_selection=p.get("best_selection"),
                         model_version=p.get("model_version", "elo_v2"),
+                        computed_at=self._parse_datetime(p.get("computed_at")),
                     )
-                    await session.merge(pred)
+                    session.add(pred)
                 await session.commit()
         except Exception as e:
             self.logger.error(f"_save_to_db error: {e}")

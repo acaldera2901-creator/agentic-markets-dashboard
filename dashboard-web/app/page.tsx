@@ -2043,7 +2043,7 @@ export default function Dashboard() {
     }
   }, [tab, history.length, fetchHistory]);
 
-  const pnl = summary?.pnl ?? 0;
+  const pnl = (summary?.pnl ?? 0) + (tennisBetSummary?.pnl ?? 0);
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
   const aliveAgents = agents.filter((a) => a.status === "alive").length;
   const totalAgents = agents.length || 16;
