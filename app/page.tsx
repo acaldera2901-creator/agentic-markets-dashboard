@@ -194,6 +194,33 @@ type SlipSelection = {
   recommendedStake: number;
 };
 
+interface TennisBet {
+  id: number;
+  match_id: string;
+  selection: string;
+  player_name: string | null;
+  odds: number;
+  stake: number;
+  paper: boolean;
+  status: string;
+  profit_loss: number | null;
+  placed_at: string;
+  betfair_bet_id: string | null;
+  tournament: string | null;
+  surface: string | null;
+  player1: string | null;
+  player2: string | null;
+  scheduled_at: string | null;
+}
+
+interface TennisBetSummary {
+  total: number;
+  won: number;
+  lost: number;
+  pending: number;
+  pnl: number;
+}
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function pct(v: number) { return `${Math.round(v * 100)}%`; }
@@ -1331,16 +1358,22 @@ function ClientStatusTab({
 
 const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled"];
 
-function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; leaguePnl: LeaguePnl[] }) {
+function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }: {
+  bets: Bet[];
+  summary: Summary;
+  leaguePnl: LeaguePnl[];
+  tennisBets?: TennisBet[];
+  tennisBetSummary?: TennisBetSummary | null;
+}) {
   const [filter, setFilter] = useState<string>("live");
-  const [paperOnly, setPaperOnly] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   const realBets   = bets.filter((b) => !FAILED_STATUSES.includes(b.status));
   const failedBets = bets.filter((b) => FAILED_STATUSES.includes(b.status));
 
   const filtered = (filter === "failed" ? failedBets : realBets).filter((b) => {
     if (filter !== "live" && filter !== "failed" && b.status !== filter) return false;
-    if (paperOnly && !b.paper) return false;
+    if (!showDemo && b.paper) return false;
     return true;
   });
 
@@ -1408,11 +1441,11 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
             Failed ({failedBets.length})
           </button>
         )}
-        <button onClick={() => setPaperOnly(!paperOnly)}
+        <button onClick={() => setShowDemo(!showDemo)}
           className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-            paperOnly ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-white/10 text-gray-400"
+            showDemo ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-white/10 text-gray-400"
           }`}>
-          Demo only
+          {showDemo ? "Hide Demo" : "Show Demo"}
         </button>
       </div>
 
@@ -1478,6 +1511,60 @@ function BetsTab({ bets, summary, leaguePnl }: { bets: Bet[]; summary: Summary; 
             </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Tennis Bets ── */}
+      {tennisBets.filter((tb) => showDemo || !tb.paper).length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider">🎾 Tennis Bets</h3>
+            {tennisBetSummary && (
+              <span className="text-xs font-mono text-gray-500">
+                {tennisBetSummary.pending} open · {tennisBetSummary.won}W/{tennisBetSummary.lost}L ·{" "}
+                <span className={tennisBetSummary.pnl >= 0 ? "text-green-400" : "text-red-400"}>
+                  {tennisBetSummary.pnl >= 0 ? "+" : ""}{tennisBetSummary.pnl.toFixed(2)}€
+                </span>
+              </span>
+            )}
+          </div>
+          {tennisBets.filter((tb) => showDemo || !tb.paper).slice(0, 30).map((tb) => (
+            <div key={tb.id} className={`glass-card p-4 ${
+              tb.status === "won" ? "border-green-400/20" :
+              tb.status === "lost" ? "border-red-400/20" : ""
+            }`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-white">
+                      {tb.player1 && tb.player2 ? `${tb.player1} vs ${tb.player2}` : tb.match_id}
+                    </span>
+                    {tb.tournament && (
+                      <span className="text-xs text-gray-500 font-mono">🎾 {tb.tournament}</span>
+                    )}
+                    {tb.surface && (
+                      <span className="text-xs px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-300 font-mono">{tb.surface}</span>
+                    )}
+                    <span className="text-xs font-mono text-yellow-400">[DEMO]</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    <span className="text-xs font-mono text-cyan-300 font-bold">{tb.player_name ?? tb.selection}</span>
+                    <span className="text-xs font-mono text-gray-400">@ {Number(tb.odds).toFixed(2)}</span>
+                    <span className="text-xs font-mono text-gray-400">stake: {Number(tb.stake).toFixed(2)}€</span>
+                    {tb.profit_loss != null && (
+                      <span className={`text-xs font-mono font-bold ${tb.profit_loss >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {tb.profit_loss >= 0 ? "+" : ""}{tb.profit_loss.toFixed(2)}€
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <StatusBadge status={tb.status} />
+                </div>
+              </div>
+              <div className="text-[10px] text-gray-700 font-mono mt-2">Placed: {timeAgo(tb.placed_at)}</div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -1844,6 +1931,8 @@ export default function Dashboard() {
   const [tennisMatches, setTennisMatches] = useState<TennisMatch[]>([]);
   const [tennisSummary, setTennisSummary] = useState<TennisSummary | null>(null);
   const [tennisComputedAt, setTennisComputedAt] = useState<string | null>(null);
+  const [tennisBets, setTennisBets] = useState<TennisBet[]>([]);
+  const [tennisBetSummary, setTennisBetSummary] = useState<TennisBetSummary | null>(null);
   const [computedAt, setComputedAt] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryMatch[]>([]);
   const [historyStats, setHistoryStats] = useState<HistoryStats | null>(null);
@@ -1857,13 +1946,21 @@ export default function Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const resp = await fetch("/api/data");
-      if (resp.ok) {
-        const data = await resp.json();
+      const [dataResp, tennisBetsResp] = await Promise.all([
+        fetch("/api/data"),
+        fetch("/api/tennis-bets"),
+      ]);
+      if (dataResp.ok) {
+        const data = await dataResp.json();
         setSummary(data.summary);
         setBets(data.bets ?? []);
         setLeaguePnl(data.league_pnl ?? []);
         setLastUpdate(new Date().toLocaleTimeString());
+      }
+      if (tennisBetsResp.ok) {
+        const tb = await tennisBetsResp.json();
+        setTennisBets(tb.bets ?? []);
+        setTennisBetSummary(tb.summary ?? null);
       }
     } catch { /**/ } finally { setLoading(false); }
   }, []);
@@ -1946,7 +2043,7 @@ export default function Dashboard() {
     }
   }, [tab, history.length, fetchHistory]);
 
-  const pnl = summary?.pnl ?? 0;
+  const pnl = (summary?.pnl ?? 0) + (tennisBetSummary?.pnl ?? 0);
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
   const aliveAgents = agents.filter((a) => a.status === "alive").length;
   const totalAgents = agents.length || 16;
@@ -1956,7 +2053,7 @@ export default function Dashboard() {
     { tab: "overview",     label: "Edge Desk",  value: String(valueBets.length + tennisValueBets.length), tone: "green" },
     { tab: "predictions",  label: "Football",   value: String(predictions.length) },
     { tab: "tennis",       label: "Tennis",     value: String(tennisMatches.length), tone: "amber" },
-    { tab: "bets",         label: "My Bets",    value: String(summary?.pending ?? 0), tone: (summary?.pending ?? 0) > 0 ? "green" : undefined },
+    { tab: "bets",         label: "My Bets",    value: String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)), tone: ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
     { tab: "history",      label: "History",    value: String(historyStats?.total_matches ?? history.length) },
     { tab: "agents",       label: "Status",     value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
   ];
@@ -1993,8 +2090,8 @@ export default function Dashboard() {
             {refreshing ? "Computing..." : "Refresh odds"}
           </button>
           <div className="rail-note">
-            <strong>Client rule</strong>
-            <span>Football is live only with Betfair betId. Tennis remains signal-only until execution mapping is fully verified.</span>
+            <strong>Execution</strong>
+            <span>Football: live via Betfair betId. Tennis: paper signals, Elo v2 model.</span>
           </div>
         </aside>
 
@@ -2058,7 +2155,7 @@ export default function Dashboard() {
             <BetsTab bets={bets} summary={summary ?? {
               total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
               win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
-            }} leaguePnl={leaguePnl} />
+            }} leaguePnl={leaguePnl} tennisBets={tennisBets} tennisBetSummary={tennisBetSummary} />
           )}
           {tab === "history" && (
             <HistoryTab
