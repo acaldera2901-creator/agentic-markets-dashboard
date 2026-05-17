@@ -124,10 +124,14 @@ class TennisTraderAgent(BaseAgent):
             await self._execute_paper(order)
             return
 
-        if await self._check_duplicate(market_id):
-            self.logger.warning(
-                f"[LIVE TENNIS] duplicate skipped: {order.get('player1')} vs {order.get('player2')} ({market_id})"
-            )
+        try:
+            if await self._check_duplicate(market_id):
+                self.logger.warning(
+                    f"[LIVE TENNIS] duplicate skipped: {order.get('player1')} vs {order.get('player2')} ({market_id})"
+                )
+                return
+        except Exception as e:
+            self.logger.error(f"[LIVE TENNIS] _check_duplicate error: {e} — skipping {market_id}")
             return
 
         try:
