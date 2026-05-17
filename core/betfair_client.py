@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 _session_token: str | None = None
 
 BETTING_ENDPOINT = "https://api.betfair.com/exchange/betting/rest/v1.0"
+ACCOUNT_ENDPOINT = "https://api.betfair.com/exchange/account/rest/v1.0"
 
 
 def _login() -> str:
@@ -54,6 +55,18 @@ def _headers() -> dict:
     }
 
 
+_SESSION_ERROR_CODES = {"NO_SESSION", "INVALID_SESSION_INFORMATION", "DSC-0015", "DSC-0018"}
+
+
+def _is_session_error(resp: requests.Response) -> bool:
+    """Return True if a non-401 response body signals a stale Betfair session."""
+    try:
+        body = resp.text
+        return any(code in body for code in _SESSION_ERROR_CODES)
+    except Exception:
+        return False
+
+
 def _call(endpoint: str, payload: dict) -> dict:
     global _session_token
     headers = _headers()
@@ -63,8 +76,8 @@ def _call(endpoint: str, payload: dict) -> dict:
         json=payload,
         timeout=15,
     )
-    # Re-auth once on 401
-    if resp.status_code == 401:
+    # Re-auth once on 401 or on 400/403 that carries a session error code
+    if resp.status_code == 401 or (resp.status_code in (400, 403) and _is_session_error(resp)):
         _session_token = _login()
         headers = _headers()
         resp = requests.post(
@@ -75,6 +88,40 @@ def _call(endpoint: str, payload: dict) -> dict:
         )
     resp.raise_for_status()
     return resp.json()
+
+
+def _account_call(endpoint: str, payload: dict | None = None) -> dict:
+    global _session_token
+    headers = _headers()
+    resp = requests.post(
+        f"{ACCOUNT_ENDPOINT}/{endpoint}/",
+        headers=headers,
+        json=payload or {},
+        timeout=15,
+    )
+    if resp.status_code == 401:
+        _session_token = _login()
+        headers = _headers()
+        resp = requests.post(
+            f"{ACCOUNT_ENDPOINT}/{endpoint}/",
+            headers=headers,
+            json=payload or {},
+            timeout=15,
+        )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_account_funds() -> dict:
+    """Return Betfair account funds. Never log credentials or session tokens."""
+    return _account_call("getAccountFunds", {})
+
+
+def list_current_orders(bet_ids: list[str] | None = None) -> dict:
+    payload: dict = {}
+    if bet_ids:
+        payload["betIds"] = bet_ids
+    return _call("listCurrentOrders", payload)
 
 
 def is_configured() -> bool:
@@ -161,6 +208,21 @@ def get_market_odds(market_id: str) -> dict:
             "exBestOffersOverrides": {"bestPricesDepth": 3},
         },
     })
+
+
+def get_best_back_price(market_id: str, selection_id: int) -> float | None:
+    """Return the current best available BACK price for one runner."""
+    book = get_market_odds(market_id)
+    if not book:
+        return None
+    for runner in book[0].get("runners", []):
+        if int(runner.get("selectionId", 0)) != int(selection_id):
+            continue
+        backs = runner.get("ex", {}).get("availableToBack", [])
+        if not backs:
+            return None
+        return float(backs[0]["price"])
+    return None
 
 
 def place_bet(market_id: str, selection_id: int, odds: float, stake: float) -> dict:

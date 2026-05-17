@@ -61,12 +61,15 @@ class TennisSettlementAgent(BaseAgent):
             self.logger.info(f"[SETTLEMENT] settled {updated} match(es), Elo ratings saved")
 
     async def _get_unsettled_predictions(self) -> list:
-        cutoff = datetime.utcnow() - timedelta(hours=SETTLEMENT_DELAY_HOURS)
+        now = datetime.utcnow()
+        cutoff = now - timedelta(hours=SETTLEMENT_DELAY_HOURS)
+        max_age = now - timedelta(days=7)  # don't chase expired Betfair market IDs
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(TennisPrediction).where(
                     TennisPrediction.outcome.is_(None),
                     TennisPrediction.computed_at <= cutoff,
+                    TennisPrediction.computed_at >= max_age,
                 )
             )
             return result.scalars().all()

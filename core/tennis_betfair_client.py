@@ -14,11 +14,17 @@ def list_tennis_markets(days_ahead: int = 2) -> list[dict]:
     Return upcoming tennis MATCH_ODDS markets from Betfair Exchange.
     Uses eventTypeIds=["2"] (Tennis).
     """
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    end = now + timedelta(days=days_ahead)
     return _call("listMarketCatalogue", {
         "filter": {
             "eventTypeIds": ["2"],
             "marketTypeCodes": ["MATCH_ODDS"],
-            "inPlayOnly": False,
+            "marketStartTime": {
+                "from": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            },
         },
         "marketProjection": ["COMPETITION", "EVENT", "MARKET_START_TIME", "RUNNER_DESCRIPTION"],
         "sort": "FIRST_TO_START",
