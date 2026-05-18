@@ -16,6 +16,7 @@ from agents.tennis_analyst import TennisAnalystAgent
 from agents.tennis_risk_manager import TennisRiskManagerAgent
 from agents.tennis_trader import TennisTraderAgent
 from agents.tennis_settlement import TennisSettlementAgent
+from agents.tennis_research_agent import TennisResearchAgent
 from core.db import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +43,7 @@ async def main():
         TennisRiskManagerAgent(),
         TennisTraderAgent(),
         TennisSettlementAgent(),
+        TennisResearchAgent(),
     ]
     await asyncio.gather(*[agent.run() for agent in agents])
 
