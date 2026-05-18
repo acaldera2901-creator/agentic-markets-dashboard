@@ -234,6 +234,10 @@ button:disabled {
   align-items: start;
 }
 
+.book-layout.no-betslip {
+  grid-template-columns: 210px minmax(0, 1fr);
+}
+
 .sports-rail,
 .book-main,
 .betslip,
@@ -1125,98 +1129,6 @@ button:disabled {
   line-height: 1.45;
 }
 
-/* ── Why center ──────────────────────────────────────────────── */
-
-.why-center {
-  display: grid;
-  gap: 14px;
-}
-
-.why-hero,
-.why-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(140,145,255,0.035);
-}
-
-.why-hero {
-  padding: 20px;
-  border-left: 2px solid var(--green);
-}
-
-.why-hero span {
-  display: block;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.why-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.why-card {
-  padding: 16px;
-  display: grid;
-  gap: 14px;
-}
-
-.why-card-head span,
-.why-card-head em {
-  color: var(--muted-2);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.why-card-head strong {
-  display: block;
-  margin-top: 6px;
-  color: var(--text);
-  font-size: 15px;
-}
-
-.why-card-head em {
-  display: block;
-  margin-top: 6px;
-  color: var(--green);
-  font-style: normal;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.why-reasons {
-  display: grid;
-  gap: 8px;
-}
-
-.why-reasons div {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
-}
-
-.why-reasons span {
-  color: var(--green);
-  font-size: 10px;
-  font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.why-reasons p {
-  margin: 0;
-  color: rgba(237,241,255,0.72);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 /* ── Profile / upgrade ──────────────────────────────────────── */
 
 .profile-panel {
@@ -1953,6 +1865,10 @@ button:disabled {
 
 @media (max-width: 1200px) {
   .book-layout {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+
+  .book-layout.no-betslip {
     grid-template-columns: 160px minmax(0, 1fr);
   }
 

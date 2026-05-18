@@ -152,7 +152,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "overview" | "portfolio" | "plans" | "predictions" | "why" | "tennis" | "bets" | "history" | "settings" | "agents";
+type Tab = "overview" | "portfolio" | "plans" | "predictions" | "tennis" | "bets" | "history" | "settings" | "agents";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -1428,69 +1428,6 @@ function bestFootballSelection(p: Prediction) {
   return map[p.best_selection as keyof typeof map] ?? null;
 }
 
-function WhyCenterTab({ predictions, tennisMatches }: { predictions: Prediction[]; tennisMatches: TennisMatch[] }) {
-  const topFootball = predictions
-    .filter((p) => p.edge != null && p.edge > 0.03)
-    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))
-    .slice(0, 6);
-  const topTennis = tennisMatches
-    .filter((m) => m.edge != null && m.edge > 0.025)
-    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))
-    .slice(0, 4);
-
-  return (
-    <div className="why-center">
-      <section className="why-hero">
-        <div>
-          <p className="eyebrow">Why center</p>
-          <h3>Ogni bet deve spiegare perche esiste</h3>
-          <span>Il Base non vende segnali ciechi: mostra probabilita, quota, edge, rischio e fattori principali.</span>
-        </div>
-      </section>
-      <div className="why-grid">
-        {topFootball.map((p) => {
-          const selection = bestFootballSelection(p);
-          const reasons = buildReasons(p).slice(0, 4);
-          return (
-            <article key={p.match_id} className="why-card">
-              <div className="why-card-head">
-                <span>{p.league}</span>
-                <strong>{p.home_team} vs {p.away_team}</strong>
-                <em>{selection?.name ?? "Wait"} @ {selection?.odds?.toFixed(2) ?? "-"} · edge +{((p.edge ?? 0) * 100).toFixed(1)}%</em>
-              </div>
-              <div className="why-reasons">
-                {reasons.map((reason, index) => (
-                  <div key={index}>
-                    <span>{reason.icon}</span>
-                    <p>{reason.text}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          );
-        })}
-        {topTennis.map((m) => (
-          <article key={m.id} className="why-card">
-            <div className="why-card-head">
-              <span>{m.surface}</span>
-              <strong>{m.player1} vs {m.player2}</strong>
-              <em>{m.best_selection === "P1" ? m.player1 : m.player2} · edge +{((m.edge ?? 0) * 100).toFixed(1)}%</em>
-            </div>
-            <div className="why-reasons">
-              <div><span>MODEL</span><p>Elo Surface v2 pesa superficie, forma recente e differenziale quote.</p></div>
-              <div><span>EDGE</span><p>Il modello vede una probabilita superiore a quella implicita nella quota.</p></div>
-              <div><span>RISK</span><p>Il segnale resta manuale nel Base: nessun agente piazza in automatico.</p></div>
-            </div>
-          </article>
-        ))}
-        {!topFootball.length && !topTennis.length && (
-          <div className="book-empty">Nessun razionale +EV disponibile ora. Il motore continua a scansionare.</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Prediction "Why" Reasoning ───────────────────────────────────────────────
 
 interface Reason { icon: string; text: string; highlight?: boolean }
@@ -1678,11 +1615,22 @@ function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
   );
 }
 
+const LEAGUE_BADGE_COLORS: Record<string, string> = {
+  PL:  "text-violet-400 border-violet-400/40 bg-violet-400/10",
+  SA:  "text-blue-400 border-blue-400/40 bg-blue-400/10",
+  PD:  "text-red-400 border-red-400/40 bg-red-400/10",
+  BL1: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10",
+  FL1: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
+  CL:  "text-amber-300 border-amber-300/40 bg-amber-300/10",
+  EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
+};
+
 function PredictionCard({ p }: { p: Prediction }) {
   const [showWhy, setShowWhy] = useState(false);
   const hasOdds = p.odds_home != null;
   const isValueBet = p.edge != null && p.edge > 0.03;
   const e = p.enrichment ?? {};
+  const leagueBadgeColor = LEAGUE_BADGE_COLORS[p.league] ?? "text-gray-400 border-gray-400/40 bg-gray-400/10";
 
   const betRec = isValueBet && hasOdds && p.best_selection ? (() => {
     const selOdds = p.best_selection === "HOME" ? p.odds_home : p.best_selection === "DRAW" ? p.odds_draw : p.odds_away;
@@ -1703,10 +1651,13 @@ function PredictionCard({ p }: { p: Prediction }) {
       >
         <div className="flex items-start justify-between gap-2">
           <div>
-            <span className="text-xs font-mono text-gray-500">
-              {LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}
-            </span>
-            <div className="text-sm font-bold text-white mt-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${leagueBadgeColor}`}>
+                {p.league}
+              </span>
+              <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
+            </div>
+            <div className="text-sm font-bold text-white mt-1">
               {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
             </div>
           </div>
@@ -1721,7 +1672,7 @@ function PredictionCard({ p }: { p: Prediction }) {
             )}
             {e.research && (
               <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">
-                🤖 AI
+                AI
               </span>
             )}
           </div>
@@ -1772,16 +1723,15 @@ function PredictionCard({ p }: { p: Prediction }) {
           </div>
         )}
 
-        <div className="text-[10px] text-gray-700 font-mono text-center">tap to see why →</div>
-
-        <div className="flex items-center justify-between text-xs text-gray-600 font-mono pt-1 border-t border-white/5">
-          <span>λ {p.lambda_home?.toFixed(1) ?? "?"} – {p.lambda_away?.toFixed(1) ?? "?"}</span>
-          {p.edge != null && (
-            <span className={p.edge > 0 ? "text-green-500" : "text-red-500"}>
-              edge {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
+        <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
+          <span className="text-gray-600">Dixon-Coles · λ {p.lambda_home?.toFixed(1) ?? "?"}/{p.lambda_away?.toFixed(1) ?? "?"}</span>
+          {p.edge != null ? (
+            <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${p.edge > 0.03 ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
+              {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
             </span>
+          ) : (
+            <span className="text-gray-600">no edge</span>
           )}
-          <span>{p.model_matches ?? "?"} matches</span>
         </div>
       </div>
 
@@ -2948,12 +2898,11 @@ export default function Dashboard() {
     { tab: "portfolio",    label: "Portfolio",  value: isPremiumClient ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : "PRO", tone: isPremiumClient ? "green" : undefined },
     { tab: "plans",        label: "Plans",      value: "2", tone: "amber" },
     { tab: "predictions",  label: "Best Bets",  value: isClientUnlocked ? String(predictions.length + tennisMatches.length) : "LOCK" },
-    { tab: "why",          label: "Why",        value: isClientUnlocked ? String(valueBets.length + tennisValueBets.length) : "LOCK" },
     { tab: "tennis",       label: "Tennis",     value: isClientUnlocked ? String(tennisMatches.length) : "LOCK", tone: isClientUnlocked ? "amber" : undefined },
     { tab: "bets",         label: "Bets",       value: isPremiumClient ? String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) : "PRO", tone: isPremiumClient && ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
-    { tab: "history",      label: "Storico",    value: isClientUnlocked ? String(historyStats?.total_matches ?? history.length) : "LOCK" },
+    { tab: "history",      label: "Storico",    value: isPremiumClient ? String(historyStats?.total_matches ?? history.length) : "PRO" },
     { tab: "settings",     label: "Settings",   value: clientProfile ? (isPremiumClient ? "PRO" : "SET") : "LOGIN" },
-    { tab: "agents",       label: "Status",     value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
+    { tab: "agents",       label: "Status",     value: isPremiumClient ? (aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}`) : "PRO" },
   ];
 
   return (
@@ -2981,7 +2930,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="book-layout">
+      <section className={`book-layout${isPremiumClient ? "" : " no-betslip"}`}>
         <aside className="sports-rail">
           <div className="rail-title">Desk</div>
           {navItems.map((item) => (
@@ -2989,7 +2938,7 @@ export default function Dashboard() {
               key={item.tab}
               className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
               onClick={() => {
-                if (!isClientUnlocked && ["portfolio", "predictions", "why", "tennis", "bets", "history"].includes(item.tab)) {
+                if (!isClientUnlocked && ["portfolio", "predictions", "tennis", "bets", "history", "agents"].includes(item.tab)) {
                   setTab(item.tab);
                   openAuth("login");
                   return;
@@ -3019,7 +2968,6 @@ export default function Dashboard() {
                 {tab === "portfolio" && "Client portfolio"}
                 {tab === "plans" && "Client plans"}
                 {tab === "predictions" && "Best bets · Signal Desk"}
-                {tab === "why" && "Why this bet"}
                 {tab === "tennis" && "Tennis · Elo Surface v2"}
                 {tab === "bets" && "Execution log"}
                 {tab === "history" && "Storico settled"}
@@ -3050,7 +2998,7 @@ export default function Dashboard() {
                 <SportsbookBoard
                   predictions={predictions}
                   tennisMatches={tennisMatches}
-                  onSelect={setSlipSelection}
+                  onSelect={isPremiumClient ? setSlipSelection : () => undefined}
                 />
               </>
             ) : (
@@ -3122,13 +3070,8 @@ export default function Dashboard() {
               <SportsbookBoard
                 predictions={predictions}
                 tennisMatches={tennisMatches}
-                onSelect={setSlipSelection}
+                onSelect={isPremiumClient ? setSlipSelection : () => undefined}
               />
-            </LockedGate>
-          )}
-          {tab === "why" && (
-            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
-              <WhyCenterTab predictions={predictions} tennisMatches={tennisMatches} />
             </LockedGate>
           )}
           {tab === "bets" && (
@@ -3150,11 +3093,20 @@ export default function Dashboard() {
           )}
           {tab === "history" && (
             <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
-              <HistoryTab
-                history={history}
-                stats={historyStats}
-                loading={historyLoading}
-              />
+              {isPremiumClient ? (
+                <HistoryTab
+                  history={history}
+                  stats={historyStats}
+                  loading={historyLoading}
+                />
+              ) : (
+                <div className="premium-gate-card">
+                  <p className="eyebrow">Piano Premium</p>
+                  <h3>Storico scommesse</h3>
+                  <p>Lo storico dei settled e le performance storiche del modello sono disponibili solo con il Piano Premium. Nel Piano Base hai accesso ai segnali in tempo reale.</p>
+                  <button onClick={() => setTab("plans")}>Passa a Premium · €199/mese</button>
+                </div>
+              )}
             </LockedGate>
           )}
           {tab === "settings" && (
@@ -3165,17 +3117,28 @@ export default function Dashboard() {
             />
           )}
           {tab === "agents" && (
-            <ClientStatusTab
-              agents={agents}
-              bets={isPremiumClient ? bets : []}
-              tennisSummary={tennisSummary}
-              computedAt={computedAt}
-              tennisComputedAt={tennisComputedAt}
-            />
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
+              {isPremiumClient ? (
+                <ClientStatusTab
+                  agents={agents}
+                  bets={bets}
+                  tennisSummary={tennisSummary}
+                  computedAt={computedAt}
+                  tennisComputedAt={tennisComputedAt}
+                />
+              ) : (
+                <div className="premium-gate-card">
+                  <p className="eyebrow">Piano Premium</p>
+                  <h3>Status agenti</h3>
+                  <p>Il monitoraggio degli agenti, l&apos;esecuzione live e l&apos;audit di sistema sono disponibili solo con il Piano Premium.</p>
+                  <button onClick={() => setTab("plans")}>Passa a Premium · €199/mese</button>
+                </div>
+              )}
+            </LockedGate>
           )}
         </section>
 
-        {isClientUnlocked && (
+        {isPremiumClient && (
           <BetSlip
             key={slipSelection ? `${slipSelection.sport}-${slipSelection.id}-${slipSelection.selection}` : "empty-slip"}
             selection={slipSelection}
