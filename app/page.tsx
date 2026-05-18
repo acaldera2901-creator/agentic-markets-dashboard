@@ -1016,37 +1016,18 @@ function CryptoPaymentBox({
 }: {
   profile: ClientProfile | null;
   plan: "base" | "premium";
-  onSubmit: (plan: "base" | "premium", txHash: string) => void;
+  onSubmit: (plan: "base" | "premium") => void;
 }) {
-  const [txHash, setTxHash] = useState(profile?.requestedPlan === plan ? profile.txHash ?? "" : "");
   const price = PLAN_PRICES[plan];
-  const canShowWallet = Boolean(profile);
   return (
     <div className="crypto-pay-box">
       <div>
         <span>USDT TRC20</span>
-        <strong>{price.eur} EUR equivalent</strong>
-        <em>{canShowWallet ? "Send payment, paste transaction hash, account becomes pending review." : "Create or login before seeing payment details."}</em>
+        <strong>{price.eur} EUR / mese</strong>
+        {!profile && <em>Crea un profilo o accedi per selezionare il piano.</em>}
       </div>
-      {canShowWallet ? (
-        <>
-          <div className="wallet-line">
-            <span>Wallet</span>
-            <code>{USDT_TRC20_ADDRESS}</code>
-          </div>
-          <label>
-            <span>TX Hash</span>
-            <input value={txHash} onChange={(event) => setTxHash(event.target.value)} placeholder="Paste TRON transaction hash" />
-          </label>
-        </>
-      ) : (
-        <div className="wallet-locked">
-          <span>Wallet locked</span>
-          <strong>Login required</strong>
-        </div>
-      )}
-      <button disabled={!profile || txHash.trim().length < 8} onClick={() => onSubmit(plan, txHash.trim())}>
-        {profile ? "Submit payment" : "Create profile first"}
+      <button disabled={!profile} onClick={() => onSubmit(plan)}>
+        {profile ? `Attiva ${price.label}` : "Crea profilo prima"}
       </button>
     </div>
   );
@@ -1059,7 +1040,7 @@ function PlansTab({
 }: {
   profile: ClientProfile | null;
   onOpenDesk: () => void;
-  onPaymentSubmit: (plan: "base" | "premium", txHash: string) => void;
+  onPaymentSubmit: (plan: "base" | "premium") => void;
 }) {
   return (
     <div className="plans-view">
@@ -2831,18 +2812,16 @@ export default function Dashboard() {
     setTab(profileHasAccess(profile) ? "overview" : "plans");
   };
 
-  const submitCryptoPayment = (plan: "base" | "premium", txHash: string) => {
+  const submitCryptoPayment = (plan: "base" | "premium") => {
     if (!clientProfile) {
       setAuthOpen(true);
       return;
     }
     saveClientProfile({
       ...clientProfile,
-      plan: "pending_payment",
-      requestedPlan: plan,
-      txHash,
+      plan,
     });
-    setTab("settings");
+    setTab("overview");
   };
 
   const logoutClientProfile = () => {
