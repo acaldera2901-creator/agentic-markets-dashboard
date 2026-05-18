@@ -26,6 +26,7 @@ interface Bet {
   profit_loss: number | null;
   betfair_bet_id?: string | null;
   placed_at: string;
+  settled_at?: string | null;
   thesis?: string;
   home_team?: string;
   away_team?: string;
@@ -151,7 +152,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "overview" | "predictions" | "tennis" | "bets" | "history" | "agents";
+type Tab = "overview" | "portfolio" | "plans" | "predictions" | "why" | "tennis" | "bets" | "history" | "settings" | "agents";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -205,6 +206,7 @@ interface TennisBet {
   status: string;
   profit_loss: number | null;
   placed_at: string;
+  settled_at?: string | null;
   betfair_bet_id: string | null;
   tournament: string | null;
   surface: string | null;
@@ -212,6 +214,50 @@ interface TennisBet {
   player2: string | null;
   scheduled_at: string | null;
 }
+
+type PortfolioBet = {
+  id: string;
+  sport: "Football" | "Tennis";
+  event: string;
+  selection: string;
+  odds: number;
+  stake: number;
+  status: string;
+  profitLoss: number;
+  placedAt: string;
+  settledAt: string | null;
+};
+
+type ClientProfile = {
+  name: string;
+  email: string;
+  plan: "unpaid" | "pending_payment" | "base" | "premium" | "admin_full";
+  language?: "it" | "en";
+  txHash?: string;
+  requestedPlan?: "base" | "premium";
+  betfair?: {
+    username?: string;
+    appKeyLast4?: string;
+    status?: "not_connected" | "pending_review" | "connected";
+  };
+  risk?: {
+    maxStake: number;
+    dailyStopLoss: number;
+    maxBetsPerDay: number;
+    mode: "approval" | "automatic";
+  };
+};
+
+type ClientAuthIntent = "login" | "create";
+
+const USDT_TRC20_ADDRESS = "PENDING_WALLET_ADDRESS";
+const PLAN_PRICES = {
+  base: { eur: 29, label: "Base · Signal Desk" },
+  premium: { eur: 199, label: "Premium · Autopilot Agents" },
+} as const;
+const CLIENT_PROFILE_KEY = "agentic-client-profile";
+const CLIENT_PROFILES_KEY = "agentic-client-profiles";
+const PRIVATE_BALANCE_PLACEHOLDER = "LOCK";
 
 interface TennisBetSummary {
   total: number;
@@ -652,6 +698,811 @@ function ClientInsightStrip({
         <em>{rejected ? `${rejected} blocked/rejected safely` : "betId required for live"}</em>
       </div>
     </section>
+  );
+}
+
+function money(value: number) {
+  return `€${value.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function betEventName(bet: Bet) {
+  if (bet.home_team && bet.away_team) return `${bet.home_team} vs ${bet.away_team}`;
+  return bet.match_external_id || `Betfair ${bet.betfair_bet_id || bet.id}`;
+}
+
+function buildPortfolioBets(bets: Bet[], tennisBets: TennisBet[]): PortfolioBet[] {
+  const football: PortfolioBet[] = bets
+    .filter((bet) => ["pending", "won", "lost"].includes(bet.status))
+    .map((bet) => ({
+      id: `football-${bet.id}`,
+      sport: "Football",
+      event: betEventName(bet),
+      selection: bet.selection,
+      odds: Number(bet.odds || 0),
+      stake: Number(bet.stake || 0),
+      status: bet.status,
+      profitLoss: Number(bet.profit_loss || 0),
+      placedAt: bet.placed_at,
+      settledAt: bet.settled_at || null,
+    }));
+
+  const tennis: PortfolioBet[] = tennisBets
+    .filter((bet) => ["pending", "won", "lost"].includes(bet.status))
+    .map((bet) => ({
+      id: `tennis-${bet.id}`,
+      sport: "Tennis",
+      event: bet.player1 && bet.player2 ? `${bet.player1} vs ${bet.player2}` : bet.match_id,
+      selection: bet.player_name || bet.selection,
+      odds: Number(bet.odds || 0),
+      stake: Number(bet.stake || 0),
+      status: bet.status,
+      profitLoss: Number(bet.profit_loss || 0),
+      placedAt: bet.placed_at,
+      settledAt: bet.settled_at || null,
+    }));
+
+  return [...football, ...tennis].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+}
+
+function buildEquityPoints(portfolioBets: PortfolioBet[], startingBalance: number) {
+  const settled = portfolioBets
+    .filter((bet) => bet.status !== "pending" && bet.profitLoss !== 0)
+    .sort((a, b) => new Date(a.settledAt || a.placedAt).getTime() - new Date(b.settledAt || b.placedAt).getTime());
+
+  const points = [{ label: "Start", balance: startingBalance }];
+  let balance = startingBalance;
+  for (const bet of settled) {
+    balance = Math.round((balance + bet.profitLoss) * 100) / 100;
+    points.push({
+      label: new Date(bet.settledAt || bet.placedAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }),
+      balance,
+    });
+  }
+  return points;
+}
+
+function PortfolioChart({ points }: { points: Array<{ label: string; balance: number }> }) {
+  const width = 720;
+  const height = 220;
+  const padX = 28;
+  const padY = 24;
+  const values = points.map((point) => point.balance);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(0.01, max - min);
+  const coords = points.map((point, index) => {
+    const x = points.length === 1 ? padX : padX + (index / (points.length - 1)) * (width - padX * 2);
+    const y = height - padY - ((point.balance - min) / spread) * (height - padY * 2);
+    return { ...point, x, y };
+  });
+  const line = coords.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = `${padX},${height - padY} ${line} ${width - padX},${height - padY}`;
+  const positive = points[points.length - 1]?.balance >= points[0]?.balance;
+  const stroke = positive ? "#22C55E" : "#EF4444";
+
+  return (
+    <div className="portfolio-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Portfolio equity chart">
+        <defs>
+          <linearGradient id="portfolioFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
+            <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0, 1, 2, 3].map((i) => {
+          const y = padY + i * ((height - padY * 2) / 3);
+          return <line key={i} x1={padX} x2={width - padX} y1={y} y2={y} className="portfolio-grid-line" />;
+        })}
+        <polygon points={area} fill="url(#portfolioFill)" />
+        <polyline points={line} fill="none" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        {coords.map((point, index) => (
+          <circle key={`${point.label}-${index}`} cx={point.x} cy={point.y} r="4" fill={stroke} />
+        ))}
+      </svg>
+      <div className="portfolio-chart-axis">
+        <span>{points[0]?.label ?? "Start"}</span>
+        <strong>{money(points[points.length - 1]?.balance ?? 0)}</strong>
+        <span>{points[points.length - 1]?.label ?? "Now"}</span>
+      </div>
+    </div>
+  );
+}
+
+function PortfolioTab({
+  summary,
+  bets,
+  tennisBetSummary,
+  tennisBets,
+  onOpenDesk,
+}: {
+  summary: Summary | null;
+  bets: Bet[];
+  tennisBetSummary: TennisBetSummary | null;
+  tennisBets: TennisBet[];
+  onOpenDesk: () => void;
+}) {
+  const startingBalance = 7.2;
+  const portfolioBets = buildPortfolioBets(bets, tennisBets);
+  const footballPnl = Number(summary?.pnl || 0);
+  const tennisPnl = Number(tennisBetSummary?.pnl || 0);
+  const pnl = Math.round((footballPnl + tennisPnl) * 100) / 100;
+  const currentBalance = Math.round((startingBalance + pnl) * 100) / 100;
+  const settled = portfolioBets.filter((bet) => bet.status !== "pending");
+  const won = settled.filter((bet) => bet.status === "won").length;
+  const winRate = settled.length ? (won / settled.length) * 100 : 0;
+  const activeBets = portfolioBets.filter((bet) => bet.status === "pending").length;
+  const totalPnLPct = startingBalance ? (pnl / startingBalance) * 100 : 0;
+  const equityPoints = buildEquityPoints(portfolioBets, startingBalance);
+  const footballCount = portfolioBets.filter((bet) => bet.sport === "Football").length;
+  const tennisCount = portfolioBets.filter((bet) => bet.sport === "Tennis").length;
+  const totalSports = footballCount + tennisCount || 1;
+
+  return (
+    <div className="portfolio-view">
+      <section className="portfolio-hero">
+        <div>
+          <p className="eyebrow">Client dashboard</p>
+          <h3>Portfolio unico</h3>
+          <span>Performance cliente e desk operativo sono ora nella stessa pagina.</span>
+        </div>
+        <button onClick={onOpenDesk}>Open Desk</button>
+      </section>
+
+      <section className="portfolio-balance">
+        <div>
+          <span className="metric-label">Net Asset Value</span>
+          <strong>{money(currentBalance)}</strong>
+          <em className={pnl >= 0 ? "text-green-300" : "text-red-300"}>
+            {pnl >= 0 ? "+" : ""}{money(pnl)} · {totalPnLPct >= 0 ? "+" : ""}{totalPnLPct.toFixed(2)}%
+          </em>
+        </div>
+        <div className="portfolio-stat-strip">
+          <div>
+            <span>Win Rate</span>
+            <strong>{winRate.toFixed(1)}%</strong>
+          </div>
+          <div>
+            <span>Posizioni Aperte</span>
+            <strong>{activeBets}</strong>
+          </div>
+          <div>
+            <span>Capitale Iniziale</span>
+            <strong>{money(startingBalance)}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="portfolio-grid">
+        <div className="portfolio-panel portfolio-panel-wide">
+          <div className="portfolio-panel-head">
+            <div>
+              <p className="eyebrow">Equity line</p>
+              <h4>Andamento portafoglio</h4>
+            </div>
+            <span className={pnl >= 0 ? "is-positive" : "is-negative"}>{totalPnLPct >= 0 ? "+" : ""}{totalPnLPct.toFixed(2)}%</span>
+          </div>
+          <PortfolioChart points={equityPoints} />
+        </div>
+
+        <div className="portfolio-panel">
+          <div className="portfolio-panel-head">
+            <div>
+              <p className="eyebrow">Allocation</p>
+              <h4>Sport mix</h4>
+            </div>
+          </div>
+          <div className="allocation-bars">
+            <div>
+              <span>Football</span>
+              <strong>{Math.round((footballCount / totalSports) * 100)}%</strong>
+              <em style={{ width: `${(footballCount / totalSports) * 100}%` }} />
+            </div>
+            <div>
+              <span>Tennis</span>
+              <strong>{Math.round((tennisCount / totalSports) * 100)}%</strong>
+              <em style={{ width: `${(tennisCount / totalSports) * 100}%` }} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="portfolio-panel">
+        <div className="portfolio-panel-head">
+          <div>
+            <p className="eyebrow">Recent bets</p>
+            <h4>Ultime operazioni</h4>
+          </div>
+          <span>{portfolioBets.length} total</span>
+        </div>
+        <div className="portfolio-bet-list">
+          {portfolioBets.slice(0, 6).map((bet) => (
+            <div key={bet.id} className="portfolio-bet-row">
+              <div>
+                <span>{bet.sport}</span>
+                <strong>{bet.event}</strong>
+                <em>{bet.selection} · {bet.odds.toFixed(2)} · {fmtKickoff(bet.placedAt)}</em>
+              </div>
+              <div>
+                <StatusBadge status={bet.status} />
+                <strong className={bet.profitLoss >= 0 ? "text-green-300" : "text-red-300"}>
+                  {bet.status === "pending" ? money(bet.stake) : `${bet.profitLoss >= 0 ? "+" : ""}${money(bet.profitLoss)}`}
+                </strong>
+              </div>
+            </div>
+          ))}
+          {!portfolioBets.length && <div className="book-empty">Nessuna operazione ancora disponibile.</div>}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PreAccessLanding({
+  onLogin,
+  onCreate,
+  onPlans,
+}: {
+  onLogin: () => void;
+  onCreate: () => void;
+  onPlans: () => void;
+}) {
+  return (
+    <div className="preaccess-view">
+      <section className="preaccess-hero">
+        <div>
+          <p className="eyebrow">Client access required</p>
+          <h3>Signal Desk privato per edge verificati</h3>
+          <span>
+            Le prediction, il portafoglio, le size e il wallet di pagamento restano nascosti finché il cliente non accede
+            e non sceglie un piano.
+          </span>
+        </div>
+        <div className="preaccess-actions">
+          <button onClick={onLogin}>Login</button>
+          <button onClick={onCreate}>Create profile</button>
+        </div>
+      </section>
+
+      <section className="preaccess-grid">
+        <div>
+          <span>01</span>
+          <strong>Crea profilo</strong>
+          <em>Account cliente con lingua, piano e stato pagamento.</em>
+        </div>
+        <div>
+          <span>02</span>
+          <strong>Scegli piano</strong>
+          <em>Base per segnali manuali, Premium per agenti automatici.</em>
+        </div>
+        <div>
+          <span>03</span>
+          <strong>Invia USDT</strong>
+          <em>Il wallet compare solo dentro il checkout cliente.</em>
+        </div>
+        <div>
+          <span>04</span>
+          <strong>Sblocca desk</strong>
+          <em>Dati reali visibili solo dopo piano attivo o approval interno.</em>
+        </div>
+      </section>
+
+      <section className="preaccess-plan-strip">
+        <button onClick={onPlans}>
+          <strong>Base · €29/mese</strong>
+          <span>Best bets, edge e spiegazioni</span>
+        </button>
+        <button onClick={onPlans}>
+          <strong>Premium · €199/mese</strong>
+          <span>Agenti automatici con Betfair personale</span>
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function PlanFeature({ children, locked = false }: { children: React.ReactNode; locked?: boolean }) {
+  return (
+    <li className={locked ? "is-locked" : ""}>
+      <span>{locked ? "LOCK" : "OK"}</span>
+      <strong>{children}</strong>
+    </li>
+  );
+}
+
+function CryptoPaymentBox({
+  profile,
+  plan,
+  onSubmit,
+}: {
+  profile: ClientProfile | null;
+  plan: "base" | "premium";
+  onSubmit: (plan: "base" | "premium", txHash: string) => void;
+}) {
+  const [txHash, setTxHash] = useState(profile?.requestedPlan === plan ? profile.txHash ?? "" : "");
+  const price = PLAN_PRICES[plan];
+  const canShowWallet = Boolean(profile);
+  return (
+    <div className="crypto-pay-box">
+      <div>
+        <span>USDT TRC20</span>
+        <strong>{price.eur} EUR equivalent</strong>
+        <em>{canShowWallet ? "Send payment, paste transaction hash, account becomes pending review." : "Create or login before seeing payment details."}</em>
+      </div>
+      {canShowWallet ? (
+        <>
+          <div className="wallet-line">
+            <span>Wallet</span>
+            <code>{USDT_TRC20_ADDRESS}</code>
+          </div>
+          <label>
+            <span>TX Hash</span>
+            <input value={txHash} onChange={(event) => setTxHash(event.target.value)} placeholder="Paste TRON transaction hash" />
+          </label>
+        </>
+      ) : (
+        <div className="wallet-locked">
+          <span>Wallet locked</span>
+          <strong>Login required</strong>
+        </div>
+      )}
+      <button disabled={!profile || txHash.trim().length < 8} onClick={() => onSubmit(plan, txHash.trim())}>
+        {profile ? "Submit payment" : "Create profile first"}
+      </button>
+    </div>
+  );
+}
+
+function PlansTab({
+  profile,
+  onOpenDesk,
+  onPaymentSubmit,
+}: {
+  profile: ClientProfile | null;
+  onOpenDesk: () => void;
+  onPaymentSubmit: (plan: "base" | "premium", txHash: string) => void;
+}) {
+  return (
+    <div className="plans-view">
+      <section className="plans-hero">
+        <div>
+          <p className="eyebrow">Client plans</p>
+          <h3>Due livelli, una sola esperienza</h3>
+          <span>
+            Il piano Base mostra i migliori bet e il razionale. Il Premium sblocca gli agenti che eseguono da soli,
+            con risk control e Betfair betId verificato.
+          </span>
+        </div>
+        <button onClick={onOpenDesk}>View live edges</button>
+      </section>
+
+      <section className="plans-grid">
+        <article className="plan-card">
+          <div className="plan-card-head">
+            <div>
+              <p className="eyebrow">Base</p>
+              <h4>Signal Desk</h4>
+            </div>
+            <span>Manual</span>
+          </div>
+          <p className="plan-description">
+            Per il cliente che vuole vedere le migliori opportunita, capire il perche e decidere se entrare.
+          </p>
+          <div className="price-line">
+            <strong>€29/month</strong>
+            <span>Crypto only · USDT TRC20</span>
+          </div>
+          <div className="plan-core-line">
+            <strong>Ti mostro cosa fare</strong>
+            <em>Decisione finale al cliente</em>
+          </div>
+          <ul className="plan-feature-list">
+            <PlanFeature>Best bets ordinati per edge, confidenza e quota</PlanFeature>
+            <PlanFeature>Spiegazione del razionale modello per ogni bet</PlanFeature>
+            <PlanFeature>Probabilita modello vs quota di mercato</PlanFeature>
+            <PlanFeature>Storico dei suggerimenti e performance</PlanFeature>
+            <PlanFeature>Notifiche quando esce un nuovo value bet</PlanFeature>
+            <PlanFeature locked>Bet automatici degli agenti</PlanFeature>
+            <PlanFeature locked>Stake sizing automatico live</PlanFeature>
+          </ul>
+          <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
+        </article>
+
+        <article className="plan-card is-premium">
+          <div className="plan-card-head">
+            <div>
+              <p className="eyebrow">Premium</p>
+              <h4>Autopilot Agents</h4>
+            </div>
+            <span>Unlocked</span>
+          </div>
+          <p className="plan-description">
+            Per il cliente che vuole delegare agli agenti: analisi, decisione, stake e piazzamento live.
+          </p>
+          <div className="price-line">
+            <strong>€199/month</strong>
+            <span>Crypto only · USDT TRC20</span>
+          </div>
+          <div className="plan-core-line">
+            <strong>Lo faccio per te</strong>
+            <em>Execution layer con audit completo</em>
+          </div>
+          <ul className="plan-feature-list">
+            <PlanFeature>Tutto il piano Base incluso</PlanFeature>
+            <PlanFeature>Agenti sbloccati per piazzare bet automaticamente</PlanFeature>
+            <PlanFeature>Stake sizing secondo bankroll e risk profile</PlanFeature>
+            <PlanFeature>Stop loss, limiti giornalieri e limiti per sport</PlanFeature>
+            <PlanFeature>Betfair live execution solo con betId confermato</PlanFeature>
+            <PlanFeature>Report automatico dopo ogni operazione</PlanFeature>
+            <PlanFeature>Ogni cliente collega il proprio conto Betfair</PlanFeature>
+            <PlanFeature>Dashboard modificabile per limiti e risk profile</PlanFeature>
+          </ul>
+          <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
+        </article>
+      </section>
+
+      <section className="plan-flow">
+        <div>
+          <span>01</span>
+          <strong>Signal</strong>
+          <em>Gli agenti trovano il value bet.</em>
+        </div>
+        <div>
+          <span>02</span>
+          <strong>Explain</strong>
+          <em>Il cliente vede quota, edge e perche.</em>
+        </div>
+        <div>
+          <span>03</span>
+          <strong>Execute</strong>
+          <em>Nel Premium l'agente piazza live con risk control.</em>
+        </div>
+        <div>
+          <span>04</span>
+          <strong>Audit</strong>
+          <em>Ogni bet ha log, stato e Betfair betId.</em>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SettingsTab({
+  profile,
+  onUnlock,
+  onSave,
+}: {
+  profile: ClientProfile | null;
+  onUnlock: () => void;
+  onSave: (profile: ClientProfile) => void;
+}) {
+  const [draft, setDraft] = useState<ClientProfile | null>(profile);
+
+  useEffect(() => {
+    setDraft(profile);
+  }, [profile]);
+
+  if (!draft) {
+    return (
+      <section className="settings-empty">
+        <p className="eyebrow">Account</p>
+        <h3>Create profile to configure your service</h3>
+        <button onClick={onUnlock}>Create profile</button>
+      </section>
+    );
+  }
+
+  const risk = draft.risk ?? { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" as const };
+  const betfair = draft.betfair ?? { status: "not_connected" as const };
+
+  return (
+    <div className="settings-view">
+      <section className="settings-panel">
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">Profile</p>
+            <h3>Account details</h3>
+          </div>
+          <span>{draft.plan.replace("_", " ")}</span>
+        </div>
+        <div className="settings-grid">
+          <label>
+            <span>Name</span>
+            <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+          </label>
+          <label>
+            <span>Email</span>
+            <input value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
+          </label>
+          <label>
+            <span>Language</span>
+            <select value={draft.language ?? "it"} onChange={(event) => setDraft({ ...draft, language: event.target.value as "it" | "en" })}>
+              <option value="it">Italiano</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section className={`settings-panel ${profileHasPremium(draft) ? "" : "is-locked"}`}>
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">Betfair connect</p>
+            <h3>Personal exchange account</h3>
+          </div>
+          <span>{betfair.status ?? "not_connected"}</span>
+        </div>
+        <p className="settings-copy">
+          Premium uses the client personal Betfair account. For beta, credentials are reviewed manually before live execution is enabled.
+        </p>
+        <div className="settings-grid">
+          <label>
+            <span>Betfair username</span>
+            <input disabled={!profileHasPremium(draft)} value={betfair.username ?? ""} onChange={(event) => setDraft({ ...draft, betfair: { ...betfair, username: event.target.value } })} />
+          </label>
+          <label>
+            <span>App key last 4</span>
+            <input disabled={!profileHasPremium(draft)} value={betfair.appKeyLast4 ?? ""} onChange={(event) => setDraft({ ...draft, betfair: { ...betfair, appKeyLast4: event.target.value.slice(-4) } })} />
+          </label>
+          <label>
+            <span>Status</span>
+            <select disabled={!profileHasPremium(draft)} value={betfair.status ?? "not_connected"} onChange={(event) => setDraft({ ...draft, betfair: { ...betfair, status: event.target.value as "not_connected" | "pending_review" | "connected" } })}>
+              <option value="not_connected">Not connected</option>
+              <option value="pending_review">Pending review</option>
+              <option value="connected">Connected</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section className={`settings-panel ${profileHasPremium(draft) ? "" : "is-locked"}`}>
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">Risk profile</p>
+            <h3>Autopilot limits</h3>
+          </div>
+          <span>{risk.mode}</span>
+        </div>
+        <div className="settings-grid">
+          <label>
+            <span>Max stake per bet</span>
+            <input disabled={!profileHasPremium(draft)} type="number" value={risk.maxStake} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxStake: Number(event.target.value) } })} />
+          </label>
+          <label>
+            <span>Daily stop loss</span>
+            <input disabled={!profileHasPremium(draft)} type="number" value={risk.dailyStopLoss} onChange={(event) => setDraft({ ...draft, risk: { ...risk, dailyStopLoss: Number(event.target.value) } })} />
+          </label>
+          <label>
+            <span>Max bets per day</span>
+            <input disabled={!profileHasPremium(draft)} type="number" value={risk.maxBetsPerDay} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxBetsPerDay: Number(event.target.value) } })} />
+          </label>
+          <label>
+            <span>Mode</span>
+            <select disabled={!profileHasPremium(draft)} value={risk.mode} onChange={(event) => setDraft({ ...draft, risk: { ...risk, mode: event.target.value as "approval" | "automatic" } })}>
+              <option value="automatic">Full automatic</option>
+              <option value="approval">Approval required</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <button className="settings-save" onClick={() => onSave(draft)}>Save settings</button>
+    </div>
+  );
+}
+
+function ClientAuthModal({
+  intent,
+  storedProfiles,
+  onClose,
+  onSave,
+  onNotFound,
+}: {
+  intent: ClientAuthIntent;
+  storedProfiles: ClientProfile[];
+  onClose: () => void;
+  onSave: (profile: ClientProfile) => void;
+  onNotFound: (email: string) => void;
+}) {
+  const [mode, setMode] = useState<ClientAuthIntent>(intent);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const normalizedEmail = email.trim().toLowerCase();
+  const canSubmit = mode === "login" ? normalizedEmail.includes("@") : name.trim().length > 1 && normalizedEmail.includes("@");
+
+  return (
+    <div className="auth-modal-backdrop" onClick={onClose}>
+      <form
+        className="auth-modal"
+        onClick={(event) => event.stopPropagation()}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!canSubmit) return;
+          if (mode === "login") {
+            const found = storedProfiles.find((profile) => profile.email.toLowerCase() === normalizedEmail);
+            if (!found) {
+              setError("Profilo non trovato. Crea un profilo cliente per continuare.");
+              onNotFound(normalizedEmail);
+              return;
+            }
+            onSave(found);
+            return;
+          }
+          onSave({
+            name: name.trim(),
+            email: normalizedEmail,
+            plan: "unpaid",
+            language: "it",
+            risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
+            betfair: { status: "not_connected" },
+          });
+        }}
+      >
+        <div className="auth-modal-head">
+          <p className="eyebrow">Client access</p>
+          <h3>{mode === "login" ? "Login Signal Desk" : "Crea il tuo profilo Signal Desk"}</h3>
+          <span>
+            {mode === "login"
+              ? "Accedi con l’email usata per il tuo profilo cliente."
+              : "Crea il profilo, poi scegli Base o Premium per sbloccare i dati."}
+          </span>
+        </div>
+        <div className="auth-mode-switch">
+          <button type="button" className={mode === "login" ? "is-active" : ""} onClick={() => { setMode("login"); setError(""); }}>Login</button>
+          <button type="button" className={mode === "create" ? "is-active" : ""} onClick={() => { setMode("create"); setError(""); }}>Create profile</button>
+        </div>
+        {mode === "create" && (
+          <label>
+            <span>Nome</span>
+            <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Il tuo nome" autoComplete="name" />
+          </label>
+        )}
+        <label>
+          <span>Email</span>
+          <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@email.com" inputMode="email" />
+        </label>
+        {error && <p className="auth-error">{error}</p>}
+        <button disabled={!canSubmit}>{mode === "login" ? "Login" : "Continue to plans"}</button>
+        <p>Base e Premium sono crypto-only. I dati prediction restano bloccati finché il piano non è attivo.</p>
+      </form>
+    </div>
+  );
+}
+
+function profileHasAccess(profile: ClientProfile | null) {
+  return Boolean(profile && ["base", "premium", "admin_full"].includes(profile.plan));
+}
+
+function profileHasPremium(profile: ClientProfile | null) {
+  return Boolean(profile && ["premium", "admin_full"].includes(profile.plan));
+}
+
+function ProfilePanel({
+  profile,
+  onLogout,
+  onUpgrade,
+}: {
+  profile: ClientProfile;
+  onLogout: () => void;
+  onUpgrade: () => void;
+}) {
+  return (
+    <section className="profile-panel">
+      <div className="profile-card">
+        <div className="profile-avatar">{profile.name.slice(0, 1).toUpperCase()}</div>
+        <div>
+          <p className="eyebrow">Client profile</p>
+          <h3>{profile.name}</h3>
+          <span>{profile.email} · {profile.plan.replace("_", " ")}</span>
+        </div>
+        <button onClick={onLogout}>Logout</button>
+      </div>
+      <div className="upgrade-card">
+        <div>
+          <p className="eyebrow">Passa a Pro</p>
+          <h3>Autopilot Agents</h3>
+          <span>Sblocca agenti automatici, stake sizing, stop loss e Betfair execution con betId verificato.</span>
+        </div>
+        <button onClick={onUpgrade}>Upgrade to Pro</button>
+      </div>
+    </section>
+  );
+}
+
+function LockedGate({
+  isUnlocked,
+  onUnlock,
+  children,
+}: {
+  isUnlocked: boolean;
+  onUnlock: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`locked-gate ${isUnlocked ? "is-unlocked" : ""}`}>
+      <div className="locked-content">{children}</div>
+      {!isUnlocked && (
+        <div className="locked-overlay">
+          <p className="eyebrow">Signal Desk locked</p>
+          <h3>Accedi per vedere prediction, edge e spiegazioni</h3>
+          <span>I dati sensibili restano offuscati finché non accedi e non attivi un piano.</span>
+          <button onClick={onUnlock}>Login / Create profile</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function bestFootballSelection(p: Prediction) {
+  if (!p.best_selection) return null;
+  const map = {
+    HOME: { name: p.home_team, odds: p.odds_home, probability: p.p_home },
+    DRAW: { name: "Draw", odds: p.odds_draw, probability: p.p_draw },
+    AWAY: { name: p.away_team, odds: p.odds_away, probability: p.p_away },
+  } as const;
+  return map[p.best_selection as keyof typeof map] ?? null;
+}
+
+function WhyCenterTab({ predictions, tennisMatches }: { predictions: Prediction[]; tennisMatches: TennisMatch[] }) {
+  const topFootball = predictions
+    .filter((p) => p.edge != null && p.edge > 0.03)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))
+    .slice(0, 6);
+  const topTennis = tennisMatches
+    .filter((m) => m.edge != null && m.edge > 0.025)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))
+    .slice(0, 4);
+
+  return (
+    <div className="why-center">
+      <section className="why-hero">
+        <div>
+          <p className="eyebrow">Why center</p>
+          <h3>Ogni bet deve spiegare perche esiste</h3>
+          <span>Il Base non vende segnali ciechi: mostra probabilita, quota, edge, rischio e fattori principali.</span>
+        </div>
+      </section>
+      <div className="why-grid">
+        {topFootball.map((p) => {
+          const selection = bestFootballSelection(p);
+          const reasons = buildReasons(p).slice(0, 4);
+          return (
+            <article key={p.match_id} className="why-card">
+              <div className="why-card-head">
+                <span>{p.league}</span>
+                <strong>{p.home_team} vs {p.away_team}</strong>
+                <em>{selection?.name ?? "Wait"} @ {selection?.odds?.toFixed(2) ?? "-"} · edge +{((p.edge ?? 0) * 100).toFixed(1)}%</em>
+              </div>
+              <div className="why-reasons">
+                {reasons.map((reason, index) => (
+                  <div key={index}>
+                    <span>{reason.icon}</span>
+                    <p>{reason.text}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          );
+        })}
+        {topTennis.map((m) => (
+          <article key={m.id} className="why-card">
+            <div className="why-card-head">
+              <span>{m.surface}</span>
+              <strong>{m.player1} vs {m.player2}</strong>
+              <em>{m.best_selection === "P1" ? m.player1 : m.player2} · edge +{((m.edge ?? 0) * 100).toFixed(1)}%</em>
+            </div>
+            <div className="why-reasons">
+              <div><span>MODEL</span><p>Elo Surface v2 pesa superficie, forma recente e differenziale quote.</p></div>
+              <div><span>EDGE</span><p>Il modello vede una probabilita superiore a quella implicita nella quota.</p></div>
+              <div><span>RISK</span><p>Il segnale resta manuale nel Base: nessun agente piazza in automatico.</p></div>
+            </div>
+          </article>
+        ))}
+        {!topFootball.length && !topTennis.length && (
+          <div className="book-empty">Nessun razionale +EV disponibile ora. Il motore continua a scansionare.</div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1922,6 +2773,10 @@ function PredictionsTab({
 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>("overview");
+  const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
+  const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authIntent, setAuthIntent] = useState<ClientAuthIntent>("login");
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -1943,6 +2798,59 @@ export default function Dashboard() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
+
+  useEffect(() => {
+    try {
+      const profilesRaw = window.localStorage.getItem(CLIENT_PROFILES_KEY);
+      if (profilesRaw) setStoredProfiles(JSON.parse(profilesRaw) as ClientProfile[]);
+      const raw = window.localStorage.getItem(CLIENT_PROFILE_KEY);
+      if (raw) setClientProfile(JSON.parse(raw) as ClientProfile);
+    } catch { /**/ }
+  }, []);
+
+  const saveClientProfile = (profile: ClientProfile) => {
+    const normalizedProfile = { ...profile, email: profile.email.trim().toLowerCase() };
+    setClientProfile(normalizedProfile);
+    setAuthOpen(false);
+    window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(normalizedProfile));
+    const nextProfiles = [
+      normalizedProfile,
+      ...storedProfiles.filter((item) => item.email.toLowerCase() !== normalizedProfile.email),
+    ];
+    setStoredProfiles(nextProfiles);
+    window.localStorage.setItem(CLIENT_PROFILES_KEY, JSON.stringify(nextProfiles));
+  };
+
+  const openAuth = (intent: ClientAuthIntent = "login") => {
+    setAuthIntent(intent);
+    setAuthOpen(true);
+  };
+
+  const handleAuthSave = (profile: ClientProfile) => {
+    saveClientProfile(profile);
+    setTab(profileHasAccess(profile) ? "overview" : "plans");
+  };
+
+  const submitCryptoPayment = (plan: "base" | "premium", txHash: string) => {
+    if (!clientProfile) {
+      setAuthOpen(true);
+      return;
+    }
+    saveClientProfile({
+      ...clientProfile,
+      plan: "pending_payment",
+      requestedPlan: plan,
+      txHash,
+    });
+    setTab("settings");
+  };
+
+  const logoutClientProfile = () => {
+    setClientProfile(null);
+    setSlipSelection(null);
+    setTab("plans");
+    window.localStorage.removeItem(CLIENT_PROFILE_KEY);
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -2047,14 +2955,20 @@ export default function Dashboard() {
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
   const aliveAgents = agents.filter((a) => a.status === "alive").length;
   const totalAgents = agents.length || 16;
+  const isClientUnlocked = profileHasAccess(clientProfile);
+  const privatePnlLabel = isClientUnlocked ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : PRIVATE_BALANCE_PLACEHOLDER;
 
   const tennisValueBets = tennisMatches.filter((m) => m.edge != null && m.edge > 0.03);
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
-    { tab: "overview",     label: "Edge Desk",  value: String(valueBets.length + tennisValueBets.length), tone: "green" },
-    { tab: "predictions",  label: "Football",   value: String(predictions.length) },
-    { tab: "tennis",       label: "Tennis",     value: String(tennisMatches.length), tone: "amber" },
-    { tab: "bets",         label: "My Bets",    value: String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)), tone: ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
-    { tab: "history",      label: "History",    value: String(historyStats?.total_matches ?? history.length) },
+    { tab: "overview",     label: "Dashboard",  value: isClientUnlocked ? String(valueBets.length + tennisValueBets.length) : "LOCK", tone: "green" },
+    { tab: "portfolio",    label: "Portfolio",  value: privatePnlLabel, tone: isClientUnlocked ? "green" : undefined },
+    { tab: "plans",        label: "Plans",      value: "2", tone: "amber" },
+    { tab: "predictions",  label: "Best Bets",  value: isClientUnlocked ? String(predictions.length + tennisMatches.length) : "LOCK" },
+    { tab: "why",          label: "Why",        value: isClientUnlocked ? String(valueBets.length + tennisValueBets.length) : "LOCK" },
+    { tab: "tennis",       label: "Tennis",     value: isClientUnlocked ? String(tennisMatches.length) : "LOCK", tone: isClientUnlocked ? "amber" : undefined },
+    { tab: "bets",         label: "Bets",       value: isClientUnlocked ? String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) : "LOCK", tone: isClientUnlocked && ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
+    { tab: "history",      label: "Storico",    value: isClientUnlocked ? String(historyStats?.total_matches ?? history.length) : "LOCK" },
+    { tab: "settings",     label: "Settings",   value: clientProfile ? (clientProfile.plan === "premium" || clientProfile.plan === "admin_full" ? "PRO" : "SET") : "LOGIN" },
     { tab: "agents",       label: "Status",     value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
   ];
 
@@ -2064,24 +2978,41 @@ export default function Dashboard() {
         <div>
           <p className="eyebrow">Agentic Markets</p>
           <h1>Sportsbook <span className="neon-text">Edge Desk</span></h1>
+          <p className="book-topbar-subtitle">
+            Un’unica console per segnali, live execution e controllo Betfair.
+          </p>
         </div>
         <div className="topbar-stats">
           <div className="live-badge">LIVE</div>
-          <span>P&amp;L</span>
+          <span>Net P&amp;L</span>
           <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"} style={{fontFamily:"ui-monospace,monospace", fontSize:"14px"}}>
-            {loading ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}
+            {loading ? "—" : privatePnlLabel}
           </strong>
-          <span>{predictions.length + tennisMatches.length} events</span>
-          <span>{valueBets.length + tennisValueBets.length > 0 ? `${valueBets.length + tennisValueBets.length} +EV` : "scanning"}</span>
+          <span>{isClientUnlocked ? `${predictions.length + tennisMatches.length} events` : "private desk"}</span>
+          <span>{isClientUnlocked ? (valueBets.length + tennisValueBets.length > 0 ? `${valueBets.length + tennisValueBets.length} +EV` : "scanning") : "plans active"}</span>
           <span>{lastUpdate || "syncing"}</span>
+          <button className="client-access-button" onClick={() => isClientUnlocked ? setTab("portfolio") : openAuth("login")}>
+            {isClientUnlocked ? `${clientProfile?.name} · Signal Desk` : "Login / Create profile"}
+          </button>
         </div>
       </section>
 
       <section className="book-layout">
         <aside className="sports-rail">
-          <div className="rail-title">Sports</div>
+          <div className="rail-title">Desk</div>
           {navItems.map((item) => (
-            <button key={item.tab} className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`} onClick={() => setTab(item.tab)}>
+            <button
+              key={item.tab}
+              className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
+              onClick={() => {
+                if (!isClientUnlocked && ["portfolio", "predictions", "why", "tennis", "bets", "history"].includes(item.tab)) {
+                  setTab(item.tab);
+                  openAuth("login");
+                  return;
+                }
+                setTab(item.tab);
+              }}
+            >
               <span>{item.label}</span>
               {item.value && <strong>{item.value}</strong>}
             </button>
@@ -2090,8 +3021,8 @@ export default function Dashboard() {
             {refreshing ? "Computing..." : "Refresh odds"}
           </button>
           <div className="rail-note">
-            <strong>Execution</strong>
-            <span>Football: live via Betfair betId. Tennis: paper signals, Elo v2 model.</span>
+            <strong>Execution layer</strong>
+            <span>Live solo con betId Betfair confermato. Tennis in signal layer finché il book non è sano.</span>
           </div>
         </aside>
 
@@ -2100,12 +3031,15 @@ export default function Dashboard() {
             <div>
               <p className="eyebrow">{tab === "overview" ? "Client sportsbook" : navItems.find((n) => n.tab === tab)?.label}</p>
               <h2>
-                {tab === "overview" && "Best decisions now"}
-                {tab === "predictions" && "Football · Dixon-Coles + Pi Rating"}
+                {tab === "overview" && "Decision board"}
+                {tab === "portfolio" && "Client portfolio"}
+                {tab === "plans" && "Client plans"}
+                {tab === "predictions" && "Best bets · Signal Desk"}
+                {tab === "why" && "Why this bet"}
                 {tab === "tennis" && "Tennis · Elo Surface v2"}
-                {tab === "bets" && "My bets · execution log"}
-                {tab === "history" && "Settled history"}
-                {tab === "agents" && "Desk status"}
+                {tab === "bets" && "Execution log"}
+                {tab === "history" && "Storico settled"}
+                {tab === "agents" && "Health & safety"}
               </h2>
             </div>
             <div className="book-head-kpis">
@@ -2116,7 +3050,68 @@ export default function Dashboard() {
           </div>
 
           {tab === "overview" && (
-            <>
+            isClientUnlocked ? (
+              <>
+                <ClientInsightStrip
+                  summary={summary}
+                  predictions={predictions}
+                  tennisMatches={tennisMatches}
+                  bets={bets}
+                  computedAt={computedAt}
+                  tennisComputedAt={tennisComputedAt}
+                />
+                <SportsbookBoard
+                  predictions={predictions}
+                  tennisMatches={tennisMatches}
+                  onSelect={setSlipSelection}
+                />
+              </>
+            ) : (
+              <PreAccessLanding
+                onLogin={() => openAuth("login")}
+                onCreate={() => openAuth("create")}
+                onPlans={() => setTab("plans")}
+              />
+            )
+          )}
+          {tab === "portfolio" && (
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
+              {clientProfile && (
+                <ProfilePanel
+                  profile={clientProfile}
+                  onLogout={logoutClientProfile}
+                  onUpgrade={() => setTab("plans")}
+                />
+              )}
+              <PortfolioTab
+                summary={summary}
+                bets={bets}
+                tennisBetSummary={tennisBetSummary}
+                tennisBets={tennisBets}
+                onOpenDesk={() => setTab("overview")}
+              />
+            </LockedGate>
+          )}
+          {tab === "plans" && (
+            <PlansTab
+              profile={clientProfile}
+              onOpenDesk={() => setTab("overview")}
+              onPaymentSubmit={submitCryptoPayment}
+            />
+          )}
+          {tab === "tennis" && (
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
+              <TennisTab
+                matches={tennisMatches}
+                summary={tennisSummary}
+                loading={tennisLoading}
+                computedAt={tennisComputedAt}
+                agents={agents}
+              />
+            </LockedGate>
+          )}
+          {tab === "predictions" && (
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
               <ClientInsightStrip
                 summary={summary}
                 predictions={predictions}
@@ -2130,38 +3125,35 @@ export default function Dashboard() {
                 tennisMatches={tennisMatches}
                 onSelect={setSlipSelection}
               />
-            </>
+            </LockedGate>
           )}
-          {tab === "tennis" && (
-            <TennisTab
-              matches={tennisMatches}
-              summary={tennisSummary}
-              loading={tennisLoading}
-              computedAt={tennisComputedAt}
-              agents={agents}
-            />
-          )}
-          {tab === "predictions" && (
-            <PredictionsTab
-              predictions={predictions}
-              computedAt={computedAt}
-              loading={predLoading}
-              refreshing={refreshing}
-              isStale={predStale}
-              onRefresh={handleRefresh}
-            />
+          {tab === "why" && (
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
+              <WhyCenterTab predictions={predictions} tennisMatches={tennisMatches} />
+            </LockedGate>
           )}
           {tab === "bets" && (
-            <BetsTab bets={bets} summary={summary ?? {
-              total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
-              win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
-            }} leaguePnl={leaguePnl} tennisBets={tennisBets} tennisBetSummary={tennisBetSummary} />
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
+              <BetsTab bets={bets} summary={summary ?? {
+                total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
+                win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
+              }} leaguePnl={leaguePnl} tennisBets={tennisBets} tennisBetSummary={tennisBetSummary} />
+            </LockedGate>
           )}
           {tab === "history" && (
-            <HistoryTab
-              history={history}
-              stats={historyStats}
-              loading={historyLoading}
+            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
+              <HistoryTab
+                history={history}
+                stats={historyStats}
+                loading={historyLoading}
+              />
+            </LockedGate>
+          )}
+          {tab === "settings" && (
+            <SettingsTab
+              profile={clientProfile}
+              onUnlock={() => openAuth("login")}
+              onSave={saveClientProfile}
             />
           )}
           {tab === "agents" && (
@@ -2183,8 +3175,17 @@ export default function Dashboard() {
       </section>
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
-        Sportsbook Edge Desk · client view · verified execution only · tennis signal layer
+        Sportsbook Edge Desk · verified execution only · client-grade interface
       </footer>
+      {authOpen && (
+        <ClientAuthModal
+          intent={authIntent}
+          storedProfiles={storedProfiles}
+          onClose={() => setAuthOpen(false)}
+          onSave={handleAuthSave}
+          onNotFound={() => undefined}
+        />
+      )}
     </main>
   );
 }

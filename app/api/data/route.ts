@@ -27,8 +27,13 @@ async function queryDB<T = Record<string, unknown>>(sql: string, params: unknown
 export async function GET() {
   const [bets, stats, leaguePnl] = await Promise.all([
     queryDB(`
-      SELECT b.*, mp.home_team, mp.away_team, mp.league, mp.league_name,
-             mp.kickoff, mp.enrichment
+      SELECT b.*,
+             COALESCE(mp.home_team, b.home_team) AS home_team,
+             COALESCE(mp.away_team, b.away_team) AS away_team,
+             COALESCE(mp.league, b.league) AS league,
+             mp.league_name,
+             COALESCE(mp.kickoff::text, b.kickoff) AS kickoff,
+             mp.enrichment
       FROM bets b
       LEFT JOIN match_predictions mp ON b.match_external_id::text = mp.match_id::text
       ORDER BY b.placed_at DESC
@@ -40,7 +45,7 @@ export async function GET() {
         COUNT(*) FILTER (WHERE status = 'won') as won,
         COUNT(*) FILTER (WHERE status = 'lost') as lost,
         COUNT(*) FILTER (WHERE status = 'pending') as pending,
-        COALESCE(SUM(CASE WHEN status = 'won' THEN stake*(odds-1) WHEN status='lost' THEN -stake ELSE 0 END), 0) as pnl,
+        COALESCE(SUM(CASE WHEN status IN ('won','lost') THEN COALESCE(profit_loss, 0) ELSE 0 END), 0) as pnl,
         AVG(odds) FILTER (WHERE status IN ('pending','won','lost')) as avg_odds,
         AVG(stake) FILTER (WHERE status IN ('pending','won','lost')) as avg_stake
       FROM bets
@@ -51,7 +56,7 @@ export async function GET() {
         COUNT(*) as total,
         COUNT(CASE WHEN b.status = 'won' THEN 1 END) as won,
         COUNT(CASE WHEN b.status = 'lost' THEN 1 END) as lost,
-        COALESCE(SUM(CASE WHEN b.status = 'won' THEN b.stake * (b.odds - 1) WHEN b.status = 'lost' THEN -b.stake ELSE 0 END), 0) as pnl
+        COALESCE(SUM(CASE WHEN b.status IN ('won','lost') THEN COALESCE(b.profit_loss, 0) ELSE 0 END), 0) as pnl
       FROM bets b
       LEFT JOIN match_predictions mp ON b.match_external_id::text = mp.match_id::text
       GROUP BY COALESCE(mp.league, 'unknown')
