@@ -1795,7 +1795,39 @@ function buildTennisReasons(m: TennisMatch): TennisReason[] {
 
 function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void }) {
   const [showWhy, setShowWhy] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
+
+  const handleWhyClick = async () => {
+    const next = !showWhy;
+    setShowWhy(next);
+    if (next && !aiAnalysis && !loadingAnalysis) {
+      setLoadingAnalysis(true);
+      try {
+        const res = await fetch("/api/tennis-analysis", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            player1: m.player1, player2: m.player2,
+            tournament: m.tournament, round: m.round, surface: m.surface,
+            p1: m.p1, p2: m.p2, odds_p1: m.odds_p1, odds_p2: m.odds_p2,
+            edge: m.edge, best_selection: m.best_selection,
+            elo_p1: m.elo_p1, elo_p2: m.elo_p2,
+            elo_p1_overall: m.elo_p1_overall, elo_p2_overall: m.elo_p2_overall,
+            surface_matches_p1: m.surface_matches_p1, surface_matches_p2: m.surface_matches_p2,
+            elo_raw_p1: m.elo_raw_p1,
+          }),
+        });
+        const data = await res.json() as { analysis?: string };
+        if (data.analysis) setAiAnalysis(data.analysis);
+      } catch {
+        // keep Elo fallback
+      } finally {
+        setLoadingAnalysis(false);
+      }
+    }
+  };
   const isValue = m.edge != null && m.edge > 0.025;
   const scheduledDate = new Date(m.scheduled).toLocaleDateString("it-IT", {
     weekday: "short", day: "numeric", month: "short",
@@ -1877,9 +1909,9 @@ function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipS
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
         <button
           className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-          onClick={() => setShowWhy(!showWhy)}
+          onClick={handleWhyClick}
         >
-          {showWhy ? "▲ meno" : "▼ perché"}
+          {loadingAnalysis ? "⏳ analisi..." : showWhy ? "▲ meno" : "▼ perché"}
         </button>
         <span className="text-gray-600">{m.model}</span>
         {m.edge != null && m.edge > 0 ? (
@@ -1893,8 +1925,24 @@ function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipS
 
       {/* Inline Why */}
       {showWhy && (
-        <div className="space-y-1.5 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Analisi Elo Surface</div>
+        <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
+          {/* AI analysis — shown first when available */}
+          {aiAnalysis ? (
+            <>
+              <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest flex items-center gap-1.5">
+                <span>🤖</span> Analisi AI
+              </div>
+              <p className="text-[10px] font-mono text-gray-300 leading-relaxed whitespace-pre-line">
+                {aiAnalysis}
+              </p>
+              <div className="text-[9px] font-mono text-white/20 uppercase tracking-widest pt-1 border-t border-white/5">Dati Elo</div>
+            </>
+          ) : loadingAnalysis ? (
+            <div className="text-[10px] font-mono text-cyan-400/50 animate-pulse">Generazione analisi AI in corso...</div>
+          ) : (
+            <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Analisi Elo Surface</div>
+          )}
+          {/* Structured Elo reasons — always shown */}
           {buildTennisReasons(m).map((r, i) => (
             <div key={i} className={`text-[10px] font-mono leading-relaxed ${r.highlight ? "text-green-400" : "text-gray-400"}`}>
               {r.icon} {r.text}
