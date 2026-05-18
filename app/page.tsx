@@ -171,6 +171,15 @@ interface TennisMatch {
   edge: number | null;
   best_selection: "P1" | "P2" | null;
   model: string;
+  // Elo analysis fields
+  elo_p1?: number | null;
+  elo_p2?: number | null;
+  elo_p1_overall?: number | null;
+  elo_p2_overall?: number | null;
+  surface_matches_p1?: number | null;
+  surface_matches_p2?: number | null;
+  elo_raw_p1?: number | null;
+  elo_raw_p2?: number | null;
 }
 
 interface TennisSummary {
@@ -1694,6 +1703,96 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
   HARD:  { label: "HARD",  color: "text-blue-400 border-blue-400/40 bg-blue-400/10" },
 };
 
+type TennisReason = { icon: string; text: string; highlight?: boolean };
+
+function buildTennisReasons(m: TennisMatch): TennisReason[] {
+  const reasons: TennisReason[] = [];
+  const surfLabel = m.surface === "CLAY" ? "terra battuta" : m.surface === "GRASS" ? "erba" : "cemento";
+  const p1last = m.player1.split(" ").pop() ?? m.player1;
+  const p2last = m.player2.split(" ").pop() ?? m.player2;
+
+  // Elo surface ratings
+  if (m.elo_p1 != null && m.elo_p2 != null) {
+    const delta = m.elo_p1 - m.elo_p2;
+    const leader = delta > 0 ? p1last : p2last;
+    const stronger = Math.abs(delta) > 80 ? "nettamente superiore" : Math.abs(delta) > 30 ? "superiore" : "leggermente avanti";
+    reasons.push({
+      icon: "🎾",
+      text: `Elo ${surfLabel}: ${p1last} ${m.elo_p1} · ${p2last} ${m.elo_p2} — ${leader} ${stronger} (Δ${Math.abs(delta).toFixed(0)} pt)`,
+      highlight: Math.abs(delta) > 80,
+    });
+  } else {
+    reasons.push({ icon: "🎾", text: `Elo surface-adjusted su ${surfLabel} — modello ${m.model}` });
+  }
+
+  // Overall vs surface rating (shows surface specialisation)
+  if (m.elo_p1 != null && m.elo_p1_overall != null && m.elo_p2 != null && m.elo_p2_overall != null) {
+    const p1surfAdv = m.elo_p1 - m.elo_p1_overall;
+    const p2surfAdv = m.elo_p2 - m.elo_p2_overall;
+    const hasSpec = Math.abs(p1surfAdv) > 20 || Math.abs(p2surfAdv) > 20;
+    if (hasSpec) {
+      const parts: string[] = [];
+      if (Math.abs(p1surfAdv) > 20) parts.push(`${p1last} ${p1surfAdv > 0 ? "+" : ""}${p1surfAdv.toFixed(0)} su ${surfLabel}`);
+      if (Math.abs(p2surfAdv) > 20) parts.push(`${p2last} ${p2surfAdv > 0 ? "+" : ""}${p2surfAdv.toFixed(0)} su ${surfLabel}`);
+      reasons.push({ icon: "📊", text: `Specializzazione superficie: ${parts.join(" · ")} (vs rating overall)`, highlight: Math.abs(p1surfAdv) > 60 || Math.abs(p2surfAdv) > 60 });
+    } else {
+      reasons.push({ icon: "📊", text: `Overall: ${p1last} ${m.elo_p1_overall} · ${p2last} ${m.elo_p2_overall} — prestazioni simili su tutte le superfici` });
+    }
+  }
+
+  // Surface match count (data reliability)
+  if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
+    const minMatches = Math.min(m.surface_matches_p1, m.surface_matches_p2);
+    const reliability = minMatches >= 50 ? "alta" : minMatches >= 20 ? "media" : "bassa";
+    reasons.push({
+      icon: "📈",
+      text: `Partite su ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — affidabilità rating ${reliability}`,
+    });
+  }
+
+  // Fatigue adjustment (shown only when meaningful)
+  if (m.elo_raw_p1 != null) {
+    const delta = Math.abs(m.p1 - m.elo_raw_p1);
+    if (delta > 0.003) {
+      const dir = m.p1 > m.elo_raw_p1 ? "favorisce" : "penalizza";
+      reasons.push({
+        icon: "⚡",
+        text: `Fatica: Elo puro ${Math.round(m.elo_raw_p1 * 100)}% → ${Math.round(m.p1 * 100)}% dopo aggiustamento — stanchezza ${dir} ${p1last}`,
+      });
+    }
+  }
+
+  // Model vs market odds
+  const mktP1 = m.odds_p1 && m.odds_p1 > 1 ? Math.round((1 / m.odds_p1) * 100) : null;
+  const mktP2 = m.odds_p2 && m.odds_p2 > 1 ? Math.round((1 / m.odds_p2) * 100) : null;
+  if (m.best_selection === "P1" && mktP1 != null) {
+    reasons.push({
+      icon: "🧠",
+      text: `Modello: ${p1last} ${Math.round(m.p1 * 100)}% · Mercato: ${mktP1}% — modello vede ${Math.round(m.p1 * 100) - mktP1}pp in più`,
+      highlight: Math.round(m.p1 * 100) - mktP1 > 4,
+    });
+  } else if (m.best_selection === "P2" && mktP2 != null) {
+    reasons.push({
+      icon: "🧠",
+      text: `Modello: ${p2last} ${Math.round(m.p2 * 100)}% · Mercato: ${mktP2}% — modello vede ${Math.round(m.p2 * 100) - mktP2}pp in più`,
+      highlight: Math.round(m.p2 * 100) - mktP2 > 4,
+    });
+  } else {
+    reasons.push({ icon: "⚖️", text: `${p1last} ${Math.round(m.p1 * 100)}% vs ${p2last} ${Math.round(m.p2 * 100)}% — nessun edge netto` });
+  }
+
+  // Edge conclusion
+  if (m.edge != null && m.edge > 0.025) {
+    reasons.push({ icon: "💰", text: `Value bet: edge +${(m.edge * 100).toFixed(1)}% su ${m.best_selection === "P1" ? m.player1 : m.player2} — supera soglia minima 2.5%`, highlight: true });
+  } else if (m.edge != null && m.edge > 0) {
+    reasons.push({ icon: "📉", text: `Edge marginale +${(m.edge * 100).toFixed(1)}% — sotto soglia value (2.5%), segnale non attivato` });
+  } else {
+    reasons.push({ icon: "❌", text: "Nessun edge positivo — il mercato prezza già correttamente questa partita" });
+  }
+
+  return reasons;
+}
+
 function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
@@ -1795,22 +1894,12 @@ function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipS
       {/* Inline Why */}
       {showWhy && (
         <div className="space-y-1.5 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Perché questa previsione</div>
-          <div className="text-[10px] font-mono text-gray-400 leading-relaxed">
-            🎾 Elo surface-adjusted: {m.model} — superficie {m.surface}
-          </div>
-          <div className="text-[10px] font-mono text-gray-400">
-            {m.best_selection === "P1"
-              ? `🧠 Favorito: ${m.player1} — p1 ${Math.round(m.p1 * 100)}% vs mercato ${m.odds_p1 > 0 ? Math.round((1 / m.odds_p1) * 100) : "?"}%`
-              : m.best_selection === "P2"
-                ? `🧠 Favorito: ${m.player2} — p2 ${Math.round(m.p2 * 100)}% vs mercato ${m.odds_p2 > 0 ? Math.round((1 / m.odds_p2) * 100) : "?"}%`
-                : "⚖️ Nessun edge rilevato dal modello"}
-          </div>
-          {isValue && (
-            <div className="text-[10px] font-mono text-green-400">
-              💰 Value bet: edge +{(m.edge! * 100).toFixed(1)}% rispetto alla quota di mercato
+          <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Analisi Elo Surface</div>
+          {buildTennisReasons(m).map((r, i) => (
+            <div key={i} className={`text-[10px] font-mono leading-relaxed ${r.highlight ? "text-green-400" : "text-gray-400"}`}>
+              {r.icon} {r.text}
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
