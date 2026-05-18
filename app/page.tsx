@@ -1808,16 +1808,7 @@ function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipS
         const res = await fetch("/api/tennis-analysis", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            player1: m.player1, player2: m.player2,
-            tournament: m.tournament, round: m.round, surface: m.surface,
-            p1: m.p1, p2: m.p2, odds_p1: m.odds_p1, odds_p2: m.odds_p2,
-            edge: m.edge, best_selection: m.best_selection,
-            elo_p1: m.elo_p1, elo_p2: m.elo_p2,
-            elo_p1_overall: m.elo_p1_overall, elo_p2_overall: m.elo_p2_overall,
-            surface_matches_p1: m.surface_matches_p1, surface_matches_p2: m.surface_matches_p2,
-            elo_raw_p1: m.elo_raw_p1,
-          }),
+          body: JSON.stringify({ match_id: m.id }),
         });
         const data = await res.json() as { analysis?: string };
         if (data.analysis) setAiAnalysis(data.analysis);
