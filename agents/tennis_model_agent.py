@@ -98,8 +98,12 @@ class TennisModelAgent(BaseAgent):
 
         surface = self._infer_surface(market.get("competition", ""))
         elo_pred = self.elo.predict(player1, player2, surface)
-        p1, p2 = elo_pred["p1"], elo_pred["p2"]
+        elo_raw_p1, elo_raw_p2 = elo_pred["p1"], elo_pred["p2"]
+        p1, p2 = elo_raw_p1, elo_raw_p2
         p1, p2 = self.fatigue.adjust(p1, p2)
+
+        r1_data = self.elo._get(player1)
+        r2_data = self.elo._get(player2)
 
         odds_p1 = market.get("odds_p1") or 0.0
         odds_p2 = market.get("odds_p2") or 0.0
@@ -134,6 +138,15 @@ class TennisModelAgent(BaseAgent):
             "computed_at": datetime.now(timezone.utc).isoformat(),
             "selection_id_p1": market.get("selection_id_p1"),
             "selection_id_p2": market.get("selection_id_p2"),
+            # Elo analysis fields (for dashboard "why" section)
+            "elo_p1": round(elo_pred["r1_effective"], 1),
+            "elo_p2": round(elo_pred["r2_effective"], 1),
+            "elo_p1_overall": round(r1_data["overall"], 1),
+            "elo_p2_overall": round(r2_data["overall"], 1),
+            "surface_matches_p1": r1_data.get(f"{surface}_matches", 0),
+            "surface_matches_p2": r2_data.get(f"{surface}_matches", 0),
+            "elo_raw_p1": elo_raw_p1,
+            "elo_raw_p2": elo_raw_p2,
         }
 
     @staticmethod
