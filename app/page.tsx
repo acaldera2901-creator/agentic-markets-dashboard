@@ -814,14 +814,15 @@ function PortfolioTab({
   tennisBetSummary,
   tennisBets,
   onOpenDesk,
+  startingBalance = 0,
 }: {
   summary: Summary | null;
   bets: Bet[];
   tennisBetSummary: TennisBetSummary | null;
   tennisBets: TennisBet[];
   onOpenDesk: () => void;
+  startingBalance?: number;
 }) {
-  const startingBalance = 7.2;
   const portfolioBets = buildPortfolioBets(bets, tennisBets);
   const footballPnl = Number(summary?.pnl || 0);
   const tennisPnl = Number(tennisBetSummary?.pnl || 0);
@@ -1367,6 +1368,7 @@ function ProfilePanel({
   onLogout: () => void;
   onUpgrade: () => void;
 }) {
+  const hasPremium = profileHasPremium(profile);
   return (
     <section className="profile-panel">
       <div className="profile-card">
@@ -1378,14 +1380,16 @@ function ProfilePanel({
         </div>
         <button onClick={onLogout}>Logout</button>
       </div>
-      <div className="upgrade-card">
-        <div>
-          <p className="eyebrow">Passa a Pro</p>
-          <h3>Autopilot Agents</h3>
-          <span>Sblocca agenti automatici, stake sizing, stop loss e Betfair execution con betId verificato.</span>
+      {!hasPremium && (
+        <div className="upgrade-card">
+          <div>
+            <p className="eyebrow">Passa a Pro</p>
+            <h3>Autopilot Agents</h3>
+            <span>Sblocca agenti automatici, stake sizing, stop loss e Betfair execution con betId verificato.</span>
+          </div>
+          <button onClick={onUpgrade}>Upgrade to Pro</button>
         </div>
-        <button onClick={onUpgrade}>Upgrade to Pro</button>
-      </div>
+      )}
     </section>
   );
 }
@@ -1867,12 +1871,14 @@ function TennisTab({
   loading,
   computedAt,
   agents = [],
+  showPnl = false,
 }: {
   matches: TennisMatch[];
   summary: TennisSummary | null;
   loading: boolean;
   computedAt: string | null;
   agents?: AgentStatus[];
+  showPnl?: boolean;
 }) {
   const [surfaceFilter, setSurfaceFilter] = useState<string>("ALL");
 
@@ -1902,7 +1908,7 @@ function TennisTab({
         {[
           { label: "Matches Today",     value: String(summary?.total_today ?? matches.length), color: "text-white" },
           { label: "Value Bets",        value: String(valueBets.length),  color: "text-green-400" },
-          { label: "P&L Tennis",        value: `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`, color: pnl >= 0 ? "text-green-400" : "text-red-400" },
+          { label: "P&L Tennis",        value: showPnl ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : "—", color: showPnl ? (pnl >= 0 ? "text-green-400" : "text-red-400") : "text-gray-500" },
           { label: "Betfair Markets",   value: String(summary?.markets_active ?? 0), color: "text-amber-300" },
         ].map((kpi) => (
           <div key={kpi.label} className="glass-card p-4 text-center">
@@ -2817,17 +2823,16 @@ export default function Dashboard() {
       setAuthOpen(true);
       return;
     }
-    saveClientProfile({
-      ...clientProfile,
-      plan,
-    });
+    // Strip payment-flow residuals before activating plan
+    const { txHash: _tx, requestedPlan: _rp, ...rest } = clientProfile;
+    saveClientProfile({ ...rest, plan });
     setTab("overview");
   };
 
   const logoutClientProfile = () => {
     setClientProfile(null);
     setSlipSelection(null);
-    setTab("plans");
+    setTab("overview");
     window.localStorage.removeItem(CLIENT_PROFILE_KEY);
   };
 
@@ -3018,6 +3023,7 @@ export default function Dashboard() {
                 {tab === "tennis" && "Tennis · Elo Surface v2"}
                 {tab === "bets" && "Execution log"}
                 {tab === "history" && "Storico settled"}
+                {tab === "settings" && "Account settings"}
                 {tab === "agents" && "Health & safety"}
               </h2>
             </div>
@@ -3031,14 +3037,16 @@ export default function Dashboard() {
           {tab === "overview" && (
             isClientUnlocked ? (
               <>
-                <ClientInsightStrip
-                  summary={summary}
-                  predictions={predictions}
-                  tennisMatches={tennisMatches}
-                  bets={bets}
-                  computedAt={computedAt}
-                  tennisComputedAt={tennisComputedAt}
-                />
+                {isPremiumClient && (
+                  <ClientInsightStrip
+                    summary={summary}
+                    predictions={predictions}
+                    tennisMatches={tennisMatches}
+                    bets={bets}
+                    computedAt={computedAt}
+                    tennisComputedAt={tennisComputedAt}
+                  />
+                )}
                 <SportsbookBoard
                   predictions={predictions}
                   tennisMatches={tennisMatches}
@@ -3095,19 +3103,22 @@ export default function Dashboard() {
                 loading={tennisLoading}
                 computedAt={tennisComputedAt}
                 agents={agents}
+                showPnl={isPremiumClient}
               />
             </LockedGate>
           )}
           {tab === "predictions" && (
             <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
-              <ClientInsightStrip
-                summary={summary}
-                predictions={predictions}
-                tennisMatches={tennisMatches}
-                bets={bets}
-                computedAt={computedAt}
-                tennisComputedAt={tennisComputedAt}
-              />
+              {isPremiumClient && (
+                <ClientInsightStrip
+                  summary={summary}
+                  predictions={predictions}
+                  tennisMatches={tennisMatches}
+                  bets={bets}
+                  computedAt={computedAt}
+                  tennisComputedAt={tennisComputedAt}
+                />
+              )}
               <SportsbookBoard
                 predictions={predictions}
                 tennisMatches={tennisMatches}
@@ -3156,7 +3167,7 @@ export default function Dashboard() {
           {tab === "agents" && (
             <ClientStatusTab
               agents={agents}
-              bets={bets}
+              bets={isPremiumClient ? bets : []}
               tennisSummary={tennisSummary}
               computedAt={computedAt}
               tennisComputedAt={tennisComputedAt}
@@ -3164,11 +3175,13 @@ export default function Dashboard() {
           )}
         </section>
 
-        <BetSlip
-          key={slipSelection ? `${slipSelection.sport}-${slipSelection.id}-${slipSelection.selection}` : "empty-slip"}
-          selection={slipSelection}
-          onClear={() => setSlipSelection(null)}
-        />
+        {isClientUnlocked && (
+          <BetSlip
+            key={slipSelection ? `${slipSelection.sport}-${slipSelection.id}-${slipSelection.selection}` : "empty-slip"}
+            selection={slipSelection}
+            onClear={() => setSlipSelection(null)}
+          />
+        )}
       </section>
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono">
@@ -3180,7 +3193,7 @@ export default function Dashboard() {
           storedProfiles={storedProfiles}
           onClose={() => setAuthOpen(false)}
           onSave={handleAuthSave}
-          onNotFound={() => undefined}
+          onNotFound={(_email: string) => undefined}
         />
       )}
     </main>
