@@ -152,7 +152,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "overview" | "portfolio" | "plans" | "predictions" | "tennis" | "bets" | "history" | "settings" | "agents";
+type Tab = "overview" | "portfolio" | "plans" | "predictions" | "tennis" | "bets" | "partners" | "settings" | "agents";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -2489,6 +2489,164 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
   );
 }
 
+// ─── Partners Tab ─────────────────────────────────────────────────────────────
+
+type PartnerType = "Casino & Sportsbook" | "Sportsbook" | "Exchange" | "Casino" | "Crypto Casino";
+type PartnerStatus = "featured" | "active" | "coming_soon" | "in_discussion";
+
+interface Partner {
+  id: string;
+  name: string;
+  type: PartnerType;
+  status: PartnerStatus;
+  description: string;
+  url: string | null;
+  since: string;
+  logo_initials: string;
+  logo_color: string;
+  featured?: boolean;
+  tags?: string[];
+}
+
+const PARTNERS: Partner[] = [
+  {
+    id: "partner-01",
+    name: "Partner Principale",
+    type: "Casino & Sportsbook",
+    status: "featured",
+    description: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Integrazione diretta con Agentic Markets per segnali e edge calcolati in tempo reale.",
+    url: null,
+    since: "2026",
+    logo_initials: "P1",
+    logo_color: "from-amber-500 to-orange-600",
+    featured: true,
+    tags: ["Esclusivo", "Sport", "Casino", "Live"],
+  },
+];
+
+const PARTNER_STATUS_META: Record<PartnerStatus, { label: string; color: string }> = {
+  featured:      { label: "Partner Esclusivo", color: "text-amber-400 border-amber-400/40 bg-amber-400/10" },
+  active:        { label: "Attivo",            color: "text-green-400 border-green-400/40 bg-green-400/10" },
+  coming_soon:   { label: "Coming Soon",       color: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10" },
+  in_discussion: { label: "In Trattativa",     color: "text-gray-400 border-gray-400/30 bg-gray-400/5" },
+};
+
+function PartnerCard({ p }: { p: Partner }) {
+  const status = PARTNER_STATUS_META[p.status];
+  return (
+    <div className={`glass-card p-5 space-y-4 flex flex-col ${p.featured ? "border-amber-400/30" : ""}`}>
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.logo_color} flex items-center justify-center text-white font-bold text-lg shrink-0`}>
+          {p.logo_initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-bold text-white">{p.name}</span>
+            {p.featured && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded border border-amber-400/50 text-amber-400 bg-amber-400/10 font-mono uppercase tracking-wider">⭐ Featured</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-[10px] font-mono text-gray-500">{p.type}</span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${status.color}`}>{status.label}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      <p className="text-xs font-mono text-gray-400 leading-relaxed flex-1">{p.description}</p>
+
+      {/* Tags */}
+      {p.tags && p.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {p.tags.map((tag) => (
+            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-gray-500 font-mono">{tag}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+        <span className="text-[10px] font-mono text-gray-600">Partner dal {p.since}</span>
+        {p.url ? (
+          <a
+            href={p.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-mono px-3 py-1 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
+          >
+            Visita →
+          </a>
+        ) : (
+          <span className="text-[10px] font-mono text-gray-600 italic">Link in arrivo</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PartnersTab() {
+  const featured = PARTNERS.filter((p) => p.featured);
+  const others = PARTNERS.filter((p) => !p.featured);
+
+  return (
+    <div className="space-y-8 p-4">
+      {/* Header */}
+      <div className="space-y-1">
+        <p className="eyebrow">Rete commerciale</p>
+        <h2 className="text-xl font-bold text-white">Casino & Scommesse Partner</h2>
+        <p className="text-xs font-mono text-gray-500 max-w-lg">
+          Piattaforme di gioco e scommesse con cui Agentic Markets collabora — integrazione segnali, edge e strumenti AI per gli operatori del settore.
+        </p>
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Partner Attivi", value: String(PARTNERS.filter((p) => ["featured", "active"].includes(p.status)).length), color: "text-green-400" },
+          { label: "In Trattativa", value: String(PARTNERS.filter((p) => p.status === "in_discussion").length), color: "text-amber-300" },
+          { label: "Coming Soon",   value: String(PARTNERS.filter((p) => p.status === "coming_soon").length), color: "text-cyan-400" },
+        ].map((s) => (
+          <div key={s.label} className="glass-card p-3 text-center">
+            <div className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</div>
+            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Featured */}
+      {featured.length > 0 && (
+        <div className="space-y-3">
+          <div className="text-[9px] font-mono text-amber-400/70 uppercase tracking-widest">Partner Esclusivi</div>
+          <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+            {featured.map((p) => <PartnerCard key={p.id} p={p} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Others */}
+      {others.length > 0 && (
+        <div className="space-y-3">
+          <div className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">Network Partner</div>
+          <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+            {others.map((p) => <PartnerCard key={p.id} p={p} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Add partner CTA */}
+      <div className="glass-card p-5 border-dashed border-white/10 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center text-white/30 text-2xl shrink-0">+</div>
+        <div>
+          <div className="text-sm font-bold text-white/60">Aggiungi partner</div>
+          <div className="text-xs font-mono text-gray-600 mt-0.5">Casino, sportsbook o exchange — contattaci per integrare la tua piattaforma con Agentic Markets.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── History Tab ──────────────────────────────────────────────────────────────
 
 function HistoryTab({ history, stats, loading }: {
@@ -3010,10 +3168,7 @@ export default function Dashboard() {
 
   // Fetch history when tab is first opened
   useEffect(() => {
-    if (tab === "history" && history.length === 0) {
-      queueMicrotask(() => void fetchHistory());
-    }
-  }, [tab, history.length, fetchHistory]);
+  }, [tab]);
 
   const pnl = (summary?.pnl ?? 0) + (tennisBetSummary?.pnl ?? 0);
   const valueBets = predictions.filter((p) => p.edge != null && p.edge > 0.03);
@@ -3030,7 +3185,7 @@ export default function Dashboard() {
     { tab: "predictions",  label: "Best Bets",  value: isClientUnlocked ? String(predictions.length + tennisMatches.length) : "LOCK" },
     { tab: "tennis",       label: "Tennis",     value: isClientUnlocked ? String(tennisMatches.length) : "LOCK", tone: isClientUnlocked ? "amber" : undefined },
     { tab: "bets",         label: "Bets",       value: isPremiumClient ? String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) : "PRO", tone: isPremiumClient && ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
-    { tab: "history",      label: "Storico",    value: isPremiumClient ? String(historyStats?.total_matches ?? history.length) : "PRO" },
+    { tab: "partners",     label: "Partner",    value: String(PARTNERS.length) },
     { tab: "settings",     label: "Settings",   value: clientProfile ? (isPremiumClient ? "PRO" : "SET") : "LOGIN" },
     { tab: "agents",       label: "Status",     value: isPremiumClient ? (aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}`) : "PRO" },
   ];
@@ -3068,7 +3223,7 @@ export default function Dashboard() {
               key={item.tab}
               className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
               onClick={() => {
-                if (!isClientUnlocked && ["portfolio", "predictions", "tennis", "bets", "history", "agents"].includes(item.tab)) {
+                if (!isClientUnlocked && ["portfolio", "predictions", "tennis", "bets", "agents"].includes(item.tab)) {
                   setTab(item.tab);
                   openAuth("login");
                   return;
@@ -3100,7 +3255,7 @@ export default function Dashboard() {
                 {tab === "predictions" && "Best bets · Signal Desk"}
                 {tab === "tennis" && "Tennis · Elo Surface v2"}
                 {tab === "bets" && "Execution log"}
-                {tab === "history" && "Storico settled"}
+                {tab === "partners" && "Casino & Partner Network"}
                 {tab === "settings" && "Account settings"}
                 {tab === "agents" && "Health & safety"}
               </h2>
@@ -3221,24 +3376,7 @@ export default function Dashboard() {
               )}
             </LockedGate>
           )}
-          {tab === "history" && (
-            <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
-              {isPremiumClient ? (
-                <HistoryTab
-                  history={history}
-                  stats={historyStats}
-                  loading={historyLoading}
-                />
-              ) : (
-                <div className="premium-gate-card">
-                  <p className="eyebrow">Piano Premium</p>
-                  <h3>Storico scommesse</h3>
-                  <p>Lo storico dei settled e le performance storiche del modello sono disponibili solo con il Piano Premium. Nel Piano Base hai accesso ai segnali in tempo reale.</p>
-                  <button onClick={() => setTab("plans")}>Passa a Premium · €199/mese</button>
-                </div>
-              )}
-            </LockedGate>
-          )}
+          {tab === "partners" && <PartnersTab />}
           {tab === "settings" && (
             <SettingsTab
               profile={clientProfile}
