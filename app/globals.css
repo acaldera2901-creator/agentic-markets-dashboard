@@ -1438,25 +1438,9 @@ button:disabled {
 
 .market-list {
   display: grid;
-}
-
-.market-row {
-  min-height: 88px;
-  display: grid;
-  grid-template-columns: minmax(250px, 1.35fr) 132px 280px;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  align-items: center;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  transition: background 0.12s;
-}
-
-.market-row:last-child {
-  border-bottom: 0;
-}
-
-.market-row:hover {
-  background: rgba(140,145,255,0.035);
+  padding: 16px;
 }
 
 .event-cell {

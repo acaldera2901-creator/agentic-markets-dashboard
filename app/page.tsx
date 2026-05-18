@@ -554,7 +554,7 @@ function SportsbookBoard({
         </div>
         {footballRows.length ? (
           <div className="market-list">
-            {footballRows.map((p) => <FootballMarketRow key={p.match_id} p={p} onSelect={onSelect} />)}
+            {footballRows.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} />)}
           </div>
         ) : (
           <div className="book-empty">Football markets loading. Hit refresh if the board stays empty.</div>
@@ -568,7 +568,7 @@ function SportsbookBoard({
         </div>
         {tennisRows.length ? (
           <div className="market-list">
-            {tennisRows.map((m) => <TennisMarketRow key={m.id} m={m} onSelect={onSelect} />)}
+            {tennisRows.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} />)}
           </div>
         ) : (
           <div className="book-empty">Tennis markets loading. Fallback data appears when API is ready.</div>
@@ -1564,56 +1564,6 @@ function buildReasons(p: Prediction): Reason[] {
   return reasons;
 }
 
-function WhyPanel({ p, onClose }: { p: Prediction; onClose: () => void }) {
-  const reasons = buildReasons(p);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="glass-card max-w-lg w-full max-h-[80vh] overflow-y-auto p-5 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</div>
-            <div className="font-bold text-white text-base mt-0.5">
-              {p.home_team} <span className="text-gray-500 font-normal">vs</span> {p.away_team}
-            </div>
-            <div className="text-xs text-gray-500 font-mono mt-0.5">{fmtKickoff(p.kickoff)}</div>
-            {p.match_type && <MatchTypeBadge matchType={p.match_type} />}
-          </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-white text-xl font-mono shrink-0">✕</button>
-        </div>
-
-        <div className="space-y-1.5">
-          <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400" odds={p.odds_home}
-            isValue={p.best_selection === "HOME" && (p.edge ?? 0) > 0.03} />
-          <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400" odds={p.odds_draw}
-            isValue={p.best_selection === "DRAW" && (p.edge ?? 0) > 0.03} />
-          <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400" odds={p.odds_away}
-            isValue={p.best_selection === "AWAY" && (p.edge ?? 0) > 0.03} />
-        </div>
-
-        <div className="space-y-2">
-          <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider border-b border-white/10 pb-1">
-            Perché questa previsione
-          </div>
-          {reasons.map((r, i) => (
-            <div key={i} className={`flex gap-2 text-[11px] font-mono leading-relaxed ${r.highlight ? "text-white" : "text-gray-400"}`}>
-              <span className="shrink-0 w-4">{r.icon}</span>
-              <span>{r.text}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between text-[10px] text-gray-600 font-mono pt-2 border-t border-white/5">
-          <span>λ home {p.lambda_home?.toFixed(2) ?? "?"}</span>
-          <span>λ away {p.lambda_away?.toFixed(2) ?? "?"}</span>
-          <span>{p.model_matches ?? "?"} training matches</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const LEAGUE_BADGE_COLORS: Record<string, string> = {
   PL:  "text-violet-400 border-violet-400/40 bg-violet-400/10",
@@ -1625,118 +1575,114 @@ const LEAGUE_BADGE_COLORS: Record<string, string> = {
   EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
 };
 
-function PredictionCard({ p }: { p: Prediction }) {
+function PredictionCard({ p, onSelect }: { p: Prediction; onSelect?: (s: SlipSelection) => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const hasOdds = p.odds_home != null;
   const isValueBet = p.edge != null && p.edge > 0.03;
   const e = p.enrichment ?? {};
   const leagueBadgeColor = LEAGUE_BADGE_COLORS[p.league] ?? "text-gray-400 border-gray-400/40 bg-gray-400/10";
+  const reasons = buildReasons(p);
 
-  const betRec = isValueBet && hasOdds && p.best_selection ? (() => {
+  const handleSelect = () => {
+    if (!onSelect || !p.best_selection) return;
     const selOdds = p.best_selection === "HOME" ? p.odds_home : p.best_selection === "DRAW" ? p.odds_draw : p.odds_away;
     const selP = p.best_selection === "HOME" ? p.p_home : p.best_selection === "DRAW" ? p.p_draw : p.p_away;
-    if (!selOdds || selP == null) return null;
-    const b = selOdds - 1;
-    const q = 1 - selP;
-    const kelly = Math.max(0, (b * selP - q) / b);
-    const stake = Math.min(15, Math.max(1, Math.round(kelly * 0.25 * 500)));
-    return { selOdds, stake };
-  })() : null;
+    if (!selOdds || selP == null) return;
+    const confidence = confidenceFromEdge(p.edge, selP);
+    onSelect({
+      id: p.match_id,
+      sport: "Football",
+      event: `${p.home_team} vs ${p.away_team}`,
+      league: p.league,
+      kickoff: p.kickoff,
+      market: "1X2",
+      selection: p.best_selection === "HOME" ? p.home_team : p.best_selection === "DRAW" ? "Draw" : p.away_team,
+      odds: selOdds,
+      modelProbability: selP,
+      edge: p.edge,
+      confidence,
+      recommendedStake: stakeFromEdge(p.edge, confidence),
+    });
+  };
 
   return (
-    <>
-      <div
-        className={`glass-card p-4 space-y-3 cursor-pointer hover:border-cyan-400/30 transition-colors ${isValueBet ? "border-green-400/40" : ""}`}
-        onClick={() => setShowWhy(true)}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${leagueBadgeColor}`}>
-                {p.league}
-              </span>
-              <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
-            </div>
-            <div className="text-sm font-bold text-white mt-1">
-              {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            {isValueBet && (
-              <span className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono">
-                +EV {p.best_selection}
-              </span>
-            )}
-            {p.match_type && p.match_type !== "STANDARD" && (
-              <MatchTypeBadge matchType={p.match_type} />
-            )}
-            {e.research && (
-              <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">
-                AI
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-gray-500 font-mono">{fmtKickoff(p.kickoff)}</div>
-          {e.weather && (
-            <div className="flex items-center gap-1 text-xs font-mono text-gray-400">
-              <span>{e.weather.icon}</span>
-              <span>{e.weather.temp}°C</span>
-              {e.weather.wind > 6 && <span className="text-yellow-400">💨{e.weather.wind}m/s</span>}
-              {e.weather.rain > 0 && <span className="text-blue-400">🌧️{e.weather.rain}mm</span>}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1.5">
-          <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
-            odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-          <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
-            odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-          <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
-            odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
-        </div>
-
-        {(e.form_home || e.form_away) && (
-          <div className="space-y-1">
-            <FormRow label="HOME" form={e.form_home} />
-            <FormRow label="AWAY" form={e.form_away} />
-          </div>
-        )}
-
-        {betRec && (
-          <div className="rounded-lg border border-green-400/40 bg-green-400/5 px-3 py-2.5 flex items-center gap-3 mt-1">
-            <div className="flex-1 min-w-0">
-              <div className="text-[9px] font-mono text-green-400/50 uppercase tracking-widest mb-1">Scommetti</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-sm font-bold text-green-400 font-mono">{p.best_selection}</span>
-                <span className="text-sm font-mono text-white/80">@ {betRec.selOdds.toFixed(2)}</span>
-                <span className="text-[10px] font-mono text-green-400/60 ml-auto">edge +{((p.edge ?? 0) * 100).toFixed(1)}%</span>
-              </div>
-            </div>
-            <div className="text-right shrink-0 border-l border-green-400/20 pl-3">
-              <div className="text-lg font-bold text-white font-mono">€{betRec.stake}</div>
-              <div className="text-[9px] font-mono text-green-400/50 uppercase tracking-wider">stake</div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-          <span className="text-gray-600">Dixon-Coles · λ {p.lambda_home?.toFixed(1) ?? "?"}/{p.lambda_away?.toFixed(1) ?? "?"}</span>
-          {p.edge != null ? (
-            <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${p.edge > 0.03 ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
-              {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
+    <div className={`glass-card p-4 space-y-3 ${isValueBet ? "border-green-400/40" : ""}`}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${leagueBadgeColor}`}>
+              {p.league}
             </span>
-          ) : (
-            <span className="text-gray-600">no edge</span>
+            <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
+          </div>
+          <div className="text-sm font-bold text-white mt-1">
+            {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
+          </div>
+          <div className="text-xs text-gray-600 font-mono mt-0.5">{fmtKickoff(p.kickoff)}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {isValueBet && p.best_selection && (
+            <button
+              className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono hover:bg-green-400/20 transition-colors"
+              onClick={handleSelect}
+            >
+              +EV {p.best_selection}
+            </button>
+          )}
+          {p.match_type && p.match_type !== "STANDARD" && <MatchTypeBadge matchType={p.match_type} />}
+          {e.research && (
+            <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">AI</span>
           )}
         </div>
       </div>
 
-      {showWhy && <WhyPanel p={p} onClose={() => setShowWhy(false)} />}
-    </>
+      {/* Probability bars */}
+      <div className="space-y-1.5">
+        <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
+          odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
+        <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
+          odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
+        <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
+          odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
+      </div>
+
+      {/* Footer: model + edge + why toggle */}
+      <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
+        <button
+          className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
+          onClick={() => setShowWhy(!showWhy)}
+        >
+          {showWhy ? "▲ meno" : "▼ perché"}
+        </button>
+        <span className="text-gray-600">Dixon-Coles</span>
+        {p.edge != null ? (
+          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${p.edge > 0.03 ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
+            {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
+          </span>
+        ) : (
+          <span className="text-gray-600">no edge</span>
+        )}
+      </div>
+
+      {/* Inline Why section */}
+      {showWhy && (
+        <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Perché questa previsione</div>
+          {reasons.map((r, i) => (
+            <div key={i} className={`flex gap-2 text-[10px] font-mono leading-relaxed ${r.highlight ? "text-white" : "text-gray-500"}`}>
+              <span className="shrink-0">{r.icon}</span>
+              <span>{r.text}</span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between text-[9px] text-gray-600 font-mono pt-1 border-t border-white/5">
+            <span>λ home {p.lambda_home?.toFixed(2) ?? "?"}</span>
+            <span>λ away {p.lambda_away?.toFixed(2) ?? "?"}</span>
+            <span>{p.model_matches ?? "?"} matches</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1748,13 +1694,38 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
   HARD:  { label: "HARD",  color: "text-blue-400 border-blue-400/40 bg-blue-400/10" },
 };
 
-function TennisMatchCard({ m }: { m: TennisMatch }) {
+function TennisMatchCard({ m, onSelect }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void }) {
+  const [showWhy, setShowWhy] = useState(false);
   const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
   const isValue = m.edge != null && m.edge > 0.025;
   const scheduledDate = new Date(m.scheduled).toLocaleDateString("it-IT", {
     weekday: "short", day: "numeric", month: "short",
     hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome",
   });
+
+  const handleSelect = (player: "P1" | "P2") => {
+    if (!onSelect) return;
+    const isP1 = player === "P1";
+    const odds = isP1 ? m.odds_p1 : m.odds_p2;
+    const probability = isP1 ? m.p1 : m.p2;
+    const name = isP1 ? m.player1 : m.player2;
+    const edgeForSel = m.best_selection === player ? m.edge : null;
+    const confidence = confidenceFromEdge(edgeForSel, probability);
+    onSelect({
+      id: m.id,
+      sport: "Tennis",
+      event: `${m.player1} vs ${m.player2}`,
+      league: m.tournament,
+      kickoff: m.scheduled,
+      market: "Match Winner",
+      selection: name,
+      odds,
+      modelProbability: probability,
+      edge: edgeForSel,
+      confidence,
+      recommendedStake: stakeFromEdge(edgeForSel, confidence),
+    });
+  };
 
   return (
     <div className={`glass-card p-4 space-y-3 ${isValue ? "border-green-400/40" : ""}`}>
@@ -1773,16 +1744,19 @@ function TennisMatchCard({ m }: { m: TennisMatch }) {
           </div>
           <div className="text-xs text-gray-600 font-mono mt-0.5">{scheduledDate}</div>
         </div>
-        {isValue && (
-          <span className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono shrink-0">
+        {isValue && m.best_selection && (
+          <button
+            className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono shrink-0 hover:bg-green-400/20 transition-colors"
+            onClick={() => handleSelect(m.best_selection as "P1" | "P2")}
+          >
             +EV {m.best_selection}
-          </span>
+          </button>
         )}
       </div>
 
       {/* Probability bars */}
       <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P1")}>
           <span className="text-xs font-mono w-24 shrink-0 text-cyan-400 truncate">{m.player1.split(" ").pop()}</span>
           <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
             <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${Math.round(m.p1 * 100)}%` }} />
@@ -1790,7 +1764,7 @@ function TennisMatchCard({ m }: { m: TennisMatch }) {
           <span className="text-xs font-mono w-8 text-right text-cyan-400">{Math.round(m.p1 * 100)}%</span>
           <span className="text-xs font-mono text-gray-500 w-10 text-right">{m.odds_p1.toFixed(2)}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P2")}>
           <span className="text-xs font-mono w-24 shrink-0 text-fuchsia-400 truncate">{m.player2.split(" ").pop()}</span>
           <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
             <div className="h-full rounded-full bg-fuchsia-400 transition-all" style={{ width: `${Math.round(m.p2 * 100)}%` }} />
@@ -1800,17 +1774,45 @@ function TennisMatchCard({ m }: { m: TennisMatch }) {
         </div>
       </div>
 
-      {/* Edge */}
+      {/* Footer */}
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
+        <button
+          className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
+          onClick={() => setShowWhy(!showWhy)}
+        >
+          {showWhy ? "▲ meno" : "▼ perché"}
+        </button>
         <span className="text-gray-600">{m.model}</span>
         {m.edge != null && m.edge > 0 ? (
-          <span className={isValue ? "text-green-400" : "text-gray-500"}>
+          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-green-400 border-green-400/40 bg-green-400/10" : "text-gray-400 border-gray-400/30"}`}>
             edge +{(m.edge * 100).toFixed(1)}%
           </span>
         ) : (
           <span className="text-gray-600">no edge</span>
         )}
       </div>
+
+      {/* Inline Why */}
+      {showWhy && (
+        <div className="space-y-1.5 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Perché questa previsione</div>
+          <div className="text-[10px] font-mono text-gray-400 leading-relaxed">
+            🎾 Elo surface-adjusted: {m.model} — superficie {m.surface}
+          </div>
+          <div className="text-[10px] font-mono text-gray-400">
+            {m.best_selection === "P1"
+              ? `🧠 Favorito: ${m.player1} — p1 ${Math.round(m.p1 * 100)}% vs mercato ${m.odds_p1 > 0 ? Math.round((1 / m.odds_p1) * 100) : "?"}%`
+              : m.best_selection === "P2"
+                ? `🧠 Favorito: ${m.player2} — p2 ${Math.round(m.p2 * 100)}% vs mercato ${m.odds_p2 > 0 ? Math.round((1 / m.odds_p2) * 100) : "?"}%`
+                : "⚖️ Nessun edge rilevato dal modello"}
+          </div>
+          {isValue && (
+            <div className="text-[10px] font-mono text-green-400">
+              💰 Value bet: edge +{(m.edge! * 100).toFixed(1)}% rispetto alla quota di mercato
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
