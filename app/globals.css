@@ -2080,3 +2080,53 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+.premium-gate-card {
+  margin: 2rem auto;
+  max-width: 480px;
+  padding: 2rem;
+  border: 1px solid rgba(255,181,71,.3);
+  border-radius: 12px;
+  background: rgba(255,181,71,.04);
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  text-align: center;
+}
+
+.premium-gate-card .eyebrow {
+  color: var(--amber, #ffb547);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.premium-gate-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.premium-gate-card p {
+  font-size: .875rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.6;
+}
+
+.premium-gate-card button {
+  margin-top: .5rem;
+  padding: .65rem 1.5rem;
+  border-radius: 8px;
+  background: rgba(255,181,71,.12);
+  border: 1px solid rgba(255,181,71,.4);
+  color: var(--amber, #ffb547);
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+  align-self: center;
+}
+
+.premium-gate-card button:hover {
+  background: rgba(255,181,71,.22);
+}

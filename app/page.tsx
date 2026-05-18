@@ -2935,19 +2935,19 @@ export default function Dashboard() {
   const aliveAgents = agents.filter((a) => a.status === "alive").length;
   const totalAgents = agents.length || 16;
   const isClientUnlocked = profileHasAccess(clientProfile);
-  const privatePnlLabel = isClientUnlocked ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : PRIVATE_BALANCE_PLACEHOLDER;
+  const isPremiumClient = profileHasPremium(clientProfile);
 
   const tennisValueBets = tennisMatches.filter((m) => m.edge != null && m.edge > 0.03);
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "overview",     label: "Dashboard",  value: isClientUnlocked ? String(valueBets.length + tennisValueBets.length) : "LOCK", tone: "green" },
-    { tab: "portfolio",    label: "Portfolio",  value: privatePnlLabel, tone: isClientUnlocked ? "green" : undefined },
+    { tab: "portfolio",    label: "Portfolio",  value: isPremiumClient ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : "PRO", tone: isPremiumClient ? "green" : undefined },
     { tab: "plans",        label: "Plans",      value: "2", tone: "amber" },
     { tab: "predictions",  label: "Best Bets",  value: isClientUnlocked ? String(predictions.length + tennisMatches.length) : "LOCK" },
     { tab: "why",          label: "Why",        value: isClientUnlocked ? String(valueBets.length + tennisValueBets.length) : "LOCK" },
     { tab: "tennis",       label: "Tennis",     value: isClientUnlocked ? String(tennisMatches.length) : "LOCK", tone: isClientUnlocked ? "amber" : undefined },
-    { tab: "bets",         label: "Bets",       value: isClientUnlocked ? String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) : "LOCK", tone: isClientUnlocked && ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
+    { tab: "bets",         label: "Bets",       value: isPremiumClient ? String((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) : "PRO", tone: isPremiumClient && ((summary?.pending ?? 0) + (tennisBetSummary?.pending ?? 0)) > 0 ? "green" : undefined },
     { tab: "history",      label: "Storico",    value: isClientUnlocked ? String(historyStats?.total_matches ?? history.length) : "LOCK" },
-    { tab: "settings",     label: "Settings",   value: clientProfile ? (clientProfile.plan === "premium" || clientProfile.plan === "admin_full" ? "PRO" : "SET") : "LOGIN" },
+    { tab: "settings",     label: "Settings",   value: clientProfile ? (isPremiumClient ? "PRO" : "SET") : "LOGIN" },
     { tab: "agents",       label: "Status",     value: aliveAgents === totalAgents ? "OK" : `${aliveAgents}/${totalAgents}` },
   ];
 
@@ -2965,7 +2965,7 @@ export default function Dashboard() {
           <div className="live-badge">LIVE</div>
           <span>Net P&amp;L</span>
           <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"} style={{fontFamily:"ui-monospace,monospace", fontSize:"14px"}}>
-            {loading ? "—" : privatePnlLabel}
+            {loading ? "—" : isPremiumClient ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : "—"}
           </strong>
           <span>{isClientUnlocked ? `${predictions.length + tennisMatches.length} events` : "private desk"}</span>
           <span>{isClientUnlocked ? (valueBets.length + tennisValueBets.length > 0 ? `${valueBets.length + tennisValueBets.length} +EV` : "scanning") : "plans active"}</span>
@@ -3062,13 +3062,22 @@ export default function Dashboard() {
                   onUpgrade={() => setTab("plans")}
                 />
               )}
-              <PortfolioTab
-                summary={summary}
-                bets={bets}
-                tennisBetSummary={tennisBetSummary}
-                tennisBets={tennisBets}
-                onOpenDesk={() => setTab("overview")}
-              />
+              {isPremiumClient ? (
+                <PortfolioTab
+                  summary={summary}
+                  bets={bets}
+                  tennisBetSummary={tennisBetSummary}
+                  tennisBets={tennisBets}
+                  onOpenDesk={() => setTab("overview")}
+                />
+              ) : (
+                <div className="premium-gate-card">
+                  <p className="eyebrow">Piano Premium</p>
+                  <h3>Portfolio Betfair</h3>
+                  <p>Il portfolio collegato al tuo conto Betfair è disponibile solo con il Piano Premium. Nel Piano Base hai accesso ai segnali del desk — le scommesse le gestisci tu.</p>
+                  <button onClick={() => setTab("plans")}>Passa a Premium · €199/mese</button>
+                </div>
+              )}
             </LockedGate>
           )}
           {tab === "plans" && (
@@ -3113,10 +3122,19 @@ export default function Dashboard() {
           )}
           {tab === "bets" && (
             <LockedGate isUnlocked={isClientUnlocked} onUnlock={() => openAuth("login")}>
-              <BetsTab bets={bets} summary={summary ?? {
-                total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
-                win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
-              }} leaguePnl={leaguePnl} tennisBets={tennisBets} tennisBetSummary={tennisBetSummary} />
+              {isPremiumClient ? (
+                <BetsTab bets={bets} summary={summary ?? {
+                  total_bets: 0, won: 0, lost: 0, pending: 0, pnl: 0,
+                  win_rate: "0.0", avg_odds: "0.00", avg_stake: "0.00",
+                }} leaguePnl={leaguePnl} tennisBets={tennisBets} tennisBetSummary={tennisBetSummary} />
+              ) : (
+                <div className="premium-gate-card">
+                  <p className="eyebrow">Piano Premium</p>
+                  <h3>Execution log</h3>
+                  <p>Il log scommesse degli agenti è disponibile solo con il Piano Premium. Il tuo conto Betfair viene collegato durante l&apos;onboarding Premium e le bet vengono piazzate automaticamente dagli agenti.</p>
+                  <button onClick={() => setTab("plans")}>Passa a Premium · €199/mese</button>
+                </div>
+              )}
             </LockedGate>
           )}
           {tab === "history" && (
