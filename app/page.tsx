@@ -180,7 +180,7 @@ const BASE_TRANSLATIONS = {
     gate_bets_desc: "Il log scommesse degli agenti è disponibile solo con il Piano Premium. Il tuo conto exchange viene collegato durante l'onboarding Premium e le bet vengono piazzate automaticamente dagli agenti.",
     gate_agents_title: "Status agenti",
     gate_agents_desc: "Il monitor degli agenti è disponibile solo con il Piano Premium. Mostra heartbeat, errori e stato di ogni agente del tuo conto.",
-    gate_upgrade_btn: "Passa a Premium · €199/mese",
+    gate_upgrade_btn: "Passa a Premium",
     // Footer
     footer_note: "Sportsbook Edge Desk · solo execution verificata · interfaccia client-grade",
     // History
@@ -417,7 +417,7 @@ const BASE_TRANSLATIONS = {
     gate_bets_desc: "The agent bet log is available with the Premium Plan only. Your exchange account is linked during Premium onboarding and bets are placed automatically by agents.",
     gate_agents_title: "Agent status",
     gate_agents_desc: "The agent monitor is available with the Premium Plan only. Shows heartbeat, errors and status of every agent on your account.",
-    gate_upgrade_btn: "Upgrade to Premium · €199/month",
+    gate_upgrade_btn: "Upgrade to Premium",
     // Footer
     footer_note: "Sportsbook Edge Desk · verified execution only · client-grade interface",
     // History
@@ -496,7 +496,7 @@ const EXTRA_TRANSLATIONS = {
     locked_plan_eyebrow: "Upgrade requerido", locked_plan_title: "Actualiza tu paquete para desbloquear esta función",
     locked_plan_desc: "Tu perfil está activo. Esta vista requiere un nivel superior.", locked_plan_btn: "Ver planes",
     gate_eyebrow: "Plan Premium", gate_bets_title: "Registro de ejecución", gate_bets_desc: "Las apuestas automáticas y el registro de ejecución están disponibles solo con Premium.",
-    gate_upgrade_btn: "Pasar a Premium · €199/mes",
+    gate_upgrade_btn: "Pasar a Premium",
     topbar_private: "desk privado", topbar_scanning: "analizando", topbar_plans: "planes activos", topbar_syncing: "sincronizando",
     refresh_odds: "ACTUALIZAR ODDS", rail_exec_note: "Ejecución live solo con bet ID confirmado. Tennis en capa de señal.",
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
@@ -516,7 +516,7 @@ const EXTRA_TRANSLATIONS = {
     locked_plan_eyebrow: "Upgrade requis", locked_plan_title: "Passe à un niveau supérieur pour débloquer cette vue",
     locked_plan_desc: "Ton profil est actif. Cette section demande un niveau supérieur.", locked_plan_btn: "Voir les plans",
     gate_eyebrow: "Plan Premium", gate_bets_title: "Journal d'exécution", gate_bets_desc: "Les agents automatiques et le journal d'exécution sont disponibles uniquement avec Premium.",
-    gate_upgrade_btn: "Passer à Premium · €199/mois",
+    gate_upgrade_btn: "Passer à Premium",
     topbar_private: "desk privé", topbar_scanning: "analyse", topbar_plans: "plans actifs", topbar_syncing: "sync",
     refresh_odds: "RAFRAICHIR ODDS", rail_exec_note: "Exécution live seulement avec bet ID confirmé. Tennis en couche signal.",
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
@@ -536,7 +536,7 @@ const EXTRA_TRANSLATIONS = {
     locked_plan_eyebrow: "Нужен апгрейд", locked_plan_title: "Обнови пакет, чтобы открыть этот раздел",
     locked_plan_desc: "Профиль активен. Этот раздел требует более высокого уровня.", locked_plan_btn: "Смотреть планы",
     gate_eyebrow: "Premium план", gate_bets_title: "Журнал исполнения", gate_bets_desc: "Автоматические агенты и журнал исполнения доступны только в Premium.",
-    gate_upgrade_btn: "Перейти на Premium · €199/мес",
+    gate_upgrade_btn: "Перейти на Premium",
     topbar_private: "приватный desk", topbar_scanning: "анализ", topbar_plans: "планы активны", topbar_syncing: "синхронизация",
     refresh_odds: "ОБНОВИТЬ ODDS", rail_exec_note: "Live execution только с подтвержденным bet ID. Tennis в signal layer.",
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
@@ -724,10 +724,6 @@ const LEAGUE_FLAGS: Record<string, string> = {
   PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "⭐", EL: "🟠",
 };
 
-const LEAGUE_IMPORTANCE: Record<string, number> = {
-  CL: 5, EL: 4, PL: 3, SA: 3, PD: 3, BL1: 3, FL1: 3,
-};
-
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
   DERBY:              { label: "Derby",          color: "text-red-400 border-red-400/40 bg-red-400/10",        priority: 5 },
   TITLE_DECIDER:      { label: "Title",          color: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10", priority: 4 },
@@ -831,6 +827,7 @@ type ClientProfile = {
   email: string;
   plan: "free" | "unpaid" | "pending_payment" | "base" | "premium" | "admin_full";
   language?: Lang;
+  timezone?: string;
   txHash?: string;
   requestedPlan?: "base" | "premium";
   betfair?: {
@@ -844,15 +841,38 @@ type ClientProfile = {
     maxBetsPerDay: number;
     mode: "approval" | "automatic";
   };
+  notifications?: {
+    valueBets: boolean;
+    dailyReport: boolean;
+    paymentUpdates: boolean;
+    securityAlerts: boolean;
+  };
+  sportPreferences?: string[];
+  leaderboardOptIn?: boolean;
 };
 
 type ClientAuthIntent = "login" | "create";
 
 const USDT_TRC20_ADDRESS = "TDUeCx7BBVySkZ8M9eC5Cocq87K2TcmkRf";
-const PLAN_PRICES = {
-  base: { eur: 29, label: "Level 1 · Signal Desk" },
-  premium: { eur: 199, label: "Level 2 · Autopilot Agents" },
+const PLAN_CONFIG = {
+  base: {
+    eur: Number(process.env.NEXT_PUBLIC_BASE_PLAN_EUR ?? 29),
+    label: "Level 1 · Signal Desk",
+    envKey: "NEXT_PUBLIC_BASE_PLAN_EUR",
+  },
+  premium: {
+    eur: Number(process.env.NEXT_PUBLIC_PREMIUM_PLAN_EUR ?? 199),
+    label: "Level 2 · Autopilot Agents",
+    envKey: "NEXT_PUBLIC_PREMIUM_PLAN_EUR",
+  },
 } as const;
+type PlanKey = keyof typeof PLAN_CONFIG;
+
+function planPriceCopy(plan: PlanKey, lang: Lang) {
+  const amount = PLAN_CONFIG[plan].eur;
+  const suffix = lang === "it" ? "mese" : "month";
+  return amount > 0 ? `€${amount}/${suffix}` : "Configured at checkout";
+}
 const CLIENT_PROFILE_KEY = "agentic-client-profile";
 const CLIENT_PROFILES_KEY = "agentic-client-profiles";
 const PRIVATE_BALANCE_PLACEHOLDER = "LOCK";
@@ -906,14 +926,6 @@ function timeAgo(utc: string) {
   if (diff < 60) return `${diff}m ago`;
   const h = Math.floor(diff / 60);
   return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-}
-
-function matchImportance(p: Prediction | HistoryMatch): number {
-  const leaguePrio = LEAGUE_IMPORTANCE[p.league] ?? 2;
-  const edgePrio = (p.edge ?? 0) > 0.05 ? 2 : (p.edge ?? 0) > 0.02 ? 1 : 0;
-  const mt = "match_type" in p ? (p.match_type ?? "") : "";
-  const typePrio = MATCH_TYPE_META[mt as string]?.priority ?? 0;
-  return leaguePrio + edgePrio + typePrio;
 }
 
 function confidenceFromEdge(edge: number | null, probability: number) {
@@ -1057,146 +1069,6 @@ function isTennisBestBet(m: TennisMatch) {
     && odds != null
     && odds >= MIN_BEST_BET_ODDS
     && (m.edge ?? 0) >= TENNIS_BEST_EDGE_THRESHOLD;
-}
-
-function OddsButton({
-  label,
-  odds,
-  probability,
-  active,
-  onClick,
-}: {
-  label: string;
-  odds: number | null;
-  probability: number;
-  active?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button className={`odds-button ${active ? "is-value" : ""}`} disabled={odds == null} onClick={onClick}>
-      <span>{label}</span>
-      <strong>{odds == null ? "—" : odds.toFixed(2)}</strong>
-      <em>{pct(probability)}</em>
-    </button>
-  );
-}
-
-function FootballMarketRow({ p, onSelect }: { p: Prediction; onSelect: (selection: SlipSelection) => void }) {
-  const lang = useLang();
-  const tz = useTz();
-  const options = [
-    { key: "HOME", label: "1", odds: p.odds_home, probability: p.p_home, name: p.home_team },
-    { key: "DRAW", label: "X", odds: p.odds_draw, probability: p.p_draw, name: "Draw" },
-    { key: "AWAY", label: "2", odds: p.odds_away, probability: p.p_away, name: p.away_team },
-  ];
-
-  return (
-    <div className="market-row">
-      <div className="event-cell">
-        <div className="event-meta">
-          <span>{LEAGUE_FLAGS[p.league] ?? "FB"} {p.league}</span>
-          <span>{fmtKickoff(p.kickoff, lang, tz)}</span>
-          <MatchTypeBadge matchType={p.match_type} />
-        </div>
-        <strong>{p.home_team}</strong>
-        <strong>{p.away_team}</strong>
-      </div>
-      <div className="model-cell">
-        <span>Model</span>
-        <strong>{p.best_selection ?? "WAIT"}</strong>
-        <em className={isFootballBestBet(p) ? "text-green-300" : "text-gray-500"}>
-          {p.edge == null ? "no edge" : `${p.edge > 0 ? "+" : ""}${(p.edge * 100).toFixed(1)}%`}
-        </em>
-      </div>
-      <div className="odds-grid football">
-        {options.map((o) => {
-          const confidence = confidenceFromEdge(p.best_selection === o.key ? p.edge : null, o.probability);
-          return (
-            <OddsButton
-              key={o.key}
-              label={o.label}
-              odds={o.odds}
-              probability={o.probability}
-              active={p.best_selection === o.key && isFootballBestBet(p)}
-              onClick={() => o.odds != null && onSelect({
-                id: p.match_id,
-                sport: "Football",
-                event: `${p.home_team} vs ${p.away_team}`,
-                league: p.league,
-                kickoff: p.kickoff,
-                market: "1X2",
-                selection: o.name,
-                odds: o.odds,
-                modelProbability: o.probability,
-                edge: p.best_selection === o.key ? p.edge : null,
-                confidence,
-                recommendedStake: stakeFromEdge(p.best_selection === o.key ? p.edge : null, confidence),
-              })}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TennisMarketRow({ m, onSelect }: { m: TennisMatch; onSelect: (selection: SlipSelection) => void }) {
-  const lang = useLang();
-  const tz = useTz();
-  const isValueBet = isTennisBestBet(m);
-  const options = [
-    { key: "P1", label: "P1", odds: m.odds_p1, probability: m.p1, name: m.player1 },
-    { key: "P2", label: "P2", odds: m.odds_p2, probability: m.p2, name: m.player2 },
-  ] as const;
-
-  return (
-    <div className="market-row tennis-row">
-      <div className="event-cell">
-        <div className="event-meta">
-          <span>TN {m.surface}</span>
-          <span>{fmtKickoff(m.scheduled, lang, tz)}</span>
-          <span>{m.round}</span>
-        </div>
-        <strong>{m.player1}</strong>
-        <strong>{m.player2}</strong>
-      </div>
-      <div className="model-cell">
-        <span>{m.tournament}</span>
-        <strong>{m.best_selection ?? "WAIT"}</strong>
-        <em className={isValueBet ? "text-green-300" : "text-gray-500"}>
-          {m.edge == null ? "no edge" : `${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%`}
-        </em>
-      </div>
-      <div className="odds-grid tennis">
-        {options.map((o) => {
-          const confidence = confidenceFromEdge(m.best_selection === o.key ? m.edge : null, o.probability);
-          return (
-            <OddsButton
-              key={o.key}
-              label={o.label}
-              odds={o.odds}
-              probability={o.probability}
-              active={m.best_selection === o.key && isValueBet}
-              onClick={() => onSelect({
-                id: m.id,
-                sport: "Tennis",
-                event: `${m.player1} vs ${m.player2}`,
-                league: m.tournament,
-                kickoff: m.scheduled,
-                market: "Match Winner",
-                selection: o.name,
-                odds: o.odds,
-                modelProbability: o.probability,
-                edge: m.best_selection === o.key ? m.edge : null,
-                confidence,
-                recommendedStake: stakeFromEdge(m.best_selection === o.key ? m.edge : null, confidence),
-              })}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 function SportsbookBoard({
@@ -1636,80 +1508,6 @@ function BetSlip({ selection, onClear }: { selection: SlipSelection | null; onCl
   );
 }
 
-function DeskAdRail() {
-  const lang = useLang();
-  const copy = {
-    it: {
-      title: "Partner e sponsor",
-      subtitle: "Spazi sempre visibili per operatori, bookmaker e campagne future.",
-      slots: [
-        ["Main sponsor", "Slot operatore premium", "Banner laterale persistente."],
-        ["Affiliate", "Campagna acquisizione", "Tracking link e promo future."],
-        ["Media", "Partner editoriale", "Contenuto o sponsor educativo."],
-      ],
-      support: "Support chat placeholder",
-    },
-    en: {
-      title: "Partners and sponsors",
-      subtitle: "Always-visible slots for operators, bookmakers and future campaigns.",
-      slots: [
-        ["Main sponsor", "Premium operator slot", "Persistent side banner."],
-        ["Affiliate", "Acquisition campaign", "Future tracking links and promos."],
-        ["Media", "Editorial partner", "Content or educational sponsor."],
-      ],
-      support: "Support chat placeholder",
-    },
-    es: {
-      title: "Partners y sponsors",
-      subtitle: "Espacios siempre visibles para operadores, bookmakers y campañas futuras.",
-      slots: [
-        ["Sponsor principal", "Slot operador premium", "Banner lateral persistente."],
-        ["Afiliado", "Campaña de adquisición", "Links y promos futuras."],
-        ["Media", "Partner editorial", "Contenido o sponsor educativo."],
-      ],
-      support: "Chat de soporte placeholder",
-    },
-    fr: {
-      title: "Partenaires et sponsors",
-      subtitle: "Espaces toujours visibles pour opérateurs, bookmakers et campagnes futures.",
-      slots: [
-        ["Sponsor principal", "Slot opérateur premium", "Bannière latérale persistante."],
-        ["Affiliation", "Campagne acquisition", "Liens tracking et promos futures."],
-        ["Média", "Partenaire éditorial", "Contenu ou sponsor éducatif."],
-      ],
-      support: "Placeholder chat support",
-    },
-    ru: {
-      title: "Партнеры и спонсоры",
-      subtitle: "Постоянные места для операторов, букмекеров и будущих кампаний.",
-      slots: [
-        ["Главный спонсор", "Премиум слот оператора", "Постоянный боковой баннер."],
-        ["Affiliate", "Кампания привлечения", "Будущие tracking links и промо."],
-        ["Media", "Редакционный партнер", "Контент или образовательный спонсор."],
-      ],
-      support: "Support chat placeholder",
-    },
-  }[lang];
-
-  return (
-    <aside className="desk-ad-rail">
-      <div className="ad-rail-head">
-        <p className="eyebrow">Ads rail</p>
-        <h3>{copy.title}</h3>
-        <span>{copy.subtitle}</span>
-      </div>
-      {copy.slots.map(([label, title, desc]) => (
-        <article key={label} className="ad-slot-card">
-          <span>{label}</span>
-          <strong>{title}</strong>
-          <em>{desc}</em>
-        </article>
-      ))}
-      <button disabled>{copy.support}</button>
-    </aside>
-  );
-}
-
 function ClientInsightStrip({
   summary,
   predictions,
@@ -2101,14 +1899,18 @@ function DeskPreview() {
 
 function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: () => void }) {
   const lang = useLang();
+  const priceCopy = {
+    base: planPriceCopy("base", lang),
+    premium: planPriceCopy("premium", lang),
+  };
   const levels = lang === "it" ? [
     { name: "Free", price: "€0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-    { name: "Livello 1", price: "€29/mese", desc: "Best Bets, spiegazioni, board football/tennis e decisione manuale.", cta: "Vai ai piani", action: onPlans },
-    { name: "Livello 2", price: "€199/mese", desc: "Agent automation, execution log, account linking e controlli premium.", cta: "Vai ai piani", action: onPlans },
+    { name: "Livello 1", price: priceCopy.base, desc: "Best Bets, spiegazioni, board football/tennis e decisione manuale.", cta: "Vai ai piani", action: onPlans },
+    { name: "Livello 2", price: priceCopy.premium, desc: "Agent automation, execution log, account linking e controlli premium.", cta: "Vai ai piani", action: onPlans },
   ] : [
     { name: "Free", price: "€0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-    { name: "Level 1", price: "€29/month", desc: "Best Bets, explanations, football/tennis board and manual decisions.", cta: "View plans", action: onPlans },
-    { name: "Level 2", price: "€199/month", desc: "Agent automation, execution log, account linking and premium controls.", cta: "View plans", action: onPlans },
+    { name: "Level 1", price: priceCopy.base, desc: "Best Bets, explanations, football/tennis board and manual decisions.", cta: "View plans", action: onPlans },
+    { name: "Level 2", price: priceCopy.premium, desc: "Agent automation, execution log, account linking and premium controls.", cta: "View plans", action: onPlans },
   ];
   return (
     <section className="public-section">
@@ -2193,12 +1995,97 @@ function SponsorSlot({ label, title, desc }: { label: string; title: string; des
 
 function SupportHub() {
   const lang = useLang();
+  const [topic, setTopic] = useState("access");
+  const [priority, setPriority] = useState("normal");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const copy = lang === "it" ? {
+    eyebrow: "Supporto cliente",
+    title: "Apri una richiesta",
+    subtitle: "Descrivi il problema: il team potrà collegare questo flusso a email, Telegram o CRM senza cambiare la UI.",
+    topic: "Area",
+    priority: "Priorità",
+    message: "Messaggio",
+    placeholder: "Scrivi cosa non funziona, quale piano hai e cosa stavi provando a fare...",
+    send: "Prepara ticket",
+    sent: "Ticket preparato",
+    sentDesc: "La richiesta è pronta per essere collegata al canale supporto operativo.",
+    topics: [
+      ["access", "Accesso / login"],
+      ["payment", "Pagamento / TX hash"],
+      ["signals", "Prediction e best bets"],
+      ["execution", "Exchange / execution"],
+      ["account", "Profilo e impostazioni"],
+    ],
+    priorities: [
+      ["normal", "Normale"],
+      ["high", "Alta"],
+      ["urgent", "Urgente"],
+    ],
+  } : {
+    eyebrow: "Client support",
+    title: "Open a request",
+    subtitle: "Describe the issue: this flow can connect to email, Telegram or CRM without changing the UI.",
+    topic: "Area",
+    priority: "Priority",
+    message: "Message",
+    placeholder: "Write what is not working, which plan you have and what you were trying to do...",
+    send: "Prepare ticket",
+    sent: "Ticket prepared",
+    sentDesc: "The request is ready to be connected to the operating support channel.",
+    topics: [
+      ["access", "Access / login"],
+      ["payment", "Payment / TX hash"],
+      ["signals", "Predictions and best bets"],
+      ["execution", "Exchange / execution"],
+      ["account", "Profile and settings"],
+    ],
+    priorities: [
+      ["normal", "Normal"],
+      ["high", "High"],
+      ["urgent", "Urgent"],
+    ],
+  };
+
+  if (sent) {
+    return (
+      <section className="support-hub">
+        <p className="eyebrow">{copy.eyebrow}</p>
+        <h3>{copy.sent}</h3>
+        <p>{copy.sentDesc}</p>
+        <div className="support-ticket-summary">
+          <span>{copy.topic}: {copy.topics.find(([key]) => key === topic)?.[1]}</span>
+          <span>{copy.priority}: {copy.priorities.find(([key]) => key === priority)?.[1]}</span>
+        </div>
+        <button onClick={() => { setSent(false); setMessage(""); }}>{lang === "it" ? "Nuova richiesta" : "New request"}</button>
+      </section>
+    );
+  }
+
   return (
     <section className="support-hub">
-      <p className="eyebrow">Support</p>
-      <h3>{lang === "it" ? "Live chat placeholder" : "Live chat placeholder"}</h3>
-      <p>{lang === "it" ? "Qui collegheremo chat, onboarding e supporto cliente. Per ora è una struttura non attiva." : "Chat, onboarding and customer support will connect here. For now this is inactive structure."}</p>
-      <button disabled>{lang === "it" ? "Chat non attiva" : "Chat inactive"}</button>
+      <p className="eyebrow">{copy.eyebrow}</p>
+      <h3>{copy.title}</h3>
+      <p>{copy.subtitle}</p>
+      <div className="support-form">
+        <label>
+          <span>{copy.topic}</span>
+          <select value={topic} onChange={(event) => setTopic(event.target.value)}>
+            {copy.topics.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>{copy.priority}</span>
+          <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+            {copy.priorities.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+        <label className="support-message">
+          <span>{copy.message}</span>
+          <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={4} placeholder={copy.placeholder} />
+        </label>
+      </div>
+      <button disabled={message.trim().length < 8} onClick={() => setSent(true)}>{copy.send}</button>
     </section>
   );
 }
@@ -2246,13 +2133,14 @@ function CryptoPaymentBox({
   plan: "base" | "premium";
   onSubmit: (plan: "base" | "premium") => void;
 }) {
-  const price = PLAN_PRICES[plan];
+  const price = PLAN_CONFIG[plan];
   const t = useT();
+  const lang = useLang();
   return (
     <div className="crypto-pay-box">
       <div>
         <span>USDT TRC20</span>
-        <strong>{price.eur} EUR / {t.price_month}</strong>
+        <strong>{planPriceCopy(plan, lang)}</strong>
         {!profile && <em>{t.crypto_profile_required}</em>}
       </div>
       <button disabled={!profile} onClick={() => onSubmit(plan)}>
@@ -2273,7 +2161,7 @@ function CheckoutModal({
 }) {
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
-  const price = PLAN_PRICES[plan];
+  const price = PLAN_CONFIG[plan];
   const t = useT();
   const lang = useLang();
 
@@ -2492,7 +2380,7 @@ function PlansTab({
           </div>
           <p className="plan-description">{t.plans_base_desc}</p>
           <div className="price-line">
-            <strong>€29/month</strong>
+            <strong>{planPriceCopy("base", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
@@ -2521,7 +2409,7 @@ function PlansTab({
           </div>
           <p className="plan-description">{t.plans_premium_desc}</p>
           <div className="price-line">
-            <strong>€199/month</strong>
+            <strong>{planPriceCopy("premium", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
@@ -2568,6 +2456,7 @@ function SettingsTab({
   }, [profile]);
 
   const t = useT();
+  const lang = useLang();
 
   if (!draft) {
     return (
@@ -2580,20 +2469,97 @@ function SettingsTab({
   }
 
   const risk = draft.risk ?? { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" as const };
+  const notifications = draft.notifications ?? defaultNotifications();
+  const settingsTimezone = draft.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const sportPrefs = draft.sportPreferences ?? ["football", "tennis"];
+  const leaderboard = draft.leaderboardOptIn ?? false;
+  const isPremium = profileHasPremium(draft);
+
+  const toggleSport = (sport: string) => {
+    const current = draft.sportPreferences ?? ["football", "tennis"];
+    const next = current.includes(sport) ? current.filter((s) => s !== sport) : [...current, sport];
+    setDraft({ ...draft, sportPreferences: next });
+  };
+
+  const SPORTS = lang === "it"
+    ? [["football", "⚽ Football"], ["tennis", "🎾 Tennis"], ["basketball", "🏀 Basketball"], ["other", "Altri sport"]]
+    : [["football", "⚽ Football"], ["tennis", "🎾 Tennis"], ["basketball", "🏀 Basketball"], ["other", "Other sports"]];
+
+  const copy = lang === "it" ? {
+    profile: "Profilo",
+    accountDetails: "Dettagli account",
+    name: "Nome",
+    language: "Lingua",
+    timezone: "Timezone",
+    notifications: "Notifiche",
+    valueBets: "Nuovi value bet",
+    dailyReport: "Report giornaliero",
+    paymentUpdates: "Pagamenti e accesso",
+    securityAlerts: "Sicurezza account",
+    enabled: "Attivo",
+    disabled: "Disattivo",
+    riskProfile: "Risk profile",
+    autopilotLimits: "Limiti autopilot",
+    premiumOnly: "Premium",
+    maxStake: "Stake massimo per bet",
+    stopLoss: "Stop loss giornaliero",
+    maxBets: "Max bet al giorno",
+    mode: "Modalità",
+    automatic: "Automatico",
+    approval: "Richiede conferma",
+    sportPrefs: "Sport preferiti",
+    sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
+    leaderboardTitle: "Leaderboard",
+    leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate e ROI.",
+    leaderboardOn: "Partecipo",
+    leaderboardOff: "Non partecipo",
+  } : {
+    profile: "Profile",
+    accountDetails: "Account details",
+    name: "Name",
+    language: "Language",
+    timezone: "Timezone",
+    notifications: "Notifications",
+    valueBets: "New value bets",
+    dailyReport: "Daily report",
+    paymentUpdates: "Payment and access",
+    securityAlerts: "Account security",
+    enabled: "Enabled",
+    disabled: "Disabled",
+    riskProfile: "Risk profile",
+    autopilotLimits: "Autopilot limits",
+    premiumOnly: "Premium",
+    maxStake: "Max stake per bet",
+    stopLoss: "Daily stop loss",
+    maxBets: "Max bets per day",
+    mode: "Mode",
+    automatic: "Automatic",
+    approval: "Approval required",
+    sportPrefs: "Sport preferences",
+    sportPrefsDesc: "Receive predictions only for selected sports.",
+    leaderboardTitle: "Leaderboard",
+    leaderboardDesc: "Appear in the public leaderboard ranked by hit rate and ROI.",
+    leaderboardOn: "Opted in",
+    leaderboardOff: "Opted out",
+  };
+
+  const updateNotification = (key: keyof NonNullable<ClientProfile["notifications"]>) => {
+    setDraft({ ...draft, notifications: { ...notifications, [key]: !notifications[key] } });
+  };
 
   return (
     <div className="settings-view">
       <section className="settings-panel">
         <div className="settings-panel-head">
           <div>
-            <p className="eyebrow">Profile</p>
-            <h3>Account details</h3>
+            <p className="eyebrow">{copy.profile}</p>
+            <h3>{copy.accountDetails}</h3>
           </div>
           <span>{draft.plan.replace("_", " ")}</span>
         </div>
         <div className="settings-grid">
           <label>
-            <span>Name</span>
+            <span>{copy.name}</span>
             <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
           </label>
           <label>
@@ -2601,42 +2567,111 @@ function SettingsTab({
             <input value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
           </label>
           <label>
-            <span>Language</span>
+            <span>{copy.language}</span>
             <select value={draft.language ?? "it"} onChange={(event) => setDraft({ ...draft, language: event.target.value as Lang })}>
               {LANGUAGES.map((code) => (
                 <option key={code} value={code}>{languageLabel(code, t)}</option>
               ))}
             </select>
           </label>
+          <label>
+            <span>{copy.timezone}</span>
+            <select value={settingsTimezone} onChange={(event) => setDraft({ ...draft, timezone: event.target.value })}>
+              {TIMEZONE_OPTIONS.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+            </select>
+          </label>
         </div>
       </section>
 
-      <section className={`settings-panel ${profileHasPremium(draft) ? "" : "is-locked"}`}>
+      <section className="settings-panel">
         <div className="settings-panel-head">
           <div>
-            <p className="eyebrow">Risk profile</p>
-            <h3>Autopilot limits</h3>
+            <p className="eyebrow">{copy.notifications}</p>
+            <h3>{lang === "it" ? "Canali e trigger" : "Channels and triggers"}</h3>
           </div>
-          <span>{risk.mode}</span>
+          <span>{Object.values(notifications).filter(Boolean).length}/4</span>
+        </div>
+        <div className="settings-notification-list">
+          {([
+            ["valueBets", copy.valueBets],
+            ["dailyReport", copy.dailyReport],
+            ["paymentUpdates", copy.paymentUpdates],
+            ["securityAlerts", copy.securityAlerts],
+          ] as [keyof NonNullable<ClientProfile["notifications"]>, string][]).map(([key, label]) => (
+            <button key={key} type="button" className={notifications[key] ? "is-on" : ""} onClick={() => updateNotification(key)}>
+              <span>{label}</span>
+              <strong>{notifications[key] ? copy.enabled : copy.disabled}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-panel">
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">{copy.sportPrefs}</p>
+            <h3>{copy.sportPrefsDesc}</h3>
+          </div>
+          <span>{sportPrefs.length}</span>
+        </div>
+        <div className="settings-notification-list">
+          {SPORTS.map(([key, label]) => (
+            <button key={key} type="button"
+              className={sportPrefs.includes(key) ? "is-on" : ""}
+              onClick={() => toggleSport(key)}
+            >
+              <span>{label}</span>
+              <strong>{sportPrefs.includes(key) ? copy.enabled : copy.disabled}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-panel">
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">{copy.leaderboardTitle}</p>
+            <h3>{copy.leaderboardDesc}</h3>
+          </div>
+          <span>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</span>
+        </div>
+        <div className="settings-notification-list">
+          <button type="button"
+            className={leaderboard ? "is-on" : ""}
+            onClick={() => setDraft({ ...draft, leaderboardOptIn: !leaderboard })}
+          >
+            <span>{copy.leaderboardTitle}</span>
+            <strong>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</strong>
+          </button>
+        </div>
+      </section>
+
+      <section className={`settings-panel ${isPremium ? "" : "is-locked"}`}>
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">{copy.riskProfile}</p>
+            <h3>{copy.autopilotLimits}</h3>
+          </div>
+          <span>{isPremium ? risk.mode : copy.premiumOnly}</span>
         </div>
         <div className="settings-grid">
           <label>
-            <span>Max stake per bet</span>
-            <input disabled={!profileHasPremium(draft)} type="number" value={risk.maxStake} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxStake: Number(event.target.value) } })} />
+            <span>{copy.maxStake}</span>
+            <input disabled={!isPremium} type="number" value={risk.maxStake} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxStake: Number(event.target.value) } })} />
           </label>
           <label>
-            <span>Daily stop loss</span>
-            <input disabled={!profileHasPremium(draft)} type="number" value={risk.dailyStopLoss} onChange={(event) => setDraft({ ...draft, risk: { ...risk, dailyStopLoss: Number(event.target.value) } })} />
+            <span>{copy.stopLoss}</span>
+            <input disabled={!isPremium} type="number" value={risk.dailyStopLoss} onChange={(event) => setDraft({ ...draft, risk: { ...risk, dailyStopLoss: Number(event.target.value) } })} />
           </label>
           <label>
-            <span>Max bets per day</span>
-            <input disabled={!profileHasPremium(draft)} type="number" value={risk.maxBetsPerDay} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxBetsPerDay: Number(event.target.value) } })} />
+            <span>{copy.maxBets}</span>
+            <input disabled={!isPremium} type="number" value={risk.maxBetsPerDay} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxBetsPerDay: Number(event.target.value) } })} />
           </label>
           <label>
-            <span>Mode</span>
-            <select disabled={!profileHasPremium(draft)} value={risk.mode} onChange={(event) => setDraft({ ...draft, risk: { ...risk, mode: event.target.value as "approval" | "automatic" } })}>
-              <option value="automatic">Full automatic</option>
-              <option value="approval">Approval required</option>
+            <span>{copy.mode}</span>
+            <select disabled={!isPremium} value={risk.mode} onChange={(event) => setDraft({ ...draft, risk: { ...risk, mode: event.target.value as "approval" | "automatic" } })}>
+              <option value="automatic">{copy.automatic}</option>
+              <option value="approval">{copy.approval}</option>
             </select>
           </label>
         </div>
@@ -2692,8 +2727,10 @@ function ClientAuthModal({
             email: normalizedEmail,
             plan: "free",
             language: lang,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome",
             risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
             betfair: { status: "not_connected" },
+            notifications: defaultNotifications(),
           });
         }}
       >
@@ -2734,6 +2771,17 @@ function profileHasSignalPreview(profile: ClientProfile | null) {
 
 function profileHasPremium(profile: ClientProfile | null) {
   return Boolean(profile && (["premium", "admin_full"].includes(profile.plan) || (profile.plan === "pending_payment" && profile.requestedPlan === "premium")));
+}
+
+const TIMEZONE_OPTIONS = ["Europe/Rome", "Europe/Oslo", "Europe/London", "America/New_York", "America/Sao_Paulo", "Asia/Dubai"];
+
+function defaultNotifications(): NonNullable<ClientProfile["notifications"]> {
+  return {
+    valueBets: true,
+    dailyReport: true,
+    paymentUpdates: true,
+    securityAlerts: true,
+  };
 }
 
 function ProfilePanel({
@@ -4680,305 +4728,6 @@ function HistoryTab({ history, stats, loading }: {
   );
 }
 
-// ─── Predictions Tab ──────────────────────────────────────────────────────────
-
-type SortMode = "kickoff_asc" | "kickoff_desc" | "edge_desc" | "importance_desc";
-type ImportanceFilter = "all" | "european" | "top5" | "value";
-
-function PredictionsTab({
-  predictions, computedAt, loading, refreshing, isStale, onRefresh,
-}: {
-  predictions: Prediction[];
-  computedAt: string | null;
-  loading: boolean;
-  refreshing: boolean;
-  isStale: boolean;
-  onRefresh: () => void;
-}) {
-  const t = useT();
-  const [leagueFilter, setLeagueFilter] = useState("ALL");
-  const [valueOnly, setValueOnly] = useState(false);
-  const [sortMode, setSortMode] = useState<SortMode>("kickoff_asc");
-  const [importanceFilter, setImportanceFilter] = useState<ImportanceFilter>("all");
-  const [matchTypeFilter, setMatchTypeFilter] = useState("ALL");
-
-  const allLeagues = [...new Set(predictions.map((p) => p.league))];
-  const allMatchTypes = [...new Set(predictions.map((p) => p.match_type ?? "STANDARD").filter(Boolean))];
-  const hasMatchTypes = allMatchTypes.some((t) => t !== "STANDARD" && t !== "ROTATION");
-
-  const filtered = predictions
-    .filter((p) => {
-      if (leagueFilter !== "ALL" && p.league !== leagueFilter) return false;
-      if (valueOnly && !isFootballBestBet(p)) return false;
-      if (importanceFilter === "european" && !["CL", "EL"].includes(p.league)) return false;
-      if (importanceFilter === "top5" && !["PL", "SA", "PD", "BL1", "FL1"].includes(p.league)) return false;
-      if (importanceFilter === "value" && !isFootballBestBet(p)) return false;
-      if (matchTypeFilter !== "ALL" && (p.match_type ?? "STANDARD") !== matchTypeFilter) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortMode) {
-        case "kickoff_asc":  return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
-        case "kickoff_desc": return new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime();
-        case "edge_desc":    return (b.edge ?? -1) - (a.edge ?? -1);
-        case "importance_desc": return matchImportance(b) - matchImportance(a);
-        default: return 0;
-      }
-    });
-
-  const valueBets = predictions.filter(isFootballBestBet);
-
-  return (
-    <div className="space-y-4">
-      {/* Header row */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-xs text-gray-500 font-mono">
-          {t.pred_model_badge} ·{" "}
-          {computedAt ? `${t.tennis_computed} ${timeAgo(computedAt)}` : "loading…"}
-          {valueBets.length > 0 && (
-            <span className="ml-2 text-green-400">· {valueBets.length} {valueBets.length > 1 ? t.pred_value_bets : t.pred_value_bet}</span>
-          )}
-        </p>
-        <button onClick={onRefresh} disabled={refreshing}
-          className="px-3 py-1.5 rounded-lg border border-cyan-400/40 text-cyan-300 text-xs font-mono hover:bg-cyan-400/10 transition disabled:opacity-40">
-          {refreshing ? t.pred_computing : t.pred_refresh}
-        </button>
-      </div>
-      {isStale && !loading && (
-        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-yellow-400/30 bg-yellow-400/5 text-xs font-mono text-yellow-400">
-          <span>{t.pred_stale_warning}</span>
-        </div>
-      )}
-
-      {/* Filter bar */}
-      <div className="glass-card p-3 space-y-3">
-        {/* Row 1: Sort */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_sort_label}</span>
-          {([
-            { key: "kickoff_asc", label: t.pred_sort_closest },
-            { key: "kickoff_desc", label: t.pred_sort_farthest },
-            { key: "edge_desc", label: t.pred_sort_best_edge },
-            { key: "importance_desc", label: t.pred_sort_importance },
-          ] as { key: SortMode; label: string }[]).map((s) => (
-            <button key={s.key} onClick={() => setSortMode(s.key)}
-              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                sortMode === s.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
-              }`}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 2: Category */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_cat_label}</span>
-          {([
-            { key: "all", label: t.pred_cat_all },
-            { key: "european", label: t.pred_cat_european },
-            { key: "top5", label: t.pred_cat_top5 },
-            { key: "value", label: t.pred_cat_ev },
-          ] as { key: ImportanceFilter; label: string }[]).map((f) => (
-            <button key={f.key} onClick={() => setImportanceFilter(f.key)}
-              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                importanceFilter === f.key ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
-              }`}>
-              {f.label}
-            </button>
-          ))}
-          <button onClick={() => setValueOnly(!valueOnly)}
-            className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-              valueOnly ? "border-green-400 text-green-400 bg-green-400/10" : "border-white/10 text-gray-400 hover:border-green-400/40"
-            }`}>
-            {t.pred_value_only}
-          </button>
-        </div>
-
-        {/* Row 3: League filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_league_label}</span>
-          {["ALL", ...allLeagues].map((l) => (
-            <button key={l} onClick={() => setLeagueFilter(l)}
-              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                leagueFilter === l ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
-              }`}>
-              {LEAGUE_FLAGS[l] ?? ""} {l}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 4: Match type filter (only shown if Python pipeline provides types) */}
-        {hasMatchTypes && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_type_label}</span>
-            {["ALL", ...allMatchTypes].map((mt) => (
-              <button key={mt} onClick={() => setMatchTypeFilter(mt)}
-                className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                  matchTypeFilter === mt
-                    ? "border-amber-400 text-amber-300 bg-amber-400/10"
-                    : "border-white/10 text-gray-400 hover:border-amber-400/40"
-                }`}>
-                {mt === "ALL" ? t.pred_all_types : (MATCH_TYPE_META[mt]?.label ?? mt)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Results count */}
-        <div className="text-[10px] text-gray-600 font-mono">
-          {t.pred_showing} {filtered.length} {t.pred_of} {predictions.length} {t.pred_predictions}
-          {valueBets.length > 0 && ` · ${valueBets.length} ${valueBets.length > 1 ? t.pred_value_bets : t.pred_value_bet}`}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="glass-card p-12 text-center text-gray-400 font-mono">
-          <div className="animate-pulse">{t.loading_predictions}</div>
-          <div className="text-xs mt-2 text-gray-600">{t.pred_loading_sub}</div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-card p-8 text-center text-gray-400 font-mono">
-          {predictions.length === 0 ? t.no_predictions : t.no_match_filters}
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((p) => <PredictionCard key={p.match_id} p={p} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── (OperatorsTab merged into PartnersTab) ────────────────────────────────────
-
-function OperatorsTab_UNUSED() {
-  const lang = useLang();
-  const [form, setForm] = useState({ company: "", site: "", category: "sportsbook" as PartnerCategory, email: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  const placeholders = [
-    { type: lang === "it" ? "Sportsbook" : "Sportsbook", name: "Partner Slot 1", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-    { type: "Casino", name: "Partner Slot 2", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-    { type: "Exchange", name: "Partner Slot 3", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-    { type: lang === "it" ? "Data Provider" : "Data Provider", name: "Partner Slot 4", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-  ];
-
-  const categoryLabels: Record<PartnerCategory, string> = lang === "it"
-    ? { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" }
-    : { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.company || !form.email) return;
-    setStatus("sending");
-    try {
-      const res = await fetch("/api/partner-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      setStatus(res.ok ? "sent" : "error");
-    } catch {
-      setStatus("error");
-    }
-  };
-
-  return (
-    <div className="operators-page">
-
-      {/* Hero */}
-      <div className="operators-hero">
-        <p className="eyebrow">Agentic Markets · Operators</p>
-        <h3>{lang === "it" ? "Dove piazzare le tue scommesse" : "Where to place your bets"}</h3>
-        <p>{lang === "it"
-          ? "I nostri partner verificati ti offrono le migliori condizioni per scommettere sulle prediction del modello. Presto disponibili."
-          : "Our verified partners offer the best conditions to bet on model predictions. Coming soon."
-        }</p>
-      </div>
-
-      {/* Partner grid */}
-      <div className="operators-grid">
-        {placeholders.map((p) => (
-          <div key={p.name} className="operator-card available">
-            <div className="operator-card-type">{p.type}</div>
-            <div className="operator-card-name">{p.name}</div>
-            <div className="operator-card-desc">{p.desc}</div>
-            <div className="operator-card-badge">{lang === "it" ? "In arrivo" : "Coming soon"}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Collaboration form */}
-      <div className="operators-collab">
-        <div className="operators-collab-head">
-          <p className="eyebrow">{lang === "it" ? "Sei un operatore?" : "Are you an operator?"}</p>
-          <h4>{lang === "it" ? "Diventa partner di Agentic Markets" : "Become an Agentic Markets partner"}</h4>
-          <p>{lang === "it"
-            ? "Collaboriamo con sportsbook, casino, exchange e data provider. Scrivi una richiesta di partnership e ti contatteremo entro 48 ore."
-            : "We partner with sportsbooks, casinos, exchanges and data providers. Send a partnership request and we'll reply within 48 hours."
-          }</p>
-        </div>
-
-        {status === "sent" ? (
-          <div className="operators-sent">
-            <span>✓</span>
-            <p>{lang === "it" ? "Richiesta inviata. Ti contatteremo entro 48 ore." : "Request sent. We'll contact you within 48 hours."}</p>
-          </div>
-        ) : (
-          <form className="operators-form" onSubmit={handleSubmit}>
-            <div className="operators-form-row">
-              <label>
-                <span>{lang === "it" ? "Azienda / Brand" : "Company / Brand"}</span>
-                <input type="text" required value={form.company}
-                  onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  placeholder={lang === "it" ? "Es. Bet365, PokerStars…" : "e.g. Bet365, PokerStars…"} />
-              </label>
-              <label>
-                <span>{lang === "it" ? "Sito web" : "Website"}</span>
-                <input type="url" value={form.site}
-                  onChange={(e) => setForm({ ...form, site: e.target.value })}
-                  placeholder="https://…" />
-              </label>
-            </div>
-            <div className="operators-form-row">
-              <label>
-                <span>{lang === "it" ? "Tipo operatore" : "Operator type"}</span>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as PartnerCategory })}>
-                  {PARTNER_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{categoryLabels[c]}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Email</span>
-                <input type="email" required value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="partnerships@yoursite.com" />
-              </label>
-            </div>
-            <label>
-              <span>{lang === "it" ? "Messaggio (opzionale)" : "Message (optional)"}</span>
-              <textarea rows={3} value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
-                placeholder={lang === "it" ? "Descrivi brevemente la tua proposta…" : "Briefly describe your proposal…"} />
-            </label>
-            <button type="submit" className="btn-primary" disabled={status === "sending"}>
-              {status === "sending"
-                ? (lang === "it" ? "Invio…" : "Sending…")
-                : (lang === "it" ? "Invia richiesta di partnership" : "Send partnership request")}
-            </button>
-            {status === "error" && (
-              <p style={{ color: "var(--red)", fontSize: 12, marginTop: 8 }}>
-                {lang === "it" ? "Errore nell'invio. Riprova." : "Send error. Please try again."}
-              </p>
-            )}
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Assistance Tab ───────────────────────────────────────────────────────────
 
 function AssistanceTab() {
@@ -4995,14 +4744,14 @@ function FAQTab() {
     ["Cosa sblocca il Livello 1 (Base)?", "Best Bets, spiegazioni e board sportivo per decisione manuale."],
     ["Cosa sblocca il Livello 2 (Premium)?", "Dashboard completa, execution log e agenti automatici quando il conto è collegato."],
     ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
-    ["Quanto ci vuole per l'attivazione?", "Normalmente 24h. Riceverai conferma via email."],
+    ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
   ] : [
     ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
     ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
     ["What does Level 1 (Base) unlock?", "Best Bets, explanations and sports board for manual decision-making."],
     ["What does Level 2 (Premium) unlock?", "Full dashboard, execution log and automated agents once account is linked."],
     ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
-    ["How long does activation take?", "Usually 24h. You'll receive email confirmation."],
+    ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
   ];
   return <FAQSupportSection items={faqItems} />;
 }
@@ -5023,8 +4772,103 @@ function ClientAreaTab({
   onLogout: () => void;
 }) {
   const lang = useLang();
+  const t = useT();
+  const plan = profile?.plan ?? "unpaid";
+  const accessState = profileHasPremium(profile)
+    ? "Premium"
+    : profileHasAccess(profile)
+      ? "Base"
+      : profile?.plan === "free"
+        ? "Free"
+        : profile?.plan === "pending_payment"
+          ? "Review"
+          : "Login";
+  const notifications = profile?.notifications ?? defaultNotifications();
+  const statusCopy = lang === "it" ? {
+    title: "Dashboard cliente",
+    subtitle: "Profilo, piano e stato accesso in un solo posto.",
+    currentPlan: "Piano attuale",
+    access: "Stato accesso",
+    exchange: "Conto exchange",
+    timezone: "Timezone",
+    notifications: "Notifiche attive",
+    payment: "Pagamento",
+    paymentOk: "Accesso attivo",
+    paymentFree: "Free attivo",
+    paymentReview: "TX ricevuto",
+    paymentMissing: "Nessun piano selezionato",
+    connected: "Collegato",
+    notConnected: "Da collegare",
+    openDesk: "Apri desk",
+    logout: "Esci dall'account",
+  } : {
+    title: "Client dashboard",
+    subtitle: "Profile, plan and access status in one place.",
+    currentPlan: "Current plan",
+    access: "Access status",
+    exchange: "Exchange account",
+    timezone: "Timezone",
+    notifications: "Active notifications",
+    payment: "Payment",
+    paymentOk: "Access active",
+    paymentFree: "Free active",
+    paymentReview: "TX received",
+    paymentMissing: "No plan selected",
+    connected: "Connected",
+    notConnected: "Needs setup",
+    openDesk: "Open desk",
+    logout: "Log out",
+  };
+  const paymentState = plan === "pending_payment"
+    ? statusCopy.paymentReview
+    : profileHasAccess(profile)
+      ? statusCopy.paymentOk
+      : plan === "free"
+        ? statusCopy.paymentFree
+        : statusCopy.paymentMissing;
   return (
-    <>
+    <div className="client-area-view">
+      <section className="client-area-hero">
+        <div>
+          <p className="eyebrow">Client Area</p>
+          <h3>{statusCopy.title}</h3>
+          <span>{statusCopy.subtitle}</span>
+        </div>
+        <button onClick={onOpenDesk}>{statusCopy.openDesk}</button>
+      </section>
+
+      {profile ? (
+        <section className="client-account-summary">
+          <div className="client-account-main">
+            <div className="profile-avatar">{profile.name.slice(0, 1).toUpperCase()}</div>
+            <div>
+              <p className="eyebrow">{profile.email}</p>
+              <h3>{profile.name}</h3>
+              <span>{statusCopy.currentPlan}: {plan.replace("_", " ")}</span>
+            </div>
+          </div>
+          <div className="client-account-kpis">
+            <article><span>{statusCopy.access}</span><strong>{accessState}</strong></article>
+            <article><span>{statusCopy.payment}</span><strong>{paymentState}</strong></article>
+            <article><span>{statusCopy.exchange}</span><strong>{profile.betfair?.status === "connected" ? statusCopy.connected : statusCopy.notConnected}</strong></article>
+            <article><span>{statusCopy.timezone}</span><strong>{profile.timezone ?? "Europe/Rome"}</strong></article>
+            <article><span>{statusCopy.notifications}</span><strong>{Object.values(notifications).filter(Boolean).length}/4</strong></article>
+          </div>
+          {profile.txHash && (
+            <div className="client-account-note">
+              <span>{t.pending_tx_label}</span>
+              <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="settings-empty">
+          <p className="eyebrow">Client profile</p>
+          <h3>{t.settings_empty_title}</h3>
+          <button onClick={onActivateFree}>{t.settings_empty_btn}</button>
+        </section>
+      )}
+
       <PlansTab
         profile={profile}
         onOpenDesk={onOpenDesk}
@@ -5032,13 +4876,13 @@ function ClientAreaTab({
         onActivateFree={onActivateFree}
       />
       {profile && (
-        <div style={{ padding: "8px 24px 24px", borderTop: "1px solid var(--border)" }}>
-          <button className="btn-secondary" onClick={onLogout} style={{ marginTop: 12 }}>
-            {lang === "it" ? "Esci dall'account" : "Log out"}
+        <div className="client-area-footer">
+          <button className="btn-secondary" onClick={onLogout}>
+            {statusCopy.logout}
           </button>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
