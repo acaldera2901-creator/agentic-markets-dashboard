@@ -9,9 +9,8 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     API_FOOTBALL_KEY: str = ""
     ODDS_API_KEY: str = ""
-    BETFAIR_APP_KEY: str = ""
-    BETFAIR_USERNAME: str = ""
-    BETFAIR_PASSWORD: str = ""
+    MATCHBOOK_USERNAME: str = ""
+    MATCHBOOK_PASSWORD: str = ""
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_CHAT_ID: str = ""
 

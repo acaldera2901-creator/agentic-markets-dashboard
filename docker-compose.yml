@@ -4,9 +4,11 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
+      timeout: 3s
       retries: 5
 
   postgres:
@@ -19,10 +21,51 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U agentic"]
       interval: 5s
+      timeout: 3s
       retries: 5
+
+  app:
+    build: .
+    command: python run.py
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://agentic:password@postgres:5432/agentic_markets
+    volumes:
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  dashboard:
+    build: .
+    command: uvicorn dashboard.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://agentic:password@postgres:5432/agentic_markets
 
 volumes:
   pgdata:

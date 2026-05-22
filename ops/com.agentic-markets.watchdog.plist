@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agentic-markets.watchdog</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/venv/bin/python</string>
+    <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/scripts/agent_watchdog.py</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/calde/Desktop/sistema-andrea/agentic-markets</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>60</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/logs/watchdog.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/logs/watchdog.err.log</string>
+</dict>
+</plist>

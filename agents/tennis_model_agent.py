@@ -6,6 +6,8 @@ from agents.base import BaseAgent
 from core.redis_client import get_redis
 from models.elo_surface import EloSurfaceModel
 
+MIN_ODDS = 1.50  # don't bet heavy favourites — compounded variance destroys EV
+
 
 class FatigueAdjustment:
     MAX_ADJUSTMENT = 0.04
@@ -111,15 +113,24 @@ class TennisModelAgent(BaseAgent):
         edge_p1 = round(p1 - (1.0 / odds_p1), 4) if odds_p1 else None
         edge_p2 = round(p2 - (1.0 / odds_p2), 4) if odds_p2 else None
 
+        best_selection = None
+        edge = None
         if edge_p1 is not None and edge_p2 is not None:
-            if edge_p1 >= edge_p2 and edge_p1 > 0:
+            p1_eligible = odds_p1 >= MIN_ODDS
+            p2_eligible = odds_p2 >= MIN_ODDS
+            if p1_eligible and p2_eligible:
+                if edge_p1 >= edge_p2 and edge_p1 > 0:
+                    best_selection, edge = "P1", edge_p1
+                elif edge_p2 > 0:
+                    best_selection, edge = "P2", edge_p2
+                else:
+                    edge = max(edge_p1, edge_p2)
+            elif p1_eligible and edge_p1 > 0:
                 best_selection, edge = "P1", edge_p1
-            elif edge_p2 > 0:
+            elif p2_eligible and edge_p2 > 0:
                 best_selection, edge = "P2", edge_p2
             else:
-                best_selection, edge = None, max(edge_p1, edge_p2)
-        else:
-            best_selection, edge = None, None
+                edge = max(edge_p1, edge_p2)
 
         return {
             "match_id": market.get("market_id", ""),

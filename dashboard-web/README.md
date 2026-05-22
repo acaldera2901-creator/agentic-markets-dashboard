@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agentic Markets Dashboard Web
 
-## Getting Started
+Next.js customer-facing Sportsbook Edge Desk for Agentic Markets.
 
-First, run the development server:
+## Current beta scope
+
+- Public homepage is visible without login and shows product structure, sponsor placeholders, support/FAQ placeholders and past public bet history only.
+- Local profile flow supports login/create profile via browser `localStorage`; new profiles start on `free`.
+- Free shows profile/product preview only, without operational predictions.
+- Level 1 and Level 2 plans are crypto-only.
+- Checkout opens only after login and shows the USDT TRC20 wallet.
+- Submitted TX hash moves the client to `pending_payment`; it does not unlock the plan automatically.
+- Level 1 unlocks Best Bets, explanations and Sports board after payment/internal activation.
+- Level 2 unlocks portfolio, execution log, agent health, bet slip and risk controls.
+- UI language switch supports Italian and English.
+- Future sports are rendered as disabled roadmap placeholders until real models/data exist.
+- Founder access route exists at `/api/founder/grant` and requires server env `FOUNDER_ACCESS_KEY`.
+
+## Important implementation notes
+
+This beta is still UI/local-state based. Client profile, plan state and TX hash are stored in `localStorage`, so they are useful for demo and onboarding flow only. Production needs server-side accounts, sessions, payment verification and database-backed plan activation.
+
+Do not expose real P&L, real wallet, execution data or Betfair credentials before the user has an active plan. The main dashboard currently uses:
+
+- `profileHasAccess(profile)` for Level 1/Level 2/Admin signal access.
+- `profileHasPremium(profile)` for portfolio, execution, agents and bet slip.
+- `free` for logged-in preview only. It must not reveal live prediction-sensitive data.
+- `pending_payment` to show a waiting screen after TX submission.
+
+## Recent debug notes
+
+The issue reported on May 18 was caused by an inconsistent access contract:
+
+- The modal copy suggested a free unlock.
+- The created profile was saved as `unpaid`.
+- The gate correctly required `base`, `premium` or `admin_full`, so the page stayed locked after profile creation.
+- Portfolio/P&L was visible in nav/topbar before login.
+- History was implemented but removed from the rendered navigation during the Claude pass.
+
+Fixes applied:
+
+- Login and create profile are separate flows.
+- Create profile sends the user to Plans instead of pretending to unlock predictions.
+- Checkout submission now saves `plan: "pending_payment"` and `requestedPlan`, instead of activating Base/Premium immediately.
+- Portfolio/P&L/bets/history/agents are gated before active access.
+- History was removed from the client nav and folded into the public homepage as past-only proof.
+- The profile name placeholder no longer defaults to Andrea.
+- Public homepage now uses `/api/history` and refreshes history alongside football/tennis data.
+- The client nav uses `FREE`, `BASE` and `PRO` status labels so the selected package is visible.
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Expected result: Next.js production build completes successfully and lists the app routes, including `/api/founder/grant`, `/api/history`, `/api/predictions`, `/api/tennis`, and `/api/tennis-bets`.

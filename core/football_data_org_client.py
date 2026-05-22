@@ -91,6 +91,61 @@ async def get_fixtures(competition_code: str, api_key: str, days_ahead: int = 14
     return [_normalize(m) for m in resp.json().get("matches", [])]
 
 
+async def get_match_result(
+    competition_code: str,
+    api_key: str,
+    home_team: str,
+    away_team: str,
+    kickoff_date: str,
+) -> dict | None:
+    """
+    Look up a finished match result by team names and date.
+    Searches ±3 days around kickoff_date. Returns {home_goals, away_goals} or None.
+    Used as fallback in ResultSettlementAgent when RapidAPI is unavailable.
+    """
+    if competition_code not in FREE_TIER_CODES or not api_key:
+        return None
+
+    import unicodedata
+    from difflib import SequenceMatcher
+
+    def _norm(s: str) -> str:
+        return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower().strip()
+
+    def _sim(a: str, b: str) -> float:
+        return SequenceMatcher(None, _norm(a), _norm(b)).ratio()
+
+    try:
+        base_dt = datetime.fromisoformat(kickoff_date.replace("Z", "+00:00")).date()
+    except Exception:
+        return None
+
+    date_from = (base_dt - timedelta(days=1)).isoformat()
+    date_to = (base_dt + timedelta(days=2)).isoformat()
+
+    await _rate_limited_request()
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{BASE_URL}/competitions/{competition_code}/matches",
+            headers=_headers(api_key),
+            params={"status": "FINISHED", "dateFrom": date_from, "dateTo": date_to},
+            timeout=15.0,
+        )
+    if resp.status_code != 200:
+        return None
+
+    for m in resp.json().get("matches", []):
+        h = m.get("homeTeam", {}).get("name", "")
+        a = m.get("awayTeam", {}).get("name", "")
+        if _sim(h, home_team) >= 0.6 and _sim(a, away_team) >= 0.6:
+            ft = m.get("score", {}).get("fullTime", {})
+            hg = ft.get("home")
+            ag = ft.get("away")
+            if hg is not None and ag is not None:
+                return {"home_goals": int(hg), "away_goals": int(ag)}
+    return None
+
+
 async def get_historical_results(competition_code: str, api_key: str, days_back: int = 365) -> List[Dict]:
     if competition_code not in FREE_TIER_CODES:
         return []

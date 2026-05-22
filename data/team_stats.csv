@@ -1,0 +1,261 @@
+season,league,league_name,team,gp,wins,draws,losses,goals_for,goals_against,goal_diff,points
+2023,BL1,Bundesliga,1. FC Köln,34,5,12,17,28,60,-32,27
+2023,BL1,Bundesliga,Augsburg,34,10,9,15,50,60,-10,39
+2023,BL1,Bundesliga,Bayern,34,23,3,8,94,45,49,72
+2023,BL1,Bundesliga,Bochum,34,7,12,15,42,74,-32,33
+2023,BL1,Bundesliga,Bremen,34,11,9,14,48,54,-6,42
+2023,BL1,Bundesliga,Darmstadt,34,3,8,23,30,86,-56,17
+2023,BL1,Bundesliga,Dortmund,34,18,9,7,68,43,25,63
+2023,BL1,Bundesliga,Frankfurt,34,11,14,9,51,50,1,47
+2023,BL1,Bundesliga,Freiburg,34,11,9,14,45,58,-13,42
+2023,BL1,Bundesliga,Heidenheim,34,10,12,12,50,55,-5,42
+2023,BL1,Bundesliga,Hoffenheim,34,13,7,14,66,66,0,46
+2023,BL1,Bundesliga,Leverkusen,34,28,6,0,89,24,65,90
+2023,BL1,Bundesliga,M'gladbach,34,7,13,14,56,67,-11,34
+2023,BL1,Bundesliga,Mainz,34,7,14,13,39,51,-12,35
+2023,BL1,Bundesliga,RB Leipzig,34,19,8,7,77,39,38,65
+2023,BL1,Bundesliga,Stuttgart,34,23,4,7,78,39,39,73
+2023,BL1,Bundesliga,Union Berlin,34,9,6,19,33,58,-25,33
+2023,BL1,Bundesliga,Wolfsburg,34,10,7,17,41,56,-15,37
+2023,CL,Champions League,Antwerp FC,6,1,0,5,6,17,-11,3
+2023,CL,Champions League,Arsenal,10,5,2,3,23,10,13,17
+2023,CL,Champions League,Atleti,10,6,2,2,26,15,11,20
+2023,CL,Champions League,Barça,10,6,1,3,20,14,6,19
+2023,CL,Champions League,Bayern,12,7,3,2,21,13,8,24
+2023,CL,Champions League,Braga,6,1,1,4,6,12,-6,4
+2023,CL,Champions League,Celtic,6,1,1,4,5,15,-10,4
+2023,CL,Champions League,Crvena Zvedza,6,0,1,5,7,15,-8,1
+2023,CL,Champions League,Dortmund,13,7,3,3,17,11,6,24
+2023,CL,Champions League,Feyenoord,6,2,0,4,9,10,-1,6
+2023,CL,Champions League,Galatasaray,6,1,2,3,10,13,-3,5
+2023,CL,Champions League,Inter,8,4,3,1,12,10,2,15
+2023,CL,Champions League,København,8,2,2,4,10,14,-4,8
+2023,CL,Champions League,Lazio,8,4,1,3,8,10,-2,13
+2023,CL,Champions League,Man City,10,8,1,1,31,17,14,25
+2023,CL,Champions League,Man United,6,1,1,4,12,15,-3,4
+2023,CL,Champions League,Milan,6,2,2,2,5,8,-3,8
+2023,CL,Champions League,Napoli,8,3,2,3,12,13,-1,11
+2023,CL,Champions League,Newcastle,6,1,2,3,6,7,-1,5
+2023,CL,Champions League,PSG,12,5,2,5,19,15,4,17
+2023,CL,Champions League,PSV,8,2,4,2,9,13,-4,10
+2023,CL,Champions League,Porto,8,5,0,3,18,13,5,15
+2023,CL,Champions League,RB Leipzig,8,4,1,3,14,12,2,13
+2023,CL,Champions League,RB Salzburg,6,1,1,4,4,8,-4,4
+2023,CL,Champions League,RC Lens,6,2,2,2,6,11,-5,8
+2023,CL,Champions League,Real Madrid,13,10,3,0,32,18,14,33
+2023,CL,Champions League,Real Sociedad,8,3,3,2,8,6,2,12
+2023,CL,Champions League,SL Benfica,6,1,1,4,7,11,-4,4
+2023,CL,Champions League,Sevilla FC,6,0,2,4,7,12,-5,2
+2023,CL,Champions League,Shaktar,6,3,0,3,10,12,-2,9
+2023,CL,Champions League,Union Berlin,6,0,2,4,6,10,-4,2
+2023,CL,Champions League,Young Boys,6,1,1,4,7,13,-6,4
+2023,FL1,Ligue 1,Brest,34,17,10,7,53,34,19,61
+2023,FL1,Ligue 1,Clermont Foot,34,5,10,19,26,60,-34,25
+2023,FL1,Ligue 1,FC Metz,34,8,5,21,35,58,-23,29
+2023,FL1,Ligue 1,Le Havre,34,7,11,16,34,45,-11,32
+2023,FL1,Ligue 1,Lille,34,16,11,7,52,34,18,59
+2023,FL1,Ligue 1,Lorient,34,7,8,19,43,66,-23,29
+2023,FL1,Ligue 1,Marseille,34,13,11,10,52,41,11,50
+2023,FL1,Ligue 1,Monaco,34,20,7,7,68,42,26,67
+2023,FL1,Ligue 1,Montpellier,34,10,12,12,43,48,-5,42
+2023,FL1,Ligue 1,Nantes,34,9,6,19,30,55,-25,33
+2023,FL1,Ligue 1,Nice,34,15,10,9,40,29,11,55
+2023,FL1,Ligue 1,Olympique Lyon,34,16,5,13,49,55,-6,53
+2023,FL1,Ligue 1,PSG,34,22,10,2,81,33,48,76
+2023,FL1,Ligue 1,RC Lens,34,14,9,11,45,37,8,51
+2023,FL1,Ligue 1,Stade Rennais,34,12,10,12,53,46,7,46
+2023,FL1,Ligue 1,Stade de Reims,34,13,8,13,42,47,-5,47
+2023,FL1,Ligue 1,Strasbourg,34,10,9,15,38,50,-12,39
+2023,FL1,Ligue 1,Toulouse,34,11,10,13,42,46,-4,43
+2023,PD,La Liga,Alavés,38,12,10,16,36,46,-10,46
+2023,PD,La Liga,Almería,38,3,12,23,43,75,-32,21
+2023,PD,La Liga,Athletic,38,19,11,8,61,37,24,68
+2023,PD,La Liga,Atleti,38,24,4,10,70,43,27,76
+2023,PD,La Liga,Barça,38,26,7,5,79,44,35,85
+2023,PD,La Liga,Celta,38,10,11,17,46,57,-11,41
+2023,PD,La Liga,Cádiz CF,38,6,15,17,26,55,-29,33
+2023,PD,La Liga,Getafe,38,10,13,15,42,54,-12,43
+2023,PD,La Liga,Girona,38,25,6,7,85,46,39,81
+2023,PD,La Liga,Granada,38,4,9,25,38,79,-41,21
+2023,PD,La Liga,Las Palmas,38,10,10,18,33,47,-14,40
+2023,PD,La Liga,Mallorca,38,8,16,14,33,44,-11,40
+2023,PD,La Liga,Osasuna,38,12,9,17,45,56,-11,45
+2023,PD,La Liga,Rayo Vallecano,38,8,14,16,29,48,-19,38
+2023,PD,La Liga,Real Betis,38,14,15,9,48,45,3,57
+2023,PD,La Liga,Real Madrid,38,29,8,1,87,26,61,95
+2023,PD,La Liga,Real Sociedad,38,16,12,10,51,39,12,60
+2023,PD,La Liga,Sevilla FC,38,10,11,17,48,54,-6,41
+2023,PD,La Liga,Valencia,38,13,10,15,40,45,-5,49
+2023,PD,La Liga,Villarreal,38,14,11,13,65,65,0,53
+2023,PL,Premier League,Arsenal,38,28,5,5,91,29,62,89
+2023,PL,Premier League,Aston Villa,38,20,8,10,76,61,15,68
+2023,PL,Premier League,Bournemouth,38,13,9,16,54,67,-13,48
+2023,PL,Premier League,Brentford,38,10,9,19,56,65,-9,39
+2023,PL,Premier League,Brighton Hove,38,12,12,14,55,62,-7,48
+2023,PL,Premier League,Burnley,38,5,9,24,41,78,-37,24
+2023,PL,Premier League,Chelsea,38,18,9,11,77,63,14,63
+2023,PL,Premier League,Crystal Palace,38,13,10,15,57,58,-1,49
+2023,PL,Premier League,Everton,38,13,9,16,40,51,-11,48
+2023,PL,Premier League,Fulham,38,13,8,17,55,61,-6,47
+2023,PL,Premier League,Liverpool,38,24,10,4,86,41,45,82
+2023,PL,Premier League,Luton Town,38,6,8,24,52,85,-33,26
+2023,PL,Premier League,Man City,38,28,7,3,96,34,62,91
+2023,PL,Premier League,Man United,38,18,6,14,57,58,-1,60
+2023,PL,Premier League,Newcastle,38,18,6,14,85,62,23,60
+2023,PL,Premier League,Nottingham,38,9,9,20,49,67,-18,36
+2023,PL,Premier League,Sheffield Utd,38,3,7,28,35,104,-69,16
+2023,PL,Premier League,Tottenham,38,20,6,12,74,61,13,66
+2023,PL,Premier League,West Ham,38,14,10,14,60,74,-14,52
+2023,PL,Premier League,Wolverhampton,38,13,7,18,50,65,-15,46
+2023,SA,Serie A,Atalanta,38,21,6,11,72,42,30,69
+2023,SA,Serie A,Bologna,38,18,14,6,54,32,22,68
+2023,SA,Serie A,Cagliari,38,8,12,18,42,68,-26,36
+2023,SA,Serie A,Empoli,38,9,9,20,29,54,-25,36
+2023,SA,Serie A,Fiorentina,38,17,9,12,61,46,15,60
+2023,SA,Serie A,Frosinone,38,8,11,19,44,69,-25,35
+2023,SA,Serie A,Genoa,38,12,13,13,45,45,0,49
+2023,SA,Serie A,Inter,38,29,7,2,89,22,67,94
+2023,SA,Serie A,Juventus,38,19,14,5,54,31,23,71
+2023,SA,Serie A,Lazio,38,18,7,13,49,39,10,61
+2023,SA,Serie A,Lecce,38,8,14,16,32,54,-22,38
+2023,SA,Serie A,Milan,38,22,9,7,76,49,27,75
+2023,SA,Serie A,Monza,38,11,12,15,39,51,-12,45
+2023,SA,Serie A,Napoli,38,13,14,11,55,48,7,53
+2023,SA,Serie A,Roma,38,18,9,11,65,46,19,63
+2023,SA,Serie A,Salernitana,38,2,11,25,32,81,-49,17
+2023,SA,Serie A,Sassuolo,38,7,9,22,43,75,-32,30
+2023,SA,Serie A,Torino,38,13,14,11,36,36,0,53
+2023,SA,Serie A,Udinese,38,6,19,13,37,53,-16,37
+2023,SA,Serie A,Verona,38,9,11,18,38,51,-13,38
+2024,BL1,Bundesliga,Augsburg,34,11,10,13,35,51,-16,43
+2024,BL1,Bundesliga,Bayern,34,25,7,2,99,32,67,82
+2024,BL1,Bundesliga,Bochum,33,5,7,21,31,67,-36,22
+2024,BL1,Bundesliga,Bremen,34,14,9,11,54,57,-3,51
+2024,BL1,Bundesliga,Dortmund,34,17,6,11,71,51,20,57
+2024,BL1,Bundesliga,Frankfurt,34,17,9,8,68,46,22,60
+2024,BL1,Bundesliga,Freiburg,34,16,7,11,49,53,-4,55
+2024,BL1,Bundesliga,Heidenheim,34,8,5,21,37,64,-27,29
+2024,BL1,Bundesliga,Hoffenheim,34,7,11,16,46,68,-22,32
+2024,BL1,Bundesliga,Holstein Kiel,34,6,7,21,49,80,-31,25
+2024,BL1,Bundesliga,Leverkusen,34,19,12,3,72,43,29,69
+2024,BL1,Bundesliga,M'gladbach,34,13,6,15,55,57,-2,45
+2024,BL1,Bundesliga,Mainz,34,14,10,10,55,43,12,52
+2024,BL1,Bundesliga,RB Leipzig,34,13,12,9,53,48,5,51
+2024,BL1,Bundesliga,St. Pauli,34,8,8,18,28,41,-13,32
+2024,BL1,Bundesliga,Stuttgart,34,14,8,12,64,53,11,50
+2024,BL1,Bundesliga,Union Berlin,33,10,10,13,35,49,-14,40
+2024,BL1,Bundesliga,Wolfsburg,34,11,10,13,56,54,2,43
+2024,CL,Champions League,Arsenal,14,9,2,3,31,10,21,29
+2024,CL,Champions League,Aston Villa,12,8,1,3,23,12,11,25
+2024,CL,Champions League,Atalanta,10,4,3,3,22,11,11,15
+2024,CL,Champions League,Atleti,10,6,0,4,24,18,6,18
+2024,CL,Champions League,Barça,14,9,2,3,43,24,19,29
+2024,CL,Champions League,Bayern,14,8,2,4,31,18,13,26
+2024,CL,Champions League,Bologna,8,1,3,4,4,9,-5,6
+2024,CL,Champions League,Brest,10,4,1,5,10,21,-11,13
+2024,CL,Champions League,Celtic,10,3,4,3,15,17,-2,13
+2024,CL,Champions League,Club Brugge,12,5,2,5,13,19,-6,17
+2024,CL,Champions League,Crvena Zvedza,8,2,0,6,13,22,-9,6
+2024,CL,Champions League,Dinamo Zagreb,8,3,2,3,12,19,-7,11
+2024,CL,Champions League,Dortmund,14,8,2,4,31,19,12,26
+2024,CL,Champions League,Feyenoord,12,5,2,5,21,26,-5,17
+2024,CL,Champions League,Girona,8,1,0,7,5,13,-8,3
+2024,CL,Champions League,Inter,15,10,3,2,26,16,10,33
+2024,CL,Champions League,Juventus,10,4,3,3,12,11,1,15
+2024,CL,Champions League,Leverkusen,10,5,1,4,15,12,3,16
+2024,CL,Champions League,Lille,10,5,2,3,19,13,6,17
+2024,CL,Champions League,Liverpool,10,8,0,2,19,10,9,24
+2024,CL,Champions League,Man City,10,3,2,5,21,20,1,11
+2024,CL,Champions League,Milan,10,5,1,4,15,13,2,16
+2024,CL,Champions League,Monaco,10,4,2,4,16,17,-1,14
+2024,CL,Champions League,PSG,17,11,1,5,42,16,26,34
+2024,CL,Champions League,PSV,12,5,3,4,23,24,-1,18
+2024,CL,Champions League,RB Leipzig,8,1,0,7,8,15,-7,3
+2024,CL,Champions League,RB Salzburg,8,1,0,7,5,27,-22,3
+2024,CL,Champions League,Real Madrid,14,9,0,5,33,24,9,27
+2024,CL,Champions League,SL Benfica,12,5,2,5,21,19,2,17
+2024,CL,Champions League,Shaktar,8,2,1,5,8,16,-8,7
+2024,CL,Champions League,Sl. Bratislava,8,0,0,8,7,27,-20,0
+2024,CL,Champions League,Sparta Praha,8,1,1,6,7,21,-14,4
+2024,CL,Champions League,Sporting CP,10,3,3,4,13,15,-2,12
+2024,CL,Champions League,Sturm Graz,8,2,0,6,5,14,-9,6
+2024,CL,Champions League,Stuttgart,8,3,1,4,13,17,-4,10
+2024,CL,Champions League,Young Boys,8,0,0,8,3,24,-21,0
+2024,FL1,Ligue 1,Angers SCO,34,10,6,18,32,53,-21,36
+2024,FL1,Ligue 1,Auxerre,34,11,9,14,48,51,-3,42
+2024,FL1,Ligue 1,Brest,34,15,5,14,52,59,-7,50
+2024,FL1,Ligue 1,Le Havre,34,10,4,20,40,71,-31,34
+2024,FL1,Ligue 1,Lille,34,17,9,8,52,36,16,60
+2024,FL1,Ligue 1,Marseille,34,20,5,9,74,47,27,65
+2024,FL1,Ligue 1,Monaco,34,18,7,9,63,41,22,61
+2024,FL1,Ligue 1,Montpellier,33,4,4,25,23,77,-54,16
+2024,FL1,Ligue 1,Nantes,34,8,12,14,39,52,-13,36
+2024,FL1,Ligue 1,Nice,34,17,9,8,66,41,25,60
+2024,FL1,Ligue 1,Olympique Lyon,34,17,6,11,65,46,19,57
+2024,FL1,Ligue 1,PSG,34,26,6,2,92,35,57,84
+2024,FL1,Ligue 1,RC Lens,34,15,7,12,42,39,3,52
+2024,FL1,Ligue 1,Saint-Étienne,33,7,6,20,37,77,-40,27
+2024,FL1,Ligue 1,Stade Rennais,34,13,2,19,51,50,1,41
+2024,FL1,Ligue 1,Stade de Reims,34,8,9,17,33,47,-14,33
+2024,FL1,Ligue 1,Strasbourg,34,16,9,9,56,44,12,57
+2024,FL1,Ligue 1,Toulouse,34,11,9,14,44,43,1,42
+2024,PD,La Liga,Alavés,38,10,12,16,38,48,-10,42
+2024,PD,La Liga,Athletic,38,19,13,6,54,29,25,70
+2024,PD,La Liga,Atleti,38,22,10,6,68,30,38,76
+2024,PD,La Liga,Barça,38,28,4,6,102,39,63,88
+2024,PD,La Liga,Celta,38,16,7,15,59,57,2,55
+2024,PD,La Liga,Espanyol,38,11,9,18,40,51,-11,42
+2024,PD,La Liga,Getafe,38,11,9,18,34,39,-5,42
+2024,PD,La Liga,Girona,38,11,8,19,44,60,-16,41
+2024,PD,La Liga,Las Palmas,38,8,8,22,40,61,-21,32
+2024,PD,La Liga,Leganés,38,9,13,16,39,56,-17,40
+2024,PD,La Liga,Mallorca,38,13,9,16,35,44,-9,48
+2024,PD,La Liga,Osasuna,38,12,16,10,48,52,-4,52
+2024,PD,La Liga,Rayo Vallecano,38,13,13,12,41,45,-4,52
+2024,PD,La Liga,Real Betis,38,16,12,10,57,50,7,60
+2024,PD,La Liga,Real Madrid,38,26,6,6,78,38,40,84
+2024,PD,La Liga,Real Sociedad,38,13,7,18,35,46,-11,46
+2024,PD,La Liga,Sevilla FC,38,10,11,17,42,55,-13,41
+2024,PD,La Liga,Valencia,38,11,13,14,44,54,-10,46
+2024,PD,La Liga,Valladolid,38,4,4,30,26,90,-64,16
+2024,PD,La Liga,Villarreal,38,20,10,8,71,51,20,70
+2024,PL,Premier League,Arsenal,38,20,14,4,69,34,35,74
+2024,PL,Premier League,Aston Villa,38,19,9,10,58,51,7,66
+2024,PL,Premier League,Bournemouth,38,15,11,12,58,46,12,56
+2024,PL,Premier League,Brentford,38,16,8,14,66,57,9,56
+2024,PL,Premier League,Brighton Hove,38,16,13,9,66,59,7,61
+2024,PL,Premier League,Chelsea,38,20,9,9,64,43,21,69
+2024,PL,Premier League,Crystal Palace,38,13,14,11,51,51,0,53
+2024,PL,Premier League,Everton,38,11,15,12,42,44,-2,48
+2024,PL,Premier League,Fulham,38,15,9,14,54,54,0,54
+2024,PL,Premier League,Ipswich Town,38,4,10,24,36,82,-46,22
+2024,PL,Premier League,Leicester City,38,6,7,25,33,80,-47,25
+2024,PL,Premier League,Liverpool,38,25,9,4,86,41,45,84
+2024,PL,Premier League,Man City,38,21,8,9,72,44,28,71
+2024,PL,Premier League,Man United,38,11,9,18,44,54,-10,42
+2024,PL,Premier League,Newcastle,38,20,6,12,68,47,21,66
+2024,PL,Premier League,Nottingham,38,19,8,11,58,46,12,65
+2024,PL,Premier League,Southampton,38,2,6,30,26,86,-60,12
+2024,PL,Premier League,Tottenham,38,11,5,22,64,65,-1,38
+2024,PL,Premier League,West Ham,38,11,10,17,46,62,-16,43
+2024,PL,Premier League,Wolverhampton,38,12,6,20,54,69,-15,42
+2024,SA,Serie A,Atalanta,38,22,8,8,78,37,41,74
+2024,SA,Serie A,Bologna,38,16,14,8,57,47,10,62
+2024,SA,Serie A,Cagliari,38,9,9,20,40,56,-16,36
+2024,SA,Serie A,Como 1907,38,13,10,15,49,52,-3,49
+2024,SA,Serie A,Empoli,38,6,13,19,33,59,-26,31
+2024,SA,Serie A,Fiorentina,38,19,8,11,60,41,19,65
+2024,SA,Serie A,Genoa,38,10,13,15,37,49,-12,43
+2024,SA,Serie A,Inter,38,24,9,5,79,35,44,81
+2024,SA,Serie A,Juventus,38,18,16,4,58,35,23,70
+2024,SA,Serie A,Lazio,38,18,11,9,61,49,12,65
+2024,SA,Serie A,Lecce,38,8,10,20,27,58,-31,34
+2024,SA,Serie A,Milan,38,18,9,11,61,43,18,63
+2024,SA,Serie A,Monza,38,3,9,26,28,69,-41,18
+2024,SA,Serie A,Napoli,38,24,10,4,59,27,32,82
+2024,SA,Serie A,Parma,38,7,15,16,44,58,-14,36
+2024,SA,Serie A,Roma,38,20,9,9,56,35,21,69
+2024,SA,Serie A,Torino,38,10,14,14,39,45,-6,44
+2024,SA,Serie A,Udinese,38,12,8,18,41,56,-15,44
+2024,SA,Serie A,Venezia FC,38,5,14,19,32,56,-24,29
+2024,SA,Serie A,Verona,38,10,7,21,34,66,-32,37

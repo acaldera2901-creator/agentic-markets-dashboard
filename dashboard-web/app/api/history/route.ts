@@ -23,6 +23,7 @@ export async function GET() {
       mp.kickoff, mp.p_home, mp.p_draw, mp.p_away,
       mp.odds_home, mp.odds_draw, mp.odds_away,
       mp.edge, mp.best_selection,
+      mp.home_score, mp.away_score, mp.match_status,
       b.selection  AS bet_selection,
       b.status     AS bet_status,
       b.stake      AS bet_stake,

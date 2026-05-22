@@ -23,11 +23,13 @@ export interface FDMatch {
   homeGoals: number | null;
   awayGoals: number | null;
   status: string;
+  minute: number | null;
 }
 
 function normalize(m: Record<string, unknown>): FDMatch {
   const ft = (m.score as Record<string, Record<string, number | null>>)
     ?.fullTime ?? {};
+  const minute = (m.minute as number | null | undefined) ?? null;
   return {
     id: String(m.id),
     utcDate: m.utcDate as string,
@@ -36,6 +38,7 @@ function normalize(m: Record<string, unknown>): FDMatch {
     homeGoals: ft.home ?? null,
     awayGoals: ft.away ?? null,
     status: m.status as string,
+    minute,
   };
 }
 
@@ -80,4 +83,23 @@ export async function fetchFixtures(code: string): Promise<FDMatch[]> {
     dateFrom: today.toISOString().slice(0, 10),
     dateTo: to.toISOString().slice(0, 10),
   });
+}
+
+export async function fetchAllTodayMatches(): Promise<FDMatch[]> {
+  if (!process.env.FOOTBALL_DATA_ORG_API_KEY) return [];
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const competitions = Object.keys(LEAGUES).join(",");
+  const qs = new URLSearchParams({
+    competitions,
+    dateFrom: yesterday.toISOString().slice(0, 10),
+    dateTo: today.toISOString().slice(0, 10),
+  }).toString();
+  try {
+    const r = await fetch(`${BASE}/matches?${qs}`, { headers: headers(), cache: "no-store" });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return ((data.matches ?? []) as Record<string, unknown>[]).map(normalize);
+  } catch { return []; }
 }

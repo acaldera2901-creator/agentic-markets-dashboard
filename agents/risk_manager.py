@@ -22,7 +22,7 @@ def resolve_edge_threshold(data: dict) -> tuple[float, str]:
     """
     notes = str(data.get("notes", "")).lower()
     source = str(data.get("source", "")).lower()
-    sharp_keywords = ("pinnacle", "betfair", "exchange", "sharp")
+    sharp_keywords = ("pinnacle", "matchbook", "exchange", "sharp")
     if any(k in notes or k in source for k in sharp_keywords):
         return settings.EDGE_MIN_SHARP, "sharp"
     return settings.EDGE_MIN_SOFT, "soft"
