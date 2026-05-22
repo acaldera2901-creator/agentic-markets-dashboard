@@ -4530,6 +4530,7 @@ interface LeaderboardEntry {
   points: number;
   bets_won: number;
   bets_total: number;
+  pnl: number;
   hit_rate: number;
   sport: string;
 }
@@ -4538,6 +4539,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
   const lang = useLang();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [systemWins, setSystemWins] = useState(0);
+  const [systemPnl, setSystemPnl] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -4546,6 +4548,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       .then((d) => {
         setEntries(d.leaderboard ?? []);
         setSystemWins(d.system_wins ?? 0);
+        setSystemPnl(d.system_pnl ?? 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -4563,7 +4566,9 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     hitRate: "Hit Rate",
     sport: "Sport",
     systemWins: "Bet vinte dal sistema",
+    systemPnl: "P&L sistema",
     pointsFormula: "10 pt per vittoria",
+    pnl: "Guadagno",
     yourRank: "La tua posizione",
     notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
     loading: "Caricamento classifica…",
@@ -4581,7 +4586,9 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     hitRate: "Hit Rate",
     sport: "Sport",
     systemWins: "System wins",
+    systemPnl: "System P&L",
     pointsFormula: "10 pts per win",
+    pnl: "Profit",
     yourRank: "Your position",
     notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
     loading: "Loading leaderboard…",
@@ -4612,7 +4619,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="glass-card p-4 text-center">
           <div className="text-2xl font-black text-green-400 font-mono">{systemWins}</div>
           <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
@@ -4620,6 +4627,12 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
         <div className="glass-card p-4 text-center">
           <div className="text-2xl font-black text-cyan-400 font-mono">{systemWins * 10}</div>
           <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
+        </div>
+        <div className="glass-card p-4 text-center">
+          <div className={`text-2xl font-black font-mono ${systemPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+            {systemPnl >= 0 ? "+" : ""}{systemPnl.toFixed(2)}€
+          </div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemPnl}</div>
         </div>
       </div>
 
@@ -4636,7 +4649,10 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                 <div key={e.rank} className={`glass-card p-4 text-center space-y-2 border bg-gradient-to-b ${medalColors[i]}`}>
                   <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
                   <div className="text-sm font-bold text-white truncate">{e.name}</div>
-                  <div className="text-xl font-black font-mono text-white">{e.points}</div>
+                  <div className="text-xl font-black font-mono text-white">{e.points} pt</div>
+                  <div className={`text-sm font-bold font-mono ${e.pnl >= 0 ? "text-green-300" : "text-red-300"}`}>
+                    {e.pnl >= 0 ? "+" : ""}{e.pnl.toFixed(2)}€
+                  </div>
                   <div className="text-[10px] font-mono text-white/60">{e.bets_won}W · {e.hit_rate}%</div>
                 </div>
               ))}
@@ -4652,6 +4668,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                     <th className="px-4 py-3 text-left">{copy.rank}</th>
                     <th className="px-4 py-3 text-left">{copy.player}</th>
                     <th className="px-4 py-3 text-right">{copy.points}</th>
+                    <th className="px-4 py-3 text-right">{copy.pnl}</th>
                     <th className="px-4 py-3 text-right">{copy.won}/{copy.total}</th>
                     <th className="px-4 py-3 text-right">{copy.hitRate}</th>
                     <th className="px-4 py-3 text-right hidden md:table-cell">{copy.sport}</th>
@@ -4668,6 +4685,9 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                         {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-green-400 border border-green-400/40 px-1 py-0.5 rounded">YOU</span>}
                       </td>
                       <td className="px-4 py-3 text-right text-green-400 font-bold">{e.points}</td>
+                      <td className={`px-4 py-3 text-right font-mono font-bold ${e.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {e.pnl >= 0 ? "+" : ""}{e.pnl.toFixed(2)}€
+                      </td>
                       <td className="px-4 py-3 text-right text-gray-400">{e.bets_won}/{e.bets_total}</td>
                       <td className="px-4 py-3 text-right text-cyan-400">{e.hit_rate}%</td>
                       <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell capitalize">{e.sport}</td>
@@ -4688,7 +4708,12 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             <div className="text-3xl font-black font-mono text-green-400">#{yourEntry.rank}</div>
             <div>
               <div className="text-sm font-bold text-white">{yourEntry.name}</div>
-              <div className="text-xs font-mono text-gray-500">{yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}</div>
+              <div className="text-xs font-mono text-gray-500">
+                {yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}
+              </div>
+              <div className={`text-sm font-bold font-mono mt-0.5 ${yourEntry.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {yourEntry.pnl >= 0 ? "+" : ""}{yourEntry.pnl.toFixed(2)}€ {copy.pnl}
+              </div>
             </div>
           </div>
         ) : (
