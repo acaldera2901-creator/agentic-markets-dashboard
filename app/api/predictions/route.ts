@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { buildModel, predict, MatchResult } from "@/lib/poisson-model";
+
+export const dynamic = "force-dynamic";
+import { buildModel, predict, computeExtraMarkets, MatchResult } from "@/lib/poisson-model";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -250,6 +252,9 @@ async function ensureTables() {
   await dbQuery(
     `ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS enrichment JSONB`
   );
+  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS home_score INT`);
+  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS away_score INT`);
+  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS match_status TEXT DEFAULT 'SCHEDULED'`);
   // Understat per-league cache (refreshed every 6h)
   await dbQuery(`
     CREATE TABLE IF NOT EXISTS understat_cache (
@@ -329,6 +334,7 @@ interface EnrichmentPayload {
   api_pct_away?: number;
   api_advice?: string;
   research?: string;
+  extra_market_odds?: Partial<Record<string, number>>;
 }
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
@@ -451,8 +457,20 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // Research from Ollama (Python agent)
       if (researchMap[fix.id]) enrichment.research = researchMap[fix.id];
 
+      // Resolve api-football fixture early — used for time correction + enrichment
+      const apifix = matchFixture(fix.homeTeam, fix.awayTeam, apiFixtures);
+
+      // football-data.org free tier returns 00:00:00 UTC as placeholder when time unconfirmed.
+      // Prefer api-football.com date when available and not also midnight.
+      const fdMidnight = fix.utcDate.includes("T00:00:00");
+      const apifixDate = apifix?.date ? new Date(apifix.date) : null;
+      const apifixMidnight = apifixDate ? (apifixDate.getUTCHours() === 0 && apifixDate.getUTCMinutes() === 0) : true;
+      const finalKickoff = fdMidnight && apifixDate && !apifixMidnight
+        ? apifixDate.toISOString()
+        : fix.utcDate;
+
       // Weather (async, only for matches within 48h)
-      const kickoffDate = new Date(fix.utcDate);
+      const kickoffDate = new Date(finalKickoff);
       const hoursUntil = (kickoffDate.getTime() - Date.now()) / 3_600_000;
       if (hoursUntil >= 0 && hoursUntil <= 48) {
         try {
@@ -462,10 +480,18 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         }
       }
 
+      // Extra market odds from The Odds API (stored for edge computation in GET)
+      if (odds?.extra) {
+        const mo: Partial<Record<string, number>> = {};
+        for (const [k, v] of Object.entries(odds.extra)) {
+          if (v != null) mo[k] = v;
+        }
+        if (Object.keys(mo).length) enrichment.extra_market_odds = mo;
+      }
+
       // API-Football: injuries + prediction (only for value bets or matches within 72h)
       const isValueBet = edge != null && edge > 0.03;
       if (hoursUntil >= 0 && hoursUntil <= 72 && (isValueBet || hoursUntil <= 24)) {
-        const apifix = matchFixture(fix.homeTeam, fix.awayTeam, apiFixtures);
         if (apifix) {
           try {
             const [pred, injuries] = await Promise.all([
@@ -504,7 +530,7 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
            model_matches=EXCLUDED.model_matches, enrichment=EXCLUDED.enrichment,
            computed_at=NOW()`,
         [
-          fix.id, code, LEAGUES[code], fix.homeTeam, fix.awayTeam, fix.utcDate,
+          fix.id, code, LEAGUES[code], fix.homeTeam, fix.awayTeam, finalKickoff,
           probs.pHome, probs.pDraw, probs.pAway, probs.lambdaHome, probs.lambdaAway,
           odds?.oddsHome ?? null, odds?.oddsDraw ?? null, odds?.oddsAway ?? null,
           edge, bestSel, model.matchCount,
@@ -516,26 +542,26 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   }
 
   await dbQuery(
-    `DELETE FROM match_predictions WHERE kickoff < NOW() - INTERVAL '2 hours'`
+    `DELETE FROM match_predictions WHERE kickoff < NOW() - INTERVAL '24 hours'`
   );
 
   return { stored: stored.length, leagues: [...new Set(stored)] };
 }
 
 export async function GET() {
-  await ensureTables();
-
-  let predictions = await dbQuery<PredictionRow>(
-    `SELECT * FROM match_predictions
-     WHERE kickoff > NOW()
-     ORDER BY league = 'SA' DESC, kickoff ASC
-     LIMIT 120`
-  );
-
-  const meta = await dbQuery<{ ts: string; cnt: string }>(
-    `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
-     FROM match_predictions WHERE kickoff > NOW()`
-  );
+  const [predictions_raw, meta] = await Promise.all([
+    dbQuery<PredictionRow>(
+      `SELECT * FROM match_predictions
+       WHERE kickoff > NOW()
+       ORDER BY league = 'SA' DESC, kickoff ASC
+       LIMIT 120`
+    ),
+    dbQuery<{ ts: string; cnt: string }>(
+      `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
+       FROM match_predictions WHERE kickoff > NOW()`
+    ),
+  ]);
+  let predictions = predictions_raw;
 
   const computedAt = meta[0]?.ts ?? null;
   const ageMinutes = computedAt
@@ -543,7 +569,17 @@ export async function GET() {
     : Infinity;
   const usingFallback = predictions.length === 0;
   if (usingFallback) predictions = fallbackPredictions();
-  predictions = predictions.map(hydratePaperOdds);
+  predictions = predictions.map((p) => {
+    const hydrated = hydratePaperOdds(p);
+    const lH = hydrated.lambda_home;
+    const lA = hydrated.lambda_away;
+    if (lH != null && lA != null && lH > 0 && lA > 0) {
+      const marketOdds = (hydrated.enrichment as EnrichmentPayload | null)?.extra_market_odds ?? {};
+      const extra_markets = computeExtraMarkets(lH, lA, marketOdds);
+      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets } };
+    }
+    return hydrated;
+  });
   const isStale = !usingFallback && ageMinutes > 60;
 
   return NextResponse.json(

@@ -23,11 +23,62 @@ function mean(arr: number[]): number {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 1;
 }
 
-function poisson(k: number, lambda: number): number {
+export function poisson(k: number, lambda: number): number {
   if (lambda <= 0) return k === 0 ? 1 : 0;
   let logP = -lambda + k * Math.log(lambda);
   for (let i = 2; i <= k; i++) logP -= Math.log(i);
   return Math.exp(logP);
+}
+
+export interface ExtraMarket {
+  key: string;
+  label: string;
+  p: number;
+  model_odds: number;
+  market_odds: number | null;
+  edge: number | null;
+}
+
+export function computeExtraMarkets(
+  lambdaHome: number,
+  lambdaAway: number,
+  marketOdds: Partial<Record<string, number>> = {}
+): ExtraMarket[] {
+  const N = 9;
+  let pBTTS = 0, pO15 = 0, pO25 = 0, pO35 = 0, p1X = 0, pX2 = 0, p12 = 0;
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      const p = poisson(i, lambdaHome) * poisson(j, lambdaAway);
+      if (i >= 1 && j >= 1) pBTTS += p;
+      if (i + j >= 2) pO15 += p;
+      if (i + j >= 3) pO25 += p;
+      if (i + j >= 4) pO35 += p;
+      if (i >= j) p1X += p;
+      if (j >= i) pX2 += p;
+      if (i !== j) p12 += p;
+    }
+  }
+
+  const mOdds = (p: number) =>
+    Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100;
+  const edge = (p: number, mkt: number | null) =>
+    mkt != null ? Math.round((p * mkt - 1) * 10000) / 10000 : null;
+
+  const raw: [string, string, number][] = [
+    ["over_1_5", "O1.5", pO15],
+    ["over_2_5", "O2.5", pO25],
+    ["over_3_5", "O3.5", pO35],
+    ["btts_yes",  "GG",   pBTTS],
+    ["btts_no",   "NG",   1 - pBTTS],
+    ["double_1x", "1X",  p1X],
+    ["double_x2", "X2",  pX2],
+    ["double_12", "12",  p12],
+  ];
+
+  return raw.map(([key, label, p]) => {
+    const mo = marketOdds[key] ?? null;
+    return { key, label, p: Math.round(p * 10000) / 10000, model_odds: mOdds(p), market_odds: mo, edge: edge(p, mo) };
+  });
 }
 
 export function buildModel(results: MatchResult[]): PoissonModel | null {
