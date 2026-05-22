@@ -737,7 +737,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners";
+type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners" | "leaderboard";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -4522,6 +4522,183 @@ function PartnersTab() {
   );
 }
 
+// ─── Leaderboard Tab ─────────────────────────────────────────────────────────
+
+interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  points: number;
+  bets_won: number;
+  bets_total: number;
+  hit_rate: number;
+  sport: string;
+}
+
+function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOptedIn?: boolean }) {
+  const lang = useLang();
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [systemWins, setSystemWins] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/leaderboard")
+      .then((r) => r.json())
+      .then((d) => {
+        setEntries(d.leaderboard ?? []);
+        setSystemWins(d.system_wins ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const copy = lang === "it" ? {
+    eyebrow: "Classifica pubblica",
+    title: "Leaderboard Signal Desk",
+    subtitle: "10 punti per ogni scommessa vinta. La classifica si aggiorna ad ogni settlement.",
+    rank: "#",
+    player: "Giocatore",
+    points: "Punti",
+    won: "Vinte",
+    total: "Totali",
+    hitRate: "Hit Rate",
+    sport: "Sport",
+    systemWins: "Bet vinte dal sistema",
+    pointsFormula: "10 pt per vittoria",
+    yourRank: "La tua posizione",
+    notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
+    loading: "Caricamento classifica…",
+    noData: "Nessun dato disponibile.",
+    podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+  } : {
+    eyebrow: "Public leaderboard",
+    title: "Signal Desk Leaderboard",
+    subtitle: "10 points for every won bet. Rankings update after each settlement.",
+    rank: "#",
+    player: "Player",
+    points: "Points",
+    won: "Won",
+    total: "Total",
+    hitRate: "Hit Rate",
+    sport: "Sport",
+    systemWins: "System wins",
+    pointsFormula: "10 pts per win",
+    yourRank: "Your position",
+    notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
+    loading: "Loading leaderboard…",
+    noData: "No data available.",
+    podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+  };
+
+  const podium = entries.slice(0, 3);
+  const rest = entries.slice(3);
+
+  const yourEntry = isOptedIn && clientName
+    ? entries.find((e) => e.name === clientName)
+    : null;
+
+  const medalColors = [
+    "from-amber-400 to-yellow-500 border-amber-400/40",
+    "from-slate-300 to-slate-400 border-slate-300/40",
+    "from-amber-700 to-amber-800 border-amber-700/40",
+  ];
+
+  return (
+    <div className="space-y-6 p-4">
+      {/* Header */}
+      <div className="space-y-1">
+        <p className="eyebrow">{copy.eyebrow}</p>
+        <h2 className="text-xl font-bold text-white">{copy.title}</h2>
+        <p className="text-xs font-mono text-gray-500 max-w-lg">{copy.subtitle}</p>
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="glass-card p-4 text-center">
+          <div className="text-2xl font-black text-green-400 font-mono">{systemWins}</div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
+        </div>
+        <div className="glass-card p-4 text-center">
+          <div className="text-2xl font-black text-cyan-400 font-mono">{systemWins * 10}</div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-xs font-mono text-gray-500 animate-pulse py-8 text-center">{copy.loading}</div>
+      ) : entries.length === 0 ? (
+        <div className="text-xs font-mono text-gray-500 py-8 text-center">{copy.noData}</div>
+      ) : (
+        <>
+          {/* Podium */}
+          {podium.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              {podium.map((e, i) => (
+                <div key={e.rank} className={`glass-card p-4 text-center space-y-2 border bg-gradient-to-b ${medalColors[i]}`}>
+                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
+                  <div className="text-sm font-bold text-white truncate">{e.name}</div>
+                  <div className="text-xl font-black font-mono text-white">{e.points}</div>
+                  <div className="text-[10px] font-mono text-white/60">{e.bets_won}W · {e.hit_rate}%</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Full table */}
+          {rest.length > 0 && (
+            <div className="glass-card overflow-hidden">
+              <table className="w-full text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-white/5 text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left">{copy.rank}</th>
+                    <th className="px-4 py-3 text-left">{copy.player}</th>
+                    <th className="px-4 py-3 text-right">{copy.points}</th>
+                    <th className="px-4 py-3 text-right">{copy.won}/{copy.total}</th>
+                    <th className="px-4 py-3 text-right">{copy.hitRate}</th>
+                    <th className="px-4 py-3 text-right hidden md:table-cell">{copy.sport}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rest.map((e) => (
+                    <tr key={e.rank}
+                      className={`border-b border-white/5 hover:bg-white/3 transition-colors ${yourEntry?.rank === e.rank ? "bg-green-400/5 border-green-400/20" : ""}`}
+                    >
+                      <td className="px-4 py-3 text-gray-500">{e.rank}</td>
+                      <td className="px-4 py-3 text-white font-semibold">
+                        {e.name}
+                        {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-green-400 border border-green-400/40 px-1 py-0.5 rounded">YOU</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-green-400 font-bold">{e.points}</td>
+                      <td className="px-4 py-3 text-right text-gray-400">{e.bets_won}/{e.bets_total}</td>
+                      <td className="px-4 py-3 text-right text-cyan-400">{e.hit_rate}%</td>
+                      <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell capitalize">{e.sport}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Your rank / opt-in CTA */}
+      <div className="glass-card p-5 space-y-2">
+        <p className="eyebrow">{copy.yourRank}</p>
+        {isOptedIn && yourEntry ? (
+          <div className="flex items-center gap-4">
+            <div className="text-3xl font-black font-mono text-green-400">#{yourEntry.rank}</div>
+            <div>
+              <div className="text-sm font-bold text-white">{yourEntry.name}</div>
+              <div className="text-xs font-mono text-gray-500">{yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}</div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs font-mono text-gray-500">{copy.notOptedIn}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── History Tab ──────────────────────────────────────────────────────────────
 
 function HistoryTab({ history, stats, loading }: {
@@ -5269,7 +5446,8 @@ export default function Dashboard() {
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isPremiumClient ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
-    { tab: "history",     label: tNav.nav_history },
+    { tab: "history",      label: tNav.nav_history },
+    { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     { tab: "partners",    label: tNav.nav_partner },
     { tab: "settings",    label: uiLanguage === "it" ? "Impostazioni" : "Settings" },
     { tab: "assistance",  label: uiLanguage === "it" ? "Assistenza" : "Assistance" },
@@ -5403,6 +5581,12 @@ export default function Dashboard() {
           {tab === "faq" && <FAQTab />}
           {tab === "history" && (
             <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
+          )}
+          {tab === "leaderboard" && (
+            <LeaderboardTab
+              clientName={clientProfile?.name}
+              isOptedIn={clientProfile?.leaderboardOptIn ?? false}
+            />
           )}
           {tab === "partners" && <PartnersTab />}
         </section>
