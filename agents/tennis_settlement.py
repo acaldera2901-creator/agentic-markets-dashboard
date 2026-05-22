@@ -1,35 +1,36 @@
 """
-TennisSettlementAgent: polls settled Betfair tennis markets, updates Elo ratings.
+TennisSettlementAgent — resolves tennis match outcomes and settles paper bets.
 
-Runs every 5 minutes. For each TennisPrediction older than 4 hours without an outcome:
-  1. Checks Betfair for settlement (runner status=WINNER)
-  2. Calls EloSurfaceModel.update(winner, loser, surface)
-  3. Persists updated Elo ratings to DB
-  4. Marks TennisPrediction outcome/winner/settled_at
-  5. Settles pending TennisBet records (won/lost + profit_loss)
+Without a live exchange:
+  1. On first run, bulk-expires all predictions older than EXPIRE_AFTER_DAYS
+     (old Betfair market IDs are gone — no way to resolve them).
+  2. For recent predictions (< EXPIRE_AFTER_DAYS, > SETTLEMENT_DELAY_HOURS),
+     attempts resolution via Matchbook settled markets if configured.
+  3. Predictions that can't be resolved are left pending until they expire.
+
+Runs every POLL_INTERVAL seconds.
 """
 import asyncio
 import logging
 from datetime import datetime, timedelta
 
 from agents.base import BaseAgent
-from core.betfair_client import is_configured
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
-from core.tennis_betfair_client import get_settled_results
 from models.elo_surface import EloSurfaceModel
-from sqlalchemy import select
-
-logger = logging.getLogger(__name__)
+from sqlalchemy import select, update
 
 SETTLEMENT_DELAY_HOURS = 4
+EXPIRE_AFTER_DAYS = 7
 POLL_INTERVAL = 300
-BETFAIR_BATCH = 50
+
+logger = logging.getLogger(__name__)
 
 
 class TennisSettlementAgent(BaseAgent):
     def __init__(self):
         super().__init__("TennisSettlementAgent")
         self._elo = EloSurfaceModel()
+        self._stale_expired = False  # run bulk-expire once per process lifetime
 
     async def _main_loop(self):
         while self._running:
@@ -37,33 +38,37 @@ class TennisSettlementAgent(BaseAgent):
             await asyncio.sleep(POLL_INTERVAL)
 
     async def _settlement_cycle(self):
-        if not is_configured():
-            return
+        if not self._stale_expired:
+            await self._bulk_expire_stale()
+            self._stale_expired = True
 
+        await self._settle_recent()
+
+    async def _bulk_expire_stale(self):
+        """Mark all predictions older than EXPIRE_AFTER_DAYS as 'expired' in one query."""
+        cutoff = datetime.utcnow() - timedelta(days=EXPIRE_AFTER_DAYS)
         async with AsyncSessionLocal() as session:
-            await self._elo.load_from_db_async(session)
-
-        pending = await self._get_unsettled_predictions()
-        if not pending:
-            return
-
-        updated = 0
-        market_ids = [p.match_id for p in pending]
-        for i in range(0, len(market_ids), BETFAIR_BATCH):
-            updated += await self._process_batch(
-                market_ids[i:i + BETFAIR_BATCH],
-                {p.match_id: p for p in pending},
+            result = await session.execute(
+                update(TennisPrediction)
+                .where(
+                    TennisPrediction.outcome.is_(None),
+                    TennisPrediction.computed_at < cutoff,
+                )
+                .values(outcome="expired", settled_at=datetime.utcnow())
+            )
+            await session.commit()
+            n = result.rowcount
+        if n:
+            self.logger.info(
+                f"[SETTLEMENT] bulk-expired {n} stale predictions (> {EXPIRE_AFTER_DAYS}d old)"
             )
 
-        if updated:
-            async with AsyncSessionLocal() as session:
-                await self._elo.save_to_db_async(session)
-            self.logger.info(f"[SETTLEMENT] settled {updated} match(es), Elo ratings saved")
-
-    async def _get_unsettled_predictions(self) -> list:
+    async def _settle_recent(self):
+        """Attempt settlement for predictions within the last EXPIRE_AFTER_DAYS days."""
         now = datetime.utcnow()
         cutoff = now - timedelta(hours=SETTLEMENT_DELAY_HOURS)
-        max_age = now - timedelta(days=7)  # don't chase expired Betfair market IDs
+        max_age = now - timedelta(days=EXPIRE_AFTER_DAYS)
+
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(TennisPrediction).where(
@@ -72,48 +77,63 @@ class TennisSettlementAgent(BaseAgent):
                     TennisPrediction.computed_at >= max_age,
                 )
             )
-            return result.scalars().all()
+            pending = result.scalars().all()
 
-    async def _process_batch(
-        self, batch_ids: list[str], pred_by_id: dict[str, TennisPrediction]
-    ) -> int:
-        try:
-            settled = get_settled_results(batch_ids)
-        except Exception as e:
-            self.logger.error(f"get_settled_results error: {e}")
-            return 0
+        if not pending:
+            return
 
-        count = 0
-        for mid, position in settled.items():
-            if not position:
-                continue
-            pred = pred_by_id.get(mid)
-            if not pred:
-                continue
+        resolved = await self._resolve_via_matchbook(pending)
+        if not resolved:
+            return
 
-            # position is "P1" or "P2" — runner order matches player1/player2
-            if position == "P1":
-                outcome = "P1_WIN"
-                winner_name = pred.player1
-                loser_name = pred.player2
-            else:
-                outcome = "P2_WIN"
-                winner_name = pred.player2
-                loser_name = pred.player1
+        async with AsyncSessionLocal() as session:
+            await self._elo.load_from_db_async(session)
 
+        updated = 0
+        for pred, winner_position in resolved:
+            outcome = "P1_WIN" if winner_position == "P1" else "P2_WIN"
+            winner_name = pred.player1 if winner_position == "P1" else pred.player2
+            loser_name = pred.player2 if winner_position == "P1" else pred.player1
             surface = pred.surface or "hard"
             self._elo.update(winner_name, loser_name, surface)
-
             await self._update_prediction(pred.id, outcome, winner_name)
-            await self._settle_bets(mid, outcome)
+            await self._settle_bets(pred.match_id, outcome)
+            updated += 1
 
-            self.logger.info(
-                f"[SETTLEMENT] {pred.player1} vs {pred.player2} → "
-                f"{winner_name} ({outcome}, surface={surface})"
-            )
-            count += 1
+        if updated:
+            async with AsyncSessionLocal() as session:
+                await self._elo.save_to_db_async(session)
+            self.logger.info(f"[SETTLEMENT] settled {updated} recent match(es), Elo updated")
 
-        return count
+    async def _resolve_via_matchbook(self, pending: list) -> list[tuple]:
+        """
+        Resolve outcomes from Matchbook settled markets (if configured).
+        Returns list of (TennisPrediction, "P1"|"P2") for resolved matches.
+        When no exchange is configured, returns empty list gracefully.
+        """
+        try:
+            from core import matchbook_client
+            if not matchbook_client.is_configured():
+                return []
+            if not hasattr(matchbook_client, "get_settled_tennis_result"):
+                return []
+        except Exception:
+            return []
+
+        resolved = []
+        for pred in pending:
+            try:
+                result = await asyncio.to_thread(
+                    matchbook_client.get_settled_tennis_result,
+                    pred.player1,
+                    pred.player2,
+                    pred.computed_at,
+                )
+                if result in ("P1", "P2"):
+                    resolved.append((pred, result))
+            except Exception as e:
+                self.logger.debug(f"matchbook settle lookup failed: {e}")
+        return resolved
 
     async def _update_prediction(self, pred_id: int, outcome: str, winner: str):
         async with AsyncSessionLocal() as session:

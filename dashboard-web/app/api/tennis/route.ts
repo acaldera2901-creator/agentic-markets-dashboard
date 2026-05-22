@@ -22,6 +22,15 @@ type TennisPredictionInput = {
   best_selection?: string | null;
   model_version?: string;
   model?: string;
+  // Elo analysis fields
+  elo_p1?: number | null;
+  elo_p2?: number | null;
+  elo_p1_overall?: number | null;
+  elo_p2_overall?: number | null;
+  surface_matches_p1?: number | null;
+  surface_matches_p2?: number | null;
+  elo_raw_p1?: number | null;
+  elo_raw_p2?: number | null;
 };
 
 type TennisPrediction = ReturnType<typeof normalizePrediction>;
@@ -64,6 +73,14 @@ const PLACEHOLDER_MATCHES = [
     edge: 0.032,
     best_selection: "P1",
     model: "elo_surface_v2",
+    elo_p1: 2198.4,
+    elo_p2: 2181.2,
+    elo_p1_overall: 2142.6,
+    elo_p2_overall: 2138.9,
+    surface_matches_p1: 87,
+    surface_matches_p2: 74,
+    elo_raw_p1: 0.5218,
+    elo_raw_p2: 0.4782,
   },
   {
     id: "RG2026_SF2",
@@ -80,6 +97,14 @@ const PLACEHOLDER_MATCHES = [
     edge: 0.018,
     best_selection: "P1",
     model: "elo_surface_v2",
+    elo_p1: 2234.1,
+    elo_p2: 1967.8,
+    elo_p1_overall: 2201.4,
+    elo_p2_overall: 1923.5,
+    surface_matches_p1: 142,
+    surface_matches_p2: 61,
+    elo_raw_p1: 0.6088,
+    elo_raw_p2: 0.3912,
   },
   {
     id: "RG2026_QF_W1",
@@ -96,6 +121,14 @@ const PLACEHOLDER_MATCHES = [
     edge: 0.047,
     best_selection: "P1",
     model: "elo_surface_v2",
+    elo_p1: 2216.3,
+    elo_p2: 2024.7,
+    elo_p1_overall: 2174.8,
+    elo_p2_overall: 1998.2,
+    surface_matches_p1: 118,
+    surface_matches_p2: 52,
+    elo_raw_p1: 0.5801,
+    elo_raw_p2: 0.4199,
   },
   {
     id: "RG2026_QF_W2",
@@ -112,6 +145,14 @@ const PLACEHOLDER_MATCHES = [
     edge: 0.011,
     best_selection: "P2",
     model: "elo_surface_v2",
+    elo_p1: 1984.6,
+    elo_p2: 2011.3,
+    elo_p1_overall: 2047.2,
+    elo_p2_overall: 2008.9,
+    surface_matches_p1: 38,
+    surface_matches_p2: 43,
+    elo_raw_p1: 0.4915,
+    elo_raw_p2: 0.5085,
   },
   {
     id: "QUEENS2026_R1_1",
@@ -128,6 +169,14 @@ const PLACEHOLDER_MATCHES = [
     edge: 0.0,
     best_selection: null,
     model: "elo_surface_v2",
+    elo_p1: 1834.2,
+    elo_p2: 1891.6,
+    elo_p1_overall: 1902.4,
+    elo_p2_overall: 1918.7,
+    surface_matches_p1: 29,
+    surface_matches_p2: 34,
+    elo_raw_p1: 0.4501,
+    elo_raw_p2: 0.5499,
   },
   {
     id: "LVIV2026_R1_1",
@@ -144,6 +193,14 @@ const PLACEHOLDER_MATCHES = [
     edge: 0.028,
     best_selection: "P1",
     model: "elo_surface_v2",
+    elo_p1: 1873.4,
+    elo_p2: 1798.1,
+    elo_p1_overall: 1841.6,
+    elo_p2_overall: 1812.3,
+    surface_matches_p1: 67,
+    surface_matches_p2: 31,
+    elo_raw_p1: 0.5384,
+    elo_raw_p2: 0.4616,
   },
 ];
 
@@ -228,6 +285,14 @@ function normalizePrediction(p: TennisPredictionInput) {
     edge: p.edge ?? null,
     best_selection: p.best_selection ?? null,
     model: p.model_version || p.model || "elo_surface_v2",
+    elo_p1: p.elo_p1 ?? null,
+    elo_p2: p.elo_p2 ?? null,
+    elo_p1_overall: p.elo_p1_overall ?? null,
+    elo_p2_overall: p.elo_p2_overall ?? null,
+    surface_matches_p1: p.surface_matches_p1 ?? null,
+    surface_matches_p2: p.surface_matches_p2 ?? null,
+    elo_raw_p1: p.elo_raw_p1 ?? null,
+    elo_raw_p2: p.elo_raw_p2 ?? null,
   };
 }
 

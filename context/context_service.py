@@ -21,10 +21,12 @@ class ContextService:
         self._predictability = LeaguePredictabilityTracker()
         self._league_profiles: dict[str, dict] = {}
 
-    def load_league_history(self, league_id: str, league_name: str, matches: list[dict]) -> None:
+    def load_league_history(self, league_id: str, league_name: str, matches: list[dict]) -> dict:
+        """Compute and cache league strength + odds profiles. Returns the strength profile."""
         profile = self._strength_analyzer.compute_profile(league_id, league_name, matches)
         self._league_profiles[league_id] = profile
         self._odds_profiler.compute_profile(league_id, matches)
+        return profile
 
     def load_predictions_history(self, league_id: str, predictions: list[dict]) -> None:
         self._predictability.update(league_id, predictions)

@@ -2,6 +2,7 @@ import asyncio
 import json
 import math
 import subprocess
+import os
 from datetime import datetime, timedelta
 from typing import List
 from agents.base import BaseAgent
@@ -20,15 +21,6 @@ AGENT_PROCESSES = [
 
 AGENT_HEARTBEAT_KEYS = {
     "data_collector": "DataCollector",
-    "model": "ModelAgent",
-    "analyst": "AnalystAgent",
-    "strategist": "StrategistAgent",
-    "risk_manager": "RiskManagerAgent",
-    "trader": "TraderAgent",
-}
-
-AGENT_CLASS_NAMES = {
-    "data_collector": "DataCollectorAgent",
     "model": "ModelAgent",
     "analyst": "AnalystAgent",
     "strategist": "StrategistAgent",
@@ -62,6 +54,7 @@ class MonitorAgent(BaseAgent):
         self._last_report = datetime.min
         self._last_psi_check = datetime.min
         self._last_monte_carlo = datetime.min
+        self._started_at = datetime.utcnow()
 
     async def _main_loop(self) -> None:
         await self._init_telegram()
@@ -90,29 +83,35 @@ class MonitorAgent(BaseAgent):
                 self.logger.error(f"Telegram send failed: {e}")
 
     async def _check_heartbeats(self) -> None:
+        if (datetime.utcnow() - self._started_at).total_seconds() < settings.HEARTBEAT_TIMEOUT:
+            self.logger.info("heartbeat watchdog warming up")
+            return
+
         r = await get_redis()
+        stale_agents = []
         for agent_key, hb_key in AGENT_HEARTBEAT_KEYS.items():
             hb = await r.get(f"health:{hb_key}")
             if hb is None or is_heartbeat_stale(hb, settings.HEARTBEAT_TIMEOUT):
-                self.logger.warning(f"{hb_key} heartbeat missing — restarting")
-                await self._restart_agent(agent_key)
-                await self._send_telegram(f"⚠️ {hb_key} crashed — restarted automatically")
+                stale_agents.append(hb_key)
 
-    async def _restart_agent(self, agent_name: str) -> None:
-        class_name = AGENT_CLASS_NAMES.get(agent_name, "")
-        if not class_name:
-            return
+        if stale_agents:
+            self.logger.warning(f"heartbeat missing for {', '.join(stale_agents)} — restarting orchestrator")
+            await self._restart_orchestrator(stale_agents)
+            await self._send_telegram(
+                f"⚠️ Agent heartbeat stale: {', '.join(stale_agents)} — orchestrator restart requested"
+            )
+
+    async def _restart_orchestrator(self, stale_agents: list[str]) -> None:
+        label = "gui/{}/com.agentic-markets.agents".format(os.getuid())
         try:
-            subprocess.Popen(
-                [
-                    ".venv/bin/python", "-c",
-                    f"import asyncio; from agents.{agent_name} import {class_name}; asyncio.run({class_name}().run())"
-                ],
-                start_new_session=True,
+            subprocess.run(
+                ["launchctl", "kickstart", "-k", label],
                 cwd="/Users/calde/Desktop/sistema-andrea/agentic-markets",
+                check=False,
+                timeout=15,
             )
         except Exception as e:
-            self.logger.error(f"restart failed for {agent_name}: {e}")
+            self.logger.error(f"orchestrator restart failed for {stale_agents}: {e}")
 
     async def _check_anomalies(self) -> None:
         r = await get_redis()

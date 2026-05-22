@@ -10,7 +10,7 @@ from config.settings import settings
 def _edge_threshold(data: dict) -> tuple[float, str]:
     notes = str(data.get("notes", "")).lower()
     source = str(data.get("source", "")).lower()
-    if any(k in notes or k in source for k in ("pinnacle", "betfair", "exchange", "sharp")):
+    if any(k in notes or k in source for k in ("pinnacle", "matchbook", "exchange", "sharp")):
         return settings.EDGE_MIN_SHARP, "sharp"
     return settings.EDGE_MIN_SOFT, "soft"
 
@@ -53,7 +53,16 @@ class AnalystAgent(BaseAgent):
             best_sel = max(edges, key=edges.get)
             best_edge = edges[best_sel]
 
-            if best_edge < settings.MIN_EDGE:
+            # Raise effective edge threshold by phase_edge_boost from ModelAgent
+            phase_boost = float(data.get("phase_edge_boost") or 0.0)
+            effective_min_edge = settings.MIN_EDGE + phase_boost
+
+            # Short-odds guard: heavy favourites compound variance — require extra edge
+            odds_for_sel = market_odds[best_sel]
+            if odds_for_sel < settings.SHORT_ODDS_THRESHOLD:
+                effective_min_edge = max(effective_min_edge, settings.MIN_EDGE_SHORT_ODDS)
+
+            if best_edge < effective_min_edge:
                 if is_near_kickoff(data.get("kickoff", "")):
                     from core.telegram_client import send, match_header
                     edge_threshold, tier = _edge_threshold(data)
@@ -93,6 +102,14 @@ class AnalystAgent(BaseAgent):
                 "confidence": str(assessment.get("confidence", 0.7)),
                 "notes": assessment.get("notes", ""),
                 "source": bookmaker_source,
+                # Season phase context (pass through)
+                "season_phase": data.get("season_phase", "MID"),
+                "phase_stake_multiplier": data.get("phase_stake_multiplier", "1.0"),
+                "phase_edge_boost": data.get("phase_edge_boost", "0.0"),
+                "phase_dead_rubber_skip": data.get("phase_dead_rubber_skip", "False"),
+                "match_type": data.get("match_type", "STANDARD"),
+                "league_tier": data.get("league_tier", ""),
+                "auto_skip_reason": data.get("auto_skip_reason", ""),
                 "found_at": datetime.utcnow().isoformat(),
             }
             await publish("analyst:opportunities", opportunity)

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 import traceback
 import unicodedata
 from difflib import SequenceMatcher
@@ -9,7 +10,7 @@ from core.redis_client import publish
 from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGUE_IDS
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
 from core.odds_api_client import get_odds, normalize_name
-from core.betfair_client import get_all_odds_for_league, is_configured as betfair_configured
+from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
 from config.settings import settings
 
 
@@ -26,6 +27,8 @@ class DataCollectorAgent(BaseAgent):
     def __init__(self):
         super().__init__("DataCollector")
         self._upcoming_kickoffs: list = []
+        self._consecutive_empty_cycles: int = 0
+        self._last_offseason_log: float = 0.0
 
     async def _main_loop(self) -> None:
         while self._running:
@@ -38,6 +41,8 @@ class DataCollectorAgent(BaseAgent):
             await asyncio.sleep(interval)
 
     def _next_interval(self) -> int:
+        if self._consecutive_empty_cycles >= 3:
+            return 1800  # 30 min during off-season — check twice an hour
         return settings.PREMATCH_REFRESH_INTERVAL if self._has_imminent_match() else settings.DATA_REFRESH_INTERVAL
 
     def _has_imminent_match(self) -> bool:
@@ -70,25 +75,25 @@ class DataCollectorAgent(BaseAgent):
 
     async def _collect_cycle(self) -> None:
         self._upcoming_kickoffs = []
+        published_this_cycle = 0
         for league_code, league_id in LEAGUE_IDS.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
-                # Primary odds source: Betfair Exchange (live, sharpest prices)
-                # The Odds API is a fallback (monthly quota often exhausted)
+                # Primary odds source: Matchbook Exchange
                 odds_map: dict = {}
-                if betfair_configured():
+                if mb_configured():
                     try:
-                        bf_list = await asyncio.to_thread(get_all_odds_for_league, league_code)
-                    except Exception as bf_err:
-                        self.logger.warning(f"Betfair odds error {league_code}: {bf_err}")
-                        bf_list = []
-                    if bf_list:
-                        self.logger.info(f"Betfair {league_code}: {len(bf_list)} markets")
-                        odds_map = {
-                            o["home_team_normalized"] + "|" + o["away_team_normalized"]: o
-                            for o in bf_list
-                        }
-                # Supplement with Odds API if Betfair had no markets for this league
+                        mb_list = await asyncio.to_thread(mb_football_markets)
+                        if mb_list:
+                            self.logger.info(f"Matchbook football: {len(mb_list)} markets total")
+                            for o in mb_list:
+                                key = o["home_team_normalized"] + "|" + o["away_team_normalized"]
+                                if key not in odds_map:
+                                    odds_map[key] = o
+                    except Exception as mb_err:
+                        self.logger.warning(f"Matchbook odds error: {mb_err}")
+
+                # Fallback: The Odds API
                 if not odds_map:
                     odds_list = await get_odds(league_code)
                     odds_map = {
@@ -106,8 +111,21 @@ class DataCollectorAgent(BaseAgent):
                         published += 1
                 if published:
                     self.logger.info(f"published {published} fixtures for {league_code}")
+                    published_this_cycle += published
             except Exception as e:
                 self.logger.error(f"error collecting {league_code}: {e}\n{traceback.format_exc()}")
+
+        if published_this_cycle == 0:
+            self._consecutive_empty_cycles += 1
+            now = time.time()
+            if now - self._last_offseason_log >= 3600:
+                self.logger.info(
+                    f"[OFF-SEASON] no fixtures found ({self._consecutive_empty_cycles} consecutive "
+                    "empty cycles). System idle — next check in 30 min."
+                )
+                self._last_offseason_log = now
+        else:
+            self._consecutive_empty_cycles = 0
 
     def _build_event(self, fixture: dict, odds_map: dict, league: str) -> dict | None:
         try:

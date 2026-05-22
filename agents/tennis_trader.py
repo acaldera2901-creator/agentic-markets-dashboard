@@ -49,19 +49,10 @@ class TennisTraderAgent(BaseAgent):
                 self._processed_ids = set(list(self._processed_ids)[-250:])
 
     def _selection_info(self, order: dict) -> tuple[str | None, float | None, int | None]:
-        """Return (player_name, odds, selection_id) for the chosen side."""
         side = order.get("best_selection", "P1")
         if side == "P1":
-            return (
-                order.get("player1"),
-                order.get("odds_p1"),
-                order.get("selection_id_p1"),
-            )
-        return (
-            order.get("player2"),
-            order.get("odds_p2"),
-            order.get("selection_id_p2"),
-        )
+            return order.get("player1"), order.get("odds_p1"), order.get("selection_id_p1")
+        return order.get("player2"), order.get("odds_p2"), order.get("selection_id_p2")
 
     async def _check_duplicate(self, match_id: str) -> bool:
         from core.db import AsyncSessionLocal, TennisBet
@@ -110,88 +101,90 @@ class TennisTraderAgent(BaseAgent):
             self.logger.error(f"_execute_paper error: {e}")
 
     async def _execute_live(self, order: dict):
+        """Route to Matchbook if configured, otherwise paper."""
+        match_id = order.get("match_id", "")
+        if match_id.startswith("mb_"):
+            await self._execute_live_matchbook(order)
+        else:
+            self.logger.info(
+                f"[TENNIS] no live exchange for market {match_id} — routing to paper"
+            )
+            await self._execute_paper(order)
+
+    async def _execute_live_matchbook(self, order: dict):
+        """Place a live bet on Matchbook Exchange."""
         from core.db import AsyncSessionLocal, TennisBet
-        from core.betfair_client import get_best_back_price, place_bet
+        from core import matchbook_client
 
-        player_name, model_odds, selection_id = self._selection_info(order)
-        market_id = order.get("match_id", "")
+        player_name, model_odds, runner_id = self._selection_info(order)
+        match_id = order.get("match_id", "")
 
-        if not market_id or not selection_id:
+        if not match_id or not runner_id:
             self.logger.error(
-                f"[LIVE TENNIS] missing market_id or selection_id for "
+                f"[LIVE MATCHBOOK] missing match_id or runner_id for "
                 f"{order.get('player1')} vs {order.get('player2')} — falling back to paper"
             )
             await self._execute_paper(order)
             return
 
         try:
-            if await self._check_duplicate(market_id):
+            if await self._check_duplicate(match_id):
                 self.logger.warning(
-                    f"[LIVE TENNIS] duplicate skipped: {order.get('player1')} vs {order.get('player2')} ({market_id})"
+                    f"[LIVE MATCHBOOK] duplicate skipped: {order.get('player1')} vs {order.get('player2')}"
                 )
                 return
         except Exception as e:
-            self.logger.error(f"[LIVE TENNIS] _check_duplicate error: {e} — skipping {market_id}")
+            self.logger.error(f"[LIVE MATCHBOOK] _check_duplicate error: {e}")
             return
 
-        try:
-            live_odds = await asyncio.get_event_loop().run_in_executor(
-                None, get_best_back_price, market_id, int(selection_id)
-            )
-        except Exception as e:
-            self.logger.error(f"[LIVE TENNIS] get_best_back_price error: {e}")
-            return
-
-        if not live_odds:
-            self.logger.error(
-                f"[LIVE TENNIS] no Betfair BACK price for {player_name} in market {market_id}"
-            )
-            return
+        # Use odds from order (fetched in the last 5-min cycle — fresh enough)
+        odds = model_odds or 2.0
+        stake = float(order.get("stake", 2.0))
 
         try:
             result = await asyncio.get_event_loop().run_in_executor(
-                None, place_bet, market_id, int(selection_id), live_odds, float(order["stake"])
+                None, matchbook_client.place_bet, int(runner_id), odds, stake
             )
         except Exception as e:
-            self.logger.error(f"[LIVE TENNIS] place_bet error: {e}")
+            self.logger.error(f"[LIVE MATCHBOOK] place_bet error: {e} — falling back to paper")
+            await self._execute_paper(order)
             return
 
-        bf_status = result.get("status", "FAILURE")
-        instructions = (result.get("instructionReports") or [{}])
-        bf_bet_id = None
-        if bf_status == "SUCCESS" and instructions:
-            bf_bet_id = instructions[0].get("betId") or instructions[0].get("instruction", {}).get("betId")
+        mb_status = result.get("status", "")
+        mb_bet_id = str(result.get("id", "")) if result.get("id") else None
 
-        if bf_status != "SUCCESS" or not bf_bet_id:
-            err = result.get("errorCode", "UNKNOWN")
+        if mb_status not in ("matched", "open") or not mb_bet_id:
             self.logger.error(
-                f"[LIVE TENNIS] Betfair rejected: {player_name} @ {live_odds} — {err} | {result}"
+                f"[LIVE MATCHBOOK] bet rejected: {player_name} @ {odds} — status={mb_status} | {result}"
             )
+            await self._execute_paper(order)
             return
+
+        matched_odds = float(result.get("odds", odds))
 
         try:
             async with AsyncSessionLocal() as session:
                 bet = TennisBet(
-                    match_id=market_id,
+                    match_id=match_id,
                     selection=order.get("best_selection", "P1"),
                     player_name=player_name,
-                    odds=float(live_odds),
-                    stake=float(order["stake"]),
+                    odds=matched_odds,
+                    stake=stake,
                     paper=False,
                     status="pending",
-                    betfair_bet_id=bf_bet_id,
+                    betfair_bet_id=mb_bet_id,  # reuse field for Matchbook bet ID
                 )
                 session.add(bet)
                 await session.commit()
         except Exception as e:
-            self.logger.error(f"[LIVE TENNIS] DB save error: {e}")
+            self.logger.error(f"[LIVE MATCHBOOK] DB save error: {e}")
             return
 
         self.logger.info(
-            f"[LIVE] TENNIS: {player_name} @ {live_odds:.2f} "
-            f"stake={order.get('stake'):.2f}€ edge={order.get('edge', 0):.1%} betId={bf_bet_id}"
+            f"[LIVE MATCHBOOK] TENNIS: {player_name} @ {matched_odds:.2f} "
+            f"stake={stake:.2f}€ edge={order.get('edge', 0):.1%} betId={mb_bet_id}"
         )
-        await self._send_alert(order, player_name, live_odds, mode="LIVE")
+        await self._send_alert(order, player_name, matched_odds, mode="LIVE-MB")
 
     async def _send_alert(self, order: dict, player: str | None, odds: float | None, mode: str = "LIVE"):
         if not self._bot or not settings.TELEGRAM_CHAT_ID:
@@ -200,9 +193,10 @@ class TennisTraderAgent(BaseAgent):
         if edge < 0.04:
             return
         try:
-            emoji = "🟢" if mode == "LIVE" else "🟡"
+            emoji = "🟢" if mode.startswith("LIVE") else "🟡"
+            exchange_tag = "Matchbook" if "MB" in mode else "Paper"
             msg = (
-                f"🎾 [{mode}] TENNIS BET\n"
+                f"🎾 [{mode}] TENNIS BET — {exchange_tag}\n"
                 f"{order.get('player1')} vs {order.get('player2')}\n"
                 f"▶ {player} @ {odds:.2f}  |  Edge +{edge*100:.1f}%\n"
                 f"Stake: {order.get('stake', 0):.2f}€  |  {order.get('tournament', '')} ({order.get('surface', '').upper()})\n"

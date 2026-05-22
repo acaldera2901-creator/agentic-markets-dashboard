@@ -24,13 +24,19 @@ class TennisAnalystAgent(BaseAgent):
         data = json.loads(raw)
         predictions = data.get("predictions", [])
 
-        TENNIS_MIN_EDGE = 0.04
+        TENNIS_MIN_EDGE = 0.06  # raised from 4% — reduces false positives
+        TENNIS_MIN_ODDS = 1.50  # mirrors MIN_ODDS in tennis_model_agent
 
         opportunities = []
         for pred in predictions:
             edge = pred.get("edge")
-            if edge and edge >= TENNIS_MIN_EDGE and pred.get("best_selection"):
-                opportunities.append({
+            sel = pred.get("best_selection")
+            if not (edge and edge >= TENNIS_MIN_EDGE and sel):
+                continue
+            odds_key = "odds_p1" if sel == "P1" else "odds_p2"
+            if (pred.get(odds_key) or 0.0) < TENNIS_MIN_ODDS:
+                continue
+            opportunities.append({
                     **pred,
                     "analyst_notes": f"edge={edge:.1%} on {pred['best_selection']} ({pred['player1']} vs {pred['player2']})",
                     "analyst_ts": datetime.now(timezone.utc).isoformat(),

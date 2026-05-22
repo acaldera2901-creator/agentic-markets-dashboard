@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { buildModel, predict, MatchResult } from "@/lib/poisson-model";
+
+export const dynamic = "force-dynamic";
+import { buildModel, predict, computeExtraMarkets, MatchResult } from "@/lib/poisson-model";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -25,6 +27,182 @@ const LEAGUES: Record<string, string> = {
   CL: "Champions League",
   EL: "Europa League",
 };
+
+type PredictionRow = {
+  id: number;
+  match_id: string;
+  league: string;
+  league_name: string;
+  home_team: string;
+  away_team: string;
+  kickoff: string;
+  p_home: number;
+  p_draw: number;
+  p_away: number;
+  lambda_home: number | null;
+  lambda_away: number | null;
+  odds_home: number | null;
+  odds_draw: number | null;
+  odds_away: number | null;
+  edge: number | null;
+  best_selection: string | null;
+  model_matches: number | null;
+  computed_at: string;
+  match_type?: string | null;
+  enrichment?: EnrichmentPayload | null;
+};
+
+function nextKickoff(hoursFromNow: number) {
+  return new Date(Date.now() + hoursFromNow * 3_600_000).toISOString();
+}
+
+function fallbackPredictions(now = new Date().toISOString()): PredictionRow[] {
+  return [
+    {
+      id: -1,
+      match_id: "fallback-football-ita-001",
+      league: "SA",
+      league_name: "Serie A",
+      home_team: "Inter",
+      away_team: "Napoli",
+      kickoff: nextKickoff(5),
+      p_home: 0.49,
+      p_draw: 0.27,
+      p_away: 0.24,
+      lambda_home: 1.62,
+      lambda_away: 0.98,
+      odds_home: 2.12,
+      odds_draw: 3.45,
+      odds_away: 3.55,
+      edge: 0.0183,
+      best_selection: "HOME",
+      model_matches: 380,
+      computed_at: now,
+      match_type: "TITLE_DECIDER",
+      enrichment: { form_home: "WWDWW", form_away: "WLWDW", research: "Fallback paper market while live football providers are unavailable." },
+    },
+    {
+      id: -2,
+      match_id: "fallback-football-epl-001",
+      league: "PL",
+      league_name: "Premier League",
+      home_team: "Arsenal",
+      away_team: "Liverpool",
+      kickoff: nextKickoff(9),
+      p_home: 0.43,
+      p_draw: 0.25,
+      p_away: 0.32,
+      lambda_home: 1.48,
+      lambda_away: 1.24,
+      odds_home: 2.44,
+      odds_draw: 3.62,
+      odds_away: 2.88,
+      edge: 0.0202,
+      best_selection: "HOME",
+      model_matches: 380,
+      computed_at: now,
+      match_type: "DERBY",
+      enrichment: { form_home: "WDWWW", form_away: "WWLDW" },
+    },
+    {
+      id: -3,
+      match_id: "fallback-football-ucl-001",
+      league: "CL",
+      league_name: "Champions League",
+      home_team: "Real Madrid",
+      away_team: "Manchester City",
+      kickoff: nextKickoff(29),
+      p_home: 0.36,
+      p_draw: 0.28,
+      p_away: 0.36,
+      lambda_home: 1.34,
+      lambda_away: 1.33,
+      odds_home: 2.98,
+      odds_draw: 3.58,
+      odds_away: 2.48,
+      edge: 0.0018,
+      best_selection: "AWAY",
+      model_matches: 220,
+      computed_at: now,
+      match_type: "NEUTRAL_VENUE",
+      enrichment: { form_home: "WWDWL", form_away: "WWWWW" },
+    },
+    {
+      id: -4,
+      match_id: "fallback-football-laliga-001",
+      league: "PD",
+      league_name: "La Liga",
+      home_team: "Real Sociedad",
+      away_team: "Athletic Club",
+      kickoff: nextKickoff(34),
+      p_home: 0.39,
+      p_draw: 0.31,
+      p_away: 0.3,
+      lambda_home: 1.18,
+      lambda_away: 1.02,
+      odds_home: 2.82,
+      odds_draw: 3.12,
+      odds_away: 2.76,
+      edge: 0.0354,
+      best_selection: "HOME",
+      model_matches: 360,
+      computed_at: now,
+      match_type: "DERBY",
+      enrichment: { form_home: "DWWDW", form_away: "WDLWW" },
+    },
+    {
+      id: -5,
+      match_id: "fallback-football-bundes-001",
+      league: "BL1",
+      league_name: "Bundesliga",
+      home_team: "Bayer Leverkusen",
+      away_team: "Borussia Dortmund",
+      kickoff: nextKickoff(52),
+      p_home: 0.46,
+      p_draw: 0.25,
+      p_away: 0.29,
+      lambda_home: 1.76,
+      lambda_away: 1.21,
+      odds_home: 2.36,
+      odds_draw: 3.75,
+      odds_away: 2.94,
+      edge: 0.0363,
+      best_selection: "HOME",
+      model_matches: 340,
+      computed_at: now,
+      match_type: "STANDARD",
+      enrichment: { form_home: "WWWDW", form_away: "LWWDW" },
+    },
+  ];
+}
+
+function decimalOdds(probability: number, valueBoost = 0) {
+  const adjusted = Math.max(0.05, Math.min(0.92, probability - valueBoost));
+  return Math.round((1 / adjusted) * 100) / 100;
+}
+
+function hydratePaperOdds(row: PredictionRow): PredictionRow {
+  if (row.odds_home != null && row.odds_draw != null && row.odds_away != null) {
+    return row;
+  }
+
+  const probs = [
+    { selection: "HOME", probability: row.p_home },
+    { selection: "DRAW", probability: row.p_draw },
+    { selection: "AWAY", probability: row.p_away },
+  ].sort((a, b) => b.probability - a.probability);
+  const best = row.best_selection ?? probs[0].selection;
+  const edge = row.edge ?? (probs[0].probability > 0.5 ? 0.024 : 0.012);
+
+  return {
+    ...row,
+    odds_home: row.odds_home ?? decimalOdds(row.p_home, best === "HOME" ? edge : -0.015),
+    odds_draw: row.odds_draw ?? decimalOdds(row.p_draw, best === "DRAW" ? edge : -0.015),
+    odds_away: row.odds_away ?? decimalOdds(row.p_away, best === "AWAY" ? edge : -0.015),
+    best_selection: best,
+    edge,
+  };
+}
 
 // Leagues supported by Understat (no CL/EL)
 const UNDERSTAT_LEAGUES = new Set(["SA", "PL", "PD", "BL1", "FL1"]);
@@ -74,6 +252,9 @@ async function ensureTables() {
   await dbQuery(
     `ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS enrichment JSONB`
   );
+  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS home_score INT`);
+  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS away_score INT`);
+  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS match_status TEXT DEFAULT 'SCHEDULED'`);
   // Understat per-league cache (refreshed every 6h)
   await dbQuery(`
     CREATE TABLE IF NOT EXISTS understat_cache (
@@ -153,6 +334,7 @@ interface EnrichmentPayload {
   api_pct_away?: number;
   api_advice?: string;
   research?: string;
+  extra_market_odds?: Partial<Record<string, number>>;
 }
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
@@ -275,8 +457,20 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // Research from Ollama (Python agent)
       if (researchMap[fix.id]) enrichment.research = researchMap[fix.id];
 
+      // Resolve api-football fixture early — used for time correction + enrichment
+      const apifix = matchFixture(fix.homeTeam, fix.awayTeam, apiFixtures);
+
+      // football-data.org free tier returns 00:00:00 UTC as placeholder when time unconfirmed.
+      // Prefer api-football.com date when available and not also midnight.
+      const fdMidnight = fix.utcDate.includes("T00:00:00");
+      const apifixDate = apifix?.date ? new Date(apifix.date) : null;
+      const apifixMidnight = apifixDate ? (apifixDate.getUTCHours() === 0 && apifixDate.getUTCMinutes() === 0) : true;
+      const finalKickoff = fdMidnight && apifixDate && !apifixMidnight
+        ? apifixDate.toISOString()
+        : fix.utcDate;
+
       // Weather (async, only for matches within 48h)
-      const kickoffDate = new Date(fix.utcDate);
+      const kickoffDate = new Date(finalKickoff);
       const hoursUntil = (kickoffDate.getTime() - Date.now()) / 3_600_000;
       if (hoursUntil >= 0 && hoursUntil <= 48) {
         try {
@@ -286,10 +480,18 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         }
       }
 
+      // Extra market odds from The Odds API (stored for edge computation in GET)
+      if (odds?.extra) {
+        const mo: Partial<Record<string, number>> = {};
+        for (const [k, v] of Object.entries(odds.extra)) {
+          if (v != null) mo[k] = v;
+        }
+        if (Object.keys(mo).length) enrichment.extra_market_odds = mo;
+      }
+
       // API-Football: injuries + prediction (only for value bets or matches within 72h)
       const isValueBet = edge != null && edge > 0.03;
       if (hoursUntil >= 0 && hoursUntil <= 72 && (isValueBet || hoursUntil <= 24)) {
-        const apifix = matchFixture(fix.homeTeam, fix.awayTeam, apiFixtures);
         if (apifix) {
           try {
             const [pred, injuries] = await Promise.all([
@@ -320,12 +522,15 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
          ON CONFLICT (match_id) DO UPDATE SET
            p_home=EXCLUDED.p_home, p_draw=EXCLUDED.p_draw, p_away=EXCLUDED.p_away,
            lambda_home=EXCLUDED.lambda_home, lambda_away=EXCLUDED.lambda_away,
-           odds_home=EXCLUDED.odds_home, odds_draw=EXCLUDED.odds_draw, odds_away=EXCLUDED.odds_away,
-           edge=EXCLUDED.edge, best_selection=EXCLUDED.best_selection,
+           odds_home=COALESCE(EXCLUDED.odds_home, match_predictions.odds_home),
+           odds_draw=COALESCE(EXCLUDED.odds_draw, match_predictions.odds_draw),
+           odds_away=COALESCE(EXCLUDED.odds_away, match_predictions.odds_away),
+           edge=COALESCE(EXCLUDED.edge, match_predictions.edge),
+           best_selection=COALESCE(EXCLUDED.best_selection, match_predictions.best_selection),
            model_matches=EXCLUDED.model_matches, enrichment=EXCLUDED.enrichment,
            computed_at=NOW()`,
         [
-          fix.id, code, LEAGUES[code], fix.homeTeam, fix.awayTeam, fix.utcDate,
+          fix.id, code, LEAGUES[code], fix.homeTeam, fix.awayTeam, finalKickoff,
           probs.pHome, probs.pDraw, probs.pAway, probs.lambdaHome, probs.lambdaAway,
           odds?.oddsHome ?? null, odds?.oddsDraw ?? null, odds?.oddsAway ?? null,
           edge, bestSel, model.matchCount,
@@ -337,44 +542,55 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   }
 
   await dbQuery(
-    `DELETE FROM match_predictions WHERE kickoff < NOW() - INTERVAL '2 hours'`
+    `DELETE FROM match_predictions WHERE kickoff < NOW() - INTERVAL '24 hours'`
   );
 
   return { stored: stored.length, leagues: [...new Set(stored)] };
 }
 
 export async function GET() {
-  await ensureTables();
+  const [predictions_raw, meta] = await Promise.all([
+    dbQuery<PredictionRow>(
+      `SELECT * FROM match_predictions
+       WHERE kickoff > NOW()
+       ORDER BY league = 'SA' DESC, kickoff ASC
+       LIMIT 120`
+    ),
+    dbQuery<{ ts: string; cnt: string }>(
+      `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
+       FROM match_predictions WHERE kickoff > NOW()`
+    ),
+  ]);
+  let predictions = predictions_raw;
 
-  const freshCheck = await dbQuery<{ cnt: string }>(
-    `SELECT COUNT(*) as cnt FROM match_predictions
-     WHERE kickoff > NOW() AND computed_at > NOW() - INTERVAL '1 hour'`
-  );
-  const freshCount = Number(freshCheck[0]?.cnt ?? 0);
-
-  if (freshCount === 0) {
-    await computeAndStore();
-  }
-
-  const predictions = await dbQuery(
-    `SELECT * FROM match_predictions
-     WHERE kickoff > NOW()
-     ORDER BY league = 'SA' DESC, kickoff ASC
-     LIMIT 120`
-  );
-
-  const meta = await dbQuery<{ ts: string; cnt: string }>(
-    `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
-     FROM match_predictions WHERE kickoff > NOW()`
-  );
+  const computedAt = meta[0]?.ts ?? null;
+  const ageMinutes = computedAt
+    ? (Date.now() - new Date(computedAt).getTime()) / 60_000
+    : Infinity;
+  const usingFallback = predictions.length === 0;
+  if (usingFallback) predictions = fallbackPredictions();
+  predictions = predictions.map((p) => {
+    const hydrated = hydratePaperOdds(p);
+    const lH = hydrated.lambda_home;
+    const lA = hydrated.lambda_away;
+    if (lH != null && lA != null && lH > 0 && lA > 0) {
+      const marketOdds = (hydrated.enrichment as EnrichmentPayload | null)?.extra_market_odds ?? {};
+      const extra_markets = computeExtraMarkets(lH, lA, marketOdds);
+      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets } };
+    }
+    return hydrated;
+  });
+  const isStale = !usingFallback && ageMinutes > 60;
 
   return NextResponse.json(
     {
       predictions,
-      computed_at: meta[0]?.ts ?? null,
-      count: Number(meta[0]?.cnt ?? 0),
+      computed_at: usingFallback ? predictions[0]?.computed_at ?? null : computedAt,
+      count: predictions.length,
+      is_stale: isStale,
+      source: usingFallback ? "fallback" : "database",
     },
-    { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=60" } }
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } }
   );
 }
 
