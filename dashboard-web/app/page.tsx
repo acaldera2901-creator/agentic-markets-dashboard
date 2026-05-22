@@ -741,7 +741,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "operators";
+type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -4332,8 +4332,35 @@ function PartnerCard({ p }: { p: Partner }) {
   );
 }
 
+const PARTNER_CATEGORIES = ["sportsbook", "casino", "exchange", "data_provider"] as const;
+type PartnerCategory = typeof PARTNER_CATEGORIES[number];
+
 function PartnersTab() {
   const t = useT();
+  const lang = useLang();
+  const [form, setForm] = useState({ company: "", site: "", category: "sportsbook" as PartnerCategory, email: "", message: "" });
+  const [formStatus, setFormStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  const categoryLabels: Record<PartnerCategory, string> = lang === "it"
+    ? { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" }
+    : { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.company || !form.email) return;
+    setFormStatus("sending");
+    try {
+      const res = await fetch("/api/partner-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      setFormStatus(res.ok ? "sent" : "error");
+    } catch {
+      setFormStatus("error");
+    }
+  };
+
   const featured = PARTNERS.filter((p) => p.featured);
   const others = PARTNERS.filter((p) => !p.featured);
 
@@ -4380,13 +4407,68 @@ function PartnersTab() {
         </div>
       )}
 
-      {/* Add partner CTA */}
-      <div className="glass-card p-5 border-dashed border-white/10 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center text-white/30 text-2xl shrink-0">+</div>
-        <div>
-          <div className="text-sm font-bold text-white/60">{t.partners_invite_title}</div>
-          <div className="text-xs font-mono text-gray-600 mt-0.5">{t.partners_invite_desc}</div>
+      {/* Collaboration form */}
+      <div className="operators-collab">
+        <div className="operators-collab-head">
+          <p className="eyebrow">{lang === "it" ? "Sei un operatore?" : "Are you an operator?"}</p>
+          <h4>{t.partners_invite_title}</h4>
+          <p>{t.partners_invite_desc}</p>
         </div>
+        {formStatus === "sent" ? (
+          <div className="operators-sent">
+            <span>✓</span>
+            <p>{lang === "it" ? "Richiesta inviata. Ti contatteremo entro 48 ore." : "Request sent. We'll contact you within 48 hours."}</p>
+          </div>
+        ) : (
+          <form className="operators-form" onSubmit={handleSubmit}>
+            <div className="operators-form-row">
+              <label>
+                <span>{lang === "it" ? "Azienda / Brand" : "Company / Brand"}</span>
+                <input type="text" required value={form.company}
+                  onChange={(e) => setForm({ ...form, company: e.target.value })}
+                  placeholder={lang === "it" ? "Es. Bet365, PokerStars…" : "e.g. Bet365, PokerStars…"} />
+              </label>
+              <label>
+                <span>{lang === "it" ? "Sito web" : "Website"}</span>
+                <input type="url" value={form.site}
+                  onChange={(e) => setForm({ ...form, site: e.target.value })}
+                  placeholder="https://…" />
+              </label>
+            </div>
+            <div className="operators-form-row">
+              <label>
+                <span>{lang === "it" ? "Tipo operatore" : "Operator type"}</span>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as PartnerCategory })}>
+                  {PARTNER_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{categoryLabels[c]}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Email</span>
+                <input type="email" required value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="partnerships@yoursite.com" />
+              </label>
+            </div>
+            <label>
+              <span>{lang === "it" ? "Messaggio (opzionale)" : "Message (optional)"}</span>
+              <textarea rows={3} value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                placeholder={lang === "it" ? "Descrivi brevemente la tua proposta…" : "Briefly describe your proposal…"} />
+            </label>
+            <button type="submit" className="btn-primary" disabled={formStatus === "sending"}>
+              {formStatus === "sending"
+                ? (lang === "it" ? "Invio…" : "Sending…")
+                : (lang === "it" ? "Invia richiesta di partnership" : "Send partnership request")}
+            </button>
+            {formStatus === "error" && (
+              <p style={{ color: "var(--red)", fontSize: 12, marginTop: 8 }}>
+                {lang === "it" ? "Errore nell'invio. Riprova." : "Send error. Please try again."}
+              </p>
+            )}
+          </form>
+        )}
       </div>
     </div>
   );
@@ -4767,12 +4849,9 @@ function PredictionsTab({
   );
 }
 
-// ─── Operators Tab ────────────────────────────────────────────────────────────
+// ─── (OperatorsTab merged into PartnersTab) ────────────────────────────────────
 
-const PARTNER_CATEGORIES = ["sportsbook", "casino", "exchange", "data_provider"] as const;
-type PartnerCategory = typeof PARTNER_CATEGORIES[number];
-
-function OperatorsTab() {
+function OperatorsTab_UNUSED() {
   const lang = useLang();
   const [form, setForm] = useState({ company: "", site: "", category: "sportsbook" as PartnerCategory, email: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -5080,6 +5159,7 @@ export default function Dashboard() {
   const [predLoading, setPredLoading] = useState(true);
   const [tennisLoading, setTennisLoading] = useState(true);
   const [predStale, setPredStale] = useState(false);
+  const [predFallback, setPredFallback] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [refreshing, setRefreshing] = useState(false);
@@ -5238,6 +5318,7 @@ export default function Dashboard() {
         setPredictions(data.predictions ?? []);
         setComputedAt(data.computed_at ?? null);
         setPredStale(data.is_stale ?? false);
+        setPredFallback(data.source === "fallback");
       }
     } catch { /**/ } finally { setPredLoading(false); }
   }, []);
@@ -5344,8 +5425,9 @@ export default function Dashboard() {
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isPremiumClient ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
+    { tab: "history",     label: tNav.nav_history },
+    { tab: "partners",    label: tNav.nav_partner },
     { tab: "settings",    label: uiLanguage === "it" ? "Impostazioni" : "Settings" },
-    { tab: "operators",   label: uiLanguage === "it" ? "Operatori" : "Operators" },
     { tab: "assistance",  label: uiLanguage === "it" ? "Assistenza" : "Assistance" },
     { tab: "faq",         label: "FAQ" },
   ];
@@ -5359,9 +5441,7 @@ export default function Dashboard() {
     <main className="portal-root">
 
       {/* ── Top banner ── */}
-      <div className="portal-top-banner">
-        <span className="sponsor-label">Top Sponsor Slot · Operator Placement</span>
-      </div>
+      <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
 
       {/* ── Brand row ── */}
       <div className="portal-brand-row">
@@ -5395,13 +5475,13 @@ export default function Dashboard() {
         <aside className="portal-ad-col left">
           <div className="portal-ad-slot">
             <p className="ad-eyebrow">Operator</p>
-            <div className="ad-name">Left Column</div>
-            <div className="ad-desc">Operator placement — premium inventory.</div>
+            <div className="ad-name" style={{ color: "transparent" }}>·</div>
+            <div className="ad-desc" style={{ color: "transparent" }}>·</div>
           </div>
           <div className="portal-ad-slot tall">
-            <p className="ad-eyebrow">Sponsor</p>
-            <div className="ad-name">Partner Slot</div>
-            <div className="ad-desc">Vertical partner banner.</div>
+            <p className="ad-eyebrow" style={{ color: "transparent" }}>·</p>
+            <div className="ad-name" style={{ color: "transparent" }}>·</div>
+            <div className="ad-desc" style={{ color: "transparent" }}>·</div>
           </div>
         </aside>
 
@@ -5437,6 +5517,12 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {predFallback && tab === "bets" && (
+            <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
+              <span>⚠️ {uiLanguage === "it" ? "Dati demo — nessuna partita nel database. Questi sono esempi di output del modello, non prediction operative." : "Demo data — no matches in database. These are model output examples, not live predictions."}</span>
+            </div>
+          )}
+
           {tab === "bets" && (
             <UnifiedBetsTab
               predictions={predictions}
@@ -5445,7 +5531,7 @@ export default function Dashboard() {
               historyStats={historyStats}
               historyLoading={historyLoading}
               onSelect={(s) => setSlipSelection(s)}
-              onBetNow={() => setTab("operators")}
+              onBetNow={() => setTab("partners")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               isSignalPreviewUnlocked={isSignalPreviewUnlocked}
@@ -5471,7 +5557,10 @@ export default function Dashboard() {
           )}
           {tab === "assistance" && <AssistanceTab />}
           {tab === "faq" && <FAQTab />}
-          {tab === "operators" && <OperatorsTab />}
+          {tab === "history" && (
+            <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
+          )}
+          {tab === "partners" && <PartnersTab />}
         </section>
         </section>{/* end book-layout */}
         </div>{/* end portal-desk */}
@@ -5480,22 +5569,20 @@ export default function Dashboard() {
         <aside className="portal-ad-col right">
           <div className="portal-ad-slot">
             <p className="ad-eyebrow">Sportsbook</p>
-            <div className="ad-name">Right Column</div>
-            <div className="ad-desc">Sportsbook partner — future inventory.</div>
+            <div className="ad-name" style={{ color: "transparent" }}>·</div>
+            <div className="ad-desc" style={{ color: "transparent" }}>·</div>
           </div>
           <div className="portal-ad-slot tall">
-            <p className="ad-eyebrow">Casino</p>
-            <div className="ad-name">Partner Slot</div>
-            <div className="ad-desc">Casino partner — future campaigns.</div>
+            <p className="ad-eyebrow" style={{ color: "transparent" }}>·</p>
+            <div className="ad-name" style={{ color: "transparent" }}>·</div>
+            <div className="ad-desc" style={{ color: "transparent" }}>·</div>
           </div>
         </aside>
 
       </div>{/* end portal-columns */}
 
       {/* ── Bottom banner ── */}
-      <div className="portal-bottom-banner">
-        <span className="sponsor-label">Bottom Operator Banner · Partner Network</span>
-      </div>
+      <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
 
       <footer className="text-center text-xs text-gray-600 pb-8 font-mono" style={{padding: "16px 24px"}}>
         {tUI.footer_note}
