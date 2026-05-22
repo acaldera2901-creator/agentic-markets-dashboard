@@ -2,6 +2,31 @@
 
 import { useEffect, useState, useCallback, useRef, createContext, useContext } from "react";
 
+// ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
+
+function getSessionId(): string {
+  if (typeof window === "undefined") return "ssr";
+  let sid = sessionStorage.getItem("am_sid");
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem("am_sid", sid);
+  }
+  return sid;
+}
+
+function trackEvent(
+  event_type: string,
+  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown> }
+) {
+  if (typeof window === "undefined") return;
+  const language = extra?.language ?? localStorage.getItem("agentic-lang") ?? undefined;
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event_type, session_id: getSessionId(), language, ...extra }),
+  }).catch(() => { /* ignore */ });
+}
+
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 
 const BASE_TRANSLATIONS = {
@@ -4368,6 +4393,7 @@ function PartnerCard({ p }: { p: Partner }) {
             href={p.url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("partner_click", { partner_id: p.id })}
             className="text-[10px] font-mono px-3 py-1 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
           >
             {t.partners_visit}
@@ -5178,6 +5204,7 @@ export default function Dashboard() {
     const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
     setUiLanguage(next);
     localStorage.setItem("agentic-lang", next);
+    trackEvent("language_change", { language: next });
   };
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
   const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
@@ -5212,6 +5239,10 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz, setUserTz] = useState("Europe/Rome");
   useEffect(() => { setUserTz(Intl.DateTimeFormat().resolvedOptions().timeZone); }, []);
+  useEffect(() => { trackEvent("page_view"); }, []);
+  useEffect(() => {
+    if (tab === "client-area") trackEvent("plan_view");
+  }, [tab]);
 
   // IP-based language detection — only runs when no stored preference exists
   useEffect(() => {
@@ -5292,6 +5323,7 @@ export default function Dashboard() {
     if (!clientProfile || !checkoutPlan) return;
     const { txHash: _tx, requestedPlan: _rp, ...rest } = clientProfile;
     saveClientProfile({ ...rest, plan: checkoutPlan, txHash, requestedPlan: checkoutPlan });
+    trackEvent("conversion", { plan: checkoutPlan, meta: { tx: txHash } });
     setCheckoutOpen(false);
     setCheckoutPlan(null);
     setTab("bets");
@@ -5541,7 +5573,7 @@ export default function Dashboard() {
                 <button
                   key={item.tab}
                   className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
-                  onClick={() => setTab(item.tab)}
+                  onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
                 >
                   <span>{item.label}</span>
                   {item.value && <strong>{item.value}</strong>}
