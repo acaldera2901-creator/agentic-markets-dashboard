@@ -1,6 +1,10 @@
 .env
 .venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 .DS_Store
+logs/
+data/tester_screenshots/
+data/test_report_*.json
