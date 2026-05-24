@@ -2,7 +2,7 @@
   "mcpServers": {
     "project-brain": {
       "type": "http",
-      "url": "https://project-brain-server-fat6brob8-agenticmarkets-cb-1025s-projects.vercel.app/api/mcp",
+      "url": "https://project-brain-server-6iam9vew1-agenticmarkets-cb-1025s-projects.vercel.app/api/mcp",
       "headers": {
         "x-brain-token": "593ece9b3a8cf507e3268db8194357c764892d5d"
       }
