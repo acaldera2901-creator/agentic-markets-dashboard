@@ -18,7 +18,7 @@ jobs:
         with:
           version: latest
 
-      - name: Push migrations
+      - name: Push migrations via pooler
         run: |
           supabase db push \
-            --db-url "postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres"
+            --db-url "postgresql://postgres.xcgvfrsrcphzfctfyukz:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
