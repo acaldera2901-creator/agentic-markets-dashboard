@@ -10,10 +10,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      PROJECT_ID: xcgvfrsrcphzfctfyukz
 
     steps:
       - uses: actions/checkout@v4
@@ -22,5 +18,7 @@ jobs:
         with:
           version: latest
 
-      - run: supabase link --project-ref $PROJECT_ID
-      - run: supabase db push
+      - name: Push migrations
+        run: |
+          supabase db push \
+            --db-url "postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres"
