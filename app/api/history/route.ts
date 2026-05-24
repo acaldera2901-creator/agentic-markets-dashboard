@@ -1,20 +1,5 @@
 import { NextResponse } from "next/server";
-
-const DB_URL = process.env.DATABASE_URL;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function dbQuery<T = Record<string, any>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql, params)) ?? []) as T[];
-  } catch (e) {
-    console.error("History DB error:", String(e));
-    return [];
-  }
-}
+import { dbQuery } from "@/lib/db";
 
 export async function GET() {
   const rows = await dbQuery(`

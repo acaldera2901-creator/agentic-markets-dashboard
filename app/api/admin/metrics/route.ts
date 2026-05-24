@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { dbQuery } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const DB_URL = process.env.DATABASE_URL ?? "";
 
 function isAuthorized(req: NextRequest): boolean {
   if (!ADMIN_SECRET) return false;
   const cookie = req.cookies.get("admin_token")?.value;
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
   return cookie === ADMIN_SECRET || bearer === ADMIN_SECRET;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function q<T = Record<string, any>>(sql: string): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql)) ?? []) as T[];
-  } catch {
-    return [];
-  }
 }
 
 export async function GET(req: NextRequest) {
@@ -43,29 +30,29 @@ export async function GET(req: NextRequest) {
     leaderboardStats,
     partnerRequests,
   ] = await Promise.all([
-    q<{ n: string }>("SELECT COUNT(*) as n FROM events"),
-    q<{ event_type: string; n: string }>(
+    dbQuery<{ n: string }>("SELECT COUNT(*) as n FROM events"),
+    dbQuery<{ event_type: string; n: string }>(
       "SELECT event_type, COUNT(*) as n FROM events GROUP BY event_type ORDER BY n DESC"
     ),
-    q<{ country: string; n: string }>(
+    dbQuery<{ country: string; n: string }>(
       "SELECT COALESCE(country, 'unknown') as country, COUNT(*) as n FROM events GROUP BY country ORDER BY n DESC LIMIT 20"
     ),
-    q<{ language: string; n: string }>(
+    dbQuery<{ language: string; n: string }>(
       "SELECT COALESCE(language, 'unknown') as language, COUNT(*) as n FROM events GROUP BY language ORDER BY n DESC"
     ),
-    q<{ plan: string; n: string }>(
+    dbQuery<{ plan: string; n: string }>(
       "SELECT COALESCE(plan, 'none') as plan, COUNT(*) as n FROM events WHERE plan IS NOT NULL GROUP BY plan ORDER BY n DESC"
     ),
-    q<{ partner_id: string; n: string }>(
+    dbQuery<{ partner_id: string; n: string }>(
       "SELECT partner_id, COUNT(*) as n FROM events WHERE event_type = 'partner_click' AND partner_id IS NOT NULL GROUP BY partner_id ORDER BY n DESC LIMIT 20"
     ),
-    q<{ n: string; revenue: string }>(
+    dbQuery<{ n: string; revenue: string }>(
       "SELECT COUNT(*) as n, COALESCE(SUM(value), 0) as revenue FROM events WHERE event_type = 'conversion'"
     ),
-    q<{ event_type: string; country: string; language: string; plan: string; created_at: string }>(
+    dbQuery<{ event_type: string; country: string; language: string; plan: string; created_at: string }>(
       "SELECT event_type, country, language, plan, created_at FROM events ORDER BY created_at DESC LIMIT 50"
     ),
-    q<{ total: string; wins: string; losses: string; pending: string; total_pnl: string }>(
+    dbQuery<{ total: string; wins: string; losses: string; pending: string; total_pnl: string }>(
       `SELECT COUNT(*) as total,
         COUNT(*) FILTER (WHERE status='won') as wins,
         COUNT(*) FILTER (WHERE status='lost') as losses,
@@ -73,8 +60,8 @@ export async function GET(req: NextRequest) {
         COALESCE(SUM(CASE WHEN status='won' THEN stake*(odds-1) WHEN status='lost' THEN -stake ELSE 0 END), 0) as total_pnl
        FROM bets`
     ),
-    q<{ n: string }>("SELECT COUNT(*) as n FROM leaderboard"),
-    q<{ n: string; latest: string }>(
+    dbQuery<{ n: string }>("SELECT COUNT(*) as n FROM leaderboard"),
+    dbQuery<{ n: string; latest: string }>(
       "SELECT COUNT(*) as n, MAX(created_at) as latest FROM partner_requests"
     ),
   ]);

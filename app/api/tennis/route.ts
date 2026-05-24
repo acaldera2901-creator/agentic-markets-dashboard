@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
+import { dbQuery } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-
-const DB_URL = process.env.DATABASE_URL;
 
 type TennisPredictionInput = {
   match_id?: string;
@@ -227,17 +226,6 @@ async function getFromRedis(): Promise<RedisTennisPayload | null> {
   }
 }
 
-async function dbQuery<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql, params)) ?? []) as T[];
-  } catch {
-    return [];
-  }
-}
 
 async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; computed_at?: string } | null> {
   const rows = await dbQuery<DbTennisPrediction>(`

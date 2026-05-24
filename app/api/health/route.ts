@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-const DB_URL = process.env.DATABASE_URL;
+import { dbQuery } from "@/lib/db";
 
 interface HeartbeatRow {
   agent_name: string;
@@ -13,28 +12,6 @@ interface TennisActivityRow {
   latest_signal: string | null;
   predictions: string;
   signals: string;
-}
-
-async function dbQuery<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql, params)) ?? []) as T[];
-  } catch {
-    return [];
-  }
-}
-
-async function ensureTable() {
-  await dbQuery(`
-    CREATE TABLE IF NOT EXISTS agent_heartbeats (
-      agent_name VARCHAR PRIMARY KEY,
-      last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      status_detail TEXT
-    )
-  `);
 }
 
 const CORE_AGENTS = [
@@ -58,7 +35,7 @@ function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {
 }
 
 export async function GET() {
-  await ensureTable();
+
 
   const [rows, tennisActivityRows] = await Promise.all([
     dbQuery<HeartbeatRow>(
@@ -141,7 +118,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  await ensureTable();
+
 
   const body = await req.json() as { agent_name?: string; detail?: string };
   const name = body.agent_name;

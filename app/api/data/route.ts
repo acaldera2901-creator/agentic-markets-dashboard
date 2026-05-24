@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-const DB_URL = process.env.DATABASE_URL;
+import { dbQuery } from "@/lib/db";
 
 interface StatRow {
   total: string;
@@ -12,21 +11,9 @@ interface StatRow {
   avg_stake: string;
 }
 
-async function queryDB<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql, params)) ?? []) as T[];
-  } catch {
-    return [];
-  }
-}
-
 export async function GET() {
   const [bets, stats, leaguePnl] = await Promise.all([
-    queryDB(`
+    dbQuery(`
       SELECT b.*,
              COALESCE(mp.home_team, b.home_team) AS home_team,
              COALESCE(mp.away_team, b.away_team) AS away_team,
@@ -39,7 +26,7 @@ export async function GET() {
       ORDER BY b.placed_at DESC
       LIMIT 100
     `),
-    queryDB<StatRow>(`
+    dbQuery<StatRow>(`
       SELECT
         COUNT(*) FILTER (WHERE status IN ('pending','won','lost')) as total,
         COUNT(*) FILTER (WHERE status = 'won') as won,
@@ -50,7 +37,7 @@ export async function GET() {
         AVG(stake) FILTER (WHERE status IN ('pending','won','lost')) as avg_stake
       FROM bets
     `),
-    queryDB(`
+    dbQuery(`
       SELECT
         COALESCE(mp.league, 'unknown') as league,
         COUNT(*) as total,

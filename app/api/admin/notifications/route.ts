@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { dbQuery } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const DB_URL = process.env.DATABASE_URL ?? "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 
@@ -12,25 +12,6 @@ function isAuthorized(req: NextRequest): boolean {
   const cookie = req.cookies.get("admin_token")?.value;
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
   return cookie === ADMIN_SECRET || bearer === ADMIN_SECRET;
-}
-
-async function ensureTable() {
-  if (!DB_URL) return;
-  const { neon } = await import("@neondatabase/serverless");
-  const db = neon(DB_URL);
-  await db`
-    CREATE TABLE IF NOT EXISTS notifications (
-      id         SERIAL PRIMARY KEY,
-      type       TEXT NOT NULL,
-      title      TEXT,
-      body       TEXT NOT NULL,
-      target     TEXT DEFAULT 'all',
-      sent       BOOLEAN DEFAULT false,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      sent_at    TIMESTAMPTZ,
-      meta       JSONB DEFAULT '{}'
-    )
-  `;
 }
 
 async function sendTelegram(text: string): Promise<boolean> {
@@ -54,15 +35,7 @@ export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  await ensureTable();
-  if (!DB_URL) return NextResponse.json({ notifications: [] });
-
-  const { neon } = await import("@neondatabase/serverless");
-  const db = neon(DB_URL);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await (db as any).query(
-    "SELECT * FROM notifications ORDER BY created_at DESC LIMIT 100"
-  );
+  const rows = await dbQuery("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 100");
   return NextResponse.json({ notifications: rows ?? [] });
 }
 
@@ -82,8 +55,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "type and body required" }, { status: 400 });
   }
 
-  await ensureTable();
-
   let sent = false;
 
   if (body.type === "telegram") {
@@ -91,16 +62,11 @@ export async function POST(req: NextRequest) {
     sent = await sendTelegram(text);
   }
 
-  if (DB_URL) {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any).query(
-      `INSERT INTO notifications (type, title, body, target, sent, sent_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [body.type, body.title ?? null, body.body, body.target ?? "all", sent, sent ? new Date() : null]
-    );
-  }
+  await dbQuery(
+    `INSERT INTO notifications (type, title, body, target, sent, sent_at)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [body.type, body.title ?? null, body.body, body.target ?? "all", sent, sent ? new Date().toISOString() : null]
+  );
 
   return NextResponse.json({ ok: true, sent });
 }
