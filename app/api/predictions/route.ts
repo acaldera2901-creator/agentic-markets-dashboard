@@ -27,6 +27,7 @@ const LEAGUES: Record<string, string> = {
   FL1: "Ligue 1",
   CL: "Champions League",
   EL: "Europa League",
+  WC: "World Cup",
 };
 
 type PredictionRow = {
