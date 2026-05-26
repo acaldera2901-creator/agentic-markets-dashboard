@@ -1,0 +1,333 @@
+import { dbQuery } from "@/lib/db";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type UnifiedPrediction = {
+  id: string;
+  external_event_id: string | null;
+  sport: string;
+  competition: string;
+  league: string | null;
+  event_name: string;
+  home_team: string | null;
+  away_team: string | null;
+  player_one: string | null;
+  player_two: string | null;
+  market: string;
+  pick: string | null;
+  bookmaker: string;
+  odds: number | null;
+  fair_odds: number | null;
+  edge_percent: number | null;
+  confidence_score: number | null;
+  risk_level: string;
+  stake_suggestion: number | null;
+  closing_odds: number | null;
+  closing_line_value: number | null;
+  status: string;
+  signal_type: string;
+  source: string;
+  model_version: string;
+  plan_access: string;
+  is_historical: boolean;
+  is_live: boolean;
+  is_paper: boolean;
+  is_verified: boolean;
+  is_demo: boolean;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  starts_at: string;
+  expires_at: string;
+  settled_at: string | null;
+  result: string | null;
+  pnl: number | null;
+  stake: number | null;
+  roi: number | null;
+  notes: string | null;
+  explanation: string | null;
+  world_cup_stage: string | null;
+  group_name: string | null;
+  venue: string | null;
+  neutral_venue: boolean;
+  team_news_summary: string | null;
+  market_movement_summary: string | null;
+  source_table: string | null;
+  source_id: string | null;
+};
+
+type MatchPredictionRow = {
+  id: number;
+  match_id: string;
+  league: string;
+  league_name: string;
+  home_team: string;
+  away_team: string;
+  kickoff: string;
+  p_home: number;
+  p_draw: number;
+  p_away: number;
+  odds_home: number | null;
+  odds_draw: number | null;
+  odds_away: number | null;
+  edge: number | null;
+  best_selection: string | null;
+  enrichment: {
+    form_home?: string;
+    form_away?: string;
+    injuries_home?: string[];
+    injuries_away?: string[];
+    research?: string;
+    match_type?: string;
+    api_advice?: string;
+  } | null;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const WORLD_CUP_KEYWORDS = ["world cup", "fifa", "wc 2026", "wc2026"];
+
+function detectCompetition(league: string, leagueName: string): string {
+  const lower = leagueName.toLowerCase();
+  if (WORLD_CUP_KEYWORDS.some((k) => lower.includes(k))) return "World Cup";
+  if (league === "CL") return "Champions League";
+  if (league === "EL") return "Europa League";
+  return leagueName;
+}
+
+function detectWorldCupStage(leagueName: string): string | null {
+  const lower = leagueName.toLowerCase();
+  if (!WORLD_CUP_KEYWORDS.some((k) => lower.includes(k))) return null;
+  if (lower.includes("final") && !lower.includes("semi") && !lower.includes("quarter")) return "final";
+  if (lower.includes("semi")) return "semi";
+  if (lower.includes("quarter")) return "quarter";
+  if (lower.includes("round of 16") || lower.includes("round16")) return "round16";
+  return "group";
+}
+
+function computeStatus(kickoff: string): string {
+  const hoursUntil = (new Date(kickoff).getTime() - Date.now()) / 3_600_000;
+  if (hoursUntil > 24) return "upcoming";
+  if (hoursUntil > 0) return "open";
+  return "pending_settlement";
+}
+
+function computeRisk(edge: number | null): string {
+  if (edge == null) return "medium";
+  if (edge > 0.04) return "low";
+  if (edge > 0.02) return "medium";
+  return "high";
+}
+
+function pickOdds(row: MatchPredictionRow): number | null {
+  if (row.best_selection === "HOME") return row.odds_home;
+  if (row.best_selection === "DRAW") return row.odds_draw;
+  if (row.best_selection === "AWAY") return row.odds_away;
+  return null;
+}
+
+function pickProb(row: MatchPredictionRow): number {
+  if (row.best_selection === "HOME") return row.p_home;
+  if (row.best_selection === "DRAW") return row.p_draw;
+  return row.p_away;
+}
+
+function generateFootballExplanation(row: MatchPredictionRow): string {
+  const pick = row.best_selection ?? "N/A";
+  const edgePct = row.edge != null ? `${(row.edge * 100).toFixed(1)}%` : "unknown";
+  const confidence = `${Math.round(pickProb(row) * 100)}%`;
+  const enr = row.enrichment;
+
+  const formNote =
+    enr?.form_home && enr?.form_away
+      ? ` Recent form: ${row.home_team} ${enr.form_home}, ${row.away_team} ${enr.form_away}.`
+      : "";
+
+  const injuryNote =
+    (enr?.injuries_home?.length ?? 0) > 0 || (enr?.injuries_away?.length ?? 0) > 0
+      ? " Injury data considered."
+      : "";
+
+  const adviceNote = enr?.api_advice ? ` External model note: ${enr.api_advice}.` : "";
+
+  return (
+    `Poisson model signal. Pick: ${pick} | Edge: ${edgePct} over implied market probability` +
+    ` | Model confidence: ${confidence}.` +
+    formNote +
+    injuryNote +
+    adviceNote +
+    " This signal is informational and does not guarantee an outcome. Bet responsibly."
+  );
+}
+
+// ─── Adapter ──────────────────────────────────────────────────────────────────
+
+function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
+  const competition = detectCompetition(row.league, row.league_name);
+  const isWorldCup = competition === "World Cup";
+  void isWorldCup;
+  const odds = pickOdds(row);
+  const prob = pickProb(row);
+  const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
+  const edgePct = row.edge != null ? Math.round(row.edge * 10000) / 100 : null;
+  const confidence = Math.round(prob * 100);
+  const neutral = row.enrichment?.match_type === "NEUTRAL_VENUE";
+
+  const teamNews =
+    (row.enrichment?.injuries_home?.length ?? 0) > 0 ||
+    (row.enrichment?.injuries_away?.length ?? 0) > 0
+      ? `${row.home_team}: ${row.enrichment?.injuries_home?.join(", ") || "none"} | ${row.away_team}: ${row.enrichment?.injuries_away?.join(", ") || "none"}`
+      : null;
+
+  return {
+    external_event_id: row.match_id,
+    sport: "football",
+    competition,
+    league: row.league,
+    event_name: `${row.home_team} vs ${row.away_team}`,
+    home_team: row.home_team,
+    away_team: row.away_team,
+    market: "1X2",
+    pick: row.best_selection,
+    bookmaker: "market composite",
+    odds: odds != null ? Math.round(odds * 100) / 100 : null,
+    fair_odds: fairOdds,
+    edge_percent: edgePct,
+    confidence_score: confidence,
+    risk_level: computeRisk(row.edge),
+    status: computeStatus(row.kickoff),
+    signal_type: "signal",
+    source: "model",
+    model_version: "football-poisson-v1",
+    plan_access: "base",
+    is_historical: false,
+    is_live: false,
+    is_paper: false,
+    is_verified: false,
+    is_demo: false,
+    published_at: new Date().toISOString(),
+    starts_at: row.kickoff,
+    expires_at: row.kickoff,
+    explanation: generateFootballExplanation(row),
+    neutral_venue: neutral,
+    team_news_summary: teamNews,
+    world_cup_stage: detectWorldCupStage(row.league_name),
+    source_table: "match_predictions",
+    source_id: row.match_id,
+  };
+}
+
+// ─── Sync function (called after every football model refresh) ────────────────
+
+export async function syncMatchPredictionsToUnified(): Promise<number> {
+  const rows = await dbQuery<MatchPredictionRow>(
+    `SELECT id, match_id, league, league_name, home_team, away_team, kickoff,
+            p_home, p_draw, p_away, odds_home, odds_draw, odds_away,
+            edge, best_selection, enrichment
+     FROM match_predictions
+     WHERE kickoff > NOW() - INTERVAL '1 hour'
+     ORDER BY kickoff ASC
+     LIMIT 200`
+  );
+
+  let synced = 0;
+  for (const row of rows) {
+    const d = matchPredictionToUnifiedInsert(row);
+    await dbQuery(
+      `INSERT INTO unified_predictions (
+        external_event_id, sport, competition, league, event_name,
+        home_team, away_team, market, pick, bookmaker,
+        odds, fair_odds, edge_percent, confidence_score, risk_level,
+        status, signal_type, source, model_version, plan_access,
+        is_historical, is_live, is_paper, is_verified, is_demo,
+        published_at, starts_at, expires_at, explanation,
+        neutral_venue, team_news_summary, world_cup_stage, source_table, source_id
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+        $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+        $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34
+      )
+      ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL DO UPDATE SET
+        odds              = EXCLUDED.odds,
+        fair_odds         = EXCLUDED.fair_odds,
+        edge_percent      = EXCLUDED.edge_percent,
+        confidence_score  = EXCLUDED.confidence_score,
+        risk_level        = EXCLUDED.risk_level,
+        status            = EXCLUDED.status,
+        explanation       = EXCLUDED.explanation,
+        team_news_summary = EXCLUDED.team_news_summary,
+        neutral_venue     = EXCLUDED.neutral_venue,
+        world_cup_stage   = EXCLUDED.world_cup_stage,
+        updated_at        = NOW()
+      WHERE unified_predictions.settled_at IS NULL`,
+      [
+        d.external_event_id, d.sport, d.competition, d.league, d.event_name,
+        d.home_team, d.away_team, d.market, d.pick, d.bookmaker,
+        d.odds, d.fair_odds, d.edge_percent, d.confidence_score, d.risk_level,
+        d.status, d.signal_type, d.source, d.model_version, d.plan_access,
+        d.is_historical, d.is_live, d.is_paper, d.is_verified, d.is_demo,
+        d.published_at, d.starts_at, d.expires_at, d.explanation,
+        d.neutral_venue, d.team_news_summary, d.world_cup_stage, d.source_table, d.source_id,
+      ]
+    );
+    synced++;
+  }
+
+  await dbQuery(
+    `UPDATE unified_predictions
+     SET status = 'pending_settlement', updated_at = NOW()
+     WHERE is_historical = FALSE
+       AND expires_at < NOW()
+       AND status IN ('open', 'upcoming')
+       AND settled_at IS NULL`
+  );
+
+  return synced;
+}
+
+// ─── Access control (applied in API routes) ───────────────────────────────────
+
+export function applyAccessControl(
+  row: UnifiedPrediction,
+  planAccess: string
+): Partial<UnifiedPrediction> {
+  if (planAccess === "premium") return row;
+
+  if (planAccess === "base") {
+    const { closing_line_value, stake_suggestion, ...rest } = row;
+    void closing_line_value;
+    void stake_suggestion;
+    return rest;
+  }
+
+  if (planAccess === "free") {
+    return {
+      id: row.id,
+      sport: row.sport,
+      competition: row.competition,
+      league: row.league,
+      event_name: row.event_name,
+      home_team: row.home_team,
+      away_team: row.away_team,
+      starts_at: row.starts_at,
+      status: row.status,
+      signal_type: row.signal_type,
+      plan_access: row.plan_access,
+      is_paper: row.is_paper,
+      is_demo: row.is_demo,
+    };
+  }
+
+  // Public / locked visitor
+  return {
+    id: row.id,
+    sport: row.sport,
+    competition: row.competition,
+    event_name: row.event_name,
+    home_team: row.home_team,
+    away_team: row.away_team,
+    starts_at: row.starts_at,
+    status: row.status,
+    plan_access: row.plan_access,
+  };
+}
