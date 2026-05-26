@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "project-brain": {
+      "type": "http",
+      "url": "https://project-brain-server.vercel.app/api/mcp",
+      "headers": {
+        "x-brain-token": "593ece9b3a8cf507e3268db8194357c764892d5d"
+      }
+    }
+  }
+}

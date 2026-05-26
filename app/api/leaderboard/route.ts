@@ -51,8 +51,11 @@ export async function GET() {
      FROM leaderboard ORDER BY points DESC, pnl DESC, bets_won DESC`
   ),
   ]);
-  const systemWins = Number(systemStats[0]?.wins ?? 0);
-  const systemPnl  = Number(systemStats[0]?.total_pnl ?? 0);
+  const betsWins = Number(systemStats[0]?.wins ?? 0);
+  const betsPnl  = Number(systemStats[0]?.total_pnl ?? 0);
+  // If bets table has no data, derive system stats from leaderboard entries
+  const systemWins = betsWins > 0 ? betsWins : entries.reduce((sum, e) => sum + (e.bets_won ?? 0), 0);
+  const systemPnl  = betsPnl  !== 0 ? betsPnl  : entries.reduce((sum, e) => sum + Number(e.pnl ?? 0), 0);
 
   const ranked = entries.map((e, i) => ({
     rank: i + 1,

@@ -260,8 +260,8 @@ const BASE_TRANSLATIONS = {
     agent_arch_none_suffix: "nella cartella del progetto.",
     agent_last_seen: "Ultimo heartbeat",
     agent_no_heartbeat: "Nessun heartbeat ricevuto",
-    partner_primary_name: "Partner Principale",
-    partner_primary_desc: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Integrazione diretta con Agentic Markets per segnali e edge calcolati in tempo reale.",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Link di accesso in fase di finalizzazione. Disponibile a breve.",
     partner_tag_exclusive: "Esclusivo",
     language_it: "Italiano",
     language_en: "Inglese",
@@ -497,8 +497,8 @@ const BASE_TRANSLATIONS = {
     agent_arch_none_suffix: "inside the project folder.",
     agent_last_seen: "Last seen",
     agent_no_heartbeat: "No heartbeat received",
-    partner_primary_name: "Primary Partner",
-    partner_primary_desc: "Casino and sportsbook platform — exclusive project partner. Direct integration with Agentic Markets for real-time signals and edge calculations.",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Casino and sportsbook platform — exclusive project partner. Access link being finalised. Available shortly.",
     partner_tag_exclusive: "Exclusive",
     language_it: "Italian",
     language_en: "English",
@@ -575,7 +575,7 @@ const TRANSLATIONS = {
 } as const;
 
 type Lang = keyof typeof TRANSLATIONS;
-const LANGUAGES: Lang[] = ["it", "en", "es", "fr", "ru"];
+const LANGUAGES: Lang[] = ["it", "en"];
 const TOPBAR_SUBTITLE: Record<Lang, string> = {
   it: "Un’unica console per segnali, analisi predittiva e live execution.",
   en: "One console for signals, predictive analytics and live execution.",
@@ -2111,6 +2111,11 @@ function SupportHub() {
           <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={4} placeholder={copy.placeholder} />
         </label>
       </div>
+      {message.trim().length > 0 && message.trim().length < 8 && (
+        <p className="support-validation-hint">
+          {lang === "it" ? "Messaggio troppo corto. Scrivi almeno 8 caratteri." : "Message too short. Please write at least 8 characters."}
+        </p>
+      )}
       <button disabled={message.trim().length < 8} onClick={() => setSent(true)}>{copy.send}</button>
     </section>
   );
@@ -2162,6 +2167,9 @@ function CryptoPaymentBox({
   const price = PLAN_CONFIG[plan];
   const t = useT();
   const lang = useLang();
+  const isCurrentPlan = profile?.plan === plan ||
+    (plan === "premium" && profileHasPremium(profile)) ||
+    (plan === "base" && profileHasAccess(profile) && !profileHasPremium(profile));
   return (
     <div className="crypto-pay-box">
       <div>
@@ -2169,8 +2177,12 @@ function CryptoPaymentBox({
         <strong>{planPriceCopy(plan, lang)}</strong>
         {!profile && <em>{t.crypto_profile_required}</em>}
       </div>
-      <button disabled={!profile} onClick={() => onSubmit(plan)}>
-        {profile ? `${t.crypto_activate} ${price.label}` : t.crypto_create_first}
+      <button disabled={!profile || isCurrentPlan} onClick={() => onSubmit(plan)}>
+        {isCurrentPlan
+          ? (lang === "it" ? "Piano attuale" : "Current plan")
+          : profile
+            ? `${t.crypto_activate} ${price.label}`
+            : t.crypto_create_first}
       </button>
     </div>
   );
@@ -2329,7 +2341,7 @@ function PendingPaymentView({
     <div className="pending-payment-view">
       <p className="eyebrow">{t.pending_title}</p>
       <h2>{t.pending_subtitle}</h2>
-      {profile.txHash && (
+      {profile.txHash && profile.txHash !== "test" && (
         <div className="pending-tx">
           <span>{t.pending_tx_label} {profile.txHash.length > 20 ? `${profile.txHash.slice(0, 10)}...${profile.txHash.slice(-8)}` : profile.txHash}</span>
         </div>
@@ -2431,7 +2443,7 @@ function PlansTab({
               <p className="eyebrow">{lang === "it" ? "Livello 2" : "Level 2"}</p>
               <h4>Autopilot Agents</h4>
             </div>
-            <span>Unlocked</span>
+            <span>{profileHasPremium(profile) ? "Unlocked" : "Premium"}</span>
           </div>
           <p className="plan-description">{t.plans_premium_desc}</p>
           <div className="price-line">
@@ -2615,7 +2627,7 @@ function SettingsTab({
             <p className="eyebrow">{copy.notifications}</p>
             <h3>{lang === "it" ? "Canali e trigger" : "Channels and triggers"}</h3>
           </div>
-          <span>{Object.values(notifications).filter(Boolean).length}/4</span>
+          <span>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</span>
         </div>
         <div className="settings-notification-list">
           {([
@@ -4322,7 +4334,7 @@ interface Partner {
 const PARTNERS: Partner[] = [
   {
     id: "partner-01",
-    name: "Partner Principale",
+    name: "Sportsbook Partner",
     type: "Casino & Sportsbook",
     status: "featured",
     description: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Integrazione diretta con Agentic Markets per segnali e edge calcolati in tempo reale.",
@@ -5130,9 +5142,9 @@ function ClientAreaTab({
             <article><span>{statusCopy.payment}</span><strong>{paymentState}</strong></article>
             <article><span>{statusCopy.exchange}</span><strong>{profile.betfair?.status === "connected" ? statusCopy.connected : statusCopy.notConnected}</strong></article>
             <article><span>{statusCopy.timezone}</span><strong>{profile.timezone ?? "Europe/Rome"}</strong></article>
-            <article><span>{statusCopy.notifications}</span><strong>{Object.values(notifications).filter(Boolean).length}/4</strong></article>
+            <article><span>{statusCopy.notifications}</span><strong>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</strong></article>
           </div>
-          {profile.txHash && (
+          {profile.txHash && profile.txHash !== "test" && (
             <div className="client-account-note">
               <span>{t.pending_tx_label}</span>
               <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
@@ -5468,10 +5480,9 @@ export default function Dashboard() {
       const resp = await fetch("/api/tennis");
       if (resp.ok) {
         const data = await resp.json();
-        const isPlaceholder = data.source === "placeholder" || data.is_placeholder === true;
-        setTennisMatches(isPlaceholder ? [] : (data.matches ?? []));
-        setTennisSummary(isPlaceholder ? null : (data.summary ?? null));
-        setTennisComputedAt(isPlaceholder ? null : (data.computed_at ?? null));
+        setTennisMatches(data.matches ?? []);
+        setTennisSummary(data.summary ?? null);
+        setTennisComputedAt(data.computed_at ?? null);
       }
     } catch { /**/ } finally { setTennisLoading(false); }
   }, []);

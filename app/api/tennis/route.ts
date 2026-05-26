@@ -56,6 +56,13 @@ type DbTennisPrediction = {
   computed_at: string | null;
 };
 
+function futureDateISO(daysFromNow: number, hour = 14): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  d.setUTCHours(hour, 0, 0, 0);
+  return d.toISOString();
+}
+
 const PLACEHOLDER_MATCHES = [
   {
     id: "RG2026_SF1",
@@ -64,7 +71,7 @@ const PLACEHOLDER_MATCHES = [
     tournament: "Roland Garros",
     surface: "CLAY",
     round: "SF",
-    scheduled: "2026-05-14T14:00:00Z",
+    scheduled: futureDateISO(2, 14),
     p1: 0.52,
     p2: 0.48,
     odds_p1: 1.91,
@@ -88,7 +95,7 @@ const PLACEHOLDER_MATCHES = [
     tournament: "Roland Garros",
     surface: "CLAY",
     round: "SF",
-    scheduled: "2026-05-14T16:30:00Z",
+    scheduled: futureDateISO(2, 16),
     p1: 0.61,
     p2: 0.39,
     odds_p1: 1.58,
@@ -112,7 +119,7 @@ const PLACEHOLDER_MATCHES = [
     tournament: "Roland Garros (W)",
     surface: "CLAY",
     round: "QF",
-    scheduled: "2026-05-14T11:00:00Z",
+    scheduled: futureDateISO(3, 11),
     p1: 0.58,
     p2: 0.42,
     odds_p1: 1.68,
@@ -136,7 +143,7 @@ const PLACEHOLDER_MATCHES = [
     tournament: "Roland Garros (W)",
     surface: "CLAY",
     round: "QF",
-    scheduled: "2026-05-14T13:00:00Z",
+    scheduled: futureDateISO(3, 13),
     p1: 0.49,
     p2: 0.51,
     odds_p1: 2.02,
@@ -160,7 +167,7 @@ const PLACEHOLDER_MATCHES = [
     tournament: "Cinch Championships (Queens)",
     surface: "GRASS",
     round: "R16",
-    scheduled: "2026-05-14T12:00:00Z",
+    scheduled: futureDateISO(4, 12),
     p1: 0.45,
     p2: 0.55,
     odds_p1: 2.18,
@@ -184,7 +191,7 @@ const PLACEHOLDER_MATCHES = [
     tournament: "WTA Strasbourg",
     surface: "CLAY",
     round: "QF",
-    scheduled: "2026-05-14T10:30:00Z",
+    scheduled: futureDateISO(4, 10),
     p1: 0.54,
     p2: 0.46,
     odds_p1: 1.85,

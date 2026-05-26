@@ -25,6 +25,10 @@ export async function GET() {
   const won = withBets.filter((r) => r.bet_status === "won").length;
   const lost = withBets.filter((r) => r.bet_status === "lost").length;
 
+  const avgEdge = withBets.length > 0
+    ? (withBets.reduce((s, r) => s + Number(r.edge ?? 0), 0) / withBets.length * 100).toFixed(2)
+    : "0.00";
+
   const totalStaked = withBets.reduce((s, r) => s + Number(r.bet_stake ?? 0), 0);
   const totalReturn = withBets.reduce((s, r) => {
     if (r.bet_status === "won") return s + Number(r.bet_stake ?? 0) * (Number(r.bet_odds ?? 1) - 1);
@@ -56,6 +60,7 @@ export async function GET() {
       roi,
       model_accuracy: modelAccuracy,
       total_return: totalReturn.toFixed(2),
+      avg_clv: avgEdge,
     },
   });
 }
