@@ -741,6 +741,7 @@ interface HistoryStats {
   roi: string;
   model_accuracy: string;
   total_return: string;
+  avg_clv?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -3295,6 +3296,7 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
               {p.league}
             </span>
             <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-400/70 bg-amber-400/5">PAPER</span>
           </div>
           <div className="text-sm font-bold text-white mt-1">
             {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
@@ -4445,6 +4447,11 @@ function PartnersTab() {
         <p className="eyebrow">{t.partners_eyebrow}</p>
         <h2 className="text-xl font-bold text-white">{t.partners_title}</h2>
         <p className="text-xs font-mono text-gray-500 max-w-lg">{t.partners_desc}</p>
+        <p className="text-[10px] font-mono text-gray-600 mt-1">
+          {lang === "it"
+            ? "I link partner sono relazioni commerciali affiliate. AgenticMarkets riceve compenso per referral qualificati."
+            : "Partner links are commercial affiliate relationships. AgenticMarkets receives compensation for qualified referrals."}
+        </p>
       </div>
 
       {/* Stats strip */}
@@ -4662,6 +4669,47 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
         </div>
       </div>
 
+      {/* Hall of Fame */}
+      {entries.length > 0 && (
+        <div className="space-y-2">
+          <p className="eyebrow">{lang === "it" ? "Hall of Fame" : "Hall of Fame"}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-card p-4 space-y-1">
+              <div className="text-[10px] font-mono text-yellow-400/70 uppercase tracking-wider">
+                {lang === "it" ? "🏆 Top profitto" : "🏆 Top profit"}
+              </div>
+              {(() => {
+                const top = [...entries].sort((a, b) => b.pnl - a.pnl)[0];
+                return top ? (
+                  <>
+                    <div className="text-sm font-bold text-white truncate">{top.name}</div>
+                    <div className="text-lg font-black font-mono text-green-400">
+                      {top.pnl >= 0 ? "+" : ""}{top.pnl.toFixed(2)}€
+                    </div>
+                    <div className="text-[10px] font-mono text-gray-500">{top.hit_rate}% hit rate</div>
+                  </>
+                ) : null;
+              })()}
+            </div>
+            <div className="glass-card p-4 space-y-1">
+              <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider">
+                {lang === "it" ? "🔥 Più attivo" : "🔥 Most active"}
+              </div>
+              {(() => {
+                const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
+                return top ? (
+                  <>
+                    <div className="text-sm font-bold text-white truncate">{top.name}</div>
+                    <div className="text-lg font-black font-mono text-cyan-400">{top.bets_total}</div>
+                    <div className="text-[10px] font-mono text-gray-500">{lang === "it" ? "scommesse totali" : "total bets"}</div>
+                  </>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-xs font-mono text-gray-500 animate-pulse py-8 text-center">{copy.loading}</div>
       ) : entries.length === 0 ? (
@@ -4791,7 +4839,7 @@ function HistoryTab({ history, stats, loading }: {
     <div className="space-y-6">
       {/* Stats strip */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-9 gap-3">
           {[
             { label: t.hist_matches,  value: String(stats.total_matches), color: "text-white" },
             { label: t.hist_bets,     value: String(stats.bets_placed), color: "text-cyan-300" },
@@ -4799,6 +4847,8 @@ function HistoryTab({ history, stats, loading }: {
             { label: t.hist_lost,     value: String(stats.lost), color: "text-red-400" },
             { label: t.hist_hit_rate, value: `${stats.accuracy}%`, color: "text-yellow-400" },
             { label: t.hist_roi,      value: `${Number(stats.roi) >= 0 ? "+" : ""}${stats.roi}%`, color: Number(stats.roi) >= 0 ? "text-green-400" : "text-red-400" },
+            { label: lang === "it" ? "CLV avg" : "Avg CLV", value: stats.avg_clv != null ? `${Number(stats.avg_clv) >= 0 ? "+" : ""}${stats.avg_clv}%` : "N/A", color: stats.avg_clv && Number(stats.avg_clv) >= 0 ? "text-cyan-400" : "text-gray-500" },
+            { label: lang === "it" ? "Acc. modello" : "Model Acc.", value: `${stats.model_accuracy}%`, color: "text-purple-400" },
             { label: t.hist_return,   value: `${Number(stats.total_return) >= 0 ? "+" : ""}${stats.total_return}€`, color: Number(stats.total_return) >= 0 ? "text-green-400" : "text-red-400" },
           ].map((kpi) => (
             <div key={kpi.label} className="glass-card p-3 text-center">
@@ -5195,11 +5245,12 @@ function UnifiedBetsTab({
 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>("bets");
-  const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "it";
+  const [uiLanguage, setUiLanguage] = useState<Lang>("it");
+  useEffect(() => {
     const stored = localStorage.getItem("agentic-lang") as Lang | null;
-    return stored && LANGUAGES.includes(stored) ? stored : "it";
-  });
+    if (stored && LANGUAGES.includes(stored)) setUiLanguage(stored);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const toggleLanguage = () => {
     const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
     setUiLanguage(next);
@@ -5669,8 +5720,19 @@ export default function Dashboard() {
       {/* ── Bottom banner ── */}
       <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
 
-      <footer className="text-center text-xs text-gray-600 pb-8 font-mono" style={{padding: "16px 24px"}}>
-        {tUI.footer_note}
+      <footer className="text-center text-xs text-gray-500 pb-8 font-mono space-y-2" style={{padding: "16px 24px"}}>
+        <div>{tUI.footer_note}</div>
+        <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] text-gray-600">
+          <span className="border border-gray-600 rounded px-1.5 py-0.5 font-bold">18+</span>
+          <span>{uiLanguage === "it" ? "Le performance passate non garantiscono risultati futuri." : "Past performance does not guarantee future results."}</span>
+          <span>|</span>
+          <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">GamCare</a>
+          <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">BeGambleAware</a>
+          <span>|</span>
+          <span>{uiLanguage === "it" ? "I link partner sono affiliati commerciali." : "Partner links are commercial affiliates."}</span>
+          <span>|</span>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{uiLanguage === "it" ? "Privacy Policy" : "Privacy Policy"}</a>
+        </div>
         <button
           type="button"
           onClick={handleFounderTrigger}
