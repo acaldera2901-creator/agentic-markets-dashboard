@@ -9,7 +9,12 @@ export async function GET(req: Request) {
   const sport       = searchParams.get("sport");
   const competition = searchParams.get("competition");
   const status      = searchParams.get("status");
-  const planAccess  = searchParams.get("plan_access") ?? "public";
+
+  // plan_access from URL is capped at "free" until server-side auth is live.
+  // "base" and "premium" tiers require a verified session — gate them here.
+  const requestedAccess = searchParams.get("plan_access") ?? "public";
+  const UNAUTHENTICATED_TIERS = new Set(["public", "free"]);
+  const planAccess = UNAUTHENTICATED_TIERS.has(requestedAccess) ? requestedAccess : "public";
 
   const conditions: string[] = [
     "starts_at > NOW()",
