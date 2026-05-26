@@ -17,6 +17,7 @@ import {
 export const maxDuration = 300;
 
 import { dbQuery } from "@/lib/db";
+import { syncMatchPredictionsToUnified } from "@/lib/unified-adapter";
 
 const LEAGUES: Record<string, string> = {
   SA: "Serie A",
@@ -536,5 +537,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await computeAndStore();
-  return NextResponse.json({ ...result, at: new Date().toISOString() });
+  const synced = await syncMatchPredictionsToUnified();
+  return NextResponse.json({ ...result, synced_to_unified: synced, at: new Date().toISOString() });
 }
