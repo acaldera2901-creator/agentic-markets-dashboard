@@ -126,16 +126,18 @@ function pickOdds(row: MatchPredictionRow): number | null {
   return null;
 }
 
-function pickProb(row: MatchPredictionRow): number {
+function pickProb(row: MatchPredictionRow): number | null {
   if (row.best_selection === "HOME") return row.p_home;
   if (row.best_selection === "DRAW") return row.p_draw;
-  return row.p_away;
+  if (row.best_selection === "AWAY") return row.p_away;
+  return null;
 }
 
 function generateFootballExplanation(row: MatchPredictionRow): string {
   const pick = row.best_selection ?? "N/A";
   const edgePct = row.edge != null ? `${(row.edge * 100).toFixed(1)}%` : "unknown";
-  const confidence = `${Math.round(pickProb(row) * 100)}%`;
+  const prob = pickProb(row);
+  const confidence = prob != null ? `${Math.round(prob * 100)}%` : "unknown";
   const enr = row.enrichment;
 
   const formNote =
@@ -164,13 +166,11 @@ function generateFootballExplanation(row: MatchPredictionRow): string {
 
 function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
   const competition = detectCompetition(row.league, row.league_name);
-  const isWorldCup = competition === "World Cup";
-  void isWorldCup;
   const odds = pickOdds(row);
   const prob = pickProb(row);
-  const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
+  const fairOdds = prob != null && prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
   const edgePct = row.edge != null ? Math.round(row.edge * 10000) / 100 : null;
-  const confidence = Math.round(prob * 100);
+  const confidence = prob != null ? Math.round(prob * 100) : null;
   const neutral = row.enrichment?.match_type === "NEUTRAL_VENUE";
 
   const teamNews =
@@ -207,7 +207,7 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     is_demo: false,
     published_at: new Date().toISOString(),
     starts_at: row.kickoff,
-    expires_at: row.kickoff,
+    expires_at: row.kickoff, // prediction expires when match starts; stale cleanup uses this
     explanation: generateFootballExplanation(row),
     neutral_venue: neutral,
     team_news_summary: teamNews,
@@ -294,9 +294,9 @@ export function applyAccessControl(
   if (planAccess === "premium") return row;
 
   if (planAccess === "base") {
-    const { closing_line_value, stake_suggestion, ...rest } = row;
-    void closing_line_value;
-    void stake_suggestion;
+    const { closing_line_value: _clv, stake_suggestion: _ss, ...rest } = row;
+    void _clv;
+    void _ss;
     return rest;
   }
 
