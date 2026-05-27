@@ -8,3 +8,4 @@ __pycache__/
 logs/
 data/tester_screenshots/
 data/test_report_*.json
+.mcp.json

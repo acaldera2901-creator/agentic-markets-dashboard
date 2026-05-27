@@ -1,22 +1,5 @@
 import { NextResponse } from "next/server";
-
-const DB_URL = process.env.DATABASE_URL;
-
-async function dbQuery<T = Record<string, unknown>>(
-  query: string,
-  params: unknown[] = []
-): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(query, params)) ?? []) as T[];
-  } catch (e) {
-    console.error("DB error:", String(e));
-    return [];
-  }
-}
+import { dbQuery } from "@/lib/db";
 
 /** GET — returns all recent research summaries (match_id → summary) */
 export async function GET() {

@@ -1,20 +1,5 @@
 import { NextResponse } from "next/server";
-
-const DB_URL = process.env.DATABASE_URL;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function dbQuery<T = Record<string, any>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql, params)) ?? []) as T[];
-  } catch (e) {
-    console.error("History DB error:", String(e));
-    return [];
-  }
-}
+import { dbQuery } from "@/lib/db";
 
 export async function GET() {
   const rows = await dbQuery(`
@@ -39,6 +24,10 @@ export async function GET() {
   const withBets = rows.filter((r) => r.bet_status);
   const won = withBets.filter((r) => r.bet_status === "won").length;
   const lost = withBets.filter((r) => r.bet_status === "lost").length;
+
+  const avgEdge = withBets.length > 0
+    ? (withBets.reduce((s, r) => s + Number(r.edge ?? 0), 0) / withBets.length * 100).toFixed(2)
+    : "0.00";
 
   const totalStaked = withBets.reduce((s, r) => s + Number(r.bet_stake ?? 0), 0);
   const totalReturn = withBets.reduce((s, r) => {
@@ -71,6 +60,7 @@ export async function GET() {
       roi,
       model_accuracy: modelAccuracy,
       total_return: totalReturn.toFixed(2),
+      avg_clv: avgEdge,
     },
   });
 }

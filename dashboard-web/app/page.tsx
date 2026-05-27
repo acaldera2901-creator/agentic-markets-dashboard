@@ -2,6 +2,31 @@
 
 import { useEffect, useState, useCallback, useRef, createContext, useContext } from "react";
 
+// ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
+
+function getSessionId(): string {
+  if (typeof window === "undefined") return "ssr";
+  let sid = sessionStorage.getItem("am_sid");
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem("am_sid", sid);
+  }
+  return sid;
+}
+
+function trackEvent(
+  event_type: string,
+  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown> }
+) {
+  if (typeof window === "undefined") return;
+  const language = extra?.language ?? localStorage.getItem("agentic-lang") ?? undefined;
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event_type, session_id: getSessionId(), language, ...extra }),
+  }).catch(() => { /* ignore */ });
+}
+
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 
 const BASE_TRANSLATIONS = {
@@ -180,7 +205,7 @@ const BASE_TRANSLATIONS = {
     gate_bets_desc: "Il log scommesse degli agenti è disponibile solo con il Piano Premium. Il tuo conto exchange viene collegato durante l'onboarding Premium e le bet vengono piazzate automaticamente dagli agenti.",
     gate_agents_title: "Status agenti",
     gate_agents_desc: "Il monitor degli agenti è disponibile solo con il Piano Premium. Mostra heartbeat, errori e stato di ogni agente del tuo conto.",
-    gate_upgrade_btn: "Passa a Premium · €199/mese",
+    gate_upgrade_btn: "Passa a Premium",
     // Footer
     footer_note: "Sportsbook Edge Desk · solo execution verificata · interfaccia client-grade",
     // History
@@ -235,8 +260,8 @@ const BASE_TRANSLATIONS = {
     agent_arch_none_suffix: "nella cartella del progetto.",
     agent_last_seen: "Ultimo heartbeat",
     agent_no_heartbeat: "Nessun heartbeat ricevuto",
-    partner_primary_name: "Partner Principale",
-    partner_primary_desc: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Integrazione diretta con Agentic Markets per segnali e edge calcolati in tempo reale.",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Link di accesso in fase di finalizzazione. Disponibile a breve.",
     partner_tag_exclusive: "Esclusivo",
     language_it: "Italiano",
     language_en: "Inglese",
@@ -417,7 +442,7 @@ const BASE_TRANSLATIONS = {
     gate_bets_desc: "The agent bet log is available with the Premium Plan only. Your exchange account is linked during Premium onboarding and bets are placed automatically by agents.",
     gate_agents_title: "Agent status",
     gate_agents_desc: "The agent monitor is available with the Premium Plan only. Shows heartbeat, errors and status of every agent on your account.",
-    gate_upgrade_btn: "Upgrade to Premium · €199/month",
+    gate_upgrade_btn: "Upgrade to Premium",
     // Footer
     footer_note: "Sportsbook Edge Desk · verified execution only · client-grade interface",
     // History
@@ -472,8 +497,8 @@ const BASE_TRANSLATIONS = {
     agent_arch_none_suffix: "inside the project folder.",
     agent_last_seen: "Last seen",
     agent_no_heartbeat: "No heartbeat received",
-    partner_primary_name: "Primary Partner",
-    partner_primary_desc: "Casino and sportsbook platform — exclusive project partner. Direct integration with Agentic Markets for real-time signals and edge calculations.",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Casino and sportsbook platform — exclusive project partner. Access link being finalised. Available shortly.",
     partner_tag_exclusive: "Exclusive",
     language_it: "Italian",
     language_en: "English",
@@ -496,7 +521,7 @@ const EXTRA_TRANSLATIONS = {
     locked_plan_eyebrow: "Upgrade requerido", locked_plan_title: "Actualiza tu paquete para desbloquear esta función",
     locked_plan_desc: "Tu perfil está activo. Esta vista requiere un nivel superior.", locked_plan_btn: "Ver planes",
     gate_eyebrow: "Plan Premium", gate_bets_title: "Registro de ejecución", gate_bets_desc: "Las apuestas automáticas y el registro de ejecución están disponibles solo con Premium.",
-    gate_upgrade_btn: "Pasar a Premium · €199/mes",
+    gate_upgrade_btn: "Pasar a Premium",
     topbar_private: "desk privado", topbar_scanning: "analizando", topbar_plans: "planes activos", topbar_syncing: "sincronizando",
     refresh_odds: "ACTUALIZAR ODDS", rail_exec_note: "Ejecución live solo con bet ID confirmado. Tennis en capa de señal.",
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
@@ -516,7 +541,7 @@ const EXTRA_TRANSLATIONS = {
     locked_plan_eyebrow: "Upgrade requis", locked_plan_title: "Passe à un niveau supérieur pour débloquer cette vue",
     locked_plan_desc: "Ton profil est actif. Cette section demande un niveau supérieur.", locked_plan_btn: "Voir les plans",
     gate_eyebrow: "Plan Premium", gate_bets_title: "Journal d'exécution", gate_bets_desc: "Les agents automatiques et le journal d'exécution sont disponibles uniquement avec Premium.",
-    gate_upgrade_btn: "Passer à Premium · €199/mois",
+    gate_upgrade_btn: "Passer à Premium",
     topbar_private: "desk privé", topbar_scanning: "analyse", topbar_plans: "plans actifs", topbar_syncing: "sync",
     refresh_odds: "RAFRAICHIR ODDS", rail_exec_note: "Exécution live seulement avec bet ID confirmé. Tennis en couche signal.",
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
@@ -536,7 +561,7 @@ const EXTRA_TRANSLATIONS = {
     locked_plan_eyebrow: "Нужен апгрейд", locked_plan_title: "Обнови пакет, чтобы открыть этот раздел",
     locked_plan_desc: "Профиль активен. Этот раздел требует более высокого уровня.", locked_plan_btn: "Смотреть планы",
     gate_eyebrow: "Premium план", gate_bets_title: "Журнал исполнения", gate_bets_desc: "Автоматические агенты и журнал исполнения доступны только в Premium.",
-    gate_upgrade_btn: "Перейти на Premium · €199/мес",
+    gate_upgrade_btn: "Перейти на Premium",
     topbar_private: "приватный desk", topbar_scanning: "анализ", topbar_plans: "планы активны", topbar_syncing: "синхронизация",
     refresh_odds: "ОБНОВИТЬ ODDS", rail_exec_note: "Live execution только с подтвержденным bet ID. Tennis в signal layer.",
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
@@ -550,7 +575,7 @@ const TRANSLATIONS = {
 } as const;
 
 type Lang = keyof typeof TRANSLATIONS;
-const LANGUAGES: Lang[] = ["it", "en", "es", "fr", "ru"];
+const LANGUAGES: Lang[] = ["it", "en"];
 const TOPBAR_SUBTITLE: Record<Lang, string> = {
   it: "Un’unica console per segnali, analisi predittiva e live execution.",
   en: "One console for signals, predictive analytics and live execution.",
@@ -716,16 +741,13 @@ interface HistoryStats {
   roi: string;
   model_accuracy: string;
   total_return: string;
+  avg_clv?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LEAGUE_FLAGS: Record<string, string> = {
   PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "⭐", EL: "🟠",
-};
-
-const LEAGUE_IMPORTANCE: Record<string, number> = {
-  CL: 5, EL: 4, PL: 3, SA: 3, PD: 3, BL1: 3, FL1: 3,
 };
 
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
@@ -741,7 +763,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners";
+type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners" | "leaderboard";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -831,6 +853,7 @@ type ClientProfile = {
   email: string;
   plan: "free" | "unpaid" | "pending_payment" | "base" | "premium" | "admin_full";
   language?: Lang;
+  timezone?: string;
   txHash?: string;
   requestedPlan?: "base" | "premium";
   betfair?: {
@@ -844,15 +867,38 @@ type ClientProfile = {
     maxBetsPerDay: number;
     mode: "approval" | "automatic";
   };
+  notifications?: {
+    valueBets: boolean;
+    dailyReport: boolean;
+    paymentUpdates: boolean;
+    securityAlerts: boolean;
+  };
+  sportPreferences?: string[];
+  leaderboardOptIn?: boolean;
 };
 
 type ClientAuthIntent = "login" | "create";
 
 const USDT_TRC20_ADDRESS = "TDUeCx7BBVySkZ8M9eC5Cocq87K2TcmkRf";
-const PLAN_PRICES = {
-  base: { eur: 29, label: "Level 1 · Signal Desk" },
-  premium: { eur: 199, label: "Level 2 · Autopilot Agents" },
+const PLAN_CONFIG = {
+  base: {
+    eur: Number(process.env.NEXT_PUBLIC_BASE_PLAN_EUR ?? 29),
+    label: "Level 1 · Signal Desk",
+    envKey: "NEXT_PUBLIC_BASE_PLAN_EUR",
+  },
+  premium: {
+    eur: Number(process.env.NEXT_PUBLIC_PREMIUM_PLAN_EUR ?? 199),
+    label: "Level 2 · Autopilot Agents",
+    envKey: "NEXT_PUBLIC_PREMIUM_PLAN_EUR",
+  },
 } as const;
+type PlanKey = keyof typeof PLAN_CONFIG;
+
+function planPriceCopy(plan: PlanKey, lang: Lang) {
+  const amount = PLAN_CONFIG[plan].eur;
+  const suffix = lang === "it" ? "mese" : "month";
+  return amount > 0 ? `€${amount}/${suffix}` : "Configured at checkout";
+}
 const CLIENT_PROFILE_KEY = "agentic-client-profile";
 const CLIENT_PROFILES_KEY = "agentic-client-profiles";
 const PRIVATE_BALANCE_PLACEHOLDER = "LOCK";
@@ -906,14 +952,6 @@ function timeAgo(utc: string) {
   if (diff < 60) return `${diff}m ago`;
   const h = Math.floor(diff / 60);
   return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-}
-
-function matchImportance(p: Prediction | HistoryMatch): number {
-  const leaguePrio = LEAGUE_IMPORTANCE[p.league] ?? 2;
-  const edgePrio = (p.edge ?? 0) > 0.05 ? 2 : (p.edge ?? 0) > 0.02 ? 1 : 0;
-  const mt = "match_type" in p ? (p.match_type ?? "") : "";
-  const typePrio = MATCH_TYPE_META[mt as string]?.priority ?? 0;
-  return leaguePrio + edgePrio + typePrio;
 }
 
 function confidenceFromEdge(edge: number | null, probability: number) {
@@ -1059,161 +1097,23 @@ function isTennisBestBet(m: TennisMatch) {
     && (m.edge ?? 0) >= TENNIS_BEST_EDGE_THRESHOLD;
 }
 
-function OddsButton({
-  label,
-  odds,
-  probability,
-  active,
-  onClick,
-}: {
-  label: string;
-  odds: number | null;
-  probability: number;
-  active?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button className={`odds-button ${active ? "is-value" : ""}`} disabled={odds == null} onClick={onClick}>
-      <span>{label}</span>
-      <strong>{odds == null ? "—" : odds.toFixed(2)}</strong>
-      <em>{pct(probability)}</em>
-    </button>
-  );
-}
-
-function FootballMarketRow({ p, onSelect }: { p: Prediction; onSelect: (selection: SlipSelection) => void }) {
-  const lang = useLang();
-  const tz = useTz();
-  const options = [
-    { key: "HOME", label: "1", odds: p.odds_home, probability: p.p_home, name: p.home_team },
-    { key: "DRAW", label: "X", odds: p.odds_draw, probability: p.p_draw, name: "Draw" },
-    { key: "AWAY", label: "2", odds: p.odds_away, probability: p.p_away, name: p.away_team },
-  ];
-
-  return (
-    <div className="market-row">
-      <div className="event-cell">
-        <div className="event-meta">
-          <span>{LEAGUE_FLAGS[p.league] ?? "FB"} {p.league}</span>
-          <span>{fmtKickoff(p.kickoff, lang, tz)}</span>
-          <MatchTypeBadge matchType={p.match_type} />
-        </div>
-        <strong>{p.home_team}</strong>
-        <strong>{p.away_team}</strong>
-      </div>
-      <div className="model-cell">
-        <span>Model</span>
-        <strong>{p.best_selection ?? "WAIT"}</strong>
-        <em className={isFootballBestBet(p) ? "text-green-300" : "text-gray-500"}>
-          {p.edge == null ? "no edge" : `${p.edge > 0 ? "+" : ""}${(p.edge * 100).toFixed(1)}%`}
-        </em>
-      </div>
-      <div className="odds-grid football">
-        {options.map((o) => {
-          const confidence = confidenceFromEdge(p.best_selection === o.key ? p.edge : null, o.probability);
-          return (
-            <OddsButton
-              key={o.key}
-              label={o.label}
-              odds={o.odds}
-              probability={o.probability}
-              active={p.best_selection === o.key && isFootballBestBet(p)}
-              onClick={() => o.odds != null && onSelect({
-                id: p.match_id,
-                sport: "Football",
-                event: `${p.home_team} vs ${p.away_team}`,
-                league: p.league,
-                kickoff: p.kickoff,
-                market: "1X2",
-                selection: o.name,
-                odds: o.odds,
-                modelProbability: o.probability,
-                edge: p.best_selection === o.key ? p.edge : null,
-                confidence,
-                recommendedStake: stakeFromEdge(p.best_selection === o.key ? p.edge : null, confidence),
-              })}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TennisMarketRow({ m, onSelect }: { m: TennisMatch; onSelect: (selection: SlipSelection) => void }) {
-  const lang = useLang();
-  const tz = useTz();
-  const isValueBet = isTennisBestBet(m);
-  const options = [
-    { key: "P1", label: "P1", odds: m.odds_p1, probability: m.p1, name: m.player1 },
-    { key: "P2", label: "P2", odds: m.odds_p2, probability: m.p2, name: m.player2 },
-  ] as const;
-
-  return (
-    <div className="market-row tennis-row">
-      <div className="event-cell">
-        <div className="event-meta">
-          <span>TN {m.surface}</span>
-          <span>{fmtKickoff(m.scheduled, lang, tz)}</span>
-          <span>{m.round}</span>
-        </div>
-        <strong>{m.player1}</strong>
-        <strong>{m.player2}</strong>
-      </div>
-      <div className="model-cell">
-        <span>{m.tournament}</span>
-        <strong>{m.best_selection ?? "WAIT"}</strong>
-        <em className={isValueBet ? "text-green-300" : "text-gray-500"}>
-          {m.edge == null ? "no edge" : `${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%`}
-        </em>
-      </div>
-      <div className="odds-grid tennis">
-        {options.map((o) => {
-          const confidence = confidenceFromEdge(m.best_selection === o.key ? m.edge : null, o.probability);
-          return (
-            <OddsButton
-              key={o.key}
-              label={o.label}
-              odds={o.odds}
-              probability={o.probability}
-              active={m.best_selection === o.key && isValueBet}
-              onClick={() => onSelect({
-                id: m.id,
-                sport: "Tennis",
-                event: `${m.player1} vs ${m.player2}`,
-                league: m.tournament,
-                kickoff: m.scheduled,
-                market: "Match Winner",
-                selection: o.name,
-                odds: o.odds,
-                modelProbability: o.probability,
-                edge: m.best_selection === o.key ? m.edge : null,
-                confidence,
-                recommendedStake: stakeFromEdge(m.best_selection === o.key ? m.edge : null, confidence),
-              })}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function SportsbookBoard({
   predictions,
   tennisMatches,
   onSelect,
   onBetNow,
-  previewLimit,
+  isFreeClient,
+  isPremium,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
-  previewLimit?: number;
+  isFreeClient?: boolean;
+  isPremium?: boolean;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
-  const [signalFilter, setSignalFilter] = useState<"all" | "value">("value");
+  const [signalFilter, setSignalFilter] = useState<"all" | "value">(isFreeClient ? "value" : "all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
   const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
   const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("edge");
@@ -1294,7 +1194,7 @@ function SportsbookBoard({
     .filter((p) => signalFilter === "all" || isFootballBestBet(p))
     .filter((p) => competitionFilter === "all" || competitionFilter === `football:${p.league}`)
     .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query)))
-    .slice(0, previewLimit ?? (signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY));
+    .slice(0, signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY);
 
   const tennisRows = sortTennis(tennisMatches
     .filter((m) => sportFilter !== "football")
@@ -1303,7 +1203,7 @@ function SportsbookBoard({
     .filter((m) => competitionFilter === "all" || competitionFilter === `tennis:${m.tournament}`)
     .filter((m) => surfaceFilter === "all" || m.surface === surfaceFilter)
     .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query)))
-    .slice(0, previewLimit ?? (signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY));
+    .slice(0, signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY);
 
   const filteredTotal = footballRows.length + tennisRows.length;
   const showFootballSection = sportFilter !== "tennis" && surfaceFilter === "all" && !competitionFilter.startsWith("tennis:");
@@ -1379,6 +1279,16 @@ function SportsbookBoard({
         <div className="book-empty">{labels.noResults}</div>
       ) : (
         <>
+          {isFreeClient && (
+            <div className="free-tier-banner">
+              <strong>{lang === "it" ? "Piano Free — 1 prediction per sport" : "Free Plan — 1 prediction per sport"}</strong>
+              <span>{lang === "it"
+                ? "Vedi 1 anteprima per sport. Sblocca tutte le prediction, edge% e analisi con il piano Base (€29/mese)."
+                : "You see 1 preview per sport. Unlock all predictions, edge% and analysis with the Base plan (€29/mo)."
+              }</span>
+            </div>
+          )}
+
           {showFootballSection && (
             <section className="market-section">
               <div className="market-section-title">
@@ -1387,7 +1297,16 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="market-list">
-                  {footballRows.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} />)}
+                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
+                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />
+                  ))}
+                  {isFreeClient && footballRows.length > 1 && (
+                    <div className="free-preview-wall">
+                      <div className="fpw-lock">🔒</div>
+                      <div className="fpw-count">+{footballRows.length - 1} {lang === "it" ? "prediction bloccate" : "predictions locked"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutte con il piano Base (€29/mese)" : "Unlock all with the Base plan (€29/mo)"}</div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_football_empty}</div>
@@ -1403,7 +1322,16 @@ function SportsbookBoard({
               </div>
               {tennisRows.length ? (
                 <div className="market-list">
-                  {tennisRows.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} />)}
+                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
+                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />
+                  ))}
+                  {isFreeClient && tennisRows.length > 1 && (
+                    <div className="free-preview-wall">
+                      <div className="fpw-lock">🔒</div>
+                      <div className="fpw-count">+{tennisRows.length - 1} {lang === "it" ? "match bloccati" : "matches locked"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con il piano Base (€29/mese)" : "Unlock all with the Base plan (€29/mo)"}</div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_tennis_empty}</div>
@@ -1421,13 +1349,15 @@ function BestBetsBoard({
   tennisMatches,
   onSelect,
   onBetNow,
-  previewLimit,
+  isFreeClient,
+  isPremium,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
-  previewLimit?: number;
+  isFreeClient?: boolean;
+  isPremium?: boolean;
 }) {
   const t = useT();
   const lang = useLang();
@@ -1479,9 +1409,9 @@ function BestBetsBoard({
     .filter((m) => sportFilter !== "football")
     .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query));
   const visibleFootballValue = sortFootballBest([...footballValue])
-    .slice(0, previewLimit ?? 21);
+    .slice(0, 21);
   const visibleTennisValue = sortTennisBest([...tennisValue])
-    .slice(0, previewLimit ?? 21);
+    .slice(0, 21);
   const totalValue = visibleFootballValue.length + visibleTennisValue.length;
 
   return (
@@ -1533,7 +1463,7 @@ function BestBetsBoard({
                 <em>{visibleFootballValue.length} {t.board_value}</em>
               </div>
               <div className="market-list">
-                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} />)}
+                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -1545,7 +1475,7 @@ function BestBetsBoard({
                 <em>{visibleTennisValue.length} {t.board_value}</em>
               </div>
               <div className="market-list">
-                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} />)}
+                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -1632,80 +1562,6 @@ function BetSlip({ selection, onClear }: { selection: SlipSelection | null; onCl
           </p>
         </div>
       )}
-    </aside>
-  );
-}
-
-function DeskAdRail() {
-  const lang = useLang();
-  const copy = {
-    it: {
-      title: "Partner e sponsor",
-      subtitle: "Spazi sempre visibili per operatori, bookmaker e campagne future.",
-      slots: [
-        ["Main sponsor", "Slot operatore premium", "Banner laterale persistente."],
-        ["Affiliate", "Campagna acquisizione", "Tracking link e promo future."],
-        ["Media", "Partner editoriale", "Contenuto o sponsor educativo."],
-      ],
-      support: "Support chat placeholder",
-    },
-    en: {
-      title: "Partners and sponsors",
-      subtitle: "Always-visible slots for operators, bookmakers and future campaigns.",
-      slots: [
-        ["Main sponsor", "Premium operator slot", "Persistent side banner."],
-        ["Affiliate", "Acquisition campaign", "Future tracking links and promos."],
-        ["Media", "Editorial partner", "Content or educational sponsor."],
-      ],
-      support: "Support chat placeholder",
-    },
-    es: {
-      title: "Partners y sponsors",
-      subtitle: "Espacios siempre visibles para operadores, bookmakers y campañas futuras.",
-      slots: [
-        ["Sponsor principal", "Slot operador premium", "Banner lateral persistente."],
-        ["Afiliado", "Campaña de adquisición", "Links y promos futuras."],
-        ["Media", "Partner editorial", "Contenido o sponsor educativo."],
-      ],
-      support: "Chat de soporte placeholder",
-    },
-    fr: {
-      title: "Partenaires et sponsors",
-      subtitle: "Espaces toujours visibles pour opérateurs, bookmakers et campagnes futures.",
-      slots: [
-        ["Sponsor principal", "Slot opérateur premium", "Bannière latérale persistante."],
-        ["Affiliation", "Campagne acquisition", "Liens tracking et promos futures."],
-        ["Média", "Partenaire éditorial", "Contenu ou sponsor éducatif."],
-      ],
-      support: "Placeholder chat support",
-    },
-    ru: {
-      title: "Партнеры и спонсоры",
-      subtitle: "Постоянные места для операторов, букмекеров и будущих кампаний.",
-      slots: [
-        ["Главный спонсор", "Премиум слот оператора", "Постоянный боковой баннер."],
-        ["Affiliate", "Кампания привлечения", "Будущие tracking links и промо."],
-        ["Media", "Редакционный партнер", "Контент или образовательный спонсор."],
-      ],
-      support: "Support chat placeholder",
-    },
-  }[lang];
-
-  return (
-    <aside className="desk-ad-rail">
-      <div className="ad-rail-head">
-        <p className="eyebrow">Ads rail</p>
-        <h3>{copy.title}</h3>
-        <span>{copy.subtitle}</span>
-      </div>
-      {copy.slots.map(([label, title, desc]) => (
-        <article key={label} className="ad-slot-card">
-          <span>{label}</span>
-          <strong>{title}</strong>
-          <em>{desc}</em>
-        </article>
-      ))}
-      <button disabled>{copy.support}</button>
     </aside>
   );
 }
@@ -2101,14 +1957,18 @@ function DeskPreview() {
 
 function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: () => void }) {
   const lang = useLang();
+  const priceCopy = {
+    base: planPriceCopy("base", lang),
+    premium: planPriceCopy("premium", lang),
+  };
   const levels = lang === "it" ? [
     { name: "Free", price: "€0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-    { name: "Livello 1", price: "€29/mese", desc: "Best Bets, spiegazioni, board football/tennis e decisione manuale.", cta: "Vai ai piani", action: onPlans },
-    { name: "Livello 2", price: "€199/mese", desc: "Agent automation, execution log, account linking e controlli premium.", cta: "Vai ai piani", action: onPlans },
+    { name: "Livello 1", price: priceCopy.base, desc: "Best Bets, spiegazioni, board football/tennis e decisione manuale.", cta: "Vai ai piani", action: onPlans },
+    { name: "Livello 2", price: priceCopy.premium, desc: "Agent automation, execution log, account linking e controlli premium.", cta: "Vai ai piani", action: onPlans },
   ] : [
     { name: "Free", price: "€0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-    { name: "Level 1", price: "€29/month", desc: "Best Bets, explanations, football/tennis board and manual decisions.", cta: "View plans", action: onPlans },
-    { name: "Level 2", price: "€199/month", desc: "Agent automation, execution log, account linking and premium controls.", cta: "View plans", action: onPlans },
+    { name: "Level 1", price: priceCopy.base, desc: "Best Bets, explanations, football/tennis board and manual decisions.", cta: "View plans", action: onPlans },
+    { name: "Level 2", price: priceCopy.premium, desc: "Agent automation, execution log, account linking and premium controls.", cta: "View plans", action: onPlans },
   ];
   return (
     <section className="public-section">
@@ -2193,12 +2053,102 @@ function SponsorSlot({ label, title, desc }: { label: string; title: string; des
 
 function SupportHub() {
   const lang = useLang();
+  const [topic, setTopic] = useState("access");
+  const [priority, setPriority] = useState("normal");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const copy = lang === "it" ? {
+    eyebrow: "Supporto cliente",
+    title: "Apri una richiesta",
+    subtitle: "Descrivi il problema: il team potrà collegare questo flusso a email, Telegram o CRM senza cambiare la UI.",
+    topic: "Area",
+    priority: "Priorità",
+    message: "Messaggio",
+    placeholder: "Scrivi cosa non funziona, quale piano hai e cosa stavi provando a fare...",
+    send: "Prepara ticket",
+    sent: "Ticket preparato",
+    sentDesc: "La richiesta è pronta per essere collegata al canale supporto operativo.",
+    topics: [
+      ["access", "Accesso / login"],
+      ["payment", "Pagamento / TX hash"],
+      ["signals", "Prediction e best bets"],
+      ["execution", "Exchange / execution"],
+      ["account", "Profilo e impostazioni"],
+    ],
+    priorities: [
+      ["normal", "Normale"],
+      ["high", "Alta"],
+      ["urgent", "Urgente"],
+    ],
+  } : {
+    eyebrow: "Client support",
+    title: "Open a request",
+    subtitle: "Describe the issue: this flow can connect to email, Telegram or CRM without changing the UI.",
+    topic: "Area",
+    priority: "Priority",
+    message: "Message",
+    placeholder: "Write what is not working, which plan you have and what you were trying to do...",
+    send: "Prepare ticket",
+    sent: "Ticket prepared",
+    sentDesc: "The request is ready to be connected to the operating support channel.",
+    topics: [
+      ["access", "Access / login"],
+      ["payment", "Payment / TX hash"],
+      ["signals", "Predictions and best bets"],
+      ["execution", "Exchange / execution"],
+      ["account", "Profile and settings"],
+    ],
+    priorities: [
+      ["normal", "Normal"],
+      ["high", "High"],
+      ["urgent", "Urgent"],
+    ],
+  };
+
+  if (sent) {
+    return (
+      <section className="support-hub">
+        <p className="eyebrow">{copy.eyebrow}</p>
+        <h3>{copy.sent}</h3>
+        <p>{copy.sentDesc}</p>
+        <div className="support-ticket-summary">
+          <span>{copy.topic}: {copy.topics.find(([key]) => key === topic)?.[1]}</span>
+          <span>{copy.priority}: {copy.priorities.find(([key]) => key === priority)?.[1]}</span>
+        </div>
+        <button onClick={() => { setSent(false); setMessage(""); }}>{lang === "it" ? "Nuova richiesta" : "New request"}</button>
+      </section>
+    );
+  }
+
   return (
     <section className="support-hub">
-      <p className="eyebrow">Support</p>
-      <h3>{lang === "it" ? "Live chat placeholder" : "Live chat placeholder"}</h3>
-      <p>{lang === "it" ? "Qui collegheremo chat, onboarding e supporto cliente. Per ora è una struttura non attiva." : "Chat, onboarding and customer support will connect here. For now this is inactive structure."}</p>
-      <button disabled>{lang === "it" ? "Chat non attiva" : "Chat inactive"}</button>
+      <p className="eyebrow">{copy.eyebrow}</p>
+      <h3>{copy.title}</h3>
+      <p>{copy.subtitle}</p>
+      <div className="support-form">
+        <label>
+          <span>{copy.topic}</span>
+          <select value={topic} onChange={(event) => setTopic(event.target.value)}>
+            {copy.topics.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>{copy.priority}</span>
+          <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+            {copy.priorities.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+        <label className="support-message">
+          <span>{copy.message}</span>
+          <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={4} placeholder={copy.placeholder} />
+        </label>
+      </div>
+      {message.trim().length > 0 && message.trim().length < 8 && (
+        <p className="support-validation-hint">
+          {lang === "it" ? "Messaggio troppo corto. Scrivi almeno 8 caratteri." : "Message too short. Please write at least 8 characters."}
+        </p>
+      )}
+      <button disabled={message.trim().length < 8} onClick={() => setSent(true)}>{copy.send}</button>
     </section>
   );
 }
@@ -2246,17 +2196,25 @@ function CryptoPaymentBox({
   plan: "base" | "premium";
   onSubmit: (plan: "base" | "premium") => void;
 }) {
-  const price = PLAN_PRICES[plan];
+  const price = PLAN_CONFIG[plan];
   const t = useT();
+  const lang = useLang();
+  const isCurrentPlan = profile?.plan === plan ||
+    (plan === "premium" && profileHasPremium(profile)) ||
+    (plan === "base" && profileHasAccess(profile) && !profileHasPremium(profile));
   return (
     <div className="crypto-pay-box">
       <div>
         <span>USDT TRC20</span>
-        <strong>{price.eur} EUR / {t.price_month}</strong>
+        <strong>{planPriceCopy(plan, lang)}</strong>
         {!profile && <em>{t.crypto_profile_required}</em>}
       </div>
-      <button disabled={!profile} onClick={() => onSubmit(plan)}>
-        {profile ? `${t.crypto_activate} ${price.label}` : t.crypto_create_first}
+      <button disabled={!profile || isCurrentPlan} onClick={() => onSubmit(plan)}>
+        {isCurrentPlan
+          ? (lang === "it" ? "Piano attuale" : "Current plan")
+          : profile
+            ? `${t.crypto_activate} ${price.label}`
+            : t.crypto_create_first}
       </button>
     </div>
   );
@@ -2273,7 +2231,7 @@ function CheckoutModal({
 }) {
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
-  const price = PLAN_PRICES[plan];
+  const price = PLAN_CONFIG[plan];
   const t = useT();
   const lang = useLang();
 
@@ -2415,7 +2373,7 @@ function PendingPaymentView({
     <div className="pending-payment-view">
       <p className="eyebrow">{t.pending_title}</p>
       <h2>{t.pending_subtitle}</h2>
-      {profile.txHash && (
+      {profile.txHash && profile.txHash !== "test" && (
         <div className="pending-tx">
           <span>{t.pending_tx_label} {profile.txHash.length > 20 ? `${profile.txHash.slice(0, 10)}...${profile.txHash.slice(-8)}` : profile.txHash}</span>
         </div>
@@ -2492,7 +2450,7 @@ function PlansTab({
           </div>
           <p className="plan-description">{t.plans_base_desc}</p>
           <div className="price-line">
-            <strong>€29/month</strong>
+            <strong>{planPriceCopy("base", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
@@ -2517,11 +2475,11 @@ function PlansTab({
               <p className="eyebrow">{lang === "it" ? "Livello 2" : "Level 2"}</p>
               <h4>Autopilot Agents</h4>
             </div>
-            <span>Unlocked</span>
+            <span>{profileHasPremium(profile) ? "Unlocked" : "Premium"}</span>
           </div>
           <p className="plan-description">{t.plans_premium_desc}</p>
           <div className="price-line">
-            <strong>€199/month</strong>
+            <strong>{planPriceCopy("premium", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
@@ -2568,6 +2526,7 @@ function SettingsTab({
   }, [profile]);
 
   const t = useT();
+  const lang = useLang();
 
   if (!draft) {
     return (
@@ -2580,20 +2539,97 @@ function SettingsTab({
   }
 
   const risk = draft.risk ?? { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" as const };
+  const notifications = draft.notifications ?? defaultNotifications();
+  const settingsTimezone = draft.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const sportPrefs = draft.sportPreferences ?? ["football", "tennis"];
+  const leaderboard = draft.leaderboardOptIn ?? false;
+  const isPremium = profileHasPremium(draft);
+
+  const toggleSport = (sport: string) => {
+    const current = draft.sportPreferences ?? ["football", "tennis"];
+    const next = current.includes(sport) ? current.filter((s) => s !== sport) : [...current, sport];
+    setDraft({ ...draft, sportPreferences: next });
+  };
+
+  const SPORTS = lang === "it"
+    ? [["football", "⚽ Football"], ["tennis", "🎾 Tennis"], ["basketball", "🏀 Basketball"], ["other", "Altri sport"]]
+    : [["football", "⚽ Football"], ["tennis", "🎾 Tennis"], ["basketball", "🏀 Basketball"], ["other", "Other sports"]];
+
+  const copy = lang === "it" ? {
+    profile: "Profilo",
+    accountDetails: "Dettagli account",
+    name: "Nome",
+    language: "Lingua",
+    timezone: "Timezone",
+    notifications: "Notifiche",
+    valueBets: "Nuovi value bet",
+    dailyReport: "Report giornaliero",
+    paymentUpdates: "Pagamenti e accesso",
+    securityAlerts: "Sicurezza account",
+    enabled: "Attivo",
+    disabled: "Disattivo",
+    riskProfile: "Risk profile",
+    autopilotLimits: "Limiti autopilot",
+    premiumOnly: "Premium",
+    maxStake: "Stake massimo per bet",
+    stopLoss: "Stop loss giornaliero",
+    maxBets: "Max bet al giorno",
+    mode: "Modalità",
+    automatic: "Automatico",
+    approval: "Richiede conferma",
+    sportPrefs: "Sport preferiti",
+    sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
+    leaderboardTitle: "Leaderboard",
+    leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate e ROI.",
+    leaderboardOn: "Partecipo",
+    leaderboardOff: "Non partecipo",
+  } : {
+    profile: "Profile",
+    accountDetails: "Account details",
+    name: "Name",
+    language: "Language",
+    timezone: "Timezone",
+    notifications: "Notifications",
+    valueBets: "New value bets",
+    dailyReport: "Daily report",
+    paymentUpdates: "Payment and access",
+    securityAlerts: "Account security",
+    enabled: "Enabled",
+    disabled: "Disabled",
+    riskProfile: "Risk profile",
+    autopilotLimits: "Autopilot limits",
+    premiumOnly: "Premium",
+    maxStake: "Max stake per bet",
+    stopLoss: "Daily stop loss",
+    maxBets: "Max bets per day",
+    mode: "Mode",
+    automatic: "Automatic",
+    approval: "Approval required",
+    sportPrefs: "Sport preferences",
+    sportPrefsDesc: "Receive predictions only for selected sports.",
+    leaderboardTitle: "Leaderboard",
+    leaderboardDesc: "Appear in the public leaderboard ranked by hit rate and ROI.",
+    leaderboardOn: "Opted in",
+    leaderboardOff: "Opted out",
+  };
+
+  const updateNotification = (key: keyof NonNullable<ClientProfile["notifications"]>) => {
+    setDraft({ ...draft, notifications: { ...notifications, [key]: !notifications[key] } });
+  };
 
   return (
     <div className="settings-view">
       <section className="settings-panel">
         <div className="settings-panel-head">
           <div>
-            <p className="eyebrow">Profile</p>
-            <h3>Account details</h3>
+            <p className="eyebrow">{copy.profile}</p>
+            <h3>{copy.accountDetails}</h3>
           </div>
           <span>{draft.plan.replace("_", " ")}</span>
         </div>
         <div className="settings-grid">
           <label>
-            <span>Name</span>
+            <span>{copy.name}</span>
             <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
           </label>
           <label>
@@ -2601,42 +2637,111 @@ function SettingsTab({
             <input value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
           </label>
           <label>
-            <span>Language</span>
+            <span>{copy.language}</span>
             <select value={draft.language ?? "it"} onChange={(event) => setDraft({ ...draft, language: event.target.value as Lang })}>
               {LANGUAGES.map((code) => (
                 <option key={code} value={code}>{languageLabel(code, t)}</option>
               ))}
             </select>
           </label>
+          <label>
+            <span>{copy.timezone}</span>
+            <select value={settingsTimezone} onChange={(event) => setDraft({ ...draft, timezone: event.target.value })}>
+              {TIMEZONE_OPTIONS.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+            </select>
+          </label>
         </div>
       </section>
 
-      <section className={`settings-panel ${profileHasPremium(draft) ? "" : "is-locked"}`}>
+      <section className="settings-panel">
         <div className="settings-panel-head">
           <div>
-            <p className="eyebrow">Risk profile</p>
-            <h3>Autopilot limits</h3>
+            <p className="eyebrow">{copy.notifications}</p>
+            <h3>{lang === "it" ? "Canali e trigger" : "Channels and triggers"}</h3>
           </div>
-          <span>{risk.mode}</span>
+          <span>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</span>
+        </div>
+        <div className="settings-notification-list">
+          {([
+            ["valueBets", copy.valueBets],
+            ["dailyReport", copy.dailyReport],
+            ["paymentUpdates", copy.paymentUpdates],
+            ["securityAlerts", copy.securityAlerts],
+          ] as [keyof NonNullable<ClientProfile["notifications"]>, string][]).map(([key, label]) => (
+            <button key={key} type="button" className={notifications[key] ? "is-on" : ""} onClick={() => updateNotification(key)}>
+              <span>{label}</span>
+              <strong>{notifications[key] ? copy.enabled : copy.disabled}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-panel">
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">{copy.sportPrefs}</p>
+            <h3>{copy.sportPrefsDesc}</h3>
+          </div>
+          <span>{sportPrefs.length}</span>
+        </div>
+        <div className="settings-notification-list">
+          {SPORTS.map(([key, label]) => (
+            <button key={key} type="button"
+              className={sportPrefs.includes(key) ? "is-on" : ""}
+              onClick={() => toggleSport(key)}
+            >
+              <span>{label}</span>
+              <strong>{sportPrefs.includes(key) ? copy.enabled : copy.disabled}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-panel">
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">{copy.leaderboardTitle}</p>
+            <h3>{copy.leaderboardDesc}</h3>
+          </div>
+          <span>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</span>
+        </div>
+        <div className="settings-notification-list">
+          <button type="button"
+            className={leaderboard ? "is-on" : ""}
+            onClick={() => setDraft({ ...draft, leaderboardOptIn: !leaderboard })}
+          >
+            <span>{copy.leaderboardTitle}</span>
+            <strong>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</strong>
+          </button>
+        </div>
+      </section>
+
+      <section className={`settings-panel ${isPremium ? "" : "is-locked"}`}>
+        <div className="settings-panel-head">
+          <div>
+            <p className="eyebrow">{copy.riskProfile}</p>
+            <h3>{copy.autopilotLimits}</h3>
+          </div>
+          <span>{isPremium ? risk.mode : copy.premiumOnly}</span>
         </div>
         <div className="settings-grid">
           <label>
-            <span>Max stake per bet</span>
-            <input disabled={!profileHasPremium(draft)} type="number" value={risk.maxStake} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxStake: Number(event.target.value) } })} />
+            <span>{copy.maxStake}</span>
+            <input disabled={!isPremium} type="number" value={risk.maxStake} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxStake: Number(event.target.value) } })} />
           </label>
           <label>
-            <span>Daily stop loss</span>
-            <input disabled={!profileHasPremium(draft)} type="number" value={risk.dailyStopLoss} onChange={(event) => setDraft({ ...draft, risk: { ...risk, dailyStopLoss: Number(event.target.value) } })} />
+            <span>{copy.stopLoss}</span>
+            <input disabled={!isPremium} type="number" value={risk.dailyStopLoss} onChange={(event) => setDraft({ ...draft, risk: { ...risk, dailyStopLoss: Number(event.target.value) } })} />
           </label>
           <label>
-            <span>Max bets per day</span>
-            <input disabled={!profileHasPremium(draft)} type="number" value={risk.maxBetsPerDay} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxBetsPerDay: Number(event.target.value) } })} />
+            <span>{copy.maxBets}</span>
+            <input disabled={!isPremium} type="number" value={risk.maxBetsPerDay} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxBetsPerDay: Number(event.target.value) } })} />
           </label>
           <label>
-            <span>Mode</span>
-            <select disabled={!profileHasPremium(draft)} value={risk.mode} onChange={(event) => setDraft({ ...draft, risk: { ...risk, mode: event.target.value as "approval" | "automatic" } })}>
-              <option value="automatic">Full automatic</option>
-              <option value="approval">Approval required</option>
+            <span>{copy.mode}</span>
+            <select disabled={!isPremium} value={risk.mode} onChange={(event) => setDraft({ ...draft, risk: { ...risk, mode: event.target.value as "approval" | "automatic" } })}>
+              <option value="automatic">{copy.automatic}</option>
+              <option value="approval">{copy.approval}</option>
             </select>
           </label>
         </div>
@@ -2692,8 +2797,10 @@ function ClientAuthModal({
             email: normalizedEmail,
             plan: "free",
             language: lang,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome",
             risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
             betfair: { status: "not_connected" },
+            notifications: defaultNotifications(),
           });
         }}
       >
@@ -2734,6 +2841,17 @@ function profileHasSignalPreview(profile: ClientProfile | null) {
 
 function profileHasPremium(profile: ClientProfile | null) {
   return Boolean(profile && (["premium", "admin_full"].includes(profile.plan) || (profile.plan === "pending_payment" && profile.requestedPlan === "premium")));
+}
+
+const TIMEZONE_OPTIONS = ["Europe/Rome", "Europe/Oslo", "Europe/London", "America/New_York", "America/Sao_Paulo", "Asia/Dubai"];
+
+function defaultNotifications(): NonNullable<ClientProfile["notifications"]> {
+  return {
+    valueBets: true,
+    dailyReport: true,
+    paymentUpdates: true,
+    securityAlerts: true,
+  };
 }
 
 function ProfilePanel({
@@ -3174,7 +3292,7 @@ const LEAGUE_BADGE_COLORS: Record<string, string> = {
   EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
 };
 
-function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void }) {
+function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -3222,6 +3340,7 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
               {p.league}
             </span>
             <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-400/70 bg-amber-400/5">PAPER</span>
           </div>
           <div className="text-sm font-bold text-white mt-1">
             {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
@@ -3229,7 +3348,7 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
           <div className="text-xs text-gray-600 font-mono mt-0.5">{fmtKickoff(p.kickoff, lang, tz)}</div>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          {isValueBet && p.best_selection && (
+          {isValueBet && p.best_selection && !isPreview && (
             <button
               className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono hover:bg-green-400/20 transition-colors"
               onClick={handleSelect}
@@ -3302,14 +3421,20 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
 
       {/* Footer: model + edge + why toggle */}
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-        <button
-          className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-          onClick={() => setShowWhy(!showWhy)}
-        >
-          {showWhy ? t.pred_why_hide : t.pred_why_show}
-        </button>
+        {isPreview ? (
+          <span className="why-locked-preview">{t.pred_why_show}</span>
+        ) : (
+          <button
+            className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
+            onClick={() => setShowWhy(!showWhy)}
+          >
+            {showWhy ? t.pred_why_hide : t.pred_why_show}
+          </button>
+        )}
         <span className="text-gray-600">Dixon-Coles</span>
-        {p.edge != null ? (
+        {isPreview ? (
+          <span className="plan-lock-badge">🔒 Base</span>
+        ) : p.edge != null ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
           </span>
@@ -3318,8 +3443,17 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
         )}
       </div>
 
+      {/* Preview upgrade nudge (free plan) */}
+      {isPreview && (
+        <div className="plan-upgrade-nudge">
+          <span>🔒</span>
+          <strong>{lang === "it" ? "Edge e analisi richiedono il piano Base" : "Edge and analysis require the Base plan"}</strong>
+          <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali operativi con Base (€29/mese)." : "Unlock edge%, AI reasoning and operational signals with Base (€29/mo)."}</em>
+        </div>
+      )}
+
       {/* Inline Why section */}
-      {showWhy && (
+      {!isPreview && showWhy && (
         <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.pred_why_title}</div>
           {reasons.map((r, i) => (
@@ -3336,13 +3470,79 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
         </div>
       )}
 
-      {onBetNow && (
+      {onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
         >
           {t.bet_now}
         </button>
+      )}
+
+      {/* Deep Analysis — Premium only */}
+      {isPremium && (
+        <div className="deep-analysis-panel">
+          <div className="da-header">
+            <span className="da-badge">⚡ Premium</span>
+            <span className="da-title">{lang === "it" ? "Analisi approfondita" : "Deep Analysis"}</span>
+          </div>
+          {(e.xg_home != null || e.xg_away != null) && (
+            <div className="da-row">
+              <span className="da-label">xG</span>
+              <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
+            </div>
+          )}
+          {(e.pi_home != null || e.pi_away != null) && (
+            <div className="da-row">
+              <span className="da-label">Pi Rating</span>
+              <span className="da-value">{e.pi_home ?? "–"} vs {e.pi_away ?? "–"}</span>
+            </div>
+          )}
+          {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
+            <div className="da-row">
+              <span className="da-label">🚑 {lang === "it" ? "Infortuni" : "Injuries"}</span>
+              <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
+            </div>
+          )}
+          {e.weather && (
+            <div className="da-row">
+              <span className="da-label">{e.weather.icon} {lang === "it" ? "Meteo" : "Weather"}</span>
+              <span className="da-value">{e.weather.temp}°C · {e.weather.condition} · {e.weather.wind}km/h</span>
+            </div>
+          )}
+          {e.api_pct_home != null && (
+            <div className="da-row">
+              <span className="da-label">API-FB</span>
+              <span className="da-value">H:{e.api_pct_home}% D:{e.api_pct_draw ?? "–"}% A:{e.api_pct_away ?? "–"}%{e.api_advice ? ` · ${e.api_advice}` : ""}</span>
+            </div>
+          )}
+          {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
+            <div className="da-row da-markets-row">
+              <span className="da-label">{lang === "it" ? "Mercati" : "Markets"}</span>
+              <div className="da-markets-list">
+                {e.extra_markets.filter((m) => m.edge != null).slice(0, 4).map((m) => (
+                  <span key={m.key} className={`da-market-pill${m.edge != null && m.edge > 0.02 ? " value" : ""}`}>
+                    {m.label}{m.edge != null ? ` ${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%` : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {e.research && (
+            <div className="da-research">
+              <span className="da-label">🤖 AI</span>
+              <p className="da-research-text">{e.research}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deep Analysis locked teaser — Base users only */}
+      {!isPremium && !isPreview && (
+        <div className="deep-analysis-locked">
+          <span>⚡</span>
+          <span>{lang === "it" ? "Analisi approfondita disponibile con Premium (€199/mese)" : "Deep analysis available with Premium (€199/mo)"}</span>
+        </div>
       )}
     </div>
   );
@@ -3453,7 +3653,7 @@ function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
   return reasons;
 }
 
-function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void }) {
+function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -3526,7 +3726,7 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
           </div>
           <div className="text-xs text-gray-600 font-mono mt-0.5">{scheduledDate}</div>
         </div>
-        {isValue && m.best_selection && (
+        {isValue && m.best_selection && !isPreview && (
           <button
             className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono shrink-0 hover:bg-green-400/20 transition-colors"
             onClick={() => handleSelect(m.best_selection as "P1" | "P2")}
@@ -3556,14 +3756,20 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-        <button
-          className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-          onClick={handleWhyClick}
-        >
-          {loadingAnalysis ? "⏳ ..." : showWhy ? t.tennis_why_hide : t.tennis_why_show}
-        </button>
+        {isPreview ? (
+          <span className="why-locked-preview">{t.tennis_why_show}</span>
+        ) : (
+          <button
+            className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
+            onClick={handleWhyClick}
+          >
+            {loadingAnalysis ? "⏳ ..." : showWhy ? t.tennis_why_hide : t.tennis_why_show}
+          </button>
+        )}
         <span className="text-gray-600">{m.model}</span>
-        {m.edge != null && m.edge > 0 ? (
+        {isPreview ? (
+          <span className="plan-lock-badge">🔒 Base</span>
+        ) : m.edge != null && m.edge > 0 ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-green-400 border-green-400/40 bg-green-400/10" : "text-gray-400 border-gray-400/30"}`}>
             edge +{(m.edge * 100).toFixed(1)}%
           </span>
@@ -3572,7 +3778,16 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
         )}
       </div>
 
-      {onBetNow && (
+      {/* Preview upgrade nudge (free plan) */}
+      {isPreview && (
+        <div className="plan-upgrade-nudge">
+          <span>🔒</span>
+          <strong>{lang === "it" ? "Edge Elo e analisi richiedono il piano Base" : "Elo edge and analysis require the Base plan"}</strong>
+          <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Base (€29/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Base (€29/mo)."}</em>
+        </div>
+      )}
+
+      {onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
@@ -3582,7 +3797,7 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
       )}
 
       {/* Inline Why */}
-      {showWhy && (
+      {!isPreview && showWhy && (
         <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
           {/* AI analysis — shown first when available */}
           {aiAnalysis && lang === "it" ? (
@@ -3606,6 +3821,46 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
               {r.icon} {r.text}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Deep Analysis — Premium only */}
+      {isPremium && (
+        <div className="deep-analysis-panel">
+          <div className="da-header">
+            <span className="da-badge">⚡ Premium</span>
+            <span className="da-title">{lang === "it" ? "Analisi Elo" : "Elo Analysis"}</span>
+          </div>
+          <div className="da-row">
+            <span className="da-label">Elo {surface.label}</span>
+            <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
+          </div>
+          {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
+            <div className="da-row">
+              <span className="da-label">Elo Overall</span>
+              <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
+            </div>
+          )}
+          {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) && (
+            <div className="da-row">
+              <span className="da-label">{lang === "it" ? "Match sup." : "Surf. matches"}</span>
+              <span className="da-value">{m.surface_matches_p1 ?? "–"} vs {m.surface_matches_p2 ?? "–"}</span>
+            </div>
+          )}
+          {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
+            <div className="da-row">
+              <span className="da-label">Elo raw prob.</span>
+              <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deep Analysis locked teaser — Base users only */}
+      {!isPremium && !isPreview && (
+        <div className="deep-analysis-locked">
+          <span>⚡</span>
+          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Premium (€199/mese)" : "Deep Elo analysis available with Premium (€199/mo)"}</span>
         </div>
       )}
     </div>
@@ -4247,7 +4502,7 @@ interface Partner {
 const PARTNERS: Partner[] = [
   {
     id: "partner-01",
-    name: "Partner Principale",
+    name: "Sportsbook Partner",
     type: "Casino & Sportsbook",
     status: "featured",
     description: "Casino e piattaforma di scommesse sportive — partner esclusivo del progetto. Integrazione diretta con Agentic Markets per segnali e edge calcolati in tempo reale.",
@@ -4320,6 +4575,7 @@ function PartnerCard({ p }: { p: Partner }) {
             href={p.url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("partner_click", { partner_id: p.id })}
             className="text-[10px] font-mono px-3 py-1 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
           >
             {t.partners_visit}
@@ -4371,6 +4627,11 @@ function PartnersTab() {
         <p className="eyebrow">{t.partners_eyebrow}</p>
         <h2 className="text-xl font-bold text-white">{t.partners_title}</h2>
         <p className="text-xs font-mono text-gray-500 max-w-lg">{t.partners_desc}</p>
+        <p className="text-[10px] font-mono text-gray-600 mt-1">
+          {lang === "it"
+            ? "I link partner sono relazioni commerciali affiliate. AgenticMarkets riceve compenso per referral qualificati."
+            : "Partner links are commercial affiliate relationships. AgenticMarkets receives compensation for qualified referrals."}
+        </p>
       </div>
 
       {/* Stats strip */}
@@ -4474,6 +4735,249 @@ function PartnersTab() {
   );
 }
 
+// ─── Leaderboard Tab ─────────────────────────────────────────────────────────
+
+interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  points: number;
+  bets_won: number;
+  bets_total: number;
+  pnl: number;
+  hit_rate: number;
+  sport: string;
+}
+
+function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOptedIn?: boolean }) {
+  const lang = useLang();
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [systemWins, setSystemWins] = useState(0);
+  const [systemPnl, setSystemPnl] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/leaderboard")
+      .then((r) => r.json())
+      .then((d) => {
+        setEntries(d.leaderboard ?? []);
+        setSystemWins(d.system_wins ?? 0);
+        setSystemPnl(d.system_pnl ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const copy = lang === "it" ? {
+    eyebrow: "Classifica pubblica",
+    title: "Leaderboard Signal Desk",
+    subtitle: "10 punti per ogni scommessa vinta. La classifica si aggiorna ad ogni settlement.",
+    rank: "#",
+    player: "Giocatore",
+    points: "Punti",
+    won: "Vinte",
+    total: "Totali",
+    hitRate: "Hit Rate",
+    sport: "Sport",
+    systemWins: "Bet vinte dal sistema",
+    systemPnl: "P&L sistema",
+    pointsFormula: "10 pt per vittoria",
+    pnl: "Guadagno",
+    yourRank: "La tua posizione",
+    notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
+    loading: "Caricamento classifica…",
+    noData: "Nessun dato disponibile.",
+    podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+  } : {
+    eyebrow: "Public leaderboard",
+    title: "Signal Desk Leaderboard",
+    subtitle: "10 points for every won bet. Rankings update after each settlement.",
+    rank: "#",
+    player: "Player",
+    points: "Points",
+    won: "Won",
+    total: "Total",
+    hitRate: "Hit Rate",
+    sport: "Sport",
+    systemWins: "System wins",
+    systemPnl: "System P&L",
+    pointsFormula: "10 pts per win",
+    pnl: "Profit",
+    yourRank: "Your position",
+    notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
+    loading: "Loading leaderboard…",
+    noData: "No data available.",
+    podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+  };
+
+  const podium = entries.slice(0, 3);
+  const rest = entries.slice(3);
+
+  const yourEntry = isOptedIn && clientName
+    ? entries.find((e) => e.name === clientName)
+    : null;
+
+  const medalColors = [
+    "from-amber-400 to-yellow-500 border-amber-400/40",
+    "from-slate-300 to-slate-400 border-slate-300/40",
+    "from-amber-700 to-amber-800 border-amber-700/40",
+  ];
+
+  return (
+    <div className="space-y-6 p-4">
+      {/* Header */}
+      <div className="space-y-1">
+        <p className="eyebrow">{copy.eyebrow}</p>
+        <h2 className="text-xl font-bold text-white">{copy.title}</h2>
+        <p className="text-xs font-mono text-gray-500 max-w-lg">{copy.subtitle}</p>
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="glass-card p-4 text-center">
+          <div className="text-2xl font-black text-green-400 font-mono">{systemWins}</div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
+        </div>
+        <div className="glass-card p-4 text-center">
+          <div className="text-2xl font-black text-cyan-400 font-mono">{systemWins * 10}</div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
+        </div>
+        <div className="glass-card p-4 text-center">
+          <div className={`text-2xl font-black font-mono ${systemPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+            {systemPnl >= 0 ? "+" : ""}{systemPnl.toFixed(2)}€
+          </div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemPnl}</div>
+        </div>
+      </div>
+
+      {/* Hall of Fame */}
+      {entries.length > 0 && (
+        <div className="space-y-2">
+          <p className="eyebrow">{lang === "it" ? "Hall of Fame" : "Hall of Fame"}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-card p-4 space-y-1">
+              <div className="text-[10px] font-mono text-yellow-400/70 uppercase tracking-wider">
+                {lang === "it" ? "🏆 Top profitto" : "🏆 Top profit"}
+              </div>
+              {(() => {
+                const top = [...entries].sort((a, b) => b.pnl - a.pnl)[0];
+                return top ? (
+                  <>
+                    <div className="text-sm font-bold text-white truncate">{top.name}</div>
+                    <div className="text-lg font-black font-mono text-green-400">
+                      {top.pnl >= 0 ? "+" : ""}{top.pnl.toFixed(2)}€
+                    </div>
+                    <div className="text-[10px] font-mono text-gray-500">{top.hit_rate}% hit rate</div>
+                  </>
+                ) : null;
+              })()}
+            </div>
+            <div className="glass-card p-4 space-y-1">
+              <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider">
+                {lang === "it" ? "🔥 Più attivo" : "🔥 Most active"}
+              </div>
+              {(() => {
+                const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
+                return top ? (
+                  <>
+                    <div className="text-sm font-bold text-white truncate">{top.name}</div>
+                    <div className="text-lg font-black font-mono text-cyan-400">{top.bets_total}</div>
+                    <div className="text-[10px] font-mono text-gray-500">{lang === "it" ? "scommesse totali" : "total bets"}</div>
+                  </>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-xs font-mono text-gray-500 animate-pulse py-8 text-center">{copy.loading}</div>
+      ) : entries.length === 0 ? (
+        <div className="text-xs font-mono text-gray-500 py-8 text-center">{copy.noData}</div>
+      ) : (
+        <>
+          {/* Podium */}
+          {podium.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              {podium.map((e, i) => (
+                <div key={e.rank} className={`glass-card p-4 text-center space-y-2 border bg-gradient-to-b ${medalColors[i]}`}>
+                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
+                  <div className="text-sm font-bold text-white truncate">{e.name}</div>
+                  <div className="text-xl font-black font-mono text-white">{e.points} pt</div>
+                  <div className={`text-sm font-bold font-mono ${e.pnl >= 0 ? "text-green-300" : "text-red-300"}`}>
+                    {e.pnl >= 0 ? "+" : ""}{e.pnl.toFixed(2)}€
+                  </div>
+                  <div className="text-[10px] font-mono text-white/60">{e.bets_won}W · {e.hit_rate}%</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Full table */}
+          {rest.length > 0 && (
+            <div className="glass-card overflow-hidden">
+              <table className="w-full text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-white/5 text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left">{copy.rank}</th>
+                    <th className="px-4 py-3 text-left">{copy.player}</th>
+                    <th className="px-4 py-3 text-right">{copy.points}</th>
+                    <th className="px-4 py-3 text-right">{copy.pnl}</th>
+                    <th className="px-4 py-3 text-right">{copy.won}/{copy.total}</th>
+                    <th className="px-4 py-3 text-right">{copy.hitRate}</th>
+                    <th className="px-4 py-3 text-right hidden md:table-cell">{copy.sport}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rest.map((e) => (
+                    <tr key={e.rank}
+                      className={`border-b border-white/5 hover:bg-white/3 transition-colors ${yourEntry?.rank === e.rank ? "bg-green-400/5 border-green-400/20" : ""}`}
+                    >
+                      <td className="px-4 py-3 text-gray-500">{e.rank}</td>
+                      <td className="px-4 py-3 text-white font-semibold">
+                        {e.name}
+                        {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-green-400 border border-green-400/40 px-1 py-0.5 rounded">YOU</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-green-400 font-bold">{e.points}</td>
+                      <td className={`px-4 py-3 text-right font-mono font-bold ${e.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {e.pnl >= 0 ? "+" : ""}{e.pnl.toFixed(2)}€
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-400">{e.bets_won}/{e.bets_total}</td>
+                      <td className="px-4 py-3 text-right text-cyan-400">{e.hit_rate}%</td>
+                      <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell capitalize">{e.sport}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Your rank / opt-in CTA */}
+      <div className="glass-card p-5 space-y-2">
+        <p className="eyebrow">{copy.yourRank}</p>
+        {isOptedIn && yourEntry ? (
+          <div className="flex items-center gap-4">
+            <div className="text-3xl font-black font-mono text-green-400">#{yourEntry.rank}</div>
+            <div>
+              <div className="text-sm font-bold text-white">{yourEntry.name}</div>
+              <div className="text-xs font-mono text-gray-500">
+                {yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}
+              </div>
+              <div className={`text-sm font-bold font-mono mt-0.5 ${yourEntry.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {yourEntry.pnl >= 0 ? "+" : ""}{yourEntry.pnl.toFixed(2)}€ {copy.pnl}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs font-mono text-gray-500">{copy.notOptedIn}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── History Tab ──────────────────────────────────────────────────────────────
 
 function HistoryTab({ history, stats, loading }: {
@@ -4515,7 +5019,7 @@ function HistoryTab({ history, stats, loading }: {
     <div className="space-y-6">
       {/* Stats strip */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-9 gap-3">
           {[
             { label: t.hist_matches,  value: String(stats.total_matches), color: "text-white" },
             { label: t.hist_bets,     value: String(stats.bets_placed), color: "text-cyan-300" },
@@ -4523,6 +5027,8 @@ function HistoryTab({ history, stats, loading }: {
             { label: t.hist_lost,     value: String(stats.lost), color: "text-red-400" },
             { label: t.hist_hit_rate, value: `${stats.accuracy}%`, color: "text-yellow-400" },
             { label: t.hist_roi,      value: `${Number(stats.roi) >= 0 ? "+" : ""}${stats.roi}%`, color: Number(stats.roi) >= 0 ? "text-green-400" : "text-red-400" },
+            { label: lang === "it" ? "CLV avg" : "Avg CLV", value: stats.avg_clv != null ? `${Number(stats.avg_clv) >= 0 ? "+" : ""}${stats.avg_clv}%` : "N/A", color: stats.avg_clv && Number(stats.avg_clv) >= 0 ? "text-cyan-400" : "text-gray-500" },
+            { label: lang === "it" ? "Acc. modello" : "Model Acc.", value: `${stats.model_accuracy}%`, color: "text-purple-400" },
             { label: t.hist_return,   value: `${Number(stats.total_return) >= 0 ? "+" : ""}${stats.total_return}€`, color: Number(stats.total_return) >= 0 ? "text-green-400" : "text-red-400" },
           ].map((kpi) => (
             <div key={kpi.label} className="glass-card p-3 text-center">
@@ -4680,305 +5186,6 @@ function HistoryTab({ history, stats, loading }: {
   );
 }
 
-// ─── Predictions Tab ──────────────────────────────────────────────────────────
-
-type SortMode = "kickoff_asc" | "kickoff_desc" | "edge_desc" | "importance_desc";
-type ImportanceFilter = "all" | "european" | "top5" | "value";
-
-function PredictionsTab({
-  predictions, computedAt, loading, refreshing, isStale, onRefresh,
-}: {
-  predictions: Prediction[];
-  computedAt: string | null;
-  loading: boolean;
-  refreshing: boolean;
-  isStale: boolean;
-  onRefresh: () => void;
-}) {
-  const t = useT();
-  const [leagueFilter, setLeagueFilter] = useState("ALL");
-  const [valueOnly, setValueOnly] = useState(false);
-  const [sortMode, setSortMode] = useState<SortMode>("kickoff_asc");
-  const [importanceFilter, setImportanceFilter] = useState<ImportanceFilter>("all");
-  const [matchTypeFilter, setMatchTypeFilter] = useState("ALL");
-
-  const allLeagues = [...new Set(predictions.map((p) => p.league))];
-  const allMatchTypes = [...new Set(predictions.map((p) => p.match_type ?? "STANDARD").filter(Boolean))];
-  const hasMatchTypes = allMatchTypes.some((t) => t !== "STANDARD" && t !== "ROTATION");
-
-  const filtered = predictions
-    .filter((p) => {
-      if (leagueFilter !== "ALL" && p.league !== leagueFilter) return false;
-      if (valueOnly && !isFootballBestBet(p)) return false;
-      if (importanceFilter === "european" && !["CL", "EL"].includes(p.league)) return false;
-      if (importanceFilter === "top5" && !["PL", "SA", "PD", "BL1", "FL1"].includes(p.league)) return false;
-      if (importanceFilter === "value" && !isFootballBestBet(p)) return false;
-      if (matchTypeFilter !== "ALL" && (p.match_type ?? "STANDARD") !== matchTypeFilter) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortMode) {
-        case "kickoff_asc":  return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
-        case "kickoff_desc": return new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime();
-        case "edge_desc":    return (b.edge ?? -1) - (a.edge ?? -1);
-        case "importance_desc": return matchImportance(b) - matchImportance(a);
-        default: return 0;
-      }
-    });
-
-  const valueBets = predictions.filter(isFootballBestBet);
-
-  return (
-    <div className="space-y-4">
-      {/* Header row */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-xs text-gray-500 font-mono">
-          {t.pred_model_badge} ·{" "}
-          {computedAt ? `${t.tennis_computed} ${timeAgo(computedAt)}` : "loading…"}
-          {valueBets.length > 0 && (
-            <span className="ml-2 text-green-400">· {valueBets.length} {valueBets.length > 1 ? t.pred_value_bets : t.pred_value_bet}</span>
-          )}
-        </p>
-        <button onClick={onRefresh} disabled={refreshing}
-          className="px-3 py-1.5 rounded-lg border border-cyan-400/40 text-cyan-300 text-xs font-mono hover:bg-cyan-400/10 transition disabled:opacity-40">
-          {refreshing ? t.pred_computing : t.pred_refresh}
-        </button>
-      </div>
-      {isStale && !loading && (
-        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-yellow-400/30 bg-yellow-400/5 text-xs font-mono text-yellow-400">
-          <span>{t.pred_stale_warning}</span>
-        </div>
-      )}
-
-      {/* Filter bar */}
-      <div className="glass-card p-3 space-y-3">
-        {/* Row 1: Sort */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_sort_label}</span>
-          {([
-            { key: "kickoff_asc", label: t.pred_sort_closest },
-            { key: "kickoff_desc", label: t.pred_sort_farthest },
-            { key: "edge_desc", label: t.pred_sort_best_edge },
-            { key: "importance_desc", label: t.pred_sort_importance },
-          ] as { key: SortMode; label: string }[]).map((s) => (
-            <button key={s.key} onClick={() => setSortMode(s.key)}
-              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                sortMode === s.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
-              }`}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 2: Category */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_cat_label}</span>
-          {([
-            { key: "all", label: t.pred_cat_all },
-            { key: "european", label: t.pred_cat_european },
-            { key: "top5", label: t.pred_cat_top5 },
-            { key: "value", label: t.pred_cat_ev },
-          ] as { key: ImportanceFilter; label: string }[]).map((f) => (
-            <button key={f.key} onClick={() => setImportanceFilter(f.key)}
-              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                importanceFilter === f.key ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
-              }`}>
-              {f.label}
-            </button>
-          ))}
-          <button onClick={() => setValueOnly(!valueOnly)}
-            className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-              valueOnly ? "border-green-400 text-green-400 bg-green-400/10" : "border-white/10 text-gray-400 hover:border-green-400/40"
-            }`}>
-            {t.pred_value_only}
-          </button>
-        </div>
-
-        {/* Row 3: League filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_league_label}</span>
-          {["ALL", ...allLeagues].map((l) => (
-            <button key={l} onClick={() => setLeagueFilter(l)}
-              className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                leagueFilter === l ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
-              }`}>
-              {LEAGUE_FLAGS[l] ?? ""} {l}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 4: Match type filter (only shown if Python pipeline provides types) */}
-        {hasMatchTypes && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider w-12 shrink-0">{t.pred_type_label}</span>
-            {["ALL", ...allMatchTypes].map((mt) => (
-              <button key={mt} onClick={() => setMatchTypeFilter(mt)}
-                className={`px-2.5 py-1 rounded-full border text-xs font-mono transition ${
-                  matchTypeFilter === mt
-                    ? "border-amber-400 text-amber-300 bg-amber-400/10"
-                    : "border-white/10 text-gray-400 hover:border-amber-400/40"
-                }`}>
-                {mt === "ALL" ? t.pred_all_types : (MATCH_TYPE_META[mt]?.label ?? mt)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Results count */}
-        <div className="text-[10px] text-gray-600 font-mono">
-          {t.pred_showing} {filtered.length} {t.pred_of} {predictions.length} {t.pred_predictions}
-          {valueBets.length > 0 && ` · ${valueBets.length} ${valueBets.length > 1 ? t.pred_value_bets : t.pred_value_bet}`}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="glass-card p-12 text-center text-gray-400 font-mono">
-          <div className="animate-pulse">{t.loading_predictions}</div>
-          <div className="text-xs mt-2 text-gray-600">{t.pred_loading_sub}</div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-card p-8 text-center text-gray-400 font-mono">
-          {predictions.length === 0 ? t.no_predictions : t.no_match_filters}
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((p) => <PredictionCard key={p.match_id} p={p} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── (OperatorsTab merged into PartnersTab) ────────────────────────────────────
-
-function OperatorsTab_UNUSED() {
-  const lang = useLang();
-  const [form, setForm] = useState({ company: "", site: "", category: "sportsbook" as PartnerCategory, email: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  const placeholders = [
-    { type: lang === "it" ? "Sportsbook" : "Sportsbook", name: "Partner Slot 1", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-    { type: "Casino", name: "Partner Slot 2", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-    { type: "Exchange", name: "Partner Slot 3", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-    { type: lang === "it" ? "Data Provider" : "Data Provider", name: "Partner Slot 4", desc: lang === "it" ? "Slot disponibile · Contattaci" : "Available slot · Contact us", available: true },
-  ];
-
-  const categoryLabels: Record<PartnerCategory, string> = lang === "it"
-    ? { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" }
-    : { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.company || !form.email) return;
-    setStatus("sending");
-    try {
-      const res = await fetch("/api/partner-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      setStatus(res.ok ? "sent" : "error");
-    } catch {
-      setStatus("error");
-    }
-  };
-
-  return (
-    <div className="operators-page">
-
-      {/* Hero */}
-      <div className="operators-hero">
-        <p className="eyebrow">Agentic Markets · Operators</p>
-        <h3>{lang === "it" ? "Dove piazzare le tue scommesse" : "Where to place your bets"}</h3>
-        <p>{lang === "it"
-          ? "I nostri partner verificati ti offrono le migliori condizioni per scommettere sulle prediction del modello. Presto disponibili."
-          : "Our verified partners offer the best conditions to bet on model predictions. Coming soon."
-        }</p>
-      </div>
-
-      {/* Partner grid */}
-      <div className="operators-grid">
-        {placeholders.map((p) => (
-          <div key={p.name} className="operator-card available">
-            <div className="operator-card-type">{p.type}</div>
-            <div className="operator-card-name">{p.name}</div>
-            <div className="operator-card-desc">{p.desc}</div>
-            <div className="operator-card-badge">{lang === "it" ? "In arrivo" : "Coming soon"}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Collaboration form */}
-      <div className="operators-collab">
-        <div className="operators-collab-head">
-          <p className="eyebrow">{lang === "it" ? "Sei un operatore?" : "Are you an operator?"}</p>
-          <h4>{lang === "it" ? "Diventa partner di Agentic Markets" : "Become an Agentic Markets partner"}</h4>
-          <p>{lang === "it"
-            ? "Collaboriamo con sportsbook, casino, exchange e data provider. Scrivi una richiesta di partnership e ti contatteremo entro 48 ore."
-            : "We partner with sportsbooks, casinos, exchanges and data providers. Send a partnership request and we'll reply within 48 hours."
-          }</p>
-        </div>
-
-        {status === "sent" ? (
-          <div className="operators-sent">
-            <span>✓</span>
-            <p>{lang === "it" ? "Richiesta inviata. Ti contatteremo entro 48 ore." : "Request sent. We'll contact you within 48 hours."}</p>
-          </div>
-        ) : (
-          <form className="operators-form" onSubmit={handleSubmit}>
-            <div className="operators-form-row">
-              <label>
-                <span>{lang === "it" ? "Azienda / Brand" : "Company / Brand"}</span>
-                <input type="text" required value={form.company}
-                  onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  placeholder={lang === "it" ? "Es. Bet365, PokerStars…" : "e.g. Bet365, PokerStars…"} />
-              </label>
-              <label>
-                <span>{lang === "it" ? "Sito web" : "Website"}</span>
-                <input type="url" value={form.site}
-                  onChange={(e) => setForm({ ...form, site: e.target.value })}
-                  placeholder="https://…" />
-              </label>
-            </div>
-            <div className="operators-form-row">
-              <label>
-                <span>{lang === "it" ? "Tipo operatore" : "Operator type"}</span>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as PartnerCategory })}>
-                  {PARTNER_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{categoryLabels[c]}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Email</span>
-                <input type="email" required value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="partnerships@yoursite.com" />
-              </label>
-            </div>
-            <label>
-              <span>{lang === "it" ? "Messaggio (opzionale)" : "Message (optional)"}</span>
-              <textarea rows={3} value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
-                placeholder={lang === "it" ? "Descrivi brevemente la tua proposta…" : "Briefly describe your proposal…"} />
-            </label>
-            <button type="submit" className="btn-primary" disabled={status === "sending"}>
-              {status === "sending"
-                ? (lang === "it" ? "Invio…" : "Sending…")
-                : (lang === "it" ? "Invia richiesta di partnership" : "Send partnership request")}
-            </button>
-            {status === "error" && (
-              <p style={{ color: "var(--red)", fontSize: 12, marginTop: 8 }}>
-                {lang === "it" ? "Errore nell'invio. Riprova." : "Send error. Please try again."}
-              </p>
-            )}
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Assistance Tab ───────────────────────────────────────────────────────────
 
 function AssistanceTab() {
@@ -4995,14 +5202,14 @@ function FAQTab() {
     ["Cosa sblocca il Livello 1 (Base)?", "Best Bets, spiegazioni e board sportivo per decisione manuale."],
     ["Cosa sblocca il Livello 2 (Premium)?", "Dashboard completa, execution log e agenti automatici quando il conto è collegato."],
     ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
-    ["Quanto ci vuole per l'attivazione?", "Normalmente 24h. Riceverai conferma via email."],
+    ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
   ] : [
     ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
     ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
     ["What does Level 1 (Base) unlock?", "Best Bets, explanations and sports board for manual decision-making."],
     ["What does Level 2 (Premium) unlock?", "Full dashboard, execution log and automated agents once account is linked."],
     ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
-    ["How long does activation take?", "Usually 24h. You'll receive email confirmation."],
+    ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
   ];
   return <FAQSupportSection items={faqItems} />;
 }
@@ -5023,8 +5230,103 @@ function ClientAreaTab({
   onLogout: () => void;
 }) {
   const lang = useLang();
+  const t = useT();
+  const plan = profile?.plan ?? "unpaid";
+  const accessState = profileHasPremium(profile)
+    ? "Premium"
+    : profileHasAccess(profile)
+      ? "Base"
+      : profile?.plan === "free"
+        ? "Free"
+        : profile?.plan === "pending_payment"
+          ? "Review"
+          : "Login";
+  const notifications = profile?.notifications ?? defaultNotifications();
+  const statusCopy = lang === "it" ? {
+    title: "Dashboard cliente",
+    subtitle: "Profilo, piano e stato accesso in un solo posto.",
+    currentPlan: "Piano attuale",
+    access: "Stato accesso",
+    exchange: "Conto exchange",
+    timezone: "Timezone",
+    notifications: "Notifiche attive",
+    payment: "Pagamento",
+    paymentOk: "Accesso attivo",
+    paymentFree: "Free attivo",
+    paymentReview: "TX ricevuto",
+    paymentMissing: "Nessun piano selezionato",
+    connected: "Collegato",
+    notConnected: "Da collegare",
+    openDesk: "Apri desk",
+    logout: "Esci dall'account",
+  } : {
+    title: "Client dashboard",
+    subtitle: "Profile, plan and access status in one place.",
+    currentPlan: "Current plan",
+    access: "Access status",
+    exchange: "Exchange account",
+    timezone: "Timezone",
+    notifications: "Active notifications",
+    payment: "Payment",
+    paymentOk: "Access active",
+    paymentFree: "Free active",
+    paymentReview: "TX received",
+    paymentMissing: "No plan selected",
+    connected: "Connected",
+    notConnected: "Needs setup",
+    openDesk: "Open desk",
+    logout: "Log out",
+  };
+  const paymentState = plan === "pending_payment"
+    ? statusCopy.paymentReview
+    : profileHasAccess(profile)
+      ? statusCopy.paymentOk
+      : plan === "free"
+        ? statusCopy.paymentFree
+        : statusCopy.paymentMissing;
   return (
-    <>
+    <div className="client-area-view">
+      <section className="client-area-hero">
+        <div>
+          <p className="eyebrow">Client Area</p>
+          <h3>{statusCopy.title}</h3>
+          <span>{statusCopy.subtitle}</span>
+        </div>
+        <button onClick={onOpenDesk}>{statusCopy.openDesk}</button>
+      </section>
+
+      {profile ? (
+        <section className="client-account-summary">
+          <div className="client-account-main">
+            <div className="profile-avatar">{profile.name.slice(0, 1).toUpperCase()}</div>
+            <div>
+              <p className="eyebrow">{profile.email}</p>
+              <h3>{profile.name}</h3>
+              <span>{statusCopy.currentPlan}: {plan.replace("_", " ")}</span>
+            </div>
+          </div>
+          <div className="client-account-kpis">
+            <article><span>{statusCopy.access}</span><strong>{accessState}</strong></article>
+            <article><span>{statusCopy.payment}</span><strong>{paymentState}</strong></article>
+            <article><span>{statusCopy.exchange}</span><strong>{profile.betfair?.status === "connected" ? statusCopy.connected : statusCopy.notConnected}</strong></article>
+            <article><span>{statusCopy.timezone}</span><strong>{profile.timezone ?? "Europe/Rome"}</strong></article>
+            <article><span>{statusCopy.notifications}</span><strong>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</strong></article>
+          </div>
+          {profile.txHash && profile.txHash !== "test" && (
+            <div className="client-account-note">
+              <span>{t.pending_tx_label}</span>
+              <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="settings-empty">
+          <p className="eyebrow">Client profile</p>
+          <h3>{t.settings_empty_title}</h3>
+          <button onClick={onActivateFree}>{t.settings_empty_btn}</button>
+        </section>
+      )}
+
       <PlansTab
         profile={profile}
         onOpenDesk={onOpenDesk}
@@ -5032,13 +5334,13 @@ function ClientAreaTab({
         onActivateFree={onActivateFree}
       />
       {profile && (
-        <div style={{ padding: "8px 24px 24px", borderTop: "1px solid var(--border)" }}>
-          <button className="btn-secondary" onClick={onLogout} style={{ marginTop: 12 }}>
-            {lang === "it" ? "Esci dall'account" : "Log out"}
+        <div className="client-area-footer">
+          <button className="btn-secondary" onClick={onLogout}>
+            {statusCopy.logout}
           </button>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -5056,6 +5358,7 @@ function UnifiedBetsTab({
   onRegister,
   isSignalPreviewUnlocked,
   isFreeClient,
+  isPremiumClient,
   isLoggedIn,
 }: {
   predictions: Prediction[];
@@ -5069,6 +5372,7 @@ function UnifiedBetsTab({
   onRegister: () => void;
   isSignalPreviewUnlocked: boolean;
   isFreeClient: boolean;
+  isPremiumClient?: boolean;
   isLoggedIn: boolean;
 }) {
   const lang = useLang();
@@ -5103,8 +5407,6 @@ function UnifiedBetsTab({
     );
   }
 
-  // Free plan: 1 per category. Base/Premium: unlimited.
-  const previewLimit = isFreeClient ? 1 : undefined;
   return (
     <>
       <SportsbookBoard
@@ -5112,7 +5414,8 @@ function UnifiedBetsTab({
         tennisMatches={tennisMatches}
         onSelect={onSelect}
         onBetNow={onBetNow}
-        previewLimit={previewLimit}
+        isFreeClient={isFreeClient}
+        isPremium={isPremiumClient}
       />
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
@@ -5123,15 +5426,17 @@ function UnifiedBetsTab({
 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>("bets");
-  const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "it";
+  const [uiLanguage, setUiLanguage] = useState<Lang>("it");
+  useEffect(() => {
     const stored = localStorage.getItem("agentic-lang") as Lang | null;
-    return stored && LANGUAGES.includes(stored) ? stored : "it";
-  });
+    if (stored && LANGUAGES.includes(stored)) setUiLanguage(stored);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const toggleLanguage = () => {
     const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
     setUiLanguage(next);
     localStorage.setItem("agentic-lang", next);
+    trackEvent("language_change", { language: next });
   };
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
   const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
@@ -5166,6 +5471,10 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz, setUserTz] = useState("Europe/Rome");
   useEffect(() => { setUserTz(Intl.DateTimeFormat().resolvedOptions().timeZone); }, []);
+  useEffect(() => { trackEvent("page_view"); }, []);
+  useEffect(() => {
+    if (tab === "client-area") trackEvent("plan_view");
+  }, [tab]);
 
   // IP-based language detection — only runs when no stored preference exists
   useEffect(() => {
@@ -5246,6 +5555,7 @@ export default function Dashboard() {
     if (!clientProfile || !checkoutPlan) return;
     const { txHash: _tx, requestedPlan: _rp, ...rest } = clientProfile;
     saveClientProfile({ ...rest, plan: checkoutPlan, txHash, requestedPlan: checkoutPlan });
+    trackEvent("conversion", { plan: checkoutPlan, meta: { tx: txHash } });
     setCheckoutOpen(false);
     setCheckoutPlan(null);
     setTab("bets");
@@ -5339,10 +5649,9 @@ export default function Dashboard() {
       const resp = await fetch("/api/tennis");
       if (resp.ok) {
         const data = await resp.json();
-        const isPlaceholder = data.source === "placeholder" || data.is_placeholder === true;
-        setTennisMatches(isPlaceholder ? [] : (data.matches ?? []));
-        setTennisSummary(isPlaceholder ? null : (data.summary ?? null));
-        setTennisComputedAt(isPlaceholder ? null : (data.computed_at ?? null));
+        setTennisMatches(data.matches ?? []);
+        setTennisSummary(data.summary ?? null);
+        setTennisComputedAt(data.computed_at ?? null);
       }
     } catch { /**/ } finally { setTennisLoading(false); }
   }, []);
@@ -5425,7 +5734,8 @@ export default function Dashboard() {
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isPremiumClient ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
-    { tab: "history",     label: tNav.nav_history },
+    { tab: "history",      label: tNav.nav_history },
+    { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     { tab: "partners",    label: tNav.nav_partner },
     { tab: "settings",    label: uiLanguage === "it" ? "Impostazioni" : "Settings" },
     { tab: "assistance",  label: uiLanguage === "it" ? "Assistenza" : "Assistance" },
@@ -5494,7 +5804,7 @@ export default function Dashboard() {
                 <button
                   key={item.tab}
                   className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
-                  onClick={() => setTab(item.tab)}
+                  onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
                 >
                   <span>{item.label}</span>
                   {item.value && <strong>{item.value}</strong>}
@@ -5536,6 +5846,7 @@ export default function Dashboard() {
               onRegister={() => openAuth("create")}
               isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
+              isPremiumClient={isPremiumClient}
               isLoggedIn={hasClientProfile}
             />
           )}
@@ -5559,6 +5870,12 @@ export default function Dashboard() {
           {tab === "faq" && <FAQTab />}
           {tab === "history" && (
             <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
+          )}
+          {tab === "leaderboard" && (
+            <LeaderboardTab
+              clientName={clientProfile?.name}
+              isOptedIn={clientProfile?.leaderboardOptIn ?? false}
+            />
           )}
           {tab === "partners" && <PartnersTab />}
         </section>
@@ -5584,8 +5901,19 @@ export default function Dashboard() {
       {/* ── Bottom banner ── */}
       <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
 
-      <footer className="text-center text-xs text-gray-600 pb-8 font-mono" style={{padding: "16px 24px"}}>
-        {tUI.footer_note}
+      <footer className="text-center text-xs text-gray-500 pb-8 font-mono space-y-2" style={{padding: "16px 24px"}}>
+        <div>{tUI.footer_note}</div>
+        <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] text-gray-600">
+          <span className="border border-gray-600 rounded px-1.5 py-0.5 font-bold">18+</span>
+          <span>{uiLanguage === "it" ? "Le performance passate non garantiscono risultati futuri." : "Past performance does not guarantee future results."}</span>
+          <span>|</span>
+          <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">GamCare</a>
+          <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">BeGambleAware</a>
+          <span>|</span>
+          <span>{uiLanguage === "it" ? "I link partner sono affiliati commerciali." : "Partner links are commercial affiliates."}</span>
+          <span>|</span>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{uiLanguage === "it" ? "Privacy Policy" : "Privacy Policy"}</a>
+        </div>
         <button
           type="button"
           onClick={handleFounderTrigger}
