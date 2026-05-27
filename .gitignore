@@ -1,6 +1,7 @@
 # Python
 .env
 .env.*
+!.env.fly.example
 .venv/
 venv/
 __pycache__/
