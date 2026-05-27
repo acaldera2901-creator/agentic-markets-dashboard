@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agentic Markets — Architecture v5.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#07090d; --bg-2:#0b0e14; --panel:#0e131c; --panel-2:#121826;
+    --line:#1a2233; --line-2:#243049; --text:#e6edf7; --muted:#7d8aa3; --dim:#4a5774;
+    --cyan:#00e5ff; --cyan-2:#7df9ff; --amber:#ffb547; --green:#32e0a0;
+    --magenta:#ff5cf2; --red:#ff5d6c; --violet:#9b8cff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  body {
+    min-height:100vh;
+    background: radial-gradient(1200px 700px at 80% -10%, rgba(0,229,255,.07), transparent 60%),
+                radial-gradient(900px 600px at -10% 110%, rgba(155,140,255,.06), transparent 60%),
+                var(--bg);
+    overflow-x: hidden;
+  }
+  body::before {
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size:56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%);
+  }
+  .topbar {
+    position:sticky; top:0; z-index:30; display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    padding:10px 16px; background:rgba(7,9,13,.85); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; }
+  .brand-dot { width:10px; height:10px; border-radius:50%; background:var(--cyan); box-shadow:0 0 14px var(--cyan); }
+  .brand small { color:var(--muted); font-weight:500; font-size:11px; margin-left:4px; }
+  .crumb { color:var(--dim); font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+  .crumb b { color:var(--text); font-weight:600; }
+  .grow { flex:1; }
+  .pill {
+    display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px;
+    background:var(--panel-2); border:1px solid var(--line); font-size:10px; color:var(--muted);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .pill .dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:blip 1.4s ease-in-out infinite; }
+  @keyframes blip { 50% { opacity:.35; } }
+  .legend { display:flex; flex-wrap:wrap; gap:6px; }
+  .legend button {
+    background:var(--panel-2); border:1px solid var(--line); color:var(--muted); padding:4px 8px;
+    border-radius:8px; font-size:10px; cursor:pointer; font-family:'JetBrains Mono',monospace;
+    transition:all .15s ease;
+  }
+  .legend button:hover { color:var(--text); border-color:var(--line-2); }
+  .legend button.active { background:rgba(0,229,255,.08); border-color:rgba(0,229,255,.4); color:var(--cyan); }
+  .stage {
+    position:relative; z-index:1; display:grid; grid-template-columns:1fr 380px;
+    min-height:calc(100vh - 56px);
+  }
+  .canvas-wrap {
+    position:relative; padding:16px 16px 40px; overflow-x:auto; overflow-y:visible;
+  }
+  .canvas-title {
+    display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px;
+    margin-bottom:14px;
+  }
+  .canvas-title h1 { margin:0; font-size:20px; }
+  .canvas-title h1 span { color:var(--cyan); }
+  .canvas-title p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+  .meta-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .kpi {
+    display:flex; flex-direction:column; gap:2px; padding:6px 10px; border:1px solid var(--line);
+    border-radius:10px; background:rgba(14,19,28,.6); min-width:80px;
+  }
+  .kpi label { font-size:9px; color:var(--dim); letter-spacing:.18em; text-transform:uppercase; }
+  .kpi b { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text); }
+  .kpi b.up { color:var(--green); }
+  .canvas {
+    position:relative; width:1200px; height:1640px; border:1px solid var(--line); border-radius:14px;
+    background: radial-gradient(800px 400px at 20% 10%, rgba(0,229,255,.05), transparent 50%),
+                radial-gradient(700px 400px at 90% 90%, rgba(155,140,255,.05), transparent 50%),
+                linear-gradient(180deg, rgba(11,14,20,.9), rgba(8,10,16,.95));
+    overflow:visible;
+  }
+  .canvas .grid-bg {
+    position:absolute; inset:0; pointer-events:none;
+    background-image: linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+                      linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+    background-size:40px 40px;
+  }
+  svg.edges { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
+  .edge { stroke:var(--line-2); stroke-width:1.4; fill:none; opacity:.65; }
+  .edge.hi { stroke:var(--cyan); stroke-width:2; opacity:1; filter:drop-shadow(0 0 6px rgba(0,229,255,.6)); }
+  .edge.dim { opacity:.12; }
+  .flow {
+    stroke:var(--cyan); stroke-width:2; fill:none; stroke-dasharray:2 8;
+    animation:dash 1.2s linear infinite; filter:drop-shadow(0 0 4px rgba(0,229,255,.7));
+  }
+  @keyframes dash { to { stroke-dashoffset:-40; } }
+  .lane {
+    position:absolute; left:18px; font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:.22em; color:var(--dim); text-transform:uppercase; z-index:3; pointer-events:none;
+  }
+  .lane b { color:var(--cyan); margin-right:8px; }
+  .lane-line {
+    position:absolute; left:0; right:0; height:1px;
+    background:linear-gradient(90deg,transparent,var(--line-2) 8%,var(--line-2) 92%,transparent);
+    z-index:1;
+  }
+  .node {
+    position:absolute; z-index:4; width:182px;
+    background:linear-gradient(180deg, rgba(18,24,38,.95), rgba(12,16,26,.95));
+    border:1px solid var(--line-2); border-radius:12px; padding:8px 10px 10px;
+    cursor:pointer; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .2s ease;
+    box-shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35);
+  }
+  .node:hover { transform:translateY(-2px); border-color:rgba(0,229,255,.5); box-shadow:0 0 0 1px rgba(0,229,255,.25),0 12px 28px rgba(0,229,255,.12); }
+  .node.active { border-color:var(--cyan); box-shadow:0 0 0 1px rgba(0,229,255,.6), 0 0 32px rgba(0,229,255,.25); }
+  .node.faded { opacity:.18; filter:saturate(.4); }
+  .node .head { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .node .ico {
+    width:22px; height:22px; border-radius:6px; display:grid; place-items:center;
+    background:rgba(0,229,255,.08); color:var(--cyan); font-size:12px;
+    border:1px solid rgba(0,229,255,.2);
+  }
+  .node .tag { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.18em; color:var(--dim); text-transform:uppercase; }
+  .node h4 { margin:0; font-size:12px; font-weight:600; letter-spacing:-.01em; line-height:1.25; }
+  .node p { margin:4px 0 0; font-size:9px; color:var(--muted); line-height:1.45; font-family:'JetBrains Mono',monospace; }
+  .node .footer {
+    margin-top:6px; display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--dim);
+    border-top:1px dashed var(--line); padding-top:5px;
+  }
+  .node .footer .ok { color:var(--green); }
+  .node .footer .pending { color:var(--amber); }
+  .node .pulse { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:blip 1.6s ease-in-out infinite; display:inline-block; vertical-align:-1px; margin-right:4px; }
+  .layer-source .ico { color:var(--cyan); background:rgba(0,229,255,.09); border-color:rgba(0,229,255,.25); }
+  .layer-collect .ico { color:var(--cyan-2); background:rgba(125,249,255,.08); border-color:rgba(125,249,255,.25); }
+  .layer-model .ico { color:var(--amber); background:rgba(255,181,71,.09); border-color:rgba(255,181,71,.25); }
+  .layer-ensemble .ico { color:var(--magenta); background:rgba(255,92,242,.09); border-color:rgba(255,92,242,.25); }
+  .layer-value .ico { color:var(--green); background:rgba(50,224,160,.09); border-color:rgba(50,224,160,.3); }
+  .layer-output .ico { color:var(--cyan); background:rgba(0,229,255,.09); border-color:rgba(0,229,255,.25); }
+  .layer-parallel .ico { color:var(--violet); background:rgba(155,140,255,.1); border-color:rgba(155,140,255,.28); }
+  .league-cluster {
+    position:absolute; z-index:3; width:390px; display:grid; grid-template-columns:repeat(2,1fr); gap:6px;
+  }
+  .lchip {
+    background:rgba(14,19,28,.85); border:1px solid var(--line); border-radius:10px; padding:6px 8px;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .lchip:hover { border-color:rgba(50,224,160,.45); background:rgba(50,224,160,.05); }
+  .lchip .ltitle { font-size:10px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:6px; }
+  .lchip .lcount { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--green); }
+  .lchip p { margin:3px 0 0; font-size:9px; color:var(--muted); font-family:'JetBrains Mono',monospace; line-height:1.4; }
+  .lchip.active { border-color:var(--green); box-shadow:0 0 0 1px rgba(50,224,160,.4); }
+  .lchip.today { border-color:rgba(0,229,255,.5); background:rgba(0,229,255,.04); }
+  .lchip.today .ltitle { color:var(--cyan); }
+  .lchip.today .lcount { color:var(--cyan); }
+  .league-cluster-label {
+    position:absolute; font-family:'JetBrains Mono',monospace; font-size:9px;
+    letter-spacing:.2em; color:var(--dim); text-transform:uppercase; z-index:5;
+  }
+  .panel {
+    position:sticky; top:56px; align-self:start; height:calc(100vh - 56px);
+    border-left:1px solid var(--line); background:linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+    display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .panel-head { padding:16px 18px 12px; border-bottom:1px solid var(--line); }
+  .panel-head .eyebrow { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.22em; color:var(--cyan); text-transform:uppercase; }
+  .panel-head h2 { margin:6px 0 4px; font-size:18px; letter-spacing:-.01em; }
+  .panel-head .sub { color:var(--muted); font-size:11px; font-family:'JetBrains Mono',monospace; }
+  .panel-body { padding:14px 18px; overflow:auto; flex:1; }
+  .panel-body h5 { margin:18px 0 8px; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--dim); font-family:'JetBrains Mono',monospace; }
+  .panel-body h5:first-child { margin-top:0; }
+  .kv { display:grid; grid-template-columns:1fr auto; gap:6px 12px; font-family:'JetBrains Mono',monospace; font-size:11px; }
+  .kv span { color:var(--muted); }
+  .kv b { color:var(--text); font-weight:600; }
+  .codeblock {
+    background:#05080d; border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--cyan-2);
+    line-height:1.5; white-space:pre-wrap; word-break:break-word;
+  }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip {
+    font-family:'JetBrains Mono',monospace; font-size:9px; padding:3px 6px; border-radius:6px;
+    background:rgba(0,229,255,.06); color:var(--cyan); border:1px solid rgba(0,229,255,.2);
+  }
+  .chip.amber { background:rgba(255,181,71,.07); color:var(--amber); border-color:rgba(255,181,71,.25); }
+  .chip.green { background:rgba(50,224,160,.07); color:var(--green); border-color:rgba(50,224,160,.25); }
+  .chip.violet { background:rgba(155,140,255,.07); color:var(--violet); border-color:rgba(155,140,255,.25); }
+  .chip.magenta { background:rgba(255,92,242,.07); color:var(--magenta); border-color:rgba(255,92,242,.25); }
+  .chip.red { background:rgba(255,93,108,.07); color:var(--red); border-color:rgba(255,93,108,.25); }
+  .neighbors { display:flex; flex-direction:column; gap:6px; }
+  .neighbors button {
+    text-align:left; background:rgba(14,19,28,.7); border:1px solid var(--line); color:var(--text);
+    padding:6px 8px; border-radius:8px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:10px;
+    display:flex; justify-content:space-between; align-items:center; transition:all .15s ease;
+  }
+  .neighbors button:hover { border-color:rgba(0,229,255,.4); background:rgba(0,229,255,.05); }
+  .neighbors button .arrow { color:var(--dim); }
+  .neighbors button.up .arrow { color:var(--cyan); }
+  .neighbors button.down .arrow { color:var(--violet); }
+  .ev-row {
+    display:grid; grid-template-columns:1fr auto; gap:8px; padding:6px 8px; border:1px solid var(--line);
+    border-radius:8px; margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:10px;
+  }
+  .ev-row .match { color:var(--text); }
+  .ev-row .edge { color:var(--green); font-weight:600; }
+  .ev-row .meta { color:var(--dim); font-size:9px; }
+  .footer-bar { padding:8px 16px; border-top:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim); display:flex; justify-content:space-between; }
+  @media (max-width:860px) {
+    .stage { display:block; }
+    .canvas-wrap { overflow-x:auto; padding:12px; }
+    .panel { position:relative; top:0; height:auto; border-left:none; border-top:1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="brand-dot"></span>Agentic&nbsp;Markets <small>/ Football AI</small></div>
+  <div class="crumb">SYSTEM &nbsp;›&nbsp; <b>Architecture v4.0</b> &nbsp;›&nbsp; 2026-05-06</div>
+  <div class="grow"></div>
+  <span class="pill"><span class="dot"></span> 8 agenti online</span>
+  <span class="pill mono">10 bet oggi · paper</span>
+  <div class="legend" id="legend">
+    <button data-layer="all" class="active">ALL</button>
+    <button data-layer="source">SOURCES</button>
+    <button data-layer="collect">COLLECT</button>
+    <button data-layer="model">MODELS</button>
+    <button data-layer="ensemble">ENSEMBLE</button>
+    <button data-layer="value">VALUE</button>
+    <button data-layer="parallel">PARALLEL</button>
+    <button data-layer="output">OUTPUT</button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="canvas-wrap">
+    <div class="canvas-title">
+      <div>
+        <h1>Pipeline <span>Market Data → Value Bet</span></h1>
+        <p>Flusso dati end-to-end · Betfair Exchange primary · Dixon-Coles + Pi Rating + xG · Kelly sizing</p>
+      </div>
+      <div class="meta-row">
+        <div class="kpi"><label>Agenti</label><b class="mono">8</b></div>
+        <div class="kpi"><label>Leghe</label><b class="mono">6</b></div>
+        <div class="kpi"><label>Modelli</label><b class="mono">3</b></div>
+        <div class="kpi"><label>Mercati</label><b class="mono up">53</b></div>
+        <div class="kpi"><label>Refresh</label><b class="mono up">10m</b></div>
+      </div>
+    </div>
+
+    <div class="canvas" id="canvas">
+      <div class="grid-bg"></div>
+      <svg class="edges" id="edges" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <div class="panel-head">
+      <div class="eyebrow" id="p-eyebrow">SYSTEM OVERVIEW</div>
+      <h2 id="p-title">Agentic Markets v4.0</h2>
+      <div class="sub" id="p-sub">8 agenti · 6 leghe · 53 mercati Betfair · paper trading</div>
+    </div>
+    <div class="panel-body" id="p-body"></div>
+    <div class="footer-bar"><span>build #4.0.0 · 2026-05-06</span><span id="p-time">—</span></div>
+  </aside>
+</div>
+
+<script>
+const NODES = [
+  // ── FONTI DATI ──
+  {id:"S1",layer:"source",x:15,y:70,ico:"🔷",tag:"EXCHANGE",title:"Betfair Exchange",
+   desc:"Quote live best-back (PRIMARY)\nbatch listMarketCatalogue\n+ listMarketBook · 53 mercati",
+   schema:{endpoint:"api.betfair.com/exchange/betting/rest/v1.0",auth:"session-token · identitysso.betfair.it",refresh:"ogni ciclo",markets:"53 live"},
+   metrics:{leghe:"6",mercati:"53",latency:"~200ms",err:"0.0%"},status:"ok"},
+
+  {id:"S2",layer:"source",x:215,y:70,ico:"⚽",tag:"REST",title:"football-data.org",
+   desc:"Fixture storici e in programma.\nPiano free: SA · PL · PD · BL1\nFonte primaria per fixture",
+   schema:{endpoint:"api.football-data.org/v4",auth:"X-Auth-Token",cache:"6h",plan:"free tier"},
+   metrics:{fixture:"480K",leghe:"6",lag:"6h",err:"0.0%"},status:"ok"},
+
+  {id:"S3",layer:"source",x:415,y:70,ico:"📡",tag:"REST",title:"API-Football",
+   desc:"Fixture fallback + infortuni\n+ lineup pre-partita.\n100 req/day (free tier)",
+   schema:{endpoint:"api-football-v1.p.rapidapi.com",rps:"100/d",auth:"x-rapidapi-key",cache:"30m"},
+   metrics:{injuries:"820/d",lineups:"800/d",err:"0.2%"},status:"ok"},
+
+  {id:"S4",layer:"source",x:615,y:70,ico:"📊",tag:"SCRAPE",title:"Understat",
+   desc:"xG · xGA · npxG · xGChain\nxGBuildup per ogni match\nSA · PL · BL1 · CL",
+   schema:{endpoint:"understat.com",method:"scrape",cache:"24h",auth:"none"},
+   metrics:{records:"1.2M",lag:"4h",err:"0%"},status:"ok"},
+
+  {id:"S5",layer:"source",x:815,y:70,ico:"📈",tag:"REST",title:"The Odds API",
+   desc:"Quote sharp · FALLBACK.\nUsata solo se Betfair\nha 0 mercati per la lega",
+   schema:{endpoint:"the-odds-api.com/v4",auth:"api-key",quota:"500/mo",trigger:"betfair=empty"},
+   metrics:{matches:"800/d",quota:"esaurita",err:"0.1%"},status:"ok"},
+
+  {id:"S6",layer:"source",x:1015,y:70,ico:"🌤️",tag:"REST",title:"OpenWeatherMap",
+   desc:"Meteo stadio: pioggia, vento,\ntemp, umidità. Feature\naggiuntiva nel modello.",
+   schema:{endpoint:"api.openweathermap.org/data/2.5",auth:"api-key",cache:"1h"},
+   metrics:{cities:"412",lag:"1h",err:"0%"},status:"ok"},
+
+  // ── DATA COLLECTOR ──
+  {id:"DC",layer:"collect",x:509,y:240,ico:"🔄",tag:"AGENT",title:"DataCollectorAgent",
+   desc:"Ciclo 10m (2m pre-kickoff).\nBetfair → fallback Odds API.\nFuzzy match cross-lingua:\nNFKD + SequenceMatcher ≥ 0.65\n→ Redis market:data",
+   schema:{schedule:"10min · 2min pre-KO",fuzzy_algo:"NFKD + SequenceMatcher",threshold:"0.65",retries:3,redis_out:"market:data"},
+   metrics:{events:"+120/ciclo",leghe:"6",lag:"<30s",err:"0.1%"},status:"ok"},
+
+  // ── MODEL COMPONENTS ──
+  {id:"M1",layer:"model",x:50,y:430,ico:"📐",tag:"POISSON",title:"Dixon-Coles",
+   desc:"Poisson bivariato con corr. rho.\nFit per lega: SA 381 match\nCL 190 match. Refit settimanale.",
+   schema:{family:"bivariate-poisson",rho:"-0.13",refit:"weekly",train_SA:"381 match",train_CL:"190 match"},
+   metrics:{logloss:"1.011",brier:"0.204",leghe:"6"},status:"ok"},
+
+  {id:"M2",layer:"model",x:509,y:430,ico:"🔢",tag:"RATINGS",title:"Pi Ratings",
+   desc:"Rating casa/trasferta per forma\nrecente. Decadimento 0.995/match.\nPeso per margine di vittoria.",
+   schema:{algo:"Pi+Berrar",K_factor:"32",decay:"0.995/match",split:"home / away"},
+   metrics:{teams:"512",refresh:"post-match",err:"0%"},status:"ok"},
+
+  {id:"M3",layer:"model",x:940,y:430,ico:"⚡",tag:"XG",title:"xG Enrichment",
+   desc:"Integra xG Understat nel prior\nDixon-Coles. Rolling last5/10/20.\nAjusta p per qualità reale.",
+   schema:{source:"understat",windows:"last5,last10,last20",lag:"4h",impact:"±0.04 p"},
+   metrics:{features:"12 xG vars",impact:"±0.04 p",err:"0%"},status:"ok"},
+
+  // ── MODEL AGENT (ensemble) ──
+  {id:"MA",layer:"ensemble",x:509,y:590,ico:"🧠",tag:"AGENT",title:"ModelAgent",
+   desc:"Combina DC + Pi Rating + xG.\nConformal Prediction CI\n(α=0.10, 90% coverage).\n→ Redis model:probabilities",
+   schema:{CI:"conformal α=0.10",output:"p_home · p_draw · p_away\nci_low · ci_high",refit:"weekly",redis_out:"model:probabilities"},
+   metrics:{latency:"~1.2s",matches:"+120/ciclo",err:"0%"},status:"ok"},
+
+  // ── PARALLEL: MONITOR ──
+  {id:"P1",layer:"parallel",x:940,y:590,ico:"💓",tag:"MONITOR",title:"MonitorAgent",
+   desc:"Heartbeat ogni 30s.\nDrift PSI ogni 24h.\nMonte Carlo bankroll domenica.",
+   schema:{heartbeat:"30s → /api/health Vercel",psi_check:"daily",monte_carlo:"domenica notte",redis_watch:"tutti gli stream"},
+   metrics:{uptime:"99.8%",checks:"2880/d",err:"0%"},status:"ok"},
+
+  // ── ANALYST ──
+  {id:"AA",layer:"value",x:509,y:750,ico:"📈",tag:"AGENT",title:"AnalystAgent",
+   desc:"edge = p_modello − 1/odds_betfair\nSoglia adattiva per tipo mercato:\n• Betfair/sharp: edge ≥ 2%\n• Soft: edge ≥ 5%\n→ Redis analyst:opportunities",
+   schema:{edge_sharp:"≥ 2% (Betfair · Pinnacle)",edge_soft:"≥ 5% (altri)",redis_in:"model:probabilities",redis_out:"analyst:opportunities"},
+   metrics:{flagged:"~38/d",skip:"~82/d",err:"0%"},status:"ok"},
+
+  // ── PARALLEL: RESEARCH ──
+  {id:"P2",layer:"parallel",x:940,y:750,ico:"🔬",tag:"RESEARCH",title:"ResearchAgent",
+   desc:"Ollama llama3.2 → AI summaries\npre-match: notizie, infortuni,\ncontesto tattico → Neon DB.",
+   schema:{model:"llama3.2:3b",trigger:"pre-match 24h",output:"match_research → Neon"},
+   metrics:{queries:"~50/d",confidence:"80%",err:"0%"},status:"ok"},
+
+  // ── STRATEGIST ──
+  {id:"ST",layer:"value",x:509,y:910,ico:"🎯",tag:"AGENT",title:"StrategistAgent",
+   desc:"Conviction score 0–10\n(Claude API + rule-based fallback).\nFiltra qualità edge + contesto.\nSkip se conviction < 6.",
+   schema:{model:"claude-3-haiku",fallback:"rule-based",threshold:"6 / 10",redis_in:"analyst:opportunities",redis_out:"strategy:approved"},
+   metrics:{approved:"~70%",skip:"~30%",latency:"~800ms"},status:"ok"},
+
+  // ── RISK MANAGER ──
+  {id:"RM",layer:"value",x:509,y:1070,ico:"🛡️",tag:"AGENT",title:"RiskManagerAgent",
+   desc:"Kelly frazionato (f=0.25):\nstake = min(kelly×0.25×BK, 3%×BK)\nGate: completeness < 75% → DLQ\nBlocco mensile: drawdown > 15%",
+   schema:{kelly_fraction:"0.25",max_single:"3% bankroll (€15)",max_exposure:"10% bankroll (€50)",drawdown_block:"15%/mese",redis_in:"strategy:approved",redis_out:"risk:orders"},
+   metrics:{stake_range:"3–15 €",exposure_max:"€ 50",bets_oggi:"10",block_rate:"~5%"},status:"ok"},
+
+  // ── TRADER ──
+  {id:"TR",layer:"output",x:509,y:1230,ico:"💸",tag:"AGENT",title:"TraderAgent",
+   desc:"PAPER: salva bet su Neon DB.\nLIVE: place_bet() Betfair REST.\nTelegram alert ogni bet\ncon edge > 3%.",
+   schema:{mode:"PAPER_TRADING=true",live_fn:"place_bet() → Betfair REST",alert:"edge > 3%",redis_in:"risk:orders"},
+   metrics:{bets_oggi:"10",mode:"● paper",p_l:"tracking",err:"0%"},status:"ok"},
+
+  // ── OUTPUTS ──
+  {id:"O1",layer:"output",x:50,y:1420,ico:"🗄️",tag:"NEON DB",title:"PostgreSQL (Neon)",
+   desc:"match_predictions · bets\nagent_heartbeats · match_research\ndead_letter_preds · monte_carlo",
+   schema:{host:"neon.tech · serverless cloud",tables:"7",size:"12 GB"},
+   metrics:{p_l:"tracked",heartbeats:"ogni 30s",err:"0%"},status:"ok"},
+
+  {id:"O2",layer:"output",x:509,y:1420,ico:"🖥️",tag:"VERCEL",title:"Dashboard (Vercel)",
+   desc:"Pipeline live · Previsioni\nP&L paper tracking.\nagentic-markets-roan.vercel.app",
+   schema:{host:"vercel.com",stack:"Next.js 14",url:"agentic-markets-roan.vercel.app",uptime:"always-on"},
+   metrics:{uptime:"99.9%",always_on:"sì",err:"0%"},status:"ok"},
+
+  {id:"O3",layer:"output",x:940,y:1420,ico:"📱",tag:"TELEGRAM",title:"Telegram Alert",
+   desc:"Alert per ogni bet: match,\nselezione, edge %, stake €,\nodds Betfair live.",
+   schema:{trigger:"edge > 3%",format:"markdown",token:"configurato"},
+   metrics:{bets_oggi:"10",trigger:"> 3% edge",err:"0%"},status:"ok"},
+];
+
+const LEAGUES = [
+  {id:"LSA", title:"Serie A",        count:10, desc:"SA · Torino v Sassuolo 08/05", today:false},
+  {id:"LCL", title:"Champions",      count:1,  desc:"Bayern v PSG · OGGI 21:00",    today:true},
+  {id:"LPD", title:"La Liga",        count:13, desc:"PD · 13 mercati live",          today:false},
+  {id:"LBL", title:"Bundesliga",     count:9,  desc:"BL1 · 9 mercati live",          today:false},
+  {id:"LEL", title:"Europa League",  count:10, desc:"EL · 10 mercati live",          today:false},
+  {id:"LECL",title:"Conference L.", count:10, desc:"ECL · 10 mercati live",          today:false},
+];
+
+const EDGES = [
+  ["S1","DC"],["S2","DC"],["S3","DC"],["S4","DC"],["S5","DC"],["S6","DC"],
+  ["DC","M1"],["DC","M2"],["DC","M3"],
+  ["M1","MA"],["M2","MA"],["M3","MA"],
+  ["MA","AA"],
+  ["AA","ST"],
+  ["ST","RM"],
+  ["RM","TR"],
+  ["TR","O1"],["TR","O2"],["TR","O3"],
+  ["P1","O2"],
+  ["P2","O1"],
+];
+
+const LANES = [
+  {y:38,  label:"01 — Data Sources (6 fonti)"},
+  {y:208, label:"02 — Data Collection · fuzzy matching cross-lingua"},
+  {y:398, label:"03 — Modelli (Dixon-Coles · Pi Rating · xG Enrichment)"},
+  {y:558, label:"04 — ModelAgent (ensemble + Conformal CI) ·· Parallel: Monitor / Research"},
+  {y:718, label:"05 — Analyst (edge detection)"},
+  {y:878, label:"06 — Strategist (conviction AI · Claude)"},
+  {y:1038,label:"07 — Risk Management (Kelly sizing · exposure cap)"},
+  {y:1198,label:"08 — Execution (paper / live · Betfair REST)"},
+  {y:1388,label:"09 — Output & Delivery"},
+];
+
+const HOT = [
+  ["S1","DC"],["DC","M2"],["M2","MA"],["MA","AA"],["AA","ST"],["ST","RM"],["RM","TR"],["TR","O2"]
+];
+
+const canvasDiv = document.getElementById('canvas');
+const svg = document.getElementById('edges');
+let activeId = null;
+
+function makeLanes() {
+  LANES.forEach(l => {
+    const lab = document.createElement('div');
+    lab.className='lane'; lab.style.top=(l.y-2)+'px';
+    lab.innerHTML=`<b>›</b>${l.label}`;
+    canvasDiv.appendChild(lab);
+    const line = document.createElement('div');
+    line.className='lane-line'; line.style.top=(l.y+12)+'px';
+    canvasDiv.appendChild(line);
+  });
+}
+
+function nodeEl(n) {
+  const el = document.createElement('div');
+  el.className = `node layer-${n.layer}`;
+  el.dataset.id = n.id; el.dataset.layer = n.layer;
+  el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
+  el.innerHTML = `<div class="head"><div class="ico">${n.ico||'•'}</div><div class="tag mono">${n.tag||''}</div></div><h4>${n.title}</h4><p>${(n.desc||'').replace(/\n/g,'<br>')}</p><div class="footer"><span>${n.id}</span><span class="${n.status==='ok'?'ok':'pending'}"><span class="pulse"></span>${n.status==='ok'?'live':'pending'}</span></div>`;
+  el.addEventListener('click',()=>selectNode(n.id));
+  el.addEventListener('mouseenter',()=>highlightNeighbors(n.id,true));
+  el.addEventListener('mouseleave',()=>{ if(!activeId) highlightNeighbors(null,false); });
+  return el;
+}
+
+function makeNodes() {
+  NODES.forEach(n => canvasDiv.appendChild(nodeEl(n)));
+
+  // League cluster
+  const label = document.createElement('div');
+  label.className = 'league-cluster-label';
+  label.style.left = '42px'; label.style.top = '838px';
+  label.textContent = '› Mercati Betfair Exchange attivi';
+  canvasDiv.appendChild(label);
+
+  const cluster = document.createElement('div');
+  cluster.className = 'league-cluster';
+  cluster.style.left = '42px';
+  cluster.style.top = '856px';
+  LEAGUES.forEach(l => {
+    const c = document.createElement('div');
+    c.className = 'lchip' + (l.today ? ' today' : '');
+    c.dataset.lid = l.id;
+    c.innerHTML = `<div class="ltitle">${l.title}<span class="lcount">×${l.count}</span></div><p>${l.desc}</p>`;
+    c.addEventListener('click', () => selectLeague(l.id));
+    cluster.appendChild(c);
+  });
+  canvasDiv.appendChild(cluster);
+}
+
+function getNodeCenter(id) {
+  const el = canvasDiv.querySelector(`.node[data-id="${id}"]`);
+  if (!el) return null;
+  const r = el.getBoundingClientRect(), c = canvasDiv.getBoundingClientRect();
+  return {
+    x: r.left - c.left + r.width / 2,
+    y: r.top - c.top + r.height / 2,
+    top: r.top - c.top,
+    bottom: r.top - c.top + r.height,
+    h: r.height, w: r.width
+  };
+}
+
+function curvePath(a, b) {
+  const x1=a.x, y1=a.bottom, x2=b.x, y2=b.top;
+  const dy = y2 - y1, cx = Math.abs(dy) * 0.5;
+  return `M ${x1} ${y1} C ${x1} ${y1+cx}, ${x2} ${y2-cx}, ${x2} ${y2}`;
+}
+
+function makeEdges() {
+  svg.innerHTML = '';
+  EDGES.forEach(([a,b]) => {
+    const A = getNodeCenter(a), B = getNodeCenter(b);
+    if (!A || !B) return;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', curvePath(A,B));
+    p.setAttribute('class','edge');
+    p.dataset.from = a; p.dataset.to = b;
+    svg.appendChild(p);
+  });
+
+  HOT.forEach(([a,b]) => {
+    const A = getNodeCenter(a), B = getNodeCenter(b);
+    if (!A || !B) return;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', curvePath(A,B));
+    p.setAttribute('class','flow');
+    svg.appendChild(p);
+  });
+}
+
+function highlightNeighbors(id, on) {
+  if (!id && !activeId) {
+    document.querySelectorAll('.edge').forEach(e => e.classList.remove('hi','dim'));
+    document.querySelectorAll('.node').forEach(n => n.classList.remove('faded'));
+    return;
+  }
+  if (!id) return;
+  const ups = new Set(), downs = new Set();
+  EDGES.forEach(([a,b]) => { if (b===id) ups.add(a); if (a===id) downs.add(b); });
+  document.querySelectorAll('.edge').forEach(e => {
+    const isMine = (e.dataset.from===id || e.dataset.to===id);
+    e.classList.toggle('hi', isMine);
+    e.classList.toggle('dim', !isMine);
+  });
+  document.querySelectorAll('.node').forEach(n => {
+    const keep = (n.dataset.id===id || ups.has(n.dataset.id) || downs.has(n.dataset.id));
+    n.classList.toggle('faded', !keep);
+  });
+}
+
+function samplePayload(n) {
+  switch(n.id) {
+    case 'S1': return `{ "league": "CL",
+  "marketId": "1.234567890",
+  "runners": [
+    { "name": "Bayern Munich", "best_back": 1.65 },
+    { "name": "The Draw",      "best_back": 5.60 },
+    { "name": "Paris St-G",   "best_back": 4.50 }
+  ],
+  "bookmaker": "betfair_exchange",
+  "margin": 0.042
+}`;
+    case 'DC': return `{ "match_id": "1001",
+  "league": "CL",
+  "home_team": "FC Bayern München",
+  "away_team": "Paris Saint-Germain FC",
+  "kickoff": "2026-05-06T19:00:00Z",
+  "odds_home": 1.65,
+  "odds_draw": 5.60,
+  "odds_away": 4.50,
+  "source": "betfair_exchange",
+  "fuzzy": { "sim_home": 0.89, "sim_away": 0.69 },
+  "collected_at": "2026-05-06T09:00:00Z"
+}`;
+    case 'M2': return `{ "home_team": "Bayern Munich",
+  "pi_home": 1340,
+  "pi_away": 1290,
+  "pi_diff": 50,
+  "home_advantage": 0.12,
+  "p_home": 0.52,
+  "p_draw": 0.24,
+  "p_away": 0.24
+}`;
+    case 'MA': return `{ "match_id": "1001",
+  "p_home": 0.50,
+  "p_draw": 0.22,
+  "p_away": 0.28,
+  "ci_low": 0.0,
+  "ci_high": 1.0,
+  "selection": "away",
+  "confidence": 0.72,
+  "edge": 0.040
+}`;
+    case 'AA': return `{ "edge": 0.040,
+  "selection": "away",
+  "p_model": 0.28,
+  "odds": 4.50,
+  "p_implied": 0.222,
+  "tier": "sharp",
+  "edge_threshold": 0.02,
+  "pass": true
+}`;
+    case 'RM': return `{ "stake": 3.80,
+  "kelly_full": 0.084,
+  "kelly_frac": 0.25,
+  "bankroll": 500,
+  "exposure_delta": 0.0076,
+  "data_completeness": 1.0,
+  "approved": true
+}`;
+    case 'TR': return `{ "match": "Bayern Munich v PSG",
+  "selection": "away",
+  "odds": 4.50,
+  "stake": 3.80,
+  "edge": 0.040,
+  "mode": "PAPER",
+  "saved_db": true,
+  "telegram_sent": false,
+  "sized_at": "2026-05-06T10:48:00Z"
+}`;
+    default: return JSON.stringify(n.schema || {}, null, 2);
+  }
+}
+
+function renderPanel(id) {
+  const n = NODES.find(n => n.id === id);
+  if (!n) { renderOverview(); return; }
+  document.getElementById('p-eyebrow').textContent = `LAYER · ${n.layer.toUpperCase()}`;
+  document.getElementById('p-title').textContent = n.title;
+  document.getElementById('p-sub').textContent = `${n.id} · ${n.tag||''}`.toLowerCase();
+  const body = document.getElementById('p-body');
+  const ups = EDGES.filter(([a,b])=>b===id).map(([a])=>NODES.find(x=>x.id===a)).filter(Boolean);
+  const downs = EDGES.filter(([a,b])=>a===id).map(([,b])=>NODES.find(x=>x.id===b)).filter(Boolean);
+  const schema = Object.entries(n.schema||{}).map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('');
+  const metrics = Object.entries(n.metrics||{}).map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('');
+  body.innerHTML = `
+    <h5>Description</h5>
+    <p style="margin:0;font-size:13px;color:var(--text);line-height:1.55">${(n.desc||'').replace(/\n/g,' ')}</p>
+    <h5>Schema / params</h5>
+    <div class="kv">${schema||'<span>—</span><b>—</b>'}</div>
+    <h5>Live metrics</h5>
+    <div class="kv">${metrics||'<span>—</span><b>—</b>'}</div>
+    <h5>Sample payload</h5>
+    <div class="codeblock">${samplePayload(n)}</div>
+    <h5>Upstream (${ups.length})</h5>
+    <div class="neighbors">${ups.length
+      ? ups.map(u=>`<button class="up" onclick="selectNode('${u.id}')"><span>${u.id} · ${u.title}</span><span class="arrow">↑</span></button>`).join('')
+      : '<div class="kv"><span>none</span><b>root</b></div>'}</div>
+    <h5>Downstream (${downs.length})</h5>
+    <div class="neighbors">${downs.length
+      ? downs.map(d=>`<button class="down" onclick="selectNode('${d.id}')"><span>${d.id} · ${d.title}</span><span class="arrow">↓</span></button>`).join('')
+      : '<div class="kv"><span>none</span><b>leaf</b></div>'}</div>
+  `;
+}
+
+function selectLeague(lid) {
+  const l = LEAGUES.find(x => x.id === lid);
+  if (!l) return;
+  document.querySelectorAll('.lchip').forEach(c => c.classList.toggle('active', c.dataset.lid===lid));
+  document.getElementById('p-eyebrow').textContent = 'BETFAIR EXCHANGE';
+  document.getElementById('p-title').textContent = l.title;
+  document.getElementById('p-sub').textContent = `${l.count} mercati MATCH_ODDS attivi`;
+  const isCL = l.id === 'LCL';
+  const isSA = l.id === 'LSA';
+  document.getElementById('p-body').innerHTML = `
+    <h5>Mercati ${l.title}</h5>
+    <div class="kv">
+      <span>mercati live</span><b>${l.count}</b>
+      <span>tipo</span><b>MATCH_ODDS</b>
+      <span>fonte</span><b>Betfair Exchange</b>
+      <span>status</span><b style="color:var(--green)">● live</b>
+    </div>
+    ${isCL ? `
+    <h5>Match attivo · OGGI</h5>
+    <div class="ev-row">
+      <div>
+        <div class="match">Bayern Munich v Paris Saint-Germain</div>
+        <div class="meta">CL Semifinale · 06/05/2026 · 21:00 CET · Allianz Arena</div>
+      </div>
+      <div>
+        <div class="edge">+4.0% PSG</div>
+        <div class="meta">kelly ~3.80€</div>
+      </div>
+    </div>` : ''}
+    ${isSA ? `
+    <h5>Prossimo match</h5>
+    <div class="ev-row">
+      <div>
+        <div class="match">Torino v Sassuolo</div>
+        <div class="meta">Serie A · 08/05/2026 · 18:45 CET</div>
+      </div>
+      <div>
+        <div class="edge" style="color:var(--amber)">08/05</div>
+        <div class="meta">analysis pending</div>
+      </div>
+    </div>` : ''}
+    <h5>Quote live (esempio)</h5>
+    <div class="codeblock">${isCL
+      ? 'Bayern Munich  1.65\nThe Draw       5.60\nParis St-G     4.50\n\nmargin: 4.2%  (sharp)'
+      : isSA
+        ? 'Torino         2.54\nDraw           3.40\nSassuolo       3.10'
+        : `${l.count} mercati attivi\nfonte: Betfair Exchange\ntipo: MATCH_ODDS`}
+    </div>
+  `;
+}
+
+function selectNode(id) {
+  activeId = id;
+  document.querySelectorAll('.node').forEach(n => n.classList.toggle('active', n.dataset.id===id));
+  document.querySelectorAll('.lchip').forEach(c => c.classList.remove('active'));
+  renderPanel(id);
+  highlightNeighbors(id, true);
+}
+
+function renderOverview() {
+  document.getElementById('p-eyebrow').textContent = 'SYSTEM OVERVIEW';
+  document.getElementById('p-title').textContent = 'Agentic Markets v5.0';
+  document.getElementById('p-sub').textContent = '9 agenti · 6 leghe · 53 mercati Betfair · League & Match Context Module · paper trading';
+  document.getElementById('p-body').innerHTML = `
+    <h5>Hot path (Betfair → value bet)</h5>
+    <div class="codeblock">Betfair Exchange (PRIMARY)
+→ DataCollectorAgent (fuzzy match cross-lingua)
+→ Redis market:data
+→ ModelAgent (Dixon-Coles + Pi Rating + xG)
+   └─ ContextService v5.0
+      ├─ LeagueStrengthAnalyzer (tier 1-5)
+      ├─ LeagueOddsProfiler (anomaly detect)
+      ├─ LeaguePredictabilityTracker (CLV/Brier)
+      ├─ MatchTypeClassifier (derby/title/relegation…)
+      └─ CompetitionTypeFactors (stake penalty)
+→ AnalystAgent (edge = p - 1/odds)
+→ StrategistAgent (conviction ≥ 6)
+→ RiskManagerAgent (Kelly f=0.25 + context penalty)
+→ TraderAgent (paper → Neon DB)</div>
+    <h5>Novità v5.0 — Context Module</h5>
+    <div class="kv">
+      <span>LeagueStrengthAnalyzer</span><b style="color:var(--green)">tier 1–5</b>
+      <span>LeagueOddsProfiler</span><b style="color:var(--green)">anomaly σ=1.5</b>
+      <span>LeaguePredictabilityTracker</span><b style="color:var(--green)">CLV + Brier</b>
+      <span>MatchTypeClassifier</span><b style="color:var(--green)">10 tipi</b>
+      <span>CompetitionTypeFactors</span><b style="color:var(--green)">stake penalty</b>
+    </div>
+    <h5>Metriche sistema</h5>
+    <div class="kv">
+      <span>Bankroll</span><b>€ 500</b>
+      <span>Exposure max</span><b>€ 50 (10%)</b>
+      <span>Stake max</span><b>€ 15 (3%)</b>
+      <span>Kelly fraction</span><b>0.25</b>
+      <span>Edge min (sharp)</span><b>2%</b>
+      <span>Edge min (soft)</span><b>5%</b>
+      <span>Drawdown block</span><b style="color:var(--red)">15%/mese</b>
+      <span>DERBY penalty</span><b style="color:var(--amber)">-30% stake</b>
+    </div>
+    <h5>Hint</h5>
+    <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.55">Clicca un nodo per dettagli, schema e payload. Hover per evidenziare connessioni. Clicca una lega nel canvas per dettagli mercato.</p>
+  `;
+}
+
+function tick() {
+  const d = new Date();
+  document.getElementById('p-time').textContent = 'sync ' + d.toISOString().slice(11,19) + 'Z';
+}
+
+makeLanes();
+makeNodes();
+document.fonts.ready.then(() => { makeEdges(); renderOverview(); });
+window.addEventListener('resize', () => makeEdges());
+tick(); setInterval(tick, 1000);
+
+document.getElementById('legend').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  const layer = e.target.dataset.layer;
+  document.querySelectorAll('#legend button').forEach(b => b.classList.toggle('active', b===e.target));
+  document.querySelectorAll('.node').forEach(n => n.classList.toggle('faded', layer!=='all' && n.dataset.layer!==layer));
+  document.querySelectorAll('.edge').forEach(ed => ed.classList.toggle('dim', layer!=='all'));
+});
+
+window.selectNode = selectNode;
+window.selectLeague = selectLeague;
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+# Risk Manager Engine — configuration
+# All thresholds live here. No magic numbers in code.
+#
+# STAKE CALIBRATION NOTE:
+#   These values use BANKROLL from .env (currently 10€ for live test).
+#   max_bet_abs / min_stake / stake_floor are ABSOLUTE values in euros.
+#   Recalibrate when bankroll changes:
+#     10€ bankroll  → max_bet_abs=2.0  min_stake=2.0  stake_floor=2.0  (20%)
+#     100€ bankroll → max_bet_abs=3.0  min_stake=2.0  stake_floor=2.0  (3%)
+#     500€ bankroll → max_bet_abs=15.0 min_stake=2.0  stake_floor=2.0  (3%)
+#   Betfair minimum bet is 2€ — do not set min_stake below 2.0.
+
+circuit_breaker:
+  YELLOW:
+    trigger: -0.10           # drawdown threshold to activate
+    stake_multiplier: 0.75
+    action: reduce_stake
+  ORANGE:
+    trigger: -0.20
+    stake_multiplier: 0.50
+    action: reduce_and_restrict
+    restrict_tiers: [4, 5]
+  RED:
+    trigger: -0.30
+    stake_multiplier: 0.0
+    action: full_stop
+    requires_manual_review: true
+
+exposure:
+  max_league_pct: 0.20       # max open stake on any single league
+  max_matchday_pct: 0.15     # max open stake on any single matchday
+  max_total_pct: 0.40        # max total open stake across all leagues
+
+variance_budget:
+  max_weekly_variance: 2.0   # sum of p*(1-p) per week before throttling
+
+stake:
+  max_bet_abs: 2.0           # hard cap: 2€ on 10€ bankroll (20%) — raise proportionally with bankroll
+  kelly_fraction: 0.25       # fractional Kelly multiplier (quarter-Kelly)
+  min_stake: 2.0             # Betfair exchange minimum — any approved bet below this is blocked
+  stake_floor: 2.0           # bump sub-minimum Kelly stakes to Betfair minimum rather than dropping them
+  max_bet_pct: 0.20          # secondary pct cap (20% of bankroll) — safety net when bankroll grows
+
+ci_width:
+  max_ci_width: 1.5          # CI width ≥ this → factor = 0; 0 → factor = 1.0
+  # Football conformal q_hat ≈ 0.45-0.55 → typical width ≈ 0.9-1.1
+  # 1.0 blocked everything but heavy favourites; 1.5 gives partial credit to balanced matches
