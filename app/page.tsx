@@ -1103,12 +1103,14 @@ function SportsbookBoard({
   onSelect,
   onBetNow,
   isFreeClient,
+  isPremium,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
   isFreeClient?: boolean;
+  isPremium?: boolean;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   const [signalFilter, setSignalFilter] = useState<"all" | "value">(isFreeClient ? "value" : "all");
@@ -1279,10 +1281,10 @@ function SportsbookBoard({
         <>
           {isFreeClient && (
             <div className="free-tier-banner">
-              <strong>{lang === "it" ? "Piano Free — Anteprima" : "Free Plan — Preview"}</strong>
+              <strong>{lang === "it" ? "Piano Free — 1 prediction per sport" : "Free Plan — 1 prediction per sport"}</strong>
               <span>{lang === "it"
-                ? "Stai vedendo tutte le prediction ma edge%, analisi e segnali operativi richiedono il piano Base (€29/mese)."
-                : "You see all predictions but edge%, analysis and operational signals require the Base plan (€29/mo)."
+                ? "Vedi 1 anteprima per sport. Sblocca tutte le prediction, edge% e analisi con il piano Base (€29/mese)."
+                : "You see 1 preview per sport. Unlock all predictions, edge% and analysis with the Base plan (€29/mo)."
               }</span>
             </div>
           )}
@@ -1295,7 +1297,16 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="market-list">
-                  {footballRows.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
+                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
+                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />
+                  ))}
+                  {isFreeClient && footballRows.length > 1 && (
+                    <div className="free-preview-wall">
+                      <div className="fpw-lock">🔒</div>
+                      <div className="fpw-count">+{footballRows.length - 1} {lang === "it" ? "prediction bloccate" : "predictions locked"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutte con il piano Base (€29/mese)" : "Unlock all with the Base plan (€29/mo)"}</div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_football_empty}</div>
@@ -1311,7 +1322,16 @@ function SportsbookBoard({
               </div>
               {tennisRows.length ? (
                 <div className="market-list">
-                  {tennisRows.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
+                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
+                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />
+                  ))}
+                  {isFreeClient && tennisRows.length > 1 && (
+                    <div className="free-preview-wall">
+                      <div className="fpw-lock">🔒</div>
+                      <div className="fpw-count">+{tennisRows.length - 1} {lang === "it" ? "match bloccati" : "matches locked"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con il piano Base (€29/mese)" : "Unlock all with the Base plan (€29/mo)"}</div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_tennis_empty}</div>
@@ -1330,12 +1350,14 @@ function BestBetsBoard({
   onSelect,
   onBetNow,
   isFreeClient,
+  isPremium,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
   isFreeClient?: boolean;
+  isPremium?: boolean;
 }) {
   const t = useT();
   const lang = useLang();
@@ -1441,7 +1463,7 @@ function BestBetsBoard({
                 <em>{visibleFootballValue.length} {t.board_value}</em>
               </div>
               <div className="market-list">
-                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
+                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -1453,7 +1475,7 @@ function BestBetsBoard({
                 <em>{visibleTennisValue.length} {t.board_value}</em>
               </div>
               <div className="market-list">
-                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
+                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -3270,7 +3292,7 @@ const LEAGUE_BADGE_COLORS: Record<string, string> = {
   EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
 };
 
-function PredictionCard({ p, onSelect, onBetNow, isPreview }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean }) {
+function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -3456,6 +3478,72 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview }: { p: Prediction; o
           {t.bet_now}
         </button>
       )}
+
+      {/* Deep Analysis — Premium only */}
+      {isPremium && (
+        <div className="deep-analysis-panel">
+          <div className="da-header">
+            <span className="da-badge">⚡ Premium</span>
+            <span className="da-title">{lang === "it" ? "Analisi approfondita" : "Deep Analysis"}</span>
+          </div>
+          {(e.xg_home != null || e.xg_away != null) && (
+            <div className="da-row">
+              <span className="da-label">xG</span>
+              <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
+            </div>
+          )}
+          {(e.pi_home != null || e.pi_away != null) && (
+            <div className="da-row">
+              <span className="da-label">Pi Rating</span>
+              <span className="da-value">{e.pi_home ?? "–"} vs {e.pi_away ?? "–"}</span>
+            </div>
+          )}
+          {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
+            <div className="da-row">
+              <span className="da-label">🚑 {lang === "it" ? "Infortuni" : "Injuries"}</span>
+              <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
+            </div>
+          )}
+          {e.weather && (
+            <div className="da-row">
+              <span className="da-label">{e.weather.icon} {lang === "it" ? "Meteo" : "Weather"}</span>
+              <span className="da-value">{e.weather.temp}°C · {e.weather.condition} · {e.weather.wind}km/h</span>
+            </div>
+          )}
+          {e.api_pct_home != null && (
+            <div className="da-row">
+              <span className="da-label">API-FB</span>
+              <span className="da-value">H:{e.api_pct_home}% D:{e.api_pct_draw ?? "–"}% A:{e.api_pct_away ?? "–"}%{e.api_advice ? ` · ${e.api_advice}` : ""}</span>
+            </div>
+          )}
+          {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
+            <div className="da-row da-markets-row">
+              <span className="da-label">{lang === "it" ? "Mercati" : "Markets"}</span>
+              <div className="da-markets-list">
+                {e.extra_markets.filter((m) => m.edge != null).slice(0, 4).map((m) => (
+                  <span key={m.key} className={`da-market-pill${m.edge != null && m.edge > 0.02 ? " value" : ""}`}>
+                    {m.label}{m.edge != null ? ` ${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%` : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {e.research && (
+            <div className="da-research">
+              <span className="da-label">🤖 AI</span>
+              <p className="da-research-text">{e.research}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deep Analysis locked teaser — Base users only */}
+      {!isPremium && !isPreview && (
+        <div className="deep-analysis-locked">
+          <span>⚡</span>
+          <span>{lang === "it" ? "Analisi approfondita disponibile con Premium (€199/mese)" : "Deep analysis available with Premium (€199/mo)"}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -3565,7 +3653,7 @@ function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
   return reasons;
 }
 
-function TennisMatchCard({ m, onSelect, onBetNow, isPreview }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean }) {
+function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -3733,6 +3821,46 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview }: { m: TennisMatch;
               {r.icon} {r.text}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Deep Analysis — Premium only */}
+      {isPremium && (
+        <div className="deep-analysis-panel">
+          <div className="da-header">
+            <span className="da-badge">⚡ Premium</span>
+            <span className="da-title">{lang === "it" ? "Analisi Elo" : "Elo Analysis"}</span>
+          </div>
+          <div className="da-row">
+            <span className="da-label">Elo {surface.label}</span>
+            <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
+          </div>
+          {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
+            <div className="da-row">
+              <span className="da-label">Elo Overall</span>
+              <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
+            </div>
+          )}
+          {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) && (
+            <div className="da-row">
+              <span className="da-label">{lang === "it" ? "Match sup." : "Surf. matches"}</span>
+              <span className="da-value">{m.surface_matches_p1 ?? "–"} vs {m.surface_matches_p2 ?? "–"}</span>
+            </div>
+          )}
+          {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
+            <div className="da-row">
+              <span className="da-label">Elo raw prob.</span>
+              <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deep Analysis locked teaser — Base users only */}
+      {!isPremium && !isPreview && (
+        <div className="deep-analysis-locked">
+          <span>⚡</span>
+          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Premium (€199/mese)" : "Deep Elo analysis available with Premium (€199/mo)"}</span>
         </div>
       )}
     </div>
@@ -5230,6 +5358,7 @@ function UnifiedBetsTab({
   onRegister,
   isSignalPreviewUnlocked,
   isFreeClient,
+  isPremiumClient,
   isLoggedIn,
 }: {
   predictions: Prediction[];
@@ -5243,6 +5372,7 @@ function UnifiedBetsTab({
   onRegister: () => void;
   isSignalPreviewUnlocked: boolean;
   isFreeClient: boolean;
+  isPremiumClient?: boolean;
   isLoggedIn: boolean;
 }) {
   const lang = useLang();
@@ -5285,6 +5415,7 @@ function UnifiedBetsTab({
         onSelect={onSelect}
         onBetNow={onBetNow}
         isFreeClient={isFreeClient}
+        isPremium={isPremiumClient}
       />
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
@@ -5715,6 +5846,7 @@ export default function Dashboard() {
               onRegister={() => openAuth("create")}
               isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
+              isPremiumClient={isPremiumClient}
               isLoggedIn={hasClientProfile}
             />
           )}

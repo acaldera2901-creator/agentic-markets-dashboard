@@ -4084,3 +4084,143 @@ button:disabled {
   font-family: var(--font-mono, monospace);
   color: rgba(255,255,255,0.35);
 }
+
+/* ─── Free preview wall ─────────────────────────────────────────────────────── */
+.free-preview-wall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border-radius: 8px;
+  border: 1px dashed rgba(234, 179, 8, 0.25);
+  background: rgba(234, 179, 8, 0.03);
+  text-align: center;
+}
+.fpw-lock {
+  font-size: 22px;
+  opacity: 0.7;
+}
+.fpw-count {
+  font-size: 13px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: #eab308;
+  letter-spacing: 0.03em;
+}
+.fpw-sub {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: rgba(255,255,255,0.35);
+}
+
+/* ─── Deep Analysis Panel (Premium) ─────────────────────────────────────────── */
+.deep-analysis-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(139, 92, 246, 0.04);
+  margin-top: 4px;
+}
+.da-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.da-badge {
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
+  text-transform: uppercase;
+}
+.da-title {
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(167, 139, 250, 0.6);
+}
+.da-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+}
+.da-label {
+  color: rgba(255,255,255,0.35);
+  min-width: 80px;
+  flex-shrink: 0;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.da-value {
+  color: rgba(255,255,255,0.75);
+  flex: 1;
+}
+.da-markets-row {
+  flex-wrap: wrap;
+}
+.da-markets-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+.da-market-pill {
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.04);
+}
+.da-market-pill.value {
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.07);
+}
+.da-research {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(139, 92, 246, 0.12);
+  margin-top: 2px;
+}
+.da-research-text {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: rgba(255,255,255,0.55);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ─── Deep Analysis locked teaser (Base) ──────────────────────────────────── */
+.deep-analysis-locked {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: 1px dashed rgba(139, 92, 246, 0.18);
+  background: rgba(139, 92, 246, 0.02);
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: rgba(167, 139, 250, 0.45);
+  margin-top: 4px;
+  cursor: default;
+  user-select: none;
+}
