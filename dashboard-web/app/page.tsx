@@ -98,7 +98,7 @@ const BASE_TRANSLATIONS = {
     board_title: "Best available edges", board_eyebrow: "Market board",
     board_football: "Football", board_tennis: "Tennis",
     board_value: "value", board_markets: "markets", board_matches: "matches",
-    board_football_empty: "Football markets loading. Hit refresh if the board stays empty.",
+    board_football_empty: "No football fixtures scheduled. Markets return automatically when the season resumes.",
     board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
     // Profile panel
     profile_upgrade_eyebrow: "Passa a Pro",
@@ -335,7 +335,7 @@ const BASE_TRANSLATIONS = {
     board_title: "Best available edges", board_eyebrow: "Market board",
     board_football: "Football", board_tennis: "Tennis",
     board_value: "value", board_markets: "markets", board_matches: "matches",
-    board_football_empty: "Football markets loading. Hit refresh if the board stays empty.",
+    board_football_empty: "No football fixtures scheduled. Markets return automatically when the season resumes.",
     board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
     // Profile panel
     profile_upgrade_eyebrow: "Upgrade to Pro",
@@ -5629,7 +5629,7 @@ export default function Dashboard() {
         setPredictions(data.predictions ?? []);
         setComputedAt(data.computed_at ?? null);
         setPredStale(data.is_stale ?? false);
-        setPredFallback(data.source === "fallback");
+        setPredFallback(data.is_off_season === true);
       }
     } catch { /**/ } finally { setPredLoading(false); }
   }, []);
@@ -5834,7 +5834,7 @@ export default function Dashboard() {
 
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-              <span>⚠️ {uiLanguage === "it" ? "Dati demo — nessuna partita nel database. Questi sono esempi di output del modello, non prediction operative." : "Demo data — no matches in database. These are model output examples, not live predictions."}</span>
+              <span>⚽ {uiLanguage === "it" ? "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026)." : "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026)."}</span>
             </div>
           )}
           {tennisIsPlaceholder && tab === "bets" && (
