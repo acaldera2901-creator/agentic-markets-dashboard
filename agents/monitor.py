@@ -103,10 +103,11 @@ class MonitorAgent(BaseAgent):
 
     async def _restart_orchestrator(self, stale_agents: list[str]) -> None:
         label = "gui/{}/com.agentic-markets.agents".format(os.getuid())
+        cwd = settings.AGENTIC_MARKETS_AGENT_ROOT or os.getcwd()
         try:
             subprocess.run(
                 ["launchctl", "kickstart", "-k", label],
-                cwd="/Users/calde/Desktop/sistema-andrea/agentic-markets",
+                cwd=cwd,
                 check=False,
                 timeout=15,
             )
