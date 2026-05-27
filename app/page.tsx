@@ -1102,13 +1102,13 @@ function SportsbookBoard({
   tennisMatches,
   onSelect,
   onBetNow,
-  previewLimit,
+  isFreeClient,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
-  previewLimit?: number;
+  isFreeClient?: boolean;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   const [signalFilter, setSignalFilter] = useState<"all" | "value">("value");
@@ -1192,7 +1192,7 @@ function SportsbookBoard({
     .filter((p) => signalFilter === "all" || isFootballBestBet(p))
     .filter((p) => competitionFilter === "all" || competitionFilter === `football:${p.league}`)
     .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query)))
-    .slice(0, previewLimit ?? (signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY));
+    .slice(0, signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY);
 
   const tennisRows = sortTennis(tennisMatches
     .filter((m) => sportFilter !== "football")
@@ -1201,7 +1201,7 @@ function SportsbookBoard({
     .filter((m) => competitionFilter === "all" || competitionFilter === `tennis:${m.tournament}`)
     .filter((m) => surfaceFilter === "all" || m.surface === surfaceFilter)
     .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query)))
-    .slice(0, previewLimit ?? (signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY));
+    .slice(0, signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY);
 
   const filteredTotal = footballRows.length + tennisRows.length;
   const showFootballSection = sportFilter !== "tennis" && surfaceFilter === "all" && !competitionFilter.startsWith("tennis:");
@@ -1277,6 +1277,16 @@ function SportsbookBoard({
         <div className="book-empty">{labels.noResults}</div>
       ) : (
         <>
+          {isFreeClient && (
+            <div className="free-tier-banner">
+              <strong>{lang === "it" ? "Piano Free — Anteprima" : "Free Plan — Preview"}</strong>
+              <span>{lang === "it"
+                ? "Stai vedendo tutte le prediction ma edge%, analisi e segnali operativi richiedono il piano Base (€29/mese)."
+                : "You see all predictions but edge%, analysis and operational signals require the Base plan (€29/mo)."
+              }</span>
+            </div>
+          )}
+
           {showFootballSection && (
             <section className="market-section">
               <div className="market-section-title">
@@ -1285,7 +1295,7 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="market-list">
-                  {footballRows.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} />)}
+                  {footballRows.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_football_empty}</div>
@@ -1301,7 +1311,7 @@ function SportsbookBoard({
               </div>
               {tennisRows.length ? (
                 <div className="market-list">
-                  {tennisRows.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} />)}
+                  {tennisRows.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_tennis_empty}</div>
@@ -1319,13 +1329,13 @@ function BestBetsBoard({
   tennisMatches,
   onSelect,
   onBetNow,
-  previewLimit,
+  isFreeClient,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
-  previewLimit?: number;
+  isFreeClient?: boolean;
 }) {
   const t = useT();
   const lang = useLang();
@@ -1377,9 +1387,9 @@ function BestBetsBoard({
     .filter((m) => sportFilter !== "football")
     .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query));
   const visibleFootballValue = sortFootballBest([...footballValue])
-    .slice(0, previewLimit ?? 21);
+    .slice(0, 21);
   const visibleTennisValue = sortTennisBest([...tennisValue])
-    .slice(0, previewLimit ?? 21);
+    .slice(0, 21);
   const totalValue = visibleFootballValue.length + visibleTennisValue.length;
 
   return (
@@ -1431,7 +1441,7 @@ function BestBetsBoard({
                 <em>{visibleFootballValue.length} {t.board_value}</em>
               </div>
               <div className="market-list">
-                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} />)}
+                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
               </div>
             </section>
           )}
@@ -1443,7 +1453,7 @@ function BestBetsBoard({
                 <em>{visibleTennisValue.length} {t.board_value}</em>
               </div>
               <div className="market-list">
-                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} />)}
+                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} />)}
               </div>
             </section>
           )}
@@ -3260,7 +3270,7 @@ const LEAGUE_BADGE_COLORS: Record<string, string> = {
   EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
 };
 
-function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void }) {
+function PredictionCard({ p, onSelect, onBetNow, isPreview }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -3316,7 +3326,7 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
           <div className="text-xs text-gray-600 font-mono mt-0.5">{fmtKickoff(p.kickoff, lang, tz)}</div>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          {isValueBet && p.best_selection && (
+          {isValueBet && p.best_selection && !isPreview && (
             <button
               className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono hover:bg-green-400/20 transition-colors"
               onClick={handleSelect}
@@ -3389,14 +3399,20 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
 
       {/* Footer: model + edge + why toggle */}
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-        <button
-          className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-          onClick={() => setShowWhy(!showWhy)}
-        >
-          {showWhy ? t.pred_why_hide : t.pred_why_show}
-        </button>
+        {isPreview ? (
+          <span className="why-locked-preview">{t.pred_why_show}</span>
+        ) : (
+          <button
+            className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
+            onClick={() => setShowWhy(!showWhy)}
+          >
+            {showWhy ? t.pred_why_hide : t.pred_why_show}
+          </button>
+        )}
         <span className="text-gray-600">Dixon-Coles</span>
-        {p.edge != null ? (
+        {isPreview ? (
+          <span className="plan-lock-badge">🔒 Base</span>
+        ) : p.edge != null ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
           </span>
@@ -3405,8 +3421,17 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
         )}
       </div>
 
+      {/* Preview upgrade nudge (free plan) */}
+      {isPreview && (
+        <div className="plan-upgrade-nudge">
+          <span>🔒</span>
+          <strong>{lang === "it" ? "Edge e analisi richiedono il piano Base" : "Edge and analysis require the Base plan"}</strong>
+          <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali operativi con Base (€29/mese)." : "Unlock edge%, AI reasoning and operational signals with Base (€29/mo)."}</em>
+        </div>
+      )}
+
       {/* Inline Why section */}
-      {showWhy && (
+      {!isPreview && showWhy && (
         <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.pred_why_title}</div>
           {reasons.map((r, i) => (
@@ -3423,7 +3448,7 @@ function PredictionCard({ p, onSelect, onBetNow }: { p: Prediction; onSelect?: (
         </div>
       )}
 
-      {onBetNow && (
+      {onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
@@ -3540,7 +3565,7 @@ function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
   return reasons;
 }
 
-function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void }) {
+function TennisMatchCard({ m, onSelect, onBetNow, isPreview }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -3613,7 +3638,7 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
           </div>
           <div className="text-xs text-gray-600 font-mono mt-0.5">{scheduledDate}</div>
         </div>
-        {isValue && m.best_selection && (
+        {isValue && m.best_selection && !isPreview && (
           <button
             className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono shrink-0 hover:bg-green-400/20 transition-colors"
             onClick={() => handleSelect(m.best_selection as "P1" | "P2")}
@@ -3643,14 +3668,20 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-        <button
-          className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-          onClick={handleWhyClick}
-        >
-          {loadingAnalysis ? "⏳ ..." : showWhy ? t.tennis_why_hide : t.tennis_why_show}
-        </button>
+        {isPreview ? (
+          <span className="why-locked-preview">{t.tennis_why_show}</span>
+        ) : (
+          <button
+            className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
+            onClick={handleWhyClick}
+          >
+            {loadingAnalysis ? "⏳ ..." : showWhy ? t.tennis_why_hide : t.tennis_why_show}
+          </button>
+        )}
         <span className="text-gray-600">{m.model}</span>
-        {m.edge != null && m.edge > 0 ? (
+        {isPreview ? (
+          <span className="plan-lock-badge">🔒 Base</span>
+        ) : m.edge != null && m.edge > 0 ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-green-400 border-green-400/40 bg-green-400/10" : "text-gray-400 border-gray-400/30"}`}>
             edge +{(m.edge * 100).toFixed(1)}%
           </span>
@@ -3659,7 +3690,16 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
         )}
       </div>
 
-      {onBetNow && (
+      {/* Preview upgrade nudge (free plan) */}
+      {isPreview && (
+        <div className="plan-upgrade-nudge">
+          <span>🔒</span>
+          <strong>{lang === "it" ? "Edge Elo e analisi richiedono il piano Base" : "Elo edge and analysis require the Base plan"}</strong>
+          <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Base (€29/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Base (€29/mo)."}</em>
+        </div>
+      )}
+
+      {onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
@@ -3669,7 +3709,7 @@ function TennisMatchCard({ m, onSelect, onBetNow }: { m: TennisMatch; onSelect?:
       )}
 
       {/* Inline Why */}
-      {showWhy && (
+      {!isPreview && showWhy && (
         <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
           {/* AI analysis — shown first when available */}
           {aiAnalysis && lang === "it" ? (
@@ -5237,8 +5277,6 @@ function UnifiedBetsTab({
     );
   }
 
-  // Free plan: 1 per category. Base/Premium: unlimited.
-  const previewLimit = isFreeClient ? 1 : undefined;
   return (
     <>
       <SportsbookBoard
@@ -5246,7 +5284,7 @@ function UnifiedBetsTab({
         tennisMatches={tennisMatches}
         onSelect={onSelect}
         onBetNow={onBetNow}
-        previewLimit={previewLimit}
+        isFreeClient={isFreeClient}
       />
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
