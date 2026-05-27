@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from agents.data_collector import DataCollectorAgent
 from agents.model import ModelAgent
 from agents.analyst import AnalystAgent
@@ -19,11 +20,37 @@ from agents.tennis_settlement import TennisSettlementAgent
 from agents.tennis_research_agent import TennisResearchAgent
 from core.db import init_db
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
+log = logging.getLogger("run")
+
+
+async def _health_server(port: int = 8080) -> None:
+    """Minimal HTTP health server so Fly.io knows the process is alive."""
+    from aiohttp import web
+
+    async def handle(request):
+        return web.Response(text='{"status":"ok"}', content_type="application/json")
+
+    app = web.Application()
+    app.router.add_get("/health", handle)
+    app.router.add_get("/", handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    log.info("health server listening on :%d", port)
 
 
 async def main():
-    await init_db()
+    try:
+        await init_db()
+        log.info("DB initialized")
+    except Exception as e:
+        log.error("DB init failed (non-fatal): %s", e)
+
+    port = int(os.environ.get("PORT", 8080))
+    await _health_server(port)
+
     agents = [
         # Football pipeline
         DataCollectorAgent(),
@@ -45,6 +72,7 @@ async def main():
         TennisSettlementAgent(),
         TennisResearchAgent(),
     ]
+    log.info("Starting %d agents", len(agents))
     await asyncio.gather(*[agent.run() for agent in agents])
 
 

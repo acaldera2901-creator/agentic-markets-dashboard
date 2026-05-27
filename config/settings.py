@@ -29,9 +29,12 @@ class Settings(BaseSettings):
     DASHBOARD_URL: str = ""
     RESEARCH_SECRET: str = ""
 
-    # Supabase — direct write for agent heartbeats
+    # Supabase — direct write for agent heartbeats + DB
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
+    # Path override for launchctl restart (Mac local only — ignored on server)
+    AGENTIC_MARKETS_AGENT_ROOT: str = ""
+    DASHBOARD_HEARTBEAT_TIMEOUT: int = 10
 
     # Asian Handicap collector (S7)
     SBOBET_API_KEY: str = ""         # optional AH odds source
