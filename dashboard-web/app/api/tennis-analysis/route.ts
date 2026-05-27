@@ -1,20 +1,7 @@
 import { NextResponse } from "next/server";
+import { dbQuery } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-
-const DB_URL = process.env.DATABASE_URL;
-
-async function dbQuery<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql, params)) ?? []) as T[];
-  } catch {
-    return [];
-  }
-}
 
 export async function POST(req: Request) {
   let body: { match_id?: string; player1?: string; player2?: string };

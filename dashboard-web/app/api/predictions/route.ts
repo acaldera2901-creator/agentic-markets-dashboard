@@ -16,7 +16,8 @@ import {
 
 export const maxDuration = 300;
 
-const DB_URL = process.env.DATABASE_URL;
+import { dbQuery } from "@/lib/db";
+import { syncMatchPredictionsToUnified } from "@/lib/unified-adapter";
 
 const LEAGUES: Record<string, string> = {
   SA: "Serie A",
@@ -26,6 +27,7 @@ const LEAGUES: Record<string, string> = {
   FL1: "Ligue 1",
   CL: "Champions League",
   EL: "Europa League",
+  WC: "World Cup",
 };
 
 type PredictionRow = {
@@ -207,71 +209,6 @@ function hydratePaperOdds(row: PredictionRow): PredictionRow {
 // Leagues supported by Understat (no CL/EL)
 const UNDERSTAT_LEAGUES = new Set(["SA", "PL", "PD", "BL1", "FL1"]);
 
-async function dbQuery<T = Record<string, unknown>>(
-  query: string,
-  params: unknown[] = []
-): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(query, params)) ?? []) as T[];
-  } catch (e) {
-    console.error("DB error:", String(e));
-    return [];
-  }
-}
-
-async function ensureTables() {
-  // Main predictions table
-  await dbQuery(`
-    CREATE TABLE IF NOT EXISTS match_predictions (
-      id SERIAL PRIMARY KEY,
-      match_id VARCHAR NOT NULL UNIQUE,
-      league VARCHAR NOT NULL,
-      league_name VARCHAR NOT NULL,
-      home_team VARCHAR NOT NULL,
-      away_team VARCHAR NOT NULL,
-      kickoff TIMESTAMPTZ NOT NULL,
-      p_home FLOAT NOT NULL,
-      p_draw FLOAT NOT NULL,
-      p_away FLOAT NOT NULL,
-      lambda_home FLOAT,
-      lambda_away FLOAT,
-      odds_home FLOAT,
-      odds_draw FLOAT,
-      odds_away FLOAT,
-      edge FLOAT,
-      best_selection VARCHAR,
-      model_matches INT,
-      computed_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-  // Enrichment column (JSONB — added after initial creation)
-  await dbQuery(
-    `ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS enrichment JSONB`
-  );
-  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS home_score INT`);
-  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS away_score INT`);
-  await dbQuery(`ALTER TABLE match_predictions ADD COLUMN IF NOT EXISTS match_status TEXT DEFAULT 'SCHEDULED'`);
-  // Understat per-league cache (refreshed every 6h)
-  await dbQuery(`
-    CREATE TABLE IF NOT EXISTS understat_cache (
-      league VARCHAR PRIMARY KEY,
-      data JSONB NOT NULL,
-      cached_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-  // Research summaries from Python ResearchAgent (Ollama)
-  await dbQuery(`
-    CREATE TABLE IF NOT EXISTS match_research (
-      match_id VARCHAR PRIMARY KEY,
-      summary TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-}
 
 function wait(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -568,7 +505,13 @@ export async function GET() {
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
   const usingFallback = predictions.length === 0;
-  if (usingFallback) predictions = fallbackPredictions();
+  const MIN_PREDICTIONS = 5;
+  if (predictions.length < MIN_PREDICTIONS) {
+    const existingIds = new Set(predictions.map((p) => p.match_id));
+    const fallback = fallbackPredictions().filter((f) => !existingIds.has(f.match_id));
+    const needed = MIN_PREDICTIONS - predictions.length;
+    predictions = [...predictions, ...fallback.slice(0, needed)];
+  }
   predictions = predictions.map((p) => {
     const hydrated = hydratePaperOdds(p);
     const lH = hydrated.lambda_home;
@@ -600,7 +543,7 @@ export async function POST(req: Request) {
   if (cronSecret && auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  await ensureTables();
   const result = await computeAndStore();
-  return NextResponse.json({ ...result, at: new Date().toISOString() });
+  const synced = await syncMatchPredictionsToUnified();
+  return NextResponse.json({ ...result, synced_to_unified: synced, at: new Date().toISOString() });
 }

@@ -1,20 +1,7 @@
 import { NextResponse } from "next/server";
+import { dbQuery as queryDB } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-
-const DB_URL = process.env.DATABASE_URL;
-
-async function queryDB<T = Record<string, unknown>>(sql: string): Promise<T[]> {
-  if (!DB_URL) return [];
-  try {
-    const { neon } = await import("@neondatabase/serverless");
-    const db = neon(DB_URL);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((await (db as any).query(sql)) ?? []) as T[];
-  } catch {
-    return [];
-  }
-}
 
 export async function GET() {
   const [bets, stats] = await Promise.all([

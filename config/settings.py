@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     DASHBOARD_URL: str = ""
     RESEARCH_SECRET: str = ""
 
+    # Supabase — direct write for agent heartbeats
+    SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+
     # Asian Handicap collector (S7)
     SBOBET_API_KEY: str = ""         # optional AH odds source
     PINNACLE_API_KEY: str = ""       # optional Pinnacle AH endpoint

@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from config.settings import settings
 from core.redis_client import set_heartbeat
+from core.supabase_client import upsert_heartbeat
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
 
@@ -31,7 +32,11 @@ class BaseAgent(ABC):
     async def _heartbeat_loop(self) -> None:
         while self._running:
             await set_heartbeat(self.name, settings.HEARTBEAT_TIMEOUT, datetime.utcnow().isoformat())
-            await self._post_dashboard_heartbeat()
+            await asyncio.gather(
+                self._post_dashboard_heartbeat(),
+                upsert_heartbeat(self.name),
+                return_exceptions=True,
+            )
             await asyncio.sleep(settings.HEARTBEAT_INTERVAL)
 
     async def _post_dashboard_heartbeat(self) -> None:
