@@ -498,21 +498,12 @@ export async function GET() {
        FROM match_predictions WHERE kickoff > NOW()`
     ),
   ]);
-  let predictions = predictions_raw;
-
   const computedAt = meta[0]?.ts ?? null;
   const ageMinutes = computedAt
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
-  const usingFallback = predictions.length === 0;
-  const MIN_PREDICTIONS = 5;
-  if (predictions.length < MIN_PREDICTIONS) {
-    const existingIds = new Set(predictions.map((p) => p.match_id));
-    const fallback = fallbackPredictions().filter((f) => !existingIds.has(f.match_id));
-    const needed = MIN_PREDICTIONS - predictions.length;
-    predictions = [...predictions, ...fallback.slice(0, needed)];
-  }
-  predictions = predictions.map((p) => {
+  const isOffSeason = predictions_raw.length === 0;
+  const predictions = predictions_raw.map((p) => {
     const hydrated = hydratePaperOdds(p);
     const lH = hydrated.lambda_home;
     const lA = hydrated.lambda_away;
@@ -523,15 +514,16 @@ export async function GET() {
     }
     return hydrated;
   });
-  const isStale = !usingFallback && ageMinutes > 60;
+  const isStale = !isOffSeason && ageMinutes > 60;
 
   return NextResponse.json(
     {
       predictions,
-      computed_at: usingFallback ? predictions[0]?.computed_at ?? null : computedAt,
+      computed_at: computedAt,
       count: predictions.length,
       is_stale: isStale,
-      source: usingFallback ? "fallback" : "database",
+      is_off_season: isOffSeason,
+      source: "database",
     },
     { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } }
   );
