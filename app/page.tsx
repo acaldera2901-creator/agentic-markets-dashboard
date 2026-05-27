@@ -1111,7 +1111,7 @@ function SportsbookBoard({
   isFreeClient?: boolean;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
-  const [signalFilter, setSignalFilter] = useState<"all" | "value">("value");
+  const [signalFilter, setSignalFilter] = useState<"all" | "value">(isFreeClient ? "value" : "all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
   const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
   const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("edge");

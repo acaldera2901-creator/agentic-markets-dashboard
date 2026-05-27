@@ -505,7 +505,13 @@ export async function GET() {
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
   const usingFallback = predictions.length === 0;
-  if (usingFallback) predictions = fallbackPredictions();
+  const MIN_PREDICTIONS = 5;
+  if (predictions.length < MIN_PREDICTIONS) {
+    const existingIds = new Set(predictions.map((p) => p.match_id));
+    const fallback = fallbackPredictions().filter((f) => !existingIds.has(f.match_id));
+    const needed = MIN_PREDICTIONS - predictions.length;
+    predictions = [...predictions, ...fallback.slice(0, needed)];
+  }
   predictions = predictions.map((p) => {
     const hydrated = hydratePaperOdds(p);
     const lH = hydrated.lambda_home;
