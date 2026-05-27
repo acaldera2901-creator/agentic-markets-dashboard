@@ -5453,6 +5453,7 @@ export default function Dashboard() {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [tennisMatches, setTennisMatches] = useState<TennisMatch[]>([]);
+  const [tennisIsPlaceholder, setTennisIsPlaceholder] = useState(false);
   const [tennisSummary, setTennisSummary] = useState<TennisSummary | null>(null);
   const [tennisComputedAt, setTennisComputedAt] = useState<string | null>(null);
   const [tennisBets, setTennisBets] = useState<TennisBet[]>([]);
@@ -5649,7 +5650,11 @@ export default function Dashboard() {
       const resp = await fetch("/api/tennis");
       if (resp.ok) {
         const data = await resp.json();
-        setTennisMatches(data.matches ?? []);
+        const liveMatches: TennisMatch[] = data.matches ?? [];
+        const demoMatches: TennisMatch[] = data.demo_matches ?? [];
+        const usePlaceholder = liveMatches.length === 0 && demoMatches.length > 0;
+        setTennisMatches(usePlaceholder ? demoMatches : liveMatches);
+        setTennisIsPlaceholder(usePlaceholder);
         setTennisSummary(data.summary ?? null);
         setTennisComputedAt(data.computed_at ?? null);
       }
@@ -5830,6 +5835,11 @@ export default function Dashboard() {
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
               <span>⚠️ {uiLanguage === "it" ? "Dati demo — nessuna partita nel database. Questi sono esempi di output del modello, non prediction operative." : "Demo data — no matches in database. These are model output examples, not live predictions."}</span>
+            </div>
+          )}
+          {tennisIsPlaceholder && tab === "bets" && (
+            <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-blue-400/30 bg-blue-400/5 text-xs font-mono text-blue-400">
+              <span>🎾 {uiLanguage === "it" ? "Tennis — dati di esempio. Il modello live si attiva appena arrivano i dati reali." : "Tennis — example data. Live model activates automatically when real data arrives."}</span>
             </div>
           )}
 
