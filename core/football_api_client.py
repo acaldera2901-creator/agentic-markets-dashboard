@@ -63,6 +63,9 @@ async def get_historical_results(league_id: int, season: int) -> List[Dict]:
 LEAGUE_IDS = {
     "PL": 39, "SA": 135, "PD": 140, "BL1": 78,
     "FL1": 61, "CL": 2, "EL": 3, "ECL": 848,
+    # API-FOOTBALL / API-SPORTS uses league id 1 for FIFA World Cup.
+    # Keep this in monitor-only until diagnostics confirm 2026 coverage.
+    "WC": 1,
 }
 
 

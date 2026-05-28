@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Markets — Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07090d; --panel: #0e131c; --line: #1a2233; --line-2: #243049;
+    --text: #e6edf7; --muted: #7d8aa3; --dim: #4a5774;
+    --cyan: #00e5ff; --green: #32e0a0; --amber: #ffb547; --violet: #9b8cff;
+  }
+  html, body {
+    height: 100%; background: var(--bg); color: var(--text);
+    font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 70%);
+  }
+  .topbar {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; gap: 0;
+    height: 52px;
+    background: rgba(7,9,13,.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+    padding: 0 20px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 13px; color: var(--text);
+    margin-right: 32px; flex-shrink: 0;
+  }
+  .brand-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+  }
+  .brand small { color: var(--muted); font-weight: 400; font-size: 11px; }
+  .tabs { display: flex; gap: 2px; flex: 1; }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 18px; height: 52px;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s, background .15s;
+    white-space: nowrap; user-select: none;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+  .tab.active { color: var(--text); border-bottom-color: var(--cyan); }
+  .tab .tab-ico {
+    width: 20px; height: 20px; border-radius: 5px;
+    display: grid; place-items: center; font-size: 11px;
+    background: rgba(0,229,255,.08); border: 1px solid rgba(0,229,255,.2);
+    flex-shrink: 0;
+  }
+  .tab:nth-child(2) .tab-ico { background: rgba(50,224,160,.08); border-color: rgba(50,224,160,.2); }
+  .tab:nth-child(3) .tab-ico { background: rgba(155,140,255,.08); border-color: rgba(155,140,255,.2); }
+  .tab .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; padding: 2px 6px; border-radius: 4px;
+    background: rgba(0,229,255,.08); color: var(--cyan);
+    border: 1px solid rgba(0,229,255,.2);
+  }
+  .tab:nth-child(2) .badge { background: rgba(50,224,160,.08); color: var(--green); border-color: rgba(50,224,160,.2); }
+  .tab:nth-child(3) .badge { background: rgba(155,140,255,.08); color: var(--violet); border-color: rgba(155,140,255,.2); }
+  .status {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted);
+    flex-shrink: 0;
+  }
+  .status .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: blip 1.4s ease-in-out infinite;
+  }
+  @keyframes blip { 50% { opacity: .3; } }
+  .frame-wrap {
+    position: relative; z-index: 1;
+    height: calc(100vh - 52px);
+  }
+  iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: none; opacity: 0;
+    transition: opacity .2s ease;
+    pointer-events: none;
+  }
+  iframe.visible { opacity: 1; pointer-events: all; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-dot"></span>
+    Agentic&nbsp;Markets <small>&nbsp;/&nbsp;Hub</small>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="show(0)">
+      <span class="tab-ico">⬡</span>
+      System Architecture
+      <span class="badge">v5.0</span>
+    </div>
+    <div class="tab" onclick="show(1)">
+      <span class="tab-ico">🔒</span>
+      Confidential
+      <span class="badge">private</span>
+    </div>
+  </div>
+  <div class="status">
+    <span class="dot"></span>
+    <span id="clock">—</span>
+  </div>
+</div>
+
+<div class="frame-wrap">
+  <iframe id="f0" src="schema.html"                 class="visible"></iframe>
+  <iframe id="f1" src="prediction-confidential.html" class=""></iframe>
+</div>
+
+<script>
+  let current = 0;
+  const tabs = document.querySelectorAll('.tab');
+  const frames = document.querySelectorAll('iframe');
+
+  function show(i) {
+    tabs[current].classList.remove('active');
+    frames[current].classList.remove('visible');
+    current = i;
+    tabs[current].classList.add('active');
+    frames[current].classList.add('visible');
+  }
+
+  function tick() {
+    const d = new Date();
+    document.getElementById('clock').textContent = d.toISOString().slice(11,19) + ' UTC';
+  }
+  tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>

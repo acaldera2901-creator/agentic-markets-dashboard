@@ -54,130 +54,6 @@ type PredictionRow = {
   enrichment?: EnrichmentPayload | null;
 };
 
-function nextKickoff(hoursFromNow: number) {
-  return new Date(Date.now() + hoursFromNow * 3_600_000).toISOString();
-}
-
-function fallbackPredictions(now = new Date().toISOString()): PredictionRow[] {
-  return [
-    {
-      id: -1,
-      match_id: "fallback-football-ita-001",
-      league: "SA",
-      league_name: "Serie A",
-      home_team: "Inter",
-      away_team: "Napoli",
-      kickoff: nextKickoff(5),
-      p_home: 0.49,
-      p_draw: 0.27,
-      p_away: 0.24,
-      lambda_home: 1.62,
-      lambda_away: 0.98,
-      odds_home: 2.12,
-      odds_draw: 3.45,
-      odds_away: 3.55,
-      edge: 0.0183,
-      best_selection: "HOME",
-      model_matches: 380,
-      computed_at: now,
-      match_type: "TITLE_DECIDER",
-      enrichment: { form_home: "WWDWW", form_away: "WLWDW", research: "Fallback paper market while live football providers are unavailable." },
-    },
-    {
-      id: -2,
-      match_id: "fallback-football-epl-001",
-      league: "PL",
-      league_name: "Premier League",
-      home_team: "Arsenal",
-      away_team: "Liverpool",
-      kickoff: nextKickoff(9),
-      p_home: 0.43,
-      p_draw: 0.25,
-      p_away: 0.32,
-      lambda_home: 1.48,
-      lambda_away: 1.24,
-      odds_home: 2.44,
-      odds_draw: 3.62,
-      odds_away: 2.88,
-      edge: 0.0202,
-      best_selection: "HOME",
-      model_matches: 380,
-      computed_at: now,
-      match_type: "DERBY",
-      enrichment: { form_home: "WDWWW", form_away: "WWLDW" },
-    },
-    {
-      id: -3,
-      match_id: "fallback-football-ucl-001",
-      league: "CL",
-      league_name: "Champions League",
-      home_team: "Real Madrid",
-      away_team: "Manchester City",
-      kickoff: nextKickoff(29),
-      p_home: 0.36,
-      p_draw: 0.28,
-      p_away: 0.36,
-      lambda_home: 1.34,
-      lambda_away: 1.33,
-      odds_home: 2.98,
-      odds_draw: 3.58,
-      odds_away: 2.48,
-      edge: 0.0018,
-      best_selection: "AWAY",
-      model_matches: 220,
-      computed_at: now,
-      match_type: "NEUTRAL_VENUE",
-      enrichment: { form_home: "WWDWL", form_away: "WWWWW" },
-    },
-    {
-      id: -4,
-      match_id: "fallback-football-laliga-001",
-      league: "PD",
-      league_name: "La Liga",
-      home_team: "Real Sociedad",
-      away_team: "Athletic Club",
-      kickoff: nextKickoff(34),
-      p_home: 0.39,
-      p_draw: 0.31,
-      p_away: 0.3,
-      lambda_home: 1.18,
-      lambda_away: 1.02,
-      odds_home: 2.82,
-      odds_draw: 3.12,
-      odds_away: 2.76,
-      edge: 0.0354,
-      best_selection: "HOME",
-      model_matches: 360,
-      computed_at: now,
-      match_type: "DERBY",
-      enrichment: { form_home: "DWWDW", form_away: "WDLWW" },
-    },
-    {
-      id: -5,
-      match_id: "fallback-football-bundes-001",
-      league: "BL1",
-      league_name: "Bundesliga",
-      home_team: "Bayer Leverkusen",
-      away_team: "Borussia Dortmund",
-      kickoff: nextKickoff(52),
-      p_home: 0.46,
-      p_draw: 0.25,
-      p_away: 0.29,
-      lambda_home: 1.76,
-      lambda_away: 1.21,
-      odds_home: 2.36,
-      odds_draw: 3.75,
-      odds_away: 2.94,
-      edge: 0.0363,
-      best_selection: "HOME",
-      model_matches: 340,
-      computed_at: now,
-      match_type: "STANDARD",
-      enrichment: { form_home: "WWWDW", form_away: "LWWDW" },
-    },
-  ];
-}
-
 function decimalOdds(probability: number, valueBoost = 0) {
   const adjusted = Math.max(0.05, Math.min(0.92, probability - valueBoost));
   return Math.round((1 / adjusted) * 100) / 100;
@@ -498,21 +374,12 @@ export async function GET() {
        FROM match_predictions WHERE kickoff > NOW()`
     ),
   ]);
-  let predictions = predictions_raw;
-
   const computedAt = meta[0]?.ts ?? null;
   const ageMinutes = computedAt
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
-  const usingFallback = predictions.length === 0;
-  const MIN_PREDICTIONS = 5;
-  if (predictions.length < MIN_PREDICTIONS) {
-    const existingIds = new Set(predictions.map((p) => p.match_id));
-    const fallback = fallbackPredictions().filter((f) => !existingIds.has(f.match_id));
-    const needed = MIN_PREDICTIONS - predictions.length;
-    predictions = [...predictions, ...fallback.slice(0, needed)];
-  }
-  predictions = predictions.map((p) => {
+  const isOffSeason = predictions_raw.length === 0;
+  const predictions = predictions_raw.map((p) => {
     const hydrated = hydratePaperOdds(p);
     const lH = hydrated.lambda_home;
     const lA = hydrated.lambda_away;
@@ -523,15 +390,16 @@ export async function GET() {
     }
     return hydrated;
   });
-  const isStale = !usingFallback && ageMinutes > 60;
+  const isStale = !isOffSeason && ageMinutes > 60;
 
   return NextResponse.json(
     {
       predictions,
-      computed_at: usingFallback ? predictions[0]?.computed_at ?? null : computedAt,
+      computed_at: computedAt,
       count: predictions.length,
       is_stale: isStale,
-      source: usingFallback ? "fallback" : "database",
+      is_off_season: isOffSeason,
+      source: "database",
     },
     { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } }
   );

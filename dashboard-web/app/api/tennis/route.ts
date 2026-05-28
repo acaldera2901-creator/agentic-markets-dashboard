@@ -333,21 +333,33 @@ export async function GET() {
     });
   }
 
-  // Fallback to placeholder data — live mode requires Redis/Upstash connection
+  // In production return empty matches; demo data only when TENNIS_DEMO_MODE=true
+  const demoMode = process.env.TENNIS_DEMO_MODE === "true";
   const summary = {
     total_today: 0,
     value_bets: 0,
     markets_active: 0,
     pnl: 0.0,
-    source: "placeholder",
+    source: demoMode ? "placeholder" : "none",
   };
 
   return NextResponse.json({
-    matches: PLACEHOLDER_MATCHES,
+    matches: demoMode ? PLACEHOLDER_MATCHES : [],
+    demo_matches: demoMode ? [] : PLACEHOLDER_MATCHES,
     summary,
-    status: "offline",
+    status: "not_ready",
     computed_at: now,
-    source: "placeholder",
-    is_placeholder: true,
+    source: demoMode ? "placeholder" : "none",
+    is_placeholder: demoMode,
+    readiness: {
+      ready_for_live: false,
+      required: [
+        "real fixture feed",
+        "real odds feed",
+        "surface/player model writer",
+        "Redis or Supabase persistence",
+        "settlement/history writer",
+      ],
+    },
   });
 }

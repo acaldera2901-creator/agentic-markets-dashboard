@@ -12,7 +12,13 @@ export async function GET(req: NextRequest) {
   }
 
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? `https://${req.headers.get("host")}`;
-  const resp = await fetch(`${base}/api/predictions`, { method: "POST" });
+  const resp = await fetch(`${base}/api/predictions`, {
+    method: "POST",
+    headers: auth ? { Authorization: auth } : {},
+  });
   const data = await resp.json();
+  if (!resp.ok) {
+    return NextResponse.json({ error: "upstream_failed", status: resp.status, detail: data }, { status: resp.status });
+  }
   return NextResponse.json(data);
 }
