@@ -5,6 +5,9 @@ from agents.base import BaseAgent
 from core.redis_client import consume, publish
 from core.football_api_client import get_historical_results as apifootball_history, LEAGUE_IDS
 from core.football_data_org_client import get_historical_results as fdorg_history, FREE_TIER_CODES
+from core.world_cup_registry import api_football_season_for, is_world_cup_code
+from core.world_cup_team_model import matchup_profile
+from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
 from context.context_service import ContextService
@@ -43,7 +46,10 @@ class ModelAgent(BaseAgent):
                 return results
         if settings.API_FOOTBALL_KEY:
             now = datetime.now()
-            season = now.year if now.month >= 8 else now.year - 1
+            season = api_football_season_for(
+                league_code,
+                now.year if now.month >= 8 else now.year - 1,
+            )
             return await apifootball_history(league_id, season)
         return []
 
@@ -100,6 +106,21 @@ class ModelAgent(BaseAgent):
                     self.logger.info(f"fitted model for {league_code} on {len(training)} matches")
                 else:
                     self.logger.warning(f"insufficient data for {league_code}: {len(training)} matches")
+                    if is_world_cup_code(league_code):
+                        self.set_status_detail({
+                            "type": "model_bootstrap",
+                            "world_cup": {
+                                "mode": "monitor_only",
+                                "blocked_reason": "national-team model/history not ready",
+                                "training_matches": len(training),
+                                "required_next": [
+                                    "national-team strength baseline",
+                                    "recent international form",
+                                    "venue/stage context",
+                                    "settlement source",
+                                ],
+                            },
+                        })
             except Exception as e:
                 self.logger.error(f"bootstrap error for {league_code}: {e}")
 
@@ -159,6 +180,38 @@ class ModelAgent(BaseAgent):
                 "odds": json.dumps(payload.get("odds", {})),
                 "computed_at": datetime.now(timezone.utc).isoformat(),
             }
+            if is_world_cup_code(league):
+                wc_context = payload.get("world_cup_context") or {}
+                national_matchup = matchup_profile(self._history.get(league, []), home, away)
+                result["world_cup_context"] = json.dumps(wc_context)
+                result["world_cup_national_matchup"] = json.dumps(national_matchup)
+                result["world_cup_stage"] = str(wc_context.get("stage") or "unknown")
+                result["neutral_venue"] = str(wc_context.get("neutral_venue", True))
+                result["host_advantage_team"] = str(wc_context.get("host_advantage_team") or "")
+                result["world_cup_context_quality"] = str(wc_context.get("data_completeness_score", 0))
+                result["world_cup_national_model_quality"] = str(national_matchup.get("data_quality", 0))
+                result["world_cup_national_model_blocked_reason"] = str(
+                    national_matchup.get("blocked_reason") or ""
+                )
+                quality = compute_world_cup_data_quality(
+                    payload=payload,
+                    context=wc_context,
+                    national_matchup=national_matchup,
+                    settlement_ready=False,
+                    squad_news_ready=False,
+                )
+                result["world_cup_data_quality"] = json.dumps(quality)
+                result["world_cup_data_quality_score"] = str(quality.get("total_score", 0))
+                result["world_cup_publication_tier"] = str(quality.get("publication_tier", "monitor_only"))
+                result["world_cup_data_quality_blocked_reasons"] = json.dumps(
+                    quality.get("blocked_reasons", [])
+                )
+                result["world_cup_odds_snapshot"] = json.dumps(quality.get("odds_snapshot") or {})
+                result["provider_event_id"] = str(payload.get("provider_event_id") or payload.get("match_id") or "")
+                result["provider_source"] = str(payload.get("provider_source") or "")
+                self.set_status_detail(world_cup_data_quality_status_detail(quality))
+                if wc_context.get("market_warning"):
+                    result["market_warning"] = str(wc_context["market_warning"])
 
             # Arricchisci con contesto campionato/partita
             ctx_input = {

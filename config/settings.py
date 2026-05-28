@@ -97,7 +97,9 @@ class Settings(BaseSettings):
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
 
-    LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL"]
+    # WC is included for World Cup diagnostics/monitoring. It must stay gated
+    # until fixture, odds, national-team model and settlement readiness pass.
+    LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL", "WC"]
     DATA_REFRESH_INTERVAL: int = 900
     PREMATCH_REFRESH_INTERVAL: int = 60
 
