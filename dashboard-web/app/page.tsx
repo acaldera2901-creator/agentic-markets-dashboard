@@ -1104,6 +1104,7 @@ function SportsbookBoard({
   onBetNow,
   isFreeClient,
   isPremium,
+  tennisIsPlaceholder,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -1111,9 +1112,10 @@ function SportsbookBoard({
   onBetNow?: () => void;
   isFreeClient?: boolean;
   isPremium?: boolean;
+  tennisIsPlaceholder?: boolean;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
-  const [signalFilter, setSignalFilter] = useState<"all" | "value">(isFreeClient ? "value" : "all");
+  const [signalFilter, setSignalFilter] = useState<"all" | "value">("all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
   const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
   const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("edge");
@@ -1198,8 +1200,8 @@ function SportsbookBoard({
 
   const tennisRows = sortTennis(tennisMatches
     .filter((m) => sportFilter !== "football")
-    .filter((m) => isTennisMarketVisible(m.scheduled))
-    .filter((m) => signalFilter === "all" || isTennisBestBet(m))
+    .filter((m) => tennisIsPlaceholder || isTennisMarketVisible(m.scheduled))
+    .filter((m) => tennisIsPlaceholder || signalFilter === "all" || isTennisBestBet(m))
     .filter((m) => competitionFilter === "all" || competitionFilter === `tennis:${m.tournament}`)
     .filter((m) => surfaceFilter === "all" || m.surface === surfaceFilter)
     .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query)))
@@ -5360,6 +5362,7 @@ function UnifiedBetsTab({
   isFreeClient,
   isPremiumClient,
   isLoggedIn,
+  tennisIsPlaceholder,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -5374,41 +5377,24 @@ function UnifiedBetsTab({
   isFreeClient: boolean;
   isPremiumClient?: boolean;
   isLoggedIn: boolean;
+  tennisIsPlaceholder?: boolean;
 }) {
   const lang = useLang();
   const visibleHistory = history
     .filter((h) => h.bet_status && h.bet_status !== "pending")
     .slice(0, 5);
 
-  if (!isLoggedIn) {
-    return (
-      <>
-        <div className="bets-auth-gate">
-          <div className="bets-auth-gate-icon">🔒</div>
-          <h3>{lang === "it" ? "Accedi per vedere le prediction" : "Sign in to see predictions"}</h3>
-          <p>{lang === "it"
-            ? "Crea un profilo gratuito o accedi per sbloccare le best bets del giorno selezionate dall'agente."
-            : "Create a free profile or sign in to unlock today's best bets selected by the agent."
-          }</p>
-          <div className="bets-auth-gate-actions">
-            <button className="btn-primary" onClick={onRegister}>
-              {lang === "it" ? "Registrati gratis" : "Register for free"}
-            </button>
-            <button className="btn-secondary" onClick={onSignIn}>
-              {lang === "it" ? "Accedi" : "Sign In"}
-            </button>
-          </div>
-          <span className="bets-auth-gate-hint">
-            {lang === "it" ? "Piano Free incluso — nessuna carta richiesta" : "Free plan included — no card required"}
-          </span>
-        </div>
-        <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
-      </>
-    );
-  }
-
   return (
     <>
+      {!isLoggedIn && (
+        <div className="flex items-center justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-gray-300">
+          <span>{lang === "it" ? "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica." : "Register to save selections, get alerts and unlock auto-execution."}</span>
+          <div className="flex gap-2 shrink-0">
+            <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{lang === "it" ? "Accedi" : "Sign In"}</button>
+            <button className="btn-primary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onRegister}>{lang === "it" ? "Registrati" : "Register"}</button>
+          </div>
+        </div>
+      )}
       <SportsbookBoard
         predictions={predictions}
         tennisMatches={tennisMatches}
@@ -5416,6 +5402,7 @@ function UnifiedBetsTab({
         onBetNow={onBetNow}
         isFreeClient={isFreeClient}
         isPremium={isPremiumClient}
+        tennisIsPlaceholder={tennisIsPlaceholder}
       />
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
@@ -5626,10 +5613,12 @@ export default function Dashboard() {
       const resp = await fetch("/api/predictions");
       if (resp.ok) {
         const data = await resp.json();
-        setPredictions(data.predictions ?? []);
+        const isOffSeason = data.is_off_season === true;
+        const live: Prediction[] = data.predictions ?? [];
+        setPredictions(live);
+        setPredFallback(isOffSeason);
         setComputedAt(data.computed_at ?? null);
         setPredStale(data.is_stale ?? false);
-        setPredFallback(data.is_off_season === true);
       }
     } catch { /**/ } finally { setPredLoading(false); }
   }, []);
@@ -5651,10 +5640,8 @@ export default function Dashboard() {
       if (resp.ok) {
         const data = await resp.json();
         const liveMatches: TennisMatch[] = data.matches ?? [];
-        const demoMatches: TennisMatch[] = data.demo_matches ?? [];
-        const usePlaceholder = liveMatches.length === 0 && demoMatches.length > 0;
-        setTennisMatches(usePlaceholder ? demoMatches : liveMatches);
-        setTennisIsPlaceholder(usePlaceholder);
+        setTennisMatches(liveMatches);
+        setTennisIsPlaceholder(false);
         setTennisSummary(data.summary ?? null);
         setTennisComputedAt(data.computed_at ?? null);
       }
@@ -5837,12 +5824,6 @@ export default function Dashboard() {
               <span>⚽ {uiLanguage === "it" ? "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026)." : "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026)."}</span>
             </div>
           )}
-          {tennisIsPlaceholder && tab === "bets" && (
-            <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-blue-400/30 bg-blue-400/5 text-xs font-mono text-blue-400">
-              <span>🎾 {uiLanguage === "it" ? "Tennis — dati di esempio. Il modello live si attiva appena arrivano i dati reali." : "Tennis — example data. Live model activates automatically when real data arrives."}</span>
-            </div>
-          )}
-
           {tab === "bets" && (
             <UnifiedBetsTab
               predictions={predictions}
@@ -5858,6 +5839,7 @@ export default function Dashboard() {
               isFreeClient={isFreeClient}
               isPremiumClient={isPremiumClient}
               isLoggedIn={hasClientProfile}
+              tennisIsPlaceholder={tennisIsPlaceholder}
             />
           )}
           {tab === "client-area" && (
