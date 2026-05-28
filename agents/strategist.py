@@ -25,6 +25,13 @@ class StrategistAgent(BaseAgent):
 
     async def _process(self, data: dict) -> None:
         try:
+            if data.get("league") == "WC" and data.get("market_warning"):
+                self.logger.info(
+                    "World Cup market warning for %s vs %s: %s",
+                    data.get("home_team"),
+                    data.get("away_team"),
+                    data.get("market_warning"),
+                )
             result = await self._evaluate(data)
 
             if not result.get("approve") or result.get("conviction", 0) < 6:
