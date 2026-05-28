@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import httpx
 from abc import ABC, abstractmethod
@@ -16,6 +17,7 @@ class BaseAgent(ABC):
         self.logger = logging.getLogger(name)
         self._running = False
         self._researched: set = set()  # used by ResearchAgent
+        self._status_detail: dict | str | None = None
 
     async def run(self) -> None:
         self._running = True
@@ -32,14 +34,29 @@ class BaseAgent(ABC):
     async def _heartbeat_loop(self) -> None:
         while self._running:
             await set_heartbeat(self.name, settings.HEARTBEAT_TIMEOUT, datetime.utcnow().isoformat())
+            detail = self._serialize_status_detail()
             await asyncio.gather(
-                self._post_dashboard_heartbeat(),
-                upsert_heartbeat(self.name),
+                self._post_dashboard_heartbeat(detail),
+                upsert_heartbeat(self.name, detail),
                 return_exceptions=True,
             )
             await asyncio.sleep(settings.HEARTBEAT_INTERVAL)
 
-    async def _post_dashboard_heartbeat(self) -> None:
+    def set_status_detail(self, detail: dict | str | None) -> None:
+        """Expose structured, non-secret runtime state to health/diagnostics."""
+        self._status_detail = detail
+
+    def _serialize_status_detail(self) -> str | None:
+        if self._status_detail is None:
+            return None
+        if isinstance(self._status_detail, str):
+            return self._status_detail[:4000]
+        try:
+            return json.dumps(self._status_detail, separators=(",", ":"), default=str)[:4000]
+        except Exception:
+            return str(self._status_detail)[:4000]
+
+    async def _post_dashboard_heartbeat(self, detail: str | None = None) -> None:
         """POST heartbeat to dashboard DB so agent status is visible in the web UI."""
         if not settings.DASHBOARD_URL:
             return
@@ -50,7 +67,7 @@ class BaseAgent(ABC):
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.post(
                     f"{settings.DASHBOARD_URL}/api/health",
-                    json={"agent_name": self.name},
+                    json={"agent_name": self.name, "detail": detail},
                     headers=headers,
                 )
         except Exception:

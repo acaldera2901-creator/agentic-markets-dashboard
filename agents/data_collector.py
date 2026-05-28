@@ -11,6 +11,8 @@ from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGU
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
 from core.odds_api_client import get_odds, normalize_name
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
+from core.world_cup_context import build_world_cup_context
+from core.world_cup_registry import api_football_season_for, build_cycle_detail, is_world_cup_code
 from config.settings import settings
 
 
@@ -69,16 +71,27 @@ class DataCollectorAgent(BaseAgent):
         if settings.API_FOOTBALL_KEY:
             now = datetime.now()
             # Seasons start Aug/Sep — before August we're still in the previous season
-            season = now.year if now.month >= 8 else now.year - 1
+            season = api_football_season_for(
+                league_code,
+                now.year if now.month >= 8 else now.year - 1,
+            )
             return await apifootball_fixtures(league_id, season)
         return []
 
     async def _collect_cycle(self) -> None:
         self._upcoming_kickoffs = []
         published_this_cycle = 0
+        league_counts: dict[str, dict[str, int]] = {}
+        source_errors: list[str] = []
         for league_code, league_id in LEAGUE_IDS.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
+                league_counts[league_code] = {
+                    "fixtures": len(fixtures),
+                    "odds_markets": 0,
+                    "matched_odds": 0,
+                    "published_events": 0,
+                }
                 # Primary odds source: Matchbook Exchange
                 odds_map: dict = {}
                 if mb_configured():
@@ -92,6 +105,7 @@ class DataCollectorAgent(BaseAgent):
                                     odds_map[key] = o
                     except Exception as mb_err:
                         self.logger.warning(f"Matchbook odds error: {mb_err}")
+                        source_errors.append(f"{league_code}:matchbook:{mb_err}")
 
                 # Fallback: The Odds API
                 if not odds_map:
@@ -102,18 +116,33 @@ class DataCollectorAgent(BaseAgent):
                     }
                     if odds_map:
                         self.logger.info(f"OddsAPI {league_code}: {len(odds_map)} markets")
+                league_counts[league_code]["odds_markets"] = len(odds_map)
                 published = 0
+                matched_odds = 0
                 for fixture in fixtures:
                     event = self._build_event(fixture, odds_map, league_code)
                     if event:
                         self._upcoming_kickoffs.append(event["kickoff"])
+                        if event.get("odds"):
+                            matched_odds += 1
                         await publish("market:data", {"payload": json.dumps(event)})
                         published += 1
+                league_counts[league_code]["matched_odds"] = matched_odds
+                league_counts[league_code]["published_events"] = published
                 if published:
                     self.logger.info(f"published {published} fixtures for {league_code}")
                     published_this_cycle += published
+                if is_world_cup_code(league_code):
+                    self.logger.info(
+                        "World Cup monitor: fixtures=%s odds_markets=%s matched_odds=%s published=%s",
+                        len(fixtures),
+                        len(odds_map),
+                        matched_odds,
+                        published,
+                    )
             except Exception as e:
                 self.logger.error(f"error collecting {league_code}: {e}\n{traceback.format_exc()}")
+                source_errors.append(f"{league_code}:collect:{e}")
 
         if published_this_cycle == 0:
             self._consecutive_empty_cycles += 1
@@ -126,6 +155,17 @@ class DataCollectorAgent(BaseAgent):
                 self._last_offseason_log = now
         else:
             self._consecutive_empty_cycles = 0
+
+        self.set_status_detail(
+            build_cycle_detail(
+                league_counts=league_counts,
+                source_errors=source_errors,
+                # These stay false until dedicated World Cup model/context/settlement are implemented.
+                national_model_ready=False,
+                venue_context_ready=False,
+                settlement_ready=False,
+            )
+        )
 
     def _build_event(self, fixture: dict, odds_map: dict, league: str) -> dict | None:
         try:
@@ -153,11 +193,18 @@ class DataCollectorAgent(BaseAgent):
 
             return {
                 "match_id": match_id,
+                "provider_event_id": match_id,
+                "provider_source": "api-football",
                 "league": league,
                 "home_team": home,
                 "away_team": away,
                 "kickoff": kickoff,
                 "odds": odds_data or {},
+                "world_cup_context": (
+                    build_world_cup_context(fixture=fixture, team_a=home, team_b=away)
+                    if is_world_cup_code(league)
+                    else None
+                ),
                 "collected_at": datetime.now(timezone.utc).isoformat(),
             }
         except (KeyError, TypeError):

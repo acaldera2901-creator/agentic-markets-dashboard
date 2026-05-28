@@ -81,6 +81,53 @@ class AnalystAgent(BaseAgent):
                     f"skipped {data['home_team']} vs {data['away_team']}: {assessment.get('notes')}"
                 )
                 return
+            if data.get("league") == "WC":
+                context_quality = float(data.get("world_cup_context_quality") or 0.0)
+                national_quality = float(data.get("world_cup_national_model_quality") or 0.0)
+                data_quality = float(data.get("world_cup_data_quality_score") or 0.0)
+                publication_tier = str(data.get("world_cup_publication_tier") or "monitor_only")
+                if data_quality < 0.78:
+                    self.logger.info(
+                        "skipped World Cup signal: data quality %.2f below publication threshold",
+                        data_quality,
+                    )
+                    self.set_status_detail({
+                        "type": "analyst_gate",
+                        "league": "WC",
+                        "blocked_reason": "world_cup_data_quality_below_threshold",
+                        "world_cup_data_quality_score": data_quality,
+                        "publication_tier": publication_tier,
+                        "required_min": 0.78,
+                        "blocked_reasons": data.get("world_cup_data_quality_blocked_reasons", "[]"),
+                    })
+                    return
+                if context_quality < 0.78:
+                    self.logger.info(
+                        "skipped World Cup signal: context quality %.2f below publication threshold",
+                        context_quality,
+                    )
+                    self.set_status_detail({
+                        "type": "analyst_gate",
+                        "league": "WC",
+                        "blocked_reason": "world_cup_context_quality_below_threshold",
+                        "world_cup_context_quality": context_quality,
+                        "required_min": 0.78,
+                    })
+                    return
+                if national_quality < 0.75:
+                    self.logger.info(
+                        "skipped World Cup signal: national model quality %.2f below publication threshold",
+                        national_quality,
+                    )
+                    self.set_status_detail({
+                        "type": "analyst_gate",
+                        "league": "WC",
+                        "blocked_reason": data.get("world_cup_national_model_blocked_reason")
+                            or "world_cup_national_model_quality_below_threshold",
+                        "world_cup_national_model_quality": national_quality,
+                        "required_min": 0.75,
+                    })
+                    return
 
             bookmaker_source = odds_raw.get("bookmaker", "")
             opportunity = {
@@ -110,6 +157,19 @@ class AnalystAgent(BaseAgent):
                 "match_type": data.get("match_type", "STANDARD"),
                 "league_tier": data.get("league_tier", ""),
                 "auto_skip_reason": data.get("auto_skip_reason", ""),
+                "world_cup_stage": data.get("world_cup_stage", ""),
+                "neutral_venue": data.get("neutral_venue", ""),
+                "host_advantage_team": data.get("host_advantage_team", ""),
+                "world_cup_context_quality": data.get("world_cup_context_quality", ""),
+                "world_cup_national_model_quality": data.get("world_cup_national_model_quality", ""),
+                "world_cup_national_model_blocked_reason": data.get("world_cup_national_model_blocked_reason", ""),
+                "world_cup_data_quality_score": data.get("world_cup_data_quality_score", ""),
+                "world_cup_publication_tier": data.get("world_cup_publication_tier", ""),
+                "world_cup_data_quality_blocked_reasons": data.get("world_cup_data_quality_blocked_reasons", ""),
+                "world_cup_odds_snapshot": data.get("world_cup_odds_snapshot", ""),
+                "provider_event_id": data.get("provider_event_id", ""),
+                "provider_source": data.get("provider_source", ""),
+                "market_warning": data.get("market_warning", ""),
                 "found_at": datetime.utcnow().isoformat(),
             }
             await publish("analyst:opportunities", opportunity)

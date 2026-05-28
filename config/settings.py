@@ -29,9 +29,12 @@ class Settings(BaseSettings):
     DASHBOARD_URL: str = ""
     RESEARCH_SECRET: str = ""
 
-    # Supabase — direct write for agent heartbeats
+    # Supabase — direct write for agent heartbeats + DB
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
+    # Path override for launchctl restart (Mac local only — ignored on server)
+    AGENTIC_MARKETS_AGENT_ROOT: str = ""
+    DASHBOARD_HEARTBEAT_TIMEOUT: int = 10
 
     # Asian Handicap collector (S7)
     SBOBET_API_KEY: str = ""         # optional AH odds source
@@ -94,7 +97,9 @@ class Settings(BaseSettings):
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
 
-    LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL"]
+    # WC is included for World Cup diagnostics/monitoring. It must stay gated
+    # until fixture, odds, national-team model and settlement readiness pass.
+    LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL", "WC"]
     DATA_REFRESH_INTERVAL: int = 900
     PREMATCH_REFRESH_INTERVAL: int = 60
 

@@ -14,6 +14,9 @@ SPORT_KEYS = {
     "CL": "soccer_uefa_champs_league",
     "EL": "soccer_uefa_europa_league",
     "ECL": "soccer_uefa_europa_conference_league",
+    # Provider key must be probed before live use. If The Odds API changes the key,
+    # diagnostics will show odds_markets=0 and keep World Cup in monitor_only.
+    "WC": "soccer_fifa_world_cup",
 }
 
 _SUFFIXES = re.compile(r"\b(FC|CF|SC|AC|AS|SV|1\. ?FC|VfB|VfL|TSG|RB|SS|US|SSC|AFC)\b", re.IGNORECASE)

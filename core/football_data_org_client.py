@@ -15,7 +15,7 @@ from typing import List, Dict
 BASE_URL = "https://api.football-data.org/v4"
 
 # competition codes supported by the free tier (subset of all codes)
-FREE_TIER_CODES = frozenset({"PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "DED", "PPL", "BSA"})
+FREE_TIER_CODES = frozenset({"PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "DED", "PPL", "BSA", "WC"})
 
 # Global rate limiter: max 8 requests/min (conservative below the 10/min limit)
 # Shared across DataCollector, ModelAgent, or any other caller
