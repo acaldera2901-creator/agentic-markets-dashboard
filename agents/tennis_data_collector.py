@@ -1,44 +1,40 @@
+# agents/tennis_data_collector.py
 import asyncio
-import json
 from datetime import datetime
 
 from agents.base import BaseAgent
-from core.redis_client import get_redis
+from core.tennis_api_client import TennisAPIClient
 
 
 class TennisDataCollectorAgent(BaseAgent):
     def __init__(self):
         super().__init__("TennisDataCollectorAgent")
+        self._client = TennisAPIClient()
 
     async def _main_loop(self) -> None:
         while self._running:
             await self._collect_cycle()
-            await asyncio.sleep(300)
+            await asyncio.sleep(3600)  # hourly — respect 100 req/day quota
 
     async def _collect_cycle(self):
-        from core import matchbook_client
-
-        markets: list[dict] = []
-
-        if matchbook_client.is_configured():
-            try:
-                mb_markets = await asyncio.to_thread(matchbook_client.get_tennis_markets)
-                if mb_markets:
-                    markets.extend(mb_markets)
-                    self.logger.info(f"tennis: {len(mb_markets)} markets from Matchbook")
-            except Exception as e:
-                self.logger.error(f"tennis: Matchbook collection error: {e}")
-        else:
-            self.logger.debug("tennis: no exchange configured — skipping collection")
-
-        if markets:
-            r = await get_redis()
-            payload = json.dumps({
-                "markets": markets,
-                "collected_at": datetime.utcnow().isoformat(),
-                "count": len(markets),
-            })
-            await r.set("market:tennis", payload, ex=600)
-            self.logger.info(f"tennis: {len(markets)} total markets cached")
-        else:
-            self.logger.debug("tennis: no markets available")
+        try:
+            fixtures = await self._client.get_upcoming_fixtures(days_ahead=7)
+            if fixtures:
+                await self._client.write_fixtures_to_supabase(fixtures)
+                self.logger.info("tennis: collected %d fixtures from RapidAPI", len(fixtures))
+                self.set_status_detail({
+                    "type": "tennis_collection",
+                    "fixtures_collected": len(fixtures),
+                    "source": "rapidapi_tennis",
+                    "collected_at": datetime.utcnow().isoformat(),
+                })
+            else:
+                self.logger.info("tennis: no fixtures returned (quota exhausted or no matches today)")
+                self.set_status_detail({
+                    "type": "tennis_collection",
+                    "fixtures_collected": 0,
+                    "source": "rapidapi_tennis",
+                    "status": "empty",
+                })
+        except Exception as exc:
+            self.logger.error("tennis collection error: %s", exc)
