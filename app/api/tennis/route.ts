@@ -182,9 +182,20 @@ export async function GET() {
 
   return NextResponse.json({
     matches: [],
-    summary: { total_today: 0, value_bets: 0, markets_active: 0, pnl: 0.0, source: "offline" },
-    status: "offline",
+    summary: { total_today: 0, value_bets: 0, markets_active: 0, pnl: 0.0, source: "none" },
+    status: "not_ready",
     computed_at: now,
-    source: "offline",
+    source: "none",
+    is_placeholder: false,
+    readiness: {
+      ready_for_live: false,
+      required: [
+        "real fixture feed",
+        "real odds feed",
+        "surface/player model writer",
+        "Redis or Supabase persistence",
+        "settlement/history writer",
+      ],
+    },
   });
 }
