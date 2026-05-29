@@ -54,7 +54,6 @@ type PredictionRow = {
   enrichment?: EnrichmentPayload | null;
 };
 
-
 function decimalOdds(probability: number, valueBoost = 0) {
   const adjusted = Math.max(0.05, Math.min(0.92, probability - valueBoost));
   return Math.round((1 / adjusted) * 100) / 100;
@@ -375,14 +374,13 @@ export async function GET() {
        FROM match_predictions WHERE kickoff > NOW()`
     ),
   ]);
-  let predictions = predictions_raw;
-
   const computedAt = meta[0]?.ts ?? null;
   const ageMinutes = computedAt
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
-  const isStale = predictions.length > 0 && ageMinutes > 60;
-  predictions = predictions.map((p) => {
+  const isOffSeason = predictions_raw.length === 0;
+  const isStale = !isOffSeason && ageMinutes > 60;
+  const predictions = predictions_raw.map((p) => {
     const hydrated = hydratePaperOdds(p);
     const lH = hydrated.lambda_home;
     const lA = hydrated.lambda_away;
@@ -399,6 +397,7 @@ export async function GET() {
       computed_at: computedAt,
       count: predictions.length,
       is_stale: isStale,
+      is_off_season: isOffSeason,
       source: "database",
     },
     { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } }
