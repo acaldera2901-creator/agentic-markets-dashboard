@@ -55,7 +55,9 @@ class AnalystAgent(BaseAgent):
 
             # Raise effective edge threshold by phase_edge_boost from ModelAgent
             phase_boost = float(data.get("phase_edge_boost") or 0.0)
-            effective_min_edge = settings.MIN_EDGE + phase_boost
+            confidence_weight = max(0.5, min(1.0, float(data.get("confidence_weight") or 1.0)))
+            # High confidence → lower required edge threshold. Low confidence → higher threshold.
+            effective_min_edge = (settings.MIN_EDGE + phase_boost) / confidence_weight
 
             # Short-odds guard: heavy favourites compound variance — require extra edge
             odds_for_sel = market_odds[best_sel]
@@ -171,6 +173,8 @@ class AnalystAgent(BaseAgent):
                 "provider_source": data.get("provider_source", ""),
                 "market_warning": data.get("market_warning", ""),
                 "found_at": datetime.utcnow().isoformat(),
+                "feature_adjustments": data.get("feature_adjustments", ""),
+                "confidence_weight": data.get("confidence_weight", "1.0"),
             }
             await publish("analyst:opportunities", opportunity)
             self.logger.info(
