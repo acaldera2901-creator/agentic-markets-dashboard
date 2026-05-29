@@ -97,6 +97,11 @@ class Settings(BaseSettings):
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
 
+    # Data collection
+    DATA_COLLECTION_DAYS_AHEAD: int = 7
+    TENNIS_RAPIDAPI_HOST: str = "v1.tennis.api-sports.io"
+    HISTORICAL_CSV_YEARS_BACK: int = 3
+
     # WC is included for World Cup diagnostics/monitoring. It must stay gated
     # until fixture, odds, national-team model and settlement readiness pass.
     LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL", "WC"]

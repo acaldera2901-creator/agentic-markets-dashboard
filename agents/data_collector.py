@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from agents.base import BaseAgent
 from core.redis_client import publish
 from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGUE_IDS
+from core.data_hub import DataHub
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
 from core.odds_api_client import get_odds, normalize_name
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
@@ -31,6 +32,7 @@ class DataCollectorAgent(BaseAgent):
         self._upcoming_kickoffs: list = []
         self._consecutive_empty_cycles: int = 0
         self._last_offseason_log: float = 0.0
+        self._hub = DataHub()
 
     async def _main_loop(self) -> None:
         while self._running:
@@ -166,6 +168,15 @@ class DataCollectorAgent(BaseAgent):
                 settlement_ready=False,
             )
         )
+
+        # DataHub enrichment — fire-and-forget, never blocks core pipeline
+        try:
+            leagues = list(LEAGUE_IDS.keys())
+            hub_fixtures = await self._hub.collect_all_fixtures(leagues)
+            await self._hub.collect_all_odds(leagues)
+            self.logger.info("DataHub enriched %d fixtures", len(hub_fixtures))
+        except Exception as hub_exc:
+            self.logger.warning("DataHub enrichment failed (non-blocking): %s", hub_exc)
 
     def _build_event(self, fixture: dict, odds_map: dict, league: str) -> dict | None:
         try:
