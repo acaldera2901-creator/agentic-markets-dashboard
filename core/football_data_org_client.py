@@ -146,6 +146,28 @@ async def get_match_result(
     return None
 
 
+async def get_standings(competition_code: str, api_key: str) -> List[Dict]:
+    """Return standings table for a competition. Returns [] if not in free tier."""
+    if competition_code not in FREE_TIER_CODES:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            resp = await c.get(
+                f"https://api.football-data.org/v4/competitions/{competition_code}/standings",
+                headers={"X-Auth-Token": api_key},
+            )
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+            standings = data.get("standings", [])
+            for s in standings:
+                if s.get("type") == "TOTAL":
+                    return s.get("table", [])
+            return []
+    except Exception:
+        return []
+
+
 async def get_historical_results(competition_code: str, api_key: str, days_back: int = 365) -> List[Dict]:
     if competition_code not in FREE_TIER_CODES:
         return []
