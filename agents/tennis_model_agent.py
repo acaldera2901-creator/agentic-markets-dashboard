@@ -90,11 +90,12 @@ class TennisModelAgent(BaseAgent):
             return []
         try:
             import datetime
-            now_iso = datetime.datetime.utcnow().isoformat()
+            # Include matches from last 12h (covers live/today) and upcoming
+            cutoff = (datetime.datetime.utcnow() - datetime.timedelta(hours=12)).isoformat()
             async with httpx.AsyncClient(timeout=10.0) as c:
                 resp = await c.get(
                     f"{supa_url.rstrip('/')}/rest/v1/tennis_fixtures",
-                    params={"scheduled_at": f"gt.{now_iso}", "order": "scheduled_at.asc", "limit": "100"},
+                    params={"scheduled_at": f"gt.{cutoff}", "order": "scheduled_at.asc", "limit": "100"},
                     headers={
                         "apikey": supa_key,
                         "Authorization": f"Bearer {supa_key}",
@@ -165,6 +166,12 @@ class TennisModelAgent(BaseAgent):
             "model_version": "elo_surface_v3_h2h_fatigue",
         }
 
+    _PREDICTION_COLS = {
+        "match_id", "player1", "player2", "tournament", "surface",
+        "scheduled_at", "p1", "p2", "odds_p1", "odds_p2",
+        "edge", "best_selection", "model_version",
+    }
+
     async def _write_predictions(self, predictions: list[dict]) -> None:
         from config.settings import settings
         import httpx
@@ -172,11 +179,13 @@ class TennisModelAgent(BaseAgent):
         supa_key = settings.SUPABASE_SERVICE_ROLE_KEY
         if not supa_url or not supa_key or not predictions:
             return
+        # Strip fields not in tennis_predictions schema
+        clean = [{k: v for k, v in p.items() if k in self._PREDICTION_COLS} for p in predictions]
         try:
             async with httpx.AsyncClient(timeout=10.0) as c:
                 await c.post(
                     f"{supa_url.rstrip('/')}/rest/v1/tennis_predictions",
-                    json=predictions,
+                    json=clean,
                     headers={
                         "apikey": supa_key,
                         "Authorization": f"Bearer {supa_key}",
