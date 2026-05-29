@@ -122,7 +122,6 @@ async def get_fixtures() -> list[dict]:
                 "round": round_name,
                 "scheduled_at": ev.get("date", ""),
                 "provider": "espn",
-                "espn_status": parsed["match_status"],
             })
 
     logger.info("ESPN tennis: found %d singles matches", len(results))
