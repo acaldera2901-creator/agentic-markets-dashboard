@@ -103,3 +103,133 @@ async def get_fixture_result(fixture_id: int) -> dict | None:
         "home_team": f.get("teams", {}).get("home", {}).get("name", ""),
         "away_team": f.get("teams", {}).get("away", {}).get("name", ""),
     }
+
+
+async def get_standings(league_id: int, season: int) -> List[Dict]:
+    """Return league table rows for the given league+season."""
+    if not settings.API_FOOTBALL_KEY:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/standings",
+                params={"league": league_id, "season": season},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+            standings = data.get("response", [])
+            if not standings:
+                return []
+            return standings[0].get("league", {}).get("standings", [[]])[0]
+    except Exception:
+        return []
+
+
+async def get_team_form(team_id: int, league_id: int, season: int, last_n: int = 10) -> Dict:
+    """Return form data: {form: 'WWDLW', ppg: float, xg_avg: float, matches: int}"""
+    if not settings.API_FOOTBALL_KEY:
+        return {}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/fixtures",
+                params={"team": team_id, "league": league_id, "season": season,
+                        "last": last_n, "status": "FT"},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return {}
+            fixtures = resp.json().get("response", [])
+    except Exception:
+        return {}
+
+    results = []
+    for f in fixtures:
+        goals = f.get("goals", {})
+        teams = f.get("teams", {})
+        is_home = teams.get("home", {}).get("id") == team_id
+        scored = goals.get("home") if is_home else goals.get("away")
+        conceded = goals.get("away") if is_home else goals.get("home")
+        if scored is None or conceded is None:
+            continue
+        won = scored > conceded
+        drawn = scored == conceded
+        results.append({"w": won, "d": drawn, "scored": scored, "conceded": conceded})
+
+    if not results:
+        return {}
+
+    form_str = "".join("W" if r["w"] else ("D" if r["d"] else "L") for r in results[-5:])
+    points = sum(3 if r["w"] else (1 if r["d"] else 0) for r in results)
+    ppg = round(points / len(results), 3)
+    avg_scored = round(sum(r["scored"] for r in results) / len(results), 3)
+    return {"form": form_str, "ppg": ppg, "xg_avg": avg_scored, "matches": len(results)}
+
+
+async def get_h2h(team1_id: int, team2_id: int, last_n: int = 10) -> Dict:
+    """Return H2H record: {team1_wins, draws, team2_wins, total}"""
+    if not settings.API_FOOTBALL_KEY:
+        return {}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/fixtures/headtohead",
+                params={"h2h": f"{team1_id}-{team2_id}", "last": last_n, "status": "FT"},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return {}
+            fixtures = resp.json().get("response", [])
+    except Exception:
+        return {}
+
+    t1_wins = draws = t2_wins = 0
+    for f in fixtures:
+        teams = f.get("teams", {})
+        goals = f.get("goals", {})
+        home_id = teams.get("home", {}).get("id")
+        gh, ga = goals.get("home", 0) or 0, goals.get("away", 0) or 0
+        if gh == ga:
+            draws += 1
+        elif gh > ga:
+            if home_id == team1_id:
+                t1_wins += 1
+            else:
+                t2_wins += 1
+        else:
+            if home_id == team1_id:
+                t2_wins += 1
+            else:
+                t1_wins += 1
+    return {"team1_wins": t1_wins, "draws": draws, "team2_wins": t2_wins, "total": len(fixtures)}
+
+
+async def get_injuries(fixture_id: int) -> Dict:
+    """Return injury lists: {home: [...], away: [...]}"""
+    if not settings.API_FOOTBALL_KEY:
+        return {"home": [], "away": []}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/injuries",
+                params={"fixture": fixture_id},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return {"home": [], "away": []}
+            injuries = resp.json().get("response", [])
+    except Exception:
+        return {"home": [], "away": []}
+
+    home_inj, away_inj = [], []
+    for inj in injuries:
+        player = inj.get("player", {})
+        entry = {"name": player.get("name"), "reason": inj.get("reason", "")}
+        side = inj.get("team", {}).get("side", "")
+        if side == "home":
+            home_inj.append(entry)
+        else:
+            away_inj.append(entry)
+    return {"home": home_inj, "away": away_inj}
