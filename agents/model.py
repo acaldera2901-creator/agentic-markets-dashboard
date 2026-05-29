@@ -13,6 +13,7 @@ from models.conformal import calibrate_from_history, get_interval, interval_widt
 from context.context_service import ContextService
 from core.db import persist_league_profile, persist_match_classification
 from learning.season_phase import SeasonPhaseAdapter
+from models.feature_adjuster import FeatureAdjuster, EnrichedFixture
 from config.settings import settings
 
 # Expected matches per season per league (home + away; 20-team league = 380 total)
@@ -29,6 +30,7 @@ class ModelAgent(BaseAgent):
         self._history: dict[str, list] = {}  # league → parsed match results for conformal
         self._context_svc = ContextService()
         self._phase_adapter = SeasonPhaseAdapter()
+        self._feature_adjuster = FeatureAdjuster()
 
     async def _main_loop(self) -> None:
         await self._bootstrap_models()
@@ -155,6 +157,34 @@ class ModelAgent(BaseAgent):
 
             p_home, p_draw, p_away = model.predict(home, away)
 
+            # Apply feature corrections from enriched fixture data
+            enriched = EnrichedFixture(
+                home_ppg=float(payload.get("home_ppg") or 1.5),
+                away_ppg=float(payload.get("away_ppg") or 1.5),
+                home_xg_avg=float(payload.get("home_xg_avg") or 1.3),
+                away_xg_avg=float(payload.get("away_xg_avg") or 1.3),
+                home_xg_luck=float(payload.get("home_xg_luck") or 0.0),
+                away_xg_luck=float(payload.get("away_xg_luck") or 0.0),
+                home_motivation=float(payload.get("home_motivation") or 0.7),
+                away_motivation=float(payload.get("away_motivation") or 0.7),
+                h2h_home_wins=int(payload.get("h2h_home_wins") or 0),
+                h2h_draws=int(payload.get("h2h_draws") or 0),
+                h2h_away_wins=int(payload.get("h2h_away_wins") or 0),
+                h2h_matches=int(payload.get("h2h_matches") or 0),
+                temperature_c=float(payload.get("temperature_c") or 15.0),
+                wind_kmh=float(payload.get("wind_kmh") or 0.0),
+                precipitation_pct=float(payload.get("precipitation_pct") or 0.0),
+                home_injuries_json=payload.get("home_injuries_json") or [],
+                away_injuries_json=payload.get("away_injuries_json") or [],
+            )
+            adjusted = self._feature_adjuster.adjust(
+                {"p_home": p_home, "p_draw": p_draw, "p_away": p_away},
+                enriched,
+            )
+            p_home = adjusted.p_home
+            p_draw = adjusted.p_draw
+            p_away = adjusted.p_away
+
             # Conformal prediction intervals
             ci_home = get_interval(league, p_home)
             ci_draw = get_interval(league, p_draw)
@@ -179,6 +209,9 @@ class ModelAgent(BaseAgent):
                 "ci_width": str(ci_width),
                 "odds": json.dumps(payload.get("odds", {})),
                 "computed_at": datetime.now(timezone.utc).isoformat(),
+                "feature_adjustments": ",".join(adjusted.adjustments_applied),
+                "confidence_weight": str(adjusted.confidence_weight),
+                "adjustment_detail": json.dumps(adjusted.adjustment_detail),
             }
             if is_world_cup_code(league):
                 wc_context = payload.get("world_cup_context") or {}
