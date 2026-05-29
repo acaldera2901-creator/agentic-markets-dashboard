@@ -62,35 +62,130 @@ class TennisModelAgent(BaseAgent):
             self.logger.error(f"_load_elo_ratings failed: {e}")
 
     async def _compute_cycle(self):
-        r = await get_redis()
-        raw = await r.get("market:tennis")
-        if not raw:
-            self.logger.warning("no tennis markets in Redis — skipping model cycle")
-            return
-
-        data = json.loads(raw)
-        markets = data.get("markets", [])
-        if not markets:
+        # Read upcoming fixtures from Supabase tennis_fixtures table
+        fixtures = await self._load_fixtures_from_db()
+        if not fixtures:
+            self.logger.info("tennis model: no fixtures in DB — skipping cycle")
             return
 
         predictions = []
-        for m in markets:
+        for fixture in fixtures:
             try:
-                pred = self._predict_match(m)
+                pred = self._score_fixture(fixture)
                 if pred:
                     predictions.append(pred)
-            except Exception as e:
-                self.logger.warning(f"predict_match error for {m.get('event_name')}: {e}")
+            except Exception as exc:
+                self.logger.debug("tennis scoring error: %s", exc)
 
         if predictions:
-            payload = json.dumps({
-                "predictions": predictions,
-                "computed_at": datetime.now(timezone.utc).isoformat(),
-                "count": len(predictions),
-            })
-            await r.set("model:tennis_probs", payload, ex=3600)
-            await self._save_to_db(predictions)
-            self.logger.info(f"TennisModelAgent: {len(predictions)} predictions computed")
+            await self._write_predictions(predictions)
+            self.logger.info("tennis model: scored %d fixtures", len(predictions))
+
+    async def _load_fixtures_from_db(self) -> list[dict]:
+        from config.settings import settings
+        import httpx
+        supa_url = settings.SUPABASE_URL
+        supa_key = settings.SUPABASE_SERVICE_ROLE_KEY
+        if not supa_url or not supa_key:
+            return []
+        try:
+            import datetime
+            now_iso = datetime.datetime.utcnow().isoformat()
+            async with httpx.AsyncClient(timeout=10.0) as c:
+                resp = await c.get(
+                    f"{supa_url.rstrip('/')}/rest/v1/tennis_fixtures",
+                    params={"scheduled_at": f"gt.{now_iso}", "order": "scheduled_at.asc", "limit": "100"},
+                    headers={
+                        "apikey": supa_key,
+                        "Authorization": f"Bearer {supa_key}",
+                    },
+                )
+                if resp.status_code == 200:
+                    return resp.json()
+                return []
+        except Exception as exc:
+            self.logger.debug("tennis fixtures DB load error: %s", exc)
+            return []
+
+    def _score_fixture(self, fixture: dict) -> dict | None:
+        p1 = fixture.get("player1", "")
+        p2 = fixture.get("player2", "")
+        surface = (fixture.get("surface") or "hard").lower()
+        if not p1 or not p2:
+            return None
+
+        # Rank guard: skip rank mismatches > 200 outside Grand Slams
+        p1_rank = fixture.get("p1_rank") or 999
+        p2_rank = fixture.get("p2_rank") or 999
+        tournament = fixture.get("tournament") or ""
+        is_grand_slam = any(gs in tournament for gs in ("Roland Garros", "Wimbledon", "US Open", "Australian Open"))
+        if abs(p1_rank - p2_rank) > 200 and not is_grand_slam:
+            self.logger.debug("tennis: skipping rank mismatch %s(%d) vs %s(%d)", p1, p1_rank, p2, p2_rank)
+            return None
+
+        # Base Elo prediction
+        elo_result = self.elo.predict(p1, p2, surface)
+        p1_prob = elo_result["p1"]
+        p2_prob = elo_result["p2"]
+
+        # H2H surface adjustment (only when >= 4 surface matches)
+        h2h_s_p1 = fixture.get("h2h_surface_p1") or 0
+        h2h_s_p2 = fixture.get("h2h_surface_p2") or 0
+        h2h_total = h2h_s_p1 + h2h_s_p2
+        if h2h_total >= 4:
+            h2h_rate = h2h_s_p1 / h2h_total
+            if h2h_rate > 0.70:
+                p1_prob = min(0.90, p1_prob + 0.02)
+            elif h2h_rate < 0.30:
+                p2_prob = min(0.90, p2_prob + 0.02)
+            total = p1_prob + p2_prob
+            p1_prob, p2_prob = p1_prob / total, p2_prob / total
+
+        # Fatigue using real rest/sets data from fixture
+        p1_prob, p2_prob = self.fatigue.adjust(
+            p1_prob, p2_prob,
+            p1_rest_days=fixture.get("p1_rest_days") or 3,
+            p2_rest_days=fixture.get("p2_rest_days") or 3,
+            p1_sets_last_match=fixture.get("p1_sets_last") or 2,
+            p2_sets_last_match=fixture.get("p2_sets_last") or 2,
+        )
+
+        return {
+            "match_id": fixture["match_id"],
+            "player1": p1,
+            "player2": p2,
+            "tournament": tournament,
+            "surface": surface,
+            "round": fixture.get("round", ""),
+            "scheduled_at": fixture.get("scheduled_at", ""),
+            "p1": round(p1_prob, 4),
+            "p2": round(p2_prob, 4),
+            "elo_p1": elo_result.get("r1_effective"),
+            "elo_p2": elo_result.get("r2_effective"),
+            "model_version": "elo_surface_v3_h2h_fatigue",
+        }
+
+    async def _write_predictions(self, predictions: list[dict]) -> None:
+        from config.settings import settings
+        import httpx
+        supa_url = settings.SUPABASE_URL
+        supa_key = settings.SUPABASE_SERVICE_ROLE_KEY
+        if not supa_url or not supa_key or not predictions:
+            return
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as c:
+                await c.post(
+                    f"{supa_url.rstrip('/')}/rest/v1/tennis_predictions",
+                    json=predictions,
+                    headers={
+                        "apikey": supa_key,
+                        "Authorization": f"Bearer {supa_key}",
+                        "Content-Type": "application/json",
+                        "Prefer": "resolution=merge-duplicates",
+                    },
+                )
+        except Exception as exc:
+            self.logger.debug("tennis predictions write error: %s", exc)
 
     def _predict_match(self, market: dict) -> dict | None:
         player1 = market.get("player1", "")
