@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchAllTodayMatches } from "@/lib/football-data";
 import { dbQuery } from "@/lib/db";
+import { requireAccess } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,9 @@ export interface LiveScore {
   minute: number | null;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
   const matches = await fetchAllTodayMatches();
 
   const liveMap: Record<string, LiveScore> = {};

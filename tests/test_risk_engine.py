@@ -191,7 +191,7 @@ class TestFactorComputation:
         assert d.factors["data_completeness"] < 1.0
 
     def test_ci_width_factor_zero_when_max(self, engine):
-        bet = {**BASE_BET, "ci_width": "1.0"}  # at max_ci_width
+        bet = {**BASE_BET, "ci_width": "1.5"}  # at max_ci_width (config/risk_config.yaml: 1.5)
         d = engine.evaluate(bet, BANKROLL, MATCHDAY)
         assert d.factors["ci_width"] == pytest.approx(0.0)
 

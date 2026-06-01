@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     SBOBET_API_KEY: str = ""         # optional AH odds source
     PINNACLE_API_KEY: str = ""       # optional Pinnacle AH endpoint
 
+    # Experiment isolation — when true, the backend runs as an offline experiment
+    # and MUST NOT write the client-served tables (bets / tennis_bets). Internal
+    # tables (predictions, heartbeats, logs, elo, etc.) are still written freely.
+    EXPERIMENT_MODE: bool = False
+
     # Trading parameters — fully explicit and configurable
     PAPER_TRADING: bool = True
     BANKROLL: float = 10.0            # default 10€ live test — override in .env
@@ -108,7 +113,9 @@ class Settings(BaseSettings):
     DATA_REFRESH_INTERVAL: int = 900
     PREMATCH_REFRESH_INTERVAL: int = 60
 
-    model_config = {"env_file": ".env"}
+    # extra="ignore": the shared .env also holds frontend-only vars (e.g. SESSION_SECRET
+    # for the Next.js gating). The Python backend must not choke on env it doesn't own.
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 settings = Settings()

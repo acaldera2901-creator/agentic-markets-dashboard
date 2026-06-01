@@ -71,6 +71,15 @@ class TennisTraderAgent(BaseAgent):
 
         player_name, odds, _ = self._selection_info(order)
 
+        if settings.EXPERIMENT_MODE:
+            # Experiment mode: never write the client-served `tennis_bets` table.
+            self.logger.info(
+                f"[EXPERIMENT] TENNIS not persisted: {player_name} @ "
+                f"{(odds or 2.0):.2f} stake={order.get('stake', 1.0):.2f}€ "
+                f"edge={order.get('edge', 0):.1%}"
+            )
+            return
+
         try:
             if await self._check_duplicate(order["match_id"]):
                 self.logger.warning(

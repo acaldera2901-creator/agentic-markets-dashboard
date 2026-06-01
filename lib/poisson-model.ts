@@ -10,6 +10,8 @@ interface TeamStrength {
   defenseHome: number;
   attackAway: number;
   defenseAway: number;
+  /** Number of matches this team appears in (min of home+away samples used). */
+  matches: number;
 }
 
 export interface PoissonModel {
@@ -18,6 +20,19 @@ export interface PoissonModel {
   avgAway: number;
   matchCount: number;
 }
+
+// ─── Reliability guard (P0 #3) ─────────────────────────────────────────────────
+// On small samples (typically CL/EL early rounds: 1–2 matches per team) raw
+// goal-ratio strengths explode and produce indefensible probabilities (e.g. a
+// home favourite shown at 11%). Two mitigations:
+//   1. Shrinkage: pull each team's strength toward the league mean (1.0) with
+//      weight 1/(matches + SHRINKAGE_PRIOR). Few matches → strength ≈ 1.0.
+//   2. Min-match gate: predictions where either team has fewer than
+//      MIN_MATCHES_PER_TEAM samples are flagged unreliable and must NOT be shown
+//      as value-bets to the customer (see predict() -> reliable flag).
+// Tune here (no TS config dir exists; the Python config/ is for the Python pipeline).
+export const SHRINKAGE_PRIOR = 4; // pseudo-matches of league-average prior
+export const MIN_MATCHES_PER_TEAM = 4; // below this a prediction is "insufficient_data"
 
 function mean(arr: number[]): number {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 1;
@@ -104,13 +119,24 @@ export function buildModel(results: MatchResult[]): PoissonModel | null {
     ...results.map((r) => r.awayTeam),
   ]);
 
+  // Shrink a raw strength ratio toward the league mean (1.0). With n samples the
+  // estimate gets weight n/(n+prior); the prior gets weight prior/(n+prior).
+  // n=0 → 1.0, n→∞ → raw ratio. Caps the blow-ups on tiny CL/EL samples.
+  const shrink = (raw: number, n: number) =>
+    (raw * n + 1.0 * SHRINKAGE_PRIOR) / (n + SHRINKAGE_PRIOR);
+
   const strengths: Record<string, TeamStrength> = {};
   for (const team of teams) {
+    const hg = homeGoals[team] ?? [];
+    const hc = homeConceded[team] ?? [];
+    const ag = awayGoals[team] ?? [];
+    const ac = awayConceded[team] ?? [];
     strengths[team] = {
-      attackHome: mean(homeGoals[team] ?? [avgHome]) / avgHome,
-      defenseHome: mean(homeConceded[team] ?? [avgAway]) / avgAway,
-      attackAway: mean(awayGoals[team] ?? [avgAway]) / avgAway,
-      defenseAway: mean(awayConceded[team] ?? [avgHome]) / avgHome,
+      attackHome: shrink(mean(hg.length ? hg : [avgHome]) / avgHome, hg.length),
+      defenseHome: shrink(mean(hc.length ? hc : [avgAway]) / avgAway, hc.length),
+      attackAway: shrink(mean(ag.length ? ag : [avgAway]) / avgAway, ag.length),
+      defenseAway: shrink(mean(ac.length ? ac : [avgHome]) / avgHome, ac.length),
+      matches: hg.length + ag.length, // total matches this team played
     };
   }
 
@@ -121,10 +147,14 @@ export function predict(
   homeTeam: string,
   awayTeam: string,
   model: PoissonModel
-): { pHome: number; pDraw: number; pAway: number; lambdaHome: number; lambdaAway: number } | null {
+): { pHome: number; pDraw: number; pAway: number; lambdaHome: number; lambdaAway: number; teamMatches: number; reliable: boolean } | null {
   const h = model.strengths[homeTeam];
   const a = model.strengths[awayTeam];
   if (!h || !a) return null;
+
+  // Reliability: the weaker-sampled of the two teams drives confidence.
+  const teamMatches = Math.min(h.matches, a.matches);
+  const reliable = teamMatches >= MIN_MATCHES_PER_TEAM;
 
   const lambdaHome = h.attackHome * a.defenseAway * model.avgHome;
   const lambdaAway = a.attackAway * h.defenseHome * model.avgAway;
@@ -146,5 +176,7 @@ export function predict(
     pAway: pAway / total,
     lambdaHome: Math.round(lambdaHome * 100) / 100,
     lambdaAway: Math.round(lambdaAway * 100) / 100,
+    teamMatches,
+    reliable,
   };
 }

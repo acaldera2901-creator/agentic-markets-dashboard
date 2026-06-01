@@ -1,0 +1,11 @@
+# Keep the upload lean: drop only heavy/regenerable/duplicate dirs.
+# (Next.js build needs lib/ app/ public/ + root config — those stay.)
+dashboard-web/
+client-portal/
+.venv/
+venv/
+node_modules/
+.next/
+__pycache__/
+.pytest_cache/
+*.pyc

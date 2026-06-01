@@ -2833,8 +2833,11 @@ function ClientAuthModal({
   );
 }
 
+// Mirrors the server gate (lib/auth.ts planHasAccess/planHasPremium): pending_payment
+// does NOT unlock data — it shows a "waiting for confirmation" state. The server is the
+// authority on data; these predicates only drive UI state.
 function profileHasAccess(profile: ClientProfile | null) {
-  return Boolean(profile && (["base", "premium", "admin_full"].includes(profile.plan) || (profile.plan === "pending_payment" && profile.requestedPlan)));
+  return Boolean(profile && ["base", "premium", "admin_full"].includes(profile.plan));
 }
 
 function profileHasSignalPreview(profile: ClientProfile | null) {
@@ -2842,7 +2845,11 @@ function profileHasSignalPreview(profile: ClientProfile | null) {
 }
 
 function profileHasPremium(profile: ClientProfile | null) {
-  return Boolean(profile && (["premium", "admin_full"].includes(profile.plan) || (profile.plan === "pending_payment" && profile.requestedPlan === "premium")));
+  return Boolean(profile && ["premium", "admin_full"].includes(profile.plan));
+}
+
+function profileIsPending(profile: ClientProfile | null) {
+  return Boolean(profile && profile.plan === "pending_payment");
 }
 
 const TIMEZONE_OPTIONS = ["Europe/Rome", "Europe/Oslo", "Europe/London", "America/New_York", "America/Sao_Paulo", "Asia/Dubai"];
@@ -5494,6 +5501,40 @@ export default function Dashboard() {
     } catch { /**/ }
   }, []);
 
+  // On mount, reconcile the locally-stored profile with the server session (the cookie
+  // is the authority). If there is a valid session, adopt the fresh DB plan; if not, the
+  // stored profile is downgraded so it can never show premium data without a session.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch("/api/auth", { credentials: "same-origin", cache: "no-store" });
+        if (cancelled) return;
+        if (resp.ok) {
+          const server = await resp.json() as { identifier?: string; plan?: ClientProfile["plan"]; name?: string | null };
+          setClientProfile((prev) => {
+            if (!prev) return prev;
+            if (server.plan && server.plan !== prev.plan) {
+              const next = { ...prev, plan: server.plan };
+              try { window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(next)); } catch { /**/ }
+              return next;
+            }
+            return prev;
+          });
+        } else if (resp.status === 401) {
+          // No server session: keep the user identity but strip any premium plan locally.
+          setClientProfile((prev) => {
+            if (!prev || !profileHasAccess(prev)) return prev;
+            const next = { ...prev, plan: "free" as const };
+            try { window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(next)); } catch { /**/ }
+            return next;
+          });
+        }
+      } catch { /* offline: leave local state as-is */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const saveClientProfile = (profile: ClientProfile) => {
     const normalizedProfile = { ...profile, email: profile.email.trim().toLowerCase() };
     setClientProfile(normalizedProfile);
@@ -5516,8 +5557,31 @@ export default function Dashboard() {
     setAuthOpen(true);
   };
 
-  const handleAuthSave = (profile: ClientProfile) => {
-    saveClientProfile(profile);
+  const handleAuthSave = async (profile: ClientProfile) => {
+    // Server is the authority: create/login the profile, set the signed cookie, and
+    // adopt the plan the DB returns (never trust the locally-stored plan for data access).
+    try {
+      const resp = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          action: "login",
+          identifier: profile.email,
+          name: profile.name,
+          language: profile.language,
+          timezone: profile.timezone,
+        }),
+      });
+      if (resp.ok) {
+        const server = await resp.json() as { plan?: ClientProfile["plan"]; name?: string | null };
+        saveClientProfile({ ...profile, plan: server.plan ?? profile.plan });
+        setTab("bets");
+        return;
+      }
+    } catch { /* fall through to local-only below */ }
+    // Network/server failure: keep the user logged in locally but never above 'free'.
+    saveClientProfile({ ...profile, plan: profileHasAccess(profile) ? "free" : profile.plan });
     setTab("bets");
   };
 
@@ -5539,10 +5603,27 @@ export default function Dashboard() {
     setTab("bets");
   };
 
-  const handleCheckoutConfirm = (txHash: string) => {
+  const handleCheckoutConfirm = async (txHash: string) => {
     if (!clientProfile || !checkoutPlan) return;
     const { txHash: _tx, requestedPlan: _rp, ...rest } = clientProfile;
-    saveClientProfile({ ...rest, plan: checkoutPlan, txHash, requestedPlan: checkoutPlan });
+    // Submitting a tx_hash does NOT unlock access. The server moves the profile to
+    // 'pending_payment' until payment is confirmed; the client mirrors that waiting state.
+    try {
+      const resp = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "checkout", requested_plan: checkoutPlan, tx_hash: txHash }),
+      });
+      if (resp.ok) {
+        const server = await resp.json() as { plan?: ClientProfile["plan"] };
+        saveClientProfile({ ...rest, plan: server.plan ?? "pending_payment", txHash, requestedPlan: checkoutPlan });
+      } else {
+        saveClientProfile({ ...rest, plan: "pending_payment", txHash, requestedPlan: checkoutPlan });
+      }
+    } catch {
+      saveClientProfile({ ...rest, plan: "pending_payment", txHash, requestedPlan: checkoutPlan });
+    }
     trackEvent("conversion", { plan: checkoutPlan, meta: { tx: txHash } });
     setCheckoutOpen(false);
     setCheckoutPlan(null);
@@ -5577,6 +5658,12 @@ export default function Dashboard() {
     setSlipSelection(null);
     setTab("bets");
     window.localStorage.removeItem(CLIENT_PROFILE_KEY);
+    void fetch("/api/auth", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ action: "logout" }),
+    }).catch(() => { /* cookie clears client-side via reload anyway */ });
   };
 
   const focusClientPlans = () => {
@@ -5587,10 +5674,18 @@ export default function Dashboard() {
   };
 
   const fetchData = useCallback(async () => {
+    // Premium endpoints: only fetch with an unlocked plan; the server gate (401/403)
+    // is the real authority, this just avoids needless locked requests and clears stale data.
+    if (!profileHasAccess(clientProfile)) {
+      setSummary(null); setBets([]); setLeaguePnl([]);
+      setTennisBets([]); setTennisBetSummary(null);
+      setLoading(false);
+      return;
+    }
     try {
       const [dataResp, tennisBetsResp] = await Promise.all([
-        fetch("/api/data"),
-        fetch("/api/tennis-bets"),
+        fetch("/api/data", { credentials: "same-origin" }),
+        fetch("/api/tennis-bets", { credentials: "same-origin" }),
       ]);
       if (dataResp.ok) {
         const data = await dataResp.json();
@@ -5598,19 +5693,28 @@ export default function Dashboard() {
         setBets(data.bets ?? []);
         setLeaguePnl(data.league_pnl ?? []);
         setLastUpdate(new Date().toLocaleTimeString());
+      } else if (dataResp.status === 401 || dataResp.status === 403) {
+        setSummary(null); setBets([]); setLeaguePnl([]);
       }
       if (tennisBetsResp.ok) {
         const tb = await tennisBetsResp.json();
         setTennisBets(tb.bets ?? []);
         setTennisBetSummary(tb.summary ?? null);
+      } else if (tennisBetsResp.status === 401 || tennisBetsResp.status === 403) {
+        setTennisBets([]); setTennisBetSummary(null);
       }
     } catch { /**/ } finally { setLoading(false); }
-  }, []);
+  }, [clientProfile]);
 
   const fetchPredictions = useCallback(async () => {
+    if (!profileHasAccess(clientProfile)) {
+      setPredictions([]);
+      setPredLoading(false);
+      return;
+    }
     setPredLoading(true);
     try {
-      const resp = await fetch("/api/predictions");
+      const resp = await fetch("/api/predictions", { credentials: "same-origin" });
       if (resp.ok) {
         const data = await resp.json();
         const isOffSeason = data.is_off_season === true;
@@ -5619,9 +5723,11 @@ export default function Dashboard() {
         setPredFallback(isOffSeason);
         setComputedAt(data.computed_at ?? null);
         setPredStale(data.is_stale ?? false);
+      } else if (resp.status === 401 || resp.status === 403) {
+        setPredictions([]);
       }
     } catch { /**/ } finally { setPredLoading(false); }
-  }, []);
+  }, [clientProfile]);
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -5634,9 +5740,15 @@ export default function Dashboard() {
   }, []);
 
   const fetchTennis = useCallback(async () => {
+    if (!profileHasAccess(clientProfile)) {
+      setTennisMatches([]);
+      setTennisSummary(null);
+      setTennisLoading(false);
+      return;
+    }
     setTennisLoading(true);
     try {
-      const resp = await fetch("/api/tennis");
+      const resp = await fetch("/api/tennis", { credentials: "same-origin" });
       if (resp.ok) {
         const data = await resp.json();
         const liveMatches: TennisMatch[] = data.matches ?? [];
@@ -5644,9 +5756,12 @@ export default function Dashboard() {
         setTennisIsPlaceholder(false);
         setTennisSummary(data.summary ?? null);
         setTennisComputedAt(data.computed_at ?? null);
+      } else if (resp.status === 401 || resp.status === 403) {
+        setTennisMatches([]);
+        setTennisSummary(null);
       }
     } catch { /**/ } finally { setTennisLoading(false); }
-  }, []);
+  }, [clientProfile]);
 
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -5661,13 +5776,17 @@ export default function Dashboard() {
   }, []);
 
   const fetchLive = useCallback(async () => {
+    if (!profileHasAccess(clientProfile)) {
+      setLiveScores({});
+      return;
+    }
     try {
-      const r = await fetch("/api/live");
+      const r = await fetch("/api/live", { credentials: "same-origin" });
       if (!r.ok) return;
       const d = await r.json() as { live: Record<string, LiveScore> };
       setLiveScores(d.live ?? {});
     } catch { /* silent */ }
-  }, []);
+  }, [clientProfile]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

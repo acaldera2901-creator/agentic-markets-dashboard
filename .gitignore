@@ -37,3 +37,4 @@ next-env.d.ts
 
 # OS
 .DS_Store
+scripts/migrate_to_company_supabase.py

@@ -39,6 +39,33 @@ async def test_paper_trade_writes_to_db_and_publishes():
 
 
 @pytest.mark.asyncio
+async def test_experiment_mode_does_not_write_bets_table():
+    """In EXPERIMENT_MODE the trader publishes but never opens a DB session
+    (so the client-served `bets` table is never polluted)."""
+    from agents.trader import TraderAgent
+    agent = TraderAgent()
+
+    order = {
+        "match_id": "123",
+        "home_team": "Arsenal",
+        "away_team": "Chelsea",
+        "selection": "home",
+        "odds": "2.5",
+        "stake": "10.0",
+        "league": "PL",
+    }
+
+    with patch("agents.trader.settings.EXPERIMENT_MODE", True), \
+         patch("agents.trader.AsyncSessionLocal") as mock_sessionmaker, \
+         patch("agents.trader.publish", new_callable=AsyncMock) as mock_pub:
+        await agent._execute_paper(order)
+        mock_sessionmaker.assert_not_called()
+        mock_pub.assert_called_once()
+        assert mock_pub.call_args[0][0] == "trader:executions"
+        assert mock_pub.call_args[0][1]["bet_id"] == "experiment"
+
+
+@pytest.mark.asyncio
 async def test_paper_trade_skips_duplicate():
     """TraderAgent skips placing a bet when a pending one already exists for the same match."""
     from agents.trader import TraderAgent

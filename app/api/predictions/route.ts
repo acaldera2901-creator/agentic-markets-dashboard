@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAccess } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 import { buildModel, predict, computeExtraMarkets, MatchResult } from "@/lib/poisson-model";
@@ -51,34 +52,31 @@ type PredictionRow = {
   model_matches: number | null;
   computed_at: string;
   match_type?: string | null;
+  is_estimate?: boolean;
   enrichment?: EnrichmentPayload | null;
 };
 
-function decimalOdds(probability: number, valueBoost = 0) {
-  const adjusted = Math.max(0.05, Math.min(0.92, probability - valueBoost));
-  return Math.round((1 / adjusted) * 100) / 100;
-}
+// When real market odds are missing we must NOT fabricate odds or an edge:
+// the customer could not tell a real value-bet from an invented one, which is a
+// legal-claim risk ("value" over the market). Instead we expose the model's
+// probabilities only, mark the row as an estimate (is_estimate=true) and leave
+// edge/odds null so the frontend never flags it as a value-bet.
+function markModelEstimate(row: PredictionRow): PredictionRow {
+  const hasRealOdds =
+    row.odds_home != null && row.odds_draw != null && row.odds_away != null;
 
-function hydratePaperOdds(row: PredictionRow): PredictionRow {
-  if (row.odds_home != null && row.odds_draw != null && row.odds_away != null) {
-    return row;
+  if (hasRealOdds) {
+    return { ...row, is_estimate: false };
   }
 
-  const probs = [
-    { selection: "HOME", probability: row.p_home },
-    { selection: "DRAW", probability: row.p_draw },
-    { selection: "AWAY", probability: row.p_away },
-  ].sort((a, b) => b.probability - a.probability);
-  const best = row.best_selection ?? probs[0].selection;
-  const edge = row.edge ?? (probs[0].probability > 0.5 ? 0.024 : 0.012);
-
+  // No real market odds: model estimate only — no synthetic odds, no edge.
   return {
     ...row,
-    odds_home: row.odds_home ?? decimalOdds(row.p_home, best === "HOME" ? edge : -0.015),
-    odds_draw: row.odds_draw ?? decimalOdds(row.p_draw, best === "DRAW" ? edge : -0.015),
-    odds_away: row.odds_away ?? decimalOdds(row.p_away, best === "AWAY" ? edge : -0.015),
-    best_selection: best,
-    edge,
+    odds_home: null,
+    odds_draw: null,
+    odds_away: null,
+    edge: null,
+    is_estimate: true,
   };
 }
 
@@ -148,6 +146,8 @@ interface EnrichmentPayload {
   api_advice?: string;
   research?: string;
   extra_market_odds?: Partial<Record<string, number>>;
+  reliability?: string;
+  team_matches?: number;
 }
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
@@ -227,9 +227,12 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       const key = `${normName(fix.homeTeam)}|${normName(fix.awayTeam)}`;
       const odds = oddsMap[code]?.[key];
 
+      // P0 #3: predictions built on too few matches per team (e.g. CL/EL early
+      // rounds) are not reliable. Never compute an edge or a value-bet selection
+      // for them — they are shown only as flagged model estimates.
       let edge: number | null = null;
       let bestSel: string | null = null;
-      if (odds) {
+      if (odds && probs.reliable) {
         const eH = probs.pHome - 1 / odds.oddsHome;
         const eD = probs.pDraw - 1 / odds.oddsDraw;
         const eA = probs.pAway - 1 / odds.oddsAway;
@@ -240,6 +243,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
 
       // ── Build enrichment payload ─────────────────────────────────────────
       const enrichment: EnrichmentPayload = {};
+      if (!probs.reliable) {
+        enrichment.reliability = "insufficient_data";
+        enrichment.team_matches = probs.teamMatches;
+        console.log(
+          `[${code}] insufficient_data: ${fix.homeTeam} vs ${fix.awayTeam} (min ${probs.teamMatches} matches/team)`
+        );
+      }
 
       // Pi Rating
       const piH = piRatings[fix.homeTeam];
@@ -361,7 +371,9 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   return { stored: stored.length, leagues: [...new Set(stored)] };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
   const [predictions_raw, meta] = await Promise.all([
     dbQuery<PredictionRow>(
       `SELECT * FROM match_predictions
@@ -381,7 +393,7 @@ export async function GET() {
   const isOffSeason = predictions_raw.length === 0;
   const isStale = !isOffSeason && ageMinutes > 60;
   const predictions = predictions_raw.map((p) => {
-    const hydrated = hydratePaperOdds(p);
+    const hydrated = markModelEstimate(p);
     const lH = hydrated.lambda_home;
     const lA = hydrated.lambda_away;
     if (lH != null && lA != null && lH > 0 && lA > 0) {
@@ -400,7 +412,7 @@ export async function GET() {
       is_off_season: isOffSeason,
       source: "database",
     },
-    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } }
+    { headers: { "Cache-Control": "private, no-store" } }
   );
 }
 
