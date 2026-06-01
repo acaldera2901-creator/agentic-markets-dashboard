@@ -7,7 +7,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-ROOT = Path("/Users/calde/Desktop/sistema-andrea/agentic-markets")
+# Derive ROOT from this file's location so a project move never breaks the watchdog.
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from config.settings import settings

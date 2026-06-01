@@ -135,7 +135,8 @@ function pickProb(row: MatchPredictionRow): number | null {
 
 function generateFootballExplanation(row: MatchPredictionRow): string {
   const pick = row.best_selection ?? "N/A";
-  const edgePct = row.edge != null ? `${(row.edge * 100).toFixed(1)}%` : "unknown";
+  const odds = pickOdds(row);
+  const hasRealMarket = odds != null && row.edge != null;
   const prob = pickProb(row);
   const confidence = prob != null ? `${Math.round(prob * 100)}%` : "unknown";
   const enr = row.enrichment;
@@ -152,9 +153,13 @@ function generateFootballExplanation(row: MatchPredictionRow): string {
 
   const adviceNote = enr?.api_advice ? ` External model note: ${enr.api_advice}.` : "";
 
+  // Only claim an "edge over the market" when there is a real market price.
+  const headline = hasRealMarket
+    ? `Poisson model signal. Pick: ${pick} | Edge: ${(row.edge! * 100).toFixed(1)}% over implied market probability | Model confidence: ${confidence}.`
+    : `Poisson model estimate. Model lean: ${pick} | Model confidence: ${confidence}. No live market price available, so no market edge is claimed.`;
+
   return (
-    `Poisson model signal. Pick: ${pick} | Edge: ${edgePct} over implied market probability` +
-    ` | Model confidence: ${confidence}.` +
+    headline +
     formNote +
     injuryNote +
     adviceNote +
@@ -169,9 +174,14 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
   const odds = pickOdds(row);
   const prob = pickProb(row);
   const fairOdds = prob != null && prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
-  const edgePct = row.edge != null ? Math.round(row.edge * 10000) / 100 : null;
   const confidence = prob != null ? Math.round(prob * 100) : null;
   const neutral = row.enrichment?.match_type === "NEUTRAL_VENUE";
+
+  // A real value-bet requires real market odds AND a real computed edge.
+  // Without them this is a model estimate (paper), never an edge over the market:
+  // do not emit a fabricated edge, a real bookmaker, or is_paper=false.
+  const hasRealMarket = odds != null && row.edge != null;
+  const edgePct = hasRealMarket ? Math.round(row.edge! * 10000) / 100 : null;
 
   const teamNews =
     (row.enrichment?.injuries_home?.length ?? 0) > 0 ||
@@ -189,20 +199,20 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     away_team: row.away_team,
     market: "1X2",
     pick: row.best_selection,
-    bookmaker: "market composite",
-    odds: odds != null ? Math.round(odds * 100) / 100 : null,
+    bookmaker: hasRealMarket ? "market composite" : "no market",
+    odds: hasRealMarket && odds != null ? Math.round(odds * 100) / 100 : null,
     fair_odds: fairOdds,
     edge_percent: edgePct,
     confidence_score: confidence,
-    risk_level: computeRisk(row.edge),
+    risk_level: hasRealMarket ? computeRisk(row.edge) : "medium",
     status: computeStatus(row.kickoff),
-    signal_type: "signal",
+    signal_type: hasRealMarket ? "signal" : "estimate",
     source: "model",
     model_version: "football-poisson-v1",
     plan_access: "base",
     is_historical: false,
     is_live: false,
-    is_paper: false,
+    is_paper: !hasRealMarket,
     is_verified: false,
     is_demo: false,
     published_at: new Date().toISOString(),

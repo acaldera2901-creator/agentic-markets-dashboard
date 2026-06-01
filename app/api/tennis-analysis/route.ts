@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { requireAccess } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
   let body: { match_id?: string; player1?: string; player2?: string };
   try {
     body = await req.json();

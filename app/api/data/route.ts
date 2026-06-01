@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { requireAccess } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 interface StatRow {
   total: string;
@@ -11,7 +14,9 @@ interface StatRow {
   avg_stake: string;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
   const [bets, stats, leaguePnl] = await Promise.all([
     dbQuery(`
       SELECT b.*,

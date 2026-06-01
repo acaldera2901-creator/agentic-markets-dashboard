@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { dbQuery as queryDB } from "@/lib/db";
+import { requireAccess } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
   const [bets, stats] = await Promise.all([
     queryDB(`
       SELECT tb.id, tb.match_id, tb.selection, tb.player_name,

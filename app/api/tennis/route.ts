@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { requireAccess } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +139,9 @@ function normalizePrediction(p: TennisPredictionInput) {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
   const now = new Date().toISOString();
 
   const redisData = await getFromRedis();

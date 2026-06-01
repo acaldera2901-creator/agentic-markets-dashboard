@@ -57,6 +57,22 @@ class TraderAgent(BaseAgent):
 
     async def _execute_paper(self, order: dict) -> None:
         kickoff = str(order.get("kickoff", ""))
+        if settings.EXPERIMENT_MODE:
+            # Experiment mode: never write the client-served `bets` table.
+            # Still publish to the bus so the rest of the pipeline runs.
+            execution = {
+                **order,
+                "bet_id": "experiment",
+                "paper": "true",
+                "executed_at": datetime.utcnow().isoformat(),
+            }
+            await publish("trader:executions", execution)
+            self.logger.info(
+                f"[EXPERIMENT] not persisted: {order.get('home_team')} vs "
+                f"{order.get('away_team')} {order.get('selection')} @ {order.get('odds')} "
+                f"stake={order.get('stake')}"
+            )
+            return
         async with AsyncSessionLocal() as session:
             existing = await session.execute(
                 select(Bet).where(
