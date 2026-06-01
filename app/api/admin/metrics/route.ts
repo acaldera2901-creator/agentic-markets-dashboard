@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { OPERATING_COSTS, monthlyBurnEur } from "@/lib/operating-costs";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ export async function GET(req: NextRequest) {
     betsStats,
     leaderboardStats,
     partnerRequests,
+    clientStats,
+    pendingActivations,
   ] = await Promise.all([
     dbQuery<{ n: string }>("SELECT COUNT(*) as n FROM events"),
     dbQuery<{ event_type: string; n: string }>(
@@ -64,6 +67,21 @@ export async function GET(req: NextRequest) {
     dbQuery<{ n: string; latest: string }>(
       "SELECT COUNT(*) as n, MAX(created_at) as latest FROM partner_requests"
     ),
+    // Real clients from the server-authoritative profiles table (P0 #1).
+    dbQuery<{ total: string; free: string; pending: string; base: string; premium: string; new_7d: string; new_30d: string }>(
+      `SELECT COUNT(*) as total,
+        COUNT(*) FILTER (WHERE plan='free') as free,
+        COUNT(*) FILTER (WHERE plan='pending_payment') as pending,
+        COUNT(*) FILTER (WHERE plan='base') as base,
+        COUNT(*) FILTER (WHERE plan IN ('premium','admin_full')) as premium,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as new_7d,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as new_30d
+       FROM profiles`
+    ),
+    // Pending payment activations — actionable list for the admin.
+    dbQuery<{ identifier: string; requested_plan: string; tx_hash: string; created_at: string }>(
+      "SELECT identifier, requested_plan, tx_hash, created_at FROM profiles WHERE plan='pending_payment' ORDER BY updated_at DESC LIMIT 50"
+    ),
   ]);
 
   return NextResponse.json({
@@ -80,6 +98,32 @@ export async function GET(req: NextRequest) {
       losses: Number(betsStats[0]?.losses ?? 0),
       pending: Number(betsStats[0]?.pending ?? 0),
       pnl: Number(betsStats[0]?.total_pnl ?? 0),
+    },
+    clients: {
+      total: Number(clientStats[0]?.total ?? 0),
+      free: Number(clientStats[0]?.free ?? 0),
+      pending_payment: Number(clientStats[0]?.pending ?? 0),
+      base: Number(clientStats[0]?.base ?? 0),
+      premium: Number(clientStats[0]?.premium ?? 0),
+      paying: Number(clientStats[0]?.base ?? 0) + Number(clientStats[0]?.premium ?? 0),
+      new_7d: Number(clientStats[0]?.new_7d ?? 0),
+      new_30d: Number(clientStats[0]?.new_30d ?? 0),
+    },
+    pending_activations: pendingActivations.map((r) => ({
+      identifier: r.identifier,
+      requested_plan: r.requested_plan,
+      tx_hash: r.tx_hash,
+      created_at: r.created_at,
+    })),
+    finance: {
+      monthly_burn_eur: monthlyBurnEur(),
+      total_revenue_eur: Number(conversions[0]?.revenue ?? 0),
+      net_eur: Number(conversions[0]?.revenue ?? 0) - monthlyBurnEur(),
+      costs: OPERATING_COSTS.filter((c) => c.monthly_eur > 0).map((c) => ({
+        label: c.label,
+        category: c.category,
+        monthly_eur: c.monthly_eur,
+      })),
     },
     events_by_type: eventsByType.map((r) => ({ type: r.event_type, count: Number(r.n) })),
     by_country: byCountry.map((r) => ({ country: r.country, count: Number(r.n) })),

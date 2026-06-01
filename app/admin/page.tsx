@@ -19,6 +19,23 @@ interface Metrics {
     pending: number;
     pnl: number;
   };
+  clients: {
+    total: number;
+    free: number;
+    pending_payment: number;
+    base: number;
+    premium: number;
+    paying: number;
+    new_7d: number;
+    new_30d: number;
+  };
+  pending_activations: { identifier: string; requested_plan: string; tx_hash: string; created_at: string }[];
+  finance: {
+    monthly_burn_eur: number;
+    total_revenue_eur: number;
+    net_eur: number;
+    costs: { label: string; category: string; monthly_eur: number }[];
+  };
   events_by_type: { type: string; count: number }[];
   by_country: { country: string; count: number }[];
   by_language: { language: string; count: number }[];
@@ -229,6 +246,61 @@ export default function AdminPage() {
                 value={`${m.bets.pnl >= 0 ? "+" : ""}€${m.bets.pnl.toFixed(2)}`}
                 sub={m.bets.pnl >= 0 ? "profit" : "loss"}
               />
+            </div>
+
+            {/* Clienti reali (profiles table) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <StatBox label="Clienti totali" value={m.clients.total} sub={`+${m.clients.new_7d} ultimi 7gg`} />
+              <StatBox label="Paganti" value={m.clients.paying} sub={`${m.clients.base} base · ${m.clients.premium} premium`} />
+              <StatBox label="In attesa pagamento" value={m.clients.pending_payment} sub="da attivare" />
+              <StatBox label="Free" value={m.clients.free} />
+              <StatBox label="Nuovi 30gg" value={m.clients.new_30d} />
+              <StatBox label="Conversion" value={`${m.clients.total > 0 ? Math.round((m.clients.paying / m.clients.total) * 100) : 0}%`} sub="paganti/totali" />
+            </div>
+
+            {/* Attivazioni in attesa — azionabili */}
+            {m.pending_activations.length > 0 && (
+              <Card>
+                <div className="text-gray-400 text-xs uppercase tracking-wider mb-3">
+                  Attivazioni in attesa ({m.pending_activations.length})
+                </div>
+                <div className="space-y-2">
+                  {m.pending_activations.map((p) => (
+                    <div key={p.identifier} className="flex justify-between items-center text-sm border-b border-gray-800 pb-2">
+                      <span className="text-gray-300">{p.identifier}</span>
+                      <span className="text-gray-400">{p.requested_plan}</span>
+                      <span className="text-gray-500 font-mono text-xs truncate max-w-[180px]" title={p.tx_hash}>{p.tx_hash || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Finanze — costi fissi + net vs revenue */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 grid grid-cols-3 gap-4">
+                <StatBox label="Burn mensile" value={`€${m.finance.monthly_burn_eur.toFixed(2)}`} sub="costi fissi" />
+                <StatBox label="Revenue" value={`€${m.finance.total_revenue_eur.toFixed(2)}`} />
+                <StatBox
+                  label="Net"
+                  value={`${m.finance.net_eur >= 0 ? "+" : ""}€${m.finance.net_eur.toFixed(2)}`}
+                  sub={m.finance.net_eur >= 0 ? "in attivo" : "in perdita"}
+                />
+              </div>
+              <Card>
+                <div className="text-gray-400 text-xs uppercase tracking-wider mb-3">Costi mensili</div>
+                <div className="space-y-2">
+                  {m.finance.costs.map((c) => (
+                    <div key={c.label} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-300">{c.label}</span>
+                      <span className="text-white font-medium">€{c.monthly_eur.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {m.finance.costs.length === 0 && (
+                    <div className="text-gray-600 text-sm">Nessun costo configurato — modifica lib/operating-costs.ts</div>
+                  )}
+                </div>
+              </Card>
             </div>
 
             {/* Country + Language + Plan */}
