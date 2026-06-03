@@ -70,6 +70,20 @@ Calibrazione isotonic (`scripts/backtest_poisson.py`, split temporale): guadagno
 ### ✅ ABBIAMO (storico/backtestabile) — IMPLEMENTATO
 pi-rating · form · riposo · congestione · medie lega · closing odds (solo validazione).
 
+### 🎾 TENNIS — implementato (2026-06-03d)
+Ingest Sackmann (`core/tennis_data.py`, 11712 match ATP 2021-24, free GitHub), surface-Elo (`models/tennis_elo.py`), serve/return + fatigue + H2H, stacking logistico (`scripts/backtest_tennis.py`):
+
+| Modello | Brier | Acc |
+|---|---|---|
+| Rank baseline | — | 63.5% |
+| Surface-Elo only | 0.21959 | 63.3% |
+| Elo + serve/return/fatigue/H2H | 0.21749 | **64.6%** |
+
+Le feature contano (elo_diff 0.521, rank 0.433, **serve_diff 0.219**). Architettura multi-sport validata. Manca: odds tennis-data.co.uk per il baseline-mercato.
+
+### 🔧 xG — scraper pronto per Andrea (`scripts/scrape_understat_xg.py`)
+Understat bloccato dal build env → scraper da lanciare dalla rete di Andrea: popola `data/understat/`, poi si fa il join con i match fd.co.uk (mapping nomi) e si aggiunge la feature xG al backtest.
+
 ### ❌ MANCANTI — da ingestire (in ordine di impatto atteso)
 1. **xG storico** (Understat/FBref scraping) — il pezzo più grosso del gap residuo.
 2. **Formazioni/assenze** (API-Football, già pagata; serve storicizzarle).
