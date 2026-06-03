@@ -1,0 +1,381 @@
+date,home_team,away_team,home_xg,away_xg,home_goals,away_goals
+2021-08-13,Valencia,Getafe,1.579,1.193,1,0
+2021-08-14,Mallorca,Real Betis,0.57,0.814,1,1
+2021-08-14,Cadiz,Levante,0.994,0.916,1,1
+2021-08-14,Osasuna,Espanyol,0.579,0.584,0,0
+2021-08-14,Alaves,Real Madrid,1.411,2.156,1,4
+2021-08-15,Celta Vigo,Atletico Madrid,1.594,1.805,1,2
+2021-08-15,Barcelona,Real Sociedad,3.465,0.902,4,2
+2021-08-15,Sevilla,Rayo Vallecano,3.674,0.484,3,0
+2021-08-16,Villarreal,Granada,1.218,0.247,0,0
+2021-08-16,Elche,Athletic Club,0.934,0.635,0,0
+2021-08-20,Real Betis,Cadiz,1.823,1.453,1,1
+2021-08-21,Alaves,Mallorca,0.921,0.824,0,1
+2021-08-21,Granada,Valencia,0.753,1.5,1,1
+2021-08-21,Espanyol,Villarreal,1.689,0.597,0,0
+2021-08-21,Athletic Club,Barcelona,1.434,1.184,1,1
+2021-08-22,Real Sociedad,Rayo Vallecano,2.269,0.763,1,0
+2021-08-22,Atletico Madrid,Elche,1.045,0.168,1,0
+2021-08-22,Levante,Real Madrid,1.638,2.141,3,3
+2021-08-23,Getafe,Sevilla,0.392,0.814,0,1
+2021-08-23,Osasuna,Celta Vigo,2.582,0.085,0,0
+2021-08-27,Mallorca,Espanyol,1.287,0.297,1,0
+2021-08-27,Valencia,Alaves,2.34,0.361,3,0
+2021-08-28,Celta Vigo,Athletic Club,0.935,1.452,0,1
+2021-08-28,Real Sociedad,Levante,0.856,0.521,1,0
+2021-08-28,Elche,Sevilla,0.855,1.7,1,1
+2021-08-28,Real Betis,Real Madrid,0.421,0.941,0,1
+2021-08-29,Barcelona,Getafe,1.051,0.283,2,1
+2021-08-29,Cadiz,Osasuna,1.361,2.284,2,3
+2021-08-29,Rayo Vallecano,Granada,2.196,0.586,4,0
+2021-08-29,Atletico Madrid,Villarreal,1.773,0.449,2,2
+2021-09-11,Levante,Rayo Vallecano,1.11,2.768,1,1
+2021-09-11,Athletic Club,Mallorca,1.855,0.225,2,0
+2021-09-12,Espanyol,Atletico Madrid,0.374,0.732,1,2
+2021-09-12,Osasuna,Valencia,0.457,0.925,1,4
+2021-09-12,Cadiz,Real Sociedad,0.608,2.366,0,2
+2021-09-12,Real Madrid,Celta Vigo,3.037,1.991,5,2
+2021-09-13,Getafe,Elche,0.38,1.074,0,1
+2021-09-13,Granada,Real Betis,0.78,2.438,1,2
+2021-09-17,Celta Vigo,Cadiz,0.994,1.074,1,2
+2021-09-18,Rayo Vallecano,Getafe,1.987,1.154,3,0
+2021-09-18,Atletico Madrid,Athletic Club,1.101,1.106,0,0
+2021-09-18,Elche,Levante,0.537,1.125,1,1
+2021-09-18,Alaves,Osasuna,0.252,1.323,0,2
+2021-09-19,Mallorca,Villarreal,0.529,1.634,0,0
+2021-09-19,Real Sociedad,Sevilla,1.177,0.765,0,0
+2021-09-19,Real Betis,Espanyol,2.369,1.217,2,2
+2021-09-19,Valencia,Real Madrid,0.647,1.363,1,2
+2021-09-20,Barcelona,Granada,1.882,0.613,1,1
+2021-09-21,Getafe,Atletico Madrid,0.331,1.479,1,2
+2021-09-21,Athletic Club,Rayo Vallecano,0.956,1.041,1,2
+2021-09-21,Levante,Celta Vigo,1.407,0.74,0,2
+2021-09-22,Sevilla,Valencia,1.207,0.442,3,1
+2021-09-22,Espanyol,Alaves,1.618,0.425,1,0
+2021-09-22,Villarreal,Elche,2.779,1.096,4,1
+2021-09-22,Real Madrid,Mallorca,2.375,1.192,6,1
+2021-09-23,Granada,Real Sociedad,1.25,1.582,2,3
+2021-09-23,Osasuna,Real Betis,0.82,2.203,1,3
+2021-09-23,Cadiz,Barcelona,1.401,0.362,0,0
+2021-09-25,Alaves,Atletico Madrid,1.197,0.558,1,0
+2021-09-25,Valencia,Athletic Club,1.086,0.831,1,1
+2021-09-25,Sevilla,Espanyol,1.575,0.479,2,0
+2021-09-25,Real Madrid,Villarreal,1.536,0.666,0,0
+2021-09-26,Mallorca,Osasuna,2.742,1.636,2,3
+2021-09-26,Barcelona,Levante,3.113,0.713,3,0
+2021-09-26,Rayo Vallecano,Cadiz,1.89,1.1,3,1
+2021-09-26,Real Sociedad,Elche,2.118,0.573,1,0
+2021-09-26,Real Betis,Getafe,2.464,0.591,2,0
+2021-09-27,Celta Vigo,Granada,1.267,0.542,1,0
+2021-10-01,Athletic Club,Alaves,2.494,0.808,1,0
+2021-10-02,Osasuna,Rayo Vallecano,0.657,0.149,1,0
+2021-10-02,Mallorca,Levante,0.442,1.434,1,0
+2021-10-02,Cadiz,Valencia,0.157,1.438,0,0
+2021-10-02,Atletico Madrid,Barcelona,1.374,0.747,2,0
+2021-10-03,Elche,Celta Vigo,1.398,0.714,1,0
+2021-10-03,Espanyol,Real Madrid,1.291,1.624,2,1
+2021-10-03,Villarreal,Real Betis,2.586,0.527,2,0
+2021-10-03,Getafe,Real Sociedad,0.524,0.8,1,1
+2021-10-03,Granada,Sevilla,0.084,1.403,1,0
+2021-10-16,Levante,Getafe,0.833,0.557,0,0
+2021-10-16,Real Sociedad,Mallorca,0.405,0.36,1,0
+2021-10-17,Rayo Vallecano,Elche,1.107,0.326,2,1
+2021-10-17,Celta Vigo,Sevilla,0.889,0.828,0,1
+2021-10-17,Villarreal,Osasuna,0.713,0.957,1,2
+2021-10-17,Barcelona,Valencia,2.379,0.378,3,1
+2021-10-18,Alaves,Real Betis,1.358,1.478,0,1
+2021-10-18,Espanyol,Cadiz,1.735,0.604,2,0
+2021-10-22,Osasuna,Granada,1.245,0.435,1,1
+2021-10-23,Valencia,Mallorca,1.471,0.808,2,2
+2021-10-23,Cadiz,Alaves,2.003,1.867,0,2
+2021-10-23,Elche,Espanyol,0.999,1.054,2,2
+2021-10-23,Athletic Club,Villarreal,2.643,0.606,2,1
+2021-10-24,Sevilla,Levante,1.83,1.288,5,3
+2021-10-24,Barcelona,Real Madrid,1.588,1.546,1,2
+2021-10-24,Real Betis,Rayo Vallecano,1.434,1.168,3,2
+2021-10-24,Atletico Madrid,Real Sociedad,1.753,0.834,2,2
+2021-10-25,Getafe,Celta Vigo,0.461,2.481,0,3
+2021-10-26,Alaves,Elche,1.813,0.282,1,0
+2021-10-26,Espanyol,Athletic Club,1.233,3.684,1,1
+2021-10-26,Villarreal,Cadiz,1.951,1.536,3,3
+2021-10-27,Rayo Vallecano,Barcelona,0.786,2.857,1,0
+2021-10-27,Mallorca,Sevilla,2.274,1.421,1,1
+2021-10-27,Real Betis,Valencia,2.581,2.178,4,1
+2021-10-27,Real Madrid,Osasuna,0.655,0.71,0,0
+2021-10-28,Celta Vigo,Real Sociedad,0.996,1.427,0,2
+2021-10-28,Granada,Getafe,2.264,0.581,1,1
+2021-10-28,Levante,Atletico Madrid,2.124,1.334,2,2
+2021-10-30,Elche,Real Madrid,1.151,1.607,1,2
+2021-10-30,Sevilla,Osasuna,2.434,0.79,2,0
+2021-10-30,Valencia,Villarreal,1.664,0.804,2,0
+2021-10-30,Barcelona,Alaves,1.56,0.6,1,1
+2021-10-31,Cadiz,Mallorca,1.802,1.037,1,1
+2021-10-31,Atletico Madrid,Real Betis,2.551,0.521,3,0
+2021-10-31,Getafe,Espanyol,0.952,0.62,2,1
+2021-10-31,Real Sociedad,Athletic Club,1.058,1.011,1,1
+2021-11-01,Rayo Vallecano,Celta Vigo,0.468,0.438,0,0
+2021-11-01,Levante,Granada,1.331,1.461,0,3
+2021-11-05,Athletic Club,Cadiz,0.585,0.492,0,1
+2021-11-06,Espanyol,Granada,1.764,2.069,2,0
+2021-11-06,Celta Vigo,Barcelona,1.771,1.139,3,3
+2021-11-06,Alaves,Levante,1.535,0.803,2,1
+2021-11-06,Real Madrid,Rayo Vallecano,2.726,1.78,2,1
+2021-11-07,Villarreal,Getafe,1.493,0.153,1,0
+2021-11-07,Valencia,Atletico Madrid,1.572,2.638,3,3
+2021-11-07,Mallorca,Elche,2.049,0.68,2,2
+2021-11-07,Osasuna,Real Sociedad,0.496,1.433,0,2
+2021-11-07,Real Betis,Sevilla,0.389,1.422,0,2
+2021-11-19,Levante,Athletic Club,0.631,0.452,0,0
+2021-11-20,Celta Vigo,Villarreal,0.91,2.719,1,1
+2021-11-20,Sevilla,Alaves,1.375,1.474,2,2
+2021-11-20,Atletico Madrid,Osasuna,1.61,0.379,1,0
+2021-11-20,Barcelona,Espanyol,1.513,1.413,1,0
+2021-11-21,Getafe,Cadiz,1.543,0.37,4,0
+2021-11-21,Granada,Real Madrid,0.564,3.779,1,4
+2021-11-21,Elche,Real Betis,0.825,1.601,0,3
+2021-11-21,Real Sociedad,Valencia,0.405,0.585,0,0
+2021-11-22,Rayo Vallecano,Mallorca,1.95,0.828,3,1
+2021-11-26,Athletic Club,Granada,1.339,0.978,2,2
+2021-11-27,Alaves,Celta Vigo,0.677,1.543,1,2
+2021-11-27,Valencia,Rayo Vallecano,1.581,2.029,1,1
+2021-11-27,Mallorca,Getafe,0.473,0.739,0,0
+2021-11-27,Villarreal,Barcelona,1.56,3.372,1,3
+2021-11-28,Real Betis,Levante,2.31,0.646,3,1
+2021-11-28,Espanyol,Real Sociedad,0.378,1.326,1,0
+2021-11-28,Cadiz,Atletico Madrid,0.766,3.326,1,4
+2021-11-28,Real Madrid,Sevilla,1.248,1.302,2,1
+2021-11-29,Osasuna,Elche,2.137,1.057,1,1
+2021-12-01,Real Madrid,Athletic Club,1.605,2.702,1,0
+2021-12-03,Granada,Alaves,1.083,1.385,2,1
+2021-12-04,Sevilla,Villarreal,0.47,1.909,1,0
+2021-12-04,Barcelona,Real Betis,1.209,0.643,0,1
+2021-12-04,Atletico Madrid,Mallorca,2.07,0.776,1,2
+2021-12-04,Real Sociedad,Real Madrid,0.585,2.192,0,2
+2021-12-05,Rayo Vallecano,Espanyol,0.649,0.475,1,0
+2021-12-05,Elche,Cadiz,2.331,1.506,3,1
+2021-12-05,Levante,Osasuna,0.51,0.251,0,0
+2021-12-05,Celta Vigo,Valencia,0.645,1.011,1,2
+2021-12-06,Getafe,Athletic Club,1.357,0.466,0,0
+2021-12-10,Mallorca,Celta Vigo,0.898,1.335,0,0
+2021-12-11,Espanyol,Levante,2.135,3.388,4,3
+2021-12-11,Alaves,Getafe,0.989,1.047,1,1
+2021-12-11,Valencia,Elche,1.675,1.13,2,1
+2021-12-11,Athletic Club,Sevilla,2.357,0.215,0,1
+2021-12-12,Villarreal,Rayo Vallecano,2.11,1.413,2,0
+2021-12-12,Osasuna,Barcelona,0.368,1.389,2,2
+2021-12-12,Real Betis,Real Sociedad,1.217,1.067,4,0
+2021-12-12,Real Madrid,Atletico Madrid,0.588,0.77,2,0
+2021-12-13,Cadiz,Granada,0.619,1.124,1,1
+2021-12-17,Celta Vigo,Espanyol,1.656,0.378,3,1
+2021-12-18,Rayo Vallecano,Alaves,1.873,0.199,2,0
+2021-12-18,Real Sociedad,Villarreal,1.346,3.022,1,3
+2021-12-18,Barcelona,Elche,2.964,1.266,3,2
+2021-12-18,Sevilla,Atletico Madrid,0.373,1.245,2,1
+2021-12-19,Granada,Mallorca,2.715,1.086,4,1
+2021-12-19,Athletic Club,Real Betis,1.191,2.019,3,2
+2021-12-19,Getafe,Osasuna,1.091,0.712,1,0
+2021-12-19,Real Madrid,Cadiz,2.796,0.242,0,0
+2021-12-20,Levante,Valencia,2.735,2.106,3,4
+2021-12-21,Villarreal,Alaves,3.88,0.31,5,2
+2021-12-21,Sevilla,Barcelona,0.299,1.906,1,1
+2021-12-22,Granada,Atletico Madrid,0.911,1.779,2,1
+2021-12-22,Athletic Club,Real Madrid,1.093,1.585,1,2
+2021-12-31,Valencia,Espanyol,0.864,2.148,1,2
+2022-01-02,Getafe,Real Madrid,0.9,0.913,1,0
+2022-01-02,Elche,Granada,1.448,0.966,0,0
+2022-01-02,Atletico Madrid,Rayo Vallecano,1.981,0.104,2,0
+2022-01-02,Alaves,Real Sociedad,1.541,1.381,1,1
+2022-01-02,Real Betis,Celta Vigo,0.889,1.872,0,2
+2022-01-02,Mallorca,Barcelona,0.989,1.618,0,1
+2022-01-03,Villarreal,Levante,4.19,0.423,5,0
+2022-01-03,Osasuna,Athletic Club,0.522,2.485,1,3
+2022-01-03,Cadiz,Sevilla,0.239,1.284,0,1
+2022-01-08,Levante,Mallorca,1.325,1.165,2,0
+2022-01-08,Real Sociedad,Celta Vigo,2.321,0.314,1,0
+2022-01-08,Granada,Barcelona,0.748,0.967,1,1
+2022-01-08,Real Madrid,Valencia,4.113,1.121,4,1
+2022-01-09,Rayo Vallecano,Real Betis,1.479,1.267,1,1
+2022-01-09,Sevilla,Getafe,0.592,0.115,1,0
+2022-01-09,Alaves,Athletic Club,0.586,0.464,0,0
+2022-01-09,Osasuna,Cadiz,3.134,0.21,2,0
+2022-01-09,Villarreal,Atletico Madrid,2.561,0.882,2,2
+2022-01-10,Espanyol,Elche,1.302,0.662,1,2
+2022-01-16,Elche,Villarreal,0.204,0.755,1,0
+2022-01-18,Cadiz,Espanyol,0.802,1.916,2,2
+2022-01-18,Real Betis,Alaves,2.102,0.26,4,0
+2022-01-19,Celta Vigo,Osasuna,1.524,0.466,2,0
+2022-01-19,Valencia,Sevilla,0.573,1.18,1,1
+2022-01-20,Getafe,Granada,1.181,0.856,4,2
+2022-01-21,Espanyol,Real Betis,1.571,2.857,1,4
+2022-01-22,Levante,Cadiz,1.085,0.911,0,2
+2022-01-22,Villarreal,Mallorca,2.198,1.6,3,0
+2022-01-22,Sevilla,Celta Vigo,0.885,0.47,2,2
+2022-01-22,Atletico Madrid,Valencia,2.26,0.727,3,2
+2022-01-23,Granada,Osasuna,0.583,2.171,0,2
+2022-01-23,Real Madrid,Elche,3.828,0.725,2,2
+2022-01-23,Real Sociedad,Getafe,1.213,0.351,0,0
+2022-01-23,Rayo Vallecano,Athletic Club,1.453,0.413,0,1
+2022-01-23,Alaves,Barcelona,0.733,1.149,0,1
+2022-02-04,Getafe,Levante,1.172,0.556,3,0
+2022-02-05,Elche,Alaves,1.774,1.122,3,1
+2022-02-05,Mallorca,Cadiz,2.235,0.887,2,1
+2022-02-05,Celta Vigo,Rayo Vallecano,0.654,0.679,2,0
+2022-02-05,Osasuna,Sevilla,0.397,1.35,0,0
+2022-02-06,Valencia,Real Sociedad,1.191,0.54,0,0
+2022-02-06,Barcelona,Atletico Madrid,0.927,1.615,4,2
+2022-02-06,Real Betis,Villarreal,0.738,1.341,0,2
+2022-02-06,Real Madrid,Granada,1.472,0.395,1,0
+2022-02-07,Athletic Club,Espanyol,1.075,0.58,2,1
+2022-02-11,Sevilla,Elche,0.768,0.287,2,0
+2022-02-12,Cadiz,Celta Vigo,0.881,0.901,0,0
+2022-02-12,Villarreal,Real Madrid,0.46,2.111,0,0
+2022-02-12,Rayo Vallecano,Osasuna,0.59,2.123,0,3
+2022-02-12,Atletico Madrid,Getafe,3.208,2.266,4,3
+2022-02-13,Alaves,Valencia,2.035,1.181,2,1
+2022-02-13,Levante,Real Betis,1.668,2.097,2,4
+2022-02-13,Real Sociedad,Granada,3.438,0.774,2,0
+2022-02-13,Espanyol,Barcelona,0.624,1.622,2,2
+2022-02-14,Mallorca,Athletic Club,1.817,1.544,3,2
+2022-02-16,Atletico Madrid,Levante,1.106,0.813,0,1
+2022-02-18,Elche,Rayo Vallecano,2.957,0.832,2,1
+2022-02-19,Granada,Villarreal,2.127,5.342,1,4
+2022-02-19,Osasuna,Atletico Madrid,0.689,0.929,0,3
+2022-02-19,Cadiz,Getafe,0.654,0.885,1,1
+2022-02-19,Real Madrid,Alaves,3.023,0.637,3,0
+2022-02-20,Espanyol,Sevilla,1.602,0.958,1,1
+2022-02-20,Valencia,Barcelona,0.775,2.469,1,4
+2022-02-20,Real Betis,Mallorca,1.473,0.34,2,1
+2022-02-20,Athletic Club,Real Sociedad,3.088,0.528,4,0
+2022-02-21,Celta Vigo,Levante,1.405,1.547,1,1
+2022-02-25,Levante,Elche,2.131,1.039,3,0
+2022-02-26,Mallorca,Valencia,1.388,0.72,0,1
+2022-02-26,Getafe,Alaves,1.238,1.339,2,2
+2022-02-26,Rayo Vallecano,Real Madrid,1.198,1.927,0,1
+2022-02-26,Atletico Madrid,Celta Vigo,0.772,0.725,2,0
+2022-02-27,Villarreal,Espanyol,4.805,0.641,5,1
+2022-02-27,Sevilla,Real Betis,1.734,0.746,2,1
+2022-02-27,Real Sociedad,Osasuna,1.523,0.411,1,0
+2022-02-27,Barcelona,Athletic Club,3.243,0.333,4,0
+2022-02-28,Granada,Cadiz,0.241,0.902,0,0
+2022-03-02,Mallorca,Real Sociedad,0.456,1.449,0,2
+2022-03-04,Alaves,Sevilla,2.034,1.08,0,0
+2022-03-05,Osasuna,Villarreal,1.527,0.523,1,0
+2022-03-05,Espanyol,Getafe,0.122,0.478,2,0
+2022-03-05,Valencia,Granada,1.835,0.21,3,1
+2022-03-05,Real Madrid,Real Sociedad,2.088,0.743,4,1
+2022-03-06,Cadiz,Rayo Vallecano,1.166,0.908,2,0
+2022-03-06,Elche,Barcelona,0.85,4.086,1,2
+2022-03-06,Celta Vigo,Mallorca,2.8,1.591,4,3
+2022-03-06,Real Betis,Atletico Madrid,1.315,2.674,1,3
+2022-03-07,Athletic Club,Levante,3.487,0.552,3,1
+2022-03-11,Atletico Madrid,Cadiz,0.66,0.817,2,1
+2022-03-12,Levante,Espanyol,1.256,0.479,1,1
+2022-03-12,Granada,Elche,1.342,1.329,0,1
+2022-03-12,Villarreal,Celta Vigo,1.17,0.933,1,0
+2022-03-12,Getafe,Valencia,1.207,0.251,0,0
+2022-03-13,Rayo Vallecano,Sevilla,0.627,0.413,1,1
+2022-03-13,Real Betis,Athletic Club,0.846,0.708,1,0
+2022-03-13,Real Sociedad,Alaves,3.048,0.666,1,0
+2022-03-13,Barcelona,Osasuna,3.903,0.111,4,0
+2022-03-14,Mallorca,Real Madrid,1.177,1.817,0,3
+2022-03-18,Athletic Club,Getafe,2.643,0.563,1,1
+2022-03-19,Alaves,Granada,2.131,2.191,2,3
+2022-03-19,Elche,Valencia,0.509,0.98,0,1
+2022-03-19,Osasuna,Levante,2.674,1.219,3,1
+2022-03-19,Rayo Vallecano,Atletico Madrid,1.885,1.192,0,1
+2022-03-20,Espanyol,Mallorca,1.54,0.306,1,0
+2022-03-20,Celta Vigo,Real Betis,1.262,0.444,0,0
+2022-03-20,Cadiz,Villarreal,1.427,0.193,1,0
+2022-03-20,Sevilla,Real Sociedad,0.355,1.221,0,0
+2022-03-20,Real Madrid,Barcelona,0.628,4.26,0,4
+2022-04-02,Getafe,Mallorca,1.695,0.308,1,0
+2022-04-02,Levante,Villarreal,1.717,1.102,2,0
+2022-04-02,Celta Vigo,Real Madrid,1.074,2.946,1,2
+2022-04-02,Atletico Madrid,Alaves,2.864,0.518,4,1
+2022-04-03,Athletic Club,Elche,2.081,0.452,2,1
+2022-04-03,Real Betis,Osasuna,4.858,0.311,4,1
+2022-04-03,Granada,Rayo Vallecano,2.264,1.046,2,2
+2022-04-03,Valencia,Cadiz,0.108,0.196,0,0
+2022-04-03,Barcelona,Sevilla,1.934,0.488,1,0
+2022-04-04,Real Sociedad,Espanyol,1.958,0.715,1,0
+2022-04-08,Sevilla,Granada,3.308,0.982,4,2
+2022-04-09,Cadiz,Real Betis,1.155,1.228,1,2
+2022-04-09,Mallorca,Atletico Madrid,1.08,0.575,1,0
+2022-04-09,Villarreal,Athletic Club,0.92,2.05,1,1
+2022-04-09,Real Madrid,Getafe,1.622,0.408,2,0
+2022-04-10,Osasuna,Alaves,2.673,0.78,1,0
+2022-04-10,Espanyol,Celta Vigo,1.558,0.696,1,0
+2022-04-10,Elche,Real Sociedad,1.048,2.082,1,2
+2022-04-10,Levante,Barcelona,2.987,1.361,2,3
+2022-04-11,Rayo Vallecano,Valencia,0.556,0.57,1,1
+2022-04-15,Real Sociedad,Real Betis,0.868,0.378,0,0
+2022-04-16,Elche,Mallorca,1.5,1.064,3,0
+2022-04-16,Alaves,Rayo Vallecano,0.531,1.22,1,0
+2022-04-16,Valencia,Osasuna,1.209,1.063,1,2
+2022-04-16,Getafe,Villarreal,0.939,2.824,1,2
+2022-04-17,Granada,Levante,1.156,4.459,1,4
+2022-04-17,Atletico Madrid,Espanyol,1.589,0.815,2,1
+2022-04-17,Athletic Club,Celta Vigo,0.911,0.883,0,2
+2022-04-17,Sevilla,Real Madrid,1.172,1.535,2,3
+2022-04-18,Barcelona,Cadiz,1.354,1.928,0,1
+2022-04-19,Mallorca,Alaves,0.914,0.562,2,1
+2022-04-19,Real Betis,Elche,1.344,0.835,0,1
+2022-04-19,Villarreal,Valencia,2.795,0.313,2,0
+2022-04-20,Atletico Madrid,Granada,1.148,0.151,0,0
+2022-04-20,Celta Vigo,Getafe,0.326,1.459,0,2
+2022-04-20,Osasuna,Real Madrid,0.873,4.605,1,3
+2022-04-21,Espanyol,Rayo Vallecano,0.455,1.016,0,1
+2022-04-21,Levante,Sevilla,2.621,2.46,2,3
+2022-04-21,Cadiz,Athletic Club,3.426,2.332,2,3
+2022-04-21,Real Sociedad,Barcelona,1.032,1.965,0,1
+2022-04-24,Barcelona,Rayo Vallecano,1.108,0.248,0,1
+2022-04-29,Sevilla,Cadiz,0.873,0.899,1,1
+2022-04-30,Alaves,Villarreal,1.853,1.14,2,1
+2022-04-30,Real Madrid,Espanyol,2.317,1.642,4,0
+2022-04-30,Valencia,Levante,0.737,1.703,1,1
+2022-04-30,Athletic Club,Atletico Madrid,1.247,0.503,2,0
+2022-05-01,Elche,Osasuna,0.809,1.119,1,1
+2022-05-01,Granada,Celta Vigo,0.999,1.301,1,1
+2022-05-01,Rayo Vallecano,Real Sociedad,1.199,0.875,1,1
+2022-05-01,Barcelona,Mallorca,1.641,1.24,2,1
+2022-05-02,Getafe,Real Betis,0.852,0.47,0,0
+2022-05-06,Levante,Real Sociedad,2.222,2.306,2,1
+2022-05-07,Mallorca,Granada,1.779,2.646,2,6
+2022-05-07,Athletic Club,Valencia,1.545,0.127,0,0
+2022-05-07,Celta Vigo,Alaves,2.999,0.136,4,0
+2022-05-07,Cadiz,Elche,2.024,0.063,3,0
+2022-05-07,Real Betis,Barcelona,0.628,1.197,1,2
+2022-05-08,Getafe,Rayo Vallecano,0.629,0.817,0,0
+2022-05-08,Villarreal,Sevilla,2.701,0.987,1,1
+2022-05-08,Espanyol,Osasuna,0.569,1.11,1,1
+2022-05-08,Atletico Madrid,Real Madrid,2.454,1.136,1,0
+2022-05-10,Valencia,Real Betis,1.119,1.836,0,3
+2022-05-10,Granada,Athletic Club,1.02,0.356,1,0
+2022-05-10,Barcelona,Celta Vigo,1.234,0.851,3,1
+2022-05-11,Alaves,Espanyol,2.457,0.902,2,1
+2022-05-11,Osasuna,Getafe,0.608,0.583,1,1
+2022-05-11,Sevilla,Mallorca,1.652,0.553,0,0
+2022-05-11,Elche,Atletico Madrid,0.169,2.613,0,2
+2022-05-12,Real Sociedad,Cadiz,2.658,0.675,3,0
+2022-05-12,Rayo Vallecano,Villarreal,1.893,2.918,1,5
+2022-05-12,Real Madrid,Levante,4.896,0.696,6,0
+2022-05-15,Athletic Club,Osasuna,1.478,0.764,2,0
+2022-05-15,Atletico Madrid,Sevilla,0.893,0.794,1,1
+2022-05-15,Real Betis,Granada,1.702,1.156,2,0
+2022-05-15,Celta Vigo,Elche,1.557,0.446,1,0
+2022-05-15,Mallorca,Rayo Vallecano,0.945,2.045,2,1
+2022-05-15,Getafe,Barcelona,0.237,0.195,0,0
+2022-05-15,Cadiz,Real Madrid,2.666,1.925,1,1
+2022-05-15,Espanyol,Valencia,0.599,2.226,1,1
+2022-05-15,Levante,Alaves,2.147,0.572,3,1
+2022-05-15,Villarreal,Real Sociedad,1.01,2.727,1,2
+2022-05-20,Real Madrid,Real Betis,1.815,1.436,0,0
+2022-05-20,Rayo Vallecano,Levante,2.733,3.285,2,4
+2022-05-21,Valencia,Celta Vigo,1.479,1.409,2,0
+2022-05-22,Elche,Getafe,3.025,1.069,3,1
+2022-05-22,Alaves,Cadiz,0.392,1.841,0,1
+2022-05-22,Granada,Espanyol,2.033,0.387,0,0
+2022-05-22,Osasuna,Mallorca,0.897,1.235,0,2
+2022-05-22,Barcelona,Villarreal,0.628,0.687,0,2
+2022-05-22,Real Sociedad,Atletico Madrid,2.217,0.587,1,2
+2022-05-22,Sevilla,Athletic Club,1.412,0.487,1,0

@@ -81,8 +81,17 @@ Ingest Sackmann (`core/tennis_data.py`, 11712 match ATP 2021-24, free GitHub), s
 
 Le feature contano (elo_diff 0.521, rank 0.433, **serve_diff 0.219**). Architettura multi-sport validata. Manca: odds tennis-data.co.uk per il baseline-mercato.
 
-### 🔧 xG — scraper pronto per Andrea (`scripts/scrape_understat_xg.py`)
-Understat bloccato dal build env → scraper da lanciare dalla rete di Andrea: popola `data/understat/`, poi si fa il join con i match fd.co.uk (mapping nomi) e si aggiunge la feature xG al backtest.
+### 🔧 xG — INGESTITO E MISURATO (2026-06-03e) ✅ IL LEVER
+Understat aveva cambiato struttura (niente più `datesData`; ora endpoint XHR `/getLeagueData/{slug}/{season}` con header `X-Requested-With`, dietro Cloudflare). Risolto con Playwright (`scripts/scrape_understat_xg.py`): **7156 match con xG per-match** scaricati in `data/understat/` (5 leghe × 4 stagioni). Loader `core/understat_data.py`, backtest `scripts/backtest_xg.py` (xG-form running attack/difesa per squadra).
+
+| Modello (Understat, 3415 eval) | Brier | Gap chiuso |
+|---|---|---|
+| Poisson only | 0.59348 | — |
+| + pi + form (no xG) | 0.58921 | 23% |
+| **+ xG form** | **0.58236** | **60%** |
+| Market (Pinnacle ref) | 0.575 | 100% |
+
+**Lo xG è la feature più forte (|coef| xg_off 0.182, la più alta di tutte) e chiude il 60% del gap col mercato.** Confermato col dato reale: il gap era informazione = xG. Prossimi: join xG↔fd.co.uk (name-map) per il serving cliente, + formazioni/infortuni per chiudere il restante 40%.
 
 ### ❌ MANCANTI — da ingestire (in ordine di impatto atteso)
 1. **xG storico** (Understat/FBref scraping) — il pezzo più grosso del gap residuo.
