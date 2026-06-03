@@ -1,0 +1,23 @@
+// Affiliate scaffolding. Real partner links/odds arrive once bookmaker deals are
+// signed (Andrea/Maven). Until then a single placeholder partner is emitted from
+// env so the UI + revenue plumbing exist. NEVER fabricates an "edge".
+export type AffiliateOffer = {
+  bookmaker: string;
+  bonus: string;
+  url: string;
+  odds: number | null; // populated later from partner feed; null for now
+};
+
+export function affiliateOffer(): AffiliateOffer | null {
+  const bookmaker = process.env.AFFILIATE_BOOKMAKER || "";
+  const url = process.env.AFFILIATE_URL || "";
+  const bonus = process.env.AFFILIATE_BONUS || "";
+  if (!bookmaker || !url) return null; // not configured yet -> no CTA
+  return { bookmaker, bonus, url, odds: null };
+}
+
+// Attach the offer to a revealed prediction row (no-op if not configured).
+export function withAffiliate<T extends Record<string, unknown>>(row: T): T {
+  const offer = affiliateOffer();
+  return offer ? ({ ...row, affiliate: offer } as T) : row;
+}
