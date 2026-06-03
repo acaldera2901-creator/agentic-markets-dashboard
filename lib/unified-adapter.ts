@@ -206,7 +206,7 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     confidence_score: confidence,
     risk_level: hasRealMarket ? computeRisk(row.edge) : "medium",
     status: computeStatus(row.kickoff),
-    signal_type: hasRealMarket ? "signal" : "estimate",
+    signal_type: hasRealMarket ? "signal" : "paper",
     source: "model",
     model_version: "football-poisson-v1",
     plan_access: "base",
