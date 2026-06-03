@@ -93,6 +93,8 @@ class Settings(BaseSettings):
     DC_MIN_TEAM_MATCHES: int = 4             # reliability gate, mirrors TS MIN_MATCHES_PER_TEAM
     DC_MAX_CI_WIDTH: float = 0.15            # conformal interval width above which a pick is "estimate"
     DC_TIME_DECAY_HALFLIFE_DAYS: float = 120.0  # Dixon-Coles time weighting; 0 disables
+    XG_MODEL_VERSION: str = "football-xg-v1"     # xG-enhanced model (paper/parallel)
+    XG_SOURCE_TABLE: str = "xg_predictions"      # distinct dedup namespace
 
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1

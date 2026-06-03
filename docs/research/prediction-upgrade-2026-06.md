@@ -97,6 +97,16 @@ Understat aveva cambiato struttura (niente più `datesData`; ora endpoint XHR `/
 
 Prossimi: join xG↔fd.co.uk (name-map) + productionization nel serving cliente (Python→unified_predictions, gated da conferma Andrea = deploy); formazioni/infortuni dopo il contratto.
 
+### 🚀 PRODUCTIONIZATION xG (2026-06-03g) — paper/parallelo, NON ancora servito ai clienti
+- `core/team_mapping.py`: Understat→fd.co.uk, **copertura 100%** su tutte le leghe (test live).
+- `models/xg_model.py`: `XGModel` riutilizzabile (fit/predict/**update**) — impacchetta il modello validato (Poisson v2 + pi + form + xG-form → logistic).
+- `core/supabase_client.py::xg_prediction_to_unified_row`: riga `unified_predictions` taggata `model_version=football-xg-v1`, `source_table=xg_predictions`, `is_paper=True` — dedup namespace distinto, **non sovrascrive mai il Poisson v1 servito**.
+- `scripts/verify_xg_path.py`: verifica end-to-end (dry-run, nessun insert live).
+
+**Verifica:** path OK end-to-end. Brier held-out con **stato fresco** 0.587 (batte base 0.589, verso mercato 0.575); con **stato congelato** 0.593 (edge svanisce). → **Requisito operativo: il modello va ri-allenato/aggiornato a ogni giornata** (`update()` per i risultati in arrivo tra un retrain e l'altro). Il backtest pulito (split 50/50 + refit) resta il riferimento di qualità: 0.582 = 60% del gap.
+
+**Resta gated (= deploy, conferma Andrea):** il flip al serving cliente. Tutto il resto è paper/parallelo e non tocca ciò che vedono i clienti.
+
 ### ❌ MANCANTI — da ingestire (in ordine di impatto atteso)
 1. **xG storico** (Understat/FBref scraping) — il pezzo più grosso del gap residuo.
 2. **Formazioni/assenze** (API-Football, già pagata; serve storicizzarle).

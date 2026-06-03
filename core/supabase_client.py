@@ -205,6 +205,16 @@ def dc_prediction_to_unified_row(p: DCPrediction) -> dict:
     }
 
 
+def xg_prediction_to_unified_row(p: DCPrediction) -> dict:
+    """Same unified_predictions schema as the DC row, tagged as the xG-enhanced
+    model. Paper/parallel: distinct model_version + source_table, so it never
+    overwrites the served Poisson v1 rows (promotion to client = explicit deploy)."""
+    row = dc_prediction_to_unified_row(p)
+    row["model_version"] = settings.XG_MODEL_VERSION
+    row["source_table"] = settings.XG_SOURCE_TABLE
+    return row
+
+
 async def upsert_dc_predictions(predictions: list[DCPrediction]) -> int:
     """
     Upsert Dixon-Coles predictions into unified_predictions via PostgREST.
