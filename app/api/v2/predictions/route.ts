@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
-import { UnifiedPrediction, applyAccessControl } from "@/lib/unified-adapter";
-import { requireAccess } from "@/lib/auth";
+import { UnifiedPrediction } from "@/lib/unified-adapter";
+import { resolveAccessState } from "@/lib/auth";
+import { projectPrediction } from "@/lib/access-projection";
+import { pickOfDayId } from "@/lib/pick-of-day";
+import { withAffiliate } from "@/lib/affiliate";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const { ctx, deny } = await requireAccess(req);
-  if (deny) return deny;
+  const { state } = await resolveAccessState(req); // never denies (read)
 
   const { searchParams } = new URL(req.url);
   const sport       = searchParams.get("sport");
   const competition = searchParams.get("competition");
   const status      = searchParams.get("status");
-
-  // Access tier is derived from the verified session plan (never from the URL),
-  // so a base session sees base data and a premium/admin session sees full data.
-  // requireAccess already guaranteed plan is base/premium/admin_full.
-  const planAccess = ctx!.plan === "base" ? "base" : "premium";
 
   const conditions: string[] = [
     "starts_at > NOW()",
@@ -45,7 +42,11 @@ export async function GET(req: Request) {
      LIMIT 100`
   );
 
-  const predictions = rows.map((row) => applyAccessControl(row, planAccess));
+  const potd = pickOfDayId(rows as Array<{ id: string; confidence_score?: number | null; starts_at?: string | null }>);
+  const predictions = rows.map((row) => {
+    const projected = projectPrediction(row as unknown as Record<string, unknown>, state, (row as { id: string }).id === potd);
+    return projected.locked ? projected : withAffiliate(projected);
+  });
 
   return NextResponse.json(
     {
