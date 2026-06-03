@@ -208,6 +208,7 @@ const BASE_TRANSLATIONS = {
     gate_upgrade_btn: "Passa a Premium",
     // Footer
     footer_note: "Sportsbook Edge Desk · solo execution verificata · interfaccia client-grade",
+    rg_footer: "18+. Gioca responsabilmente. I contenuti sono a scopo informativo; quote e bonus sono offerte di partner affiliati.",
     // History
     hist_matches: "Partite", hist_bets: "Scommesse", hist_won: "Vinte", hist_lost: "Perse",
     hist_hit_rate: "Hit Rate", hist_roi: "ROI", hist_return: "Ritorno",
@@ -445,6 +446,7 @@ const BASE_TRANSLATIONS = {
     gate_upgrade_btn: "Upgrade to Premium",
     // Footer
     footer_note: "Sportsbook Edge Desk · verified execution only · client-grade interface",
+    rg_footer: "18+. Play responsibly. Content is for informational purposes; odds and bonuses are offers from affiliate partners.",
     // History
     hist_matches: "Matches", hist_bets: "Bets Placed", hist_won: "Won", hist_lost: "Lost",
     hist_hit_rate: "Hit Rate", hist_roi: "ROI", hist_return: "Return",
@@ -526,6 +528,7 @@ const EXTRA_TRANSLATIONS = {
     refresh_odds: "ACTUALIZAR ODDS", rail_exec_note: "Ejecución live solo con bet ID confirmado. Tennis en capa de señal.",
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
     footer_note: "Sportsbook Edge Desk · ejecución verificada · interfaz cliente",
+    rg_footer: "18+. Juega con responsabilidad. El contenido es informativo; cuotas y bonos son ofertas de socios afiliados.",
   },
   fr: {
     ...BASE_TRANSLATIONS.en,
@@ -546,6 +549,7 @@ const EXTRA_TRANSLATIONS = {
     refresh_odds: "RAFRAICHIR ODDS", rail_exec_note: "Exécution live seulement avec bet ID confirmé. Tennis en couche signal.",
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
     footer_note: "Sportsbook Edge Desk · exécution vérifiée · interface client",
+    rg_footer: "18+. Jouez de façon responsable. Le contenu est informatif; les cotes et bonus sont des offres de partenaires affiliés.",
   },
   ru: {
     ...BASE_TRANSLATIONS.en,
@@ -566,6 +570,7 @@ const EXTRA_TRANSLATIONS = {
     refresh_odds: "ОБНОВИТЬ ODDS", rail_exec_note: "Live execution только с подтвержденным bet ID. Tennis в signal layer.",
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
     footer_note: "Sportsbook Edge Desk · проверенное исполнение · клиентский интерфейс",
+    rg_footer: "18+. Играй ответственно. Контент носит информационный характер; котировки и бонусы — предложения партнёров.",
   },
 } as const;
 
@@ -698,6 +703,13 @@ interface Prediction {
   computed_at: string;
   match_type?: string | null;
   enrichment?: PredictionEnrichment | null;
+  // Reveal-gating fields (Task 7)
+  locked?: boolean;
+  pick_of_day?: boolean;
+  pick?: string | null;
+  confidence_score?: number | null;
+  explanation?: string | null;
+  affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
 
 interface AgentStatus {
@@ -791,6 +803,13 @@ interface TennisMatch {
   surface_matches_p2?: number | null;
   elo_raw_p1?: number | null;
   elo_raw_p2?: number | null;
+  // Reveal-gating fields (Task 7)
+  locked?: boolean;
+  pick_of_day?: boolean;
+  pick?: string | null;
+  confidence_score?: number | null;
+  explanation?: string | null;
+  affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
 
 interface TennisSummary {
@@ -1102,6 +1121,7 @@ function SportsbookBoard({
   tennisMatches,
   onSelect,
   onBetNow,
+  onGate,
   isFreeClient,
   isPremium,
   tennisIsPlaceholder,
@@ -1110,6 +1130,7 @@ function SportsbookBoard({
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
+  onGate?: () => void;
   isFreeClient?: boolean;
   isPremium?: boolean;
   tennisIsPlaceholder?: boolean;
@@ -1300,7 +1321,7 @@ function SportsbookBoard({
               {footballRows.length ? (
                 <div className="market-list">
                   {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
-                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />
+                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                   ))}
                   {isFreeClient && footballRows.length > 1 && (
                     <div className="free-preview-wall">
@@ -1325,7 +1346,7 @@ function SportsbookBoard({
               {tennisRows.length ? (
                 <div className="market-list">
                   {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
-                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />
+                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                   ))}
                   {isFreeClient && tennisRows.length > 1 && (
                     <div className="free-preview-wall">
@@ -1342,6 +1363,8 @@ function SportsbookBoard({
           )}
         </>
       )}
+      {/* 18+ / Responsible Gambling + affiliate disclosure (Task 7 Step 3) */}
+      <div className="rg-footer">{t.rg_footer}</div>
     </div>
   );
 }
@@ -3301,7 +3324,7 @@ const LEAGUE_BADGE_COLORS: Record<string, string> = {
   EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
 };
 
-function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean }) {
+function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -3394,15 +3417,35 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Pr
         </div>
       )}
 
-      {/* Probability bars */}
-      <div className="space-y-1.5">
-        <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
-          odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-        <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
-          odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-        <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
-          odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
-      </div>
+      {/* Per-card reveal gating (Task 7) */}
+      {p.locked ? (
+        <div className="locked-overlay" role="button" onClick={() => onGate?.()}>
+          <span className="blurred">▒▒ HOME ▒▒▒%</span>
+          <span className="blurred">▒▒ DRAW ▒▒▒%</span>
+          <span className="blurred">▒▒ AWAY ▒▒▒%</span>
+          <span className="locked-cta">{t.locked_title}</span>
+        </div>
+      ) : (
+        <>
+          {/* Probability bars */}
+          <div className="space-y-1.5">
+            <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
+              odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
+            <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
+              odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
+            <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
+              odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
+          </div>
+          {p.pick && <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{p.pick}</strong>{p.confidence_score != null && <span className="ml-1 text-gray-400">{p.confidence_score}%</span>}</div>}
+          {p.explanation && <p className="text-[10px] font-mono text-gray-400 mt-1 leading-relaxed">{p.explanation}</p>}
+          {p.affiliate && (
+            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
+              {p.affiliate.bonus} · {p.affiliate.bookmaker} →
+            </a>
+          )}
+          {p.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
+        </>
+      )}
 
       {/* Extra markets — schedina optimizer */}
       {e.extra_markets && e.extra_markets.length > 0 && (() => {
@@ -3662,7 +3705,7 @@ function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
   return reasons;
 }
 
-function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean }) {
+function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -3745,23 +3788,42 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: T
         )}
       </div>
 
-      {/* Probability bars */}
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P1")}>
-          <span className="text-xs font-mono w-24 shrink-0 text-cyan-400 truncate">{m.player1.split(" ").pop()}</span>
-          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-            <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${Math.round(m.p1 * 100)}%` }} />
-          </div>
-          <span className="text-xs font-mono w-8 text-right text-cyan-400">{Math.round(m.p1 * 100)}%</span>
+      {/* Per-card reveal gating (Task 7) */}
+      {m.locked ? (
+        <div className="locked-overlay" role="button" onClick={() => onGate?.()}>
+          <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
+          <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
+          <span className="locked-cta">{t.locked_title}</span>
         </div>
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P2")}>
-          <span className="text-xs font-mono w-24 shrink-0 text-fuchsia-400 truncate">{m.player2.split(" ").pop()}</span>
-          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-            <div className="h-full rounded-full bg-fuchsia-400 transition-all" style={{ width: `${Math.round(m.p2 * 100)}%` }} />
+      ) : (
+        <>
+          {/* Probability bars */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P1")}>
+              <span className="text-xs font-mono w-24 shrink-0 text-cyan-400 truncate">{m.player1.split(" ").pop()}</span>
+              <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${Math.round(m.p1 * 100)}%` }} />
+              </div>
+              <span className="text-xs font-mono w-8 text-right text-cyan-400">{Math.round(m.p1 * 100)}%</span>
+            </div>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P2")}>
+              <span className="text-xs font-mono w-24 shrink-0 text-fuchsia-400 truncate">{m.player2.split(" ").pop()}</span>
+              <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full rounded-full bg-fuchsia-400 transition-all" style={{ width: `${Math.round(m.p2 * 100)}%` }} />
+              </div>
+              <span className="text-xs font-mono w-8 text-right text-fuchsia-400">{Math.round(m.p2 * 100)}%</span>
+            </div>
           </div>
-          <span className="text-xs font-mono w-8 text-right text-fuchsia-400">{Math.round(m.p2 * 100)}%</span>
-        </div>
-      </div>
+          {m.pick && <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{m.pick}</strong>{m.confidence_score != null && <span className="ml-1 text-gray-400">{m.confidence_score}%</span>}</div>}
+          {m.explanation && <p className="text-[10px] font-mono text-gray-400 mt-1 leading-relaxed">{m.explanation}</p>}
+          {m.affiliate && (
+            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
+              {m.affiliate.bonus} · {m.affiliate.bookmaker} →
+            </a>
+          )}
+          {m.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
+        </>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
@@ -5365,6 +5427,7 @@ function UnifiedBetsTab({
   onBetNow,
   onSignIn,
   onRegister,
+  onGate,
   isSignalPreviewUnlocked,
   isFreeClient,
   isPremiumClient,
@@ -5380,6 +5443,7 @@ function UnifiedBetsTab({
   onBetNow: () => void;
   onSignIn: () => void;
   onRegister: () => void;
+  onGate?: () => void;
   isSignalPreviewUnlocked: boolean;
   isFreeClient: boolean;
   isPremiumClient?: boolean;
@@ -5407,6 +5471,7 @@ function UnifiedBetsTab({
         tennisMatches={tennisMatches}
         onSelect={onSelect}
         onBetNow={onBetNow}
+        onGate={onGate}
         isFreeClient={isFreeClient}
         isPremium={isPremiumClient}
         tennisIsPlaceholder={tennisIsPlaceholder}
@@ -5707,11 +5772,7 @@ export default function Dashboard() {
   }, [clientProfile]);
 
   const fetchPredictions = useCallback(async () => {
-    if (!profileHasAccess(clientProfile)) {
-      setPredictions([]);
-      setPredLoading(false);
-      return;
-    }
+    // No access gate here: API returns per-card locked projection (Task 7)
     setPredLoading(true);
     try {
       const resp = await fetch("/api/predictions", { credentials: "same-origin" });
@@ -5727,7 +5788,8 @@ export default function Dashboard() {
         setPredictions([]);
       }
     } catch { /**/ } finally { setPredLoading(false); }
-  }, [clientProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -5740,12 +5802,7 @@ export default function Dashboard() {
   }, []);
 
   const fetchTennis = useCallback(async () => {
-    if (!profileHasAccess(clientProfile)) {
-      setTennisMatches([]);
-      setTennisSummary(null);
-      setTennisLoading(false);
-      return;
-    }
+    // No access gate here: API returns per-card locked projection (Task 7)
     setTennisLoading(true);
     try {
       const resp = await fetch("/api/tennis", { credentials: "same-origin" });
@@ -5761,7 +5818,8 @@ export default function Dashboard() {
         setTennisSummary(null);
       }
     } catch { /**/ } finally { setTennisLoading(false); }
-  }, [clientProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -5954,6 +6012,7 @@ export default function Dashboard() {
               onBetNow={() => setTab("partners")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
+              onGate={handleProtectedUnlock}
               isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
               isPremiumClient={isPremiumClient}

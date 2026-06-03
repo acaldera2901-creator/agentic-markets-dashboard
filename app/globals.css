@@ -4208,6 +4208,76 @@ button:disabled {
   margin: 0;
 }
 
+/* ─── Task 7: Per-card blur + CTA + PotD + bonus ──────────────────────────── */
+.blurred {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+}
+.locked-overlay {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 6px;
+  border: 1px dashed rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.18);
+}
+.locked-overlay:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.06);
+}
+.locked-cta {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: rgba(167, 139, 250, 0.85);
+  margin-top: 4px;
+  text-align: center;
+}
+.bonus-cta {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: #34d399;
+  text-decoration: none;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.bonus-cta:hover {
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.55);
+}
+.badge-potd {
+  display: inline-block;
+  background: #1f7a3d;
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  margin-top: 4px;
+  letter-spacing: 0.03em;
+}
+.rg-footer {
+  margin: 8px 0 2px;
+  padding: 6px 10px;
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: rgba(255,255,255,0.22);
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  line-height: 1.4;
+}
+
 /* ─── Deep Analysis locked teaser (Base) ──────────────────────────────────── */
 .deep-analysis-locked {
   display: flex;
