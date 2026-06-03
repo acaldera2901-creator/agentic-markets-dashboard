@@ -1,0 +1,381 @@
+date,home_team,away_team,home_xg,away_xg,home_goals,away_goals
+2021-08-06,Monaco,Nantes,1.769,0.24,1,1
+2021-08-07,Lyon,Brest,1.175,1.02,1,1
+2021-08-07,Troyes,Paris Saint Germain,0.618,1.487,1,2
+2021-08-08,Rennes,Lens,0.598,2.136,1,1
+2021-08-08,Saint-Etienne,Lorient,1.858,0.836,1,1
+2021-08-08,Strasbourg,Angers,0.267,1.416,0,2
+2021-08-08,Bordeaux,Clermont Foot,0.511,2.957,0,2
+2021-08-08,Nice,Reims,1.099,0.158,0,0
+2021-08-08,Metz,Lille,1.021,1.622,3,3
+2021-08-08,Montpellier,Marseille,0.765,2.158,2,3
+2021-08-13,Lorient,Monaco,0.779,0.865,1,0
+2021-08-14,Lille,Nice,0.769,2.337,0,4
+2021-08-14,Paris Saint Germain,Strasbourg,2.9,0.57,4,2
+2021-08-15,Angers,Lyon,1.642,0.977,3,0
+2021-08-15,Brest,Rennes,2.299,1.322,1,1
+2021-08-15,Clermont Foot,Troyes,1.443,0.696,2,0
+2021-08-15,Nantes,Metz,1.722,0.885,2,0
+2021-08-15,Reims,Montpellier,1.308,2.0,3,3
+2021-08-15,Lens,Saint-Etienne,1.145,0.852,2,2
+2021-08-15,Marseille,Bordeaux,1.053,0.318,2,2
+2021-08-20,Brest,Paris Saint Germain,1.249,1.515,2,4
+2021-08-21,Monaco,Lens,0.242,0.599,0,2
+2021-08-21,Saint-Etienne,Lille,0.477,1.197,1,1
+2021-08-22,Lyon,Clermont Foot,3.319,1.821,3,3
+2021-08-22,Metz,Reims,0.67,1.184,1,1
+2021-08-22,Bordeaux,Angers,0.603,1.013,1,1
+2021-08-22,Strasbourg,Troyes,2.955,1.145,1,1
+2021-08-22,Montpellier,Lorient,3.649,0.462,3,1
+2021-08-22,Rennes,Nantes,0.87,0.264,1,0
+2021-08-27,Nantes,Lyon,1.354,1.441,0,1
+2021-08-28,Nice,Bordeaux,2.528,0.867,4,0
+2021-08-28,Marseille,Saint-Etienne,2.737,1.228,3,1
+2021-08-29,Troyes,Monaco,0.589,1.741,1,2
+2021-08-29,Strasbourg,Brest,1.227,0.593,3,1
+2021-08-29,Angers,Rennes,2.632,1.287,2,0
+2021-08-29,Clermont Foot,Metz,1.645,1.903,2,2
+2021-08-29,Lens,Lorient,1.139,1.216,2,2
+2021-08-29,Lille,Montpellier,2.464,0.719,2,1
+2021-08-29,Reims,Paris Saint Germain,0.827,1.825,0,2
+2021-09-10,Lorient,Lille,1.085,1.518,2,1
+2021-09-11,Paris Saint Germain,Clermont Foot,2.506,1.035,4,0
+2021-09-11,Monaco,Marseille,0.891,1.361,0,2
+2021-09-12,Montpellier,Saint-Etienne,1.09,0.862,2,0
+2021-09-12,Rennes,Reims,0.806,0.871,0,2
+2021-09-12,Bordeaux,Lens,1.008,3.125,2,3
+2021-09-12,Brest,Angers,1.48,0.998,1,1
+2021-09-12,Metz,Troyes,0.781,0.867,0,2
+2021-09-12,Nantes,Nice,2.157,2.453,0,2
+2021-09-12,Lyon,Strasbourg,1.699,2.045,3,1
+2021-09-17,Strasbourg,Metz,2.047,0.612,3,0
+2021-09-18,Lens,Lille,0.487,1.21,1,0
+2021-09-18,Saint-Etienne,Bordeaux,1.754,2.368,1,2
+2021-09-19,Nice,Monaco,1.945,2.591,2,2
+2021-09-19,Troyes,Montpellier,0.489,0.25,1,1
+2021-09-19,Angers,Nantes,0.609,2.599,1,4
+2021-09-19,Clermont Foot,Brest,0.792,0.657,1,1
+2021-09-19,Reims,Lorient,0.978,0.175,0,0
+2021-09-19,Marseille,Rennes,2.214,1.061,2,0
+2021-09-19,Paris Saint Germain,Lyon,2.23,0.823,2,1
+2021-09-22,Monaco,Saint-Etienne,1.738,0.326,3,1
+2021-09-22,Montpellier,Bordeaux,1.685,1.269,3,3
+2021-09-22,Nantes,Brest,1.664,0.564,3,1
+2021-09-22,Rennes,Clermont Foot,3.15,0.38,6,0
+2021-09-22,Lille,Reims,1.185,1.175,2,1
+2021-09-22,Lens,Strasbourg,2.684,1.095,0,1
+2021-09-22,Angers,Marseille,0.47,0.494,0,0
+2021-09-22,Lyon,Troyes,2.472,0.944,3,1
+2021-09-22,Metz,Paris Saint Germain,0.761,1.147,1,2
+2021-09-22,Lorient,Nice,0.619,2.169,1,0
+2021-09-25,Saint-Etienne,Nice,0.663,3.177,0,3
+2021-09-25,Strasbourg,Lille,0.496,2.586,1,2
+2021-09-25,Lyon,Lorient,0.843,0.535,1,1
+2021-09-25,Paris Saint Germain,Montpellier,2.584,0.275,2,0
+2021-09-26,Bordeaux,Rennes,0.602,1.781,1,1
+2021-09-26,Brest,Metz,1.668,0.669,1,2
+2021-09-26,Reims,Nantes,1.231,0.769,3,1
+2021-09-26,Troyes,Angers,1.26,1.285,1,1
+2021-09-26,Clermont Foot,Monaco,1.309,1.792,1,3
+2021-09-26,Marseille,Lens,2.02,2.49,2,3
+2021-10-01,Lens,Reims,2.364,0.086,2,0
+2021-10-02,Montpellier,Strasbourg,1.057,0.294,1,1
+2021-10-02,Nice,Brest,4.368,0.315,2,1
+2021-10-03,Rennes,Paris Saint Germain,0.878,1.398,2,0
+2021-10-03,Angers,Metz,2.814,0.895,3,2
+2021-10-03,Lorient,Clermont Foot,0.585,0.775,1,1
+2021-10-03,Monaco,Bordeaux,1.727,0.575,3,0
+2021-10-03,Nantes,Troyes,1.71,1.647,2,0
+2021-10-03,Lille,Marseille,3.523,0.564,2,0
+2021-10-03,Saint-Etienne,Lyon,2.478,1.348,1,1
+2021-10-15,Paris Saint Germain,Angers,2.49,1.159,2,1
+2021-10-16,Clermont Foot,Lille,0.403,0.607,1,0
+2021-10-16,Lyon,Monaco,2.817,0.515,2,0
+2021-10-17,Troyes,Nice,1.422,0.513,1,0
+2021-10-17,Bordeaux,Nantes,0.674,1.279,1,1
+2021-10-17,Brest,Reims,0.508,1.039,1,1
+2021-10-17,Metz,Rennes,0.973,3.36,0,3
+2021-10-17,Strasbourg,Saint-Etienne,2.711,0.931,5,1
+2021-10-17,Montpellier,Lens,1.625,1.19,1,0
+2021-10-17,Marseille,Lorient,1.708,2.092,4,1
+2021-10-22,Saint-Etienne,Angers,1.504,0.675,2,2
+2021-10-23,Nantes,Clermont Foot,1.071,0.736,2,1
+2021-10-23,Lille,Brest,1.679,1.142,1,1
+2021-10-24,Nice,Lyon,1.996,1.417,3,2
+2021-10-24,Lens,Metz,2.372,0.79,4,1
+2021-10-24,Lorient,Bordeaux,1.784,1.065,1,1
+2021-10-24,Reims,Troyes,1.022,0.675,1,2
+2021-10-24,Rennes,Strasbourg,1.358,1.026,1,0
+2021-10-24,Monaco,Montpellier,2.119,1.168,3,1
+2021-10-24,Marseille,Paris Saint Germain,1.292,2.052,0,0
+2021-10-27,Nice,Marseille,1.505,0.341,1,1
+2021-10-29,Paris Saint Germain,Lille,2.31,1.833,2,1
+2021-10-30,Metz,Saint-Etienne,0.383,0.282,1,1
+2021-10-30,Lyon,Lens,2.029,2.13,2,1
+2021-10-31,Angers,Nice,1.212,0.897,1,2
+2021-10-31,Bordeaux,Reims,1.948,1.814,3,2
+2021-10-31,Montpellier,Nantes,1.472,0.857,2,0
+2021-10-31,Strasbourg,Lorient,3.094,0.666,4,0
+2021-10-31,Troyes,Rennes,1.8,1.513,2,2
+2021-10-31,Brest,Monaco,1.771,0.507,2,0
+2021-10-31,Clermont Foot,Marseille,0.744,1.246,0,1
+2021-11-05,Lens,Troyes,3.168,0.537,4,0
+2021-11-06,Lille,Angers,1.745,1.151,1,1
+2021-11-06,Bordeaux,Paris Saint Germain,1.576,1.24,2,3
+2021-11-07,Marseille,Metz,1.669,1.361,0,0
+2021-11-07,Lorient,Brest,1.17,2.35,1,2
+2021-11-07,Nantes,Strasbourg,2.263,1.925,2,2
+2021-11-07,Reims,Monaco,0.337,0.974,0,0
+2021-11-07,Saint-Etienne,Clermont Foot,2.056,1.303,3,2
+2021-11-07,Nice,Montpellier,1.636,0.642,0,1
+2021-11-07,Rennes,Lyon,3.98,0.953,4,1
+2021-11-19,Monaco,Lille,0.938,2.165,2,2
+2021-11-20,Paris Saint Germain,Nantes,1.267,0.999,3,1
+2021-11-20,Rennes,Montpellier,3.997,0.299,2,0
+2021-11-21,Brest,Lens,1.445,1.714,4,0
+2021-11-21,Angers,Lorient,1.462,0.421,1,0
+2021-11-21,Strasbourg,Reims,2.025,1.259,1,1
+2021-11-21,Troyes,Saint-Etienne,1.191,1.24,0,1
+2021-11-21,Metz,Bordeaux,1.327,2.682,3,3
+2021-11-21,Clermont Foot,Nice,0.78,0.618,1,2
+2021-11-26,Lens,Angers,1.603,2.002,2,2
+2021-11-27,Lille,Nantes,1.468,0.359,1,1
+2021-11-27,Nice,Metz,1.35,0.527,0,1
+2021-11-28,Saint-Etienne,Paris Saint Germain,0.97,3.435,1,3
+2021-11-28,Reims,Clermont Foot,0.708,0.27,1,0
+2021-11-28,Bordeaux,Brest,1.457,2.266,1,2
+2021-11-28,Lorient,Rennes,0.634,0.989,0,2
+2021-11-28,Monaco,Strasbourg,1.582,0.945,1,1
+2021-11-28,Montpellier,Lyon,1.022,1.179,0,1
+2021-11-28,Marseille,Troyes,1.153,0.146,1,0
+2021-12-01,Angers,Monaco,1.033,3.506,1,3
+2021-12-01,Brest,Saint-Etienne,1.892,0.457,1,0
+2021-12-01,Metz,Montpellier,1.475,1.412,1,3
+2021-12-01,Strasbourg,Bordeaux,3.431,1.488,5,2
+2021-12-01,Troyes,Lorient,1.122,0.434,2,0
+2021-12-01,Clermont Foot,Lens,1.805,0.568,2,2
+2021-12-01,Lyon,Reims,2.851,1.053,1,2
+2021-12-01,Nantes,Marseille,0.174,1.637,0,1
+2021-12-01,Paris Saint Germain,Nice,1.618,0.958,0,0
+2021-12-01,Rennes,Lille,0.8,0.708,1,2
+2021-12-04,Marseille,Brest,1.923,1.554,1,2
+2021-12-04,Lille,Troyes,1.794,0.29,2,1
+2021-12-04,Lens,Paris Saint Germain,0.824,2.291,1,1
+2021-12-05,Saint-Etienne,Rennes,0.358,3.115,0,5
+2021-12-05,Reims,Angers,1.343,1.772,1,2
+2021-12-05,Lorient,Nantes,0.62,0.269,0,1
+2021-12-05,Monaco,Metz,1.914,0.548,4,0
+2021-12-05,Montpellier,Clermont Foot,0.856,0.394,1,0
+2021-12-05,Nice,Strasbourg,1.368,2.726,0,3
+2021-12-05,Bordeaux,Lyon,2.601,1.847,2,2
+2021-12-10,Nantes,Lens,1.437,0.841,3,2
+2021-12-11,Brest,Montpellier,0.691,1.676,0,4
+2021-12-11,Reims,Saint-Etienne,2.718,0.119,2,0
+2021-12-12,Lille,Lyon,2.156,0.422,0,0
+2021-12-12,Rennes,Nice,1.608,1.804,1,2
+2021-12-12,Angers,Clermont Foot,1.527,1.707,0,1
+2021-12-12,Troyes,Bordeaux,1.269,1.14,1,2
+2021-12-12,Metz,Lorient,1.142,1.707,4,1
+2021-12-12,Strasbourg,Marseille,1.79,0.709,0,2
+2021-12-12,Paris Saint Germain,Monaco,1.903,0.815,2,0
+2021-12-22,Bordeaux,Lille,1.009,1.231,2,3
+2021-12-22,Lorient,Paris Saint Germain,1.477,2.199,1,1
+2021-12-22,Lyon,Metz,2.79,0.354,1,1
+2021-12-22,Marseille,Reims,1.705,1.057,1,1
+2021-12-22,Monaco,Rennes,1.628,1.295,2,1
+2021-12-22,Montpellier,Angers,0.999,0.747,4,1
+2021-12-22,Nice,Lens,0.866,1.722,2,1
+2021-12-22,Saint-Etienne,Nantes,1.007,0.791,0,1
+2021-12-22,Troyes,Brest,1.059,0.661,1,1
+2022-01-07,Bordeaux,Marseille,0.413,2.156,0,1
+2022-01-08,Lens,Rennes,0.58,0.328,1,0
+2022-01-09,Brest,Nice,1.617,1.449,0,3
+2022-01-09,Metz,Strasbourg,0.271,3.704,0,2
+2022-01-09,Clermont Foot,Reims,0.763,0.809,0,0
+2022-01-09,Nantes,Monaco,0.365,0.695,0,0
+2022-01-09,Lyon,Paris Saint Germain,1.036,1.129,1,1
+2022-01-14,Nice,Nantes,2.277,0.397,2,1
+2022-01-15,Saint-Etienne,Lens,0.951,0.747,1,2
+2022-01-15,Paris Saint Germain,Brest,2.71,0.725,2,0
+2022-01-16,Rennes,Bordeaux,4.078,0.413,6,0
+2022-01-16,Lorient,Angers,0.481,0.555,0,0
+2022-01-16,Monaco,Clermont Foot,4.259,0.249,4,0
+2022-01-16,Reims,Metz,0.652,0.713,0,1
+2022-01-16,Strasbourg,Montpellier,1.46,1.029,3,1
+2022-01-16,Troyes,Lyon,0.485,3.027,0,1
+2022-01-16,Marseille,Lille,1.627,0.967,1,1
+2022-01-19,Clermont Foot,Strasbourg,0.348,1.749,0,2
+2022-01-19,Montpellier,Troyes,0.575,0.548,0,1
+2022-01-19,Lille,Lorient,1.586,1.218,3,1
+2022-01-21,Lyon,Saint-Etienne,2.19,0.243,1,0
+2022-01-22,Brest,Lille,1.294,1.375,2,0
+2022-01-22,Lens,Marseille,0.618,1.355,0,2
+2022-01-23,Metz,Nice,0.234,1.947,0,2
+2022-01-23,Angers,Troyes,2.297,1.637,2,1
+2022-01-23,Bordeaux,Strasbourg,1.654,1.49,4,3
+2022-01-23,Clermont Foot,Rennes,1.098,2.491,2,1
+2022-01-23,Nantes,Lorient,1.403,2.031,4,2
+2022-01-23,Montpellier,Monaco,2.229,1.242,3,2
+2022-01-23,Paris Saint Germain,Reims,2.953,0.344,4,0
+2022-01-26,Angers,Saint-Etienne,0.354,0.352,0,1
+2022-02-02,Lyon,Marseille,1.552,1.122,2,1
+2022-02-04,Marseille,Angers,2.347,0.687,5,2
+2022-02-05,Saint-Etienne,Montpellier,2.123,0.698,3,1
+2022-02-05,Monaco,Lyon,2.29,1.307,2,0
+2022-02-06,Lorient,Lens,1.57,0.392,2,0
+2022-02-06,Strasbourg,Nantes,1.328,0.262,1,0
+2022-02-06,Troyes,Metz,0.435,0.567,0,0
+2022-02-06,Nice,Clermont Foot,0.699,1.299,0,1
+2022-02-06,Reims,Bordeaux,2.06,0.121,5,0
+2022-02-06,Rennes,Brest,2.775,0.221,2,0
+2022-02-06,Lille,Paris Saint Germain,0.864,3.038,1,5
+2022-02-11,Paris Saint Germain,Rennes,0.798,0.59,1,0
+2022-02-12,Montpellier,Lille,0.741,1.513,0,1
+2022-02-12,Lyon,Nice,2.752,0.08,2,0
+2022-02-13,Monaco,Lorient,1.314,0.133,0,0
+2022-02-13,Nantes,Reims,0.661,0.613,1,0
+2022-02-13,Angers,Strasbourg,0.259,0.335,0,1
+2022-02-13,Brest,Troyes,2.768,0.791,5,1
+2022-02-13,Clermont Foot,Saint-Etienne,0.834,1.186,1,2
+2022-02-13,Lens,Bordeaux,2.186,0.758,3,2
+2022-02-13,Metz,Marseille,0.792,2.319,1,2
+2022-02-18,Lille,Metz,1.189,0.279,0,0
+2022-02-19,Lens,Lyon,0.656,1.184,1,1
+2022-02-19,Nantes,Paris Saint Germain,2.596,3.653,3,1
+2022-02-20,Nice,Angers,1.3,0.983,1,0
+2022-02-20,Saint-Etienne,Strasbourg,1.29,1.517,2,2
+2022-02-20,Rennes,Troyes,3.262,0.762,4,1
+2022-02-20,Reims,Brest,0.54,1.695,1,1
+2022-02-20,Lorient,Montpellier,0.624,0.376,0,1
+2022-02-20,Bordeaux,Monaco,0.855,0.952,1,1
+2022-02-20,Marseille,Clermont Foot,1.024,0.77,0,2
+2022-02-25,Montpellier,Rennes,1.17,1.82,2,4
+2022-02-26,Strasbourg,Nice,1.031,0.149,0,0
+2022-02-26,Paris Saint Germain,Saint-Etienne,2.82,0.642,3,1
+2022-02-27,Monaco,Reims,1.749,1.67,1,2
+2022-02-27,Angers,Lens,0.601,0.689,1,2
+2022-02-27,Metz,Nantes,0.264,0.612,0,0
+2022-02-27,Clermont Foot,Bordeaux,0.553,0.894,1,1
+2022-02-27,Brest,Lorient,0.21,2.169,0,1
+2022-02-27,Troyes,Marseille,2.006,1.016,1,1
+2022-02-27,Lyon,Lille,1.487,0.735,0,1
+2022-03-04,Lorient,Lyon,1.262,2.611,1,4
+2022-03-05,Lens,Brest,1.831,0.372,0,1
+2022-03-05,Nice,Paris Saint Germain,1.205,0.653,1,0
+2022-03-06,Saint-Etienne,Metz,1.321,0.313,1,0
+2022-03-06,Reims,Strasbourg,0.91,0.745,1,1
+2022-03-06,Rennes,Angers,2.391,0.317,2,0
+2022-03-06,Bordeaux,Troyes,0.884,2.304,0,2
+2022-03-06,Nantes,Montpellier,1.559,0.2,2,0
+2022-03-06,Lille,Clermont Foot,2.041,0.478,4,0
+2022-03-06,Marseille,Monaco,0.865,0.694,0,1
+2022-03-11,Lille,Saint-Etienne,1.248,0.487,0,0
+2022-03-12,Montpellier,Nice,2.491,0.757,0,0
+2022-03-12,Troyes,Nantes,1.186,0.491,1,0
+2022-03-13,Paris Saint Germain,Bordeaux,2.054,0.757,3,0
+2022-03-13,Angers,Reims,1.882,1.524,0,1
+2022-03-13,Clermont Foot,Lorient,1.271,1.397,0,2
+2022-03-13,Metz,Lens,0.696,0.822,0,0
+2022-03-13,Strasbourg,Monaco,0.835,0.696,1,0
+2022-03-13,Lyon,Rennes,1.185,1.279,2,4
+2022-03-13,Brest,Marseille,0.425,1.945,1,4
+2022-03-18,Saint-Etienne,Troyes,1.213,1.061,1,1
+2022-03-19,Lens,Clermont Foot,1.067,1.751,3,1
+2022-03-19,Nantes,Lille,0.531,1.585,0,1
+2022-03-20,Monaco,Paris Saint Germain,2.5,1.506,3,0
+2022-03-20,Angers,Brest,1.202,0.563,1,0
+2022-03-20,Bordeaux,Montpellier,2.61,0.708,0,2
+2022-03-20,Lorient,Strasbourg,0.41,1.339,0,0
+2022-03-20,Rennes,Metz,3.397,0.685,6,1
+2022-03-20,Reims,Lyon,0.546,1.595,0,0
+2022-03-20,Marseille,Nice,1.588,1.691,2,1
+2022-04-02,Nice,Rennes,1.062,0.896,1,1
+2022-04-02,Lille,Bordeaux,3.175,0.114,0,0
+2022-04-03,Strasbourg,Lens,2.661,1.224,1,0
+2022-04-03,Clermont Foot,Nantes,0.919,1.956,2,3
+2022-04-03,Metz,Monaco,0.704,2.155,1,2
+2022-04-03,Montpellier,Brest,1.265,0.703,1,2
+2022-04-03,Troyes,Reims,1.172,0.48,1,0
+2022-04-03,Lyon,Angers,1.58,1.677,3,2
+2022-04-03,Paris Saint Germain,Lorient,1.963,0.842,5,1
+2022-04-03,Saint-Etienne,Marseille,0.208,3.739,2,4
+2022-04-08,Lorient,Saint-Etienne,4.142,1.174,6,2
+2022-04-09,Reims,Rennes,2.566,1.127,2,3
+2022-04-09,Clermont Foot,Paris Saint Germain,1.029,3.574,1,6
+2022-04-10,Bordeaux,Metz,2.29,0.335,3,1
+2022-04-10,Angers,Lille,0.68,0.899,1,1
+2022-04-10,Brest,Nantes,1.256,0.779,1,1
+2022-04-10,Monaco,Troyes,0.442,0.968,2,1
+2022-04-10,Lens,Nice,0.79,1.384,3,0
+2022-04-10,Strasbourg,Lyon,1.454,2.101,1,1
+2022-04-10,Marseille,Montpellier,2.811,0.478,2,0
+2022-04-15,Rennes,Monaco,2.279,2.958,2,3
+2022-04-16,Saint-Etienne,Brest,1.845,0.488,2,1
+2022-04-16,Lille,Lens,0.663,1.151,1,2
+2022-04-17,Nice,Lorient,2.199,0.25,2,1
+2022-04-17,Metz,Clermont Foot,0.404,2.74,1,1
+2022-04-17,Montpellier,Reims,0.909,1.194,0,0
+2022-04-17,Nantes,Angers,3.401,0.417,1,1
+2022-04-17,Troyes,Strasbourg,1.327,1.831,1,1
+2022-04-17,Lyon,Bordeaux,2.494,1.864,6,1
+2022-04-17,Paris Saint Germain,Marseille,1.39,0.305,2,1
+2022-04-20,Bordeaux,Saint-Etienne,0.928,0.858,2,2
+2022-04-20,Lorient,Metz,1.25,1.7,1,0
+2022-04-20,Monaco,Nice,2.07,0.762,1,0
+2022-04-20,Reims,Lille,0.727,0.945,2,1
+2022-04-20,Troyes,Clermont Foot,0.996,0.411,0,1
+2022-04-20,Angers,Paris Saint Germain,0.396,1.418,0,3
+2022-04-20,Brest,Lyon,1.153,2.631,2,1
+2022-04-20,Lens,Montpellier,0.989,0.217,2,0
+2022-04-20,Marseille,Nantes,3.119,0.607,3,2
+2022-04-20,Strasbourg,Rennes,2.621,0.851,2,1
+2022-04-23,Lyon,Montpellier,3.389,2.024,5,2
+2022-04-23,Saint-Etienne,Monaco,0.972,3.285,1,4
+2022-04-23,Paris Saint Germain,Lens,2.183,0.666,1,1
+2022-04-24,Rennes,Lorient,1.745,0.534,5,0
+2022-04-24,Clermont Foot,Angers,1.74,1.399,2,2
+2022-04-24,Metz,Brest,0.387,1.933,0,1
+2022-04-24,Nantes,Bordeaux,2.545,2.612,5,3
+2022-04-24,Nice,Troyes,2.362,0.466,1,0
+2022-04-24,Lille,Strasbourg,0.354,0.519,1,0
+2022-04-24,Reims,Marseille,0.662,0.458,0,1
+2022-04-29,Strasbourg,Paris Saint Germain,1.626,1.95,3,3
+2022-04-30,Lens,Nantes,1.809,1.258,2,2
+2022-04-30,Rennes,Saint-Etienne,1.294,0.569,2,0
+2022-05-01,Troyes,Lille,2.996,0.598,3,0
+2022-05-01,Lorient,Reims,1.737,1.401,1,2
+2022-05-01,Monaco,Angers,2.219,0.614,2,0
+2022-05-01,Montpellier,Metz,1.996,1.331,2,2
+2022-05-01,Brest,Clermont Foot,1.315,0.994,2,0
+2022-05-01,Bordeaux,Nice,0.182,2.543,0,1
+2022-05-01,Marseille,Lyon,1.257,2.739,0,3
+2022-05-06,Lille,Monaco,0.956,0.297,1,2
+2022-05-07,Brest,Strasbourg,0.774,2.194,0,1
+2022-05-08,Metz,Lyon,1.957,2.458,3,2
+2022-05-08,Reims,Lens,0.346,1.314,1,2
+2022-05-08,Clermont Foot,Montpellier,1.812,1.11,2,1
+2022-05-08,Angers,Bordeaux,2.397,0.702,4,1
+2022-05-08,Lorient,Marseille,0.219,2.431,0,3
+2022-05-08,Paris Saint Germain,Troyes,2.002,1.955,2,2
+2022-05-11,Nice,Saint-Etienne,1.277,1.908,4,2
+2022-05-11,Nantes,Rennes,1.238,1.537,2,1
+2022-05-14,Troyes,Lens,0.198,0.856,1,3
+2022-05-14,Strasbourg,Clermont Foot,0.636,0.401,1,0
+2022-05-14,Saint-Etienne,Reims,1.634,2.13,1,2
+2022-05-14,Bordeaux,Lorient,1.039,0.605,0,0
+2022-05-14,Rennes,Marseille,1.196,0.298,2,0
+2022-05-14,Nice,Lille,0.986,2.521,1,3
+2022-05-14,Montpellier,Paris Saint Germain,0.293,2.579,0,4
+2022-05-14,Monaco,Brest,3.845,1.994,4,2
+2022-05-14,Metz,Angers,0.742,0.609,1,0
+2022-05-14,Lyon,Nantes,3.129,1.284,3,2
+2022-05-21,Lens,Monaco,1.548,2.064,2,2
+2022-05-21,Lille,Rennes,1.713,1.137,2,2
+2022-05-21,Lorient,Troyes,1.147,0.598,1,1
+2022-05-21,Marseille,Strasbourg,2.104,1.459,4,0
+2022-05-21,Nantes,Saint-Etienne,1.849,1.787,1,1
+2022-05-21,Paris Saint Germain,Metz,5.567,0.693,5,0
+2022-05-21,Reims,Nice,0.665,1.883,2,3
+2022-05-21,Clermont Foot,Lyon,2.315,2.47,1,2
+2022-05-21,Brest,Bordeaux,1.22,3.433,2,4
+2022-05-21,Angers,Montpellier,2.265,1.297,2,0

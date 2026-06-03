@@ -1,0 +1,381 @@
+date,home_team,away_team,home_xg,away_xg,home_goals,away_goals
+2023-08-19,Empoli,Verona,0.845,0.691,0,1
+2023-08-19,Frosinone,Napoli,0.871,1.315,1,3
+2023-08-19,Inter,Monza,2.495,0.581,2,0
+2023-08-19,Genoa,Fiorentina,0.797,1.12,1,4
+2023-08-20,Roma,Salernitana,2.006,0.364,2,2
+2023-08-20,Sassuolo,Atalanta,0.381,1.501,0,2
+2023-08-20,Udinese,Juventus,1.21,1.864,0,3
+2023-08-20,Lecce,Lazio,1.754,2.222,2,1
+2023-08-21,Torino,Cagliari,1.031,0.443,0,0
+2023-08-21,Bologna,AC Milan,1.173,1.148,0,2
+2023-08-26,Frosinone,Atalanta,0.761,1.442,2,1
+2023-08-26,Monza,Empoli,2.047,1.138,2,0
+2023-08-26,AC Milan,Torino,3.253,0.563,4,1
+2023-08-26,Verona,Roma,0.904,2.004,2,1
+2023-08-27,Fiorentina,Lecce,1.51,0.494,2,2
+2023-08-27,Juventus,Bologna,0.916,0.687,1,1
+2023-08-27,Lazio,Genoa,0.938,0.695,0,1
+2023-08-27,Napoli,Sassuolo,3.535,0.146,2,0
+2023-08-28,Salernitana,Udinese,0.559,0.548,1,1
+2023-08-28,Cagliari,Inter,0.484,1.254,0,2
+2023-09-01,Sassuolo,Verona,2.621,0.555,3,1
+2023-09-01,Roma,AC Milan,0.412,1.629,1,2
+2023-09-02,Udinese,Frosinone,2.078,2.417,0,0
+2023-09-02,Bologna,Cagliari,2.827,0.537,2,1
+2023-09-02,Atalanta,Monza,1.965,0.37,3,0
+2023-09-02,Napoli,Lazio,1.043,1.048,1,2
+2023-09-03,Torino,Genoa,0.481,0.102,1,0
+2023-09-03,Inter,Fiorentina,5.215,0.347,4,0
+2023-09-03,Empoli,Juventus,0.304,3.049,0,2
+2023-09-03,Lecce,Salernitana,1.837,1.054,2,0
+2023-09-16,Juventus,Lazio,2.673,0.705,3,1
+2023-09-16,Inter,AC Milan,2.954,0.99,5,1
+2023-09-16,Genoa,Napoli,1.33,0.984,2,2
+2023-09-17,Cagliari,Udinese,2.201,0.837,0,0
+2023-09-17,Frosinone,Sassuolo,2.97,1.934,4,2
+2023-09-17,Monza,Lecce,3.296,0.896,1,1
+2023-09-17,Fiorentina,Atalanta,1.453,0.632,3,2
+2023-09-17,Roma,Empoli,2.493,0.167,7,0
+2023-09-18,Salernitana,Torino,0.695,1.546,0,3
+2023-09-18,Verona,Bologna,0.408,0.897,0,0
+2023-09-22,Salernitana,Frosinone,0.835,0.987,1,1
+2023-09-22,Lecce,Genoa,1.009,0.532,1,0
+2023-09-23,AC Milan,Verona,0.917,0.846,1,0
+2023-09-23,Sassuolo,Juventus,1.742,1.368,4,2
+2023-09-23,Lazio,Monza,1.024,1.81,1,1
+2023-09-24,Empoli,Inter,0.331,1.635,0,1
+2023-09-24,Atalanta,Cagliari,1.677,1.003,2,0
+2023-09-24,Udinese,Fiorentina,2.401,0.281,0,2
+2023-09-24,Bologna,Napoli,0.185,1.848,0,0
+2023-09-24,Torino,Roma,1.107,1.108,1,1
+2023-09-26,Juventus,Lecce,1.65,0.067,1,0
+2023-09-27,Cagliari,AC Milan,0.676,2.108,1,3
+2023-09-27,Empoli,Salernitana,2.291,0.477,1,0
+2023-09-27,Verona,Atalanta,0.325,1.384,0,1
+2023-09-27,Inter,Sassuolo,1.025,1.024,1,2
+2023-09-27,Lazio,Torino,0.774,0.213,2,0
+2023-09-27,Napoli,Udinese,3.709,0.822,4,1
+2023-09-28,Monza,Bologna,1.028,1.042,0,0
+2023-09-28,Frosinone,Fiorentina,0.976,1.453,1,1
+2023-09-28,Genoa,Roma,1.598,1.296,4,1
+2023-09-30,Lecce,Napoli,0.613,2.717,0,4
+2023-09-30,AC Milan,Lazio,2.692,0.503,2,0
+2023-09-30,Salernitana,Inter,0.62,2.555,0,4
+2023-10-01,Bologna,Empoli,3.289,1.049,3,0
+2023-10-01,Udinese,Genoa,1.531,0.833,2,2
+2023-10-01,Atalanta,Juventus,1.977,0.203,0,0
+2023-10-01,Roma,Frosinone,0.831,0.792,2,0
+2023-10-02,Torino,Verona,0.618,0.274,0,0
+2023-10-02,Sassuolo,Monza,1.49,1.85,0,1
+2023-10-02,Fiorentina,Cagliari,1.527,0.814,3,0
+2023-10-06,Empoli,Udinese,1.001,1.24,0,0
+2023-10-06,Lecce,Sassuolo,1.518,1.745,1,1
+2023-10-07,Inter,Bologna,0.705,1.048,2,2
+2023-10-07,Juventus,Torino,2.409,0.593,2,0
+2023-10-07,Genoa,AC Milan,0.354,0.899,0,1
+2023-10-08,Monza,Salernitana,3.738,1.0,3,0
+2023-10-08,Frosinone,Verona,1.92,0.506,2,1
+2023-10-08,Lazio,Atalanta,1.65,1.002,3,2
+2023-10-08,Cagliari,Roma,1.763,3.333,1,4
+2023-10-08,Napoli,Fiorentina,1.774,1.769,1,3
+2023-10-21,Verona,Napoli,0.872,2.655,1,3
+2023-10-21,Torino,Inter,0.597,2.443,0,3
+2023-10-21,Sassuolo,Lazio,0.319,2.936,0,2
+2023-10-22,Roma,Monza,2.533,0.424,1,0
+2023-10-22,Bologna,Frosinone,1.633,1.428,2,1
+2023-10-22,Salernitana,Cagliari,1.333,1.496,2,2
+2023-10-22,Atalanta,Genoa,1.971,1.042,2,0
+2023-10-22,AC Milan,Juventus,0.239,1.806,0,1
+2023-10-23,Udinese,Lecce,2.582,0.808,1,1
+2023-10-23,Fiorentina,Empoli,0.764,1.795,0,2
+2023-10-27,Genoa,Salernitana,0.407,0.779,1,0
+2023-10-28,Sassuolo,Bologna,0.865,0.83,1,1
+2023-10-28,Lecce,Torino,0.462,1.332,0,1
+2023-10-28,Juventus,Verona,3.648,0.319,1,0
+2023-10-29,Cagliari,Frosinone,4.075,1.296,4,3
+2023-10-29,Monza,Udinese,0.403,1.056,1,1
+2023-10-29,Inter,Roma,2.253,0.495,1,0
+2023-10-29,Napoli,AC Milan,1.503,2.375,2,2
+2023-10-30,Empoli,Atalanta,0.272,2.192,0,3
+2023-10-30,Lazio,Fiorentina,2.362,0.389,1,0
+2023-11-03,Bologna,Lazio,0.698,0.462,1,0
+2023-11-04,Salernitana,Napoli,0.322,1.677,0,2
+2023-11-04,Atalanta,Inter,1.361,1.396,1,2
+2023-11-04,AC Milan,Udinese,1.285,2.105,0,1
+2023-11-05,Verona,Monza,1.127,1.39,1,3
+2023-11-05,Cagliari,Genoa,1.269,0.67,2,1
+2023-11-05,Roma,Lecce,2.552,1.203,2,1
+2023-11-05,Fiorentina,Juventus,0.675,0.856,0,1
+2023-11-06,Frosinone,Empoli,0.804,1.871,2,1
+2023-11-06,Torino,Sassuolo,3.434,0.499,2,1
+2023-11-10,Sassuolo,Salernitana,2.468,0.947,2,2
+2023-11-10,Genoa,Verona,2.042,0.246,1,0
+2023-11-11,Lecce,AC Milan,1.99,2.224,2,2
+2023-11-11,Juventus,Cagliari,3.042,0.478,2,1
+2023-11-11,Monza,Torino,1.166,0.82,1,1
+2023-11-12,Napoli,Empoli,1.061,0.389,0,1
+2023-11-12,Udinese,Atalanta,1.214,0.575,1,1
+2023-11-12,Fiorentina,Bologna,1.574,2.31,2,1
+2023-11-12,Lazio,Roma,0.398,0.32,0,0
+2023-11-12,Inter,Frosinone,3.278,0.586,2,0
+2023-11-25,Salernitana,Lazio,1.401,1.835,2,1
+2023-11-25,Atalanta,Napoli,0.88,2.511,1,2
+2023-11-25,AC Milan,Fiorentina,1.784,1.695,1,0
+2023-11-26,Cagliari,Monza,1.587,0.802,1,1
+2023-11-26,Frosinone,Genoa,0.991,1.826,2,1
+2023-11-26,Empoli,Sassuolo,1.477,2.976,3,4
+2023-11-26,Roma,Udinese,1.259,0.532,3,1
+2023-11-26,Juventus,Inter,0.489,0.693,1,1
+2023-11-27,Verona,Lecce,1.947,1.522,2,2
+2023-11-27,Bologna,Torino,1.349,0.573,2,0
+2023-12-01,Monza,Juventus,0.657,2.959,1,2
+2023-12-02,Genoa,Empoli,0.833,0.753,1,1
+2023-12-02,Lazio,Cagliari,2.504,0.614,1,0
+2023-12-02,AC Milan,Frosinone,1.01,0.729,3,1
+2023-12-03,Lecce,Bologna,1.658,1.517,1,1
+2023-12-03,Fiorentina,Salernitana,3.069,0.781,3,0
+2023-12-03,Udinese,Verona,2.148,1.567,3,3
+2023-12-03,Sassuolo,Roma,0.917,1.999,1,2
+2023-12-03,Napoli,Inter,0.787,2.585,0,3
+2023-12-04,Torino,Atalanta,1.639,0.346,3,0
+2023-12-08,Juventus,Napoli,0.663,1.005,1,0
+2023-12-09,Verona,Lazio,0.793,1.014,1,1
+2023-12-09,Atalanta,AC Milan,3.101,1.006,3,2
+2023-12-09,Inter,Udinese,3.342,0.847,4,0
+2023-12-10,Frosinone,Torino,1.508,1.064,0,0
+2023-12-10,Monza,Genoa,0.672,1.75,1,0
+2023-12-10,Salernitana,Bologna,0.601,1.673,1,2
+2023-12-10,Roma,Fiorentina,0.703,0.975,1,1
+2023-12-11,Empoli,Lecce,1.892,0.985,1,1
+2023-12-11,Cagliari,Sassuolo,1.238,1.29,2,1
+2023-12-15,Genoa,Juventus,0.845,2.104,1,1
+2023-12-16,Lecce,Frosinone,0.729,1.841,2,1
+2023-12-16,Napoli,Cagliari,3.033,1.838,2,1
+2023-12-16,Torino,Empoli,2.113,0.289,1,0
+2023-12-17,AC Milan,Monza,2.266,1.428,3,0
+2023-12-17,Fiorentina,Verona,0.33,2.925,1,0
+2023-12-17,Udinese,Sassuolo,0.751,2.901,2,2
+2023-12-17,Bologna,Roma,0.782,0.566,2,0
+2023-12-17,Lazio,Inter,1.638,1.694,0,2
+2023-12-18,Atalanta,Salernitana,2.348,0.977,4,1
+2023-12-22,Empoli,Lazio,0.659,1.954,0,2
+2023-12-22,Sassuolo,Genoa,2.171,1.371,1,2
+2023-12-22,Monza,Fiorentina,0.659,1.957,0,1
+2023-12-22,Salernitana,AC Milan,1.143,2.943,2,2
+2023-12-23,Frosinone,Juventus,0.496,1.275,1,2
+2023-12-23,Torino,Udinese,0.667,0.92,1,1
+2023-12-23,Bologna,Atalanta,0.987,1.594,1,0
+2023-12-23,Inter,Lecce,3.287,1.128,2,0
+2023-12-23,Verona,Cagliari,0.987,1.209,2,0
+2023-12-23,Roma,Napoli,2.069,0.441,2,0
+2023-12-29,Fiorentina,Torino,0.886,0.44,1,0
+2023-12-29,Napoli,Monza,2.373,1.097,0,0
+2023-12-29,Genoa,Inter,0.41,1.859,1,1
+2023-12-29,Lazio,Frosinone,1.749,1.131,3,1
+2023-12-30,Atalanta,Lecce,1.492,1.385,1,0
+2023-12-30,Cagliari,Empoli,1.436,0.223,0,0
+2023-12-30,Udinese,Bologna,1.532,0.767,3,0
+2023-12-30,Verona,Salernitana,0.812,0.768,0,1
+2023-12-30,AC Milan,Sassuolo,1.498,0.404,1,0
+2023-12-30,Juventus,Roma,1.633,0.395,1,0
+2024-01-05,Bologna,Genoa,1.359,0.153,1,1
+2024-01-06,Inter,Verona,2.123,1.365,2,1
+2024-01-06,Frosinone,Monza,1.15,1.453,2,3
+2024-01-06,Lecce,Cagliari,1.611,0.994,1,1
+2024-01-06,Sassuolo,Fiorentina,0.702,1.492,1,0
+2024-01-07,Empoli,AC Milan,0.946,1.514,0,3
+2024-01-07,Udinese,Lazio,0.612,0.498,1,2
+2024-01-07,Torino,Napoli,2.13,1.148,3,0
+2024-01-07,Salernitana,Juventus,0.931,1.825,1,2
+2024-01-07,Roma,Atalanta,2.582,1.111,1,1
+2024-01-13,Genoa,Torino,0.576,0.309,0,0
+2024-01-13,Napoli,Salernitana,2.733,0.152,2,1
+2024-01-13,Verona,Empoli,1.251,0.721,2,1
+2024-01-13,Monza,Inter,1.074,4.725,1,5
+2024-01-14,Lazio,Lecce,1.083,0.971,1,0
+2024-01-14,Cagliari,Bologna,0.489,0.738,2,1
+2024-01-14,Fiorentina,Udinese,1.667,1.166,2,2
+2024-01-14,AC Milan,Roma,1.574,1.237,3,1
+2024-01-15,Atalanta,Frosinone,4.917,0.435,5,0
+2024-01-16,Juventus,Sassuolo,1.232,0.295,3,0
+2024-01-20,Roma,Verona,1.454,1.096,2,1
+2024-01-20,Udinese,AC Milan,0.813,2.431,2,3
+2024-01-21,Frosinone,Cagliari,2.928,0.599,3,1
+2024-01-21,Empoli,Monza,1.781,0.869,3,0
+2024-01-21,Salernitana,Genoa,1.154,1.111,1,2
+2024-01-21,Lecce,Juventus,0.493,2.484,0,3
+2024-01-26,Cagliari,Torino,1.976,2.423,1,2
+2024-01-27,Atalanta,Udinese,1.322,0.617,2,0
+2024-01-27,Juventus,Empoli,0.991,0.696,1,1
+2024-01-27,AC Milan,Bologna,3.601,2.073,2,2
+2024-01-28,Genoa,Lecce,2.085,2.299,2,1
+2024-01-28,Verona,Frosinone,2.299,1.666,1,1
+2024-01-28,Monza,Sassuolo,0.419,0.726,1,0
+2024-01-28,Lazio,Napoli,0.414,0.17,0,0
+2024-01-28,Fiorentina,Inter,1.892,0.617,0,1
+2024-01-29,Salernitana,Roma,1.429,1.488,1,2
+2024-02-02,Lecce,Fiorentina,2.316,1.075,3,2
+2024-02-03,Udinese,Monza,0.781,0.125,0,0
+2024-02-03,Empoli,Genoa,0.585,0.577,0,0
+2024-02-03,Frosinone,AC Milan,1.067,2.012,2,3
+2024-02-03,Bologna,Sassuolo,0.889,0.899,4,2
+2024-02-04,Torino,Salernitana,0.743,0.081,0,0
+2024-02-04,Napoli,Verona,1.977,1.185,2,1
+2024-02-04,Atalanta,Lazio,2.88,1.297,3,1
+2024-02-04,Inter,Juventus,1.643,0.597,1,0
+2024-02-05,Roma,Cagliari,3.359,0.503,4,0
+2024-02-09,Salernitana,Empoli,0.8,2.15,1,3
+2024-02-10,Cagliari,Lazio,0.693,1.603,1,3
+2024-02-10,Roma,Inter,1.009,1.242,2,4
+2024-02-10,Sassuolo,Torino,0.804,1.111,1,1
+2024-02-11,Fiorentina,Frosinone,3.178,1.286,5,1
+2024-02-11,Bologna,Lecce,1.775,1.108,4,0
+2024-02-11,Monza,Verona,0.832,0.577,0,0
+2024-02-11,Genoa,Atalanta,0.906,2.846,1,4
+2024-02-11,AC Milan,Napoli,1.373,0.502,1,0
+2024-02-12,Juventus,Udinese,2.015,1.132,0,1
+2024-02-14,Bologna,Fiorentina,2.652,0.97,2,0
+2024-02-16,Torino,Lecce,1.528,0.416,2,0
+2024-02-16,Inter,Salernitana,4.488,0.046,4,0
+2024-02-17,Napoli,Genoa,1.188,0.285,1,1
+2024-02-17,Verona,Juventus,0.617,1.806,2,2
+2024-02-17,Atalanta,Sassuolo,5.009,1.814,3,0
+2024-02-18,Lazio,Bologna,1.141,1.16,1,2
+2024-02-18,Udinese,Cagliari,1.176,0.817,1,1
+2024-02-18,Empoli,Fiorentina,0.945,0.92,1,1
+2024-02-18,Frosinone,Roma,1.624,1.819,0,3
+2024-02-18,Monza,AC Milan,1.619,1.331,4,2
+2024-02-22,Torino,Lazio,1.949,0.352,0,2
+2024-02-23,Bologna,Verona,2.333,0.702,2,0
+2024-02-24,Sassuolo,Empoli,1.602,2.525,2,3
+2024-02-24,Salernitana,Monza,0.729,2.609,0,2
+2024-02-24,Genoa,Udinese,1.623,0.323,2,0
+2024-02-25,Juventus,Frosinone,1.744,0.571,3,2
+2024-02-25,Cagliari,Napoli,0.916,1.463,1,1
+2024-02-25,Lecce,Inter,0.928,3.074,0,4
+2024-02-25,AC Milan,Atalanta,1.389,1.066,1,1
+2024-02-26,Roma,Torino,1.524,0.552,3,2
+2024-02-26,Fiorentina,Lazio,3.869,0.612,2,1
+2024-02-28,Sassuolo,Napoli,0.238,2.797,1,6
+2024-02-28,Inter,Atalanta,2.919,0.258,4,0
+2024-03-01,Lazio,AC Milan,1.599,0.85,0,1
+2024-03-02,Udinese,Salernitana,1.983,0.839,1,1
+2024-03-02,Monza,Roma,1.016,1.897,1,4
+2024-03-02,Torino,Fiorentina,0.562,0.698,0,0
+2024-03-03,Verona,Sassuolo,0.504,0.36,1,0
+2024-03-03,Frosinone,Lecce,1.535,1.295,1,1
+2024-03-03,Empoli,Cagliari,1.506,0.429,0,1
+2024-03-03,Atalanta,Bologna,1.207,1.583,1,2
+2024-03-03,Napoli,Juventus,1.776,2.036,2,1
+2024-03-04,Inter,Genoa,2.904,1.17,2,1
+2024-03-08,Napoli,Torino,1.615,1.128,1,1
+2024-03-09,Cagliari,Salernitana,3.418,1.173,4,2
+2024-03-09,Sassuolo,Frosinone,0.597,1.385,1,0
+2024-03-09,Bologna,Inter,0.669,0.82,0,1
+2024-03-09,Genoa,Monza,1.815,1.662,2,3
+2024-03-10,Lecce,Verona,1.035,0.557,0,1
+2024-03-10,AC Milan,Empoli,0.989,0.42,1,0
+2024-03-10,Juventus,Atalanta,1.667,0.471,2,2
+2024-03-10,Fiorentina,Roma,2.478,0.777,2,2
+2024-03-11,Lazio,Udinese,2.151,1.489,1,2
+2024-03-15,Empoli,Bologna,0.869,2.306,0,1
+2024-03-16,Monza,Cagliari,1.444,0.444,1,0
+2024-03-16,Udinese,Torino,0.385,1.546,0,2
+2024-03-16,Salernitana,Lecce,1.451,2.015,0,1
+2024-03-16,Frosinone,Lazio,1.901,3.305,2,3
+2024-03-17,Juventus,Genoa,1.387,0.176,0,0
+2024-03-17,Verona,AC Milan,0.566,2.753,1,3
+2024-03-17,Roma,Sassuolo,0.858,0.778,1,0
+2024-03-17,Inter,Napoli,1.379,1.361,1,1
+2024-03-30,Napoli,Atalanta,1.835,1.559,0,3
+2024-03-30,Genoa,Frosinone,1.658,1.007,1,1
+2024-03-30,Torino,Monza,1.616,0.56,1,0
+2024-03-30,Lazio,Juventus,1.242,0.479,1,0
+2024-03-30,Fiorentina,AC Milan,1.7,3.174,1,2
+2024-04-01,Bologna,Salernitana,1.853,0.702,3,0
+2024-04-01,Cagliari,Verona,0.594,1.092,1,1
+2024-04-01,Sassuolo,Udinese,1.476,1.727,1,1
+2024-04-01,Lecce,Roma,1.976,1.694,0,0
+2024-04-01,Inter,Empoli,2.034,0.56,2,0
+2024-04-05,Salernitana,Sassuolo,1.28,1.88,2,2
+2024-04-06,AC Milan,Lecce,2.413,0.841,3,0
+2024-04-06,Roma,Lazio,0.635,0.48,1,0
+2024-04-06,Empoli,Torino,0.488,2.534,3,2
+2024-04-07,Frosinone,Bologna,0.568,2.464,0,0
+2024-04-07,Monza,Napoli,0.414,2.703,2,4
+2024-04-07,Verona,Genoa,0.961,2.013,1,2
+2024-04-07,Cagliari,Atalanta,0.715,0.772,2,1
+2024-04-07,Juventus,Fiorentina,2.464,0.509,1,0
+2024-04-08,Udinese,Inter,0.07,3.412,1,2
+2024-04-12,Lazio,Salernitana,2.502,0.545,4,1
+2024-04-13,Lecce,Empoli,3.151,0.136,1,0
+2024-04-13,Torino,Juventus,0.835,1.26,0,0
+2024-04-13,Bologna,Monza,2.772,0.409,0,0
+2024-04-14,Napoli,Frosinone,2.733,2.314,2,2
+2024-04-14,Sassuolo,AC Milan,1.372,3.053,3,3
+2024-04-14,Udinese,Roma,0.945,1.616,1,2
+2024-04-14,Inter,Cagliari,1.951,1.109,2,2
+2024-04-15,Fiorentina,Genoa,1.788,1.595,1,1
+2024-04-15,Atalanta,Verona,1.671,1.104,2,2
+2024-04-19,Genoa,Lazio,0.609,0.952,0,1
+2024-04-19,Cagliari,Juventus,1.978,0.595,2,2
+2024-04-20,Empoli,Napoli,1.254,0.892,1,0
+2024-04-20,Verona,Udinese,1.295,1.972,1,0
+2024-04-21,Sassuolo,Lecce,0.41,2.366,0,3
+2024-04-21,Torino,Frosinone,0.521,0.579,0,0
+2024-04-21,Salernitana,Fiorentina,0.327,2.451,0,2
+2024-04-21,Monza,Atalanta,0.879,2.198,1,2
+2024-04-22,Roma,Bologna,1.834,1.257,1,3
+2024-04-22,AC Milan,Inter,2.511,1.63,1,2
+2024-04-26,Frosinone,Salernitana,1.752,1.031,3,0
+2024-04-27,Lecce,Monza,0.928,1.096,1,1
+2024-04-27,Juventus,AC Milan,1.766,0.278,0,0
+2024-04-27,Lazio,Verona,1.317,0.629,1,0
+2024-04-28,Inter,Torino,1.901,0.458,2,0
+2024-04-28,Bologna,Udinese,0.709,0.614,1,1
+2024-04-28,Napoli,Roma,3.876,1.789,2,2
+2024-04-28,Atalanta,Empoli,2.131,0.594,2,0
+2024-04-28,Fiorentina,Sassuolo,4.296,0.268,5,1
+2024-04-29,Genoa,Cagliari,1.094,0.782,3,0
+2024-05-03,Torino,Bologna,0.787,0.17,0,0
+2024-05-04,Monza,Lazio,2.081,1.575,2,2
+2024-05-04,Sassuolo,Inter,0.335,1.637,1,0
+2024-05-05,Cagliari,Lecce,0.924,1.813,1,1
+2024-05-05,Empoli,Frosinone,0.318,0.948,0,0
+2024-05-05,Verona,Fiorentina,1.492,1.107,2,1
+2024-05-05,AC Milan,Genoa,2.315,0.911,3,3
+2024-05-05,Roma,Juventus,1.606,0.953,1,1
+2024-05-06,Salernitana,Atalanta,0.497,2.265,1,2
+2024-05-06,Udinese,Napoli,0.522,1.116,1,1
+2024-05-10,Frosinone,Inter,1.888,2.057,0,5
+2024-05-11,Napoli,Bologna,1.483,1.741,0,2
+2024-05-11,AC Milan,Cagliari,3.563,1.339,5,1
+2024-05-12,Lazio,Empoli,1.611,1.103,2,0
+2024-05-12,Genoa,Sassuolo,0.813,1.69,2,1
+2024-05-12,Verona,Torino,1.093,0.957,1,2
+2024-05-12,Juventus,Salernitana,2.37,0.921,1,1
+2024-05-12,Atalanta,Roma,2.859,1.172,2,1
+2024-05-13,Lecce,Udinese,0.348,1.637,0,2
+2024-05-13,Fiorentina,Monza,2.45,1.196,2,1
+2024-05-17,Fiorentina,Napoli,0.567,1.321,2,2
+2024-05-18,Lecce,Atalanta,1.03,2.22,0,2
+2024-05-18,Torino,AC Milan,1.08,1.642,3,1
+2024-05-19,Inter,Lazio,1.612,0.687,1,1
+2024-05-19,Sassuolo,Cagliari,0.27,1.474,0,2
+2024-05-19,Udinese,Empoli,1.669,0.83,1,1
+2024-05-19,Monza,Frosinone,1.249,2.227,0,1
+2024-05-19,Roma,Genoa,0.737,0.508,1,0
+2024-05-20,Salernitana,Verona,0.901,2.334,1,2
+2024-05-20,Bologna,Juventus,1.379,1.274,3,3
+2024-05-24,Cagliari,Fiorentina,2.083,2.216,2,3
+2024-05-24,Genoa,Bologna,1.576,0.451,2,0
+2024-05-25,Juventus,Monza,1.928,1.134,2,0
+2024-05-25,AC Milan,Salernitana,2.825,1.802,3,3
+2024-05-26,Atalanta,Torino,2.569,1.695,3,0
+2024-05-26,Napoli,Lecce,1.83,0.622,0,0
+2024-05-26,Empoli,Roma,2.89,1.456,2,1
+2024-05-26,Frosinone,Udinese,0.869,0.895,0,1
+2024-05-26,Verona,Inter,1.637,2.999,2,2
+2024-05-26,Lazio,Sassuolo,1.251,1.119,1,1
+2024-06-02,Atalanta,Fiorentina,1.697,1.007,2,3

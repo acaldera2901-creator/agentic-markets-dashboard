@@ -1,0 +1,381 @@
+date,home_team,away_team,home_xg,away_xg,home_goals,away_goals
+2021-08-21,Verona,Sassuolo,2.252,1.867,2,3
+2021-08-21,Inter,Genoa,2.207,0.967,4,0
+2021-08-21,Torino,Atalanta,0.865,1.013,1,2
+2021-08-21,Empoli,Lazio,1.134,1.782,1,3
+2021-08-22,Bologna,Salernitana,1.726,1.637,3,2
+2021-08-22,Udinese,Juventus,2.086,1.494,2,2
+2021-08-22,Napoli,Venezia,2.392,0.61,2,0
+2021-08-22,Roma,Fiorentina,2.754,0.867,3,1
+2021-08-23,Cagliari,Spezia,3.289,1.031,2,2
+2021-08-23,Sampdoria,AC Milan,1.248,0.804,0,1
+2021-08-27,Udinese,Venezia,3.018,0.909,3,0
+2021-08-27,Verona,Inter,0.604,1.837,1,3
+2021-08-28,Lazio,Spezia,2.717,0.735,6,1
+2021-08-28,Atalanta,Bologna,0.989,0.42,0,0
+2021-08-28,Fiorentina,Torino,0.54,0.294,2,1
+2021-08-28,Juventus,Empoli,1.816,1.103,0,1
+2021-08-29,Sassuolo,Sampdoria,1.228,0.577,0,0
+2021-08-29,Genoa,Napoli,0.339,1.154,1,2
+2021-08-29,AC Milan,Cagliari,2.672,0.407,4,1
+2021-08-29,Salernitana,Roma,0.221,1.887,0,4
+2021-09-11,Empoli,Venezia,1.885,2.431,1,2
+2021-09-11,Napoli,Juventus,2.187,1.561,2,1
+2021-09-11,Atalanta,Fiorentina,2.115,1.815,1,2
+2021-09-12,Sampdoria,Inter,1.466,0.965,2,2
+2021-09-12,Cagliari,Genoa,1.831,1.255,2,3
+2021-09-12,Spezia,Udinese,0.788,0.781,0,1
+2021-09-12,Torino,Salernitana,2.997,0.252,4,0
+2021-09-12,AC Milan,Lazio,3.478,0.247,2,0
+2021-09-12,Roma,Sassuolo,2.327,2.1,2,1
+2021-09-13,Bologna,Verona,1.255,0.315,1,0
+2021-09-17,Sassuolo,Torino,0.796,2.485,0,1
+2021-09-18,Genoa,Fiorentina,1.284,1.124,1,2
+2021-09-18,Inter,Bologna,4.28,0.856,6,1
+2021-09-18,Salernitana,Atalanta,0.792,1.383,0,1
+2021-09-19,Empoli,Sampdoria,0.927,1.349,0,3
+2021-09-19,Venezia,Spezia,0.806,0.478,1,2
+2021-09-19,Verona,Roma,1.021,0.662,3,2
+2021-09-19,Lazio,Cagliari,1.726,1.916,2,2
+2021-09-19,Juventus,AC Milan,1.315,1.049,1,1
+2021-09-20,Udinese,Napoli,0.243,3.303,0,4
+2021-09-21,Bologna,Genoa,2.288,1.699,2,2
+2021-09-21,Atalanta,Sassuolo,2.108,0.911,2,1
+2021-09-21,Fiorentina,Inter,1.733,2.737,1,3
+2021-09-22,Salernitana,Verona,2.689,2.062,2,2
+2021-09-22,Spezia,Juventus,1.034,2.546,2,3
+2021-09-22,Cagliari,Empoli,0.755,1.145,0,2
+2021-09-22,AC Milan,Venezia,2.114,0.581,2,0
+2021-09-23,Sampdoria,Napoli,0.569,2.106,0,4
+2021-09-23,Torino,Lazio,1.272,0.846,1,1
+2021-09-23,Roma,Udinese,1.383,0.81,1,0
+2021-09-25,Spezia,AC Milan,0.954,1.741,1,2
+2021-09-25,Inter,Atalanta,3.521,1.502,2,2
+2021-09-25,Genoa,Verona,1.437,2.073,3,3
+2021-09-26,Juventus,Sampdoria,2.628,0.601,3,2
+2021-09-26,Empoli,Bologna,1.477,2.498,4,2
+2021-09-26,Sassuolo,Salernitana,1.608,1.164,1,0
+2021-09-26,Udinese,Fiorentina,0.492,1.139,0,1
+2021-09-26,Lazio,Roma,2.484,1.844,3,2
+2021-09-26,Napoli,Cagliari,2.058,0.153,2,0
+2021-09-27,Venezia,Torino,1.526,0.853,1,1
+2021-10-01,Cagliari,Venezia,0.658,0.486,1,1
+2021-10-02,Salernitana,Genoa,0.547,1.586,1,0
+2021-10-02,Torino,Juventus,0.908,1.896,0,1
+2021-10-02,Sassuolo,Inter,1.619,2.042,1,2
+2021-10-03,Bologna,Lazio,0.778,0.963,3,0
+2021-10-03,Verona,Spezia,0.691,1.577,4,0
+2021-10-03,Sampdoria,Udinese,1.529,3.282,3,3
+2021-10-03,Fiorentina,Napoli,0.383,1.642,1,2
+2021-10-03,Roma,Empoli,1.855,0.438,2,0
+2021-10-03,Atalanta,AC Milan,2.631,2.51,2,3
+2021-10-16,Spezia,Salernitana,1.677,1.609,2,1
+2021-10-16,Lazio,Inter,2.314,1.448,3,1
+2021-10-16,AC Milan,Verona,1.519,1.583,3,2
+2021-10-17,Cagliari,Sampdoria,1.507,1.786,3,1
+2021-10-17,Empoli,Atalanta,0.575,3.835,1,4
+2021-10-17,Genoa,Sassuolo,1.384,2.822,2,2
+2021-10-17,Udinese,Bologna,1.357,1.496,1,1
+2021-10-17,Napoli,Torino,1.329,1.075,1,0
+2021-10-17,Juventus,Roma,1.47,1.456,1,0
+2021-10-18,Venezia,Fiorentina,0.794,0.427,1,0
+2021-10-22,Torino,Genoa,2.241,2.355,3,2
+2021-10-22,Sampdoria,Spezia,0.974,1.056,2,1
+2021-10-23,Salernitana,Empoli,1.372,2.83,2,4
+2021-10-23,Sassuolo,Venezia,2.131,0.507,3,1
+2021-10-23,Bologna,AC Milan,0.631,0.909,2,4
+2021-10-24,Atalanta,Udinese,0.629,0.668,1,1
+2021-10-24,Fiorentina,Cagliari,3.122,0.12,3,0
+2021-10-24,Verona,Lazio,3.536,1.425,4,1
+2021-10-24,Roma,Napoli,1.632,0.594,0,0
+2021-10-24,Inter,Juventus,0.962,1.345,1,1
+2021-10-26,Spezia,Genoa,2.406,1.065,1,1
+2021-10-26,Venezia,Salernitana,0.624,1.525,1,2
+2021-10-26,AC Milan,Torino,1.125,0.488,1,0
+2021-10-27,Juventus,Sassuolo,1.152,1.127,1,2
+2021-10-27,Sampdoria,Atalanta,0.985,1.985,1,3
+2021-10-27,Udinese,Verona,0.941,0.843,1,1
+2021-10-27,Cagliari,Roma,1.32,2.497,1,2
+2021-10-27,Empoli,Inter,0.543,3.079,0,2
+2021-10-27,Lazio,Fiorentina,0.637,0.518,1,0
+2021-10-28,Napoli,Bologna,2.677,0.252,3,0
+2021-10-30,Atalanta,Lazio,0.724,1.435,2,2
+2021-10-30,Verona,Juventus,1.577,1.79,2,1
+2021-10-30,Torino,Sampdoria,2.616,0.249,3,0
+2021-10-31,Inter,Udinese,2.057,0.304,2,0
+2021-10-31,Fiorentina,Spezia,2.817,0.088,3,0
+2021-10-31,Genoa,Venezia,0.721,0.488,0,0
+2021-10-31,Sassuolo,Empoli,1.243,1.483,1,2
+2021-10-31,Salernitana,Napoli,0.406,1.541,0,1
+2021-10-31,Roma,AC Milan,1.259,1.861,1,2
+2021-11-01,Bologna,Cagliari,1.736,0.404,2,0
+2021-11-05,Empoli,Genoa,0.745,1.697,2,2
+2021-11-06,Spezia,Torino,0.334,0.42,1,0
+2021-11-06,Juventus,Fiorentina,0.985,0.32,1,0
+2021-11-06,Cagliari,Atalanta,0.511,3.542,1,2
+2021-11-07,Venezia,Roma,3.225,2.765,3,2
+2021-11-07,Sampdoria,Bologna,1.056,1.864,1,2
+2021-11-07,Udinese,Sassuolo,1.591,0.694,3,2
+2021-11-07,Lazio,Salernitana,1.68,0.24,3,0
+2021-11-07,Napoli,Verona,0.801,1.226,1,1
+2021-11-07,AC Milan,Inter,1.157,2.348,1,1
+2021-11-20,Atalanta,Spezia,2.576,0.928,5,2
+2021-11-20,Lazio,Juventus,0.255,2.767,0,2
+2021-11-20,Fiorentina,AC Milan,1.509,1.574,4,3
+2021-11-21,Sassuolo,Cagliari,3.48,1.231,2,2
+2021-11-21,Bologna,Venezia,0.995,1.019,0,1
+2021-11-21,Salernitana,Sampdoria,0.982,1.529,0,2
+2021-11-21,Inter,Napoli,2.196,0.942,3,2
+2021-11-21,Genoa,Roma,0.103,2.343,0,2
+2021-11-22,Verona,Empoli,1.302,1.563,2,1
+2021-11-22,Torino,Udinese,1.936,1.003,2,1
+2021-11-26,Cagliari,Salernitana,1.719,0.238,1,1
+2021-11-27,Empoli,Fiorentina,2.141,2.395,2,1
+2021-11-27,Sampdoria,Verona,0.75,0.698,3,1
+2021-11-27,Juventus,Atalanta,0.818,0.573,0,1
+2021-11-27,Venezia,Inter,0.193,2.603,0,2
+2021-11-28,Udinese,Genoa,0.783,0.602,0,0
+2021-11-28,AC Milan,Sassuolo,0.881,1.185,1,3
+2021-11-28,Spezia,Bologna,0.638,2.546,0,1
+2021-11-28,Roma,Torino,0.962,0.798,1,0
+2021-11-28,Napoli,Lazio,1.195,0.273,4,0
+2021-11-30,Atalanta,Venezia,2.903,0.52,4,0
+2021-11-30,Fiorentina,Sampdoria,2.873,0.634,3,1
+2021-11-30,Verona,Cagliari,1.16,0.575,0,0
+2021-11-30,Salernitana,Juventus,0.462,2.544,0,2
+2021-12-01,Bologna,Roma,0.221,0.905,1,0
+2021-12-01,Inter,Spezia,2.851,0.252,2,0
+2021-12-01,Genoa,AC Milan,0.358,1.103,0,3
+2021-12-01,Sassuolo,Napoli,0.307,0.923,2,2
+2021-12-02,Torino,Empoli,1.378,0.972,2,2
+2021-12-02,Lazio,Udinese,1.459,2.042,4,4
+2021-12-04,AC Milan,Salernitana,2.582,0.194,2,0
+2021-12-04,Roma,Inter,0.531,1.674,0,3
+2021-12-04,Napoli,Atalanta,1.117,1.53,2,3
+2021-12-05,Bologna,Fiorentina,0.587,1.214,2,3
+2021-12-05,Spezia,Sassuolo,2.361,1.447,2,2
+2021-12-05,Venezia,Verona,1.487,2.088,3,4
+2021-12-05,Sampdoria,Lazio,1.148,1.152,1,3
+2021-12-05,Juventus,Genoa,3.005,0.0,2,0
+2021-12-06,Empoli,Udinese,2.025,2.087,3,1
+2021-12-06,Cagliari,Torino,1.21,1.902,1,1
+2021-12-10,Genoa,Sampdoria,1.01,2.029,1,3
+2021-12-11,Fiorentina,Salernitana,2.742,0.925,4,0
+2021-12-11,Venezia,Juventus,0.434,1.539,1,1
+2021-12-11,Udinese,AC Milan,2.284,1.151,1,1
+2021-12-12,Torino,Bologna,2.125,0.945,2,1
+2021-12-12,Verona,Atalanta,0.997,1.019,1,2
+2021-12-12,Napoli,Empoli,1.617,0.644,0,1
+2021-12-12,Sassuolo,Lazio,0.894,0.734,2,1
+2021-12-12,Inter,Cagliari,3.639,0.222,4,0
+2021-12-13,Roma,Spezia,2.299,0.609,2,0
+2021-12-17,Lazio,Genoa,2.071,0.173,3,1
+2021-12-17,Salernitana,Inter,1.092,3.313,0,5
+2021-12-18,Atalanta,Roma,1.471,1.995,1,4
+2021-12-18,Bologna,Juventus,0.844,1.397,0,2
+2021-12-18,Cagliari,Udinese,0.184,0.522,0,4
+2021-12-19,Fiorentina,Sassuolo,2.27,1.001,2,2
+2021-12-19,Spezia,Empoli,1.37,1.224,1,1
+2021-12-19,Sampdoria,Venezia,1.809,0.811,1,1
+2021-12-19,Torino,Verona,0.861,0.261,1,0
+2021-12-19,AC Milan,Napoli,0.369,0.994,0,1
+2021-12-21,Genoa,Atalanta,0.023,1.418,0,0
+2021-12-21,Juventus,Cagliari,2.244,1.135,2,0
+2021-12-22,Sassuolo,Bologna,0.776,1.489,0,3
+2021-12-22,Venezia,Lazio,0.756,1.552,1,3
+2021-12-22,Verona,Fiorentina,0.949,1.289,1,1
+2021-12-22,Inter,Torino,1.03,0.536,1,0
+2021-12-22,Roma,Sampdoria,1.453,1.181,1,1
+2021-12-22,Empoli,AC Milan,1.661,1.965,2,4
+2021-12-22,Napoli,Spezia,1.454,0.355,0,1
+2022-01-06,Sampdoria,Cagliari,0.731,2.19,1,2
+2022-01-06,Lazio,Empoli,3.09,2.154,3,3
+2022-01-06,Spezia,Verona,1.324,2.16,1,2
+2022-01-06,Sassuolo,Genoa,2.156,0.213,1,1
+2022-01-06,AC Milan,Roma,3.019,0.861,3,1
+2022-01-06,Juventus,Napoli,1.08,0.885,1,1
+2022-01-09,Venezia,AC Milan,0.511,3.873,0,3
+2022-01-09,Empoli,Sassuolo,1.026,4.048,1,5
+2022-01-09,Napoli,Sampdoria,1.429,0.369,1,0
+2022-01-09,Udinese,Atalanta,0.726,3.659,2,6
+2022-01-09,Genoa,Spezia,0.956,1.757,0,1
+2022-01-09,Roma,Juventus,2.533,1.45,3,4
+2022-01-09,Verona,Salernitana,1.385,1.284,1,2
+2022-01-09,Inter,Lazio,2.155,0.747,2,1
+2022-01-10,Torino,Fiorentina,2.524,0.473,4,0
+2022-01-11,Cagliari,Bologna,1.471,0.693,2,1
+2022-01-15,Sampdoria,Torino,1.287,1.312,1,2
+2022-01-15,Salernitana,Lazio,0.232,1.738,0,3
+2022-01-15,Juventus,Udinese,1.705,0.553,2,0
+2022-01-16,Sassuolo,Verona,0.856,4.116,2,4
+2022-01-16,Venezia,Empoli,1.038,1.123,1,1
+2022-01-16,Roma,Cagliari,2.015,0.643,1,0
+2022-01-16,Atalanta,Inter,1.515,1.507,0,0
+2022-01-17,Bologna,Napoli,0.802,2.201,0,2
+2022-01-17,AC Milan,Spezia,2.85,1.567,1,2
+2022-01-17,Fiorentina,Genoa,3.756,0.079,6,0
+2022-01-21,Verona,Bologna,2.052,0.417,2,1
+2022-01-22,Genoa,Udinese,1.734,0.06,0,0
+2022-01-22,Inter,Venezia,2.869,0.223,2,1
+2022-01-22,Lazio,Atalanta,0.273,0.311,0,0
+2022-01-23,Cagliari,Fiorentina,2.423,2.561,1,1
+2022-01-23,Napoli,Salernitana,4.549,0.082,4,1
+2022-01-23,Spezia,Sampdoria,0.53,0.438,1,0
+2022-01-23,Torino,Sassuolo,3.251,0.628,1,1
+2022-01-23,Empoli,Roma,1.231,2.18,2,4
+2022-01-23,AC Milan,Juventus,0.705,0.353,0,0
+2022-02-05,Roma,Genoa,1.458,0.537,0,0
+2022-02-05,Inter,AC Milan,1.064,1.17,1,2
+2022-02-05,Fiorentina,Lazio,0.71,2.488,0,3
+2022-02-06,Atalanta,Cagliari,0.984,1.626,1,2
+2022-02-06,Bologna,Empoli,0.553,1.877,0,0
+2022-02-06,Sampdoria,Sassuolo,2.419,1.326,4,0
+2022-02-06,Venezia,Napoli,0.387,1.797,0,2
+2022-02-06,Udinese,Torino,1.183,0.231,2,0
+2022-02-06,Juventus,Verona,1.384,0.435,2,0
+2022-02-07,Salernitana,Spezia,0.42,1.998,2,2
+2022-02-12,Lazio,Bologna,2.159,0.975,3,0
+2022-02-12,Napoli,Inter,1.879,0.77,1,1
+2022-02-12,Torino,Venezia,0.546,0.469,1,2
+2022-02-13,AC Milan,Sampdoria,1.586,0.171,1,0
+2022-02-13,Empoli,Cagliari,0.621,0.833,1,1
+2022-02-13,Genoa,Salernitana,2.591,0.966,1,1
+2022-02-13,Verona,Udinese,0.622,1.011,4,0
+2022-02-13,Sassuolo,Roma,1.082,1.742,2,2
+2022-02-13,Atalanta,Juventus,2.459,1.042,1,1
+2022-02-14,Spezia,Fiorentina,0.489,2.364,1,2
+2022-02-18,Juventus,Torino,0.774,0.848,1,1
+2022-02-19,Sampdoria,Empoli,0.565,1.319,2,0
+2022-02-19,Roma,Verona,0.314,0.823,2,2
+2022-02-19,Salernitana,AC Milan,0.603,1.201,2,2
+2022-02-20,Fiorentina,Atalanta,0.714,0.402,1,0
+2022-02-20,Venezia,Genoa,1.1,1.765,1,1
+2022-02-20,Inter,Sassuolo,3.347,1.944,0,2
+2022-02-20,Udinese,Lazio,1.849,1.339,1,1
+2022-02-21,Cagliari,Napoli,2.248,1.453,1,1
+2022-02-21,Bologna,Spezia,2.012,0.262,2,1
+2022-02-25,AC Milan,Udinese,0.778,0.698,1,1
+2022-02-25,Genoa,Inter,0.771,1.159,0,0
+2022-02-26,Salernitana,Bologna,1.323,0.612,1,1
+2022-02-26,Empoli,Juventus,1.371,2.136,2,3
+2022-02-26,Sassuolo,Fiorentina,1.726,2.138,2,1
+2022-02-27,Torino,Cagliari,1.368,1.699,1,2
+2022-02-27,Verona,Venezia,3.533,0.974,3,1
+2022-02-27,Spezia,Roma,0.364,4.557,0,1
+2022-02-27,Lazio,Napoli,1.431,0.849,1,2
+2022-02-28,Atalanta,Sampdoria,2.694,0.476,4,0
+2022-03-04,Inter,Salernitana,4.693,0.837,5,0
+2022-03-05,Udinese,Sampdoria,2.57,0.662,2,1
+2022-03-05,Roma,Atalanta,1.747,1.06,1,0
+2022-03-05,Cagliari,Lazio,0.596,2.683,0,3
+2022-03-06,Genoa,Empoli,1.263,0.319,0,0
+2022-03-06,Bologna,Torino,0.245,0.754,0,0
+2022-03-06,Fiorentina,Verona,1.535,0.974,1,1
+2022-03-06,Venezia,Sassuolo,3.099,3.706,1,4
+2022-03-06,Juventus,Spezia,1.418,0.985,1,0
+2022-03-06,Napoli,AC Milan,0.377,1.299,0,1
+2022-03-12,Salernitana,Sassuolo,1.637,1.595,2,2
+2022-03-12,Spezia,Cagliari,2.301,0.491,2,0
+2022-03-12,Sampdoria,Juventus,1.395,1.438,1,3
+2022-03-12,AC Milan,Empoli,0.868,0.699,1,0
+2022-03-13,Fiorentina,Bologna,2.74,0.967,1,0
+2022-03-13,Verona,Napoli,0.871,2.069,1,2
+2022-03-13,Atalanta,Genoa,1.171,0.732,0,0
+2022-03-13,Udinese,Roma,0.928,1.077,1,1
+2022-03-13,Torino,Inter,2.302,2.657,1,1
+2022-03-14,Lazio,Venezia,1.455,0.399,1,0
+2022-03-18,Sassuolo,Spezia,2.441,0.284,4,1
+2022-03-18,Genoa,Torino,0.953,0.517,1,0
+2022-03-19,Napoli,Udinese,1.282,0.771,2,1
+2022-03-19,Inter,Fiorentina,0.996,1.054,1,1
+2022-03-19,Cagliari,AC Milan,0.748,2.416,0,1
+2022-03-20,Venezia,Sampdoria,1.646,1.396,0,2
+2022-03-20,Empoli,Verona,0.934,1.545,1,1
+2022-03-20,Juventus,Salernitana,2.405,0.438,2,0
+2022-03-20,Roma,Lazio,2.477,0.358,3,0
+2022-03-20,Bologna,Atalanta,1.595,1.581,0,1
+2022-04-02,Spezia,Venezia,1.141,0.535,1,0
+2022-04-02,Lazio,Sassuolo,2.091,1.715,2,1
+2022-04-02,Salernitana,Torino,1.082,1.452,0,1
+2022-04-03,Fiorentina,Empoli,1.719,0.208,1,0
+2022-04-03,Atalanta,Napoli,1.668,1.847,1,3
+2022-04-03,Udinese,Cagliari,5.374,0.257,5,1
+2022-04-03,Sampdoria,Roma,0.45,1.184,0,1
+2022-04-03,Juventus,Inter,1.898,1.045,0,1
+2022-04-04,Verona,Genoa,1.209,0.709,1,0
+2022-04-04,AC Milan,Bologna,1.836,0.793,0,0
+2022-04-09,Empoli,Spezia,0.889,1.522,0,0
+2022-04-09,Inter,Verona,2.681,0.917,2,0
+2022-04-09,Cagliari,Juventus,0.213,1.582,1,2
+2022-04-10,Genoa,Lazio,0.58,2.157,1,4
+2022-04-10,Napoli,Fiorentina,1.454,0.895,2,3
+2022-04-10,Sassuolo,Atalanta,1.661,1.856,2,1
+2022-04-10,Venezia,Udinese,1.184,3.084,1,2
+2022-04-10,Roma,Salernitana,1.956,0.545,2,1
+2022-04-10,Torino,AC Milan,0.636,0.692,0,0
+2022-04-11,Bologna,Sampdoria,2.563,0.567,2,0
+2022-04-15,Spezia,Inter,0.414,2.744,1,3
+2022-04-15,AC Milan,Genoa,1.815,0.252,2,0
+2022-04-16,Cagliari,Sassuolo,1.908,0.295,1,0
+2022-04-16,Sampdoria,Salernitana,0.905,0.505,1,2
+2022-04-16,Udinese,Empoli,1.121,1.96,4,1
+2022-04-16,Fiorentina,Venezia,3.786,0.132,1,0
+2022-04-16,Juventus,Bologna,2.242,0.991,1,1
+2022-04-16,Lazio,Torino,0.987,0.981,1,1
+2022-04-18,Napoli,Roma,1.295,1.346,1,1
+2022-04-18,Atalanta,Verona,1.27,3.747,1,2
+2022-04-20,Udinese,Salernitana,0.481,1.092,0,1
+2022-04-23,Torino,Spezia,2.686,0.99,2,1
+2022-04-23,Venezia,Atalanta,0.703,3.551,1,3
+2022-04-23,Inter,Roma,1.785,1.232,3,1
+2022-04-23,Verona,Sampdoria,1.427,0.914,1,1
+2022-04-24,Salernitana,Fiorentina,1.325,0.508,2,1
+2022-04-24,Bologna,Udinese,0.933,1.714,2,2
+2022-04-24,Empoli,Napoli,1.803,1.307,3,2
+2022-04-24,Genoa,Cagliari,0.728,0.923,1,0
+2022-04-24,Lazio,AC Milan,0.753,2.453,1,2
+2022-04-25,Sassuolo,Juventus,1.383,0.543,1,2
+2022-04-27,Fiorentina,Udinese,2.815,3.33,0,4
+2022-04-27,Bologna,Inter,1.381,2.443,2,1
+2022-04-27,Atalanta,Torino,2.633,2.441,4,4
+2022-04-30,Cagliari,Verona,0.699,1.587,1,2
+2022-04-30,Napoli,Sassuolo,3.244,1.151,6,1
+2022-04-30,Sampdoria,Genoa,1.55,1.547,1,0
+2022-04-30,Spezia,Lazio,1.599,3.136,3,4
+2022-05-01,Juventus,Venezia,2.277,0.746,2,1
+2022-05-01,Empoli,Torino,0.722,3.025,1,3
+2022-05-01,AC Milan,Fiorentina,1.549,0.516,1,0
+2022-05-01,Udinese,Inter,1.227,2.523,1,2
+2022-05-01,Roma,Bologna,0.986,1.448,0,0
+2022-05-02,Atalanta,Salernitana,1.484,1.437,1,1
+2022-05-05,Salernitana,Venezia,1.979,1.322,2,1
+2022-05-06,Inter,Empoli,5.561,0.683,4,2
+2022-05-06,Genoa,Juventus,3.115,1.959,2,1
+2022-05-07,Torino,Napoli,0.569,1.577,0,1
+2022-05-07,Sassuolo,Udinese,1.506,2.434,1,1
+2022-05-07,Lazio,Sampdoria,2.36,0.726,2,0
+2022-05-08,Spezia,Atalanta,1.096,2.417,1,3
+2022-05-08,Venezia,Bologna,2.474,2.428,4,3
+2022-05-08,Salernitana,Cagliari,1.629,0.383,1,1
+2022-05-08,Verona,AC Milan,1.08,3.125,1,3
+2022-05-09,Fiorentina,Roma,1.703,0.581,2,0
+2022-05-14,Empoli,Salernitana,1.769,3.343,1,1
+2022-05-14,Verona,Torino,0.693,1.741,0,1
+2022-05-14,Udinese,Spezia,1.402,2.649,2,3
+2022-05-14,Roma,Venezia,3.017,0.343,1,1
+2022-05-15,Bologna,Sassuolo,1.647,2.613,1,3
+2022-05-15,Napoli,Genoa,2.345,1.034,3,0
+2022-05-15,AC Milan,Atalanta,1.534,0.779,2,0
+2022-05-15,Cagliari,Inter,0.67,2.631,1,3
+2022-05-16,Sampdoria,Fiorentina,1.765,1.573,4,1
+2022-05-16,Juventus,Lazio,0.768,0.84,2,2
+2022-05-20,Torino,Roma,0.517,2.725,0,3
+2022-05-21,Genoa,Bologna,0.916,1.069,0,1
+2022-05-21,Atalanta,Empoli,3.278,0.29,0,1
+2022-05-21,Fiorentina,Juventus,1.386,0.066,2,0
+2022-05-21,Lazio,Verona,3.455,1.973,3,3
+2022-05-22,Spezia,Napoli,1.704,1.778,0,3
+2022-05-22,Inter,Sampdoria,2.964,0.837,3,0
+2022-05-22,Sassuolo,AC Milan,0.293,4.006,0,3
+2022-05-22,Salernitana,Udinese,2.383,2.361,0,4
+2022-05-22,Venezia,Cagliari,0.665,1.575,0,0

@@ -1,0 +1,381 @@
+date,home_team,away_team,home_xg,away_xg,home_goals,away_goals
+2022-08-12,Osasuna,Sevilla,1.356,0.966,2,1
+2022-08-13,Celta Vigo,Espanyol,0.347,1.033,2,2
+2022-08-13,Real Valladolid,Villarreal,0.859,1.395,0,3
+2022-08-13,Barcelona,Rayo Vallecano,1.371,0.772,0,0
+2022-08-14,Cadiz,Real Sociedad,0.294,2.644,0,1
+2022-08-14,Valencia,Girona,1.879,0.132,1,0
+2022-08-14,Almeria,Real Madrid,0.801,3.114,1,2
+2022-08-15,Athletic Club,Mallorca,1.606,0.476,0,0
+2022-08-15,Getafe,Atletico Madrid,1.14,1.484,0,3
+2022-08-15,Real Betis,Elche,3.997,0.294,3,0
+2022-08-19,Espanyol,Rayo Vallecano,0.904,1.698,0,2
+2022-08-19,Sevilla,Real Valladolid,1.951,0.558,1,1
+2022-08-20,Osasuna,Cadiz,2.924,1.017,2,0
+2022-08-20,Mallorca,Real Betis,1.468,2.216,1,2
+2022-08-20,Celta Vigo,Real Madrid,1.32,3.596,1,4
+2022-08-21,Athletic Club,Valencia,0.762,0.676,1,0
+2022-08-21,Atletico Madrid,Villarreal,1.585,1.982,0,2
+2022-08-21,Real Sociedad,Barcelona,0.799,2.04,1,4
+2022-08-22,Elche,Almeria,0.899,0.97,1,1
+2022-08-22,Girona,Getafe,1.522,0.693,3,1
+2022-08-26,Girona,Celta Vigo,0.566,0.626,0,1
+2022-08-26,Real Betis,Osasuna,0.507,0.91,1,0
+2022-08-27,Elche,Real Sociedad,1.235,1.812,0,1
+2022-08-27,Rayo Vallecano,Mallorca,0.865,0.856,0,2
+2022-08-27,Almeria,Sevilla,2.154,1.379,2,1
+2022-08-28,Getafe,Villarreal,0.274,1.132,0,0
+2022-08-28,Barcelona,Real Valladolid,3.287,0.72,4,0
+2022-08-28,Espanyol,Real Madrid,1.634,2.046,1,3
+2022-08-29,Cadiz,Athletic Club,0.239,3.187,0,4
+2022-08-29,Valencia,Atletico Madrid,0.654,1.975,0,1
+2022-09-02,Celta Vigo,Cadiz,1.51,0.235,3,0
+2022-09-03,Mallorca,Girona,0.896,1.095,1,1
+2022-09-03,Real Madrid,Real Betis,3.206,0.333,2,1
+2022-09-03,Real Sociedad,Atletico Madrid,1.752,2.248,1,1
+2022-09-03,Sevilla,Barcelona,0.829,4.678,0,3
+2022-09-04,Osasuna,Rayo Vallecano,3.175,0.18,2,1
+2022-09-04,Athletic Club,Espanyol,1.247,1.114,0,1
+2022-09-04,Villarreal,Elche,3.583,0.219,4,0
+2022-09-04,Valencia,Getafe,2.928,0.572,5,1
+2022-09-05,Real Valladolid,Almeria,2.125,0.505,1,0
+2022-09-09,Girona,Real Valladolid,2.593,0.511,2,1
+2022-09-10,Rayo Vallecano,Valencia,2.012,2.182,2,1
+2022-09-10,Espanyol,Sevilla,2.371,2.32,2,3
+2022-09-10,Cadiz,Barcelona,0.248,2.669,0,4
+2022-09-10,Atletico Madrid,Celta Vigo,0.923,1.306,4,1
+2022-09-11,Real Madrid,Mallorca,2.218,0.951,4,1
+2022-09-11,Elche,Athletic Club,0.748,3.239,1,4
+2022-09-11,Getafe,Real Sociedad,1.069,1.321,2,1
+2022-09-11,Real Betis,Villarreal,1.615,2.442,1,0
+2022-09-12,Almeria,Osasuna,0.167,2.14,0,1
+2022-09-16,Real Valladolid,Cadiz,1.988,0.523,0,1
+2022-09-17,Mallorca,Almeria,0.969,0.298,1,0
+2022-09-17,Barcelona,Elche,5.179,0.013,3,0
+2022-09-17,Valencia,Celta Vigo,1.912,0.587,3,0
+2022-09-17,Athletic Club,Rayo Vallecano,2.173,0.622,3,2
+2022-09-18,Osasuna,Getafe,1.132,1.432,0,2
+2022-09-18,Villarreal,Sevilla,2.104,0.437,1,1
+2022-09-18,Real Betis,Girona,1.492,1.347,2,1
+2022-09-18,Real Sociedad,Espanyol,2.358,1.289,2,1
+2022-09-18,Atletico Madrid,Real Madrid,1.104,1.093,1,2
+2022-09-30,Athletic Club,Almeria,2.555,0.426,4,0
+2022-10-01,Cadiz,Villarreal,1.061,1.431,0,0
+2022-10-01,Getafe,Real Valladolid,2.506,1.322,2,3
+2022-10-01,Sevilla,Atletico Madrid,0.363,2.121,0,2
+2022-10-01,Mallorca,Barcelona,0.925,0.636,0,1
+2022-10-02,Espanyol,Valencia,0.738,1.356,2,2
+2022-10-02,Celta Vigo,Real Betis,0.893,1.106,1,0
+2022-10-02,Girona,Real Sociedad,0.933,2.236,3,5
+2022-10-02,Real Madrid,Osasuna,2.563,0.466,1,1
+2022-10-03,Rayo Vallecano,Elche,0.651,0.925,2,1
+2022-10-07,Osasuna,Valencia,1.963,2.734,1,2
+2022-10-08,Almeria,Rayo Vallecano,1.057,0.893,3,1
+2022-10-08,Atletico Madrid,Girona,2.198,0.722,2,1
+2022-10-08,Sevilla,Athletic Club,1.356,1.919,1,1
+2022-10-08,Getafe,Real Madrid,0.262,1.481,0,1
+2022-10-09,Real Valladolid,Real Betis,0.662,0.545,0,0
+2022-10-09,Cadiz,Espanyol,1.338,1.471,2,2
+2022-10-09,Real Sociedad,Villarreal,2.371,0.222,1,0
+2022-10-09,Barcelona,Celta Vigo,1.985,1.35,1,0
+2022-10-10,Elche,Mallorca,0.335,2.697,1,1
+2022-10-14,Rayo Vallecano,Getafe,1.119,0.396,0,0
+2022-10-15,Girona,Cadiz,2.36,1.347,1,1
+2022-10-15,Valencia,Elche,3.041,1.303,2,2
+2022-10-15,Mallorca,Sevilla,1.41,0.177,0,1
+2022-10-15,Athletic Club,Atletico Madrid,1.333,0.463,0,1
+2022-10-16,Celta Vigo,Real Sociedad,0.483,1.179,1,2
+2022-10-16,Real Madrid,Barcelona,1.47,1.665,3,1
+2022-10-16,Espanyol,Real Valladolid,1.631,0.552,1,0
+2022-10-16,Real Betis,Almeria,3.194,1.116,3,1
+2022-10-17,Villarreal,Osasuna,2.153,0.332,2,0
+2022-10-18,Sevilla,Valencia,1.197,1.711,1,1
+2022-10-18,Getafe,Athletic Club,0.753,1.102,2,2
+2022-10-18,Atletico Madrid,Rayo Vallecano,0.818,1.62,1,1
+2022-10-19,Cadiz,Real Betis,0.747,1.222,0,0
+2022-10-19,Real Valladolid,Celta Vigo,1.633,2.031,4,1
+2022-10-19,Real Sociedad,Mallorca,2.164,1.094,1,0
+2022-10-19,Elche,Real Madrid,1.05,1.615,0,3
+2022-10-20,Almeria,Girona,2.086,2.654,3,2
+2022-10-20,Osasuna,Espanyol,1.029,1.449,1,0
+2022-10-20,Barcelona,Villarreal,3.616,0.503,3,0
+2022-10-22,Rayo Vallecano,Cadiz,3.885,0.642,5,1
+2022-10-22,Real Valladolid,Real Sociedad,0.786,0.825,1,0
+2022-10-22,Valencia,Mallorca,1.07,1.251,1,2
+2022-10-22,Real Madrid,Sevilla,2.177,0.518,3,1
+2022-10-23,Espanyol,Elche,2.185,0.319,2,2
+2022-10-23,Real Betis,Atletico Madrid,1.331,0.585,1,2
+2022-10-23,Girona,Osasuna,0.667,0.694,1,1
+2022-10-23,Villarreal,Almeria,0.852,1.242,2,1
+2022-10-23,Barcelona,Athletic Club,2.135,0.241,4,0
+2022-10-24,Celta Vigo,Getafe,0.822,0.226,1,1
+2022-10-28,Mallorca,Espanyol,1.19,0.248,1,1
+2022-10-29,Almeria,Celta Vigo,2.305,0.198,3,1
+2022-10-29,Cadiz,Atletico Madrid,1.589,1.797,3,2
+2022-10-29,Sevilla,Rayo Vallecano,0.978,0.773,0,1
+2022-10-29,Valencia,Barcelona,0.187,2.334,0,1
+2022-10-30,Osasuna,Real Valladolid,1.9,0.33,2,0
+2022-10-30,Real Madrid,Girona,2.658,1.998,1,1
+2022-10-30,Athletic Club,Villarreal,2.057,0.221,1,0
+2022-10-30,Real Sociedad,Real Betis,1.282,1.345,0,2
+2022-10-31,Elche,Getafe,1.227,0.373,0,1
+2022-11-04,Girona,Athletic Club,1.066,0.812,2,1
+2022-11-05,Getafe,Cadiz,0.517,1.245,0,0
+2022-11-05,Real Valladolid,Elche,2.813,0.198,2,1
+2022-11-05,Celta Vigo,Osasuna,0.825,0.36,1,2
+2022-11-05,Barcelona,Almeria,4.336,0.538,2,0
+2022-11-06,Atletico Madrid,Espanyol,2.023,0.871,1,1
+2022-11-06,Real Sociedad,Valencia,1.458,0.796,1,1
+2022-11-06,Villarreal,Mallorca,0.43,0.704,0,2
+2022-11-06,Real Betis,Sevilla,1.131,1.496,1,1
+2022-11-07,Rayo Vallecano,Real Madrid,1.659,2.213,3,2
+2022-11-08,Elche,Girona,0.914,2.209,1,2
+2022-11-08,Athletic Club,Real Valladolid,2.657,0.481,3,0
+2022-11-08,Osasuna,Barcelona,1.236,1.015,1,2
+2022-11-09,Almeria,Getafe,0.346,0.452,1,0
+2022-11-09,Sevilla,Real Sociedad,0.698,2.188,1,2
+2022-11-09,Espanyol,Villarreal,0.842,0.75,0,1
+2022-11-09,Mallorca,Atletico Madrid,1.466,1.506,1,0
+2022-11-10,Rayo Vallecano,Celta Vigo,0.442,0.678,0,0
+2022-11-10,Valencia,Real Betis,2.247,0.308,3,0
+2022-11-10,Real Madrid,Cadiz,1.731,1.117,2,1
+2022-12-29,Girona,Rayo Vallecano,2.268,1.321,2,2
+2022-12-29,Real Betis,Athletic Club,0.542,0.358,0,0
+2022-12-29,Atletico Madrid,Elche,1.744,0.569,2,0
+2022-12-30,Getafe,Mallorca,1.328,0.36,2,0
+2022-12-30,Celta Vigo,Sevilla,1.665,0.594,1,1
+2022-12-30,Cadiz,Almeria,1.578,2.23,1,1
+2022-12-30,Real Valladolid,Real Madrid,0.535,2.534,0,2
+2022-12-31,Barcelona,Espanyol,2.746,0.847,1,1
+2022-12-31,Real Sociedad,Osasuna,1.543,0.306,2,0
+2022-12-31,Villarreal,Valencia,2.373,1.167,2,1
+2023-01-06,Elche,Celta Vigo,1.145,1.971,0,1
+2023-01-06,Valencia,Cadiz,0.495,0.434,0,1
+2023-01-07,Villarreal,Real Madrid,2.417,2.167,2,1
+2023-01-07,Mallorca,Real Valladolid,1.528,0.435,1,0
+2023-01-07,Espanyol,Girona,1.267,1.658,2,2
+2023-01-08,Almeria,Real Sociedad,0.31,2.117,0,2
+2023-01-08,Rayo Vallecano,Real Betis,1.39,0.735,1,2
+2023-01-08,Sevilla,Getafe,1.216,1.175,2,1
+2023-01-08,Atletico Madrid,Barcelona,1.936,1.236,0,1
+2023-01-09,Athletic Club,Osasuna,1.176,0.428,0,0
+2023-01-13,Celta Vigo,Villarreal,2.458,0.105,1,1
+2023-01-14,Real Valladolid,Rayo Vallecano,0.611,1.17,0,1
+2023-01-14,Girona,Sevilla,2.846,0.784,2,1
+2023-01-14,Osasuna,Mallorca,1.191,0.523,1,0
+2023-01-14,Real Sociedad,Athletic Club,1.888,0.265,3,1
+2023-01-15,Getafe,Espanyol,0.496,0.46,1,2
+2023-01-15,Almeria,Atletico Madrid,1.082,2.084,1,1
+2023-01-16,Cadiz,Elche,1.402,0.655,1,1
+2023-01-20,Mallorca,Celta Vigo,0.404,0.425,1,0
+2023-01-21,Rayo Vallecano,Real Sociedad,0.642,1.436,0,2
+2023-01-21,Espanyol,Real Betis,2.162,0.836,1,0
+2023-01-21,Atletico Madrid,Real Valladolid,4.114,0.422,3,0
+2023-01-21,Sevilla,Cadiz,1.66,0.077,1,0
+2023-01-22,Villarreal,Girona,2.795,0.637,1,0
+2023-01-22,Elche,Osasuna,2.362,0.608,1,1
+2023-01-22,Barcelona,Getafe,0.712,1.246,1,0
+2023-01-22,Athletic Club,Real Madrid,1.156,0.947,0,2
+2023-01-23,Valencia,Almeria,2.707,1.688,2,2
+2023-01-27,Almeria,Espanyol,2.18,0.806,3,1
+2023-01-28,Cadiz,Mallorca,1.831,0.307,2,0
+2023-01-28,Girona,Barcelona,0.894,0.981,0,1
+2023-01-28,Sevilla,Elche,3.273,0.341,3,0
+2023-01-28,Getafe,Real Betis,0.206,2.0,0,1
+2023-01-29,Real Valladolid,Valencia,1.47,1.057,1,0
+2023-01-29,Osasuna,Atletico Madrid,0.741,1.297,0,1
+2023-01-29,Celta Vigo,Athletic Club,0.615,0.233,1,0
+2023-01-29,Real Madrid,Real Sociedad,1.405,0.37,0,0
+2023-01-30,Villarreal,Rayo Vallecano,1.197,0.83,0,1
+2023-02-01,Real Betis,Barcelona,0.761,2.383,1,2
+2023-02-02,Real Madrid,Valencia,2.605,0.213,2,0
+2023-02-03,Athletic Club,Cadiz,2.302,1.553,4,1
+2023-02-04,Espanyol,Osasuna,1.564,0.919,1,1
+2023-02-04,Elche,Villarreal,2.89,1.489,3,1
+2023-02-04,Atletico Madrid,Getafe,1.013,1.137,1,1
+2023-02-04,Real Betis,Celta Vigo,3.541,2.304,3,4
+2023-02-05,Mallorca,Real Madrid,0.242,1.398,1,0
+2023-02-05,Girona,Valencia,2.57,0.878,1,0
+2023-02-05,Real Sociedad,Real Valladolid,1.216,0.782,0,1
+2023-02-05,Barcelona,Sevilla,3.098,0.041,3,0
+2023-02-06,Rayo Vallecano,Almeria,1.381,1.375,2,0
+2023-02-10,Cadiz,Girona,0.718,0.214,2,0
+2023-02-11,Almeria,Real Betis,2.009,3.307,2,3
+2023-02-11,Sevilla,Mallorca,2.168,0.207,2,0
+2023-02-11,Valencia,Athletic Club,1.675,1.347,1,2
+2023-02-12,Getafe,Rayo Vallecano,1.237,1.705,1,1
+2023-02-12,Celta Vigo,Atletico Madrid,1.057,0.956,0,1
+2023-02-12,Real Valladolid,Osasuna,1.964,1.036,0,0
+2023-02-12,Villarreal,Barcelona,1.052,1.378,0,1
+2023-02-13,Espanyol,Real Sociedad,1.257,1.207,2,3
+2023-02-15,Real Madrid,Elche,4.044,0.619,4,0
+2023-02-17,Girona,Almeria,3.226,1.237,6,2
+2023-02-18,Real Sociedad,Celta Vigo,1.529,1.343,1,1
+2023-02-18,Real Betis,Real Valladolid,2.218,0.979,2,1
+2023-02-18,Mallorca,Villarreal,2.744,1.019,4,2
+2023-02-18,Osasuna,Real Madrid,0.401,1.865,0,2
+2023-02-19,Elche,Espanyol,1.602,1.359,0,1
+2023-02-19,Rayo Vallecano,Sevilla,1.375,0.476,1,1
+2023-02-19,Atletico Madrid,Athletic Club,1.065,1.008,1,0
+2023-02-19,Barcelona,Cadiz,2.289,1.404,2,0
+2023-02-20,Getafe,Valencia,2.134,1.094,1,0
+2023-02-24,Elche,Real Betis,0.884,4.052,2,3
+2023-02-25,Espanyol,Mallorca,1.994,0.558,2,1
+2023-02-25,Cadiz,Rayo Vallecano,0.816,0.407,1,0
+2023-02-25,Real Madrid,Atletico Madrid,1.563,0.218,1,1
+2023-02-25,Valencia,Real Sociedad,0.636,0.818,1,0
+2023-02-26,Athletic Club,Girona,1.345,1.339,2,3
+2023-02-26,Celta Vigo,Real Valladolid,2.976,0.902,3,0
+2023-02-26,Almeria,Barcelona,0.828,1.156,1,0
+2023-02-26,Sevilla,Osasuna,2.382,1.343,2,3
+2023-02-27,Villarreal,Getafe,1.911,0.468,2,1
+2023-03-03,Real Sociedad,Cadiz,1.076,0.847,0,0
+2023-03-04,Getafe,Girona,1.869,0.846,3,2
+2023-03-04,Almeria,Villarreal,0.371,2.373,0,2
+2023-03-04,Mallorca,Elche,0.962,0.957,0,1
+2023-03-04,Atletico Madrid,Sevilla,3.052,1.768,6,1
+2023-03-05,Real Valladolid,Espanyol,1.38,0.946,2,1
+2023-03-05,Barcelona,Valencia,2.092,0.629,1,0
+2023-03-05,Rayo Vallecano,Athletic Club,0.854,1.257,0,0
+2023-03-05,Real Betis,Real Madrid,0.593,1.145,0,0
+2023-03-06,Osasuna,Celta Vigo,1.163,0.726,0,0
+2023-03-10,Cadiz,Getafe,1.732,2.699,2,2
+2023-03-11,Real Madrid,Espanyol,1.782,1.102,3,1
+2023-03-11,Elche,Real Valladolid,2.803,0.247,1,1
+2023-03-11,Celta Vigo,Rayo Vallecano,2.138,0.697,3,0
+2023-03-11,Valencia,Osasuna,1.842,0.258,1,0
+2023-03-12,Mallorca,Real Sociedad,1.464,0.683,1,1
+2023-03-12,Sevilla,Almeria,3.159,1.519,2,1
+2023-03-12,Villarreal,Real Betis,1.333,1.031,1,1
+2023-03-12,Athletic Club,Barcelona,1.137,0.725,0,1
+2023-03-13,Girona,Atletico Madrid,0.302,1.807,0,1
+2023-03-17,Real Valladolid,Athletic Club,1.084,2.345,1,3
+2023-03-18,Almeria,Cadiz,2.694,1.131,1,1
+2023-03-18,Rayo Vallecano,Girona,1.72,1.509,2,2
+2023-03-18,Espanyol,Celta Vigo,1.711,1.632,1,3
+2023-03-18,Atletico Madrid,Valencia,3.363,0.689,3,0
+2023-03-19,Real Betis,Mallorca,0.607,0.14,1,0
+2023-03-19,Osasuna,Villarreal,1.156,1.587,0,3
+2023-03-19,Real Sociedad,Elche,2.694,0.082,2,0
+2023-03-19,Getafe,Sevilla,2.073,0.819,2,0
+2023-03-19,Barcelona,Real Madrid,1.665,0.524,2,1
+2023-03-31,Mallorca,Osasuna,0.433,0.508,0,0
+2023-04-01,Girona,Espanyol,1.45,0.946,2,1
+2023-04-01,Athletic Club,Getafe,0.751,0.723,0,0
+2023-04-01,Cadiz,Sevilla,0.691,1.729,0,2
+2023-04-01,Elche,Barcelona,0.508,1.618,0,4
+2023-04-02,Celta Vigo,Almeria,2.139,1.237,2,2
+2023-04-02,Real Madrid,Real Valladolid,4.827,0.72,6,0
+2023-04-02,Villarreal,Real Sociedad,2.805,0.912,2,0
+2023-04-02,Atletico Madrid,Real Betis,1.701,0.371,1,0
+2023-04-03,Valencia,Rayo Vallecano,2.711,0.645,1,1
+2023-04-07,Sevilla,Celta Vigo,0.475,0.611,2,2
+2023-04-08,Osasuna,Elche,1.69,0.658,2,1
+2023-04-08,Espanyol,Athletic Club,1.168,2.739,1,2
+2023-04-08,Real Sociedad,Getafe,2.118,0.244,2,0
+2023-04-08,Real Madrid,Villarreal,2.233,1.245,2,3
+2023-04-09,Real Valladolid,Mallorca,0.949,1.983,3,3
+2023-04-09,Real Betis,Cadiz,1.588,2.856,0,2
+2023-04-09,Almeria,Valencia,1.499,1.089,2,1
+2023-04-09,Rayo Vallecano,Atletico Madrid,0.564,2.365,1,2
+2023-04-10,Barcelona,Girona,1.051,0.491,0,0
+2023-04-14,Rayo Vallecano,Osasuna,1.084,0.373,2,1
+2023-04-15,Villarreal,Real Valladolid,1.995,2.415,1,2
+2023-04-15,Athletic Club,Real Sociedad,1.0,1.712,2,0
+2023-04-15,Real Betis,Espanyol,1.965,0.616,3,1
+2023-04-15,Cadiz,Real Madrid,0.584,4.491,0,2
+2023-04-16,Girona,Elche,1.229,0.578,2,0
+2023-04-16,Getafe,Barcelona,0.621,1.046,0,0
+2023-04-16,Atletico Madrid,Almeria,2.512,0.058,2,1
+2023-04-16,Valencia,Sevilla,0.528,1.47,0,2
+2023-04-17,Celta Vigo,Mallorca,0.469,1.184,0,1
+2023-04-21,Espanyol,Cadiz,1.523,1.127,0,0
+2023-04-22,Osasuna,Real Betis,1.633,1.993,3,2
+2023-04-22,Almeria,Athletic Club,0.573,1.835,1,2
+2023-04-22,Real Sociedad,Rayo Vallecano,0.815,0.36,2,1
+2023-04-22,Real Valladolid,Girona,1.111,1.059,1,0
+2023-04-22,Real Madrid,Celta Vigo,1.814,0.745,2,0
+2023-04-23,Elche,Valencia,0.795,1.053,0,2
+2023-04-23,Barcelona,Atletico Madrid,2.128,0.714,1,0
+2023-04-23,Mallorca,Getafe,1.917,0.119,3,1
+2023-04-23,Sevilla,Villarreal,0.853,2.135,2,1
+2023-04-25,Cadiz,Osasuna,1.405,0.866,0,1
+2023-04-25,Girona,Real Madrid,2.42,1.63,4,2
+2023-04-25,Real Betis,Real Sociedad,0.729,0.607,0,0
+2023-04-26,Atletico Madrid,Mallorca,2.615,0.741,3,1
+2023-04-26,Getafe,Almeria,1.667,2.09,1,2
+2023-04-26,Celta Vigo,Elche,1.435,1.481,1,0
+2023-04-26,Rayo Vallecano,Barcelona,0.862,1.01,2,1
+2023-04-27,Valencia,Real Valladolid,0.9,0.993,2,1
+2023-04-27,Villarreal,Espanyol,4.948,1.121,4,2
+2023-04-27,Athletic Club,Sevilla,0.195,1.001,0,1
+2023-04-28,Osasuna,Real Sociedad,0.987,2.096,0,2
+2023-04-29,Elche,Rayo Vallecano,3.38,0.565,4,0
+2023-04-29,Real Madrid,Almeria,3.205,1.375,4,2
+2023-04-29,Barcelona,Real Betis,3.086,0.231,4,0
+2023-04-30,Cadiz,Valencia,2.166,1.052,2,1
+2023-04-30,Villarreal,Celta Vigo,2.37,0.747,3,1
+2023-04-30,Espanyol,Getafe,2.444,0.41,1,0
+2023-04-30,Real Valladolid,Atletico Madrid,1.466,2.756,2,5
+2023-05-01,Mallorca,Athletic Club,1.291,1.377,1,1
+2023-05-01,Sevilla,Girona,2.352,1.13,0,2
+2023-05-02,Barcelona,Osasuna,2.4,0.356,1,0
+2023-05-02,Almeria,Elche,1.825,1.014,2,1
+2023-05-02,Real Sociedad,Real Madrid,2.263,0.867,2,0
+2023-05-03,Valencia,Villarreal,1.042,0.743,1,1
+2023-05-03,Atletico Madrid,Cadiz,4.26,0.026,5,1
+2023-05-03,Getafe,Celta Vigo,2.87,0.219,1,0
+2023-05-04,Girona,Mallorca,2.205,1.343,2,1
+2023-05-04,Sevilla,Espanyol,2.902,0.618,3,2
+2023-05-04,Athletic Club,Real Betis,1.014,0.754,0,1
+2023-05-04,Rayo Vallecano,Real Valladolid,1.57,0.571,2,1
+2023-05-12,Mallorca,Cadiz,1.603,0.611,1,0
+2023-05-13,Real Sociedad,Girona,3.055,1.469,2,2
+2023-05-13,Osasuna,Almeria,1.874,0.508,3,1
+2023-05-13,Villarreal,Athletic Club,3.093,1.822,5,1
+2023-05-13,Real Madrid,Getafe,0.879,0.586,1,0
+2023-05-14,Celta Vigo,Valencia,1.216,1.866,1,2
+2023-05-14,Elche,Atletico Madrid,2.285,1.448,1,0
+2023-05-14,Real Valladolid,Sevilla,2.017,3.058,0,3
+2023-05-14,Espanyol,Barcelona,2.727,3.65,2,4
+2023-05-15,Real Betis,Rayo Vallecano,2.696,1.72,3,1
+2023-05-19,Cadiz,Real Valladolid,2.132,0.207,2,0
+2023-05-20,Girona,Villarreal,1.317,1.716,1,2
+2023-05-20,Athletic Club,Celta Vigo,1.042,0.283,2,1
+2023-05-20,Almeria,Mallorca,1.707,0.36,3,0
+2023-05-20,Getafe,Elche,1.588,1.342,1,1
+2023-05-20,Barcelona,Real Sociedad,1.841,2.804,1,2
+2023-05-21,Rayo Vallecano,Espanyol,1.831,1.306,1,2
+2023-05-21,Atletico Madrid,Osasuna,2.088,0.715,3,0
+2023-05-21,Valencia,Real Madrid,1.491,2.089,1,0
+2023-05-21,Sevilla,Real Betis,1.519,0.114,0,0
+2023-05-23,Celta Vigo,Girona,0.933,1.4,1,1
+2023-05-23,Real Sociedad,Almeria,1.92,0.1,1,0
+2023-05-23,Real Valladolid,Barcelona,2.206,1.729,3,1
+2023-05-24,Elche,Sevilla,1.359,0.889,1,1
+2023-05-24,Villarreal,Cadiz,2.974,2.096,2,0
+2023-05-24,Real Madrid,Rayo Vallecano,1.663,0.446,2,1
+2023-05-24,Real Betis,Getafe,1.093,0.344,0,1
+2023-05-24,Espanyol,Atletico Madrid,3.036,2.763,3,3
+2023-05-25,Mallorca,Valencia,0.538,2.073,1,0
+2023-05-25,Osasuna,Athletic Club,0.907,0.534,2,0
+2023-05-27,Sevilla,Real Madrid,0.98,0.816,1,2
+2023-05-28,Athletic Club,Elche,2.914,0.769,0,1
+2023-05-28,Atletico Madrid,Real Sociedad,0.819,0.944,2,1
+2023-05-28,Barcelona,Mallorca,4.408,0.124,3,0
+2023-05-28,Getafe,Osasuna,2.719,0.432,2,1
+2023-05-28,Cadiz,Celta Vigo,1.598,0.599,1,0
+2023-05-28,Rayo Vallecano,Villarreal,1.166,0.623,2,1
+2023-05-28,Almeria,Real Valladolid,1.553,0.364,0,0
+2023-05-28,Girona,Real Betis,1.633,2.321,1,2
+2023-05-28,Valencia,Espanyol,2.533,1.781,2,2
+2023-06-04,Real Madrid,Athletic Club,1.722,2.18,1,1
+2023-06-04,Villarreal,Atletico Madrid,2.064,1.161,2,2
+2023-06-04,Celta Vigo,Barcelona,0.566,1.417,2,1
+2023-06-04,Real Valladolid,Getafe,0.687,0.279,0,0
+2023-06-04,Elche,Cadiz,1.534,2.223,1,1
+2023-06-04,Espanyol,Almeria,0.5,2.035,3,3
+2023-06-04,Osasuna,Girona,1.917,0.822,2,1
+2023-06-04,Real Betis,Valencia,0.678,0.846,1,1
+2023-06-04,Mallorca,Rayo Vallecano,2.251,1.04,3,0
+2023-06-04,Real Sociedad,Sevilla,2.354,0.462,2,1

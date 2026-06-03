@@ -1,70 +1,45 @@
-"""Scrape historical match xG from Understat — RUN FROM ANDREA'S NETWORK.
+"""Fetch historical match xG from Understat via its JSON endpoint (Playwright).
 
-Understat is bot-blocked from the build environment (returns an 18KB stub), so
-this script is meant to be run locally by Andrea on his own connection:
+Understat dropped the old inline `datesData`; the data now comes from the XHR
+endpoint /getLeagueData/{slug}/{season}, which requires the X-Requested-With
+header and a Cloudflare-cleared session. We drive a real Chromium (Playwright):
+navigate to the league page (clears Cloudflare), then fetch the endpoint from the
+page context with the right header and parse the `dates` array (per-match xG).
 
+    venv/bin/playwright install chromium   # one-off
     venv/bin/python -m scripts.scrape_understat_xg
 
-It fetches each league/season page, extracts the embedded `datesData` JSON
-(per-match xG), and writes one CSV per league/season to data/understat/.
-Polite: a delay between requests and a real User-Agent. Output schema:
-
+Output (one CSV per league/season in data/understat/):
     date, home_team, away_team, home_xg, away_xg, home_goals, away_goals
-
-Once data/understat/ is populated, the xG feature can be joined to the
-football-data.co.uk matches (team-name mapping) and added to the feature backtest.
 """
 from __future__ import annotations
 
 import csv
 import json
-import re
 import time
-import urllib.request
 from pathlib import Path
+
+from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "understat"
 
-# Understat league slug -> our internal league code (for later joining)
-LEAGUES = {
-    "EPL": "PL",
-    "La_liga": "PD",
-    "Bundesliga": "BL1",
-    "Serie_A": "SA",
-    "Ligue_1": "FL1",
-}
+# Understat league slug -> our internal league code (for joining to football-data.co.uk)
+LEAGUES = {"EPL": "PL", "La_liga": "PD", "Bundesliga": "BL1", "Serie_A": "SA", "Ligue_1": "FL1"}
 SEASONS = [2021, 2022, 2023, 2024]  # start year (2023 = 2023/24)
-REQUEST_DELAY_S = 3.0
+REQUEST_DELAY_S = 2.0
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 
-_DATES_RE = re.compile(r"datesData\s*=\s*JSON\.parse\('(.*?)'\)", re.DOTALL)
-
-
-def fetch(url: str, timeout: float = 30.0) -> str:
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310
-        return resp.read().decode("utf-8", errors="replace")
+_FETCH_JS = """async (u) => {
+  const r = await fetch(u, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+  return await r.text();
+}"""
 
 
-def extract_matches(html: str) -> list[dict]:
-    m = _DATES_RE.search(html)
-    if not m:
-        return []
-    raw = m.group(1).encode("utf-8").decode("unicode_escape")
-    return json.loads(raw)
-
-
-def scrape_league_season(slug: str, season: int) -> list[dict]:
-    html = fetch(f"https://understat.com/league/{slug}/{season}")
+def parse_dates(payload: dict) -> list[dict]:
     rows: list[dict] = []
-    for d in extract_matches(html):
+    for d in payload.get("dates", []):
         if not d.get("isResult"):
             continue
         try:
@@ -82,32 +57,41 @@ def scrape_league_season(slug: str, season: int) -> list[dict]:
     return rows
 
 
+def fetch_league_season(page, slug: str, season: int) -> list[dict]:
+    page.goto(f"https://understat.com/league/{slug}/{season}",
+              wait_until="domcontentloaded", timeout=60000)
+    text = page.evaluate(_FETCH_JS, f"https://understat.com/getLeagueData/{slug}/{season}")
+    return parse_dates(json.loads(text))
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     total = 0
-    for slug, code in LEAGUES.items():
-        for season in SEASONS:
-            try:
-                rows = scrape_league_season(slug, season)
-            except Exception as e:  # noqa: BLE001
-                print(f"  ! {slug} {season}: {e}")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(user_agent=UA)
+        for slug, code in LEAGUES.items():
+            for season in SEASONS:
+                try:
+                    rows = fetch_league_season(page, slug, season)
+                except Exception as e:  # noqa: BLE001
+                    print(f"  ! {slug} {season}: {repr(e)[:120]}")
+                    time.sleep(REQUEST_DELAY_S)
+                    continue
+                if not rows:
+                    print(f"  ? {slug} {season}: no results yet")
+                    time.sleep(REQUEST_DELAY_S)
+                    continue
+                fp = OUT / f"{code}_{slug}_{season}.csv"
+                with fp.open("w", newline="", encoding="utf-8") as f:
+                    w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                    w.writeheader()
+                    w.writerows(rows)
+                total += len(rows)
+                print(f"  ✓ {slug} {season}: {len(rows)} matches -> {fp.name}")
                 time.sleep(REQUEST_DELAY_S)
-                continue
-            if not rows:
-                print(f"  ? {slug} {season}: no data extracted (blocked?)")
-                time.sleep(REQUEST_DELAY_S)
-                continue
-            fp = OUT / f"{code}_{slug}_{season}.csv"
-            with fp.open("w", newline="", encoding="utf-8") as f:
-                w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-                w.writeheader()
-                w.writerows(rows)
-            total += len(rows)
-            print(f"  ✓ {slug} {season}: {len(rows)} matches -> {fp.name}")
-            time.sleep(REQUEST_DELAY_S)
+        browser.close()
     print(f"\nDone. {total} matches with xG written to {OUT}")
-    if total == 0:
-        print("If everything was blocked here too, run this from a normal browser network.")
 
 
 if __name__ == "__main__":
