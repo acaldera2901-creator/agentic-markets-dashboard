@@ -3419,7 +3419,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
       {/* Per-card reveal gating (Task 7) */}
       {p.locked ? (
-        <div className="locked-overlay" role="button" onClick={() => onGate?.()}>
+        <div className="card-lock-overlay" role="button" onClick={() => onGate?.()}>
           <span className="blurred">▒▒ HOME ▒▒▒%</span>
           <span className="blurred">▒▒ DRAW ▒▒▒%</span>
           <span className="blurred">▒▒ AWAY ▒▒▒%</span>
@@ -3790,7 +3790,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
       {/* Per-card reveal gating (Task 7) */}
       {m.locked ? (
-        <div className="locked-overlay" role="button" onClick={() => onGate?.()}>
+        <div className="card-lock-overlay" role="button" onClick={() => onGate?.()}>
           <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
           <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
