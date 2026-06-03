@@ -53,6 +53,31 @@ Calibrazione isotonic (`scripts/backtest_poisson.py`, split temporale): guadagno
 
 **Stato modelli:** v1 (servito ai clienti) resta il base; v2 è disponibile, marginale; nessuna promozione al cliente (l'upgrade vero arriva con le feature).
 
+## 0ter. INVENTARIO DATI + FEATURE CHE ABBIAMO (2026-06-03c)
+
+**Audit storico repo:** abbiamo solo risultati/gol/date/matchday + medie lega (`match_results.csv`, `team_stats.csv`, `league_stats.csv`, `matches_cache.json`). Nessuno xG/formazioni/infortuni storici. Le funzioni in `models/features.py` (xg_luck_streak, ah_odds_movement, referee) esistono ma **aspettano dati che non abbiamo**.
+
+**Implementato (`models/match_features.py`, derivato da dati che abbiamo):** PiRating incrementale (port di lib/pi-rating.ts), riposo, congestione, form. Stacking logistico su Poisson + queste feature (`scripts/backtest_features.py`):
+
+| Modello | Brier |
+|---|---|
+| Poisson v1 (base) | 0.59887 |
+| Poisson + feature HAVE (logit) | 0.59746 (+0.24%) |
+| Market | 0.57731 |
+
+→ chiude **6.5%** del gap col mercato. Influenza feature (mean |coef|): **pi_diff 0.117 (la più forte)**, form 0.086, rest 0.027, congestion 0.007. Riposo/congestione quasi inutili sui top campionati. **Il ~93.5% del gap residuo è informazione esterna mancante (xG/formazioni).**
+
+### ✅ ABBIAMO (storico/backtestabile) — IMPLEMENTATO
+pi-rating · form · riposo · congestione · medie lega · closing odds (solo validazione).
+
+### ❌ MANCANTI — da ingestire (in ordine di impatto atteso)
+1. **xG storico** (Understat/FBref scraping) — il pezzo più grosso del gap residuo.
+2. **Formazioni/assenze** (API-Football, già pagata; serve storicizzarle).
+3. **Odds movement** apertura→chiusura (fd.co.uk ha le aperture).
+4. **Importanza/motivazione** (classifica, derivabile — `motivation_score` pronto).
+5. **Arbitro**, **meteo storico** (impatto minore).
+6. **Tennis (Sackmann)** — non ancora ingestito.
+
 ## 1. FOOTBALL — cosa manca e dove prenderlo
 
 ### 1.1 Dati mancanti, in ordine di impatto

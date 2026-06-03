@@ -41,6 +41,10 @@ class FDMatch:
     avg_h: float | None  # market average closing
     avg_d: float | None
     avg_a: float | None
+    open_h: float | None = None  # Pinnacle opening (PSH); for line-movement features
+    open_d: float | None = None
+    open_a: float | None = None
+    referee: str | None = None
 
     @property
     def closing_home(self) -> float | None:
@@ -114,6 +118,10 @@ def parse_row(row: dict, league: str) -> FDMatch | None:
         avg_h=_to_float(row, "AvgCH"),
         avg_d=_to_float(row, "AvgCD"),
         avg_a=_to_float(row, "AvgCA"),
+        open_h=_to_float(row, "PSH") or _to_float(row, "B365H"),
+        open_d=_to_float(row, "PSD") or _to_float(row, "B365D"),
+        open_a=_to_float(row, "PSA") or _to_float(row, "B365A"),
+        referee=(row.get("Referee") or "").strip() or None,
     )
 
 
