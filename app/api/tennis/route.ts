@@ -1,11 +1,46 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { resolveAccessState } from "@/lib/auth";
-import { projectPrediction } from "@/lib/access-projection";
+import { isUnlocked } from "@/lib/access-projection";
+import type { AccessState } from "@/lib/auth";
 import { pickOfDayId } from "@/lib/pick-of-day";
 import { withAffiliate } from "@/lib/affiliate";
 
 export const dynamic = "force-dynamic";
+
+// Per-state projection that PRESERVES the tennis card shape the frontend expects
+// (player1/player2/surface/p1/p2/...). When locked, the sensitive numbers are
+// nulled (frontend blurs on `locked`); the matchup + tournament stay visible so
+// the public board is populated. Distinct from the football projection on purpose.
+function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string }>(
+  matches: T[],
+  state: AccessState
+): Array<T & { locked: boolean; pick_of_day: boolean }> {
+  const potd = pickOfDayId(
+    matches.map((m) => ({ id: m.id, confidence_score: Math.round(Math.max(m.p1, m.p2) * 100), starts_at: m.scheduled }))
+  );
+  return matches.map((m) => {
+    const isPotD = m.id === potd;
+    const unlocked = isUnlocked(state, isPotD);
+    if (unlocked) {
+      return withAffiliate({
+        ...m,
+        locked: false,
+        pick_of_day: isPotD,
+        confidence_score: Math.round(Math.max(m.p1, m.p2) * 100),
+        pick: m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2,
+      }) as T & { locked: boolean; pick_of_day: boolean };
+    }
+    // locked: keep matchup + surface visible, blank the numbers the card would show
+    return {
+      ...m,
+      locked: true,
+      pick_of_day: isPotD,
+      p1: null, p2: null, odds_p1: null, odds_p2: null, edge: null, best_selection: null,
+      elo_p1: null, elo_p2: null, elo_p1_overall: null, elo_p2_overall: null,
+    } as unknown as T & { locked: boolean; pick_of_day: boolean };
+  });
+}
 
 type TennisPredictionInput = {
   match_id?: string;
@@ -150,19 +185,7 @@ export async function GET(req: Request) {
 
   if (redisData && Array.isArray(redisData.predictions) && redisData.predictions.length > 0) {
     const matches: TennisPrediction[] = redisData.predictions.map(normalizePrediction);
-    const projInput = matches.map((m) => ({
-      id: m.id, sport: "tennis", competition: m.tournament, league: m.tournament,
-      event_name: `${m.player1} vs ${m.player2}`, home_team: m.player1, away_team: m.player2,
-      starts_at: m.scheduled, status: "open",
-      pick: m.best_selection ?? (m.p1 >= m.p2 ? m.player1 : m.player2),
-      p_home: m.p1, p_away: m.p2, confidence_score: Math.round(Math.max(m.p1, m.p2) * 100),
-      market: "ML", signal_type: "paper", model_version: m.model,
-    }));
-    const potd = pickOfDayId(projInput);
-    const projected = projInput.map((r) => {
-      const p = projectPrediction(r, state, r.id === potd);
-      return p.locked ? p : withAffiliate(p);
-    });
+    const projected = projectTennisMatches(matches, state);
     const summary = {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
@@ -182,19 +205,7 @@ export async function GET(req: Request) {
   const dbData = await getFromDb();
   if (dbData && Array.isArray(dbData.predictions) && dbData.predictions.length > 0) {
     const matches: TennisPrediction[] = dbData.predictions.map(normalizePrediction);
-    const projInput = matches.map((m) => ({
-      id: m.id, sport: "tennis", competition: m.tournament, league: m.tournament,
-      event_name: `${m.player1} vs ${m.player2}`, home_team: m.player1, away_team: m.player2,
-      starts_at: m.scheduled, status: "open",
-      pick: m.best_selection ?? (m.p1 >= m.p2 ? m.player1 : m.player2),
-      p_home: m.p1, p_away: m.p2, confidence_score: Math.round(Math.max(m.p1, m.p2) * 100),
-      market: "ML", signal_type: "paper", model_version: m.model,
-    }));
-    const potd = pickOfDayId(projInput);
-    const projected = projInput.map((r) => {
-      const p = projectPrediction(r, state, r.id === potd);
-      return p.locked ? p : withAffiliate(p);
-    });
+    const projected = projectTennisMatches(matches, state);
     const summary = {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
