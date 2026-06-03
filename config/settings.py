@@ -125,6 +125,31 @@ class Settings(BaseSettings):
     DATA_REFRESH_INTERVAL: int = 900
     PREMATCH_REFRESH_INTERVAL: int = 60
 
+    # World Cup 2026 national-team history loader (Gate 1: national_team_model).
+    # CSV is the Kaggle martj42/international-football-results dump, filtered to
+    # recent competitive + friendly matches. Quality scales min(1.0, n/20).
+    WC_HISTORY_CSV: str = "data/national_teams/international_results_raw.csv"
+    WC_HISTORY_SINCE: str = "2018-01-01"          # recency cutoff for relevance
+    WC_NATIONAL_MIN_MATCHES_FULL: int = 20        # quality 1.0
+    WC_NATIONAL_MIN_MATCHES_SIGNAL: int = 15      # quality 0.75 (signal threshold)
+    WC_HISTORY_TOURNAMENTS: List[str] = [
+        "FIFA World Cup",
+        "FIFA World Cup qualification",
+        "Friendly",
+        "AFC Asian Cup",
+        "AFC Asian Cup qualification",
+        "African Cup of Nations",
+        "African Cup of Nations qualification",
+        "Copa América",
+        "UEFA Euro",
+        "UEFA Euro qualification",
+        "UEFA Nations League",
+        "CONCACAF Nations League",
+        "CONCACAF Gold Cup",
+        "Gold Cup",
+        "Confederations Cup",
+    ]
+
     # extra="ignore": the shared .env also holds frontend-only vars (e.g. SESSION_SECRET
     # for the Next.js gating). The Python backend must not choke on env it doesn't own.
     model_config = {"env_file": ".env", "extra": "ignore"}

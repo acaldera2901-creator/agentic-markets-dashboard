@@ -188,6 +188,7 @@ def build_world_cup_context(
     fixture: dict[str, Any],
     team_a: str,
     team_b: str,
+    venue_fields: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     stage, group_name, matchday, knockout_round = infer_stage(fixture)
     venue, city = _venue_text(fixture)
@@ -195,18 +196,26 @@ def build_world_cup_context(
     neutral_venue, host_team = infer_host_advantage(team_a, team_b, venue_country)
     motivation_a, motivation_b = motivation_labels(stage, matchday)
 
+    vf = venue_fields or {}
+    rest_a = vf.get("rest_days_team_a")
+    rest_b = vf.get("rest_days_team_b")
+    travel_a = vf.get("travel_distance_km_team_a")
+    travel_b = vf.get("travel_distance_km_team_b")
+    tz_a = vf.get("timezone_shift_team_a")
+    tz_b = vf.get("timezone_shift_team_b")
+
     missing: list[str] = []
     required = {
         "stage": stage if stage != "unknown" else None,
         "venue": venue,
         "host_city": city,
         "venue_country": venue_country,
-        "rest_days_team_a": None,
-        "rest_days_team_b": None,
-        "travel_distance_km_team_a": None,
-        "travel_distance_km_team_b": None,
-        "timezone_shift_team_a": None,
-        "timezone_shift_team_b": None,
+        "rest_days_team_a": rest_a,
+        "rest_days_team_b": rest_b,
+        "travel_distance_km_team_a": travel_a,
+        "travel_distance_km_team_b": travel_b,
+        "timezone_shift_team_a": tz_a,
+        "timezone_shift_team_b": tz_b,
     }
     for key, value in required.items():
         if value is None:
@@ -226,12 +235,12 @@ def build_world_cup_context(
         venue_country=venue_country,
         neutral_venue=neutral_venue,
         host_advantage_team=host_team,
-        rest_days_team_a=None,
-        rest_days_team_b=None,
-        travel_distance_km_team_a=None,
-        travel_distance_km_team_b=None,
-        timezone_shift_team_a=None,
-        timezone_shift_team_b=None,
+        rest_days_team_a=rest_a,
+        rest_days_team_b=rest_b,
+        travel_distance_km_team_a=travel_a,
+        travel_distance_km_team_b=travel_b,
+        timezone_shift_team_a=tz_a,
+        timezone_shift_team_b=tz_b,
         motivation_label_team_a=motivation_a,
         motivation_label_team_b=motivation_b,
         market_warning=market_warning(stage),

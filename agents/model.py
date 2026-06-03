@@ -5,8 +5,9 @@ from agents.base import BaseAgent
 from core.redis_client import consume, publish
 from core.football_api_client import get_historical_results as apifootball_history, LEAGUE_IDS
 from core.football_data_org_client import get_historical_results as fdorg_history, FREE_TIER_CODES
-from core.world_cup_registry import api_football_season_for, is_world_cup_code
+from core.world_cup_registry import api_football_season_for, is_world_cup_code, WORLD_CUP_CODE
 from core.world_cup_team_model import matchup_profile
+from core.world_cup_history import canonical_team_name, load_national_history
 from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
@@ -126,6 +127,65 @@ class ModelAgent(BaseAgent):
             except Exception as e:
                 self.logger.error(f"bootstrap error for {league_code}: {e}")
 
+        # National-team history for the World Cup path. There is no Dixon-Coles
+        # model for WC (national teams, not the league pool); the WC branch in
+        # _process consumes this history directly via matchup_profile.
+        try:
+            self._history[WORLD_CUP_CODE] = load_national_history()
+            self.logger.info(
+                "loaded WC national history: %d matches", len(self._history[WORLD_CUP_CODE])
+            )
+        except Exception as e:
+            self._history[WORLD_CUP_CODE] = []
+            self.logger.error(f"WC national history load failed: {e}")
+
+    def _build_world_cup_result(self, payload: dict) -> dict:
+        """Pure WC enrichment: national matchup + data-quality gate.
+
+        Runs without a Dixon-Coles model (WC has none) and queries the national
+        history with canonical team names so fixture/API aliases resolve.
+        """
+        home = payload["home_team"]
+        away = payload["away_team"]
+        wc_context = payload.get("world_cup_context") or {}
+        national_matchup = matchup_profile(
+            self._history.get(WORLD_CUP_CODE, []),
+            canonical_team_name(home),
+            canonical_team_name(away),
+        )
+        result: dict = {
+            "world_cup_context": json.dumps(wc_context),
+            "world_cup_national_matchup": json.dumps(national_matchup),
+            "world_cup_stage": str(wc_context.get("stage") or "unknown"),
+            "neutral_venue": str(wc_context.get("neutral_venue", True)),
+            "host_advantage_team": str(wc_context.get("host_advantage_team") or ""),
+            "world_cup_context_quality": str(wc_context.get("data_completeness_score", 0)),
+            "world_cup_national_model_quality": str(national_matchup.get("data_quality", 0)),
+            "world_cup_national_model_blocked_reason": str(
+                national_matchup.get("blocked_reason") or ""
+            ),
+        }
+        quality = compute_world_cup_data_quality(
+            payload=payload,
+            context=wc_context,
+            national_matchup=national_matchup,
+            settlement_ready=False,
+            squad_news_ready=False,
+        )
+        result["world_cup_data_quality"] = json.dumps(quality)
+        result["world_cup_data_quality_score"] = str(quality.get("total_score", 0))
+        result["world_cup_publication_tier"] = str(quality.get("publication_tier", "monitor_only"))
+        result["world_cup_data_quality_blocked_reasons"] = json.dumps(
+            quality.get("blocked_reasons", [])
+        )
+        result["world_cup_odds_snapshot"] = json.dumps(quality.get("odds_snapshot") or {})
+        result["provider_event_id"] = str(payload.get("provider_event_id") or payload.get("match_id") or "")
+        result["provider_source"] = str(payload.get("provider_source") or "")
+        self.set_status_detail(world_cup_data_quality_status_detail(quality))
+        if wc_context.get("market_warning"):
+            result["market_warning"] = str(wc_context["market_warning"])
+        return result
+
     def _parse_results(self, fixtures: list) -> list:
         matches = []
         for f in fixtures:
@@ -149,6 +209,21 @@ class ModelAgent(BaseAgent):
             league = payload["league"]
             home = payload["home_team"]
             away = payload["away_team"]
+            if is_world_cup_code(league):
+                # World Cup has no Dixon-Coles league model; it runs the national
+                # data-quality gate path instead and stays in EXPERIMENT_MODE
+                # (paper_only tier), never the customer serving table.
+                wc_result = self._build_world_cup_result(payload)
+                wc_result.update({
+                    "match_id": payload["match_id"],
+                    "league": league,
+                    "home_team": home,
+                    "away_team": away,
+                    "kickoff": payload["kickoff"],
+                    "computed_at": datetime.now(timezone.utc).isoformat(),
+                })
+                await publish("model:probabilities", wc_result)
+                return
             model = self._models.get(league)
             if not model or not model.fitted:
                 return
@@ -213,38 +288,6 @@ class ModelAgent(BaseAgent):
                 "confidence_weight": str(adjusted.confidence_weight),
                 "adjustment_detail": json.dumps(adjusted.adjustment_detail),
             }
-            if is_world_cup_code(league):
-                wc_context = payload.get("world_cup_context") or {}
-                national_matchup = matchup_profile(self._history.get(league, []), home, away)
-                result["world_cup_context"] = json.dumps(wc_context)
-                result["world_cup_national_matchup"] = json.dumps(national_matchup)
-                result["world_cup_stage"] = str(wc_context.get("stage") or "unknown")
-                result["neutral_venue"] = str(wc_context.get("neutral_venue", True))
-                result["host_advantage_team"] = str(wc_context.get("host_advantage_team") or "")
-                result["world_cup_context_quality"] = str(wc_context.get("data_completeness_score", 0))
-                result["world_cup_national_model_quality"] = str(national_matchup.get("data_quality", 0))
-                result["world_cup_national_model_blocked_reason"] = str(
-                    national_matchup.get("blocked_reason") or ""
-                )
-                quality = compute_world_cup_data_quality(
-                    payload=payload,
-                    context=wc_context,
-                    national_matchup=national_matchup,
-                    settlement_ready=False,
-                    squad_news_ready=False,
-                )
-                result["world_cup_data_quality"] = json.dumps(quality)
-                result["world_cup_data_quality_score"] = str(quality.get("total_score", 0))
-                result["world_cup_publication_tier"] = str(quality.get("publication_tier", "monitor_only"))
-                result["world_cup_data_quality_blocked_reasons"] = json.dumps(
-                    quality.get("blocked_reasons", [])
-                )
-                result["world_cup_odds_snapshot"] = json.dumps(quality.get("odds_snapshot") or {})
-                result["provider_event_id"] = str(payload.get("provider_event_id") or payload.get("match_id") or "")
-                result["provider_source"] = str(payload.get("provider_source") or "")
-                self.set_status_detail(world_cup_data_quality_status_detail(quality))
-                if wc_context.get("market_warning"):
-                    result["market_warning"] = str(wc_context["market_warning"])
 
             # Arricchisci con contesto campionato/partita
             ctx_input = {
