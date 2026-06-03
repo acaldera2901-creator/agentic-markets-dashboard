@@ -67,7 +67,7 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
     confidence_score: confidence,
     risk_level: "medium",
     status: computeStatus(row.scheduled_at),
-    signal_type: hasRealMarket ? "signal" : "estimate",
+    signal_type: hasRealMarket ? "signal" : "paper",
     source: "model",
     model_version: row.model_version ?? "tennis-elo-v1",
     plan_access: "base",
