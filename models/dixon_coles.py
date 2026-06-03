@@ -1,7 +1,32 @@
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import poisson
+from datetime import date
 from typing import List, Dict, Tuple
+
+
+def decay_weights(
+    dates: List[date | None], half_life_days: float, ref: date | None = None
+) -> List[float]:
+    """Dixon-Coles time weighting: a match `half_life_days` old counts half as much.
+
+    weight = 0.5 ** (age_days / half_life_days), age measured from the most recent
+    match (or `ref`). Matches with an unknown date get weight 1.0 (no down-weighting).
+    """
+    if half_life_days <= 0:
+        return [1.0] * len(dates)
+    known = [d for d in dates if d is not None]
+    if not known:
+        return [1.0] * len(dates)
+    anchor = ref or max(known)
+    out: List[float] = []
+    for d in dates:
+        if d is None:
+            out.append(1.0)
+        else:
+            age = (anchor - d).days
+            out.append(0.5 ** (age / half_life_days))
+    return out
 
 
 def _tau(x: int, y: int, lam: float, mu: float, rho: float) -> float:
@@ -30,7 +55,8 @@ def _neg_log_likelihood(params: np.ndarray, matches: List[Dict], n_teams: int) -
         t = _tau(hg, ag, lam, mu, rho)
         if t <= 0:
             return 1e10
-        log_lik += np.log(t) + poisson.logpmf(hg, lam) + poisson.logpmf(ag, mu)
+        w = m.get("_w", 1.0)
+        log_lik += w * (np.log(t) + poisson.logpmf(hg, lam) + poisson.logpmf(ag, mu))
     return -log_lik
 
 
@@ -41,17 +67,48 @@ class DixonColesModel:
         self.params: np.ndarray | None = None
         self.fitted: bool = False
 
-    def fit(self, matches: List[Dict]) -> None:
+    def fit(
+        self,
+        matches: List[Dict],
+        warm_start: "DixonColesModel | None" = None,
+        half_life_days: float = 0.0,
+    ) -> None:
+        """Fit the model. half_life_days > 0 enables Dixon-Coles time weighting
+        (recent matches count more); 0 keeps every match equally weighted.
+        Matches should carry an ISO 'date' string for weighting to apply."""
         teams = sorted({m["home_team"] for m in matches} | {m["away_team"] for m in matches})
         self.teams = teams
         self._team_idx = {t: i for i, t in enumerate(teams)}
         n = len(teams)
 
+        if half_life_days and half_life_days > 0:
+            parsed = [date.fromisoformat(m["date"]) if m.get("date") else None for m in matches]
+            weights = decay_weights(parsed, half_life_days)
+        else:
+            weights = [1.0] * len(matches)
+
         prepared = []
-        for m in matches:
-            prepared.append({**m, "_hi": self._team_idx[m["home_team"]], "_ai": self._team_idx[m["away_team"]]})
+        for m, w in zip(matches, weights):
+            prepared.append({
+                **m,
+                "_hi": self._team_idx[m["home_team"]],
+                "_ai": self._team_idx[m["away_team"]],
+                "_w": w,
+            })
 
         x0 = np.concatenate([np.zeros(2 * n), [0.1, -0.1]])
+        # Warm-start from a previous fit (same league, slightly fewer teams): reuse
+        # per-team params by name so re-optimization converges in far fewer steps.
+        if warm_start is not None and warm_start.fitted and warm_start.params is not None:
+            pn = len(warm_start.teams)
+            for t, i in self._team_idx.items():
+                wi = warm_start._team_idx.get(t)
+                if wi is not None:
+                    x0[i] = warm_start.params[wi]
+                    x0[n + i] = warm_start.params[pn + wi]
+            x0[-2] = warm_start.params[-2]
+            x0[-1] = warm_start.params[-1]
+
         bounds = [(-3.0, 3.0)] * (2 * n) + [(0.0, 1.0), (-1.0, 0.0)]
 
         result = minimize(_neg_log_likelihood, x0, args=(prepared, n), method="L-BFGS-B", bounds=bounds)

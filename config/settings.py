@@ -84,6 +84,16 @@ class Settings(BaseSettings):
     CLV_MIN_ACCEPTABLE: float = 0.0        # CLV negativo → sospensione consigliata
     LEAGUE_TIER_TOP5: list[str] = ["PL", "SA", "PD", "BL1", "FL1"]
 
+    # Dixon-Coles → unified_predictions writer (experiment, runs in parallel to
+    # the TS Poisson v1; distinct model_version + source_table so it never
+    # overwrites the client-served rows until an explicit promotion).
+    DC_MODEL_VERSION: str = "football-dixoncoles-v1"
+    DC_SOURCE_TABLE: str = "dixon_coles_predictions"
+    DC_PLAN_ACCESS: str = "premium"          # parked behind premium until promoted
+    DC_MIN_TEAM_MATCHES: int = 4             # reliability gate, mirrors TS MIN_MATCHES_PER_TEAM
+    DC_MAX_CI_WIDTH: float = 0.15            # conformal interval width above which a pick is "estimate"
+    DC_TIME_DECAY_HALFLIFE_DAYS: float = 120.0  # Dixon-Coles time weighting; 0 disables
+
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1
     PSI_CRITICAL_THRESHOLD: float = 0.2
