@@ -72,3 +72,15 @@ export async function requirePremium(
   if (!planHasPremium(ctx.plan)) return { ctx, deny: jsonDeny(403, "premium plan required") };
   return { ctx, deny: null };
 }
+
+// Read-side access state — never denies. Writes still use requireAccess/requirePremium.
+export type AccessState =
+  | "anonymous" | "free" | "pending_payment" | "base" | "premium" | "admin_full";
+
+export async function resolveAccessState(
+  req: Request
+): Promise<{ ctx: SessionContext | null; state: AccessState }> {
+  const ctx = await getSessionPlan(req);
+  if (!ctx) return { ctx: null, state: "anonymous" };
+  return { ctx, state: ctx.plan as AccessState };
+}
