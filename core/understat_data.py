@@ -26,6 +26,10 @@ class XGMatch:
     away_goals: int
     home_xg: float
     away_xg: float
+    home_npxg: float | None = None
+    away_npxg: float | None = None
+    home_ppda: float | None = None
+    away_ppda: float | None = None
 
     def as_model_match(self) -> dict:
         return {
@@ -41,6 +45,14 @@ class XGMatch:
         return "H" if self.home_goals > self.away_goals else "A" if self.away_goals > self.home_goals else "D"
 
 
+def _opt_float(row: dict, key: str) -> float | None:
+    v = (row.get(key) or "").strip()
+    try:
+        return float(v) if v else None
+    except (ValueError, TypeError):
+        return None
+
+
 def parse_row(row: dict, league: str) -> XGMatch | None:
     try:
         return XGMatch(
@@ -52,6 +64,10 @@ def parse_row(row: dict, league: str) -> XGMatch | None:
             away_goals=int(row["away_goals"]),
             home_xg=float(row["home_xg"]),
             away_xg=float(row["away_xg"]),
+            home_npxg=_opt_float(row, "home_npxg"),
+            away_npxg=_opt_float(row, "away_npxg"),
+            home_ppda=_opt_float(row, "home_ppda"),
+            away_ppda=_opt_float(row, "away_ppda"),
         )
     except (KeyError, ValueError, TypeError):
         return None

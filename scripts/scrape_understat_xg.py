@@ -37,20 +37,45 @@ _FETCH_JS = """async (u) => {
 }"""
 
 
-def parse_dates(payload: dict) -> list[dict]:
+def _team_history_index(payload: dict) -> dict[tuple[str, str], dict]:
+    """(date, team_title) -> {npxg, npxga, ppda} from the per-team history blocks."""
+    idx: dict[tuple[str, str], dict] = {}
+    for t in payload.get("teams", {}).values():
+        title = t.get("title")
+        for h in t.get("history", []):
+            d = (h.get("date") or "")[:10]
+            ppda = h.get("ppda") or {}
+            att, dfn = ppda.get("att"), ppda.get("def")
+            idx[(d, title)] = {
+                "npxg": h.get("npxG"),
+                "npxga": h.get("npxGA"),
+                "ppda": (att / dfn) if att and dfn else None,  # passes allowed per def action (low=press)
+            }
+    return idx
+
+
+def parse_payload(payload: dict) -> list[dict]:
+    th = _team_history_index(payload)
     rows: list[dict] = []
     for d in payload.get("dates", []):
         if not d.get("isResult"):
             continue
         try:
+            day = (d.get("datetime") or "")[:10]
+            ht, at = d["h"]["title"], d["a"]["title"]
+            h_stats, a_stats = th.get((day, ht), {}), th.get((day, at), {})
             rows.append({
-                "date": (d.get("datetime") or "")[:10],
-                "home_team": d["h"]["title"],
-                "away_team": d["a"]["title"],
+                "date": day,
+                "home_team": ht,
+                "away_team": at,
                 "home_xg": round(float(d["xG"]["h"]), 3),
                 "away_xg": round(float(d["xG"]["a"]), 3),
                 "home_goals": int(d["goals"]["h"]),
                 "away_goals": int(d["goals"]["a"]),
+                "home_npxg": h_stats.get("npxg"),
+                "away_npxg": a_stats.get("npxg"),
+                "home_ppda": h_stats.get("ppda"),
+                "away_ppda": a_stats.get("ppda"),
             })
         except (KeyError, TypeError, ValueError):
             continue
@@ -61,7 +86,7 @@ def fetch_league_season(page, slug: str, season: int) -> list[dict]:
     page.goto(f"https://understat.com/league/{slug}/{season}",
               wait_until="domcontentloaded", timeout=60000)
     text = page.evaluate(_FETCH_JS, f"https://understat.com/getLeagueData/{slug}/{season}")
-    return parse_dates(json.loads(text))
+    return parse_payload(json.loads(text))
 
 
 def main() -> None:

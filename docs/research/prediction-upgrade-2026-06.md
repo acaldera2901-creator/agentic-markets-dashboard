@@ -91,7 +91,11 @@ Understat aveva cambiato struttura (niente più `datesData`; ora endpoint XHR `/
 | **+ xG form** | **0.58236** | **60%** |
 | Market (Pinnacle ref) | 0.575 | 100% |
 
-**Lo xG è la feature più forte (|coef| xg_off 0.182, la più alta di tutte) e chiude il 60% del gap col mercato.** Confermato col dato reale: il gap era informazione = xG. Prossimi: join xG↔fd.co.uk (name-map) per il serving cliente, + formazioni/infortuni per chiudere il restante 40%.
+**Lo xG è la feature più forte (|coef| xg_off 0.182, la più alta di tutte) e chiude il 60% del gap col mercato.** Confermato col dato reale: il gap era informazione = xG.
+
+**Compensare prima del contratto API-Football (2026-06-03f):** aggiunti npxG + pressing (ppda) dall'endpoint Understat. Risultato: 0.58236 → 0.58233, **nessun guadagno** — npxG è collineare con xG, ppda |coef| 0.024 trascurabile. **Lo xG è il soffitto di Understat (60% del gap).** Il restante 40% = formazioni/infortuni/team-news (API-Football) — nessun sostituto gratuito lo recupera. In attesa del contratto.
+
+Prossimi: join xG↔fd.co.uk (name-map) + productionization nel serving cliente (Python→unified_predictions, gated da conferma Andrea = deploy); formazioni/infortuni dopo il contratto.
 
 ### ❌ MANCANTI — da ingestire (in ordine di impatto atteso)
 1. **xG storico** (Understat/FBref scraping) — il pezzo più grosso del gap residuo.
