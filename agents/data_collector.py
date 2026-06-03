@@ -14,12 +14,80 @@ from core.odds_api_client import get_odds, normalize_name
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
 from core.world_cup_context import build_world_cup_context
 from core.world_cup_registry import api_football_season_for, build_cycle_detail, is_world_cup_code
+from core.world_cup_venue_context import enrich_venue_context
+from core.world_cup_history import canonical_team_name, load_national_history, WC2026_TEAMS
+from core.world_cup_team_model import build_profile
 from config.settings import settings
 
 
 def _ascii_lower(s: str) -> str:
     """Strip diacritics and lowercase — handles München↔Munich type mismatches."""
     return unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii').lower().strip()
+
+
+def _parse_kickoff(value) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def national_model_ready() -> bool:
+    """True when the national-team history covers the WC field at signal quality.
+
+    Cheap and cached (``load_national_history`` is lru_cached): a profile clears
+    the gate when ``data_quality >= 0.75`` (>=15 recent matches). The model agent
+    consumes the same history; this only reflects readiness in the heartbeat.
+    """
+    try:
+        matches = load_national_history()
+    except Exception:
+        return False
+    if not matches:
+        return False
+    covered = 0
+    for team in WC2026_TEAMS:
+        profile = build_profile(matches, team)
+        if profile and profile.data_quality >= 0.75:
+            covered += 1
+    return covered >= int(len(WC2026_TEAMS) * 0.9)
+
+
+def build_team_prev_kickoff_registry(fixtures: list[dict]) -> dict[str, dict]:
+    """Per-team previous-kickoff map from the real fixture feed.
+
+    Walks fixtures in kickoff order; for each fixture records the previous
+    kickoff already seen for each of its two teams (canonical-keyed, so a team's
+    earlier matches are found regardless of API spelling). Returns
+    ``{match_id: {team_a_prev_kickoff, team_b_prev_kickoff}}``. First match of a
+    team -> ``None`` (rest_days undefined by design; travel/timezone still resolve).
+    """
+    parsed: list[tuple[str, str, str, datetime | None]] = []
+    for fx in fixtures:
+        try:
+            mid = str(fx["fixture"]["id"])
+            home = fx["teams"]["home"]["name"]
+            away = fx["teams"]["away"]["name"]
+        except (KeyError, TypeError):
+            continue
+        ko = _parse_kickoff(fx.get("fixture", {}).get("date"))
+        parsed.append((mid, home, away, ko))
+
+    parsed.sort(key=lambda r: (r[3] is None, r[3] or datetime.max.replace(tzinfo=timezone.utc)))
+
+    last_seen: dict[str, datetime] = {}
+    registry: dict[str, dict] = {}
+    for mid, home, away, ko in parsed:
+        ckey_a = canonical_team_name(home)
+        ckey_b = canonical_team_name(away)
+        registry[mid] = {
+            "team_a_prev_kickoff": last_seen.get(ckey_a),
+            "team_b_prev_kickoff": last_seen.get(ckey_b),
+        }
+        if ko is not None:
+            last_seen[ckey_a] = ko
+            last_seen[ckey_b] = ko
+    return registry
 
 
 def _name_sim(a: str, b: str) -> float:
@@ -85,9 +153,15 @@ class DataCollectorAgent(BaseAgent):
         published_this_cycle = 0
         league_counts: dict[str, dict[str, int]] = {}
         source_errors: list[str] = []
+        wc_venue_context_ready = False
         for league_code, league_id in LEAGUE_IDS.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
+                prev_kickoff_registry: dict[str, dict] = (
+                    build_team_prev_kickoff_registry(fixtures)
+                    if is_world_cup_code(league_code)
+                    else {}
+                )
                 league_counts[league_code] = {
                     "fixtures": len(fixtures),
                     "odds_markets": 0,
@@ -122,11 +196,17 @@ class DataCollectorAgent(BaseAgent):
                 published = 0
                 matched_odds = 0
                 for fixture in fixtures:
-                    event = self._build_event(fixture, odds_map, league_code)
+                    venue_prev = prev_kickoff_registry.get(
+                        str(fixture.get("fixture", {}).get("id"))
+                    )
+                    event = self._build_event(fixture, odds_map, league_code, venue_prev)
                     if event:
                         self._upcoming_kickoffs.append(event["kickoff"])
                         if event.get("odds"):
                             matched_odds += 1
+                        wc_ctx = event.get("world_cup_context")
+                        if wc_ctx and wc_ctx.get("data_completeness_score", 0) >= 0.78:
+                            wc_venue_context_ready = True
                         await publish("market:data", {"payload": json.dumps(event)})
                         published += 1
                 league_counts[league_code]["matched_odds"] = matched_odds
@@ -162,9 +242,11 @@ class DataCollectorAgent(BaseAgent):
             build_cycle_detail(
                 league_counts=league_counts,
                 source_errors=source_errors,
-                # These stay false until dedicated World Cup model/context/settlement are implemented.
-                national_model_ready=False,
-                venue_context_ready=False,
+                # national_model + venue_context are now wired (paper tier). Settlement
+                # stays false -> registry readiness remains monitor_only for signal,
+                # but the WC data-quality tier reaches paper_only in ModelAgent.
+                national_model_ready=national_model_ready(),
+                venue_context_ready=wc_venue_context_ready,
                 settlement_ready=False,
             )
         )
@@ -178,7 +260,13 @@ class DataCollectorAgent(BaseAgent):
         except Exception as hub_exc:
             self.logger.warning("DataHub enrichment failed (non-blocking): %s", hub_exc)
 
-    def _build_event(self, fixture: dict, odds_map: dict, league: str) -> dict | None:
+    def _build_event(
+        self,
+        fixture: dict,
+        odds_map: dict,
+        league: str,
+        venue_prev: dict | None = None,
+    ) -> dict | None:
         try:
             teams = fixture["teams"]
             home = teams["home"]["name"]
@@ -212,7 +300,7 @@ class DataCollectorAgent(BaseAgent):
                 "kickoff": kickoff,
                 "odds": odds_data or {},
                 "world_cup_context": (
-                    build_world_cup_context(fixture=fixture, team_a=home, team_b=away)
+                    self._build_wc_context(fixture, home, away, kickoff, venue_prev)
                     if is_world_cup_code(league)
                     else None
                 ),
@@ -220,3 +308,20 @@ class DataCollectorAgent(BaseAgent):
             }
         except (KeyError, TypeError):
             return None
+
+    def _build_wc_context(
+        self, fixture: dict, home: str, away: str, kickoff: str, venue_prev: dict | None
+    ) -> dict:
+        prev = venue_prev or {}
+        venue_fields = enrich_venue_context(
+            fixture,
+            team_a=home,
+            team_b=away,
+            host_city=fixture.get("fixture", {}).get("venue", {}).get("city"),
+            team_a_prev_kickoff=prev.get("team_a_prev_kickoff"),
+            team_b_prev_kickoff=prev.get("team_b_prev_kickoff"),
+            kickoff=_parse_kickoff(kickoff),
+        )
+        return build_world_cup_context(
+            fixture=fixture, team_a=home, team_b=away, venue_fields=venue_fields
+        )

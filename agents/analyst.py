@@ -33,6 +33,11 @@ class AnalystAgent(BaseAgent):
 
     async def _process(self, data: dict) -> None:
         try:
+            # World Cup rows are EXPERIMENT_MODE diagnostics (data-quality tier),
+            # not 1X2 value-bet signals — they carry no p_home/p_draw/p_away and
+            # must never enter the bet/edge pipeline. Skip them silently.
+            if "p_home" not in data or "world_cup_publication_tier" in data:
+                return
             p_home = float(data["p_home"])
             p_draw = float(data["p_draw"])
             p_away = float(data["p_away"])
