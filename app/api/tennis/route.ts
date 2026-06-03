@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
-import { requireAccess } from "@/lib/auth";
+import { resolveAccessState } from "@/lib/auth";
+import { projectPrediction } from "@/lib/access-projection";
+import { pickOfDayId } from "@/lib/pick-of-day";
+import { withAffiliate } from "@/lib/affiliate";
 
 export const dynamic = "force-dynamic";
 
@@ -140,14 +143,26 @@ function normalizePrediction(p: TennisPredictionInput) {
 }
 
 export async function GET(req: Request) {
-  const { deny } = await requireAccess(req);
-  if (deny) return deny;
+  const { state } = await resolveAccessState(req); // never denies (read)
   const now = new Date().toISOString();
 
   const redisData = await getFromRedis();
 
   if (redisData && Array.isArray(redisData.predictions) && redisData.predictions.length > 0) {
     const matches: TennisPrediction[] = redisData.predictions.map(normalizePrediction);
+    const projInput = matches.map((m) => ({
+      id: m.id, sport: "tennis", competition: m.tournament, league: m.tournament,
+      event_name: `${m.player1} vs ${m.player2}`, home_team: m.player1, away_team: m.player2,
+      starts_at: m.scheduled, status: "open",
+      pick: m.best_selection ?? (m.p1 >= m.p2 ? m.player1 : m.player2),
+      p_home: m.p1, p_away: m.p2, confidence_score: Math.round(Math.max(m.p1, m.p2) * 100),
+      market: "ML", signal_type: "paper", model_version: m.model,
+    }));
+    const potd = pickOfDayId(projInput);
+    const projected = projInput.map((r) => {
+      const p = projectPrediction(r, state, r.id === potd);
+      return p.locked ? p : withAffiliate(p);
+    });
     const summary = {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
@@ -156,7 +171,7 @@ export async function GET(req: Request) {
       source: "live",
     };
     return NextResponse.json({
-      matches,
+      matches: projected,
       summary,
       status: "paper",
       computed_at: redisData.computed_at || now,
@@ -167,6 +182,19 @@ export async function GET(req: Request) {
   const dbData = await getFromDb();
   if (dbData && Array.isArray(dbData.predictions) && dbData.predictions.length > 0) {
     const matches: TennisPrediction[] = dbData.predictions.map(normalizePrediction);
+    const projInput = matches.map((m) => ({
+      id: m.id, sport: "tennis", competition: m.tournament, league: m.tournament,
+      event_name: `${m.player1} vs ${m.player2}`, home_team: m.player1, away_team: m.player2,
+      starts_at: m.scheduled, status: "open",
+      pick: m.best_selection ?? (m.p1 >= m.p2 ? m.player1 : m.player2),
+      p_home: m.p1, p_away: m.p2, confidence_score: Math.round(Math.max(m.p1, m.p2) * 100),
+      market: "ML", signal_type: "paper", model_version: m.model,
+    }));
+    const potd = pickOfDayId(projInput);
+    const projected = projInput.map((r) => {
+      const p = projectPrediction(r, state, r.id === potd);
+      return p.locked ? p : withAffiliate(p);
+    });
     const summary = {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
@@ -175,7 +203,7 @@ export async function GET(req: Request) {
       source: "database",
     };
     return NextResponse.json({
-      matches,
+      matches: projected,
       summary,
       status: "signal",
       computed_at: dbData.computed_at || now,
