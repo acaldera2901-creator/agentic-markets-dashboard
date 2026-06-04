@@ -22,16 +22,26 @@ function isAuthorized(req: NextRequest): boolean {
 }
 
 async function writeAdminEvent(eventType: string, plan: Plan | null, meta: Record<string, unknown>) {
-  await dbQuery(
-    `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
-     VALUES ($1, 'admin', NULL, NULL, $2, NULL, 0, $3)`,
-    [eventType, plan, JSON.stringify(meta)]
-  );
+  // Audit logging must never fail the request it is recording.
+  try {
+    await dbQuery(
+      `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+       VALUES ($1, 'admin', NULL, NULL, $2, NULL, 0, $3)`,
+      [eventType, plan, JSON.stringify(meta)]
+    );
+  } catch {
+    /* swallow — audit event is best-effort */
+  }
 }
 
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  // This GET mutates session state (sets the session cookie). Block cross-site
+  // triggers (img/form/prefetch CSRF) while allowing the admin's same-origin nav.
+  if (req.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
   }
 
   const profileId = req.nextUrl.searchParams.get("id")?.trim() ?? "";

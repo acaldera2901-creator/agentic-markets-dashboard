@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
-import { ADMIN_IDENTIFIER, defaultPlanForIdentifier, normalizeIdentifier } from "@/lib/admin-profile-policy";
+import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -90,23 +90,21 @@ export async function POST(req: Request) {
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
   const language = typeof body.language === "string" ? body.language.slice(0, 16) : null;
   const timezone = typeof body.timezone === "string" ? body.timezone.slice(0, 64) : null;
-  const defaultPlan = defaultPlanForIdentifier(identifier);
 
-  // Upsert: new profile starts on 'free'; never downgrade or reset an existing plan here.
+  // Upsert: new profile ALWAYS starts on 'free'; never escalate, downgrade, or reset
+  // an existing plan here. Admin/elevated plans are granted ONLY via the secret-gated
+  // /api/founder/grant or the admin console — never inferred from a (claimable,
+  // passwordless) email identifier, which would let anyone self-grant admin_full.
   // COALESCE keeps existing name/language/timezone when the new value is null.
   await dbQuery(
     `INSERT INTO profiles (identifier, name, language, timezone, plan)
-       VALUES ($1, $2, $3, $4, $5)
+       VALUES ($1, $2, $3, $4, 'free')
      ON CONFLICT (identifier) DO UPDATE
        SET name = COALESCE(EXCLUDED.name, profiles.name),
            language = COALESCE(EXCLUDED.language, profiles.language),
            timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
-           plan = CASE
-             WHEN profiles.identifier = $6 THEN 'admin_full'
-             ELSE profiles.plan
-           END,
            updated_at = NOW()`,
-    [identifier, name, language, timezone, defaultPlan, ADMIN_IDENTIFIER]
+    [identifier, name, language, timezone]
   );
 
   const profile = await loadProfile(identifier);

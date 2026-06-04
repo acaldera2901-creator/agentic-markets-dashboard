@@ -123,13 +123,13 @@ async function getFromRedis(): Promise<RedisTennisPayload | null> {
 async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; computed_at?: string } | null> {
   const rows = await dbQuery<DbTennisPrediction>(`
     SELECT * FROM (
-      SELECT DISTINCT ON (split_part(tp.match_id, ':', 3))
+      SELECT DISTINCT ON (COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id))
              tp.match_id, tp.tournament, tp.surface, tp.player1, tp.player2, tp.scheduled_at,
              tp.p1, tp.p2, tp.odds_p1, tp.odds_p2, tp.edge, tp.best_selection, tp.model_version, tp.computed_at
       FROM tennis_predictions tp
       WHERE tp.scheduled_at > NOW() - INTERVAL '2 hours'
         AND tp.winner IS NULL
-      ORDER BY split_part(tp.match_id, ':', 3), tp.computed_at DESC
+      ORDER BY COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id), tp.computed_at DESC
     ) d
     ORDER BY d.scheduled_at ASC
     LIMIT 80
