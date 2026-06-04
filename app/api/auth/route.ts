@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
+import { ADMIN_IDENTIFIER, defaultPlanForIdentifier, normalizeIdentifier } from "@/lib/admin-profile-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -13,16 +14,9 @@ export const dynamic = "force-dynamic";
 
 type ProfileRow = { identifier: string; plan: Plan; name: string | null };
 
-function normalizeIdentifier(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const v = raw.trim().toLowerCase();
-  if (!v || v.length > 320) return null;
-  return v;
-}
-
 async function loadProfile(identifier: string): Promise<ProfileRow | null> {
   const rows = await dbQuery<ProfileRow>(
-    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 LIMIT 1",
+    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
     [identifier]
   );
   return rows[0] ?? null;
@@ -72,7 +66,8 @@ export async function POST(req: Request) {
              requested_plan = $2,
              tx_hash = $3,
              updated_at = NOW()
-       WHERE identifier = $1`,
+       WHERE identifier = $1
+          OR LOWER(TRIM(identifier)) = $1`,
       [ctx.identifier, requested, txHash]
     );
     const updated = await loadProfile(ctx.identifier);
@@ -95,18 +90,23 @@ export async function POST(req: Request) {
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
   const language = typeof body.language === "string" ? body.language.slice(0, 16) : null;
   const timezone = typeof body.timezone === "string" ? body.timezone.slice(0, 64) : null;
+  const defaultPlan = defaultPlanForIdentifier(identifier);
 
   // Upsert: new profile starts on 'free'; never downgrade or reset an existing plan here.
   // COALESCE keeps existing name/language/timezone when the new value is null.
   await dbQuery(
     `INSERT INTO profiles (identifier, name, language, timezone, plan)
-       VALUES ($1, $2, $3, $4, 'free')
+       VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (identifier) DO UPDATE
        SET name = COALESCE(EXCLUDED.name, profiles.name),
            language = COALESCE(EXCLUDED.language, profiles.language),
            timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
+           plan = CASE
+             WHEN profiles.identifier = $6 THEN 'admin_full'
+             ELSE profiles.plan
+           END,
            updated_at = NOW()`,
-    [identifier, name, language, timezone]
+    [identifier, name, language, timezone, defaultPlan, ADMIN_IDENTIFIER]
   );
 
   const profile = await loadProfile(identifier);

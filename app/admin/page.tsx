@@ -17,7 +17,6 @@ interface Metrics {
     wins: number;
     losses: number;
     pending: number;
-    pnl: number;
   };
   clients: {
     total: number;
@@ -43,6 +42,55 @@ interface Metrics {
   partner_clicks: { partner: string; clicks: number }[];
   recent_events: { event_type: string; country: string; language: string; plan: string; created_at: string }[];
   generated_at: string;
+}
+
+type Plan = "free" | "pending_payment" | "base" | "premium" | "admin_full";
+
+interface AdminProfile {
+  id: string;
+  identifier: string;
+  name: string | null;
+  plan: Plan;
+  requested_plan: "base" | "premium" | null;
+  tx_hash: string | null;
+  language: string | null;
+  timezone: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const CLIENT_PROFILE_KEY = "agentic-client-profile";
+const CLIENT_PROFILES_KEY = "agentic-client-profiles";
+
+function seedClientProfile(profile: AdminProfile) {
+  const email = profile.identifier.trim().toLowerCase();
+  const language = profile.language === "en" || profile.language === "it" ? profile.language : "it";
+  const clientProfile = {
+    name: profile.name ?? email.split("@")[0] ?? "Client",
+    email,
+    plan: profile.plan,
+    language,
+    timezone: profile.timezone ?? "Europe/Rome",
+    risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
+    betfair: { status: "not_connected" },
+    notifications: {
+      valueBets: true,
+      dailyReport: true,
+      paymentUpdates: true,
+      securityAlerts: true,
+    },
+    txHash: profile.tx_hash ?? undefined,
+    requestedPlan: profile.requested_plan ?? undefined,
+  };
+
+  window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(clientProfile));
+  const raw = window.localStorage.getItem(CLIENT_PROFILES_KEY);
+  const profiles = raw ? JSON.parse(raw) as Array<{ email?: string }> : [];
+  const nextProfiles = [
+    clientProfile,
+    ...profiles.filter((item) => item.email?.toLowerCase() !== email),
+  ];
+  window.localStorage.setItem(CLIENT_PROFILES_KEY, JSON.stringify(nextProfiles));
 }
 
 interface Notification {
@@ -94,10 +142,16 @@ function Badge({ type }: { type: string }) {
 export default function AdminPage() {
   const router = useRouter();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [profiles, setProfiles] = useState<AdminProfile[]>([]);
+  const [adminIdentifier, setAdminIdentifier] = useState("acaldera2901@gmail.com");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [section, setSection] = useState<"overview" | "events" | "notifications">("overview");
+  const [section, setSection] = useState<"overview" | "profiles" | "events" | "notifications">("overview");
+  const [activationBusy, setActivationBusy] = useState<string | null>(null);
+  const [activationResult, setActivationResult] = useState("");
+  const [profileBusy, setProfileBusy] = useState<string | null>(null);
+  const [profileResult, setProfileResult] = useState("");
 
   // Notification form
   const [nType, setNType] = useState<"telegram" | "in_app" | "email" | "push">("telegram");
@@ -121,6 +175,16 @@ export default function AdminPage() {
       const [m, n] = await Promise.all([mRes.json(), nRes.json()]);
       setMetrics(m);
       setNotifications(n.notifications ?? []);
+      const pRes = await fetch("/api/admin/profiles");
+      if (pRes.status === 401) {
+        router.replace("/admin/login");
+        return;
+      }
+      if (pRes.ok) {
+        const p = await pRes.json() as { profiles?: AdminProfile[]; admin_identifier?: string };
+        setProfiles(p.profiles ?? []);
+        setAdminIdentifier(p.admin_identifier ?? "acaldera2901@gmail.com");
+      }
     } catch {
       setError("Failed to load data.");
     } finally {
@@ -155,6 +219,59 @@ export default function AdminPage() {
       setNResult("Error sending.");
     } finally {
       setNSending(false);
+    }
+  }
+
+  async function approveActivation(identifier: string) {
+    const pending = profiles.find((profile) => profile.identifier === identifier);
+    if (!pending?.requested_plan) {
+      setActivationResult("Profilo non trovato o piano richiesto mancante.");
+      return;
+    }
+    setActivationBusy(identifier);
+    await updateProfilePlan(pending, pending.requested_plan);
+    setActivationResult(`Profilo ${identifier} attivato come ${pending.requested_plan}.`);
+    setActivationBusy(null);
+  }
+
+  async function updateProfilePlan(profile: AdminProfile, plan: Plan) {
+    setProfileBusy(profile.id);
+    setProfileResult("");
+    try {
+      const res = await fetch("/api/admin/profiles", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: profile.id, identifier: profile.identifier, plan }),
+      });
+      const data = await res.json() as { error?: string; profile?: AdminProfile };
+      if (res.status === 401) {
+        router.replace("/admin/login");
+        return;
+      }
+      if (!res.ok) {
+        setProfileResult(data.error ?? "Plan update failed.");
+        return;
+      }
+      setProfileResult(`${profile.identifier} aggiornato a ${data.profile?.plan ?? plan}.`);
+      await fetchData();
+    } catch {
+      setProfileResult("Errore durante aggiornamento piano.");
+    } finally {
+      setProfileBusy(null);
+    }
+  }
+
+  async function switchToProfile(profile: AdminProfile) {
+    setProfileBusy(profile.id);
+    setProfileResult("");
+    try {
+      seedClientProfile(profile);
+      const switchUrl = `/api/admin/profiles/switch?id=${encodeURIComponent(profile.id)}&identifier=${encodeURIComponent(profile.identifier)}`;
+      window.location.assign(switchUrl);
+    } catch {
+      setProfileResult("Errore durante lo switch profilo.");
+    } finally {
+      setProfileBusy(null);
     }
   }
 
@@ -206,7 +323,7 @@ export default function AdminPage() {
 
       {/* Nav */}
       <nav className="border-b border-gray-800 px-6 flex gap-1">
-        {(["overview", "events", "notifications"] as const).map((s) => (
+        {(["overview", "profiles", "events", "notifications"] as const).map((s) => (
           <button
             key={s}
             onClick={() => setSection(s)}
@@ -236,16 +353,11 @@ export default function AdminPage() {
             </div>
 
             {/* Bets stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatBox label="Bets Total" value={m.bets.total} />
               <StatBox label="Won" value={m.bets.wins} sub={`${hitRate}% hit rate`} />
               <StatBox label="Lost" value={m.bets.losses} />
               <StatBox label="Pending" value={m.bets.pending} />
-              <StatBox
-                label="System P&L"
-                value={`${m.bets.pnl >= 0 ? "+" : ""}€${m.bets.pnl.toFixed(2)}`}
-                sub={m.bets.pnl >= 0 ? "profit" : "loss"}
-              />
             </div>
 
             {/* Clienti reali (profiles table) */}
@@ -258,6 +370,16 @@ export default function AdminPage() {
               <StatBox label="Conversion" value={`${m.clients.total > 0 ? Math.round((m.clients.paying / m.clients.total) * 100) : 0}%`} sub="paganti/totali" />
             </div>
 
+            {activationResult && (
+              <div className={`rounded-lg border px-3 py-2 text-sm ${
+                activationResult.includes("Errore") || activationResult.includes("failed") || activationResult.includes("missing")
+                  ? "border-red-800 bg-red-950/40 text-red-300"
+                  : "border-emerald-800 bg-emerald-950/40 text-emerald-300"
+              }`}>
+                {activationResult}
+              </div>
+            )}
+
             {/* Attivazioni in attesa — azionabili */}
             {m.pending_activations.length > 0 && (
               <Card>
@@ -266,10 +388,17 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-2">
                   {m.pending_activations.map((p) => (
-                    <div key={p.identifier} className="flex justify-between items-center text-sm border-b border-gray-800 pb-2">
+                    <div key={p.identifier} className="grid grid-cols-1 gap-2 border-b border-gray-800 pb-3 text-sm md:grid-cols-[1fr_120px_1fr_120px] md:items-center">
                       <span className="text-gray-300">{p.identifier}</span>
-                      <span className="text-gray-400">{p.requested_plan}</span>
-                      <span className="text-gray-500 font-mono text-xs truncate max-w-[180px]" title={p.tx_hash}>{p.tx_hash || "—"}</span>
+                      <span className="text-gray-400 capitalize">{p.requested_plan}</span>
+                      <span className="text-gray-500 font-mono text-xs truncate" title={p.tx_hash}>{p.tx_hash || "—"}</span>
+                      <button
+                        onClick={() => approveActivation(p.identifier)}
+                        disabled={activationBusy === p.identifier}
+                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500"
+                      >
+                        {activationBusy === p.identifier ? "Attivo..." : "Approva"}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -374,6 +503,117 @@ export default function AdminPage() {
               </div>
             </Card>
           </>
+        )}
+
+        {/* ── PROFILES ── */}
+        {section === "profiles" && (
+          <Card>
+            <div className="flex flex-col gap-3 mb-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-gray-400 text-xs uppercase tracking-wider">Profile Control</div>
+                <h2 className="text-xl font-bold text-white mt-1">Utenti, piani e switch sessione</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  Admin canonico: <span className="font-mono text-emerald-300">{adminIdentifier}</span>. Puoi fare upgrade, downgrade e aprire il desk come qualsiasi profilo.
+                </p>
+              </div>
+              <button
+                onClick={fetchData}
+                className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 transition-colors hover:border-emerald-500 hover:text-white"
+              >
+                Refresh profiles
+              </button>
+            </div>
+
+            {profileResult && (
+              <div className={`mb-4 rounded-lg border px-3 py-2 text-sm ${
+                profileResult.includes("Errore") || profileResult.includes("failed") || profileResult.includes("not found")
+                  ? "border-red-800 bg-red-950/40 text-red-300"
+                  : "border-emerald-800 bg-emerald-950/40 text-emerald-300"
+              }`}>
+                {profileResult}
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-800 text-xs text-gray-500">
+                    <th className="text-left pb-2 font-medium">Profile</th>
+                    <th className="text-left pb-2 font-medium">Plan</th>
+                    <th className="text-left pb-2 font-medium">Requested</th>
+                    <th className="text-left pb-2 font-medium">TX</th>
+                    <th className="text-left pb-2 font-medium">Updated</th>
+                    <th className="text-right pb-2 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {profiles.map((profile) => {
+                    const isAdmin = profile.identifier === adminIdentifier;
+                    const busy = profileBusy === profile.id;
+                    return (
+                      <tr key={profile.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td className="py-3">
+                          <div className="font-medium text-gray-200">{profile.name || "Senza nome"}</div>
+                          <div className="font-mono text-xs text-gray-500">{profile.identifier}</div>
+                          {isAdmin && <span className="mt-1 inline-block rounded-full bg-emerald-950 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">ADMIN</span>}
+                        </td>
+                        <td className="py-3">
+                          <select
+                            value={profile.plan}
+                            disabled={busy}
+                            onChange={(event) => updateProfilePlan(profile, event.target.value as Plan)}
+                            className="rounded-lg border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-emerald-500 focus:outline-none disabled:opacity-50"
+                          >
+                            <option value="free">free</option>
+                            <option value="pending_payment">pending_payment</option>
+                            <option value="base">base</option>
+                            <option value="premium">premium</option>
+                            <option value="admin_full">admin_full</option>
+                          </select>
+                        </td>
+                        <td className="py-3 text-gray-400">{profile.requested_plan ?? "—"}</td>
+                        <td className="py-3">
+                          <span className="block max-w-[180px] truncate font-mono text-xs text-gray-500" title={profile.tx_hash ?? ""}>
+                            {profile.tx_hash || "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 text-xs text-gray-500">
+                          {new Date(profile.updated_at).toLocaleString()}
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            {profile.plan === "pending_payment" && profile.requested_plan && (
+                              <button
+                                disabled={busy}
+                                onClick={() => updateProfilePlan(profile, profile.requested_plan as Plan)}
+                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500"
+                              >
+                                Approva
+                              </button>
+                            )}
+                            <button
+                              disabled={busy}
+                              onClick={() => switchToProfile(profile)}
+                              className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-50"
+                            >
+                              {busy ? "..." : "Switch"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {profiles.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-600">
+                        Nessun profilo trovato.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
 
         {/* ── EVENTS ── */}

@@ -4,9 +4,22 @@ from datetime import datetime, timezone
 
 from agents.base import BaseAgent
 from core.redis_client import get_redis
+from core.tennis_names import canonical_player_key, clean_player_name
 from models.elo_surface import EloSurfaceModel
 
 MIN_ODDS = 1.50  # don't bet heavy favourites — compounded variance destroys EV
+
+
+def tennis_fixture_identity(fixture: dict) -> str | None:
+    """Provider-independent identity for duplicate/inverted fixture rows."""
+    p1 = canonical_player_key(fixture.get("player1"))
+    p2 = canonical_player_key(fixture.get("player2"))
+    if not p1 or not p2 or p1 == p2:
+        return None
+    scheduled_day = str(fixture.get("scheduled_at") or "")[:10]
+    tournament = canonical_player_key(fixture.get("tournament"))
+    pair = "|".join(sorted([p1, p2]))
+    return f"{scheduled_day}:{tournament}:{pair}"
 
 
 class FatigueAdjustment:
@@ -57,6 +70,7 @@ class TennisModelAgent(BaseAgent):
                         "hard_matches": row.hard_matches,
                         "matches": row.matches,
                     }
+                    self.elo._index_player(row.player)
             self.logger.info(f"TennisModelAgent: loaded {len(self.elo.ratings)} Elo ratings from DB")
         except Exception as e:
             self.logger.error(f"_load_elo_ratings failed: {e}")
@@ -69,8 +83,13 @@ class TennisModelAgent(BaseAgent):
             return
 
         predictions = []
+        seen_fixtures: set[str] = set()
         for fixture in fixtures:
             try:
+                identity = tennis_fixture_identity(fixture)
+                if not identity or identity in seen_fixtures:
+                    continue
+                seen_fixtures.add(identity)
                 pred = self._score_fixture(fixture)
                 if pred:
                     predictions.append(pred)
@@ -109,8 +128,8 @@ class TennisModelAgent(BaseAgent):
             return []
 
     def _score_fixture(self, fixture: dict) -> dict | None:
-        p1 = fixture.get("player1", "")
-        p2 = fixture.get("player2", "")
+        p1 = clean_player_name(fixture.get("player1", ""))
+        p2 = clean_player_name(fixture.get("player2", ""))
         surface = (fixture.get("surface") or "hard").lower()
         if not p1 or not p2:
             return None

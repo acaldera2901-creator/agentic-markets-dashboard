@@ -31,7 +31,7 @@ export async function getSessionPlan(req: Request): Promise<SessionContext | nul
   const payload = verifySession(token);
   if (!payload) return null;
   const rows = await dbQuery<{ identifier: string; plan: Plan; name: string | null }>(
-    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 LIMIT 1",
+    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
     [payload.identifier]
   );
   if (!rows.length) return null;

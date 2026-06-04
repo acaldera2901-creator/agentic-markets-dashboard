@@ -10,6 +10,7 @@ when surface data is available.
 """
 import math
 import logging
+from core.tennis_names import canonical_player_key
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,29 @@ class EloSurfaceModel:
     def __init__(self):
         # ratings: {player_name: {overall: float, clay: float, grass: float, hard: float}}
         self.ratings: dict[str, dict[str, float]] = {}
+        self._canonical_index: dict[str, str] = {}
         self.K = 32
         self.decay = 0.99  # per-match decay applied to inactive players
 
+    def _index_player(self, player: str) -> None:
+        key = canonical_player_key(player)
+        if key:
+            self._canonical_index[key] = player
+
+    def _resolve_player(self, player: str) -> str:
+        if player in self.ratings:
+            return player
+        key = canonical_player_key(player)
+        if key in self._canonical_index:
+            return self._canonical_index[key]
+        for existing in self.ratings:
+            if canonical_player_key(existing) == key:
+                self._canonical_index[key] = existing
+                return existing
+        return player
+
     def _get(self, player: str) -> dict[str, float]:
+        player = self._resolve_player(player)
         if player not in self.ratings:
             self.ratings[player] = {
                 "overall": DEFAULT_RATING,
@@ -35,6 +55,7 @@ class EloSurfaceModel:
                 "hard": DEFAULT_RATING,
                 "matches": 0,
             }
+            self._index_player(player)
         return self.ratings[player]
 
     def expected_score(self, r1: float, r2: float) -> float:
@@ -115,6 +136,7 @@ class EloSurfaceModel:
                 "clay_matches": row.clay_matches, "grass_matches": row.grass_matches,
                 "hard_matches": row.hard_matches, "matches": row.matches,
             }
+            self._index_player(row.player)
         logger.info(f"EloSurfaceModel: loaded {len(rows)} player ratings from DB")
 
     async def save_to_db_async(self, session) -> None:

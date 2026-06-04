@@ -7,24 +7,20 @@ Fallback used when paid tennis APIs are unavailable.
 from __future__ import annotations
 import logging
 import re
-from datetime import datetime, timezone
 from typing import Any
 
 import httpx
+from core.tennis_names import clean_player_name, canonical_player_key
 
 logger = logging.getLogger("espn_tennis_client")
 
 _URL = "https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=tennis"
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)"}
-_SEEDING = re.compile(r"\(\d+\)\s*")
-_NATION = re.compile(r"\([A-Z]{2,3}\)")
 _DOUBLES_SEP = re.compile(r"\s*&\s*")
-
-
-def _clean_name(raw: str) -> str:
-    name = _SEEDING.sub("", raw)
-    name = _NATION.sub("", name)
-    return name.strip()
+_NOTE_SPLIT = re.compile(
+    r"^(?P<p1>.+?)\s+(?P<verb>bt|def\.?|defeated|leads)\s+(?P<p2>.+?)(?:\s+\d|$)",
+    re.IGNORECASE,
+)
 
 
 def _parse_notes(note_text: str, comp_type: str) -> dict | None:
@@ -33,33 +29,14 @@ def _parse_notes(note_text: str, comp_type: str) -> dict | None:
     if "Doubles" in comp_type:
         return None
 
-    text = note_text
-    status = "completed"
-    sep = None
-
-    if " bt " in text:
-        sep = " bt "
-        status = "completed"
-    elif " leads " in text:
-        sep = " leads "
-        status = "live"
-    else:
+    text = " ".join(note_text.split())
+    match = _NOTE_SPLIT.match(text)
+    if not match:
         return None
 
-    parts = text.split(sep, 1)
-    if len(parts) != 2:
-        return None
-
-    p1_raw = parts[0].strip()
-    # Score starts with digits/whitespace
-    p2_and_score = parts[1].strip()
-    p2_raw = re.split(r"\s+\d[-\d()\s]*$", p2_and_score)[0].strip()
-    # Fallback: split on first digit block
-    if not p2_raw:
-        p2_raw = re.split(r"\s+\d", p2_and_score)[0].strip()
-
-    p1 = _clean_name(p1_raw)
-    p2 = _clean_name(p2_raw)
+    status = "live" if match.group("verb").lower() == "leads" else "completed"
+    p1 = clean_player_name(match.group("p1"))
+    p2 = clean_player_name(match.group("p2"))
     if not p1 or not p2:
         return None
 
@@ -108,7 +85,8 @@ async def get_fixtures() -> list[dict]:
 
             match_date = str(ev.get("date", ""))[:10]
             event_id = ev.get("competitionId", ev.get("id", ""))
-            match_id = f"tennis:espn:{event_id}:{parsed['player1'].replace(' ','-')}"
+            match_key = f"{canonical_player_key(parsed['player1'])}:{canonical_player_key(parsed['player2'])}".replace(" ", "-")
+            match_id = f"tennis:espn:{event_id}:{match_key}"
             tournament = ev.get("name", ev.get("shortName", "Unknown"))
             round_num = ev.get("round", 0)
             round_name = f"Round {round_num}" if round_num else ""

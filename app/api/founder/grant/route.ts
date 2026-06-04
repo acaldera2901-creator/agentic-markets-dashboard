@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
+import { ADMIN_IDENTIFIER, ADMIN_PROFILE_PLAN } from "@/lib/admin-profile-policy";
 
 export const dynamic = "force-dynamic";
 
 // Founder/team access: validates FOUNDER_ACCESS_KEY, then establishes a server-side
 // admin_full session (upsert profile + signed cookie) so the server gate grants full
 // data access. This endpoint stays public (it IS the entry point).
-const FOUNDER_IDENTIFIER = "admin@agentic-markets.internal";
-
 export async function POST(req: Request) {
   let body: { secret?: string };
   try {
@@ -29,13 +28,13 @@ export async function POST(req: Request) {
   // Upsert the admin profile and force plan = admin_full.
   await dbQuery(
     `INSERT INTO profiles (identifier, name, plan)
-       VALUES ($1, 'Andrea', 'admin_full')
+       VALUES ($1, 'Andrea', $2)
      ON CONFLICT (identifier) DO UPDATE
-       SET plan = 'admin_full', updated_at = NOW()`,
-    [FOUNDER_IDENTIFIER]
+       SET plan = $2, updated_at = NOW()`,
+    [ADMIN_IDENTIFIER, ADMIN_PROFILE_PLAN]
   );
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, signSession(FOUNDER_IDENTIFIER), SESSION_COOKIE_OPTIONS);
+  res.cookies.set(SESSION_COOKIE, signSession(ADMIN_IDENTIFIER), SESSION_COOKIE_OPTIONS);
   return res;
 }
