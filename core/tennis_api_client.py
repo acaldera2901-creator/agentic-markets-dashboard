@@ -4,12 +4,12 @@ Uses RAPIDAPI_KEY from settings. Free tier: 100 requests/day.
 """
 from __future__ import annotations
 import logging
-import re
 from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 from config.settings import settings
+from core.tennis_names import canonical_player_key, clean_player_name
 
 logger = logging.getLogger("tennis_api_client")
 
@@ -25,7 +25,7 @@ _SURFACE_MAP = {
 
 
 def normalize_player_name(name: str) -> str:
-    return re.sub(r"\s+", " ", name.strip()).lower()
+    return canonical_player_key(name)
 
 
 class TennisAPIClient:
@@ -123,7 +123,9 @@ class TennisAPIClient:
             players = raw.get("players", {})
             p1 = players.get("home", {})
             p2 = players.get("away", {})
-            if not p1.get("name") or not p2.get("name"):
+            p1_name = clean_player_name(p1.get("name"))
+            p2_name = clean_player_name(p2.get("name"))
+            if not p1_name or not p2_name:
                 return None
             tournament = raw.get("tournament", {})
             surface_raw = tournament.get("surface", "Hard")
@@ -131,8 +133,8 @@ class TennisAPIClient:
             match_id = f"tennis:rapidapi:{raw.get('id', '')}"
             return {
                 "match_id": match_id,
-                "player1": p1["name"],
-                "player2": p2["name"],
+                "player1": p1_name,
+                "player2": p2_name,
                 "tournament": tournament.get("name", ""),
                 "surface": surface,
                 "round": (raw.get("round") or {}).get("name", ""),

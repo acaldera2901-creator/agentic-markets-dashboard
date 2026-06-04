@@ -55,12 +55,11 @@ export async function GET(req: NextRequest) {
     dbQuery<{ event_type: string; country: string; language: string; plan: string; created_at: string }>(
       "SELECT event_type, country, language, plan, created_at FROM events ORDER BY created_at DESC LIMIT 50"
     ),
-    dbQuery<{ total: string; wins: string; losses: string; pending: string; total_pnl: string }>(
+    dbQuery<{ total: string; wins: string; losses: string; pending: string }>(
       `SELECT COUNT(*) as total,
         COUNT(*) FILTER (WHERE status='won') as wins,
         COUNT(*) FILTER (WHERE status='lost') as losses,
-        COUNT(*) FILTER (WHERE status='pending') as pending,
-        COALESCE(SUM(CASE WHEN status='won' THEN stake*(odds-1) WHEN status='lost' THEN -stake ELSE 0 END), 0) as total_pnl
+        COUNT(*) FILTER (WHERE status='pending') as pending
        FROM bets`
     ),
     dbQuery<{ n: string }>("SELECT COUNT(*) as n FROM leaderboard"),
@@ -97,7 +96,6 @@ export async function GET(req: NextRequest) {
       wins: Number(betsStats[0]?.wins ?? 0),
       losses: Number(betsStats[0]?.losses ?? 0),
       pending: Number(betsStats[0]?.pending ?? 0),
-      pnl: Number(betsStats[0]?.total_pnl ?? 0),
     },
     clients: {
       total: Number(clientStats[0]?.total ?? 0),

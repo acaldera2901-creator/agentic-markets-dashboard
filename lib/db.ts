@@ -5,7 +5,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let _client: SupabaseClient | null = null;
 
-function getClient(): SupabaseClient | null {
+export function getSupabaseAdminClient(): SupabaseClient | null {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
   if (!_client) {
     _client = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -19,7 +19,7 @@ export async function dbQuery<T = Record<string, unknown>>(
   sql: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const db = getClient();
+  const db = getSupabaseAdminClient();
   if (!db) return [];
   try {
     const { data, error } = await db.rpc("exec_sql", { query: interpolate(sql, params) });
