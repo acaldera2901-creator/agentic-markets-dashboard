@@ -78,7 +78,7 @@ const BASE_TRANSLATIONS = {
     plans_base_f4: "Tennis Live V4 e Football Live V4 research",
     plans_base_f5: "Storico, track record e paper monitoring",
     plans_base_f6: "Execution automatica reale",
-    plans_base_f7: "Promessa di ROI garantito",
+    plans_base_f7: "Nessuna promessa di profitto garantito",
     plans_premium_desc: "Per il cliente che vuole delegare agli agenti: analisi, decisione, stake e piazzamento live.",
     plans_premium_core: "Lo faccio per te", plans_premium_sub: "Execution layer con audit completo",
     plans_premium_f1: "Tutto il piano Base incluso",
@@ -147,7 +147,7 @@ const BASE_TRANSLATIONS = {
     betslip_football_note: "Il football può eseguire live solo dopo approval del rischio e conferma del bet ID dall'exchange.",
     betslip_tennis_note: "Il tennis è solo segnale finché il runner mapping non è verificato per l'esecuzione live.",
     // Client summary strip
-    summary_session_pnl: "P&L Sessione", summary_football_edge: "Football Edge",
+    summary_football_edge: "Football Edge",
     summary_tennis_signals: "Tennis Signals", summary_exec_quality: "Qualità Esecuzione",
     summary_pending_bets: "bet in attesa", summary_waiting_markets: "in attesa di mercati",
     summary_signal_active: "signal layer attivo", summary_blocked: "bloccati/rifiutati",
@@ -218,7 +218,7 @@ const BASE_TRANSLATIONS = {
     rg_footer: "18+. Gioca responsabilmente. I contenuti sono a scopo informativo; quote e bonus sono offerte di partner affiliati.",
     // History
     hist_matches: "Partite", hist_bets: "Scommesse", hist_won: "Vinte", hist_lost: "Perse",
-    hist_hit_rate: "Hit Rate", hist_roi: "ROI", hist_return: "Ritorno",
+    hist_hit_rate: "Hit Rate",
     hist_filter_all: "Tutte", hist_filter_with_bet: "Con scommessa", hist_filter_won: "Vinte",
     hist_filter_lost: "Perse", hist_filter_no_bet: "Senza scommessa",
     hist_legend_won: "Scommessa vinta", hist_legend_lost: "Scommessa persa",
@@ -316,7 +316,7 @@ const BASE_TRANSLATIONS = {
     plans_base_f4: "Tennis Live V4 and Football Live V4 research",
     plans_base_f5: "History, track record and paper monitoring",
     plans_base_f6: "Real automated execution",
-    plans_base_f7: "Guaranteed ROI promise",
+    plans_base_f7: "No guaranteed profit promises",
     plans_premium_desc: "For the client who wants to delegate to agents: analysis, decision, stake and live placement.",
     plans_premium_core: "I do it for you", plans_premium_sub: "Execution layer with full audit",
     plans_premium_f1: "Everything in the Base plan",
@@ -385,7 +385,7 @@ const BASE_TRANSLATIONS = {
     betslip_football_note: "Football can execute live only after risk approval and the exchange returns a confirmed bet ID.",
     betslip_tennis_note: "Tennis is signal-only until runner mapping is fully verified for live execution.",
     // Client summary strip
-    summary_session_pnl: "Session P&L", summary_football_edge: "Football Edge",
+    summary_football_edge: "Football Edge",
     summary_tennis_signals: "Tennis Signals", summary_exec_quality: "Execution Quality",
     summary_pending_bets: "pending bets", summary_waiting_markets: "waiting for markets",
     summary_signal_active: "signal layer active", summary_blocked: "blocked/rejected safely",
@@ -456,7 +456,7 @@ const BASE_TRANSLATIONS = {
     rg_footer: "18+. Play responsibly. Content is for informational purposes; odds and bonuses are offers from affiliate partners.",
     // History
     hist_matches: "Matches", hist_bets: "Bets Placed", hist_won: "Won", hist_lost: "Lost",
-    hist_hit_rate: "Hit Rate", hist_roi: "ROI", hist_return: "Return",
+    hist_hit_rate: "Hit Rate",
     hist_filter_all: "All matches", hist_filter_with_bet: "With bet", hist_filter_won: "Won",
     hist_filter_lost: "Lost", hist_filter_no_bet: "No bet placed",
     hist_legend_won: "Bet won", hist_legend_lost: "Bet lost",
@@ -624,10 +624,8 @@ interface Summary {
   won: number;
   lost: number;
   pending: number;
-  pnl: number;
   win_rate: string;
   avg_odds: string;
-  avg_stake: string;
 }
 
 interface Bet {
@@ -635,11 +633,8 @@ interface Bet {
   match_external_id: string;
   selection: string;
   odds: number;
-  stake: number;
   paper: boolean;
   status: string;
-  profit_loss: number | null;
-  betfair_bet_id?: string | null;
   placed_at: string;
   settled_at?: string | null;
   thesis?: string;
@@ -651,13 +646,6 @@ interface Bet {
   enrichment?: PredictionEnrichment | null;
 }
 
-interface LeaguePnl {
-  league: string;
-  total: number;
-  won: number;
-  lost: number;
-  pnl: number;
-}
 
 interface PredictionEnrichment {
   pi_home?: number;
@@ -746,7 +734,6 @@ interface HistoryMatch {
   match_status: string | null;
   bet_selection: string | null;
   bet_status: string | null;
-  bet_stake: number | null;
   bet_odds: number | null;
 }
 
@@ -757,10 +744,7 @@ interface HistoryStats {
   lost: number;
   pending: number;
   accuracy: string;
-  roi: string;
   model_accuracy: string;
-  total_return: string;
-  avg_clv?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -836,7 +820,6 @@ interface TennisSummary {
   total_today: number;
   value_bets: number;
   markets_active: number;
-  pnl: number;
 }
 
 type SlipSelection = {
@@ -860,13 +843,10 @@ interface TennisBet {
   selection: string;
   player_name: string | null;
   odds: number;
-  stake: number;
   paper: boolean;
   status: string;
-  profit_loss: number | null;
   placed_at: string;
   settled_at?: string | null;
-  betfair_bet_id: string | null;
   tournament: string | null;
   surface: string | null;
   player1: string | null;
@@ -874,18 +854,6 @@ interface TennisBet {
   scheduled_at: string | null;
 }
 
-type PortfolioBet = {
-  id: string;
-  sport: "Football" | "Tennis";
-  event: string;
-  selection: string;
-  odds: number;
-  stake: number;
-  status: string;
-  profitLoss: number;
-  placedAt: string;
-  settledAt: string | null;
-};
 
 type ClientProfile = {
   name: string;
@@ -932,17 +900,14 @@ const EMPTY_SUMMARY: Summary = {
   won: 0,
   lost: 0,
   pending: 0,
-  pnl: 0,
   win_rate: "0.0",
   avg_odds: "0.00",
-  avg_stake: "0.00",
 };
 const EMPTY_TENNIS_BET_SUMMARY: TennisBetSummary = {
   total: 0,
   won: 0,
   lost: 0,
   pending: 0,
-  pnl: 0,
 };
 
 interface TennisBetSummary {
@@ -950,7 +915,7 @@ interface TennisBetSummary {
   won: number;
   lost: number;
   pending: number;
-  pnl: number;
+  hit_rate?: string;
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -1611,293 +1576,7 @@ function BetSlip({ selection, onClear }: { selection: SlipSelection | null; onCl
   );
 }
 
-function ClientInsightStrip({
-  summary,
-  predictions,
-  tennisMatches,
-  bets,
-  computedAt,
-  tennisComputedAt,
-}: {
-  summary: Summary | null;
-  predictions: Prediction[];
-  tennisMatches: TennisMatch[];
-  bets: Bet[];
-  computedAt: string | null;
-  tennisComputedAt: string | null;
-}) {
-  const footballValue = predictions.filter(isFootballBestBet).length;
-  const tennisValue = tennisMatches.filter(isTennisBestBet).length;
-  const liveConfirmed = bets.filter((b) => !b.paper && Boolean(b.betfair_bet_id)).length;
-  const rejected = bets.filter((b) => FAILED_STATUSES.includes(b.status)).length;
-  const pnl = summary?.pnl ?? 0;
 
-  const t = useT();
-  return (
-    <section className="client-summary-strip" aria-label="Client desk summary">
-      <div>
-        <span className="metric-label">{t.summary_session_pnl}</span>
-        <strong className={pnl >= 0 ? "text-green-300" : "text-red-300"}>{`${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`}</strong>
-        <em>{summary?.pending ?? 0} {t.summary_pending_bets}</em>
-      </div>
-      <div>
-        <span className="metric-label">{t.summary_football_edge}</span>
-        <strong>{footballValue}</strong>
-        <em>{computedAt ? `updated ${timeAgo(computedAt)}` : t.summary_waiting_markets}</em>
-      </div>
-      <div>
-        <span className="metric-label">{t.summary_tennis_signals}</span>
-        <strong>{tennisValue}</strong>
-        <em>{tennisComputedAt ? `updated ${timeAgo(tennisComputedAt)}` : t.summary_signal_active}</em>
-      </div>
-      <div>
-        <span className="metric-label">{t.summary_exec_quality}</span>
-        <strong>{liveConfirmed}</strong>
-        <em>{rejected ? `${rejected} ${t.summary_blocked}` : t.summary_id_required}</em>
-      </div>
-    </section>
-  );
-}
-
-function money(value: number) {
-  return `€${value.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function betEventName(bet: Bet) {
-  if (bet.home_team && bet.away_team) return `${bet.home_team} vs ${bet.away_team}`;
-  return bet.match_external_id || `Bet #${bet.id}`;
-}
-
-function buildPortfolioBets(bets: Bet[], tennisBets: TennisBet[]): PortfolioBet[] {
-  const football: PortfolioBet[] = bets
-    .filter((bet) => ["pending", "won", "lost"].includes(bet.status))
-    .map((bet) => ({
-      id: `football-${bet.id}`,
-      sport: "Football",
-      event: betEventName(bet),
-      selection: bet.selection,
-      odds: Number(bet.odds || 0),
-      stake: Number(bet.stake || 0),
-      status: bet.status,
-      profitLoss: Number(bet.profit_loss || 0),
-      placedAt: bet.placed_at,
-      settledAt: bet.settled_at || null,
-    }));
-
-  const tennis: PortfolioBet[] = tennisBets
-    .filter((bet) => ["pending", "won", "lost"].includes(bet.status))
-    .map((bet) => ({
-      id: `tennis-${bet.id}`,
-      sport: "Tennis",
-      event: bet.player1 && bet.player2 ? `${bet.player1} vs ${bet.player2}` : bet.match_id,
-      selection: bet.player_name || bet.selection,
-      odds: Number(bet.odds || 0),
-      stake: Number(bet.stake || 0),
-      status: bet.status,
-      profitLoss: Number(bet.profit_loss || 0),
-      placedAt: bet.placed_at,
-      settledAt: bet.settled_at || null,
-    }));
-
-  return [...football, ...tennis].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-}
-
-function buildEquityPoints(portfolioBets: PortfolioBet[], startingBalance: number) {
-  const settled = portfolioBets
-    .filter((bet) => bet.status !== "pending" && bet.profitLoss !== 0)
-    .sort((a, b) => new Date(a.settledAt || a.placedAt).getTime() - new Date(b.settledAt || b.placedAt).getTime());
-
-  const points = [{ label: "Start", balance: startingBalance }];
-  let balance = startingBalance;
-  for (const bet of settled) {
-    balance = Math.round((balance + bet.profitLoss) * 100) / 100;
-    points.push({
-      label: new Date(bet.settledAt || bet.placedAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }),
-      balance,
-    });
-  }
-  return points;
-}
-
-function PortfolioChart({ points }: { points: Array<{ label: string; balance: number }> }) {
-  const width = 720;
-  const height = 220;
-  const padX = 28;
-  const padY = 24;
-  const values = points.map((point) => point.balance);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const spread = Math.max(0.01, max - min);
-  const coords = points.map((point, index) => {
-    const x = points.length === 1 ? padX : padX + (index / (points.length - 1)) * (width - padX * 2);
-    const y = height - padY - ((point.balance - min) / spread) * (height - padY * 2);
-    return { ...point, x, y };
-  });
-  const line = coords.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `${padX},${height - padY} ${line} ${width - padX},${height - padY}`;
-  const positive = points[points.length - 1]?.balance >= points[0]?.balance;
-  const stroke = positive ? "#22C55E" : "#EF4444";
-
-  return (
-    <div className="portfolio-chart">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Portfolio equity chart">
-        <defs>
-          <linearGradient id="portfolioFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
-            <stop offset="100%" stopColor={stroke} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0, 1, 2, 3].map((i) => {
-          const y = padY + i * ((height - padY * 2) / 3);
-          return <line key={i} x1={padX} x2={width - padX} y1={y} y2={y} className="portfolio-grid-line" />;
-        })}
-        <polygon points={area} fill="url(#portfolioFill)" />
-        <polyline points={line} fill="none" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        {coords.map((point, index) => (
-          <circle key={`${point.label}-${index}`} cx={point.x} cy={point.y} r="4" fill={stroke} />
-        ))}
-      </svg>
-      <div className="portfolio-chart-axis">
-        <span>{points[0]?.label ?? "Start"}</span>
-        <strong>{money(points[points.length - 1]?.balance ?? 0)}</strong>
-        <span>{points[points.length - 1]?.label ?? "Now"}</span>
-      </div>
-    </div>
-  );
-}
-
-function PortfolioTab({
-  summary,
-  bets,
-  tennisBetSummary,
-  tennisBets,
-  onOpenDesk,
-  startingBalance = 0,
-}: {
-  summary: Summary | null;
-  bets: Bet[];
-  tennisBetSummary: TennisBetSummary | null;
-  tennisBets: TennisBet[];
-  onOpenDesk: () => void;
-  startingBalance?: number;
-}) {
-  const t = useT();
-  const lang = useLang();
-  const tz = useTz();
-  const portfolioBets = buildPortfolioBets(bets, tennisBets);
-  const footballPnl = Number(summary?.pnl || 0);
-  const tennisPnl = Number(tennisBetSummary?.pnl || 0);
-  const pnl = Math.round((footballPnl + tennisPnl) * 100) / 100;
-  const currentBalance = Math.round((startingBalance + pnl) * 100) / 100;
-  const settled = portfolioBets.filter((bet) => bet.status !== "pending");
-  const won = settled.filter((bet) => bet.status === "won").length;
-  const winRate = settled.length ? (won / settled.length) * 100 : 0;
-  const activeBets = portfolioBets.filter((bet) => bet.status === "pending").length;
-  const totalPnLPct = startingBalance ? (pnl / startingBalance) * 100 : 0;
-  const equityPoints = buildEquityPoints(portfolioBets, startingBalance);
-  const footballCount = portfolioBets.filter((bet) => bet.sport === "Football").length;
-  const tennisCount = portfolioBets.filter((bet) => bet.sport === "Tennis").length;
-  const totalSports = footballCount + tennisCount || 1;
-
-  return (
-    <div className="portfolio-view">
-      <section className="portfolio-hero">
-        <div>
-          <p className="eyebrow">Client dashboard</p>
-          <h3>{t.portfolio_hero_title}</h3>
-          <span>{t.portfolio_hero_desc}</span>
-        </div>
-        <button onClick={onOpenDesk}>{t.portfolio_open_desk}</button>
-      </section>
-
-      <section className="portfolio-balance">
-        <div>
-          <span className="metric-label">Net Asset Value</span>
-          <strong>{money(currentBalance)}</strong>
-          <em className={pnl >= 0 ? "text-green-300" : "text-red-300"}>
-            {pnl >= 0 ? "+" : ""}{money(pnl)} · {totalPnLPct >= 0 ? "+" : ""}{totalPnLPct.toFixed(2)}%
-          </em>
-        </div>
-        <div className="portfolio-stat-strip">
-          <div>
-            <span>Win Rate</span>
-            <strong>{winRate.toFixed(1)}%</strong>
-          </div>
-          <div>
-            <span>{t.portfolio_open_positions}</span>
-            <strong>{activeBets}</strong>
-          </div>
-          <div>
-            <span>{t.portfolio_starting_capital}</span>
-            <strong>{money(startingBalance)}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="portfolio-grid">
-        <div className="portfolio-panel portfolio-panel-wide">
-          <div className="portfolio-panel-head">
-            <div>
-              <p className="eyebrow">Equity line</p>
-              <h4>{t.portfolio_trend}</h4>
-            </div>
-            <span className={pnl >= 0 ? "is-positive" : "is-negative"}>{totalPnLPct >= 0 ? "+" : ""}{totalPnLPct.toFixed(2)}%</span>
-          </div>
-          <PortfolioChart points={equityPoints} />
-        </div>
-
-        <div className="portfolio-panel">
-          <div className="portfolio-panel-head">
-            <div>
-              <p className="eyebrow">Allocation</p>
-              <h4>Sport mix</h4>
-            </div>
-          </div>
-          <div className="allocation-bars">
-            <div>
-              <span>Football</span>
-              <strong>{Math.round((footballCount / totalSports) * 100)}%</strong>
-              <em style={{ width: `${(footballCount / totalSports) * 100}%` }} />
-            </div>
-            <div>
-              <span>Tennis</span>
-              <strong>{Math.round((tennisCount / totalSports) * 100)}%</strong>
-              <em style={{ width: `${(tennisCount / totalSports) * 100}%` }} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="portfolio-panel">
-        <div className="portfolio-panel-head">
-          <div>
-            <p className="eyebrow">{t.portfolio_recent_eyebrow}</p>
-            <h4>{t.portfolio_recent_title}</h4>
-          </div>
-          <span>{portfolioBets.length} {t.portfolio_total}</span>
-        </div>
-        <div className="portfolio-bet-list">
-          {portfolioBets.slice(0, 6).map((bet) => (
-            <div key={bet.id} className="portfolio-bet-row">
-              <div>
-                <span>{bet.sport}</span>
-                <strong>{bet.event}</strong>
-                <em>{bet.selection} · {bet.odds.toFixed(2)} · {fmtKickoff(bet.placedAt, lang, tz)}</em>
-              </div>
-              <div>
-                <StatusBadge status={bet.status} />
-                <strong className={bet.profitLoss >= 0 ? "text-green-300" : "text-red-300"}>
-                  {bet.status === "pending" ? money(bet.stake) : `${bet.profitLoss >= 0 ? "+" : ""}${money(bet.profitLoss)}`}
-                </strong>
-              </div>
-            </div>
-          ))}
-          {!portfolioBets.length && <div className="book-empty">{t.portfolio_empty}</div>}
-        </div>
-      </section>
-    </div>
-  );
-}
 
 function PreAccessLanding({
   onLogin,
@@ -2043,7 +1722,7 @@ function PublicOldBetsPanel({ history, stats, loading }: { history: HistoryMatch
       <div className="public-history-stats">
         <div><span>{lang === "it" ? "Partite" : "Matches"}</span><strong>{stats?.total_matches ?? "..."}</strong></div>
         <div><span>{lang === "it" ? "Bets" : "Bets"}</span><strong>{stats?.bets_placed ?? "..."}</strong></div>
-        <div><span>ROI</span><strong>{stats ? `${stats.roi}%` : "..."}</strong></div>
+        <div><span>{lang === "it" ? "Hit Rate" : "Hit Rate"}</span><strong>{stats ? `${stats.accuracy}%` : "..."}</strong></div>
       </div>
       <div className="public-old-bets">
         {loading ? (
@@ -2589,7 +2268,7 @@ function SettingsTab({
     sportPrefs: "Sport preferiti",
     sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
     leaderboardTitle: "Leaderboard",
-    leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate e ROI.",
+    leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate.",
     leaderboardOn: "Partecipo",
     leaderboardOff: "Non partecipo",
   } : {
@@ -2617,7 +2296,7 @@ function SettingsTab({
     sportPrefs: "Sport preferences",
     sportPrefsDesc: "Receive predictions only for selected sports.",
     leaderboardTitle: "Leaderboard",
-    leaderboardDesc: "Appear in the public leaderboard ranked by hit rate and ROI.",
+    leaderboardDesc: "Appear in the public leaderboard ranked by hit rate.",
     leaderboardOn: "Opted in",
     leaderboardOff: "Opted out",
   };
@@ -2906,177 +2585,6 @@ function ProfilePanel({
   );
 }
 
-function ClientDashboardTab({
-  profile,
-  isPremiumClient,
-  summary,
-  bets,
-  tennisBetSummary,
-  tennisBets,
-  agents,
-  tennisSummary,
-  computedAt,
-  tennisComputedAt,
-  onLogout,
-  onUpgrade,
-  onOpenDesk,
-  onPaymentSubmit,
-  onActivateFree,
-  onUnlock,
-  onSaveProfile,
-}: {
-  profile: ClientProfile | null;
-  isPremiumClient: boolean;
-  summary: Summary;
-  bets: Bet[];
-  tennisBetSummary: TennisBetSummary;
-  tennisBets: TennisBet[];
-  agents: AgentStatus[];
-  tennisSummary: TennisSummary | null;
-  computedAt: string | null;
-  tennisComputedAt: string | null;
-  onLogout: () => void;
-  onUpgrade: () => void;
-  onOpenDesk: () => void;
-  onPaymentSubmit: (plan: PublicPlanKey) => void;
-  onActivateFree: () => void;
-  onUnlock: () => void;
-  onSaveProfile: (profile: ClientProfile) => void;
-}) {
-  const t = useT();
-  const accountPlan = profile?.plan === "admin_full" ? "premium" : profile?.plan ?? "unpaid";
-  const activeAgents = agents.filter((agent) => agent.status === "alive").length;
-
-  return (
-    <div className="client-dashboard-view">
-      {profile ? (
-        <ProfilePanel profile={profile} onLogout={onLogout} onUpgrade={onUpgrade} />
-      ) : (
-        <section className="settings-empty">
-          <p className="eyebrow">Client profile</p>
-          <h3>{t.settings_empty_title}</h3>
-          <button onClick={onUnlock}>{t.settings_empty_btn}</button>
-        </section>
-      )}
-
-      <section className="client-dashboard-overview">
-        <div>
-          <span className="metric-label">Current plan</span>
-          <strong>{accountPlan.replace("_", " ")}</strong>
-          <em>{isPremiumClient ? "Signal Desk Pro enabled" : "Signal access enabled · execution not included"}</em>
-        </div>
-        <div>
-          <span className="metric-label">Service health</span>
-          <strong>{activeAgents || "OK"}</strong>
-          <em>{activeAgents ? "agents reporting heartbeat" : "client data layer online"}</em>
-        </div>
-        <div>
-          <span className="metric-label">Account status</span>
-          <strong>{profile?.betfair?.status === "connected" ? "Connected" : "Setup"}</strong>
-          <em>{profile?.betfair?.status === "connected" ? "exchange account linked" : t.account_pending_detail}</em>
-        </div>
-      </section>
-
-      <section className="client-dashboard-section">
-        <div className="client-dashboard-section-head">
-          <div>
-            <p className="eyebrow">Portfolio</p>
-            <h3>{t.portfolio_hero_title}</h3>
-          </div>
-          {!isPremiumClient && <span>Internal only</span>}
-        </div>
-        {isPremiumClient ? (
-          <PortfolioTab
-            summary={summary}
-            bets={bets}
-            tennisBetSummary={tennisBetSummary}
-            tennisBets={tennisBets}
-            onOpenDesk={onOpenDesk}
-          />
-        ) : (
-          <div className="premium-gate-card in-dashboard">
-            <p className="eyebrow">{t.gate_eyebrow}</p>
-            <h3>{t.gate_portfolio_title}</h3>
-            <p>{t.gate_portfolio_desc}</p>
-            <button onClick={onUpgrade}>{t.gate_upgrade_btn}</button>
-          </div>
-        )}
-      </section>
-
-      <section id="client-plans" className="client-dashboard-section">
-        <div className="client-dashboard-section-head">
-          <div>
-            <p className="eyebrow">{t.plans_eyebrow}</p>
-            <h3>{t.plans_title}</h3>
-          </div>
-          <span>{profile ? accountPlan.replace("_", " ") : "Login"}</span>
-        </div>
-        <PlansTab profile={profile} onOpenDesk={onOpenDesk} onPaymentSubmit={onPaymentSubmit} onActivateFree={onActivateFree} />
-      </section>
-
-      <section className="client-dashboard-section">
-        <div className="client-dashboard-section-head">
-          <div>
-            <p className="eyebrow">Account</p>
-            <h3>{t.page_settings}</h3>
-          </div>
-          <span>{isPremiumClient ? "Pro controls" : "Free controls"}</span>
-        </div>
-        <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSaveProfile} />
-      </section>
-
-      <section className="client-dashboard-section">
-        <div className="client-dashboard-section-head">
-          <div>
-            <p className="eyebrow">{t.partners_eyebrow}</p>
-            <h3>{t.partners_title}</h3>
-          </div>
-          <span>{PARTNERS.length}</span>
-        </div>
-        <PartnersTab />
-      </section>
-
-      <section className="client-dashboard-section">
-        <div className="client-dashboard-section-head">
-          <div>
-            <p className="eyebrow">System</p>
-            <h3>{t.page_agents}</h3>
-          </div>
-          <span>{isPremiumClient ? "Live audit" : "Service health"}</span>
-        </div>
-        {isPremiumClient ? (
-          <ClientStatusTab
-            agents={agents}
-            bets={bets}
-            tennisSummary={tennisSummary}
-            computedAt={computedAt}
-            tennisComputedAt={tennisComputedAt}
-          />
-        ) : (
-          <div className="client-status">
-            <section className="client-status-grid compact">
-              <article className="client-status-card good">
-                <span>Signal desk</span>
-                <strong>Online</strong>
-                <em>Best Bets and Tennis signal layers are available on Signal Desk Pro.</em>
-              </article>
-              <article className="client-status-card warn">
-                <span>Execution</span>
-                <strong>Internal</strong>
-                <em>Automatic execution and exchange audit are not included in the public go-live plan.</em>
-              </article>
-              <article className="client-status-card neutral">
-                <span>Freshness</span>
-                <strong>{computedAt ? timeAgo(computedAt) : "syncing"}</strong>
-                <em>{tennisComputedAt ? `Tennis updated ${timeAgo(tennisComputedAt)}.` : "Waiting for tennis sync."}</em>
-              </article>
-            </section>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
 
 function LockedGate({
   isUnlocked,
@@ -3961,135 +3469,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   );
 }
 
-function TennisTab({
-  matches,
-  summary,
-  loading,
-  computedAt,
-  agents = [],
-  showPnl = false,
-  onBetNow,
-}: {
-  matches: TennisMatch[];
-  summary: TennisSummary | null;
-  loading: boolean;
-  computedAt: string | null;
-  agents?: AgentStatus[];
-  showPnl?: boolean;
-  onBetNow?: () => void;
-}) {
-  const [surfaceFilter, setSurfaceFilter] = useState<string>("ALL");
-
-  const surfaces = ["ALL", ...Array.from(new Set(matches.map((m) => m.surface)))];
-  const filtered = surfaceFilter === "ALL" ? matches : matches.filter((m) => m.surface === surfaceFilter);
-  const valueBets = matches.filter(isTennisBestBet);
-  const pnl = summary?.pnl ?? 0;
-  const t = useT();
-  const lang = useLang();
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className="inline-block px-3 py-0.5 rounded-full border border-amber-400/50 text-amber-300 text-xs font-mono tracking-wider">
-            {t.tennis_badge}
-          </div>
-          {computedAt && (
-            <p className="text-xs text-gray-500 font-mono mt-1">
-              {t.tennis_computed} {timeAgo(computedAt)} · {matches.length} {t.tennis_matches_loaded}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: t.tennis_kpi_today,   value: String(summary?.total_today ?? matches.length), color: "text-white" },
-          { label: t.tennis_kpi_value,   value: String(valueBets.length),  color: "text-green-400" },
-          { label: "P&L Tennis",         value: showPnl ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€` : "—", color: showPnl ? (pnl >= 0 ? "text-green-400" : "text-red-400") : "text-gray-500" },
-          { label: t.tennis_kpi_markets, value: String(summary?.markets_active ?? 0), color: "text-amber-300" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="glass-card p-4 text-center">
-            <div className={`text-xl font-black ${kpi.color}`}>{kpi.value}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{kpi.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Surface filter */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider">{t.tennis_surface_label}</span>
-        {surfaces.map((s) => (
-          <button key={s} onClick={() => setSurfaceFilter(s)}
-            className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-              surfaceFilter === s
-                ? "border-amber-400 text-amber-300 bg-amber-400/10"
-                : "border-white/10 text-gray-400 hover:border-amber-400/40"
-            }`}>
-            {s}
-          </button>
-        ))}
-      </div>
-
-      {/* Match list */}
-      {loading ? (
-        <div className="glass-card p-12 text-center text-gray-400 font-mono">
-          <div className="animate-pulse">{t.tennis_loading}</div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-card p-8 text-center text-gray-400 font-mono">{t.tennis_no_matches}</div>
-      ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((m) => <TennisMatchCard key={m.id} m={m} onBetNow={onBetNow} />)}
-        </div>
-      )}
-
-      {/* Agent status — live from heartbeat DB */}
-      <div className="glass-card p-4">
-        <h3 className="text-xs font-mono text-amber-400/70 uppercase tracking-wider mb-3">
-          {t.tennis_pipeline_title}
-        </h3>
-        <div className="grid md:grid-cols-3 gap-3">
-          {[
-            { key: "TennisDataCollectorAgent", label: "DataCollector",  desc: lang === "it" ? "Mercati tennis · ciclo polling 5min" : "Tennis markets · 5min polling cycle" },
-            { key: "TennisModelAgent",          label: "ModelAgent",     desc: lang === "it" ? "Elo Surface v2 · terra/erba/cemento · 2966 giocatori" : "Elo Surface v2 · clay/grass/hard · 2966 players" },
-            { key: "TennisAnalystAgent",         label: "Analyst",       desc: lang === "it" ? "Value edge · soglia 4% · confronto mercato" : "Value edge · 4% threshold · market comparison" },
-            { key: "TennisRiskManagerAgent",     label: "RiskManager",   desc: lang === "it" ? "Quarter-Kelly sizing · cap 20% · drawdown gate" : "Quarter-Kelly sizing · 20% cap · drawdown gate" },
-            { key: "TennisTraderAgent",          label: "Trader",        desc: lang === "it" ? "Paper bets · Neon DB · alert Telegram" : "Paper bets · Neon DB · Telegram alerts" },
-            { key: "TennisSettlementAgent",      label: "Settlement",    desc: lang === "it" ? "CLOSED → update Elo → loop P&L" : "CLOSED → Elo update → P&L loop" },
-          ].map(({ key, label, desc }) => {
-            const a = agents.find((ag) => ag.name === key);
-            const st = a?.status ?? "offline";
-            const dotCls = st === "alive" ? "bg-green-400 animate-pulse" : st === "stale" ? "bg-yellow-400" : "bg-red-400";
-            const txtCls = st === "alive" ? "text-green-400" : st === "stale" ? "text-yellow-400" : "text-red-400";
-            const borderCls = st === "alive" ? "border-green-400/20" : st === "stale" ? "border-yellow-400/20" : "border-red-400/20";
-            return (
-              <div key={key} className={`glass-card p-3 space-y-1 ${borderCls}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white font-mono">{label}</span>
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${dotCls}`} />
-                    <span className={`text-xs font-mono ${txtCls}`}>{st.toUpperCase()}</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-gray-500 font-mono">{desc}</p>
-                {a?.last_seen
-                  ? <div className="text-[9px] text-gray-600 font-mono">{t.tennis_last_seen}: {timeAgo(a.last_seen)}</div>
-                  : <div className="text-[9px] text-gray-600 font-mono">{t.tennis_no_heartbeat}</div>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <footer className="text-center text-xs text-gray-600 font-mono pb-4">
-        {t.tennis_footer}
-      </footer>
-    </div>
-  );
-}
 
 // ─── Agent Status Tab ─────────────────────────────────────────────────────────
 
@@ -4224,7 +3603,7 @@ function ClientStatusTab({
   const tennisAgents = agents.filter((a) => a.name.startsWith("Tennis"));
   const footballAlive = footballAgents.filter((a) => a.status === "alive").length;
   const tennisAlive = tennisAgents.filter((a) => a.status === "alive").length;
-  const confirmedLive = bets.filter((b) => !b.paper && Boolean(b.betfair_bet_id)).length;
+  const confirmedLive = bets.filter((b) => !b.paper).length;
   const blocked = bets.filter((b) => FAILED_STATUSES.includes(b.status)).length;
 
   const rows = [
@@ -4295,284 +3674,6 @@ function ClientStatusTab({
 
 const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled"];
 
-type UnifiedBet = {
-  id: string;
-  sport: "Football" | "Tennis";
-  event: string;
-  competition: string;
-  market: string;
-  pick: string;
-  odds: number;
-  stake: number;
-  status: string;
-  profitLoss: number | null;
-  placedAt: string;
-  startsAt: string | null;
-  source: "live" | "paper" | "signal";
-  category: "execution" | "signal" | "settled" | "failed";
-  betId: string | null;
-};
-
-function statusCategory(status: string): UnifiedBet["category"] {
-  if (FAILED_STATUSES.includes(status)) return "failed";
-  if (["won", "lost", "settled"].includes(status)) return "settled";
-  if (["pending", "matched", "open"].includes(status)) return "execution";
-  return "signal";
-}
-
-function aggregateUnifiedBets(bets: Bet[], tennisBets: TennisBet[]): UnifiedBet[] {
-  const footballRows: UnifiedBet[] = bets.map((bet) => {
-    const isLive = !bet.paper && Boolean(bet.betfair_bet_id);
-    return {
-      id: `football-${bet.id}`,
-      sport: "Football",
-      event: bet.home_team && bet.away_team
-        ? `${bet.home_team} vs ${bet.away_team}`
-        : `Match #${bet.match_external_id}`,
-      competition: bet.league_name || bet.league || "Football",
-      market: "1X2",
-      pick: bet.selection,
-      odds: Number(bet.odds ?? 0),
-      stake: Number(bet.stake ?? 0),
-      status: bet.status,
-      profitLoss: bet.profit_loss,
-      placedAt: bet.placed_at,
-      startsAt: bet.kickoff ?? null,
-      source: bet.paper ? "paper" : isLive ? "live" : "signal",
-      category: statusCategory(bet.status),
-      betId: bet.betfair_bet_id ?? null,
-    };
-  });
-
-  const tennisRows: UnifiedBet[] = tennisBets.map((bet) => ({
-    id: `tennis-${bet.id}`,
-    sport: "Tennis",
-    event: bet.player1 && bet.player2 ? `${bet.player1} vs ${bet.player2}` : bet.match_id,
-    competition: bet.tournament || bet.surface || "Tennis",
-    market: "Match Winner",
-    pick: bet.player_name ?? bet.selection,
-    odds: Number(bet.odds ?? 0),
-    stake: Number(bet.stake ?? 0),
-    status: bet.status,
-    profitLoss: bet.profit_loss,
-    placedAt: bet.placed_at,
-    startsAt: bet.scheduled_at ?? null,
-    source: bet.paper ? "paper" : bet.betfair_bet_id ? "live" : "signal",
-    category: statusCategory(bet.status),
-    betId: bet.betfair_bet_id ?? null,
-  }));
-
-  return [...footballRows, ...tennisRows].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-}
-
-function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }: {
-  bets: Bet[];
-  summary: Summary;
-  leaguePnl: LeaguePnl[];
-  tennisBets?: TennisBet[];
-  tennisBetSummary?: TennisBetSummary | null;
-}) {
-  const [sportFilter, setSportFilter] = useState<"all" | "Football" | "Tennis">("all");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | UnifiedBet["category"]>("all");
-  const [sourceFilter, setSourceFilter] = useState<"all" | UnifiedBet["source"]>("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const lang = useLang();
-  const tz = useTz();
-  const rows = aggregateUnifiedBets(bets, tennisBets);
-  const query = searchTerm.trim().toLowerCase();
-  const filtered = rows.filter((row) => {
-    if (sportFilter !== "all" && row.sport !== sportFilter) return false;
-    if (categoryFilter !== "all" && row.category !== categoryFilter) return false;
-    if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
-    if (query && !`${row.event} ${row.competition} ${row.pick} ${row.market} ${row.status}`.toLowerCase().includes(query)) return false;
-    return true;
-  });
-  const pnl = summary.pnl + (tennisBetSummary?.pnl ?? 0);
-  const openRows = rows.filter((row) => ["execution", "signal"].includes(row.category)).length;
-  const verifiedRows = rows.filter((row) => row.source === "live" && row.betId).length;
-  const failedRows = rows.filter((row) => row.category === "failed").length;
-  const labels = lang === "it" ? {
-    eyebrow: "Unified Bets",
-    title: "Dashboard scommesse multi-sport",
-    subtitle: "Football, tennis e prossimi sport finiscono nello stesso registro operativo. Nessuna sezione separata, un solo audit.",
-    allSports: "Tutti",
-    category: "Categoria",
-    allCategories: "Tutte",
-    execution: "Execution",
-    signal: "Signal",
-    settled: "Settled",
-    failed: "Failed",
-    source: "Fonte",
-    allSources: "Tutte",
-    live: "Live",
-    paper: "Paper",
-    search: "Cerca evento, lega, pick...",
-    total: "Totale",
-    open: "Aperte",
-    verified: "Verificate",
-    empty: "Nessuna scommessa rispetta questi filtri.",
-    placed: "Inserita",
-  } : {
-    eyebrow: "Unified Bets",
-    title: "Multi-sport bets dashboard",
-    subtitle: "Football, tennis and future sports land in one operating ledger. No split sections, one audit trail.",
-    allSports: "All",
-    category: "Category",
-    allCategories: "All",
-    execution: "Execution",
-    signal: "Signal",
-    settled: "Settled",
-    failed: "Failed",
-    source: "Source",
-    allSources: "All",
-    live: "Live",
-    paper: "Paper",
-    search: "Search event, league, pick...",
-    total: "Total",
-    open: "Open",
-    verified: "Verified",
-    empty: "No bets match these filters.",
-    placed: "Placed",
-  };
-
-  return (
-    <div className="unified-bets-view">
-      <section className="client-callout unified-bets-hero">
-        <div>
-          <p className="eyebrow">{labels.eyebrow}</p>
-          <h3>{labels.title}</h3>
-        </div>
-        <p>{labels.subtitle}</p>
-      </section>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: labels.total, value: String(rows.length), color: "text-white" },
-          { label: labels.open, value: String(openRows), color: "text-cyan-300" },
-          { label: "P&L", value: `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}€`, color: pnl >= 0 ? "text-green-400" : "text-red-400" },
-          { label: labels.verified, value: String(verifiedRows), color: "text-fuchsia-300" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="glass-card p-4 text-center">
-            <div className={`text-xl font-black ${kpi.color}`}>{kpi.value}</div>
-            <div className="text-xs text-gray-400 mt-1">{kpi.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {leaguePnl.length > 0 && (
-        <div className="glass-card p-4">
-          <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">P&L by League</h3>
-          <div className="space-y-2">
-            {leaguePnl.map((l) => (
-              <div key={l.league} className="flex items-center gap-3">
-                <span className="text-xs font-mono w-8 text-gray-400">{LEAGUE_FLAGS[l.league] ?? "⚽"}</span>
-                <span className="text-xs font-mono text-gray-300 w-8">{l.league}</span>
-                <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${Number(l.pnl) >= 0 ? "bg-green-500" : "bg-red-500"}`}
-                    style={{ width: `${Math.min(Math.abs(Number(l.pnl)) / 20, 100)}%` }}
-                  />
-                </div>
-                <span className={`text-xs font-mono w-16 text-right ${Number(l.pnl) >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  {Number(l.pnl) >= 0 ? "+" : ""}{Number(l.pnl).toFixed(2)}€
-                </span>
-                <span className="text-xs text-gray-600 font-mono">{l.won}W/{l.lost}L</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="bets-filter-bar">
-        <div className="segmented-filter" aria-label="Bets sport filter">
-          {[
-            ["all", labels.allSports],
-            ["Football", "Football"],
-            ["Tennis", "Tennis"],
-          ].map(([key, label]) => (
-            <button key={key} className={sportFilter === key ? "is-active" : ""} onClick={() => setSportFilter(key as "all" | "Football" | "Tennis")}>{label}</button>
-          ))}
-        </div>
-        <label>
-          <span>{labels.category}</span>
-          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as "all" | UnifiedBet["category"])}>
-            <option value="all">{labels.allCategories}</option>
-            <option value="execution">{labels.execution}</option>
-            <option value="signal">{labels.signal}</option>
-            <option value="settled">{labels.settled}</option>
-            <option value="failed">{labels.failed}{failedRows ? ` (${failedRows})` : ""}</option>
-          </select>
-        </label>
-        <label>
-          <span>{labels.source}</span>
-          <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as "all" | UnifiedBet["source"])}>
-            <option value="all">{labels.allSources}</option>
-            <option value="live">{labels.live}</option>
-            <option value="paper">{labels.paper}</option>
-            <option value="signal">Signal</option>
-          </select>
-        </label>
-        <input className="sports-search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={labels.search} />
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="glass-card p-8 text-center text-gray-400 font-mono">{labels.empty}</div>
-      ) : (
-        <div className="unified-bet-list">
-          {filtered.map((bet) => {
-            const executionLabel = bet.source === "paper" ? "PAPER" : bet.source === "live" ? "LIVE" : "SIGNAL";
-            const executionClass = bet.source === "paper"
-              ? "text-yellow-400"
-              : bet.source === "live"
-                ? "text-green-400"
-                : "text-cyan-300";
-            return (
-            <div key={bet.id} className={`glass-card p-4 ${
-              bet.status === "won" ? "border-green-400/20" :
-              bet.status === "lost" || bet.category === "failed" ? "border-red-400/20" : ""
-            }`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-white">{bet.event}</span>
-                    <span className="text-xs text-gray-500 font-mono">{bet.sport === "Football" ? "⚽" : "🎾"} {bet.competition}</span>
-                    <span className="text-xs text-gray-500 font-mono">{bet.market}</span>
-                    <span className={`text-xs font-mono ${executionClass}`}>
-                      [{executionLabel}]
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    <span className="text-xs font-mono text-cyan-300 font-bold">{bet.pick}</span>
-                    <span className="text-xs font-mono text-gray-400">@ {bet.odds.toFixed(2)}</span>
-                    <span className="text-xs font-mono text-gray-400">stake: {bet.stake.toFixed(2)}€</span>
-                    {bet.startsAt && (
-                      <span className="text-xs font-mono text-gray-600">{fmtKickoff(bet.startsAt, lang, tz)}</span>
-                    )}
-                  </div>
-                  {bet.betId && <p className="text-[10px] text-green-400/70 mt-1 font-mono">Betfair ID: {bet.betId}</p>}
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <StatusBadge status={bet.status} />
-                  {bet.profitLoss != null ? (
-                    <span className={`text-sm font-bold font-mono ${bet.profitLoss >= 0 ? "text-green-400" : "text-red-400"}`}>
-                      {bet.profitLoss >= 0 ? "+" : ""}{bet.profitLoss.toFixed(2)}€
-                    </span>
-                  ) : bet.category === "failed" ? (
-                    <span className="text-xs text-gray-600 font-mono">—</span>
-                  ) : (
-                    <span className="text-xs text-gray-600 font-mono">pending</span>
-                  )}
-                </div>
-              </div>
-              <div className="text-[10px] text-gray-700 font-mono mt-2">{labels.placed}: {timeAgo(bet.placedAt)}</div>
-            </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Partners Tab ─────────────────────────────────────────────────────────────
 
@@ -4837,7 +3938,6 @@ interface LeaderboardEntry {
   points: number;
   bets_won: number;
   bets_total: number;
-  pnl: number;
   hit_rate: number;
   sport: string;
 }
@@ -4846,7 +3946,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
   const lang = useLang();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [systemWins, setSystemWins] = useState(0);
-  const [systemPnl, setSystemPnl] = useState(0);
+  const [systemHitRate, setSystemHitRate] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -4855,7 +3955,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       .then((d) => {
         setEntries(d.leaderboard ?? []);
         setSystemWins(d.system_wins ?? 0);
-        setSystemPnl(d.system_pnl ?? 0);
+        setSystemHitRate(d.system_hit_rate ?? 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -4873,9 +3973,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     hitRate: "Hit Rate",
     sport: "Sport",
     systemWins: "Bet vinte dal sistema",
-    systemPnl: "P&L sistema",
+    systemHitRate: "Hit rate sistema",
     pointsFormula: "10 pt per vittoria",
-    pnl: "Guadagno",
     yourRank: "La tua posizione",
     notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
     loading: "Caricamento classifica…",
@@ -4893,9 +3992,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     hitRate: "Hit Rate",
     sport: "Sport",
     systemWins: "System wins",
-    systemPnl: "System P&L",
+    systemHitRate: "System hit rate",
     pointsFormula: "10 pts per win",
-    pnl: "Profit",
     yourRank: "Your position",
     notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
     loading: "Loading leaderboard…",
@@ -4936,10 +4034,10 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
         </div>
         <div className="glass-card p-4 text-center">
-          <div className={`text-2xl font-black font-mono ${systemPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {systemPnl >= 0 ? "+" : ""}{systemPnl.toFixed(2)}€
+          <div className="text-2xl font-black font-mono text-cyan-400">
+            {systemHitRate}%
           </div>
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemPnl}</div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemHitRate}</div>
         </div>
       </div>
 
@@ -4950,17 +4048,17 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-2 gap-3">
             <div className="glass-card p-4 space-y-1">
               <div className="text-[10px] font-mono text-yellow-400/70 uppercase tracking-wider">
-                {lang === "it" ? "🏆 Top profitto" : "🏆 Top profit"}
+                {lang === "it" ? "🏆 Top hit rate" : "🏆 Top hit rate"}
               </div>
               {(() => {
-                const top = [...entries].sort((a, b) => b.pnl - a.pnl)[0];
+                const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
                 return top ? (
                   <>
                     <div className="text-sm font-bold text-white truncate">{top.name}</div>
                     <div className="text-lg font-black font-mono text-green-400">
-                      {top.pnl >= 0 ? "+" : ""}{top.pnl.toFixed(2)}€
+                      {top.hit_rate}%
                     </div>
-                    <div className="text-[10px] font-mono text-gray-500">{top.hit_rate}% hit rate</div>
+                    <div className="text-[10px] font-mono text-gray-500">{top.bets_won}W / {top.bets_total}</div>
                   </>
                 ) : null;
               })()}
@@ -4998,9 +4096,6 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                   <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
                   <div className="text-sm font-bold text-white truncate">{e.name}</div>
                   <div className="text-xl font-black font-mono text-white">{e.points} pt</div>
-                  <div className={`text-sm font-bold font-mono ${e.pnl >= 0 ? "text-green-300" : "text-red-300"}`}>
-                    {e.pnl >= 0 ? "+" : ""}{e.pnl.toFixed(2)}€
-                  </div>
                   <div className="text-[10px] font-mono text-white/60">{e.bets_won}W · {e.hit_rate}%</div>
                 </div>
               ))}
@@ -5016,7 +4111,6 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                     <th className="px-4 py-3 text-left">{copy.rank}</th>
                     <th className="px-4 py-3 text-left">{copy.player}</th>
                     <th className="px-4 py-3 text-right">{copy.points}</th>
-                    <th className="px-4 py-3 text-right">{copy.pnl}</th>
                     <th className="px-4 py-3 text-right">{copy.won}/{copy.total}</th>
                     <th className="px-4 py-3 text-right">{copy.hitRate}</th>
                     <th className="px-4 py-3 text-right hidden md:table-cell">{copy.sport}</th>
@@ -5033,9 +4127,6 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                         {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-green-400 border border-green-400/40 px-1 py-0.5 rounded">YOU</span>}
                       </td>
                       <td className="px-4 py-3 text-right text-green-400 font-bold">{e.points}</td>
-                      <td className={`px-4 py-3 text-right font-mono font-bold ${e.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        {e.pnl >= 0 ? "+" : ""}{e.pnl.toFixed(2)}€
-                      </td>
                       <td className="px-4 py-3 text-right text-gray-400">{e.bets_won}/{e.bets_total}</td>
                       <td className="px-4 py-3 text-right text-cyan-400">{e.hit_rate}%</td>
                       <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell capitalize">{e.sport}</td>
@@ -5058,9 +4149,6 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
               <div className="text-sm font-bold text-white">{yourEntry.name}</div>
               <div className="text-xs font-mono text-gray-500">
                 {yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}
-              </div>
-              <div className={`text-sm font-bold font-mono mt-0.5 ${yourEntry.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                {yourEntry.pnl >= 0 ? "+" : ""}{yourEntry.pnl.toFixed(2)}€ {copy.pnl}
               </div>
             </div>
           </div>
@@ -5113,17 +4201,14 @@ function HistoryTab({ history, stats, loading }: {
     <div className="space-y-6">
       {/* Stats strip */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-9 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           {[
             { label: t.hist_matches,  value: String(stats.total_matches), color: "text-white" },
             { label: t.hist_bets,     value: String(stats.bets_placed), color: "text-cyan-300" },
             { label: t.hist_won,      value: String(stats.won), color: "text-green-400" },
             { label: t.hist_lost,     value: String(stats.lost), color: "text-red-400" },
             { label: t.hist_hit_rate, value: `${stats.accuracy}%`, color: "text-yellow-400" },
-            { label: t.hist_roi,      value: `${Number(stats.roi) >= 0 ? "+" : ""}${stats.roi}%`, color: Number(stats.roi) >= 0 ? "text-green-400" : "text-red-400" },
-            { label: lang === "it" ? "CLV avg" : "Avg CLV", value: stats.avg_clv != null ? `${Number(stats.avg_clv) >= 0 ? "+" : ""}${stats.avg_clv}%` : "N/A", color: stats.avg_clv && Number(stats.avg_clv) >= 0 ? "text-cyan-400" : "text-gray-500" },
             { label: lang === "it" ? "Acc. modello" : "Model Acc.", value: `${stats.model_accuracy}%`, color: "text-purple-400" },
-            { label: t.hist_return,   value: `${Number(stats.total_return) >= 0 ? "+" : ""}${stats.total_return}€`, color: Number(stats.total_return) >= 0 ? "text-green-400" : "text-red-400" },
           ].map((kpi) => (
             <div key={kpi.label} className="glass-card p-3 text-center">
               <div className={`text-lg font-black ${kpi.color}`}>{kpi.value}</div>
@@ -5530,7 +4615,6 @@ export default function Dashboard() {
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
-  const [leaguePnl, setLeaguePnl] = useState<LeaguePnl[]>([]);
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [tennisMatches, setTennisMatches] = useState<TennisMatch[]>([]);
@@ -5763,7 +4847,7 @@ export default function Dashboard() {
     // Premium endpoints: only fetch with an unlocked plan; the server gate (401/403)
     // is the real authority, this just avoids needless locked requests and clears stale data.
     if (!profileHasAccess(clientProfile)) {
-      setSummary(null); setBets([]); setLeaguePnl([]);
+      setSummary(null); setBets([]);
       setTennisBets([]); setTennisBetSummary(null);
       setLoading(false);
       return;
@@ -5777,10 +4861,9 @@ export default function Dashboard() {
         const data = await dataResp.json();
         setSummary(data.summary);
         setBets(data.bets ?? []);
-        setLeaguePnl(data.league_pnl ?? []);
         setLastUpdate(new Date().toLocaleTimeString());
       } else if (dataResp.status === 401 || dataResp.status === 403) {
-        setSummary(null); setBets([]); setLeaguePnl([]);
+        setSummary(null); setBets([]);
       }
       if (tennisBetsResp.ok) {
         const tb = await tennisBetsResp.json();
@@ -5892,24 +4975,11 @@ export default function Dashboard() {
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); clearInterval(liveInt); };
   }, [fetchData, fetchPredictions, fetchAgents, fetchTennis, fetchHistory, fetchLive]);
 
-  const pnl = (summary?.pnl ?? 0) + (tennisBetSummary?.pnl ?? 0);
   const valueBets = predictions.filter(isFootballBestBet);
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
-  const isFounderAccount = clientProfile?.plan === "admin_full";
-  const accountSummary = isFounderAccount ? (summary ?? EMPTY_SUMMARY) : EMPTY_SUMMARY;
-  const accountBets = isFounderAccount ? bets : [];
-  const accountLeaguePnl = isFounderAccount ? leaguePnl : [];
-  const accountTennisBets = isFounderAccount ? tennisBets : [];
-  const accountTennisBetSummary = isFounderAccount ? (tennisBetSummary ?? EMPTY_TENNIS_BET_SUMMARY) : EMPTY_TENNIS_BET_SUMMARY;
-  const accountTennisSummary = tennisSummary
-    ? { ...tennisSummary, pnl: isFounderAccount ? tennisSummary.pnl : 0 }
-    : null;
-  const accountPnl = accountSummary.pnl + accountTennisBetSummary.pnl;
-  const accountPendingBets = accountSummary.pending + accountTennisBetSummary.pending;
-
   const tennisValueBets = tennisMatches.filter(isTennisBestBet);
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
