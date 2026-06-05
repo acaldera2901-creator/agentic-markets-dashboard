@@ -3,6 +3,7 @@ import { dbQuery } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
+import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +56,8 @@ export async function POST(req: Request) {
     if (!ctx) {
       return NextResponse.json({ error: "authentication required" }, { status: 401 });
     }
-    const requested = body.requested_plan;
-    if (requested !== "base" && requested !== "premium") {
+    const requested = normalizeCheckoutPlan(body.requested_plan);
+    if (!requested) {
       return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
     }
     const txHash = typeof body.tx_hash === "string" ? body.tx_hash.trim() : null;

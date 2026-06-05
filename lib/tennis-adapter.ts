@@ -20,6 +20,11 @@ type TennisPredictionRow = {
   edge: number | null;
   best_selection: string | null;
   model_version: string | null;
+  serve_form_p1: number | null;
+  serve_form_p2: number | null;
+  return_form_p1: number | null;
+  return_form_p2: number | null;
+  feature_quality: number | null;
 };
 
 function computeStatus(scheduledAt: string | null): string {
@@ -44,9 +49,18 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
   const confidence = prob > 0 ? Math.round(prob * 100) : null;
   const surface = row.surface ? row.surface[0].toUpperCase() + row.surface.slice(1) : "n/a";
+  const featureSummary = row.feature_quality != null
+    ? ` Feature quality ${Math.round(row.feature_quality * 100)}%.`
+    : "";
+  const serveReturnSummary =
+    row.serve_form_p1 != null && row.serve_form_p2 != null && row.return_form_p1 != null && row.return_form_p2 != null
+      ? ` Serve/return: ${row.player1} ${(row.serve_form_p1 * 100).toFixed(1)}%/${(row.return_form_p1 * 100).toFixed(1)}%, ${row.player2} ${(row.serve_form_p2 * 100).toFixed(1)}%/${(row.return_form_p2 * 100).toFixed(1)}%.`
+      : "";
 
   const explanation =
     `Surface-Elo model (${surface}). Lean: ${pick} at ${confidence ?? "?"}% win probability.` +
+    serveReturnSummary +
+    featureSummary +
     (hasRealMarket ? "" : " No live market price available, so no market edge is claimed.") +
     " Informational only and does not guarantee an outcome. Bet responsibly.";
 
@@ -93,7 +107,8 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
 export async function syncTennisPredictionsToUnified(): Promise<number> {
   const rows = await dbQuery<TennisPredictionRow>(
     `SELECT match_id, tournament, surface, player1, player2, scheduled_at,
-            p1, p2, odds_p1, odds_p2, edge, best_selection, model_version
+            p1, p2, odds_p1, odds_p2, edge, best_selection, model_version,
+            serve_form_p1, serve_form_p2, return_form_p1, return_form_p2, feature_quality
      FROM tennis_predictions
      WHERE scheduled_at > NOW() - INTERVAL '3 hours'
        AND winner IS NULL

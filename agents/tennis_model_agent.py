@@ -1,9 +1,10 @@
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from agents.base import BaseAgent
 from core.redis_client import get_redis
+from core.tennis_features import TennisFeatureStore
 from core.tennis_names import canonical_player_key, clean_player_name
 from models.elo_surface import EloSurfaceModel
 
@@ -46,13 +47,23 @@ class TennisModelAgent(BaseAgent):
         super().__init__("TennisModelAgent")
         self.elo = EloSurfaceModel()
         self.fatigue = FatigueAdjustment()
-        self.model_version = "elo_v2"
+        self.feature_store: TennisFeatureStore | None = None
+        self.model_version = "elo_surface_v4_features_odds"
 
     async def _main_loop(self) -> None:
         await self._load_elo_ratings()
+        self._load_feature_store()
         while self._running:
             await self._compute_cycle()
             await asyncio.sleep(300)
+
+    def _load_feature_store(self) -> None:
+        try:
+            self.feature_store = TennisFeatureStore.from_cache()
+            self.logger.info("TennisModelAgent: loaded tennis feature store")
+        except Exception as exc:
+            self.feature_store = None
+            self.logger.warning("TennisModelAgent: feature store unavailable: %s", exc)
 
     async def _load_elo_ratings(self) -> None:
         try:
@@ -133,6 +144,8 @@ class TennisModelAgent(BaseAgent):
         surface = (fixture.get("surface") or "hard").lower()
         if not p1 or not p2:
             return None
+        if self.feature_store is None:
+            self._load_feature_store()
 
         # Rank guard: skip rank mismatches > 200 outside Grand Slams
         p1_rank = fixture.get("p1_rank") or 999
@@ -147,10 +160,24 @@ class TennisModelAgent(BaseAgent):
         elo_result = self.elo.predict(p1, p2, surface)
         p1_prob = elo_result["p1"]
         p2_prob = elo_result["p2"]
+        fixture_date = self._fixture_date(fixture.get("scheduled_at"))
+        feature_context = (
+            self.feature_store.match_context(p1, p2, surface, fixture_date)
+            if self.feature_store is not None else {}
+        )
+
+        # Serve/return form adjustment from the backtested feature family.
+        quality = float(feature_context.get("feature_quality") or 0.0)
+        serve_delta = float(feature_context.get("serve_form_p1") or 0.62) - float(feature_context.get("serve_form_p2") or 0.62)
+        return_delta = float(feature_context.get("return_form_p1") or 0.38) - float(feature_context.get("return_form_p2") or 0.38)
+        form_delta = max(-0.035, min(0.035, ((serve_delta * 0.18) + (return_delta * 0.12)) * quality))
+        if abs(form_delta) > 0.001:
+            p1_prob = max(0.05, min(0.95, p1_prob + form_delta))
+            p2_prob = 1.0 - p1_prob
 
         # H2H surface adjustment (only when >= 4 surface matches)
-        h2h_s_p1 = fixture.get("h2h_surface_p1") or 0
-        h2h_s_p2 = fixture.get("h2h_surface_p2") or 0
+        h2h_s_p1 = fixture.get("h2h_surface_p1") or feature_context.get("h2h_surface_p1") or 0
+        h2h_s_p2 = fixture.get("h2h_surface_p2") or feature_context.get("h2h_surface_p2") or 0
         h2h_total = h2h_s_p1 + h2h_s_p2
         if h2h_total >= 4:
             h2h_rate = h2h_s_p1 / h2h_total
@@ -164,11 +191,23 @@ class TennisModelAgent(BaseAgent):
         # Fatigue using real rest/sets data from fixture
         p1_prob, p2_prob = self.fatigue.adjust(
             p1_prob, p2_prob,
-            p1_rest_days=fixture.get("p1_rest_days") or 3,
-            p2_rest_days=fixture.get("p2_rest_days") or 3,
-            p1_sets_last_match=fixture.get("p1_sets_last") or 2,
-            p2_sets_last_match=fixture.get("p2_sets_last") or 2,
+            p1_rest_days=fixture.get("p1_rest_days") or feature_context.get("p1_rest_days") or 3,
+            p2_rest_days=fixture.get("p2_rest_days") or feature_context.get("p2_rest_days") or 3,
+            p1_sets_last_match=fixture.get("p1_sets_last") or feature_context.get("p1_sets_last") or 2,
+            p2_sets_last_match=fixture.get("p2_sets_last") or feature_context.get("p2_sets_last") or 2,
         )
+
+        odds_p1 = self._float_or_none(fixture.get("odds_p1"))
+        odds_p2 = self._float_or_none(fixture.get("odds_p2"))
+        edge, best_selection = self._market_edge(p1_prob, p2_prob, odds_p1, odds_p2)
+        feature_snapshot = {
+            "source": "jeff_sackmann_cache",
+            "serve_return_delta": round(form_delta, 4),
+            "feature_quality": round(quality, 4),
+            "surface": surface,
+            "fixture_date": fixture_date.isoformat() if fixture_date else None,
+        }
+        feature_snapshot.update(feature_context)
 
         return {
             "match_id": fixture["match_id"],
@@ -180,16 +219,81 @@ class TennisModelAgent(BaseAgent):
             "scheduled_at": fixture.get("scheduled_at", ""),
             "p1": round(p1_prob, 4),
             "p2": round(p2_prob, 4),
+            "odds_p1": odds_p1,
+            "odds_p2": odds_p2,
+            "edge": edge,
+            "best_selection": best_selection,
             "elo_p1": elo_result.get("r1_effective"),
             "elo_p2": elo_result.get("r2_effective"),
-            "model_version": "elo_surface_v3_h2h_fatigue",
+            "serve_form_p1": feature_context.get("serve_form_p1"),
+            "serve_form_p2": feature_context.get("serve_form_p2"),
+            "return_form_p1": feature_context.get("return_form_p1"),
+            "return_form_p2": feature_context.get("return_form_p2"),
+            "surface_matches_p1": feature_context.get("surface_matches_p1"),
+            "surface_matches_p2": feature_context.get("surface_matches_p2"),
+            "surface_reliability_p1": feature_context.get("surface_reliability_p1"),
+            "surface_reliability_p2": feature_context.get("surface_reliability_p2"),
+            "feature_quality": round(quality, 4),
+            "p1_rest_days": feature_context.get("p1_rest_days"),
+            "p2_rest_days": feature_context.get("p2_rest_days"),
+            "p1_recent_matches_14d": feature_context.get("p1_recent_matches_14d"),
+            "p2_recent_matches_14d": feature_context.get("p2_recent_matches_14d"),
+            "h2h_p1_wins": feature_context.get("h2h_p1_wins"),
+            "h2h_p2_wins": feature_context.get("h2h_p2_wins"),
+            "h2h_surface_p1": feature_context.get("h2h_surface_p1"),
+            "h2h_surface_p2": feature_context.get("h2h_surface_p2"),
+            "feature_snapshot": feature_snapshot,
+            "model_version": self.model_version,
         }
 
     _PREDICTION_COLS = {
         "match_id", "player1", "player2", "tournament", "surface",
         "scheduled_at", "p1", "p2", "odds_p1", "odds_p2",
         "edge", "best_selection", "model_version",
+        "elo_p1", "elo_p2",
+        "serve_form_p1", "serve_form_p2", "return_form_p1", "return_form_p2",
+        "surface_matches_p1", "surface_matches_p2",
+        "surface_reliability_p1", "surface_reliability_p2", "feature_quality",
+        "p1_rest_days", "p2_rest_days", "p1_recent_matches_14d", "p2_recent_matches_14d",
+        "h2h_p1_wins", "h2h_p2_wins", "h2h_surface_p1", "h2h_surface_p2",
+        "feature_snapshot",
     }
+
+    @staticmethod
+    def _fixture_date(value) -> date | None:
+        parsed = TennisModelAgent._parse_datetime(value)
+        if parsed is None:
+            return None
+        return parsed.date()
+
+    @staticmethod
+    def _float_or_none(value) -> float | None:
+        try:
+            if value is None or value == "":
+                return None
+            out = float(value)
+            return out if out > 1.0 else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _market_edge(p1: float, p2: float, odds_p1: float | None, odds_p2: float | None) -> tuple[float | None, str | None]:
+        if not odds_p1 or not odds_p2:
+            return None, None
+        inv1 = 1.0 / odds_p1
+        inv2 = 1.0 / odds_p2
+        total = inv1 + inv2
+        if total <= 0:
+            return None, None
+        market_p1 = inv1 / total
+        market_p2 = inv2 / total
+        edge_p1 = round(p1 - market_p1, 4)
+        edge_p2 = round(p2 - market_p2, 4)
+        if odds_p1 >= MIN_ODDS and edge_p1 > 0 and edge_p1 >= edge_p2:
+            return edge_p1, "P1"
+        if odds_p2 >= MIN_ODDS and edge_p2 > 0:
+            return edge_p2, "P2"
+        return max(edge_p1, edge_p2), None
 
     async def _write_predictions(self, predictions: list[dict]) -> None:
         from config.settings import settings

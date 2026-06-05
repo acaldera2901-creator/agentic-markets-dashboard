@@ -75,6 +75,12 @@ type MatchPredictionRow = {
   enrichment: {
     form_home?: string;
     form_away?: string;
+    xg_home?: number;
+    xga_home?: number;
+    xg_away?: number;
+    xga_away?: number;
+    npxg_home?: number;
+    npxg_away?: number;
     injuries_home?: string[];
     injuries_away?: string[];
     research?: string;
@@ -151,16 +157,22 @@ function generateFootballExplanation(row: MatchPredictionRow): string {
       ? " Injury data considered."
       : "";
 
+  const xgNote =
+    enr?.xg_home != null || enr?.xg_away != null
+      ? " Understat xG/npxG context considered."
+      : "";
+
   const adviceNote = enr?.api_advice ? ` External model note: ${enr.api_advice}.` : "";
 
   // Only claim an "edge over the market" when there is a real market price.
   const headline = hasRealMarket
-    ? `Poisson model signal. Pick: ${pick} | Edge: ${(row.edge! * 100).toFixed(1)}% over implied market probability | Model confidence: ${confidence}.`
-    : `Poisson model estimate. Model lean: ${pick} | Model confidence: ${confidence}. No live market price available, so no market edge is claimed.`;
+    ? `Football Live V4 signal. Pick: ${pick} | Edge: ${(row.edge! * 100).toFixed(1)}% over implied market probability | Model confidence: ${confidence}.`
+    : `Football Live V4 estimate. Model lean: ${pick} | Model confidence: ${confidence}. No live market price available, so no market edge is claimed.`;
 
   return (
     headline +
     formNote +
+    xgNote +
     injuryNote +
     adviceNote +
     " This signal is informational and does not guarantee an outcome. Bet responsibly."
@@ -208,7 +220,7 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     status: computeStatus(row.kickoff),
     signal_type: hasRealMarket ? "signal" : "paper",
     source: "model",
-    model_version: "football-poisson-v1",
+    model_version: "football-live-v4-xg-market",
     plan_access: "base",
     is_historical: false,
     is_live: false,
@@ -301,14 +313,7 @@ export function applyAccessControl(
   row: UnifiedPrediction,
   planAccess: string
 ): Partial<UnifiedPrediction> {
-  if (planAccess === "premium") return row;
-
-  if (planAccess === "base") {
-    const { closing_line_value: _clv, stake_suggestion: _ss, ...rest } = row;
-    void _clv;
-    void _ss;
-    return rest;
-  }
+  if (planAccess === "base" || planAccess === "premium") return row;
 
   if (planAccess === "free") {
     return {

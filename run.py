@@ -21,6 +21,8 @@ from agents.tennis_research_agent import TennisResearchAgent
 from core.db import init_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger("run")
 
 

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireAccess } from "@/lib/auth";
+import { resolveAccessState, type AccessState } from "@/lib/auth";
+import { isUnlocked } from "@/lib/access-projection";
+import { pickOfDayId } from "@/lib/pick-of-day";
 
 export const dynamic = "force-dynamic";
 import { buildModel, predict, computeExtraMarkets, MatchResult } from "@/lib/poisson-model";
@@ -80,6 +82,94 @@ function markModelEstimate(row: PredictionRow): PredictionRow {
   };
 }
 
+// ─── Per-tier read projection (P0: stop premium enrichment leaking to Base) ─────
+//
+// Anonymous / free (non-PotD): row is locked — pick, probabilities, edge and all
+//   enrichment are stripped; only the matchup + kickoff stay visible (the card
+//   blurs on `locked`). Mirrors the tennis board behaviour.
+// base/premium/admin or the free Pick of the Day: unlocked.
+// The public paid plan is `base`, so active paid users see the advanced enrichment.
+
+// Advanced enrichment keys — stripped for anonymous/free/pending users.
+const PREMIUM_ENRICHMENT_KEYS = [
+  "pi_home", "pi_away",
+  "xg_home", "xga_home", "xg_away", "xga_away", "npxg_home", "npxg_away",
+  "ppda_home", "ppda_away",
+  "injuries_home", "injuries_away",
+  "weather",
+  "api_pct_home", "api_pct_draw", "api_pct_away", "api_advice",
+  "research",
+] as const;
+
+type ProjectedPredictionRow = Partial<PredictionRow> & {
+  match_id: string;
+  league: string;
+  league_name: string;
+  home_team: string;
+  away_team: string;
+  kickoff: string;
+  locked: boolean;
+  pick_of_day: boolean;
+};
+
+function projectPredictionRow(
+  p: PredictionRow,
+  state: AccessState,
+  isPotD: boolean
+): ProjectedPredictionRow {
+  const base = {
+    match_id: p.match_id,
+    league: p.league,
+    league_name: p.league_name,
+    home_team: p.home_team,
+    away_team: p.away_team,
+    kickoff: p.kickoff,
+    match_type: p.match_type ?? null,
+    pick_of_day: isPotD,
+  };
+
+  if (!isUnlocked(state, isPotD)) {
+    // Locked: keep the matchup visible, blank everything the card would reveal.
+    return { ...base, locked: true };
+  }
+
+  const isPaid = state === "base" || state === "premium" || state === "admin_full";
+
+  let enrichment: EnrichmentPayload | null = p.enrichment ?? null;
+  if (enrichment && !isPaid) {
+    const e: Record<string, unknown> = { ...(enrichment as Record<string, unknown>) };
+    for (const k of PREMIUM_ENRICHMENT_KEYS) delete e[k];
+    // extra_markets stay for the free Pick of the Day, but strip the per-market edge.
+    const em = e.extra_markets as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(em)) {
+      e.extra_markets = em.map((market) => {
+        const rest = { ...market };
+        delete rest.edge;
+        return rest;
+      });
+    }
+    enrichment = e as EnrichmentPayload;
+  }
+
+  return {
+    ...base,
+    locked: false,
+    p_home: p.p_home,
+    p_draw: p.p_draw,
+    p_away: p.p_away,
+    lambda_home: p.lambda_home,
+    lambda_away: p.lambda_away,
+    odds_home: p.odds_home,
+    odds_draw: p.odds_draw,
+    odds_away: p.odds_away,
+    edge: p.edge,
+    best_selection: p.best_selection,
+    model_matches: p.model_matches,
+    is_estimate: p.is_estimate,
+    enrichment,
+  };
+}
+
 // Leagues supported by Understat (no CL/EL)
 const UNDERSTAT_LEAGUES = new Set(["SA", "PL", "PD", "BL1", "FL1"]);
 
@@ -135,6 +225,8 @@ interface EnrichmentPayload {
   xga_away?: number;
   npxg_home?: number;
   npxg_away?: number;
+  ppda_home?: number;
+  ppda_away?: number;
   form_home?: string;
   form_away?: string;
   injuries_home?: string[];
@@ -264,11 +356,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         enrichment.xg_home = xgH.xg_home;
         enrichment.xga_home = xgH.xga_home;
         enrichment.npxg_home = xgH.npxg_home;
+        enrichment.ppda_home = xgH.ppda;
       }
       if (xgA) {
         enrichment.xg_away = xgA.xg_away;
         enrichment.xga_away = xgA.xga_away;
         enrichment.npxg_away = xgA.npxg_away;
+        enrichment.ppda_away = xgA.ppda;
       }
 
       // Form from history
@@ -372,8 +466,9 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
 }
 
 export async function GET(req: Request) {
-  const { deny } = await requireAccess(req);
-  if (deny) return deny;
+  // Read-side: never deny. The board returns per-card `locked` projections for
+  // anonymous/free, and strips premium enrichment for base (P0 leak fix).
+  const { state } = await resolveAccessState(req);
   const [predictions_raw, meta] = await Promise.all([
     dbQuery<PredictionRow>(
       `SELECT * FROM match_predictions
@@ -392,7 +487,9 @@ export async function GET(req: Request) {
     : Infinity;
   const isOffSeason = predictions_raw.length === 0;
   const isStale = !isOffSeason && ageMinutes > 60;
-  const predictions = predictions_raw.map((p) => {
+
+  // Hydrate (estimate flag + extra markets) before projecting, then gate per tier.
+  const hydratedRows = predictions_raw.map((p) => {
     const hydrated = markModelEstimate(p);
     const lH = hydrated.lambda_home;
     const lA = hydrated.lambda_away;
@@ -403,6 +500,19 @@ export async function GET(req: Request) {
     }
     return hydrated;
   });
+
+  const potd = pickOfDayId(
+    hydratedRows.map((p) => ({
+      id: p.match_id,
+      confidence_score: Math.round(Math.max(p.p_home, p.p_draw, p.p_away) * 100),
+      starts_at: p.kickoff,
+    }))
+  );
+
+  const predictions = hydratedRows.map((p) =>
+    projectPredictionRow(p, state, p.match_id === potd)
+  );
+
   return NextResponse.json(
     {
       predictions,

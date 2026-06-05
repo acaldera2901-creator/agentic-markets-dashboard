@@ -9,6 +9,7 @@ from agents.base import BaseAgent
 from core.redis_client import publish
 from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGUE_IDS
 from core.data_hub import DataHub
+from core.football_features import FootballFeatureStore
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
 from core.odds_api_client import get_odds, normalize_name
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
@@ -101,6 +102,7 @@ class DataCollectorAgent(BaseAgent):
         self._consecutive_empty_cycles: int = 0
         self._last_offseason_log: float = 0.0
         self._hub = DataHub()
+        self._football_features: FootballFeatureStore | None = None
 
     async def _main_loop(self) -> None:
         while self._running:
@@ -290,7 +292,7 @@ class DataCollectorAgent(BaseAgent):
                         odds_data = val
                         break
 
-            return {
+            event = {
                 "match_id": match_id,
                 "provider_event_id": match_id,
                 "provider_source": "api-football",
@@ -306,8 +308,20 @@ class DataCollectorAgent(BaseAgent):
                 ),
                 "collected_at": datetime.now(timezone.utc).isoformat(),
             }
+            if not is_world_cup_code(league):
+                event.update(self._build_football_features(home, away, league, kickoff))
+            return event
         except (KeyError, TypeError):
             return None
+
+    def _build_football_features(self, home: str, away: str, league: str, kickoff: str) -> dict:
+        try:
+            if self._football_features is None:
+                self._football_features = FootballFeatureStore()
+            return self._football_features.match_context(home, away, league, kickoff)
+        except Exception as exc:
+            self.logger.debug("football feature enrichment skipped: %s", exc)
+            return {}
 
     def _build_wc_context(
         self, fixture: dict, home: str, away: str, kickoff: str, venue_prev: dict | None

@@ -7,10 +7,12 @@ const PUBLIC_FIELDS = [
 ] as const;
 
 // Fields revealed only when a row is "unlocked" for the state.
+// `result`/`settled_at` are the real settled outcome (won/lost) — the honest track
+// record, not money — revealed alongside the pick when the row is unlocked.
 const REVEAL_FIELDS = [
   "pick", "p_home", "p_draw", "p_away", "confidence_score",
   "fair_odds", "market", "signal_type", "explanation", "model_version",
-  "is_paper", "affiliate",
+  "is_paper", "affiliate", "result", "settled_at",
 ] as const;
 
 // Premium-only extra fields (advanced depth).
@@ -38,7 +40,7 @@ export function projectPrediction(
   const unlocked = isUnlocked(state, isPickOfDay);
   if (unlocked) {
     for (const f of REVEAL_FIELDS) if (f in row) out[f] = row[f];
-    if (state === "premium" || state === "admin_full") {
+    if (state === "base" || state === "premium" || state === "admin_full") {
       for (const f of PREMIUM_FIELDS) if (f in row) out[f] = row[f];
     }
   }

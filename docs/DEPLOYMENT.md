@@ -34,8 +34,8 @@ psql "$STAGING_DB" -f supabase/migrations/nuova_migration.sql
 
 ### Su Production solo se tutto OK
 ```bash
-export PGPASSWORD='Agenticmagnetic!'
-PROD_DB="postgresql://postgres.izscgffubtakzvwxchqt:Agenticmagnetic!@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+export PGPASSWORD='<SUPABASE_DB_PASSWORD>'
+PROD_DB="postgresql://postgres.<PROJECT_REF>:<SUPABASE_DB_PASSWORD>@<SUPABASE_POOLER_HOST>:5432/postgres"
 /opt/homebrew/opt/postgresql@18/bin/psql "$PROD_DB" -f supabase/migrations/nuova_migration.sql
 ```
 
@@ -51,8 +51,8 @@ PROD_DB="postgresql://postgres.izscgffubtakzvwxchqt:Agenticmagnetic!@aws-0-eu-we
 ### Production (Supabase aziendale — Maven Agency)
 - **URL:** https://izscgffubtakzvwxchqt.supabase.co
 - **Dashboard:** https://supabase.com/dashboard/project/izscgffubtakzvwxchqt
-- **DB password:** Agenticmagnetic!
-- **Connessione pooler:** `postgresql://postgres.izscgffubtakzvwxchqt:Agenticmagnetic!@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
+- **DB password:** configurala localmente come secret, non committarla.
+- **Connessione pooler:** `postgresql://postgres.<PROJECT_REF>:<SUPABASE_DB_PASSWORD>@<SUPABASE_POOLER_HOST>:5432/postgres`
 
 ---
 

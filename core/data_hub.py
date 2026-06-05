@@ -74,8 +74,16 @@ class DataHub:
         if not self.quota.can_call("tennis_rapidapi") or not settings.RAPIDAPI_KEY:
             return []
         from core.tennis_api_client import TennisAPIClient
+        from core.tennis_odds_api_client import get_tennis_odds, merge_tennis_odds
         client = TennisAPIClient()
         fixtures = await client.get_upcoming_fixtures(days_ahead=days_ahead)
+        if fixtures and settings.ODDS_API_KEY and self.quota.can_call("odds_api"):
+            try:
+                odds = await get_tennis_odds()
+                fixtures = merge_tennis_odds(fixtures, odds)
+                await self.quota.increment("odds_api")
+            except Exception as exc:
+                logger.debug("tennis odds enrichment error: %s", exc)
         if fixtures:
             await client.write_fixtures_to_supabase(fixtures)
             await self.quota.increment("tennis_rapidapi")

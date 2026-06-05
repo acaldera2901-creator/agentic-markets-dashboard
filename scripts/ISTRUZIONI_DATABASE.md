@@ -42,7 +42,7 @@ mkdir credentials
 pip install gspread google-auth-oauthlib
 
 # Esegui
-FOOTBALL_DATA_ORG_API_KEY=1c9a0375c0414a6293b884aba824395d \
+FOOTBALL_DATA_ORG_API_KEY=<YOUR_FOOTBALL_DATA_ORG_API_KEY> \
 python scripts/populate_gsheets.py
 ```
 

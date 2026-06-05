@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -25,8 +26,8 @@ from core.tennis_data import TennisMatch, download_csv, parse_csv  # noqa: E402
 from models.tennis_elo import SurfaceElo  # noqa: E402
 
 CACHE = ROOT / "data" / "tennis"
-TOUR = "atp"
-YEARS = [2021, 2022, 2023, 2024]
+TOURS = ("atp", "wta")
+YEARS = list(range(2021, datetime.now(UTC).year + 1))
 WARMUP = 800  # matches to let Elo/serve stats settle before recording
 
 
@@ -68,13 +69,27 @@ class Running:
             self.rt_won[m.winner] += m.l_svpt - (m.l_1st_won + m.l_2nd_won); self.rt_pts[m.winner] += m.l_svpt
 
 
-def run() -> None:
-    print("Loading Sackmann tennis (cached)…")
+def available_years(tour: str) -> list[int]:
+    years = []
+    for fp in sorted(CACHE.glob(f"{tour}_*.csv")):
+        try:
+            years.append(int(fp.stem.rsplit("_", 1)[1]))
+        except ValueError:
+            continue
+    return sorted(set(years)) or YEARS
+
+
+def run_tour(tour: str) -> None:
+    print(f"Loading Sackmann tennis {tour.upper()} (cached)…")
     matches: list[TennisMatch] = []
-    for yr in YEARS:
-        matches.extend(load_cached(TOUR, yr))
+    for yr in available_years(tour):
+        matches.extend(load_cached(tour, yr))
     matches.sort(key=lambda m: m.date)
-    print(f"  {TOUR.upper()}: {len(matches)} matches")
+    print(f"  {tour.upper()}: {len(matches)} matches")
+
+    if len(matches) <= WARMUP + 200:
+        print(f"  ! skip {tour.upper()}: not enough matches")
+        return
 
     elo = SurfaceElo()
     run_stats = Running()
@@ -143,6 +158,11 @@ def run() -> None:
     coefs = dict(zip(["elo_diff", "rank_diff", "serve_diff", "ret_diff", "fatigue", "h2h"],
                      np.round(np.abs(clf.coef_[0]), 3)))
     print(f"feature influence |coef|: {coefs}")
+
+
+def run() -> None:
+    for tour in TOURS:
+        run_tour(tour)
 
 
 if __name__ == "__main__":

@@ -37,15 +37,21 @@ export async function GET(req: Request) {
   ]);
 
   const s = stats[0] as Record<string, string> | undefined;
+  const totalTennis = Number(s?.total ?? 0);
+  const wonTennis = Number(s?.won ?? 0);
+  const lostTennis = Number(s?.lost ?? 0);
 
   return NextResponse.json({
     bets,
     summary: {
-      total: Number(s?.total ?? 0),
-      won: Number(s?.won ?? 0),
-      lost: Number(s?.lost ?? 0),
+      total: totalTennis,
+      won: wonTennis,
+      lost: lostTennis,
       pending: Number(s?.pending ?? 0),
       pnl: Number(s?.pnl ?? 0),
+      hit_rate: wonTennis + lostTennis > 0
+        ? ((wonTennis / (wonTennis + lostTennis)) * 100).toFixed(1)
+        : "0.0",
     },
   });
 }

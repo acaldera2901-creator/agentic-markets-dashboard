@@ -1,0 +1,438 @@
+{
+  "generated_at": "2026-06-04T16:03:49.755287+00:00",
+  "synced_files": 37,
+  "synced_rows": 39538,
+  "skipped_files": 5,
+  "by_source": {
+    "football-data.co.uk": {
+      "files": 25,
+      "rows": 8907
+    },
+    "jeff_sackmann": {
+      "files": 12,
+      "rows": 30631
+    }
+  },
+  "results": [
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "ATP",
+      "year": 2021,
+      "status": "synced",
+      "rows": 2733,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/atp_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "ATP",
+      "year": 2022,
+      "status": "synced",
+      "rows": 2917,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/atp_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "ATP",
+      "year": 2023,
+      "status": "synced",
+      "rows": 2986,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/atp_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "ATP",
+      "year": 2024,
+      "status": "synced",
+      "rows": 3076,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/atp_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "ATP",
+      "year": 2025,
+      "status": "synced",
+      "rows": 2944,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/atp_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "ATP",
+      "year": 2026,
+      "status": "synced",
+      "rows": 1322,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/atp_2026.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "WTA",
+      "year": 2021,
+      "status": "synced",
+      "rows": 2597,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/wta_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "WTA",
+      "year": 2022,
+      "status": "synced",
+      "rows": 2594,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/wta_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "WTA",
+      "year": 2023,
+      "status": "synced",
+      "rows": 2810,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/wta_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "WTA",
+      "year": 2024,
+      "status": "synced",
+      "rows": 2689,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/wta_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "WTA",
+      "year": 2025,
+      "status": "synced",
+      "rows": 2795,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/wta_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "tennis",
+      "source": "jeff_sackmann",
+      "key": "WTA",
+      "year": 2026,
+      "status": "synced",
+      "rows": 1168,
+      "file": "/Users/calde/Desktop/agentic-markets/data/tennis/wta_2026.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PL",
+      "year": 2021,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PL_E0_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PL",
+      "year": 2022,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PL_E0_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PL",
+      "year": 2023,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PL_E0_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PL",
+      "year": 2024,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PL_E0_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PL",
+      "year": 2025,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PL_E0_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PL",
+      "year": 2026,
+      "status": "skipped",
+      "rows": 0,
+      "file": null,
+      "error": "HTTP 404"
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "BL1",
+      "year": 2021,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/BL1_D1_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "BL1",
+      "year": 2022,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/BL1_D1_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "BL1",
+      "year": 2023,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/BL1_D1_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "BL1",
+      "year": 2024,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/BL1_D1_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "BL1",
+      "year": 2025,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/BL1_D1_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "BL1",
+      "year": 2026,
+      "status": "skipped",
+      "rows": 0,
+      "file": null,
+      "error": "HTTP 404"
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "SA",
+      "year": 2021,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/SA_I1_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "SA",
+      "year": 2022,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/SA_I1_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "SA",
+      "year": 2023,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/SA_I1_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "SA",
+      "year": 2024,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/SA_I1_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "SA",
+      "year": 2025,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/SA_I1_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "SA",
+      "year": 2026,
+      "status": "skipped",
+      "rows": 0,
+      "file": null,
+      "error": "HTTP 404"
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PD",
+      "year": 2021,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PD_SP1_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PD",
+      "year": 2022,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PD_SP1_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PD",
+      "year": 2023,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PD_SP1_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PD",
+      "year": 2024,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PD_SP1_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PD",
+      "year": 2025,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/PD_SP1_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "PD",
+      "year": 2026,
+      "status": "skipped",
+      "rows": 0,
+      "file": null,
+      "error": "HTTP 404"
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "FL1",
+      "year": 2021,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/FL1_F1_2021.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "FL1",
+      "year": 2022,
+      "status": "synced",
+      "rows": 380,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/FL1_F1_2022.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "FL1",
+      "year": 2023,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/FL1_F1_2023.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "FL1",
+      "year": 2024,
+      "status": "synced",
+      "rows": 306,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/FL1_F1_2024.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "FL1",
+      "year": 2025,
+      "status": "synced",
+      "rows": 305,
+      "file": "/Users/calde/Desktop/agentic-markets/data/football_data_uk/FL1_F1_2025.csv",
+      "error": null
+    },
+    {
+      "sport": "football",
+      "source": "football-data.co.uk",
+      "key": "FL1",
+      "year": 2026,
+      "status": "skipped",
+      "rows": 0,
+      "file": null,
+      "error": "HTTP 404"
+    }
+  ]
+}

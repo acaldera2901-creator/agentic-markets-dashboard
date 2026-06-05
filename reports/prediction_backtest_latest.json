@@ -1,0 +1,324 @@
+{
+  "generated_at": "2026-06-04T17:02:14.512533+00:00",
+  "football_data_uk": {
+    "dataset": "football-data.co.uk cached seasons, closing odds, walk-forward Poisson v1",
+    "overall": {
+      "n": 8575,
+      "model_argmax_accuracy_pct": 51.22,
+      "model_argmax_ci_95": {
+        "low_pct": 50.16,
+        "high_pct": 52.28
+      },
+      "market_favorite_accuracy_pct": 54.17,
+      "market_favorite_ci_95": {
+        "low_pct": 53.11,
+        "high_pct": 55.22
+      },
+      "model_brier": 0.59909,
+      "market_brier": 0.57634,
+      "model_logloss": 1.0032,
+      "market_logloss": 0.96913,
+      "model_ece": 0.01762,
+      "market_ece": 0.01447
+    },
+    "by_model_pick": {
+      "H": {
+        "n": 5619,
+        "model_argmax_accuracy_pct": 52.87,
+        "model_argmax_ci_95": {
+          "low_pct": 51.57,
+          "high_pct": 54.18
+        },
+        "market_favorite_accuracy_pct": 54.81,
+        "market_favorite_ci_95": {
+          "low_pct": 53.51,
+          "high_pct": 56.11
+        },
+        "model_brier": 0.58905,
+        "market_brier": 0.56718,
+        "model_logloss": 0.98897,
+        "market_logloss": 0.95572,
+        "model_ece": 0.01734,
+        "market_ece": 0.00552,
+        "pick": "H"
+      },
+      "D": {
+        "n": 28,
+        "model_argmax_accuracy_pct": 32.14,
+        "model_argmax_ci_95": {
+          "low_pct": 17.93,
+          "high_pct": 50.66
+        },
+        "market_favorite_accuracy_pct": 50.0,
+        "market_favorite_ci_95": {
+          "low_pct": 32.63,
+          "high_pct": 67.37
+        },
+        "model_brier": 0.67154,
+        "market_brier": 0.63145,
+        "model_logloss": 1.10935,
+        "market_logloss": 1.0448,
+        "model_ece": 0.05702,
+        "market_ece": 0.11908,
+        "pick": "D"
+      },
+      "A": {
+        "n": 2928,
+        "model_argmax_accuracy_pct": 48.22,
+        "model_argmax_ci_95": {
+          "low_pct": 46.42,
+          "high_pct": 50.04
+        },
+        "market_favorite_accuracy_pct": 52.97,
+        "market_favorite_ci_95": {
+          "low_pct": 51.16,
+          "high_pct": 54.77
+        },
+        "model_brier": 0.61765,
+        "market_brier": 0.5934,
+        "model_logloss": 1.02948,
+        "market_logloss": 0.99413,
+        "model_ece": 0.01959,
+        "market_ece": 0.03331,
+        "pick": "A"
+      }
+    },
+    "by_league": {
+      "PL": {
+        "n": 1833,
+        "model_argmax_accuracy_pct": 52.54,
+        "model_argmax_ci_95": {
+          "low_pct": 50.25,
+          "high_pct": 54.82
+        },
+        "market_favorite_accuracy_pct": 55.21,
+        "market_favorite_ci_95": {
+          "low_pct": 52.92,
+          "high_pct": 57.47
+        },
+        "model_brier": 0.59845,
+        "market_brier": 0.56743,
+        "model_logloss": 1.00279,
+        "market_logloss": 0.95615,
+        "model_ece": 0.03657,
+        "market_ece": 0.01361
+      },
+      "BL1": {
+        "n": 1463,
+        "model_argmax_accuracy_pct": 50.72,
+        "model_argmax_ci_95": {
+          "low_pct": 48.16,
+          "high_pct": 53.27
+        },
+        "market_favorite_accuracy_pct": 54.0,
+        "market_favorite_ci_95": {
+          "low_pct": 51.44,
+          "high_pct": 56.54
+        },
+        "model_brier": 0.6002,
+        "market_brier": 0.57941,
+        "model_logloss": 1.00523,
+        "market_logloss": 0.97521,
+        "model_ece": 0.0377,
+        "market_ece": 0.01339
+      },
+      "SA": {
+        "n": 1833,
+        "model_argmax_accuracy_pct": 51.01,
+        "model_argmax_ci_95": {
+          "low_pct": 48.72,
+          "high_pct": 53.29
+        },
+        "market_favorite_accuracy_pct": 53.74,
+        "market_favorite_ci_95": {
+          "low_pct": 51.45,
+          "high_pct": 56.01
+        },
+        "model_brier": 0.60131,
+        "market_brier": 0.5792,
+        "model_logloss": 1.00534,
+        "market_logloss": 0.9715,
+        "model_ece": 0.01938,
+        "market_ece": 0.01626
+      },
+      "PD": {
+        "n": 1834,
+        "model_argmax_accuracy_pct": 51.8,
+        "model_argmax_ci_95": {
+          "low_pct": 49.51,
+          "high_pct": 54.08
+        },
+        "market_favorite_accuracy_pct": 54.47,
+        "market_favorite_ci_95": {
+          "low_pct": 52.18,
+          "high_pct": 56.74
+        },
+        "model_brier": 0.59172,
+        "market_brier": 0.57268,
+        "model_logloss": 0.99255,
+        "market_logloss": 0.96451,
+        "model_ece": 0.01534,
+        "market_ece": 0.03145
+      },
+      "FL1": {
+        "n": 1612,
+        "model_argmax_accuracy_pct": 49.75,
+        "model_argmax_ci_95": {
+          "low_pct": 47.31,
+          "high_pct": 52.19
+        },
+        "market_favorite_accuracy_pct": 53.29,
+        "market_favorite_ci_95": {
+          "low_pct": 50.85,
+          "high_pct": 55.71
+        },
+        "model_brier": 0.60464,
+        "market_brier": 0.58459,
+        "model_logloss": 1.01147,
+        "market_logloss": 0.98093,
+        "model_ece": 0.02484,
+        "market_ece": 0.01005
+      }
+    }
+  },
+  "football_understat_xg": {
+    "dataset": "Understat top leagues 2021-2024, walk-forward; second half held out",
+    "models": [
+      {
+        "model": "poisson_only",
+        "n": 3415,
+        "accuracy_pct": 52.71,
+        "brier": 0.59348,
+        "logloss": 0.99523,
+        "ece": 0.01572
+      },
+      {
+        "model": "poisson_plus_pi_form",
+        "n": 3415,
+        "accuracy_pct": 52.59,
+        "brier": 0.58921,
+        "logloss": 0.98818,
+        "ece": 0.02306
+      },
+      {
+        "model": "poisson_plus_pi_form_xg",
+        "n": 3415,
+        "accuracy_pct": 53.32,
+        "brier": 0.58236,
+        "logloss": 0.97762,
+        "ece": 0.00931
+      },
+      {
+        "model": "poisson_plus_pi_form_xg_npxg_ppda",
+        "n": 3415,
+        "accuracy_pct": 53.29,
+        "brier": 0.58233,
+        "logloss": 0.97732,
+        "ece": 0.00796
+      }
+    ]
+  },
+  "tennis": {
+    "dataset": "Jeff Sackmann ATP/WTA cached CSVs, evaluated per tour to avoid mixing player pools",
+    "tours": {
+      "atp": {
+        "dataset": "Jeff Sackmann ATP cached CSVs, walk-forward; second half held out",
+        "n_matches": 15978,
+        "models": [
+          {
+            "model": "rank_baseline",
+            "n": 7589,
+            "accuracy_pct": 64.04,
+            "ci_95": {
+              "low_pct": 62.95,
+              "high_pct": 65.11
+            },
+            "brier": null,
+            "ece": null
+          },
+          {
+            "model": "surface_elo",
+            "n": 7589,
+            "accuracy_pct": 63.97,
+            "ci_95": {
+              "low_pct": 62.89,
+              "high_pct": 65.05
+            },
+            "brier": 0.21924,
+            "ece": 0.0146
+          },
+          {
+            "model": "elo_rank_serve_return_fatigue_h2h",
+            "n": 7589,
+            "accuracy_pct": 64.94,
+            "ci_95": {
+              "low_pct": 63.86,
+              "high_pct": 66.0
+            },
+            "brier": 0.21786,
+            "ece": 0.02385
+          }
+        ],
+        "feature_coeff_abs": {
+          "elo_diff": 0.5276,
+          "rank_diff": 0.3948,
+          "serve_diff": 0.193,
+          "return_diff": 0.0779,
+          "fatigue_14d": 0.0783,
+          "h2h": 0.0192
+        }
+      },
+      "wta": {
+        "dataset": "Jeff Sackmann WTA cached CSVs, walk-forward; second half held out",
+        "n_matches": 14653,
+        "models": [
+          {
+            "model": "rank_baseline",
+            "n": 6927,
+            "accuracy_pct": 62.99,
+            "ci_95": {
+              "low_pct": 61.84,
+              "high_pct": 64.12
+            },
+            "brier": null,
+            "ece": null
+          },
+          {
+            "model": "surface_elo",
+            "n": 6927,
+            "accuracy_pct": 63.49,
+            "ci_95": {
+              "low_pct": 62.35,
+              "high_pct": 64.62
+            },
+            "brier": 0.21918,
+            "ece": 0.01603
+          },
+          {
+            "model": "elo_rank_serve_return_fatigue_h2h",
+            "n": 6927,
+            "accuracy_pct": 65.34,
+            "ci_95": {
+              "low_pct": 64.21,
+              "high_pct": 66.45
+            },
+            "brier": 0.21427,
+            "ece": 0.01575
+          }
+        ],
+        "feature_coeff_abs": {
+          "elo_diff": 0.4705,
+          "rank_diff": 0.4046,
+          "serve_diff": 0.1162,
+          "return_diff": 0.1118,
+          "fatigue_14d": 0.1106,
+          "h2h": 0.0
+        }
+      }
+    }
+  },
+  "interpretation": {
+    "accuracy_note": "Argmax accuracy answers: if the model says HOME/AWAY/DRAW is most likely, how often does that side actually win?",
+    "calibration_note": "Brier/log-loss/ECE answer whether probability levels are honest; a 60% pick should win near 60% over many cases."
+  }
+}

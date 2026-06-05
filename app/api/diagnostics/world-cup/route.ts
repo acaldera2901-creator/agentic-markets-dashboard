@@ -22,7 +22,7 @@ const EXPECTED_WORLD_CUP_MATCHES = 104;
 
 function authorized(req: Request): boolean {
   const secret = process.env.RESEARCH_SECRET;
-  if (!secret) return true;
+  if (!secret) return false;
   return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
