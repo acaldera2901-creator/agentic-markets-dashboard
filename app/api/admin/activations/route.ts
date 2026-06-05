@@ -40,10 +40,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "identifier required" }, { status: 400 });
   }
 
+  // 30-day subscription window from activation (payments GAP2). Runtime access
+  // and the daily cron both enforce expiry against plan_expires_at.
   const rows = await dbQuery<ActivationRow>(
     `UPDATE profiles
        SET plan = requested_plan,
            requested_plan = NULL,
+           plan_expires_at = NOW() + INTERVAL '30 days',
            updated_at = NOW()
      WHERE identifier = $1
        AND plan = 'pending_payment'
