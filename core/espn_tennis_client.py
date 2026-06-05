@@ -83,6 +83,21 @@ async def get_fixtures() -> list[dict]:
             if not parsed:
                 continue
 
+            # Completed matches are not fixtures: emitting them poisons the
+            # pipeline with past events AND with a systematic winner-as-player1
+            # bias ("A bt B" puts the winner first by construction).
+            if parsed["match_status"] == "completed":
+                continue
+
+            # Live matches come as "leader leads trailer" — same ordering bias.
+            # Canonical (alphabetical) player order makes player1/player2 and
+            # the match_id deterministic; the odds merge already re-aligns
+            # prices by canonical player key, so order carries no meaning here.
+            p1, p2 = parsed["player1"], parsed["player2"]
+            if canonical_player_key(p1) > canonical_player_key(p2):
+                p1, p2 = p2, p1
+            parsed["player1"], parsed["player2"] = p1, p2
+
             match_date = str(ev.get("date", ""))[:10]
             event_id = ev.get("competitionId", ev.get("id", ""))
             match_key = f"{canonical_player_key(parsed['player1'])}:{canonical_player_key(parsed['player2'])}".replace(" ", "-")
