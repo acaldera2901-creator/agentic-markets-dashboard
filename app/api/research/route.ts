@@ -13,12 +13,12 @@ export async function GET() {
 
 /** POST — stores a research summary from the Python ResearchAgent (Ollama) */
 export async function POST(req: Request) {
+  // Default-deny: a missing RESEARCH_SECRET must close the endpoint, not open
+  // it (same pattern as the cron routes). Unauthenticated writes are never ok.
   const secret = process.env.RESEARCH_SECRET;
-  if (secret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+  const auth = req.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   let body: { match_id: string; summary: string };

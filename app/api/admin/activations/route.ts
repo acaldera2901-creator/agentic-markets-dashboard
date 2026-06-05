@@ -12,12 +12,12 @@ type ActivationRow = {
   plan: "base" | "premium";
 };
 
-function isAuthorized(req: NextRequest): boolean {
+function isAuthorized(req: NextRequest): Promise<boolean> {
   return isAdminAuthorized(req);
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   // Mutating route authorized via admin cookie: block cross-site triggers

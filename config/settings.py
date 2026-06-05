@@ -95,6 +95,8 @@ class Settings(BaseSettings):
     DC_TIME_DECAY_HALFLIFE_DAYS: float = 120.0  # Dixon-Coles time weighting; 0 disables
     XG_MODEL_VERSION: str = "football-xg-v1"     # xG-enhanced model (paper/parallel)
     XG_SOURCE_TABLE: str = "xg_predictions"      # distinct dedup namespace
+    WC_MODEL_VERSION: str = "football-worldcup-v1"  # national Poisson rates (paper tier)
+    WC_SOURCE_TABLE: str = "wc_model"               # distinct dedup namespace for WC rows
 
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1

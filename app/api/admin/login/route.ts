@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeEqual } from "@/lib/admin-auth";
+import { issueAdminToken } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,9 @@ export async function POST(req: NextRequest) {
     }
 
     const res = NextResponse.json({ ok: true });
-    res.cookies.set("admin_token", ADMIN_SECRET, {
+    // Expiring HMAC session token — the raw ADMIN_SECRET never reaches the
+    // browser cookie store (see lib/admin-session.ts).
+    res.cookies.set("admin_token", await issueAdminToken(ADMIN_SECRET), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

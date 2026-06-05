@@ -13,7 +13,7 @@ type ProfileRow = {
   plan: Plan;
 };
 
-function isAuthorized(req: NextRequest): boolean {
+function isAuthorized(req: NextRequest): Promise<boolean> {
   return isAdminAuthorized(req);
 }
 
@@ -31,7 +31,7 @@ async function writeAdminEvent(eventType: string, plan: Plan | null, meta: Recor
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   // This GET mutates session state (sets the session cookie). Block cross-site

@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
+import { verifyAdminToken } from "@/lib/admin-session";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
@@ -14,11 +15,14 @@ export function safeEqual(candidate: string | null | undefined, secret: string):
   return timingSafeEqual(a, b);
 }
 
-// Shared admin gate for /api/admin/*: accepts the admin cookie or a Bearer
-// token, both compared constant-time. Fail-closed when ADMIN_SECRET is unset.
-export function isAdminAuthorized(req: NextRequest): boolean {
+// Shared admin gate for /api/admin/*. Fail-closed when ADMIN_SECRET is unset.
+// - Cookie: HMAC session token (expiring, derived — the raw secret no longer
+//   lives in the browser cookie store; see lib/admin-session.ts).
+// - Bearer: raw ADMIN_SECRET, constant-time — kept for server-to-server calls.
+export async function isAdminAuthorized(req: NextRequest): Promise<boolean> {
   if (!ADMIN_SECRET) return false;
-  const cookie = req.cookies.get("admin_token")?.value;
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
-  return safeEqual(cookie, ADMIN_SECRET) || safeEqual(bearer, ADMIN_SECRET);
+  if (safeEqual(bearer, ADMIN_SECRET)) return true;
+  const cookie = req.cookies.get("admin_token")?.value;
+  return verifyAdminToken(cookie, ADMIN_SECRET);
 }

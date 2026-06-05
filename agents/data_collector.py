@@ -188,6 +188,37 @@ class DataCollectorAgent(BaseAgent):
         league_counts: dict[str, dict[str, int]] = {}
         source_errors: list[str] = []
         wc_venue_context_ready = False
+
+        # P4-A: squad_news via ESPN, computed BEFORE the publish loop so the
+        # flags can travel inside each WC market:data payload — the ModelAgent
+        # runs in another process and Redis is its only input, so without these
+        # keys it can only assume False (the old hard-coded behaviour). The
+        # espn client is TTL-cached 6h: cost is unchanged. Fail-soft: a
+        # provider outage closes the gate, never breaks the cycle.
+        squad_summary: dict[str, int] = {}
+        squad_news_ready = False
+        try:
+            coverage = await get_squad_coverage()
+            wc_teams_total = len(await get_world_cup_teams())
+            squad_summary = {
+                "covered": len(coverage),
+                "teams": wc_teams_total,
+                "injured_total": sum(c.get("injured", 0) for c in coverage.values()),
+            }
+            # Broad coverage, not perfection: >=80% of the qualified field
+            # with a published squad keeps the gate honest and reachable.
+            squad_news_ready = (
+                wc_teams_total > 0
+                and len(coverage) >= max(1, int(0.8 * wc_teams_total))
+            )
+        except Exception as e:
+            source_errors.append(f"WC:squad_news:{e}")
+        # settlement_feed = a result provider is configured AND the unified
+        # history writer exists (P4-B in agents/result_settlement.py).
+        settlement_ready = bool(
+            settings.API_FOOTBALL_KEY or settings.FOOTBALL_DATA_ORG_API_KEY
+        )
+
         for league_code, league_id in LEAGUE_IDS.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
@@ -256,6 +287,11 @@ class DataCollectorAgent(BaseAgent):
                         wc_ctx = event.get("world_cup_context")
                         if wc_ctx and wc_ctx.get("data_completeness_score", 0) >= 0.78:
                             wc_venue_context_ready = True
+                        if is_world_cup_code(league_code):
+                            # Real gate flags for the ModelAgent data-quality
+                            # scorer (replaces its hard-coded False defaults).
+                            event["squad_news_ready"] = squad_news_ready
+                            event["settlement_ready"] = settlement_ready
                         await publish("market:data", {"payload": json.dumps(event)})
                         published += 1
                 league_counts[league_code]["matched_odds"] = matched_odds
@@ -287,41 +323,16 @@ class DataCollectorAgent(BaseAgent):
         else:
             self._consecutive_empty_cycles = 0
 
-        # P4-A: squad_news via ESPN (fail-soft — a provider outage closes the
-        # gate, never breaks the cycle). TTL-cached in espn_soccer_client, so
-        # this is ~1 burst of requests every 6h, not one per cycle.
-        squad_summary: dict[str, int] = {}
-        squad_news_ready = False
-        try:
-            coverage = await get_squad_coverage()
-            wc_teams_total = len(await get_world_cup_teams())
-            squad_summary = {
-                "covered": len(coverage),
-                "teams": wc_teams_total,
-                "injured_total": sum(c.get("injured", 0) for c in coverage.values()),
-            }
-            # Broad coverage, not perfection: >=80% of the qualified field
-            # with a published squad keeps the gate honest and reachable.
-            squad_news_ready = (
-                wc_teams_total > 0
-                and len(coverage) >= max(1, int(0.8 * wc_teams_total))
-            )
-        except Exception as e:
-            source_errors.append(f"WC:squad_news:{e}")
-
         self.set_status_detail(
             build_cycle_detail(
                 league_counts=league_counts,
                 source_errors=source_errors,
                 # national_model + venue_context wired (paper tier); squad_news
-                # wired via ESPN (P4-A); settlement_feed = a result provider is
-                # configured AND the unified history writer exists (P4-B in
-                # agents/result_settlement.py).
+                # + settlement_feed computed before the publish loop (they also
+                # travel inside each WC payload for the ModelAgent scorer).
                 national_model_ready=national_model_ready(),
                 venue_context_ready=wc_venue_context_ready,
-                settlement_ready=bool(
-                    settings.API_FOOTBALL_KEY or settings.FOOTBALL_DATA_ORG_API_KEY
-                ),
+                settlement_ready=settlement_ready,
                 squad_news_ready=squad_news_ready,
                 squad_coverage=squad_summary,
             )

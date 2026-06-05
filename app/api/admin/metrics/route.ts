@@ -5,12 +5,12 @@ import { OPERATING_COSTS, monthlyBurnEur } from "@/lib/operating-costs";
 
 export const dynamic = "force-dynamic";
 
-function isAuthorized(req: NextRequest): boolean {
+function isAuthorized(req: NextRequest): Promise<boolean> {
   return isAdminAuthorized(req);
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

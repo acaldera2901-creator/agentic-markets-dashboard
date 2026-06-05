@@ -112,13 +112,13 @@ export async function GET() {
 
 // Python agents POST heartbeats here via DASHBOARD_URL/api/health
 export async function POST(req: Request) {
+  // Default-deny: a missing RESEARCH_SECRET must close the endpoint, not open
+  // it (same pattern as the cron routes). Unauthenticated writes are never ok.
   const secret = process.env.RESEARCH_SECRET;
   const auth = req.headers.get("authorization");
-  if (secret && auth !== `Bearer ${secret}`) {
+  if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-
-
 
   const body = await req.json() as { agent_name?: string; detail?: string };
   const name = body.agent_name;

@@ -215,6 +215,104 @@ def xg_prediction_to_unified_row(p: DCPrediction) -> dict:
     return row
 
 
+def wc_prediction_to_unified_row(
+    p: DCPrediction,
+    *,
+    stage: str | None = None,
+    neutral_venue: bool = True,
+) -> dict:
+    """World Cup paper row on the unified_predictions schema.
+
+    Honesty rules (mirrors lib/publication-gate.ts FORCE PAPER for WC):
+    - signal_type is ALWAYS "paper" — never signal/estimate, regardless of
+      reliability, until the WC registry leaves monitor_only and the gate is
+      lifted by an explicit promotion deploy.
+    - no odds, no edge, no bookmaker claims (national Poisson rates only).
+    """
+    row = dc_prediction_to_unified_row(p)
+    pick = row["pick"]
+    confidence = row["confidence_score"]
+    row["model_version"] = settings.WC_MODEL_VERSION
+    row["source_table"] = settings.WC_SOURCE_TABLE
+    row["competition"] = "World Cup"
+    row["signal_type"] = "paper"
+    row["neutral_venue"] = neutral_venue
+    if stage:
+        row["world_cup_stage"] = stage
+    row["explanation"] = (
+        f"World Cup paper prediction (national Poisson rates model). "
+        f"Pick: {pick} | model probability {confidence}%. "
+        "Paper tier: published for track-record transparency only, "
+        "no market odds attached, no edge claimed. Bet responsibly."
+    )
+    return row
+
+
+async def upsert_unified_rows(rows: list[dict]) -> int:
+    """
+    Upsert pre-built unified_predictions rows via PostgREST.
+
+    Dedup key is (source_table, source_id) like the TS adapter, but the unique
+    index is PARTIAL (WHERE source_table IS NOT NULL — see
+    db/migrations/001_unified_predictions.sql) and PostgREST's `on_conflict`
+    cannot target a partial index (42P10, hit live 2026-06-05). So this does an
+    explicit PATCH-then-POST per row: update the existing key, insert when no
+    row matched. Single writer per key, 30-ish rows per cycle — two round
+    trips are fine. Fail-soft per row; returns rows successfully written.
+    """
+    base = _rest_base()
+    if not base:
+        return 0
+
+    headers = _service_headers()
+
+    written = 0
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for row in rows:
+                try:
+                    source_table = row.get("source_table")
+                    source_id = row.get("source_id")
+                    if not source_table or not source_id:
+                        logger.warning("unified upsert skipped: missing dedup key")
+                        continue
+                    resp = await client.patch(
+                        f"{base}/unified_predictions"
+                        f"?source_table=eq.{source_table}&source_id=eq.{source_id}",
+                        json=row,
+                        headers={**headers, "Prefer": "return=representation"},
+                    )
+                    if resp.status_code == 200 and resp.json():
+                        written += 1
+                        continue
+                    if resp.status_code not in (200, 404):
+                        logger.warning(
+                            "unified upsert PATCH failed: %s %s",
+                            resp.status_code,
+                            resp.text[:200],
+                        )
+                        continue
+                    resp = await client.post(
+                        f"{base}/unified_predictions",
+                        json=row,
+                        headers=headers,
+                    )
+                    if resp.status_code in (200, 201, 204):
+                        written += 1
+                    else:
+                        logger.warning(
+                            "unified upsert POST failed: %s %s",
+                            resp.status_code,
+                            resp.text[:200],
+                        )
+                except Exception as exc:
+                    logger.warning("unified upsert error (row skipped): %s", exc)
+    except Exception as exc:
+        logger.warning("unified upsert client error: %s", exc)
+
+    return written
+
+
 async def upsert_dc_predictions(predictions: list[DCPrediction]) -> int:
     """
     Upsert Dixon-Coles predictions into unified_predictions via PostgREST.

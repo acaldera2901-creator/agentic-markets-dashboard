@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { dbQuery } from "@/lib/db";
+import { dbQuery, dbExecute } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 
-function isAuthorized(req: NextRequest): boolean {
+function isAuthorized(req: NextRequest): Promise<boolean> {
   return isAdminAuthorized(req);
 }
 
@@ -30,7 +30,7 @@ async function sendTelegram(text: string): Promise<boolean> {
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const rows = await dbQuery("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 100");
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,11 +60,21 @@ export async function POST(req: NextRequest) {
     sent = await sendTelegram(text);
   }
 
-  await dbQuery(
-    `INSERT INTO notifications (type, title, body, target, sent, sent_at)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [body.type, body.title ?? null, body.body, body.target ?? "all", sent, sent ? new Date().toISOString() : null]
-  );
+  // Fail-loud: the admin must never see ok:true when the notification was not
+  // persisted (dbQuery would swallow the error and report a phantom success).
+  try {
+    await dbExecute(
+      `INSERT INTO notifications (type, title, body, target, sent, sent_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [body.type, body.title ?? null, body.body, body.target ?? "all", sent, sent ? new Date().toISOString() : null]
+    );
+  } catch (e) {
+    console.error("[admin/notifications] insert failed:", String(e));
+    return NextResponse.json(
+      { error: "notification not persisted", sent },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true, sent });
 }

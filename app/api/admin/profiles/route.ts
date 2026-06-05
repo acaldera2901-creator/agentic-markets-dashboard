@@ -25,7 +25,7 @@ type ProfileAdminRow = {
   updated_at: string;
 };
 
-function isAuthorized(req: NextRequest): boolean {
+function isAuthorized(req: NextRequest): Promise<boolean> {
   return isAdminAuthorized(req);
 }
 
@@ -55,7 +55,7 @@ async function writeAdminEvent(eventType: string, plan: Plan | null, meta: Recor
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   // Mutating route authorized via admin cookie: block cross-site triggers
@@ -143,7 +143,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   // POST(impersonate) sets the session cookie — same cross-site guard as /switch.

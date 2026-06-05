@@ -9,6 +9,8 @@ from core.world_cup_registry import api_football_season_for, is_world_cup_code, 
 from core.world_cup_team_model import matchup_profile
 from core.world_cup_history import canonical_team_name, load_national_history
 from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
+from core.world_cup_probability import national_match_probabilities
+from core.supabase_client import DCPrediction, upsert_unified_rows, wc_prediction_to_unified_row
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
 from context.context_service import ContextService
@@ -165,12 +167,14 @@ class ModelAgent(BaseAgent):
                 national_matchup.get("blocked_reason") or ""
             ),
         }
+        # Real gate flags computed by the DataCollector travel inside the
+        # payload (fail-closed: missing keys read as False, the old behaviour).
         quality = compute_world_cup_data_quality(
             payload=payload,
             context=wc_context,
             national_matchup=national_matchup,
-            settlement_ready=False,
-            squad_news_ready=False,
+            settlement_ready=bool(payload.get("settlement_ready", False)),
+            squad_news_ready=bool(payload.get("squad_news_ready", False)),
         )
         result["world_cup_data_quality"] = json.dumps(quality)
         result["world_cup_data_quality_score"] = str(quality.get("total_score", 0))
@@ -181,10 +185,71 @@ class ModelAgent(BaseAgent):
         result["world_cup_odds_snapshot"] = json.dumps(quality.get("odds_snapshot") or {})
         result["provider_event_id"] = str(payload.get("provider_event_id") or payload.get("match_id") or "")
         result["provider_source"] = str(payload.get("provider_source") or "")
+        # National 1X2 probabilities (Poisson rates, neutral venue). Fail-closed:
+        # missing profile -> no probabilities -> no paper row downstream.
+        probs = national_match_probabilities(
+            self._history.get(WORLD_CUP_CODE, []),
+            canonical_team_name(home),
+            canonical_team_name(away),
+        )
+        result["world_cup_probabilities"] = json.dumps(probs or {})
         self.set_status_detail(world_cup_data_quality_status_detail(quality))
         if wc_context.get("market_warning"):
             result["market_warning"] = str(wc_context["market_warning"])
         return result
+
+    async def _persist_world_cup_paper(self, payload: dict, wc_result: dict) -> None:
+        """Write a WC paper prediction to unified_predictions when allowed.
+
+        Conditions (all fail-closed):
+        - publication tier is at least paper_only (monitor_only writes nothing)
+        - the national probability model produced probabilities for both teams
+
+        Rows are ALWAYS paper (signal_type="paper", is_paper=true, no odds, no
+        edge) — mirrors lib/publication-gate.ts which FORCE-PAPERs WC rows while
+        the registry is monitor_only. Upsert failure is non-fatal: next cycle
+        retries the same (source_table, source_id) key.
+        """
+        tier = wc_result.get("world_cup_publication_tier", "monitor_only")
+        if tier == "monitor_only":
+            return
+        try:
+            probs = json.loads(wc_result.get("world_cup_probabilities") or "{}")
+        except (TypeError, ValueError):
+            probs = {}
+        if not probs:
+            return
+        try:
+            pred = DCPrediction(
+                match_id=str(payload.get("match_id")),
+                league=payload["league"],
+                league_name="FIFA World Cup 2026",
+                home_team=payload["home_team"],
+                away_team=payload["away_team"],
+                kickoff=payload["kickoff"],
+                p_home=float(probs["p_team_a"]),
+                p_draw=float(probs["p_draw"]),
+                p_away=float(probs["p_team_b"]),
+                home_team_matches=int(probs.get("team_a_matches", 0)),
+                away_team_matches=int(probs.get("team_b_matches", 0)),
+            )
+            stage = wc_result.get("world_cup_stage") or ""
+            row = wc_prediction_to_unified_row(
+                pred,
+                # "unknown" must not override the mapper's league-name default
+                stage=stage if stage not in ("", "unknown") else None,
+                neutral_venue=wc_result.get("neutral_venue", "True") == "True",
+            )
+            written = await upsert_unified_rows([row])
+            if written:
+                self.logger.info(
+                    "WC paper row written: %s vs %s (tier=%s)",
+                    payload["home_team"], payload["away_team"], tier,
+                )
+        except Exception as exc:
+            # Non-fatal by contract: a writer hiccup must never break the
+            # model loop. The upsert is idempotent and retried next cycle.
+            self.logger.warning("WC paper writer failed (non-fatal): %s", exc)
 
     def _parse_results(self, fixtures: list) -> list:
         matches = []
@@ -223,6 +288,10 @@ class ModelAgent(BaseAgent):
                     "computed_at": datetime.now(timezone.utc).isoformat(),
                 })
                 await publish("model:probabilities", wc_result)
+                # Paper-tier writer: the only bridge from the Python WC model to
+                # unified_predictions. AnalystAgent early-returns on WC rows by
+                # design, so without this call no WC row would ever be written.
+                await self._persist_world_cup_paper(payload, wc_result)
                 return
             model = self._models.get(league)
             if not model or not model.fitted:
