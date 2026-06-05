@@ -28,6 +28,7 @@ from core.espn_soccer_client import (
     get_world_cup_teams,
     get_league_fixtures as espn_league_fixtures,
 )
+from core.wc_squad_sync import sync_rosters
 from config.settings import settings
 
 
@@ -213,6 +214,20 @@ class DataCollectorAgent(BaseAgent):
             )
         except Exception as e:
             source_errors.append(f"WC:squad_news:{e}")
+        # Track A: persist squad reveals (snapshot only on roster change).
+        # ESPN data is already TTL-cached by the coverage pass above — this
+        # costs zero extra HTTP. Fail-soft: never breaks the cycle.
+        try:
+            sync_summary = await sync_rosters()
+            if sync_summary.get("snapshots_written"):
+                self.logger.info(
+                    "WC squad sync: %d reveal snapshot(s) captured",
+                    sync_summary["snapshots_written"],
+                )
+            for sync_err in sync_summary.get("errors", []):
+                source_errors.append(f"WC:squad_sync:{sync_err}")
+        except Exception as e:
+            source_errors.append(f"WC:squad_sync:{e}")
         # settlement_feed = a result provider is configured AND the unified
         # history writer exists (P4-B in agents/result_settlement.py).
         settlement_ready = bool(
