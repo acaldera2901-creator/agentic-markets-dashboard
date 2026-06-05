@@ -64,7 +64,13 @@ function heartbeatReadiness(
   const readiness = (worldCup as { readiness?: unknown }).readiness;
   if (typeof readiness !== "object" || readiness === null) return closed;
 
-  const gates = readiness as { national_team_model?: unknown; venue_context?: unknown };
+  // Real heartbeat shape (core/world_cup_registry.py) nests the booleans under
+  // readiness.gates; accept the flat shape too for forward-compatibility.
+  const nested = (readiness as { gates?: unknown }).gates;
+  const gates = (typeof nested === "object" && nested !== null ? nested : readiness) as {
+    national_team_model?: unknown;
+    venue_context?: unknown;
+  };
   return {
     national_team_model: gates.national_team_model === true,
     venue_context: gates.venue_context === true,
