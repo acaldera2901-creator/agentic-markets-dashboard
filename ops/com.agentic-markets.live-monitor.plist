@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agentic-markets.live-monitor</string>
+  <!-- Direct python invocation (same pattern as the repaired watchdog).
+       A /bin/zsh -lc wrapper dies with EX_CONFIG under launchd. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/calde/Desktop/agentic-markets/venv/bin/python</string>
+    <string>scripts/live_monitor.py</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/calde/Desktop/agentic-markets</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>600</integer>
+  <!-- stdio outside ~/Desktop: launchd cannot open TCC-protected paths for
+       stdio redirection (EX_CONFIG spawn failure, verified 2026-06-05). -->
+  <key>StandardOutPath</key>
+  <string>/Users/calde/Library/Logs/agentic-markets/live-monitor.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/calde/Library/Logs/agentic-markets/live-monitor.err.log</string>
+</dict>
+</plist>
