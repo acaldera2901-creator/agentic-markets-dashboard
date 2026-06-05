@@ -5,11 +5,15 @@ import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
 import { sendEmail, paymentReceivedEmail } from "@/lib/email";
+import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 
 export const dynamic = "force-dynamic";
 
-// Server-authoritative auth endpoint (P0 #1).
-// - POST { action: "login" }    -> upsert profile (new = free), set signed cookie, return profile.
+// Server-authoritative auth endpoint. Email-only login was too weak (anyone
+// knowing an email logged in as them); the session cookie is now gated by a
+// password (no email/domain dependency, unlike the OTP path).
+// - POST { action: "register" } -> create/claim profile with a password, set cookie.
+// - POST { action: "login" }    -> verify password, set cookie.
 // - POST { action: "checkout" } -> mark plan='pending_payment' + requested_plan/tx_hash. Never unlocks.
 // - POST { action: "logout" }   -> clear cookie.
 // - GET                          -> current session profile (fresh plan from DB) or 401.
@@ -22,6 +26,25 @@ async function loadProfile(identifier: string): Promise<ProfileRow | null> {
     [identifier]
   );
   return rows[0] ?? null;
+}
+
+type AuthRow = { identifier: string; plan: Plan; name: string | null; password_hash: string | null };
+
+async function loadAuthRow(identifier: string): Promise<AuthRow | null> {
+  const rows = await dbQuery<AuthRow>(
+    "SELECT identifier, plan, name, password_hash FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+    [identifier]
+  );
+  return rows[0] ?? null;
+}
+
+function issueSession(profile: ProfileRow): NextResponse {
+  const res = NextResponse.json(
+    { identifier: profile.identifier, plan: profile.plan, name: profile.name },
+    { headers: { "cache-control": "no-store" } }
+  );
+  res.cookies.set(SESSION_COOKIE, signSession(profile.identifier), SESSION_COOKIE_OPTIONS);
+  return res;
 }
 
 export async function GET(req: Request) {
@@ -101,53 +124,77 @@ export async function POST(req: Request) {
     );
   }
 
-  // Default: login / create-profile (passwordless, identifier-only).
+  // ── Password auth (register / login) ──────────────────────────────────────
   const identifier = normalizeIdentifier(body.identifier ?? body.email);
-  if (!identifier) {
-    return NextResponse.json({ error: "identifier required" }, { status: 400 });
+  if (!identifier || !identifier.includes("@")) {
+    return NextResponse.json({ error: "valid email required" }, { status: 400 });
   }
-  const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
-  const language = typeof body.language === "string" ? body.language.slice(0, 16) : null;
-  const timezone = typeof body.timezone === "string" ? body.timezone.slice(0, 64) : null;
+  const password = typeof body.password === "string" ? body.password : "";
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return NextResponse.json({ error: `password must be at least ${MIN_PASSWORD_LENGTH} characters` }, { status: 400 });
+  }
 
-  // Upsert: new profile ALWAYS starts on 'free'; never escalate, downgrade, or reset
-  // an existing plan here. Admin/elevated plans are granted ONLY via the secret-gated
-  // /api/founder/grant or the admin console — never inferred from a (claimable,
-  // passwordless) email identifier, which would let anyone self-grant admin_full.
-  // COALESCE keeps existing name/language/timezone when the new value is null.
-  try {
-    await dbExecute(
-      `INSERT INTO profiles (identifier, name, language, timezone, plan)
-       VALUES ($1, $2, $3, $4, 'free')
-     ON CONFLICT (identifier) DO UPDATE
-       SET name = COALESCE(EXCLUDED.name, profiles.name),
-           language = COALESCE(EXCLUDED.language, profiles.language),
-           timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
-           updated_at = NOW()`,
-      [identifier, name, language, timezone]
-    );
-  } catch (e) {
-    console.error("[auth] profile upsert failed:", String(e));
-    return NextResponse.json({ error: "profile persistence failed" }, { status: 500 });
+  const existing = await loadAuthRow(identifier);
+
+  // An admin_full profile never gets a session via the public path — even with
+  // the right password. Admin sessions come only from /api/founder/grant.
+  if (existing?.plan === "admin_full") {
+    return NextResponse.json({ error: "this profile requires founder access" }, { status: 403 });
+  }
+
+  if (action === "register") {
+    // Block taking over an account that already has a password. A legacy profile
+    // with no password_hash can still be claimed here (sets the password).
+    if (existing?.password_hash) {
+      return NextResponse.json({ error: "account already exists — please log in" }, { status: 409 });
+    }
+    const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
+    const language = typeof body.language === "string" ? body.language.slice(0, 16) : null;
+    const timezone = typeof body.timezone === "string" ? body.timezone.slice(0, 64) : null;
+    try {
+      await dbExecute(
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash)
+         VALUES ($1, $2, $3, $4, 'free', $5)
+       ON CONFLICT (identifier) DO UPDATE
+         SET name = COALESCE(EXCLUDED.name, profiles.name),
+             language = COALESCE(EXCLUDED.language, profiles.language),
+             timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
+             password_hash = EXCLUDED.password_hash,
+             updated_at = NOW()`,
+        [identifier, name, language, timezone, hashPassword(password)]
+      );
+    } catch (e) {
+      console.error("[auth] register failed:", String(e));
+      return NextResponse.json({ error: "registration failed" }, { status: 500 });
+    }
+    const profile = await loadProfile(identifier);
+    if (!profile) return NextResponse.json({ error: "registration failed" }, { status: 500 });
+    return issueSession(profile);
+  }
+
+  // action === "login" (default)
+  if (!existing) {
+    return NextResponse.json({ error: "no account for this email" }, { status: 404 });
+  }
+  if (!existing.password_hash) {
+    // Legacy profile with no password yet: first login sets it (claim). This is
+    // the migration path for the handful of pre-password accounts.
+    try {
+      await dbExecute(
+        "UPDATE profiles SET password_hash = $2, updated_at = NOW() WHERE identifier = $1",
+        [existing.identifier, hashPassword(password)]
+      );
+    } catch (e) {
+      console.error("[auth] password claim failed:", String(e));
+      return NextResponse.json({ error: "login failed" }, { status: 500 });
+    }
+  } else if (!verifyPassword(password, existing.password_hash)) {
+    return NextResponse.json({ error: "wrong email or password" }, { status: 401 });
   }
 
   const profile = await loadProfile(identifier);
   if (!profile) {
-    return NextResponse.json({ error: "profile persistence failed" }, { status: 500 });
+    return NextResponse.json({ error: "login failed" }, { status: 500 });
   }
-
-  // Passwordless login must never hand out an elevated session: anyone who
-  // knows the admin identifier would otherwise get admin_full data access.
-  // Admin sessions are established only via the secret-gated /api/founder/grant.
-  if (profile.plan === "admin_full") {
-    return NextResponse.json({ error: "this profile requires founder access" }, { status: 403 });
-  }
-
-  const token = signSession(identifier);
-  const res = NextResponse.json(
-    { identifier: profile.identifier, plan: profile.plan, name: profile.name },
-    { headers: { "cache-control": "no-store" } }
-  );
-  res.cookies.set(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS);
-  return res;
+  return issueSession(profile);
 }

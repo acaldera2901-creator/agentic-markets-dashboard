@@ -65,6 +65,10 @@ const BASE_TRANSLATIONS = {
     auth_not_found: "Profilo non trovato. Crea un profilo cliente per continuare.",
     auth_create_btn: "Continue to plans",
     auth_footer: "Signal Desk Pro è crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
+    auth_pw_placeholder_new: "Almeno 8 caratteri",
+    auth_err_wrongpw: "Email o password errata.", auth_err_noaccount: "Nessun account con questa email. Registrati.",
+    auth_err_exists: "Account già esistente — accedi.", auth_err_founder: "Questo profilo richiede founder access.",
+    auth_err_pwshort: "La password deve avere almeno 8 caratteri.", auth_err_generic: "Errore. Riprova.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Un piano pagante, promessa chiara",
@@ -303,6 +307,10 @@ const BASE_TRANSLATIONS = {
     auth_not_found: "Profile not found. Create a client profile to continue.",
     auth_create_btn: "Continue to plans",
     auth_footer: "Signal Desk Pro is crypto-only. Prediction data stays locked until the plan is active.",
+    auth_pw_placeholder_new: "At least 8 characters",
+    auth_err_wrongpw: "Wrong email or password.", auth_err_noaccount: "No account for this email. Sign up.",
+    auth_err_exists: "Account already exists — log in.", auth_err_founder: "This profile requires founder access.",
+    auth_err_pwshort: "Password must be at least 8 characters.", auth_err_generic: "Error. Try again.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "One paid plan, clear promise",
@@ -2455,56 +2463,64 @@ function SettingsTab({
 
 function ClientAuthModal({
   intent,
-  storedProfiles,
   onClose,
-  onSave,
-  onNotFound,
+  onAuthed,
 }: {
   intent: ClientAuthIntent;
-  storedProfiles: ClientProfile[];
   onClose: () => void;
-  onSave: (profile: ClientProfile) => void;
-  onNotFound: (email: string) => void;
+  onAuthed: (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => void;
 }) {
   const [mode, setMode] = useState<ClientAuthIntent>(intent);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const t = useT();
   const lang = useLang();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome";
   const normalizedEmail = email.trim().toLowerCase();
-  const canSubmit = mode === "login" ? normalizedEmail.includes("@") : name.trim().length > 1 && normalizedEmail.includes("@");
+  const emailValid = normalizedEmail.includes("@");
+  const pwValid = password.length >= 8;
+  const canSubmit = mode === "login"
+    ? emailValid && pwValid
+    : name.trim().length > 1 && emailValid && pwValid;
+
+  const submit = async () => {
+    if (!canSubmit || busy) return;
+    setBusy(true); setError("");
+    try {
+      const resp = await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({
+          action: mode === "login" ? "login" : "register",
+          identifier: normalizedEmail, password,
+          name: mode === "create" ? name.trim() : undefined,
+          language: lang, timezone: tz,
+        }),
+      });
+      if (resp.ok) {
+        const server = await resp.json() as { plan?: ClientProfile["plan"]; name?: string | null };
+        onAuthed({
+          name: (server.name ?? name.trim()) || normalizedEmail,
+          email: normalizedEmail, plan: "free", language: lang, timezone: tz,
+          risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
+          betfair: { status: "not_connected" }, notifications: defaultNotifications(),
+        }, server.plan);
+      } else if (resp.status === 401) setError(t.auth_err_wrongpw);
+      else if (resp.status === 404) setError(t.auth_err_noaccount);
+      else if (resp.status === 409) setError(t.auth_err_exists);
+      else if (resp.status === 403) setError(t.auth_err_founder);
+      else if (resp.status === 400) setError(t.auth_err_pwshort);
+      else setError(t.auth_err_generic);
+    } catch { setError(t.auth_err_generic); }
+    finally { setBusy(false); }
+  };
 
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
-      <form
-        className="auth-modal"
-        onClick={(event) => event.stopPropagation()}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!canSubmit) return;
-          if (mode === "login") {
-            const found = storedProfiles.find((profile) => profile.email.toLowerCase() === normalizedEmail);
-            if (!found) {
-              setError(t.auth_not_found);
-              onNotFound(normalizedEmail);
-              return;
-            }
-            onSave(found);
-            return;
-          }
-          onSave({
-            name: name.trim(),
-            email: normalizedEmail,
-            plan: "free",
-            language: lang,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome",
-            risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
-            betfair: { status: "not_connected" },
-            notifications: defaultNotifications(),
-          });
-        }}
-      >
+      <form className="auth-modal" onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <div className="auth-modal-head">
           <p className="eyebrow">{t.auth_eyebrow}</p>
           <h3>{mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
@@ -2517,15 +2533,21 @@ function ClientAuthModal({
         {mode === "create" && (
           <label>
             <span>{t.auth_name_label}</span>
-            <input value={name} onChange={(event) => setName(event.target.value)} placeholder={t.auth_name_placeholder} autoComplete="name" />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.auth_name_placeholder} autoComplete="name" />
           </label>
         )}
         <label>
           <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@email.com" inputMode="email" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            placeholder={mode === "create" ? t.auth_pw_placeholder_new : "••••••••"}
+            autoComplete={mode === "login" ? "current-password" : "new-password"} />
         </label>
         {error && <p className="auth-error">{error}</p>}
-        <button disabled={!canSubmit}>{mode === "login" ? "Login" : t.auth_create_btn}</button>
+        <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
         <p>{t.auth_footer}</p>
       </form>
     </div>
@@ -4800,31 +4822,11 @@ export default function Dashboard() {
     setAuthOpen(true);
   };
 
-  const handleAuthSave = async (profile: ClientProfile) => {
-    // Server is the authority: create/login the profile, set the signed cookie, and
-    // adopt the plan the DB returns (never trust the locally-stored plan for data access).
-    try {
-      const resp = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          action: "login",
-          identifier: profile.email,
-          name: profile.name,
-          language: profile.language,
-          timezone: profile.timezone,
-        }),
-      });
-      if (resp.ok) {
-        const server = await resp.json() as { plan?: ClientProfile["plan"]; name?: string | null };
-        saveClientProfile({ ...profile, plan: server.plan ?? profile.plan });
-        setTab("bets");
-        return;
-      }
-    } catch { /* fall through to local-only below */ }
-    // Network/server failure: keep the user logged in locally but never above 'free'.
-    saveClientProfile({ ...profile, plan: profileHasAccess(profile) ? "free" : profile.plan });
+  const handleAuthed = (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => {
+    // The modal already authenticated (register/login with password) and the
+    // server set the signed session cookie. We only adopt the DB plan and persist
+    // the local UX profile — the cookie, not localStorage, is the data authority.
+    saveClientProfile({ ...profile, plan: serverPlan ?? profile.plan });
     setTab("bets");
   };
 
@@ -5284,10 +5286,8 @@ export default function Dashboard() {
       {authOpen && (
         <ClientAuthModal
           intent={authIntent}
-          storedProfiles={storedProfiles}
           onClose={() => setAuthOpen(false)}
-          onSave={handleAuthSave}
-          onNotFound={(_email: string) => undefined}
+          onAuthed={handleAuthed}
         />
       )}
       {checkoutOpen && checkoutPlan && (
