@@ -56,6 +56,31 @@ def test_diff_empty_when_unchanged():
     }
 
 
+def test_diff_handles_duplicate_names_without_collapsing():
+    # two distinct players sharing a displayName (realistic across 48 squads):
+    # the duplicate must not be silently dropped from the diff
+    prev = [_p("Dup", "G"), _p("Dup", "D"), _p("Solo")]
+    new = [_p("Dup", "G"), _p("Solo")]
+    d = diff_rosters(prev, new)
+    assert d["removed"] == ["Dup"]
+    assert d["added"] == []
+
+
+def test_diff_injury_change_on_duplicate_name_position():
+    prev = [_p("Dup", "G", injured=False), _p("Dup", "D", injured=False)]
+    new = [_p("Dup", "G", injured=False), _p("Dup", "D", injured=True)]
+    d = diff_rosters(prev, new)
+    assert d["injury_changes"] == ["Dup"]
+    assert d["added"] == [] and d["removed"] == []
+
+
+def test_roster_hash_deterministic_for_non_ascii_names():
+    # guards json.dumps ensure_ascii determinism across runs/platforms
+    roster = [_p("Müller", "F"), _p("Ødegaard", "M")]
+    assert roster_hash(roster) == roster_hash(list(reversed(roster)))
+    assert roster_hash(roster) == "504e9b13dadb271f8a3a5f760d18de465553c26b3d7300a8e9e06c8b24b93f61"
+
+
 # ─── _player_rows: uniform-row invariant (P1/P3 PostgREST lesson) ──────────────
 
 def test_player_rows_have_identical_keys_with_explicit_nulls():

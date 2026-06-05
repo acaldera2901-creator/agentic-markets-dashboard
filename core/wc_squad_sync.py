@@ -36,6 +36,8 @@ def _now() -> str:
 
 def roster_hash(players: list[dict]) -> str:
     """Order-insensitive sha256 over (name, position, injured) per player."""
+    # Scope is INTENTIONALLY membership+injury only: shirt_number/club/age
+    # (future enrichment) must NOT trigger reveal snapshots.
     canon = sorted(
         [p.get("name") or "", p.get("position") or "", bool(p.get("injured"))]
         for p in players
@@ -44,21 +46,35 @@ def roster_hash(players: list[dict]) -> str:
 
 
 def diff_rosters(prev: list[dict] | None, new: list[dict]) -> dict | None:
-    """Reveal diff vs the previous roster; None on first capture (no diff)."""
+    """Reveal diff vs the previous roster; None on first capture (no diff).
+
+    Keyed on (name, position): two players sharing a displayName (possible
+    across 48 international squads) must not silently collapse — roster_hash
+    covers ALL players, so a collapsed diff would write a snapshot whose diff
+    does not explain its own hash change.
+    """
     if prev is None:
         return None
-    prev_by_name = {p.get("name"): p for p in prev if p.get("name")}
-    new_by_name = {p.get("name"): p for p in new if p.get("name")}
+
+    def _by_key(roster: list[dict]) -> dict:
+        out = {}
+        for p in roster:
+            if p.get("name"):
+                out[(p["name"], p.get("position") or "")] = p
+        if len(out) != sum(1 for p in roster if p.get("name")):
+            logger.debug("duplicate (name, position) entries collapsed in roster diff")
+        return out
+
+    prev_by_key = _by_key(prev)
+    new_by_key = _by_key(new)
     return {
-        "added": sorted(n for n in new_by_name if n not in prev_by_name),
-        "removed": sorted(n for n in prev_by_name if n not in new_by_name),
-        "injury_changes": sorted(
-            n
-            for n in new_by_name
-            if n in prev_by_name
-            and bool(new_by_name[n].get("injured"))
-            != bool(prev_by_name[n].get("injured"))
-        ),
+        "added": sorted({k[0] for k in new_by_key.keys() - prev_by_key.keys()}),
+        "removed": sorted({k[0] for k in prev_by_key.keys() - new_by_key.keys()}),
+        "injury_changes": sorted({
+            k[0]
+            for k in new_by_key.keys() & prev_by_key.keys()
+            if bool(new_by_key[k].get("injured")) != bool(prev_by_key[k].get("injured"))
+        }),
     }
 
 
