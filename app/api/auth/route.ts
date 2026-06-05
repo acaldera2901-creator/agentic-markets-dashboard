@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dbQuery } from "@/lib/db";
+import { dbQuery, dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
@@ -61,22 +61,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
     }
     const txHash = typeof body.tx_hash === "string" ? body.tx_hash.trim() : null;
-    await dbQuery(
-      `UPDATE profiles
-         SET plan = 'pending_payment',
-             requested_plan = $2,
-             tx_hash = $3,
-             updated_at = NOW()
-       WHERE identifier = $1
-          OR LOWER(TRIM(identifier)) = $1`,
-      [ctx.identifier, requested, txHash]
-    );
+    // Fail-loud write: a swallowed UPDATE here would tell the client the checkout
+    // was registered while the DB never changed (silent payment loss).
+    try {
+      await dbExecute(
+        `UPDATE profiles
+           SET plan = 'pending_payment',
+               requested_plan = $2,
+               tx_hash = $3,
+               updated_at = NOW()
+         WHERE identifier = $1
+            OR LOWER(TRIM(identifier)) = $1`,
+        [ctx.identifier, requested, txHash]
+      );
+    } catch (e) {
+      console.error("[auth] checkout write failed:", String(e));
+      return NextResponse.json({ error: "checkout persistence failed" }, { status: 500 });
+    }
     const updated = await loadProfile(ctx.identifier);
+    if (!updated || updated.plan !== "pending_payment") {
+      return NextResponse.json({ error: "checkout not persisted" }, { status: 500 });
+    }
     return NextResponse.json(
       {
         identifier: ctx.identifier,
-        plan: updated?.plan ?? "pending_payment",
-        name: updated?.name ?? ctx.name,
+        plan: updated.plan,
+        name: updated.name ?? ctx.name,
         requested_plan: requested,
       },
       { headers: { "cache-control": "no-store" } }
@@ -97,20 +107,32 @@ export async function POST(req: Request) {
   // /api/founder/grant or the admin console — never inferred from a (claimable,
   // passwordless) email identifier, which would let anyone self-grant admin_full.
   // COALESCE keeps existing name/language/timezone when the new value is null.
-  await dbQuery(
-    `INSERT INTO profiles (identifier, name, language, timezone, plan)
+  try {
+    await dbExecute(
+      `INSERT INTO profiles (identifier, name, language, timezone, plan)
        VALUES ($1, $2, $3, $4, 'free')
      ON CONFLICT (identifier) DO UPDATE
        SET name = COALESCE(EXCLUDED.name, profiles.name),
            language = COALESCE(EXCLUDED.language, profiles.language),
            timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
            updated_at = NOW()`,
-    [identifier, name, language, timezone]
-  );
+      [identifier, name, language, timezone]
+    );
+  } catch (e) {
+    console.error("[auth] profile upsert failed:", String(e));
+    return NextResponse.json({ error: "profile persistence failed" }, { status: 500 });
+  }
 
   const profile = await loadProfile(identifier);
   if (!profile) {
     return NextResponse.json({ error: "profile persistence failed" }, { status: 500 });
+  }
+
+  // Passwordless login must never hand out an elevated session: anyone who
+  // knows the admin identifier would otherwise get admin_full data access.
+  // Admin sessions are established only via the secret-gated /api/founder/grant.
+  if (profile.plan === "admin_full") {
+    return NextResponse.json({ error: "this profile requires founder access" }, { status: 403 });
   }
 
   const token = signSession(identifier);

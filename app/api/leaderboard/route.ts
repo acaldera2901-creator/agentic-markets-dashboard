@@ -1,24 +1,36 @@
 import { NextResponse } from "next/server";
-import { dbQuery } from "@/lib/db";
+import { createHash } from "node:crypto";
+import { dbQuery, dbExecute } from "@/lib/db";
+import { getSessionPlan } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  // Opt-in requires an authenticated session; the identity (email_hash) is
+  // derived server-side from the session, never trusted from the body —
+  // otherwise anyone could hijack another user's display_name.
+  const ctx = await getSessionPlan(req);
+  if (!ctx) {
+    return NextResponse.json({ error: "authentication required" }, { status: 401 });
+  }
   try {
-    const body = await req.json() as { emailHash: string; displayName: string };
-    if (!body.emailHash || !body.displayName) {
-      return NextResponse.json({ error: "missing fields" }, { status: 400 });
+    const body = await req.json() as { displayName?: string };
+    const displayName = typeof body.displayName === "string" ? body.displayName.trim().slice(0, 40) : "";
+    if (!displayName) {
+      return NextResponse.json({ error: "displayName required" }, { status: 400 });
     }
 
-    await dbQuery(
+    const emailHash = createHash("sha256").update(ctx.identifier).digest("hex");
+    await dbExecute(
       `INSERT INTO leaderboard (display_name, email_hash, points, bets_won, bets_total, pnl)
        VALUES ($1, $2, 0, 0, 0, 0)
        ON CONFLICT (email_hash) DO UPDATE SET display_name = EXCLUDED.display_name, updated_at = NOW()`,
-      [body.displayName, body.emailHash]
+      [displayName, emailHash]
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    console.error("[leaderboard] opt-in write failed:", String(e));
+    return NextResponse.json({ error: "persistence failed" }, { status: 500 });
   }
 }
 

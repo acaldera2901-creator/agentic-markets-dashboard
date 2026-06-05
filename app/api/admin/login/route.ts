@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { safeEqual } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     const { password } = await req.json() as { password?: string };
 
-    if (!ADMIN_SECRET || password !== ADMIN_SECRET) {
+    if (!ADMIN_SECRET || !safeEqual(password, ADMIN_SECRET)) {
       // Add a small delay to prevent brute-force
       await new Promise((r) => setTimeout(r, 500));
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

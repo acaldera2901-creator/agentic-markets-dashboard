@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import {
@@ -10,8 +11,6 @@ import {
 import type { Plan } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
 type ProfileAdminRow = {
   id: string;
@@ -27,10 +26,7 @@ type ProfileAdminRow = {
 };
 
 function isAuthorized(req: NextRequest): boolean {
-  if (!ADMIN_SECRET) return false;
-  const cookie = req.cookies.get("admin_token")?.value;
-  const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
-  return cookie === ADMIN_SECRET || bearer === ADMIN_SECRET;
+  return isAdminAuthorized(req);
 }
 
 async function ensureAdminProfile() {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { safeEqual } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,8 @@ function isAuthorized(req: Request): boolean {
   const secret = process.env.RESEARCH_SECRET || process.env.CRON_SECRET;
   // Default-deny: diagnostics expose DB state — never fail open on missing env.
   if (!secret) return false;
-  return req.headers.get("authorization") === `Bearer ${secret}`;
+  const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
+  return safeEqual(bearer, secret);
 }
 
 async function safeQuery<T>(query: string): Promise<T[]> {

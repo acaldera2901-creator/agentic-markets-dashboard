@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery } from "@/lib/db";
 import { OPERATING_COSTS, monthlyBurnEur } from "@/lib/operating-costs";
 
 export const dynamic = "force-dynamic";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-
 function isAuthorized(req: NextRequest): boolean {
-  if (!ADMIN_SECRET) return false;
-  const cookie = req.cookies.get("admin_token")?.value;
-  const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
-  return cookie === ADMIN_SECRET || bearer === ADMIN_SECRET;
+  return isAdminAuthorized(req);
 }
 
 export async function GET(req: NextRequest) {

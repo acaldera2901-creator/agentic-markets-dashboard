@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -8,10 +9,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 
 function isAuthorized(req: NextRequest): boolean {
-  if (!ADMIN_SECRET) return false;
-  const cookie = req.cookies.get("admin_token")?.value;
-  const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
-  return cookie === ADMIN_SECRET || bearer === ADMIN_SECRET;
+  return isAdminAuthorized(req);
 }
 
 async function sendTelegram(text: string): Promise<boolean> {

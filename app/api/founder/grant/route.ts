@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { dbQuery } from "@/lib/db";
+import { dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { ADMIN_IDENTIFIER, ADMIN_PROFILE_PLAN } from "@/lib/admin-profile-policy";
+import { safeEqual } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,18 +22,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  if (body.secret !== expected) {
+  if (!safeEqual(body.secret, expected)) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  // Upsert the admin profile and force plan = admin_full.
-  await dbQuery(
-    `INSERT INTO profiles (identifier, name, plan)
-       VALUES ($1, 'Andrea', $2)
-     ON CONFLICT (identifier) DO UPDATE
-       SET plan = $2, updated_at = NOW()`,
-    [ADMIN_IDENTIFIER, ADMIN_PROFILE_PLAN]
-  );
+  // Upsert the admin profile and force plan = admin_full. Fail-loud: a swallowed
+  // write here would set the session cookie while the plan was never granted.
+  try {
+    await dbExecute(
+      `INSERT INTO profiles (identifier, name, plan)
+         VALUES ($1, 'Andrea', $2)
+       ON CONFLICT (identifier) DO UPDATE
+         SET plan = $2, updated_at = NOW()`,
+      [ADMIN_IDENTIFIER, ADMIN_PROFILE_PLAN]
+    );
+  } catch (e) {
+    console.error("[founder] grant write failed:", String(e));
+    return NextResponse.json({ ok: false, error: "grant persistence failed" }, { status: 500 });
+  }
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, signSession(ADMIN_IDENTIFIER), SESSION_COOKIE_OPTIONS);
