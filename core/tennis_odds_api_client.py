@@ -119,6 +119,15 @@ def merge_tennis_odds(fixtures: list[dict[str, Any]], odds_rows: list[dict[str, 
 async def get_tennis_odds(sport_keys: tuple[str, ...] = TENNIS_SPORT_KEYS) -> list[dict[str, Any]]:
     if not settings.ODDS_API_KEY:
         return []
+    # Quota guard: the free /sports listing tells us which tournaments are
+    # in-season — polling all 21 keys blind costs ~42 credits/cycle for nothing.
+    from core.odds_api_client import get_active_sport_keys
+
+    active = await get_active_sport_keys()
+    if active is not None:
+        sport_keys = tuple(k for k in sport_keys if k in active)
+    if not sport_keys:
+        return []
     rows: list[dict[str, Any]] = []
     async with httpx.AsyncClient(timeout=15.0) as client:
         for sport_key in sport_keys:

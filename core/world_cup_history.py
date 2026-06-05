@@ -56,6 +56,13 @@ _TEAM_ALIASES: dict[str, str] = {
     "czechia": "Czech Republic",
     "china pr": "China",
     "cape verde": "Cabo Verde",
+    # Bookmaker-feed variants (The Odds API / exchanges) — keep WC2026 odds
+    # matching robust regardless of the provider's spelling.
+    "holland": "Netherlands",
+    "ksa": "Saudi Arabia",
+    "czech rep": "Czech Republic",
+    "bosnia and herz": "Bosnia and Herzegovina",
+    "bosnia herzegovina": "Bosnia and Herzegovina",
 }
 
 

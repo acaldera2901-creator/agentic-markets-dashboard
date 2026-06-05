@@ -49,15 +49,19 @@ function envEnabled(name: string): boolean {
 // is fresh — a dead agent must never hold a gate true (fail-closed).
 const HEARTBEAT_FRESH_MS = 15 * 60 * 1000;
 
+function isHeartbeatFresh(row: (HeartbeatRow & { detail: unknown }) | undefined): boolean {
+  if (!row?.last_seen) return false;
+  const lastSeen = new Date(row.last_seen).getTime();
+  return !Number.isNaN(lastSeen) && Date.now() - lastSeen <= HEARTBEAT_FRESH_MS;
+}
+
 function heartbeatReadiness(
   row: (HeartbeatRow & { detail: unknown }) | undefined
-): { national_team_model: boolean; venue_context: boolean } {
-  const closed = { national_team_model: false, venue_context: false };
-  if (!row?.last_seen) return closed;
-  const lastSeen = new Date(row.last_seen).getTime();
-  if (Number.isNaN(lastSeen) || Date.now() - lastSeen > HEARTBEAT_FRESH_MS) return closed;
+): { national_team_model: boolean; venue_context: boolean; group_table_logic: boolean } {
+  const closed = { national_team_model: false, venue_context: false, group_table_logic: false };
+  if (!isHeartbeatFresh(row)) return closed;
 
-  const detail = row.detail;
+  const detail = row!.detail;
   if (typeof detail !== "object" || detail === null) return closed;
   const worldCup = (detail as { world_cup?: unknown }).world_cup;
   if (typeof worldCup !== "object" || worldCup === null) return closed;
@@ -70,11 +74,27 @@ function heartbeatReadiness(
   const gates = (typeof nested === "object" && nested !== null ? nested : readiness) as {
     national_team_model?: unknown;
     venue_context?: unknown;
+    stage_context?: unknown;
   };
   return {
     national_team_model: gates.national_team_model === true,
     venue_context: gates.venue_context === true,
+    // Python computes group/stage inference as `stage_context` (infer_stage).
+    group_table_logic: gates.stage_context === true,
   };
+}
+
+// travel/rest/weather completeness is measured by the ModelAgent as
+// venue_context_quality (0..1) inside its world_cup_data_quality detail.
+function modelVenueQualityReady(
+  row: (HeartbeatRow & { detail: unknown }) | undefined,
+  threshold = 0.7
+): boolean {
+  if (!isHeartbeatFresh(row)) return false;
+  const detail = row!.detail;
+  if (typeof detail !== "object" || detail === null) return false;
+  const quality = (detail as { venue_context_quality?: unknown }).venue_context_quality;
+  return typeof quality === "number" && quality >= threshold;
 }
 
 export type WorldCupDiagnostics = {
@@ -195,11 +215,10 @@ export async function buildWorldCupDiagnostics(): Promise<WorldCupDiagnostics> {
   const activePredictions = Number(match.active) + Number(unified.active);
   const settledOrHistorical = Number(match.historical) + Number(unified.historical);
 
-  // P2 wiring: national_team_model and venue_context are computed by the Python
-  // DataCollector and shipped in its heartbeat detail (world_cup.readiness.*).
-  // Fail-closed: missing/stale/garbled heartbeat → false. The freshness guard
-  // ensures a dead agent can never hold a gate true.
+  // Readiness gates driven by the live Python heartbeats (fail-closed: a
+  // missing/stale/garbled heartbeat can never hold a gate true).
   const dataCollectorRow = heartbeats.find((row) => row.agent_name === "DataCollector");
+  const modelAgentRow = heartbeats.find((row) => row.agent_name === "ModelAgent");
   const dcReadiness = heartbeatReadiness(dataCollectorRow);
 
   const readiness = {
@@ -214,8 +233,8 @@ export async function buildWorldCupDiagnostics(): Promise<WorldCupDiagnostics> {
         (latestDataQualityDetail as { odds_snapshot?: unknown }).odds_snapshot
     ),
     squad_news: false,
-    travel_rest_weather: false,
-    group_table_logic: false,
+    travel_rest_weather: modelVenueQualityReady(modelAgentRow),
+    group_table_logic: dcReadiness.group_table_logic,
     settlement: settledOrHistorical > 0,
     history: Number(unified.historical) > 0,
   };
