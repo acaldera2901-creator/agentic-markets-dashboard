@@ -57,8 +57,8 @@ function isHeartbeatFresh(row: (HeartbeatRow & { detail: unknown }) | undefined)
 
 function heartbeatReadiness(
   row: (HeartbeatRow & { detail: unknown }) | undefined
-): { national_team_model: boolean; venue_context: boolean; group_table_logic: boolean } {
-  const closed = { national_team_model: false, venue_context: false, group_table_logic: false };
+): { national_team_model: boolean; venue_context: boolean; group_table_logic: boolean; squad_news: boolean } {
+  const closed = { national_team_model: false, venue_context: false, group_table_logic: false, squad_news: false };
   if (!isHeartbeatFresh(row)) return closed;
 
   const detail = row!.detail;
@@ -75,12 +75,16 @@ function heartbeatReadiness(
     national_team_model?: unknown;
     venue_context?: unknown;
     stage_context?: unknown;
+    squad_news?: unknown;
   };
   return {
     national_team_model: gates.national_team_model === true,
     venue_context: gates.venue_context === true,
     // Python computes group/stage inference as `stage_context` (infer_stage).
     group_table_logic: gates.stage_context === true,
+    // P4-A: ESPN squad coverage (>=80% of qualified teams), fail-closed on
+    // stale heartbeat exactly like the other heartbeat-driven gates.
+    squad_news: gates.squad_news === true,
   };
 }
 
@@ -232,7 +236,7 @@ export async function buildWorldCupDiagnostics(): Promise<WorldCupDiagnostics> {
         typeof latestDataQualityDetail === "object" &&
         (latestDataQualityDetail as { odds_snapshot?: unknown }).odds_snapshot
     ),
-    squad_news: false,
+    squad_news: dcReadiness.squad_news,
     travel_rest_weather: modelVenueQualityReady(modelAgentRow),
     group_table_logic: dcReadiness.group_table_logic,
     settlement: settledOrHistorical > 0,

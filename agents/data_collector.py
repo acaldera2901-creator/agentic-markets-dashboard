@@ -23,6 +23,7 @@ from core.world_cup_registry import api_football_season_for, build_cycle_detail,
 from core.world_cup_venue_context import enrich_venue_context
 from core.world_cup_history import canonical_team_name, load_national_history, WC2026_TEAMS
 from core.world_cup_team_model import build_profile
+from core.espn_soccer_client import get_squad_coverage, get_world_cup_teams
 from config.settings import settings
 
 
@@ -260,16 +261,42 @@ class DataCollectorAgent(BaseAgent):
         else:
             self._consecutive_empty_cycles = 0
 
+        # P4-A: squad_news via ESPN (fail-soft — a provider outage closes the
+        # gate, never breaks the cycle). TTL-cached in espn_soccer_client, so
+        # this is ~1 burst of requests every 6h, not one per cycle.
+        squad_summary: dict[str, int] = {}
+        squad_news_ready = False
+        try:
+            coverage = await get_squad_coverage()
+            wc_teams_total = len(await get_world_cup_teams())
+            squad_summary = {
+                "covered": len(coverage),
+                "teams": wc_teams_total,
+                "injured_total": sum(c.get("injured", 0) for c in coverage.values()),
+            }
+            # Broad coverage, not perfection: >=80% of the qualified field
+            # with a published squad keeps the gate honest and reachable.
+            squad_news_ready = (
+                wc_teams_total > 0 and len(coverage) >= int(0.8 * wc_teams_total)
+            )
+        except Exception as e:
+            source_errors.append(f"WC:squad_news:{e}")
+
         self.set_status_detail(
             build_cycle_detail(
                 league_counts=league_counts,
                 source_errors=source_errors,
-                # national_model + venue_context are now wired (paper tier). Settlement
-                # stays false -> registry readiness remains monitor_only for signal,
-                # but the WC data-quality tier reaches paper_only in ModelAgent.
+                # national_model + venue_context wired (paper tier); squad_news
+                # wired via ESPN (P4-A); settlement_feed = a result provider is
+                # configured AND the unified history writer exists (P4-B in
+                # agents/result_settlement.py).
                 national_model_ready=national_model_ready(),
                 venue_context_ready=wc_venue_context_ready,
-                settlement_ready=False,
+                settlement_ready=bool(
+                    settings.API_FOOTBALL_KEY or settings.FOOTBALL_DATA_ORG_API_KEY
+                ),
+                squad_news_ready=squad_news_ready,
+                squad_coverage=squad_summary,
             )
         )
 
