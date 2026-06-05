@@ -265,3 +265,35 @@ def test_player_rows_dedupes_duplicate_names_with_warning():
     )
     assert [r["player_name"] for r in rows] == ["Dup", "Solo"]
     assert rows[0]["position"] == "G"  # first occurrence wins
+
+
+# ─── DataCollector hook ─────────────────────────────────────────────────────────
+
+async def test_collector_cycle_invokes_squad_sync(monkeypatch):
+    """The collect cycle calls sync_rosters once, fail-soft: a sync exception
+    must land in source_errors, not break the cycle."""
+    from agents import data_collector as dc
+
+    monkeypatch.setattr(dc, "LEAGUE_IDS", {})  # skip the league loop entirely
+    monkeypatch.setattr(dc, "get_squad_coverage", AsyncMock(return_value={"Italy": {"squad_size": 26, "injured": 1}}))
+    monkeypatch.setattr(dc, "get_world_cup_teams", AsyncMock(return_value=[{"id": "1", "name": "Italy"}]))
+    monkeypatch.setattr(dc, "national_model_ready", lambda: False)
+    sync_mock = AsyncMock(return_value={"teams_seen": 1, "teams_synced": 0, "snapshots_written": 0, "errors": [], "skipped": False})
+    monkeypatch.setattr(dc, "sync_rosters", sync_mock)
+
+    agent = dc.DataCollectorAgent.__new__(dc.DataCollectorAgent)  # skip __init__ (Redis/DataHub)
+    agent._upcoming_kickoffs = []
+    agent._consecutive_empty_cycles = 0
+    agent._last_offseason_log = 0.0
+    agent._hub = MagicMock()
+    agent._hub.collect_all_fixtures = AsyncMock(return_value=[])
+    agent._hub.collect_all_odds = AsyncMock(return_value=None)
+    agent.logger = MagicMock()
+    agent.set_status_detail = MagicMock()
+
+    await agent._collect_cycle()
+    sync_mock.assert_awaited_once()
+
+    # fail-soft: sync raising must not propagate
+    monkeypatch.setattr(dc, "sync_rosters", AsyncMock(side_effect=RuntimeError("boom")))
+    await agent._collect_cycle()  # MUST NOT raise
