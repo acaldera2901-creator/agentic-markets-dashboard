@@ -38,6 +38,8 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       pick_of_day: isPotD,
       p1: null, p2: null, odds_p1: null, odds_p2: null, edge: null, best_selection: null,
       elo_p1: null, elo_p2: null, elo_p1_overall: null, elo_p2_overall: null,
+      serve_form_p1: null, serve_form_p2: null, return_form_p1: null, return_form_p2: null,
+      surface_reliability_p1: null, surface_reliability_p2: null, feature_quality: null,
     } as unknown as T & { locked: boolean; pick_of_day: boolean };
   });
 }
@@ -67,6 +69,19 @@ type TennisPredictionInput = {
   elo_p2_overall?: number | null;
   surface_matches_p1?: number | null;
   surface_matches_p2?: number | null;
+  serve_form_p1?: number | null;
+  serve_form_p2?: number | null;
+  return_form_p1?: number | null;
+  return_form_p2?: number | null;
+  surface_reliability_p1?: number | null;
+  surface_reliability_p2?: number | null;
+  feature_quality?: number | null;
+  p1_rest_days?: number | null;
+  p2_rest_days?: number | null;
+  p1_recent_matches_14d?: number | null;
+  p2_recent_matches_14d?: number | null;
+  h2h_p1_wins?: number | null;
+  h2h_p2_wins?: number | null;
   elo_raw_p1?: number | null;
   elo_raw_p2?: number | null;
 };
@@ -91,6 +106,23 @@ type DbTennisPrediction = {
   odds_p2: number | null;
   edge: number | null;
   best_selection: string | null;
+  elo_p1: number | null;
+  elo_p2: number | null;
+  surface_matches_p1: number | null;
+  surface_matches_p2: number | null;
+  serve_form_p1: number | null;
+  serve_form_p2: number | null;
+  return_form_p1: number | null;
+  return_form_p2: number | null;
+  surface_reliability_p1: number | null;
+  surface_reliability_p2: number | null;
+  feature_quality: number | null;
+  p1_rest_days: number | null;
+  p2_rest_days: number | null;
+  p1_recent_matches_14d: number | null;
+  p2_recent_matches_14d: number | null;
+  h2h_p1_wins: number | null;
+  h2h_p2_wins: number | null;
   model_version: string | null;
   computed_at: string | null;
 };
@@ -125,7 +157,13 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
     SELECT * FROM (
       SELECT DISTINCT ON (COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id))
              tp.match_id, tp.tournament, tp.surface, tp.player1, tp.player2, tp.scheduled_at,
-             tp.p1, tp.p2, tp.odds_p1, tp.odds_p2, tp.edge, tp.best_selection, tp.model_version, tp.computed_at
+             tp.p1, tp.p2, tp.odds_p1, tp.odds_p2, tp.edge, tp.best_selection,
+             tp.elo_p1, tp.elo_p2, tp.surface_matches_p1, tp.surface_matches_p2,
+             tp.serve_form_p1, tp.serve_form_p2, tp.return_form_p1, tp.return_form_p2,
+             tp.surface_reliability_p1, tp.surface_reliability_p2, tp.feature_quality,
+             tp.p1_rest_days, tp.p2_rest_days, tp.p1_recent_matches_14d, tp.p2_recent_matches_14d,
+             tp.h2h_p1_wins, tp.h2h_p2_wins,
+             tp.model_version, tp.computed_at
       FROM tennis_predictions tp
       WHERE tp.scheduled_at > NOW() - INTERVAL '2 hours'
         AND tp.winner IS NULL
@@ -150,6 +188,23 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
       odds_p2: row.odds_p2 == null ? null : Number(row.odds_p2),
       edge: row.edge == null ? null : Number(row.edge),
       best_selection: row.best_selection,
+      elo_p1: row.elo_p1 == null ? null : Number(row.elo_p1),
+      elo_p2: row.elo_p2 == null ? null : Number(row.elo_p2),
+      surface_matches_p1: row.surface_matches_p1 == null ? null : Number(row.surface_matches_p1),
+      surface_matches_p2: row.surface_matches_p2 == null ? null : Number(row.surface_matches_p2),
+      serve_form_p1: row.serve_form_p1 == null ? null : Number(row.serve_form_p1),
+      serve_form_p2: row.serve_form_p2 == null ? null : Number(row.serve_form_p2),
+      return_form_p1: row.return_form_p1 == null ? null : Number(row.return_form_p1),
+      return_form_p2: row.return_form_p2 == null ? null : Number(row.return_form_p2),
+      surface_reliability_p1: row.surface_reliability_p1 == null ? null : Number(row.surface_reliability_p1),
+      surface_reliability_p2: row.surface_reliability_p2 == null ? null : Number(row.surface_reliability_p2),
+      feature_quality: row.feature_quality == null ? null : Number(row.feature_quality),
+      p1_rest_days: row.p1_rest_days == null ? null : Number(row.p1_rest_days),
+      p2_rest_days: row.p2_rest_days == null ? null : Number(row.p2_rest_days),
+      p1_recent_matches_14d: row.p1_recent_matches_14d == null ? null : Number(row.p1_recent_matches_14d),
+      p2_recent_matches_14d: row.p2_recent_matches_14d == null ? null : Number(row.p2_recent_matches_14d),
+      h2h_p1_wins: row.h2h_p1_wins == null ? null : Number(row.h2h_p1_wins),
+      h2h_p2_wins: row.h2h_p2_wins == null ? null : Number(row.h2h_p2_wins),
       model_version: row.model_version || "elo_surface_v2",
     })),
     computed_at: rows[0]?.computed_at || undefined,
@@ -178,6 +233,19 @@ function normalizePrediction(p: TennisPredictionInput) {
     elo_p2_overall: p.elo_p2_overall ?? null,
     surface_matches_p1: p.surface_matches_p1 ?? null,
     surface_matches_p2: p.surface_matches_p2 ?? null,
+    serve_form_p1: p.serve_form_p1 ?? null,
+    serve_form_p2: p.serve_form_p2 ?? null,
+    return_form_p1: p.return_form_p1 ?? null,
+    return_form_p2: p.return_form_p2 ?? null,
+    surface_reliability_p1: p.surface_reliability_p1 ?? null,
+    surface_reliability_p2: p.surface_reliability_p2 ?? null,
+    feature_quality: p.feature_quality ?? null,
+    p1_rest_days: p.p1_rest_days ?? null,
+    p2_rest_days: p.p2_rest_days ?? null,
+    p1_recent_matches_14d: p.p1_recent_matches_14d ?? null,
+    p2_recent_matches_14d: p.p2_recent_matches_14d ?? null,
+    h2h_p1_wins: p.h2h_p1_wins ?? null,
+    h2h_p2_wins: p.h2h_p2_wins ?? null,
     elo_raw_p1: p.elo_raw_p1 ?? null,
     elo_raw_p2: p.elo_raw_p2 ?? null,
   };
@@ -196,7 +264,6 @@ export async function GET(req: Request) {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
       markets_active: matches.length,
-      pnl: 0.0,
       source: "live",
     };
     return NextResponse.json({
@@ -216,7 +283,6 @@ export async function GET(req: Request) {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
       markets_active: matches.length,
-      pnl: 0.0,
       source: "database",
     };
     return NextResponse.json({
@@ -230,7 +296,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     matches: [],
-    summary: { total_today: 0, value_bets: 0, markets_active: 0, pnl: 0.0, source: "none" },
+    summary: { total_today: 0, value_bets: 0, markets_active: 0, source: "none" },
     status: "not_ready",
     computed_at: now,
     source: "none",

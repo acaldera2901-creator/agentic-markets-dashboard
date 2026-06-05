@@ -18,7 +18,7 @@
 // ── Configurazione ─────────────────────────────────────────────────────────────
 
 const SPREADSHEET_ID    = "1aFbrx-w2uI4tRvHjEfWskNcfMuWY5GgwCYNMYE3Q8Mo";
-const FDORG_API_KEY     = "1c9a0375c0414a6293b884aba824395d";
+const FDORG_API_KEY     = PropertiesService.getScriptProperties().getProperty("FOOTBALL_DATA_ORG_API_KEY") || "";
 const FDORG_BASE        = "https://api.football-data.org/v4";
 
 // Sheet IDs già caricati su Drive (CSV → Google Sheets)

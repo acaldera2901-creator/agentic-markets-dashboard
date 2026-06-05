@@ -192,7 +192,9 @@ export default function AdminPage() {
     }
   }, [router]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    queueMicrotask(() => { void fetchData(); });
+  }, [fetchData]);
 
   async function logout() {
     await fetch("/api/admin/login", { method: "DELETE" });

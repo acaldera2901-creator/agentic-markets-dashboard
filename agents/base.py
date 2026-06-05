@@ -9,6 +9,8 @@ from core.redis_client import set_heartbeat
 from core.supabase_client import upsert_heartbeat
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class BaseAgent(ABC):

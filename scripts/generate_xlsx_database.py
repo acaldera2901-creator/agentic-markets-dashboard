@@ -22,7 +22,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 # ── Config ────────────────────────────────────────────────────────────────────
-FDORG_API_KEY = os.getenv("FOOTBALL_DATA_ORG_API_KEY", "1c9a0375c0414a6293b884aba824395d")
+FDORG_API_KEY = os.getenv("FOOTBALL_DATA_ORG_API_KEY", "")
 FDORG_BASE    = "https://api.football-data.org/v4"
 SEASONS       = [2020, 2021, 2022, 2023, 2024]
 LEAGUES = {

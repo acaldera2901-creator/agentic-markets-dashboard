@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, func
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, func
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from config.settings import settings
@@ -253,6 +253,26 @@ class TennisPrediction(Base):
     odds_p2 = Column(Float, nullable=True)
     edge = Column(Float, nullable=True)
     best_selection = Column(String, nullable=True)
+    elo_p1 = Column(Float, nullable=True)
+    elo_p2 = Column(Float, nullable=True)
+    serve_form_p1 = Column(Float, nullable=True)
+    serve_form_p2 = Column(Float, nullable=True)
+    return_form_p1 = Column(Float, nullable=True)
+    return_form_p2 = Column(Float, nullable=True)
+    surface_matches_p1 = Column(Integer, nullable=True)
+    surface_matches_p2 = Column(Integer, nullable=True)
+    surface_reliability_p1 = Column(Float, nullable=True)
+    surface_reliability_p2 = Column(Float, nullable=True)
+    feature_quality = Column(Float, nullable=True)
+    p1_rest_days = Column(Integer, nullable=True)
+    p2_rest_days = Column(Integer, nullable=True)
+    p1_recent_matches_14d = Column(Integer, nullable=True)
+    p2_recent_matches_14d = Column(Integer, nullable=True)
+    h2h_p1_wins = Column(Integer, nullable=True)
+    h2h_p2_wins = Column(Integer, nullable=True)
+    h2h_surface_p1 = Column(Integer, nullable=True)
+    h2h_surface_p2 = Column(Integer, nullable=True)
+    feature_snapshot = Column(JSON, nullable=True)
     model_version = Column(String, default="elo_v1")
     computed_at = Column(DateTime, default=datetime.datetime.utcnow)
     outcome = Column(String, nullable=True)      # "P1_WIN" or "P2_WIN"

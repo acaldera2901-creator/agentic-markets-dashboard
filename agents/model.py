@@ -287,6 +287,19 @@ class ModelAgent(BaseAgent):
                 "feature_adjustments": ",".join(adjusted.adjustments_applied),
                 "confidence_weight": str(adjusted.confidence_weight),
                 "adjustment_detail": json.dumps(adjusted.adjustment_detail),
+                "model_version": "football_live_v4_xg_features",
+                "feature_quality": str(payload.get("feature_quality") or 0.0),
+                "feature_snapshot": json.dumps(payload.get("feature_snapshot") or {}),
+                "home_xg_avg": str(payload.get("home_xg_avg") or ""),
+                "away_xg_avg": str(payload.get("away_xg_avg") or ""),
+                "home_npxg_avg": str(payload.get("home_npxg_avg") or ""),
+                "away_npxg_avg": str(payload.get("away_npxg_avg") or ""),
+                "home_ppda": str(payload.get("home_ppda") or ""),
+                "away_ppda": str(payload.get("away_ppda") or ""),
+                "home_rest_days": str(payload.get("home_rest_days") or ""),
+                "away_rest_days": str(payload.get("away_rest_days") or ""),
+                "home_congestion_14d": str(payload.get("home_congestion_14d") or ""),
+                "away_congestion_14d": str(payload.get("away_congestion_14d") or ""),
             }
 
             # Arricchisci con contesto campionato/partita

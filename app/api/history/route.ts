@@ -4,6 +4,7 @@ import { dbQuery } from "@/lib/db";
 // Public track record (visible to every plan, including logged-out visitors).
 // Sourced directly from settled `bets` — the model's real results on real matches.
 // match_predictions is empty between seasons, so we read bets straight, not via a join.
+//
 export async function GET() {
   const rows = await dbQuery<{
     match_id: string;

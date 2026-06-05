@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, createContext, useContext } from "react";
+import {
+  PUBLIC_PAID_PLAN,
+  type PublicPlanKey,
+  planAmountUsdt,
+  planPriceCopy as publicPlanPriceCopy,
+} from "@/lib/commercial-plan";
+import { buildBestBetRows, type BestBetCandidate } from "@/lib/best-bets";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -43,35 +50,35 @@ const BASE_TRANSLATIONS = {
     preaccess_subtitle: "Le prediction, il portafoglio, le size e il wallet di pagamento restano nascosti finché il cliente non accede e non sceglie un piano.",
     preaccess_login: "Login", preaccess_create: "Crea profilo",
     preaccess_s1_title: "Crea profilo", preaccess_s1_desc: "Account cliente con lingua, piano e stato pagamento.",
-    preaccess_s2_title: "Scegli piano", preaccess_s2_desc: "Base per segnali manuali, Premium per agenti automatici.",
+    preaccess_s2_title: "Scegli piano", preaccess_s2_desc: "Free per preview, Signal Desk Pro per segnali e ricerca.",
     preaccess_s3_title: "Invia USDT", preaccess_s3_desc: "Il wallet compare solo dentro il checkout cliente.",
     preaccess_s4_title: "Sblocca desk", preaccess_s4_desc: "Dati reali visibili solo dopo piano attivo o approval interno.",
-    preaccess_base_desc: "Best bets, edge e spiegazioni",
-    preaccess_premium_desc: "Agenti automatici con execution live",
+    preaccess_base_desc: "Signal Desk Pro: tennis live, football research e Best Bets",
+    preaccess_premium_desc: "Accessi avanzati riservati al team interno",
     // Auth modal
     auth_eyebrow: "Client access",
     auth_login_title: "Login Signal Desk",
     auth_create_title: "Crea il tuo profilo Signal Desk",
     auth_login_sub: "Accedi con l'email usata per il tuo profilo cliente.",
-    auth_create_sub: "Crea il profilo, poi scegli Base o Premium per sbloccare i dati.",
+    auth_create_sub: "Crea il profilo, poi scegli Signal Desk Pro per sbloccare i dati.",
     auth_name_label: "Nome", auth_name_placeholder: "Il tuo nome",
     auth_not_found: "Profilo non trovato. Crea un profilo cliente per continuare.",
     auth_create_btn: "Continue to plans",
-    auth_footer: "Base e Premium sono crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
+    auth_footer: "Signal Desk Pro è crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
     // Plans
     plans_eyebrow: "Client plans",
-    plans_title: "Due livelli, una sola esperienza",
-    plans_subtitle: "Il piano Base mostra i migliori bet e il razionale. Il Premium sblocca gli agenti che eseguono da soli, con risk control e execution verificata.",
+    plans_title: "Un piano pagante, promessa chiara",
+    plans_subtitle: "Free resta preview. Signal Desk Pro sblocca tennis live, football research, Best Bets, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
     plans_cta: "View live edges",
-    plans_base_desc: "Per il cliente che vuole vedere le migliori opportunità, capire il perché e decidere se entrare.",
-    plans_base_core: "Ti mostro cosa fare", plans_base_sub: "Decisione finale al cliente",
-    plans_base_f1: "Best bets ordinati per edge, confidenza e quota",
-    plans_base_f2: "Spiegazione del razionale modello per ogni bet",
-    plans_base_f3: "Probabilità modello vs quota di mercato",
-    plans_base_f4: "Storico dei suggerimenti e performance",
-    plans_base_f5: "Notifiche quando esce un nuovo value bet",
-    plans_base_f6: "Bet automatici degli agenti",
-    plans_base_f7: "Stake sizing automatico live",
+    plans_base_desc: "Per chi vuole un desk AI operativo ma controllato: segnali, probabilità, spiegazioni, qualità dati e storico live/paper.",
+    plans_base_core: "Segnali e ricerca, non autopilot", plans_base_sub: "Decisione finale al cliente",
+    plans_base_f1: "Best Bets +EV quando odds ed edge sono disponibili",
+    plans_base_f2: "Top Model Signals quando il mercato live è vuoto",
+    plans_base_f3: "Probabilità modello, quota disponibile e spiegazione",
+    plans_base_f4: "Tennis Live V4 e Football Live V4 research",
+    plans_base_f5: "Storico, track record e paper monitoring",
+    plans_base_f6: "Execution automatica reale",
+    plans_base_f7: "Promessa di ROI garantito",
     plans_premium_desc: "Per il cliente che vuole delegare agli agenti: analisi, decisione, stake e piazzamento live.",
     plans_premium_core: "Lo faccio per te", plans_premium_sub: "Execution layer con audit completo",
     plans_premium_f1: "Tutto il piano Base incluso",
@@ -84,8 +91,8 @@ const BASE_TRANSLATIONS = {
     plans_premium_f8: "Dashboard modificabile per limiti e risk profile",
     plans_flow1_title: "Signal", plans_flow1_desc: "Gli agenti trovano il value bet.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Il cliente vede quota, edge e perché.",
-    plans_flow3_title: "Decide", plans_flow3_desc: "Base: il cliente decide. Premium: l'agente esegue.",
-    plans_flow4_title: "Execute", plans_flow4_desc: "Live solo con bet ID verificato sul conto reale.",
+    plans_flow3_title: "Decide", plans_flow3_desc: "Il cliente decide se entrare: niente execution automatica nel go-live.",
+    plans_flow4_title: "Track", plans_flow4_desc: "Prediction salvate prima dell'evento e misurate nel track record.",
     // Prediction card
     pred_why_show: "▼ perché", pred_why_hide: "▲ meno",
     pred_why_title: "Perché questa previsione",
@@ -102,8 +109,8 @@ const BASE_TRANSLATIONS = {
     board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
     // Profile panel
     profile_upgrade_eyebrow: "Passa a Pro",
-    profile_upgrade_title: "Autopilot Agents",
-    profile_upgrade_desc: "Sblocca agenti automatici, stake sizing, stop loss e live execution verificata sul tuo conto exchange.",
+    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_desc: "Sblocca tennis live, football research, Best Bets, spiegazioni modello e track record.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
     // Settings
@@ -151,7 +158,7 @@ const BASE_TRANSLATIONS = {
     locked_btn: "Login / Crea profilo",
     locked_plan_eyebrow: "Piano richiesto",
     locked_plan_title: "Scegli un pacchetto per sbloccare il desk",
-    locked_plan_desc: "Il profilo è attivo, ma prediction, edge e spiegazioni si sbloccano solo dopo aver selezionato Base o Premium.",
+    locked_plan_desc: "Il profilo è attivo, ma prediction, edge e spiegazioni si sbloccano solo dopo aver selezionato Signal Desk Pro.",
     locked_plan_btn: "Vai agli abbonamenti",
     // Page headers
     page_overview: "Dashboard cliente", page_portfolio: "Client portfolio",
@@ -199,13 +206,13 @@ const BASE_TRANSLATIONS = {
     partners_status_negotiation: "In Trattativa", partners_status_coming: "Coming Soon",
     partners_exclusive_badge: "Partner Esclusivo",
     // Portfolio/Bets/Agents premium gates
-    gate_eyebrow: "Piano Premium", gate_portfolio_title: "Portfolio live",
-    gate_portfolio_desc: "Il portfolio live, il grafico equity e il P&L dettagliato per sport sono disponibili solo con il Piano Premium.",
+    gate_eyebrow: "Accesso interno", gate_portfolio_title: "Portfolio live",
+    gate_portfolio_desc: "Il portfolio live, il grafico equity e il P&L dettagliato per sport non fanno parte del piano pubblico di go-live.",
     gate_bets_title: "Execution log",
     gate_bets_desc: "Il log scommesse degli agenti è disponibile solo con il Piano Premium. Il tuo conto exchange viene collegato durante l'onboarding Premium e le bet vengono piazzate automaticamente dagli agenti.",
     gate_agents_title: "Status agenti",
     gate_agents_desc: "Il monitor degli agenti è disponibile solo con il Piano Premium. Mostra heartbeat, errori e stato di ogni agente del tuo conto.",
-    gate_upgrade_btn: "Passa a Premium",
+    gate_upgrade_btn: "Passa a Pro",
     // Footer
     footer_note: "Sportsbook Edge Desk · solo execution verificata · interfaccia client-grade",
     rg_footer: "18+. Gioca responsabilmente. I contenuti sono a scopo informativo; quote e bonus sono offerte di partner affiliati.",
@@ -281,35 +288,35 @@ const BASE_TRANSLATIONS = {
     preaccess_subtitle: "Predictions, portfolio, stake sizes and payment wallet are hidden until the client signs in and chooses a plan.",
     preaccess_login: "Login", preaccess_create: "Create profile",
     preaccess_s1_title: "Create profile", preaccess_s1_desc: "Client account with language, plan and payment status.",
-    preaccess_s2_title: "Choose plan", preaccess_s2_desc: "Base for manual signals, Premium for automated agents.",
+    preaccess_s2_title: "Choose plan", preaccess_s2_desc: "Free for preview, Signal Desk Pro for signals and research.",
     preaccess_s3_title: "Send USDT", preaccess_s3_desc: "Wallet address appears only inside the client checkout.",
     preaccess_s4_title: "Unlock desk", preaccess_s4_desc: "Live data visible only after plan is active or internal approval.",
-    preaccess_base_desc: "Best bets, edge & explanations",
-    preaccess_premium_desc: "Automated agents with live execution",
+    preaccess_base_desc: "Signal Desk Pro: tennis live, football research and Best Bets",
+    preaccess_premium_desc: "Advanced access reserved for the internal team",
     // Auth modal
     auth_eyebrow: "Client access",
     auth_login_title: "Login Signal Desk",
     auth_create_title: "Create your Signal Desk profile",
     auth_login_sub: "Sign in with the email used for your client profile.",
-    auth_create_sub: "Create your profile, then choose Base or Premium to unlock data.",
+    auth_create_sub: "Create your profile, then choose Signal Desk Pro to unlock data.",
     auth_name_label: "Name", auth_name_placeholder: "Your name",
     auth_not_found: "Profile not found. Create a client profile to continue.",
     auth_create_btn: "Continue to plans",
-    auth_footer: "Base and Premium are crypto-only. Prediction data stays locked until a plan is active.",
+    auth_footer: "Signal Desk Pro is crypto-only. Prediction data stays locked until the plan is active.",
     // Plans
     plans_eyebrow: "Client plans",
-    plans_title: "Two tiers, one experience",
-    plans_subtitle: "The Base plan shows the best bets and the rationale. Premium unlocks agents that execute autonomously, with risk control and verified execution.",
+    plans_title: "One paid plan, clear promise",
+    plans_subtitle: "Free stays as preview. Signal Desk Pro unlocks tennis live, football research, Best Bets, explanations and track record. No aggressive market-beating promise.",
     plans_cta: "View live edges",
-    plans_base_desc: "For the client who wants to see the best opportunities, understand the reasoning and decide whether to enter.",
-    plans_base_core: "I show you what to do", plans_base_sub: "Final decision is yours",
-    plans_base_f1: "Best bets ranked by edge, confidence and odds",
-    plans_base_f2: "Model rationale explained for each bet",
-    plans_base_f3: "Model probability vs market odds",
-    plans_base_f4: "History of suggestions and performance",
-    plans_base_f5: "Notifications when a new value bet appears",
-    plans_base_f6: "Automated agent bets",
-    plans_base_f7: "Live automatic stake sizing",
+    plans_base_desc: "For clients who want an AI betting desk with controlled signals, probabilities, explanations, data quality and live/paper tracking.",
+    plans_base_core: "Signals and research, not autopilot", plans_base_sub: "Final decision stays with the client",
+    plans_base_f1: "Best Bets +EV when odds and edge are available",
+    plans_base_f2: "Top Model Signals when live markets are quiet",
+    plans_base_f3: "Model probability, available odds and explanation",
+    plans_base_f4: "Tennis Live V4 and Football Live V4 research",
+    plans_base_f5: "History, track record and paper monitoring",
+    plans_base_f6: "Real automated execution",
+    plans_base_f7: "Guaranteed ROI promise",
     plans_premium_desc: "For the client who wants to delegate to agents: analysis, decision, stake and live placement.",
     plans_premium_core: "I do it for you", plans_premium_sub: "Execution layer with full audit",
     plans_premium_f1: "Everything in the Base plan",
@@ -322,8 +329,8 @@ const BASE_TRANSLATIONS = {
     plans_premium_f8: "Editable dashboard for limits and risk profile",
     plans_flow1_title: "Signal", plans_flow1_desc: "Agents find the value bet.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Client sees odds, edge and why.",
-    plans_flow3_title: "Decide", plans_flow3_desc: "Base: client decides. Premium: agent executes.",
-    plans_flow4_title: "Execute", plans_flow4_desc: "Live only with verified bet ID on real account.",
+    plans_flow3_title: "Decide", plans_flow3_desc: "Client decides whether to enter: no automated execution in the go-live.",
+    plans_flow4_title: "Track", plans_flow4_desc: "Predictions are saved before the event and measured in the track record.",
     // Prediction card
     pred_why_show: "▼ why", pred_why_hide: "▲ less",
     pred_why_title: "Why this prediction",
@@ -340,8 +347,8 @@ const BASE_TRANSLATIONS = {
     board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
     // Profile panel
     profile_upgrade_eyebrow: "Upgrade to Pro",
-    profile_upgrade_title: "Autopilot Agents",
-    profile_upgrade_desc: "Unlock automated agents, stake sizing, stop loss and verified live execution on your exchange account.",
+    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_desc: "Unlock tennis live, football research, Best Bets, model explanations and track record.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
     // Settings
@@ -389,7 +396,7 @@ const BASE_TRANSLATIONS = {
     locked_btn: "Login / Create profile",
     locked_plan_eyebrow: "Plan required",
     locked_plan_title: "Choose a package to unlock the desk",
-    locked_plan_desc: "Your profile is active, but predictions, edge and explanations unlock only after choosing Base or Premium.",
+    locked_plan_desc: "Your profile is active, but predictions, edge and explanations unlock only after choosing Signal Desk Pro.",
     locked_plan_btn: "Go to subscriptions",
     // Page headers
     page_overview: "Client dashboard", page_portfolio: "Client portfolio",
@@ -437,13 +444,13 @@ const BASE_TRANSLATIONS = {
     partners_status_negotiation: "In Negotiation", partners_status_coming: "Coming Soon",
     partners_exclusive_badge: "Exclusive Partner",
     // Portfolio/Bets/Agents premium gates
-    gate_eyebrow: "Premium Plan", gate_portfolio_title: "Live portfolio",
-    gate_portfolio_desc: "The live portfolio, equity chart and detailed P&L by sport are available with the Premium Plan only.",
+    gate_eyebrow: "Internal access", gate_portfolio_title: "Live portfolio",
+    gate_portfolio_desc: "Live portfolio, equity chart and detailed P&L by sport are not part of the public go-live plan.",
     gate_bets_title: "Execution log",
     gate_bets_desc: "The agent bet log is available with the Premium Plan only. Your exchange account is linked during Premium onboarding and bets are placed automatically by agents.",
     gate_agents_title: "Agent status",
     gate_agents_desc: "The agent monitor is available with the Premium Plan only. Shows heartbeat, errors and status of every agent on your account.",
-    gate_upgrade_btn: "Upgrade to Premium",
+    gate_upgrade_btn: "Upgrade to Pro",
     // Footer
     footer_note: "Sportsbook Edge Desk · verified execution only · client-grade interface",
     rg_footer: "18+. Play responsibly. Content is for informational purposes; odds and bonuses are offers from affiliate partners.",
@@ -801,6 +808,19 @@ interface TennisMatch {
   elo_p2_overall?: number | null;
   surface_matches_p1?: number | null;
   surface_matches_p2?: number | null;
+  serve_form_p1?: number | null;
+  serve_form_p2?: number | null;
+  return_form_p1?: number | null;
+  return_form_p2?: number | null;
+  surface_reliability_p1?: number | null;
+  surface_reliability_p2?: number | null;
+  feature_quality?: number | null;
+  p1_rest_days?: number | null;
+  p2_rest_days?: number | null;
+  p1_recent_matches_14d?: number | null;
+  p2_recent_matches_14d?: number | null;
+  h2h_p1_wins?: number | null;
+  h2h_p2_wins?: number | null;
   elo_raw_p1?: number | null;
   elo_raw_p2?: number | null;
   // Reveal-gating fields (Task 7)
@@ -899,24 +919,10 @@ type ClientProfile = {
 type ClientAuthIntent = "login" | "create";
 
 const USDT_TRC20_ADDRESS = "TDUeCx7BBVySkZ8M9eC5Cocq87K2TcmkRf";
-const PLAN_CONFIG = {
-  base: {
-    eur: Number(process.env.NEXT_PUBLIC_BASE_PLAN_EUR ?? 29),
-    label: "Level 1 · Signal Desk",
-    envKey: "NEXT_PUBLIC_BASE_PLAN_EUR",
-  },
-  premium: {
-    eur: Number(process.env.NEXT_PUBLIC_PREMIUM_PLAN_EUR ?? 199),
-    label: "Level 2 · Autopilot Agents",
-    envKey: "NEXT_PUBLIC_PREMIUM_PLAN_EUR",
-  },
-} as const;
-type PlanKey = keyof typeof PLAN_CONFIG;
+type PlanKey = PublicPlanKey;
 
 function planPriceCopy(plan: PlanKey, lang: Lang) {
-  const amount = PLAN_CONFIG[plan].eur;
-  const suffix = lang === "it" ? "mese" : "month";
-  return amount > 0 ? `€${amount}/${suffix}` : "Configured at checkout";
+  return publicPlanPriceCopy(plan, lang);
 }
 const CLIENT_PROFILE_KEY = "agentic-client-profile";
 const CLIENT_PROFILES_KEY = "agentic-client-profiles";
@@ -1306,8 +1312,8 @@ function SportsbookBoard({
             <div className="free-tier-banner">
               <strong>{lang === "it" ? "Piano Free — 1 prediction per sport" : "Free Plan — 1 prediction per sport"}</strong>
               <span>{lang === "it"
-                ? "Vedi 1 anteprima per sport. Sblocca tutte le prediction, edge% e analisi con il piano Base (€29/mese)."
-                : "You see 1 preview per sport. Unlock all predictions, edge% and analysis with the Base plan (€29/mo)."
+                ? "Vedi 1 anteprima per sport. Sblocca prediction, edge% e analisi con Signal Desk Pro (49.50 USDT/mese)."
+                : "You see 1 preview per sport. Unlock predictions, edge% and analysis with Signal Desk Pro (49.50 USDT/month)."
               }</span>
             </div>
           )}
@@ -1327,7 +1333,7 @@ function SportsbookBoard({
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
                       <div className="fpw-count">+{footballRows.length - 1} {lang === "it" ? "prediction bloccate" : "predictions locked"}</div>
-                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutte con il piano Base (€29/mese)" : "Unlock all with the Base plan (€29/mo)"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.50 USDT/mese)" : "Unlock all with Signal Desk Pro (49.50 USDT/month)"}</div>
                     </div>
                   )}
                 </div>
@@ -1352,7 +1358,7 @@ function SportsbookBoard({
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
                       <div className="fpw-count">+{tennisRows.length - 1} {lang === "it" ? "match bloccati" : "matches locked"}</div>
-                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con il piano Base (€29/mese)" : "Unlock all with the Base plan (€29/mo)"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.50 USDT/mese)" : "Unlock all with Signal Desk Pro (49.50 USDT/month)"}</div>
                     </div>
                   )}
                 </div>
@@ -1400,6 +1406,9 @@ function BestBetsBoard({
     time: "Prima kickoff",
     search: "Cerca match, team, player...",
     showing: "Mostro",
+    valueMode: "+EV live",
+    modelMode: "Top Model Signals",
+    noEdge: "nessun edge mercato",
   } : {
     all: "All",
     football: "Football",
@@ -1410,39 +1419,50 @@ function BestBetsBoard({
     time: "Closest kickoff",
     search: "Search match, team, player...",
     showing: "Showing",
+    valueMode: "Live +EV",
+    modelMode: "Top Model Signals",
+    noEdge: "no market edge",
   };
-  const sortFootballBest = (rows: Prediction[]) => rows.sort((a, b) => (
-    sortMode === "time"
-      ? new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()
-      : sortMode === "edge"
-        ? (b.edge ?? 0) - (a.edge ?? 0)
-      : selectedFootballProbability(b) - selectedFootballProbability(a)
-  ));
-  const sortTennisBest = (rows: TennisMatch[]) => rows.sort((a, b) => (
-    sortMode === "time"
-      ? new Date(a.scheduled).getTime() - new Date(b.scheduled).getTime()
-      : sortMode === "edge"
-        ? (b.edge ?? 0) - (a.edge ?? 0)
-      : selectedTennisProbability(b) - selectedTennisProbability(a)
-  ));
-  const footballValue = predictions
-    .filter(isFootballBestBet)
-    .filter((p) => sportFilter !== "tennis")
-    .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query));
-  const tennisValue = tennisMatches
-    .filter(isTennisBestBet)
-    .filter((m) => sportFilter !== "football")
-    .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query));
-  const visibleFootballValue = sortFootballBest([...footballValue])
-    .slice(0, 21);
-  const visibleTennisValue = sortTennisBest([...tennisValue])
-    .slice(0, 21);
-  const totalValue = visibleFootballValue.length + visibleTennisValue.length;
+  const footballById = new Map(predictions.map((p) => [p.match_id, p]));
+  const tennisById = new Map(tennisMatches.map((m) => [m.id, m]));
+  const footballCandidates: BestBetCandidate[] = predictions.map((p) => ({
+    kind: "football",
+    id: p.match_id,
+    startsAt: p.kickoff,
+    label: `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`,
+    probability: selectedFootballProbability(p),
+    odds: selectedFootballOdds(p),
+    edge: p.edge,
+  }));
+  const tennisCandidates: BestBetCandidate[] = tennisMatches.map((m) => ({
+    kind: "tennis",
+    id: m.id,
+    startsAt: m.scheduled,
+    label: `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`,
+    probability: selectedTennisProbability(m),
+    odds: selectedTennisOdds(m),
+    edge: m.edge,
+  }));
+  const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
+    sportFilter,
+    sortMode,
+    query,
+  });
+  const visibleFootballValue = bestRows.items
+    .filter((row) => row.kind === "football")
+    .map((row) => footballById.get(row.id))
+    .filter((p): p is Prediction => Boolean(p));
+  const visibleTennisValue = bestRows.items
+    .filter((row) => row.kind === "tennis")
+    .map((row) => tennisById.get(row.id))
+    .filter((m): m is TennisMatch => Boolean(m));
+  const totalValue = bestRows.items.length;
+  const modeLabel = bestRows.mode === "value" ? labels.valueMode : bestRows.mode === "model_signal" ? labels.modelMode : "+EV";
 
   return (
     <div className="sportsbook-board best-bets-board">
       <div className="board-subhead">
-        <span>{labels.showing} {totalValue} +EV</span>
+        <span>{labels.showing} {totalValue} {modeLabel}</span>
         <span>Football {visibleFootballValue.length}</span>
         <span>Tennis {visibleTennisValue.length}</span>
       </div>
@@ -1485,7 +1505,7 @@ function BestBetsBoard({
             <section className="market-section">
               <div className="market-section-title">
                 <span>{t.board_football}</span>
-                <em>{visibleFootballValue.length} {t.board_value}</em>
+                <em>{visibleFootballValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</em>
               </div>
               <div className="market-list">
                 {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
@@ -1497,7 +1517,7 @@ function BestBetsBoard({
             <section className="market-section">
               <div className="market-section-title amber">
                 <span>{t.board_tennis}</span>
-                <em>{visibleTennisValue.length} {t.board_value}</em>
+                <em>{visibleTennisValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</em>
               </div>
               <div className="market-list">
                 {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
@@ -1508,8 +1528,8 @@ function BestBetsBoard({
       ) : (
         <div className="book-empty">
           {lang === "it"
-            ? "Nessun best bet attivo ora. Le predizioni complete restano nella scheda Sports."
-            : "No active best bets right now. Full predictions remain available in the Sports tab."}
+            ? "Nessun mercato o model signal attivo ora. Le predizioni complete restano nella scheda Sports."
+            : "No active market or model signal right now. Full predictions remain available in the Sports tab."}
         </div>
       )}
     </div>
@@ -1912,13 +1932,13 @@ function PreAccessLanding({
   const faq = lang === "it" ? [
     ["Cosa vede un utente pubblico?", "Solo homepage, struttura del prodotto e storico passato/educational. I segnali live restano bloccati."],
     ["Cosa sblocca il piano Free?", "Profilo, lingua, preview account e accesso alla struttura, senza prediction operative."],
-    ["Cosa sblocca il Livello 1?", "Best Bets, spiegazioni e board sportivo per decisione manuale."],
-    ["Cosa sblocca il Livello 2?", "Dashboard Premium, execution log e agenti automatici quando il conto è collegato."],
+    ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+    ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
   ] : [
     ["What can public users see?", "Only homepage, product structure and past/educational history. Live signals stay locked."],
     ["What does Free unlock?", "Profile, language, account preview and product structure, without operational predictions."],
-    ["What does Level 1 unlock?", "Best Bets, explanations and sports board for manual decision-making."],
-    ["What does Level 2 unlock?", "Premium dashboard, execution log and automated agents once the account is linked."],
+    ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+    ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
   ];
   return (
     <div className="public-homepage">
@@ -1971,9 +1991,9 @@ function DeskPreview() {
         <strong>LOCKED</strong>
       </div>
       <div className="desk-preview-board">
-        <div><span>Football</span><em>Best Bets</em><strong>Level 1</strong></div>
-        <div><span>Tennis</span><em>Elo Surface</em><strong>Level 1</strong></div>
-        <div><span>Agents</span><em>Auto execution</em><strong>Level 2</strong></div>
+        <div><span>Football</span><em>Live V4 research</em><strong>Pro</strong></div>
+        <div><span>Tennis</span><em>Elo Surface V4</em><strong>Pro</strong></div>
+        <div><span>Best Bets</span><em>+EV or model signals</em><strong>Pro</strong></div>
       </div>
       <p>{lang === "it" ? "Preview pubblica: dati sensibili oscurati fino al piano." : "Public preview: sensitive data hidden until plan activation."}</p>
     </div>
@@ -1984,22 +2004,19 @@ function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: ()
   const lang = useLang();
   const priceCopy = {
     base: planPriceCopy("base", lang),
-    premium: planPriceCopy("premium", lang),
   };
   const levels = lang === "it" ? [
     { name: "Free", price: "€0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-    { name: "Livello 1", price: priceCopy.base, desc: "Best Bets, spiegazioni, board football/tennis e decisione manuale.", cta: "Vai ai piani", action: onPlans },
-    { name: "Livello 2", price: priceCopy.premium, desc: "Agent automation, execution log, account linking e controlli premium.", cta: "Vai ai piani", action: onPlans },
+    { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
   ] : [
     { name: "Free", price: "€0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-    { name: "Level 1", price: priceCopy.base, desc: "Best Bets, explanations, football/tennis board and manual decisions.", cta: "View plans", action: onPlans },
-    { name: "Level 2", price: priceCopy.premium, desc: "Agent automation, execution log, account linking and premium controls.", cta: "View plans", action: onPlans },
+    { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
   ];
   return (
     <section className="public-section">
       <div className="public-section-head">
         <p className="eyebrow">{lang === "it" ? "Accesso clienti" : "Client access"}</p>
-        <h3>{lang === "it" ? "Tre livelli chiari, zero ambiguità" : "Three clear levels, zero ambiguity"}</h3>
+        <h3>{lang === "it" ? "Free più un piano unico, zero ambiguità" : "Free plus one paid plan, zero ambiguity"}</h3>
       </div>
       <div className="access-level-grid">
         {levels.map((level) => (
@@ -2218,15 +2235,12 @@ function CryptoPaymentBox({
   onSubmit,
 }: {
   profile: ClientProfile | null;
-  plan: "base" | "premium";
-  onSubmit: (plan: "base" | "premium") => void;
+  plan: PublicPlanKey;
+  onSubmit: (plan: PublicPlanKey) => void;
 }) {
-  const price = PLAN_CONFIG[plan];
   const t = useT();
   const lang = useLang();
-  const isCurrentPlan = profile?.plan === plan ||
-    (plan === "premium" && profileHasPremium(profile)) ||
-    (plan === "base" && profileHasAccess(profile) && !profileHasPremium(profile));
+  const isCurrentPlan = profileHasAccess(profile);
   return (
     <div className="crypto-pay-box">
       <div>
@@ -2238,7 +2252,7 @@ function CryptoPaymentBox({
         {isCurrentPlan
           ? (lang === "it" ? "Piano attuale" : "Current plan")
           : profile
-            ? `${t.crypto_activate} ${price.label}`
+            ? `${t.crypto_activate} ${PUBLIC_PAID_PLAN.label[lang === "it" ? "it" : "en"]}`
             : t.crypto_create_first}
       </button>
     </div>
@@ -2250,13 +2264,13 @@ function CheckoutModal({
   onConfirm,
   onClose,
 }: {
-  plan: "base" | "premium";
+  plan: PublicPlanKey;
   onConfirm: (txHash: string) => void;
   onClose: () => void;
 }) {
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
-  const price = PLAN_CONFIG[plan];
+  const price = planAmountUsdt(plan);
   const t = useT();
   const lang = useLang();
 
@@ -2271,9 +2285,9 @@ function CheckoutModal({
       <div className="auth-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-head">
           <p className="eyebrow">Checkout · USDT TRC20</p>
-          <h3>{price.label}</h3>
+          <h3>{PUBLIC_PAID_PLAN.label[lang === "it" ? "it" : "en"]}</h3>
           <span>
-            {lang === "it" ? <>Invia esattamente <strong style={{ color: "var(--green)" }}>{price.eur} USDT</strong> all&apos;indirizzo qui sotto. Il piano passerà in verifica.</> : <>Send exactly <strong style={{ color: "var(--green)" }}>{price.eur} USDT</strong> to the address below. The plan will move to review.</>}
+            {lang === "it" ? <>Invia esattamente <strong style={{ color: "var(--green)" }}>{price.toFixed(2)} USDT</strong> all&apos;indirizzo qui sotto. Il piano passerà in verifica.</> : <>Send exactly <strong style={{ color: "var(--green)" }}>{price.toFixed(2)} USDT</strong> to the address below. The plan will move to review.</>}
           </span>
         </div>
 
@@ -2283,7 +2297,7 @@ function CheckoutModal({
             <code>{USDT_TRC20_ADDRESS}</code>
             <button type="button" onClick={handleCopy}>{copied ? t.checkout_copied : t.checkout_copy}</button>
           </div>
-          <em>{t.checkout_amount}: {price.eur} USDT · {t.checkout_monthly}</em>
+          <em>{t.checkout_amount}: {price.toFixed(2)} USDT · {t.checkout_monthly}</em>
         </div>
 
         <div className="checkout-steps">
@@ -2307,11 +2321,11 @@ function CheckoutModal({
           onClick={() => onConfirm(txHash)}
           style={{ marginTop: 4 }}
         >
-          {t.checkout_confirm} · {price.eur} USDT
+          {t.checkout_confirm} · {price.toFixed(2)} USDT
         </button>
 
         <p>
-          {t.checkout_note_prefix} {price.eur} {t.checkout_note_suffix}{" "}
+          {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
           <button
             type="button"
             onClick={onClose}
@@ -2416,7 +2430,7 @@ function PlansTab({
 }: {
   profile: ClientProfile | null;
   onOpenDesk: () => void;
-  onPaymentSubmit: (plan: "base" | "premium") => void;
+  onPaymentSubmit: (plan: PublicPlanKey) => void;
   onActivateFree: () => void;
 }) {
   const t = useT();
@@ -2458,7 +2472,7 @@ function PlansTab({
             <PlanFeature>{lang === "it" ? "Profilo cliente e lingua salvati" : "Client profile and language saved"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Storico pubblico passato" : "Public past history"}</PlanFeature>
             <PlanFeature locked>{t.plans_base_f1}</PlanFeature>
-            <PlanFeature locked>{t.plans_premium_f2}</PlanFeature>
+            <PlanFeature locked>{lang === "it" ? "Tennis live e football research" : "Tennis live and football research"}</PlanFeature>
           </ul>
           <button className="plan-action" disabled={!profile || profile.plan === "free"} onClick={onActivateFree}>
             {!profile ? t.crypto_create_first : profile.plan === "free" ? (lang === "it" ? "Free attivo" : "Free active") : (lang === "it" ? "Attiva Free" : "Activate Free")}
@@ -2468,10 +2482,10 @@ function PlansTab({
         <article className="plan-card">
           <div className="plan-card-head">
             <div>
-              <p className="eyebrow">{lang === "it" ? "Livello 1" : "Level 1"}</p>
-              <h4>Signal Desk</h4>
+              <p className="eyebrow">{lang === "it" ? "Piano unico" : "Single plan"}</p>
+              <h4>Signal Desk Pro</h4>
             </div>
-            <span>Manual</span>
+            <span>49.50 USDT</span>
           </div>
           <p className="plan-description">{t.plans_base_desc}</p>
           <div className="price-line">
@@ -2488,40 +2502,10 @@ function PlansTab({
             <PlanFeature>{t.plans_base_f3}</PlanFeature>
             <PlanFeature>{t.plans_base_f4}</PlanFeature>
             <PlanFeature>{t.plans_base_f5}</PlanFeature>
-            <PlanFeature locked>{t.plans_base_f6}</PlanFeature>
-            <PlanFeature locked>{t.plans_base_f7}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Tennis live V4 e Football Live V4 research" : "Tennis Live V4 and Football Live V4 research"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Best Bets +EV oppure Top Model Signals quando il mercato è vuoto" : "Best Bets +EV or Top Model Signals when markets are quiet"}</PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
-        </article>
-
-        <article className="plan-card is-premium">
-          <div className="plan-card-head">
-            <div>
-              <p className="eyebrow">{lang === "it" ? "Livello 2" : "Level 2"}</p>
-              <h4>Autopilot Agents</h4>
-            </div>
-            <span>{profileHasPremium(profile) ? "Unlocked" : "Premium"}</span>
-          </div>
-          <p className="plan-description">{t.plans_premium_desc}</p>
-          <div className="price-line">
-            <strong>{planPriceCopy("premium", lang)}</strong>
-            <span>Crypto only · USDT TRC20</span>
-          </div>
-          <div className="plan-core-line">
-            <strong>{t.plans_premium_core}</strong>
-            <em>{t.plans_premium_sub}</em>
-          </div>
-          <ul className="plan-feature-list">
-            <PlanFeature>{t.plans_premium_f1}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f2}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f3}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f4}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f5}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f6}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f7}</PlanFeature>
-            <PlanFeature>{t.plans_premium_f8}</PlanFeature>
-          </ul>
-          <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
         </article>
       </section>
 
@@ -2954,7 +2938,7 @@ function ClientDashboardTab({
   onLogout: () => void;
   onUpgrade: () => void;
   onOpenDesk: () => void;
-  onPaymentSubmit: (plan: "base" | "premium") => void;
+  onPaymentSubmit: (plan: PublicPlanKey) => void;
   onActivateFree: () => void;
   onUnlock: () => void;
   onSaveProfile: (profile: ClientProfile) => void;
@@ -2979,7 +2963,7 @@ function ClientDashboardTab({
         <div>
           <span className="metric-label">Current plan</span>
           <strong>{accountPlan.replace("_", " ")}</strong>
-          <em>{isPremiumClient ? "Autopilot and execution controls enabled" : "Signal access enabled · Premium controls locked"}</em>
+          <em>{isPremiumClient ? "Signal Desk Pro enabled" : "Signal access enabled · execution not included"}</em>
         </div>
         <div>
           <span className="metric-label">Service health</span>
@@ -2999,7 +2983,7 @@ function ClientDashboardTab({
             <p className="eyebrow">Portfolio</p>
             <h3>{t.portfolio_hero_title}</h3>
           </div>
-          {!isPremiumClient && <span>Premium</span>}
+          {!isPremiumClient && <span>Internal only</span>}
         </div>
         {isPremiumClient ? (
           <PortfolioTab
@@ -3036,7 +3020,7 @@ function ClientDashboardTab({
             <p className="eyebrow">Account</p>
             <h3>{t.page_settings}</h3>
           </div>
-          <span>{isPremiumClient ? "Premium controls" : "Base controls"}</span>
+          <span>{isPremiumClient ? "Pro controls" : "Free controls"}</span>
         </div>
         <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSaveProfile} />
       </section>
@@ -3074,12 +3058,12 @@ function ClientDashboardTab({
               <article className="client-status-card good">
                 <span>Signal desk</span>
                 <strong>Online</strong>
-                <em>Best Bets and Tennis signal layers are available on Base.</em>
+                <em>Best Bets and Tennis signal layers are available on Signal Desk Pro.</em>
               </article>
               <article className="client-status-card warn">
                 <span>Execution</span>
-                <strong>Premium</strong>
-                <em>Automatic agents, exchange audit and risk controls unlock with Premium.</em>
+                <strong>Internal</strong>
+                <em>Automatic execution and exchange audit are not included in the public go-live plan.</em>
               </article>
               <article className="client-status-card neutral">
                 <span>Freshness</span>
@@ -3485,7 +3469,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         )}
         <span className="text-gray-600">Dixon-Coles</span>
         {isPreview ? (
-          <span className="plan-lock-badge">🔒 Base</span>
+          <span className="plan-lock-badge">🔒 Pro</span>
         ) : p.edge != null ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
@@ -3499,8 +3483,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {isPreview && (
         <div className="plan-upgrade-nudge">
           <span>🔒</span>
-          <strong>{lang === "it" ? "Edge e analisi richiedono il piano Base" : "Edge and analysis require the Base plan"}</strong>
-          <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali operativi con Base (€29/mese)." : "Unlock edge%, AI reasoning and operational signals with Base (€29/mo)."}</em>
+          <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
+          <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali con Pro (49.50 USDT/mese)." : "Unlock edge%, AI reasoning and signals with Pro (49.50 USDT/month)."}</em>
         </div>
       )}
 
@@ -3535,7 +3519,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {isPremium && (
         <div className="deep-analysis-panel">
           <div className="da-header">
-            <span className="da-badge">⚡ Premium</span>
+            <span className="da-badge">⚡ Pro</span>
             <span className="da-title">{lang === "it" ? "Analisi approfondita" : "Deep Analysis"}</span>
           </div>
           {(e.xg_home != null || e.xg_away != null) && (
@@ -3593,7 +3577,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {!isPremium && !isPreview && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi approfondita disponibile con Premium (€199/mese)" : "Deep analysis available with Premium (€199/mo)"}</span>
+          <span>{lang === "it" ? "Analisi approfondita disponibile con Signal Desk Pro (49.50 USDT/mese)" : "Deep analysis available with Signal Desk Pro (49.50 USDT/month)"}</span>
         </div>
       )}
     </div>
@@ -3659,6 +3643,45 @@ function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
       icon: "📈",
       text: lang === "it" ? `Partite su ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — affidabilità rating ${reliability}` : `Matches on ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — ${reliability} rating reliability`,
     });
+  }
+
+  if (m.serve_form_p1 != null && m.serve_form_p2 != null && m.return_form_p1 != null && m.return_form_p2 != null) {
+    const serveEdge = (m.serve_form_p1 - m.serve_form_p2) * 100;
+    const returnEdge = (m.return_form_p1 - m.return_form_p2) * 100;
+    const serveLeader = serveEdge >= 0 ? p1last : p2last;
+    const returnLeader = returnEdge >= 0 ? p1last : p2last;
+    reasons.push({
+      icon: "🎯",
+      text: lang === "it"
+        ? `Forma serve/return: servizio ${serveLeader} ${Math.abs(serveEdge).toFixed(1)}pp · risposta ${returnLeader} ${Math.abs(returnEdge).toFixed(1)}pp`
+        : `Serve/return form: serve ${serveLeader} ${Math.abs(serveEdge).toFixed(1)}pp · return ${returnLeader} ${Math.abs(returnEdge).toFixed(1)}pp`,
+      highlight: Math.abs(serveEdge) > 4 || Math.abs(returnEdge) > 3,
+    });
+  }
+
+  if (m.feature_quality != null) {
+    const q = Math.round(m.feature_quality * 100);
+    reasons.push({
+      icon: "🧪",
+      text: lang === "it"
+        ? `Qualità feature live: ${q}% — campione tecnico ${q >= 70 ? "solido" : q >= 40 ? "medio" : "limitato"}`
+        : `Live feature quality: ${q}% — ${q >= 70 ? "solid" : q >= 40 ? "medium" : "limited"} technical sample`,
+      highlight: q >= 70,
+    });
+  }
+
+  if (m.p1_rest_days != null && m.p2_rest_days != null) {
+    const recent1 = m.p1_recent_matches_14d ?? null;
+    const recent2 = m.p2_recent_matches_14d ?? null;
+    const restDelta = m.p1_rest_days - m.p2_rest_days;
+    if (Math.abs(restDelta) >= 2 || (recent1 != null && recent2 != null && recent1 !== recent2)) {
+      reasons.push({
+        icon: "⚡",
+        text: lang === "it"
+          ? `Carico recente: riposo ${p1last} ${m.p1_rest_days}g · ${p2last} ${m.p2_rest_days}g, match 14g ${recent1 ?? "?"}-${recent2 ?? "?"}`
+          : `Recent load: rest ${p1last} ${m.p1_rest_days}d · ${p2last} ${m.p2_rest_days}d, 14d matches ${recent1 ?? "?"}-${recent2 ?? "?"}`,
+      });
+    }
   }
 
   // Fatigue adjustment (shown only when meaningful)
@@ -3839,7 +3862,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         )}
         <span className="text-gray-600">{m.model}</span>
         {isPreview ? (
-          <span className="plan-lock-badge">🔒 Base</span>
+          <span className="plan-lock-badge">🔒 Pro</span>
         ) : m.edge != null && m.edge > 0 ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-green-400 border-green-400/40 bg-green-400/10" : "text-gray-400 border-gray-400/30"}`}>
             edge +{(m.edge * 100).toFixed(1)}%
@@ -3853,8 +3876,8 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {isPreview && (
         <div className="plan-upgrade-nudge">
           <span>🔒</span>
-          <strong>{lang === "it" ? "Edge Elo e analisi richiedono il piano Base" : "Elo edge and analysis require the Base plan"}</strong>
-          <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Base (€29/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Base (€29/mo)."}</em>
+          <strong>{lang === "it" ? "Edge Elo e analisi richiedono Signal Desk Pro" : "Elo edge and analysis require Signal Desk Pro"}</strong>
+          <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.50 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.50 USDT/month)."}</em>
         </div>
       )}
 
@@ -3899,7 +3922,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {isPremium && (
         <div className="deep-analysis-panel">
           <div className="da-header">
-            <span className="da-badge">⚡ Premium</span>
+            <span className="da-badge">⚡ Pro</span>
             <span className="da-title">{lang === "it" ? "Analisi Elo" : "Elo Analysis"}</span>
           </div>
           <div className="da-row">
@@ -3931,7 +3954,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {!isPremium && !isPreview && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Premium (€199/mese)" : "Deep Elo analysis available with Premium (€199/mo)"}</span>
+          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Signal Desk Pro (49.50 USDT/mese)" : "Deep Elo analysis available with Signal Desk Pro (49.50 USDT/month)"}</span>
         </div>
       )}
     </div>
@@ -5270,15 +5293,15 @@ function FAQTab() {
   const faqItems = lang === "it" ? [
     ["Cosa vede un utente pubblico?", "Solo struttura del prodotto e storico passato. I segnali live restano bloccati."],
     ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
-    ["Cosa sblocca il Livello 1 (Base)?", "Best Bets, spiegazioni e board sportivo per decisione manuale."],
-    ["Cosa sblocca il Livello 2 (Premium)?", "Dashboard completa, execution log e agenti automatici quando il conto è collegato."],
+    ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+    ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
     ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
     ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
   ] : [
     ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
     ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
-    ["What does Level 1 (Base) unlock?", "Best Bets, explanations and sports board for manual decision-making."],
-    ["What does Level 2 (Premium) unlock?", "Full dashboard, execution log and automated agents once account is linked."],
+    ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+    ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
     ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
     ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
   ];
@@ -5296,7 +5319,7 @@ function ClientAreaTab({
 }: {
   profile: ClientProfile | null;
   onOpenDesk: () => void;
-  onPaymentSubmit: (plan: "base" | "premium") => void;
+  onPaymentSubmit: (plan: PublicPlanKey) => void;
   onActivateFree: () => void;
   onLogout: () => void;
 }) {
@@ -5306,7 +5329,7 @@ function ClientAreaTab({
   const accessState = profileHasPremium(profile)
     ? "Premium"
     : profileHasAccess(profile)
-      ? "Base"
+      ? "Pro"
       : profile?.plan === "free"
         ? "Free"
         : profile?.plan === "pending_payment"
@@ -5485,12 +5508,11 @@ function UnifiedBetsTab({
 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>("bets");
-  const [uiLanguage, setUiLanguage] = useState<Lang>("it");
-  useEffect(() => {
-    const stored = localStorage.getItem("agentic-lang") as Lang | null;
-    if (stored && LANGUAGES.includes(stored)) setUiLanguage(stored);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
+    if (typeof window === "undefined") return "it";
+    const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
+    return stored && LANGUAGES.includes(stored) ? stored : "it";
+  });
   const toggleLanguage = () => {
     const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
     setUiLanguage(next);
@@ -5502,7 +5524,7 @@ export default function Dashboard() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authIntent, setAuthIntent] = useState<ClientAuthIntent>("login");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [checkoutPlan, setCheckoutPlan] = useState<"base" | "premium" | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
   const [founderOpen, setFounderOpen] = useState(false);
   const founderClickRef = useRef({ count: 0, timer: null as ReturnType<typeof setTimeout> | null });
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
@@ -5529,8 +5551,7 @@ export default function Dashboard() {
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
-  const [userTz, setUserTz] = useState("Europe/Rome");
-  useEffect(() => { setUserTz(Intl.DateTimeFormat().resolvedOptions().timeZone); }, []);
+  const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
   useEffect(() => { trackEvent("page_view"); }, []);
   useEffect(() => {
     if (tab === "client-area") trackEvent("plan_view");
@@ -5650,7 +5671,7 @@ export default function Dashboard() {
     setTab("bets");
   };
 
-  const submitCryptoPayment = (plan: "base" | "premium") => {
+  const submitCryptoPayment = (plan: PublicPlanKey) => {
     if (!clientProfile) {
       setAuthOpen(true);
       return;
@@ -5876,7 +5897,6 @@ export default function Dashboard() {
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
-  const isPremiumClient = profileHasPremium(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
   const isFounderAccount = clientProfile?.plan === "admin_full";
   const accountSummary = isFounderAccount ? (summary ?? EMPTY_SUMMARY) : EMPTY_SUMMARY;
@@ -5902,7 +5922,7 @@ export default function Dashboard() {
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
-    { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isPremiumClient ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
+    { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     { tab: "partners",    label: tNav.nav_partner },
@@ -5931,7 +5951,7 @@ export default function Dashboard() {
         <div className="portal-brand-actions">
           {clientProfile ? (
             <button className="client-access-button" onClick={() => setTab("client-area")}>
-              {clientProfile.name} · {isPremiumClient ? "Premium" : isClientUnlocked ? "Base" : clientProfile.plan === "free" ? "Free" : "Setup"}
+              {clientProfile.name} · {isClientUnlocked ? "Signal Desk Pro" : clientProfile.plan === "free" ? "Free" : "Setup"}
             </button>
           ) : (
             <>
@@ -6015,7 +6035,7 @@ export default function Dashboard() {
               onGate={handleProtectedUnlock}
               isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
-              isPremiumClient={isPremiumClient}
+              isPremiumClient={isClientUnlocked}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
             />

@@ -2,10 +2,14 @@
 # (Next.js build needs lib/ app/ public/ + root config — those stay.)
 dashboard-web/
 client-portal/
+.backups/
+logs/
 .venv/
 venv/
 node_modules/
 .next/
+.env
+.env.*
 __pycache__/
 .pytest_cache/
 *.pyc
