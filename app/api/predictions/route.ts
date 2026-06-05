@@ -534,6 +534,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await computeAndStore();
-  const synced = await syncMatchPredictionsToUnified();
-  return NextResponse.json({ ...result, synced_to_unified: synced, at: new Date().toISOString() });
+  const syncReport = await syncMatchPredictionsToUnified();
+  return NextResponse.json({ ...result, synced_to_unified: syncReport, at: new Date().toISOString() });
 }

@@ -27,13 +27,17 @@ export async function GET(req: Request) {
     ? Math.min(Math.floor(rawLimit), 300)
     : 100;
 
-  const conditions: string[] = ["is_historical = TRUE"];
+  // Demo rows must never appear in the public track record (defensive).
+  const conditions: string[] = ["is_historical = TRUE", "is_demo = FALSE"];
+  const values: unknown[] = [];
 
   if (sport && sport !== "all") {
-    conditions.push(`sport = '${sport.replace(/'/g, "''")}'`);
+    values.push(sport);
+    conditions.push(`sport = $${values.length}`);
   }
   if (competition && competition !== "all") {
-    conditions.push(`competition ILIKE '%${competition.replace(/'/g, "''")}%'`);
+    values.push(`%${competition}%`);
+    conditions.push(`competition ILIKE $${values.length}`);
   }
 
   const rows = await dbQuery<HistoryRow>(
@@ -44,7 +48,8 @@ export async function GET(req: Request) {
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      ORDER BY COALESCE(settled_at, starts_at) DESC
-     LIMIT ${limit}`
+     LIMIT ${limit}`,
+    values
   );
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
