@@ -99,6 +99,11 @@ export async function PATCH(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Mutating route authorized via admin cookie: block cross-site triggers
+  // (form/img/prefetch CSRF) while allowing the admin's same-origin calls.
+  if (req.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
+  }
 
   let body: { id?: unknown; identifier?: unknown; plan?: unknown };
   try {
@@ -144,6 +149,10 @@ export async function PATCH(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  // POST(impersonate) sets the session cookie — same cross-site guard as /switch.
+  if (req.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
   }
 
   let body: { id?: unknown; identifier?: unknown; action?: unknown };
