@@ -20,7 +20,8 @@ type HeartbeatRow = {
 
 function isAuthorized(req: Request): boolean {
   const secret = process.env.RESEARCH_SECRET || process.env.CRON_SECRET;
-  if (!secret) return true;
+  // Default-deny: diagnostics expose DB state — never fail open on missing env.
+  if (!secret) return false;
   return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
