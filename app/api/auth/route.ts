@@ -4,6 +4,7 @@ import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/sessi
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
+import { sendEmail, paymentReceivedEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,13 @@ export async function POST(req: Request) {
     const updated = await loadProfile(ctx.identifier);
     if (!updated || updated.plan !== "pending_payment") {
       return NextResponse.json({ error: "checkout not persisted" }, { status: 500 });
+    }
+    // GAP4: confirm receipt to the customer (best-effort — never fails checkout).
+    if (ctx.identifier.includes("@")) {
+      const lang = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+      const mail = paymentReceivedEmail(lang);
+      sendEmail({ to: ctx.identifier, subject: mail.subject, html: mail.html, text: mail.text })
+        .catch((e) => console.error("[auth] payment-received email failed:", String(e)));
     }
     return NextResponse.json(
       {

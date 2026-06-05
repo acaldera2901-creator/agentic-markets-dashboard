@@ -35,6 +35,39 @@ export async function sendEmail(opts: {
   }
 }
 
+function shell(bodyHtml: string): string {
+  return `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">Agentic Markets</p>
+  ${bodyHtml}
+</div>`;
+}
+
+// Payment received → plan in review (GAP4).
+export function paymentReceivedEmail(lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const subject = it ? "Pagamento ricevuto — in verifica" : "Payment received — under review";
+  const body = it
+    ? "Abbiamo ricevuto la tua richiesta di Signal Desk Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo."
+    : "We received your Signal Desk Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.";
+  return { subject, html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p>`), text: body };
+}
+
+// Plan activated (GAP4).
+export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const until = expiresAtISO ? new Date(expiresAtISO).toLocaleDateString(it ? "it-IT" : "en-GB") : null;
+  const subject = it ? "Signal Desk Pro attivato ✅" : "Signal Desk Pro activated ✅";
+  const body = it
+    ? `Il tuo Signal Desk Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
+    : `Your Signal Desk Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
+  const cta = it ? "Apri il desk" : "Open the desk";
+  return {
+    subject,
+    html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p><a href="https://agentic-markets-roan.vercel.app/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`),
+    text: body,
+  };
+}
+
 export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: string; html: string; text: string } {
   const it = lang === "it";
   const subject = it
