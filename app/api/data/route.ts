@@ -8,18 +8,19 @@ interface StatRow {
   total: string;
   won: string;
   lost: string;
-  pnl: string;
   pending: string;
   avg_odds: string;
-  avg_stake: string;
 }
 
 export async function GET(req: Request) {
   const { deny } = await requireAccess(req);
   if (deny) return deny;
-  const [bets, stats, leaguePnl] = await Promise.all([
+  // Product line: calibrated probabilities, not edge/profit. No money metrics
+  // (profit_loss/stake/P&L) are ever selected or serialized to the client.
+  const [bets, stats, leagueStats] = await Promise.all([
     dbQuery(`
-      SELECT b.*,
+      SELECT b.id, b.match_external_id, b.selection, b.odds,
+             b.status, b.placed_at, b.settled_at, b.paper, b.thesis,
              COALESCE(mp.home_team, b.home_team) AS home_team,
              COALESCE(mp.away_team, b.away_team) AS away_team,
              COALESCE(mp.league, b.league) AS league,
@@ -37,9 +38,7 @@ export async function GET(req: Request) {
         COUNT(*) FILTER (WHERE status = 'won') as won,
         COUNT(*) FILTER (WHERE status = 'lost') as lost,
         COUNT(*) FILTER (WHERE status = 'pending') as pending,
-        COALESCE(SUM(CASE WHEN status IN ('won','lost') THEN COALESCE(profit_loss, 0) ELSE 0 END), 0) as pnl,
-        AVG(odds) FILTER (WHERE status IN ('pending','won','lost')) as avg_odds,
-        AVG(stake) FILTER (WHERE status IN ('pending','won','lost')) as avg_stake
+        AVG(odds) FILTER (WHERE status IN ('pending','won','lost')) as avg_odds
       FROM bets
     `),
     dbQuery(`
@@ -47,12 +46,11 @@ export async function GET(req: Request) {
         COALESCE(mp.league, 'unknown') as league,
         COUNT(*) as total,
         COUNT(CASE WHEN b.status = 'won' THEN 1 END) as won,
-        COUNT(CASE WHEN b.status = 'lost' THEN 1 END) as lost,
-        COALESCE(SUM(CASE WHEN b.status IN ('won','lost') THEN COALESCE(b.profit_loss, 0) ELSE 0 END), 0) as pnl
+        COUNT(CASE WHEN b.status = 'lost' THEN 1 END) as lost
       FROM bets b
       LEFT JOIN match_predictions mp ON b.match_external_id::text = mp.match_id::text
       GROUP BY COALESCE(mp.league, 'unknown')
-      ORDER BY pnl DESC
+      ORDER BY total DESC
     `),
   ]);
 
@@ -66,11 +64,9 @@ export async function GET(req: Request) {
       won: Number(s?.won ?? 0),
       lost: Number(s?.lost ?? 0),
       pending: Number(s?.pending ?? 0),
-      pnl: Number(s?.pnl ?? 0),
       win_rate: total > 0 ? ((Number(s?.won ?? 0) / total) * 100).toFixed(1) : "0.0",
       avg_odds: Number(s?.avg_odds ?? 0).toFixed(2),
-      avg_stake: Number(s?.avg_stake ?? 0).toFixed(2),
     },
-    league_pnl: leaguePnl,
+    league_stats: leagueStats,
   });
 }

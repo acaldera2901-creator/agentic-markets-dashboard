@@ -48,9 +48,8 @@ export type UnifiedPrediction = {
   expires_at: string;
   settled_at: string | null;
   result: string | null;
-  pnl: number | null;
-  stake: number | null;
-  roi: number | null;
+  // P&L/stake/ROI intentionally absent: the product serves calibrated
+  // probabilities and hit-rate, never money metrics derived from bets.
   notes: string | null;
   explanation: string | null;
   world_cup_stage: string | null;
