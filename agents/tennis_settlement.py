@@ -1,12 +1,18 @@
 """
 TennisSettlementAgent — resolves tennis match outcomes and settles paper bets.
 
-Without a live exchange:
+Resolution order per cycle:
   1. On first run, bulk-expires all predictions older than EXPIRE_AFTER_DAYS
      (old Betfair market IDs are gone — no way to resolve them).
-  2. For recent predictions (< EXPIRE_AFTER_DAYS, > SETTLEMENT_DELAY_HOURS),
-     attempts resolution via Matchbook settled markets if configured.
+  2. For recent predictions (< EXPIRE_AFTER_DAYS, > SETTLEMENT_DELAY_HOURS):
+     Matchbook settled markets when configured, otherwise ESPN completed
+     results (the live data source — "A bt B" notes carry the winner).
   3. Predictions that can't be resolved are left pending until they expire.
+
+Every settlement (win/loss AND expiry) is bridged to the served
+unified_predictions row so the public track record (/api/v2/history)
+includes tennis — without the bridge those rows stay un-historical forever
+(the unified settlement cycle in ResultSettlementAgent is football-only).
 
 Runs every POLL_INTERVAL seconds.
 """
@@ -16,6 +22,9 @@ from datetime import datetime, timedelta
 
 from agents.base import BaseAgent
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
+from core.espn_tennis_client import get_completed_results
+from core.supabase_client import settle_unified_tennis
+from core.tennis_names import canonical_player_key
 from models.elo_surface import EloSurfaceModel
 from sqlalchemy import select, update
 
@@ -48,6 +57,18 @@ class TennisSettlementAgent(BaseAgent):
         """Mark all predictions older than EXPIRE_AFTER_DAYS as 'expired' in one query."""
         cutoff = datetime.utcnow() - timedelta(days=EXPIRE_AFTER_DAYS)
         async with AsyncSessionLocal() as session:
+            # Collect match_ids BEFORE the update so the unified rows can be
+            # voided too (the public history must not keep them open forever).
+            stale_ids = [
+                row[0] for row in (
+                    await session.execute(
+                        select(TennisPrediction.match_id).where(
+                            TennisPrediction.outcome.is_(None),
+                            TennisPrediction.computed_at < cutoff,
+                        )
+                    )
+                ).all()
+            ]
             result = await session.execute(
                 update(TennisPrediction)
                 .where(
@@ -62,6 +83,12 @@ class TennisSettlementAgent(BaseAgent):
             self.logger.info(
                 f"[SETTLEMENT] bulk-expired {n} stale predictions (> {EXPIRE_AFTER_DAYS}d old)"
             )
+        voided = 0
+        for match_id in stale_ids:
+            if await settle_unified_tennis(match_id, None, void=True):
+                voided += 1
+        if voided:
+            self.logger.info(f"[SETTLEMENT] voided {voided} unified tennis rows (expired)")
 
     async def _settle_recent(self):
         """Attempt settlement for predictions within the last EXPIRE_AFTER_DAYS days."""
@@ -84,6 +111,10 @@ class TennisSettlementAgent(BaseAgent):
 
         resolved = await self._resolve_via_matchbook(pending)
         if not resolved:
+            # ESPN fallback: the same feed the collector uses also carries
+            # completed results ("A bt B"), so no exchange is required.
+            resolved = await self._resolve_via_espn(pending)
+        if not resolved:
             return
 
         async with AsyncSessionLocal() as session:
@@ -98,12 +129,44 @@ class TennisSettlementAgent(BaseAgent):
             self._elo.update(winner_name, loser_name, surface)
             await self._update_prediction(pred.id, outcome, winner_name)
             await self._settle_bets(pred.match_id, outcome)
+            # Bridge to the public track record (/api/v2/history).
+            await settle_unified_tennis(pred.match_id, winner_name)
             updated += 1
 
         if updated:
             async with AsyncSessionLocal() as session:
                 await self._elo.save_to_db_async(session)
             self.logger.info(f"[SETTLEMENT] settled {updated} recent match(es), Elo updated")
+
+    async def _resolve_via_espn(self, pending: list) -> list[tuple]:
+        """
+        Resolve outcomes from ESPN completed results (free, no key).
+        Matches predictions to results by canonical player-key pair; the
+        winner is whoever ESPN listed first ("A bt B"). Returns the same
+        (TennisPrediction, "P1"|"P2") shape as the Matchbook resolver.
+        """
+        try:
+            results = await get_completed_results()
+        except Exception as e:
+            self.logger.debug(f"espn results lookup failed: {e}")
+            return []
+        if not results:
+            return []
+
+        by_pair: dict[frozenset, str] = {
+            frozenset((r["winner_key"], r["loser_key"])): r["winner_key"]
+            for r in results
+        }
+
+        resolved = []
+        for pred in pending:
+            k1 = canonical_player_key(pred.player1)
+            k2 = canonical_player_key(pred.player2)
+            winner_key = by_pair.get(frozenset((k1, k2)))
+            if not winner_key:
+                continue
+            resolved.append((pred, "P1" if winner_key == k1 else "P2"))
+        return resolved
 
     async def _resolve_via_matchbook(self, pending: list) -> list[tuple]:
         """

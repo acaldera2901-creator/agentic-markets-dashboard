@@ -755,6 +755,41 @@ interface HistoryStats {
   model_accuracy: string;
 }
 
+// Unified track record (/api/v2/history) — multi-sport, result-centric.
+// Rows pass the same per-tier projection as the board: `locked` rows hide pick.
+interface V2HistoryRow {
+  id: string;
+  sport: string;
+  competition: string | null;
+  event_name: string | null;
+  home_team: string | null;
+  away_team: string | null;
+  player_one: string | null;
+  player_two: string | null;
+  market: string | null;
+  pick: string | null;
+  status: string | null;
+  result: string | null; // won | lost | void | pending | null
+  signal_type: string | null;
+  is_paper: boolean;
+  is_verified: boolean;
+  starts_at: string | null;
+  settled_at: string | null;
+  world_cup_stage: string | null;
+  locked?: boolean;
+}
+
+interface V2HistoryStats {
+  total: number;
+  won: number;
+  lost: number;
+  void: number;
+  pending: number;
+  paper: number;
+  verified: number;
+  win_rate: string | null;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LEAGUE_FLAGS: Record<string, string> = {
@@ -4222,39 +4257,59 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
 // ─── History Tab ──────────────────────────────────────────────────────────────
 
 function HistoryTab({ history, stats, loading }: {
-  history: HistoryMatch[];
-  stats: HistoryStats | null;
+  history: V2HistoryRow[];
+  stats: V2HistoryStats | null;
   loading: boolean;
 }) {
   const t = useT();
   const lang = useLang();
   const tz = useTz();
-  const liveScores = useLive();
-  const [leagueFilter, setLeagueFilter] = useState("ALL");
+  const [sportFilter, setSportFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
+  const [competitionFilter, setCompetitionFilter] = useState("all");
 
-  const allLeagues = [...new Set(history.map((h) => h.league))];
+  const SPORT_ICONS: Record<string, string> = { football: "⚽", tennis: "🎾" };
+  const resultOf = (h: V2HistoryRow) => h.result ?? "pending";
 
-  const filtered = history.filter((h) => {
-    if (leagueFilter !== "ALL" && h.league !== leagueFilter) return false;
-    if (resultFilter === "bet" && !h.bet_status) return false;
-    if (resultFilter === "won" && h.bet_status !== "won") return false;
-    if (resultFilter === "lost" && h.bet_status !== "lost") return false;
-    if (resultFilter === "no-bet" && h.bet_status) return false;
+  // Sport is the first-level filter; competitions are derived from the rows of
+  // the SELECTED sport only, so a football competition can never stay active
+  // while tennis is selected (the cross-filter conflict the old tab had).
+  const sports = [...new Set(history.map((h) => h.sport))].sort();
+  const sportRows = sportFilter === "all" ? history : history.filter((h) => h.sport === sportFilter);
+  const competitions = [...new Set(sportRows.map((h) => h.competition ?? "—"))].sort();
+  const effectiveCompetition = competitions.includes(competitionFilter) ? competitionFilter : "all";
+
+  const filtered = sportRows.filter((h) => {
+    if (effectiveCompetition !== "all" && (h.competition ?? "—") !== effectiveCompetition) return false;
+    if (resultFilter !== "all" && resultOf(h) !== resultFilter) return false;
     return true;
   });
 
-  const getBetOutcomeColor = (h: HistoryMatch) => {
-    if (!h.bet_status) return "border-white/10";
-    if (h.bet_status === "won") return "border-green-400/30";
-    if (h.bet_status === "lost") return "border-red-400/30";
-    return "border-yellow-400/20";
-  };
+  // Per-button counts on the current sport slice: a 0-count button is shown
+  // disabled instead of producing a silent empty list.
+  const countByResult = (key: string) =>
+    key === "all" ? sportRows.length : sportRows.filter((h) => resultOf(h) === key).length;
+  const countByCompetition = (c: string) =>
+    c === "all" ? sportRows.length : sportRows.filter((h) => (h.competition ?? "—") === c).length;
 
-  const getModelCorrectness = (h: HistoryMatch) => {
-    if (!h.bet_status || h.bet_status === "pending") return null;
-    return h.bet_status === "won";
-  };
+  const resultColor = (r: string) =>
+    r === "won" ? "border-green-400/40 text-green-400"
+    : r === "lost" ? "border-red-400/40 text-red-400"
+    : r === "void" ? "border-gray-500/40 text-gray-400"
+    : "border-yellow-400/30 text-yellow-300";
+
+  const cardBorder = (r: string) =>
+    r === "won" ? "border-green-400/30"
+    : r === "lost" ? "border-red-400/30"
+    : r === "void" ? "border-white/10"
+    : "border-yellow-400/20";
+
+  const eventLabel = (h: V2HistoryRow) =>
+    h.event_name
+    ?? (h.home_team && h.away_team ? `${h.home_team} vs ${h.away_team}` : null)
+    ?? (h.player_one && h.player_two ? `${h.player_one} vs ${h.player_two}` : "—");
+
+  const fmtDate = (iso: string | null) => (iso ? fmtKickoff(iso, lang, tz) : "—");
 
   return (
     <div className="space-y-6">
@@ -4262,12 +4317,12 @@ function HistoryTab({ history, stats, loading }: {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           {[
-            { label: t.hist_matches,  value: String(stats.total_matches), color: "text-white" },
-            { label: t.hist_bets,     value: String(stats.bets_placed), color: "text-cyan-300" },
+            { label: t.hist_matches,  value: String(stats.total), color: "text-white" },
             { label: t.hist_won,      value: String(stats.won), color: "text-green-400" },
             { label: t.hist_lost,     value: String(stats.lost), color: "text-red-400" },
-            { label: t.hist_hit_rate, value: `${stats.accuracy}%`, color: "text-yellow-400" },
-            { label: lang === "it" ? "Acc. modello" : "Model Acc.", value: `${stats.model_accuracy}%`, color: "text-purple-400" },
+            { label: "Void",          value: String(stats.void), color: "text-gray-400" },
+            { label: t.hist_legend_pending, value: String(stats.pending), color: "text-yellow-400" },
+            { label: t.hist_hit_rate, value: stats.win_rate ?? "—", color: "text-cyan-300" },
           ].map((kpi) => (
             <div key={kpi.label} className="glass-card p-3 text-center">
               <div className={`text-lg font-black ${kpi.color}`}>{kpi.value}</div>
@@ -4277,33 +4332,55 @@ function HistoryTab({ history, stats, loading }: {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Filters: sport → result → competition (derived from selected sport) */}
+      <div className="space-y-2">
         <div className="flex gap-1 flex-wrap">
-          {[
-            { key: "all",    label: t.hist_filter_all },
-            { key: "bet",    label: t.hist_filter_with_bet },
-            { key: "won",    label: t.hist_filter_won },
-            { key: "lost",   label: t.hist_filter_lost },
-            { key: "no-bet", label: t.hist_filter_no_bet },
-          ].map((f) => (
-            <button key={f.key} onClick={() => setResultFilter(f.key)}
+          {["all", ...sports].map((s) => (
+            <button key={s} onClick={() => { setSportFilter(s); setCompetitionFilter("all"); }}
               className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-                resultFilter === f.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+                sportFilter === s ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
               }`}>
-              {f.label}
+              {s === "all" ? (lang === "it" ? "Tutti gli sport" : "All sports") : `${SPORT_ICONS[s] ?? ""} ${s}`}
             </button>
           ))}
         </div>
-        <div className="flex gap-1 flex-wrap">
-          {["ALL", ...allLeagues].map((l) => (
-            <button key={l} onClick={() => setLeagueFilter(l)}
-              className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-                leagueFilter === l ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
-              }`}>
-              {LEAGUE_FLAGS[l] ?? ""} {l}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1 flex-wrap">
+            {[
+              { key: "all",     label: t.hist_filter_all },
+              { key: "won",     label: t.hist_filter_won },
+              { key: "lost",    label: t.hist_filter_lost },
+              { key: "void",    label: "Void" },
+              { key: "pending", label: t.hist_legend_pending },
+            ].map((f) => {
+              const n = countByResult(f.key);
+              return (
+                <button key={f.key} onClick={() => setResultFilter(f.key)} disabled={n === 0}
+                  className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
+                    n === 0 ? "border-white/5 text-gray-700 cursor-not-allowed"
+                    : resultFilter === f.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10"
+                    : "border-white/10 text-gray-400 hover:border-cyan-400/40"
+                  }`}>
+                  {f.label} ({n})
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            {["all", ...competitions].map((c) => {
+              const n = countByCompetition(c);
+              return (
+                <button key={c} onClick={() => setCompetitionFilter(c)} disabled={n === 0}
+                  className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
+                    n === 0 ? "border-white/5 text-gray-700 cursor-not-allowed"
+                    : effectiveCompetition === c ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10"
+                    : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
+                  }`}>
+                  {c === "all" ? (lang === "it" ? "Tutte le competizioni" : "All competitions") : `${c} (${n})`}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -4312,7 +4389,7 @@ function HistoryTab({ history, stats, loading }: {
         <span><span className="inline-block w-3 h-3 rounded-full bg-green-400/50 mr-1 align-middle"></span>{t.hist_legend_won}</span>
         <span><span className="inline-block w-3 h-3 rounded-full bg-red-400/50 mr-1 align-middle"></span>{t.hist_legend_lost}</span>
         <span><span className="inline-block w-3 h-3 rounded-full bg-yellow-400/50 mr-1 align-middle"></span>{t.hist_legend_pending}</span>
-        <span><span className="inline-block w-3 h-3 rounded-full bg-gray-600 mr-1 align-middle"></span>{t.hist_legend_no_bet}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-gray-600 mr-1 align-middle"></span>Void</span>
       </div>
 
       {loading ? (
@@ -4326,94 +4403,51 @@ function HistoryTab({ history, stats, loading }: {
       ) : (
         <div className="space-y-2">
           {filtered.map((h) => {
-            const correct = getModelCorrectness(h);
+            const r = resultOf(h);
             return (
-              <div key={h.match_id} className={`glass-card p-3 ${getBetOutcomeColor(h)}`}>
+              <div key={h.id} className={`glass-card p-3 ${cardBorder(r)}`}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  {/* Match info */}
+                  {/* Event info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[h.league] ?? "⚽"} {h.league}</span>
-                      <span className="text-sm font-bold text-white">
-                        {h.home_team} <span className="text-gray-500 font-normal text-xs">vs</span> {h.away_team}
+                      <span className="text-xs text-gray-500 font-mono">
+                        {SPORT_ICONS[h.sport] ?? ""} {h.competition ?? h.sport}
+                        {h.world_cup_stage ? ` · ${h.world_cup_stage}` : ""}
                       </span>
+                      <span className="text-sm font-bold text-white">{eventLabel(h)}</span>
                     </div>
-                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">{fmtKickoff(h.kickoff, lang, tz)}</div>
+                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">
+                      {fmtDate(h.starts_at)}
+                      {h.settled_at ? ` · ${lang === "it" ? "settled" : "settled"} ${fmtDate(h.settled_at)}` : ""}
+                    </div>
                   </div>
 
-                  {/* Final / Live score */}
-                  {(() => {
-                    const ls = liveScores[h.match_id];
-                    const homeScore = ls?.home_score ?? h.home_score;
-                    const awayScore = ls?.away_score ?? h.away_score;
-                    const status = ls?.match_status ?? h.match_status;
-                    if (homeScore == null || awayScore == null) return null;
-                    const isLiveNow = status === "IN_PLAY" || status === "PAUSED";
-                    const actual = homeScore > awayScore ? "HOME" : homeScore < awayScore ? "AWAY" : "DRAW";
-                    const correct = h.best_selection != null && h.best_selection === actual;
-                    return (
-                      <div className={`hist-score shrink-0 ${isLiveNow ? "live" : ""}`}>
-                        {isLiveNow && <span className="live-badge blink">● LIVE</span>}
-                        <span className="hist-score-val">{homeScore} — {awayScore}</span>
-                        {!isLiveNow && h.best_selection && (
-                          <span className={`live-verdict ${correct ? "correct" : "wrong"}`}>
-                            {correct ? "✓" : "✗"}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Model prediction */}
+                  {/* Pick (projection may lock it for anonymous/free tiers) */}
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
-                      <div className="text-[10px] text-gray-600 font-mono">{t.hist_model_pred}</div>
-                      <div className="text-xs font-mono text-cyan-300">{h.best_selection ?? "—"}</div>
-                      {h.edge != null && (
-                        <div className={`text-[10px] font-mono ${h.edge > 0 ? "text-green-500" : "text-gray-500"}`}>
-                          edge {h.edge > 0 ? "+" : ""}{(h.edge * 100).toFixed(1)}%
-                        </div>
-                      )}
+                      <div className="text-[10px] text-gray-600 font-mono">{t.hist_model_pred}{h.market ? ` (${h.market})` : ""}</div>
+                      <div className="text-xs font-mono text-cyan-300">
+                        {h.locked ? "🔒" : (h.pick ?? "—")}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Bet info + result */}
+                  {/* Result + tier chips */}
                   <div className="flex items-center gap-2 shrink-0">
-                    {h.bet_status ? (
-                      <div className="text-right">
-                        <div className="text-[10px] text-gray-600 font-mono">
-                          Bet: {h.bet_selection} @ {h.bet_odds?.toFixed(2)}
-                        </div>
-                        <div className="flex items-center justify-end gap-1 mt-0.5">
-                          <StatusBadge status={h.bet_status} />
-                          {correct !== null && (
-                            <span className={`text-[10px] font-mono ${correct ? "text-green-400" : "text-red-400"}`}>
-                              {correct ? t.hist_model_correct : t.hist_model_wrong}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-gray-600 font-mono">{t.hist_no_bet}</span>
+                    <span className={`px-2 py-0.5 rounded-full border text-[10px] font-mono uppercase ${resultColor(r)}`}>
+                      {r}
+                    </span>
+                    {h.is_paper && (
+                      <span className="px-2 py-0.5 rounded-full border border-white/10 text-[10px] font-mono text-gray-400">
+                        paper
+                      </span>
+                    )}
+                    {h.is_verified && (
+                      <span className="px-2 py-0.5 rounded-full border border-cyan-400/30 text-[10px] font-mono text-cyan-300">
+                        verified
+                      </span>
                     )}
                   </div>
-                </div>
-
-                {/* Probability mini-bar */}
-                <div className="flex gap-1 mt-2">
-                  {[
-                    { label: "H", p: h.p_home, color: "bg-cyan-400" },
-                    { label: "D", p: h.p_draw, color: "bg-yellow-400" },
-                    { label: "A", p: h.p_away, color: "bg-fuchsia-400" },
-                  ].map(({ label, p, color }) => (
-                    <div key={label} className="flex items-center gap-1 flex-1">
-                      <span className="text-[9px] text-gray-600 font-mono w-3">{label}</span>
-                      <div className="flex-1 bg-white/5 rounded-full h-1 overflow-hidden">
-                        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.round(p * 100)}%` }} />
-                      </div>
-                      <span className="text-[9px] text-gray-600 font-mono w-6 text-right">{Math.round(p * 100)}%</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             );
@@ -4719,6 +4753,9 @@ export default function Dashboard() {
   const [computedAt, setComputedAt] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryMatch[]>([]);
   const [historyStats, setHistoryStats] = useState<HistoryStats | null>(null);
+  const [historyV2, setHistoryV2] = useState<V2HistoryRow[]>([]);
+  const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
+  const [historyV2Loading, setHistoryV2Loading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(true);
   const [tennisLoading, setTennisLoading] = useState(true);
@@ -5012,6 +5049,20 @@ export default function Dashboard() {
     } catch { /**/ } finally { setHistoryLoading(false); }
   }, []);
 
+  // Unified multi-sport track record for the History tab (the legacy
+  // /api/history feed above stays only for PublicOldBetsPanel).
+  const fetchHistoryV2 = useCallback(async () => {
+    setHistoryV2Loading(true);
+    try {
+      const resp = await fetch("/api/v2/history?limit=300", { credentials: "same-origin" });
+      if (resp.ok) {
+        const data = await resp.json();
+        setHistoryV2(data.history ?? []);
+        setHistoryV2Stats(data.stats ?? null);
+      }
+    } catch { /**/ } finally { setHistoryV2Loading(false); }
+  }, []);
+
   const fetchLive = useCallback(async () => {
     if (!profileHasAccess(clientProfile)) {
       setLiveScores({});
@@ -5029,7 +5080,7 @@ export default function Dashboard() {
     setRefreshing(true);
     try {
       await fetch("/api/predictions", { method: "POST" });
-      await Promise.all([fetchPredictions(), fetchTennis(), fetchHistory()]);
+      await Promise.all([fetchPredictions(), fetchTennis(), fetchHistory(), fetchHistoryV2()]);
     } finally { setRefreshing(false); }
   };
 
@@ -5040,6 +5091,7 @@ export default function Dashboard() {
       void fetchAgents();
       void fetchTennis();
       void fetchHistory();
+      void fetchHistoryV2();
       void fetchLive();
     });
     const dataInt = setInterval(fetchData, 30_000);
@@ -5218,7 +5270,7 @@ export default function Dashboard() {
           {tab === "assistance" && <AssistanceTab />}
           {tab === "faq" && <FAQTab />}
           {tab === "history" && (
-            <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
+            <HistoryTab history={historyV2} stats={historyV2Stats} loading={historyV2Loading} />
           )}
           {tab === "leaderboard" && (
             <LeaderboardTab

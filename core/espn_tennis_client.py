@@ -119,3 +119,54 @@ async def get_fixtures() -> list[dict]:
 
     logger.info("ESPN tennis: found %d singles matches", len(results))
     return results
+
+
+async def get_completed_results() -> list[dict]:
+    """
+    Completed singles results from the same scoreboard feed.
+
+    The notes field puts the WINNER first by construction ("A bt B 6-4 6-3"),
+    so parsed player1 of a completed match IS the winner — exactly the bias
+    that makes completed rows unusable as fixtures makes them perfect for
+    settlement. Returns [{winner_key, loser_key, winner_name, loser_name,
+    tournament}] with canonical player keys for matching.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(_URL, headers=_HEADERS)
+            if resp.status_code != 200:
+                logger.warning("ESPN tennis results: %s", resp.status_code)
+                return []
+            data = resp.json()
+    except Exception as exc:
+        logger.debug("ESPN tennis results error (non-fatal): %s", exc)
+        return []
+
+    sports = data.get("sports", [])
+    if not sports:
+        return []
+
+    out: list[dict] = []
+    for league in sports[0].get("leagues", []):
+        for ev in league.get("events", []):
+            comp_type = ev.get("competitionType", {}).get("text", "")
+            if "Singles" not in comp_type:
+                continue
+            notes = ev.get("notes", [])
+            note_text = notes[0].get("text", "") if notes else ""
+            if not note_text:
+                continue
+            parsed = _parse_notes(note_text, comp_type)
+            if not parsed or parsed["match_status"] != "completed":
+                continue
+            winner, loser = parsed["player1"], parsed["player2"]
+            out.append({
+                "winner_key": canonical_player_key(winner),
+                "loser_key": canonical_player_key(loser),
+                "winner_name": winner,
+                "loser_name": loser,
+                "tournament": ev.get("name", ev.get("shortName", "")),
+            })
+
+    logger.info("ESPN tennis: found %d completed results", len(out))
+    return out

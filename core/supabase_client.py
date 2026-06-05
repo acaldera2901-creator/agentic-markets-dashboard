@@ -453,3 +453,59 @@ async def settle_unified_prediction(row_id: str, result: str) -> bool:
     except Exception as exc:
         logger.warning("unified settle error for %s: %s", row_id, exc)
         return False
+
+
+async def settle_unified_tennis(
+    match_id: str,
+    winner_name: str | None,
+    *,
+    void: bool = False,
+) -> bool:
+    """
+    Bridge a tennis settlement to the served unified_predictions row.
+
+    The TennisSettlementAgent settles the Python-side TennisPrediction; the
+    synced unified row (source_table='tennis_predictions', source_id=match_id)
+    would otherwise stay un-historical forever — the football-only filter in
+    fetch_unsettled_unified_predictions never picks it up — and the public
+    track record (/api/v2/history) would show no tennis at all.
+
+    result mapping: void -> "void"; otherwise compare the row's pick (a player
+    name, written by lib/tennis-adapter.ts) to winner_name -> won/lost.
+    Returns True if a row was settled, False otherwise (missing row included —
+    not every Python prediction passes the publication gate into unified).
+    """
+    base = _rest_base()
+    if not base:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/unified_predictions",
+                params={
+                    "select": "id,pick",
+                    "source_table": "eq.tennis_predictions",
+                    "source_id": f"eq.{match_id}",
+                    "is_historical": "eq.false",
+                    "limit": "1",
+                },
+                headers=_service_headers(),
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "unified tennis lookup failed for %s: %s %s",
+                    match_id, resp.status_code, resp.text[:200],
+                )
+                return False
+            rows = resp.json()
+        if not rows:
+            return False
+        row = rows[0]
+        if void or not winner_name:
+            result = "void"
+        else:
+            result = "won" if (row.get("pick") or "") == winner_name else "lost"
+        return await settle_unified_prediction(str(row["id"]), result)
+    except Exception as exc:
+        logger.warning("unified tennis settle error for %s: %s", match_id, exc)
+        return False
