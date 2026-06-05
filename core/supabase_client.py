@@ -5,7 +5,7 @@ Writes are fire-and-forget: failures are logged but never crash the agent.
 """
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import httpx
 from config.settings import settings
 
@@ -260,3 +260,98 @@ async def upsert_dc_predictions(predictions: list[DCPrediction]) -> int:
         logger.warning("dc unified upsert client error: %s", exc)
 
     return written
+
+
+# ─── Unified predictions settlement (P4-B / P5) ────────────────────────────────
+# Settles served rows after the event: result + is_historical=TRUE feed the
+# public track record (/api/v2/history) and flip the WC `settlement`/`history`
+# readiness gates. Product line: result only — no money metrics are written.
+
+def _service_headers() -> dict:
+    return {
+        "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+    }
+
+
+async def fetch_unsettled_unified_predictions(
+    cutoff_minutes: int = 115, limit: int = 50
+) -> list[dict]:
+    """
+    Rows whose event started at least `cutoff_minutes` ago and that still have
+    no result. Oldest first, bounded — a backlog drains across cycles instead
+    of hammering the result providers in one go.
+    """
+    base = _rest_base()
+    if not base:
+        return []
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(minutes=cutoff_minutes)
+    ).isoformat()
+    params = {
+        "select": (
+            "id,external_event_id,sport,league,competition,home_team,away_team,"
+            "market,pick,starts_at,world_cup_stage"
+        ),
+        "sport": "eq.football",
+        "is_historical": "eq.false",
+        "result": "is.null",
+        "starts_at": f"lt.{cutoff}",
+        "order": "starts_at.asc",
+        "limit": str(limit),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/unified_predictions", params=params, headers=_service_headers()
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "unified unsettled fetch failed: %s %s",
+                    resp.status_code,
+                    resp.text[:200],
+                )
+                return []
+            return resp.json() or []
+    except Exception as exc:
+        logger.warning("unified unsettled fetch error: %s", exc)
+        return []
+
+
+async def settle_unified_prediction(row_id: str, result: str) -> bool:
+    """
+    Mark one served prediction as settled history. `result` is won|lost|void.
+    Fail-loud to the caller (bool) so the settlement agent can count and retry
+    on the next cycle — but never raises.
+    """
+    base = _rest_base()
+    if not base:
+        return False
+    payload = {
+        "result": result,
+        "status": "settled",
+        "is_historical": True,
+        "settled_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.patch(
+                f"{base}/unified_predictions",
+                params={"id": f"eq.{row_id}"},
+                json=payload,
+                headers=_service_headers(),
+            )
+            if resp.status_code in (200, 204):
+                return True
+            logger.warning(
+                "unified settle failed for %s: %s %s",
+                row_id,
+                resp.status_code,
+                resp.text[:200],
+            )
+            return False
+    except Exception as exc:
+        logger.warning("unified settle error for %s: %s", row_id, exc)
+        return False

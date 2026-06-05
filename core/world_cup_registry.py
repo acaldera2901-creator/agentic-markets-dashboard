@@ -45,6 +45,7 @@ class WorldCupRegistry:
         WorldCupGate("venue_context", "Venue, host country and neutral/host context are known."),
         WorldCupGate("national_team_model", "National-team strength baseline exists."),
         WorldCupGate("stage_context", "Group/knockout stage is known."),
+        WorldCupGate("squad_news", "Squad/injury data covers the qualified teams (ESPN)."),
         WorldCupGate("settlement_feed", "Result settlement source is available."),
         WorldCupGate("history_writer", "Settled signals can move into history."),
     )
@@ -71,6 +72,7 @@ def readiness_from_counts(
     national_model_ready: bool = False,
     venue_context_ready: bool = False,
     settlement_ready: bool = False,
+    squad_news_ready: bool = False,
 ) -> dict[str, Any]:
     fixture_feed = fixtures > 0
     odds_feed = odds_markets > 0 and matched_odds > 0
@@ -81,6 +83,7 @@ def readiness_from_counts(
         "venue_context": venue_context_ready,
         "national_team_model": national_model_ready,
         "stage_context": fixture_feed,
+        "squad_news": squad_news_ready,
         "settlement_feed": settlement_ready,
         "history_writer": history_writer,
     }
@@ -103,6 +106,8 @@ def build_cycle_detail(
     national_model_ready: bool = False,
     venue_context_ready: bool = False,
     settlement_ready: bool = False,
+    squad_news_ready: bool = False,
+    squad_coverage: dict[str, int] | None = None,
 ) -> str:
     """Return compact JSON-safe heartbeat detail for dashboard/Supabase."""
     wc = league_counts.get(WORLD_CUP_CODE, {})
@@ -113,6 +118,7 @@ def build_cycle_detail(
         national_model_ready=national_model_ready,
         venue_context_ready=venue_context_ready,
         settlement_ready=settlement_ready,
+        squad_news_ready=squad_news_ready,
     )
     payload = {
         "ts": datetime.now(timezone.utc).isoformat(),
@@ -124,6 +130,8 @@ def build_cycle_detail(
             "matched_odds": int(wc.get("matched_odds", 0)),
             "published_events": int(wc.get("published_events", 0)),
             "readiness": readiness,
+            # compact counts only — the 4000-char heartbeat budget is tight
+            "squad_coverage": squad_coverage or {},
         },
         "leagues": league_counts,
         "source_errors": source_errors or [],

@@ -13,13 +13,17 @@ Runs every 5 minutes. For each pending bet whose kickoff was at least 115 minute
 import asyncio
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from agents.base import BaseAgent
 from core.db import get_pending_bets_for_settlement, settle_bet, get_cumulative_pnl
 from core.football_api_client import get_fixture_result
 from core.football_data_org_client import get_match_result as fdorg_get_match_result
 from core.redis_client import publish
+from core.supabase_client import (
+    fetch_unsettled_unified_predictions,
+    settle_unified_prediction,
+)
 from core.telegram_client import send as tg_send
 from config.settings import settings
 from learning.self_learning import SelfLearningEngine
@@ -61,6 +65,10 @@ class ResultSettlementAgent(BaseAgent):
                 await self._settlement_cycle()
             except Exception as e:
                 self.logger.error(f"settlement cycle error: {e}", exc_info=True)
+            try:
+                await self._unified_settlement_cycle()
+            except Exception as e:
+                self.logger.error(f"unified settlement cycle error: {e}", exc_info=True)
             await asyncio.sleep(self.POLL_INTERVAL)
 
     async def _settlement_cycle(self) -> None:
@@ -115,6 +123,80 @@ class ResultSettlementAgent(BaseAgent):
 
         if settled_this_cycle:
             await self._send_telegram_summary(settled_this_cycle)
+
+    async def _unified_settlement_cycle(self) -> None:
+        """
+        P4-B / P5: settle served rows in unified_predictions (incl. World Cup)
+        and move them into history (is_historical=TRUE). This is what feeds the
+        public track record and flips the WC `settlement`/`history` gates.
+        Result only — no money metrics are written (product line: hit-rate).
+        """
+        rows = await fetch_unsettled_unified_predictions(cutoff_minutes=115)
+        if not rows:
+            return
+
+        self.logger.info(f"unified settlement: {len(rows)} rows past cutoff")
+        settled = 0
+        for row in rows:
+            try:
+                result = await self._fetch_unified_result(row)
+                if result is None:
+                    continue  # not finished / providers have no score yet
+
+                pick = str(row.get("pick") or "").lower()
+                market = str(row.get("market") or "1X2")
+                if market != "1X2" or pick not in ("home", "draw", "away"):
+                    # Unknown market/pick: settle as void rather than guessing.
+                    outcome = "void"
+                else:
+                    outcome = _outcome(pick, result["home_goals"], result["away_goals"])
+
+                if await settle_unified_prediction(str(row["id"]), outcome):
+                    settled += 1
+                    self.logger.info(
+                        f"unified settled: {row.get('home_team')} vs {row.get('away_team')} "
+                        f"({row.get('competition')}) | {pick} | "
+                        f"{result['home_goals']}-{result['away_goals']} | {outcome}"
+                        + (" | WC" if row.get("world_cup_stage") else "")
+                    )
+            except Exception as e:
+                self.logger.error(f"failed to settle unified row {row.get('id')}: {e}")
+
+        if settled:
+            self.set_status_detail({
+                "type": "unified_settlement",
+                "settled": settled,
+                "pending": len(rows) - settled,
+                "settled_at": datetime.now(timezone.utc).isoformat(),
+            })
+
+    async def _fetch_unified_result(self, row: dict) -> dict | None:
+        """Result lookup for a unified row: fixture id first, team-name fallback."""
+        ext = row.get("external_event_id")
+        try:
+            result = await get_fixture_result(int(ext))
+            if result:
+                return result
+        except (ValueError, TypeError):
+            pass
+        except Exception:
+            pass  # 403/429 → fall through to backup
+
+        if (
+            row.get("home_team") and row.get("away_team") and row.get("starts_at")
+            and row.get("league") and settings.FOOTBALL_DATA_ORG_API_KEY
+        ):
+            try:
+                return await fdorg_get_match_result(
+                    competition_code=str(row["league"]),
+                    api_key=settings.FOOTBALL_DATA_ORG_API_KEY,
+                    home_team=str(row["home_team"]),
+                    away_team=str(row["away_team"]),
+                    kickoff_date=str(row["starts_at"]),
+                )
+            except Exception as e:
+                self.logger.debug(f"fdorg fallback failed for unified {row.get('id')}: {e}")
+        return None
 
     async def _fetch_result(self, bet) -> dict | None:
         """Try API-Football first, fall back to football-data.org by team names."""
