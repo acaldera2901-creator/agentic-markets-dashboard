@@ -379,6 +379,7 @@ export async function GET() {
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
   const isOffSeason = predictions_raw.length === 0;
+  const isStale = !isOffSeason && ageMinutes > 60;
   const predictions = predictions_raw.map((p) => {
     const hydrated = hydratePaperOdds(p);
     const lH = hydrated.lambda_home;
@@ -390,8 +391,6 @@ export async function GET() {
     }
     return hydrated;
   });
-  const isStale = !isOffSeason && ageMinutes > 60;
-
   return NextResponse.json(
     {
       predictions,
