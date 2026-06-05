@@ -11,7 +11,18 @@ export type SessionContext = {
   identifier: string;
   plan: Plan;
   name: string | null;
+  plan_expires_at: string | null;
 };
+
+// Paid plans (base/premium) expire; admin_full and free do not. A plan past its
+// expiry degrades to 'free' AT RUNTIME here — independent of the daily cron
+// sweep — so an expired subscriber loses data access immediately, never lingering
+// until the next cron run.
+function effectivePlan(plan: Plan, expiresAt: string | null): Plan {
+  if (plan !== "base" && plan !== "premium") return plan;
+  if (!expiresAt) return plan; // legacy active rows with no expiry stay active
+  return new Date(expiresAt).getTime() < Date.now() ? "free" : plan;
+}
 
 // Header-based cookie read: robust across Next.js versions (avoids the cookie() API
 // that has breaking changes in this Next build — see AGENTS.md).
@@ -30,12 +41,18 @@ export async function getSessionPlan(req: Request): Promise<SessionContext | nul
   const token = readCookie(req, SESSION_COOKIE);
   const payload = verifySession(token);
   if (!payload) return null;
-  const rows = await dbQuery<{ identifier: string; plan: Plan; name: string | null }>(
-    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+  const rows = await dbQuery<{ identifier: string; plan: Plan; name: string | null; plan_expires_at: string | null }>(
+    "SELECT identifier, plan, name, plan_expires_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
     [payload.identifier]
   );
   if (!rows.length) return null;
-  return { identifier: rows[0].identifier, plan: rows[0].plan, name: rows[0].name ?? null };
+  const expiresAt = rows[0].plan_expires_at ?? null;
+  return {
+    identifier: rows[0].identifier,
+    plan: effectivePlan(rows[0].plan, expiresAt),
+    name: rows[0].name ?? null,
+    plan_expires_at: expiresAt,
+  };
 }
 
 // Server-side mirror of the client predicates profileHasAccess / profileHasPremium.

@@ -7,6 +7,10 @@
     {
       "path": "/api/predictions/refresh",
       "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/subscriptions",
+      "schedule": "0 6 * * *"
     }
   ]
 }

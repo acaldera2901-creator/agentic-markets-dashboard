@@ -863,6 +863,7 @@ type ClientProfile = {
   timezone?: string;
   txHash?: string;
   requestedPlan?: "base" | "premium";
+  planExpiresAt?: string | null;
   betfair?: {
     username?: string;
     appKeyLast4?: string;
@@ -2572,6 +2573,11 @@ function ProfilePanel({
 }) {
   const hasPremium = profileHasPremium(profile);
   const t = useT();
+  const lang = useLang();
+  // Days remaining on a paid subscription (payments GAP2). Hidden for free/admin.
+  const daysLeft = profile.planExpiresAt && profileHasAccess(profile) && profile.plan !== "admin_full"
+    ? Math.ceil((new Date(profile.planExpiresAt).getTime() - Date.now()) / 86_400_000)
+    : null;
   return (
     <section className="profile-panel">
       <div className="profile-card">
@@ -2583,6 +2589,18 @@ function ProfilePanel({
         </div>
         <button onClick={onLogout}>{t.profile_logout}</button>
       </div>
+      {daysLeft != null && (
+        <div className="upgrade-card" style={daysLeft <= 5 ? { borderColor: "rgba(251,191,36,0.4)" } : undefined}>
+          <div>
+            <p className="eyebrow">{lang === "it" ? "Abbonamento" : "Subscription"}</p>
+            <h3>{daysLeft > 0
+              ? `${daysLeft} ${lang === "it" ? (daysLeft === 1 ? "giorno rimanente" : "giorni rimanenti") : (daysLeft === 1 ? "day left" : "days left")}`
+              : (lang === "it" ? "Scaduto" : "Expired")}</h3>
+            <span>{lang === "it" ? "Signal Desk Pro · rinnovo mensile" : "Signal Desk Pro · monthly renewal"}</span>
+          </div>
+          {daysLeft <= 7 && <button onClick={onUpgrade}>{lang === "it" ? "Rinnova" : "Renew"}</button>}
+        </div>
+      )}
       {!hasPremium && (
         <div className="upgrade-card">
           <div>
@@ -4734,11 +4752,13 @@ export default function Dashboard() {
         const resp = await fetch("/api/auth", { credentials: "same-origin", cache: "no-store" });
         if (cancelled) return;
         if (resp.ok) {
-          const server = await resp.json() as { identifier?: string; plan?: ClientProfile["plan"]; name?: string | null };
+          const server = await resp.json() as { identifier?: string; plan?: ClientProfile["plan"]; name?: string | null; plan_expires_at?: string | null };
           setClientProfile((prev) => {
             if (!prev) return prev;
-            if (server.plan && server.plan !== prev.plan) {
-              const next = { ...prev, plan: server.plan };
+            const planChanged = server.plan && server.plan !== prev.plan;
+            const expiryChanged = server.plan_expires_at !== prev.planExpiresAt;
+            if (planChanged || expiryChanged) {
+              const next = { ...prev, plan: server.plan ?? prev.plan, planExpiresAt: server.plan_expires_at ?? null };
               try { window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(next)); } catch { /**/ }
               return next;
             }
