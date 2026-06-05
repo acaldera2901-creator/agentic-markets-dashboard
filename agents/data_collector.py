@@ -11,7 +11,12 @@ from core.football_api_client import get_fixtures as apifootball_fixtures, LEAGU
 from core.data_hub import DataHub
 from core.football_features import FootballFeatureStore
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
-from core.odds_api_client import get_odds, normalize_name
+from core.odds_api_client import (
+    get_all_bookmaker_odds,
+    get_odds,
+    normalize_name,
+    snapshot_odds_to_supabase,
+)
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
 from core.world_cup_context import build_world_cup_context
 from core.world_cup_registry import api_football_season_for, build_cycle_detail, is_world_cup_code
@@ -195,6 +200,21 @@ class DataCollectorAgent(BaseAgent):
                     if odds_map:
                         self.logger.info(f"OddsAPI {league_code}: {len(odds_map)} markets")
                 league_counts[league_code]["odds_markets"] = len(odds_map)
+
+                # P3 wiring: persist a multi-bookmaker snapshot for World Cup odds
+                # (audit trail + flips the odds_snapshots readiness gate). Capped
+                # per cycle and non-fatal — a snapshot failure never blocks collection.
+                if is_world_cup_code(league_code):
+                    try:
+                        snapshot_rows = await get_all_bookmaker_odds(league_code)
+                        if snapshot_rows:
+                            await snapshot_odds_to_supabase(snapshot_rows[:200])
+                            self.logger.info(
+                                "World Cup odds snapshot: %d rows captured",
+                                min(len(snapshot_rows), 200),
+                            )
+                    except Exception as snap_err:
+                        self.logger.warning(f"WC odds snapshot failed (non-fatal): {snap_err}")
                 published = 0
                 matched_odds = 0
                 for fixture in fixtures:
