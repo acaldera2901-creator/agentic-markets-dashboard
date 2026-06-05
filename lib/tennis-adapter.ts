@@ -1,4 +1,10 @@
 import { dbQuery } from "@/lib/db";
+import {
+  gateCandidate,
+  recordVerdict,
+  emptySyncReport,
+  type SyncReport,
+} from "@/lib/publication-gate";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -104,7 +110,8 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
 
 // Called from the refresh cron, right after the football refresh, so a single
 // scheduled job keeps unified_predictions populated for every sport.
-export async function syncTennisPredictionsToUnified(): Promise<number> {
+// Every candidate passes through the Safe Publication Gate v1 (same as football).
+export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
   const rows = await dbQuery<TennisPredictionRow>(
     `SELECT match_id, tournament, surface, player1, player2, scheduled_at,
             p1, p2, odds_p1, odds_p2, edge, best_selection, model_version,
@@ -116,9 +123,26 @@ export async function syncTennisPredictionsToUnified(): Promise<number> {
      LIMIT 200`
   );
 
-  let synced = 0;
+  const report = emptySyncReport();
   for (const row of rows) {
     const d = tennisPredictionToUnifiedInsert(row);
+
+    const verdict = gateCandidate(
+      {
+        startsAt: row.scheduled_at,
+        pick: d.pick,
+        odds: d.odds,
+        edge: row.edge,
+        isWorldCup: false,
+      },
+      { worldCupSignalReady: false }
+    );
+    recordVerdict(report, verdict);
+    if (!verdict.publish) continue;
+
+    // Gate is authoritative on the published label (downgrade-only).
+    d.signal_type = verdict.signalType;
+    d.is_paper = verdict.isPaper;
     await dbQuery(
       `INSERT INTO unified_predictions (
         external_event_id, sport, competition, league, event_name,
@@ -142,6 +166,7 @@ export async function syncTennisPredictionsToUnified(): Promise<number> {
         risk_level        = EXCLUDED.risk_level,
         status            = EXCLUDED.status,
         signal_type       = EXCLUDED.signal_type,
+        is_paper          = EXCLUDED.is_paper,
         explanation       = EXCLUDED.explanation,
         starts_at         = EXCLUDED.starts_at,
         expires_at        = EXCLUDED.expires_at,
@@ -157,7 +182,6 @@ export async function syncTennisPredictionsToUnified(): Promise<number> {
         d.neutral_venue, d.team_news_summary, d.world_cup_stage, d.source_table, d.source_id,
       ]
     );
-    synced++;
   }
-  return synced;
+  return report;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncTennisPredictionsToUnified } from "@/lib/tennis-adapter";
+import { emptySyncReport, type SyncReport } from "@/lib/publication-gate";
 
 export const maxDuration = 300;
 
@@ -11,7 +12,8 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
+  // Default-deny: a missing CRON_SECRET must never leave the trigger open.
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -33,17 +35,17 @@ export async function GET(req: NextRequest) {
   // ── 2. Tennis ────────────────────────────────────────────────────────────
   // Independent of football: even when club football is between seasons, tennis
   // keeps the board populated. A tennis failure must not fail the whole cron.
-  let tennisSynced = 0;
+  let tennisReport: SyncReport = emptySyncReport();
   let tennisError: unknown = null;
   try {
-    tennisSynced = await syncTennisPredictionsToUnified();
+    tennisReport = await syncTennisPredictionsToUnified();
   } catch (e) {
     tennisError = String(e);
   }
 
   return NextResponse.json({
-    ok: !footballError || tennisSynced > 0,
+    ok: !footballError || tennisReport.synced > 0,
     football: footballError ? { error: footballError } : football,
-    tennis: { synced: tennisSynced, ...(tennisError ? { error: tennisError } : {}) },
+    tennis: { ...tennisReport, ...(tennisError ? { error: tennisError } : {}) },
   });
 }

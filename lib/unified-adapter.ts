@@ -1,4 +1,11 @@
 import { dbQuery } from "@/lib/db";
+import {
+  gateCandidate,
+  recordVerdict,
+  emptySyncReport,
+  type SyncReport,
+} from "@/lib/publication-gate";
+import { isWorldCupSignalReady } from "@/lib/world-cup-readiness";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -240,8 +247,12 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
 }
 
 // ─── Sync function (called after every football model refresh) ────────────────
+//
+// Every candidate passes through the Safe Publication Gate v1 before touching
+// unified_predictions: stale/invalid rows are rejected, rows without a real
+// market or with World Cup readiness still monitor_only are forced to paper.
 
-export async function syncMatchPredictionsToUnified(): Promise<number> {
+export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
   const rows = await dbQuery<MatchPredictionRow>(
     `SELECT id, match_id, league, league_name, home_team, away_team, kickoff,
             p_home, p_draw, p_away, odds_home, odds_draw, odds_away,
@@ -252,9 +263,29 @@ export async function syncMatchPredictionsToUnified(): Promise<number> {
      LIMIT 200`
   );
 
-  let synced = 0;
+  const wcSignalReady = await isWorldCupSignalReady();
+  const report = emptySyncReport();
+
   for (const row of rows) {
     const d = matchPredictionToUnifiedInsert(row);
+
+    const verdict = gateCandidate(
+      {
+        startsAt: row.kickoff,
+        pick: row.best_selection,
+        odds: pickOdds(row),
+        edge: row.edge,
+        isWorldCup: d.competition === "World Cup" || d.world_cup_stage != null,
+      },
+      { worldCupSignalReady: wcSignalReady }
+    );
+    recordVerdict(report, verdict);
+    if (!verdict.publish) continue;
+
+    // The gate is authoritative on the published label: it can only ever
+    // downgrade signal→paper (e.g. WC monitor_only), never upgrade.
+    d.signal_type = verdict.signalType;
+    d.is_paper = verdict.isPaper;
     await dbQuery(
       `INSERT INTO unified_predictions (
         external_event_id, sport, competition, league, event_name,
@@ -276,6 +307,8 @@ export async function syncMatchPredictionsToUnified(): Promise<number> {
         confidence_score  = EXCLUDED.confidence_score,
         risk_level        = EXCLUDED.risk_level,
         status            = EXCLUDED.status,
+        signal_type       = EXCLUDED.signal_type,
+        is_paper          = EXCLUDED.is_paper,
         explanation       = EXCLUDED.explanation,
         team_news_summary = EXCLUDED.team_news_summary,
         neutral_venue     = EXCLUDED.neutral_venue,
@@ -292,7 +325,6 @@ export async function syncMatchPredictionsToUnified(): Promise<number> {
         d.neutral_venue, d.team_news_summary, d.world_cup_stage, d.source_table, d.source_id,
       ]
     );
-    synced++;
   }
 
   await dbQuery(
@@ -304,7 +336,7 @@ export async function syncMatchPredictionsToUnified(): Promise<number> {
        AND settled_at IS NULL`
   );
 
-  return synced;
+  return report;
 }
 
 // ─── Access control (applied in API routes) ───────────────────────────────────
