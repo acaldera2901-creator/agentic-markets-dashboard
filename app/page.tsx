@@ -65,6 +65,13 @@ const BASE_TRANSLATIONS = {
     auth_not_found: "Profilo non trovato. Crea un profilo cliente per continuare.",
     auth_create_btn: "Continue to plans",
     auth_footer: "Signal Desk Pro è crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
+    auth_send_code: "Invia codice", auth_verify: "Verifica e accedi",
+    auth_code_title: "Inserisci il codice", auth_code_sub: "Abbiamo inviato un codice a 6 cifre a",
+    auth_code_label: "Codice di accesso", auth_resend: "Invia di nuovo", auth_resend_in: "Reinvia tra",
+    auth_change_email: "Cambia email",
+    auth_err_send: "Impossibile inviare il codice. Riprova.", auth_err_wrong: "Codice errato. Riprova.",
+    auth_err_attempts: "Troppi tentativi. Richiedi un nuovo codice.", auth_err_generic: "Errore di verifica. Riprova.",
+    auth_err_founder: "Questo profilo richiede founder access.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Un piano pagante, promessa chiara",
@@ -303,6 +310,13 @@ const BASE_TRANSLATIONS = {
     auth_not_found: "Profile not found. Create a client profile to continue.",
     auth_create_btn: "Continue to plans",
     auth_footer: "Signal Desk Pro is crypto-only. Prediction data stays locked until the plan is active.",
+    auth_send_code: "Send code", auth_verify: "Verify & sign in",
+    auth_code_title: "Enter the code", auth_code_sub: "We sent a 6-digit code to",
+    auth_code_label: "Login code", auth_resend: "Resend code", auth_resend_in: "Resend in",
+    auth_change_email: "Change email",
+    auth_err_send: "Couldn't send the code. Try again.", auth_err_wrong: "Wrong code. Try again.",
+    auth_err_attempts: "Too many attempts. Request a new code.", auth_err_generic: "Verification error. Try again.",
+    auth_err_founder: "This profile requires founder access.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "One paid plan, clear promise",
@@ -2442,77 +2456,124 @@ function SettingsTab({
 
 function ClientAuthModal({
   intent,
-  storedProfiles,
   onClose,
-  onSave,
-  onNotFound,
+  onVerified,
 }: {
   intent: ClientAuthIntent;
-  storedProfiles: ClientProfile[];
   onClose: () => void;
-  onSave: (profile: ClientProfile) => void;
-  onNotFound: (email: string) => void;
+  onVerified: (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => void;
 }) {
   const [mode, setMode] = useState<ClientAuthIntent>(intent);
+  const [step, setStep] = useState<"email" | "code">("email");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const t = useT();
   const lang = useLang();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome";
   const normalizedEmail = email.trim().toLowerCase();
-  const canSubmit = mode === "login" ? normalizedEmail.includes("@") : name.trim().length > 1 && normalizedEmail.includes("@");
+  const emailValid = normalizedEmail.includes("@");
+  const canRequest = mode === "login" ? emailValid : name.trim().length > 1 && emailValid;
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
+
+  const requestCode = async () => {
+    if (!canRequest || busy) return;
+    setBusy(true); setError("");
+    try {
+      const resp = await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "request_code", identifier: normalizedEmail, language: lang }),
+      });
+      if (resp.ok) { setStep("code"); setCooldown(60); }
+      else if (resp.status === 429) {
+        const d = await resp.json().catch(() => ({}));
+        setStep("code"); setCooldown(d.retry_after ?? 60);
+      } else { setError(t.auth_err_send); }
+    } catch { setError(t.auth_err_send); }
+    finally { setBusy(false); }
+  };
+
+  const verifyCode = async () => {
+    if (code.length !== 6 || busy) return;
+    setBusy(true); setError("");
+    try {
+      const resp = await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "verify_code", identifier: normalizedEmail, code, name: name.trim() || undefined, language: lang, timezone: tz }),
+      });
+      if (resp.ok) {
+        const server = await resp.json() as { plan?: ClientProfile["plan"]; name?: string | null };
+        onVerified({
+          name: (server.name ?? name.trim()) || normalizedEmail,
+          email: normalizedEmail, plan: "free", language: lang, timezone: tz,
+          risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
+          betfair: { status: "not_connected" }, notifications: defaultNotifications(),
+        }, server.plan);
+      } else if (resp.status === 401) setError(t.auth_err_wrong);
+      else if (resp.status === 429) setError(t.auth_err_attempts);
+      else if (resp.status === 403) setError(t.auth_err_founder);
+      else setError(t.auth_err_generic);
+    } catch { setError(t.auth_err_generic); }
+    finally { setBusy(false); }
+  };
 
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
-      <form
-        className="auth-modal"
-        onClick={(event) => event.stopPropagation()}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!canSubmit) return;
-          if (mode === "login") {
-            const found = storedProfiles.find((profile) => profile.email.toLowerCase() === normalizedEmail);
-            if (!found) {
-              setError(t.auth_not_found);
-              onNotFound(normalizedEmail);
-              return;
-            }
-            onSave(found);
-            return;
-          }
-          onSave({
-            name: name.trim(),
-            email: normalizedEmail,
-            plan: "free",
-            language: lang,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome",
-            risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
-            betfair: { status: "not_connected" },
-            notifications: defaultNotifications(),
-          });
-        }}
-      >
+      <form className="auth-modal" onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => { e.preventDefault(); step === "email" ? requestCode() : verifyCode(); }}>
         <div className="auth-modal-head">
           <p className="eyebrow">{t.auth_eyebrow}</p>
-          <h3>{mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
-          <span>{mode === "login" ? t.auth_login_sub : t.auth_create_sub}</span>
+          <h3>{step === "code" ? t.auth_code_title : mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
+          <span>{step === "code" ? `${t.auth_code_sub} ${normalizedEmail}` : mode === "login" ? t.auth_login_sub : t.auth_create_sub}</span>
         </div>
-        <div className="auth-mode-switch">
-          <button type="button" className={mode === "login" ? "is-active" : ""} onClick={() => { setMode("login"); setError(""); }}>Login</button>
-          <button type="button" className={mode === "create" ? "is-active" : ""} onClick={() => { setMode("create"); setError(""); }}>{t.preaccess_create}</button>
-        </div>
-        {mode === "create" && (
-          <label>
-            <span>{t.auth_name_label}</span>
-            <input value={name} onChange={(event) => setName(event.target.value)} placeholder={t.auth_name_placeholder} autoComplete="name" />
-          </label>
+
+        {step === "email" ? (
+          <>
+            <div className="auth-mode-switch">
+              <button type="button" className={mode === "login" ? "is-active" : ""} onClick={() => { setMode("login"); setError(""); }}>Login</button>
+              <button type="button" className={mode === "create" ? "is-active" : ""} onClick={() => { setMode("create"); setError(""); }}>{t.preaccess_create}</button>
+            </div>
+            {mode === "create" && (
+              <label>
+                <span>{t.auth_name_label}</span>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.auth_name_placeholder} autoComplete="name" />
+              </label>
+            )}
+            <label>
+              <span>Email</span>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
+            </label>
+            {error && <p className="auth-error">{error}</p>}
+            <button disabled={!canRequest || busy}>{busy ? "…" : t.auth_send_code}</button>
+          </>
+        ) : (
+          <>
+            <label>
+              <span>{t.auth_code_label}</span>
+              <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="------" inputMode="numeric" autoComplete="one-time-code" autoFocus
+                style={{ letterSpacing: "0.4em", fontFamily: "ui-monospace, monospace", fontSize: "20px", textAlign: "center" }} />
+            </label>
+            {error && <p className="auth-error">{error}</p>}
+            <button disabled={code.length !== 6 || busy}>{busy ? "…" : t.auth_verify}</button>
+            <button type="button" className="auth-link" disabled={cooldown > 0 || busy} onClick={requestCode}
+              style={{ background: "none", border: "none", color: cooldown > 0 ? "#475569" : "#67e8f9", fontSize: "11px", fontFamily: "monospace", cursor: cooldown > 0 ? "default" : "pointer", marginTop: "4px" }}>
+              {cooldown > 0 ? `${t.auth_resend_in} ${cooldown}s` : t.auth_resend}
+            </button>
+            <button type="button" className="auth-link" onClick={() => { setStep("email"); setCode(""); setError(""); }}
+              style={{ background: "none", border: "none", color: "#64748b", fontSize: "11px", fontFamily: "monospace", cursor: "pointer" }}>
+              ← {t.auth_change_email}
+            </button>
+          </>
         )}
-        <label>
-          <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@email.com" inputMode="email" />
-        </label>
-        {error && <p className="auth-error">{error}</p>}
-        <button disabled={!canSubmit}>{mode === "login" ? "Login" : t.auth_create_btn}</button>
         <p>{t.auth_footer}</p>
       </form>
     </div>
@@ -4727,31 +4788,12 @@ export default function Dashboard() {
     setAuthOpen(true);
   };
 
-  const handleAuthSave = async (profile: ClientProfile) => {
-    // Server is the authority: create/login the profile, set the signed cookie, and
-    // adopt the plan the DB returns (never trust the locally-stored plan for data access).
-    try {
-      const resp = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          action: "login",
-          identifier: profile.email,
-          name: profile.name,
-          language: profile.language,
-          timezone: profile.timezone,
-        }),
-      });
-      if (resp.ok) {
-        const server = await resp.json() as { plan?: ClientProfile["plan"]; name?: string | null };
-        saveClientProfile({ ...profile, plan: server.plan ?? profile.plan });
-        setTab("bets");
-        return;
-      }
-    } catch { /* fall through to local-only below */ }
-    // Network/server failure: keep the user logged in locally but never above 'free'.
-    saveClientProfile({ ...profile, plan: profileHasAccess(profile) ? "free" : profile.plan });
+  const handleAuthVerified = (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => {
+    // The OTP modal already verified the code and the server set the signed
+    // session cookie. We only adopt the DB plan and persist the local UX profile
+    // — the cookie, not localStorage, is what the server gate trusts for data.
+    saveClientProfile({ ...profile, plan: serverPlan ?? profile.plan });
+    setAuthOpen(false);
     setTab("bets");
   };
 
@@ -5184,10 +5226,8 @@ export default function Dashboard() {
       {authOpen && (
         <ClientAuthModal
           intent={authIntent}
-          storedProfiles={storedProfiles}
           onClose={() => setAuthOpen(false)}
-          onSave={handleAuthSave}
-          onNotFound={(_email: string) => undefined}
+          onVerified={handleAuthVerified}
         />
       )}
       {checkoutOpen && checkoutPlan && (
