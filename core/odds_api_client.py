@@ -144,8 +144,28 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
     return rows
 
 
+# Exact column set of the odds_snapshots table. PostgREST bulk inserts need
+# uniform keys across rows, and unknown keys (home_team/away_team from
+# get_all_bookmaker_odds) are rejected — normalize before posting.
+_SNAPSHOT_COLUMNS = (
+    "match_id", "bookmaker", "source", "market",
+    "odds_home", "odds_draw", "odds_away",
+    "ah_line", "ah_home", "ah_away", "overround",
+)
+
+
+def to_snapshot_rows(rows: List[Dict]) -> List[Dict]:
+    """Project bookmaker-odds rows onto the odds_snapshots column set."""
+    return [
+        {col: row.get(col) for col in _SNAPSHOT_COLUMNS}
+        for row in rows
+        if row.get("match_id") and row.get("bookmaker")
+    ]
+
+
 async def snapshot_odds_to_supabase(rows: List[Dict]) -> None:
     """Write multi-bookmaker odds rows to odds_snapshots table."""
+    rows = to_snapshot_rows(rows)
     if not rows or not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
         return
     try:
