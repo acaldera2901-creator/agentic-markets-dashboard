@@ -3,7 +3,7 @@
 // flags, the reveal timeline (in/out per snapshot — Track A data), and the
 // team's World Cup fixtures. No money fields, nothing gated here.
 import type { Metadata } from "next";
-import Link from "next/link";
+import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { notFound } from "next/navigation";
 import { dbQuery } from "@/lib/db";
 import { fetchWcFixtures, fetchTeamGroupMap, teamSlug, teamNeedleFromSlug } from "@/lib/world-cup";
@@ -105,7 +105,9 @@ export default async function TeamPage(
   }
 
   return (
-    <main className="wc-page">
+    <div className="portal-root wc-root">
+      <SiteTopbar backHref="/world-cup" backLabel="World Cup hub" />
+      <main className="wc-page">
       <header className="wc-hero wc-hero-team">
         <div className="eyebrow">
           World Cup 2026{group ? ` · Group ${group}` : ""}
@@ -115,9 +117,6 @@ export default async function TeamPage(
           {squad.squad_size ?? players.length} players
           {squad.injured_count ? ` · ${squad.injured_count} flagged injured` : " · no injuries flagged"}
         </p>
-        <div className="wc-hero-actions">
-          <Link href="/world-cup" className="wc-back-link">← World Cup hub</Link>
-        </div>
       </header>
 
       <section className="wc-section">
@@ -196,6 +195,7 @@ export default async function TeamPage(
           <div className="book-empty">Fixtures unavailable right now — retry shortly.</div>
         )}
       </section>
-    </main>
+      </main>
+    </div>
   );
 }

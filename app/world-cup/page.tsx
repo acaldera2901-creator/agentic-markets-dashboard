@@ -4,6 +4,7 @@
 // Groups/calendar proxied from ESPN (cached 5 min), squads from Track A tables.
 import type { Metadata } from "next";
 import Link from "next/link";
+import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import Countdown from "@/components/world-cup/Countdown";
 import GroupsGrid from "@/components/world-cup/GroupsGrid";
 import CalendarSection from "@/components/world-cup/CalendarSection";
@@ -38,7 +39,9 @@ export default async function WorldCupPage() {
   ]);
 
   return (
-    <main className="wc-page">
+    <div className="portal-root wc-root">
+      <SiteTopbar backLabel="Board" />
+      <main className="wc-page">
       <header className="wc-hero">
         <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
         <h1>World Cup Intelligence Hub</h1>
@@ -47,9 +50,6 @@ export default async function WorldCupPage() {
           happen, AI predictions with a transparent hit-rate record.
         </p>
         <Countdown />
-        <div className="wc-hero-actions">
-          <Link href="/" className="wc-back-link">← Main board</Link>
-        </div>
       </header>
 
       <section className="wc-section" id="board">
@@ -94,6 +94,7 @@ export default async function WorldCupPage() {
         <h2 className="wc-section-title">Track record</h2>
         <TrackRecordStrip />
       </section>
-    </main>
+      </main>
+    </div>
   );
 }
