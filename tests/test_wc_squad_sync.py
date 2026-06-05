@@ -54,3 +54,28 @@ def test_diff_empty_when_unchanged():
     assert diff_rosters(roster, roster) == {
         "added": [], "removed": [], "injury_changes": [],
     }
+
+
+# ─── _player_rows: uniform-row invariant (P1/P3 PostgREST lesson) ──────────────
+
+def test_player_rows_have_identical_keys_with_explicit_nulls():
+    rows = wc_squad_sync._player_rows(
+        "squad-uuid",
+        [
+            {"name": "Alpha", "position": "G", "injured": False},
+            # richer row (future API-Football enrichment) — keys must still match
+            {"name": "Beta", "position": "D", "injured": True,
+             "shirt_number": 4, "club_team": "FC X", "age": 27},
+        ],
+    )
+    assert len(rows) == 2
+    keysets = {tuple(sorted(r.keys())) for r in rows}
+    assert len(keysets) == 1  # IDENTICAL keys on every row
+    assert rows[0]["shirt_number"] is None  # explicit NULL, not missing
+    assert rows[1]["shirt_number"] == 4
+    assert all(r["squad_id"] == "squad-uuid" for r in rows)
+
+
+def test_player_rows_skip_nameless_entries():
+    rows = wc_squad_sync._player_rows("s", [{"name": None}, {"name": "Ok"}])
+    assert [r["player_name"] for r in rows] == ["Ok"]

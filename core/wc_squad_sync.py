@@ -60,3 +60,23 @@ def diff_rosters(prev: list[dict] | None, new: list[dict]) -> dict | None:
             != bool(prev_by_name[n].get("injured"))
         ),
     }
+
+
+def _player_rows(squad_id: str, players: list[dict]) -> list[dict]:
+    """Bulk rows with IDENTICAL keys and explicit None for missing values —
+    non-uniform keys make PostgREST silently reject the whole bulk insert
+    (P1/P3 lesson, 2026-06-05)."""
+    return [
+        {
+            "squad_id": squad_id,
+            "player_name": p["name"],
+            "position": p.get("position"),
+            "is_injured": bool(p.get("injured")),
+            "shirt_number": p.get("shirt_number"),
+            "club_team": p.get("club_team"),
+            "age": p.get("age"),
+            "updated_at": _now(),
+        }
+        for p in players
+        if p.get("name")
+    ]
