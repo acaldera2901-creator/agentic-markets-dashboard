@@ -104,6 +104,23 @@ export async function fetchLeagueXG(
   }
 }
 
+/**
+ * League xG baselines for the model blend: average xG scored at home and away
+ * across teams with data. Used to normalize team xG into attack/defense ratings
+ * (mirrors how goal ratings are normalized by avgHome/avgAway). Returns null
+ * when the map is empty or degenerate — callers then skip the blend entirely.
+ */
+export function leagueXGAverages(
+  xgMap: Record<string, TeamXG>
+): { home: number; away: number } | null {
+  const teams = Object.values(xgMap).filter((t) => t.xg_home > 0 || t.xg_away > 0);
+  if (teams.length < 6) return null; // too few teams to define a league baseline
+  const home = teams.reduce((s, t) => s + t.xg_home, 0) / teams.length;
+  const away = teams.reduce((s, t) => s + t.xg_away, 0) / teams.length;
+  if (home <= 0 || away <= 0) return null;
+  return { home, away };
+}
+
 /** Normalize team name for fuzzy matching (strip suffixes, lowercase). */
 export function normTeam(name: string): string {
   return name

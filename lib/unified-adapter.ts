@@ -226,7 +226,7 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     status: computeStatus(row.kickoff),
     signal_type: hasRealMarket ? "signal" : "paper",
     source: "model",
-    model_version: "football-live-v4-xg-market",
+    model_version: "football-v4-xg-model", // xG in the model (blend w=0.5), not just enrichment display
     plan_access: "base",
     is_historical: false,
     is_live: false,

@@ -34,6 +34,40 @@ export interface PoissonModel {
 export const SHRINKAGE_PRIOR = 4; // pseudo-matches of league-average prior
 export const MIN_MATCHES_PER_TEAM = 4; // below this a prediction is "insufficient_data"
 
+// ─── xG blend (Football V4) ────────────────────────────────────────────────────
+// Goals are a noisy sample of chance creation; xG is the better signal (backtest
+// 2026-06: blending xG into the ratings closes ~60% of the Brier gap to market).
+// Each attack/defense multiplier is blended with its xG-based counterpart:
+//   rating = (1-w) * goalsRating + w * xgRating
+// where xgRating = team xG (or xGA) per side / league-average xG for that side.
+// Weight tuned via scripts/verify-xg-blend.ts walk-forward (2026-06-05:
+// optimum w=0.5, Brier 0.6095→0.6014 on 6373 predictions, concave sweep);
+// w=0 (xG missing for that figure) reproduces the pure-goals model exactly —
+// safe fallback for CL/EL/WC where Understat has no coverage.
+export const XG_BLEND_WEIGHT = 0.5;
+
+/** Per-side team xG figures, as served live by lib/understat.ts (last-10 averages). */
+export interface TeamXGFigures {
+  xg_home: number;
+  xga_home: number;
+  xg_away: number;
+  xga_away: number;
+}
+
+/** League normalization baselines: average xG scored at home / away across teams. */
+export interface LeagueXGBaseline {
+  home: number;
+  away: number;
+}
+
+export interface XGAdjust {
+  home: TeamXGFigures | null;
+  away: TeamXGFigures | null;
+  league: LeagueXGBaseline | null;
+  /** Blend weight override (default XG_BLEND_WEIGHT). Used by the backtest sweep. */
+  weight?: number;
+}
+
 function mean(arr: number[]): number {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 1;
 }
@@ -146,7 +180,8 @@ export function buildModel(results: MatchResult[]): PoissonModel | null {
 export function predict(
   homeTeam: string,
   awayTeam: string,
-  model: PoissonModel
+  model: PoissonModel,
+  xg?: XGAdjust
 ): { pHome: number; pDraw: number; pAway: number; lambdaHome: number; lambdaAway: number; teamMatches: number; reliable: boolean } | null {
   const h = model.strengths[homeTeam];
   const a = model.strengths[awayTeam];
@@ -156,8 +191,26 @@ export function predict(
   const teamMatches = Math.min(h.matches, a.matches);
   const reliable = teamMatches >= MIN_MATCHES_PER_TEAM;
 
-  const lambdaHome = h.attackHome * a.defenseAway * model.avgHome;
-  const lambdaAway = a.attackAway * h.defenseHome * model.avgAway;
+  // Goals-based multipliers (the original model), optionally blended with xG.
+  let attackHome = h.attackHome;
+  let defenseHome = h.defenseHome;
+  let attackAway = a.attackAway;
+  let defenseAway = a.defenseAway;
+
+  if (xg?.league && xg.league.home > 0 && xg.league.away > 0) {
+    const w = xg.weight ?? XG_BLEND_WEIGHT;
+    const blend = (goals: number, xgFigure: number | undefined, leagueAvg: number) =>
+      xgFigure && xgFigure > 0 ? (1 - w) * goals + w * (xgFigure / leagueAvg) : goals;
+    // Home attack creates xG at home (vs league home-xG average); home defense
+    // concedes xGA at home, i.e. away-style chance creation (vs away average).
+    attackHome  = blend(attackHome,  xg.home?.xg_home,  xg.league.home);
+    defenseHome = blend(defenseHome, xg.home?.xga_home, xg.league.away);
+    attackAway  = blend(attackAway,  xg.away?.xg_away,  xg.league.away);
+    defenseAway = blend(defenseAway, xg.away?.xga_away, xg.league.home);
+  }
+
+  const lambdaHome = attackHome * defenseAway * model.avgHome;
+  const lambdaAway = attackAway * defenseHome * model.avgAway;
 
   let pHome = 0, pDraw = 0, pAway = 0;
   for (let i = 0; i <= 10; i++) {

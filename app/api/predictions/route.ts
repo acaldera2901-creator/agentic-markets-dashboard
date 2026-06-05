@@ -8,7 +8,7 @@ import { buildModel, predict, computeExtraMarkets, MatchResult } from "@/lib/poi
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
-import { fetchLeagueXG, matchTeam } from "@/lib/understat";
+import { fetchLeagueXG, matchTeam, leagueXGAverages } from "@/lib/understat";
 import { fetchMatchWeather } from "@/lib/weather";
 import {
   fetchApiFixtures,
@@ -307,13 +307,20 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
     const piRatings = computePiRatings(training);
     const teamForms = computeTeamForms(training);
     const leagueXG = xgMap[code] ?? {};
+    // Football V4: xG enters the model, not just the enrichment display. Teams
+    // or leagues without Understat coverage fall back to pure-goals ratings.
+    const xgBaseline = leagueXGAverages(leagueXG);
     const apiFixtures = apifixMap[code] ?? [];
 
     const fixtures = fixtureResults.find((f) => f.code === code)?.fixtures ?? [];
-    console.log(`[${code}] model on ${model.matchCount} matches → ${fixtures.length} fixtures`);
+    console.log(`[${code}] model on ${model.matchCount} matches → ${fixtures.length} fixtures${xgBaseline ? " (xG blend on)" : ""}`);
 
     for (const fix of fixtures) {
-      const probs = predict(fix.homeTeam, fix.awayTeam, model);
+      const probs = predict(fix.homeTeam, fix.awayTeam, model, {
+        home: matchTeam(fix.homeTeam, leagueXG),
+        away: matchTeam(fix.awayTeam, leagueXG),
+        league: xgBaseline,
+      });
       if (!probs) continue;
 
       const key = `${normName(fix.homeTeam)}|${normName(fix.awayTeam)}`;
