@@ -3,6 +3,7 @@ Supabase REST client for agent heartbeats and model predictions.
 Uses httpx (already in requirements) — no extra dependency.
 Writes are fire-and-forget: failures are logged but never crash the agent.
 """
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
@@ -198,6 +199,13 @@ def dc_prediction_to_unified_row(p: DCPrediction) -> dict:
         "starts_at": p.kickoff,
         "expires_at": p.kickoff,
         "explanation": explanation,
+        # Full 1X2 distribution as machine-readable JSON: the dashboard's
+        # off-season fallback (GET /api/predictions, PROPOSAL #016) projects
+        # unified rows onto the v1 board shape and needs all three
+        # probabilities — confidence_score alone only carries the pick's.
+        "notes": json.dumps(
+            {"p_home": p.p_home, "p_draw": p.p_draw, "p_away": p.p_away}
+        ),
         "neutral_venue": False,
         "world_cup_stage": _world_cup_stage(p.league_name),
         "source_table": settings.DC_SOURCE_TABLE,

@@ -472,11 +472,97 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   return { stored: stored.length, leagues: [...new Set(stored)] };
 }
 
+// ─── Off-season fallback (PROPOSAL #016) ─────────────────────────────────────
+//
+// When match_predictions is empty (domestic leagues paused, no WC model in the
+// TS Poisson path — it has no finished WC matches to train on), serve the
+// Python national-model rows already published to unified_predictions (World
+// Cup paper tier). Honesty rules preserved: odds/edge stay null, so
+// markModelEstimate flags every fallback row as a model estimate and the
+// frontend can never present it as a value bet. Rows without the full 1X2
+// distribution in notes are skipped (fail-closed, no fabricated numbers).
+
+type UnifiedFallbackRow = {
+  external_event_id: string | null;
+  source_id: string | null;
+  league: string | null;
+  competition: string;
+  home_team: string | null;
+  away_team: string | null;
+  starts_at: string;
+  pick: string | null;
+  notes: string | null;
+  updated_at: string;
+};
+
+const FALLBACK_SELECTIONS = new Set(["HOME", "DRAW", "AWAY"]);
+
+function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
+  if (!u.home_team || !u.away_team) return null;
+  let probs: { p_home?: unknown; p_draw?: unknown; p_away?: unknown };
+  try {
+    probs = JSON.parse(u.notes ?? "");
+  } catch {
+    return null; // old rows without the distribution: skip, never invent
+  }
+  const pHome = Number(probs?.p_home);
+  const pDraw = Number(probs?.p_draw);
+  const pAway = Number(probs?.p_away);
+  if (![pHome, pDraw, pAway].every((p) => Number.isFinite(p) && p >= 0 && p <= 1)) {
+    return null;
+  }
+  const matchId = u.external_event_id ?? u.source_id;
+  if (!matchId) return null;
+  const pick = (u.pick ?? "").toUpperCase();
+  return {
+    id: 0,
+    match_id: matchId,
+    league: u.league ?? "WC",
+    league_name: u.competition,
+    home_team: u.home_team,
+    away_team: u.away_team,
+    kickoff: u.starts_at,
+    p_home: pHome,
+    p_draw: pDraw,
+    p_away: pAway,
+    lambda_home: null,
+    lambda_away: null,
+    odds_home: null,
+    odds_draw: null,
+    odds_away: null,
+    edge: null,
+    best_selection: FALLBACK_SELECTIONS.has(pick) ? pick : null,
+    model_matches: null,
+    computed_at: u.updated_at,
+    match_type: null,
+    enrichment: null,
+  };
+}
+
+async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
+  const rows = await dbQuery<UnifiedFallbackRow>(
+    `SELECT external_event_id, source_id, league, competition, home_team,
+            away_team, starts_at, pick, notes, updated_at
+     FROM unified_predictions
+     WHERE sport = 'football'
+       AND starts_at > NOW()
+       AND expires_at > NOW()
+       AND published_at IS NOT NULL
+       AND is_historical = FALSE
+       AND is_demo = FALSE
+     ORDER BY starts_at ASC
+     LIMIT 120`
+  );
+  return rows
+    .map(unifiedToPredictionRow)
+    .filter((row): row is PredictionRow => row !== null);
+}
+
 export async function GET(req: Request) {
   // Read-side: never deny. The board returns per-card `locked` projections for
   // anonymous/free, and strips premium enrichment for base (P0 leak fix).
   const { state } = await resolveAccessState(req);
-  const [predictions_raw, meta] = await Promise.all([
+  const [primary_raw, meta] = await Promise.all([
     dbQuery<PredictionRow>(
       `SELECT * FROM match_predictions
        WHERE kickoff > NOW()
@@ -488,12 +574,24 @@ export async function GET(req: Request) {
        FROM match_predictions WHERE kickoff > NOW()`
     ),
   ]);
-  const computedAt = meta[0]?.ts ?? null;
+
+  const fallback_raw = primary_raw.length === 0 ? await fetchUnifiedFallback() : [];
+  const usingFallback = primary_raw.length === 0 && fallback_raw.length > 0;
+  const predictions_raw = usingFallback ? fallback_raw : primary_raw;
+
+  const computedAt = usingFallback
+    ? fallback_raw.reduce<string | null>(
+        (max, row) => (max === null || row.computed_at > max ? row.computed_at : max),
+        null
+      )
+    : meta[0]?.ts ?? null;
   const ageMinutes = computedAt
     ? (Date.now() - new Date(computedAt).getTime()) / 60_000
     : Infinity;
+  // Off-season banner only when there is truly nothing to show: the fallback
+  // serves real upcoming fixtures (e.g. World Cup), so the banner would lie.
   const isOffSeason = predictions_raw.length === 0;
-  const isStale = !isOffSeason && ageMinutes > 60;
+  const isStale = !isOffSeason && !usingFallback && ageMinutes > 60;
 
   // Hydrate (estimate flag + extra markets) before projecting, then gate per tier.
   const hydratedRows = predictions_raw.map((p) => {
@@ -527,7 +625,7 @@ export async function GET(req: Request) {
       count: predictions.length,
       is_stale: isStale,
       is_off_season: isOffSeason,
-      source: "database",
+      source: usingFallback ? "unified_fallback" : "database",
     },
     { headers: { "Cache-Control": "private, no-store" } }
   );

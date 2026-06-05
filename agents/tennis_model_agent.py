@@ -313,7 +313,7 @@ class TennisModelAgent(BaseAgent):
         clean = [{k: v for k, v in p.items() if k in self._PREDICTION_COLS} for p in predictions]
         try:
             async with httpx.AsyncClient(timeout=10.0) as c:
-                await c.post(
+                resp = await c.post(
                     f"{supa_url.rstrip('/')}/rest/v1/tennis_predictions",
                     json=clean,
                     headers={
@@ -323,8 +323,16 @@ class TennisModelAgent(BaseAgent):
                         "Prefer": "resolution=merge-duplicates",
                     },
                 )
+                # PostgREST signals failures via status code, not exceptions:
+                # a silent 4xx here would quietly starve the board (lesson from
+                # the 2026-06-05 empty Best Bets investigation).
+                if resp.status_code >= 300:
+                    self.logger.warning(
+                        "tennis predictions write rejected: %s %s",
+                        resp.status_code, resp.text[:200],
+                    )
         except Exception as exc:
-            self.logger.debug("tennis predictions write error: %s", exc)
+            self.logger.warning("tennis predictions write error: %s", exc)
 
     def _predict_match(self, market: dict) -> dict | None:
         player1 = market.get("player1", "")
