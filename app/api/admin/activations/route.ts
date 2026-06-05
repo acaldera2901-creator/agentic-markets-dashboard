@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery } from "@/lib/db";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
+import { sendEmail, planActivatedEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,18 @@ export async function POST(req: NextRequest) {
       JSON.stringify({ identifier: activated.identifier, name: activated.name }),
     ]
   );
+
+  // GAP4: tell the customer the plan is live (best-effort — never fails the
+  // activation). Re-read the expiry just set above for the "active until" date.
+  if (activated.identifier.includes("@")) {
+    const exp = await dbQuery<{ plan_expires_at: string | null }>(
+      "SELECT plan_expires_at::text FROM profiles WHERE identifier = $1 LIMIT 1",
+      [activated.identifier]
+    );
+    const mail = planActivatedEmail(exp[0]?.plan_expires_at ?? null);
+    sendEmail({ to: activated.identifier, subject: mail.subject, html: mail.html, text: mail.text })
+      .catch((e) => console.error("[activations] plan-activated email failed:", String(e)));
+  }
 
   return NextResponse.json({
     ok: true,
