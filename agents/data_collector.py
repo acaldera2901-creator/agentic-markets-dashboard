@@ -23,7 +23,11 @@ from core.world_cup_registry import api_football_season_for, build_cycle_detail,
 from core.world_cup_venue_context import enrich_venue_context
 from core.world_cup_history import canonical_team_name, load_national_history, WC2026_TEAMS
 from core.world_cup_team_model import build_profile
-from core.espn_soccer_client import get_squad_coverage, get_world_cup_teams
+from core.espn_soccer_client import (
+    get_squad_coverage,
+    get_world_cup_teams,
+    get_league_fixtures as espn_league_fixtures,
+)
 from config.settings import settings
 
 
@@ -138,14 +142,36 @@ class DataCollectorAgent(BaseAgent):
         return False
 
     async def _fetch_fixtures(self, league_code: str, league_id: int) -> list:
-        """Prefer football-data.org (free, no daily cap); fall back to API-Football."""
+        """
+        Provider chain by cost (decision Andrea 2026-06-05, AM-API-001 'altra via'):
+        football-data.org (free) -> ESPN scoreboard (free) -> API-Football LAST.
+        The paid/quota-bound provider is the final fallback so its remaining
+        quota survives for result settlement, not fixture polling — the 403/429
+        storm of 2026-06-05 came from hammering it for off-season leagues.
+        """
         fdorg_key = settings.FOOTBALL_DATA_ORG_API_KEY
         if fdorg_key and league_code in FREE_TIER_CODES:
             fixtures = await fdorg_fixtures(league_code, fdorg_key)
             if fixtures:
                 return fixtures
 
-        # fallback: API-Football (100 req/day)
+        # Free fallback: ESPN scoreboard (no key, all our league codes).
+        try:
+            fixtures = await espn_league_fixtures(league_code)
+            if fixtures:
+                return fixtures
+            # Two independent free sources agree there are no upcoming
+            # fixtures (off-season): trust them and do NOT burn API-Football
+            # quota — it is shared with result settlement. This was the
+            # 403/429 storm of 2026-06-05.
+            from core.espn_soccer_client import ESPN_LEAGUE_CODES
+            if league_code in ESPN_LEAGUE_CODES:
+                return []
+        except Exception as e:
+            self.logger.debug(f"ESPN fixtures fallback failed for {league_code}: {e}")
+
+        # Last resort: API-Football (100 req/day shared with settlement) —
+        # only reached for leagues without an ESPN mapping or if ESPN errored.
         if settings.API_FOOTBALL_KEY:
             now = datetime.now()
             # Seasons start Aug/Sep — before August we're still in the previous season

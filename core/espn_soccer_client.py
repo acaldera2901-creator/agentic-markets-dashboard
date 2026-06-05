@@ -24,7 +24,22 @@ import httpx
 logger = logging.getLogger("espn_soccer_client")
 
 _BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world"
+_SOCCER_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)"}
+
+# Our league codes -> ESPN league slugs (fixtures fallback, decision Andrea
+# 2026-06-05: free ESPN instead of paying the API-Football quota).
+ESPN_LEAGUE_CODES: dict[str, str] = {
+    "PL": "eng.1",
+    "SA": "ita.1",
+    "PD": "esp.1",
+    "BL1": "ger.1",
+    "FL1": "fra.1",
+    "CL": "uefa.champions",
+    "EL": "uefa.europa",
+    "ECL": "uefa.europa.conf",
+    "WC": "fifa.world",
+}
 
 SQUAD_TTL = 6 * 3600  # squads/injuries change slowly; 6h keeps us at ~200 req/day
 
@@ -123,6 +138,61 @@ async def get_squad_coverage() -> dict[str, dict]:
             }
     logger.info("ESPN soccer: squad coverage %d/%d WC teams", len(coverage), len(teams))
     return coverage
+
+
+async def get_league_fixtures(league_code: str, days_ahead: int = 14) -> list[dict]:
+    """
+    Upcoming fixtures for one league from the ESPN scoreboard, normalized to
+    the API-Football shape ({fixture:{id,date}, teams:{home/away:{name}}}) so
+    the collector is format-agnostic — same trick as football_data_org_client.
+
+    Fixture ids are prefixed "espn:" on purpose: they must never be mistaken
+    for API-Football fixture ids (settlement falls back to the team-name
+    lookup for them, which is the correct path).
+    """
+    slug = ESPN_LEAGUE_CODES.get(league_code)
+    if not slug:
+        return []
+    from datetime import datetime, timedelta, timezone
+
+    today = datetime.now(timezone.utc).date()
+    date_range = f"{today.strftime('%Y%m%d')}-{(today + timedelta(days=days_ahead)).strftime('%Y%m%d')}"
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(
+                f"{_SOCCER_BASE}/{slug}/scoreboard",
+                params={"dates": date_range},
+                headers=_HEADERS,
+            )
+            if resp.status_code != 200:
+                logger.warning("ESPN soccer scoreboard %s: %s", league_code, resp.status_code)
+                return []
+            data = resp.json()
+    except Exception as exc:
+        logger.debug("ESPN soccer scoreboard %s error (non-fatal): %s", league_code, exc)
+        return []
+
+    fixtures: list[dict] = []
+    for ev in data.get("events", []):
+        state = (((ev.get("status") or {}).get("type")) or {}).get("state")
+        if state != "pre":
+            continue  # only future matches are fixtures
+        comps = (ev.get("competitions") or [{}])[0].get("competitors", [])
+        home = next((c for c in comps if c.get("homeAway") == "home"), None)
+        away = next((c for c in comps if c.get("homeAway") == "away"), None)
+        if not home or not away:
+            continue
+        fixtures.append({
+            "fixture": {"id": f"espn:{ev.get('id')}", "date": ev.get("date")},
+            "teams": {
+                "home": {"name": (home.get("team") or {}).get("displayName", "")},
+                "away": {"name": (away.get("team") or {}).get("displayName", "")},
+            },
+            "score": {"fulltime": {"home": None, "away": None}},
+        })
+    if fixtures:
+        logger.info("ESPN soccer %s: %d upcoming fixtures", league_code, len(fixtures))
+    return fixtures
 
 
 async def get_match_lineups(event_id: str) -> dict | None:

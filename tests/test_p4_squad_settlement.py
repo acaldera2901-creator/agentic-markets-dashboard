@@ -175,3 +175,35 @@ def test_outcome_mapping_for_unified_picks():
     assert _outcome("home", 2, 0) == "won"
     assert _outcome("draw", 1, 1) == "won"
     assert _outcome("away", 1, 1) == "lost"
+
+
+# ─── ESPN league fixtures fallback (AM-API-001 'altra via') ────────────────────
+
+async def test_espn_league_fixtures_normalized_shape():
+    payload = {"events": [
+        {"id": "760415", "date": "2026-06-11T19:00Z",
+         "status": {"type": {"state": "pre"}},
+         "competitions": [{"competitors": [
+             {"homeAway": "home", "team": {"displayName": "Mexico"}},
+             {"homeAway": "away", "team": {"displayName": "South Africa"}},
+         ]}]},
+        {"id": "760400", "date": "2026-06-01T19:00Z",
+         "status": {"type": {"state": "post"}},  # finished -> excluded
+         "competitions": [{"competitors": [
+             {"homeAway": "home", "team": {"displayName": "A"}},
+             {"homeAway": "away", "team": {"displayName": "B"}},
+         ]}]},
+    ]}
+    with patch.object(espn_soccer_client.httpx, "AsyncClient", return_value=_client_with([payload])):
+        fx = await espn_soccer_client.get_league_fixtures("WC")
+    assert len(fx) == 1
+    f = fx[0]
+    assert f["fixture"]["id"] == "espn:760415"  # prefixed: never an API-Football id
+    assert f["teams"]["home"]["name"] == "Mexico"
+    assert f["teams"]["away"]["name"] == "South Africa"
+    assert f["score"]["fulltime"] == {"home": None, "away": None}
+
+
+async def test_espn_league_fixtures_unknown_league_empty():
+    fx = await espn_soccer_client.get_league_fixtures("XYZ")
+    assert fx == []
