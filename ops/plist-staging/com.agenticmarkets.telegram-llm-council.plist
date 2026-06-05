@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>com.agenticmarkets.telegram-llm-council</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/calde/.nvm/versions/node/v24.14.0/bin/node</string>
+		<string>/Users/calde/Desktop/brain-agentic-markets-vault/tools/telegram-llm-council-bridge.mjs</string>
+		<string>run</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/calde/Library/Logs/agentic-markets/telegram-bridge.err.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/calde/Library/Logs/agentic-markets/telegram-bridge.out.log</string>
+	<key>WorkingDirectory</key>
+	<string>/Users/calde/Desktop/brain-agentic-markets-vault</string>
+</dict>
+</plist>

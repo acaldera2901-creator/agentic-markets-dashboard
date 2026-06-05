@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>BANKROLL</key>
+		<string>10.0</string>
+		<key>DASHBOARD_URL</key>
+		<string>https://agentic-markets-roan.vercel.app</string>
+		<key>EXPERIMENT_MODE</key>
+		<string>true</string>
+		<key>OLLAMA_BASE_URL</key>
+		<string></string>
+		<key>PAPER_TRADING</key>
+		<string>true</string>
+		<key>SUPABASE_URL</key>
+		<string>https://izscgffubtakzvwxchqt.supabase.co</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>com.agentic-markets.agents</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/calde/Desktop/agentic-markets/venv/bin/python</string>
+		<string>run.py</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/calde/Library/Logs/agentic-markets/agents.err.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/calde/Library/Logs/agentic-markets/agents.out.log</string>
+	<key>ThrottleInterval</key>
+	<integer>30</integer>
+	<key>WorkingDirectory</key>
+	<string>/Users/calde/Desktop/agentic-markets</string>
+</dict>
+</plist>
