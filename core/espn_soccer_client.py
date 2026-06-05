@@ -121,22 +121,52 @@ async def get_team_squad(team_id: str) -> dict | None:
     return _store(key, squad)
 
 
+# Last full-coverage snapshot: a single throttled burst (ESPN rate-limits
+# 48 back-to-back roster calls) must not flap the squad_news gate — squads
+# don't change hourly, so a <24h-old good snapshot is still honest data.
+_last_good_coverage: tuple[float, dict[str, dict]] | None = None
+_COVERAGE_GRACE = 24 * 3600
+_ROSTER_SPACING_S = 0.25  # be polite: ~12s per full sweep, once per 6h TTL
+
+
 async def get_squad_coverage() -> dict[str, dict]:
     """
     Fetch squads for every qualified WC team (cache-aware: after the first
     cycle this is free until the TTL expires). Returns {team_name: summary}
-    with summary = {squad_size, injured, fetched_at}.
+    with summary = {squad_size, injured}.
     """
+    import asyncio
+    global _last_good_coverage
+
     teams = await get_world_cup_teams()
     coverage: dict[str, dict] = {}
     for team in teams:
+        cached = _cached(f"squad:{team['id']}") is not None
         squad = await get_team_squad(team["id"])
         if squad and squad["squad_size"] > 0:
             coverage[team["name"]] = {
                 "squad_size": squad["squad_size"],
                 "injured": squad["injured"],
             }
-    logger.info("ESPN soccer: squad coverage %d/%d WC teams", len(coverage), len(teams))
+        if not cached:
+            await asyncio.sleep(_ROSTER_SPACING_S)
+
+    if teams and len(coverage) >= max(1, int(0.8 * len(teams))):
+        _last_good_coverage = (time.time(), coverage)
+        logger.info("ESPN soccer: squad coverage %d/%d WC teams", len(coverage), len(teams))
+        return coverage
+
+    # Degraded burst (throttling/outage): fall back to the last good snapshot
+    # within the grace window instead of flapping the gate.
+    if _last_good_coverage and time.time() - _last_good_coverage[0] < _COVERAGE_GRACE:
+        age_min = int((time.time() - _last_good_coverage[0]) / 60)
+        logger.warning(
+            "ESPN soccer: degraded squad burst (%d/%d) — serving last good coverage (%d teams, %dmin old)",
+            len(coverage), len(teams), len(_last_good_coverage[1]), age_min,
+        )
+        return _last_good_coverage[1]
+
+    logger.warning("ESPN soccer: squad coverage degraded %d/%d, no good snapshot to fall back on", len(coverage), len(teams))
     return coverage
 
 

@@ -303,7 +303,8 @@ class DataCollectorAgent(BaseAgent):
             # Broad coverage, not perfection: >=80% of the qualified field
             # with a published squad keeps the gate honest and reachable.
             squad_news_ready = (
-                wc_teams_total > 0 and len(coverage) >= int(0.8 * wc_teams_total)
+                wc_teams_total > 0
+                and len(coverage) >= max(1, int(0.8 * wc_teams_total))
             )
         except Exception as e:
             source_errors.append(f"WC:squad_news:{e}")
