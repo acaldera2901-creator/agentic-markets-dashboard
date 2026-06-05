@@ -119,9 +119,9 @@ class TennisModelAgent(BaseAgent):
         if not supa_url or not supa_key:
             return []
         try:
-            import datetime
+            from datetime import timedelta
             # Include matches from last 12h (covers live/today) and upcoming
-            cutoff = (datetime.datetime.utcnow() - datetime.timedelta(hours=12)).isoformat()
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=12)).isoformat()
             async with httpx.AsyncClient(timeout=10.0) as c:
                 resp = await c.get(
                     f"{supa_url.rstrip('/')}/rest/v1/tennis_fixtures",
@@ -188,13 +188,20 @@ class TennisModelAgent(BaseAgent):
             total = p1_prob + p2_prob
             p1_prob, p2_prob = p1_prob / total, p2_prob / total
 
-        # Fatigue using real rest/sets data from fixture
+        # Fatigue using real rest/sets data from fixture.
+        # `or` would treat a legitimate 0 (played same day) as missing — coalesce on None only.
+        def _first_set(*values, default):
+            for value in values:
+                if value is not None:
+                    return value
+            return default
+
         p1_prob, p2_prob = self.fatigue.adjust(
             p1_prob, p2_prob,
-            p1_rest_days=fixture.get("p1_rest_days") or feature_context.get("p1_rest_days") or 3,
-            p2_rest_days=fixture.get("p2_rest_days") or feature_context.get("p2_rest_days") or 3,
-            p1_sets_last_match=fixture.get("p1_sets_last") or feature_context.get("p1_sets_last") or 2,
-            p2_sets_last_match=fixture.get("p2_sets_last") or feature_context.get("p2_sets_last") or 2,
+            p1_rest_days=_first_set(fixture.get("p1_rest_days"), feature_context.get("p1_rest_days"), default=3),
+            p2_rest_days=_first_set(fixture.get("p2_rest_days"), feature_context.get("p2_rest_days"), default=3),
+            p1_sets_last_match=_first_set(fixture.get("p1_sets_last"), feature_context.get("p1_sets_last"), default=2),
+            p2_sets_last_match=_first_set(fixture.get("p2_sets_last"), feature_context.get("p2_sets_last"), default=2),
         )
 
         odds_p1 = self._float_or_none(fixture.get("odds_p1"))

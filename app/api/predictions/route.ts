@@ -529,7 +529,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
+  // Default-deny: a missing CRON_SECRET must never leave the trigger open.
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await computeAndStore();
