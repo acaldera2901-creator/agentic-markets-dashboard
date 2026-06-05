@@ -23,6 +23,11 @@ export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Mutating route authorized via admin cookie: block cross-site triggers
+  // (form/img/prefetch CSRF) while allowing the admin's same-origin calls.
+  if (req.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
+  }
 
   let body: { identifier?: unknown };
   try {
