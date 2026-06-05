@@ -207,3 +207,19 @@ async def test_espn_league_fixtures_normalized_shape():
 async def test_espn_league_fixtures_unknown_league_empty():
     fx = await espn_soccer_client.get_league_fixtures("XYZ")
     assert fx == []
+
+
+async def test_squad_coverage_grace_on_throttled_burst():
+    """A throttled burst (rosters all None) must serve the last good snapshot
+    within 24h instead of flapping the squad_news gate to false."""
+    import time as _time
+    espn_soccer_client._cache.clear()
+    good = {"Mexico": {"squad_size": 51, "injured": 0}}
+    espn_soccer_client._last_good_coverage = (_time.time() - 600, good)  # 10min old
+    with patch.object(espn_soccer_client, "get_world_cup_teams",
+                      AsyncMock(return_value=[{"id": "203", "name": "Mexico"}])), \
+         patch.object(espn_soccer_client, "get_team_squad", AsyncMock(return_value=None)):
+        cov = await espn_soccer_client.get_squad_coverage()
+    assert cov == good
+    espn_soccer_client._last_good_coverage = None
+    espn_soccer_client._cache.clear()
