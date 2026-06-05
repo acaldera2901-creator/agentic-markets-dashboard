@@ -4,8 +4,12 @@
 
 | Ambiente | Supabase | URL | Quando |
 |---|---|---|---|
-| **Staging** | `xcgvfrsrcphzfctfyukz` (personale) | Vercel Preview URLs | Ogni push su branch feature |
+| **Staging** | `izscgffubtakzvwxchqt` (aziendale — stesso DB di prod) | Vercel Preview URLs | Ogni push su branch feature |
 | **Production** | `izscgffubtakzvwxchqt` (aziendale) | agentic-markets-roan.vercel.app | Solo dopo verifica su staging |
+
+> Dal 2026-06-05 il progetto personale `xcgvfrsrcphzfctfyukz` è dismesso: tutti gli ambienti
+> puntano al progetto aziendale (org Maven Agency). Attenzione: staging e prod condividono il DB —
+> gli account di test creati in Preview finiscono in `auth.users` di produzione.
 
 ---
 
@@ -24,31 +28,19 @@
 
 ## Modifiche al DB (schema)
 
-### Su Staging prima
-```bash
-export PGPASSWORD='PswCaldera22.'
-STAGING_DB="postgresql://postgres:PswCaldera22.@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres"
-psql "$STAGING_DB" -f supabase/migrations/nuova_migration.sql
-```
-→ Testa che il frontend Preview funzioni.
-
-### Su Production solo se tutto OK
+### Applicare una migration (unico DB — aziendale)
 ```bash
 export PGPASSWORD='<SUPABASE_DB_PASSWORD>'
-PROD_DB="postgresql://postgres.<PROJECT_REF>:<SUPABASE_DB_PASSWORD>@<SUPABASE_POOLER_HOST>:5432/postgres"
+PROD_DB="postgresql://postgres.izscgffubtakzvwxchqt:<SUPABASE_DB_PASSWORD>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
 /opt/homebrew/opt/postgresql@18/bin/psql "$PROD_DB" -f supabase/migrations/nuova_migration.sql
 ```
+→ Testa prima che il frontend Preview funzioni, poi verifica prod.
 
 ---
 
 ## Credenziali rapide
 
-### Staging (Supabase personale)
-- **URL:** https://xcgvfrsrcphzfctfyukz.supabase.co
-- **Dashboard:** https://supabase.com/dashboard/project/xcgvfrsrcphzfctfyukz
-- **DB password:** PswCaldera22.
-
-### Production (Supabase aziendale — Maven Agency)
+### Production + Staging (Supabase aziendale — Maven Agency)
 - **URL:** https://izscgffubtakzvwxchqt.supabase.co
 - **Dashboard:** https://supabase.com/dashboard/project/izscgffubtakzvwxchqt
 - **DB password:** configurala localmente come secret, non committarla.
