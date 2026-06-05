@@ -299,6 +299,27 @@ class DataCollectorAgent(BaseAgent):
             odds_key = f"{normalize_name(home)}|{normalize_name(away)}"
             odds_data = odds_map.get(odds_key)
 
+            # National-team canonical fallback (World Cup): "Korea Republic" vs
+            # "South Korea", "USA" vs "United States" etc. sit below the fuzzy
+            # threshold — map BOTH sides to the canonical spelling before matching.
+            if not odds_data and is_world_cup_code(league):
+                canonical_key = (
+                    f"{normalize_name(canonical_team_name(home))}|"
+                    f"{normalize_name(canonical_team_name(away))}"
+                )
+                odds_data = odds_map.get(canonical_key)
+                if not odds_data:
+                    for key, val in odds_map.items():
+                        k_home, _, k_away = key.partition("|")
+                        if (
+                            normalize_name(canonical_team_name(k_home))
+                            == normalize_name(canonical_team_name(home))
+                            and normalize_name(canonical_team_name(k_away))
+                            == normalize_name(canonical_team_name(away))
+                        ):
+                            odds_data = val
+                            break
+
             # Fuzzy fallback: substring + similarity (handles umlaut mismatches like München↔Munich,
             # abbreviations like "Paris St-G"↔"Paris Saint-Germain", and suffix variants)
             if not odds_data:

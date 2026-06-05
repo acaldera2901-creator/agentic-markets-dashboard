@@ -1,9 +1,44 @@
 import httpx
 import re
+import time
 from typing import List, Dict, Optional
 from config.settings import settings
 
 BASE_URL = "https://api.the-odds-api.com/v4"
+
+# ─── Active-sports filter (quota guard) ───────────────────────────────────────
+# The /sports endpoint is FREE on The Odds API and lists in-season sport keys.
+# Querying odds for an out-of-season key still burns paid credits, so every
+# odds call first checks this cached set. Fail-open: if the listing call
+# fails, behave as before (query everything) rather than blinding the system.
+
+_ACTIVE_KEYS_TTL_SECONDS = 30 * 60
+_active_keys_cache: tuple[float, frozenset[str]] | None = None
+
+
+async def get_active_sport_keys() -> frozenset[str] | None:
+    """Return the in-season sport keys, or None when the free listing fails."""
+    global _active_keys_cache
+    if not settings.ODDS_API_KEY:
+        return None
+    now = time.monotonic()
+    if _active_keys_cache and now - _active_keys_cache[0] < _ACTIVE_KEYS_TTL_SECONDS:
+        return _active_keys_cache[1]
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{BASE_URL}/sports",
+                params={"apiKey": settings.ODDS_API_KEY},
+            )
+        if resp.status_code != 200:
+            return None
+        keys = frozenset(
+            s.get("key", "") for s in resp.json() if s.get("active") is True
+        )
+        _active_keys_cache = (now, keys)
+        return keys
+    except Exception:
+        return None
 
 SPORT_KEYS = {
     "PL": "soccer_epl",
@@ -67,6 +102,10 @@ async def get_odds(league: str) -> List[Dict]:
     sport_key = SPORT_KEYS.get(league)
     if not sport_key:
         return []
+    # Quota guard: never burn paid credits on an out-of-season league.
+    active = await get_active_sport_keys()
+    if active is not None and sport_key not in active:
+        return []
     async with httpx.AsyncClient() as client:
         resp = await client.get(
             f"{BASE_URL}/sports/{sport_key}/odds",
@@ -91,6 +130,10 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
     """Fetch odds from ALL bookmakers. Returns [{match_id, home_team, away_team, bookmaker, odds_home, odds_draw, odds_away, overround}]."""
     sport_key = SPORT_KEYS.get(league_code)
     if not sport_key or not settings.ODDS_API_KEY:
+        return []
+    # Quota guard: skip out-of-season keys (h2h+spreads × regions is expensive).
+    active = await get_active_sport_keys()
+    if active is not None and sport_key not in active:
         return []
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
