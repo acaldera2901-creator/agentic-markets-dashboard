@@ -1350,7 +1350,15 @@ function SportsbookBoard({
                   )}
                 </div>
               ) : (
-                <div className="book-empty">{t.board_football_empty}</div>
+                /* P6: honest empty-state — WC countdown message + hub link */
+                <div className="book-empty wc-empty-state">
+                  <div>{lang === "it"
+                    ? "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale — kickoff 11 giugno."
+                    : "No football signals right now. The first signals arrive when World Cup markets open — kickoff June 11."}</div>
+                  <a href="/world-cup" className="wc-back-link">{lang === "it"
+                    ? "Esplora l'hub Mondiali: gironi, calendario, convocazioni →"
+                    : "Explore the World Cup hub: groups, calendar, squads →"}</a>
+                </div>
               )}
             </section>
           )}
@@ -5210,6 +5218,10 @@ export default function Dashboard() {
                   {item.value && <strong>{item.value}</strong>}
                 </button>
               ))}
+              {/* Track B: World Cup hub is a route, not a tab */}
+              <a className="rail-item" href="/world-cup">
+                <span>🏆 World Cup</span>
+              </a>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
                 {refreshing ? "..." : tUI.refresh_odds}
               </button>

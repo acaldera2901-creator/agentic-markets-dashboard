@@ -97,6 +97,16 @@ TEAM_HOME: dict[str, tuple[tuple[float, float], str]] = {
     "Norway": ((59.914, 10.752), "Europe/Oslo"),
     "Poland": ((52.230, 21.012), "Europe/Warsaw"),
     "Serbia": ((44.787, 20.457), "Europe/Belgrade"),
+    # Track C alias audit (2026-06-06): the 6 qualified teams below were
+    # missing (this table pre-dated the final playoff results) — their venue
+    # context silently degraded to neutral. Some entries above are now stale
+    # (non-qualified playoff hopefuls) — harmless, kept for reference.
+    "Sweden": ((59.329, 18.069), "Europe/Stockholm"),
+    "Iraq": ((33.315, 44.366), "Asia/Baghdad"),
+    "New Zealand": ((-41.286, 174.776), "Pacific/Auckland"),
+    "Cabo Verde": ((14.916, -23.509), "Atlantic/Cape_Verde"),
+    "Congo DR": ((-4.325, 15.322), "Africa/Kinshasa"),
+    "Curaçao": ((12.109, -68.935), "America/Curacao"),
     "Japan": ((35.690, 139.692), "Asia/Tokyo"),
     "South Korea": ((37.567, 126.978), "Asia/Seoul"),
     "Iran": ((35.689, 51.389), "Asia/Tehran"),
