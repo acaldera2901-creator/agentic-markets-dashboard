@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dbQuery } from "@/lib/db";
+import { dbExecute } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    await dbQuery(
+    // dbExecute throws on failure so the existing catch returns a real 500
+    // instead of a silent 200 with the request never stored.
+    await dbExecute(
       `INSERT INTO partner_requests (company, site, category, email, message)
        VALUES ($1, $2, $3, $4, $5)`,
       [company, site ?? null, category ?? null, email, message ?? null]
