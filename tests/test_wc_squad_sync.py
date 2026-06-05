@@ -139,6 +139,9 @@ class _FakeHttpClient:
     async def delete(self, url, params=None, headers=None):
         return await self.request("DELETE", url, params=params)
 
+    async def patch(self, url, params=None, json=None, headers=None):
+        return await self.request("PATCH", url, params=params, json=json)
+
 
 def _fake_client_cm(fake):
     cm = MagicMock()
@@ -192,14 +195,21 @@ async def test_sync_changed_hash_upserts_and_snapshots(monkeypatch):
     fake = _FakeHttpClient([
         (("GET", "wc_squads"), _resp([{"id": "u1", "team_canonical": "Italy", "roster_hash": "OLD"}])),
         (("POST", "wc_squads"), _resp([{"id": "u1"}], 201)),
-        (("GET", "wc_squad_snapshots"), _resp([{"roster": [_p("Alpha", "G"), _p("Cut")]}])),
+        (("GET", "wc_squad_snapshots"), _resp([{"roster": [_p("Alpha", "G"), _p("Cut")], "roster_hash": "OLD"}])),
         (("POST", "wc_squad_players"), _resp([], 201)),
         (("POST", "wc_squad_snapshots"), _resp([], 201)),
+        (("PATCH", "wc_squads"), _resp([], 204)),
     ])
     with patch.object(wc_squad_sync.httpx, "AsyncClient", return_value=_fake_client_cm(fake)):
         summary = await wc_squad_sync.sync_rosters()
     assert summary["teams_synced"] == 1
     assert summary["snapshots_written"] == 1
+    assert summary["errors"] == []
+    # upsert body must NOT carry roster_hash — the hash commits LAST via PATCH
+    squads_post = next(c for c in fake.calls if c[0] == "POST" and "wc_squads" in c[1] and "players" not in c[1] and "snapshots" not in c[1])
+    assert "roster_hash" not in squads_post[3]
+    hash_patch = next(c for c in fake.calls if c[0] == "PATCH" and "wc_squads" in c[1])
+    assert hash_patch[3]["roster_hash"] == roster_hash(_SQUAD["players"])
     snapshot_post = next(
         c for c in fake.calls if c[0] == "POST" and "wc_squad_snapshots" in c[1]
     )
@@ -210,7 +220,10 @@ async def test_sync_changed_hash_upserts_and_snapshots(monkeypatch):
     # players were replaced for the changed team
     assert any(c[0] == "DELETE" and "wc_squad_players" in c[1] for c in fake.calls)
     player_post = next(c for c in fake.calls if c[0] == "POST" and "wc_squad_players" in c[1])
-    assert {tuple(sorted(r.keys())) for r in player_post[3]} != set() and len(player_post[3]) == 2
+    assert len(player_post[3]) == 2
+    # PATCH (hash commit) must be the LAST write
+    write_methods = [c[0] for c in fake.calls if c[0] in ("POST", "DELETE", "PATCH")]
+    assert write_methods[-1] == "PATCH"
 
 
 async def test_sync_is_fail_soft_on_network_error(monkeypatch):
@@ -223,3 +236,32 @@ async def test_sync_is_fail_soft_on_network_error(monkeypatch):
     with patch.object(wc_squad_sync.httpx, "AsyncClient", return_value=boom):
         summary = await wc_squad_sync.sync_rosters()  # MUST NOT raise
     assert summary["errors"]
+
+
+async def test_sync_players_409_aborts_before_snapshot_and_hash(monkeypatch):
+    """UNIQUE violation on the players bulk -> no snapshot, no hash commit,
+    error visible in summary -> next cycle retries (self-healing)."""
+    _patch_espn(monkeypatch)
+    monkeypatch.setattr(wc_squad_sync, "_rest_base", lambda: "http://sb/rest/v1")
+    monkeypatch.setattr(wc_squad_sync, "_service_headers", dict)
+    fake = _FakeHttpClient([
+        (("GET", "wc_squads"), _resp([{"id": "u1", "team_canonical": "Italy", "roster_hash": "OLD"}])),
+        (("POST", "wc_squads"), _resp([{"id": "u1"}], 201)),
+        (("GET", "wc_squad_snapshots"), _resp([])),
+        (("POST", "wc_squad_players"), _resp([], 409)),
+    ])
+    with patch.object(wc_squad_sync.httpx, "AsyncClient", return_value=_fake_client_cm(fake)):
+        summary = await wc_squad_sync.sync_rosters()
+    assert summary["teams_synced"] == 0
+    assert summary["snapshots_written"] == 0
+    assert summary["errors"] == ["Italy:write_failed"]
+    assert not any(c[0] == "POST" and "wc_squad_snapshots" in c[1] for c in fake.calls)
+    assert not any(c[0] == "PATCH" for c in fake.calls)
+
+
+def test_player_rows_dedupes_duplicate_names_with_warning():
+    rows = wc_squad_sync._player_rows(
+        "s", [_p("Dup", "G"), _p("Dup", "D"), _p("Solo")]
+    )
+    assert [r["player_name"] for r in rows] == ["Dup", "Solo"]
+    assert rows[0]["position"] == "G"  # first occurrence wins

@@ -81,28 +81,38 @@ def diff_rosters(prev: list[dict] | None, new: list[dict]) -> dict | None:
 def _player_rows(squad_id: str, players: list[dict]) -> list[dict]:
     """Bulk rows with IDENTICAL keys and explicit None for missing values —
     non-uniform keys make PostgREST silently reject the whole bulk insert
-    (P1/P3 lesson, 2026-06-05)."""
-    return [
-        {
+    (P1/P3 lesson, 2026-06-05). Deduped by player_name: the table has
+    UNIQUE(squad_id, player_name) and a 409 rejects the WHOLE batch; the
+    full (duplicate-preserving) roster lives in the snapshot JSONB."""
+    seen: set[str] = set()
+    rows: list[dict] = []
+    for p in players:
+        name = p.get("name")
+        if not name:
+            continue
+        if name in seen:
+            logger.warning("duplicate player_name %r dropped from wc_squad_players bulk", name)
+            continue
+        seen.add(name)
+        rows.append({
             "squad_id": squad_id,
-            "player_name": p["name"],
+            "player_name": name,
             "position": p.get("position"),
             "is_injured": bool(p.get("injured")),
             "shirt_number": p.get("shirt_number"),
             "club_team": p.get("club_team"),
             "age": p.get("age"),
             "updated_at": _now(),
-        }
-        for p in players
-        if p.get("name")
-    ]
+        })
+    return rows
 
 
-async def _latest_snapshot_roster(client, base, headers, team_canonical) -> list[dict] | None:
+async def _latest_snapshot(client, base, headers, team_canonical) -> dict | None:
+    """Latest snapshot row ({roster, roster_hash}) for one team, or None."""
     resp = await client.get(
         f"{base}/wc_squad_snapshots",
         params={
-            "select": "roster",
+            "select": "roster,roster_hash",
             "team_canonical": f"eq.{team_canonical}",
             "source": f"eq.{SOURCE}",
             "order": "captured_at.desc",
@@ -113,16 +123,20 @@ async def _latest_snapshot_roster(client, base, headers, team_canonical) -> list
     if resp.status_code != 200:
         return None
     rows = resp.json() or []
-    return rows[0].get("roster") if rows else None
+    return rows[0] if rows else None
 
 
 async def _write_team(client, base, headers, *, team_canonical, team_id, squad, new_hash) -> bool:
     """Upsert current state + append the reveal snapshot for ONE changed team.
-    Returns True when the snapshot was written."""
+
+    roster_hash is committed LAST (separate PATCH): it is the change-detection
+    key, so it must only land after players + snapshot succeeded — a partial
+    failure leaves the stored hash stale and the next cycle retries
+    (self-healing). Returns True only when the full write committed.
+    """
     players = squad["players"]
 
-    # 1) upsert wc_squads (full unique index -> on_conflict works, unlike
-    #    unified_predictions whose index is partial)
+    # 1) upsert wc_squads WITHOUT roster_hash (committed last) -> squad_id
     resp = await client.post(
         f"{base}/wc_squads",
         params={"on_conflict": "team_canonical,source"},
@@ -131,7 +145,6 @@ async def _write_team(client, base, headers, *, team_canonical, team_id, squad, 
             "team_id_espn": str(team_id),
             "squad_size": squad.get("squad_size"),
             "injured_count": squad.get("injured"),
-            "roster_hash": new_hash,
             "source": SOURCE,
             "updated_at": _now(),
         },
@@ -148,10 +161,11 @@ async def _write_team(client, base, headers, *, team_canonical, team_id, squad, 
     squad_id = rows[0]["id"]
 
     # 2) diff vs the last snapshot BEFORE appending the new one
-    prev_roster = await _latest_snapshot_roster(client, base, headers, team_canonical)
-    diff = diff_rosters(prev_roster, players)
+    prev = await _latest_snapshot(client, base, headers, team_canonical)
+    diff = diff_rosters(prev.get("roster") if prev else None, players)
 
-    # 3) replace current players (delete + uniform bulk insert)
+    # 3) replace current players (delete + uniform deduped bulk insert).
+    #    A failure here aborts BEFORE the snapshot/hash commit -> retried.
     await client.delete(
         f"{base}/wc_squad_players",
         params={"squad_id": f"eq.{squad_id}"},
@@ -165,22 +179,37 @@ async def _write_team(client, base, headers, *, team_canonical, team_id, squad, 
         if resp.status_code not in (200, 201, 204):
             logger.warning("wc_squad_players insert failed for %s: %s",
                            team_canonical, resp.status_code)
+            return False
 
-    # 4) append-only reveal snapshot
-    resp = await client.post(
-        f"{base}/wc_squad_snapshots",
-        json={
-            "team_canonical": team_canonical,
-            "source": SOURCE,
-            "roster_hash": new_hash,
-            "roster": players,
-            "diff": diff,
-            "captured_at": _now(),
-        },
+    # 4) append-only reveal snapshot — skipped when the latest snapshot already
+    #    carries this hash (a previous attempt failed after this step)
+    if not prev or prev.get("roster_hash") != new_hash:
+        resp = await client.post(
+            f"{base}/wc_squad_snapshots",
+            json={
+                "team_canonical": team_canonical,
+                "source": SOURCE,
+                "roster_hash": new_hash,
+                "roster": players,
+                "diff": diff,
+                "captured_at": _now(),
+            },
+            headers=headers,
+        )
+        if resp.status_code not in (200, 201, 204):
+            logger.warning("wc_squad_snapshots insert failed for %s: %s",
+                           team_canonical, resp.status_code)
+            return False
+
+    # 5) commit the hash — the write is now complete
+    resp = await client.patch(
+        f"{base}/wc_squads",
+        params={"id": f"eq.{squad_id}"},
+        json={"roster_hash": new_hash, "updated_at": _now()},
         headers=headers,
     )
-    if resp.status_code not in (200, 201, 204):
-        logger.warning("wc_squad_snapshots insert failed for %s: %s",
+    if resp.status_code not in (200, 204):
+        logger.warning("wc_squads hash commit failed for %s: %s",
                        team_canonical, resp.status_code)
         return False
     return True
@@ -243,6 +272,8 @@ async def sync_rosters() -> dict:
                     ):
                         summary["teams_synced"] += 1
                         summary["snapshots_written"] += 1
+                    else:
+                        summary["errors"].append(f"{team_canonical}:write_failed")
                 except Exception as exc:  # one team must not sink the sweep
                     summary["errors"].append(f"{team.get('name')}:{exc}")
     except Exception as exc:
