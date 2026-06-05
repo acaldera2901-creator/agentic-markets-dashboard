@@ -1,6 +1,6 @@
 -- ============================================================
 -- AGENTIC MARKETS — Schema completo Supabase
--- Eseguire nel SQL Editor: supabase.com/dashboard/project/xcgvfrsrcphzfctfyukz/sql
+-- Eseguire nel SQL Editor: supabase.com/dashboard/project/izscgffubtakzvwxchqt/sql
 -- ============================================================
 
 -- Dashboard-web tables

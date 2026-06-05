@@ -23,7 +23,7 @@ jobs:
           version: latest
 
       - name: Link project
-        run: supabase link --project-ref xcgvfrsrcphzfctfyukz
+        run: supabase link --project-ref izscgffubtakzvwxchqt
 
       - name: Push migrations
         run: supabase db push
