@@ -297,3 +297,32 @@ async def test_collector_cycle_invokes_squad_sync(monkeypatch):
     # fail-soft: sync raising must not propagate
     monkeypatch.setattr(dc, "sync_rosters", AsyncMock(side_effect=RuntimeError("boom")))
     await agent._collect_cycle()  # MUST NOT raise
+
+
+# ─── backfill script ────────────────────────────────────────────────────────────
+
+async def test_backfill_main_returns_summary(monkeypatch, capsys):
+    from scripts import backfill_wc_squads
+
+    monkeypatch.setattr(
+        backfill_wc_squads, "sync_rosters",
+        AsyncMock(return_value={"teams_seen": 48, "teams_synced": 48,
+                                "snapshots_written": 48, "errors": [], "skipped": False}),
+    )
+    code = await backfill_wc_squads.main()
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "snapshots_written=48" in out
+
+
+async def test_backfill_exit_code_1_when_skipped(monkeypatch, capsys):
+    from scripts import backfill_wc_squads
+
+    monkeypatch.setattr(
+        backfill_wc_squads, "sync_rosters",
+        AsyncMock(return_value={"teams_seen": 0, "teams_synced": 0,
+                                "snapshots_written": 0, "errors": [], "skipped": True}),
+    )
+    code = await backfill_wc_squads.main()
+    assert code == 1
+    assert "SUPABASE env missing or ESPN unavailable" in capsys.readouterr().out
