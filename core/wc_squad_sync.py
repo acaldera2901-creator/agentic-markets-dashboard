@@ -96,3 +96,161 @@ def _player_rows(squad_id: str, players: list[dict]) -> list[dict]:
         for p in players
         if p.get("name")
     ]
+
+
+async def _latest_snapshot_roster(client, base, headers, team_canonical) -> list[dict] | None:
+    resp = await client.get(
+        f"{base}/wc_squad_snapshots",
+        params={
+            "select": "roster",
+            "team_canonical": f"eq.{team_canonical}",
+            "source": f"eq.{SOURCE}",
+            "order": "captured_at.desc",
+            "limit": "1",
+        },
+        headers=headers,
+    )
+    if resp.status_code != 200:
+        return None
+    rows = resp.json() or []
+    return rows[0].get("roster") if rows else None
+
+
+async def _write_team(client, base, headers, *, team_canonical, team_id, squad, new_hash) -> bool:
+    """Upsert current state + append the reveal snapshot for ONE changed team.
+    Returns True when the snapshot was written."""
+    players = squad["players"]
+
+    # 1) upsert wc_squads (full unique index -> on_conflict works, unlike
+    #    unified_predictions whose index is partial)
+    resp = await client.post(
+        f"{base}/wc_squads",
+        params={"on_conflict": "team_canonical,source"},
+        json={
+            "team_canonical": team_canonical,
+            "team_id_espn": str(team_id),
+            "squad_size": squad.get("squad_size"),
+            "injured_count": squad.get("injured"),
+            "roster_hash": new_hash,
+            "source": SOURCE,
+            "updated_at": _now(),
+        },
+        headers={**headers, "Prefer": "resolution=merge-duplicates,return=representation"},
+    )
+    if resp.status_code not in (200, 201):
+        logger.warning("wc_squads upsert failed for %s: %s %s",
+                       team_canonical, resp.status_code, str(resp.json())[:200])
+        return False
+    rows = resp.json() or []
+    if not rows or not rows[0].get("id"):
+        logger.warning("wc_squads upsert returned no id for %s", team_canonical)
+        return False
+    squad_id = rows[0]["id"]
+
+    # 2) diff vs the last snapshot BEFORE appending the new one
+    prev_roster = await _latest_snapshot_roster(client, base, headers, team_canonical)
+    diff = diff_rosters(prev_roster, players)
+
+    # 3) replace current players (delete + uniform bulk insert)
+    await client.delete(
+        f"{base}/wc_squad_players",
+        params={"squad_id": f"eq.{squad_id}"},
+        headers=headers,
+    )
+    rows_payload = _player_rows(squad_id, players)
+    if rows_payload:
+        resp = await client.post(
+            f"{base}/wc_squad_players", json=rows_payload, headers=headers
+        )
+        if resp.status_code not in (200, 201, 204):
+            logger.warning("wc_squad_players insert failed for %s: %s",
+                           team_canonical, resp.status_code)
+
+    # 4) append-only reveal snapshot
+    resp = await client.post(
+        f"{base}/wc_squad_snapshots",
+        json={
+            "team_canonical": team_canonical,
+            "source": SOURCE,
+            "roster_hash": new_hash,
+            "roster": players,
+            "diff": diff,
+            "captured_at": _now(),
+        },
+        headers=headers,
+    )
+    if resp.status_code not in (200, 201, 204):
+        logger.warning("wc_squad_snapshots insert failed for %s: %s",
+                       team_canonical, resp.status_code)
+        return False
+    return True
+
+
+async def sync_rosters() -> dict:
+    """Sync every cached WC roster to Supabase. Returns a summary dict;
+    NEVER raises (fail-soft contract with the collector cycle)."""
+    summary = {
+        "teams_seen": 0,
+        "teams_synced": 0,
+        "snapshots_written": 0,
+        "errors": [],
+        "skipped": False,
+    }
+    base = _rest_base()
+    if not base:
+        summary["skipped"] = True
+        return summary
+    headers = _service_headers()
+
+    try:
+        teams = await get_world_cup_teams()
+    except Exception as exc:
+        summary["errors"].append(f"teams:{exc}")
+        return summary
+    if not teams:
+        summary["skipped"] = True
+        return summary
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # current hashes in ONE round trip (<=48 rows)
+            current: dict[str, dict] = {}
+            resp = await client.get(
+                f"{base}/wc_squads",
+                params={"select": "id,team_canonical,roster_hash", "source": f"eq.{SOURCE}"},
+                headers=headers,
+            )
+            if resp.status_code == 200:
+                current = {r["team_canonical"]: r for r in resp.json() or []}
+            else:
+                summary["errors"].append(f"wc_squads_get:{resp.status_code}")
+
+            for team in teams:
+                try:
+                    squad = await get_team_squad(team["id"])
+                    if not squad or not squad.get("players"):
+                        continue
+                    summary["teams_seen"] += 1
+                    team_canonical = canonical_team_name(squad.get("team") or team["name"])
+                    new_hash = roster_hash(squad["players"])
+                    prev = current.get(team_canonical)
+                    if prev and prev.get("roster_hash") == new_hash:
+                        continue  # unchanged — zero writes
+                    if await _write_team(
+                        client, base, headers,
+                        team_canonical=team_canonical,
+                        team_id=team["id"], squad=squad, new_hash=new_hash,
+                    ):
+                        summary["teams_synced"] += 1
+                        summary["snapshots_written"] += 1
+                except Exception as exc:  # one team must not sink the sweep
+                    summary["errors"].append(f"{team.get('name')}:{exc}")
+    except Exception as exc:
+        summary["errors"].append(f"client:{exc}")
+
+    if summary["snapshots_written"]:
+        logger.info(
+            "WC squad sync: %d/%d teams changed -> snapshots written",
+            summary["snapshots_written"], summary["teams_seen"],
+        )
+    return summary

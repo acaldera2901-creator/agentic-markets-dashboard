@@ -104,3 +104,122 @@ def test_player_rows_have_identical_keys_with_explicit_nulls():
 def test_player_rows_skip_nameless_entries():
     rows = wc_squad_sync._player_rows("s", [{"name": None}, {"name": "Ok"}])
     assert [r["player_name"] for r in rows] == ["Ok"]
+
+
+# ─── sync_rosters ───────────────────────────────────────────────────────────────
+
+def _resp(payload, status=200):
+    r = MagicMock()
+    r.status_code = status
+    r.json.return_value = payload
+    return r
+
+
+class _FakeHttpClient:
+    """Records every request; routes responses by (method, path-fragment)."""
+
+    def __init__(self, routes):
+        self.routes = routes  # list of ((method, fragment), response) consumed in order
+        self.calls = []  # (method, url, params, json)
+
+    async def request(self, method, url, params=None, json=None, headers=None):
+        self.calls.append((method, url, params, json))
+        for i, ((m, frag), resp) in enumerate(self.routes):
+            if m == method and frag in url + "?" + str(params):
+                self.routes.pop(i)
+                return resp
+        return _resp([], 200)
+
+    async def get(self, url, params=None, headers=None):
+        return await self.request("GET", url, params=params)
+
+    async def post(self, url, params=None, json=None, headers=None):
+        return await self.request("POST", url, params=params, json=json)
+
+    async def delete(self, url, params=None, headers=None):
+        return await self.request("DELETE", url, params=params)
+
+
+def _fake_client_cm(fake):
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=fake)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    return cm
+
+
+_TEAMS = [{"id": "1", "name": "Italy"}]
+_SQUAD = {
+    "team": "Italy",
+    "squad_size": 2,
+    "injured": 0,
+    "players": [_p("Alpha", "G"), _p("Beta", "D")],
+}
+
+
+def _patch_espn(monkeypatch, squad=_SQUAD):
+    monkeypatch.setattr(wc_squad_sync, "get_world_cup_teams", AsyncMock(return_value=_TEAMS))
+    monkeypatch.setattr(wc_squad_sync, "get_team_squad", AsyncMock(return_value=squad))
+
+
+async def test_sync_skips_when_supabase_unconfigured(monkeypatch):
+    monkeypatch.setattr(wc_squad_sync, "_rest_base", lambda: None)
+    summary = await wc_squad_sync.sync_rosters()
+    assert summary["skipped"] is True
+    assert summary["snapshots_written"] == 0
+
+
+async def test_sync_unchanged_hash_writes_nothing(monkeypatch):
+    _patch_espn(monkeypatch)
+    monkeypatch.setattr(wc_squad_sync, "_rest_base", lambda: "http://sb/rest/v1")
+    monkeypatch.setattr(wc_squad_sync, "_service_headers", dict)
+    same_hash = roster_hash(_SQUAD["players"])
+    fake = _FakeHttpClient(
+        [(("GET", "wc_squads"), _resp([{"id": "u1", "team_canonical": "Italy", "roster_hash": same_hash}]))]
+    )
+    with patch.object(wc_squad_sync.httpx, "AsyncClient", return_value=_fake_client_cm(fake)):
+        summary = await wc_squad_sync.sync_rosters()
+    assert summary["teams_seen"] == 1
+    assert summary["teams_synced"] == 0
+    assert summary["snapshots_written"] == 0
+    writes = [c for c in fake.calls if c[0] in ("POST", "DELETE")]
+    assert writes == []  # unchanged roster -> ZERO writes
+
+
+async def test_sync_changed_hash_upserts_and_snapshots(monkeypatch):
+    _patch_espn(monkeypatch)
+    monkeypatch.setattr(wc_squad_sync, "_rest_base", lambda: "http://sb/rest/v1")
+    monkeypatch.setattr(wc_squad_sync, "_service_headers", dict)
+    fake = _FakeHttpClient([
+        (("GET", "wc_squads"), _resp([{"id": "u1", "team_canonical": "Italy", "roster_hash": "OLD"}])),
+        (("POST", "wc_squads"), _resp([{"id": "u1"}], 201)),
+        (("GET", "wc_squad_snapshots"), _resp([{"roster": [_p("Alpha", "G"), _p("Cut")]}])),
+        (("POST", "wc_squad_players"), _resp([], 201)),
+        (("POST", "wc_squad_snapshots"), _resp([], 201)),
+    ])
+    with patch.object(wc_squad_sync.httpx, "AsyncClient", return_value=_fake_client_cm(fake)):
+        summary = await wc_squad_sync.sync_rosters()
+    assert summary["teams_synced"] == 1
+    assert summary["snapshots_written"] == 1
+    snapshot_post = next(
+        c for c in fake.calls if c[0] == "POST" and "wc_squad_snapshots" in c[1]
+    )
+    body = snapshot_post[3]
+    assert body["team_canonical"] == "Italy"
+    assert body["roster_hash"] == roster_hash(_SQUAD["players"])
+    assert body["diff"] == {"added": ["Beta"], "removed": ["Cut"], "injury_changes": []}
+    # players were replaced for the changed team
+    assert any(c[0] == "DELETE" and "wc_squad_players" in c[1] for c in fake.calls)
+    player_post = next(c for c in fake.calls if c[0] == "POST" and "wc_squad_players" in c[1])
+    assert {tuple(sorted(r.keys())) for r in player_post[3]} != set() and len(player_post[3]) == 2
+
+
+async def test_sync_is_fail_soft_on_network_error(monkeypatch):
+    _patch_espn(monkeypatch)
+    monkeypatch.setattr(wc_squad_sync, "_rest_base", lambda: "http://sb/rest/v1")
+    monkeypatch.setattr(wc_squad_sync, "_service_headers", dict)
+    boom = MagicMock()
+    boom.__aenter__ = AsyncMock(side_effect=RuntimeError("net down"))
+    boom.__aexit__ = AsyncMock(return_value=False)
+    with patch.object(wc_squad_sync.httpx, "AsyncClient", return_value=boom):
+        summary = await wc_squad_sync.sync_rosters()  # MUST NOT raise
+    assert summary["errors"]
