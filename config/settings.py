@@ -106,6 +106,16 @@ class Settings(BaseSettings):
     # with lib/prediction-window.ts.
     PREDICTION_WINDOW_DAYS: int = 10
 
+    # Tennis board curation (#020, Andrea 2026-06-06: "tutto quello che si vede
+    # deve essere sotto il nostro controllo"). Qualifying rounds are dropped via
+    # the real ESPN round field; minor circuits (ITF/Challenger/WTA125) via an
+    # explicit, env-overridable denylist matched on accent-folded tournament
+    # names. Dropped tournaments are logged every cycle so curation stays visible.
+    TENNIS_INCLUDE_QUALIFYING: bool = False
+    TENNIS_TOURNAMENT_DENYLIST: str = (
+        "itf,challenger,125,memorial,trofeo,makarska,puglie,ilkley,fontana"
+    )
+
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1
     PSI_CRITICAL_THRESHOLD: float = 0.2

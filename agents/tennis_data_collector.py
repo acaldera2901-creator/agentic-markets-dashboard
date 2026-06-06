@@ -7,6 +7,7 @@ from config.settings import settings
 from core.tennis_api_client import TennisAPIClient
 from core.espn_tennis_client import get_fixtures as espn_get_fixtures
 from core.tennis_odds_api_client import get_tennis_odds, merge_tennis_odds
+from core.tennis_tour_filter import filter_main_tour, parse_denylist
 
 # Odds columns added by the v4 migration. Every row in the PostgREST bulk upsert
 # must carry the same keys, so unmatched fixtures get explicit nulls.
@@ -51,6 +52,26 @@ class TennisDataCollectorAgent(BaseAgent):
                 fixtures = await espn_get_fixtures()
                 source = "espn"
 
+            # Board curation (#020): main draw + main tour only. Drops are
+            # logged per tournament so the curation is visible, never silent.
+            dropped_report = None
+            if fixtures:
+                fixtures, dropped_report = filter_main_tour(
+                    fixtures,
+                    denylist=parse_denylist(settings.TENNIS_TOURNAMENT_DENYLIST),
+                    include_qualifying=settings.TENNIS_INCLUDE_QUALIFYING,
+                )
+                if dropped_report["qualifying"] or dropped_report["minor"]:
+                    self.logger.info(
+                        "tennis filter: dropped %d qualifying + %d minor-circuit (%s)",
+                        dropped_report["qualifying"],
+                        dropped_report["minor"],
+                        ", ".join(
+                            f"{name}={n}"
+                            for name, n in sorted(dropped_report["dropped_tournaments"].items())
+                        ),
+                    )
+
             if fixtures:
                 fixtures, odds_merged = await self._merge_market_odds(fixtures)
                 await self._client.write_fixtures_to_supabase(fixtures)
@@ -61,6 +82,8 @@ class TennisDataCollectorAgent(BaseAgent):
                     "type": "tennis_collection",
                     "fixtures_collected": len(fixtures),
                     "odds_merged": odds_merged,
+                    "dropped_qualifying": (dropped_report or {}).get("qualifying", 0),
+                    "dropped_minor": (dropped_report or {}).get("minor", 0),
                     "source": source,
                     "collected_at": datetime.utcnow().isoformat(),
                 })
