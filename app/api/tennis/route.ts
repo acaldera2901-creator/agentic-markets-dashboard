@@ -86,7 +86,7 @@ type TennisPredictionInput = {
   elo_raw_p2?: number | null;
 };
 
-type TennisPrediction = ReturnType<typeof normalizePrediction>;
+type TennisPrediction = NonNullable<ReturnType<typeof normalizePrediction>>;
 
 type RedisTennisPayload = {
   predictions?: TennisPredictionInput[];
@@ -167,6 +167,11 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
       FROM tennis_predictions tp
       WHERE tp.scheduled_at > NOW() - INTERVAL '2 hours'
         AND tp.winner IS NULL
+        -- Fail-closed (#020 audit): a row without real model probabilities
+        -- must never surface — the old ?? 0.5 default would have shown a
+        -- fabricated-looking 50/50.
+        AND tp.p1 IS NOT NULL
+        AND tp.p2 IS NOT NULL
       ORDER BY COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id), tp.computed_at DESC
     ) d
     ORDER BY d.scheduled_at ASC
@@ -180,10 +185,13 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
       player1: row.player1,
       player2: row.player2,
       tournament: row.tournament || "",
-      surface: row.surface || "hard",
+      // Surface is always written by our pipeline (inferred from the real
+      // tournament name); never invent "hard" when it is genuinely absent.
+      surface: row.surface || "",
       scheduled_at: row.scheduled_at || "",
-      p1: Number(row.p1 ?? 0.5),
-      p2: Number(row.p2 ?? 0.5),
+      // SQL filters p1/p2 IS NOT NULL — no fabricated 0.5 fallback.
+      p1: Number(row.p1),
+      p2: Number(row.p2),
       odds_p1: row.odds_p1 == null ? null : Number(row.odds_p1),
       odds_p2: row.odds_p2 == null ? null : Number(row.odds_p2),
       edge: row.edge == null ? null : Number(row.edge),
@@ -211,17 +219,23 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
   };
 }
 
+// Fail-closed (#020 audit): rows without real model probabilities return null
+// and are dropped by the callers — the old `?? 0.5` default would have shown a
+// fabricated-looking 50/50 to the customer.
 function normalizePrediction(p: TennisPredictionInput) {
+  if (p.p1 == null || p.p2 == null) return null;
   return {
     id: p.match_id || p.id || "",
     player1: p.player1 || "",
     player2: p.player2 || "",
     tournament: p.tournament || "",
-    surface: (p.surface || "hard").toUpperCase(),
+    // Never invent a surface: our pipeline always writes one (inferred from
+    // the real tournament name); absent stays visibly absent.
+    surface: (p.surface || "").toUpperCase(),
     round: p.round || "",
     scheduled: p.scheduled_at || p.scheduled || "",
-    p1: p.p1 ?? 0.5,
-    p2: p.p2 ?? 0.5,
+    p1: p.p1,
+    p2: p.p2,
     odds_p1: p.odds_p1 ?? null,
     odds_p2: p.odds_p2 ?? null,
     edge: p.edge ?? null,
@@ -258,7 +272,9 @@ export async function GET(req: Request) {
   const redisData = await getFromRedis();
 
   if (redisData && Array.isArray(redisData.predictions) && redisData.predictions.length > 0) {
-    const matches: TennisPrediction[] = redisData.predictions.map(normalizePrediction);
+    const matches: TennisPrediction[] = redisData.predictions
+      .map(normalizePrediction)
+      .filter((m): m is TennisPrediction => m !== null);
     const projected = projectTennisMatches(matches, state);
     const summary = {
       total_today: matches.length,
@@ -277,7 +293,9 @@ export async function GET(req: Request) {
 
   const dbData = await getFromDb();
   if (dbData && Array.isArray(dbData.predictions) && dbData.predictions.length > 0) {
-    const matches: TennisPrediction[] = dbData.predictions.map(normalizePrediction);
+    const matches: TennisPrediction[] = dbData.predictions
+      .map(normalizePrediction)
+      .filter((m): m is TennisPrediction => m !== null);
     const projected = projectTennisMatches(matches, state);
     const summary = {
       total_today: matches.length,
