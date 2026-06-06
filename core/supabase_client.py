@@ -228,6 +228,8 @@ def wc_prediction_to_unified_row(
     *,
     stage: str | None = None,
     neutral_venue: bool = True,
+    explanation: str | None = None,
+    enrichment: dict | None = None,
 ) -> dict:
     """World Cup paper row on the unified_predictions schema.
 
@@ -236,6 +238,11 @@ def wc_prediction_to_unified_row(
       reliability, until the WC registry leaves monitor_only and the gate is
       lifted by an explicit promotion deploy.
     - no odds, no edge, no bookmaker claims (national Poisson rates only).
+
+    ``explanation`` / ``enrichment``: when the caller has the real data sources
+    (form, venue, squad — see core/world_cup_explanation), it passes a rich
+    match-specific explanation and a structured Deep-Analysis payload. When
+    omitted, falls back to the generic paper-tier explanation (fail-soft).
     """
     row = dc_prediction_to_unified_row(p)
     pick = row["pick"]
@@ -247,12 +254,14 @@ def wc_prediction_to_unified_row(
     row["neutral_venue"] = neutral_venue
     if stage:
         row["world_cup_stage"] = stage
-    row["explanation"] = (
+    row["explanation"] = explanation or (
         f"World Cup paper prediction (national Poisson rates model). "
         f"Pick: {pick} | model probability {confidence}%. "
         "Paper tier: published for track-record transparency only, "
         "no market odds attached, no edge claimed. Bet responsibly."
     )
+    if enrichment is not None:
+        row["enrichment"] = enrichment
     return row
 
 

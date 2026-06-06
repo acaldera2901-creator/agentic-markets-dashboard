@@ -63,6 +63,32 @@ def _team_rows(matches: list[dict[str, Any]], team: str) -> list[dict[str, Any]]
     return rows
 
 
+def recent_form(matches: list[dict[str, Any]], team: str, *, last_n: int = 5) -> dict[str, Any] | None:
+    """Last-N W/D/L + goals for/against for a team, newest-last.
+
+    ``matches`` must be chronologically ordered (the history loader sorts by
+    date). Returns None when the team has no rows — fail-soft for the caller.
+    The ``last`` list holds single-char results oldest→newest ("W"/"D"/"L").
+    """
+    rows = _team_rows(matches, team)
+    if not rows:
+        return None
+    window = rows[-last_n:]
+    w = sum(1 for r in window if r["points"] == 3)
+    d = sum(1 for r in window if r["points"] == 1)
+    lo = sum(1 for r in window if r["points"] == 0)
+    last = ["W" if r["points"] == 3 else "D" if r["points"] == 1 else "L" for r in window]
+    return {
+        "w": w,
+        "d": d,
+        "l": lo,
+        "gf": sum(r["gf"] for r in window),
+        "ga": sum(r["ga"] for r in window),
+        "last": last,
+        "played": len(window),
+    }
+
+
 def build_profile(matches: list[dict[str, Any]], team: str) -> NationalTeamProfile | None:
     rows = _team_rows(matches, team)
     if not rows:

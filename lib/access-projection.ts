@@ -13,10 +13,20 @@ const REVEAL_FIELDS = [
   "pick", "p_home", "p_draw", "p_away", "confidence_score",
   "fair_odds", "market", "signal_type", "explanation", "model_version",
   "is_paper", "affiliate", "result", "settled_at",
+  // 1X2 distribution for model rows that carry it as JSON (WC paper rows,
+  // off-season DC fallback) instead of dedicated p_* columns.
+  "notes",
 ] as const;
 
-// Premium-only extra fields (advanced depth).
+// Paid-tier extra fields (base + premium + admin): advanced depth that any
+// paying user gets. NOTE the historical name — this set is granted to base too
+// (see projectPrediction), it is NOT premium-exclusive.
 const PREMIUM_FIELDS = ["closing_line_value", "stake_suggestion", "edge_percent"] as const;
+
+// Strictly premium/admin fields — never base. `enrichment` is the structured
+// Deep-Analysis payload (form, venue, squad, lambdas, market), mirroring the
+// home board's Deep Analysis panel which is gated on the premium plan only.
+const PREMIUM_ONLY_FIELDS = ["enrichment"] as const;
 
 export type ProjectedPrediction = Record<string, unknown> & { locked: boolean };
 
@@ -42,6 +52,9 @@ export function projectPrediction(
     for (const f of REVEAL_FIELDS) if (f in row) out[f] = row[f];
     if (state === "base" || state === "premium" || state === "admin_full") {
       for (const f of PREMIUM_FIELDS) if (f in row) out[f] = row[f];
+    }
+    if (state === "premium" || state === "admin_full") {
+      for (const f of PREMIUM_ONLY_FIELDS) if (f in row) out[f] = row[f];
     }
   }
   return { ...out, locked: !unlocked } as ProjectedPrediction;

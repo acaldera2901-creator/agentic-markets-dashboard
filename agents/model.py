@@ -10,6 +10,7 @@ from core.world_cup_team_model import matchup_profile
 from core.world_cup_history import canonical_team_name, load_national_history
 from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
 from core.world_cup_probability import national_match_probabilities
+from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
 from core.supabase_client import DCPrediction, upsert_unified_rows, wc_prediction_to_unified_row
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
@@ -234,11 +235,54 @@ class ModelAgent(BaseAgent):
                 away_team_matches=int(probs.get("team_b_matches", 0)),
             )
             stage = wc_result.get("world_cup_stage") or ""
+            # Build the match-specific explanation + Deep-Analysis enrichment from
+            # the real sources available in the model loop: national history (form
+            # + lambdas), the WC context (venue/travel/rest/host advantage/group).
+            # Squad/injury info needs a DB read and is filled by the backfill /
+            # squad-sync path; omitted here -> empty (fail-soft), not fabricated.
+            try:
+                wc_context = json.loads(wc_result.get("world_cup_context") or "{}")
+            except (TypeError, ValueError):
+                wc_context = {}
+            venue = {
+                "travel_km_home": wc_context.get("travel_distance_km_team_a"),
+                "travel_km_away": wc_context.get("travel_distance_km_team_b"),
+                "rest_days_home": wc_context.get("rest_days_team_a"),
+                "rest_days_away": wc_context.get("rest_days_team_b"),
+                "tz_shift_home": wc_context.get("timezone_shift_team_a"),
+                "tz_shift_away": wc_context.get("timezone_shift_team_b"),
+                "host_advantage": wc_context.get("host_advantage_team") or None,
+            }
+            enrichment = build_wc_enrichment(
+                home_team=payload["home_team"],
+                away_team=payload["away_team"],
+                canonical_home=canonical_team_name(payload["home_team"]),
+                canonical_away=canonical_team_name(payload["away_team"]),
+                history=self._history.get(WORLD_CUP_CODE, []),
+                probs=probs,
+                venue=venue,
+                group=wc_context.get("group_name") or None,
+            )
+            pick = max(
+                {"HOME": pred.p_home, "DRAW": pred.p_draw, "AWAY": pred.p_away}.items(),
+                key=lambda kv: kv[1],
+            )[0]
+            confidence = round(max(pred.p_home, pred.p_draw, pred.p_away) * 100)
+            explanation = build_wc_explanation(
+                home_team=payload["home_team"],
+                away_team=payload["away_team"],
+                enrichment=enrichment,
+                probs=probs,
+                pick=pick,
+                confidence=confidence,
+            )
             row = wc_prediction_to_unified_row(
                 pred,
                 # "unknown" must not override the mapper's league-name default
                 stage=stage if stage not in ("", "unknown") else None,
                 neutral_venue=wc_result.get("neutral_venue", "True") == "True",
+                explanation=explanation,
+                enrichment=enrichment,
             )
             written = await upsert_unified_rows([row])
             if written:

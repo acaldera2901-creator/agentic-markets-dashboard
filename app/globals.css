@@ -4519,6 +4519,24 @@ button:disabled {
 .wc-board-match { font-weight: 800; font-size: 14px; margin: 6px 0 2px; }
 .wc-board-pick { margin-top: 10px; font-size: 13px; }
 .wc-board-pick strong { color: var(--green); }
+
+/* WC card parity: 1X2 probability bars, why text (reuses .deep-analysis-* for
+   the premium panel, defined above). */
+.wc-prob-block { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.wc-prob-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.wc-prob-label { width: 40px; color: rgba(255, 255, 255, 0.55); font-weight: 600; letter-spacing: 0.04em; }
+.wc-prob-row.picked .wc-prob-label { color: var(--green); }
+.wc-prob-bar { flex: 1; height: 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+.wc-prob-fill { height: 100%; background: rgba(255, 255, 255, 0.25); border-radius: 4px; }
+.wc-prob-row.picked .wc-prob-fill { background: var(--green); }
+.wc-prob-pct { width: 36px; text-align: right; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.75); }
+.wc-prob-row.picked .wc-prob-pct { color: var(--green); font-weight: 700; }
+.wc-why {
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.66);
+}
 .wc-lock {
   display: block;
   margin-top: 10px;

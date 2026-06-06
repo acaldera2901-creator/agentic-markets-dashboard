@@ -21,6 +21,19 @@ Pattern, decisioni tecniche e gotcha consolidati. Solo roba non ovvia.
 - **Cliente**: sessione firmata via `lib/session.ts` (SESSION_COOKIE), plan SEMPRE risolto fresh dal DB in `lib/auth.ts` (mai dal cookie). Scadenza piano enforced a runtime (`effectivePlan`).
 - Cookie read header-based (`lib/auth.ts readCookie`) per evitare breaking changes API `cookies()` in questo build Next.
 
+## API caching trap (CRITICO, verificato 2026-06-06)
+- `/api/v2/predictions` proietta per sessione (`lib/access-projection.ts`) MA rispondeva `Cache-Control: public, s-maxage=120` → la CDN Vercel cachea UNA proiezione sotto la chiave-URL e la serve a tutti: un loggato vede il board anonimo, o un anonimo vede i pick sbloccati. `force-dynamic` NON basta (riguarda solo il render, non l'header CDN).
+- Fix: header condizionale — `public, s-maxage` SOLO per `state==="anonymous"` (l'unica proiezione identica tra richieste), altrimenti `private, no-store`. Aggiunto `Vary: Cookie`. Stesso pattern da applicare a qualsiasi route che proietta per sessione.
+- DATABASE_URL in `.env` è in forma SQLAlchemy `postgresql+asyncpg://...`; asyncpg vuole `postgresql://` → strip del `+asyncpg` negli script standalone.
+
+## Access projection — gerarchia piani
+- `PREMIUM_FIELDS` (nome storico fuorviante) è in realtà "paid-tier": concesso a base+premium+admin. Per campi STRETTAMENTE premium (es. `enrichment` = Deep Analysis) usare il nuovo set `PREMIUM_ONLY_FIELDS` gated su `premium`/`admin_full`. La home gate la Deep Analysis su `isPremium` (solo premium), non base → coerenza.
+
+## World Cup enrichment (2026-06-06)
+- Le WC paper rows ora portano `explanation` ricca (forma W-D-L+gol dal CSV nazionali, lambda Poisson, venue/squad se presenti) + colonna `enrichment` JSONB (migration `005_unified_enrichment.sql`). Builder puro in `core/world_cup_explanation.py` (fail-soft: fonte mancante → campo null/omesso, mai inventato). Writer live in `agents/model.py` la costruisce dal `world_cup_context`; backfill `scripts/backfill_wc_enrichment.py` legge squad/infortuni dal DB.
+- Le probs WC NON sono colonne: stanno in `notes` JSON (`{p_home,p_draw,p_away}`). Per esporle al client serve `notes` in REVEAL_FIELDS, parse client-side. `confidence_score` è già un intero in percento (non moltiplicare ×100 — bug vecchio in WcBoard).
+- Travel/timezone richiedono `host_city` che le righe storiche non hanno → venue null (onesto). `injured_count` negli snapshot squad attuali è 0 → liste infortuni vuote.
+
 ## Supabase
 - Progetto AZIENDALE prod: `izscgffubtakzvwxchqt` (eu-west-1 pooler). Progetto PERSONALE morto da dismettere: `xcgvfrsrcphzfctfyukz` (entro ~28/06). In codice live resta solo in docs/plan (non config).
 - Tutto l'accesso server usa `service_role` (BYPASSRLS). RLS on profiles; grant anon revocati su tabelle prodotto. `council_*` resta NO-RLS (Block C aperto).

@@ -55,6 +55,19 @@ export async function GET(req: Request) {
     return projected.locked ? projected : withAffiliate(projected);
   });
 
+  // Access bug fix (2026-06-06): this route projects per-session
+  // (lib/access-projection.ts), so the body differs for anonymous vs
+  // logged-in viewers. A shared `public, s-maxage` header let Vercel's CDN
+  // cache one viewer's projection (e.g. an unlocked logged-in response) under
+  // the URL key and serve it to everyone — a logged-in user could see the
+  // anonymous blurred board, or worse, an anonymous user could see unlocked
+  // picks. Only the anonymous projection is identical across requests and safe
+  // to share-cache; any session gets `private, no-store`.
+  const cacheControl =
+    state === "anonymous"
+      ? "public, s-maxage=120, stale-while-revalidate=60"
+      : "private, no-store";
+
   return NextResponse.json(
     {
       predictions,
@@ -64,6 +77,6 @@ export async function GET(req: Request) {
         count: predictions.length,
       },
     },
-    { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=60" } }
+    { headers: { "Cache-Control": cacheControl, Vary: "Cookie" } }
   );
 }
