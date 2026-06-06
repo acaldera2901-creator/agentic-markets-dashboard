@@ -46,6 +46,80 @@ export const MIN_MATCHES_PER_TEAM = 4; // below this a prediction is "insufficie
 // safe fallback for CL/EL/WC where Understat has no coverage.
 export const XG_BLEND_WEIGHT = 0.5;
 
+// ─── Market blend (Reliability upgrade PROPOSAL B) ───────────────────────────
+// The closing line is the single strongest 1X2 predictor: in the walk-forward
+// backtest (docs/internal/reliability-upgrade-2026-06-06.md, FASE 4, 8.575
+// predictions) the market reaches Brier 0.579 vs the served Poisson's 0.599,
+// and the model loses exactly where it diverges most from the line (longshots
+// 2.50+: 30.8% hit vs 43.4%). Blending the served probabilities toward the
+// de-vigged market — p = α·p_model + (1−α)·p_market — recovers ~all of that gap.
+//
+// α is NOT an edge claim: the same backtest shows no ROI beats the closing line
+// (everything loses ~7-9% to vig). The blend improves CALIBRATION, not edge; the
+// product copy must never present it as "value vs market" (P0 #2 stays intact).
+//
+// α=0 is the statistical optimum every season out-of-sample, but it turns us into
+// a pure mirror of the bookmaker. α=0.3 keeps almost the entire calibration gain
+// while preserving the model's identity. Setting α=1 restores today's behaviour
+// exactly (the rollback switch).
+export const MARKET_BLEND_ALPHA = 0.3;
+
+export interface TripleProb {
+  pHome: number;
+  pDraw: number;
+  pAway: number;
+}
+
+export interface MarketProb {
+  home: number;
+  draw: number;
+  away: number;
+}
+
+/**
+ * De-vig 1X2 decimal odds into a normalized probability triple (basic overround
+ * removal — TS port of core/football_data_uk.implied_probs). Returns null when
+ * any leg is missing or non-positive, so callers never fabricate a market.
+ */
+export function devig1x2(
+  oddsHome: number | null | undefined,
+  oddsDraw: number | null | undefined,
+  oddsAway: number | null | undefined
+): MarketProb | null {
+  if (!oddsHome || !oddsDraw || !oddsAway) return null;
+  if (oddsHome <= 0 || oddsDraw <= 0 || oddsAway <= 0) return null;
+  const invH = 1 / oddsHome;
+  const invD = 1 / oddsDraw;
+  const invA = 1 / oddsAway;
+  const s = invH + invD + invA;
+  if (s <= 0) return null;
+  return { home: invH / s, draw: invD / s, away: invA / s };
+}
+
+/**
+ * Blend model probabilities toward the de-vigged market:
+ *   p = α·p_model + (1−α)·p_market.
+ * α=1 (or market=null) → identity, the fail-safe that reproduces the current
+ * served numbers when no real market exists. Output is a valid distribution
+ * whenever both inputs are (no renormalization needed: a convex combination of
+ * two simplex points stays on the simplex).
+ */
+export function blendWithMarket(
+  model: TripleProb,
+  market: MarketProb | null,
+  alpha: number = MARKET_BLEND_ALPHA
+): TripleProb {
+  if (!market || alpha >= 1) {
+    return { pHome: model.pHome, pDraw: model.pDraw, pAway: model.pAway };
+  }
+  const a = Math.max(0, Math.min(1, alpha));
+  return {
+    pHome: a * model.pHome + (1 - a) * market.home,
+    pDraw: a * model.pDraw + (1 - a) * market.draw,
+    pAway: a * model.pAway + (1 - a) * market.away,
+  };
+}
+
 /** Per-side team xG figures, as served live by lib/understat.ts (last-10 averages). */
 export interface TeamXGFigures {
   xg_home: number;

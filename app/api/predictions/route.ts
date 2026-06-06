@@ -4,7 +4,16 @@ import { isUnlocked } from "@/lib/access-projection";
 import { pickOfDayId } from "@/lib/pick-of-day";
 
 export const dynamic = "force-dynamic";
-import { buildModel, predict, computeExtraMarkets, MatchResult } from "@/lib/poisson-model";
+import {
+  buildModel,
+  predict,
+  computeExtraMarkets,
+  blendWithMarket,
+  devig1x2,
+  MARKET_BLEND_ALPHA,
+  MatchResult,
+} from "@/lib/poisson-model";
+import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -326,9 +335,27 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       const key = `${normName(fix.homeTeam)}|${normName(fix.awayTeam)}`;
       const odds = oddsMap[code]?.[key];
 
+      // ── Market blend (PROPOSAL B) ───────────────────────────────────────────
+      // When real 1X2 odds exist, pull the served probabilities toward the
+      // de-vigged closing line (p = α·model + (1−α)·market, α=MARKET_BLEND_ALPHA).
+      // The blended triple is THE number served, stored and edged. No real odds →
+      // market=null → blendWithMarket is the identity → today's behaviour exactly
+      // (fail-safe, P0 #2 intact: no synthetic market is ever invented).
+      const modelProbs = { pHome: probs.pHome, pDraw: probs.pDraw, pAway: probs.pAway };
+      const marketDevig = odds
+        ? devig1x2(odds.oddsHome, odds.oddsDraw, odds.oddsAway)
+        : null;
+      const served = blendWithMarket(modelProbs, marketDevig);
+      const blendAlpha = marketDevig ? MARKET_BLEND_ALPHA : null;
+      probs.pHome = served.pHome;
+      probs.pDraw = served.pDraw;
+      probs.pAway = served.pAway;
+
       // P0 #3: predictions built on too few matches per team (e.g. CL/EL early
       // rounds) are not reliable. Never compute an edge or a value-bet selection
       // for them — they are shown only as flagged model estimates.
+      // NB: edge is computed on the POST-blend probability. Since the blend tilts
+      // toward the line, the edge shrinks (correct: true edge over the close ≈ 0).
       let edge: number | null = null;
       let bestSel: string | null = null;
       if (odds && probs.reliable) {
@@ -462,6 +489,27 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         ]
       );
       stored.push(code);
+
+      // PROPOSAL A: append an immutable snapshot of exactly what we served, with
+      // both served (post-blend) and raw model probabilities + the de-vigged
+      // market, so live calibration is measurable. Fail-soft: never breaks serve.
+      await logPredictionSnapshot({
+        matchId: fix.id,
+        league: code,
+        homeTeam: fix.homeTeam,
+        awayTeam: fix.awayTeam,
+        kickoff: finalKickoff,
+        served,
+        model: modelProbs,
+        lambdaHome: probs.lambdaHome,
+        lambdaAway: probs.lambdaAway,
+        oddsHome: odds?.oddsHome ?? null,
+        oddsDraw: odds?.oddsDraw ?? null,
+        oddsAway: odds?.oddsAway ?? null,
+        market: marketDevig,
+        modelVersion: "football-v4-xg-model",
+        blendAlpha,
+      });
     }
   }
 
