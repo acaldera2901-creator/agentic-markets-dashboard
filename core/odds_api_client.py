@@ -1,10 +1,14 @@
 import httpx
+import logging
 import re
 import time
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 from config.settings import settings
 
 BASE_URL = "https://api.the-odds-api.com/v4"
+
+logger = logging.getLogger("odds_api_client")
 
 # ─── Active-sports filter (quota guard) ───────────────────────────────────────
 # The /sports endpoint is FREE on The Odds API and lists in-season sport keys.
@@ -60,6 +64,30 @@ _SUFFIXES = re.compile(r"\b(FC|CF|SC|AC|AS|SV|1\. ?FC|VfB|VfL|TSG|RB|SS|US|SSC|A
 def normalize_name(name: str) -> str:
     """Strip common club suffixes so 'Arsenal FC' matches 'Arsenal'."""
     return _SUFFIXES.sub("", name).strip().lower()
+
+
+def football_pair_key(home: str, away: str, commence_time: str | None) -> str | None:
+    """Provider-agnostic match identity: '<utc-date>:<teamA>|<teamB>' (sorted pair).
+
+    Same recipe as the tennis adapter's _pair_key — computable from both
+    odds_snapshots and our prediction tables, so snapshots become joinable
+    (#ODDS-1). Returns None when either name is missing.
+    """
+    h, a = normalize_name(home or ""), normalize_name(away or "")
+    if not h or not a or h == a:
+        return None
+    day = ""
+    if commence_time:
+        try:
+            day = (
+                datetime.fromisoformat(str(commence_time).replace("Z", "+00:00"))
+                .astimezone(timezone.utc)
+                .date()
+                .isoformat()
+            )
+        except ValueError:
+            day = str(commence_time)[:10]
+    return f"{day}:{'|'.join(sorted([h, a]))}"
 
 
 def _best_odds(event: dict) -> Optional[dict]:
@@ -126,12 +154,19 @@ def implied_probability(odds: float) -> float:
     return 1.0 / odds if odds > 0 else 0.0
 
 
+# Markets we snapshot per league call. Credit cost = markets × regions, so
+# h2h+spreads+totals × eu,uk = 6 credits per league per cycle (#ODDS-1 budget).
+SNAPSHOT_MARKETS = "h2h,spreads,totals"
+SNAPSHOT_REGIONS = "eu,uk"
+SNAPSHOT_CREDITS_PER_CALL = len(SNAPSHOT_MARKETS.split(",")) * len(SNAPSHOT_REGIONS.split(","))
+
+
 async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
-    """Fetch odds from ALL bookmakers. Returns [{match_id, home_team, away_team, bookmaker, odds_home, odds_draw, odds_away, overround}]."""
+    """Fetch odds from ALL bookmakers. Returns [{match_id, team_pair_key, commence_time, home_team, away_team, bookmaker, market, ...}]."""
     sport_key = SPORT_KEYS.get(league_code)
     if not sport_key or not settings.ODDS_API_KEY:
         return []
-    # Quota guard: skip out-of-season keys (h2h+spreads × regions is expensive).
+    # Quota guard: skip out-of-season keys (markets × regions is expensive).
     active = await get_active_sport_keys()
     if active is not None and sport_key not in active:
         return []
@@ -141,8 +176,8 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
                 f"{BASE_URL}/sports/{sport_key}/odds",
                 params={
                     "apiKey": settings.ODDS_API_KEY,
-                    "regions": "eu,uk",
-                    "markets": "h2h,spreads",
+                    "regions": SNAPSHOT_REGIONS,
+                    "markets": SNAPSHOT_MARKETS,
                     "oddsFormat": "decimal",
                     "dateFormat": "iso",
                 },
@@ -158,6 +193,15 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
         match_id = f"{league_code}:{ev.get('id', '')}"
         home = ev.get("home_team", "")
         away = ev.get("away_team", "")
+        commence = ev.get("commence_time")
+        ident = {
+            "match_id": match_id,
+            "home_team": home,
+            "away_team": away,
+            "team_pair_key": football_pair_key(home, away, commence),
+            "commence_time": commence,
+            "source": "odds_api",
+        }
         for bm in ev.get("bookmakers", []):
             bm_name = bm.get("key", "")
             for market in bm.get("markets", []):
@@ -169,8 +213,7 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
                     if oh and od and oa:
                         overround = round((1/oh + 1/od + 1/oa) - 1, 4)
                         rows.append({
-                            "match_id": match_id, "home_team": home, "away_team": away,
-                            "bookmaker": bm_name, "source": "odds_api", "market": "h2h",
+                            **ident, "bookmaker": bm_name, "market": "h2h",
                             "odds_home": oh, "odds_draw": od, "odds_away": oa,
                             "overround": overround,
                         })
@@ -178,11 +221,26 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
                     for outcome in market.get("outcomes", []):
                         is_home_team = outcome["name"] == home
                         rows.append({
-                            "match_id": match_id, "home_team": home, "away_team": away,
-                            "bookmaker": bm_name, "source": "odds_api", "market": "ah",
+                            **ident, "bookmaker": bm_name, "market": "ah",
                             "ah_line": outcome.get("point", 0.0),
                             "ah_home": outcome["price"] if is_home_team else None,
                             "ah_away": outcome["price"] if not is_home_team else None,
+                        })
+                elif market.get("key") == "totals":
+                    # One row per line: Over/Under share the same point value.
+                    by_line: dict = {}
+                    for outcome in market.get("outcomes", []):
+                        line = outcome.get("point")
+                        if line is None:
+                            continue
+                        slot = by_line.setdefault(line, {})
+                        slot[outcome.get("name", "")] = outcome.get("price")
+                    for line, prices in by_line.items():
+                        rows.append({
+                            **ident, "bookmaker": bm_name, "market": "totals",
+                            "total_line": line,
+                            "total_over": prices.get("Over"),
+                            "total_under": prices.get("Under"),
                         })
     return rows
 
@@ -191,9 +249,10 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
 # uniform keys across rows, and unknown keys (home_team/away_team from
 # get_all_bookmaker_odds) are rejected — normalize before posting.
 _SNAPSHOT_COLUMNS = (
-    "match_id", "bookmaker", "source", "market",
+    "match_id", "team_pair_key", "commence_time", "bookmaker", "source", "market",
     "odds_home", "odds_draw", "odds_away",
     "ah_line", "ah_home", "ah_away", "overround",
+    "total_line", "total_over", "total_under",
 )
 
 
@@ -223,5 +282,69 @@ async def snapshot_odds_to_supabase(rows: List[Dict]) -> None:
                 },
             )
     except Exception as exc:
-        import logging
-        logging.getLogger("odds_api_client").debug("snapshot write failed (non-fatal): %s", exc)
+        logger.debug("snapshot write failed (non-fatal): %s", exc)
+
+
+async def mark_closing_lines(lookback_hours: int = 36) -> int:
+    """Mark the last pre-kickoff snapshot of each started match as the closing line.
+
+    For every match whose commence_time has passed within the lookback window
+    and that has no is_closing row yet, flags the rows of its most recent
+    captured_at batch. The closing line is the calibration/CLV reference
+    (#ODDS-1) — without it the snapshots are write-only noise.
+    Returns the number of matches marked. Fail-soft: returns 0 on any error.
+    """
+    if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+        return 0
+    base = f"{settings.SUPABASE_URL.rstrip('/')}/rest/v1/odds_snapshots"
+    headers = {
+        "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+    }
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(hours=lookback_hours)
+    marked = 0
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            resp = await c.get(
+                base,
+                # repeated filters on the same column are ANDed by PostgREST
+                params=[
+                    ("select", "match_id,captured_at,is_closing"),
+                    ("commence_time", f"lt.{now.isoformat()}"),
+                    ("commence_time", f"gt.{since.isoformat()}"),
+                    ("order", "captured_at.desc"),
+                    ("limit", "10000"),
+                ],
+                headers=headers,
+            )
+            if resp.status_code != 200:
+                return 0
+            latest: dict[str, str] = {}
+            already_closed: set[str] = set()
+            for row in resp.json():
+                mid = row.get("match_id")
+                if not mid:
+                    continue
+                if row.get("is_closing"):
+                    already_closed.add(mid)
+                    continue
+                # rows arrive captured_at DESC — first hit is the latest batch
+                latest.setdefault(mid, row.get("captured_at"))
+            for mid, cap in latest.items():
+                if mid in already_closed or not cap:
+                    continue
+                patch = await c.patch(
+                    base,
+                    params={"match_id": f"eq.{mid}", "captured_at": f"eq.{cap}"},
+                    json={"is_closing": True},
+                    headers=headers,
+                )
+                if patch.status_code in (200, 204):
+                    marked += 1
+    except Exception as exc:
+        logger.debug("closing-line marking failed (non-fatal): %s", exc)
+    if marked:
+        logger.info("closing line marked for %d match(es)", marked)
+    return marked

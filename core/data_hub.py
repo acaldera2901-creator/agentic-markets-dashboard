@@ -6,6 +6,7 @@ Calls all configured providers in parallel, merges results, writes to Supabase.
 from __future__ import annotations
 import asyncio
 import logging
+import time
 from datetime import date
 
 import httpx
@@ -13,6 +14,14 @@ from config.settings import settings
 from core.quota_tracker import QuotaTracker
 
 logger = logging.getLogger("data_hub")
+
+# Odds snapshot cadence (#ODDS-1, APPROVE Andrea 2026-06-06): base 30 min,
+# densified to 10 min when a kickoff is imminent (closing-line capture).
+# Decoupled from the collector cycle (900s/60s prematch) so model freshness
+# never multiplies credit burn: 6 credits × ~10 active keys at this cadence
+# ≈ 85-90K credits/month worst case, inside the 100K plan.
+ODDS_SNAPSHOT_INTERVAL_BASE = 1800
+ODDS_SNAPSHOT_INTERVAL_IMMINENT = 600
 
 
 class DataHub:
@@ -24,6 +33,7 @@ class DataHub:
         self._url = supabase_url or settings.SUPABASE_URL
         self._key = supabase_key or settings.SUPABASE_SERVICE_ROLE_KEY
         self.quota = QuotaTracker(supabase_url=self._url, supabase_key=self._key)
+        self._last_odds_snapshot: float = 0.0
 
     # ── public ────────────────────────────────────────────────────────────────
 
@@ -52,21 +62,43 @@ class DataHub:
         logger.info("DataHub: %d fixtures from %d providers", len(merged), len(fixture_lists))
         return merged
 
-    async def collect_all_odds(self, leagues: list[str]) -> list[dict]:
-        """Collect multi-bookmaker odds and snapshot to Supabase."""
+    async def collect_all_odds(self, leagues: list[str], *, imminent_kickoff: bool = False) -> list[dict]:
+        """Collect multi-bookmaker odds and snapshot to Supabase.
+
+        Internally throttled (#ODDS-1): runs at most every 30 min (10 min when
+        ``imminent_kickoff`` — a kickoff within 2h, for closing-line density),
+        regardless of how often the collector cycles. After each snapshot the
+        closing line of any just-started match is marked.
+        """
         if not self.quota.can_call("odds_api") or not settings.ODDS_API_KEY:
             return []
-        from core.odds_api_client import get_all_bookmaker_odds, snapshot_odds_to_supabase
+        min_interval = (
+            ODDS_SNAPSHOT_INTERVAL_IMMINENT if imminent_kickoff else ODDS_SNAPSHOT_INTERVAL_BASE
+        )
+        now = time.monotonic()
+        if self._last_odds_snapshot and now - self._last_odds_snapshot < min_interval:
+            return []
+        self._last_odds_snapshot = now
+        from core.odds_api_client import (
+            SNAPSHOT_CREDITS_PER_CALL,
+            get_all_bookmaker_odds,
+            mark_closing_lines,
+            snapshot_odds_to_supabase,
+        )
         all_rows: list[dict] = []
         for league in leagues:
             try:
                 rows = await get_all_bookmaker_odds(league)
+                if rows:
+                    # quota-guard skips (off-season key / missing key) return []
+                    # without spending credits — only count real provider calls.
+                    await self.quota.increment("odds_api", SNAPSHOT_CREDITS_PER_CALL)
                 all_rows.extend(rows)
-                await self.quota.increment("odds_api")
             except Exception as exc:
                 logger.debug("odds error %s: %s", league, exc)
         if all_rows:
             await snapshot_odds_to_supabase(all_rows)
+        await mark_closing_lines()
         return all_rows
 
     async def collect_tennis_fixtures(self, days_ahead: int = 7) -> list[dict]:

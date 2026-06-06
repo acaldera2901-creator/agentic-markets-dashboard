@@ -117,13 +117,31 @@ class AHCollectorAgent(BaseAgent):
             self.logger.warning(f"SBOBet fetch error: {e}")
         return results
 
+    # The Odds API fallback cadence (#ODDS-1): the loop polls every 60s, but
+    # paid credits must not — 5 leagues × 1 credit × 60s would burn ~7200/day.
+    ODDS_API_AH_MIN_INTERVAL = 1800.0
+    _last_odds_api_ah: float = 0.0
+
     async def _fetch_odds_api_ah(self) -> list[dict]:
-        """Fallback: use The Odds API asian_handicap markets if no dedicated AH key."""
+        """Fallback: The Odds API spreads (= Asian Handicap) markets."""
         if not settings.ODDS_API_KEY:
             return []
+        import time as _time
+        now = _time.monotonic()
+        if self._last_odds_api_ah and now - self._last_odds_api_ah < self.ODDS_API_AH_MIN_INTERVAL:
+            return []
+        self._last_odds_api_ah = now
         results: list[dict] = []
         sports = ["soccer_epl", "soccer_italy_serie_a", "soccer_spain_la_liga",
                   "soccer_germany_bundesliga", "soccer_france_ligue_one"]
+        # Quota guard: skip out-of-season keys (free listing) — same pattern as
+        # core/odds_api_client.get_odds.
+        from core.odds_api_client import get_active_sport_keys
+        active = await get_active_sport_keys()
+        if active is not None:
+            sports = [s for s in sports if s in active]
+        if not sports:
+            return []
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 for sport in sports:
@@ -131,7 +149,7 @@ class AHCollectorAgent(BaseAgent):
                         f"https://api.the-odds-api.com/v4/sports/{sport}/odds",
                         params={
                             "apiKey": settings.ODDS_API_KEY,
-                            "markets": "asian_handicap",
+                            "markets": "spreads",  # The Odds API v4 key for AH/handicap (#ODDS-1: 'asian_handicap' does not exist -> always 0 results)
                             "oddsFormat": "decimal",
                             "regions": "eu",
                         },
@@ -145,7 +163,7 @@ class AHCollectorAgent(BaseAgent):
                         current_home = current_away = None
                         for bm in event.get("bookmakers", []):
                             for market in bm.get("markets", []):
-                                if market.get("key") != "asian_handicap":
+                                if market.get("key") != "spreads":
                                     continue
                                 outcomes = {o["name"]: o for o in market.get("outcomes", [])}
                                 teams = list(outcomes.keys())

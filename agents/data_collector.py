@@ -12,10 +12,8 @@ from core.data_hub import DataHub
 from core.football_features import FootballFeatureStore
 from core.football_data_org_client import get_fixtures as fdorg_fixtures, FREE_TIER_CODES
 from core.odds_api_client import (
-    get_all_bookmaker_odds,
     get_odds,
     normalize_name,
-    snapshot_odds_to_supabase,
 )
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
 from core.world_cup_context import build_world_cup_context
@@ -279,20 +277,12 @@ class DataCollectorAgent(BaseAgent):
                         self.logger.info(f"OddsAPI {league_code}: {len(odds_map)} markets")
                 league_counts[league_code]["odds_markets"] = len(odds_map)
 
-                # P3 wiring: persist a multi-bookmaker snapshot for World Cup odds
-                # (audit trail + flips the odds_snapshots readiness gate). Capped
-                # per cycle and non-fatal — a snapshot failure never blocks collection.
-                if is_world_cup_code(league_code):
-                    try:
-                        snapshot_rows = await get_all_bookmaker_odds(league_code)
-                        if snapshot_rows:
-                            await snapshot_odds_to_supabase(snapshot_rows[:200])
-                            self.logger.info(
-                                "World Cup odds snapshot: %d rows captured",
-                                min(len(snapshot_rows), 200),
-                            )
-                    except Exception as snap_err:
-                        self.logger.warning(f"WC odds snapshot failed (non-fatal): {snap_err}")
+                # NOTE (#ODDS-1, 2026-06-06): the per-league WC snapshot writer
+                # that lived here was removed — it duplicated
+                # data_hub.collect_all_odds in the same cycle (double credits,
+                # double rows, quota never tracked). All odds snapshots now flow
+                # through the single throttled DataHub path at the end of the
+                # cycle, which also marks closing lines.
                 # Venue enrichment (venue_context gate): football-data.org WC
                 # fixtures carry stage/group but venue=None; ESPN has stadium +
                 # city for the whole slate. Merge by normalized team pair so the
@@ -389,7 +379,9 @@ class DataCollectorAgent(BaseAgent):
         try:
             leagues = list(LEAGUE_IDS.keys())
             hub_fixtures = await self._hub.collect_all_fixtures(leagues)
-            await self._hub.collect_all_odds(leagues)
+            await self._hub.collect_all_odds(
+                leagues, imminent_kickoff=self._has_imminent_match()
+            )
             self.logger.info("DataHub enriched %d fixtures", len(hub_fixtures))
         except Exception as hub_exc:
             self.logger.warning("DataHub enrichment failed (non-blocking): %s", hub_exc)

@@ -15,7 +15,10 @@ logger = logging.getLogger("quota_tracker")
 
 DEFAULT_LIMITS: dict[str, dict[str, int]] = {
     "api_football":        {"daily": 100},
-    "odds_api":            {"monthly": 500},
+    # Paid plan: 100K credits/month (verified via x-requests-remaining 2026-06-06).
+    # Daily guard 3200 ≈ 99K/month worst case; the tracker resets per-day, so
+    # "daily" is the enforced limit and "monthly" documents the plan ceiling.
+    "odds_api":            {"daily": 3200, "monthly": 100_000},
     "football_data_org":   {"daily": 5000},
     "openweathermap":      {"daily": 1000},
     "tennis_rapidapi":     {"daily": 100},
@@ -46,8 +49,12 @@ class QuotaTracker:
             return True
         return entry["used"] < entry["limit"]
 
-    async def increment(self, provider: str) -> None:
-        """Increment usage counter and persist to Supabase (best effort)."""
+    async def increment(self, provider: str, count: int = 1) -> None:
+        """Increment usage counter and persist to Supabase (best effort).
+
+        ``count`` lets credit-priced providers (The Odds API: markets × regions
+        per call) track real credits instead of call counts (#ODDS-1).
+        """
         if provider not in self._limits:
             return
         today = str(date.today())
@@ -64,7 +71,7 @@ class QuotaTracker:
             # entry exists (date is today or unset) — keep existing used, update metadata
             self._cache[provider]["limit"] = limit
             self._cache[provider]["date"] = today
-        self._cache[provider]["used"] += 1
+        self._cache[provider]["used"] += max(1, int(count))
         await self._persist(provider, self._cache[provider]["used"], limit)
 
     async def load(self, provider: str) -> None:
