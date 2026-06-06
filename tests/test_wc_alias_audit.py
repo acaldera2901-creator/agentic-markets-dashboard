@@ -50,7 +50,11 @@ def test_known_provider_variants_canonicalize():
         "Bosnia-Herzegovina": "Bosnia and Herzegovina",
         "Korea Republic": "South Korea",
         "USA": "United States",
-        "Cape Verde": "Cabo Verde",
+        # dataset canonical is "Cape Verde" (the only spelling in the CSV);
+        # FIFA/feed spelling "Cabo Verde" must map INTO it, not out of it
+        "Cabo Verde": "Cape Verde",
+        "Cape Verde": "Cape Verde",
+        "Congo DR": "DR Congo",
         "Türkiye": "Turkey",
         "Holland": "Netherlands",
         "KSA": "Saudi Arabia",
