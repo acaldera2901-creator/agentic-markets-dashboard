@@ -8,6 +8,7 @@ const SPORT_KEYS: Record<string, string> = {
   FL1: "soccer_france_ligue_one",
   CL: "soccer_uefa_champs_league",
   EL: "soccer_uefa_europa_league",
+  WC: "soccer_fifa_world_cup", // parity with core/odds_api_client.py (#018)
 };
 
 export function normName(name: string): string {

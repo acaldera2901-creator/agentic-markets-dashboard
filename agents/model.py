@@ -11,7 +11,13 @@ from core.world_cup_history import canonical_team_name, load_national_history
 from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
 from core.world_cup_probability import national_match_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
-from core.supabase_client import DCPrediction, upsert_unified_rows, wc_prediction_to_unified_row
+from core.supabase_client import (
+    DCPrediction,
+    log_prediction_snapshot,
+    upsert_unified_rows,
+    wc_prediction_to_unified_row,
+)
+from core.market_blend import MARKET_BLEND_ALPHA, devig_1x2, blend_with_market
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
 from context.context_service import ContextService
@@ -35,6 +41,10 @@ class ModelAgent(BaseAgent):
         self._context_svc = ContextService()
         self._phase_adapter = SeasonPhaseAdapter()
         self._feature_adjuster = FeatureAdjuster()
+        # Calibration snapshots (#018): last served (p_home,p_draw,p_away,odds_home)
+        # per WC match — snapshot only on change so the 15-min cycle doesn't
+        # flood prediction_log with identical rows.
+        self._wc_snapshot_state: dict[str, tuple] = {}
 
     async def _main_loop(self) -> None:
         await self._bootstrap_models()
@@ -221,6 +231,36 @@ class ModelAgent(BaseAgent):
         if not probs:
             return
         try:
+            # #018: real matched market → de-vig → α=0.3 blend. The SERVED
+            # probabilities are the blended ones (same contract as the TS v1
+            # path, APPROVE msg_mq1m1b9v). No market → identity blend, the row
+            # stays a pure model paper estimate (fail-closed, nothing invented).
+            odds_payload = payload.get("odds") or {}
+            odds_triple = None
+            bookmaker = None
+            market = devig_1x2(
+                odds_payload.get("odds_home"),
+                odds_payload.get("odds_draw"),
+                odds_payload.get("odds_away"),
+            )
+            if market:
+                odds_triple = {
+                    "home": float(odds_payload["odds_home"]),
+                    "draw": float(odds_payload["odds_draw"]),
+                    "away": float(odds_payload["odds_away"]),
+                }
+                bookmaker = str(
+                    odds_payload.get("bookmaker")
+                    or odds_payload.get("source")
+                    or odds_payload.get("provider")
+                    or "market"
+                )
+            p_home, p_draw, p_away = blend_with_market(
+                float(probs["p_team_a"]),
+                float(probs["p_draw"]),
+                float(probs["p_team_b"]),
+                market,
+            )
             pred = DCPrediction(
                 match_id=str(payload.get("match_id")),
                 league=payload["league"],
@@ -228,9 +268,9 @@ class ModelAgent(BaseAgent):
                 home_team=payload["home_team"],
                 away_team=payload["away_team"],
                 kickoff=payload["kickoff"],
-                p_home=float(probs["p_team_a"]),
-                p_draw=float(probs["p_draw"]),
-                p_away=float(probs["p_team_b"]),
+                p_home=p_home,
+                p_draw=p_draw,
+                p_away=p_away,
                 home_team_matches=int(probs.get("team_a_matches", 0)),
                 away_team_matches=int(probs.get("team_b_matches", 0)),
             )
@@ -276,6 +316,10 @@ class ModelAgent(BaseAgent):
                 pick=pick,
                 confidence=confidence,
             )
+            # Per-row promotion gate (#018): the data-quality tier already
+            # scores odds/venue/squad/settlement quality. signal needs BOTH
+            # an allowing tier AND a real matched market.
+            signal_allowed = tier in ("signal_allowed", "premium_candidate")
             row = wc_prediction_to_unified_row(
                 pred,
                 # "unknown" must not override the mapper's league-name default
@@ -283,13 +327,43 @@ class ModelAgent(BaseAgent):
                 neutral_venue=wc_result.get("neutral_venue", "True") == "True",
                 explanation=explanation,
                 enrichment=enrichment,
+                odds_triple=odds_triple,
+                bookmaker=bookmaker,
+                signal_allowed=signal_allowed,
             )
             written = await upsert_unified_rows([row])
             if written:
                 self.logger.info(
-                    "WC paper row written: %s vs %s (tier=%s)",
+                    "WC row written: %s vs %s (tier=%s, %s, market=%s)",
                     payload["home_team"], payload["away_team"], tier,
+                    row.get("signal_type"), "yes" if odds_triple else "no",
                 )
+                # Calibration snapshot of what is actually served (#018):
+                # insert-on-change only, so identical cycles don't flood the log.
+                snap_key = str(payload.get("match_id"))
+                snap_sig = (
+                    round(p_home, 4), round(p_draw, 4), round(p_away, 4),
+                    (odds_triple or {}).get("home"),
+                )
+                if self._wc_snapshot_state.get(snap_key) != snap_sig:
+                    self._wc_snapshot_state[snap_key] = snap_sig
+                    await log_prediction_snapshot(
+                        match_id=snap_key,
+                        league=payload["league"],
+                        home_team=payload["home_team"],
+                        away_team=payload["away_team"],
+                        kickoff=payload["kickoff"],
+                        served=(p_home, p_draw, p_away),
+                        model=(
+                            float(probs["p_team_a"]),
+                            float(probs["p_draw"]),
+                            float(probs["p_team_b"]),
+                        ),
+                        odds=odds_triple,
+                        market=market,
+                        model_version=settings.WC_MODEL_VERSION,
+                        blend_alpha=MARKET_BLEND_ALPHA if market else None,
+                    )
         except Exception as exc:
             # Non-fatal by contract: a writer hiccup must never break the
             # model loop. The upsert is idempotent and retried next cycle.

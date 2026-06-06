@@ -230,19 +230,27 @@ def wc_prediction_to_unified_row(
     neutral_venue: bool = True,
     explanation: str | None = None,
     enrichment: dict | None = None,
+    odds_triple: dict | None = None,
+    bookmaker: str | None = None,
+    signal_allowed: bool = False,
 ) -> dict:
-    """World Cup paper row on the unified_predictions schema.
+    """World Cup row on the unified_predictions schema.
 
-    Honesty rules (mirrors lib/publication-gate.ts FORCE PAPER for WC):
-    - signal_type is ALWAYS "paper" — never signal/estimate, regardless of
-      reliability, until the WC registry leaves monitor_only and the gate is
-      lifted by an explicit promotion deploy.
-    - no odds, no edge, no bookmaker claims (national Poisson rates only).
+    Promotion rules (#018, APPROVE Andrea 2026-06-06 — the "explicit promotion
+    deploy" the original force-paper docstring reserved):
+    - signal_type = "signal" ONLY when BOTH hold: the per-row data-quality tier
+      allows it (``signal_allowed`` ← publication_tier in signal_allowed /
+      premium_candidate, which already scores odds+venue+squad+settlement
+      quality) AND a real matched market exists (``odds_triple``).
+    - otherwise the row stays paper exactly as before — fail-closed.
+    - odds/edge are written ONLY from a real matched market; nothing is ever
+      fabricated. ``p`` carries the SERVED (market-blended α=0.3) probabilities;
+      the caller computes them via core/market_blend.
 
     ``explanation`` / ``enrichment``: when the caller has the real data sources
     (form, venue, squad — see core/world_cup_explanation), it passes a rich
     match-specific explanation and a structured Deep-Analysis payload. When
-    omitted, falls back to the generic paper-tier explanation (fail-soft).
+    omitted, falls back to the generic explanation (fail-soft).
     """
     row = dc_prediction_to_unified_row(p)
     pick = row["pick"]
@@ -250,19 +258,127 @@ def wc_prediction_to_unified_row(
     row["model_version"] = settings.WC_MODEL_VERSION
     row["source_table"] = settings.WC_SOURCE_TABLE
     row["competition"] = "World Cup"
-    row["signal_type"] = "paper"
     row["neutral_venue"] = neutral_venue
     if stage:
         row["world_cup_stage"] = stage
-    row["explanation"] = explanation or (
-        f"World Cup paper prediction (national Poisson rates model). "
-        f"Pick: {pick} | model probability {confidence}%. "
-        "Paper tier: published for track-record transparency only, "
-        "no market odds attached, no edge claimed. Bet responsibly."
+
+    has_market = bool(
+        odds_triple
+        and all(_safe_positive(odds_triple.get(k)) for k in ("home", "draw", "away"))
     )
+    promoted = signal_allowed and has_market
+
+    if has_market:
+        pick_odds = {
+            "HOME": odds_triple["home"],
+            "DRAW": odds_triple["draw"],
+            "AWAY": odds_triple["away"],
+        }[pick]
+        pick_prob = confidence / 100.0
+        edge = pick_prob - (1.0 / pick_odds) if pick_odds > 0 else None
+        row["odds"] = round(float(pick_odds), 3)
+        row["bookmaker"] = bookmaker or "market"
+        row["edge_percent"] = round(edge * 100, 2) if edge is not None else None
+        # notes carries the machine-readable payload the dashboard fallback
+        # projects onto the v1 board (probabilities already there from the dc
+        # mapper — extend with the real 3-way market).
+        notes = json.loads(row["notes"])
+        notes.update(
+            {
+                "odds_home": round(float(odds_triple["home"]), 3),
+                "odds_draw": round(float(odds_triple["draw"]), 3),
+                "odds_away": round(float(odds_triple["away"]), 3),
+                "bookmaker": bookmaker or "market",
+            }
+        )
+        row["notes"] = json.dumps(notes)
+
+    if promoted:
+        row["signal_type"] = "signal"
+        row["is_paper"] = False
+        row["explanation"] = explanation or (
+            "World Cup market-blended signal (alpha=0.3 model + de-vigged market). "
+            f"Pick: {pick} | served probability {confidence}% | real market odds attached. "
+            "Bet responsibly."
+        )
+    else:
+        row["signal_type"] = "paper"
+        # Paper never claims an edge, even when reference odds are shown.
+        row["edge_percent"] = None
+        row["explanation"] = explanation or (
+            f"World Cup paper prediction (national Poisson rates model). "
+            f"Pick: {pick} | model probability {confidence}%. "
+            "Paper tier: published for track-record transparency only"
+            + (", real market odds shown for reference" if has_market else ", no market odds attached")
+            + ", no edge claimed. Bet responsibly."
+        )
+
     if enrichment is not None:
         row["enrichment"] = enrichment
     return row
+
+
+def _safe_positive(value) -> bool:
+    try:
+        return float(value) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+async def log_prediction_snapshot(
+    *,
+    match_id: str,
+    league: str,
+    home_team: str,
+    away_team: str,
+    kickoff: str,
+    served: tuple[float, float, float],
+    model: tuple[float, float, float],
+    odds: dict | None,
+    market: dict | None,
+    model_version: str,
+    blend_alpha: float | None,
+) -> None:
+    """Append one served-prediction snapshot to prediction_log (PostgREST).
+
+    Mirrors lib/prediction-log.ts logPredictionSnapshot for the Python WC path
+    (#018): the rows actually served to customers come from this writer, so
+    calibration must snapshot HERE, not only in the dormant TS compute path.
+    Fail-soft by contract — a snapshot failure never breaks the model loop.
+    """
+    base = _rest_base()
+    if not base:
+        return
+    row = {
+        "match_id": match_id,
+        "league": league,
+        "home_team": home_team,
+        "away_team": away_team,
+        "kickoff": kickoff,
+        "p_home": served[0], "p_draw": served[1], "p_away": served[2],
+        "model_p_home": model[0], "model_p_draw": model[1], "model_p_away": model[2],
+        "odds_home": (odds or {}).get("home"),
+        "odds_draw": (odds or {}).get("draw"),
+        "odds_away": (odds or {}).get("away"),
+        "market_p_home": (market or {}).get("home"),
+        "market_p_draw": (market or {}).get("draw"),
+        "market_p_away": (market or {}).get("away"),
+        "model_version": model_version,
+        "blend_alpha": blend_alpha,
+        "computed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{base}/prediction_log", json=row, headers=_service_headers()
+            )
+            if resp.status_code not in (200, 201, 204):
+                logger.warning(
+                    "prediction_log snapshot rejected: %s %s",
+                    resp.status_code, resp.text[:200],
+                )
+    except Exception as exc:
+        logger.warning("prediction_log snapshot failed (non-fatal): %s", exc)
 
 
 async def upsert_unified_rows(rows: list[dict]) -> int:

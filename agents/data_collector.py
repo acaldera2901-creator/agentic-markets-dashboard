@@ -27,6 +27,8 @@ from core.espn_soccer_client import (
     get_squad_coverage,
     get_world_cup_teams,
     get_league_fixtures as espn_league_fixtures,
+    get_wc_venue_map as espn_wc_venue_map,
+    _venue_pair_key as espn_venue_pair_key,
 )
 from core.wc_squad_sync import sync_rosters
 from config.settings import settings
@@ -288,6 +290,33 @@ class DataCollectorAgent(BaseAgent):
                             )
                     except Exception as snap_err:
                         self.logger.warning(f"WC odds snapshot failed (non-fatal): {snap_err}")
+                # Venue enrichment (venue_context gate): football-data.org WC
+                # fixtures carry stage/group but venue=None; ESPN has stadium +
+                # city for the whole slate. Merge by normalized team pair so the
+                # context builder sees fixture.venue.{name,city}. Fail-soft.
+                if is_world_cup_code(league_code):
+                    try:
+                        venue_map = await espn_wc_venue_map()
+                    except Exception as venue_err:
+                        venue_map = {}
+                        self.logger.debug(f"WC venue map failed (non-fatal): {venue_err}")
+                    if venue_map:
+                        for fixture in fixtures:
+                            fx = fixture.setdefault("fixture", {})
+                            if (fx.get("venue") or {}).get("city"):
+                                continue  # provider already has it
+                            h = fixture.get("teams", {}).get("home", {}).get("name", "")
+                            a = fixture.get("teams", {}).get("away", {}).get("name", "")
+                            info = venue_map.get(espn_venue_pair_key(h, a)) if h and a else None
+                            if not info:
+                                continue
+                            fx["venue"] = {
+                                **({"name": info["venue"]} if info.get("venue") else {}),
+                                **({"city": info["city"]} if info.get("city") else {}),
+                            }
+                            if info.get("round") and not fixture.get("round"):
+                                fixture["round"] = info["round"]
+
                 published = 0
                 matched_odds = 0
                 for fixture in fixtures:

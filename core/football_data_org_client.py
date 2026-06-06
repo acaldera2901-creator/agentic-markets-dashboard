@@ -48,7 +48,7 @@ def _headers(api_key: str) -> dict:
 def _normalize(m: dict) -> dict:
     """Return a dict in API-Football shape so callers are format-agnostic."""
     ft = m.get("score", {}).get("fullTime", {})
-    return {
+    normalized = {
         "fixture": {
             "id": m["id"],
             "date": m["utcDate"],
@@ -64,6 +64,26 @@ def _normalize(m: dict) -> dict:
             }
         },
     }
+    # Stage/group/matchday feed the WC context (infer_stage reads the fixture
+    # "round" text): "GROUP_STAGE GROUP_A" → "group stage group a" matches both
+    # the stage keyword and the group-letter regex. Dropping these here was
+    # what kept the venue_context gate red (missing_stage on every WC row).
+    round_parts = [
+        str(m.get("stage") or "").replace("_", " "),
+        str(m.get("group") or "").replace("_", " "),
+    ]
+    matchday = m.get("matchday")
+    if matchday:
+        round_parts.append(f"Matchday {matchday}")
+    round_text = " ".join(p for p in round_parts if p).strip()
+    if round_text:
+        normalized["round"] = round_text
+    # football-data.org rarely fills venue (None for WC as of 2026-06), but
+    # pass it through when present so the context builder can read it.
+    venue = m.get("venue")
+    if venue:
+        normalized["fixture"]["venue"] = {"name": str(venue)}
+    return normalized
 
 
 async def get_fixtures(competition_code: str, api_key: str, days_ahead: int = 14) -> List[Dict]:

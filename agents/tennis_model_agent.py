@@ -9,6 +9,11 @@ from core.tennis_names import canonical_player_key, clean_player_name
 from models.elo_surface import EloSurfaceModel
 
 MIN_ODDS = 1.50  # don't bet heavy favourites — compounded variance destroys EV
+# Calibration report 2026-06-06 (docs/internal/calibration-backtest-2026-06-06.md):
+# live bets priced >2.10 ran BELOW break-even (70 bets, yield −20%/−7%) while the
+# 1.50–2.10 band ran above. Selections outside the band are not emitted as value
+# bets; probabilities are still served untouched. Revisit when n grows.
+MAX_ODDS = 2.10
 
 
 def tennis_fixture_identity(fixture: dict) -> str | None:
@@ -296,9 +301,9 @@ class TennisModelAgent(BaseAgent):
         market_p2 = inv2 / total
         edge_p1 = round(p1 - market_p1, 4)
         edge_p2 = round(p2 - market_p2, 4)
-        if odds_p1 >= MIN_ODDS and edge_p1 > 0 and edge_p1 >= edge_p2:
+        if MIN_ODDS <= odds_p1 <= MAX_ODDS and edge_p1 > 0 and edge_p1 >= edge_p2:
             return edge_p1, "P1"
-        if odds_p2 >= MIN_ODDS and edge_p2 > 0:
+        if MIN_ODDS <= odds_p2 <= MAX_ODDS and edge_p2 > 0:
             return edge_p2, "P2"
         return max(edge_p1, edge_p2), None
 
@@ -358,8 +363,8 @@ class TennisModelAgent(BaseAgent):
         best_selection = None
         edge = None
         if edge_p1 is not None and edge_p2 is not None:
-            p1_eligible = odds_p1 >= MIN_ODDS
-            p2_eligible = odds_p2 >= MIN_ODDS
+            p1_eligible = MIN_ODDS <= odds_p1 <= MAX_ODDS
+            p2_eligible = MIN_ODDS <= odds_p2 <= MAX_ODDS
             if p1_eligible and p2_eligible:
                 if edge_p1 >= edge_p2 and edge_p1 > 0:
                     best_selection, edge = "P1", edge_p1

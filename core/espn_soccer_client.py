@@ -207,22 +207,104 @@ async def get_league_fixtures(league_code: str, days_ahead: int = 14) -> list[di
         state = (((ev.get("status") or {}).get("type")) or {}).get("state")
         if state != "pre":
             continue  # only future matches are fixtures
-        comps = (ev.get("competitions") or [{}])[0].get("competitors", [])
+        competition = (ev.get("competitions") or [{}])[0]
+        comps = competition.get("competitors", [])
         home = next((c for c in comps if c.get("homeAway") == "home"), None)
         away = next((c for c in comps if c.get("homeAway") == "away"), None)
         if not home or not away:
             continue
-        fixtures.append({
+        entry = {
             "fixture": {"id": f"espn:{ev.get('id')}", "date": ev.get("date")},
             "teams": {
                 "home": {"name": (home.get("team") or {}).get("displayName", "")},
                 "away": {"name": (away.get("team") or {}).get("displayName", "")},
             },
             "score": {"fulltime": {"home": None, "away": None}},
-        })
+        }
+        # Venue + stage feed the WC venue_context gate: ESPN carries stadium and
+        # city per event, and the stage slug per season. Keep the nested shape
+        # _venue_text expects (fixture.venue.{name,city}).
+        venue = competition.get("venue") or {}
+        venue_name = venue.get("fullName")
+        venue_city = (venue.get("address") or {}).get("city")
+        if venue_name or venue_city:
+            entry["fixture"]["venue"] = {
+                **({"name": venue_name} if venue_name else {}),
+                **({"city": venue_city} if venue_city else {}),
+            }
+        stage_slug = ((ev.get("season") or {}).get("slug") or "").replace("-", " ")
+        if stage_slug:
+            entry["round"] = stage_slug.title()
+        fixtures.append(entry)
     if fixtures:
         logger.info("ESPN soccer %s: %d upcoming fixtures", league_code, len(fixtures))
     return fixtures
+
+
+# ─── WC venue lookup (for fixtures from providers without venue data) ─────────
+#
+# football-data.org WC matches carry group/stage but venue=None; ESPN has the
+# stadium + city for every WC fixture. This map lets the collector enrich
+# venue-less WC fixtures by normalized team pair. TTL-cached: one scoreboard
+# call covers the whole tournament slate.
+
+
+def _venue_pair_key(home: str, away: str) -> tuple[str, str]:
+    from core.world_cup_context import normalize_team
+    return (normalize_team(home), normalize_team(away))
+
+
+async def get_wc_venue_map(days_ahead: int = 45) -> dict[tuple[str, str], dict]:
+    """Map (home_key, away_key) → {venue, city, round} for upcoming WC matches.
+
+    Both team orders are keyed: provider home/away may disagree with ESPN's.
+    """
+    cached = _cached("wc_venue_map")
+    if cached is not None:
+        return cached
+
+    from datetime import datetime, timedelta, timezone
+    today = datetime.now(timezone.utc).date()
+    date_range = f"{today.strftime('%Y%m%d')}-{(today + timedelta(days=days_ahead)).strftime('%Y%m%d')}"
+    out: dict[tuple[str, str], dict] = {}
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(
+                f"{_SOCCER_BASE}/fifa.world/scoreboard",
+                params={"dates": date_range},
+                headers=_HEADERS,
+            )
+            if resp.status_code != 200:
+                logger.warning("ESPN WC venue map: %s", resp.status_code)
+                return out
+            data = resp.json()
+    except Exception as exc:
+        logger.debug("ESPN WC venue map error (non-fatal): %s", exc)
+        return out
+
+    for ev in data.get("events", []):
+        competition = (ev.get("competitions") or [{}])[0]
+        comps = competition.get("competitors", [])
+        home = next((c for c in comps if c.get("homeAway") == "home"), None)
+        away = next((c for c in comps if c.get("homeAway") == "away"), None)
+        if not home or not away:
+            continue
+        venue = competition.get("venue") or {}
+        info = {
+            "venue": venue.get("fullName"),
+            "city": (venue.get("address") or {}).get("city"),
+            "round": ((ev.get("season") or {}).get("slug") or "").replace("-", " ").title() or None,
+        }
+        if not (info["venue"] or info["city"]):
+            continue
+        h = (home.get("team") or {}).get("displayName", "")
+        a = (away.get("team") or {}).get("displayName", "")
+        if h and a:
+            out[_venue_pair_key(h, a)] = info
+            out[_venue_pair_key(a, h)] = info
+    if out:
+        logger.info("ESPN WC venue map: %d matchups with venue", len(out) // 2)
+    return _store("wc_venue_map", out)
 
 
 async def get_match_lineups(event_id: str) -> dict | None:

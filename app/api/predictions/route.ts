@@ -540,6 +540,8 @@ type UnifiedFallbackRow = {
   starts_at: string;
   pick: string | null;
   notes: string | null;
+  signal_type: string | null;
+  edge_percent: number | null;
   updated_at: string;
 };
 
@@ -547,21 +549,36 @@ const FALLBACK_SELECTIONS = new Set(["HOME", "DRAW", "AWAY"]);
 
 function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
   if (!u.home_team || !u.away_team) return null;
-  let probs: { p_home?: unknown; p_draw?: unknown; p_away?: unknown };
+  let notes: {
+    p_home?: unknown; p_draw?: unknown; p_away?: unknown;
+    odds_home?: unknown; odds_draw?: unknown; odds_away?: unknown;
+  };
   try {
-    probs = JSON.parse(u.notes ?? "");
+    notes = JSON.parse(u.notes ?? "");
   } catch {
     return null; // old rows without the distribution: skip, never invent
   }
-  const pHome = Number(probs?.p_home);
-  const pDraw = Number(probs?.p_draw);
-  const pAway = Number(probs?.p_away);
+  const pHome = Number(notes?.p_home);
+  const pDraw = Number(notes?.p_draw);
+  const pAway = Number(notes?.p_away);
   if (![pHome, pDraw, pAway].every((p) => Number.isFinite(p) && p >= 0 && p <= 1)) {
     return null;
   }
   const matchId = u.external_event_id ?? u.source_id;
   if (!matchId) return null;
   const pick = (u.pick ?? "").toUpperCase();
+
+  // Real market odds are exposed ONLY on promoted signal rows (#018). Paper
+  // rows may carry reference odds in notes, but the v1 board must never
+  // compute a value-bet from a row the publication gate kept on paper.
+  const isSignal = u.signal_type === "signal";
+  const oddsHome = isSignal ? Number(notes?.odds_home) : NaN;
+  const oddsDraw = isSignal ? Number(notes?.odds_draw) : NaN;
+  const oddsAway = isSignal ? Number(notes?.odds_away) : NaN;
+  const hasOdds = [oddsHome, oddsDraw, oddsAway].every(
+    (o) => Number.isFinite(o) && o > 1
+  );
+
   return {
     id: 0,
     match_id: matchId,
@@ -575,10 +592,10 @@ function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
     p_away: pAway,
     lambda_home: null,
     lambda_away: null,
-    odds_home: null,
-    odds_draw: null,
-    odds_away: null,
-    edge: null,
+    odds_home: hasOdds ? oddsHome : null,
+    odds_draw: hasOdds ? oddsDraw : null,
+    odds_away: hasOdds ? oddsAway : null,
+    edge: hasOdds && u.edge_percent != null ? Number(u.edge_percent) / 100 : null,
     best_selection: FALLBACK_SELECTIONS.has(pick) ? pick : null,
     model_matches: null,
     computed_at: u.updated_at,
@@ -590,7 +607,7 @@ function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
 async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
   const rows = await dbQuery<UnifiedFallbackRow>(
     `SELECT external_event_id, source_id, league, competition, home_team,
-            away_team, starts_at, pick, notes, updated_at
+            away_team, starts_at, pick, notes, signal_type, edge_percent, updated_at
      FROM unified_predictions
      WHERE sport = 'football'
        AND starts_at > NOW()
