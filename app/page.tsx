@@ -703,6 +703,9 @@ interface Prediction {
   model_matches: number | null;
   computed_at: string;
   match_type?: string | null;
+  // True = model estimate without real market odds (no edge claimed) — drives
+  // the PAPER badge. Set server-side by markModelEstimate.
+  is_estimate?: boolean;
   enrichment?: PredictionEnrichment | null;
   // Reveal-gating fields (Task 7)
   locked?: boolean;
