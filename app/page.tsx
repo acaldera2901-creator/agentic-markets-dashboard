@@ -1018,6 +1018,17 @@ function stakeFromEdge(edge: number | null, confidence: number) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+// Literal text→bg class map: Tailwind's scanner only generates classes it can
+// SEE as literal strings in source. The old dynamic color.replace("text-","bg-")
+// worked by accident (the pre-#021 tennis bars carried the literals) — when
+// those were removed, bg-cyan-400/bg-fuchsia-400 were purged from the bundle
+// and every HOME/AWAY/player bar rendered empty (bug Andrea 2026-06-06).
+const PROB_BAR_FILL: Record<string, string> = {
+  "text-cyan-400": "bg-cyan-400",
+  "text-yellow-400": "bg-yellow-400",
+  "text-fuchsia-400": "bg-fuchsia-400",
+};
+
 function ProbBar({ label, pct: p, color, odds, isValue }: {
   label: string; pct: number; color: string; odds?: number | null; isValue?: boolean;
 }) {
@@ -1025,7 +1036,7 @@ function ProbBar({ label, pct: p, color, odds, isValue }: {
     <div className="flex items-center gap-2">
       <span className={`text-xs font-mono w-10 shrink-0 ${color}`}>{label}</span>
       <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${color.replace("text-", "bg-")}`}
+        <div className={`h-full rounded-full transition-all ${PROB_BAR_FILL[color] ?? color.replace("text-", "bg-")}`}
           style={{ width: `${Math.round(p * 100)}%` }} />
       </div>
       <span className={`text-xs font-mono w-8 text-right ${color}`}>{pct(p)}</span>

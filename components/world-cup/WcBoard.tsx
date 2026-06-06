@@ -48,6 +48,8 @@ type ProjectedRow = {
   explanation?: string | null;
   notes?: string | null;           // JSON: { p_home, p_draw, p_away, odds_home?, odds_draw?, odds_away? }
   enrichment?: WcEnrichment | null; // premium-only (projection-gated)
+  // Real affiliate target attached by withAffiliate on unlocked rows.
+  affiliate?: { url: string; bookmaker?: string; bonus?: string } | null;
 };
 
 const kickFmt = new Intl.DateTimeFormat("en-GB", {
@@ -255,6 +257,26 @@ function WcCard({ p }: { p: ProjectedRow }) {
               </span>
             ) : null}
           </div>
+
+          {/* Place Bet — same CTA as the football card (#021 follow-up).
+              Renders ONLY when the row carries a real affiliate target
+              (withAffiliate on unlocked rows) — never a fake link. */}
+          {p.affiliate?.url && (
+            <a
+              href={p.affiliate.url}
+              target="_blank"
+              rel="nofollow sponsored noopener"
+              style={{
+                display: "block", width: "100%", marginTop: "0.35rem", padding: "0.45rem 0",
+                borderRadius: "0.55rem", border: "1px solid rgba(74,222,128,0.3)",
+                background: "rgba(74,222,128,0.08)", color: "#4ade80", textAlign: "center",
+                fontFamily: "monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
+                textDecoration: "none",
+              }}
+            >
+              Piazza la scommessa →
+            </a>
+          )}
 
           {/* Inline Why — real explanation + enrichment-derived rows */}
           {showWhy && (p.explanation || hasWhyExtras) && (
