@@ -4808,8 +4808,16 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
+const VALID_TABS: readonly Tab[] = ["bets", "client-area", "settings", "assistance", "faq", "history", "partners", "leaderboard"];
+
 export default function Dashboard() {
-  const [tab, setTab] = useState<Tab>("bets");
+  // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
+  // hub's Place Bet button) land directly on a tab. Whitelisted values only.
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "bets";
+    const requested = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+    return requested && VALID_TABS.includes(requested) ? requested : "bets";
+  });
   const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
     if (typeof window === "undefined") return "it";
     const stored = window.localStorage.getItem("agentic-lang") as Lang | null;

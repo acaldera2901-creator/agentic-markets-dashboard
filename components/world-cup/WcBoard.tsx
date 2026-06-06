@@ -258,25 +258,25 @@ function WcCard({ p }: { p: ProjectedRow }) {
             ) : null}
           </div>
 
-          {/* Place Bet — same CTA as the football card (#021 follow-up).
-              Renders ONLY when the row carries a real affiliate target
-              (withAffiliate on unlocked rows) — never a fake link. */}
-          {p.affiliate?.url && (
-            <a
-              href={p.affiliate.url}
-              target="_blank"
-              rel="nofollow sponsored noopener"
-              style={{
-                display: "block", width: "100%", marginTop: "0.35rem", padding: "0.45rem 0",
-                borderRadius: "0.55rem", border: "1px solid rgba(74,222,128,0.3)",
-                background: "rgba(74,222,128,0.08)", color: "#4ade80", textAlign: "center",
-                fontFamily: "monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
-                textDecoration: "none",
-              }}
-            >
-              Piazza la scommessa →
-            </a>
-          )}
+          {/* Place Bet — same behavior as the football card on the home
+              board: routes to the Partners tab (the home's onBetNow does
+              setTab("partners")). When a real affiliate link exists on the
+              row it wins; otherwise the deep-link. Never a fake target. */}
+          <a
+            href={p.affiliate?.url || "/?tab=partners"}
+            {...(p.affiliate?.url
+              ? { target: "_blank", rel: "nofollow sponsored noopener" }
+              : {})}
+            style={{
+              display: "block", width: "100%", marginTop: "0.35rem", padding: "0.45rem 0",
+              borderRadius: "0.55rem", border: "1px solid rgba(74,222,128,0.3)",
+              background: "rgba(74,222,128,0.08)", color: "#4ade80", textAlign: "center",
+              fontFamily: "monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
+              textDecoration: "none",
+            }}
+          >
+            Piazza la scommessa →
+          </a>
 
           {/* Inline Why — real explanation + enrichment-derived rows */}
           {showWhy && (p.explanation || hasWhyExtras) && (
