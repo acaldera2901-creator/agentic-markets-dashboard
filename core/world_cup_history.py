@@ -19,19 +19,26 @@ from typing import Any
 from config.settings import settings
 
 
-# Plausible WC2026 field used for the >=30/32 quality gate. Canonical spelling
-# matches the Kaggle dataset (which is also our normalization target).
+# The 48 qualified WC2026 teams (authoritative: distinct teams in the dataset's
+# own "FIFA World Cup" 2026 fixture rows — see audit 2026-06-06). Canonical
+# spelling matches the Kaggle dataset (which is also our normalization target).
 WC2026_TEAMS: tuple[str, ...] = (
-    "United States", "Canada", "Mexico",
+    # Hosts + CONCACAF
+    "United States", "Canada", "Mexico", "Panama", "Haiti", "Curaçao",
+    # CONMEBOL
     "Argentina", "Brazil", "Uruguay", "Colombia", "Ecuador", "Paraguay",
+    # UEFA
     "France", "England", "Spain", "Portugal", "Germany", "Netherlands",
-    "Belgium", "Italy", "Croatia", "Switzerland", "Denmark", "Scotland",
-    "Austria", "Turkey", "Czech Republic", "Norway", "Poland", "Serbia",
+    "Belgium", "Croatia", "Switzerland", "Scotland", "Austria", "Turkey",
+    "Czech Republic", "Norway", "Sweden", "Bosnia and Herzegovina",
+    # AFC
     "Japan", "South Korea", "Iran", "Australia", "Saudi Arabia", "Qatar",
-    "Uzbekistan", "Jordan",
-    "Morocco", "Senegal", "Tunisia", "Algeria", "Egypt", "Nigeria", "Ghana",
-    "Ivory Coast", "Cameroon", "South Africa",
-    "Haiti", "Bosnia and Herzegovina", "Panama", "Costa Rica",
+    "Uzbekistan", "Jordan", "Iraq",
+    # OFC
+    "New Zealand",
+    # CAF
+    "Morocco", "Senegal", "Tunisia", "Algeria", "Egypt", "Ghana",
+    "Ivory Coast", "South Africa", "Cape Verde", "DR Congo",
 )
 
 
@@ -55,7 +62,12 @@ _TEAM_ALIASES: dict[str, str] = {
     "cote d'ivoire": "Ivory Coast",
     "czechia": "Czech Republic",
     "china pr": "China",
-    "cape verde": "Cabo Verde",
+    # Dataset canonical is "Cape Verde" (verified in CSV); FIFA/feeds say "Cabo Verde".
+    "cabo verde": "Cape Verde",
+    "curacao": "Curaçao",
+    "congo dr": "DR Congo",
+    "democratic republic of the congo": "DR Congo",
+    "democratic republic of congo": "DR Congo",
     # Bookmaker-feed variants (The Odds API / exchanges) — keep WC2026 odds
     # matching robust regardless of the provider's spelling.
     "holland": "Netherlands",

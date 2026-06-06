@@ -101,11 +101,13 @@ TEAM_HOME: dict[str, tuple[tuple[float, float], str]] = {
     # missing (this table pre-dated the final playoff results) — their venue
     # context silently degraded to neutral. Some entries above are now stale
     # (non-qualified playoff hopefuls) — harmless, kept for reference.
+    # Keys MUST be canonical dataset spellings (canonical_team_name output):
+    # "Cape Verde" / "DR Congo", not the FIFA spellings.
     "Sweden": ((59.329, 18.069), "Europe/Stockholm"),
     "Iraq": ((33.315, 44.366), "Asia/Baghdad"),
     "New Zealand": ((-41.286, 174.776), "Pacific/Auckland"),
-    "Cabo Verde": ((14.916, -23.509), "Atlantic/Cape_Verde"),
-    "Congo DR": ((-4.325, 15.322), "Africa/Kinshasa"),
+    "Cape Verde": ((14.916, -23.509), "Atlantic/Cape_Verde"),
+    "DR Congo": ((-4.325, 15.322), "Africa/Kinshasa"),
     "Curaçao": ((12.109, -68.935), "America/Curacao"),
     "Japan": ((35.690, 139.692), "Asia/Tokyo"),
     "South Korea": ((37.567, 126.978), "Asia/Seoul"),
