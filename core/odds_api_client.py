@@ -71,9 +71,16 @@ def football_pair_key(home: str, away: str, commence_time: str | None) -> str | 
 
     Same recipe as the tennis adapter's _pair_key — computable from both
     odds_snapshots and our prediction tables, so snapshots become joinable
-    (#ODDS-1). Returns None when either name is missing.
+    (#ODDS-1). National-team names go through canonical_team_name first
+    (passthrough for clubs), so 'Czechia'/'Czech Republic', 'USA'/'United
+    States', 'Bosnia-Herzegovina'/... land on the same key — verified against
+    live WC rows where 6/28 pairs missed the join on raw provider spellings.
+    Returns None when either name is missing.
     """
-    h, a = normalize_name(home or ""), normalize_name(away or "")
+    from core.world_cup_history import canonical_team_name
+
+    h = normalize_name(canonical_team_name(home) or "")
+    a = normalize_name(canonical_team_name(away) or "")
     if not h or not a or h == a:
         return None
     day = ""
