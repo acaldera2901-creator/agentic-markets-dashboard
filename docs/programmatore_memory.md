@@ -39,3 +39,10 @@ Pattern, decisioni tecniche e gotcha consolidati. Solo roba non ovvia.
 - Tutto l'accesso server usa `service_role` (BYPASSRLS). RLS on profiles; grant anon revocati su tabelle prodotto. `council_*` resta NO-RLS (Block C aperto).
 - CI `.github/workflows/supabase-migrations.yml` → `supabase link --project-ref izscgffubtakzvwxchqt`. Secrets GH: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`.
 - Secrets Vercel CRON_SECRET/RESEARCH_SECRET sono "sensitive" → non rileggibili dal CLI dopo il set.
+
+## Dashboard home cards — campi reali (verificato 2026-06-06, #021)
+- **Football enrichment** (`PredictionEnrichment` in app/page.tsx, popolato da `app/api/predictions/route.ts`): oltre a xg/xga/pi/injuries/weather ci sono anche `npxg_home/away`, `ppda_home/away` (PPDA: più basso = pressing più intenso), `form_home/away` (stringa W/D/L). I primi due erano REALI nel payload ma MANCAVANO dal tipo TS della home → aggiunti.
+- **Tennis** (`TennisMatch`, da `app/api/tennis/route.ts`): `h2h_p1_wins/h2h_p2_wins` reali ed esposti (da `tp.h2h_p1_wins/p2_wins`, sorgente `core/tennis_features.py`).
+- **World Cup** card (WcBoard, da `/api/v2/predictions` proiettato): le odds 3-vie REALI stanno SOLO in `notes` JSON (`odds_home/odds_draw/odds_away`, + `bookmaker`) e ESCLUSIVAMENTE su righe con market matchato (vedi `core/supabase_client.py:wc_prediction_to_unified_row` → ramo `has_market`). `edge_percent` reale solo su righe `signal_type='signal'` promosse (paper → edge_percent=None, paid-tier gated). `world_cup_stage` NON è proiettato al client (non in PUBLIC_FIELDS) → in UI usare `league` come descrittore, mai inventare lo stage.
+- ProbBar (football) accetta prop `odds` ma NON la renderizza (prop vestigiale). Riusata nella card tennis per parità di stile.
+- Settings: rimosso blocco "Risk profile" (UI + copy IT/EN + locals orfani). Il campo `risk` su `ClientProfile` e il default a signup restano (dati persistiti, fuori scope). Email ora read-only/disabled con nota supporto.
