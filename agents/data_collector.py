@@ -152,15 +152,18 @@ class DataCollectorAgent(BaseAgent):
         quota survives for result settlement, not fixture polling — the 403/429
         storm of 2026-06-05 came from hammering it for off-season leagues.
         """
+        # Rolling window (#019): never fetch beyond the publication horizon —
+        # what we don't compute, we can't accidentally serve.
+        window = settings.PREDICTION_WINDOW_DAYS
         fdorg_key = settings.FOOTBALL_DATA_ORG_API_KEY
         if fdorg_key and league_code in FREE_TIER_CODES:
-            fixtures = await fdorg_fixtures(league_code, fdorg_key)
+            fixtures = await fdorg_fixtures(league_code, fdorg_key, days_ahead=window)
             if fixtures:
                 return fixtures
 
         # Free fallback: ESPN scoreboard (no key, all our league codes).
         try:
-            fixtures = await espn_league_fixtures(league_code)
+            fixtures = await espn_league_fixtures(league_code, days_ahead=window)
             if fixtures:
                 return fixtures
             # Two independent free sources agree there are no upcoming

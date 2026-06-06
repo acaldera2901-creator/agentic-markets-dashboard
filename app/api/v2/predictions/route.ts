@@ -5,6 +5,7 @@ import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { pickOfDayId } from "@/lib/pick-of-day";
 import { withAffiliate } from "@/lib/affiliate";
+import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +18,17 @@ export async function GET(req: Request) {
   const status      = searchParams.get("status");
 
   // Demo rows must never reach the public board (defensive, AM-CODE-REVIEW-001 #4).
+  // Rolling publication window (#019): serve only the next N days — closer
+  // matches carry more information; distant ones come into view day by day.
   const conditions: string[] = [
     "starts_at > NOW()",
+    "starts_at < NOW() + ($1 || ' days')::interval",
     "expires_at > NOW()",
     "published_at IS NOT NULL",
     "is_historical = FALSE",
     "is_demo = FALSE",
   ];
-  const values: unknown[] = [];
+  const values: unknown[] = [PREDICTION_WINDOW_DAYS];
 
   if (sport && sport !== "all") {
     values.push(sport);

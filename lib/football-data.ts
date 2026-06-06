@@ -1,3 +1,5 @@
+import { PREDICTION_WINDOW_DAYS } from "./prediction-window";
+
 const BASE = "https://api.football-data.org/v4";
 
 // Competitions available on the free tier
@@ -77,7 +79,8 @@ export async function fetchHistory(code: string): Promise<FDMatch[]> {
 export async function fetchFixtures(code: string): Promise<FDMatch[]> {
   const today = new Date();
   const to = new Date(today);
-  to.setDate(to.getDate() + 32);
+  // Rolling publication window (#019): never fetch beyond the serving horizon.
+  to.setDate(to.getDate() + PREDICTION_WINDOW_DAYS);
   return fetchMatches(code, {
     status: "SCHEDULED,TIMED",
     dateFrom: today.toISOString().slice(0, 10),

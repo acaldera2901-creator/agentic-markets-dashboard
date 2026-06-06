@@ -14,6 +14,7 @@ import {
   MatchResult,
 } from "@/lib/poisson-model";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
+import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -611,12 +612,14 @@ async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
      FROM unified_predictions
      WHERE sport = 'football'
        AND starts_at > NOW()
+       AND starts_at < NOW() + ($1 || ' days')::interval
        AND expires_at > NOW()
        AND published_at IS NOT NULL
        AND is_historical = FALSE
        AND is_demo = FALSE
      ORDER BY starts_at ASC
-     LIMIT 120`
+     LIMIT 120`,
+    [PREDICTION_WINDOW_DAYS]
   );
   return rows
     .map(unifiedToPredictionRow)
@@ -631,12 +634,17 @@ export async function GET(req: Request) {
     dbQuery<PredictionRow>(
       `SELECT * FROM match_predictions
        WHERE kickoff > NOW()
+         AND kickoff < NOW() + ($1 || ' days')::interval
        ORDER BY league = 'SA' DESC, kickoff ASC
-       LIMIT 120`
+       LIMIT 120`,
+      [PREDICTION_WINDOW_DAYS]
     ),
     dbQuery<{ ts: string; cnt: string }>(
       `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
-       FROM match_predictions WHERE kickoff > NOW()`
+       FROM match_predictions
+       WHERE kickoff > NOW()
+         AND kickoff < NOW() + ($1 || ' days')::interval`,
+      [PREDICTION_WINDOW_DAYS]
     ),
   ]);
 

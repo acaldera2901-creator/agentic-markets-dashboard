@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     WC_MODEL_VERSION: str = "football-worldcup-v1"  # national Poisson rates (paper tier)
     WC_SOURCE_TABLE: str = "wc_model"               # distinct dedup namespace for WC rows
 
+    # Rolling publication window (#019, APPROVE Andrea 2026-06-06): predictions
+    # are computed and served only for the next N days, refreshed daily — closer
+    # matches carry more information (squads, injuries, mature markets), so the
+    # served percentages are stronger than publishing the whole slate at once.
+    # ALL sports (current and future) must respect this window. Keep in sync
+    # with lib/prediction-window.ts.
+    PREDICTION_WINDOW_DAYS: int = 10
+
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1
     PSI_CRITICAL_THRESHOLD: float = 0.2
