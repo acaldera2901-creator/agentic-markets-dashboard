@@ -2955,7 +2955,12 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               {p.league}
             </span>
             <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
-            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-400/70 bg-amber-400/5">PAPER</span>
+            {/* PAPER = published for track-record only: no market odds, no edge
+                claimed (is_estimate). Was hardcoded when every WC row was paper;
+                now it follows the row's real state (#018 promoted WC to signal). */}
+            {p.is_estimate && (
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-400/70 bg-amber-400/5">PAPER</span>
+            )}
           </div>
           <div className="text-sm font-bold text-white mt-1">
             {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
