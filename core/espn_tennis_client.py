@@ -261,12 +261,17 @@ async def get_completed_results() -> list[dict]:
             if not parsed or parsed["match_status"] != "completed":
                 continue
             winner, loser = parsed["player1"], parsed["player2"]
+            # #021: the REAL set score sits at the tail of the note
+            # ("A bt B 7-5 6-0") — extract it for the public history. None
+            # when absent (fail-closed: history shows no score, never a guess).
+            score_match = re.search(r"((?:\d+-\d+(?:\(\d+\))?\s*)+)$", note_text.strip())
             out.append({
                 "winner_key": canonical_player_key(winner),
                 "loser_key": canonical_player_key(loser),
                 "winner_name": winner,
                 "loser_name": loser,
                 "tournament": ev.get("name", ev.get("shortName", "")),
+                "score_text": score_match.group(1).strip() if score_match else None,
             })
 
     logger.info("ESPN tennis: found %d completed results", len(out))

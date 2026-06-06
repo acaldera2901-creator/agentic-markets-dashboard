@@ -112,7 +112,7 @@ async def test_settle_unified_tennis_result_mapping(pick, winner, void, expected
         mk.return_value.__aenter__.return_value = client
         ok = await sc.settle_unified_tennis("tennis:espn:e1:k", winner, void=void)
     assert ok is True
-    settle.assert_awaited_once_with("row-1", expected)
+    settle.assert_awaited_once_with("row-1", expected, final_score=None)
 
 
 @pytest.mark.asyncio

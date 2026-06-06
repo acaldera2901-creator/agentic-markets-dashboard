@@ -11,6 +11,10 @@ export const LEAGUES: Record<string, string> = {
   FL1: "Ligue 1",
   CL: "Champions League",
   EL: "Europa League",
+  // #021: without WC here, fetchAllTodayMatches never returned World Cup
+  // matches — the live score bar would have stayed empty for the whole
+  // tournament (matches start 2026-06-11).
+  WC: "World Cup",
 };
 
 function headers() {

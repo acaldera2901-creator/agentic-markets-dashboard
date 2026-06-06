@@ -151,7 +151,12 @@ class ResultSettlementAgent(BaseAgent):
                 else:
                     outcome = _outcome(pick, result["home_goals"], result["away_goals"])
 
-                if await settle_unified_prediction(str(row["id"]), outcome):
+                if await settle_unified_prediction(
+                    str(row["id"]),
+                    outcome,
+                    # #021: real final score into the served history row.
+                    final_score=f"{result['home_goals']}-{result['away_goals']}",
+                ):
                     settled += 1
                     self.logger.info(
                         f"unified settled: {row.get('home_team')} vs {row.get('away_team')} "

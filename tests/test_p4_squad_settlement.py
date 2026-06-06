@@ -117,7 +117,7 @@ async def test_unified_settlement_settles_and_flags_history():
     }]
     settled_calls = []
 
-    async def fake_settle(row_id, result):
+    async def fake_settle(row_id, result, *, final_score=None):
         settled_calls.append((row_id, result))
         return True
 
@@ -142,7 +142,7 @@ async def test_unified_settlement_unknown_market_voids():
              "starts_at": "2026-06-11T19:00:00+00:00"}]
     calls = []
 
-    async def fake_settle(row_id, result):
+    async def fake_settle(row_id, result, *, final_score=None):
         calls.append((row_id, result))
         return True
 

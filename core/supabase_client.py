@@ -550,9 +550,18 @@ async def fetch_unsettled_unified_predictions(
         return []
 
 
-async def settle_unified_prediction(row_id: str, result: str) -> bool:
+async def settle_unified_prediction(
+    row_id: str,
+    result: str,
+    *,
+    final_score: str | None = None,
+) -> bool:
     """
     Mark one served prediction as settled history. `result` is won|lost|void.
+    ``final_score`` (#021): the REAL final score as display text ("2-1" for
+    football, "6-4 6-3" for tennis) — merged into the row's notes JSON so the
+    public history shows the result, never left to guesswork. Omitted when the
+    source didn't provide one (fail-closed: no score is shown instead).
     Fail-loud to the caller (bool) so the settlement agent can count and retry
     on the next cycle — but never raises.
     """
@@ -566,6 +575,25 @@ async def settle_unified_prediction(row_id: str, result: str) -> bool:
         "settled_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+    if final_score:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"{base}/unified_predictions",
+                    params={"select": "notes", "id": f"eq.{row_id}", "limit": "1"},
+                    headers=_service_headers(),
+                )
+                existing = {}
+                if resp.status_code == 200 and resp.json():
+                    try:
+                        existing = json.loads(resp.json()[0].get("notes") or "{}")
+                    except (TypeError, ValueError):
+                        existing = {}
+                existing["final_score"] = final_score
+                payload["notes"] = json.dumps(existing)
+        except Exception as exc:
+            # Score is enrichment, not the settlement itself — never block it.
+            logger.debug("final score merge skipped for %s: %s", row_id, exc)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.patch(
@@ -593,6 +621,7 @@ async def settle_unified_tennis(
     winner_name: str | None,
     *,
     void: bool = False,
+    final_score: str | None = None,
 ) -> bool:
     """
     Bridge a tennis settlement to the served unified_predictions row.
@@ -638,7 +667,9 @@ async def settle_unified_tennis(
             result = "void"
         else:
             result = "won" if (row.get("pick") or "") == winner_name else "lost"
-        return await settle_unified_prediction(str(row["id"]), result)
+        return await settle_unified_prediction(
+            str(row["id"]), result, final_score=final_score
+        )
     except Exception as exc:
         logger.warning("unified tennis settle error for %s: %s", match_id, exc)
         return False

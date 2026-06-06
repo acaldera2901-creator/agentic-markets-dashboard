@@ -121,7 +121,10 @@ class TennisSettlementAgent(BaseAgent):
             await self._elo.load_from_db_async(session)
 
         updated = 0
-        for pred, winner_position in resolved:
+        for entry in resolved:
+            # Resolver tuples: (pred, position) or (pred, position, score_text).
+            pred, winner_position = entry[0], entry[1]
+            score_text = entry[2] if len(entry) > 2 else None
             outcome = "P1_WIN" if winner_position == "P1" else "P2_WIN"
             winner_name = pred.player1 if winner_position == "P1" else pred.player2
             loser_name = pred.player2 if winner_position == "P1" else pred.player1
@@ -129,8 +132,11 @@ class TennisSettlementAgent(BaseAgent):
             self._elo.update(winner_name, loser_name, surface)
             await self._update_prediction(pred.id, outcome, winner_name)
             await self._settle_bets(pred.match_id, outcome)
-            # Bridge to the public track record (/api/v2/history).
-            await settle_unified_tennis(pred.match_id, winner_name)
+            # Bridge to the public track record (/api/v2/history) — with the
+            # REAL set score when ESPN provided one (#021).
+            await settle_unified_tennis(
+                pred.match_id, winner_name, final_score=score_text
+            )
             updated += 1
 
         if updated:
@@ -153,8 +159,8 @@ class TennisSettlementAgent(BaseAgent):
         if not results:
             return []
 
-        by_pair: dict[frozenset, str] = {
-            frozenset((r["winner_key"], r["loser_key"])): r["winner_key"]
+        by_pair: dict[frozenset, dict] = {
+            frozenset((r["winner_key"], r["loser_key"])): r
             for r in results
         }
 
@@ -162,10 +168,14 @@ class TennisSettlementAgent(BaseAgent):
         for pred in pending:
             k1 = canonical_player_key(pred.player1)
             k2 = canonical_player_key(pred.player2)
-            winner_key = by_pair.get(frozenset((k1, k2)))
-            if not winner_key:
+            res = by_pair.get(frozenset((k1, k2)))
+            if not res:
                 continue
-            resolved.append((pred, "P1" if winner_key == k1 else "P2"))
+            resolved.append((
+                pred,
+                "P1" if res["winner_key"] == k1 else "P2",
+                res.get("score_text"),
+            ))
         return resolved
 
     async def _resolve_via_matchbook(self, pending: list) -> list[tuple]:

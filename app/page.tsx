@@ -191,14 +191,12 @@ const BASE_TRANSLATIONS = {
     pred_type_label: "Tipo", pred_all_types: "Tutti i tipi",
     pred_showing: "Mostro", pred_of: "di", pred_predictions: "prediction",
     pred_loading_sub: "Il primo caricamento può richiedere ~90s per i dati storici",
-    pred_no_edge: "no edge",
     // Tennis tab
     tennis_badge: "Tennis AI v2.0 · ATP + WTA · Signal Layer",
     tennis_computed: "calcolato", tennis_matches_loaded: "partite caricate",
     tennis_kpi_today: "Partite Oggi", tennis_kpi_value: "Value Bets", tennis_kpi_markets: "Mercati Attivi",
     tennis_surface_label: "Superficie",
     tennis_loading: "Caricamento previsioni tennis…", tennis_no_matches: "Nessuna partita disponibile",
-    tennis_no_edge: "no edge",
     // Partners tab
     partners_eyebrow: "Rete commerciale", partners_title: "Casino & Scommesse Partner",
     partners_desc: "Piattaforme di gioco e scommesse con cui Agentic Markets collabora — integrazione segnali, edge e strumenti AI per gli operatori del settore.",
@@ -433,14 +431,12 @@ const BASE_TRANSLATIONS = {
     pred_type_label: "Type", pred_all_types: "All types",
     pred_showing: "Showing", pred_of: "of", pred_predictions: "predictions",
     pred_loading_sub: "First load may take ~90s while fetching historical data",
-    pred_no_edge: "no edge",
     // Tennis tab
     tennis_badge: "Tennis AI v2.0 · ATP + WTA · Signal Layer",
     tennis_computed: "computed", tennis_matches_loaded: "matches loaded",
     tennis_kpi_today: "Matches Today", tennis_kpi_value: "Value Bets", tennis_kpi_markets: "Active Markets",
     tennis_surface_label: "Surface",
     tennis_loading: "Loading tennis predictions…", tennis_no_matches: "No matches available",
-    tennis_no_edge: "no edge",
     // Partners tab
     partners_eyebrow: "Commercial network", partners_title: "Casino & Sportsbook Partners",
     partners_desc: "Gaming and betting platforms Agentic Markets collaborates with — signal integration, edge and AI tools for operators.",
@@ -610,7 +606,7 @@ function useLang() { return useContext(LanguageCtx); }
 const TzCtx = createContext("Europe/Rome");
 const useTz = () => useContext(TzCtx);
 
-interface LiveScore { home_score: number | null; away_score: number | null; match_status: string; minute: number | null; }
+interface LiveScore { home_score: number | null; away_score: number | null; match_status: string; minute: number | null; home_team?: string; away_team?: string; }
 const LiveCtx = createContext<Record<string, LiveScore>>({});
 const useLive = () => useContext(LiveCtx);
 function useT() { return TRANSLATIONS[useLang()]; }
@@ -664,6 +660,8 @@ interface PredictionEnrichment {
   xga_away?: number;
   npxg_home?: number;
   npxg_away?: number;
+  ppda_home?: number;
+  ppda_away?: number;
   form_home?: string;
   form_away?: string;
   injuries_home?: string[];
@@ -776,6 +774,10 @@ interface V2HistoryRow {
   starts_at: string | null;
   settled_at: string | null;
   world_cup_stage: string | null;
+  // #021: REAL final score written by the settlement agents ("2-1" football,
+  // "6-4 6-3" tennis). Null on rows settled before the feature or when the
+  // provider gave no score — nothing is ever reconstructed.
+  final_score?: string | null;
   locked?: boolean;
 }
 
@@ -788,6 +790,18 @@ interface V2HistoryStats {
   paper: number;
   verified: number;
   win_rate: string | null;
+}
+
+// #021: live tennis match from /api/tennis-live (real ESPN scores, curated
+// server-side with the same tournament rules as the board).
+interface LiveTennisMatch {
+  id: string;
+  tournament: string;
+  player1: string;
+  player2: string;
+  sets_p1: number[];
+  sets_p2: number[];
+  status_detail: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1428,7 +1442,7 @@ function BestBetsBoard({
     showing: "Mostro",
     valueMode: "+EV live",
     modelMode: "Top Model Signals",
-    noEdge: "nessun edge mercato",
+    noEdge: "segnali modello",
   } : {
     all: "All",
     football: "Football",
@@ -1441,7 +1455,7 @@ function BestBetsBoard({
     showing: "Showing",
     valueMode: "Live +EV",
     modelMode: "Top Model Signals",
-    noEdge: "no market edge",
+    noEdge: "model signals",
   };
   const footballById = new Map(predictions.map((p) => [p.match_id, p]));
   const tennisById = new Map(tennisMatches.map((m) => [m.id, m]));
@@ -2290,12 +2304,10 @@ function SettingsTab({
     );
   }
 
-  const risk = draft.risk ?? { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" as const };
   const notifications = draft.notifications ?? defaultNotifications();
   const settingsTimezone = draft.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const sportPrefs = draft.sportPreferences ?? ["football", "tennis"];
   const leaderboard = draft.leaderboardOptIn ?? false;
-  const isPremium = profileHasPremium(draft);
 
   const toggleSport = (sport: string) => {
     const current = draft.sportPreferences ?? ["football", "tennis"];
@@ -2320,15 +2332,7 @@ function SettingsTab({
     securityAlerts: "Sicurezza account",
     enabled: "Attivo",
     disabled: "Disattivo",
-    riskProfile: "Risk profile",
-    autopilotLimits: "Limiti autopilot",
-    premiumOnly: "Premium",
-    maxStake: "Stake massimo per bet",
-    stopLoss: "Stop loss giornaliero",
-    maxBets: "Max bet al giorno",
-    mode: "Modalità",
-    automatic: "Automatico",
-    approval: "Richiede conferma",
+    emailNote: "Per cambiare email contatta il supporto",
     sportPrefs: "Sport preferiti",
     sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
     leaderboardTitle: "Leaderboard",
@@ -2348,15 +2352,7 @@ function SettingsTab({
     securityAlerts: "Account security",
     enabled: "Enabled",
     disabled: "Disabled",
-    riskProfile: "Risk profile",
-    autopilotLimits: "Autopilot limits",
-    premiumOnly: "Premium",
-    maxStake: "Max stake per bet",
-    stopLoss: "Daily stop loss",
-    maxBets: "Max bets per day",
-    mode: "Mode",
-    automatic: "Automatic",
-    approval: "Approval required",
+    emailNote: "Contact support to change your email",
     sportPrefs: "Sport preferences",
     sportPrefsDesc: "Receive predictions only for selected sports.",
     leaderboardTitle: "Leaderboard",
@@ -2386,7 +2382,8 @@ function SettingsTab({
           </label>
           <label>
             <span>Email</span>
-            <input value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
+            <input value={draft.email} readOnly disabled />
+            <small style={{ display: "block", marginTop: "0.35rem", fontSize: "0.7rem", opacity: 0.55 }}>{copy.emailNote}</small>
           </label>
           <label>
             <span>{copy.language}</span>
@@ -2465,37 +2462,6 @@ function SettingsTab({
             <span>{copy.leaderboardTitle}</span>
             <strong>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</strong>
           </button>
-        </div>
-      </section>
-
-      <section className={`settings-panel ${isPremium ? "" : "is-locked"}`}>
-        <div className="settings-panel-head">
-          <div>
-            <p className="eyebrow">{copy.riskProfile}</p>
-            <h3>{copy.autopilotLimits}</h3>
-          </div>
-          <span>{isPremium ? risk.mode : copy.premiumOnly}</span>
-        </div>
-        <div className="settings-grid">
-          <label>
-            <span>{copy.maxStake}</span>
-            <input disabled={!isPremium} type="number" value={risk.maxStake} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxStake: Number(event.target.value) } })} />
-          </label>
-          <label>
-            <span>{copy.stopLoss}</span>
-            <input disabled={!isPremium} type="number" value={risk.dailyStopLoss} onChange={(event) => setDraft({ ...draft, risk: { ...risk, dailyStopLoss: Number(event.target.value) } })} />
-          </label>
-          <label>
-            <span>{copy.maxBets}</span>
-            <input disabled={!isPremium} type="number" value={risk.maxBetsPerDay} onChange={(event) => setDraft({ ...draft, risk: { ...risk, maxBetsPerDay: Number(event.target.value) } })} />
-          </label>
-          <label>
-            <span>{copy.mode}</span>
-            <select disabled={!isPremium} value={risk.mode} onChange={(event) => setDraft({ ...draft, risk: { ...risk, mode: event.target.value as "approval" | "automatic" } })}>
-              <option value="automatic">{copy.automatic}</option>
-              <option value="approval">{copy.approval}</option>
-            </select>
-          </label>
         </div>
       </section>
 
@@ -2826,6 +2792,25 @@ function buildReasons(p: Prediction, lang: Lang): Reason[] {
     }
   }
 
+  if (e.npxg_home != null && e.npxg_away != null) {
+    reasons.push({
+      icon: "🎯",
+      text: isEnglish
+        ? `npxG: home ${e.npxg_home.toFixed(2)} vs away ${e.npxg_away.toFixed(2)} (non-penalty expected goals)`
+        : `npxG: casa ${e.npxg_home.toFixed(2)} vs trasferta ${e.npxg_away.toFixed(2)} (expected goals senza rigori)`,
+    });
+  }
+
+  if (e.ppda_home != null && e.ppda_away != null) {
+    const presser = e.ppda_home < e.ppda_away ? (isEnglish ? "HOME" : "casa") : (isEnglish ? "AWAY" : "trasferta");
+    reasons.push({
+      icon: "🔼",
+      text: isEnglish
+        ? `Pressing (PPDA): home ${e.ppda_home.toFixed(1)} vs away ${e.ppda_away.toFixed(1)} — lower means more intense pressing (${presser} presses harder)`
+        : `Pressing (PPDA): casa ${e.ppda_home.toFixed(1)} vs trasferta ${e.ppda_away.toFixed(1)} — più basso = pressing più intenso (${presser} pressa di più)`,
+    });
+  }
+
   const formH = e.form_home ?? "";
   const formA = e.form_away ?? "";
   if (formH || formA) {
@@ -3078,7 +3063,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
           </span>
         ) : (
-          <span className="text-gray-600">no edge</span>
+          <span className="px-2 py-0.5 rounded border font-mono text-[10px] text-gray-400 border-gray-400/30">{Math.round(selectedFootballProbability(p) * 100)}%</span>
         )}
       </div>
 
@@ -3129,6 +3114,24 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             <div className="da-row">
               <span className="da-label">xG</span>
               <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
+            </div>
+          )}
+          {(e.npxg_home != null || e.npxg_away != null) && (
+            <div className="da-row">
+              <span className="da-label">npxG</span>
+              <span className="da-value">{e.npxg_home?.toFixed(2) ?? "–"} vs {e.npxg_away?.toFixed(2) ?? "–"}</span>
+            </div>
+          )}
+          {(e.ppda_home != null || e.ppda_away != null) && (
+            <div className="da-row">
+              <span className="da-label">Pressing (PPDA)</span>
+              <span className="da-value">{e.ppda_home?.toFixed(1) ?? "–"} vs {e.ppda_away?.toFixed(1) ?? "–"}</span>
+            </div>
+          )}
+          {(e.form_home || e.form_away) && (
+            <div className="da-row">
+              <span className="da-label">{lang === "it" ? "Forma" : "Form"}</span>
+              <span className="da-value">{e.form_home || "–"} vs {e.form_away || "–"}</span>
             </div>
           )}
           {(e.pi_home != null || e.pi_away != null) && (
@@ -3245,6 +3248,19 @@ function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
     reasons.push({
       icon: "📈",
       text: lang === "it" ? `Partite su ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — affidabilità rating ${reliability}` : `Matches on ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — ${reliability} rating reliability`,
+    });
+  }
+
+  if (m.h2h_p1_wins != null || m.h2h_p2_wins != null) {
+    const h1 = m.h2h_p1_wins ?? 0;
+    const h2 = m.h2h_p2_wins ?? 0;
+    const leader = h1 > h2 ? p1last : h2 > h1 ? p2last : null;
+    reasons.push({
+      icon: "🤝",
+      text: lang === "it"
+        ? `H2H: ${h1}–${h2}${leader ? ` — ${leader} avanti negli scontri diretti` : " — equilibrio negli scontri diretti"}`
+        : `H2H: ${h1}–${h2}${leader ? ` — ${leader} leads the head-to-head` : " — even head-to-head record"}`,
+      highlight: Math.abs(h1 - h2) >= 3,
     });
   }
 
@@ -3423,21 +3439,15 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
       ) : (
         <>
-          {/* Probability bars */}
+          {/* Probability bars — same ProbBar component as the football card */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P1")}>
-              <span className="text-xs font-mono w-24 shrink-0 text-cyan-400 truncate">{m.player1.split(" ").pop()}</span>
-              <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-                <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${Math.round(m.p1 * 100)}%` }} />
-              </div>
-              <span className="text-xs font-mono w-8 text-right text-cyan-400">{Math.round(m.p1 * 100)}%</span>
+            <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P1")}>
+              <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color="text-cyan-400"
+                odds={m.odds_p1} isValue={isValue && m.best_selection === "P1"} />
             </div>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P2")}>
-              <span className="text-xs font-mono w-24 shrink-0 text-fuchsia-400 truncate">{m.player2.split(" ").pop()}</span>
-              <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-                <div className="h-full rounded-full bg-fuchsia-400 transition-all" style={{ width: `${Math.round(m.p2 * 100)}%` }} />
-              </div>
-              <span className="text-xs font-mono w-8 text-right text-fuchsia-400">{Math.round(m.p2 * 100)}%</span>
+            <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P2")}>
+              <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color="text-fuchsia-400"
+                odds={m.odds_p2} isValue={isValue && m.best_selection === "P2"} />
             </div>
           </div>
           {m.pick && <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{m.pick}</strong>{m.confidence_score != null && <span className="ml-1 text-gray-400">{m.confidence_score}%</span>}</div>}
@@ -3471,7 +3481,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             edge +{(m.edge * 100).toFixed(1)}%
           </span>
         ) : (
-          <span className="text-gray-600">no edge</span>
+          <span className="px-2 py-0.5 rounded border font-mono text-[10px] text-gray-400 border-gray-400/30">{Math.round(Math.max(m.p1, m.p2) * 100)}%</span>
         )}
       </div>
 
@@ -3548,6 +3558,12 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             <div className="da-row">
               <span className="da-label">Elo raw prob.</span>
               <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
+            </div>
+          )}
+          {(m.h2h_p1_wins != null || m.h2h_p2_wins != null) && (
+            <div className="da-row">
+              <span className="da-label">H2H</span>
+              <span className="da-value">{m.h2h_p1_wins ?? 0}–{m.h2h_p2_wins ?? 0}</span>
             </div>
           )}
         </div>
@@ -4423,6 +4439,11 @@ function HistoryTab({ history, stats, loading }: {
                         {h.world_cup_stage ? ` · ${h.world_cup_stage}` : ""}
                       </span>
                       <span className="text-sm font-bold text-white">{eventLabel(h)}</span>
+                      {h.final_score && (
+                        <span className="px-2 py-0.5 rounded border border-white/15 bg-white/5 text-sm font-black font-mono text-white">
+                          {h.final_score}
+                        </span>
+                      )}
                     </div>
                     <div className="text-[10px] text-gray-600 font-mono mt-0.5">
                       {fmtDate(h.starts_at)}
@@ -4626,6 +4647,56 @@ function ClientAreaTab({
 
 // ─── Unified Bets Tab ─────────────────────────────────────────────────────────
 
+// ─── Live Now strip (#021) ────────────────────────────────────────────────────
+// Matches currently in play, with REAL scores: football from /api/live
+// (football-data.org, incl. World Cup), tennis from /api/tennis-live (ESPN,
+// curated like the board). Matches that have kicked off leave the upcoming
+// board (starts_at filter) — this strip is where they live until settlement
+// moves them into history automatically. Renders nothing when nothing is live.
+function LiveNowStrip({
+  liveScores,
+  liveTennis,
+  lang,
+}: {
+  liveScores: Record<string, LiveScore>;
+  liveTennis: LiveTennisMatch[];
+  lang: string;
+}) {
+  const liveFootball = Object.entries(liveScores).filter(
+    ([, s]) =>
+      (s.match_status === "IN_PLAY" || s.match_status === "PAUSED") &&
+      s.home_team && s.away_team
+  );
+  if (liveFootball.length === 0 && liveTennis.length === 0) return null;
+
+  const setsLabel = (m: LiveTennisMatch) =>
+    m.sets_p1.map((v, i) => `${v}-${m.sets_p2[i] ?? ""}`).join(" ");
+
+  return (
+    <div className="mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-red-400/30 bg-red-400/5">
+      <div className="flex items-center gap-2 flex-wrap text-xs font-mono">
+        <span className="flex items-center gap-1 text-red-400 font-bold uppercase">
+          <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          {lang === "it" ? "Live ora" : "Live now"}
+        </span>
+        {liveFootball.map(([id, s]) => (
+          <span key={`f-${id}`} className="px-2 py-0.5 rounded border border-white/10 text-gray-200">
+            ⚽ {s.home_team} <b className="text-white">{s.home_score ?? "–"}–{s.away_score ?? "–"}</b> {s.away_team}
+            {s.minute != null ? <span className="text-red-400"> {s.minute}′</span> : null}
+            {s.match_status === "PAUSED" ? <span className="text-gray-500"> HT</span> : null}
+          </span>
+        ))}
+        {liveTennis.map((m) => (
+          <span key={`t-${m.id}`} className="px-2 py-0.5 rounded border border-white/10 text-gray-200">
+            🎾 {m.player1} <b className="text-white">{setsLabel(m) || "–"}</b> {m.player2}
+            <span className="text-gray-500"> · {m.status_detail}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function UnifiedBetsTab({
   predictions,
   tennisMatches,
@@ -4771,6 +4842,7 @@ export default function Dashboard() {
   const [predFallback, setPredFallback] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
+  const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
@@ -5084,6 +5156,17 @@ export default function Dashboard() {
     } catch { /* silent */ }
   }, [clientProfile]);
 
+  // #021: live tennis (public real scores from the ESPN feed, board-curated
+  // server-side). Polled with the same cadence as football live.
+  const fetchTennisLive = useCallback(async () => {
+    try {
+      const r = await fetch("/api/tennis-live");
+      if (!r.ok) return;
+      const d = await r.json() as { matches: LiveTennisMatch[] };
+      setLiveTennis(Array.isArray(d.matches) ? d.matches : []);
+    } catch { /* silent */ }
+  }, []);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -5101,14 +5184,16 @@ export default function Dashboard() {
       void fetchHistory();
       void fetchHistoryV2();
       void fetchLive();
+      void fetchTennisLive();
     });
     const dataInt = setInterval(fetchData, 30_000);
     const predInt = setInterval(fetchPredictions, 3_600_000);
     const agentInt = setInterval(fetchAgents, 60_000);
     const tennisInt = setInterval(fetchTennis, 120_000);
     const liveInt = setInterval(fetchLive, 60_000);
-    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); clearInterval(liveInt); };
-  }, [fetchData, fetchPredictions, fetchAgents, fetchTennis, fetchHistory, fetchLive]);
+    const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
+    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
+  }, [fetchData, fetchPredictions, fetchAgents, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
 
   const valueBets = predictions.filter(isFootballBestBet);
   const hasClientProfile = Boolean(clientProfile);
@@ -5243,6 +5328,9 @@ export default function Dashboard() {
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
               <span>⚽ {uiLanguage === "it" ? "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026)." : "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026)."}</span>
             </div>
+          )}
+          {tab === "bets" && (
+            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} lang={uiLanguage} />
           )}
           {tab === "bets" && (
             <UnifiedBetsTab

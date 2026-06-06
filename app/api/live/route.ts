@@ -11,6 +11,10 @@ export interface LiveScore {
   away_score: number | null;
   match_status: string;
   minute: number | null;
+  // #021: team names so the "Live now" strip can render matches that have
+  // already left the upcoming board (kickoff <= NOW()) — real feed data.
+  home_team?: string;
+  away_team?: string;
 }
 
 export async function GET(req: Request) {
@@ -25,6 +29,8 @@ export async function GET(req: Request) {
       away_score: m.awayGoals,
       match_status: m.status,
       minute: m.minute,
+      home_team: m.homeTeam,
+      away_team: m.awayTeam,
     };
   }
 

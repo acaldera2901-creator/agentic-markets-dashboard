@@ -55,9 +55,20 @@ export async function GET(req: Request) {
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
   // (won/lost/accuracy) are aggregate hit-rate stats — no money is exposed.
-  const history = rows.map((row) =>
-    projectPrediction(row as unknown as Record<string, unknown>, state, false)
-  );
+  // final_score (#021): the settlement agents write the REAL result into notes
+  // ({"final_score": "2-1" | "6-4 6-3"}); a final score is a public fact, so it
+  // is attached after projection and visible on locked rows too.
+  const history = rows.map((row) => {
+    const projected = projectPrediction(
+      row as unknown as Record<string, unknown>, state, false
+    );
+    let finalScore: string | null = null;
+    try {
+      const parsed = JSON.parse(row.notes ?? "");
+      if (typeof parsed?.final_score === "string") finalScore = parsed.final_score;
+    } catch { /* rows without notes simply show no score */ }
+    return { ...projected, final_score: finalScore };
+  });
 
   const total    = rows.length;
   const won      = rows.filter((r) => r.result === "won").length;
