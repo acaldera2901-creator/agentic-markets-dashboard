@@ -9,6 +9,10 @@
       "schedule": "0 */2 * * *"
     },
     {
+      "path": "/api/cron/settle",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/subscriptions",
       "schedule": "0 6 * * *"
     }
