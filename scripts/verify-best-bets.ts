@@ -45,8 +45,10 @@ const rows = buildBestBetRows([modelFootball, valueFootball], [valueTennis], {
   query: "",
 });
 
-assert.equal(rows.mode, "value");
-assert.deepEqual(rows.items.map((r) => r.id), ["fb-value", "tn-value"]);
+// #021 follow-up (Andrea 2026-06-06): no value-mode collapse — value rows
+// rank first, model signals stay visible after them (mixed mode).
+assert.equal(rows.mode, "mixed");
+assert.deepEqual(rows.items.map((r) => r.id), ["fb-value", "tn-value", "fb-model"]);
 
 const fallbackRows = buildBestBetRows([modelFootball], [], {
   sportFilter: "all",

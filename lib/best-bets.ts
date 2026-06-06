@@ -1,6 +1,6 @@
 export type BestBetSport = "football" | "tennis";
 export type BestBetKind = "value" | "model_signal" | "none";
-export type BestBetMode = "value" | "model_signal" | "empty";
+export type BestBetMode = "value" | "model_signal" | "mixed" | "empty";
 export type BestBetSportFilter = "all" | BestBetSport;
 export type BestBetSortMode = "probability" | "edge" | "time";
 
@@ -102,13 +102,22 @@ export function buildBestBetRows(
 
   const valueRows = classified.filter((candidate) => candidate.classification === "value");
   const modelRows = classified.filter((candidate) => candidate.classification === "model_signal");
-  const sourceRows = valueRows.length ? valueRows : modelRows;
-  const mode: BestBetMode = valueRows.length ? "value" : modelRows.length ? "model_signal" : "empty";
+  // No value-mode collapse (bug Andrea 2026-06-06: 3 football value rows were
+  // suppressing 30 tennis model signals → tennis section looked empty). Value
+  // rows always rank first, model signals follow — both visible, one cap.
+  const mode: BestBetMode =
+    valueRows.length && modelRows.length ? "mixed"
+    : valueRows.length ? "value"
+    : modelRows.length ? "model_signal"
+    : "empty";
   const cap = options.cap ?? DEFAULT_CAP;
 
   return {
     mode,
-    items: sortRows([...sourceRows], options.sortMode).slice(0, cap),
+    items: [
+      ...sortRows([...valueRows], options.sortMode),
+      ...sortRows([...modelRows], options.sortMode),
+    ].slice(0, cap),
     valueCount: valueRows.length,
     modelSignalCount: modelRows.length,
   };

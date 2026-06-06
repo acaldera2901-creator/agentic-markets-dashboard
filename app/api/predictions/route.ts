@@ -109,6 +109,9 @@ const PREMIUM_ENRICHMENT_KEYS = [
   "weather",
   "api_pct_home", "api_pct_draw", "api_pct_away", "api_advice",
   "research",
+  // World Cup enrichment (unified fallback rows): deep blocks are paid-tier,
+  // mirroring the v2 projection where enrichment is premium-gated.
+  "venue", "squad", "market", "lambdas",
 ] as const;
 
 type ProjectedPredictionRow = Partial<PredictionRow> & {
@@ -543,6 +546,7 @@ type UnifiedFallbackRow = {
   notes: string | null;
   signal_type: string | null;
   edge_percent: number | null;
+  enrichment: Record<string, unknown> | null;
   updated_at: string;
 };
 
@@ -601,14 +605,18 @@ function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
     model_matches: null,
     computed_at: u.updated_at,
     match_type: null,
-    enrichment: null,
+    // Real WC enrichment (form, venue, squad, lambdas, sample) written by the
+    // Python model — flows to the board's Why/Deep Analysis. Premium keys are
+    // stripped per tier by projectPredictionRow, like every football row.
+    enrichment: (u.enrichment as EnrichmentPayload | null) ?? null,
   };
 }
 
 async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
   const rows = await dbQuery<UnifiedFallbackRow>(
     `SELECT external_event_id, source_id, league, competition, home_team,
-            away_team, starts_at, pick, notes, signal_type, edge_percent, updated_at
+            away_team, starts_at, pick, notes, signal_type, edge_percent,
+            enrichment, updated_at
      FROM unified_predictions
      WHERE sport = 'football'
        AND starts_at > NOW()

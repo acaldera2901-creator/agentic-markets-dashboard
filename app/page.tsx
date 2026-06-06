@@ -651,6 +651,16 @@ interface Bet {
 }
 
 
+type WcFormCounts = { w: number; d: number; l: number };
+
+// Format either form shape for display: club string ("WWDLL") passes through,
+// WC counts become "6W-2D-2L". Null when absent — never invented.
+function fmtFormAny(f?: string | WcFormCounts | null): string | null {
+  if (!f) return null;
+  if (typeof f === "string") return f;
+  return `${f.w}W-${f.d}D-${f.l}L`;
+}
+
 interface PredictionEnrichment {
   pi_home?: number;
   pi_away?: number;
@@ -662,8 +672,25 @@ interface PredictionEnrichment {
   npxg_away?: number;
   ppda_home?: number;
   ppda_away?: number;
-  form_home?: string;
-  form_away?: string;
+  // Club rows: form is a result string ("WWDLL"). World Cup rows (unified
+  // fallback): form is W/D/L counts over the national side's last matches.
+  form_home?: string | WcFormCounts;
+  form_away?: string | WcFormCounts;
+  // ── World Cup enrichment (kind === "world_cup", written by the Python model)
+  kind?: string;
+  venue?: {
+    travel_km_home?: number | null; travel_km_away?: number | null;
+    rest_days_home?: number | null; rest_days_away?: number | null;
+    tz_shift_home?: number | null; tz_shift_away?: number | null;
+    host_advantage?: string | null;
+  } | null;
+  squad?: {
+    injuries_home?: string[]; injuries_away?: string[];
+    revealed_home?: boolean; revealed_away?: boolean;
+  } | null;
+  lambdas?: { home?: number | null; away?: number | null } | null;
+  matches?: { home?: number | null; away?: number | null } | null;
+  group?: string | null;
   injuries_home?: string[];
   injuries_away?: string[];
   weather?: { temp: number; wind: number; condition: string; rain: number; icon: string } | null;
@@ -1505,7 +1532,11 @@ function BestBetsBoard({
     .map((row) => tennisById.get(row.id))
     .filter((m): m is TennisMatch => Boolean(m));
   const totalValue = bestRows.items.length;
-  const modeLabel = bestRows.mode === "value" ? labels.valueMode : bestRows.mode === "model_signal" ? labels.modelMode : "+EV";
+  const modeLabel =
+    bestRows.mode === "mixed" ? `${labels.valueMode} + ${labels.modelMode}`
+    : bestRows.mode === "value" ? labels.valueMode
+    : bestRows.mode === "model_signal" ? labels.modelMode
+    : "+EV";
 
   return (
     <div className="sportsbook-board best-bets-board">
@@ -2725,7 +2756,7 @@ function buildEnglishFootballResearch(p: Prediction) {
 
   const riskSignals = [];
   if (e.form_home || e.form_away) {
-    riskSignals.push(`recent form is ${p.home_team} ${e.form_home || "n/a"} vs ${p.away_team} ${e.form_away || "n/a"}`);
+    riskSignals.push(`recent form is ${p.home_team} ${fmtFormAny(e.form_home) || "n/a"} vs ${p.away_team} ${fmtFormAny(e.form_away) || "n/a"}`);
   }
   if (e.xg_home != null && e.xg_away != null) {
     riskSignals.push(`chance creation sits at ${e.xg_home.toFixed(2)} home xG vs ${e.xg_away.toFixed(2)} away xG`);
@@ -2825,8 +2856,9 @@ function buildReasons(p: Prediction, lang: Lang): Reason[] {
     });
   }
 
-  const formH = e.form_home ?? "";
-  const formA = e.form_away ?? "";
+  // Club form is a result string ("WWDLL"); WC form is W/D/L counts.
+  const formH = typeof e.form_home === "string" ? e.form_home : "";
+  const formA = typeof e.form_away === "string" ? e.form_away : "";
   if (formH || formA) {
     const homeWins = (formH.match(/W/g) || []).length;
     const awayWins = (formA.match(/W/g) || []).length;
@@ -2842,6 +2874,65 @@ function buildReasons(p: Prediction, lang: Lang): Reason[] {
       reasons.push({ icon: "📉", text: `Away poor form: ${awayLosses}L in last ${formA.length} games (${formA.split("").join(" ")})` });
     } else {
       reasons.push({ icon: "📋", text: `Form: HOME ${formH.split("").join(" ") || "n/a"} · AWAY ${formA.split("").join(" ") || "n/a"}` });
+    }
+  } else if (typeof e.form_home === "object" || typeof e.form_away === "object") {
+    const fh = fmtFormAny(e.form_home);
+    const fa = fmtFormAny(e.form_away);
+    const hw = typeof e.form_home === "object" && e.form_home ? e.form_home.w : 0;
+    const aw = typeof e.form_away === "object" && e.form_away ? e.form_away.w : 0;
+    reasons.push({
+      icon: "📋",
+      text: `Form (national sides): ${p.home_team} ${fh ?? "n/a"} · ${p.away_team} ${fa ?? "n/a"}`,
+      highlight: Math.abs(hw - aw) >= 4,
+    });
+  }
+
+  // ── World Cup context (real venue/squad/sample data from the WC model) ─────
+  if (e.kind === "world_cup") {
+    const v = e.venue;
+    if (v && (v.travel_km_home != null || v.travel_km_away != null)) {
+      const th = v.travel_km_home, ta = v.travel_km_away;
+      reasons.push({
+        icon: "✈️",
+        text: `Travel: ${p.home_team} ${th != null ? `${Math.round(th).toLocaleString()} km` : "n/a"} · ${p.away_team} ${ta != null ? `${Math.round(ta).toLocaleString()} km` : "n/a"}`,
+        highlight: th != null && ta != null && Math.abs(th - ta) > 5000,
+      });
+    }
+    if (v && (v.rest_days_home != null || v.rest_days_away != null)) {
+      reasons.push({
+        icon: "😴",
+        text: `Rest days: ${p.home_team} ${v.rest_days_home ?? "n/a"} · ${p.away_team} ${v.rest_days_away ?? "n/a"}`,
+        highlight: v.rest_days_home != null && v.rest_days_away != null && Math.abs(v.rest_days_home - v.rest_days_away) >= 2,
+      });
+    }
+    if (v && (v.tz_shift_home != null || v.tz_shift_away != null) && ((v.tz_shift_home ?? 0) !== 0 || (v.tz_shift_away ?? 0) !== 0)) {
+      reasons.push({
+        icon: "🕐",
+        text: `Timezone shift: ${p.home_team} ${v.tz_shift_home ?? 0}h · ${p.away_team} ${v.tz_shift_away ?? 0}h`,
+      });
+    }
+    if (v?.host_advantage) {
+      reasons.push({ icon: "🏟️", text: `Host advantage: ${v.host_advantage} plays in home country`, highlight: true });
+    }
+    const sqH = e.squad?.injuries_home?.length ?? 0;
+    const sqA = e.squad?.injuries_away?.length ?? 0;
+    if (sqH > 0 || sqA > 0) {
+      reasons.push({
+        icon: "🚑",
+        text: `Squad injuries: ${p.home_team} ${sqH}${sqH ? ` (${e.squad!.injuries_home!.slice(0, 2).join(", ")})` : ""} · ${p.away_team} ${sqA}${sqA ? ` (${e.squad!.injuries_away!.slice(0, 2).join(", ")})` : ""}`,
+        highlight: Math.abs(sqH - sqA) >= 2,
+      });
+    }
+    const mH = e.matches?.home, mA = e.matches?.away;
+    if (mH != null || mA != null) {
+      const low = (mH ?? 0) < 10 || (mA ?? 0) < 10;
+      reasons.push({
+        icon: "🗃️",
+        text: `Model sample: ${mH ?? "n/a"} vs ${mA ?? "n/a"} international matches${low ? " — small sample, wider uncertainty" : ""}`,
+      });
+    }
+    if (e.group) {
+      reasons.push({ icon: "🏆", text: `World Cup Group ${e.group}` });
     }
   }
 
@@ -3150,7 +3241,38 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {(e.form_home || e.form_away) && (
             <div className="da-row">
               <span className="da-label">{lang === "it" ? "Forma" : "Form"}</span>
-              <span className="da-value">{e.form_home || "–"} vs {e.form_away || "–"}</span>
+              <span className="da-value">{fmtFormAny(e.form_home) ?? "–"} vs {fmtFormAny(e.form_away) ?? "–"}</span>
+            </div>
+          )}
+          {/* World Cup context rows — real venue/squad/sample data */}
+          {e.kind === "world_cup" && e.venue && (e.venue.travel_km_home != null || e.venue.travel_km_away != null) && (
+            <div className="da-row">
+              <span className="da-label">✈️ {lang === "it" ? "Trasferta" : "Travel"}</span>
+              <span className="da-value">{e.venue.travel_km_home != null ? `${Math.round(e.venue.travel_km_home).toLocaleString()} km` : "–"} vs {e.venue.travel_km_away != null ? `${Math.round(e.venue.travel_km_away).toLocaleString()} km` : "–"}</span>
+            </div>
+          )}
+          {e.kind === "world_cup" && e.venue && (e.venue.rest_days_home != null || e.venue.rest_days_away != null) && (
+            <div className="da-row">
+              <span className="da-label">😴 {lang === "it" ? "Riposo" : "Rest"}</span>
+              <span className="da-value">{e.venue.rest_days_home ?? "–"} vs {e.venue.rest_days_away ?? "–"} {lang === "it" ? "giorni" : "days"}</span>
+            </div>
+          )}
+          {e.kind === "world_cup" && e.venue?.host_advantage && (
+            <div className="da-row">
+              <span className="da-label">🏟️ Host</span>
+              <span className="da-value">{e.venue.host_advantage}</span>
+            </div>
+          )}
+          {e.kind === "world_cup" && ((e.squad?.injuries_home?.length ?? 0) > 0 || (e.squad?.injuries_away?.length ?? 0) > 0) && (
+            <div className="da-row">
+              <span className="da-label">🚑 {lang === "it" ? "Infortuni rosa" : "Squad injuries"}</span>
+              <span className="da-value">{e.squad?.injuries_home?.length ?? 0} vs {e.squad?.injuries_away?.length ?? 0}</span>
+            </div>
+          )}
+          {e.kind === "world_cup" && e.matches && (e.matches.home != null || e.matches.away != null) && (
+            <div className="da-row">
+              <span className="da-label">🗃️ {lang === "it" ? "Campione" : "Sample"}</span>
+              <span className="da-value">{e.matches.home ?? "–"} vs {e.matches.away ?? "–"} {lang === "it" ? "partite" : "matches"}</span>
             </div>
           )}
           {(e.pi_home != null || e.pi_away != null) && (
