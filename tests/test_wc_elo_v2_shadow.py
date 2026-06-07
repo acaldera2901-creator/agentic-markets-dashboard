@@ -171,3 +171,19 @@ async def test_friendly_v2_uses_friendly_namespace():
     versions = [c.kwargs["model_version"] for c in snap.await_args_list]
     assert settings.FRIENDLY_V2_MODEL_VERSION in versions
     assert settings.WC_ELO_V2_MODEL_VERSION not in versions
+
+
+@pytest.mark.asyncio
+async def test_served_unified_row_tagged_v2_when_v2_serves():
+    """#ELO-V2 label fix (finding michele-claude msg_mq44rldt): the UPSERTED
+    unified row must carry model_version = the v2 id when v2 serves — not the
+    hard-coded v1 default. Before the fix, prob=v2 but label=v1 (audit-misleading)."""
+    agent = _model_agent()
+    captured = {}
+    async def capture(rows):
+        captured["row"] = rows[0]
+        return 1
+    with patch("agents.model.upsert_unified_rows", new=capture), \
+         patch("agents.model.log_prediction_snapshot", new=AsyncMock()):
+        await agent._persist_world_cup_paper(_wc_payload("Argentina", "Brazil"), _wc_result())
+    assert captured["row"]["model_version"] == settings.WC_ELO_V2_MODEL_VERSION

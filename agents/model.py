@@ -421,6 +421,11 @@ class ModelAgent(BaseAgent):
                 squad=squad_enr,
                 group=wc_context.get("group_name") or None,
             )
+            # #ELO-V2 label fix: enrichment.model reflects the SERVED model (the
+            # card reads it). build_wc_enrichment defaults it to the Poisson
+            # probs' model id; override with the v2 id when v2 served the row.
+            if v2_served:
+                enrichment["model"] = served_version
             # #LINEUP-1-ESPN: confirmed XIs from the collector (ESPN summary,
             # ~1h pre-kickoff). Display + data collection ONLY — probabilities
             # are NOT adjusted (any lineup feature must first win the
@@ -470,6 +475,10 @@ class ModelAgent(BaseAgent):
                 signal_allowed=signal_allowed,
                 team_news_summary=team_news_summary,
                 friendly=is_friendly,
+                # #ELO-V2 label fix: tag the served row with the model that
+                # actually produced the probabilities (v2 when promoted),
+                # not the hard-coded v1 default.
+                model_version=served_version,
             )
             written = await upsert_unified_rows([row])
             if written:

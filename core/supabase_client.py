@@ -254,6 +254,7 @@ def wc_prediction_to_unified_row(
     signal_allowed: bool = False,
     team_news_summary: str | None = None,
     friendly: bool = False,
+    model_version: str | None = None,
 ) -> dict:
     """World Cup row on the unified_predictions schema.
 
@@ -282,12 +283,17 @@ def wc_prediction_to_unified_row(
     pick = row["pick"]
     confidence = row["confidence_score"]
     if friendly:
-        row["model_version"] = settings.FRIENDLY_MODEL_VERSION
+        # model_version override (#ELO-V2 label fix): the served model decides
+        # the version tag. When the caller serves v2 it passes
+        # FRIENDLY_V2_MODEL_VERSION; absent -> the v1 default (fail-soft). Before
+        # this the row was hard-coded v1 even while v2 served the probabilities
+        # (finding michele-claude msg_mq44rldt: prob=v2 but label=v1).
+        row["model_version"] = model_version or settings.FRIENDLY_MODEL_VERSION
         row["source_table"] = settings.FRIENDLY_SOURCE_TABLE
         row["competition"] = "International Friendly"
         row["world_cup_stage"] = None
     else:
-        row["model_version"] = settings.WC_MODEL_VERSION
+        row["model_version"] = model_version or settings.WC_MODEL_VERSION
         row["source_table"] = settings.WC_SOURCE_TABLE
         row["competition"] = "World Cup"
     # #WC-DEDUP-1: provider-agnostic dedup key — one row per matchup no matter
