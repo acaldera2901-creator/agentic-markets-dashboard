@@ -37,11 +37,20 @@ HOST_CITY_COUNTRY = {
     "san francisco": "USA",
     "bay area": "USA",
     "seattle": "USA",
+    # Stadium towns as shipped by the live feeds (ESPN address.city /
+    # api-football venue rows) — see tests/test_wc_venue_city_audit.py.
+    "arlington": "USA",         # AT&T Stadium (Dallas)
+    "inglewood": "USA",         # SoFi Stadium (Los Angeles)
+    "santa clara": "USA",       # Levi's Stadium (San Francisco)
+    "east rutherford": "USA",   # MetLife Stadium (New York)
+    "foxborough": "USA",        # Gillette Stadium (Boston)
+    "miami gardens": "USA",     # Hard Rock Stadium (Miami)
     "toronto": "Canada",
     "vancouver": "Canada",
     "guadalajara": "Mexico",
     "mexico city": "Mexico",
     "monterrey": "Mexico",
+    "guadalupe": "Mexico",      # Estadio BBVA (Monterrey)
 }
 
 
