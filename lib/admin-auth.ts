@@ -15,6 +15,17 @@ export function safeEqual(candidate: string | null | undefined, secret: string):
   return timingSafeEqual(a, b);
 }
 
+// Shared bearer-token gate for server-to-server endpoints (cron, research,
+// diagnostics). Extracts the `Authorization: Bearer <secret>` token and compares
+// it in constant time. Fail-closed when the expected secret is unset — a missing
+// secret must never leave the endpoint open. Replaces the prior `!== \`Bearer …\``
+// checks, which were timing-variable (length/prefix leak) on a string compare.
+export function verifyBearer(req: Request, expected: string | null | undefined): boolean {
+  if (!expected) return false;
+  const bearer = req.headers.get("authorization")?.replace("Bearer ", "");
+  return safeEqual(bearer, expected);
+}
+
 // Shared admin gate for /api/admin/*. Fail-closed when ADMIN_SECRET is unset.
 // - Cookie: HMAC session token (expiring, derived — the raw secret no longer
 //   lives in the browser cookie store; see lib/admin-session.ts).

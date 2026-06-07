@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { verifyBearer } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +73,7 @@ function metrics(probs: Triple[], outcomes: number[]) {
 }
 
 export async function GET(req: Request) {
-  const secret = process.env.RESEARCH_SECRET;
-  const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

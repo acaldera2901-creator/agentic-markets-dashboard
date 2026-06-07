@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { verifyBearer } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,7 @@ function reminderEmail(daysLeft: number, lang: string) {
 
 // Vercel Cron calls GET with Authorization: Bearer <CRON_SECRET>.
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
+  if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
