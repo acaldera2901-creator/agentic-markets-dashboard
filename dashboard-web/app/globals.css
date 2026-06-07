@@ -34,7 +34,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
+  /* Token-A resolution (Andrea): shadcn `bg-muted` è una SUPERFICIE, non il testo.
+     Il legacy --muted è un colore-TESTO (rgba text 0.42) usato da 44 regole CSS che
+     restano intatte. Qui rimappiamo solo il token-superficie shadcn su --am-panel-3. */
+  --color-muted: var(--am-panel-3);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
