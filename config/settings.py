@@ -97,6 +97,18 @@ class Settings(BaseSettings):
     XG_SOURCE_TABLE: str = "xg_predictions"      # distinct dedup namespace
     WC_MODEL_VERSION: str = "football-worldcup-v1"  # national Poisson rates (paper tier)
     WC_SOURCE_TABLE: str = "wc_model"               # distinct dedup namespace for WC rows
+    # v2 Elo candidate (lab elo2). SHADOW ONLY: logged to prediction_log for A/B
+    # vs v1, never served, until promotion_gate green + human APPROVE. The
+    # "-shadow" suffix keeps its snapshots out of the served-version namespace.
+    WC_ELO_V2_MODEL_VERSION: str = "football-worldcup-v2-elo"
+    WC_ELO_V2_SHADOW_VERSION: str = "football-worldcup-v2-elo-shadow"
+    WC_ELO_V2_SHADOW_ENABLED: bool = True
+    # International friendlies — same national model as WC, distinct version +
+    # namespace so calibration/track-record audits separate friendlies (heavy
+    # rotations, lower stakes) from competitive matches. ALWAYS paper in v1.
+    FRIENDLY_MODEL_VERSION: str = "football-friendlies-v1"
+    FRIENDLY_SOURCE_TABLE: str = "friendly_model"
+    FRIENDLY_MIN_NATIONAL_QUALITY: float = 0.75   # same bar as the WC signal gate
 
     # Rolling publication window (#019, APPROVE Andrea 2026-06-06): predictions
     # are computed and served only for the next N days, refreshed daily — closer

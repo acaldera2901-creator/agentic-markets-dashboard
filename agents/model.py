@@ -5,11 +5,18 @@ from agents.base import BaseAgent
 from core.redis_client import consume, publish
 from core.football_api_client import get_historical_results as apifootball_history, LEAGUE_IDS
 from core.football_data_org_client import get_historical_results as fdorg_history, FREE_TIER_CODES
-from core.world_cup_registry import api_football_season_for, is_world_cup_code, WORLD_CUP_CODE
+from core.world_cup_registry import (
+    WORLD_CUP_CODE,
+    api_football_season_for,
+    is_friendlies_code,
+    is_national_team_code,
+    is_world_cup_code,
+)
 from core.world_cup_team_model import matchup_profile
 from core.world_cup_history import canonical_team_name, load_national_history
 from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
 from core.world_cup_probability import national_match_probabilities
+from core.world_cup_elo_model import predict_wc_match as predict_wc_elo_v2
 from core.wc_calibration import calibrate_wc_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
 from core.supabase_client import (
@@ -65,6 +72,9 @@ class ModelAgent(BaseAgent):
         # per WC match — snapshot only on change so the 15-min cycle doesn't
         # flood prediction_log with identical rows.
         self._wc_snapshot_state: dict[str, tuple] = {}
+        # v2 Elo shadow: last logged (p_home,p_draw,p_away) per WC match, so the
+        # shadow snapshot also only writes on change (mirrors the v1 state).
+        self._wc_v2_snapshot_state: dict[str, tuple] = {}
 
     async def _main_loop(self) -> None:
         await self._bootstrap_models()
@@ -224,7 +234,10 @@ class ModelAgent(BaseAgent):
             canonical_team_name(away),
         )
         result["world_cup_probabilities"] = json.dumps(probs or {})
-        self.set_status_detail(world_cup_data_quality_status_detail(quality))
+        # Heartbeat detail is the WC readiness surface: FRIENDLY rows must not
+        # overwrite it (they share this code path but not the WC gates).
+        if is_world_cup_code(payload.get("league")):
+            self.set_status_detail(world_cup_data_quality_status_detail(quality))
         if wc_context.get("market_warning"):
             result["market_warning"] = str(wc_context["market_warning"])
         return result
@@ -242,7 +255,16 @@ class ModelAgent(BaseAgent):
         retries the same (source_table, source_id) key.
         """
         tier = wc_result.get("world_cup_publication_tier", "monitor_only")
-        if tier == "monitor_only":
+        is_friendly = is_friendlies_code(payload.get("league"))
+        if is_friendly:
+            # FRIENDLY publish bar: the data-quality tier is WC-calibrated
+            # (odds/venue/squad gates that no friendly can pass) — what gates a
+            # friendly paper row is the national model itself. Same 0.75 bar as
+            # the WC national_team_model signal gate. Rows are ALWAYS paper.
+            nm_quality = float(wc_result.get("world_cup_national_model_quality") or 0.0)
+            if nm_quality < settings.FRIENDLY_MIN_NATIONAL_QUALITY:
+                return
+        elif tier == "monitor_only":
             return
         try:
             probs = json.loads(wc_result.get("world_cup_probabilities") or "{}")
@@ -288,7 +310,7 @@ class ModelAgent(BaseAgent):
             pred = DCPrediction(
                 match_id=str(payload.get("match_id")),
                 league=payload["league"],
-                league_name="FIFA World Cup 2026",
+                league_name="International Friendly" if is_friendly else "FIFA World Cup 2026",
                 home_team=payload["home_team"],
                 away_team=payload["away_team"],
                 kickoff=payload["kickoff"],
@@ -359,24 +381,33 @@ class ModelAgent(BaseAgent):
             )
             # Per-row promotion gate (#018): the data-quality tier already
             # scores odds/venue/squad/settlement quality. signal needs BOTH
-            # an allowing tier AND a real matched market.
-            signal_allowed = tier in ("signal_allowed", "premium_candidate")
+            # an allowing tier AND a real matched market. FRIENDLY rows are
+            # never promoted in v1 — paper only, regardless of tier.
+            signal_allowed = (not is_friendly) and tier in ("signal_allowed", "premium_candidate")
             row = wc_prediction_to_unified_row(
                 pred,
                 # "unknown" must not override the mapper's league-name default
                 stage=stage if stage not in ("", "unknown") else None,
-                neutral_venue=wc_result.get("neutral_venue", "True") == "True",
+                # Friendlies are hosted by the home side (ESPN home/away),
+                # not on WC neutral ground — and the empty context would
+                # otherwise default this to True.
+                neutral_venue=(
+                    False if is_friendly
+                    else wc_result.get("neutral_venue", "True") == "True"
+                ),
                 explanation=explanation,
                 enrichment=enrichment,
                 odds_triple=odds_triple,
                 bookmaker=bookmaker,
                 signal_allowed=signal_allowed,
                 team_news_summary=team_news_summary,
+                friendly=is_friendly,
             )
             written = await upsert_unified_rows([row])
             if written:
                 self.logger.info(
-                    "WC row written: %s vs %s (tier=%s, %s, market=%s)",
+                    "%s row written: %s vs %s (tier=%s, %s, market=%s)",
+                    "FRIENDLY" if is_friendly else "WC",
                     payload["home_team"], payload["away_team"], tier,
                     row.get("signal_type"), "yes" if odds_triple else "no",
                 )
@@ -402,13 +433,70 @@ class ModelAgent(BaseAgent):
                         model=(cal_a, cal_d, cal_b),
                         odds=odds_triple,
                         market=market,
-                        model_version=settings.WC_MODEL_VERSION,
+                        model_version=(
+                            settings.FRIENDLY_MODEL_VERSION
+                            if is_friendly
+                            else settings.WC_MODEL_VERSION
+                        ),
                         blend_alpha=MARKET_BLEND_ALPHA if market else None,
                     )
+            # v2 Elo shadow A/B (#WC-ELO-V2, APPROVE Andrea 2026-06-07): log the
+            # candidate's probabilities to prediction_log alongside the served v1
+            # snapshot. SHADOW ONLY — never touches pick/probabilities/the served
+            # row above. Fully isolated in its own try/except so a v2 failure can
+            # NEVER affect the served cycle.
+            await self._log_wc_elo_v2_shadow(payload, is_friendly, odds_triple, market)
         except Exception as exc:
             # Non-fatal by contract: a writer hiccup must never break the
             # model loop. The upsert is idempotent and retried next cycle.
             self.logger.warning("WC paper writer failed (non-fatal): %s", exc)
+
+    async def _log_wc_elo_v2_shadow(
+        self,
+        payload: dict,
+        is_friendly: bool,
+        odds_triple: dict | None,
+        market: dict | None,
+    ) -> None:
+        """Shadow-log the v2 Elo candidate to prediction_log (A/B vs served v1).
+
+        Read-only w.r.t. the serve path: it computes the v2 triple and writes one
+        snapshot row under WC_ELO_V2_SHADOW_VERSION. Failures are swallowed here
+        (never propagate to the served cycle). Insert-on-change only, keyed by the
+        match id, so the 15-min cycle does not flood the log.
+        """
+        if not settings.WC_ELO_V2_SHADOW_ENABLED:
+            return
+        try:
+            # WC group stage is neutral ground; friendlies are hosted (home side).
+            v2 = predict_wc_elo_v2(
+                payload["home_team"], payload["away_team"], neutral=not is_friendly
+            )
+            if v2 is None:
+                return  # missing rating -> fail-soft, no shadow row (served v1 unaffected)
+            p_home, p_draw, p_away = v2
+            snap_key = str(payload.get("match_id"))
+            sig = (round(p_home, 4), round(p_draw, 4), round(p_away, 4))
+            if self._wc_v2_snapshot_state.get(snap_key) == sig:
+                return
+            self._wc_v2_snapshot_state[snap_key] = sig
+            await log_prediction_snapshot(
+                match_id=snap_key,
+                league=payload["league"],
+                home_team=payload["home_team"],
+                away_team=payload["away_team"],
+                kickoff=payload["kickoff"],
+                # Shadow row: served == model == the v2 triple (it is NOT served;
+                # the served=v1 baseline lives in its own model_version rows).
+                served=(p_home, p_draw, p_away),
+                model=(p_home, p_draw, p_away),
+                odds=odds_triple,
+                market=market,
+                model_version=settings.WC_ELO_V2_SHADOW_VERSION,
+                blend_alpha=None,
+            )
+        except Exception as exc:
+            self.logger.warning("WC v2 Elo shadow failed (non-fatal): %s", exc)
 
     def _parse_results(self, fixtures: list) -> list:
         matches = []
@@ -433,10 +521,11 @@ class ModelAgent(BaseAgent):
             league = payload["league"]
             home = payload["home_team"]
             away = payload["away_team"]
-            if is_world_cup_code(league):
-                # World Cup has no Dixon-Coles league model; it runs the national
-                # data-quality gate path instead and stays in EXPERIMENT_MODE
-                # (paper_only tier), never the customer serving table.
+            if is_national_team_code(league):
+                # National teams (WC + FRIENDLY) have no Dixon-Coles league
+                # model; they run the national data-quality gate path instead.
+                # FRIENDLY rows are always paper (never the signal path) and
+                # gate on the national-model quality inside the persist writer.
                 wc_result = self._build_world_cup_result(payload)
                 wc_result.update({
                     "match_id": payload["match_id"],

@@ -109,7 +109,84 @@ def bench_wc() -> dict:
     }
 
 
+def bench_wc_v2() -> dict:
+    """Head-to-head v2 (football-worldcup-v2-elo) on the SAME holdout as bench_wc.
+
+    Not part of the routine served-model gate (v2 is shadow, not served) — run via
+    --wc-v2-compare to produce the v2-vs-v1 promotion evidence on the served-path
+    holdout. The lab (scripts/lab_backtest_10y.py) is the walk-forward case; this
+    is the gate-side case on neutral 2025+ matches, identical sample selection to
+    bench_wc so the two numbers are directly comparable.
+    """
+    import csv as _csv
+
+    import numpy as np
+    from core.world_cup_history import load_national_history
+    from core.world_cup_probability import national_match_probabilities
+    from core.world_cup_elo_model import predict_wc_match
+
+    neutral = set()
+    with open(ROOT / "data" / "national_teams" / "international_results_raw.csv") as fh:
+        for r in _csv.DictReader(fh):
+            if str(r.get("neutral", "")).strip().upper() in ("TRUE", "1"):
+                neutral.add((r["date"], r["home_team"], r["away_team"]))
+
+    matches = load_national_history()
+    matches.sort(key=lambda m: m["date"])
+    probs, outcomes = [], []
+    for i, m in enumerate(matches):
+        if m["date"] < date(2025, 1, 1):
+            continue
+        if (m["date"].isoformat(), m["home_team"], m["away_team"]) not in neutral:
+            continue
+        # SAME quality gate as bench_wc: only matches the served path would price.
+        v1 = national_match_probabilities(matches[:i], m["home_team"], m["away_team"])
+        if not v1 or float(v1.get("data_quality", 0)) < 0.75:
+            continue
+        v2 = predict_wc_match(m["home_team"], m["away_team"], neutral=True)
+        if v2 is None:
+            continue
+        probs.append(list(v2))
+        hg, ag = m["home_goals"], m["away_goals"]
+        outcomes.append(0 if hg > ag else 1 if hg == ag else 2)
+
+    p = np.array(probs)
+    y = np.array(outcomes)
+    brier = float(np.mean(np.sum((p - np.eye(3)[y]) ** 2, axis=1)))
+    ece_tot = 0.0
+    for k in range(3):
+        conf, hit = p[:, k], (y == k).astype(float)
+        e = 0.0
+        for b in range(10):
+            lo, hi = b / 10, (b + 1) / 10
+            msk = (conf >= lo) & (conf < hi if b < 9 else conf <= hi)
+            if msk.sum():
+                e += (msk.sum() / len(conf)) * abs(conf[msk].mean() - hit[msk].mean())
+        ece_tot += e
+    acc = float(np.mean(p.argmax(axis=1) == y))
+    return {
+        "sport": "wc_v2",
+        "holdout": "neutral 2025+ (same sample as bench_wc; v2 Elo candidate)",
+        "n": len(outcomes),
+        "brier": round(brier, 4),
+        "ece": round(float(ece_tot / 3), 4),
+        "accuracy": round(acc, 4),
+    }
+
+
 def main() -> None:
+    if "--wc-v2-compare" in sys.argv:
+        v1 = bench_wc()
+        v2 = bench_wc_v2()
+        print("[gate] WC v1 (served):", v1)
+        print("[gate] WC v2 (Elo shadow):", v2)
+        d_brier = v2["brier"] - v1["brier"]
+        verdict = "v2 WINS" if d_brier < -TOLERANCE["brier"] else (
+            "v1 wins/tie" if d_brier > TOLERANCE["brier"] else "no material diff")
+        print(f"[gate] ΔBrier v2-v1 = {d_brier:+.4f} (tol ±{TOLERANCE['brier']}) -> {verdict}")
+        print("[gate] NB: shadow only — promotion requires this green AND a human APPROVE.")
+        return
+
     update = "--update-baselines" in sys.argv
     results = {}
     for name, fn in (("football", bench_football), ("tennis", bench_tennis), ("wc", bench_wc)):
