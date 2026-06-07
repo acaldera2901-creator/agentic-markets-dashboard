@@ -13,6 +13,7 @@ import {
   MARKET_BLEND_ALPHA,
   MatchResult,
 } from "@/lib/poisson-model";
+import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
@@ -345,7 +346,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // The blended triple is THE number served, stored and edged. No real odds →
       // market=null → blendWithMarket is the identity → today's behaviour exactly
       // (fail-safe, P0 #2 intact: no synthetic market is ever invented).
-      const modelProbs = { pHome: probs.pHome, pDraw: probs.pDraw, pAway: probs.pAway };
+      // #CALIB-1: temperature scaling (tau=1.20) BEFORE the blend — fixes the
+      // measured overconfidence of the model (draws under-predicted ~1.7pp).
+      // Rows with odds blend the CALIBRATED model with the market; no-odds
+      // estimate rows serve the calibrated model directly (where it matters
+      // most). prediction_log's model_p_* records this calibrated triple — it
+      // is what actually enters the blend.
+      const modelProbs = applyTemperature({ pHome: probs.pHome, pDraw: probs.pDraw, pAway: probs.pAway });
       const marketDevig = odds
         ? devig1x2(odds.oddsHome, odds.oddsDraw, odds.oddsAway)
         : null;
