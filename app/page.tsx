@@ -3071,7 +3071,13 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           <div className="text-sm font-bold text-white mt-1">
             {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
           </div>
-          <div className="text-xs text-gray-600 font-mono mt-0.5">{fmtKickoff(p.kickoff, lang, tz)}</div>
+          <div className="text-xs text-gray-600 font-mono mt-0.5">
+            {fmtKickoff(p.kickoff, lang, tz)}
+            {/* #LIVE-1: indicatore in gioco anche senza feed live (anonimi) */}
+            {!isFutureMarket(p.kickoff) && !isFinished && !hasScore && (
+              <span className="ml-2 text-red-400 animate-pulse">● LIVE</span>
+            )}
+          </div>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           {isValueBet && p.best_selection && !isPreview && (
@@ -3216,20 +3222,19 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </div>
       )}
 
-      {/* #LIVE-1: a match in corso la card resta visibile (trasparenza del
-          pick pre-match) ma non spingiamo bet su mercati chiusi. */}
-      {onBetNow && !isPreview && !isFutureMarket(p.kickoff) ? (
+      {/* #LIVE-1 (rev. Andrea): a match in corso la card resta visibile E il
+          bottone bet resta attivo (live betting dai partner). Solo a FT il
+          bottone lascia il posto allo stato "in arrivo nello storico". */}
+      {onBetNow && !isPreview && isFinished ? (
         <div className="w-full mt-1 py-1.5 rounded-lg border border-red-400/20 bg-red-400/5 text-red-400/80 text-xs font-mono tracking-wider text-center">
-          {isFinished
-            ? (lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history")
-            : (lang === "it" ? "● In gioco — risultato a fine partita" : "● In play — result at full time")}
+          {lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}
         </div>
       ) : onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
         >
-          {t.bet_now}
+          {!isFutureMarket(p.kickoff) ? (lang === "it" ? "🔴 Live — " : "🔴 Live — ") + t.bet_now : t.bet_now}
         </button>
       )}
 
@@ -3579,7 +3584,13 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           <div className="text-sm font-bold text-white mt-1">
             {m.player1} <span className="text-gray-500 font-normal">vs</span> {m.player2}
           </div>
-          <div className="text-xs text-gray-600 font-mono mt-0.5">{scheduledDate}</div>
+          <div className="text-xs text-gray-600 font-mono mt-0.5">
+            {scheduledDate}
+            {/* #LIVE-1: indicatore in gioco (stessa logica della card football) */}
+            {!isFutureMarket(m.scheduled) && (
+              <span className="ml-2 text-red-400 animate-pulse">● LIVE</span>
+            )}
+          </div>
         </div>
         {isValue && m.best_selection && !isPreview && (
           <button

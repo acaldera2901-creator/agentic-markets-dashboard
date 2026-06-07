@@ -211,6 +211,10 @@ function WcCard({ p }: { p: ProjectedRow }) {
       </div>
       <div className="wc-fixture-meta">
         {p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : ""}
+        {/* #LIVE-1: match in corso — la card resta visibile fino al settlement */}
+        {p.starts_at && new Date(p.starts_at).getTime() < Date.now() && (
+          <span style={{ marginLeft: 8, color: "#f87171" }}>● LIVE</span>
+        )}
       </div>
 
       {p.locked ? (

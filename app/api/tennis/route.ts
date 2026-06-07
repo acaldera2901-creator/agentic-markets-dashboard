@@ -165,7 +165,9 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
              tp.h2h_p1_wins, tp.h2h_p2_wins,
              tp.model_version, tp.computed_at
       FROM tennis_predictions tp
-      WHERE tp.scheduled_at > NOW() - INTERVAL '2 hours'
+      -- #LIVE-1: 5h coprono anche un Bo5 lungo — il match resta visibile
+      -- mentre si gioca; al settlement winner si valorizza e la riga esce.
+      WHERE tp.scheduled_at > NOW() - INTERVAL '5 hours'
         AND tp.winner IS NULL
         -- Fail-closed (#020 audit): a row without real model probabilities
         -- must never surface — the old ?? 0.5 default would have shown a

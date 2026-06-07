@@ -21,9 +21,12 @@ export async function GET(req: Request) {
   // Rolling publication window (#019): serve only the next N days — closer
   // matches carry more information; distant ones come into view day by day.
   const conditions: string[] = [
-    "starts_at > NOW()",
+    // #LIVE-1: le card restano servite durante il match (150 min ≈ 90' +
+    // recuperi + margine) e spariscono quando il settlement le sposta in
+    // history — stessa finestra del board principale.
+    "starts_at > NOW() - interval '150 minutes'",
     "starts_at < NOW() + ($1 || ' days')::interval",
-    "expires_at > NOW()",
+    "expires_at > NOW() - interval '150 minutes'",
     "published_at IS NOT NULL",
     "is_historical = FALSE",
     "is_demo = FALSE",
