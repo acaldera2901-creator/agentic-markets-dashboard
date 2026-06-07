@@ -37,6 +37,7 @@ from core.espn_soccer_client import (
     _venue_pair_key as espn_venue_pair_key,
 )
 from core.wc_squad_sync import sync_rosters
+from core.squad_condition_sync import sync_squad_condition, build_condition_map
 from config.settings import settings
 
 
@@ -241,6 +242,28 @@ class DataCollectorAgent(BaseAgent):
                 source_errors.append(f"WC:squad_sync:{sync_err}")
         except Exception as e:
             source_errors.append(f"WC:squad_sync:{e}")
+        # Squad Condition Watch ①: append a per-team condition report on change
+        # (injuries / callup diff / XI-value bucket). Piggybacks the same cached
+        # ESPN squads — fail-soft, never breaks the cycle.
+        try:
+            cond_summary = await sync_squad_condition()
+            if cond_summary.get("reports_written"):
+                self.logger.info(
+                    "Squad condition: %d report(s) written",
+                    cond_summary["reports_written"],
+                )
+            for cond_err in cond_summary.get("errors", []):
+                source_errors.append(f"WC:squad_condition:{cond_err}")
+        except Exception as e:
+            source_errors.append(f"WC:squad_condition:{e}")
+        # In-memory condition map (canonical team -> report) for the why-layer +
+        # quality cap: attached to each WC event payload below. Fail-soft: empty
+        # map = no squad line, nothing fabricated.
+        try:
+            condition_map = await build_condition_map()
+        except Exception as e:
+            condition_map = {}
+            source_errors.append(f"WC:squad_condition_map:{e}")
         # settlement_feed = a result provider is configured AND the unified
         # history writer exists (P4-B in agents/result_settlement.py).
         settlement_ready = bool(
@@ -363,6 +386,15 @@ class DataCollectorAgent(BaseAgent):
                             # scorer (replaces its hard-coded False defaults).
                             event["squad_news_ready"] = squad_news_ready
                             event["settlement_ready"] = settlement_ready
+                            # Squad Condition Watch ②: per-team condition for the
+                            # why-layer + availability quality cap. Fail-soft:
+                            # missing team -> None (no squad line).
+                            hc = canonical_team_name(event.get("home_team", ""))
+                            ac = canonical_team_name(event.get("away_team", ""))
+                            event["squad_condition"] = {
+                                "home": condition_map.get(hc),
+                                "away": condition_map.get(ac),
+                            }
                         await publish("market:data", {"payload": json.dumps(event)})
                         published += 1
                 league_counts[league_code]["matched_odds"] = matched_odds

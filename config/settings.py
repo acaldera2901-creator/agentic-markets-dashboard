@@ -119,6 +119,25 @@ class Settings(BaseSettings):
     FRIENDLY_SOURCE_TABLE: str = "friendly_model"
     FRIENDLY_MIN_NATIONAL_QUALITY: float = 0.75   # same bar as the WC signal gate
 
+    # Squad Condition Watch (spec 2026-06-07-squad-condition-watch.md). ①+② only:
+    # probability-neutral why-layer + quality-gate cap. The model-feature layer ③
+    # stays gated behind PROMOTION-GATE + APPROVE.
+    # Rotation flag: XI value below this fraction of the club/national best-11 =
+    # key players rested/missing today (lab |d_avail|>=0.10 was the heavy-rotation
+    # subgroup that promoted; 0.85 ratio is its conservative single-team mirror).
+    SQUAD_ROTATION_RATIO: float = 0.85
+    # Availability index clip — identical to the lab (min(xi/best11, 1.2)).
+    SQUAD_AVAIL_CLIP: float = 1.2
+    # Min valued starters before XI value is trusted (lab MIN_XI_VALUED).
+    SQUAD_MIN_XI_VALUED: int = 9
+    # Quality-gate cap when availability is UNKNOWN (no value data): the tier
+    # cannot exceed this. signal_allowed/premium_candidate require known squad
+    # condition — probability-neutral, only gates publication strength.
+    SQUAD_UNKNOWN_AVAIL_TIER_CAP: str = "paper_only"
+    # Optional local transfermarkt valuations dir (dcaribou CDN snapshot). Absent
+    # at runtime -> XI value math degrades to None (fail-soft), never fabricated.
+    TRANSFERMARKT_DATA_DIR: str = "data/transfermarkt"
+
     # Rolling publication window (#019, APPROVE Andrea 2026-06-06): predictions
     # are computed and served only for the next N days, refreshed daily — closer
     # matches carry more information (squads, injuries, mature markets), so the

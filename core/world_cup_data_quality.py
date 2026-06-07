@@ -11,6 +11,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from config.settings import settings
+
 
 @dataclass
 class WorldCupDataQuality:
@@ -135,6 +137,27 @@ def _publication_tier(score: float) -> str:
     if score < 0.85:
         return "signal_allowed"
     return "premium_candidate"
+
+
+# Ordered weakest -> strongest; the cap clamps DOWN, never promotes.
+_TIER_ORDER = ("monitor_only", "paper_only", "signal_allowed", "premium_candidate")
+
+
+def cap_tier_for_availability(tier: str, *, availability_known: bool) -> str:
+    """Squad Condition Watch ② quality-gate cap (spec §4).
+
+    When squad availability is UNKNOWN (no XI-value data for the matchup), a row
+    cannot be published above settings.SQUAD_UNKNOWN_AVAIL_TIER_CAP — we will not
+    claim signal/premium strength on a slate whose actual XI condition we cannot
+    observe. PROBABILITY-NEUTRAL: gates publication strength only, never touches
+    p_home/p_draw/p_away. Fail-soft: an unknown tier string is returned as-is.
+    """
+    if availability_known:
+        return tier
+    cap = settings.SQUAD_UNKNOWN_AVAIL_TIER_CAP
+    if tier not in _TIER_ORDER or cap not in _TIER_ORDER:
+        return tier
+    return tier if _TIER_ORDER.index(tier) <= _TIER_ORDER.index(cap) else cap
 
 
 def compute_world_cup_data_quality(

@@ -85,13 +85,31 @@ def _heat_phrase(venue: dict[str, Any]) -> str | None:
     return None
 
 
-def _squad_phrase(team: str, injuries: list[str] | None) -> str | None:
+def _squad_phrase(
+    team: str,
+    injuries: list[str] | None,
+    *,
+    xi_value_ratio: float | None = None,
+    rotation_flag: bool = False,
+) -> str | None:
+    """Squad Condition Watch ② why-line — only when a REAL signal exists.
+
+    Fires on (in priority): a low XI-value ratio with the rotation flag set, or
+    confirmed injuries. No signal -> None (no fabricated "full strength" line).
+    Probability-neutral: pure text from passed-in squad-condition fields.
+    """
+    if rotation_flag and isinstance(xi_value_ratio, (int, float)):
+        pct = round(xi_value_ratio * 100)
+        return (
+            f"{team} rotate: starting XI worth {pct}% of their best-11 value — "
+            "key players rested/missing"
+        )
     inj = [n for n in (injuries or []) if n]
-    if not inj:
-        return None
-    shown = ", ".join(inj[:3])
-    more = f" (+{len(inj) - 3} more)" if len(inj) > 3 else ""
-    return f"{team} are without {shown}{more}"
+    if inj:
+        shown = ", ".join(inj[:3])
+        more = f" (+{len(inj) - 3} more)" if len(inj) > 3 else ""
+        return f"{team} are without {shown}{more}"
+    return None
 
 
 def build_wc_enrichment(
@@ -143,6 +161,12 @@ def build_wc_enrichment(
             "injuries_away": list(squad.get("injuries_away") or []),
             "revealed_home": bool(squad.get("revealed_home", False)),
             "revealed_away": bool(squad.get("revealed_away", False)),
+            # Squad Condition Watch ②: XI-value fraction of best-11 + rotation
+            # flag, per side. None when no value data (fail-soft, never invented).
+            "xi_value_ratio_home": squad.get("xi_value_ratio_home"),
+            "xi_value_ratio_away": squad.get("xi_value_ratio_away"),
+            "rotation_flag_home": bool(squad.get("rotation_flag_home", False)),
+            "rotation_flag_away": bool(squad.get("rotation_flag_away", False)),
         },
         "lambdas": {
             "home": probs.get("lambda_a"),
@@ -222,10 +246,19 @@ def build_wc_explanation(
     if heat:
         parts.append(heat + ".")
 
-    # Sentence 4: squad / injuries, only when a reveal carries names.
+    # Sentence 4: squad condition — rotation (XI-value ratio) or injuries, per
+    # side, only when a real signal exists (Squad Condition Watch ②).
     squad = enrichment.get("squad") or {}
-    sh = _squad_phrase(home_team, squad.get("injuries_home"))
-    sa = _squad_phrase(away_team, squad.get("injuries_away"))
+    sh = _squad_phrase(
+        home_team, squad.get("injuries_home"),
+        xi_value_ratio=squad.get("xi_value_ratio_home"),
+        rotation_flag=bool(squad.get("rotation_flag_home", False)),
+    )
+    sa = _squad_phrase(
+        away_team, squad.get("injuries_away"),
+        xi_value_ratio=squad.get("xi_value_ratio_away"),
+        rotation_flag=bool(squad.get("rotation_flag_away", False)),
+    )
     squad_sentences = [p for p in (sh, sa) if p]
     if squad_sentences:
         parts.append("; ".join(squad_sentences) + ".")

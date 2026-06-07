@@ -45,3 +45,4 @@ scripts/migrate_to_company_supabase.py
 # Legacy app — its nested .git was removed 2026-06-05 to stop divergent
 # force-push risk; files stay on disk for reference, not tracked by root repo.
 dashboard-web/
+data/transfermarkt/

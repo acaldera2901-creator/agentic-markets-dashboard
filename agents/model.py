@@ -14,7 +14,11 @@ from core.world_cup_registry import (
 )
 from core.world_cup_team_model import matchup_profile
 from core.world_cup_history import canonical_team_name, load_national_history
-from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
+from core.world_cup_data_quality import (
+    compute_world_cup_data_quality,
+    world_cup_data_quality_status_detail,
+    cap_tier_for_availability,
+)
 from core.world_cup_probability import national_match_probabilities
 from core.world_cup_elo_model import predict_wc_match as predict_wc_elo_v2
 from core.wc_calibration import calibrate_wc_probabilities
@@ -217,9 +221,26 @@ class ModelAgent(BaseAgent):
             settlement_ready=bool(payload.get("settlement_ready", False)),
             squad_news_ready=bool(payload.get("squad_news_ready", False)),
         )
-        result["world_cup_data_quality"] = json.dumps(quality)
         result["world_cup_data_quality_score"] = str(quality.get("total_score", 0))
-        result["world_cup_publication_tier"] = str(quality.get("publication_tier", "monitor_only"))
+        # Squad Condition Watch ② quality cap (probability-neutral): availability
+        # UNKNOWN (no XI-value data for either side) caps the publication tier —
+        # we will not claim signal/premium strength on a slate whose actual XI
+        # condition we cannot observe. Fail-closed: missing squad_condition reads
+        # as unknown. Does NOT touch p_home/p_draw/p_away.
+        sq_cond = payload.get("squad_condition") or {}
+        availability_known = any(
+            (sq_cond.get(side) or {}).get("availability_ratio") is not None
+            for side in ("home", "away")
+        )
+        capped_tier = cap_tier_for_availability(
+            str(quality.get("publication_tier", "monitor_only")),
+            availability_known=availability_known,
+        )
+        result["world_cup_publication_tier"] = capped_tier
+        if capped_tier != quality.get("publication_tier"):
+            quality["publication_tier"] = capped_tier
+            quality.setdefault("blocked_reasons", []).append("squad_availability_unknown")
+        result["world_cup_data_quality"] = json.dumps(quality)
         result["world_cup_data_quality_blocked_reasons"] = json.dumps(
             quality.get("blocked_reasons", [])
         )
@@ -355,9 +376,8 @@ class ModelAgent(BaseAgent):
             stage = wc_result.get("world_cup_stage") or ""
             # Build the match-specific explanation + Deep-Analysis enrichment from
             # the real sources available in the model loop: national history (form
-            # + lambdas), the WC context (venue/travel/rest/host advantage/group).
-            # Squad/injury info needs a DB read and is filled by the backfill /
-            # squad-sync path; omitted here -> empty (fail-soft), not fabricated.
+            # + lambdas), the WC context (venue/travel/rest/host advantage/group),
+            # and the Squad Condition Watch report attached by the collector.
             try:
                 wc_context = json.loads(wc_result.get("world_cup_context") or "{}")
             except (TypeError, ValueError):
@@ -376,6 +396,20 @@ class ModelAgent(BaseAgent):
                 "indoor": wc_context.get("venue_indoor"),
                 "heat_risk": wc_context.get("heat_risk"),
             }
+            # Squad Condition Watch ② (probability-neutral): the collector
+            # attaches a per-team condition report. Maps to the enrichment squad
+            # block; missing report -> None fields (fail-soft, no squad line).
+            sq_cond = payload.get("squad_condition") or {}
+            sq_home = sq_cond.get("home") or {}
+            sq_away = sq_cond.get("away") or {}
+            squad_enr = {
+                "injuries_home": sq_home.get("injuries") or [],
+                "injuries_away": sq_away.get("injuries") or [],
+                "xi_value_ratio_home": sq_home.get("xi_value_ratio"),
+                "xi_value_ratio_away": sq_away.get("xi_value_ratio"),
+                "rotation_flag_home": bool(sq_home.get("rotation_flag", False)),
+                "rotation_flag_away": bool(sq_away.get("rotation_flag", False)),
+            }
             enrichment = build_wc_enrichment(
                 home_team=payload["home_team"],
                 away_team=payload["away_team"],
@@ -384,6 +418,7 @@ class ModelAgent(BaseAgent):
                 history=self._history.get(WORLD_CUP_CODE, []),
                 probs=probs,
                 venue=venue,
+                squad=squad_enr,
                 group=wc_context.get("group_name") or None,
             )
             # #LINEUP-1-ESPN: confirmed XIs from the collector (ESPN summary,
