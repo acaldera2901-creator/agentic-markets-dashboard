@@ -46,7 +46,10 @@ function computeStatus(scheduledAt: string | null): string {
 function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const p1 = row.p1 ?? 0;
   const p2 = row.p2 ?? 0;
-  const pickP1 = row.best_selection ? row.best_selection === row.player1 : p1 >= p2;
+  // best_selection è il codice "P1"/"P2" (non il nome del giocatore) — il
+  // vecchio confronto col nome era sempre false e avrebbe invertito il pick
+  // una volta valorizzato il campo (#TENNIS-BS-1).
+  const pickP1 = row.best_selection ? row.best_selection === "P1" : p1 >= p2;
   const pick = pickP1 ? row.player1 : row.player2;
   const prob = pickP1 ? p1 : p2;
   const odds = pickP1 ? row.odds_p1 : row.odds_p2;

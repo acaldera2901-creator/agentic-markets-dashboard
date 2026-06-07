@@ -222,6 +222,11 @@ class TennisModelAgent(BaseAgent):
         odds_p1 = self._float_or_none(fixture.get("odds_p1"))
         odds_p2 = self._float_or_none(fixture.get("odds_p2"))
         edge, best_selection = self._market_edge(p1_prob, p2_prob, odds_p1, odds_p2)
+        # #TENNIS-BS-1: il Match Builder richiede best_selection non-null; senza
+        # valore di mercato (caso paper, post-Betfair) resta il lato a probabilità
+        # massima del modello. Il claim di valore vive in edge+odds, non qui.
+        if best_selection is None:
+            best_selection = "P1" if p1_prob >= p2_prob else "P2"
         feature_snapshot = {
             "source": "jeff_sackmann_cache",
             "serve_return_delta": round(form_delta, 4),
