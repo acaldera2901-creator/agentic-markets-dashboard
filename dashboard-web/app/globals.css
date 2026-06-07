@@ -1,24 +1,79 @@
 @import "tailwindcss";
 
+/* ── Agentic Markets — Sovereign Design Tokens (single source of truth) ──
+   Allineati al client-portal (UI-ACCOUNT-UNIFY-1 fase 2, opzione A: portal vince).
+   I token legacy --bg/--panel/--line/--muted/... sono ora ALIAS verso gli --am-*.
+   Divergenze adottate dal portale: --muted 0.46→0.42, --muted-2 0.24→0.22,
+   --line-2 0.18→0.16 (muted text un filo più tenue sulle viste dense — atteso).
+   Rimosso --panel-4 (orfano, 0 usi). */
 :root {
-  --bg:      #06070F;
-  --bg-2:    #0A0C1A;
-  --panel:   #0D1020;
-  --panel-2: #11142A;
-  --panel-3: #161930;
-  --panel-4: #1A1E3A;
-  --line:    rgba(140,145,255,0.09);
-  --line-2:  rgba(140,145,255,0.18);
+  /* Base backgrounds — deep indigo-black, not flat black */
+  --am-bg:         #06070F;
+  --am-bg-2:       #0A0C1A;
+  --am-panel:      #0D1020;
+  --am-panel-2:    #11142A;
+  --am-panel-3:    #161930;
 
-  --cyan:   #22D3EE;
-  --green:  #22C55E;
-  --amber:  #F59E0B;
-  --red:    #EF4444;
-  --violet: #818CF8;
+  /* Borders — indigo-tinted for depth */
+  --am-line:       rgba(140,145,255,0.09);
+  --am-line-2:     rgba(140,145,255,0.16);
 
-  --text:   rgba(237,241,255,0.94);
-  --muted:  rgba(237,241,255,0.46);
-  --muted-2:rgba(237,241,255,0.24);
+  /* Primary — emerald (professional, not neon) */
+  --am-green:      #22C55E;
+  --am-green-dim:  rgba(34,197,94,0.09);
+  --am-green-b:    rgba(34,197,94,0.28);
+
+  /* Secondary colors */
+  --am-red:        #EF4444;
+  --am-red-dim:    rgba(239,68,68,0.09);
+  --am-red-b:      rgba(239,68,68,0.28);
+  --am-amber:      #F59E0B;
+  --am-cyan:       #22D3EE;
+  --am-indigo:     #818CF8;
+
+  /* Typography */
+  --am-text:       rgba(237,241,255,0.94);
+  --am-muted:      rgba(237,241,255,0.42);
+  --am-muted-2:    rgba(237,241,255,0.22);
+
+  /* shadcn aliases */
+  --background: var(--am-bg);
+  --foreground: var(--am-text);
+  --card: var(--am-panel);
+  --card-foreground: var(--am-text);
+  --popover: var(--am-panel);
+  --popover-foreground: var(--am-text);
+  --primary: var(--am-green);
+  --primary-foreground: var(--am-bg);
+  --secondary: var(--am-panel-2);
+  --secondary-foreground: var(--am-text);
+  --muted-foreground: var(--am-muted);
+  --accent: var(--am-panel-3);
+  --accent-foreground: var(--am-text);
+  --destructive: var(--am-red);
+  --border: var(--am-line);
+  --input: var(--am-line);
+  --ring: rgba(34,197,94,0.35);
+  --radius: 0.5rem;
+
+  /* Legacy aliases — keep existing dashboard CSS working, point at --am-* */
+  --bg:      var(--am-bg);
+  --bg-2:    var(--am-bg-2);
+  --panel:   var(--am-panel);
+  --panel-2: var(--am-panel-2);
+  --panel-3: var(--am-panel-3);
+  --line:    var(--am-line);
+  --line-2:  var(--am-line-2);
+
+  --cyan:   var(--am-cyan);
+  --green:  var(--am-green);
+  --amber:  var(--am-amber);
+  --red:    var(--am-red);
+  --violet: var(--am-indigo);
+
+  --text:   var(--am-text);
+  --muted:  var(--am-muted);
+  --muted-2:var(--am-muted-2);
 }
 
 * {
