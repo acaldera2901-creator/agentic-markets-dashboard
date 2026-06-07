@@ -69,6 +69,7 @@ const BASE_TRANSLATIONS = {
     auth_err_wrongpw: "Email o password errata.", auth_err_noaccount: "Nessun account con questa email. Registrati.",
     auth_err_exists: "Account già esistente — accedi.", auth_err_founder: "Questo profilo richiede founder access.",
     auth_err_pwshort: "La password deve avere almeno 8 caratteri.", auth_err_generic: "Errore. Riprova.",
+    auth_hint_incomplete: "Inserisci un'email valida e una password di almeno 8 caratteri.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Un piano pagante, promessa chiara",
@@ -309,6 +310,7 @@ const BASE_TRANSLATIONS = {
     auth_err_wrongpw: "Wrong email or password.", auth_err_noaccount: "No account for this email. Sign up.",
     auth_err_exists: "Account already exists — log in.", auth_err_founder: "This profile requires founder access.",
     auth_err_pwshort: "Password must be at least 8 characters.", auth_err_generic: "Error. Try again.",
+    auth_hint_incomplete: "Enter a valid email and a password of at least 8 characters.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "One paid plan, clear promise",
@@ -2621,6 +2623,11 @@ function ClientAuthModal({
             autoComplete={mode === "login" ? "current-password" : "new-password"} />
         </label>
         {error && <p className="auth-error">{error}</p>}
+        {/* BUG-009: the submit button is disabled until the form validates;
+            without this hint the click looked silently unresponsive. */}
+        {!error && !canSubmit && !busy && (email || password) && (
+          <p className="auth-error">{t.auth_hint_incomplete}</p>
+        )}
         <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
         <p>{t.auth_footer}</p>
       </form>
@@ -5886,7 +5893,10 @@ export default function Dashboard() {
               historyStats={historyStats}
               historyLoading={historyLoading}
               onSelect={(s) => setSlipSelection(s)}
-              onBetNow={() => setTab("partners")}
+              // BUG-011: an anonymous "Place Bet" used to jump to the Partners
+              // (affiliate) tab with no context. Prompt sign-in first; a
+              // logged-in user keeps the affiliate route.
+              onBetNow={() => hasClientProfile ? setTab("partners") : openAuth("login")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
