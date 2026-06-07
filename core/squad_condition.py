@@ -26,6 +26,7 @@ from __future__ import annotations
 import csv
 import gzip
 import logging
+import unicodedata
 from bisect import bisect_right
 from collections import defaultdict
 from datetime import date, datetime
@@ -81,6 +82,25 @@ def best11_value(roster_names: list[str], valuations: dict[str, float]) -> float
 
 # ── point-in-time transfermarkt valuations (optional local CDN snapshot) ──────
 
+def _canon(name: str) -> str:
+    """Order/diacritic/punctuation-insensitive match key for a player name.
+
+    The live sources (ESPN squads, Track A snapshots) and Transfermarkt disagree
+    on name *form*: order ("Son Heung-min" vs TM "Heung-min Son"), hyphenation
+    ("Heung-min" vs "Heung min") and diacritics ("Mbappé" vs "Mbappe"). We strip
+    combining marks, lowercase, turn every non-alphanumeric into a space, then
+    SORT the tokens — so all three forms collapse to one key ("heung min son").
+    """
+    nfkd = unicodedata.normalize("NFKD", name)
+    ascii_only = "".join(c for c in nfkd if not unicodedata.combining(c))
+    # Drop apostrophes outright (not -> space) so elision forms collapse:
+    # "N'Golo" -> "ngolo", "O'Brien" -> "obrien". Then every other non-alnum
+    # becomes a separator and tokens are sorted (order-insensitive).
+    no_apos = ascii_only.lower().replace("'", "").replace("’", "")
+    cleaned = "".join(c if c.isalnum() else " " for c in no_apos)
+    return " ".join(sorted(cleaned.split()))
+
+
 class _Valuations:
     """Last-known market value per player NAME at or before a date.
 
@@ -89,17 +109,36 @@ class _Valuations:
     snapshots — only carry display names. Absent files -> empty index, every
     lookup returns None (fail-soft, the runtime default until the weekly CDN
     pull lands data in TRANSFERMARKT_DATA_DIR).
+
+    Lookup is exact-first, then an UNAMBIGUOUS canonical fallback (_canon) that
+    bridges name-form differences. Ambiguous canonical keys (two distinct stored
+    names collapsing to the same key) return None — we never guess a value.
     """
 
-    def __init__(self, by_name: dict[str, tuple[list[date], list[float]]]):
+    def __init__(
+        self,
+        by_name: dict[str, tuple[list[date], list[float]]],
+        norm: dict[str, list[str]] | None = None,
+    ):
         self._by_name = by_name
+        self._norm = norm or {}
 
     @property
     def loaded(self) -> bool:
         return bool(self._by_name)
 
-    def at(self, name: str, when: date | None = None) -> float | None:
+    def _entry(self, name: str):
         entry = self._by_name.get(name)
+        if entry is not None:
+            return entry
+        # canonical fallback — only when exactly one stored name matches
+        candidates = self._norm.get(_canon(name))
+        if candidates and len(candidates) == 1:
+            return self._by_name.get(candidates[0])
+        return None
+
+    def at(self, name: str, when: date | None = None) -> float | None:
+        entry = self._entry(name)
         if not entry:
             return None
         dates, vals = entry
@@ -171,11 +210,13 @@ def load_valuations() -> _Valuations:
                 raw[name].append((d, v))
 
         by_name: dict[str, tuple[list[date], list[float]]] = {}
+        norm: dict[str, list[str]] = defaultdict(list)
         for name, rows in raw.items():
             rows.sort()
             by_name[name] = ([d for d, _ in rows], [v for _, v in rows])
+            norm[_canon(name)].append(name)
         logger.info("transfermarkt valuations loaded: %d players", len(by_name))
-        return _Valuations(by_name)
+        return _Valuations(by_name, dict(norm))
     except Exception as exc:  # corrupt download must not break the collector
         logger.debug("transfermarkt valuations load failed (non-fatal): %s", exc)
         return _Valuations({})

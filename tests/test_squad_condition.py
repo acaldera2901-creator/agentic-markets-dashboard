@@ -47,6 +47,42 @@ def test_availability_index_none_when_inputs_missing():
     assert sc.availability_index(600.0, 0.0) is None  # no divide-by-zero
 
 
+# ─── name-match normalizer (_canon + canonical fallback) ──────────────────────
+
+def test_canon_collapses_order_hyphen_diacritics():
+    # ESPN "Son Heung-min" and Transfermarkt "Heung-min Son" -> one key.
+    assert sc._canon("Son Heung-min") == sc._canon("Heung-min Son")
+    # diacritics stripped, hyphens/order irrelevant.
+    assert sc._canon("Kylian Mbappé") == sc._canon("Mbappe Kylian")
+    assert sc._canon("N'Golo Kanté") == sc._canon("Kante Ngolo")
+
+
+def _val_index(pairs):
+    """Build a _Valuations the way load_valuations does, without file I/O."""
+    from collections import defaultdict
+    from datetime import date
+    by_name = {n: ([date(2026, 1, 1)], [v]) for n, v in pairs}
+    norm = defaultdict(list)
+    for n, _ in pairs:
+        norm[sc._canon(n)].append(n)
+    return sc._Valuations(by_name, dict(norm))
+
+
+def test_lookup_exact_then_canonical_fallback():
+    v = _val_index([("Heung-min Son", 17_000_000.0), ("Kylian Mbappé", 180_000_000.0)])
+    assert v.at("Heung-min Son") == 17_000_000.0          # exact
+    assert v.at("Son Heung-min") == 17_000_000.0          # reversed-order fallback
+    assert v.at("Mbappe Kylian") == 180_000_000.0         # diacritic + order fallback
+    assert v.at("Unknown Player") is None                 # genuine miss stays None
+
+
+def test_ambiguous_canonical_key_returns_none():
+    # Two DISTINCT stored players collapsing to the same key -> never guess.
+    v = _val_index([("Luis Garcia", 5_000_000.0), ("Garcia Luis", 9_000_000.0)])
+    assert v.at("Luis Garcia") == 5_000_000.0   # exact match still wins
+    assert v.at("García Luis ") is None         # ambiguous canonical -> None
+
+
 # ─── xi_value (rescale on partial valuation coverage) ────────────────────────
 
 def test_xi_value_rescales_partial_coverage():
