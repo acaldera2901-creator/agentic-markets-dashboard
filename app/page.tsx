@@ -1179,6 +1179,14 @@ function selectedTennisProbability(m: TennisMatch) {
   return Math.max(m.p1, m.p2);
 }
 
+// Honest model label per competition. WC + national friendlies run on the
+// national-team engine (Poisson-rates / Elo depending on the row); club leagues
+// on the Dixon-Coles + xG stack. "National model" is accurate for both national
+// variants — the old hardcoded "Dixon-Coles" was simply wrong on that board.
+function modelLabelFor(p: Prediction): string {
+  return p.league === "WC" || p.league === "FRIENDLY" ? "National model" : "Dixon-Coles";
+}
+
 function isFootballBestBet(p: Prediction) {
   const odds = selectedFootballOdds(p);
   return isFutureMarket(p.kickoff)
@@ -2781,7 +2789,7 @@ function buildEnglishFootballResearch(p: Prediction) {
     ? riskSignals.join("; ")
     : "the main risk is that market price, team news or late liquidity can move before execution";
 
-  return `${p.home_team} vs ${p.away_team} points to ${side} as the preferred model angle. Dixon-Coles prices it at ${modelProbability} versus ${marketProbability} implied by the market, leaving ${edge}. Main risk: ${risk}.`;
+  return `${p.home_team} vs ${p.away_team}: the model's preferred angle is ${side}, priced at ${modelProbability} against ${marketProbability} implied by the market (${edge}). Main risk: ${risk}.`;
 }
 
 function buildReasons(p: Prediction, lang: Lang): Reason[] {
@@ -2793,7 +2801,7 @@ function buildReasons(p: Prediction, lang: Lang): Reason[] {
   const leaderPct = leader === "HOME" ? p.p_home : leader === "DRAW" ? p.p_draw : p.p_away;
   reasons.push({
     icon: "🧠",
-    text: `Dixon-Coles model: ${leader} favoured at ${pct(leaderPct)} — λ ${p.lambda_home?.toFixed(2) ?? "?"} (home) vs ${p.lambda_away?.toFixed(2) ?? "?"} (away)`,
+    text: `Model: ${leader} favoured at ${pct(leaderPct)} — expected goals ${p.lambda_home?.toFixed(2) ?? "?"} home vs ${p.lambda_away?.toFixed(2) ?? "?"} away`,
   });
 
   if (p.edge != null && p.odds_home != null) {
@@ -2967,7 +2975,7 @@ function buildReasons(p: Prediction, lang: Lang): Reason[] {
     if (discrepancy >= 8) {
       reasons.push({
         icon: "🔎",
-        text: `Models diverge on HOME: Dixon-Coles says ${dixonHome}% vs API-Football ${apiHome}% — discrepancy of ${discrepancy}pp warrants extra caution`,
+        text: `Models diverge on HOME: our model says ${dixonHome}% vs API-Football ${apiHome}% — discrepancy of ${discrepancy}pp warrants extra caution`,
         highlight: discrepancy >= 15,
       });
     } else {
@@ -3177,15 +3185,17 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             {showWhy ? t.pred_why_hide : t.pred_why_show}
           </button>
         )}
-        <span className="text-gray-600">Dixon-Coles</span>
-        {isPreview ? (
+        <span className="text-gray-600">{modelLabelFor(p)}</span>
+        {isPreview || p.locked ? (
           <span className="plan-lock-badge">🔒 Pro</span>
         ) : p.edge != null ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
           </span>
-        ) : (
+        ) : Number.isFinite(selectedFootballProbability(p)) ? (
           <span className="px-2 py-0.5 rounded border font-mono text-[10px] text-gray-400 border-gray-400/30">{Math.round(selectedFootballProbability(p) * 100)}%</span>
+        ) : (
+          <span className="plan-lock-badge">🔒 Pro</span>
         )}
       </div>
 

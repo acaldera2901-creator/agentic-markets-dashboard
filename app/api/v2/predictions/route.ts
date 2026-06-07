@@ -56,6 +56,27 @@ export async function GET(req: Request) {
     values
   );
 
+  // Friendly / WC paper rows store the 1X2 distribution in `notes` (JSON), not
+  // in the p_home/p_draw/p_away columns (which stay null). Without this coalesce
+  // a consumer reading the p_* columns gets null → the board's "leader"
+  // computation falls through to AWAY while the row's `pick` says HOME, so the
+  // shown favourite flickers (e.g. Kosovo↔Andorra). /api/predictions already
+  // parses notes (unifiedToPredictionRow); mirror it here so both boards agree.
+  for (const r of rows as unknown as Array<{ p_home: number | null; p_draw: number | null; p_away: number | null; notes: string | null }>) {
+    if (r.p_home == null && r.notes) {
+      try {
+        const n = JSON.parse(r.notes);
+        if (typeof n?.p_home === "number") {
+          r.p_home = n.p_home;
+          r.p_draw = typeof n.p_draw === "number" ? n.p_draw : null;
+          r.p_away = typeof n.p_away === "number" ? n.p_away : null;
+        }
+      } catch {
+        // malformed notes → leave columns null (fail-soft, never fabricate)
+      }
+    }
+  }
+
   const potd = pickOfDayId(rows as Array<{ id: string; confidence_score?: number | null; starts_at?: string | null }>);
   const predictions = rows.map((row) => {
     const projected = projectPrediction(row as unknown as Record<string, unknown>, state, (row as { id: string }).id === potd);
