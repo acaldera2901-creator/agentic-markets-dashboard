@@ -1139,6 +1139,14 @@ function isFutureMarket(utc: string) {
   return new Date(utc).getTime() > Date.now();
 }
 
+// #LIVE-1: la card resta sul board per tutta la partita (kickoff + 150 min,
+// stesso margine della finestra server) — sparisce quando il settlement la
+// sposta in History. isFutureMarket resta il gate severo per best-bet/CTA.
+const IN_PLAY_GRACE_MS = 150 * 60 * 1000;
+function isBoardVisibleMarket(utc: string) {
+  return new Date(utc).getTime() + IN_PLAY_GRACE_MS > Date.now();
+}
+
 function isTennisMarketVisible(utc: string) {
   const scheduledAt = new Date(utc).getTime();
   if (!Number.isFinite(scheduledAt)) return false;
@@ -1286,7 +1294,7 @@ function SportsbookBoard({
   const footballRows = sortFootball(predictions
     .filter((p) => sportFilter !== "tennis")
     .filter(() => surfaceFilter === "all")
-    .filter((p) => isFutureMarket(p.kickoff))
+    .filter((p) => isBoardVisibleMarket(p.kickoff))
     .filter((p) => signalFilter === "all" || isFootballBestBet(p))
     .filter((p) => competitionFilter === "all" || competitionFilter === `football:${p.league}`)
     .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query)))
