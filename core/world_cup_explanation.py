@@ -191,7 +191,7 @@ def build_wc_explanation(
     probs: dict[str, Any],
     pick: str,
     confidence: int,
-    model_label: str = "National Poisson rates model",
+    model_label: str = "Our model",
 ) -> str:
     """Match-specific WC explanation (2-4 sentences) from the enrichment payload.
 
@@ -205,9 +205,9 @@ def build_wc_explanation(
     lam_a = enrichment.get("lambdas", {}).get("away")
     lam_txt = ""
     if isinstance(lam_h, (int, float)) and isinstance(lam_a, (int, float)):
-        lam_txt = f" Expected goals (Poisson rates): {home_team} {lam_h:.2f}, {away_team} {lam_a:.2f}."
+        lam_txt = f" Expected goals: {home_team} {lam_h:.2f}, {away_team} {lam_a:.2f}."
     s1 = (
-        f"{model_label} leans {pick_label} at {confidence}% for "
+        f"{model_label} leans {pick_label} at {confidence}% in "
         f"{home_team} vs {away_team}.{lam_txt}"
     )
 
