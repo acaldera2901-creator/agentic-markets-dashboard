@@ -451,6 +451,50 @@ def parse_summary_result(data: dict) -> dict | None:
         return None
 
 
+# ESPN terminal statuses that will never yield a settleable final score: the
+# match stopped and won't resume in a form we can settle. Void, never guess
+# (#PAPER-SETTLE-1, APPROVE Andrea 2026-06-07).
+ESPN_ABANDONED_STATUSES = {
+    "STATUS_ABANDONED",
+    "STATUS_CANCELED",
+    "STATUS_POSTPONED",
+    "STATUS_SUSPENDED",
+    "STATUS_FORFEIT",
+}
+
+
+async def get_match_disposition(league_code: str, event_id: str) -> str | None:
+    """'final' | 'abandoned' | 'pending' for an ESPN event, or None on error.
+
+    Lets settlement void matches ESPN will never complete (Suspended/Abandoned/
+    Postponed/Canceled/Forfeit) instead of leaving them on the board forever.
+    Same fail-soft contract as get_match_result: None on any fetch/parse error.
+    """
+    slug = ESPN_LEAGUE_CODES.get((league_code or "").upper())
+    if not slug or not event_id:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(
+                f"{_SOCCER_BASE}/{slug}/summary",
+                params={"event": event_id},
+                headers=_HEADERS,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+    except Exception as exc:
+        logger.debug("ESPN disposition %s/%s error (non-fatal): %s", league_code, event_id, exc)
+        return None
+    competition = ((data.get("header") or {}).get("competitions") or [{}])[0]
+    status_type = (competition.get("status") or {}).get("type") or {}
+    if status_type.get("completed"):
+        return "final"
+    if str(status_type.get("name") or "") in ESPN_ABANDONED_STATUSES:
+        return "abandoned"
+    return "pending"
+
+
 async def get_match_result(league_code: str, event_id: str) -> dict | None:
     """Final result for one ESPN event ("espn:"-prefixed unified rows).
 

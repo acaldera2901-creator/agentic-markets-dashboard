@@ -80,7 +80,7 @@ const BASE_TRANSLATIONS = {
     plans_base_f2: "Top Model Signals quando il mercato live è vuoto",
     plans_base_f3: "Probabilità modello, quota disponibile e spiegazione",
     plans_base_f4: "Tennis Live V4 e Football Live V4 research",
-    plans_base_f5: "Storico, track record e paper monitoring",
+    plans_base_f5: "Storico e track record",
     plans_base_f6: "Execution automatica reale",
     plans_base_f7: "Nessuna promessa di profitto garantito",
     plans_premium_desc: "Per il cliente che vuole delegare agli agenti: analisi, decisione, stake e piazzamento live.",
@@ -260,7 +260,7 @@ const BASE_TRANSLATIONS = {
     tennis_pipeline_title: "Tennis Pipeline · 6 Agenti",
     tennis_last_seen: "Ultimo heartbeat",
     tennis_no_heartbeat: "Nessun heartbeat ancora",
-    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2.966 giocatori · settlement loop live · paper mode",
+    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2.966 giocatori · settlement loop live",
     agent_arch_title: "Architettura ibrida v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
     agent_arch_dashboard_desc: "Dixon-Coles · Pi Rating · xG · API-Football · Odds. Sempre online, non dipende dagli agenti Python.",
@@ -320,7 +320,7 @@ const BASE_TRANSLATIONS = {
     plans_base_f2: "Top Model Signals when live markets are quiet",
     plans_base_f3: "Model probability, available odds and explanation",
     plans_base_f4: "Tennis Live V4 and Football Live V4 research",
-    plans_base_f5: "History, track record and paper monitoring",
+    plans_base_f5: "History and track record",
     plans_base_f6: "Real automated execution",
     plans_base_f7: "No guaranteed profit promises",
     plans_premium_desc: "For the client who wants to delegate to agents: analysis, decision, stake and live placement.",
@@ -500,7 +500,7 @@ const BASE_TRANSLATIONS = {
     tennis_pipeline_title: "Tennis Pipeline · 6 Agents",
     tennis_last_seen: "Last seen",
     tennis_no_heartbeat: "No heartbeat yet",
-    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2,966 players · settlement loop live · paper mode",
+    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2,966 players · settlement loop live",
     agent_arch_title: "Hybrid architecture v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
     agent_arch_dashboard_desc: "Dixon-Coles · Pi Rating · xG · API-Football · Odds. Always online, independent from local Python agents.",
@@ -3061,12 +3061,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               {p.league}
             </span>
             <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
-            {/* PAPER = published for track-record only: no market odds, no edge
-                claimed (is_estimate). Was hardcoded when every WC row was paper;
-                now it follows the row's real state (#018 promoted WC to signal). */}
-            {p.is_estimate && (
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-400/70 bg-amber-400/5">PAPER</span>
-            )}
           </div>
           <div className="text-sm font-bold text-white mt-1">
             {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
@@ -4953,11 +4947,6 @@ function HistoryTab({ history, stats, loading }: {
                     <span className={`px-2 py-0.5 rounded-full border text-[10px] font-mono uppercase ${resultColor(r)}`}>
                       {r}
                     </span>
-                    {h.is_paper && (
-                      <span className="px-2 py-0.5 rounded-full border border-white/10 text-[10px] font-mono text-gray-400">
-                        paper
-                      </span>
-                    )}
                     {h.is_verified && (
                       <span className="px-2 py-0.5 rounded-full border border-cyan-400/30 text-[10px] font-mono text-cyan-300">
                         verified

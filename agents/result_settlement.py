@@ -13,11 +13,14 @@ Runs every 5 minutes. For each pending bet whose kickoff was at least 115 minute
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from agents.base import BaseAgent
 from core.db import get_pending_bets_for_settlement, settle_bet, get_cumulative_pnl
-from core.espn_soccer_client import get_match_result as espn_get_match_result
+from core.espn_soccer_client import (
+    get_match_disposition as espn_get_match_disposition,
+    get_match_result as espn_get_match_result,
+)
 from core.football_api_client import get_fixture_result
 from core.football_data_org_client import get_match_result as fdorg_get_match_result
 from core.redis_client import publish
@@ -142,6 +145,16 @@ class ResultSettlementAgent(BaseAgent):
             try:
                 result = await self._fetch_unified_result(row)
                 if result is None:
+                    # A match ESPN will never complete (suspended/abandoned/
+                    # postponed/canceled) would otherwise sit on the board
+                    # forever. Past a 6h grace, void it — never guess a score.
+                    if await self._should_void_abandoned(row):
+                        if await settle_unified_prediction(str(row["id"]), "void"):
+                            settled += 1
+                            self.logger.info(
+                                f"unified voided (abandoned): {row.get('home_team')} vs "
+                                f"{row.get('away_team')} ({row.get('competition')})"
+                            )
                     continue  # not finished / providers have no score yet
 
                 pick = str(row.get("pick") or "").lower()
@@ -175,6 +188,35 @@ class ResultSettlementAgent(BaseAgent):
                 "pending": len(rows) - settled,
                 "settled_at": datetime.now(timezone.utc).isoformat(),
             })
+
+    # Grace before an unfinished, abandoned ESPN match is voided. A suspension
+    # can be transient (resumed same day); 6h covers the realistic cases while
+    # still clearing the board (#PAPER-SETTLE-1).
+    VOID_ABANDONED_AFTER_HOURS = 6
+
+    async def _should_void_abandoned(self, row: dict) -> bool:
+        """True if an ESPN-sourced row is past grace AND ESPN reports it
+        abandoned (no settleable score will ever arrive). ESPN-only scope: the
+        quota providers cover the rest and abandoned friendlies are the case
+        observed in prod (Denmark vs Ukraine, 2026-06-07)."""
+        starts_at = row.get("starts_at")
+        if not starts_at:
+            return False
+        try:
+            start = datetime.fromisoformat(str(starts_at).replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return False
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) - start < timedelta(hours=self.VOID_ABANDONED_AFTER_HOURS):
+            return False
+        ext = str(row.get("external_event_id") or "")
+        if not ext.startswith("espn:"):
+            return False
+        disposition = await espn_get_match_disposition(
+            str(row.get("league") or ""), ext.removeprefix("espn:")
+        )
+        return disposition == "abandoned"
 
     async def _fetch_unified_result(self, row: dict) -> dict | None:
         """Result lookup for a unified row: fixture id first, team-name fallback."""
