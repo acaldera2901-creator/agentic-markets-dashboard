@@ -151,17 +151,22 @@ export async function POST(req: Request) {
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
     const language = typeof body.language === "string" ? body.language.slice(0, 16) : null;
     const timezone = typeof body.timezone === "string" ? body.timezone.slice(0, 64) : null;
+    // #MB-1 influencer attribution: optional ref code from a Match Builder
+    // share link (first-touch — never overwrites an existing referred_by).
+    const rawRef = typeof body.ref === "string" ? body.ref.trim().toUpperCase().slice(0, 20) : "";
+    const referredBy = /^[A-Z0-9_-]{2,20}$/.test(rawRef) ? rawRef : null;
     try {
       await dbExecute(
-        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash)
-         VALUES ($1, $2, $3, $4, 'free', $5)
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by)
+         VALUES ($1, $2, $3, $4, 'free', $5, $6)
        ON CONFLICT (identifier) DO UPDATE
          SET name = COALESCE(EXCLUDED.name, profiles.name),
              language = COALESCE(EXCLUDED.language, profiles.language),
              timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
              password_hash = EXCLUDED.password_hash,
+             referred_by = COALESCE(profiles.referred_by, EXCLUDED.referred_by),
              updated_at = NOW()`,
-        [identifier, name, language, timezone, hashPassword(password)]
+        [identifier, name, language, timezone, hashPassword(password), referredBy]
       );
     } catch (e) {
       console.error("[auth] register failed:", String(e));

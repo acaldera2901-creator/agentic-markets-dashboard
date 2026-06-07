@@ -853,7 +853,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners" | "leaderboard";
+type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners" | "leaderboard" | "match-builder";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -2551,6 +2551,10 @@ function ClientAuthModal({
           identifier: normalizedEmail, password,
           name: mode === "create" ? name.trim() : undefined,
           language: lang, timezone: tz,
+          // #MB-1: first-touch influencer ref from a Match Builder share link
+          ref: mode === "create"
+            ? (() => { try { return window.localStorage.getItem("am_ref") ?? undefined; } catch { return undefined; } })()
+            : undefined,
         }),
       });
       if (resp.ok) {
@@ -3927,6 +3931,299 @@ function ClientStatusTab({
 const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled"];
 
 
+// ─── Match Builder Tab (#MB-1, influencer tool) ──────────────────────────────
+//
+// L'influencer (loggato) seleziona 2–5 predizioni, vede il moltiplicatore
+// combinato e genera un link /?mb=id1,id2&ref=CODICE. Il visitatore che apre
+// il link trova la schedina precaricata: i pick/quote restano gated per gli
+// anonimi (projection server-side), quindi il link è esso stesso il funnel.
+// Onestà quote: le selezioni senza mercato reale usano le FAIR ODDS del
+// modello, etichettate FAIR e mai spacciate per quote bancabili.
+
+interface MbItem {
+  id: string;
+  label: string;
+  market: string;
+  sport: string;
+  when: string;
+  odds: number;
+  isFair: boolean;
+}
+
+interface MbWcRow {
+  id?: string | number;
+  home_team?: string | null;
+  away_team?: string | null;
+  starts_at?: string;
+  pick?: string | null;
+  odds?: number | null;
+  fair_odds?: number | null;
+  locked?: boolean;
+}
+
+function MatchBuilderTab({
+  predictions, tennisMatches, onRegister, isLoggedIn, sharedIds = [], refCode = "",
+}: {
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  onRegister: () => void;
+  isLoggedIn: boolean;
+  sharedIds?: string[];
+  refCode?: string;
+}) {
+  const lang = useLang();
+  const [selected, setSelected] = useState<string[]>(sharedIds);
+  const [influencerCode, setInfluencerCode] = useState(refCode);
+  const [copied, setCopied] = useState(false);
+  // World Cup rows live only in /world-cup (#BOARD-WC-SPLIT) — the builder
+  // fetches them from the v2 API directly (projected per-session like the WC tab).
+  const [wcRows, setWcRows] = useState<MbWcRow[]>([]);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/v2/predictions?competition=World Cup&sport=football", { credentials: "same-origin", cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (alive) setWcRows(Array.isArray(d?.predictions) ? d.predictions : []); })
+      .catch(() => { /* WC feed down: builder still works on board signals */ });
+    return () => { alive = false; };
+  }, []);
+
+  const copy = lang === "it" ? {
+    eyebrow: "Strumento influencer", title: "Match Builder",
+    subtitle: "Costruisci una schedina con le predizioni AI e condividi il link con i tuoi follower.",
+    selectTitle: "Seleziona le predizioni (2–5)", selectedLabel: "Selezionate",
+    combinedOdds: "Moltiplicatore combinato", fairNote: "Include fair odds del modello (non quote bancabili)",
+    yourCode: "Il tuo codice influencer (es. MARIO10)", copyLink: "Copia link da condividere", copied: "Copiato ✓",
+    sharedTitle: "Schedina condivisa", sharedDesc: "Un creator ha costruito questa schedina per te.",
+    sharedBy: "Codice creator", registerCta: "Registrati gratis per vedere pick e quote",
+    noSignals: "Nessuna predizione disponibile al momento.",
+    empty: "Seleziona almeno 2 predizioni per generare il link.", fairTag: "FAIR",
+  } : {
+    eyebrow: "Influencer tool", title: "Match Builder",
+    subtitle: "Build an accumulator from AI predictions and share the link with your followers.",
+    selectTitle: "Select predictions (2–5)", selectedLabel: "Selected",
+    combinedOdds: "Combined multiplier", fairNote: "Includes model fair odds (not bookable market odds)",
+    yourCode: "Your influencer code (e.g. JOHN10)", copyLink: "Copy share link", copied: "Copied ✓",
+    sharedTitle: "Shared accumulator", sharedDesc: "A creator built this accumulator for you.",
+    sharedBy: "Creator code", registerCta: "Register free to reveal picks & odds",
+    noSignals: "No predictions available right now.",
+    empty: "Select at least 2 predictions to generate a link.", fairTag: "FAIR",
+  };
+
+  const items: MbItem[] = [
+    ...predictions
+      .filter((p) => !p.locked && isFutureMarket(p.kickoff) && Boolean(p.best_selection))
+      .map((p): MbItem | null => {
+        const market = selectedFootballOdds(p);
+        const prob = selectedFootballProbability(p);
+        const odds = market ?? (prob > 0 ? 1 / prob : null);
+        if (odds == null || !Number.isFinite(odds)) return null;
+        return {
+          id: `f_${p.match_id}`,
+          label: `${p.home_team} vs ${p.away_team}`,
+          market: p.best_selection === "HOME" ? p.home_team : p.best_selection === "AWAY" ? p.away_team : "Draw",
+          sport: p.league_name || "Football", when: p.kickoff,
+          odds, isFair: market == null,
+        };
+      })
+      .filter((i): i is MbItem => i !== null),
+    ...wcRows
+      .filter((r) => !r.locked && r.home_team && r.away_team && r.pick && r.starts_at && isFutureMarket(r.starts_at))
+      .map((r): MbItem | null => {
+        const odds = r.odds ?? r.fair_odds ?? null;
+        if (odds == null || !Number.isFinite(odds) || odds <= 1) return null;
+        return {
+          id: `w_${r.id}`,
+          label: `${r.home_team} vs ${r.away_team}`,
+          market: r.pick === "HOME" ? String(r.home_team) : r.pick === "AWAY" ? String(r.away_team) : "Draw",
+          sport: "World Cup", when: String(r.starts_at),
+          odds, isFair: r.odds == null,
+        };
+      })
+      .filter((i): i is MbItem => i !== null),
+    ...tennisMatches
+      .filter((m) => isTennisMarketVisible(m.scheduled) && Boolean(m.best_selection))
+      .map((m): MbItem | null => {
+        const market = selectedTennisOdds(m);
+        const prob = selectedTennisProbability(m);
+        const odds = market ?? (prob > 0 ? 1 / prob : null);
+        if (odds == null || !Number.isFinite(odds)) return null;
+        return {
+          id: `t_${m.id}`,
+          label: `${m.player1} vs ${m.player2}`,
+          market: m.best_selection === "P1" ? m.player1 : m.player2,
+          sport: `Tennis · ${m.tournament}`, when: m.scheduled,
+          odds, isFair: market == null,
+        };
+      })
+      .filter((i): i is MbItem => i !== null),
+  ];
+
+  // Locked rows (anonymous/free projection): the share-link visitor must still
+  // SEE which matches are in the slip — names visible, pick/odds behind the
+  // register CTA. Only unlocked items are selectable/priced.
+  const lockedLabels = new Map<string, string>([
+    ...predictions
+      .filter((p) => p.locked && p.home_team && p.away_team)
+      .map((p) => [`f_${p.match_id}`, `${p.home_team} vs ${p.away_team}`] as [string, string]),
+    ...wcRows
+      .filter((r) => r.locked && r.home_team && r.away_team)
+      .map((r) => [`w_${r.id}`, `${r.home_team} vs ${r.away_team}`] as [string, string]),
+  ]);
+  const selectedItems = items.filter((i) => selected.includes(i.id));
+  const lockedSelected = selected.filter((id) => !items.some((i) => i.id === id) && lockedLabels.has(id));
+  const combinedOdds = selectedItems.reduce((acc, i) => acc * i.odds, 1);
+  const anyFair = selectedItems.some((i) => i.isFair);
+  const isSharedView = sharedIds.length > 0 && !isLoggedIn;
+
+  const toggle = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 5 ? [...prev, id] : prev
+    );
+  };
+
+  const shareLink = (() => {
+    if (selected.length < 2) return "";
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    const params = new URLSearchParams({ mb: selected.join(",") });
+    const code = influencerCode.trim().toUpperCase();
+    if (/^[A-Z0-9_-]{2,20}$/.test(code)) params.set("ref", code);
+    return `${base}/?${params.toString()}`;
+  })();
+
+  const copyLink = async () => {
+    if (!shareLink) return;
+    try { await navigator.clipboard.writeText(shareLink); } catch { /* clipboard denied: link shown below anyway */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    trackEvent("mb_link_copied", { meta: { selections: selected.length } });
+  };
+
+  return (
+    <div className="space-y-6 p-4">
+      <div className="space-y-1">
+        <p className="eyebrow">{copy.eyebrow}</p>
+        <h2 className="text-xl font-bold text-white">{copy.title}</h2>
+        <p className="text-xs font-mono text-gray-500 max-w-lg">{copy.subtitle}</p>
+      </div>
+
+      {isSharedView && (
+        <div className="glass-card p-4 border border-cyan-400/30 space-y-2">
+          <p className="text-xs font-mono text-cyan-400 font-bold">{copy.sharedTitle}</p>
+          <p className="text-xs font-mono text-gray-400">{copy.sharedDesc}</p>
+          {refCode && (
+            <p className="text-[10px] font-mono text-gray-600">{copy.sharedBy}: <span className="text-amber-400">{refCode}</span></p>
+          )}
+          {lockedSelected.length > 0 && (
+            <div className="space-y-1 pt-1">
+              {lockedSelected.map((id) => (
+                <div key={id} className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-gray-300 truncate max-w-[220px]">{lockedLabels.get(id)}</span>
+                  <span className="text-gray-600">🔒</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={onRegister}
+            className="mt-2 text-xs font-mono px-4 py-2 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
+          >
+            {copy.registerCta} →
+          </button>
+        </div>
+      )}
+
+      {selectedItems.length >= 2 && (
+        <div className="glass-card p-4 border border-amber-400/30 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-gray-400">{copy.selectedLabel}: {selectedItems.length}/5</span>
+            <span className="text-xl font-black font-mono text-amber-400">{combinedOdds.toFixed(2)}x</span>
+          </div>
+          <div className="space-y-1">
+            {selectedItems.map((item) => (
+              <div key={item.id} className="flex items-center justify-between text-xs font-mono">
+                <span className="text-gray-300 truncate max-w-[220px]">{item.label}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-gray-500 truncate max-w-[110px]">{item.market}</span>
+                  {item.isFair && <span className="text-[8px] px-1 rounded border border-gray-500/40 text-gray-500">{copy.fairTag}</span>}
+                  <span className={item.isFair ? "text-gray-400" : "text-cyan-300"}>{item.odds.toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] font-mono text-gray-600">
+            {copy.combinedOdds}: <strong className="text-amber-400">{combinedOdds.toFixed(2)}</strong>
+            {anyFair && <span className="block text-gray-700 mt-1">⚠ {copy.fairNote}</span>}
+          </p>
+        </div>
+      )}
+
+      {!isSharedView && (
+        <div className="glass-card p-4 space-y-3">
+          <p className="text-xs font-mono text-gray-400">{copy.yourCode}</p>
+          <input
+            type="text"
+            value={influencerCode}
+            onChange={(e) => setInfluencerCode(e.target.value)}
+            placeholder="YOURCODE"
+            className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-gray-700 focus:outline-none focus:border-cyan-400/40"
+            maxLength={20}
+          />
+          {selected.length >= 2 ? (
+            <>
+              <button
+                onClick={copyLink}
+                className="w-full text-xs font-mono px-4 py-2 rounded border border-amber-400/40 text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 transition-colors"
+              >
+                {copied ? copy.copied : copy.copyLink}
+              </button>
+              <p className="text-[9px] font-mono text-gray-700 break-all">{shareLink}</p>
+            </>
+          ) : (
+            <p className="text-[10px] font-mono text-gray-700 italic">{copy.empty}</p>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">{copy.selectTitle}</p>
+        {items.length === 0 ? (
+          <div className="glass-card p-8 text-center text-xs font-mono text-gray-600">{copy.noSignals}</div>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => {
+              const isSelected = selected.includes(item.id);
+              const atCap = selected.length >= 5 && !isSelected;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => toggle(item.id)}
+                  disabled={atCap}
+                  className={`w-full glass-card p-3 flex items-center justify-between gap-3 text-left transition-colors ${
+                    isSelected ? "border-cyan-400/40 bg-cyan-400/5" : "hover:border-white/20"
+                  } ${atCap ? "opacity-40 cursor-not-allowed" : ""}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{item.label}</p>
+                    <p className="text-[10px] font-mono text-gray-500 truncate">{item.sport} · {item.market}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {item.isFair && <span className="text-[8px] px-1 rounded border border-gray-500/40 text-gray-500">{copy.fairTag}</span>}
+                    <span className={`text-sm font-black font-mono ${item.isFair ? "text-gray-400" : "text-cyan-300"}`}>{item.odds.toFixed(2)}</span>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "border-cyan-400 bg-cyan-400/20" : "border-white/20"}`}>
+                      {isSelected && <span className="text-cyan-400 text-[10px]">✓</span>}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Partners Tab ─────────────────────────────────────────────────────────────
 
 type PartnerType = "Casino & Sportsbook" | "Sportsbook" | "Exchange" | "Casino" | "Crypto Casino";
@@ -4938,7 +5235,7 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "client-area", "settings", "assistance", "faq", "history", "partners", "leaderboard"];
+const VALID_TABS: readonly Tab[] = ["bets", "client-area", "settings", "assistance", "faq", "history", "partners", "leaderboard", "match-builder"];
 
 export default function Dashboard() {
   // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
@@ -4960,6 +5257,26 @@ export default function Dashboard() {
     trackEvent("language_change", { language: next });
   };
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
+  // #MB-1 Match Builder: shared accumulator ids (?mb=) + influencer ref (?ref=).
+  // The ref is first-touch: persisted once in localStorage and attached to the
+  // register payload (app/api/auth, referred_by).
+  const [mbSharedIds, setMbSharedIds] = useState<string[]>([]);
+  const [mbRefCode, setMbRefCode] = useState<string>("");
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = (params.get("ref") ?? "").trim().toUpperCase().slice(0, 20);
+      if (/^[A-Z0-9_-]{2,20}$/.test(ref)) {
+        if (!window.localStorage.getItem("am_ref")) window.localStorage.setItem("am_ref", ref);
+        setMbRefCode(ref);
+      }
+      const mb = params.get("mb");
+      if (mb) {
+        setMbSharedIds(mb.split(",").filter(Boolean).slice(0, 5));
+        setTab("match-builder");
+      }
+    } catch { /* URL/storage unavailable: no share link to restore */ }
+  }, []);
   const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
   const [authIntent, setAuthIntent] = useState<ClientAuthIntent>("login");
@@ -5364,6 +5681,9 @@ export default function Dashboard() {
     { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
+    // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
+    // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
+    ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
     { tab: "partners",    label: tNav.nav_partner },
     { tab: "settings",    label: uiLanguage === "it" ? "Impostazioni" : "Settings" },
     { tab: "assistance",  label: uiLanguage === "it" ? "Assistenza" : "Assistance" },
@@ -5528,6 +5848,16 @@ export default function Dashboard() {
             />
           )}
           {tab === "partners" && <PartnersTab />}
+          {tab === "match-builder" && (
+            <MatchBuilderTab
+              predictions={predictions}
+              tennisMatches={tennisMatches}
+              onRegister={() => openAuth("create")}
+              isLoggedIn={hasClientProfile}
+              sharedIds={mbSharedIds}
+              refCode={mbRefCode}
+            />
+          )}
         </section>
         </section>{/* end book-layout */}
         </div>{/* end portal-desk */}
