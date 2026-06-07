@@ -632,6 +632,11 @@ async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
        AND published_at IS NOT NULL
        AND is_historical = FALSE
        AND is_demo = FALSE
+       -- Decisione Andrea 2026-06-07: il Mondiale vive SOLO nella scheda
+       -- dedicata (/world-cup, che legge /api/v2/predictions?competition=
+       -- World Cup). Il board principale serve il resto del football
+       -- (amichevoli ora, club leagues alla ripresa).
+       AND competition != 'World Cup'
      ORDER BY starts_at ASC
      LIMIT 120`,
     [PREDICTION_WINDOW_DAYS]
