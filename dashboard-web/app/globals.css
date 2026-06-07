@@ -30,7 +30,7 @@ body {
   margin: 0;
   color: var(--text);
   background: var(--bg);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-image:
     radial-gradient(ellipse 900px 520px at 50% -10%, rgba(129,140,248,0.12) 0%, transparent 68%),
     linear-gradient(180deg, rgba(255,255,255,0.018), transparent 36%);
@@ -150,7 +150,7 @@ button:disabled {
   color: var(--green);
   font-size: 10px;
   font-weight: 900;
-  font-family: monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -177,7 +177,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── Topbar stats pills ──────────────────────────────────────── */
@@ -206,7 +206,7 @@ button:disabled {
   color: rgba(255,255,255,0.65);
   font-size: 11px;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-access-button {
@@ -218,7 +218,7 @@ button:disabled {
   color: var(--green);
   font-size: 11px;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-access-button:hover {
@@ -314,7 +314,7 @@ button:disabled {
   background: var(--panel-3);
   color: var(--muted);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .rail-item:hover,
@@ -346,7 +346,7 @@ button:disabled {
   border-color: rgba(34,197,94,0.28);
   color: var(--green);
   background: rgba(34,197,94,0.08);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   text-transform: uppercase;
 }
@@ -400,7 +400,7 @@ button:disabled {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   letter-spacing: 0.04em;
 }
 
@@ -436,7 +436,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .status-dot {
@@ -503,7 +503,7 @@ button:disabled {
   color: var(--muted);
   font-size: 11px;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: nowrap;
 }
 
@@ -539,7 +539,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .sports-filter-bar select,
@@ -552,7 +552,7 @@ button:disabled {
   color: rgba(237,241,255,0.88);
   font-size: 12px;
   font-weight: 780;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   outline: none;
 }
 
@@ -717,7 +717,7 @@ button:disabled {
   font-style: normal;
   font-size: 15px;
   font-weight: 800;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-stat-strip {
@@ -745,7 +745,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-stat-strip strong {
@@ -791,7 +791,7 @@ button:disabled {
   background: rgba(6,7,15,0.35);
   font-size: 11px;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-panel-head > span.is-positive {
@@ -827,7 +827,7 @@ button:disabled {
   justify-content: space-between;
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-chart-axis strong {
@@ -897,7 +897,7 @@ button:disabled {
   color: var(--muted);
   font-size: 11px;
   font-style: normal;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-bet-row > div:last-child {
@@ -1015,7 +1015,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .is-premium .plan-card-head > span {
@@ -1079,7 +1079,7 @@ button:disabled {
   color: var(--green);
   font-size: 9px;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .plan-feature-list li strong {
@@ -1128,7 +1128,7 @@ button:disabled {
   color: var(--muted-2);
   font-size: 10px;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .plan-flow strong {
@@ -1255,7 +1255,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .auth-modal input {
@@ -1417,7 +1417,7 @@ button:disabled {
   padding: 18px 0 0;
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .public-entry-footer button {
@@ -1542,7 +1542,7 @@ button:disabled {
 
 .preaccess-grid > div > span:first-child {
   display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 900;
   color: var(--green);
@@ -1628,7 +1628,7 @@ button:disabled {
 
 .public-sponsor-strip span,
 .sponsor-slot span {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -1708,7 +1708,7 @@ button:disabled {
   border-radius: 7px;
   color: #fbbf24;
   background: rgba(245,158,11,0.08);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
 }
 
@@ -1749,7 +1749,7 @@ button:disabled {
 .desk-preview-board strong {
   color: var(--green);
   font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .desk-preview p {
@@ -1864,7 +1864,7 @@ button:disabled {
   display: block;
   color: var(--muted-2);
   font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .public-history-stats strong {
@@ -1921,7 +1921,7 @@ button:disabled {
 .future-sports-grid span {
   font-size: 10px;
   color: var(--muted-2);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .sponsor-slot {
@@ -1944,7 +1944,7 @@ button:disabled {
   color: var(--muted-2);
   font-size: 10px;
   font-style: normal;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .support-hub {
@@ -2004,7 +2004,7 @@ button:disabled {
 .support-validation-hint {
   font-size: 11px;
   color: #f87171;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   margin: 0;
   padding: 0;
 }
@@ -2381,7 +2381,7 @@ button:disabled {
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-dashboard-section .portfolio-hero,
@@ -2456,7 +2456,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .bets-filter-bar select {
@@ -2469,7 +2469,7 @@ button:disabled {
   color: rgba(237,241,255,0.88);
   font-size: 12px;
   font-weight: 780;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   outline: none;
 }
 
@@ -2503,7 +2503,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .crypto-pay-box strong {
@@ -2727,7 +2727,7 @@ button:disabled {
   color: var(--muted-2);
   font-style: normal;
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .market-list {
@@ -2764,7 +2764,7 @@ button:disabled {
   gap: 6px;
   color: var(--muted-2);
   font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .model-cell {
@@ -2772,7 +2772,7 @@ button:disabled {
   gap: 3px;
   color: var(--muted);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .model-cell strong {
@@ -2820,7 +2820,7 @@ button:disabled {
   font-size: 10px;
   font-style: normal;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .odds-button strong {
@@ -2919,7 +2919,7 @@ button:disabled {
   font-size: 11px;
   font-style: normal;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
 }
 
@@ -2943,7 +2943,7 @@ button:disabled {
 .ticket-note {
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .ticket-line strong,
@@ -3088,7 +3088,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-status-card strong {
@@ -3140,7 +3140,7 @@ button:disabled {
 .kpi-sub {
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── Responsive ──────────────────────────────────────────────── */
@@ -3386,7 +3386,7 @@ button:disabled {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--green);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .checkout-address {
@@ -3397,7 +3397,7 @@ button:disabled {
 
 .checkout-address code {
   flex: 1;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   color: var(--text);
   word-break: break-all;
@@ -3454,7 +3454,7 @@ button:disabled {
   font-weight: 900;
   display: grid;
   place-items: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .checkout-steps > div > span:last-child {
@@ -3502,7 +3502,7 @@ button:disabled {
 }
 
 .pending-payment-view .pending-tx span {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   color: rgba(245,158,11,0.80);
   word-break: break-all;
@@ -3701,7 +3701,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: .08em;
   cursor: pointer;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── Client Area & Plans ─────────────────────────────────────── */
@@ -3866,7 +3866,7 @@ button:disabled {
 }
 .extra-markets-label {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: #4b5563;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -3878,7 +3878,7 @@ button:disabled {
   gap: 3px;
   padding: 2px 7px;
   border-radius: 99px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 600;
 }
@@ -3976,7 +3976,7 @@ button:disabled {
   border-radius: 8px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.07);
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
 }
 .live-score-bar.live   { border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.05); }
@@ -4012,7 +4012,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 .hist-score.live .live-badge { font-size: 9px; }
 .hist-score-val {
@@ -4032,7 +4032,7 @@ button:disabled {
   background: rgba(234, 179, 8, 0.08);
   color: #eab308;
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
   white-space: nowrap;
   cursor: default;
@@ -4051,13 +4051,13 @@ button:disabled {
 .plan-upgrade-nudge > span { font-size: 14px; }
 .plan-upgrade-nudge strong {
   font-size: 11px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: #eab308;
   font-weight: 600;
 }
 .plan-upgrade-nudge em {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.35);
   font-style: normal;
 }
@@ -4066,7 +4066,7 @@ button:disabled {
   cursor: default;
   font-size: 10px;
   color: rgba(255,255,255,0.2);
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   user-select: none;
@@ -4084,13 +4084,13 @@ button:disabled {
 }
 .free-tier-banner strong {
   font-size: 11px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: #eab308;
   font-weight: 600;
 }
 .free-tier-banner span {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.35);
 }
 
@@ -4112,14 +4112,14 @@ button:disabled {
 }
 .fpw-count {
   font-size: 13px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
   color: #eab308;
   letter-spacing: 0.03em;
 }
 .fpw-sub {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.35);
 }
 
@@ -4142,7 +4142,7 @@ button:disabled {
 }
 .da-badge {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 2px 6px;
@@ -4154,7 +4154,7 @@ button:disabled {
 }
 .da-title {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(167, 139, 250, 0.6);
@@ -4164,7 +4164,7 @@ button:disabled {
   align-items: flex-start;
   gap: 8px;
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 .da-label {
   color: rgba(255,255,255,0.35);
@@ -4189,7 +4189,7 @@ button:disabled {
 }
 .da-market-pill {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.1);
@@ -4211,7 +4211,7 @@ button:disabled {
 }
 .da-research-text {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.55);
   line-height: 1.55;
   margin: 0;
@@ -4227,7 +4227,7 @@ button:disabled {
   border: 1px dashed rgba(139, 92, 246, 0.18);
   background: rgba(139, 92, 246, 0.02);
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(167, 139, 250, 0.45);
   margin-top: 4px;
   cursor: default;
