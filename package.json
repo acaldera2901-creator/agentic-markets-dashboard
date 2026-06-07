@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gate": "./venv/bin/python scripts/promotion_gate.py",
+    "gate:update": "./venv/bin/python scripts/promotion_gate.py --update-baselines"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

@@ -1,0 +1,30 @@
+{
+  "tolerance": {
+    "brier": 0.002,
+    "ece": 0.005
+  },
+  "models": {
+    "football": {
+      "sport": "football",
+      "holdout": "2024",
+      "n": 1559,
+      "brier": 0.5942,
+      "ece": 0.0146
+    },
+    "tennis": {
+      "sport": "tennis",
+      "holdout": "2025-26",
+      "n": 8044,
+      "brier": 0.2209,
+      "ece": 0.0179,
+      "accuracy": 0.6363
+    },
+    "wc": {
+      "sport": "wc",
+      "holdout": "neutral 2025+ (overlaps artifact fit \u2014 regression detector only)",
+      "n": 262,
+      "brier": 0.5451,
+      "ece": 0.0466
+    }
+  }
+}

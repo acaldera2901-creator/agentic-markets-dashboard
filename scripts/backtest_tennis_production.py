@@ -44,7 +44,7 @@ def ece(p: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
     return e
 
 
-def main() -> None:
+def _replay() -> list[tuple[str, float, int]]:
     rows = []
     for f in sorted(DATA_DIR.glob("*.csv")):
         for r in csv.DictReader(open(f)):
@@ -54,7 +54,6 @@ def main() -> None:
             if d and w and l:
                 rows.append((d, w, l, s))
     rows.sort(key=lambda x: x[0])
-    print(f"match Sackmann totali: {len(rows)}")
 
     model = EloSurfaceModel()
     preds: list[tuple[str, float, int]] = []
@@ -64,7 +63,28 @@ def main() -> None:
             p = model.predict(first, second, s)
             preds.append((d, float(p["p1"]), 1 if first == w else 0))
         model.update(w, l, s)
+    return preds
 
+
+def compute_metrics() -> dict:
+    """Holdout 2025-26 metrics of the production tennis model (#HARNESS-1 gate API)."""
+    preds = _replay()
+    hold = [(p, o) for d, p, o in preds if d >= HOLDOUT_START]
+    p_h = np.array([p for p, _ in hold])
+    y_h = np.array([float(o) for _, o in hold])
+    return {
+        "sport": "tennis",
+        "holdout": "2025-26",
+        "n": len(hold),
+        "brier": round(float(brier(p_h, y_h)), 4),
+        "ece": round(float(ece(p_h, y_h)), 4),
+        "accuracy": round(float(((p_h > 0.5) == (y_h == 1)).mean()), 4),
+    }
+
+
+def main() -> None:
+    preds = _replay()
+    print(f"predizioni dal {BURN_IN_END}: {len(preds)}")
     for start, label in ((HOLDOUT_START, "holdout 2025-26"), ("20240101", "holdout 2024 (split2)")):
         hold = [(p, o) for d, p, o in preds if d >= start] if start == HOLDOUT_START else [
             (p, o) for d, p, o in preds if "20240101" <= d < "20250101"
