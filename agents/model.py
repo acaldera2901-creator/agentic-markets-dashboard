@@ -10,6 +10,7 @@ from core.world_cup_team_model import matchup_profile
 from core.world_cup_history import canonical_team_name, load_national_history
 from core.world_cup_data_quality import compute_world_cup_data_quality, world_cup_data_quality_status_detail
 from core.world_cup_probability import national_match_probabilities
+from core.wc_calibration import calibrate_wc_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
 from core.supabase_client import (
     DCPrediction,
@@ -255,12 +256,16 @@ class ModelAgent(BaseAgent):
                     or odds_payload.get("provider")
                     or "market"
                 )
-            p_home, p_draw, p_away = blend_with_market(
+            # #CALIB-2: isotonic calibration (neutral-venue fit) BEFORE the
+            # blend — corrects the measured directional bias of the neutral
+            # Poisson model (team_a under-predicted ~2.5pp). Fail-safe: missing
+            # artifact = identity. Same pre-blend architecture as #CALIB-1.
+            cal_a, cal_d, cal_b = calibrate_wc_probabilities(
                 float(probs["p_team_a"]),
                 float(probs["p_draw"]),
                 float(probs["p_team_b"]),
-                market,
             )
+            p_home, p_draw, p_away = blend_with_market(cal_a, cal_d, cal_b, market)
             pred = DCPrediction(
                 match_id=str(payload.get("match_id")),
                 league=payload["league"],
@@ -354,11 +359,10 @@ class ModelAgent(BaseAgent):
                         away_team=payload["away_team"],
                         kickoff=payload["kickoff"],
                         served=(p_home, p_draw, p_away),
-                        model=(
-                            float(probs["p_team_a"]),
-                            float(probs["p_draw"]),
-                            float(probs["p_team_b"]),
-                        ),
+                        # #CALIB-2: model_p_* = the calibrated triple that
+                        # actually enters the blend (same contract as the TS
+                        # prediction_log in #CALIB-1).
+                        model=(cal_a, cal_d, cal_b),
                         odds=odds_triple,
                         market=market,
                         model_version=settings.WC_MODEL_VERSION,
