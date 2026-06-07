@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncTennisPredictionsToUnified } from "@/lib/tennis-adapter";
 import { emptySyncReport, type SyncReport } from "@/lib/publication-gate";
+import { verifyBearer } from "@/lib/admin-auth";
 
 export const maxDuration = 300;
 
@@ -9,11 +10,10 @@ export const maxDuration = 300;
 //   1. football: recompute the model + sync (POST /api/predictions)
 //   2. tennis:   sync the ESPN-fed tennis_predictions into unified_predictions
 export async function GET(req: NextRequest) {
+  // Default-deny + constant-time: a missing CRON_SECRET must never leave the
+  // trigger open. `auth` is reused below to forward the bearer to /api/predictions.
   const auth = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  // Default-deny: a missing CRON_SECRET must never leave the trigger open.
-  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
+  if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

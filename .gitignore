@@ -2,6 +2,15 @@
 .env
 .env.*
 !.env.fly.example
+
+# MCP config carries the project-brain auth token — keep it local only.
+# Commit .mcp.json.example (placeholder) instead.
+.mcp.json
+
+# Local lab datasets (auto-downloaded by scripts/lab_*.py) — never commit.
+data/football_data_uk_10y/
+data/transfermarkt/
+data/wc2026_fixtures_cache.json
 .venv/
 venv/
 __pycache__/

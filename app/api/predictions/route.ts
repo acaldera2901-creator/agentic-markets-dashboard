@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveAccessState, type AccessState } from "@/lib/auth";
 import { isUnlocked } from "@/lib/access-projection";
 import { pickOfDayId } from "@/lib/pick-of-day";
+import { verifyBearer } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 import {
@@ -729,10 +730,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  // Default-deny: a missing CRON_SECRET must never leave the trigger open.
-  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
+  // Default-deny + constant-time: a missing CRON_SECRET must never leave the
+  // trigger open, and the compare must not leak timing.
+  if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await computeAndStore();

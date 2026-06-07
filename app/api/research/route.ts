@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { verifyBearer } from "@/lib/admin-auth";
 
 /** GET — returns all recent research summaries (match_id → summary) */
 export async function GET() {
@@ -15,9 +16,7 @@ export async function GET() {
 export async function POST(req: Request) {
   // Default-deny: a missing RESEARCH_SECRET must close the endpoint, not open
   // it (same pattern as the cron routes). Unauthenticated writes are never ok.
-  const secret = process.env.RESEARCH_SECRET;
-  const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

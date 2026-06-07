@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildWorldCupDiagnostics } from "@/lib/world-cup-readiness";
+import { verifyBearer } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,9 +8,8 @@ export const dynamic = "force-dynamic";
 // the publication gate share a single source of truth for monitor_only/signal_ready.
 
 function authorized(req: Request): boolean {
-  const secret = process.env.RESEARCH_SECRET;
-  if (!secret) return false;
-  return req.headers.get("authorization") === `Bearer ${secret}`;
+  // Constant-time + default-deny (missing RESEARCH_SECRET → closed).
+  return verifyBearer(req, process.env.RESEARCH_SECRET);
 }
 
 export async function GET(req: Request) {
