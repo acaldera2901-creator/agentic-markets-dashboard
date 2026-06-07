@@ -65,7 +65,7 @@ function leagueBaseline(figures: Map<string, NonNullable<ReturnType<typeof teamF
 
 function main() {
   const files = fs.readdirSync(DATA_DIR).filter((f) => f.endsWith(".csv")).sort();
-  const out: string[] = ["league,season,date,pHome,pDraw,pAway,outcome"];
+  const out: string[] = ["league,season,date,home,away,pHome,pDraw,pAway,outcome"];
   for (const file of files) {
     const league = file.split("_")[0];
     const season = file.replace(".csv", "").split("_").pop()!;
@@ -92,7 +92,7 @@ function main() {
       });
       if (!probs || !probs.reliable) continue;
       const outcome = fix.homeGoals > fix.awayGoals ? 0 : fix.homeGoals === fix.awayGoals ? 1 : 2;
-      out.push(`${league},${season},${fix.date},${probs.pHome},${probs.pDraw},${probs.pAway},${outcome}`);
+      out.push(`${league},${season},${fix.date},${fix.home},${fix.away},${probs.pHome},${probs.pDraw},${probs.pAway},${outcome}`);
     }
   }
   fs.writeFileSync(OUT, out.join("\n"));
