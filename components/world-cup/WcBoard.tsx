@@ -9,6 +9,7 @@
 // projected; missing fields just don't render (fail-soft).
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { WC_T, type WcLang } from "@/lib/world-cup-i18n";
 
 type WcEnrichment = {
   kind?: string;
@@ -99,7 +100,8 @@ function ProbRow({ label, value, picked, odds }: { label: string; value: number;
   );
 }
 
-function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: string }) {
+function DeepAnalysis({ e, home, away, lang }: { e: WcEnrichment; home: string; away: string; lang: WcLang }) {
+  const t = WC_T[lang];
   const v = e.venue || {};
   const sq = e.squad || {};
   const injH = sq.injuries_home?.length ?? 0;
@@ -112,12 +114,12 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
   return (
     <div className="deep-analysis-panel">
       <div className="da-header">
-        <span className="da-badge">⚡ Pro</span>
-        <span className="da-title">Deep Analysis</span>
+        <span className="da-badge">⚡ {t.proBadge}</span>
+        <span className="da-title">{t.deepAnalysisTitle}</span>
       </div>
       {(e.form_home || e.form_away) && (
         <div className="da-row">
-          <span className="da-label">📈 Form</span>
+          <span className="da-label">📈 {t.daForm}</span>
           <span className="da-value">
             {home.split(" ")[0]} {fmtForm(e.form_home) ?? "–"} · {away.split(" ")[0]} {fmtForm(e.form_away) ?? "–"}
           </span>
@@ -125,7 +127,7 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {(typeof e.lambdas?.home === "number" || typeof e.lambdas?.away === "number") && (
         <div className="da-row">
-          <span className="da-label">λ xG rate</span>
+          <span className="da-label">{t.daLambda}</span>
           <span className="da-value">
             {e.lambdas?.home?.toFixed(2) ?? "–"} vs {e.lambdas?.away?.toFixed(2) ?? "–"}
           </span>
@@ -133,7 +135,7 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {hasTravel && (
         <div className="da-row">
-          <span className="da-label">✈️ Travel</span>
+          <span className="da-label">✈️ {t.daTravel}</span>
           <span className="da-value">
             {typeof v.travel_km_home === "number" ? `${v.travel_km_home}km` : "–"} vs{" "}
             {typeof v.travel_km_away === "number" ? `${v.travel_km_away}km` : "–"}
@@ -142,7 +144,7 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {hasRest && (
         <div className="da-row">
-          <span className="da-label">🛌 Rest</span>
+          <span className="da-label">🛌 {t.daRest}</span>
           <span className="da-value">
             {typeof v.rest_days_home === "number" ? `${v.rest_days_home}d` : "–"} vs{" "}
             {typeof v.rest_days_away === "number" ? `${v.rest_days_away}d` : "–"}
@@ -151,19 +153,19 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {v.host_advantage && (
         <div className="da-row">
-          <span className="da-label">🏟️ Host edge</span>
+          <span className="da-label">🏟️ {t.daHostEdge}</span>
           <span className="da-value">{v.host_advantage}</span>
         </div>
       )}
       {(injH > 0 || injA > 0) && (
         <div className="da-row">
-          <span className="da-label">🚑 Injuries</span>
+          <span className="da-label">🚑 {t.daInjuries}</span>
           <span className="da-value">H:{injH} · A:{injA}</span>
         </div>
       )}
       {e.market && typeof e.market.p_home === "number" && (
         <div className="da-row">
-          <span className="da-label">💹 Market</span>
+          <span className="da-label">💹 {t.daMarket}</span>
           <span className="da-value">
             H:{pct(e.market.p_home)} D:{pct(e.market.p_draw ?? 0)} A:{pct(e.market.p_away ?? 0)}
           </span>
@@ -171,9 +173,9 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {(typeof e.matches?.home === "number" || typeof e.matches?.away === "number") && (
         <div className="da-row">
-          <span className="da-label">🗃️ Sample</span>
+          <span className="da-label">🗃️ {t.daSample}</span>
           <span className="da-value">
-            {e.matches?.home ?? "–"} vs {e.matches?.away ?? "–"} matches
+            {e.matches?.home ?? "–"} vs {e.matches?.away ?? "–"} {t.daMatches}
           </span>
         </div>
       )}
@@ -181,8 +183,9 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
   );
 }
 
-function WcCard({ p }: { p: ProjectedRow }) {
+function WcCard({ p, lang }: { p: ProjectedRow; lang: WcLang }) {
   const [showWhy, setShowWhy] = useState(false);
+  const t = WC_T[lang];
   const home = p.home_team || "Home";
   const away = p.away_team || "Away";
   const probs = parseProbs(p.notes);
@@ -198,13 +201,21 @@ function WcCard({ p }: { p: ProjectedRow }) {
       typeof matches?.home === "number" || typeof matches?.away === "number")
   );
 
+  // Map the pick value (HOME/DRAW/AWAY) to the localised label for ProbRow.
+  // The pick value stored in the DB is always "HOME"/"DRAW"/"AWAY".
+  const probLabels: Record<string, string> = {
+    HOME: t.home,
+    DRAW: t.draw,
+    AWAY: t.away,
+  };
+
   return (
     <div className="glass-card wc-board-card">
       {/* Header — World Cup badge mirrors the football league badge */}
       <div className="eyebrow">
-        World Cup
+        {t.wcBadge}
         {p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}
-        {p.is_paper ? " · paper" : ""}
+        {p.is_paper ? ` · ${t.paperBadge}` : ""}
       </div>
       <div className="wc-board-match">
         {p.home_team && p.away_team ? `${home} vs ${away}` : p.event_name}
@@ -220,24 +231,24 @@ function WcCard({ p }: { p: ProjectedRow }) {
       {p.locked ? (
         <Link href="/" className="card-lock-overlay wc-lock" role="button">
           <span className="blurred">▒▒ PICK ▒▒▒ · ▒▒%</span>
-          <span className="locked-cta">Sign in to reveal pick &amp; confidence</span>
+          <span className="locked-cta">{t.signInToReveal}</span>
         </Link>
       ) : (
         <>
           {/* Probability bars — 3-way with real market odds when present */}
           {probs && (
             <div className="wc-prob-block">
-              <ProbRow label="HOME" value={probs.home} picked={pick === "HOME"} odds={probs.odds_home} />
-              <ProbRow label="DRAW" value={probs.draw} picked={pick === "DRAW"} odds={probs.odds_draw} />
-              <ProbRow label="AWAY" value={probs.away} picked={pick === "AWAY"} odds={probs.odds_away} />
+              <ProbRow label={probLabels.HOME} value={probs.home} picked={pick === "HOME"} odds={probs.odds_home} />
+              <ProbRow label={probLabels.DRAW} value={probs.draw} picked={pick === "DRAW"} odds={probs.odds_draw} />
+              <ProbRow label={probLabels.AWAY} value={probs.away} picked={pick === "AWAY"} odds={probs.odds_away} />
             </div>
           )}
 
           {/* Pick + confidence */}
           <div className="wc-board-pick">
-            <strong>{pick || "—"}</strong>
+            <strong>{pick ? (probLabels[pick] ?? pick) : "—"}</strong>
             {typeof p.confidence_score === "number" ? (
-              <span> · confidence {Math.round(p.confidence_score)}%</span>
+              <span> · {t.confidence} {Math.round(p.confidence_score)}%</span>
             ) : null}
           </div>
 
@@ -248,7 +259,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
               onClick={() => setShowWhy((v) => !v)}
               style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.6 }}
             >
-              {showWhy ? "Hide why" : "Why"}
+              {showWhy ? t.hideWhy : t.why}
             </button>
             <span style={{ opacity: 0.45 }}>{model}</span>
             {isSignal && typeof p.edge_percent === "number" ? (
@@ -279,7 +290,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
               textDecoration: "none",
             }}
           >
-            Place Bet →
+            {t.placeBet}
           </a>
 
           {/* Inline Why — real explanation + enrichment-derived rows */}
@@ -288,20 +299,20 @@ function WcCard({ p }: { p: ProjectedRow }) {
               {p.explanation && <p className="wc-why">{p.explanation}</p>}
               {e && (e.form_home || e.form_away) && (
                 <div className="da-row">
-                  <span className="da-label">📈 Form</span>
+                  <span className="da-label">📈 {t.daForm}</span>
                   <span className="da-value">{home.split(" ")[0]} {fmtForm(e.form_home) ?? "–"} · {away.split(" ")[0]} {fmtForm(e.form_away) ?? "–"}</span>
                 </div>
               )}
               {(typeof lambdas?.home === "number" || typeof lambdas?.away === "number") && (
                 <div className="da-row">
-                  <span className="da-label">λ xG rate</span>
+                  <span className="da-label">{t.daLambda}</span>
                   <span className="da-value">{lambdas?.home?.toFixed(2) ?? "–"} vs {lambdas?.away?.toFixed(2) ?? "–"}</span>
                 </div>
               )}
               {(typeof matches?.home === "number" || typeof matches?.away === "number") && (
                 <div className="da-row">
-                  <span className="da-label">🗃️ Sample</span>
-                  <span className="da-value">{matches?.home ?? "–"} vs {matches?.away ?? "–"} matches</span>
+                  <span className="da-label">🗃️ {t.daSample}</span>
+                  <span className="da-value">{matches?.home ?? "–"} vs {matches?.away ?? "–"} {t.daMatches}</span>
                 </div>
               )}
             </div>
@@ -309,11 +320,11 @@ function WcCard({ p }: { p: ProjectedRow }) {
 
           {/* Deep Analysis — premium-only (projection-gated) */}
           {e ? (
-            <DeepAnalysis e={e} home={home} away={away} />
+            <DeepAnalysis e={e} home={home} away={away} lang={lang} />
           ) : (
             <div className="deep-analysis-locked">
               <span>⚡</span>
-              <span>Deep analysis available with Signal Desk Pro (49.50 USDT/month)</span>
+              <span>{t.deepAnalysisLocked}</span>
             </div>
           )}
         </>
@@ -322,8 +333,9 @@ function WcCard({ p }: { p: ProjectedRow }) {
   );
 }
 
-export default function WcBoard() {
+export default function WcBoard({ lang = "it" }: { lang?: WcLang }) {
   const [rows, setRows] = useState<ProjectedRow[] | null>(null);
+  const t = WC_T[lang];
 
   useEffect(() => {
     let alive = true;
@@ -336,18 +348,18 @@ export default function WcBoard() {
     return () => { alive = false; };
   }, []);
 
-  if (rows === null) return <div className="book-empty">Loading World Cup board…</div>;
+  if (rows === null) return <div className="book-empty">{t.loading}</div>;
   if (!rows.length) {
     return (
       <div className="book-empty">
-        First World Cup signals publish when markets open — kickoff June 11.
+        {t.noSignals}
       </div>
     );
   }
 
   return (
     <div className="wc-board-grid">
-      {rows.map((p) => <WcCard key={p.id} p={p} />)}
+      {rows.map((p) => <WcCard key={p.id} p={p} lang={lang} />)}
     </div>
   );
 }

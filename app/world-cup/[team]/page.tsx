@@ -7,6 +7,8 @@ import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { notFound } from "next/navigation";
 import { dbQuery } from "@/lib/db";
 import { fetchWcFixtures, fetchTeamGroupMap, teamSlug, teamNeedleFromSlug } from "@/lib/world-cup";
+import { WC_T } from "@/lib/world-cup-i18n";
+import { wcLangFromCookie } from "@/lib/world-cup-i18n.server";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -68,8 +70,13 @@ export default async function TeamPage(
   { params }: { params: Promise<{ team: string }> }
 ) {
   const { team } = await params;
-  const squad = await loadSquad(team);
+  const [squad, lang] = await Promise.all([
+    loadSquad(team),
+    wcLangFromCookie(),
+  ]);
   if (!squad) notFound();
+
+  const t = WC_T[lang];
 
   const [players, snapshots, fixtures, groupMap] = await Promise.all([
     dbQuery<PlayerRow>(
@@ -106,21 +113,21 @@ export default async function TeamPage(
 
   return (
     <div className="portal-root wc-root">
-      <SiteTopbar backHref="/world-cup" backLabel="World Cup hub" />
+      <SiteTopbar backHref="/world-cup" backLabel={t.backLabelHub} lang={lang} />
       <main className="wc-page">
       <header className="wc-hero wc-hero-team">
         <div className="eyebrow">
-          World Cup 2026{group ? ` · Group ${group}` : ""}
+          {group ? `${t.teamEyebrowGroup} ${group}` : t.teamEyebrowBase}
         </div>
         <h1>{squad.team_canonical}</h1>
         <p className="wc-hero-sub">
-          {squad.squad_size ?? players.length} players
-          {squad.injured_count ? ` · ${squad.injured_count} flagged injured` : " · no injuries flagged"}
+          {squad.squad_size ?? players.length} {t.players}
+          {squad.injured_count ? ` · ${squad.injured_count} ${t.flaggedInjured}` : ` · ${t.noInjuries}`}
         </p>
       </header>
 
       <section className="wc-section">
-        <h2 className="wc-section-title">Squad</h2>
+        <h2 className="wc-section-title">{t.sectionSquad}</h2>
         <div className="wc-roster-grid">
           {[...byPosition.entries()].map(([position, group]) => (
             <div key={position} className="glass-card wc-roster-card">
@@ -131,7 +138,7 @@ export default async function TeamPage(
                     {p.shirt_number != null ? <span className="wc-shirt">{p.shirt_number}</span> : null}
                     {p.player_name}
                     {p.club_team ? <small> · {p.club_team}</small> : null}
-                    {p.is_injured ? <small className="wc-injury-tag"> injured</small> : null}
+                    {p.is_injured ? <small className="wc-injury-tag"> {t.injured}</small> : null}
                   </li>
                 ))}
               </ul>
@@ -141,35 +148,34 @@ export default async function TeamPage(
       </section>
 
       <section className="wc-section">
-        <h2 className="wc-section-title">Call-up timeline</h2>
+        <h2 className="wc-section-title">{t.sectionCallUp}</h2>
         {reveals.length ? (
           <div className="wc-timeline">
             {reveals.map((s) => (
               <div key={s.captured_at} className="glass-card wc-timeline-entry">
                 <div className="eyebrow">{dateFmt.format(new Date(s.captured_at))} UTC</div>
                 {s.diff?.added?.length ? (
-                  <div className="wc-timeline-line wc-in">In: {s.diff.added.join(", ")}</div>
+                  <div className="wc-timeline-line wc-in">{t.timelineIn} {s.diff.added.join(", ")}</div>
                 ) : null}
                 {s.diff?.removed?.length ? (
-                  <div className="wc-timeline-line wc-out">Out: {s.diff.removed.join(", ")}</div>
+                  <div className="wc-timeline-line wc-out">{t.timelineOut} {s.diff.removed.join(", ")}</div>
                 ) : null}
                 {s.diff?.injury_changes?.length ? (
-                  <div className="wc-timeline-line wc-flag">Injury status changed: {s.diff.injury_changes.join(", ")}</div>
+                  <div className="wc-timeline-line wc-flag">{t.timelineInjury} {s.diff.injury_changes.join(", ")}</div>
                 ) : null}
               </div>
             ))}
           </div>
         ) : (
           <div className="book-empty">
-            No roster changes recorded yet — the baseline squad was captured on{" "}
-            {dateFmt.format(new Date(squad.updated_at))} UTC. Every future
-            call-up, cut or injury flip lands here automatically.
+            {t.noRosterChanges}{" "}
+            {dateFmt.format(new Date(squad.updated_at))} {t.noRosterChangesSuffix}
           </div>
         )}
       </section>
 
       <section className="wc-section">
-        <h2 className="wc-section-title">Fixtures</h2>
+        <h2 className="wc-section-title">{t.sectionFixtures}</h2>
         {teamFixtures.length ? (
           <div className="wc-calendar-day">
             {teamFixtures.map((f) => (
@@ -185,14 +191,14 @@ export default async function TeamPage(
                   {f.away_team}
                 </span>
                 <span className="wc-fixture-meta">
-                  {f.group ? `Group ${f.group} · ` : ""}
-                  {f.venue || "Venue TBC"}{f.city ? ` · ${f.city}` : ""}
+                  {f.group ? `${t.venueGroup} ${f.group} · ` : ""}
+                  {f.venue || t.venueTbc}{f.city ? ` · ${f.city}` : ""}
                 </span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="book-empty">Fixtures unavailable right now — retry shortly.</div>
+          <div className="book-empty">{t.fixturesUnavailable}</div>
         )}
       </section>
       </main>

@@ -5319,6 +5319,8 @@ export default function Dashboard() {
     const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
     setUiLanguage(next);
     localStorage.setItem("agentic-lang", next);
+    // Mirror into a cookie so server components (e.g. /world-cup) can localise.
+    document.cookie = "agentic-lang=" + next + "; path=/; max-age=31536000; samesite=lax";
     trackEvent("language_change", { language: next });
   };
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
@@ -5385,7 +5387,11 @@ export default function Dashboard() {
   // IP-based language detection — only runs when no stored preference exists
   useEffect(() => {
     const stored = localStorage.getItem("agentic-lang");
-    if (stored && LANGUAGES.includes(stored as Lang)) return;
+    if (stored && LANGUAGES.includes(stored as Lang)) {
+      // Also ensure the cookie is in sync so server components can localise.
+      document.cookie = "agentic-lang=" + stored + "; path=/; max-age=31536000; samesite=lax";
+      return;
+    }
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
       .then((d: { languages?: string }) => {
@@ -5394,6 +5400,8 @@ export default function Dashboard() {
         const detected: Lang = LANGUAGES.includes(primary) ? primary : "en";
         setUiLanguage(detected);
         localStorage.setItem("agentic-lang", detected);
+        // Mirror into cookie so server components can localise without localStorage.
+        document.cookie = "agentic-lang=" + detected + "; path=/; max-age=31536000; samesite=lax";
       })
       .catch(() => { /* keep default */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5469,6 +5477,7 @@ export default function Dashboard() {
     if (normalizedProfile.language && normalizedProfile.language !== uiLanguage) {
       setUiLanguage(normalizedProfile.language);
       localStorage.setItem("agentic-lang", normalizedProfile.language);
+      document.cookie = "agentic-lang=" + normalizedProfile.language + "; path=/; max-age=31536000; samesite=lax";
     }
     setAuthOpen(false);
     window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(normalizedProfile));

@@ -4,6 +4,7 @@
 // badge — the hub hero swaps copy server-side on the same date logic.
 import { useEffect, useState } from "react";
 import { WC_KICKOFF_ISO } from "@/lib/world-cup";
+import { WC_T, type WcLang } from "@/lib/world-cup-i18n";
 
 function parts(msLeft: number) {
   const s = Math.max(0, Math.floor(msLeft / 1000));
@@ -15,8 +16,9 @@ function parts(msLeft: number) {
   };
 }
 
-export default function Countdown() {
+export default function Countdown({ lang = "it" }: { lang?: WcLang }) {
   const [left, setLeft] = useState<number | null>(null);
+  const t = WC_T[lang];
 
   useEffect(() => {
     const target = new Date(WC_KICKOFF_ISO).getTime();
@@ -30,7 +32,7 @@ export default function Countdown() {
   if (left <= 0) {
     return (
       <div className="wc-countdown wc-countdown-live">
-        <span className="wc-live-dot" /> Tournament live
+        <span className="wc-live-dot" /> {t.tournamentLive}
       </div>
     );
   }
@@ -38,10 +40,10 @@ export default function Countdown() {
   return (
     <div className="wc-countdown" role="timer" aria-label="Countdown to World Cup kickoff">
       {[
-        [p.days, "days"],
-        [p.hours, "hrs"],
-        [p.minutes, "min"],
-        [p.seconds, "sec"],
+        [p.days, t.days],
+        [p.hours, t.hrs],
+        [p.minutes, t.min],
+        [p.seconds, t.sec],
       ].map(([v, label]) => (
         <span key={label as string} className="wc-countdown-cell">
           <strong>{String(v).padStart(2, "0")}</strong>

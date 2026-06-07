@@ -12,14 +12,24 @@
 // and render the real state.
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { WC_T, type WcLang } from "@/lib/world-cup-i18n";
 
 type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
   | { status: "authed"; identifier: string; plan: string; name: string | null };
 
-export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
+export default function SiteTopbar({
+  backHref = "/",
+  backLabel = "Board",
+  lang = "it",
+}: {
+  backHref?: string;
+  backLabel?: string;
+  lang?: WcLang;
+}) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+  const t = WC_T[lang];
 
   useEffect(() => {
     let cancelled = false;
@@ -64,8 +74,8 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
           </>
         ) : auth.status === "anonymous" ? (
           <>
-            <Link href="/" className="btn-secondary wc-topbar-btn">Accedi</Link>
-            <Link href="/" className="btn-primary wc-topbar-btn">Registrati</Link>
+            <Link href="/" className="btn-secondary wc-topbar-btn">{t.signIn}</Link>
+            <Link href="/" className="btn-primary wc-topbar-btn">{t.register}</Link>
           </>
         ) : null /* loading: render nothing, no flicker of wrong state */}
       </div>

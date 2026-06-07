@@ -13,6 +13,8 @@ import WinnerOdds from "@/components/world-cup/WinnerOdds";
 import TrackRecordStrip from "@/components/world-cup/TrackRecordStrip";
 import { fetchWcGroups, fetchWcFixtures, teamSlug } from "@/lib/world-cup";
 import { dbQuery } from "@/lib/db";
+import { WC_T } from "@/lib/world-cup-i18n";
+import { wcLangFromCookie } from "@/lib/world-cup-i18n.server";
 
 export const revalidate = 300;
 
@@ -30,51 +32,51 @@ type SquadSummary = {
 };
 
 export default async function WorldCupPage() {
-  const [groups, fixtures, squads] = await Promise.all([
+  const [groups, fixtures, squads, lang] = await Promise.all([
     fetchWcGroups(),
     fetchWcFixtures(),
     dbQuery<SquadSummary>(
       `SELECT team_canonical, squad_size, injured_count, updated_at
        FROM wc_squads ORDER BY team_canonical ASC`
     ),
+    wcLangFromCookie(),
   ]);
+
+  const t = WC_T[lang];
 
   return (
     <div className="portal-root wc-root">
-      <SiteTopbar backLabel="Board" />
+      <SiteTopbar backLabel={t.backLabelBoard} lang={lang} />
       <main className="wc-page">
       <header className="wc-hero">
-        <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
-        <h1>World Cup Intelligence Hub</h1>
-        <p className="wc-hero-sub">
-          48 teams · 12 groups · 104 matches. Squad reveals tracked as they
-          happen, AI predictions with a transparent hit-rate record.
-        </p>
-        <Countdown />
+        <div className="eyebrow">{t.eyebrow}</div>
+        <h1>{t.heroTitle}</h1>
+        <p className="wc-hero-sub">{t.heroSub}</p>
+        <Countdown lang={lang} />
       </header>
 
       <section className="wc-section" id="board">
-        <h2 className="wc-section-title">Prediction board</h2>
-        <WcBoard />
+        <h2 className="wc-section-title">{t.sectionBoard}</h2>
+        <WcBoard lang={lang} />
       </section>
 
       <section className="wc-section" id="outlook">
-        <h2 className="wc-section-title">Who wins the World Cup?</h2>
-        <WinnerOdds />
+        <h2 className="wc-section-title">{t.sectionOutlook}</h2>
+        <WinnerOdds lang={lang} />
       </section>
 
       <section className="wc-section" id="groups">
-        <h2 className="wc-section-title">Groups</h2>
-        <GroupsGrid groups={groups} />
+        <h2 className="wc-section-title">{t.sectionGroups}</h2>
+        <GroupsGrid groups={groups} lang={lang} />
       </section>
 
       <section className="wc-section" id="calendar">
-        <h2 className="wc-section-title">Match calendar</h2>
-        <CalendarSection fixtures={fixtures} />
+        <h2 className="wc-section-title">{t.sectionCalendar}</h2>
+        <CalendarSection fixtures={fixtures} lang={lang} />
       </section>
 
       <section className="wc-section" id="squads">
-        <h2 className="wc-section-title">Squads &amp; call-ups</h2>
+        <h2 className="wc-section-title">{t.sectionSquads}</h2>
         {squads.length ? (
           <div className="wc-squads-grid">
             {squads.map((s) => (
@@ -85,20 +87,20 @@ export default async function WorldCupPage() {
               >
                 <strong>{s.team_canonical}</strong>
                 <small>
-                  {s.squad_size ?? "—"} players
-                  {s.injured_count ? ` · ${s.injured_count} injured` : ""}
+                  {s.squad_size ?? "—"} {t.players}
+                  {s.injured_count ? ` · ${s.injured_count} ${t.injured}` : ""}
                 </small>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="book-empty">Squad data syncing — back shortly.</div>
+          <div className="book-empty">{t.squadSyncing}</div>
         )}
       </section>
 
       <section className="wc-section" id="track-record">
-        <h2 className="wc-section-title">Track record</h2>
-        <TrackRecordStrip />
+        <h2 className="wc-section-title">{t.sectionTrackRecord}</h2>
+        <TrackRecordStrip lang={lang} />
       </section>
       </main>
     </div>
