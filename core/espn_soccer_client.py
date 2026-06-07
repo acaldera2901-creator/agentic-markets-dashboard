@@ -54,6 +54,14 @@ def _cached(key: str) -> Any | None:
     return None
 
 
+def _cached_for(key: str, ttl: float) -> Any | None:
+    """Like _cached but with a per-key TTL — lineups go stale in minutes, not hours."""
+    hit = _cache.get(key)
+    if hit and time.time() - hit[0] < ttl:
+        return hit[1]
+    return None
+
+
 def _store(key: str, value: Any) -> Any:
     _cache[key] = (time.time(), value)
     return value
@@ -305,6 +313,77 @@ async def get_wc_venue_map(days_ahead: int = 45) -> dict[tuple[str, str], dict]:
     if out:
         logger.info("ESPN WC venue map: %d matchups with venue", len(out) // 2)
     return _store("wc_venue_map", out)
+
+
+async def get_wc_lineup_map(within_minutes: int = 120) -> dict[tuple[str, str], dict]:
+    """Confirmed starting XIs for WC matches kicking off within ``within_minutes``.
+
+    #LINEUP-1-ESPN (APPROVE Andrea 2026-06-07): today's WC scoreboard → for
+    imminent events, fetch summary rosters via get_match_lineups (built for
+    Track A, never wired until now). Returns {(home_key, away_key): {home,
+    away, event_id}} with both team orders keyed — same matching contract as
+    get_wc_venue_map. Lineups appear ~1h before kickoff: an empty map earlier
+    is normal, callers treat missing keys as 'not published yet'. Cached 5 min
+    (the collector cycles at 60s pre-match; without a short TTL this would
+    hammer ESPN, with the global 6h TTL it would freeze the empty map).
+    """
+    cached = _cached_for("wc_lineup_map", 300)
+    if cached is not None:
+        return cached
+
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    out: dict[tuple[str, str], dict] = {}
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(
+                f"{_BASE}/scoreboard",
+                params={"dates": now.strftime("%Y%m%d")},
+                headers=_HEADERS,
+            )
+            if resp.status_code != 200:
+                return out
+            data = resp.json()
+    except Exception as exc:
+        logger.debug("ESPN WC lineup map error (non-fatal): %s", exc)
+        return out
+
+    for ev in data.get("events", []):
+        try:
+            kickoff = datetime.fromisoformat(str(ev.get("date", "")).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        # Window: 2h before kickoff until ~2.5h after — in-play keeps the
+        # confirmed XI available for late recomputes of the same fixture.
+        delta_min = (kickoff - now).total_seconds() / 60
+        if delta_min > within_minutes or delta_min < -150:
+            continue
+        competition = (ev.get("competitions") or [{}])[0]
+        comps = competition.get("competitors", [])
+        home = next((c for c in comps if c.get("homeAway") == "home"), None)
+        away = next((c for c in comps if c.get("homeAway") == "away"), None)
+        if not home or not away:
+            continue
+        lineups = await get_match_lineups(str(ev.get("id", "")))
+        if not lineups:
+            continue
+        h = (home.get("team") or {}).get("displayName", "")
+        a = (away.get("team") or {}).get("displayName", "")
+        if not (h and a):
+            continue
+        info = {
+            "home": lineups.get("home"),
+            "away": lineups.get("away"),
+            "event_id": str(ev.get("id", "")),
+        }
+        if not (info["home"] or info["away"]):
+            continue
+        out[_venue_pair_key(h, a)] = info
+        out[_venue_pair_key(a, h)] = info
+
+    if out:
+        logger.info("ESPN WC lineups: %d matchup(s) with confirmed XI", len(out) // 2)
+    return _store("wc_lineup_map", out)
 
 
 async def get_match_lineups(event_id: str) -> dict | None:

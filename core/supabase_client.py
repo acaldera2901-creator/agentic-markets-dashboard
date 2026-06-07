@@ -233,6 +233,7 @@ def wc_prediction_to_unified_row(
     odds_triple: dict | None = None,
     bookmaker: str | None = None,
     signal_allowed: bool = False,
+    team_news_summary: str | None = None,
 ) -> dict:
     """World Cup row on the unified_predictions schema.
 
@@ -261,6 +262,10 @@ def wc_prediction_to_unified_row(
     row["neutral_venue"] = neutral_venue
     if stage:
         row["world_cup_stage"] = stage
+    if team_news_summary:
+        # #LINEUP-1-ESPN: confirmed XI line (display only — probabilities are
+        # NOT lineup-adjusted until a feature wins the promotion gate).
+        row["team_news_summary"] = team_news_summary
 
     has_market = bool(
         odds_triple

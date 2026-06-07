@@ -25,6 +25,7 @@ from core.espn_soccer_client import (
     get_squad_coverage,
     get_world_cup_teams,
     get_league_fixtures as espn_league_fixtures,
+    get_wc_lineup_map as espn_wc_lineup_map,
     get_wc_venue_map as espn_wc_venue_map,
     _venue_pair_key as espn_venue_pair_key,
 )
@@ -310,6 +311,17 @@ class DataCollectorAgent(BaseAgent):
                             if info.get("round") and not fixture.get("round"):
                                 fixture["round"] = info["round"]
 
+                # #LINEUP-1-ESPN: confirmed starting XIs for imminent WC
+                # matches (published ~1h before kickoff). Matched by the same
+                # normalized pair key as the venue map. Fail-soft: empty map
+                # until ESPN publishes — nothing is fabricated.
+                wc_lineup_map: dict = {}
+                if is_world_cup_code(league_code):
+                    try:
+                        wc_lineup_map = await espn_wc_lineup_map()
+                    except Exception as lu_err:
+                        self.logger.debug(f"WC lineup map failed (non-fatal): {lu_err}")
+
                 published = 0
                 matched_odds = 0
                 for fixture in fixtures:
@@ -318,6 +330,12 @@ class DataCollectorAgent(BaseAgent):
                     )
                     event = self._build_event(fixture, odds_map, league_code, venue_prev)
                     if event:
+                        if wc_lineup_map:
+                            h = fixture.get("teams", {}).get("home", {}).get("name", "")
+                            a = fixture.get("teams", {}).get("away", {}).get("name", "")
+                            lu = wc_lineup_map.get(espn_venue_pair_key(h, a)) if h and a else None
+                            if lu:
+                                event["lineups"] = lu
                         self._upcoming_kickoffs.append(event["kickoff"])
                         if event.get("odds"):
                             matched_odds += 1

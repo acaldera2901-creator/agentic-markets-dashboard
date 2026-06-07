@@ -34,6 +34,25 @@ _LEAGUE_TOTAL_MATCHES: dict[str, int] = {
 }
 
 
+def _format_confirmed_xi(home_team: str, away_team: str, lineups: dict) -> str | None:
+    """Compact 'confirmed XI' line for team_news_summary (#LINEUP-1-ESPN).
+
+    'XI confermati — Mexico: Ochoa, Alvarez, +9 · South Africa: …'. Only sides
+    with actual starters appear; None when neither side is published yet.
+    """
+    parts: list[str] = []
+    for side, team in (("home", home_team), ("away", away_team)):
+        starters = [s for s in ((lineups.get(side) or {}).get("starters") or []) if s]
+        if not starters:
+            continue
+        shown = ", ".join(starters[:3])
+        rest = len(starters) - 3
+        parts.append(f"{team}: {shown}{f', +{rest}' if rest > 0 else ''}")
+    if not parts:
+        return None
+    return "XI confermati — " + " · ".join(parts)
+
+
 class ModelAgent(BaseAgent):
     def __init__(self):
         super().__init__("ModelAgent")
@@ -308,6 +327,18 @@ class ModelAgent(BaseAgent):
                 venue=venue,
                 group=wc_context.get("group_name") or None,
             )
+            # #LINEUP-1-ESPN: confirmed XIs from the collector (ESPN summary,
+            # ~1h pre-kickoff). Display + data collection ONLY — probabilities
+            # are NOT adjusted (any lineup feature must first win the
+            # promotion gate, ops/PROMOTION-GATE.md). Fail-soft: absent = no
+            # team news line, nothing fabricated.
+            team_news_summary = None
+            lineups = payload.get("lineups") or {}
+            if lineups:
+                enrichment["lineups"] = lineups
+                team_news_summary = _format_confirmed_xi(
+                    payload["home_team"], payload["away_team"], lineups
+                )
             pick = max(
                 {"HOME": pred.p_home, "DRAW": pred.p_draw, "AWAY": pred.p_away}.items(),
                 key=lambda kv: kv[1],
@@ -335,6 +366,7 @@ class ModelAgent(BaseAgent):
                 odds_triple=odds_triple,
                 bookmaker=bookmaker,
                 signal_allowed=signal_allowed,
+                team_news_summary=team_news_summary,
             )
             written = await upsert_unified_rows([row])
             if written:
