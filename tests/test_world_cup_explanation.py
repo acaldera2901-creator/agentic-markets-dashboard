@@ -139,6 +139,74 @@ def test_explanation_fail_soft_when_sources_missing():
     assert text.strip().endswith("Bet responsibly.")
 
 
+def test_explanation_altitude_line_at_azteca():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(
+        home_team="Strongland", away_team="Weakistan",
+        canonical_home="Strongland", canonical_away="Weakistan",
+        history=_history(), probs=probs,
+        venue={"altitude_m": 2240, "altitude_delta_home": 0,
+               "altitude_delta_away": 2200, "host_advantage": None},
+    )
+    assert enr["venue"]["altitude_m"] == 2240
+    text = build_wc_explanation(
+        home_team="Strongland", away_team="Weakistan",
+        enrichment=enr, probs=probs, pick="HOME", confidence=60,
+    )
+    assert "2,240m altitude" in text
+    assert "Weakistan" in text
+    assert "None" not in text
+    assert "nan" not in text.lower()
+    assert text.strip().endswith("Bet responsibly.")
+
+
+def test_explanation_no_altitude_line_at_sea_level():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(
+        home_team="Strongland", away_team="Weakistan",
+        canonical_home="Strongland", canonical_away="Weakistan",
+        history=_history(), probs=probs,
+        venue={"altitude_m": 30, "altitude_delta_home": 0, "altitude_delta_away": 5},
+    )
+    text = build_wc_explanation(
+        home_team="Strongland", away_team="Weakistan",
+        enrichment=enr, probs=probs, pick="HOME", confidence=60,
+    )
+    assert "altitude" not in text.lower()
+
+
+def test_explanation_heat_risk_line():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(
+        home_team="Strongland", away_team="Weakistan",
+        canonical_home="Strongland", canonical_away="Weakistan",
+        history=_history(), probs=probs,
+        venue={"heat_risk": True, "indoor": False},
+    )
+    assert enr["venue"]["heat_risk"] is True
+    text = build_wc_explanation(
+        home_team="Strongland", away_team="Weakistan",
+        enrichment=enr, probs=probs, pick="HOME", confidence=60,
+    )
+    assert "heat" in text.lower()
+    assert "None" not in text
+
+
+def test_explanation_no_heat_line_when_false_or_absent():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    for venue in ({"heat_risk": False}, {}):
+        enr = build_wc_enrichment(
+            home_team="Strongland", away_team="Weakistan",
+            canonical_home="Strongland", canonical_away="Weakistan",
+            history=_history(), probs=probs, venue=venue,
+        )
+        text = build_wc_explanation(
+            home_team="Strongland", away_team="Weakistan",
+            enrichment=enr, probs=probs, pick="HOME", confidence=60,
+        )
+        assert "heat" not in text.lower()
+
+
 def test_explanation_market_line_when_odds_present():
     probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
     enr = build_wc_enrichment(

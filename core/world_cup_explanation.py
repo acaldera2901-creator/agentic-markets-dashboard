@@ -18,6 +18,11 @@ from typing import Any
 from core.world_cup_team_model import recent_form
 
 
+# P1: altitude is only worth a sentence above this height (sea-level venues add
+# nothing). Azteca (~2,240 m) and Akron/Guadalajara (1,566 m) clear it.
+_ALTITUDE_RELEVANT_M = 1000
+
+
 def _form_block(matches: list[dict[str, Any]], canonical_team: str, *, last_n: int = 5) -> dict[str, Any] | None:
     if not matches or not canonical_team:
         return None
@@ -49,6 +54,35 @@ def _venue_phrase(team: str, venue: dict[str, Any] | None, side: str) -> str | N
     if not bits:
         return None
     return f"{team} face " + ", ".join(bits)
+
+
+def _altitude_phrase(venue: dict[str, Any], home_team: str, away_team: str) -> str | None:
+    alt = venue.get("altitude_m")
+    if not isinstance(alt, (int, float)) or alt < _ALTITUDE_RELEVANT_M:
+        return None
+    base = f"Played at {int(alt):,}m altitude"
+    # Name the team facing the largest jump from its habitual altitude.
+    deltas = {
+        home_team: venue.get("altitude_delta_home"),
+        away_team: venue.get("altitude_delta_away"),
+    }
+    big = max(
+        ((t, d) for t, d in deltas.items() if isinstance(d, (int, float))),
+        key=lambda kv: kv[1],
+        default=None,
+    )
+    if big and big[1] >= _ALTITUDE_RELEVANT_M:
+        return (
+            f"{base} — {big[0]} climb ~{int(big[1]):,}m above their usual base; "
+            "visiting sides typically tire in the closing stages"
+        )
+    return f"{base} — visiting sides typically tire in the closing stages"
+
+
+def _heat_phrase(venue: dict[str, Any]) -> str | None:
+    if venue.get("heat_risk") is True:
+        return "Midday outdoor kickoff in summer heat — fatigue and tempo risk for both sides"
+    return None
 
 
 def _squad_phrase(team: str, injuries: list[str] | None) -> str | None:
@@ -97,6 +131,12 @@ def build_wc_enrichment(
             "tz_shift_home": venue.get("tz_shift_home"),
             "tz_shift_away": venue.get("tz_shift_away"),
             "host_advantage": venue.get("host_advantage"),
+            # P1/P2 (msg_mq3ufltj): additive venue context, display-only.
+            "altitude_m": venue.get("altitude_m"),
+            "altitude_delta_home": venue.get("altitude_delta_home"),
+            "altitude_delta_away": venue.get("altitude_delta_away"),
+            "indoor": venue.get("indoor"),
+            "heat_risk": venue.get("heat_risk"),
         },
         "squad": {
             "injuries_home": list(squad.get("injuries_home") or []),
@@ -172,6 +212,14 @@ def build_wc_explanation(
         parts.append("; ".join(venue_sentences) + ".")
     elif venue.get("host_advantage"):
         parts.append(f"Host-nation advantage favours {venue['host_advantage']}.")
+
+    # P1/P2: altitude (>1000 m) and midday-heat lines, only when relevant.
+    alt_phrase = _altitude_phrase(venue, home_team, away_team)
+    if alt_phrase:
+        parts.append(alt_phrase + ".")
+    heat = _heat_phrase(venue)
+    if heat:
+        parts.append(heat + ".")
 
     # Sentence 4: squad / injuries, only when a reveal carries names.
     squad = enrichment.get("squad") or {}

@@ -12,7 +12,7 @@ the fixture calendar); travel/timezone are resolvable from static tables alone.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from math import asin, cos, radians, sin, sqrt
 from zoneinfo import ZoneInfo
 
@@ -44,6 +44,58 @@ VENUE_CITY_COORDS: dict[str, tuple[float, float]] = {
     "mexico city": (19.303, -99.150),     # Estadio Azteca
     "monterrey": (25.669, -100.244),
 }
+
+# P1 (PROPOSAL accuracy WC, msg_mq3ufltj): venue altitude in metres, keyed by
+# canonical (_norm_city) city. Verified 2026-06-07 against public elevation /
+# stadium data: Azteca ~2,200-2,240 m and Akron (Guadalajara) 1,566 m are the
+# only venues where altitude is a documented competitive factor (Monterrey and
+# all 13 US/Canada sites are effectively sea-level, <350 m). Additive: never
+# touches probabilities; relevant in the explanation only above 1,000 m.
+HOST_CITY_ALTITUDE_M: dict[str, int] = {
+    "mexico city": 2240,   # Estadio Azteca
+    "guadalajara": 1566,   # Estadio Akron
+    "monterrey": 540,      # Estadio BBVA (city ~540 m)
+    "atlanta": 320,
+    "boston": 43,          # Foxborough
+    "dallas": 140,         # Arlington
+    "houston": 15,
+    "kansas city": 270,
+    "los angeles": 30,     # Inglewood
+    "miami": 2,            # Miami Gardens
+    "new york": 3,         # East Rutherford
+    "new jersey": 3,
+    "philadelphia": 12,
+    "san francisco": 3,    # Santa Clara
+    "bay area": 3,
+    "seattle": 50,
+    "toronto": 76,
+    "vancouver": 2,
+}
+
+
+# P2 (PROPOSAL accuracy WC, msg_mq3ufltj): venues with a retractable roof + full
+# air-conditioning that play in a controlled indoor environment. Verified
+# 2026-06-07: the four widely-confirmed climate-controlled venues are Atlanta
+# (Mercedes-Benz), Arlington/Dallas (AT&T), Houston (NRG) and Vancouver
+# (BC Place, roof). SoFi (Inglewood/LA) has a fixed canopy but is NOT fully
+# air-conditioned, so it stays outdoor here. Keyed by canonical (_norm_city).
+VENUE_INDOOR: dict[str, bool] = {
+    "atlanta": True,
+    "dallas": True,
+    "houston": True,
+    "vancouver": True,
+}
+
+
+# Hot-climate host cities for the June/July tournament window. Heat risk is only
+# raised for these (documented summer heat in the US South / interior and central
+# Mexico). Conservative on purpose: northern/coastal-cool sites are excluded.
+# Note: dallas/houston/atlanta are hot but indoor (filtered by VENUE_INDOOR).
+HOT_CLIMATE_CITIES: frozenset[str] = frozenset({
+    "miami", "monterrey", "guadalajara", "kansas city", "philadelphia",
+    "dallas", "houston", "atlanta", "los angeles",
+})
+
 
 VENUE_CITY_TIMEZONE: dict[str, str] = {
     "atlanta": "America/New_York",
@@ -185,6 +237,81 @@ def team_timezone(team: str | None) -> str | None:
     return entry[1] if entry else None
 
 
+def venue_altitude_m(city: str | None) -> int | None:
+    return HOST_CITY_ALTITUDE_M.get(_norm_city(city))
+
+
+# Approximate home-capital altitude (m) for teams whose habitual altitude is a
+# meaningful baseline for the altitude_delta. Verified 2026-06-07 (city-centre
+# elevation). Only used to contextualise play at altitude (>1000 m venues);
+# absent team -> delta is None (never fabricated). Keyed by canonical name.
+TEAM_HOME_ALTITUDE_M: dict[str, int] = {
+    "Mexico": 2240,
+    "Bolivia": 3640,
+    "Ecuador": 2850,
+    "Colombia": 2640,
+    "Peru": 150,
+    "United States": 25,
+    "Canada": 70,
+    "Argentina": 25,
+    "Brazil": 1170,
+    "Uruguay": 40,
+    "Paraguay": 140,
+    "France": 35,
+    "England": 35,
+    "Spain": 667,
+    "Portugal": 10,
+    "Germany": 34,
+    "Netherlands": 0,
+    "Belgium": 13,
+    "Italy": 21,
+    "Croatia": 122,
+    "Switzerland": 540,
+    "Morocco": 75,
+    "Senegal": 22,
+    "Japan": 40,
+    "South Korea": 38,
+    "Australia": 6,
+    "Saudi Arabia": 612,
+    "Iran": 1200,
+}
+
+
+def team_home_altitude_m(team: str | None) -> int | None:
+    """Team's habitual home altitude. Returns None for an unlisted team — a
+    missing reference must degrade to no delta, never a fabricated 0."""
+    return TEAM_HOME_ALTITUDE_M.get(canonical_team_name(team))
+
+
+def is_indoor_venue(city: str | None) -> bool | None:
+    norm = _norm_city(city)
+    if norm not in VENUE_CITY_COORDS:
+        return None
+    return VENUE_INDOOR.get(norm, False)
+
+
+def heat_risk_flag(city: str | None, kickoff: datetime | None) -> bool | None:
+    """True iff an outdoor, hot-climate host city kicks off in local 12:00-17:00.
+
+    Additive flag only — it never adjusts probabilities. Returns None when the
+    inputs can't support a verdict (unknown city, missing kickoff), so callers
+    fail soft rather than treat absence as ``False``.
+    """
+    norm = _norm_city(city)
+    if norm not in VENUE_CITY_COORDS or kickoff is None:
+        return None
+    if VENUE_INDOOR.get(norm, False):
+        return False
+    if norm not in HOT_CLIMATE_CITIES:
+        return False
+    tz = VENUE_CITY_TIMEZONE.get(norm)
+    if not tz:
+        return None
+    moment = kickoff if kickoff.tzinfo is not None else kickoff.replace(tzinfo=timezone.utc)
+    local_hour = moment.astimezone(ZoneInfo(tz)).hour
+    return 12 <= local_hour < 17
+
+
 def _rest_days(kickoff: datetime | None, prev_kickoff: datetime | None) -> int | None:
     if kickoff is None or prev_kickoff is None:
         return None
@@ -225,6 +352,9 @@ def enrich_venue_context(
     kickoff: datetime | None = None,
 ) -> dict[str, int | None]:
     city = host_city or fixture.get("host_city") or fixture.get("city")
+    altitude = venue_altitude_m(city)
+    home_alt_a = team_home_altitude_m(team_a)
+    home_alt_b = team_home_altitude_m(team_b)
     return {
         "rest_days_team_a": _rest_days(kickoff, team_a_prev_kickoff),
         "rest_days_team_b": _rest_days(kickoff, team_b_prev_kickoff),
@@ -232,4 +362,9 @@ def enrich_venue_context(
         "travel_distance_km_team_b": _travel_km(team_b, city),
         "timezone_shift_team_a": _tz_shift(team_a, city, kickoff),
         "timezone_shift_team_b": _tz_shift(team_b, city, kickoff),
+        "venue_altitude_m": altitude,
+        "altitude_delta_team_a": (altitude - home_alt_a) if altitude is not None and home_alt_a is not None else None,
+        "altitude_delta_team_b": (altitude - home_alt_b) if altitude is not None and home_alt_b is not None else None,
+        "venue_indoor": is_indoor_venue(city),
+        "heat_risk": heat_risk_flag(city, kickoff),
     }

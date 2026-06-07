@@ -72,6 +72,11 @@ class WorldCupContext:
     travel_distance_km_team_b: int | None
     timezone_shift_team_a: int | None
     timezone_shift_team_b: int | None
+    venue_altitude_m: int | None
+    altitude_delta_team_a: int | None
+    altitude_delta_team_b: int | None
+    venue_indoor: bool | None
+    heat_risk: bool | None
     motivation_label_team_a: str
     motivation_label_team_b: str
     market_warning: str | None
@@ -212,6 +217,13 @@ def build_world_cup_context(
     travel_b = vf.get("travel_distance_km_team_b")
     tz_a = vf.get("timezone_shift_team_a")
     tz_b = vf.get("timezone_shift_team_b")
+    # P1/P2 (msg_mq3ufltj): additive venue context. Not part of the completeness
+    # gate (they don't block publication) — pure display enrichment.
+    altitude = vf.get("venue_altitude_m")
+    altitude_delta_a = vf.get("altitude_delta_team_a")
+    altitude_delta_b = vf.get("altitude_delta_team_b")
+    venue_indoor = vf.get("venue_indoor")
+    heat_risk = vf.get("heat_risk")
 
     missing: list[str] = []
     required = {
@@ -250,6 +262,11 @@ def build_world_cup_context(
         travel_distance_km_team_b=travel_b,
         timezone_shift_team_a=tz_a,
         timezone_shift_team_b=tz_b,
+        venue_altitude_m=altitude,
+        altitude_delta_team_a=altitude_delta_a,
+        altitude_delta_team_b=altitude_delta_b,
+        venue_indoor=venue_indoor,
+        heat_risk=heat_risk,
         motivation_label_team_a=motivation_a,
         motivation_label_team_b=motivation_b,
         market_warning=market_warning(stage),

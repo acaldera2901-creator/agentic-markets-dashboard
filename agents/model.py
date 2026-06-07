@@ -316,6 +316,11 @@ class ModelAgent(BaseAgent):
                 "tz_shift_home": wc_context.get("timezone_shift_team_a"),
                 "tz_shift_away": wc_context.get("timezone_shift_team_b"),
                 "host_advantage": wc_context.get("host_advantage_team") or None,
+                "altitude_m": wc_context.get("venue_altitude_m"),
+                "altitude_delta_home": wc_context.get("altitude_delta_team_a"),
+                "altitude_delta_away": wc_context.get("altitude_delta_team_b"),
+                "indoor": wc_context.get("venue_indoor"),
+                "heat_risk": wc_context.get("heat_risk"),
             }
             enrichment = build_wc_enrichment(
                 home_team=payload["home_team"],
