@@ -134,8 +134,30 @@ TEAM_HOME: dict[str, tuple[tuple[float, float], str]] = {
 }
 
 
+# Stadium-town / feed-spelling aliases -> canonical table key. ESPN address.city
+# ships "Town, State" for US venues and the stadium's TOWN, not the metro the
+# tables are keyed by; api-football ships the bare town. Audit 2026-06-07
+# (tests/test_wc_venue_city_audit.py): 12/16 host cities failed the exact-match
+# lookup pre-fix, silently nulling travel/timezone for most US-hosted matches.
+_VENUE_CITY_ALIASES: dict[str, str] = {
+    "arlington": "dallas",           # AT&T Stadium
+    "inglewood": "los angeles",      # SoFi Stadium
+    "santa clara": "san francisco",  # Levi's Stadium
+    "east rutherford": "new york",   # MetLife Stadium
+    "foxborough": "boston",          # Gillette Stadium
+    "miami gardens": "miami",        # Hard Rock Stadium
+    "guadalupe": "monterrey",        # Estadio BBVA
+}
+
+
 def _norm_city(city: str | None) -> str:
-    return " ".join((city or "").strip().lower().split())
+    norm = " ".join((city or "").strip().lower().split())
+    if norm in VENUE_CITY_COORDS:
+        return norm
+    base = norm.split(",")[0].strip()  # "houston, texas" -> "houston"
+    if base in _VENUE_CITY_ALIASES:
+        return _VENUE_CITY_ALIASES[base]
+    return base if base in VENUE_CITY_COORDS else norm
 
 
 def haversine_km(a: tuple[float, float], b: tuple[float, float]) -> float:
