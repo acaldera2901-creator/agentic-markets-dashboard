@@ -306,7 +306,34 @@ class ModelAgent(BaseAgent):
                 float(probs["p_draw"]),
                 float(probs["p_team_b"]),
             )
-            p_home, p_draw, p_away = blend_with_market(cal_a, cal_d, cal_b, market)
+            # #ELO-V2 PROMOTION (gate verde ΔBrier −0.0779, APPROVE Andrea
+            # 2026-06-07): il v2 Elo+logit è il modello SERVITO quando ha i
+            # rating di entrambe le squadre. Il triple Poisson+CALIB-2 resta:
+            # (a) fallback fail-soft, (b) contro-fattuale loggato in shadow.
+            # NB: il v2 porta la SUA isotonica congelata — CALIB-2 è
+            # Poisson-specifica e NON viene applicata sopra.
+            served_a, served_d, served_b = cal_a, cal_d, cal_b
+            served_version = (
+                settings.FRIENDLY_MODEL_VERSION
+                if is_friendly
+                else settings.WC_MODEL_VERSION
+            )
+            served_model_label = "National Poisson rates model"
+            v2_served = False
+            if settings.WC_ELO_V2_SERVE_ENABLED:
+                try:
+                    v2_triple = predict_wc_elo_v2(
+                        payload["home_team"], payload["away_team"],
+                        neutral=not is_friendly,
+                    )
+                except Exception:
+                    v2_triple = None  # fail-soft: il servito resta v1
+                if v2_triple is not None:
+                    served_a, served_d, served_b = v2_triple
+                    served_version = settings.WC_ELO_V2_MODEL_VERSION
+                    served_model_label = "Elo rating model"
+                    v2_served = True
+            p_home, p_draw, p_away = blend_with_market(served_a, served_d, served_b, market)
             pred = DCPrediction(
                 match_id=str(payload.get("match_id")),
                 league=payload["league"],
@@ -378,6 +405,7 @@ class ModelAgent(BaseAgent):
                 probs=probs,
                 pick=pick,
                 confidence=confidence,
+                model_label=served_model_label,
             )
             # Per-row promotion gate (#018): the data-quality tier already
             # scores odds/venue/squad/settlement quality. signal needs BOTH
@@ -427,29 +455,69 @@ class ModelAgent(BaseAgent):
                         away_team=payload["away_team"],
                         kickoff=payload["kickoff"],
                         served=(p_home, p_draw, p_away),
-                        # #CALIB-2: model_p_* = the calibrated triple that
-                        # actually enters the blend (same contract as the TS
-                        # prediction_log in #CALIB-1).
-                        model=(cal_a, cal_d, cal_b),
+                        # model_p_* = il triple del modello SERVITO che entra
+                        # nel blend (v2 Elo se promosso, altrimenti Poisson
+                        # calibrato — stesso contratto del prediction_log TS).
+                        model=(served_a, served_d, served_b),
                         odds=odds_triple,
                         market=market,
-                        model_version=(
-                            settings.FRIENDLY_MODEL_VERSION
-                            if is_friendly
-                            else settings.WC_MODEL_VERSION
-                        ),
+                        model_version=served_version,
                         blend_alpha=MARKET_BLEND_ALPHA if market else None,
                     )
-            # v2 Elo shadow A/B (#WC-ELO-V2, APPROVE Andrea 2026-06-07): log the
-            # candidate's probabilities to prediction_log alongside the served v1
-            # snapshot. SHADOW ONLY — never touches pick/probabilities/the served
-            # row above. Fully isolated in its own try/except so a v2 failure can
-            # NEVER affect the served cycle.
-            await self._log_wc_elo_v2_shadow(payload, is_friendly, odds_triple, market)
+            # Shadow A/B (#WC-ELO-V2): il CONTRO-FATTUALE viene sempre loggato —
+            # con v2 promosso al servito lo shadow è il v1 Poisson calibrato
+            # (per il confronto continuo); in fallback (rating mancante) lo
+            # shadow resta il v2. Isolato: un errore qui non tocca il servito.
+            if v2_served:
+                await self._log_wc_counterfactual_shadow(
+                    payload, (cal_a, cal_d, cal_b),
+                    settings.WC_V1_SHADOW_VERSION, odds_triple, market,
+                )
+            else:
+                await self._log_wc_elo_v2_shadow(payload, is_friendly, odds_triple, market)
         except Exception as exc:
             # Non-fatal by contract: a writer hiccup must never break the
             # model loop. The upsert is idempotent and retried next cycle.
             self.logger.warning("WC paper writer failed (non-fatal): %s", exc)
+
+    async def _log_wc_counterfactual_shadow(
+        self,
+        payload: dict,
+        triple: tuple[float, float, float],
+        version: str,
+        odds_triple: dict | None,
+        market: dict | None,
+    ) -> None:
+        """Log a counterfactual (non-served) model triple to prediction_log.
+
+        Used post-promotion to keep the v1 Poisson baseline measurable while
+        v2 is served. Same fail-soft + insert-on-change contract as the v2
+        shadow below.
+        """
+        if not settings.WC_ELO_V2_SHADOW_ENABLED:
+            return
+        try:
+            p_home, p_draw, p_away = triple
+            snap_key = f"{payload.get('match_id')}::{version}"
+            sig = (round(p_home, 4), round(p_draw, 4), round(p_away, 4))
+            if self._wc_v2_snapshot_state.get(snap_key) == sig:
+                return
+            self._wc_v2_snapshot_state[snap_key] = sig
+            await log_prediction_snapshot(
+                match_id=str(payload.get("match_id")),
+                league=payload["league"],
+                home_team=payload["home_team"],
+                away_team=payload["away_team"],
+                kickoff=payload["kickoff"],
+                served=(p_home, p_draw, p_away),
+                model=(p_home, p_draw, p_away),
+                odds=odds_triple,
+                market=market,
+                model_version=version,
+                blend_alpha=None,
+            )
+        except Exception as exc:
+            self.logger.warning("WC counterfactual shadow failed (non-fatal): %s", exc)
 
     async def _log_wc_elo_v2_shadow(
         self,

@@ -51,19 +51,40 @@ def _wc_payload(home: str, away: str) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_shadow_logged_for_rated_teams():
+async def test_v2_served_with_v1_counterfactual_shadow():
+    """Post-promotion contract (#ELO-V2): rated teams -> v2 is the SERVED
+    model_version, the v1 Poisson counterfactual goes to shadow, and the
+    v2 '-shadow' namespace is NOT used."""
     agent = _model_agent()
     with patch("agents.model.upsert_unified_rows", new=AsyncMock(return_value=1)), \
          patch("agents.model.log_prediction_snapshot", new=AsyncMock()) as snap:
         await agent._persist_world_cup_paper(_wc_payload("Argentina", "Brazil"), _wc_result())
 
     versions = [c.kwargs["model_version"] for c in snap.await_args_list]
-    assert settings.WC_ELO_V2_SHADOW_VERSION in versions
+    assert settings.WC_ELO_V2_MODEL_VERSION in versions       # served snapshot
+    assert settings.WC_V1_SHADOW_VERSION in versions          # counterfactual
+    assert settings.WC_ELO_V2_SHADOW_VERSION not in versions  # v2 not shadowed when served
     shadow_call = next(c for c in snap.await_args_list
-                       if c.kwargs["model_version"] == settings.WC_ELO_V2_SHADOW_VERSION)
+                       if c.kwargs["model_version"] == settings.WC_V1_SHADOW_VERSION)
     served = shadow_call.kwargs["served"]
     assert len(served) == 3
     assert abs(sum(served) - 1.0) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_serve_flag_false_restores_v1_with_v2_shadow():
+    """ROLLBACK contract: WC_ELO_V2_SERVE_ENABLED=False -> served is v1
+    (WC_MODEL_VERSION) and the v2 candidate goes back to shadow."""
+    agent = _model_agent()
+    with patch("agents.model.upsert_unified_rows", new=AsyncMock(return_value=1)), \
+         patch("agents.model.log_prediction_snapshot", new=AsyncMock()) as snap, \
+         patch.object(settings, "WC_ELO_V2_SERVE_ENABLED", False):
+        await agent._persist_world_cup_paper(_wc_payload("Argentina", "Brazil"), _wc_result())
+
+    versions = [c.kwargs["model_version"] for c in snap.await_args_list]
+    assert settings.WC_MODEL_VERSION in versions
+    assert settings.WC_ELO_V2_SHADOW_VERSION in versions
+    assert settings.WC_ELO_V2_MODEL_VERSION not in versions
 
 
 @pytest.mark.asyncio
@@ -128,6 +149,7 @@ async def test_shadow_insert_on_change_only():
         await agent._persist_world_cup_paper(payload, _wc_result())
         await agent._persist_world_cup_paper(payload, _wc_result())
 
+    # post-promotion: the counterfactual v1 shadow is the deduped namespace
     shadow_calls = [c for c in snap.await_args_list
-                    if c.kwargs["model_version"] == settings.WC_ELO_V2_SHADOW_VERSION]
+                    if c.kwargs["model_version"] == settings.WC_V1_SHADOW_VERSION]
     assert len(shadow_calls) == 1

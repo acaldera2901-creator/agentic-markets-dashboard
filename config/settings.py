@@ -103,6 +103,12 @@ class Settings(BaseSettings):
     WC_ELO_V2_MODEL_VERSION: str = "football-worldcup-v2-elo"
     WC_ELO_V2_SHADOW_VERSION: str = "football-worldcup-v2-elo-shadow"
     WC_ELO_V2_SHADOW_ENABLED: bool = True
+    # PROMOTION (#ELO-V2, gate verde dBrier -0.0779 + APPROVE Andrea 2026-06-07):
+    # quando True il v2 e' il modello SERVITO sul paper tier WC/friendlies; il
+    # Poisson v1 resta fallback fail-soft (rating mancante) e shadow A/B.
+    # ROLLBACK = settare False (il servito torna istantaneamente al v1).
+    WC_ELO_V2_SERVE_ENABLED: bool = True
+    WC_V1_SHADOW_VERSION: str = "football-worldcup-v1-shadow"
     # International friendlies — same national model as WC, distinct version +
     # namespace so calibration/track-record audits separate friendlies (heavy
     # rotations, lower stakes) from competitive matches. ALWAYS paper in v1.
