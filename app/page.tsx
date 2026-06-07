@@ -1179,11 +1179,12 @@ function selectedTennisProbability(m: TennisMatch) {
   return Math.max(m.p1, m.p2);
 }
 
-// Honest model label per competition: World Cup + national friendlies are served
-// by the Elo+logit model (v2-elo), club leagues by the Dixon-Coles + xG stack.
-// (Was hardcoded "Dixon-Coles" everywhere — wrong on the WC/friendly board.)
+// Honest model label per competition. WC + national friendlies run on the
+// national-team engine (Poisson-rates / Elo depending on the row); club leagues
+// on the Dixon-Coles + xG stack. "National model" is accurate for both national
+// variants — the old hardcoded "Dixon-Coles" was simply wrong on that board.
 function modelLabelFor(p: Prediction): string {
-  return p.league === "WC" || p.league === "FRIENDLY" ? "Elo model" : "Dixon-Coles";
+  return p.league === "WC" || p.league === "FRIENDLY" ? "National model" : "Dixon-Coles";
 }
 
 function isFootballBestBet(p: Prediction) {
