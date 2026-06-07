@@ -3946,8 +3946,11 @@ interface MbItem {
   market: string;
   sport: string;
   when: string;
-  odds: number;
-  isFair: boolean;
+  // Probabilità del pick secondo il nostro sistema (0-1). Decisione Andrea
+  // 2026-06-07: il builder mostra il "più quotato dal sistema" come
+  // percentuale modello, MAI come quota — coerente col prodotto
+  // (probabilità calibrate, non promesse di edge).
+  prob: number;
 }
 
 interface MbWcRow {
@@ -3991,68 +3994,68 @@ function MatchBuilderTab({
     eyebrow: "Strumento influencer", title: "Match Builder",
     subtitle: "Costruisci una schedina con le predizioni AI e condividi il link con i tuoi follower.",
     selectTitle: "Seleziona le predizioni (2–5)", selectedLabel: "Selezionate",
-    combinedOdds: "Moltiplicatore combinato", fairNote: "Include fair odds del modello (non quote bancabili)",
-    yourCode: "Il tuo codice influencer (es. MARIO10)", copyLink: "Copia link da condividere", copied: "Copiato ✓",
+    combinedProb: "Probabilità combinata (modello)",
+    yourCode: "Il tuo codice influencer (es. MARIO10)", copyLink: "Copia e pubblica link", copied: "Copiato ✓",
+    published: "Pubblicata su Creator Picks ✓",
     sharedTitle: "Schedina condivisa", sharedDesc: "Un creator ha costruito questa schedina per te.",
-    sharedBy: "Codice creator", registerCta: "Registrati gratis per vedere pick e quote",
+    sharedBy: "Codice creator", registerCta: "Registrati gratis per vedere i pick",
     noSignals: "Nessuna predizione disponibile al momento.",
-    empty: "Seleziona almeno 2 predizioni per generare il link.", fairTag: "FAIR",
+    empty: "Seleziona almeno 2 predizioni per generare il link.",
   } : {
     eyebrow: "Influencer tool", title: "Match Builder",
     subtitle: "Build an accumulator from AI predictions and share the link with your followers.",
     selectTitle: "Select predictions (2–5)", selectedLabel: "Selected",
-    combinedOdds: "Combined multiplier", fairNote: "Includes model fair odds (not bookable market odds)",
-    yourCode: "Your influencer code (e.g. JOHN10)", copyLink: "Copy share link", copied: "Copied ✓",
+    combinedProb: "Combined probability (model)",
+    yourCode: "Your influencer code (e.g. JOHN10)", copyLink: "Copy & publish link", copied: "Copied ✓",
+    published: "Published to Creator Picks ✓",
     sharedTitle: "Shared accumulator", sharedDesc: "A creator built this accumulator for you.",
-    sharedBy: "Creator code", registerCta: "Register free to reveal picks & odds",
+    sharedBy: "Creator code", registerCta: "Register free to reveal picks",
     noSignals: "No predictions available right now.",
-    empty: "Select at least 2 predictions to generate a link.", fairTag: "FAIR",
+    empty: "Select at least 2 predictions to generate a link.",
   };
 
   const items: MbItem[] = [
     ...predictions
       .filter((p) => !p.locked && isFutureMarket(p.kickoff) && Boolean(p.best_selection))
       .map((p): MbItem | null => {
-        const market = selectedFootballOdds(p);
         const prob = selectedFootballProbability(p);
-        const odds = market ?? (prob > 0 ? 1 / prob : null);
-        if (odds == null || !Number.isFinite(odds)) return null;
+        if (!Number.isFinite(prob) || prob <= 0) return null;
         return {
           id: `f_${p.match_id}`,
           label: `${p.home_team} vs ${p.away_team}`,
           market: p.best_selection === "HOME" ? p.home_team : p.best_selection === "AWAY" ? p.away_team : "Draw",
           sport: p.league_name || "Football", when: p.kickoff,
-          odds, isFair: market == null,
+          prob,
         };
       })
       .filter((i): i is MbItem => i !== null),
     ...wcRows
       .filter((r) => !r.locked && r.home_team && r.away_team && r.pick && r.starts_at && isFutureMarket(r.starts_at))
       .map((r): MbItem | null => {
-        const odds = r.odds ?? r.fair_odds ?? null;
-        if (odds == null || !Number.isFinite(odds) || odds <= 1) return null;
+        const conf = (r as { confidence_score?: number | null }).confidence_score;
+        const prob = conf != null && conf > 0 ? conf / 100
+          : r.fair_odds != null && r.fair_odds > 1 ? 1 / r.fair_odds : null;
+        if (prob == null || !Number.isFinite(prob) || prob <= 0) return null;
         return {
           id: `w_${r.id}`,
           label: `${r.home_team} vs ${r.away_team}`,
           market: r.pick === "HOME" ? String(r.home_team) : r.pick === "AWAY" ? String(r.away_team) : "Draw",
           sport: "World Cup", when: String(r.starts_at),
-          odds, isFair: r.odds == null,
+          prob,
         };
       })
       .filter((i): i is MbItem => i !== null),
     ...tennisMatches
       .filter((m) => isTennisMarketVisible(m.scheduled) && Boolean(m.best_selection))
       .map((m): MbItem | null => {
-        const market = selectedTennisOdds(m);
         const prob = selectedTennisProbability(m);
-        const odds = market ?? (prob > 0 ? 1 / prob : null);
-        if (odds == null || !Number.isFinite(odds)) return null;
+        if (!Number.isFinite(prob) || prob <= 0) return null;
         return {
           id: `t_${m.id}`,
           label: `${m.player1} vs ${m.player2}`,
           market: m.best_selection === "P1" ? m.player1 : m.player2,
           sport: `Tennis · ${m.tournament}`, when: m.scheduled,
-          odds, isFair: market == null,
+          prob,
         };
       })
       .filter((i): i is MbItem => i !== null),
@@ -4071,8 +4074,7 @@ function MatchBuilderTab({
   ]);
   const selectedItems = items.filter((i) => selected.includes(i.id));
   const lockedSelected = selected.filter((id) => !items.some((i) => i.id === id) && lockedLabels.has(id));
-  const combinedOdds = selectedItems.reduce((acc, i) => acc * i.odds, 1);
-  const anyFair = selectedItems.some((i) => i.isFair);
+  const combinedProb = selectedItems.reduce((acc, i) => acc * i.prob, 1);
   const isSharedView = sharedIds.length > 0 && !isLoggedIn;
 
   const toggle = (id: string) => {
@@ -4090,12 +4092,32 @@ function MatchBuilderTab({
     return `${base}/?${params.toString()}`;
   })();
 
+  const [publishState, setPublishState] = useState<"idle" | "published">("idle");
   const copyLink = async () => {
     if (!shareLink) return;
     try { await navigator.clipboard.writeText(shareLink); } catch { /* clipboard denied: link shown below anyway */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     trackEvent("mb_link_copied", { meta: { selections: selected.length } });
+    // Publish to Creator Picks (#MB-2): fail-soft — the share link works even
+    // if the publish API hiccups; the slip just won't appear on /community.
+    const code = influencerCode.trim().toUpperCase();
+    if (isLoggedIn && /^[A-Z0-9_-]{2,20}$/.test(code) && selectedItems.length >= 2) {
+      try {
+        const resp = await fetch("/api/match-builder", {
+          method: "POST", credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            code,
+            mb: selected.join(","),
+            selections: selectedItems.map((i) => ({
+              id: i.id, label: i.label, market: i.market, sport: i.sport, when: i.when, prob: i.prob,
+            })),
+          }),
+        });
+        if (resp.ok) setPublishState("published");
+      } catch { /* publish best-effort */ }
+    }
   };
 
   return (
@@ -4136,7 +4158,7 @@ function MatchBuilderTab({
         <div className="glass-card p-4 border border-amber-400/30 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-gray-400">{copy.selectedLabel}: {selectedItems.length}/5</span>
-            <span className="text-xl font-black font-mono text-amber-400">{combinedOdds.toFixed(2)}x</span>
+            <span className="text-xl font-black font-mono text-amber-400">{Math.round(combinedProb * 100)}%</span>
           </div>
           <div className="space-y-1">
             {selectedItems.map((item) => (
@@ -4144,15 +4166,13 @@ function MatchBuilderTab({
                 <span className="text-gray-300 truncate max-w-[220px]">{item.label}</span>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-gray-500 truncate max-w-[110px]">{item.market}</span>
-                  {item.isFair && <span className="text-[8px] px-1 rounded border border-gray-500/40 text-gray-500">{copy.fairTag}</span>}
-                  <span className={item.isFair ? "text-gray-400" : "text-cyan-300"}>{item.odds.toFixed(2)}</span>
+                  <span className="text-cyan-300">{Math.round(item.prob * 100)}%</span>
                 </div>
               </div>
             ))}
           </div>
           <p className="text-[10px] font-mono text-gray-600">
-            {copy.combinedOdds}: <strong className="text-amber-400">{combinedOdds.toFixed(2)}</strong>
-            {anyFair && <span className="block text-gray-700 mt-1">⚠ {copy.fairNote}</span>}
+            {copy.combinedProb}: <strong className="text-amber-400">{Math.round(combinedProb * 100)}%</strong>
           </p>
         </div>
       )}
@@ -4176,6 +4196,9 @@ function MatchBuilderTab({
               >
                 {copied ? copy.copied : copy.copyLink}
               </button>
+              {publishState === "published" && (
+                <p className="text-[10px] font-mono text-emerald-400">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
+              )}
               <p className="text-[9px] font-mono text-gray-700 break-all">{shareLink}</p>
             </>
           ) : (
@@ -4208,8 +4231,7 @@ function MatchBuilderTab({
                     <p className="text-[10px] font-mono text-gray-500 truncate">{item.sport} · {item.market}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    {item.isFair && <span className="text-[8px] px-1 rounded border border-gray-500/40 text-gray-500">{copy.fairTag}</span>}
-                    <span className={`text-sm font-black font-mono ${item.isFair ? "text-gray-400" : "text-cyan-300"}`}>{item.odds.toFixed(2)}</span>
+                    <span className="text-sm font-black font-mono text-cyan-300">{Math.round(item.prob * 100)}%</span>
                     <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "border-cyan-400 bg-cyan-400/20" : "border-white/20"}`}>
                       {isSelected && <span className="text-cyan-400 text-[10px]">✓</span>}
                     </div>
@@ -5775,6 +5797,10 @@ export default function Dashboard() {
               {/* Track B: World Cup hub is a route, not a tab */}
               <a className="rail-item" href="/world-cup">
                 <span>🏆 World Cup</span>
+              </a>
+              {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
+              <a className="rail-item" href="/community">
+                <span>⭐ Creator Picks</span>
               </a>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
                 {refreshing ? "..." : tUI.refresh_odds}
