@@ -626,9 +626,13 @@ async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
             enrichment, updated_at
      FROM unified_predictions
      WHERE sport = 'football'
-       AND starts_at > NOW()
+       -- #LIVE-1 (APPROVE Andrea 2026-06-07): la card resta visibile durante
+       -- la partita (150 min ≈ 90' + recuperi + margine) e sparisce quando il
+       -- settlement la sposta in History — handoff Bets → History senza buchi.
+       -- Trasparenza: il pick pre-match non si nasconde mai a match in corso.
+       AND starts_at > NOW() - interval '150 minutes'
        AND starts_at < NOW() + ($1 || ' days')::interval
-       AND expires_at > NOW()
+       AND expires_at > NOW() - interval '150 minutes'
        AND published_at IS NOT NULL
        AND is_historical = FALSE
        AND is_demo = FALSE
@@ -653,7 +657,7 @@ export async function GET(req: Request) {
   const [primary_raw, meta] = await Promise.all([
     dbQuery<PredictionRow>(
       `SELECT * FROM match_predictions
-       WHERE kickoff > NOW()
+       WHERE kickoff > NOW() - interval '150 minutes'
          AND kickoff < NOW() + ($1 || ' days')::interval
        ORDER BY league = 'SA' DESC, kickoff ASC
        LIMIT 120`,
@@ -662,7 +666,7 @@ export async function GET(req: Request) {
     dbQuery<{ ts: string; cnt: string }>(
       `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
        FROM match_predictions
-       WHERE kickoff > NOW()
+       WHERE kickoff > NOW() - interval '150 minutes'
          AND kickoff < NOW() + ($1 || ' days')::interval`,
       [PREDICTION_WINDOW_DAYS]
     ),

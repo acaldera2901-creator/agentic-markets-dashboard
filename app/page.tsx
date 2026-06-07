@@ -3208,7 +3208,15 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </div>
       )}
 
-      {onBetNow && !isPreview && (
+      {/* #LIVE-1: a match in corso la card resta visibile (trasparenza del
+          pick pre-match) ma non spingiamo bet su mercati chiusi. */}
+      {onBetNow && !isPreview && !isFutureMarket(p.kickoff) ? (
+        <div className="w-full mt-1 py-1.5 rounded-lg border border-red-400/20 bg-red-400/5 text-red-400/80 text-xs font-mono tracking-wider text-center">
+          {isFinished
+            ? (lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history")
+            : (lang === "it" ? "● In gioco — risultato a fine partita" : "● In play — result at full time")}
+        </div>
+      ) : onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
