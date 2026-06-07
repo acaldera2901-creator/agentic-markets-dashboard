@@ -9,6 +9,7 @@ import Countdown from "@/components/world-cup/Countdown";
 import GroupsGrid from "@/components/world-cup/GroupsGrid";
 import CalendarSection from "@/components/world-cup/CalendarSection";
 import WcBoard from "@/components/world-cup/WcBoard";
+import WinnerOdds from "@/components/world-cup/WinnerOdds";
 import TrackRecordStrip from "@/components/world-cup/TrackRecordStrip";
 import { fetchWcGroups, fetchWcFixtures, teamSlug } from "@/lib/world-cup";
 import { dbQuery } from "@/lib/db";
@@ -55,6 +56,11 @@ export default async function WorldCupPage() {
       <section className="wc-section" id="board">
         <h2 className="wc-section-title">Prediction board</h2>
         <WcBoard />
+      </section>
+
+      <section className="wc-section" id="outlook">
+        <h2 className="wc-section-title">Who wins the World Cup?</h2>
+        <WinnerOdds />
       </section>
 
       <section className="wc-section" id="groups">

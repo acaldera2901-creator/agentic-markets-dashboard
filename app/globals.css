@@ -4619,3 +4619,12 @@ button:disabled {
   .wc-fixture-row { grid-template-columns: 1fr; }
   .wc-fixture-meta { grid-column: 1; }
 }
+
+/* WC winner outlook (model view) */
+.wc-winner-card { padding: 16px 18px; max-width: 720px; }
+.wc-winner-head { margin-bottom: 10px; }
+.wc-winner-table td, .wc-winner-table th { padding: 5px 4px; }
+.wc-winner-col { font-weight: 800; }
+.wc-winner-podium .wc-team-col { font-weight: 800; color: var(--green, #22c55e); }
+.wc-winner-rest td { color: rgba(237, 241, 255, 0.45); font-size: 11px; border-top: 1px solid var(--line, rgba(140,145,255,0.09)); }
+.wc-winner-note { margin: 12px 0 0; font-size: 11px; line-height: 1.55; color: rgba(237, 241, 255, 0.5); }
