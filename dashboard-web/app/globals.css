@@ -518,6 +518,15 @@ button:disabled {
   color: var(--green);
 }
 
+.account-tab {
+  display: grid;
+  gap: 16px;
+}
+
+.account-subnav {
+  flex-wrap: wrap;
+}
+
 .sports-filter-bar label {
   min-width: 0;
   display: grid;

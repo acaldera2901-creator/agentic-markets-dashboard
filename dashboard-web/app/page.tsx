@@ -763,7 +763,8 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners" | "leaderboard";
+type Tab = "bets" | "account" | "history" | "partners" | "leaderboard";
+type AccountSection = "panoramica" | "impostazioni" | "assistenza" | "faq";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -5346,6 +5347,64 @@ function ClientAreaTab({
   );
 }
 
+// ─── Account Tab (unione Client Area + Impostazioni + Assistenza + FAQ) ─────────
+
+function AccountTab({
+  profile,
+  onOpenDesk,
+  onPaymentSubmit,
+  onActivateFree,
+  onLogout,
+  onUnlock,
+  onSave,
+}: {
+  profile: ClientProfile | null;
+  onOpenDesk: () => void;
+  onPaymentSubmit: (plan: "base" | "premium") => void;
+  onActivateFree: () => void;
+  onLogout: () => void;
+  onUnlock: () => void;
+  onSave: (profile: ClientProfile) => void;
+}) {
+  const lang = useLang();
+  const [section, setSection] = useState<AccountSection>("panoramica");
+  const sections: { key: AccountSection; label: string }[] = [
+    { key: "panoramica",   label: lang === "it" ? "Panoramica" : "Overview" },
+    { key: "impostazioni", label: lang === "it" ? "Impostazioni" : "Settings" },
+    { key: "assistenza",   label: lang === "it" ? "Assistenza" : "Assistance" },
+    { key: "faq",          label: "FAQ" },
+  ];
+  return (
+    <div className="account-tab">
+      <div className="segmented-filter account-subnav">
+        {sections.map((s) => (
+          <button
+            key={s.key}
+            className={section === s.key ? "is-active" : ""}
+            onClick={() => setSection(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {section === "panoramica" && (
+        <ClientAreaTab
+          profile={profile}
+          onOpenDesk={onOpenDesk}
+          onPaymentSubmit={onPaymentSubmit}
+          onActivateFree={onActivateFree}
+          onLogout={onLogout}
+        />
+      )}
+      {section === "impostazioni" && (
+        <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} />
+      )}
+      {section === "assistenza" && <AssistanceTab />}
+      {section === "faq" && <FAQTab />}
+    </div>
+  );
+}
+
 // ─── Unified Bets Tab ─────────────────────────────────────────────────────────
 
 function UnifiedBetsTab({
@@ -5461,7 +5520,7 @@ export default function Dashboard() {
   useEffect(() => { setUserTz(Intl.DateTimeFormat().resolvedOptions().timeZone); }, []);
   useEffect(() => { trackEvent("page_view"); }, []);
   useEffect(() => {
-    if (tab === "client-area") trackEvent("plan_view");
+    if (tab === "account") trackEvent("plan_view");
   }, [tab]);
 
   // IP-based language detection — only runs when no stored preference exists
@@ -5725,13 +5784,10 @@ export default function Dashboard() {
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
-    { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isPremiumClient ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
+    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (isPremiumClient ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     { tab: "partners",    label: tNav.nav_partner },
-    { tab: "settings",    label: uiLanguage === "it" ? "Impostazioni" : "Settings" },
-    { tab: "assistance",  label: uiLanguage === "it" ? "Assistenza" : "Assistance" },
-    { tab: "faq",         label: "FAQ" },
   ];
 
   const tUI = TRANSLATIONS[uiLanguage];
@@ -5753,7 +5809,7 @@ export default function Dashboard() {
         </div>
         <div className="portal-brand-actions">
           {clientProfile ? (
-            <button className="client-access-button" onClick={() => setTab("client-area")}>
+            <button className="client-access-button" onClick={() => setTab("account")}>
               {clientProfile.name} · {isPremiumClient ? "Premium" : isClientUnlocked ? "Base" : clientProfile.plan === "free" ? "Free" : "Setup"}
             </button>
           ) : (
@@ -5842,24 +5898,17 @@ export default function Dashboard() {
               tennisIsPlaceholder={tennisIsPlaceholder}
             />
           )}
-          {tab === "client-area" && (
-            <ClientAreaTab
+          {tab === "account" && (
+            <AccountTab
               profile={clientProfile}
               onOpenDesk={() => setTab("bets")}
               onPaymentSubmit={submitCryptoPayment}
               onActivateFree={activateFreePlan}
               onLogout={logoutClientProfile}
-            />
-          )}
-          {tab === "settings" && (
-            <SettingsTab
-              profile={clientProfile}
               onUnlock={() => openAuth("login")}
               onSave={saveClientProfile}
             />
           )}
-          {tab === "assistance" && <AssistanceTab />}
-          {tab === "faq" && <FAQTab />}
           {tab === "history" && (
             <HistoryTab history={history} stats={historyStats} loading={historyLoading} />
           )}
