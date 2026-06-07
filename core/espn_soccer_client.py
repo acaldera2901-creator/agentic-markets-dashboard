@@ -39,6 +39,9 @@ ESPN_LEAGUE_CODES: dict[str, str] = {
     "EL": "uefa.europa",
     "ECL": "uefa.europa.conf",
     "WC": "fifa.world",
+    # International friendlies (national teams) — pre-WC dry-run of the
+    # national model. ESPN-only competition: no fdorg/API-Football coverage.
+    "FRIENDLY": "fifa.friendly",
 }
 
 SQUAD_TTL = 6 * 3600  # squads/injuries change slowly; 6h keeps us at ~200 req/day
@@ -415,3 +418,61 @@ async def get_match_lineups(event_id: str) -> dict | None:
             ],
         }
     return out or None
+
+
+def parse_summary_result(data: dict) -> dict | None:
+    """Final score out of an ESPN summary payload, or None if not finished.
+
+    Same return contract as football_api_client.get_fixture_result:
+    {home_goals, away_goals, status, home_team, away_team}. Fail-closed on
+    anything missing — settlement must never guess a score.
+    """
+    competition = ((data.get("header") or {}).get("competitions") or [{}])[0]
+    status_type = (competition.get("status") or {}).get("type") or {}
+    if not status_type.get("completed"):
+        return None
+    home = away = None
+    for comp in competition.get("competitors", []):
+        if comp.get("homeAway") == "home":
+            home = comp
+        elif comp.get("homeAway") == "away":
+            away = comp
+    if not home or not away:
+        return None
+    try:
+        return {
+            "home_goals": int(home["score"]),
+            "away_goals": int(away["score"]),
+            "status": str(status_type.get("name") or "FT"),
+            "home_team": (home.get("team") or {}).get("displayName", ""),
+            "away_team": (away.get("team") or {}).get("displayName", ""),
+        }
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+async def get_match_result(league_code: str, event_id: str) -> dict | None:
+    """Final result for one ESPN event ("espn:"-prefixed unified rows).
+
+    The only settlement source for ESPN-only competitions (e.g. FRIENDLY,
+    which neither API-Football quota nor football-data.org cover). None while
+    the match is not completed — the settlement agent retries next cycle.
+    """
+    slug = ESPN_LEAGUE_CODES.get((league_code or "").upper())
+    if not slug or not event_id:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(
+                f"{_SOCCER_BASE}/{slug}/summary",
+                params={"event": event_id},
+                headers=_HEADERS,
+            )
+            if resp.status_code != 200:
+                logger.debug("ESPN result %s/%s: %s", league_code, event_id, resp.status_code)
+                return None
+            data = resp.json()
+    except Exception as exc:
+        logger.debug("ESPN result %s/%s error (non-fatal): %s", league_code, event_id, exc)
+        return None
+    return parse_summary_result(data)

@@ -61,7 +61,11 @@ _TEAM_ALIASES: dict[str, str] = {
     "côte d'ivoire": "Ivory Coast",
     "cote d'ivoire": "Ivory Coast",
     "czechia": "Czech Republic",
-    "china pr": "China",
+    # Dataset canonical is "China PR" (verified in CSV); ESPN friendlies say
+    # "China". The old "china pr" -> "China" alias pointed AWAY from the dataset.
+    "china": "China PR",
+    "china pr": "China PR",
+    "kyrgyz republic": "Kyrgyzstan",
     # Dataset canonical is "Cape Verde" (verified in CSV); FIFA/feeds say "Cabo Verde".
     "cabo verde": "Cape Verde",
     "curacao": "Curaçao",

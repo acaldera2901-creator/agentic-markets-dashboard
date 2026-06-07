@@ -223,6 +223,25 @@ def xg_prediction_to_unified_row(p: DCPrediction) -> dict:
     return row
 
 
+def national_dedup_key(league: str, kickoff: str, home_team: str, away_team: str) -> str:
+    """Provider-agnostic dedup key for national-team rows (#WC-DEDUP-1).
+
+    The provider chain flaps between football-data.org and ESPN, so the same
+    fixture arrives with different event ids ("537327" vs "espn:760415") and
+    the (source_table, source_id) upsert key splits one match into duplicate
+    board cards. Canonical-name + date keys are stable across providers AND
+    across spellings ("Korea Republic" vs "South Korea"). external_event_id
+    keeps carrying the live provider id — settlement still needs it.
+    """
+    from core.world_cup_context import normalize_team
+    from core.world_cup_history import canonical_team_name
+
+    date = str(kickoff or "")[:10]
+    home_key = normalize_team(canonical_team_name(home_team))
+    away_key = normalize_team(canonical_team_name(away_team))
+    return f"{(league or '').upper()}:{date}:{home_key}|{away_key}"
+
+
 def wc_prediction_to_unified_row(
     p: DCPrediction,
     *,
@@ -234,8 +253,14 @@ def wc_prediction_to_unified_row(
     bookmaker: str | None = None,
     signal_allowed: bool = False,
     team_news_summary: str | None = None,
+    friendly: bool = False,
 ) -> dict:
     """World Cup row on the unified_predictions schema.
+
+    ``friendly=True`` re-tags the row as an international friendly (same
+    national model, distinct model_version + source_table namespace so the
+    calibration/track-record audits never mix friendlies into the WC record).
+    The caller keeps friendlies on paper by passing signal_allowed=False.
 
     Promotion rules (#018, APPROVE Andrea 2026-06-06 — the "explicit promotion
     deploy" the original force-paper docstring reserved):
@@ -256,9 +281,19 @@ def wc_prediction_to_unified_row(
     row = dc_prediction_to_unified_row(p)
     pick = row["pick"]
     confidence = row["confidence_score"]
-    row["model_version"] = settings.WC_MODEL_VERSION
-    row["source_table"] = settings.WC_SOURCE_TABLE
-    row["competition"] = "World Cup"
+    if friendly:
+        row["model_version"] = settings.FRIENDLY_MODEL_VERSION
+        row["source_table"] = settings.FRIENDLY_SOURCE_TABLE
+        row["competition"] = "International Friendly"
+        row["world_cup_stage"] = None
+    else:
+        row["model_version"] = settings.WC_MODEL_VERSION
+        row["source_table"] = settings.WC_SOURCE_TABLE
+        row["competition"] = "World Cup"
+    # #WC-DEDUP-1: provider-agnostic dedup key — one row per matchup no matter
+    # which provider's event id arrived this cycle. external_event_id (above,
+    # from the dc mapper) keeps the live provider id for settlement.
+    row["source_id"] = national_dedup_key(p.league, p.kickoff, p.home_team, p.away_team)
     row["neutral_venue"] = neutral_venue
     if stage:
         row["world_cup_stage"] = stage
@@ -311,7 +346,7 @@ def wc_prediction_to_unified_row(
         # Paper never claims an edge, even when reference odds are shown.
         row["edge_percent"] = None
         row["explanation"] = explanation or (
-            f"World Cup paper prediction (national Poisson rates model). "
+            f"{'International friendly' if friendly else 'World Cup'} paper prediction (national Poisson rates model). "
             f"Pick: {pick} | model probability {confidence}%. "
             "Paper tier: published for track-record transparency only"
             + (", real market odds shown for reference" if has_market else ", no market odds attached")

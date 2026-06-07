@@ -13,6 +13,11 @@ from typing import Any
 
 
 WORLD_CUP_CODE = "WC"
+# International friendlies (national teams). Fixtures via ESPN only
+# (fifa.friendly): NOT in football_api_client.LEAGUE_IDS on purpose, so the
+# DataHub/API-Football paths never spend quota on it. Predictions ride the
+# same national-team model as the WC and are ALWAYS paper in v1.
+FRIENDLIES_CODE = "FRIENDLY"
 WORLD_CUP_API_FOOTBALL_LEAGUE_ID = 1
 WORLD_CUP_SEASON = 2026
 WORLD_CUP_EXPECTED_MATCHES = 104
@@ -56,6 +61,15 @@ REGISTRY = WorldCupRegistry()
 
 def is_world_cup_code(code: str | None) -> bool:
     return (code or "").upper() == WORLD_CUP_CODE
+
+
+def is_friendlies_code(code: str | None) -> bool:
+    return (code or "").upper() == FRIENDLIES_CODE
+
+
+def is_national_team_code(code: str | None) -> bool:
+    """National-team competitions: routed to the national model (no Dixon-Coles)."""
+    return is_world_cup_code(code) or is_friendlies_code(code)
 
 
 def api_football_season_for(code: str, fallback_year: int) -> int:

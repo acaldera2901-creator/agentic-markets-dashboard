@@ -17,7 +17,14 @@ from core.odds_api_client import (
 )
 from core.matchbook_client import get_football_markets as mb_football_markets, is_configured as mb_configured
 from core.world_cup_context import build_world_cup_context
-from core.world_cup_registry import api_football_season_for, build_cycle_detail, is_world_cup_code
+from core.world_cup_registry import (
+    FRIENDLIES_CODE,
+    api_football_season_for,
+    build_cycle_detail,
+    is_friendlies_code,
+    is_national_team_code,
+    is_world_cup_code,
+)
 from core.world_cup_venue_context import enrich_venue_context
 from core.world_cup_history import canonical_team_name, load_national_history, WC2026_TEAMS
 from core.world_cup_team_model import build_profile
@@ -177,7 +184,9 @@ class DataCollectorAgent(BaseAgent):
 
         # Last resort: API-Football (100 req/day shared with settlement) —
         # only reached for leagues without an ESPN mapping or if ESPN errored.
-        if settings.API_FOOTBALL_KEY:
+        # league_id=0 marks ESPN-only competitions (FRIENDLY): never fall
+        # through to the paid provider for them.
+        if settings.API_FOOTBALL_KEY and league_id:
             now = datetime.now()
             # Seasons start Aug/Sep — before August we're still in the previous season
             season = api_football_season_for(
@@ -238,7 +247,11 @@ class DataCollectorAgent(BaseAgent):
             settings.API_FOOTBALL_KEY or settings.FOOTBALL_DATA_ORG_API_KEY
         )
 
-        for league_code, league_id in LEAGUE_IDS.items():
+        # FRIENDLY rides the same loop as the API-Football leagues but is
+        # ESPN-only (league_id=0): kept OUT of LEAGUE_IDS so neither the
+        # DataHub nor the model bootstrap ever spend API-Football quota on it.
+        collect_targets = {**LEAGUE_IDS, FRIENDLIES_CODE: 0}
+        for league_code, league_id in collect_targets.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
                 prev_kickoff_registry: dict[str, dict] = (
@@ -253,8 +266,11 @@ class DataCollectorAgent(BaseAgent):
                     "published_events": 0,
                 }
                 # Primary odds source: Matchbook Exchange
+                # No odds source covers FRIENDLY (Odds API has no friendlies
+                # sport key); skip odds matching entirely so country names
+                # never fuzzy-match Matchbook club markets ("Chile"≈"Chelsea").
                 odds_map: dict = {}
-                if mb_configured():
+                if mb_configured() and not is_friendlies_code(league_code):
                     try:
                         mb_list = await asyncio.to_thread(mb_football_markets)
                         if mb_list:
@@ -268,7 +284,7 @@ class DataCollectorAgent(BaseAgent):
                         source_errors.append(f"{league_code}:matchbook:{mb_err}")
 
                 # Fallback: The Odds API
-                if not odds_map:
+                if not odds_map and not is_friendlies_code(league_code):
                     odds_list = await get_odds(league_code)
                     odds_map = {
                         o.get("home_team_normalized","") + "|" + o.get("away_team_normalized",""): o
@@ -471,7 +487,9 @@ class DataCollectorAgent(BaseAgent):
                 ),
                 "collected_at": datetime.now(timezone.utc).isoformat(),
             }
-            if not is_world_cup_code(league):
+            # Club-feature enrichment only: national teams (WC, FRIENDLY) have
+            # no club feature store entries — skip instead of logging misses.
+            if not is_national_team_code(league):
                 event.update(self._build_football_features(home, away, league, kickoff))
             return event
         except (KeyError, TypeError):

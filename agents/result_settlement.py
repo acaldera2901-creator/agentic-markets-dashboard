@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 
 from agents.base import BaseAgent
 from core.db import get_pending_bets_for_settlement, settle_bet, get_cumulative_pnl
+from core.espn_soccer_client import get_match_result as espn_get_match_result
 from core.football_api_client import get_fixture_result
 from core.football_data_org_client import get_match_result as fdorg_get_match_result
 from core.redis_client import publish
@@ -178,6 +179,23 @@ class ResultSettlementAgent(BaseAgent):
     async def _fetch_unified_result(self, row: dict) -> dict | None:
         """Result lookup for a unified row: fixture id first, team-name fallback."""
         ext = row.get("external_event_id")
+        # ESPN-sourced rows ("espn:<event_id>") settle straight from the ESPN
+        # summary by event id — the only result source for ESPN-only
+        # competitions (FRIENDLY); free, so tried before the quota providers.
+        ext_str = str(ext or "")
+        if ext_str.startswith("espn:"):
+            try:
+                result = await espn_get_match_result(
+                    str(row.get("league") or ""), ext_str.removeprefix("espn:")
+                )
+                if result:
+                    return result
+            except Exception as e:
+                self.logger.debug(f"ESPN result lookup failed for {ext_str}: {e}")
+            if str(row.get("league") or "").upper() == "FRIENDLY":
+                # No other provider covers friendlies: don't burn the
+                # API-Football/fdorg quota on lookups that cannot succeed.
+                return None
         try:
             result = await get_fixture_result(int(ext))
             if result:

@@ -39,6 +39,18 @@ def test_missing_artifact_is_identity(monkeypatch, tmp_path):
     wc_cal._load_maps.cache_clear()
 
 
+def test_plateau_extremes_fall_back_to_identity():
+    # #FRIENDLY-1 finding (Bolivia-Algeria served 0/0/100): inputs outside the
+    # fitted support hit the isotonic boundary plateaus and come back as a
+    # degenerate 0%/100% claim. Out-of-distribution -> identity, never 0/1.
+    raw = (0.0381, 0.0948, 0.8671)  # the real Bolivia-Algeria raw triple
+    assert calibrate_wc_probabilities(*raw) == raw
+    # Mid-range inputs keep being calibrated (the guard must not over-trigger).
+    a, d, b = calibrate_wc_probabilities(0.37, 0.26, 0.37)
+    assert (a, d, b) != (0.37, 0.26, 0.37)
+    assert all(0.0 < v < 1.0 for v in (a, d, b))
+
+
 def test_invalid_artifact_is_identity(monkeypatch, tmp_path):
     bad = tmp_path / "bad.json"
     bad.write_text(json.dumps({"maps": {"team_a": [2.0] * 201, "draw": [0.1] * 201, "team_b": [0.1] * 201}}))

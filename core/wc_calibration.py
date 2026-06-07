@@ -73,4 +73,13 @@ def calibrate_wc_probabilities(
     total = ca + cd + cb
     if not total > 0:
         return (p_team_a, p_draw, p_team_b)
+    # Boundary-plateau guard (#FRIENDLY-1 finding, Bolivia-Algeria 0/0/100):
+    # inputs outside the fitted support hit the isotonic plateaus and come back
+    # as a degenerate 0%/100% claim the raw model never made (raw was 4/9/87).
+    # An input this extreme is out-of-distribution for the curve -> identity,
+    # same fail-safe contract as a missing artifact. No served WC row is in
+    # this regime today (mid-range probs), so WC serving is unchanged.
+    for raw, mapped in ((p_team_a, ca), (p_draw, cd), (p_team_b, cb)):
+        if (mapped <= 0.0 and raw > 0.0) or (mapped >= 1.0 and raw < 1.0):
+            return (p_team_a, p_draw, p_team_b)
     return (ca / total, cd / total, cb / total)
