@@ -35,7 +35,7 @@ _NOTE_SPLIT = re.compile(
 )
 
 
-def _parse_notes(note_text: str, comp_type: str) -> dict | None:
+def _parse_notes(note_text: str, comp_type: str, tournament: str = "") -> dict | None:
     """Parse 'Player A bt Player B 6-4 6-3' or 'Player A leads Player B 7-6'."""
     # Doubles not supported (two players per side)
     if "Doubles" in comp_type:
@@ -52,7 +52,10 @@ def _parse_notes(note_text: str, comp_type: str) -> dict | None:
     if not p1 or not p2:
         return None
 
-    surface = "clay"  # ESPN only gives Roland Garros at the moment — always clay
+    # #TENNIS-1: surface inferred from the tournament name (was hardcoded
+    # 'clay' during Roland Garros — would have corrupted grass-season Elo
+    # updates for any consumer of this field).
+    surface = infer_surface(tournament)
     gender = "W" if "Women" in comp_type else "M"
 
     return {"player1": p1, "player2": p2, "surface": surface,
@@ -257,7 +260,9 @@ async def get_completed_results() -> list[dict]:
             note_text = notes[0].get("text", "") if notes else ""
             if not note_text:
                 continue
-            parsed = _parse_notes(note_text, comp_type)
+            parsed = _parse_notes(
+                note_text, comp_type, ev.get("name", ev.get("shortName", ""))
+            )
             if not parsed or parsed["match_status"] != "completed":
                 continue
             winner, loser = parsed["player1"], parsed["player2"]

@@ -55,11 +55,21 @@ class TennisModelAgent(BaseAgent):
         self.feature_store: TennisFeatureStore | None = None
         self.model_version = "elo_surface_v4_features_odds"
 
+    # #TENNIS-1: reload Elo from DB every N cycles (~30 min at 300s/cycle) so
+    # ratings updated by TennisSettlementAgent reach the scoring loop without
+    # a process restart. _load_elo_ratings merges per-row and keeps current
+    # ratings on any DB error (fail-safe already in place).
+    ELO_RELOAD_EVERY_CYCLES = 6
+
     async def _main_loop(self) -> None:
         await self._load_elo_ratings()
         self._load_feature_store()
+        cycles = 0
         while self._running:
             await self._compute_cycle()
+            cycles += 1
+            if cycles % self.ELO_RELOAD_EVERY_CYCLES == 0:
+                await self._load_elo_ratings()
             await asyncio.sleep(300)
 
     def _load_feature_store(self) -> None:

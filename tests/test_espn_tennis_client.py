@@ -90,6 +90,17 @@ def test_parse_notes_flags_completed_and_live():
     assert live["match_status"] == "live"
 
 
+def test_parse_notes_surface_follows_tournament():
+    # #TENNIS-1: surface was hardcoded 'clay' — grass-season settlement would
+    # have updated the wrong surface-specific Elo.
+    rg = _parse_notes("Carlos Alcaraz bt Jannik Sinner 6-4 6-3", "Men's Singles", "Roland Garros")
+    wim = _parse_notes("Carlos Alcaraz bt Jannik Sinner 6-4 6-3", "Men's Singles", "Wimbledon")
+    queens = _parse_notes("Carlos Alcaraz bt Jannik Sinner 6-4 6-3", "Men's Singles", "HSBC Championships, Queen's Club")
+    assert rg["surface"] == "clay"
+    assert wim["surface"] == "grass"
+    assert queens["surface"] == "grass"
+
+
 async def test_scheduled_match_is_emitted_with_canonical_order():
     rows = await _fixtures_for(
         _scoreboard([_competition("Jannik Sinner", "Carlos Alcaraz")])
