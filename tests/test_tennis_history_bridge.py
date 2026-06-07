@@ -116,6 +116,50 @@ async def test_settle_unified_tennis_result_mapping(pick, winner, void, expected
 
 
 @pytest.mark.asyncio
+async def test_settle_recent_applies_elo_once_per_physical_match():
+    """#ELO-FIX-1: the same physical match arriving as N duplicate prediction
+    rows must move the Elo rating exactly ONCE, not N times."""
+    from agents import tennis_settlement as ts
+    from models.elo_surface import EloSurfaceModel
+
+    agent = _agent()
+    agent._elo = EloSurfaceModel()
+    # Three duplicate rows for the SAME match (the pre-fix table had up to 399).
+    preds = [
+        SimpleNamespace(
+            id=i, match_id="tennis:espn:e9:k", player1="Carlos Alcaraz",
+            player2="Jannik Sinner", surface="clay",
+        )
+        for i in range(3)
+    ]
+    resolved = [(p, "P1", "6-4 6-3") for p in preds]
+
+    update_spy = MagicMock(wraps=agent._elo.update)
+    agent._elo.update = update_spy
+
+    with patch.object(ts, "AsyncSessionLocal", _NoopSession), \
+         patch.object(agent._elo, "load_from_db_async", new=AsyncMock()), \
+         patch.object(agent._elo, "save_to_db_async", new=AsyncMock()), \
+         patch.object(ts, "settle_unified_tennis", new=AsyncMock(return_value=True)), \
+         patch.object(agent, "_resolve_via_matchbook", new=AsyncMock(return_value=[])), \
+         patch.object(agent, "_resolve_via_espn", new=AsyncMock(return_value=resolved)), \
+         patch.object(agent, "_select_pending", new=AsyncMock(return_value=preds)), \
+         patch.object(agent, "_update_prediction", new=AsyncMock()), \
+         patch.object(agent, "_settle_bets", new=AsyncMock()):
+        await agent._settle_recent()
+
+    assert update_spy.call_count == 1, (
+        f"Elo update ran {update_spy.call_count}x for one physical match "
+        "(must be idempotent — this is the #ELO-FIX-1 bug)"
+    )
+
+
+class _NoopSession:
+    async def __aenter__(self): return self
+    async def __aexit__(self, *a): return False
+
+
+@pytest.mark.asyncio
 async def test_settle_unified_tennis_missing_row_is_false_not_error():
     from core import supabase_client as sc
     client = AsyncMock()

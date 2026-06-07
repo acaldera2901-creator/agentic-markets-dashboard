@@ -335,6 +335,10 @@ class TennisModelAgent(BaseAgent):
             async with httpx.AsyncClient(timeout=10.0) as c:
                 resp = await c.post(
                     f"{supa_url.rstrip('/')}/rest/v1/tennis_predictions",
+                    # on_conflict names the unique index (uq_tennis_predictions_match,
+                    # migration 009) so merge-duplicates is a real upsert and not the
+                    # silent no-op that ballooned the table to 35k rows (#ELO-FIX-1).
+                    params={"on_conflict": "match_id,player1,player2"},
                     json=clean,
                     headers={
                         "apikey": supa_key,

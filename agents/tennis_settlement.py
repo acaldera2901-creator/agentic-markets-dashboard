@@ -90,12 +90,11 @@ class TennisSettlementAgent(BaseAgent):
         if voided:
             self.logger.info(f"[SETTLEMENT] voided {voided} unified tennis rows (expired)")
 
-    async def _settle_recent(self):
-        """Attempt settlement for predictions within the last EXPIRE_AFTER_DAYS days."""
+    async def _select_pending(self) -> list:
+        """Unsettled predictions in the settlement window (outcome IS NULL)."""
         now = datetime.utcnow()
         cutoff = now - timedelta(hours=SETTLEMENT_DELAY_HOURS)
         max_age = now - timedelta(days=EXPIRE_AFTER_DAYS)
-
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(TennisPrediction).where(
@@ -104,8 +103,11 @@ class TennisSettlementAgent(BaseAgent):
                     TennisPrediction.computed_at >= max_age,
                 )
             )
-            pending = result.scalars().all()
+            return result.scalars().all()
 
+    async def _settle_recent(self):
+        """Attempt settlement for predictions within the last EXPIRE_AFTER_DAYS days."""
+        pending = await self._select_pending()
         if not pending:
             return
 
@@ -120,6 +122,13 @@ class TennisSettlementAgent(BaseAgent):
         async with AsyncSessionLocal() as session:
             await self._elo.load_from_db_async(session)
 
+        # Apply each physical match to the Elo model exactly once. Before the
+        # unique index on tennis_predictions (#ELO-FIX-1) the same match could
+        # arrive as N duplicate rows, and the old loop re-ran the Elo update once
+        # per row — inflating ratings (Zverev to 813 matches). The unique index
+        # prevents new duplicates, and this dedup keeps the rating idempotent even
+        # if duplicates ever slip through again.
+        elo_applied: set[frozenset] = set()
         updated = 0
         for entry in resolved:
             # Resolver tuples: (pred, position) or (pred, position, score_text).
@@ -129,7 +138,13 @@ class TennisSettlementAgent(BaseAgent):
             winner_name = pred.player1 if winner_position == "P1" else pred.player2
             loser_name = pred.player2 if winner_position == "P1" else pred.player1
             surface = pred.surface or "hard"
-            self._elo.update(winner_name, loser_name, surface)
+            match_identity = frozenset((
+                canonical_player_key(winner_name),
+                canonical_player_key(loser_name),
+            ))
+            if match_identity not in elo_applied:
+                self._elo.update(winner_name, loser_name, surface)
+                elo_applied.add(match_identity)
             await self._update_prediction(pred.id, outcome, winner_name)
             await self._settle_bets(pred.match_id, outcome)
             # Bridge to the public track record (/api/v2/history) — with the
@@ -142,7 +157,10 @@ class TennisSettlementAgent(BaseAgent):
         if updated:
             async with AsyncSessionLocal() as session:
                 await self._elo.save_to_db_async(session)
-            self.logger.info(f"[SETTLEMENT] settled {updated} recent match(es), Elo updated")
+            self.logger.info(
+                f"[SETTLEMENT] settled {updated} recent row(s) "
+                f"({len(elo_applied)} distinct match(es)), Elo updated"
+            )
 
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
