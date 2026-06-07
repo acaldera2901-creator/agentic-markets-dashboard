@@ -330,7 +330,12 @@ class ModelAgent(BaseAgent):
                     v2_triple = None  # fail-soft: il servito resta v1
                 if v2_triple is not None:
                     served_a, served_d, served_b = v2_triple
-                    served_version = settings.WC_ELO_V2_MODEL_VERSION
+                    # F3: amichevoli v2 in namespace separato dal WC competitivo
+                    served_version = (
+                        settings.FRIENDLY_V2_MODEL_VERSION
+                        if is_friendly
+                        else settings.WC_ELO_V2_MODEL_VERSION
+                    )
                     served_model_label = "Elo rating model"
                     v2_served = True
             p_home, p_draw, p_away = blend_with_market(served_a, served_d, served_b, market)

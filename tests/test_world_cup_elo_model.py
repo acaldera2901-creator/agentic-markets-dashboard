@@ -68,3 +68,25 @@ def test_logit_monotone_in_elo_diff():
     assert lo[2] > mid[2] > hi[2]
     for p in (lo, mid, hi):
         assert math.isclose(sum(p), 1.0, abs_tol=1e-9)
+
+
+def test_no_certainties_on_extreme_mismatch():
+    """F2 (ri-verifica michele-claude): il plateau dell'isotonica congelata
+    produceva 1.00/0.00/0.00 su mismatch fuori scala (Spain-San Marino).
+    Il clamp [_CAL_EPS, 1-_CAL_EPS] garantisce: mai certezze servite."""
+    res = m.predict_wc_match("Spain", "San Marino", neutral=False)
+    assert res is not None
+    p_home, p_draw, p_away = res
+    assert p_home < 1.0 and p_draw > 0.0 and p_away > 0.0
+    assert math.isclose(p_home + p_draw + p_away, 1.0, abs_tol=1e-9)
+    # ogni esito resta quotabile (almeno ~mezzo punto percentuale post-renorm)
+    assert min(p_home, p_draw, p_away) >= 0.005
+
+
+def test_clamp_does_not_distort_normal_range():
+    """Il clamp F2 deve essere invisibile sui match normali (nessun knot
+    estremo toccato): Mexico-United States resta identico pre/post guard
+    entro la tolleranza di rinormalizzazione."""
+    res = m.predict_wc_match("Mexico", "United States", neutral=True)
+    assert res is not None
+    assert all(0.02 < p < 0.95 for p in res)

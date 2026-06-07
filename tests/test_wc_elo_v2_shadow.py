@@ -153,3 +153,21 @@ async def test_shadow_insert_on_change_only():
     shadow_calls = [c for c in snap.await_args_list
                     if c.kwargs["model_version"] == settings.WC_V1_SHADOW_VERSION]
     assert len(shadow_calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_friendly_v2_uses_friendly_namespace():
+    """F3: amichevole servita dal v2 -> model_version football-friendlies-v2-elo
+    (namespace separato dal WC competitivo per gli audit di calibrazione)."""
+    agent = _model_agent()
+    payload = _wc_payload("Argentina", "Brazil")
+    payload["league"] = "FRIENDLY"
+    result = _wc_result()
+    result["world_cup_national_model_quality"] = "0.9"
+    with patch("agents.model.upsert_unified_rows", new=AsyncMock(return_value=1)), \
+         patch("agents.model.log_prediction_snapshot", new=AsyncMock()) as snap:
+        await agent._persist_world_cup_paper(payload, result)
+
+    versions = [c.kwargs["model_version"] for c in snap.await_args_list]
+    assert settings.FRIENDLY_V2_MODEL_VERSION in versions
+    assert settings.WC_ELO_V2_MODEL_VERSION not in versions

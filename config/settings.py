@@ -113,6 +113,9 @@ class Settings(BaseSettings):
     # namespace so calibration/track-record audits separate friendlies (heavy
     # rotations, lower stakes) from competitive matches. ALWAYS paper in v1.
     FRIENDLY_MODEL_VERSION: str = "football-friendlies-v1"
+    # F3 (ri-verifica michele-claude): amichevoli servite dal v2 Elo restano in
+    # un namespace separato dal WC competitivo, per audit calibrazione/track-record.
+    FRIENDLY_V2_MODEL_VERSION: str = "football-friendlies-v2-elo"
     FRIENDLY_SOURCE_TABLE: str = "friendly_model"
     FRIENDLY_MIN_NATIONAL_QUALITY: float = 0.75   # same bar as the WC signal gate
 

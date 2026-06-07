@@ -107,12 +107,20 @@ def _logit_probs(elo_diff: float) -> tuple[float, float, float]:
     return by_class[0], by_class[1], by_class[2]
 
 
+# Plateau guard (finding F2, ri-verifica michele-claude msg_mq3y1c4y): i knot
+# estremi dell'isotonica congelata valgono y=0.0/1.0, quindi un mismatch fuori
+# scala (Spain–San Marino) veniva servito come 1.00/0.00/0.00 — lo stesso bug
+# del caso Bolivia–Algeria che ha originato #CALIB-3 sul path v1. Mai servire
+# certezze: clamp a [EPS, 1-EPS] e rinormalizzazione.
+_CAL_EPS = 0.01
+
+
 def _calibrate(p_home: float, p_draw: float, p_away: float) -> tuple[float, float, float]:
     iso = _isotonic()
     cal = [
-        _interp(*iso[0], p_home),
-        _interp(*iso[1], p_draw),
-        _interp(*iso[2], p_away),
+        min(max(_interp(*iso[0], p_home), _CAL_EPS), 1.0 - _CAL_EPS),
+        min(max(_interp(*iso[1], p_draw), _CAL_EPS), 1.0 - _CAL_EPS),
+        min(max(_interp(*iso[2], p_away), _CAL_EPS), 1.0 - _CAL_EPS),
     ]
     s = sum(cal)
     if s <= 0:
