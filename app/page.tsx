@@ -5417,7 +5417,22 @@ export default function Dashboard() {
         if (resp.ok) {
           const server = await resp.json() as { identifier?: string; plan?: ClientProfile["plan"]; name?: string | null; plan_expires_at?: string | null };
           setClientProfile((prev) => {
-            if (!prev) return prev;
+            // BUG-003: a valid server session with no locally-stored profile
+            // (fresh device, cleared storage) left the board chrome logged-out
+            // — "Sign In", register banner, "Create profile" in Settings —
+            // while the cookie already unlocked the picks. The cookie is the
+            // authority: hydrate the profile from it so the whole board agrees.
+            if (!prev) {
+              if (!server.identifier) return prev;
+              const hydrated: ClientProfile = {
+                name: server.name ?? "",
+                email: server.identifier.trim().toLowerCase(),
+                plan: server.plan ?? "free",
+                planExpiresAt: server.plan_expires_at ?? null,
+              };
+              try { window.localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(hydrated)); } catch { /**/ }
+              return hydrated;
+            }
             const planChanged = server.plan && server.plan !== prev.plan;
             const expiryChanged = server.plan_expires_at !== prev.planExpiresAt;
             if (planChanged || expiryChanged) {
