@@ -2799,10 +2799,15 @@ function buildReasons(p: Prediction, lang: Lang): Reason[] {
 
   const leader = p.p_home > p.p_draw && p.p_home > p.p_away ? "HOME" : p.p_draw > p.p_away ? "DRAW" : "AWAY";
   const leaderPct = leader === "HOME" ? p.p_home : leader === "DRAW" ? p.p_draw : p.p_away;
-  reasons.push({
-    icon: "🧠",
-    text: `Model: ${leader} favoured at ${pct(leaderPct)} — expected goals ${p.lambda_home?.toFixed(2) ?? "?"} home vs ${p.lambda_away?.toFixed(2) ?? "?"} away`,
-  });
+  // BUG-002: the served probabilities are stripped for anon/estimate rows —
+  // without them leaderPct is NaN and this line rendered "favoured at NaN%"
+  // publicly. Skip the model line entirely when there's no real number to show.
+  if (Number.isFinite(leaderPct)) {
+    reasons.push({
+      icon: "🧠",
+      text: `Model: ${leader} favoured at ${pct(leaderPct)} — expected goals ${p.lambda_home?.toFixed(2) ?? "?"} home vs ${p.lambda_away?.toFixed(2) ?? "?"} away`,
+    });
+  }
 
   if (p.edge != null && p.odds_home != null) {
     if (isFootballBestBet(p)) {
@@ -5285,12 +5290,17 @@ function CookieBanner() {
 
 const VALID_TABS: readonly Tab[] = ["bets", "client-area", "settings", "assistance", "faq", "history", "partners", "leaderboard", "match-builder"];
 
+// BUG-008: shared/deep links sometimes use the singular ("partner"); map common
+// aliases to the canonical tab instead of silently falling back to the board.
+const TAB_ALIASES: Record<string, Tab> = { partner: "partners" };
+
 export default function Dashboard() {
   // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
   // hub's Place Bet button) land directly on a tab. Whitelisted values only.
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window === "undefined") return "bets";
-    const requested = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+    const raw = new URLSearchParams(window.location.search).get("tab");
+    const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
     return requested && VALID_TABS.includes(requested) ? requested : "bets";
   });
   const [uiLanguage, setUiLanguage] = useState<Lang>(() => {

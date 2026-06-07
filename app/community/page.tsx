@@ -26,9 +26,49 @@ type Slip = {
   selections: SlipSelection[];
 };
 
+// BUG-007: the page was Italian-only and ignored the user's language choice.
+// Mirror the board's `agentic-lang` (default IT, the prior behavior) so an EN
+// user gets EN copy. Standalone route, so a tiny local dict beats wiring the
+// full i18n provider.
+const COPY = {
+  it: {
+    back: "← Board",
+    title: "Creator Picks",
+    sub: "Schedine costruite dalla community col Match Builder, basate sulle probabilità del nostro modello. Nessuna quota, nessun edge promesso — solo predizioni AI selezionate dai creator.",
+    create: "Crea la tua →",
+    loading: "Caricamento…",
+    emptyTitle: "Nessuna schedina pubblicata ancora.",
+    emptySub: "Sii il primo: costruiscila col Match Builder e condividila.",
+    register: "Registrati per vedere i pick →",
+    open: "Apri schedina →",
+    responsible: "18+ · gioca responsabilmente",
+    locale: "it-IT",
+  },
+  en: {
+    back: "← Board",
+    title: "Creator Picks",
+    sub: "Accumulators built by the community with the Match Builder, based on our model's probabilities. No odds, no promised edge — just AI predictions hand-picked by creators.",
+    create: "Build yours →",
+    loading: "Loading…",
+    emptyTitle: "No slips published yet.",
+    emptySub: "Be the first: build one with the Match Builder and share it.",
+    register: "Register to see the picks →",
+    open: "Open slip →",
+    responsible: "18+ · gamble responsibly",
+    locale: "en-GB",
+  },
+} as const;
+
 export default function CommunityPage() {
   const [slips, setSlips] = useState<Slip[] | null>(null);
   const [locked, setLocked] = useState(true);
+  const [lang, setLang] = useState<"it" | "en">("it");
+  const t = COPY[lang];
+
+  useEffect(() => {
+    const stored = localStorage.getItem("agentic-lang");
+    if (stored === "en") setLang("en");
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -47,29 +87,28 @@ export default function CommunityPage() {
     <main className="min-h-screen bg-[#070b14] text-white">
       <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-xs font-mono text-gray-500 hover:text-gray-300">← Board</Link>
-          <h1 className="text-2xl font-black mt-1">Creator Picks</h1>
+          <Link href="/" className="text-xs font-mono text-gray-500 hover:text-gray-300">{t.back}</Link>
+          <h1 className="text-2xl font-black mt-1">{t.title}</h1>
           <p className="text-xs font-mono text-gray-500 max-w-xl">
-            Schedine costruite dalla community col Match Builder, basate sulle probabilità del nostro modello.
-            Nessuna quota, nessun edge promesso — solo predizioni AI selezionate dai creator.
+            {t.sub}
           </p>
         </div>
         <Link
           href="/?tab=match-builder"
           className="text-xs font-mono px-4 py-2 rounded border border-amber-400/40 text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 transition-colors shrink-0"
         >
-          Crea la tua →
+          {t.create}
         </Link>
       </header>
 
       <section className="max-w-3xl mx-auto px-4 py-8 space-y-4">
         {slips === null && (
-          <p className="text-center text-xs font-mono text-gray-600 py-16">Caricamento…</p>
+          <p className="text-center text-xs font-mono text-gray-600 py-16">{t.loading}</p>
         )}
         {slips !== null && slips.length === 0 && (
           <div className="text-center py-16 space-y-3">
-            <p className="text-sm font-mono text-gray-500">Nessuna schedina pubblicata ancora.</p>
-            <p className="text-xs font-mono text-gray-600">Sii il primo: costruiscila col Match Builder e condividila.</p>
+            <p className="text-sm font-mono text-gray-500">{t.emptyTitle}</p>
+            <p className="text-xs font-mono text-gray-600">{t.emptySub}</p>
           </div>
         )}
         {slips?.map((slip) => (
@@ -85,7 +124,7 @@ export default function CommunityPage() {
                   </span>
                 )}
                 <span className="text-[10px] font-mono text-gray-600">
-                  {new Date(slip.created_at).toLocaleDateString("it-IT", { day: "numeric", month: "short" })}
+                  {new Date(slip.created_at).toLocaleDateString(t.locale, { day: "numeric", month: "short" })}
                 </span>
               </div>
             </div>
@@ -99,7 +138,7 @@ export default function CommunityPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     {sel.market != null ? (
                       <>
-                        <span className="text-gray-500 truncate max-w-[120px]">{sel.market}</span>
+                        <span className="text-gray-500 truncate max-w-[140px] sm:max-w-[200px]">{sel.market}</span>
                         {sel.prob != null && <span className="text-cyan-300">{Math.round(sel.prob * 100)}%</span>}
                       </>
                     ) : (
@@ -115,17 +154,17 @@ export default function CommunityPage() {
                   href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
                 >
-                  Registrati per vedere i pick →
+                  {t.register}
                 </Link>
               ) : (
                 <Link
                   href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 rounded border border-white/15 text-gray-300 hover:bg-white/5 transition-colors"
                 >
-                  Apri schedina →
+                  {t.open}
                 </Link>
               )}
-              <span className="text-[9px] font-mono text-gray-700">18+ · gioca responsabilmente</span>
+              <span className="text-[9px] font-mono text-gray-700">{t.responsible}</span>
             </div>
           </article>
         ))}

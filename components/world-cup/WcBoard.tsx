@@ -279,7 +279,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
               textDecoration: "none",
             }}
           >
-            Piazza la scommessa →
+            Place Bet →
           </a>
 
           {/* Inline Why — real explanation + enrichment-derived rows */}
