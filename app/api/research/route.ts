@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 
-/** GET — returns all recent research summaries (match_id → summary) */
-export async function GET() {
+/** GET — returns all recent research summaries (match_id → summary).
+ *  Bearer-gated (same RESEARCH_SECRET as POST): these are internal model
+ *  research notes, not a public surface, and no client consumes this route.
+ *  Default-deny — a missing secret closes the endpoint. */
+export async function GET(req: Request) {
+  if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const rows = await dbQuery<{ match_id: string; summary: string; created_at: string }>(
     `SELECT match_id, summary, created_at FROM match_research
      WHERE created_at > NOW() - INTERVAL '48 hours'

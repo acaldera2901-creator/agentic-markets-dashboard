@@ -15,7 +15,10 @@ const CSP_REPORT_ONLY = [
   // Browser talks only to our own origin (the server proxies external APIs).
   // Supabase is allowed for any client SDK usage; widen here if a real CSP
   // report shows a legitimate blocked origin.
-  "connect-src 'self' https://*.supabase.co",
+  // ipapi.co: client-side geo/language auto-detection (degrades to default `it`
+  // when unreachable). Without it the Report-Only CSP logs a violation and the
+  // language never auto-detects.
+  "connect-src 'self' https://*.supabase.co https://ipapi.co",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",

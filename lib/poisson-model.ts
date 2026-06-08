@@ -297,10 +297,17 @@ export function predict(
   }
 
   const total = pHome + pDraw + pAway;
+  // Clamp the served triple to [0.01, 0.99] + renormalise — mirrors the national
+  // path's _calibrate so club football never serves "100%/0%" certainties (and
+  // guards the degenerate total≈0 case). Probability-neutral in the mid-range.
+  const clamp = (x: number) => Math.min(0.99, Math.max(0.01, total > 0 ? x / total : 1 / 3));
+  let cH = clamp(pHome), cD = clamp(pDraw), cA = clamp(pAway);
+  const cs = cH + cD + cA;
+  cH /= cs; cD /= cs; cA /= cs;
   return {
-    pHome: pHome / total,
-    pDraw: pDraw / total,
-    pAway: pAway / total,
+    pHome: cH,
+    pDraw: cD,
+    pAway: cA,
     lambdaHome: Math.round(lambdaHome * 100) / 100,
     lambdaAway: Math.round(lambdaAway * 100) / 100,
     teamMatches,
