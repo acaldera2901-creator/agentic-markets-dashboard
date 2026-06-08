@@ -31,6 +31,36 @@ type SquadSummary = {
   updated_at: string;
 };
 
+// Some nations arrive under two spellings in wc_squads (data dupes seen on the
+// hub): Cabo Verde / Cape Verde and Congo DR / DR Congo are the same country.
+// Collapse them in the UI — keep the preferred spelling's row (and its valid
+// team link). The wc_squads table itself still needs a proper dedup (DB write).
+const SQUAD_CANON: Record<string, string> = {
+  "cabo verde": "Cape Verde",
+  "cape verde": "Cape Verde",
+  "congo dr": "DR Congo",
+  "dr congo": "DR Congo",
+};
+function dedupeSquads(rows: SquadSummary[]): SquadSummary[] {
+  const byKey = new Map<string, SquadSummary>();
+  for (const s of rows) {
+    const raw = s.team_canonical.trim();
+    const canon = SQUAD_CANON[raw.toLowerCase()] ?? raw;
+    const existing = byKey.get(canon.toLowerCase());
+    if (!existing) {
+      byKey.set(canon.toLowerCase(), s);
+      continue;
+    }
+    const sPreferred = SQUAD_CANON[raw.toLowerCase()] === raw;
+    const ePreferred =
+      SQUAD_CANON[existing.team_canonical.trim().toLowerCase()] === existing.team_canonical.trim();
+    if (sPreferred && !ePreferred) byKey.set(canon.toLowerCase(), s);
+    else if (sPreferred === ePreferred && (s.squad_size ?? 0) > (existing.squad_size ?? 0))
+      byKey.set(canon.toLowerCase(), s);
+  }
+  return [...byKey.values()].sort((a, b) => a.team_canonical.localeCompare(b.team_canonical));
+}
+
 export default async function WorldCupPage() {
   const [groups, fixtures, squads] = await Promise.all([
     fetchWcGroups(),
@@ -41,9 +71,10 @@ export default async function WorldCupPage() {
     ),
   ]);
 
-  const squadsContent = squads.length ? (
+  const dedupedSquads = dedupeSquads(squads);
+  const squadsContent = dedupedSquads.length ? (
     <div className="wc-squads-grid">
-      {squads.map((s) => (
+      {dedupedSquads.map((s) => (
         <Link
           key={s.team_canonical}
           href={`/world-cup/${teamSlug(s.team_canonical)}`}
