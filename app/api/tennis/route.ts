@@ -5,6 +5,7 @@ import { isUnlocked } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { pickOfDayId } from "@/lib/pick-of-day";
 import { withAffiliate } from "@/lib/affiliate";
+import { surfaceDecision, SURFACE_FLOOR_TENNIS } from "@/lib/surfacing-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +24,20 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
     const isPotD = m.id === potd;
     const unlocked = isUnlocked(state, isPotD);
     if (unlocked) {
+      // Confidence-surfacing gate (10y lab 2026-06-08): below the tennis floor
+      // there is no clear favourite — drop the directional pick (the card shows
+      // none). Probability-neutral: p1/p2/confidence are unchanged.
+      const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
+      const { isPick, belowFloor } = surfaceDecision(confidence, SURFACE_FLOOR_TENNIS);
       return withAffiliate({
         ...m,
         locked: false,
         pick_of_day: isPotD,
-        confidence_score: Math.round(Math.max(m.p1, m.p2) * 100),
-        pick: m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2,
+        confidence_score: confidence,
+        below_floor: belowFloor,
+        pick: isPick
+          ? (m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2)
+          : null,
       }) as T & { locked: boolean; pick_of_day: boolean };
     }
     // locked: keep matchup + surface visible, blank the numbers the card would show
