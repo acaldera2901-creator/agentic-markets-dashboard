@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from config.settings import settings
 from core.world_cup_team_model import recent_form
 
 
@@ -29,87 +30,43 @@ def _form_block(matches: list[dict[str, Any]], canonical_team: str, *, last_n: i
     return recent_form(matches, canonical_team, last_n=last_n)
 
 
-def _form_phrase(team: str, form: dict[str, Any] | None) -> str | None:
+def _form_human(team: str, form: dict[str, Any] | None) -> str | None:
     if not form or not form.get("played"):
         return None
-    return (
-        f"{team} go in on {form['w']}W-{form['d']}D-{form['l']}L over their "
-        f"last {form['played']} ({form['gf']} scored, {form['ga']} conceded)"
-    )
+    w, d, l, n = form["w"], form["d"], form["l"], form["played"]
+    gf, ga = form.get("gf"), form.get("ga")
+    if l == 0 and w >= n - 1 and n >= 3:
+        run = f"{team} have won {w} of their last {n}" if d else f"{team} have won all {n} of their last games"
+    elif l == 0:
+        run = f"{team} are unbeaten in their last {n} ({w}W-{d}D)"
+    elif w == 0:
+        run = f"{team} have failed to win in their last {n} ({d}D-{l}L)"
+    elif l >= n - 1:
+        run = f"{team} have lost {l} of their last {n}"
+    else:
+        run = f"{team} come in {w}W-{d}D-{l}L over their last {n}"
+    if isinstance(gf, int) and isinstance(ga, int) and n:
+        if ga <= n // 3 and ga <= 3:
+            run += f", conceding just {ga}"
+        elif ga >= n * 2:
+            run += f", but leaking {ga} goals in that run"
+    return run
 
 
-def _venue_phrase(team: str, venue: dict[str, Any] | None, side: str) -> str | None:
-    if not venue:
+def _xg_clause(home_team, away_team, pick, lam_h, lam_a):
+    if not (isinstance(lam_h, (int, float)) and isinstance(lam_a, (int, float))):
         return None
-    travel = venue.get(f"travel_km_{side}")
-    rest = venue.get(f"rest_days_{side}")
-    tz = venue.get(f"tz_shift_{side}")
-    bits: list[str] = []
-    if isinstance(travel, (int, float)):
-        bits.append(f"{int(travel)} km of travel")
-    if isinstance(rest, (int, float)):
-        bits.append(f"{int(rest)} days' rest")
-    if isinstance(tz, (int, float)) and tz != 0:
-        bits.append(f"{abs(int(tz))}h timezone shift")
-    if not bits:
-        return None
-    return f"{team} face " + ", ".join(bits)
-
-
-def _altitude_phrase(venue: dict[str, Any], home_team: str, away_team: str) -> str | None:
-    alt = venue.get("altitude_m")
-    if not isinstance(alt, (int, float)) or alt < _ALTITUDE_RELEVANT_M:
-        return None
-    base = f"Played at {int(alt):,}m altitude"
-    # Name the team facing the largest jump from its habitual altitude.
-    deltas = {
-        home_team: venue.get("altitude_delta_home"),
-        away_team: venue.get("altitude_delta_away"),
-    }
-    big = max(
-        ((t, d) for t, d in deltas.items() if isinstance(d, (int, float))),
-        key=lambda kv: kv[1],
-        default=None,
-    )
-    if big and big[1] >= _ALTITUDE_RELEVANT_M:
-        return (
-            f"{base} — {big[0]} climb ~{int(big[1]):,}m above their usual base; "
-            "visiting sides typically tire in the closing stages"
-        )
-    return f"{base} — visiting sides typically tire in the closing stages"
-
-
-def _heat_phrase(venue: dict[str, Any]) -> str | None:
-    if venue.get("heat_risk") is True:
-        return "Midday outdoor kickoff in summer heat — fatigue and tempo risk for both sides"
-    return None
-
-
-def _squad_phrase(
-    team: str,
-    injuries: list[str] | None,
-    *,
-    xi_value_ratio: float | None = None,
-    rotation_flag: bool = False,
-) -> str | None:
-    """Squad Condition Watch ② why-line — only when a REAL signal exists.
-
-    Fires on (in priority): a low XI-value ratio with the rotation flag set, or
-    confirmed injuries. No signal -> None (no fabricated "full strength" line).
-    Probability-neutral: pure text from passed-in squad-condition fields.
-    """
-    if rotation_flag and isinstance(xi_value_ratio, (int, float)):
-        pct = round(xi_value_ratio * 100)
-        return (
-            f"{team} rotate: starting XI worth {pct}% of their best-11 value — "
-            "key players rested/missing"
-        )
-    inj = [n for n in (injuries or []) if n]
-    if inj:
-        shown = ", ".join(inj[:3])
-        more = f" (+{len(inj) - 3} more)" if len(inj) > 3 else ""
-        return f"{team} are without {shown}{more}"
-    return None
+    diff = lam_h - lam_a
+    favoured = home_team if diff > 0 else away_team
+    gap = abs(diff)
+    if gap < 0.15:
+        return "the expected goals are almost level"
+    strength = "edge" if gap < 0.5 else ("clearly outscore" if gap >= 0.9 else "shade")
+    base = f"{favoured} {strength} the expected-goals picture ({max(lam_h, lam_a):.1f} to {min(lam_h, lam_a):.1f})"
+    pick_team = {"HOME": home_team, "AWAY": away_team}.get(pick)
+    if pick_team and pick_team != favoured and gap >= 0.15:
+        return f"the expected goals actually lean {favoured} ({max(lam_h, lam_a):.1f} to {min(lam_h, lam_a):.1f})"
+    return base
 
 
 def build_wc_enrichment(
@@ -191,84 +148,100 @@ def build_wc_explanation(
     probs: dict[str, Any],
     pick: str,
     confidence: int,
-    model_label: str = "Our model",
+    model_label: str = "Our model",  # signature-compatible; no longer surfaced as jargon
 ) -> str:
-    """Match-specific WC explanation (2-4 sentences) from the enrichment payload.
+    """Match-specific WC explanation — human prose, probability-neutral (why v2).
 
-    ``pick`` is HOME/DRAW/AWAY; ``confidence`` is the picked-outcome probability
-    in whole percent. Sentences are only emitted for sources actually present.
+    Promoted 2026-06-08 from the lab rewrite (Michele, scripts/proposed_wc_
+    explanation_v2 @ 34e58fb). Changes TEXT ONLY: no probability/lambda/pick
+    value is touched. ``pick`` is HOME/DRAW/AWAY; ``confidence`` is the
+    picked-outcome probability in whole percent. Sentences are only emitted for
+    sources actually present (fail-soft, no fabrication).
+
+    The lead is keyed to confidence via settings (single source of truth):
+    ``WHY_STRONG_PICK_CONFIDENCE`` -> "strong pick"; ``SURFACE_FLOOR_FOOTBALL``
+    -> "favoured but open"; below the floor -> "no clear favourite". This binds
+    the copy to the same floor the surfacing gate uses (resolves the lab's
+    hardcoded 55/65 vs the served 56/61). Language stays English in Wave 1;
+    localization is Wave 2.
     """
-    pick_label = {"HOME": home_team, "AWAY": away_team, "DRAW": "the draw"}.get(pick, pick)
+    strong_floor = settings.WHY_STRONG_PICK_CONFIDENCE
+    favoured_floor = settings.SURFACE_FLOOR_FOOTBALL
 
-    # Sentence 1: the model verdict + the lambdas it rests on.
-    lam_h = enrichment.get("lambdas", {}).get("home")
-    lam_a = enrichment.get("lambdas", {}).get("away")
-    lam_txt = ""
-    if isinstance(lam_h, (int, float)) and isinstance(lam_a, (int, float)):
-        lam_txt = f" Expected goals: {home_team} {lam_h:.2f}, {away_team} {lam_a:.2f}."
-    s1 = (
-        f"{model_label} leans {pick_label} at {confidence}% in "
-        f"{home_team} vs {away_team}.{lam_txt}"
-    )
+    pick_team = {"HOME": home_team, "AWAY": away_team, "DRAW": "a draw"}.get(pick, pick)
+    lam_h = (enrichment.get("lambdas") or {}).get("home")
+    lam_a = (enrichment.get("lambdas") or {}).get("away")
+    xg = _xg_clause(home_team, away_team, pick, lam_h, lam_a)
+    fixture = f"{home_team} vs {away_team}"
 
-    parts: list[str] = [s1]
+    if pick == "DRAW":
+        lead = f"{fixture} shapes up as a tight, low-margin game — the draw is the call at {confidence}%."
+    elif confidence >= strong_floor:
+        lead = f"{pick_team} are a strong pick in {fixture} at {confidence}%"
+        lead += f" — {xg}." if xg else "."
+    elif confidence >= favoured_floor:
+        lead = f"{pick_team} are favoured in {fixture} ({confidence}%), but it's far from settled"
+        lead += f": {xg}." if xg else "."
+    else:
+        lead = (f"{fixture} is close to a coin-flip — no clear favourite, "
+                f"with {pick_team} edging it at just {confidence}%")
+        lead += f". In fact, {xg}." if xg else "."
 
-    # Sentence 2: recent form of both sides.
-    fh = _form_phrase(home_team, enrichment.get("form_home"))
-    fa = _form_phrase(away_team, enrichment.get("form_away"))
-    form_sentences = [p for p in (fh, fa) if p]
-    if form_sentences:
-        parts.append("; ".join(form_sentences) + ".")
+    parts: list[str] = [lead]
 
-    # Sentence 3: venue / travel / rest context, only sides with data.
+    fh = _form_human(home_team, enrichment.get("form_home"))
+    fa = _form_human(away_team, enrichment.get("form_away"))
+    forms = [p for p in (fh, fa) if p]
+    if forms:
+        parts.append("; ".join(forms) + ".")
+
     venue = enrichment.get("venue") or {}
-    vh = _venue_phrase(home_team, {
-        "travel_km_home": venue.get("travel_km_home"),
-        "rest_days_home": venue.get("rest_days_home"),
-        "tz_shift_home": venue.get("tz_shift_home"),
-    }, "home")
-    va = _venue_phrase(away_team, {
-        "travel_km_away": venue.get("travel_km_away"),
-        "rest_days_away": venue.get("rest_days_away"),
-        "tz_shift_away": venue.get("tz_shift_away"),
-    }, "away")
-    venue_sentences = [p for p in (vh, va) if p]
-    if venue_sentences:
-        parts.append("; ".join(venue_sentences) + ".")
+    ctx: list[str] = []
+    for team, side in ((home_team, "home"), (away_team, "away")):
+        travel = venue.get(f"travel_km_{side}")
+        tz = venue.get(f"tz_shift_{side}")
+        bits = []
+        if isinstance(travel, (int, float)) and travel >= 4000:
+            bits.append("a long trip")
+        if isinstance(tz, (int, float)) and abs(tz) >= 3:
+            bits.append(f"a {abs(int(tz))}-hour body-clock shift")
+        if bits:
+            ctx.append(f"{team} face {' and '.join(bits)}")
+    if ctx:
+        parts.append("; ".join(ctx) + ".")
     elif venue.get("host_advantage"):
-        parts.append(f"Host-nation advantage favours {venue['host_advantage']}.")
+        parts.append(f"Home support is behind {venue['host_advantage']}.")
 
-    # P1/P2: altitude (>1000 m) and midday-heat lines, only when relevant.
-    alt_phrase = _altitude_phrase(venue, home_team, away_team)
-    if alt_phrase:
-        parts.append(alt_phrase + ".")
-    heat = _heat_phrase(venue)
-    if heat:
-        parts.append(heat + ".")
+    alt = venue.get("altitude_m")
+    if isinstance(alt, (int, float)) and alt >= _ALTITUDE_RELEVANT_M:
+        deltas = {home_team: venue.get("altitude_delta_home"), away_team: venue.get("altitude_delta_away")}
+        big = max(((t, dd) for t, dd in deltas.items() if isinstance(dd, (int, float))),
+                  key=lambda kv: kv[1], default=None)
+        if big and big[1] >= _ALTITUDE_RELEVANT_M:
+            parts.append(f"Played at {int(alt):,}m altitude — {big[0]} climb ~{int(big[1]):,}m above their usual base, and visiting legs tend to go in the closing stages.")
+        else:
+            parts.append(f"Played at {int(alt):,}m altitude, where visiting legs tend to go late on.")
+    if venue.get("heat_risk") is True:
+        parts.append("A midday kickoff in summer heat will sap the tempo for both sides.")
 
-    # Sentence 4: squad condition — rotation (XI-value ratio) or injuries, per
-    # side, only when a real signal exists (Squad Condition Watch ②).
     squad = enrichment.get("squad") or {}
-    sh = _squad_phrase(
-        home_team, squad.get("injuries_home"),
-        xi_value_ratio=squad.get("xi_value_ratio_home"),
-        rotation_flag=bool(squad.get("rotation_flag_home", False)),
-    )
-    sa = _squad_phrase(
-        away_team, squad.get("injuries_away"),
-        xi_value_ratio=squad.get("xi_value_ratio_away"),
-        rotation_flag=bool(squad.get("rotation_flag_away", False)),
-    )
-    squad_sentences = [p for p in (sh, sa) if p]
-    if squad_sentences:
-        parts.append("; ".join(squad_sentences) + ".")
+    for team, side in ((home_team, "home"), (away_team, "away")):
+        ratio = squad.get(f"xi_value_ratio_{side}")
+        if squad.get(f"rotation_flag_{side}") and isinstance(ratio, (int, float)):
+            parts.append(f"{team} look set to rotate — their likely XI is worth about {round(ratio*100)}% of their strongest side.")
+        else:
+            inj = [n for n in (squad.get(f"injuries_{side}") or []) if n]
+            if inj:
+                shown = ", ".join(inj[:3])
+                more = f" and {len(inj)-3} others" if len(inj) > 3 else ""
+                parts.append(f"{team} are without {shown}{more}.")
 
-    # Market reference when odds exist.
     market = enrichment.get("market")
-    if market and isinstance(market, dict):
+    if isinstance(market, dict):
         mp = {"HOME": market.get("p_home"), "DRAW": market.get("p_draw"), "AWAY": market.get("p_away")}.get(pick)
         if isinstance(mp, (int, float)):
-            parts.append(f"Market (de-vig) prices the same pick at {round(mp * 100)}%.")
+            agree = "much the same" if abs(round(mp*100) - confidence) <= 6 else "it differently"
+            parts.append(f"The market sees {agree}, pricing the same outcome at {round(mp*100)}%.")
 
-    parts.append("Paper tier: track-record transparency only, no edge claimed. Bet responsibly.")
+    parts.append("Paper pick — track record only, no edge claimed. Bet responsibly.")
     return " ".join(parts)

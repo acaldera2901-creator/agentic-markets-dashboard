@@ -96,118 +96,110 @@ def test_enrichment_missing_team_form_is_none():
     assert enr["form_away"] is None  # fail-soft, not a crash
 
 
-# ─── explanation text ────────────────────────────────────────────────────────
+# ─── explanation text (why v2 — promoted 2026-06-08, settings-keyed tiers) ───
+#
+# The prose contract is the human rewrite (former build_wc_explanation_v2): a
+# confidence-keyed lead, no internal jargon ("Poisson rates", "Expected goals:"),
+# honest on coin-flips/xG contradictions. The 9 cases below are Michele's lab
+# contract (tests/test_wc_explanation_v2.py @ 34e58fb), re-pointed at the
+# promoted core function. Lead tiers read from settings (strong >= 65, favoured
+# >= 56, else coin-flip) — the lab's 72/60/41 values straddle those boundaries.
 
-def test_explanation_is_specific_and_clean():
+def _clean(text):
+    assert "None" not in text
+    assert "nan" not in text.lower()
+    assert text.strip().endswith("Bet responsibly.")
+
+
+def test_strong_pick_is_human_no_jargon():
     probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
     enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
         canonical_home="Strongland", canonical_away="Weakistan",
         history=_history(), probs=probs,
-        venue={"travel_km_home": 8500, "rest_days_home": 4, "tz_shift_home": -6},
+        venue={"travel_km_home": 8500, "tz_shift_home": -6},
     )
-    text = build_wc_explanation(
-        home_team="Strongland", away_team="Weakistan",
-        enrichment=enr, probs=probs, pick="HOME", confidence=72,
-    )
-    assert "Strongland" in text and "Weakistan" in text
-    assert "72%" in text
-    assert "W-" in text  # form line present
-    assert "Expected goals" in text
-    assert "nan" not in text.lower()
-    assert "None" not in text
-    assert text.strip().endswith("Bet responsibly.")
-    # 2-4 substantive sentences + the disclaimer
-    assert text.count(".") >= 3
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=72)
+    assert "Strongland" in t and "Weakistan" in t and "72%" in t
+    assert "strong pick" in t
+    assert "Poisson" not in t and "Expected goals:" not in t
+    assert "body-clock shift" in t
+    _clean(t)
+    assert t.count(".") >= 3
 
 
-def test_explanation_fail_soft_when_sources_missing():
+def test_coinflip_is_called_honestly():
     probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
     enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
-        canonical_home="Strongland", canonical_away="Nowhere",
+        canonical_home="Strongland", canonical_away="Weakistan",
         history=_history(), probs=probs,
     )
-    text = build_wc_explanation(
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=41)
+    assert "coin-flip" in t and "no clear favourite" in t
+    _clean(t)
+
+
+def test_pick_contradicting_xg_is_acknowledged():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
-        enrichment=enr, probs=probs, pick="HOME", confidence=72,
+        canonical_home="Strongland", canonical_away="Weakistan",
+        history=_history(), probs=probs,
     )
-    # No away form, no venue, no squad — must still be a clean, valid sentence.
-    assert "Strongland" in text
-    assert "None" not in text
-    assert "nan" not in text.lower()
-    assert text.strip().endswith("Bet responsibly.")
+    enr["lambdas"] = {"home": 0.90, "away": 1.40}
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=49)
+    assert "actually lean Weakistan" in t
+    _clean(t)
 
 
-def test_explanation_altitude_line_at_azteca():
+def test_short_travel_and_small_tz_are_omitted():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(
+        home_team="Strongland", away_team="Weakistan",
+        canonical_home="Strongland", canonical_away="Weakistan",
+        history=_history(), probs=probs,
+        venue={"travel_km_home": 300, "tz_shift_home": 1},
+    )
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=70)
+    assert "trip" not in t and "body-clock" not in t
+    _clean(t)
+
+
+def test_altitude_and_heat_preserved():
     probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
     enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
         canonical_home="Strongland", canonical_away="Weakistan",
         history=_history(), probs=probs,
         venue={"altitude_m": 2240, "altitude_delta_home": 0,
-               "altitude_delta_away": 2200, "host_advantage": None},
+               "altitude_delta_away": 2200, "heat_risk": True},
     )
-    assert enr["venue"]["altitude_m"] == 2240
-    text = build_wc_explanation(
-        home_team="Strongland", away_team="Weakistan",
-        enrichment=enr, probs=probs, pick="HOME", confidence=60,
-    )
-    assert "2,240m altitude" in text
-    assert "Weakistan" in text
-    assert "None" not in text
-    assert "nan" not in text.lower()
-    assert text.strip().endswith("Bet responsibly.")
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=60)
+    assert "2,240m altitude" in t and "heat" in t.lower()
+    _clean(t)
 
 
-def test_explanation_no_altitude_line_at_sea_level():
+def test_injuries_surface_humanly():
     probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
     enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
         canonical_home="Strongland", canonical_away="Weakistan",
         history=_history(), probs=probs,
-        venue={"altitude_m": 30, "altitude_delta_home": 0, "altitude_delta_away": 5},
+        squad={"injuries_away": ["Striker A", "Keeper B"]},
     )
-    text = build_wc_explanation(
-        home_team="Strongland", away_team="Weakistan",
-        enrichment=enr, probs=probs, pick="HOME", confidence=60,
-    )
-    assert "altitude" not in text.lower()
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=70)
+    assert "Weakistan are without Striker A, Keeper B" in t
+    _clean(t)
 
 
-def test_explanation_heat_risk_line():
-    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
-    enr = build_wc_enrichment(
-        home_team="Strongland", away_team="Weakistan",
-        canonical_home="Strongland", canonical_away="Weakistan",
-        history=_history(), probs=probs,
-        venue={"heat_risk": True, "indoor": False},
-    )
-    assert enr["venue"]["heat_risk"] is True
-    text = build_wc_explanation(
-        home_team="Strongland", away_team="Weakistan",
-        enrichment=enr, probs=probs, pick="HOME", confidence=60,
-    )
-    assert "heat" in text.lower()
-    assert "None" not in text
-
-
-def test_explanation_no_heat_line_when_false_or_absent():
-    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
-    for venue in ({"heat_risk": False}, {}):
-        enr = build_wc_enrichment(
-            home_team="Strongland", away_team="Weakistan",
-            canonical_home="Strongland", canonical_away="Weakistan",
-            history=_history(), probs=probs, venue=venue,
-        )
-        text = build_wc_explanation(
-            home_team="Strongland", away_team="Weakistan",
-            enrichment=enr, probs=probs, pick="HOME", confidence=60,
-        )
-        assert "heat" not in text.lower()
-
-
-def test_explanation_market_line_when_odds_present():
+def test_market_line_human():
     probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
     enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
@@ -215,8 +207,51 @@ def test_explanation_market_line_when_odds_present():
         history=_history(), probs=probs,
         market={"p_home": 0.60, "p_draw": 0.25, "p_away": 0.15},
     )
-    text = build_wc_explanation(
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=72)
+    assert "market sees" in t.lower() and "60%" in t
+    _clean(t)
+
+
+def test_single_side_form_keeps_casing():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(home_team="Strongland", away_team="Weakistan",
+                              canonical_home="Strongland", canonical_away="Nowhere",
+                              history=_history(), probs=probs)
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=72)
+    assert "Strongland" in t
+    assert " won " in t or "unbeaten" in t
+    _clean(t)
+
+
+def test_fail_soft_no_sources():
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(home_team="Strongland", away_team="Weakistan",
+                              canonical_home="Strongland", canonical_away="Nowhere",
+                              history=_history(), probs=probs)
+    t = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                             enrichment=enr, probs=probs, pick="HOME", confidence=72)
+    assert "Strongland" in t
+    _clean(t)
+
+
+def test_strong_pick_tier_reads_from_settings(monkeypatch):
+    # Single-source-of-truth: dropping the strong-pick bar must turn a previously
+    # "favoured but open" lead into a "strong pick" one. Probability-neutral —
+    # only the copy changes, not the 60% it prints.
+    from config.settings import settings
+    probs = national_match_probabilities(_history(), "Strongland", "Weakistan")
+    enr = build_wc_enrichment(
         home_team="Strongland", away_team="Weakistan",
-        enrichment=enr, probs=probs, pick="HOME", confidence=72,
+        canonical_home="Strongland", canonical_away="Weakistan",
+        history=_history(), probs=probs,
     )
-    assert "60%" in text and "Market" in text
+    base = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                                enrichment=enr, probs=probs, pick="HOME", confidence=60)
+    assert "strong pick" not in base
+    monkeypatch.setattr(settings, "WHY_STRONG_PICK_CONFIDENCE", 60)
+    promoted = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                                    enrichment=enr, probs=probs, pick="HOME", confidence=60)
+    assert "strong pick" in promoted
+    assert "60%" in promoted

@@ -165,6 +165,11 @@ class Settings(BaseSettings):
     # 2026-06-08) -> no floor. Mirrored in lib/surfacing-gate.ts — keep in sync.
     SURFACE_FLOOR_FOOTBALL: int = 56   # WC + competitive club (max-prob >= 56)
     SURFACE_FLOOR_FRIENDLY: int = 61   # international friendlies (heavy rotation)
+    # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
+    # surface floor the copy says "favoured but open"; at/above this stronger
+    # bar it says "strong pick". Below the floor it says "no clear favourite".
+    # Single source for the explanation lead — never hardcode the boundary.
+    WHY_STRONG_PICK_CONFIDENCE: int = 65
 
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1

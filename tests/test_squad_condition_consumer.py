@@ -90,7 +90,9 @@ def test_explanation_rotation_line_when_xi_value_low():
         enrichment=enr, probs=probs, pick="HOME", confidence=70,
     )
     assert "62%" in text
-    assert "best-11" in text
+    # why v2 prose contract (promoted 2026-06-08): the rotation line reads
+    # "...likely XI is worth about 62% of their strongest side" (was "best-11").
+    assert "rotate" in text and "strongest side" in text
     assert "None" not in text and "nan" not in text.lower()
     assert text.strip().endswith("Bet responsibly.")
 
@@ -123,8 +125,8 @@ def test_explanation_no_squad_line_without_signal():
         home_team="Strongland", away_team="Weakistan",
         enrichment=enr, probs=probs, pick="HOME", confidence=70,
     )
-    assert "best-11" not in text
-    assert "rotates" not in text.lower()
+    assert "strongest side" not in text
+    assert "rotate" not in text.lower()
 
 
 # ─── probability-neutrality (the load-bearing assertion) ─────────────────────
