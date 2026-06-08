@@ -69,6 +69,7 @@
   --am-panel:      #0F1118;
   --am-panel-2:    #131626;
   --am-panel-3:    #181B2E;
+  --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
 
   /* Borders — neutral-cool, low chroma for depth */
   --am-line:       rgba(255,255,255,0.08);
@@ -179,6 +180,7 @@
   --am-panel:      #FFFFFF;
   --am-panel-2:    #F1F3F7;
   --am-panel-3:    #E9ECF2;
+  --am-bar:        rgba(255,255,255,0.96);
 
   --am-line:       rgba(15,18,30,0.10);
   --am-line-2:     rgba(15,18,30,0.16);
@@ -306,7 +308,7 @@ button:disabled {
 
 .book-topbar h1 {
   margin: 6px 0 0;
-  color: white;
+  color: var(--text);
   font-size: clamp(2.1rem, 4vw, 3.25rem);
   line-height: 0.98;
   font-weight: 900;
@@ -370,6 +372,13 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* Hero eyebrow → ambra (highlight puntuale, spec §3.3). Scoped ai contesti hero. */
+.portfolio-hero .eyebrow,
+.portfolio-balance .eyebrow,
+.plans-hero .eyebrow {
+  color: var(--am-amber);
+}
+
 /* ── Topbar stats pills ──────────────────────────────────────── */
 
 .topbar-stats,
@@ -393,7 +402,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(7,16,30,0.8);
-  color: rgba(255,255,255,0.65);
+  color: var(--muted);
   font-size: 11px;
   font-weight: 850;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -430,7 +439,7 @@ button:disabled {
 .glass-card {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #0d1020;
+  background: var(--panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -487,7 +496,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: rgba(237,241,255,0.62);
+  color: var(--muted);
   background: transparent;
   text-align: left;
   font-size: 13px;
@@ -515,7 +524,7 @@ button:disabled {
 .rail-item.is-active {
   border-color: rgba(59,130,246,0.24);
   background: rgba(59,130,246,0.10);
-  color: rgba(237,241,255,0.94);
+  color: var(--text);
 }
 
 .rail-item.is-active.green {
@@ -562,7 +571,7 @@ button:disabled {
 }
 
 .rail-note strong {
-  color: rgba(255,255,255,0.9);
+  color: var(--text);
   margin-bottom: 3px;
 }
 
@@ -603,7 +612,7 @@ button:disabled {
 
 .book-main-head h2 {
   margin: 2px 0 0;
-  color: white;
+  color: var(--text);
   font-size: 1.45rem;
   line-height: 1.1;
   font-weight: 850;
@@ -698,7 +707,7 @@ button:disabled {
 }
 
 .segmented-filter button:hover {
-  color: rgba(237,241,255,0.88);
+  color: var(--text);
   background: rgba(255,255,255,0.04);
 }
 
@@ -739,7 +748,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(6,7,15,0.72);
-  color: rgba(237,241,255,0.88);
+  color: var(--text);
   font-size: 12px;
   font-weight: 780;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -797,7 +806,7 @@ button:disabled {
 
 .client-summary-strip strong {
   display: block;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: clamp(1.35rem, 2vw, 1.9rem);
   line-height: 1;
   font-weight: 850;
@@ -835,13 +844,18 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  border-left: 2px solid var(--green);
+  border-left: 2px solid var(--am-coral);
+  /* Hero wash: corallo (warm dominant) → cobalt (cool counterpoint), statico. */
+  background:
+    linear-gradient(110deg, rgba(255,107,107,0.10) 0%, transparent 42%),
+    linear-gradient(290deg, rgba(59,130,246,0.08) 0%, transparent 46%),
+    var(--am-panel);
 }
 
 .portfolio-hero h3,
 .portfolio-panel h4 {
   margin: 4px 0 0;
-  color: rgba(248,250,252,0.96);
+  color: var(--text);
   font-size: clamp(1.35rem, 2vw, 2rem);
   line-height: 1;
   font-weight: 850;
@@ -1273,7 +1287,7 @@ button:disabled {
 }
 
 .plan-feature-list li strong {
-  color: rgba(237,241,255,0.84);
+  color: var(--text);
   font-size: 13px;
   line-height: 1.35;
   font-weight: 650;
@@ -2656,7 +2670,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(6,7,15,0.72);
-  color: rgba(237,241,255,0.88);
+  color: var(--text);
   font-size: 12px;
   font-weight: 780;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -2905,7 +2919,7 @@ button:disabled {
 }
 
 .market-section-title span {
-  color: rgba(237,241,255,0.94);
+  color: var(--text);
   font-weight: 850;
 }
 
@@ -2940,7 +2954,7 @@ button:disabled {
 .event-cell strong {
   min-width: 0;
   overflow: hidden;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 15px;
   line-height: 1.15;
   text-overflow: ellipsis;
@@ -2966,7 +2980,7 @@ button:disabled {
 }
 
 .model-cell strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 12px;
 }
 
@@ -3014,7 +3028,7 @@ button:disabled {
 }
 
 .odds-button strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 20px;
   font-weight: 850;
 }
@@ -3056,7 +3070,7 @@ button:disabled {
 
 .betslip-head h3 {
   margin: 2px 0 0;
-  color: white;
+  color: var(--text);
   font-size: 1.2rem;
   font-weight: 850;
   letter-spacing: -0.02em;
@@ -3086,7 +3100,7 @@ button:disabled {
 }
 
 .betslip-empty strong {
-  color: rgba(248,250,252,0.9);
+  color: var(--text);
 }
 
 .betslip-ticket {
@@ -3115,7 +3129,7 @@ button:disabled {
 
 .betslip-ticket h4 {
   margin: 0;
-  color: white;
+  color: var(--text);
   font-size: 15px;
   line-height: 1.25;
 }
@@ -3138,7 +3152,7 @@ button:disabled {
 
 .ticket-line strong,
 .ticket-summary strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 13px;
 }
 
@@ -3153,7 +3167,7 @@ button:disabled {
   border: 1px solid rgba(255,107,107,0.28);
   border-radius: 8px;
   background: var(--bg);
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   padding: 0 12px;
   font-size: 18px;
   font-weight: 900;
@@ -3237,7 +3251,7 @@ button:disabled {
 
 .client-callout h3 {
   margin: 3px 0 0;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: clamp(1.3rem, 2.5vw, 2rem);
   line-height: 1;
   font-weight: 950;
@@ -3282,7 +3296,7 @@ button:disabled {
 }
 
 .client-status-card strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 1.35rem;
   line-height: 1;
   font-weight: 950;
@@ -3302,7 +3316,7 @@ button:disabled {
 .client-system-list strong {
   display: block;
   margin-bottom: 6px;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
 }
 
 /* ── KPI card / metric ───────────────────────────────────────── */
@@ -3721,7 +3735,7 @@ button:disabled {
 .portal-top-banner {
   min-height: 52px;
   border-bottom: 1px solid var(--line);
-  background: rgba(8,12,22,.96);
+  background: var(--am-bar);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3733,7 +3747,7 @@ button:disabled {
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(90deg, rgba(255,107,107,.06) 0%, transparent 40%),
-    rgba(5,7,13,.98);
+    var(--am-bar);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4406,7 +4420,7 @@ button:disabled {
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.5);
+  color: var(--muted);
   background: rgba(255,255,255,0.04);
 }
 .da-market-pill.value {
@@ -4425,7 +4439,7 @@ button:disabled {
 .da-research-text {
   font-size: 10px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(255,255,255,0.55);
+  color: var(--muted);
   line-height: 1.55;
   margin: 0;
 }
