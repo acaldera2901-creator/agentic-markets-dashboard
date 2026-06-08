@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, createContext, useContext } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import {
   PUBLIC_PAID_PLAN,
   type PublicPlanKey,
@@ -616,6 +616,19 @@ const useTz = () => useContext(TzCtx);
 interface LiveScore { home_score: number | null; away_score: number | null; match_status: string; minute: number | null; home_team?: string; away_team?: string; }
 const LiveCtx = createContext<Record<string, LiveScore>>({});
 const useLive = () => useContext(LiveCtx);
+
+// Live tennis scores reach the cards the same way football live scores do.
+// The /api/tennis and /api/tennis-live feeds don't share ids, so a card is
+// matched to its live ESPN score by a normalized, order-independent last-name
+// pair key (e.g. "alcaraz|sinner").
+const LiveTennisCtx = createContext<Record<string, LiveTennisMatch>>({});
+const useLiveTennis = () => useContext(LiveTennisCtx);
+function tennisLastName(s: string) {
+  return (s.split(" ").pop() ?? s).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+function tennisPairKey(a: string, b: string) {
+  return [tennisLastName(a), tennisLastName(b)].sort().join("|");
+}
 function useT() { return TRANSLATIONS[useLang()]; }
 function languageLabel(code: Lang, t: (typeof TRANSLATIONS)[Lang]) {
   const labels: Record<Lang, string> = {
@@ -3336,6 +3349,14 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   };
   const isValue = isTennisBestBet(m);
   const scheduledDate = fmtKickoff(m.scheduled, lang, tz);
+  // Live ESPN score for this match (same treatment as the football card).
+  const liveMatch = useLiveTennis()[tennisPairKey(m.player1, m.player2)];
+  const liveIsFinal = !!liveMatch && /final|complete|ended|retir|walkover|w\/o/i.test(liveMatch.status_detail || "");
+  const liveIsOn = !!liveMatch && !liveIsFinal;
+  const liveOrient = liveMatch ? tennisLastName(liveMatch.player1) === tennisLastName(m.player1) : true;
+  const liveSets1 = liveMatch ? (liveOrient ? liveMatch.sets_p1 : liveMatch.sets_p2) : [];
+  const liveSets2 = liveMatch ? (liveOrient ? liveMatch.sets_p2 : liveMatch.sets_p1) : [];
+  const liveSetsLabel = liveSets1.map((v, i) => `${v}-${liveSets2[i] ?? 0}`).join("  ");
 
   const handleSelect = (player: "P1" | "P2") => {
     if (!onSelect) return;
@@ -3378,8 +3399,8 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           </div>
           <div className="text-xs text-gray-600 font-mono mt-0.5">
             {scheduledDate}
-            {/* #LIVE-1: indicatore in gioco (stessa logica della card football) */}
-            {!isFutureMarket(m.scheduled) && (
+            {/* #LIVE-2: live solo quando il feed ESPN ha davvero questo match */}
+            {liveIsOn && (
               <span className="ml-2 text-red-400 animate-pulse">● LIVE</span>
             )}
           </div>
@@ -3393,6 +3414,19 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           </button>
         )}
       </div>
+
+      {/* Live / Final score — set scores from the ESPN live feed (player1 first) */}
+      {liveMatch && (
+        <div className={`live-score-bar ${liveIsFinal ? "finished" : "live"}`}>
+          <span className={`live-badge ${liveIsFinal ? "" : "blink"}`}>
+            {liveIsFinal ? "FT" : "● LIVE"}
+          </span>
+          <span className="live-result">{liveSetsLabel || "0-0"}</span>
+          {liveMatch.status_detail && (
+            <span className="text-[10px] font-mono text-gray-500 ml-auto">{liveMatch.status_detail}</span>
+          )}
+        </div>
+      )}
 
       {/* Per-card reveal gating (Task 7) */}
       {m.locked ? (
@@ -3457,12 +3491,16 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
       )}
 
-      {onBetNow && !isPreview && (
+      {onBetNow && !isPreview && liveIsFinal ? (
+        <div className="w-full mt-1 py-1.5 rounded-lg border border-red-400/20 bg-red-400/5 text-red-400/80 text-xs font-mono tracking-wider text-center">
+          {lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}
+        </div>
+      ) : onBetNow && !isPreview && (
         <button
           className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
           onClick={onBetNow}
         >
-          {t.bet_now}
+          {liveIsOn ? "🔴 Live — " + t.bet_now : t.bet_now}
         </button>
       )}
 
@@ -5612,10 +5650,17 @@ export default function Dashboard() {
 
   const tUI = TRANSLATIONS[uiLanguage];
 
+  const liveTennisMap = useMemo(() => {
+    const map: Record<string, LiveTennisMatch> = {};
+    for (const lm of liveTennis) map[tennisPairKey(lm.player1, lm.player2)] = lm;
+    return map;
+  }, [liveTennis]);
+
   return (
     <LanguageCtx.Provider value={uiLanguage}>
     <TzCtx.Provider value={userTz}>
     <LiveCtx.Provider value={liveScores}>
+    <LiveTennisCtx.Provider value={liveTennisMap}>
     <main className="portal-root">
       <CookieBanner />
 
@@ -5863,6 +5908,7 @@ export default function Dashboard() {
         />
       )}
     </main>
+    </LiveTennisCtx.Provider>
     </LiveCtx.Provider>
     </TzCtx.Provider>
     </LanguageCtx.Provider>
