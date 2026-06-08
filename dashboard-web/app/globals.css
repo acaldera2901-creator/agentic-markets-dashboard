@@ -4119,8 +4119,8 @@ button:disabled {
 
 /* ─── Partner collaboration form ─────────────────────────────────────────── */
 .operators-collab {
-  background: var(--surface, #1e2a3a);
-  border: 1px solid rgba(255,255,255,.07);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 28px 28px 24px;
   display: flex;
@@ -4130,7 +4130,7 @@ button:disabled {
 .operators-collab-head h4 {
   font-size: 18px;
   font-weight: 700;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
   margin: 6px 0 8px;
 }
 .operators-collab-head p {
@@ -4178,12 +4178,12 @@ button:disabled {
 .operators-form input,
 .operators-form select,
 .operators-form textarea {
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.1);
+  background: var(--am-inset);
+  border: 1px solid var(--line);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 13px;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
   outline: none;
   transition: border-color .15s;
   font-family: inherit;
@@ -4192,9 +4192,9 @@ button:disabled {
 .operators-form input:focus,
 .operators-form select:focus,
 .operators-form textarea:focus {
-  border-color: var(--accent, #38bdf8);
+  border-color: var(--am-coral);
 }
-.operators-form select option { background: #1e2a3a; }
+.operators-form select option { background: var(--panel); color: var(--text); }
 
 /* ─── Live Score ─────────────────────────────────────────────────────────── */
 .live-score-bar {
@@ -4229,7 +4229,7 @@ button:disabled {
 .live-result {
   font-size: 16px;
   font-weight: 800;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
   letter-spacing: .04em;
 }
 .live-verdict { font-size: 10px; font-weight: 700; margin-left: auto; }
@@ -4247,7 +4247,7 @@ button:disabled {
 .hist-score-val {
   font-size: 14px;
   font-weight: 700;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
 }
 
 /* ─── Plan Gating ────────────────────────────────────────────────────────── */
