@@ -5,6 +5,7 @@ import {
   emptySyncReport,
   type SyncReport,
 } from "@/lib/publication-gate";
+import { buildTennisExplanation } from "@/lib/tennis-explanation";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -58,20 +59,21 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
   const confidence = prob > 0 ? Math.round(prob * 100) : null;
   const surface = row.surface ? row.surface[0].toUpperCase() + row.surface.slice(1) : "n/a";
-  const featureSummary = row.feature_quality != null
-    ? ` Feature quality ${Math.round(row.feature_quality * 100)}%.`
-    : "";
-  const serveReturnSummary =
-    row.serve_form_p1 != null && row.serve_form_p2 != null && row.return_form_p1 != null && row.return_form_p2 != null
-      ? ` Serve/return: ${row.player1} ${(row.serve_form_p1 * 100).toFixed(1)}%/${(row.return_form_p1 * 100).toFixed(1)}%, ${row.player2} ${(row.serve_form_p2 * 100).toFixed(1)}%/${(row.return_form_p2 * 100).toFixed(1)}%.`
-      : "";
-
-  const explanation =
-    `Surface-Elo model (${surface}). Lean: ${pick} at ${confidence ?? "?"}% win probability.` +
-    serveReturnSummary +
-    featureSummary +
-    (hasRealMarket ? "" : " No live market price available, so no market edge is claimed.") +
-    " Informational only and does not guarantee an outcome. Bet responsibly.";
+  // Why-v2: human prose, no internal jargon. The picked side's serve/return form
+  // is the one paired with `pick` (P1/P2), so the comparison reads in the
+  // favourite's direction. TEXT ONLY — probabilities/pick/confidence untouched.
+  const explanation = buildTennisExplanation({
+    pick,
+    opponent: pickP1 ? row.player2 : row.player1,
+    confidence,
+    surface,
+    serveFormPick: pickP1 ? row.serve_form_p1 : row.serve_form_p2,
+    serveFormOpp: pickP1 ? row.serve_form_p2 : row.serve_form_p1,
+    returnFormPick: pickP1 ? row.return_form_p1 : row.return_form_p2,
+    returnFormOpp: pickP1 ? row.return_form_p2 : row.return_form_p1,
+    featureQuality: row.feature_quality,
+    hasRealMarket,
+  });
 
   return {
     external_event_id: row.match_id,
