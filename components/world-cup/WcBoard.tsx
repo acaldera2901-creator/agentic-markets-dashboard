@@ -116,16 +116,18 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtForm = (f?: { w: number; d: number; l: number } | null) =>
   f ? `${f.w}W-${f.d}D-${f.l}L` : null;
 
-function ProbRow({ label, value, picked, odds }: { label: string; value: number; picked: boolean; odds?: number | null }) {
+// Bar at parity with the home board's ProbBar (app/page.tsx): inset track,
+// outcome-coloured fill (coral / amber / cobalt), label + pct, optional odds.
+function ProbRow({ label, value, odds, color }: { label: string; value: number; odds?: number | null; color: string }) {
   return (
-    <div className={`wc-prob-row${picked ? " picked" : ""}`}>
-      <span className="wc-prob-label">{label}</span>
-      <div className="wc-prob-bar">
-        <div className="wc-prob-fill" style={{ width: `${Math.round(value * 100)}%` }} />
+    <div className="flex items-center gap-2">
+      <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
+      <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(value * 100)}%`, background: color }} />
       </div>
-      <span className="wc-prob-pct">{pct(value)}</span>
+      <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(value)}</span>
       {typeof odds === "number" && (
-        <span className="wc-prob-pct" style={{ opacity: 0.6, minWidth: "3.2em" }}>@{odds.toFixed(2)}</span>
+        <span className="text-xs font-mono text-gray-500 w-12 text-right">@{odds.toFixed(2)}</span>
       )}
     </div>
   );
@@ -213,7 +215,83 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
   );
 }
 
-function WcCard({ p }: { p: ProjectedRow }) {
+// Live football score shape from /api/live (same as the home board).
+type LiveScore = {
+  home_score: number | null; away_score: number | null;
+  match_status: string; minute: number | null;
+  home_team?: string; away_team?: string;
+};
+function normTeam(s?: string | null) {
+  return (s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+function teamPairKey(a?: string | null, b?: string | null) {
+  return [normTeam(a), normTeam(b)].sort().join("|");
+}
+
+const WC_WHY_LABELS: Record<WcLang, { show: string; hide: string; model: string }> = {
+  it: { show: "▼ perché", hide: "▲ meno", model: "Modello nazionali" },
+  en: { show: "▼ why", hide: "▲ less", model: "National model" },
+  es: { show: "▼ por qué", hide: "▲ menos", model: "National model" },
+  fr: { show: "▼ pourquoi", hide: "▲ moins", model: "National model" },
+  ru: { show: "▼ почему", hide: "▲ меньше", model: "National model" },
+};
+
+function fmtFormCount(f?: { w: number; d: number; l: number } | null, it?: boolean) {
+  return f ? (it ? `${f.w}V-${f.d}P-${f.l}S` : `${f.w}W-${f.d}D-${f.l}L`) : null;
+}
+
+// Human "why" paragraph in the active language, mirroring the home board's
+// buildFootballWhy: favourite + why (form / host) + honest value note + sample.
+// No codes, no λ/jargon, no "?". it = Italian, others fall back to English.
+function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: string, belowFloor: boolean, lang: WcLang): string {
+  const it = lang === "it";
+  const e = p.enrichment;
+  const out: string[] = [];
+
+  if (probs) {
+    const sides = [
+      { v: probs.home, name: home, draw: false },
+      { v: probs.draw, name: it ? "il pareggio" : "the draw", draw: true },
+      { v: probs.away, name: away, draw: false },
+    ];
+    const top = sides.slice().sort((a, b) => b.v - a.v)[0];
+    const tp = Math.round(top.v * 100);
+    if (belowFloor || tp < 45) {
+      out.push(it ? `Partita equilibrata: nessun favorito netto, ${top.name} avanti solo di poco (${tp}%).` : `A tight match with no clear favourite — ${top.name} edges it at just ${tp}%.`);
+    } else if (top.draw) {
+      out.push(it ? `Il modello vede il pareggio come l'esito più probabile, al ${tp}%.` : `The model makes the draw the likeliest result, at ${tp}%.`);
+    } else if (tp >= 65) {
+      out.push(it ? `Il modello dà ${top.name} nettamente in vantaggio, al ${tp}%.` : `The model makes ${top.name} clear favourites, at ${tp}%.`);
+    } else {
+      out.push(it ? `Il modello dà ${top.name} in vantaggio al ${tp}%, ma resta una partita aperta.` : `The model favours ${top.name} at ${tp}%, but it stays an open game.`);
+    }
+  }
+
+  const fh = fmtFormCount(e?.form_home, it), fa = fmtFormCount(e?.form_away, it);
+  if (fh && fa) {
+    out.push(it ? `Forma recente: ${home} ${fh}, ${away} ${fa}.` : `Recent form: ${home} ${fh}, ${away} ${fa}.`);
+  }
+
+  if (e?.venue?.host_advantage) {
+    out.push(it ? `${e.venue.host_advantage} gioca in casa, un vantaggio in più.` : `${e.venue.host_advantage} plays at home, an added edge.`);
+  }
+
+  if (p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0) {
+    out.push(it ? `C'è valore: il modello batte la quota di mercato di +${p.edge_percent.toFixed(1)}%.` : `There's value here: the model beats the market price by +${p.edge_percent.toFixed(1)}%.`);
+  } else {
+    out.push(it ? `Non c'è una quota di mercato consolidata per questo match, quindi non dichiariamo nessun edge: è la lettura del modello, non una value bet.` : `There's no settled market price for this match, so we're not claiming an edge — it's the model's read, not a value bet.`);
+  }
+
+  const mH = e?.matches?.home, mA = e?.matches?.away;
+  if (typeof mH === "number" && typeof mA === "number") {
+    const low = mH < 10 || mA < 10;
+    out.push(it ? `Stima basata su ${mH} contro ${mA} partite internazionali${low ? " — campione limitato, più incertezza." : ", un campione solido."}` : `Built on ${mH} vs ${mA} internationals${low ? " — a small sample, so more uncertainty." : ", a solid sample."}`);
+  }
+
+  return out.join(" ");
+}
+
+function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const [showWhy, setShowWhy] = useState(false);
   const home = p.home_team || "Home";
   const away = p.away_team || "Away";
@@ -222,17 +300,17 @@ function WcCard({ p }: { p: ProjectedRow }) {
   // the card shows the probabilities + why but no pick direction and no edge.
   const belowFloor = parseSurfaceBelowFloor(p.notes);
   const pick = belowFloor ? null : (p.pick || null);
-  const copy = SURFACE_COPY[resolveWcLang()];
+  const lang = resolveWcLang();
+  const copy = SURFACE_COPY[lang];
+  const whyL = WC_WHY_LABELS[lang];
   const isSignal = p.signal_type === "signal";
-  const model = p.enrichment?.model || "Poisson";
+  const model = whyL.model;
+  // Live football score (same treatment as the home board's card).
+  const isLive = live?.match_status === "IN_PLAY";
+  const isPaused = live?.match_status === "PAUSED";
+  const isFinished = live?.match_status === "FINISHED";
+  const hasScore = !!live && (live.home_score != null || live.away_score != null);
   const e = p.enrichment;
-  const lambdas = e?.lambdas;
-  const matches = e?.matches;
-  const hasWhyExtras = Boolean(
-    e && (e.form_home || e.form_away ||
-      typeof lambdas?.home === "number" || typeof lambdas?.away === "number" ||
-      typeof matches?.home === "number" || typeof matches?.away === "number")
-  );
 
   return (
     <div className="glass-card wc-board-card">
@@ -247,11 +325,20 @@ function WcCard({ p }: { p: ProjectedRow }) {
       </div>
       <div className="wc-fixture-meta">
         {p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : ""}
-        {/* #LIVE-1: match in corso — la card resta visibile fino al settlement */}
-        {p.starts_at && new Date(p.starts_at).getTime() < Date.now() && (
-          <span style={{ marginLeft: 8, color: "#f87171" }}>● LIVE</span>
-        )}
+        {/* #LIVE-2: live solo quando il feed ha davvero il match in corso */}
+        {isLive && <span style={{ marginLeft: 8, color: "#f87171" }}>● LIVE</span>}
       </div>
+
+      {/* Live / Final score — at parity with the home board's live-score-bar */}
+      {hasScore && live && (
+        <div className={`live-score-bar ${isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : ""}`}>
+          <span className={`live-badge ${isLive ? "blink" : ""}`}>
+            {isLive ? "● LIVE" : isPaused ? "HT" : "FT"}
+            {isLive && live.minute != null ? ` ${live.minute}'` : ""}
+          </span>
+          <span className="live-result">{live.home_score ?? 0} — {live.away_score ?? 0}</span>
+        </div>
+      )}
 
       {p.locked ? (
         <Link href="/" className="card-lock-overlay wc-lock" role="button">
@@ -262,10 +349,10 @@ function WcCard({ p }: { p: ProjectedRow }) {
         <>
           {/* Probability bars — 3-way with real market odds when present */}
           {probs && (
-            <div className="wc-prob-block">
-              <ProbRow label="HOME" value={probs.home} picked={pick === "HOME"} odds={probs.odds_home} />
-              <ProbRow label="DRAW" value={probs.draw} picked={pick === "DRAW"} odds={probs.odds_draw} />
-              <ProbRow label="AWAY" value={probs.away} picked={pick === "AWAY"} odds={probs.odds_away} />
+            <div className="space-y-1.5">
+              <ProbRow label="HOME" value={probs.home} odds={probs.odds_home} color="var(--am-coral)" />
+              <ProbRow label="DRAW" value={probs.draw} odds={probs.odds_draw} color="var(--am-amber)" />
+              <ProbRow label="AWAY" value={probs.away} odds={probs.odds_away} color="var(--am-cobalt)" />
             </div>
           )}
 
@@ -292,7 +379,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
               onClick={() => setShowWhy((v) => !v)}
               style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.6 }}
             >
-              {showWhy ? "Hide why" : "Why"}
+              {showWhy ? whyL.hide : whyL.show}
             </button>
             <span style={{ opacity: 0.45 }}>{model}</span>
             {belowFloor ? null : isSignal && typeof p.edge_percent === "number" ? (
@@ -323,31 +410,17 @@ function WcCard({ p }: { p: ProjectedRow }) {
               textDecoration: "none",
             }}
           >
-            Place Bet →
+            {isLive ? "🔴 Live — " : ""}Place Bet →
           </a>
 
-          {/* Inline Why — real explanation + enrichment-derived rows */}
-          {showWhy && (p.explanation || hasWhyExtras) && (
+          {/* Inline Why — human paragraph in the active language (parity with
+              the home board). The granular form/λ/sample rows live in the
+              premium Deep Analysis panel below, keeping the card essential. */}
+          {showWhy && (
             <div style={{ paddingTop: "0.5rem", borderTop: "1px solid var(--am-line)" }}>
-              {p.explanation && <p className="wc-why">{p.explanation}</p>}
-              {e && (e.form_home || e.form_away) && (
-                <div className="da-row">
-                  <span className="da-label">📈 Form</span>
-                  <span className="da-value">{home.split(" ")[0]} {fmtForm(e.form_home) ?? "–"} · {away.split(" ")[0]} {fmtForm(e.form_away) ?? "–"}</span>
-                </div>
-              )}
-              {(typeof lambdas?.home === "number" || typeof lambdas?.away === "number") && (
-                <div className="da-row">
-                  <span className="da-label">λ xG rate</span>
-                  <span className="da-value">{lambdas?.home?.toFixed(2) ?? "–"} vs {lambdas?.away?.toFixed(2) ?? "–"}</span>
-                </div>
-              )}
-              {(typeof matches?.home === "number" || typeof matches?.away === "number") && (
-                <div className="da-row">
-                  <span className="da-label">🗃️ Sample</span>
-                  <span className="da-value">{matches?.home ?? "–"} vs {matches?.away ?? "–"} matches</span>
-                </div>
-              )}
+              <p className="text-[11px] font-mono leading-relaxed" style={{ color: "var(--am-muted)" }}>
+                {buildWcWhy(p, probs, home, away, belowFloor, lang)}
+              </p>
             </div>
           )}
 
@@ -368,6 +441,10 @@ function WcCard({ p }: { p: ProjectedRow }) {
 
 export default function WcBoard() {
   const [rows, setRows] = useState<ProjectedRow[] | null>(null);
+  // Live scores from the same feed the home board uses (/api/live covers the
+  // ESPN fifa.friendly + football-data fixtures). Matched to cards by team-name
+  // pair since the live feed is keyed by match_id, not the prediction id.
+  const [liveMap, setLiveMap] = useState<Record<string, LiveScore>>({});
 
   useEffect(() => {
     let alive = true;
@@ -378,6 +455,25 @@ export default function WcBoard() {
       .then((d) => { if (alive) setRows(d.predictions || []); })
       .catch(() => { if (alive) setRows([]); });
     return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch("/api/live", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!alive || !d?.live) return;
+          const map: Record<string, LiveScore> = {};
+          for (const s of Object.values(d.live as Record<string, LiveScore>)) {
+            if (s?.home_team && s?.away_team) map[teamPairKey(s.home_team, s.away_team)] = s;
+          }
+          setLiveMap(map);
+        })
+        .catch(() => { /* fail-soft: no live band */ });
+    load();
+    const int = setInterval(load, 60_000);
+    return () => { alive = false; clearInterval(int); };
   }, []);
 
   if (rows === null) return <div className="book-empty">Loading World Cup board…</div>;
@@ -391,7 +487,9 @@ export default function WcBoard() {
 
   return (
     <div className="wc-board-grid">
-      {rows.map((p) => <WcCard key={p.id} p={p} />)}
+      {rows.map((p) => (
+        <WcCard key={p.id} p={p} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} />
+      ))}
     </div>
   );
 }
