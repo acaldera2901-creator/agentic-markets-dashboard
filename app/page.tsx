@@ -1067,12 +1067,12 @@ function stakeFromEdge(edge: number | null, confidence: number) {
 // worked by accident (the pre-#021 tennis bars carried the literals) — when
 // those were removed, bg-cyan-400/bg-fuchsia-400 were purged from the bundle
 // and every HOME/AWAY/player bar rendered empty (bug Andrea 2026-06-06).
-function ProbBar({ label, pct: p, color, odds, isValue }: {
-  label: string; pct: number; color: string; odds?: number | null; isValue?: boolean;
+function ProbBar({ label, pct: p, color, odds, isValue, wideLabel }: {
+  label: string; pct: number; color: string; odds?: number | null; isValue?: boolean; wideLabel?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
+      <span className={`text-xs font-mono shrink-0 ${wideLabel ? "w-24 truncate" : "w-10"}`} style={{ color }}>{label}</span>
       <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
         <div className="h-full rounded-full transition-all"
           style={{ width: `${Math.round(p * 100)}%`, background: color }} />
@@ -2777,256 +2777,170 @@ function bestFootballSelection(p: Prediction) {
 
 // ─── Prediction "Why" Reasoning ───────────────────────────────────────────────
 
-interface Reason { icon: string; text: string; highlight?: boolean }
-
-function buildEnglishFootballResearch(p: Prediction) {
-  const selected = bestFootballSelection(p);
-  const side = selected?.name ?? (p.best_selection === "DRAW" ? "Draw" : "the model's leading outcome");
-  const modelProbability = selected ? pct(selected.probability) : pct(Math.max(p.p_home, p.p_draw, p.p_away));
-  const marketProbability = selected?.odds ? pct(1 / selected.odds) : "unavailable market probability";
-  const edge = p.edge == null ? "edge unavailable" : `${p.edge > 0 ? "+" : ""}${(p.edge * 100).toFixed(1)}% edge`;
-  const e = p.enrichment ?? {};
-
-  const riskSignals = [];
-  if (e.form_home || e.form_away) {
-    riskSignals.push(`recent form is ${p.home_team} ${fmtFormAny(e.form_home) || "n/a"} vs ${p.away_team} ${fmtFormAny(e.form_away) || "n/a"}`);
+// ── Human "why" narratives (UI-WHY-PROSE). One readable paragraph in the active
+// language, assembled from the same data the cards already hold. No codes, no
+// λ/Δ/pp jargon, no model-ids, no "?": missing facts are simply omitted.
+// it = Italian; every other language falls back to English (same posture as the
+// rest of the app's es/fr/ru handling).
+function teamFormCounts(f?: string | WcFormCounts | null): { w: number; d: number; l: number } | null {
+  if (!f) return null;
+  if (typeof f === "string") {
+    if (!f.trim()) return null;
+    return { w: (f.match(/W/gi) || []).length, d: (f.match(/D/gi) || []).length, l: (f.match(/L/gi) || []).length };
   }
-  if (e.xg_home != null && e.xg_away != null) {
-    riskSignals.push(`chance creation sits at ${e.xg_home.toFixed(2)} home xG vs ${e.xg_away.toFixed(2)} away xG`);
+  if (typeof f === "object" && (f.w != null || f.d != null || f.l != null)) {
+    return { w: f.w ?? 0, d: f.d ?? 0, l: f.l ?? 0 };
   }
-  if ((e.injuries_home?.length ?? 0) || (e.injuries_away?.length ?? 0)) {
-    riskSignals.push(`injury load is ${e.injuries_home?.length ?? 0} home vs ${e.injuries_away?.length ?? 0} away players out`);
-  }
-
-  const risk = riskSignals.length
-    ? riskSignals.join("; ")
-    : "the main risk is that market price, team news or late liquidity can move before execution";
-
-  return `${p.home_team} vs ${p.away_team}: the model's preferred angle is ${side}, priced at ${modelProbability} against ${marketProbability} implied by the market (${edge}). Main risk: ${risk}.`;
+  return null;
 }
 
-function buildReasons(p: Prediction, lang: Lang): Reason[] {
+function buildFootballWhy(p: Prediction, lang: Lang): string {
+  const it = lang === "it";
   const e = p.enrichment ?? {};
-  const reasons: Reason[] = [];
-  const isEnglish = lang === "en";
+  const sides = [
+    { k: "HOME", v: p.p_home, name: p.home_team, draw: false },
+    { k: "DRAW", v: p.p_draw, name: it ? "il pareggio" : "the draw", draw: true },
+    { k: "AWAY", v: p.p_away, name: p.away_team, draw: false },
+  ].filter((s) => Number.isFinite(s.v));
+  const out: string[] = [];
 
-  const leader = p.p_home > p.p_draw && p.p_home > p.p_away ? "HOME" : p.p_draw > p.p_away ? "DRAW" : "AWAY";
-  const leaderPct = leader === "HOME" ? p.p_home : leader === "DRAW" ? p.p_draw : p.p_away;
-  // BUG-002: the served probabilities are stripped for anon/estimate rows —
-  // without them leaderPct is NaN and this line rendered "favoured at NaN%"
-  // publicly. Skip the model line entirely when there's no real number to show.
-  if (Number.isFinite(leaderPct)) {
-    reasons.push({
-      icon: "🧠",
-      text: `Model: ${leader} favoured at ${pct(leaderPct)} — expected goals ${p.lambda_home?.toFixed(2) ?? "?"} home vs ${p.lambda_away?.toFixed(2) ?? "?"} away`,
-    });
+  if (sides.length) {
+    const top = sides.slice().sort((a, b) => b.v - a.v)[0];
+    const tp = Math.round(top.v * 100);
+    if (tp < 45) {
+      out.push(it
+        ? `Partita equilibrata: nessun favorito netto, ${top.name} avanti solo di poco (${tp}%).`
+        : `A tight match with no clear favourite — ${top.name} edges it at just ${tp}%.`);
+    } else if (top.draw) {
+      out.push(it
+        ? `Il modello vede il pareggio come l'esito più probabile, al ${tp}%.`
+        : `The model makes the draw the likeliest result, at ${tp}%.`);
+    } else if (tp >= 65) {
+      out.push(it
+        ? `Il modello dà ${top.name} nettamente in vantaggio, al ${tp}%.`
+        : `The model makes ${top.name} clear favourites, at ${tp}%.`);
+    } else {
+      out.push(it
+        ? `Il modello dà ${top.name} in vantaggio al ${tp}%, ma resta una partita aperta.`
+        : `The model favours ${top.name} at ${tp}%, but it stays an open game.`);
+    }
+  }
+
+  const fh = teamFormCounts(e.form_home);
+  const fa = teamFormCounts(e.form_away);
+  if (fh && fa) {
+    const fmt = (f: { w: number; d: number; l: number }) =>
+      it ? `${f.w}V-${f.d}P-${f.l}S` : `${f.w}W-${f.d}D-${f.l}L`;
+    out.push(it
+      ? `Forma recente: ${p.home_team} ${fmt(fh)}, ${p.away_team} ${fmt(fa)}.`
+      : `Recent form: ${p.home_team} ${fmt(fh)}, ${p.away_team} ${fmt(fa)}.`);
   }
 
   if (p.edge != null && p.odds_home != null) {
     if (isFootballBestBet(p)) {
-      reasons.push({
-        icon: "💰",
-        text: `Value bet: model sees +${(p.edge * 100).toFixed(1)}% edge on ${p.best_selection} (model ${pct(leaderPct)} vs market implied ${pct(1 / (p.best_selection === "HOME" ? p.odds_home! : p.best_selection === "DRAW" ? p.odds_draw! : p.odds_away!))})`,
-        highlight: true,
-      });
-    } else if (Math.abs(p.edge) < 0.01) {
-      reasons.push({ icon: "⚖️", text: `Model and market roughly agree — edge near zero (${(p.edge * 100).toFixed(1)}%)` });
+      out.push(it
+        ? `C'è valore: il modello batte la quota di mercato di +${(p.edge * 100).toFixed(1)}%.`
+        : `There's value here: the model beats the market price by +${(p.edge * 100).toFixed(1)}%.`);
     } else {
-      reasons.push({ icon: "📉", text: `Market offers better price: model sees ${(p.edge * 100).toFixed(1)}% edge on ${p.best_selection} (no value currently)` });
+      out.push(it
+        ? `Il mercato prezza già correttamente questo incontro: nessun margine di valore da prendere.`
+        : `The market is already pricing this fairly — no value edge to take.`);
     }
   } else {
-    reasons.push({ icon: "❓", text: "No market odds available — edge cannot be computed" });
+    out.push(it
+      ? `Non c'è quota di mercato per questo incontro, quindi non dichiariamo nessun edge: è la lettura del modello, non una value bet.`
+      : `There's no live market price for this match, so we're not claiming an edge — it's the model's read, not a value bet.`);
   }
 
-  if (e.pi_home != null || e.pi_away != null) {
-    const piH = e.pi_home ?? 0;
-    const piA = e.pi_away ?? 0;
-    const diff = piH - piA;
-    if (Math.abs(diff) > 20) {
-      reasons.push({
-        icon: "⚡",
-        text: `Pi Rating: ${diff > 0 ? "HOME" : "AWAY"} stronger by ${Math.abs(diff)} points (home ${piH > 0 ? "+" : ""}${piH} / away ${piA > 0 ? "+" : ""}${piA})`,
-        highlight: Math.abs(diff) > 80,
-      });
-    } else {
-      reasons.push({ icon: "⚡", text: `Pi Rating: teams evenly matched (home ${piH > 0 ? "+" : ""}${piH} / away ${piA > 0 ? "+" : ""}${piA})` });
-    }
+  const mH = e.matches?.home, mA = e.matches?.away;
+  if (mH != null && mA != null) {
+    const low = mH < 10 || mA < 10;
+    out.push(it
+      ? `Stima basata su ${mH} contro ${mA} partite${low ? " — campione limitato, più incertezza." : ", un campione solido."}`
+      : `Built on ${mH} vs ${mA} matches${low ? " — a small sample, so more uncertainty." : ", a solid sample."}`);
   }
 
-  if (e.xg_home != null && e.xg_away != null) {
-    const diff = e.xg_home - e.xg_away;
-    if (Math.abs(diff) > 0.3) {
-      reasons.push({
-        icon: "⚽",
-        text: `xG trend: ${diff > 0 ? "HOME" : "AWAY"} creating more chances — home ${e.xg_home.toFixed(2)} xG vs away ${e.xg_away.toFixed(2)} xG per game`,
-        highlight: Math.abs(diff) > 0.6,
-      });
-    } else {
-      reasons.push({ icon: "⚽", text: `xG balanced: home ${e.xg_home.toFixed(2)} vs away ${e.xg_away.toFixed(2)} xG per game` });
-    }
-    if (e.xga_home != null && e.xga_away != null) {
-      const defDiff = e.xga_away - e.xga_home;
-      if (Math.abs(defDiff) > 0.3) {
-        reasons.push({
-          icon: "🛡️",
-          text: `Defense: ${defDiff > 0 ? "HOME concedes less" : "AWAY concedes less"} — home concedes ${e.xga_home.toFixed(2)} vs away ${e.xga_away.toFixed(2)} xGA`,
-        });
-      }
-    }
-  }
-
-  if (e.npxg_home != null && e.npxg_away != null) {
-    reasons.push({
-      icon: "🎯",
-      text: isEnglish
-        ? `npxG: home ${e.npxg_home.toFixed(2)} vs away ${e.npxg_away.toFixed(2)} (non-penalty expected goals)`
-        : `npxG: casa ${e.npxg_home.toFixed(2)} vs trasferta ${e.npxg_away.toFixed(2)} (expected goals senza rigori)`,
-    });
-  }
-
-  if (e.ppda_home != null && e.ppda_away != null) {
-    const presser = e.ppda_home < e.ppda_away ? (isEnglish ? "HOME" : "casa") : (isEnglish ? "AWAY" : "trasferta");
-    reasons.push({
-      icon: "🔼",
-      text: isEnglish
-        ? `Pressing (PPDA): home ${e.ppda_home.toFixed(1)} vs away ${e.ppda_away.toFixed(1)} — lower means more intense pressing (${presser} presses harder)`
-        : `Pressing (PPDA): casa ${e.ppda_home.toFixed(1)} vs trasferta ${e.ppda_away.toFixed(1)} — più basso = pressing più intenso (${presser} pressa di più)`,
-    });
-  }
-
-  // Club form is a result string ("WWDLL"); WC form is W/D/L counts.
-  const formH = typeof e.form_home === "string" ? e.form_home : "";
-  const formA = typeof e.form_away === "string" ? e.form_away : "";
-  if (formH || formA) {
-    const homeWins = (formH.match(/W/g) || []).length;
-    const awayWins = (formA.match(/W/g) || []).length;
-    const homeLosses = (formH.match(/L/g) || []).length;
-    const awayLosses = (formA.match(/L/g) || []).length;
-    if (homeWins >= 4) {
-      reasons.push({ icon: "🔥", text: `Home on fire: ${homeWins}W in last ${formH.length} games (${formH.split("").join(" ")})`, highlight: true });
-    } else if (awayWins >= 4) {
-      reasons.push({ icon: "🔥", text: `Away on fire: ${awayWins}W in last ${formA.length} games (${formA.split("").join(" ")})`, highlight: true });
-    } else if (homeLosses >= 4) {
-      reasons.push({ icon: "📉", text: `Home poor form: ${homeLosses}L in last ${formH.length} games (${formH.split("").join(" ")})` });
-    } else if (awayLosses >= 4) {
-      reasons.push({ icon: "📉", text: `Away poor form: ${awayLosses}L in last ${formA.length} games (${formA.split("").join(" ")})` });
-    } else {
-      reasons.push({ icon: "📋", text: `Form: HOME ${formH.split("").join(" ") || "n/a"} · AWAY ${formA.split("").join(" ") || "n/a"}` });
-    }
-  } else if (typeof e.form_home === "object" || typeof e.form_away === "object") {
-    const fh = fmtFormAny(e.form_home);
-    const fa = fmtFormAny(e.form_away);
-    const hw = typeof e.form_home === "object" && e.form_home ? e.form_home.w : 0;
-    const aw = typeof e.form_away === "object" && e.form_away ? e.form_away.w : 0;
-    reasons.push({
-      icon: "📋",
-      text: `Form (national sides): ${p.home_team} ${fh ?? "n/a"} · ${p.away_team} ${fa ?? "n/a"}`,
-      highlight: Math.abs(hw - aw) >= 4,
-    });
-  }
-
-  // ── World Cup context (real venue/squad/sample data from the WC model) ─────
-  if (e.kind === "world_cup") {
-    const v = e.venue;
-    if (v && (v.travel_km_home != null || v.travel_km_away != null)) {
-      const th = v.travel_km_home, ta = v.travel_km_away;
-      reasons.push({
-        icon: "✈️",
-        text: `Travel: ${p.home_team} ${th != null ? `${Math.round(th).toLocaleString()} km` : "n/a"} · ${p.away_team} ${ta != null ? `${Math.round(ta).toLocaleString()} km` : "n/a"}`,
-        highlight: th != null && ta != null && Math.abs(th - ta) > 5000,
-      });
-    }
-    if (v && (v.rest_days_home != null || v.rest_days_away != null)) {
-      reasons.push({
-        icon: "😴",
-        text: `Rest days: ${p.home_team} ${v.rest_days_home ?? "n/a"} · ${p.away_team} ${v.rest_days_away ?? "n/a"}`,
-        highlight: v.rest_days_home != null && v.rest_days_away != null && Math.abs(v.rest_days_home - v.rest_days_away) >= 2,
-      });
-    }
-    if (v && (v.tz_shift_home != null || v.tz_shift_away != null) && ((v.tz_shift_home ?? 0) !== 0 || (v.tz_shift_away ?? 0) !== 0)) {
-      reasons.push({
-        icon: "🕐",
-        text: `Timezone shift: ${p.home_team} ${v.tz_shift_home ?? 0}h · ${p.away_team} ${v.tz_shift_away ?? 0}h`,
-      });
-    }
-    if (v?.host_advantage) {
-      reasons.push({ icon: "🏟️", text: `Host advantage: ${v.host_advantage} plays in home country`, highlight: true });
-    }
-    const sqH = e.squad?.injuries_home?.length ?? 0;
-    const sqA = e.squad?.injuries_away?.length ?? 0;
-    if (sqH > 0 || sqA > 0) {
-      reasons.push({
-        icon: "🚑",
-        text: `Squad injuries: ${p.home_team} ${sqH}${sqH ? ` (${e.squad!.injuries_home!.slice(0, 2).join(", ")})` : ""} · ${p.away_team} ${sqA}${sqA ? ` (${e.squad!.injuries_away!.slice(0, 2).join(", ")})` : ""}`,
-        highlight: Math.abs(sqH - sqA) >= 2,
-      });
-    }
-    const mH = e.matches?.home, mA = e.matches?.away;
-    if (mH != null || mA != null) {
-      const low = (mH ?? 0) < 10 || (mA ?? 0) < 10;
-      reasons.push({
-        icon: "🗃️",
-        text: `Model sample: ${mH ?? "n/a"} vs ${mA ?? "n/a"} international matches${low ? " — small sample, wider uncertainty" : ""}`,
-      });
-    }
-    if (e.group) {
-      reasons.push({ icon: "🏆", text: `World Cup Group ${e.group}` });
-    }
-  }
-
-  const injH = e.injuries_home?.length ?? 0;
-  const injA = e.injuries_away?.length ?? 0;
-  if (injH > 0 || injA > 0) {
-    if (injH > injA + 1) {
-      reasons.push({ icon: "🚑", text: `Home significantly more injured: ${injH} vs ${injA} — ${e.injuries_home!.slice(0, 2).join(", ")}`, highlight: injH > 3 });
-    } else if (injA > injH + 1) {
-      reasons.push({ icon: "🚑", text: `Away significantly more injured: ${injA} vs ${injH} — ${e.injuries_away!.slice(0, 2).join(", ")}`, highlight: injA > 3 });
-    } else {
-      reasons.push({ icon: "🚑", text: `Injuries balanced: home ${injH} · away ${injA} players out` });
-    }
-  }
-
-  if (e.api_pct_home != null) {
-    const dixonHome = Math.round(p.p_home * 100);
-    const apiHome = e.api_pct_home;
-    const discrepancy = Math.abs(dixonHome - apiHome);
-    if (discrepancy >= 8) {
-      reasons.push({
-        icon: "🔎",
-        text: `Models diverge on HOME: our model says ${dixonHome}% vs API-Football ${apiHome}% — discrepancy of ${discrepancy}pp warrants extra caution`,
-        highlight: discrepancy >= 15,
-      });
-    } else {
-      reasons.push({ icon: "✅", text: `API-Football confirms: HOME ${apiHome}% (our model: ${dixonHome}%) — models agree` });
-    }
-    if (e.api_advice && !isEnglish) {
-      reasons.push({ icon: "💬", text: `API-Football advice: "${e.api_advice}"` });
-    }
-  }
-
-  if (e.weather) {
-    const w = e.weather;
-    if (w.wind > 8 || w.rain > 3) {
-      reasons.push({
-        icon: "🌧️",
-        text: `Weather risk: ${w.temp}°C, wind ${w.wind}m/s, rain ${w.rain}mm — may reduce total goals scored`,
-        highlight: w.wind > 12 || w.rain > 8,
-      });
-    }
-  }
-
-  if (e.research && !isEnglish) {
-    reasons.push({ icon: "🤖", text: `AI research: ${e.research}` });
-  } else if (e.research && isEnglish) {
-    reasons.push({
-      icon: "🤖",
-      text: `AI research: ${buildEnglishFootballResearch(p)}`,
-      highlight: isFootballBestBet(p),
-    });
-  }
-
-  return reasons;
+  return out.join(" ");
 }
+
+function buildTennisWhy(m: TennisMatch, lang: Lang): string {
+  const it = lang === "it";
+  const surf = it
+    ? (m.surface === "CLAY" ? "sulla terra" : m.surface === "GRASS" ? "sull'erba" : "sul cemento")
+    : (m.surface === "CLAY" ? "on clay" : m.surface === "GRASS" ? "on grass" : "on hard court");
+  const p1n = m.player1.split(" ").pop() ?? m.player1;
+  const p2n = m.player2.split(" ").pop() ?? m.player2;
+  const pct1 = Math.round(m.p1 * 100), pct2 = Math.round(m.p2 * 100);
+  const favName = m.p1 >= m.p2 ? p1n : p2n;
+  const favPct = Math.max(pct1, pct2);
+  const tbd = /\bTBD\b|\bTBA\b|qualifier/i.test(`${m.player1} ${m.player2}`);
+  const out: string[] = [];
+
+  if (Math.abs(pct1 - pct2) <= 6) {
+    out.push(it
+      ? `Praticamente un testa o croce ${surf}: ${pct1}% contro ${pct2}%, nessun favorito reale.`
+      : `Essentially a coin-flip ${surf}: ${pct1}% to ${pct2}%, with no real favourite.`);
+  } else if (favPct >= 65) {
+    out.push(it
+      ? `Il modello dà ${favName} nettamente favorito ${surf}, al ${favPct}%.`
+      : `The model makes ${favName} a clear favourite ${surf}, at ${favPct}%.`);
+  } else {
+    out.push(it
+      ? `${favName} è favorito ${surf} al ${favPct}%, ma con un margine ridotto.`
+      : `${favName} is favoured ${surf} at ${favPct}%, but only by a slim margin.`);
+  }
+
+  if (m.elo_p1 != null && m.elo_p2 != null) {
+    const d = Math.abs(m.elo_p1 - m.elo_p2);
+    const eloLeader = m.elo_p1 >= m.elo_p2 ? p1n : p2n;
+    if (d < 15) {
+      out.push(it ? `I rating Elo ${surf} sono quasi pari.` : `Their surface Elo ratings are almost level.`);
+    } else if (d < 60) {
+      out.push(it
+        ? `${eloLeader} parte un po' più in alto nei rating Elo ${surf}.`
+        : `${eloLeader} sits a little higher in the surface Elo ratings.`);
+    } else {
+      out.push(it
+        ? `${eloLeader} ha un netto vantaggio nei rating Elo ${surf}.`
+        : `${eloLeader} holds a clear edge in the surface Elo ratings.`);
+    }
+  }
+
+  if (tbd) {
+    out.push(it
+      ? `L'avversario non è ancora confermato, quindi è una lettura provvisoria.`
+      : `The opponent isn't confirmed yet, so this is a provisional read.`);
+  } else if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
+    const lo = Math.min(m.surface_matches_p1, m.surface_matches_p2);
+    if (lo < 5) {
+      const thin = m.surface_matches_p1 <= m.surface_matches_p2 ? p1n : p2n;
+      out.push(it
+        ? `Da tenere presente: ${thin} ha pochissime partite ${surf}, quindi quel rating è meno affidabile.`
+        : `Worth noting: ${thin} has very few matches ${surf}, so that rating is less reliable.`);
+    }
+  }
+
+  const h1 = m.h2h_p1_wins ?? 0, h2 = m.h2h_p2_wins ?? 0;
+  if (h1 + h2 >= 2) {
+    const hl = h1 > h2 ? p1n : h2 > h1 ? p2n : null;
+    out.push(hl
+      ? (it ? `Nei precedenti diretti è avanti ${hl} (${h1}-${h2}).` : `In their head-to-head ${hl} leads ${h1}-${h2}.`)
+      : (it ? `I precedenti diretti sono in parità (${h1}-${h2}).` : `Their head-to-head is even (${h1}-${h2}).`));
+  }
+
+  if (isTennisBestBet(m)) {
+    out.push(it
+      ? `C'è valore: il modello batte la quota di mercato di +${((m.edge ?? 0) * 100).toFixed(1)}%.`
+      : `There's value: the model beats the market price by +${((m.edge ?? 0) * 100).toFixed(1)}%.`);
+  } else {
+    out.push(it
+      ? `Niente quota di mercato qui, quindi nessun edge dichiarato: è un'inclinazione, non una scommessa.`
+      : `No live market price here, so we're not claiming an edge — it's a lean, not a bet.`);
+  }
+
+  return out.join(" ");
+}
+
 
 
 const LEAGUE_BADGE_COLORS: Record<string, string> = {
@@ -3058,7 +2972,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const belowFloor = e.surface?.below_floor === true;
   const isValueBet = !belowFloor && isFootballBestBet(p);
   const leagueBadgeColor = LEAGUE_BADGE_COLORS[p.league] ?? "text-gray-400 border-gray-400/40 bg-gray-400/10";
-  const reasons = buildReasons(p, lang);
 
   const handleSelect = () => {
     if (!onSelect || !p.best_selection) return;
@@ -3170,7 +3083,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           ) : p.pick ? (
             <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{p.pick}</strong>{p.confidence_score != null && <span className="ml-1 text-gray-400">{p.confidence_score}%</span>}</div>
           ) : null}
-          {p.explanation && <p className="text-[10px] font-mono text-gray-400 mt-1 leading-relaxed">{p.explanation}</p>}
           {p.affiliate && (
             <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
@@ -3246,17 +3158,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {!isPreview && showWhy && (
         <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.pred_why_title}</div>
-          {reasons.map((r, i) => (
-            <div key={i} className={`flex gap-2 text-[10px] font-mono leading-relaxed ${r.highlight ? "text-white" : "text-gray-500"}`}>
-              <span className="shrink-0">{r.icon}</span>
-              <span>{r.text}</span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between text-[9px] text-gray-600 font-mono pt-1 border-t border-white/5">
-            <span>λ home {p.lambda_home?.toFixed(2) ?? "?"}</span>
-            <span>λ away {p.lambda_away?.toFixed(2) ?? "?"}</span>
-            <span>{p.model_matches ?? "?"} matches</span>
-          </div>
+          <p className="text-[11px] font-mono text-gray-300 leading-relaxed">{buildFootballWhy(p, lang)}</p>
         </div>
       )}
 
@@ -3402,154 +3304,6 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
   HARD:  { label: "HARD",  color: "text-blue-400 border-blue-400/40 bg-blue-400/10" },
 };
 
-type TennisReason = { icon: string; text: string; highlight?: boolean };
-
-function buildTennisReasons(m: TennisMatch, lang: Lang): TennisReason[] {
-  const reasons: TennisReason[] = [];
-  const surfLabel = lang === "it"
-    ? (m.surface === "CLAY" ? "terra battuta" : m.surface === "GRASS" ? "erba" : "cemento")
-    : (m.surface === "CLAY" ? "clay" : m.surface === "GRASS" ? "grass" : "hard court");
-  const p1last = m.player1.split(" ").pop() ?? m.player1;
-  const p2last = m.player2.split(" ").pop() ?? m.player2;
-
-  // Elo surface ratings
-  if (m.elo_p1 != null && m.elo_p2 != null) {
-    const delta = m.elo_p1 - m.elo_p2;
-    const leader = delta > 0 ? p1last : p2last;
-    const stronger = lang === "it"
-      ? (Math.abs(delta) > 80 ? "nettamente superiore" : Math.abs(delta) > 30 ? "superiore" : "leggermente avanti")
-      : (Math.abs(delta) > 80 ? "clearly stronger" : Math.abs(delta) > 30 ? "stronger" : "slightly ahead");
-    reasons.push({
-      icon: "🎾",
-      text: `Elo ${surfLabel}: ${p1last} ${m.elo_p1} · ${p2last} ${m.elo_p2} — ${leader} ${stronger} (Δ${Math.abs(delta).toFixed(0)} pt)`,
-      highlight: Math.abs(delta) > 80,
-    });
-  } else {
-    reasons.push({ icon: "🎾", text: lang === "it" ? `Elo surface-adjusted su ${surfLabel} — modello ${m.model}` : `Surface-adjusted Elo on ${surfLabel} — model ${m.model}` });
-  }
-
-  // Overall vs surface rating (shows surface specialisation)
-  if (m.elo_p1 != null && m.elo_p1_overall != null && m.elo_p2 != null && m.elo_p2_overall != null) {
-    const p1surfAdv = m.elo_p1 - m.elo_p1_overall;
-    const p2surfAdv = m.elo_p2 - m.elo_p2_overall;
-    const hasSpec = Math.abs(p1surfAdv) > 20 || Math.abs(p2surfAdv) > 20;
-    if (hasSpec) {
-      const parts: string[] = [];
-      if (Math.abs(p1surfAdv) > 20) parts.push(`${p1last} ${p1surfAdv > 0 ? "+" : ""}${p1surfAdv.toFixed(0)} ${lang === "it" ? "su" : "on"} ${surfLabel}`);
-      if (Math.abs(p2surfAdv) > 20) parts.push(`${p2last} ${p2surfAdv > 0 ? "+" : ""}${p2surfAdv.toFixed(0)} ${lang === "it" ? "su" : "on"} ${surfLabel}`);
-      reasons.push({ icon: "📊", text: lang === "it" ? `Specializzazione superficie: ${parts.join(" · ")} (vs rating overall)` : `Surface specialization: ${parts.join(" · ")} (vs overall rating)`, highlight: Math.abs(p1surfAdv) > 60 || Math.abs(p2surfAdv) > 60 });
-    } else {
-      reasons.push({ icon: "📊", text: lang === "it" ? `Overall: ${p1last} ${m.elo_p1_overall} · ${p2last} ${m.elo_p2_overall} — prestazioni simili su tutte le superfici` : `Overall: ${p1last} ${m.elo_p1_overall} · ${p2last} ${m.elo_p2_overall} — similar performance across surfaces` });
-    }
-  }
-
-  // Surface match count (data reliability)
-  if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
-    const minMatches = Math.min(m.surface_matches_p1, m.surface_matches_p2);
-    const reliability = lang === "it"
-      ? (minMatches >= 50 ? "alta" : minMatches >= 20 ? "media" : "bassa")
-      : (minMatches >= 50 ? "high" : minMatches >= 20 ? "medium" : "low");
-    reasons.push({
-      icon: "📈",
-      text: lang === "it" ? `Partite su ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — affidabilità rating ${reliability}` : `Matches on ${surfLabel}: ${p1last} ${m.surface_matches_p1} · ${p2last} ${m.surface_matches_p2} — ${reliability} rating reliability`,
-    });
-  }
-
-  if (m.h2h_p1_wins != null || m.h2h_p2_wins != null) {
-    const h1 = m.h2h_p1_wins ?? 0;
-    const h2 = m.h2h_p2_wins ?? 0;
-    const leader = h1 > h2 ? p1last : h2 > h1 ? p2last : null;
-    reasons.push({
-      icon: "🤝",
-      text: lang === "it"
-        ? `H2H: ${h1}–${h2}${leader ? ` — ${leader} avanti negli scontri diretti` : " — equilibrio negli scontri diretti"}`
-        : `H2H: ${h1}–${h2}${leader ? ` — ${leader} leads the head-to-head` : " — even head-to-head record"}`,
-      highlight: Math.abs(h1 - h2) >= 3,
-    });
-  }
-
-  if (m.serve_form_p1 != null && m.serve_form_p2 != null && m.return_form_p1 != null && m.return_form_p2 != null) {
-    const serveEdge = (m.serve_form_p1 - m.serve_form_p2) * 100;
-    const returnEdge = (m.return_form_p1 - m.return_form_p2) * 100;
-    const serveLeader = serveEdge >= 0 ? p1last : p2last;
-    const returnLeader = returnEdge >= 0 ? p1last : p2last;
-    reasons.push({
-      icon: "🎯",
-      text: lang === "it"
-        ? `Forma serve/return: servizio ${serveLeader} ${Math.abs(serveEdge).toFixed(1)}pp · risposta ${returnLeader} ${Math.abs(returnEdge).toFixed(1)}pp`
-        : `Serve/return form: serve ${serveLeader} ${Math.abs(serveEdge).toFixed(1)}pp · return ${returnLeader} ${Math.abs(returnEdge).toFixed(1)}pp`,
-      highlight: Math.abs(serveEdge) > 4 || Math.abs(returnEdge) > 3,
-    });
-  }
-
-  if (m.feature_quality != null) {
-    const q = Math.round(m.feature_quality * 100);
-    reasons.push({
-      icon: "🧪",
-      text: lang === "it"
-        ? `Qualità feature live: ${q}% — campione tecnico ${q >= 70 ? "solido" : q >= 40 ? "medio" : "limitato"}`
-        : `Live feature quality: ${q}% — ${q >= 70 ? "solid" : q >= 40 ? "medium" : "limited"} technical sample`,
-      highlight: q >= 70,
-    });
-  }
-
-  if (m.p1_rest_days != null && m.p2_rest_days != null) {
-    const recent1 = m.p1_recent_matches_14d ?? null;
-    const recent2 = m.p2_recent_matches_14d ?? null;
-    const restDelta = m.p1_rest_days - m.p2_rest_days;
-    if (Math.abs(restDelta) >= 2 || (recent1 != null && recent2 != null && recent1 !== recent2)) {
-      reasons.push({
-        icon: "⚡",
-        text: lang === "it"
-          ? `Carico recente: riposo ${p1last} ${m.p1_rest_days}g · ${p2last} ${m.p2_rest_days}g, match 14g ${recent1 ?? "?"}-${recent2 ?? "?"}`
-          : `Recent load: rest ${p1last} ${m.p1_rest_days}d · ${p2last} ${m.p2_rest_days}d, 14d matches ${recent1 ?? "?"}-${recent2 ?? "?"}`,
-      });
-    }
-  }
-
-  // Fatigue adjustment (shown only when meaningful)
-  if (m.elo_raw_p1 != null) {
-    const delta = Math.abs(m.p1 - m.elo_raw_p1);
-    if (delta > 0.003) {
-      const dir = m.p1 > m.elo_raw_p1 ? "favorisce" : "penalizza";
-      reasons.push({
-        icon: "⚡",
-        text: lang === "it" ? `Fatica: Elo puro ${Math.round(m.elo_raw_p1 * 100)}% → ${Math.round(m.p1 * 100)}% dopo aggiustamento — stanchezza ${dir} ${p1last}` : `Fatigue: raw Elo ${Math.round(m.elo_raw_p1 * 100)}% → ${Math.round(m.p1 * 100)}% after adjustment — fatigue ${dir === "favorisce" ? "helps" : "hurts"} ${p1last}`,
-      });
-    }
-  }
-
-  // Model vs market odds
-  const mktP1 = m.odds_p1 && m.odds_p1 > 1 ? Math.round((1 / m.odds_p1) * 100) : null;
-  const mktP2 = m.odds_p2 && m.odds_p2 > 1 ? Math.round((1 / m.odds_p2) * 100) : null;
-  if (m.best_selection === "P1" && mktP1 != null) {
-    reasons.push({
-      icon: "🧠",
-      text: lang === "it" ? `Modello: ${p1last} ${Math.round(m.p1 * 100)}% · Mercato: ${mktP1}% — modello vede ${Math.round(m.p1 * 100) - mktP1}pp in più` : `Model: ${p1last} ${Math.round(m.p1 * 100)}% · Market: ${mktP1}% — model sees ${Math.round(m.p1 * 100) - mktP1}pp more`,
-      highlight: Math.round(m.p1 * 100) - mktP1 > 4,
-    });
-  } else if (m.best_selection === "P2" && mktP2 != null) {
-    reasons.push({
-      icon: "🧠",
-      text: lang === "it" ? `Modello: ${p2last} ${Math.round(m.p2 * 100)}% · Mercato: ${mktP2}% — modello vede ${Math.round(m.p2 * 100) - mktP2}pp in più` : `Model: ${p2last} ${Math.round(m.p2 * 100)}% · Market: ${mktP2}% — model sees ${Math.round(m.p2 * 100) - mktP2}pp more`,
-      highlight: Math.round(m.p2 * 100) - mktP2 > 4,
-    });
-  } else {
-    reasons.push({ icon: "⚖️", text: lang === "it" ? `${p1last} ${Math.round(m.p1 * 100)}% vs ${p2last} ${Math.round(m.p2 * 100)}% — nessun edge netto` : `${p1last} ${Math.round(m.p1 * 100)}% vs ${p2last} ${Math.round(m.p2 * 100)}% — no clear edge` });
-  }
-
-  // Edge conclusion
-  if (isTennisBestBet(m)) {
-    const edgePct = ((m.edge ?? 0) * 100).toFixed(1);
-    reasons.push({ icon: "💰", text: lang === "it" ? `Value bet: edge +${edgePct}% su ${m.best_selection === "P1" ? m.player1 : m.player2} — supera soglia minima 2.5%` : `Value bet: edge +${edgePct}% on ${m.best_selection === "P1" ? m.player1 : m.player2} — clears the 2.5% minimum threshold`, highlight: true });
-  } else if (m.edge != null && m.edge > 0) {
-    reasons.push({ icon: "📉", text: lang === "it" ? `Edge marginale +${(m.edge * 100).toFixed(1)}% — sotto soglia value (2.5%), segnale non attivato` : `Marginal edge +${(m.edge * 100).toFixed(1)}% — below value threshold (2.5%), signal not activated` });
-  } else {
-    reasons.push({ icon: "❌", text: lang === "it" ? "Nessun edge positivo — il mercato prezza già correttamente questa partita" : "No positive edge — market is already pricing this match correctly" });
-  }
-
-  return reasons;
-}
 
 function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
@@ -3653,15 +3407,14 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           <div className="space-y-1.5">
             <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P1")}>
               <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color={m.p1 >= m.p2 ? "var(--am-coral)" : "var(--am-cobalt)"}
-                odds={m.odds_p1} isValue={isValue && m.best_selection === "P1"} />
+                odds={m.odds_p1} isValue={isValue && m.best_selection === "P1"} wideLabel />
             </div>
             <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P2")}>
               <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color={m.p1 >= m.p2 ? "var(--am-cobalt)" : "var(--am-coral)"}
-                odds={m.odds_p2} isValue={isValue && m.best_selection === "P2"} />
+                odds={m.odds_p2} isValue={isValue && m.best_selection === "P2"} wideLabel />
             </div>
           </div>
           {m.pick && <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{m.pick}</strong>{m.confidence_score != null && <span className="ml-1 text-gray-400">{m.confidence_score}%</span>}</div>}
-          {m.explanation && <p className="text-[10px] font-mono text-gray-400 mt-1 leading-relaxed">{m.explanation}</p>}
           {m.affiliate && (
             <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
@@ -3683,7 +3436,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             {loadingAnalysis ? "⏳ ..." : showWhy ? t.tennis_why_hide : t.tennis_why_show}
           </button>
         )}
-        <span className="text-gray-600">{m.model}</span>
+        <span className="text-gray-600">{lang === "it" ? "Modello Elo superficie" : "Surface Elo model"}</span>
         {isPreview ? (
           <span className="plan-lock-badge">🔒 Pro</span>
         ) : m.edge != null && m.edge > 0 ? (
@@ -3730,14 +3483,10 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           ) : loadingAnalysis ? (
             <div className="text-[10px] font-mono text-cyan-400/50 animate-pulse">{t.tennis_ai_loading}</div>
           ) : (
-            <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.tennis_elo_label}</div>
+            <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.pred_why_title}</div>
           )}
-          {/* Structured Elo reasons — always shown */}
-          {buildTennisReasons(m, lang).map((r, i) => (
-            <div key={i} className={`text-[10px] font-mono leading-relaxed ${r.highlight ? "text-green-400" : "text-gray-400"}`}>
-              {r.icon} {r.text}
-            </div>
-          ))}
+          {/* Human why — readable paragraph in the active language */}
+          <p className="text-[11px] font-mono text-gray-300 leading-relaxed">{buildTennisWhy(m, lang)}</p>
         </div>
       )}
 
