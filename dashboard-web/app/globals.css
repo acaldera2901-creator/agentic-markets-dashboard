@@ -70,6 +70,7 @@
   --am-panel-2:    #131626;
   --am-panel-3:    #181B2E;
   --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
+  --am-inset:      var(--am-inset);    /* superfici recessed: input, pill, segmented */
 
   /* Borders — neutral-cool, low chroma for depth */
   --am-line:       rgba(255,255,255,0.08);
@@ -181,6 +182,7 @@
   --am-panel-2:    #F1F3F7;
   --am-panel-3:    #E9ECF2;
   --am-bar:        rgba(255,255,255,0.96);
+  --am-inset:      rgba(15,18,30,0.05);
 
   --am-line:       rgba(15,18,30,0.10);
   --am-line-2:     rgba(15,18,30,0.16);
@@ -401,7 +403,7 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(7,16,30,0.8);
+  background: var(--am-inset);
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
@@ -630,7 +632,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: rgba(203,213,225,0.9);
-  background: rgba(7,16,30,0.7);
+  background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -690,7 +692,7 @@ button:disabled {
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.58);
+  background: var(--am-inset);
 }
 
 .segmented-filter button {
@@ -747,7 +749,7 @@ button:disabled {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.72);
+  background: var(--am-inset);
   color: var(--text);
   font-size: 12px;
   font-weight: 780;
@@ -992,7 +994,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 5px;
   color: var(--muted);
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   font-size: 11px;
   font-weight: 850;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -1049,7 +1051,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: rgba(6,7,15,0.28);
+  background: var(--am-inset);
   overflow: hidden;
 }
 
@@ -1213,7 +1215,7 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(6,7,15,0.42);
+  background: var(--am-inset);
   color: var(--muted);
   font-size: 10px;
   font-weight: 900;
@@ -1237,7 +1239,7 @@ button:disabled {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
 }
 
 .plan-core-line strong {
@@ -1269,7 +1271,7 @@ button:disabled {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.24);
+  background: var(--am-inset);
 }
 
 .plan-feature-list li span {
@@ -1325,7 +1327,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.28);
+  background: var(--am-inset);
 }
 
 .plan-flow span {
@@ -1467,7 +1469,7 @@ button:disabled {
   height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.70);
+  background: var(--am-inset);
   color: var(--text);
   padding: 0 12px;
   outline: none;
@@ -2180,7 +2182,7 @@ button:disabled {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.42);
+  background: var(--am-inset);
   color: var(--text);
   padding: 10px 11px;
 }
@@ -2362,7 +2364,7 @@ button:disabled {
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   color: var(--muted);
   font-weight: 850;
 }
@@ -2471,7 +2473,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.34);
+  background: var(--am-inset);
   display: grid;
   align-content: space-between;
   gap: 8px;
@@ -2581,7 +2583,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2669,7 +2671,7 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.72);
+  background: var(--am-inset);
   color: var(--text);
   font-size: 12px;
   font-weight: 780;
@@ -2695,7 +2697,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.32);
+  background: var(--am-inset);
 }
 
 .crypto-pay-box > div:first-child span,
@@ -2754,7 +2756,7 @@ button:disabled {
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.55);
+  background: var(--am-inset);
   color: var(--text);
   padding: 0 10px;
   outline: none;
@@ -2834,7 +2836,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2864,7 +2866,7 @@ button:disabled {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.28);
+  background: var(--am-inset);
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -2905,7 +2907,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(6,7,15,0.42);
+  background: var(--am-inset);
 }
 
 .market-section-title {
@@ -3605,7 +3607,7 @@ button:disabled {
   font-size: 11px;
   color: var(--text);
   word-break: break-all;
-  background: rgba(6,7,15,0.80);
+  background: var(--am-inset);
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid var(--line);
@@ -3804,7 +3806,7 @@ button:disabled {
 .portal-ad-slot {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(8,12,22,.7);
+  background: var(--am-inset);
   padding: 14px;
   min-height: 110px;
   display: grid;
@@ -3846,7 +3848,7 @@ button:disabled {
 .portal-bottom-banner {
   min-height: 48px;
   border-top: 1px solid var(--line);
-  background: rgba(8,12,22,.96);
+  background: var(--am-inset);
   display: flex;
   align-items: center;
   justify-content: center;
