@@ -973,12 +973,12 @@ function ProbBar({ label, pct: p, color, odds, isValue }: {
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-xs font-mono w-10 shrink-0 ${color}`}>{label}</span>
+      <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
       <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${color.replace("text-", "bg-")}`}
-          style={{ width: `${Math.round(p * 100)}%` }} />
+        <div className="h-full rounded-full transition-all"
+          style={{ width: `${Math.round(p * 100)}%`, background: color }} />
       </div>
-      <span className={`text-xs font-mono w-8 text-right ${color}`}>{pct(p)}</span>
+      <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(p)}</span>
       {isValue && (
         <span className="text-xs px-1.5 py-0.5 rounded border border-green-400/40 text-green-400 bg-green-400/10 font-mono">
           VALUE
@@ -3390,11 +3390,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Pr
 
       {/* Probability bars */}
       <div className="space-y-1.5">
-        <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
+        <ProbBar label="HOME" pct={p.p_home} color="var(--am-coral)"
           odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-        <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
+        <ProbBar label="DRAW" pct={p.p_draw} color="var(--am-amber)"
           odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-        <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
+        <ProbBar label="AWAY" pct={p.p_away} color="var(--am-cobalt)"
           odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
       </div>
 
