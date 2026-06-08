@@ -3739,22 +3739,30 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: T
         )}
       </div>
 
-      {/* Probability bars */}
+      {/* Probability bars — corallo = favorito, cobalto = alternativo */}
       <div className="space-y-1.5">
+        {(() => {
+          const p1Color = m.p1 >= m.p2 ? "var(--am-coral)" : "var(--am-cobalt)";
+          const p2Color = m.p1 >= m.p2 ? "var(--am-cobalt)" : "var(--am-coral)";
+          return (
+            <>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P1")}>
-          <span className="text-xs font-mono w-24 shrink-0 text-cyan-400 truncate">{m.player1.split(" ").pop()}</span>
+          <span className="text-xs font-mono w-24 shrink-0 truncate" style={{ color: p1Color }}>{m.player1.split(" ").pop()}</span>
           <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-            <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${Math.round(m.p1 * 100)}%` }} />
+            <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(m.p1 * 100)}%`, background: p1Color }} />
           </div>
-          <span className="text-xs font-mono w-8 text-right text-cyan-400">{Math.round(m.p1 * 100)}%</span>
+          <span className="text-xs font-mono w-8 text-right" style={{ color: p1Color }}>{Math.round(m.p1 * 100)}%</span>
         </div>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P2")}>
-          <span className="text-xs font-mono w-24 shrink-0 text-fuchsia-400 truncate">{m.player2.split(" ").pop()}</span>
+          <span className="text-xs font-mono w-24 shrink-0 truncate" style={{ color: p2Color }}>{m.player2.split(" ").pop()}</span>
           <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-            <div className="h-full rounded-full bg-fuchsia-400 transition-all" style={{ width: `${Math.round(m.p2 * 100)}%` }} />
+            <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(m.p2 * 100)}%`, background: p2Color }} />
           </div>
-          <span className="text-xs font-mono w-8 text-right text-fuchsia-400">{Math.round(m.p2 * 100)}%</span>
+          <span className="text-xs font-mono w-8 text-right" style={{ color: p2Color }}>{Math.round(m.p2 * 100)}%</span>
         </div>
+            </>
+          );
+        })()}
       </div>
 
       {/* Footer */}
