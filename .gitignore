@@ -55,3 +55,4 @@ scripts/migrate_to_company_supabase.py
 # force-push risk; files stay on disk for reference, not tracked by root repo.
 dashboard-web/
 data/transfermarkt/
+.superpowers/
