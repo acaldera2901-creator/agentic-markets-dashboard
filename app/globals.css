@@ -4671,6 +4671,22 @@ button:disabled {
   .wc-aside { position: static; margin-top: 28px; }
 }
 
+.wc-ref-tabs {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-bottom: 20px; border-bottom: 1px solid var(--am-line);
+}
+.wc-ref-tab {
+  appearance: none; background: none; border: none;
+  padding: 9px 15px; margin-bottom: -1px;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.03em;
+  color: var(--am-muted); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.wc-ref-tab:hover { color: var(--am-text); }
+.wc-ref-tab.active { color: var(--am-coral); border-bottom-color: var(--am-coral); }
+
 .wc-section { margin-top: 44px; }
 .wc-section-title {
   font-size: 18px;
