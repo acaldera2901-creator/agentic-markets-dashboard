@@ -17,6 +17,7 @@ import {
 import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
+import { surfaceDecision, SURFACE_FLOOR_FOOTBALL } from "@/lib/surfacing-gate";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -255,6 +256,11 @@ interface EnrichmentPayload {
   extra_market_odds?: Partial<Record<string, number>>;
   reliability?: string;
   team_matches?: number;
+  // Confidence-surfacing gate flag (Wave 1). Same contract as the Python
+  // national path's notes.surface. below_floor=true -> the frontend shows the
+  // row without a pick direction/edge ("no clear favourite"). Probability-
+  // neutral: p_home/p_draw/p_away and confidence_score are never altered.
+  surface?: { below_floor: boolean; floor: number };
 }
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
@@ -387,6 +393,22 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         console.log(
           `[${code}] insufficient_data: ${fix.homeTeam} vs ${fix.awayTeam} (min ${probs.teamMatches} matches/team)`
         );
+      }
+
+      // Confidence-surfacing gate (Wave 1). The floor is on the model's
+      // FAVOURITE by probability (max-prob = the served confidence_score the
+      // board renders), NOT on best_selection — which is the max-EDGE pick used
+      // only when real odds exist. When the favourite's probability is below the
+      // club floor there is "no clear favourite", so the frontend drops the pick
+      // direction/edge regardless of any edge selection. Probability-neutral:
+      // p_home/p_draw/p_away, edge and best_selection are all left untouched; we
+      // only attach a flag (same contract as the Python notes.surface).
+      const confidenceScore = Math.round(
+        Math.max(probs.pHome, probs.pDraw, probs.pAway) * 100
+      );
+      const surface = surfaceDecision(confidenceScore);
+      if (surface.belowFloor) {
+        enrichment.surface = { below_floor: true, floor: SURFACE_FLOOR_FOOTBALL };
       }
 
       // Pi Rating
