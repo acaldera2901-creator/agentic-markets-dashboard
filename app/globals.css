@@ -294,8 +294,8 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(7,16,30,0.8);
-  color: rgba(255,255,255,0.65);
+  background: var(--am-inset);
+  color: var(--muted);
   font-size: 11px;
   font-weight: 850;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -332,7 +332,7 @@ button:disabled {
 .glass-card {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #0d1020;
+  background: var(--panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -389,7 +389,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: rgba(237,241,255,0.62);
+  color: var(--muted);
   background: transparent;
   text-align: left;
   font-size: 13px;
@@ -523,7 +523,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: rgba(203,213,225,0.9);
-  background: rgba(7,16,30,0.7);
+  background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -583,7 +583,7 @@ button:disabled {
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.58);
+  background: var(--am-inset);
 }
 
 .segmented-filter button {
@@ -631,7 +631,7 @@ button:disabled {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.72);
+  background: var(--am-inset);
   color: var(--text);
   font-size: 12px;
   font-weight: 780;
@@ -876,7 +876,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 5px;
   color: var(--muted);
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   font-size: 11px;
   font-weight: 850;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -889,9 +889,9 @@ button:disabled {
 }
 
 .portfolio-panel-head > span.is-negative {
-  border-color: rgba(239,68,68,0.28);
+  border-color: var(--am-negative-b);
   color: var(--red);
-  background: rgba(239,68,68,0.08);
+  background: var(--am-negative-dim);
 }
 
 .portfolio-chart {
@@ -933,7 +933,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: rgba(6,7,15,0.28);
+  background: var(--am-inset);
   overflow: hidden;
 }
 
@@ -1097,7 +1097,7 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(6,7,15,0.42);
+  background: var(--am-inset);
   color: var(--muted);
   font-size: 10px;
   font-weight: 900;
@@ -1121,7 +1121,7 @@ button:disabled {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
 }
 
 .plan-core-line strong {
@@ -1153,7 +1153,7 @@ button:disabled {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.24);
+  background: var(--am-inset);
 }
 
 .plan-feature-list li span {
@@ -1193,7 +1193,7 @@ button:disabled {
 
 .plan-action.is-premium {
   border-color: rgba(255,107,107,0.48);
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
 
@@ -1209,7 +1209,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.28);
+  background: var(--am-inset);
 }
 
 .plan-flow span {
@@ -1297,7 +1297,7 @@ button:disabled {
   padding: 0 16px;
   border: 1px solid rgba(255,107,107,0.42);
   border-radius: 8px;
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
   font-weight: 900;
 }
@@ -1351,7 +1351,7 @@ button:disabled {
   height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.70);
+  background: var(--am-inset);
   color: var(--text);
   padding: 0 12px;
   outline: none;
@@ -1596,7 +1596,7 @@ button:disabled {
 
 .preaccess-actions button:first-child {
   border: 1px solid rgba(255,107,107,0.42);
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
 
@@ -2064,7 +2064,7 @@ button:disabled {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.42);
+  background: var(--am-inset);
   color: var(--text);
   padding: 10px 11px;
 }
@@ -2246,7 +2246,7 @@ button:disabled {
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   color: var(--muted);
   font-weight: 850;
 }
@@ -2270,7 +2270,7 @@ button:disabled {
 .upgrade-card button {
   flex: 0 0 auto;
   border-color: rgba(255,107,107,0.45);
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
 
@@ -2355,7 +2355,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.34);
+  background: var(--am-inset);
   display: grid;
   align-content: space-between;
   gap: 8px;
@@ -2465,7 +2465,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2553,7 +2553,7 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.72);
+  background: var(--am-inset);
   color: var(--text);
   font-size: 12px;
   font-weight: 780;
@@ -2579,7 +2579,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(6,7,15,0.32);
+  background: var(--am-inset);
 }
 
 .crypto-pay-box > div:first-child span,
@@ -2638,7 +2638,7 @@ button:disabled {
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.55);
+  background: var(--am-inset);
   color: var(--text);
   padding: 0 10px;
   outline: none;
@@ -2718,7 +2718,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(6,7,15,0.35);
+  background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2748,7 +2748,7 @@ button:disabled {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(6,7,15,0.28);
+  background: var(--am-inset);
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -2773,7 +2773,7 @@ button:disabled {
   min-height: 42px;
   border: 1px solid rgba(255,107,107,0.42);
   border-radius: 8px;
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
   font-weight: 900;
 }
@@ -2789,7 +2789,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(6,7,15,0.42);
+  background: var(--am-inset);
 }
 
 .market-section-title {
@@ -3084,7 +3084,7 @@ button:disabled {
   min-height: 44px;
   border: 1px solid rgba(255,107,107,0.45);
   border-radius: 8px;
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
   font-weight: 850;
   text-transform: uppercase;
@@ -3489,7 +3489,7 @@ button:disabled {
   font-size: 11px;
   color: var(--text);
   word-break: break-all;
-  background: rgba(6,7,15,0.80);
+  background: var(--am-inset);
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid var(--line);
@@ -3619,7 +3619,7 @@ button:disabled {
 .portal-top-banner {
   min-height: 52px;
   border-bottom: 1px solid var(--line);
-  background: rgba(8,12,22,.96);
+  background: var(--am-bar);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3631,7 +3631,7 @@ button:disabled {
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(90deg, rgba(255,107,107,.06) 0%, transparent 40%),
-    rgba(5,7,13,.98);
+    var(--am-bar);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3688,7 +3688,7 @@ button:disabled {
 .portal-ad-slot {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(8,12,22,.7);
+  background: var(--am-inset);
   padding: 14px;
   min-height: 110px;
   display: grid;
@@ -3730,7 +3730,7 @@ button:disabled {
 .portal-bottom-banner {
   min-height: 48px;
   border-top: 1px solid var(--line);
-  background: rgba(8,12,22,.96);
+  background: var(--am-inset);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3871,7 +3871,7 @@ button:disabled {
 
 .plan-btn.primary {
   border-color: rgba(255,107,107,.42);
-  background: linear-gradient(135deg, #22C55E, #16A34A);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
 
@@ -4011,7 +4011,7 @@ button:disabled {
   font-size: 10px;
   font-weight: 600;
 }
-.extra-market-pill.high { background: rgba(74,222,128,.12);  border: 1px solid rgba(74,222,128,.35);  color: #4ade80; }
+.extra-market-pill.high { background: rgba(52,211,153,.12);  border: 1px solid rgba(52,211,153,.35);  color: var(--am-positive); }
 .extra-market-pill.mid  { background: rgba(250,204,21,.08);  border: 1px solid rgba(250,204,21,.3);   color: #fbbf24; }
 .extra-market-pill.low  { background: rgba(156,163,175,.07); border: 1px solid rgba(156,163,175,.2);  color: #9ca3af; }
 .extra-market-name { opacity: .85; }
@@ -4046,7 +4046,7 @@ button:disabled {
   background: rgba(52,211,153,.07);
   border: 1px solid rgba(52,211,153,.25);
   border-radius: 8px;
-  color: #4ade80;
+  color: var(--am-positive);
   font-size: 14px;
 }
 .operators-sent span { font-size: 22px; }
@@ -4078,7 +4078,7 @@ button:disabled {
 .operators-form input,
 .operators-form select,
 .operators-form textarea {
-  background: rgba(255,255,255,.04);
+  background: var(--am-inset);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 8px 12px;
@@ -4094,7 +4094,7 @@ button:disabled {
 .operators-form textarea:focus {
   border-color: var(--accent, #38bdf8);
 }
-.operators-form select option { background: #1e2a3a; }
+.operators-form select option { background: var(--panel); color: var(--text); }
 
 /* ─── Live Score ─────────────────────────────────────────────────────────── */
 .live-score-bar {
@@ -4103,7 +4103,7 @@ button:disabled {
   gap: 10px;
   padding: 7px 12px;
   border-radius: 8px;
-  background: rgba(255,255,255,.04);
+  background: var(--am-inset);
   border: 1px solid var(--line);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
@@ -4329,12 +4329,12 @@ button:disabled {
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.5);
+  color: var(--muted);
   background: rgba(255,255,255,0.04);
 }
 .da-market-pill.value {
   border-color: rgba(52, 211, 153, 0.35);
-  color: #4ade80;
+  color: var(--am-positive);
   background: rgba(52, 211, 153, 0.07);
 }
 .da-research {
@@ -4348,7 +4348,7 @@ button:disabled {
 .da-research-text {
   font-size: 10px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(255,255,255,0.55);
+  color: var(--muted);
   line-height: 1.55;
   margin: 0;
 }
