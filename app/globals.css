@@ -4670,6 +4670,9 @@ button:disabled {
   .wc-layout { grid-template-columns: 1fr; gap: 0; }
   .wc-aside { position: static; margin-top: 28px; }
 }
+/* Prediction board in two columns inside the hub main column — shorter page. */
+.wc-main .wc-board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 560px) { .wc-main .wc-board-grid { grid-template-columns: 1fr; } }
 
 .wc-ref-tabs {
   display: flex; flex-wrap: wrap; gap: 4px;
