@@ -112,6 +112,18 @@ function resolveWcLang(): WcLang {
   return stored === "en" || stored === "es" || stored === "fr" || stored === "ru" ? stored : "it";
 }
 
+// Display-only canonicalization: some prediction rows carry a non-canonical
+// spelling (unified_predictions has "Congo DR" while the dataset canonical is
+// "DR Congo"), which made the board disagree with the deduped squads tab.
+// Canonicalize at render — zero settlement risk, no DB write. The durable fix
+// is normalizing the prediction pipeline at the source (flagged separately).
+const WC_TEAM_CANON: Record<string, string> = {
+  "congo dr": "DR Congo",
+  "cabo verde": "Cape Verde",
+};
+const canonTeam = (name?: string | null) =>
+  name ? WC_TEAM_CANON[name.trim().toLowerCase()] ?? name : name ?? "";
+
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtForm = (f?: { w: number; d: number; l: number } | null) =>
   f ? `${f.w}W-${f.d}D-${f.l}L` : null;
@@ -293,8 +305,8 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
 
 function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const [showWhy, setShowWhy] = useState(false);
-  const home = p.home_team || "Home";
-  const away = p.away_team || "Away";
+  const home = canonTeam(p.home_team) || "Home";
+  const away = canonTeam(p.away_team) || "Away";
   const probs = parseProbs(p.notes);
   // Surfacing gate: below the confidence floor there is no clear favourite, so
   // the card shows the probabilities + why but no pick direction and no edge.
