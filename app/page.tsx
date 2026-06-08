@@ -100,6 +100,7 @@ const BASE_TRANSLATIONS = {
     plans_flow4_title: "Track", plans_flow4_desc: "Prediction salvate prima dell'evento e misurate nel track record.",
     // Prediction card
     pred_why_show: "▼ perché", pred_why_hide: "▲ meno",
+    no_clear_favorite: "Nessun favorito netto", open_match: "Partita aperta",
     pred_why_title: "Perché questa previsione",
     // Tennis card
     tennis_why_show: "▼ perché", tennis_why_hide: "▲ meno",
@@ -341,6 +342,7 @@ const BASE_TRANSLATIONS = {
     plans_flow4_title: "Track", plans_flow4_desc: "Predictions are saved before the event and measured in the track record.",
     // Prediction card
     pred_why_show: "▼ why", pred_why_hide: "▲ less",
+    no_clear_favorite: "No clear favourite", open_match: "Open match",
     pred_why_title: "Why this prediction",
     // Tennis card
     tennis_why_show: "▼ why", tennis_why_hide: "▲ less",
@@ -542,6 +544,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
     footer_note: "Sportsbook Edge Desk · ejecución verificada · interfaz cliente",
     rg_footer: "18+. Juega con responsabilidad. El contenido es informativo; cuotas y bonos son ofertas de socios afiliados.",
+    no_clear_favorite: "Sin favorito claro", open_match: "Partido abierto",
   },
   fr: {
     ...BASE_TRANSLATIONS.en,
@@ -563,6 +566,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
     footer_note: "Sportsbook Edge Desk · exécution vérifiée · interface client",
     rg_footer: "18+. Jouez de façon responsable. Le contenu est informatif; les cotes et bonus sont des offres de partenaires affiliés.",
+    no_clear_favorite: "Pas de favori net", open_match: "Match ouvert",
   },
   ru: {
     ...BASE_TRANSLATIONS.en,
@@ -584,6 +588,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
     footer_note: "Sportsbook Edge Desk · проверенное исполнение · клиентский интерфейс",
     rg_footer: "18+. Играй ответственно. Контент носит информационный характер; котировки и бонусы — предложения партнёров.",
+    no_clear_favorite: "Нет явного фаворита", open_match: "Открытый матч",
   },
 } as const;
 
@@ -709,6 +714,12 @@ interface PredictionEnrichment {
     market_odds: number | null;
     edge: number | null;
   }>;
+  // Confidence-surfacing gate (Wave 1, club football path). Present only when
+  // below_floor — same contract as the national path's notes.surface. Survives
+  // the per-tier enrichment strip (NOT in PREMIUM_ENRICHMENT_KEYS), so it reaches
+  // every unlocked tier. below_floor=true -> no clear favourite: the card drops
+  // the pick direction + edge/value badge but keeps the probabilities and why.
+  surface?: { below_floor: boolean; floor: number };
 }
 
 interface Prediction {
@@ -3044,8 +3055,13 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const isFinished = live?.match_status === "FINISHED";
   const hasScore = live && (live.home_score != null || live.away_score != null);
   const hasOdds = p.odds_home != null;
-  const isValueBet = isFootballBestBet(p);
   const e = p.enrichment ?? {};
+  // Confidence-surfacing gate (Wave 1): below the floor there is no clear
+  // favourite — drop the pick direction, the +EV/value styling and the edge
+  // badge, but keep the probability bars and the why. The match stays on the
+  // board. Probability-neutral (server never alters p_* or confidence).
+  const belowFloor = e.surface?.below_floor === true;
+  const isValueBet = !belowFloor && isFootballBestBet(p);
   const leagueBadgeColor = LEAGUE_BADGE_COLORS[p.league] ?? "text-gray-400 border-gray-400/40 bg-gray-400/10";
   const reasons = buildReasons(p, lang);
 
@@ -3122,7 +3138,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {isFinished && live.home_score != null && live.away_score != null && (() => {
             const actual = live.home_score > live.away_score ? "HOME" : live.home_score < live.away_score ? "AWAY" : "DRAW";
             const correct = p.best_selection === actual;
-            return p.best_selection ? (
+            // Below floor we never asserted a pick, so we never score one.
+            return p.best_selection && !belowFloor ? (
               <span className={`live-verdict ${correct ? "correct" : "wrong"}`}>
                 {correct ? "✓ Modello corretto" : "✗ Modello errato"}
               </span>
@@ -3150,7 +3167,14 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
               odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
           </div>
-          {p.pick && <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{p.pick}</strong>{p.confidence_score != null && <span className="ml-1 text-gray-400">{p.confidence_score}%</span>}</div>}
+          {belowFloor ? (
+            <div className="text-xs font-mono mt-1 wc-no-favourite-inline">
+              <strong>{t.no_clear_favorite}</strong>
+              <span className="ml-1">· {t.open_match}</span>
+            </div>
+          ) : p.pick ? (
+            <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{p.pick}</strong>{p.confidence_score != null && <span className="ml-1 text-gray-400">{p.confidence_score}%</span>}</div>
+          ) : null}
           {p.explanation && <p className="text-[10px] font-mono text-gray-400 mt-1 leading-relaxed">{p.explanation}</p>}
           {p.affiliate && (
             <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
@@ -3200,6 +3224,9 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         <span className="text-gray-600">{modelLabelFor(p)}</span>
         {isPreview || p.locked ? (
           <span className="plan-lock-badge">🔒 Pro</span>
+        ) : belowFloor ? (
+          // No clear favourite: no edge/value badge — keep the slot quiet.
+          <span aria-hidden="true" />
         ) : p.edge != null ? (
           <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%

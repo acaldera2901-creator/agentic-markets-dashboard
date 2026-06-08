@@ -80,6 +80,38 @@ function parseProbs(notes?: string | null): WcProbs | null {
   return null;
 }
 
+// Confidence-surfacing gate (Wave 1). The national path stores the flag inside
+// `notes` (JSON) — same contract as the Python writer: surface.below_floor=true
+// means no clear favourite, so the card drops the pick direction/edge but keeps
+// the probabilities and the why. Probability-neutral, fail-soft.
+function parseSurfaceBelowFloor(notes?: string | null): boolean {
+  if (!notes) return false;
+  try {
+    const n = JSON.parse(notes);
+    return n?.surface?.below_floor === true;
+  } catch {
+    return false;
+  }
+}
+
+// WcBoard is mounted outside page.tsx's LanguageCtx, so it can't use useT().
+// It reads the same `agentic-lang` key the rest of the app persists and resolves
+// the two surface-gate strings locally — never hardcode English (5-lang parity
+// with the TRANSLATIONS dictionary in app/page.tsx).
+type WcLang = "it" | "en" | "es" | "fr" | "ru";
+const SURFACE_COPY: Record<WcLang, { noClearFavourite: string; openMatch: string }> = {
+  it: { noClearFavourite: "Nessun favorito netto", openMatch: "Partita aperta" },
+  en: { noClearFavourite: "No clear favourite", openMatch: "Open match" },
+  es: { noClearFavourite: "Sin favorito claro", openMatch: "Partido abierto" },
+  fr: { noClearFavourite: "Pas de favori net", openMatch: "Match ouvert" },
+  ru: { noClearFavourite: "Нет явного фаворита", openMatch: "Открытый матч" },
+};
+function resolveWcLang(): WcLang {
+  if (typeof window === "undefined") return "it";
+  const stored = window.localStorage.getItem("agentic-lang");
+  return stored === "en" || stored === "es" || stored === "fr" || stored === "ru" ? stored : "it";
+}
+
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtForm = (f?: { w: number; d: number; l: number } | null) =>
   f ? `${f.w}W-${f.d}D-${f.l}L` : null;
@@ -186,7 +218,11 @@ function WcCard({ p }: { p: ProjectedRow }) {
   const home = p.home_team || "Home";
   const away = p.away_team || "Away";
   const probs = parseProbs(p.notes);
-  const pick = p.pick || null;
+  // Surfacing gate: below the confidence floor there is no clear favourite, so
+  // the card shows the probabilities + why but no pick direction and no edge.
+  const belowFloor = parseSurfaceBelowFloor(p.notes);
+  const pick = belowFloor ? null : (p.pick || null);
+  const copy = SURFACE_COPY[resolveWcLang()];
   const isSignal = p.signal_type === "signal";
   const model = p.enrichment?.model || "Poisson";
   const e = p.enrichment;
@@ -233,13 +269,21 @@ function WcCard({ p }: { p: ProjectedRow }) {
             </div>
           )}
 
-          {/* Pick + confidence */}
-          <div className="wc-board-pick">
-            <strong>{pick || "—"}</strong>
-            {typeof p.confidence_score === "number" ? (
-              <span> · confidence {Math.round(p.confidence_score)}%</span>
-            ) : null}
-          </div>
+          {/* Pick + confidence — OR the neutral "no clear favourite" label when
+              the surfacing gate is below floor (no pick direction is asserted). */}
+          {belowFloor ? (
+            <div className="wc-board-pick wc-no-favourite">
+              <strong>{copy.noClearFavourite}</strong>
+              <span> · {copy.openMatch}</span>
+            </div>
+          ) : (
+            <div className="wc-board-pick">
+              <strong>{pick || "—"}</strong>
+              {typeof p.confidence_score === "number" ? (
+                <span> · confidence {Math.round(p.confidence_score)}%</span>
+              ) : null}
+            </div>
+          )}
 
           {/* Footer — Why toggle · model · edge (signal rows only) */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", paddingTop: "0.4rem", borderTop: "1px solid rgba(255,255,255,0.06)", fontFamily: "monospace", fontSize: "0.7rem" }}>
@@ -251,7 +295,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
               {showWhy ? "Hide why" : "Why"}
             </button>
             <span style={{ opacity: 0.45 }}>{model}</span>
-            {isSignal && typeof p.edge_percent === "number" ? (
+            {belowFloor ? null : isSignal && typeof p.edge_percent === "number" ? (
               <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid", borderColor: p.edge_percent > 0 ? "rgba(74,222,128,0.4)" : "rgba(148,163,184,0.3)", color: p.edge_percent > 0 ? "#4ade80" : "#94a3b8" }}>
                 {p.edge_percent > 0 ? "+" : ""}{p.edge_percent.toFixed(1)}%
               </span>

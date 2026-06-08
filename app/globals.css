@@ -4539,6 +4539,14 @@ button:disabled {
 .wc-board-match { font-weight: 800; font-size: 14px; margin: 6px 0 2px; }
 .wc-board-pick { margin-top: 10px; font-size: 13px; }
 .wc-board-pick strong { color: var(--green); }
+/* Surfacing gate (Wave 1): "no clear favourite / open match". Neutral token
+   (NOT green/coral) so the label never reads as a pick or a value call. AA on
+   the dark panel; re-maps automatically when the light theme lands. */
+.wc-board-pick.wc-no-favourite strong { color: var(--text); font-weight: 600; }
+.wc-board-pick.wc-no-favourite span { color: var(--muted); }
+/* Club football card (app/page.tsx PredictionCard) variant of the same gate. */
+.wc-no-favourite-inline strong { color: var(--text); font-weight: 600; }
+.wc-no-favourite-inline span { color: var(--muted); }
 
 /* WC card parity: 1X2 probability bars, why text (reuses .deep-analysis-* for
    the premium panel, defined above). */
