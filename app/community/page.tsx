@@ -83,19 +83,27 @@ export default function CommunityPage() {
     return () => { alive = false; };
   }, []);
 
+  // BUG-002: page was dark-only (hardcoded bg-[#070b14]/text-white + fixed
+  // gray utilities) and ignored the theme toggle. Drive surfaces/text off the
+  // design-system --am-* tokens so the page follows data-theme; dark renders
+  // identically to before, light becomes coherent with the rest of the app.
   return (
-    <main className="min-h-screen bg-[#070b14] text-white">
-      <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
+    <main className="min-h-screen" style={{ background: "var(--am-bg)", color: "var(--am-text)" }}>
+      <header
+        className="px-6 py-4 flex items-center justify-between border-b"
+        style={{ borderColor: "var(--am-line)" }}
+      >
         <div>
-          <Link href="/" className="text-xs font-mono text-gray-500 hover:text-gray-300">{t.back}</Link>
+          <Link href="/" className="text-xs font-mono transition-colors" style={{ color: "var(--am-muted)" }}>{t.back}</Link>
           <h1 className="text-2xl font-black mt-1">{t.title}</h1>
-          <p className="text-xs font-mono text-gray-500 max-w-xl">
+          <p className="text-xs font-mono max-w-xl" style={{ color: "var(--am-muted)" }}>
             {t.sub}
           </p>
         </div>
         <Link
           href="/?tab=match-builder"
-          className="text-xs font-mono px-4 py-2 rounded border border-amber-400/40 text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 transition-colors shrink-0"
+          className="text-xs font-mono px-4 py-2 rounded border transition-colors shrink-0"
+          style={{ borderColor: "var(--am-amber)", color: "var(--am-amber)", background: "var(--am-wash)" }}
         >
           {t.create}
         </Link>
@@ -103,27 +111,34 @@ export default function CommunityPage() {
 
       <section className="max-w-3xl mx-auto px-4 py-8 space-y-4">
         {slips === null && (
-          <p className="text-center text-xs font-mono text-gray-600 py-16">{t.loading}</p>
+          <p className="text-center text-xs font-mono py-16" style={{ color: "var(--am-muted-2)" }}>{t.loading}</p>
         )}
         {slips !== null && slips.length === 0 && (
           <div className="text-center py-16 space-y-3">
-            <p className="text-sm font-mono text-gray-500">{t.emptyTitle}</p>
-            <p className="text-xs font-mono text-gray-600">{t.emptySub}</p>
+            <p className="text-sm font-mono" style={{ color: "var(--am-muted)" }}>{t.emptyTitle}</p>
+            <p className="text-xs font-mono" style={{ color: "var(--am-muted-2)" }}>{t.emptySub}</p>
           </div>
         )}
         {slips?.map((slip) => (
-          <article key={slip.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-4 space-y-3">
+          <article
+            key={slip.id}
+            className="rounded-lg border p-4 space-y-3"
+            style={{ borderColor: "var(--am-line)", background: "var(--am-panel)" }}
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono px-2 py-0.5 rounded border border-amber-400/40 text-amber-400">
+              <span
+                className="text-xs font-mono px-2 py-0.5 rounded border"
+                style={{ borderColor: "var(--am-amber)", color: "var(--am-amber)" }}
+              >
                 {slip.creator_code}
               </span>
               <div className="flex items-center gap-3">
                 {slip.combined_prob != null && (
-                  <span className="text-lg font-black font-mono text-amber-400">
+                  <span className="text-lg font-black font-mono" style={{ color: "var(--am-amber)" }}>
                     {Math.round(slip.combined_prob * 100)}%
                   </span>
                 )}
-                <span className="text-[10px] font-mono text-gray-600">
+                <span className="text-[10px] font-mono" style={{ color: "var(--am-muted-2)" }}>
                   {new Date(slip.created_at).toLocaleDateString(t.locale, { day: "numeric", month: "short" })}
                 </span>
               </div>
@@ -132,17 +147,17 @@ export default function CommunityPage() {
               {slip.selections.map((sel, i) => (
                 <div key={i} className="flex items-center justify-between text-xs font-mono gap-3">
                   <div className="min-w-0">
-                    <p className="text-gray-200 truncate">{sel.label}</p>
-                    <p className="text-[10px] text-gray-600 truncate">{sel.sport}</p>
+                    <p className="truncate" style={{ color: "var(--am-text)" }}>{sel.label}</p>
+                    <p className="text-[10px] truncate" style={{ color: "var(--am-muted-2)" }}>{sel.sport}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {sel.market != null ? (
                       <>
-                        <span className="text-gray-500 truncate max-w-[140px] sm:max-w-[200px]">{sel.market}</span>
-                        {sel.prob != null && <span className="text-cyan-300">{Math.round(sel.prob * 100)}%</span>}
+                        <span className="truncate max-w-[140px] sm:max-w-[200px]" style={{ color: "var(--am-muted)" }}>{sel.market}</span>
+                        {sel.prob != null && <span style={{ color: "var(--am-cobalt-2)" }}>{Math.round(sel.prob * 100)}%</span>}
                       </>
                     ) : (
-                      <span className="text-gray-600">🔒</span>
+                      <span style={{ color: "var(--am-muted-2)" }}>🔒</span>
                     )}
                   </div>
                 </div>
@@ -152,19 +167,21 @@ export default function CommunityPage() {
               {locked ? (
                 <Link
                   href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
-                  className="text-xs font-mono px-3 py-1.5 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
+                  className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
+                  style={{ borderColor: "var(--am-cobalt)", color: "var(--am-cobalt)", background: "color-mix(in srgb, var(--am-cobalt) 8%, transparent)" }}
                 >
                   {t.register}
                 </Link>
               ) : (
                 <Link
                   href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
-                  className="text-xs font-mono px-3 py-1.5 rounded border border-white/15 text-gray-300 hover:bg-white/5 transition-colors"
+                  className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
+                  style={{ borderColor: "var(--am-line-2)", color: "var(--am-muted)" }}
                 >
                   {t.open}
                 </Link>
               )}
-              <span className="text-[9px] font-mono text-gray-700">{t.responsible}</span>
+              <span className="text-[9px] font-mono" style={{ color: "var(--am-muted-2)" }}>{t.responsible}</span>
             </div>
           </article>
         ))}

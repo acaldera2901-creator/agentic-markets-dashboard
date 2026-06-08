@@ -1947,6 +1947,14 @@ button:disabled {
   padding: 11px;
 }
 
+/* BUG-001: dark literal above stays intact; light gets a tokenized recessed
+   surface so these panels aren't dark-grey islands on a light page. AA holds —
+   text already runs on --text/--muted tokens. */
+:root[data-theme="light"] .public-history-stats div,
+:root[data-theme="light"] .public-old-bets > div {
+  background: var(--am-panel-2);
+}
+
 .public-history-stats span,
 .public-old-bets span {
   display: block;
@@ -4588,6 +4596,13 @@ button:disabled {
   letter-spacing: 0.12em;
   color: rgba(237, 241, 255, 0.5);
 }
+
+/* BUG-003: dark literals above stay intact. In light the near-white hero-sub
+   and countdown labels were invisible (fail AA) and the cell surface was a dark
+   island. Override SOLO light → muted text + tokenized panel surface (AA). */
+:root[data-theme="light"] .wc-hero-sub { color: var(--am-muted); }
+:root[data-theme="light"] .wc-countdown-cell { background: var(--am-panel-2); }
+:root[data-theme="light"] .wc-countdown-cell small { color: var(--am-muted); }
 .wc-countdown-live {
   align-items: center;
   gap: 8px;
