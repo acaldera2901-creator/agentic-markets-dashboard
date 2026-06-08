@@ -59,34 +59,60 @@
    --line-2 0.18→0.16 (muted text un filo più tenue sulle viste dense — atteso).
    Rimosso --panel-4 (orfano, 0 usi). */
 :root {
+  /* ── Cobalt & Coral — DARK (default). Refined Terminal aesthetic. ──────
+     Single source of truth: changing these --am-* values ripropaga su tutte
+     le classi bespoke via gli alias legacy in fondo al blocco. */
+
   /* Base backgrounds — deep indigo-black, not flat black */
-  --am-bg:         #06070F;
-  --am-bg-2:       #0A0C1A;
-  --am-panel:      #0D1020;
-  --am-panel-2:    #11142A;
-  --am-panel-3:    #161930;
+  --am-bg:         #07080F;
+  --am-bg-2:       #0A0C18;
+  --am-panel:      #0F1118;
+  --am-panel-2:    #131626;
+  --am-panel-3:    #181B2E;
 
-  /* Borders — indigo-tinted for depth */
-  --am-line:       rgba(140,145,255,0.09);
-  --am-line-2:     rgba(140,145,255,0.16);
+  /* Borders — neutral-cool, low chroma for depth */
+  --am-line:       rgba(255,255,255,0.08);
+  --am-line-2:     rgba(255,255,255,0.14);
 
-  /* Primary — emerald (professional, not neon) */
-  --am-green:      #22C55E;
-  --am-green-dim:  rgba(34,197,94,0.09);
-  --am-green-b:    rgba(34,197,94,0.28);
+  /* Brand accents — coral primary, warm orange, cool cobalt */
+  --am-coral:      #FF6B6B;   /* primary: CTA, nav attiva, top-pick */
+  --am-coral-2:    #FB7185;   /* fill/gradiente */
+  --am-orange:     #FB923C;   /* secondario caldo, gradiente con coral */
+  --am-cobalt:     #3B82F6;   /* dati e output modello, link */
+  --am-cobalt-2:   #60A5FA;
+  --am-amber:      #FBBF24;   /* highlight puntuale */
 
-  /* Secondary colors */
-  --am-red:        #EF4444;
-  --am-red-dim:    rgba(239,68,68,0.09);
-  --am-red-b:      rgba(239,68,68,0.28);
-  --am-amber:      #F59E0B;
-  --am-cyan:       #22D3EE;
-  --am-indigo:     #818CF8;
+  /* P&L semantics — verde SOLO per P&L positivo / ROI, rosso per perdite */
+  --am-positive:   #34D399;
+  --am-positive-dim: rgba(52,211,153,0.10);
+  --am-positive-b:   rgba(52,211,153,0.30);
+  --am-negative:   #F87171;
+  --am-negative-dim: rgba(248,113,113,0.10);
+  --am-negative-b:   rgba(248,113,113,0.30);
+
+  /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
+  --am-coral-dim:  rgba(255,107,107,0.10);
+  --am-coral-b:    rgba(255,107,107,0.30);
+
+  /* Legacy semantic names kept as internal aliases (do not reference --am-green
+     elsewhere; --green legacy alias now points to coral). */
+  --am-green:      var(--am-coral);
+  --am-green-dim:  var(--am-coral-dim);
+  --am-green-b:    var(--am-coral-b);
+  --am-red:        var(--am-negative);
+  --am-red-dim:    var(--am-negative-dim);
+  --am-red-b:      var(--am-negative-b);
+  --am-cyan:       var(--am-cobalt-2);
+  --am-indigo:     var(--am-cobalt);
+
+  /* Ambient wash + glow color (statico, non animato — fascia verde) */
+  --am-wash:       rgba(255,107,107,0.10);
+  --am-glow:       rgba(255,107,107,0.18);
 
   /* Typography */
-  --am-text:       rgba(237,241,255,0.94);
-  --am-muted:      rgba(237,241,255,0.42);
-  --am-muted-2:    rgba(237,241,255,0.22);
+  --am-text:       rgba(234,236,245,0.96);
+  --am-muted:      rgba(234,236,245,0.62);
+  --am-muted-2:    rgba(234,236,245,0.30);
 
   /* shadcn aliases */
   --background: var(--am-bg);
@@ -105,15 +131,15 @@
   --destructive: var(--am-red);
   --border: var(--am-line);
   --input: var(--am-line);
-  --ring: rgba(34,197,94,0.35);
+  --ring: rgba(255,107,107,0.40);
   --radius: 0.5rem;
 
   /* chart + sidebar tokens (parità client-portal) — usati dal kit shadcn/recharts */
-  --chart-1: var(--am-green);
-  --chart-2: var(--am-red);
+  --chart-1: var(--am-coral);
+  --chart-2: var(--am-cobalt);
   --chart-3: var(--am-amber);
-  --chart-4: var(--am-cyan);
-  --chart-5: var(--am-indigo);
+  --chart-4: var(--am-cobalt-2);
+  --chart-5: var(--am-orange);
   --sidebar: var(--am-bg-2);
   --sidebar-foreground: var(--am-text);
   --sidebar-primary: var(--am-green);
@@ -121,7 +147,7 @@
   --sidebar-accent: var(--am-panel);
   --sidebar-accent-foreground: var(--am-text);
   --sidebar-border: var(--am-line);
-  --sidebar-ring: rgba(34,197,94,0.3);
+  --sidebar-ring: rgba(255,107,107,0.32);
 
   /* Legacy aliases — keep existing dashboard CSS working, point at --am-* */
   --bg:      var(--am-bg);
@@ -143,6 +169,48 @@
   --muted-2:var(--am-muted-2);
 }
 
+/* ── Cobalt & Coral — LIGHT override (data-theme="light" su <html>) ─────────
+   Ridefinisce SOLO i valori base --am-*; gli alias semantici e legacy ereditano
+   automaticamente perché puntano ad altri --am-*. Accenti approfonditi per AA
+   su fondo chiaro (spec §3.2). */
+:root[data-theme="light"] {
+  --am-bg:         #F6F7F9;
+  --am-bg-2:       #EEF0F4;
+  --am-panel:      #FFFFFF;
+  --am-panel-2:    #F1F3F7;
+  --am-panel-3:    #E9ECF2;
+
+  --am-line:       rgba(15,18,30,0.10);
+  --am-line-2:     rgba(15,18,30,0.16);
+
+  --am-coral:      #E5484D;   /* primary su light, contrasto AA come testo/bordo */
+  --am-coral-2:    #FF6B6B;   /* fill/gradiente */
+  --am-orange:     #EA7317;
+  --am-cobalt:     #2563EB;
+  --am-cobalt-2:   #3B82F6;
+  --am-amber:      #B5730A;
+
+  --am-positive:   #0F7A56;
+  --am-positive-dim: rgba(15,122,86,0.10);
+  --am-positive-b:   rgba(15,122,86,0.30);
+  --am-negative:   #DC2626;
+  --am-negative-dim: rgba(220,38,38,0.10);
+  --am-negative-b:   rgba(220,38,38,0.28);
+
+  --am-coral-dim:  rgba(229,72,77,0.10);
+  --am-coral-b:    rgba(229,72,77,0.30);
+
+  --am-wash:       rgba(229,72,77,0.07);
+  --am-glow:       rgba(229,72,77,0.12);
+
+  --am-text:       rgba(14,17,24,0.96);
+  --am-muted:      rgba(14,17,24,0.60);
+  --am-muted-2:    rgba(14,17,24,0.34);
+
+  --ring:         rgba(229,72,77,0.38);
+  --sidebar-ring: rgba(229,72,77,0.30);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -154,7 +222,7 @@ body {
   background: var(--bg);
   font-family: var(--font-display), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-image:
-    radial-gradient(ellipse 900px 520px at 50% -10%, rgba(129,140,248,0.12) 0%, transparent 68%),
+    radial-gradient(ellipse 900px 520px at 50% -10%, var(--am-wash) 0%, transparent 68%),
     linear-gradient(180deg, rgba(255,255,255,0.018), transparent 36%);
   background-size: 100% 100%;
 }
@@ -3824,6 +3892,28 @@ button:disabled {
   letter-spacing: .08em;
   cursor: pointer;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Theme toggle (Cobalt & Coral, F1) — same chrome as lang-toggle, glyph sun/moon. */
+.theme-toggle {
+  height: 32px;
+  width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.theme-toggle:hover {
+  color: var(--am-coral);
+  border-color: var(--am-coral-b);
+  background: var(--am-coral-dim);
 }
 
 /* ── Client Area & Plans ─────────────────────────────────────── */

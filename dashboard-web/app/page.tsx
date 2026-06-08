@@ -5484,6 +5484,20 @@ export default function Dashboard() {
     localStorage.setItem("agentic-lang", next);
     trackEvent("language_change", { language: next });
   };
+  // Theme toggle (Cobalt & Coral redesign, F1) — presentation only, no logic change.
+  // The pre-paint script in layout.tsx already set data-theme; here we just sync React.
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const current = document.documentElement.getAttribute("data-theme");
+    if (current === "light" || current === "dark") setTheme(current);
+  }, []);
+  const toggleTheme = () => {
+    const next: "dark" | "light" = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("agentic-theme", next); } catch {}
+    trackEvent("theme_change", { meta: { theme: next } });
+  };
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
   const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
@@ -5822,6 +5836,14 @@ export default function Dashboard() {
               </button>
             </>
           )}
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? (uiLanguage === "it" ? "Tema chiaro" : "Light theme") : (uiLanguage === "it" ? "Tema scuro" : "Dark theme")}
+            title={theme === "dark" ? (uiLanguage === "it" ? "Tema chiaro" : "Light theme") : (uiLanguage === "it" ? "Tema scuro" : "Dark theme")}
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <button className="lang-toggle" onClick={toggleLanguage}>{uiLanguage.toUpperCase()}</button>
         </div>
       </div>
