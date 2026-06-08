@@ -463,6 +463,7 @@ class ModelAgent(BaseAgent):
                 pick=pick,
                 confidence=confidence,
                 model_label=served_model_label,
+                friendly=is_friendly,
             )
             # Per-row promotion gate (#018): the data-quality tier already
             # scores odds/venue/squad/settlement quality. signal needs BOTH

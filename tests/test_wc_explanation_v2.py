@@ -51,6 +51,22 @@ def test_coinflip_is_called_honestly():
     _clean(t)
 
 
+def test_friendly_floor_keeps_lead_in_step_with_card_flag():
+    """#10 regression: at confidence 58 the football floor (56) says 'favoured',
+    but the surfacing gate uses the friendly floor (61) and flags 'no clear
+    favourite'. With friendly=True the lead must honor the friendly floor so the
+    why-text and the card flag agree for international friendlies."""
+    probs, enr = _enr()
+    competitive = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                                       enrichment=enr, probs=probs, pick="HOME", confidence=58)
+    assert "favoured" in competitive and "no clear favourite" not in competitive
+    friendly = build_wc_explanation(home_team="Strongland", away_team="Weakistan",
+                                    enrichment=enr, probs=probs, pick="HOME", confidence=58,
+                                    friendly=True)
+    assert "no clear favourite" in friendly and "favoured in" not in friendly
+    _clean(friendly)
+
+
 def test_pick_contradicting_xg_is_acknowledged():
     probs, enr = _enr()
     enr["lambdas"] = {"home": 0.90, "away": 1.40}

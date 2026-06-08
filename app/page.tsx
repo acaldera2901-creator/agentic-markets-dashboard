@@ -1073,13 +1073,13 @@ function ProbBar({ label, pct: p, color, odds, isValue }: {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
-      <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+      <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
         <div className="h-full rounded-full transition-all"
           style={{ width: `${Math.round(p * 100)}%`, background: color }} />
       </div>
       <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(p)}</span>
       {isValue && (
-        <span className="text-xs px-1.5 py-0.5 rounded border border-green-400/40 text-green-400 bg-green-400/10 font-mono">
+        <span className="text-xs px-1.5 py-0.5 rounded border border-[var(--am-positive)]/40 text-[var(--am-positive)] bg-[var(--am-positive)]/10 font-mono">
           VALUE
         </span>
       )}
@@ -3223,7 +3223,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           // No clear favourite: no edge/value badge — keep the slot quiet.
           <span aria-hidden="true" />
         ) : p.edge != null ? (
-          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
+          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
           </span>
         ) : Number.isFinite(selectedFootballProbability(p)) ? (
@@ -3687,7 +3687,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         {isPreview ? (
           <span className="plan-lock-badge">🔒 Pro</span>
         ) : m.edge != null && m.edge > 0 ? (
-          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-green-400 border-green-400/40 bg-green-400/10" : "text-gray-400 border-gray-400/30"}`}>
+          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" : "text-gray-400 border-gray-400/30"}`}>
             edge +{(m.edge * 100).toFixed(1)}%
           </span>
         ) : (

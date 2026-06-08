@@ -61,7 +61,7 @@ def _xg_clause(home_team, away_team, pick, lam_h, lam_a):
     gap = abs(diff)
     if gap < 0.15:
         return "the expected goals are almost level"
-    strength = "edge" if gap < 0.5 else ("clearly outscore" if gap >= 0.9 else "shade")
+    strength = "shade" if gap < 0.5 else ("clearly outscore" if gap >= 0.9 else "edge")
     base = f"{favoured} {strength} the expected-goals picture ({max(lam_h, lam_a):.1f} to {min(lam_h, lam_a):.1f})"
     pick_team = {"HOME": home_team, "AWAY": away_team}.get(pick)
     if pick_team and pick_team != favoured and gap >= 0.15:
@@ -149,6 +149,7 @@ def build_wc_explanation(
     pick: str,
     confidence: int,
     model_label: str = "Our model",  # signature-compatible; no longer surfaced as jargon
+    friendly: bool = False,
 ) -> str:
     """Match-specific WC explanation — human prose, probability-neutral (why v2).
 
@@ -159,14 +160,18 @@ def build_wc_explanation(
     sources actually present (fail-soft, no fabrication).
 
     The lead is keyed to confidence via settings (single source of truth):
-    ``WHY_STRONG_PICK_CONFIDENCE`` -> "strong pick"; ``SURFACE_FLOOR_FOOTBALL``
+    ``WHY_STRONG_PICK_CONFIDENCE`` -> "strong pick"; the surfacing floor
     -> "favoured but open"; below the floor -> "no clear favourite". This binds
-    the copy to the same floor the surfacing gate uses (resolves the lab's
-    hardcoded 55/65 vs the served 56/61). Language stays English in Wave 1;
+    the copy to the same floor the surfacing gate uses: ``SURFACE_FLOOR_FRIENDLY``
+    when ``friendly`` is set, otherwise ``SURFACE_FLOOR_FOOTBALL`` (resolves the
+    lab's hardcoded 55/65 vs the served 56/61, and keeps the lead in step with
+    the card flag for international friendlies). Language stays English in Wave 1;
     localization is Wave 2.
     """
     strong_floor = settings.WHY_STRONG_PICK_CONFIDENCE
-    favoured_floor = settings.SURFACE_FLOOR_FOOTBALL
+    favoured_floor = (
+        settings.SURFACE_FLOOR_FRIENDLY if friendly else settings.SURFACE_FLOOR_FOOTBALL
+    )
 
     pick_team = {"HOME": home_team, "AWAY": away_team, "DRAW": "a draw"}.get(pick, pick)
     lam_h = (enrichment.get("lambdas") or {}).get("home")

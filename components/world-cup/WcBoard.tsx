@@ -286,7 +286,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
           )}
 
           {/* Footer — Why toggle · model · edge (signal rows only) */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", paddingTop: "0.4rem", borderTop: "1px solid rgba(255,255,255,0.06)", fontFamily: "monospace", fontSize: "0.7rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", paddingTop: "0.4rem", borderTop: "1px solid var(--am-line)", fontFamily: "monospace", fontSize: "0.7rem" }}>
             <button
               type="button"
               onClick={() => setShowWhy((v) => !v)}
@@ -296,7 +296,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
             </button>
             <span style={{ opacity: 0.45 }}>{model}</span>
             {belowFloor ? null : isSignal && typeof p.edge_percent === "number" ? (
-              <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid", borderColor: p.edge_percent > 0 ? "rgba(74,222,128,0.4)" : "rgba(148,163,184,0.3)", color: p.edge_percent > 0 ? "#4ade80" : "#94a3b8" }}>
+              <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid", borderColor: p.edge_percent > 0 ? "var(--am-positive-b)" : "var(--am-line-2)", color: p.edge_percent > 0 ? "var(--am-positive)" : "var(--am-muted)" }}>
                 {p.edge_percent > 0 ? "+" : ""}{p.edge_percent.toFixed(1)}%
               </span>
             ) : pick && probs ? (
@@ -317,8 +317,8 @@ function WcCard({ p }: { p: ProjectedRow }) {
               : {})}
             style={{
               display: "block", width: "100%", marginTop: "0.35rem", padding: "0.45rem 0",
-              borderRadius: "0.55rem", border: "1px solid rgba(74,222,128,0.3)",
-              background: "rgba(74,222,128,0.08)", color: "#4ade80", textAlign: "center",
+              borderRadius: "0.55rem", border: "1px solid var(--am-positive-b)",
+              background: "var(--am-positive-dim)", color: "var(--am-positive)", textAlign: "center",
               fontFamily: "monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
               textDecoration: "none",
             }}
@@ -328,7 +328,7 @@ function WcCard({ p }: { p: ProjectedRow }) {
 
           {/* Inline Why — real explanation + enrichment-derived rows */}
           {showWhy && (p.explanation || hasWhyExtras) && (
-            <div style={{ paddingTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ paddingTop: "0.5rem", borderTop: "1px solid var(--am-line)" }}>
               {p.explanation && <p className="wc-why">{p.explanation}</p>}
               {e && (e.form_home || e.form_away) && (
                 <div className="da-row">

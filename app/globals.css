@@ -17,7 +17,7 @@
   --am-panel-2:    #131626;
   --am-panel-3:    #181B2E;
   --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
-  --am-inset:      var(--am-inset);    /* superfici recessed: input, pill, segmented */
+  --am-inset:      rgba(255,255,255,0.04);    /* superfici recessed: input, pill, segmented */
 
   /* Borders — neutral-cool, low chroma for depth */
   --am-line:       rgba(255,255,255,0.08);
@@ -883,9 +883,9 @@ button:disabled {
 }
 
 .portfolio-panel-head > span.is-positive {
-  border-color: rgba(255,107,107,0.28);
-  color: var(--green);
-  background: rgba(255,107,107,0.08);
+  border-color: var(--am-positive-b);
+  color: var(--am-positive);
+  background: var(--am-positive-dim);
 }
 
 .portfolio-panel-head > span.is-negative {
@@ -3171,7 +3171,7 @@ button:disabled {
 }
 
 .client-status-card.good {
-  border-color: rgba(255,107,107,0.28);
+  border-color: var(--am-positive-b);
 }
 
 .client-status-card.warn {
@@ -4027,7 +4027,7 @@ button:disabled {
 
 /* ─── Partner collaboration form ─────────────────────────────────────────── */
 .operators-collab {
-  background: var(--surface, #1e2a3a);
+  background: var(--am-panel-2);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 28px 28px 24px;
