@@ -9,7 +9,7 @@ it only decides whether a row is surfaced as a directional pick (is_pick) or as 
 Boundaries (floors are inclusive — >= floor is a pick):
   * football WC / club:  55 -> below, 56 -> pick
   * friendlies:          60 -> below, 61 -> pick
-  * tennis:              no floor, always a pick
+  * tennis:              floor 60 (10y-lab correction; was "no floor" small-sample)
 """
 import pytest
 
@@ -44,13 +44,17 @@ def test_friendly_floor_is_stricter_than_competitive():
     assert surface_decision(sport="football", friendly=True, confidence=58) == (False, True)
 
 
-def test_tennis_has_no_floor_always_pick():
-    for c in (1, 33, 50, 55, 99):
-        assert surface_decision(sport="tennis", friendly=False, confidence=c) == (True, False)
+def test_tennis_floor_60():
+    # 10y lab 2026-06-08 correction: tennis confidence IS monotone -> floor 60.
+    assert surface_decision(sport="tennis", friendly=False, confidence=59) == (False, True)
+    assert surface_decision(sport="tennis", friendly=False, confidence=60) == (True, False)
+    assert surface_decision(sport="tennis", friendly=False, confidence=72) == (True, False)
 
 
 def test_tennis_friendly_flag_is_ignored():
-    assert surface_decision(sport="tennis", friendly=True, confidence=10) == (True, False)
+    # friendly flag never applies to tennis; the tennis floor governs either way.
+    assert surface_decision(sport="tennis", friendly=True, confidence=10) == (False, True)
+    assert surface_decision(sport="tennis", friendly=True, confidence=80) == (True, False)
 
 
 def test_floors_read_from_settings_not_hardcoded(monkeypatch):
@@ -62,7 +66,8 @@ def test_floors_read_from_settings_not_hardcoded(monkeypatch):
 
 def test_sport_is_case_insensitive():
     assert surface_decision(sport="FOOTBALL", friendly=False, confidence=56) == (True, False)
-    assert surface_decision(sport="Tennis", friendly=False, confidence=10) == (True, False)
+    assert surface_decision(sport="Tennis", friendly=False, confidence=10) == (False, True)
+    assert surface_decision(sport="Tennis", friendly=False, confidence=60) == (True, False)
 
 
 def test_unknown_sport_defaults_to_football_floor():

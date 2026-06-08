@@ -161,10 +161,14 @@ class Settings(BaseSettings):
     # pick direction/edge ("no clear favourite"). Probability-neutral: the
     # gate flips a publish flag only — p_home/p_draw/p_away and confidence_score
     # are never altered. Floors are on the picked-outcome probability (max-prob,
-    # whole percent). Tennis confidence does not discriminate (lab finding
-    # 2026-06-08) -> no floor. Mirrored in lib/surfacing-gate.ts — keep in sync.
+    # whole percent). Mirrored in lib/surfacing-gate.ts — keep in sync.
     SURFACE_FLOOR_FOOTBALL: int = 56   # WC + competitive club (max-prob >= 56)
     SURFACE_FLOOR_FRIENDLY: int = 61   # international friendlies (heavy rotation)
+    # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
+    # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.
+    # Walk-forward held-out: floor 60 -> 70.9% hit (keeps 58.8%), 62 -> 72.1% (52%).
+    SURFACE_FLOOR_TENNIS: int = 60     # ATP/WTA (max-prob >= 60), commercial volume kept
+
     # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
     # surface floor the copy says "favoured but open"; at/above this stronger
     # bar it says "strong pick". Below the floor it says "no clear favourite".

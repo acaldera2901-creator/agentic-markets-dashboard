@@ -29,7 +29,10 @@ def surface_decision(
     returned so callers read intent directly without re-deriving it.
     """
     if sport.lower() == "tennis":
-        return True, False
+        # 10y lab 2026-06-08: tennis confidence IS monotone (the prior "no floor"
+        # was a 60-match artifact). Apply the tennis floor like the other sports.
+        is_pick = confidence >= settings.SURFACE_FLOOR_TENNIS
+        return is_pick, not is_pick
 
     floor = settings.SURFACE_FLOOR_FRIENDLY if friendly else settings.SURFACE_FLOOR_FOOTBALL
     is_pick = confidence >= floor
