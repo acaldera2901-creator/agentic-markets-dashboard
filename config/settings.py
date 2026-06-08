@@ -156,6 +156,16 @@ class Settings(BaseSettings):
         "itf,challenger,125,memorial,trofeo,makarska,puglie,ilkley,fontana"
     )
 
+    # Confidence-surfacing gate (Wave 1, APPROVE Andrea 2026-06-08). Single
+    # source of truth for the floor below which a row is shown WITHOUT a
+    # pick direction/edge ("no clear favourite"). Probability-neutral: the
+    # gate flips a publish flag only — p_home/p_draw/p_away and confidence_score
+    # are never altered. Floors are on the picked-outcome probability (max-prob,
+    # whole percent). Tennis confidence does not discriminate (lab finding
+    # 2026-06-08) -> no floor. Mirrored in lib/surfacing-gate.ts — keep in sync.
+    SURFACE_FLOOR_FOOTBALL: int = 56   # WC + competitive club (max-prob >= 56)
+    SURFACE_FLOOR_FRIENDLY: int = 61   # international friendlies (heavy rotation)
+
     # PSI monitoring thresholds
     PSI_WARNING_THRESHOLD: float = 0.1
     PSI_CRITICAL_THRESHOLD: float = 0.2
