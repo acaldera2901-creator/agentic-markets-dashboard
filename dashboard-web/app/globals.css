@@ -4360,6 +4360,41 @@ button:disabled {
   color: rgba(255,255,255,0.35);
 }
 
+/* ── Light polish: gating/preview cluster ──────────────────────────────────
+   I valori sopra sono cotti per dark (yellow #eab308, rgba(255,255,255,…)):
+   in light risultano slavati o invisibili. Override SOLO light, dark intatto.
+   Amber profondo #92590A (AA su small text, ~5.1–5.7) + sottotesti su --am-muted.
+   Niente cambi strutturali, solo contrasti. */
+:root[data-theme="light"] {
+  .market-section-title.amber span { color: #92590A; }
+
+  .plan-lock-badge {
+    border-color: rgba(146,89,10,0.40);
+    background: rgba(146,89,10,0.08);
+    color: #92590A;
+  }
+
+  .plan-upgrade-nudge { border-color: rgba(146,89,10,0.28); background: rgba(146,89,10,0.06); }
+  .plan-upgrade-nudge strong { color: #92590A; }
+  .plan-upgrade-nudge em { color: var(--am-muted); }
+
+  .why-locked-preview { color: var(--am-muted); }
+
+  .free-tier-banner {
+    border-color: rgba(146,89,10,0.28);
+    background: rgba(146,89,10,0.06);
+  }
+  .free-tier-banner strong { color: #92590A; }
+  .free-tier-banner span { color: var(--am-muted); }
+
+  .free-preview-wall {
+    border-color: rgba(146,89,10,0.32);
+    background: rgba(146,89,10,0.05);
+  }
+  .fpw-count { color: #92590A; }
+  .fpw-sub { color: var(--am-muted); }
+}
+
 /* ─── Deep Analysis Panel (Premium) ─────────────────────────────────────────── */
 .deep-analysis-panel {
   display: flex;
