@@ -330,34 +330,7 @@ button:disabled {
   line-height: 1.55;
 }
 
-/* ── Live badge ──────────────────────────────────────────────── */
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 26px;
-  padding: 0 10px;
-  border: 1px solid rgba(255,107,107,0.28);
-  border-radius: 4px;
-  background: rgba(255,107,107,0.09);
-  color: var(--green);
-  font-size: 10px;
-  font-weight: 900;
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.live-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: pulse-dot 1.5s ease-in-out infinite;
-  box-shadow: 0 0 8px rgba(255,107,107,0.65);
-}
+/* ── Live badge: see consolidated single source of truth near .live-score-bar ── */
 
 /* ── Eyebrow / labels ────────────────────────────────────────── */
 
@@ -4216,15 +4189,21 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
 }
-.live-score-bar.live   { border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.05); }
-.live-score-bar.paused { border-color: rgba(250,204,21,.25); background: rgba(250,204,21,.04); }
-.live-score-bar.finished { border-color: rgba(148,163,184,.2); }
+/* Per-state container tint — tokenized, theme-aware (AA in both themes).
+   live = coral (red-token), paused/HT = amber, finished/FT = neutral border only. */
+.live-score-bar.live   { border-color: var(--am-coral-b);    background: var(--am-coral-dim); }
+.live-score-bar.paused { border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.05); }
+.live-score-bar.finished { border-color: var(--am-line-2); }
+
+/* ── .live-badge — single source of truth (consolidated; was also defined ~line 335).
+   JSX emits "● LIVE" text itself, so NO ::before dot here (avoids double dot).
+   Pulse/dot semantics live ONLY in the `live` state via the .blink class. */
 .live-badge {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: #ef4444;
+  color: var(--am-coral);          /* live state: coral (red-token) */
   white-space: nowrap;
 }
 .live-badge.blink { animation: livePulse 1.2s ease-in-out infinite; }
@@ -4232,8 +4211,9 @@ button:disabled {
   0%, 100% { opacity: 1; }
   50% { opacity: .35; }
 }
-.live-score-bar.paused .live-badge { color: #fbbf24; }
-.live-score-bar.finished .live-badge { color: #94a3b8; }
+/* HT/paused = amber, FT/finished = muted/neutral — no red dot, no pulse */
+.live-score-bar.paused   .live-badge { color: var(--am-amber); }
+.live-score-bar.finished .live-badge { color: var(--am-muted); }
 .live-result {
   font-size: 16px;
   font-weight: 800;
@@ -4242,7 +4222,7 @@ button:disabled {
 }
 .live-verdict { font-size: 10px; font-weight: 700; margin-left: auto; }
 .live-verdict.correct { color: var(--am-positive); }
-.live-verdict.wrong   { color: #f87171; }
+.live-verdict.wrong   { color: var(--am-negative); }
 
 /* ─── History Score ──────────────────────────────────────────────────────── */
 .hist-score {
