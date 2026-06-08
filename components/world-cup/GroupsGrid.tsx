@@ -3,20 +3,21 @@
 import Link from "next/link";
 import type { WcGroup } from "@/lib/world-cup";
 import { teamSlug } from "@/lib/world-cup";
+import { T } from "./wc-i18n";
 
 export default function GroupsGrid({ groups }: { groups: WcGroup[] }) {
   if (!groups.length) {
-    return <div className="book-empty">Group tables unavailable right now — retry shortly.</div>;
+    return <div className="book-empty"><T id="groupsUnavailable" /></div>;
   }
   return (
     <div className="wc-groups-grid">
       {groups.map((g) => (
         <div key={g.name} className="glass-card wc-group-card">
-          <div className="eyebrow">Group {g.name}</div>
+          <div className="eyebrow"><T id="group" /> {g.name}</div>
           <table className="wc-table">
             <thead>
               <tr>
-                <th className="wc-team-col">Team</th>
+                <th className="wc-team-col"><T id="team" /></th>
                 <th>P</th>
                 <th>W</th>
                 <th>D</th>

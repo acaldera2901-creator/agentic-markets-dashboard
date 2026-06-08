@@ -12,14 +12,16 @@
 // and render the real state.
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useWcLang, wcT } from "./wc-i18n";
 
 type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
   | { status: "authed"; identifier: string; plan: string; name: string | null };
 
-export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
+export default function SiteTopbar({ backHref = "/", backLabel }: { backHref?: string; backLabel?: string }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+  const lang = useWcLang();
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +54,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
           <div className="brand-name">AgenticMarkets</div>
           <div className="brand-tagline">Bets the Future · Predictive Intelligence for Sports Markets</div>
         </Link>
-        <Link href={backHref} className="wc-topbar-back">← {backLabel}</Link>
+        <Link href={backHref} className="wc-topbar-back">← {backLabel ?? wcT("back", lang)}</Link>
       </div>
       <div className="portal-brand-actions">
         {auth.status === "authed" ? (
@@ -64,8 +66,8 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
           </>
         ) : auth.status === "anonymous" ? (
           <>
-            <Link href="/" className="btn-secondary wc-topbar-btn">Accedi</Link>
-            <Link href="/" className="btn-primary wc-topbar-btn">Registrati</Link>
+            <Link href="/" className="btn-secondary wc-topbar-btn">{wcT("signIn", lang)}</Link>
+            <Link href="/" className="btn-primary wc-topbar-btn">{wcT("register", lang)}</Link>
           </>
         ) : null /* loading: render nothing, no flicker of wrong state */}
       </div>

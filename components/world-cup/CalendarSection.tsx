@@ -6,15 +6,18 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { WcFixture } from "@/lib/world-cup";
 import { teamSlug } from "@/lib/world-cup";
+import { useWcLang, wcT, type WcCopyKey } from "./wc-i18n";
 
-const STAGES: Array<{ key: "all" | WcFixture["stage"]; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "group", label: "Groups" },
+// `tkey` localises the word-based stages; the abbreviations (R32/R16/QF/SF) are
+// language-neutral and kept verbatim.
+const STAGES: Array<{ key: "all" | WcFixture["stage"]; label: string; tkey?: WcCopyKey }> = [
+  { key: "all", label: "All", tkey: "filterAll" },
+  { key: "group", label: "Groups", tkey: "filterGroups" },
   { key: "round32", label: "R32" },
   { key: "round16", label: "R16" },
   { key: "quarter", label: "QF" },
   { key: "semi", label: "SF" },
-  { key: "final", label: "Final" },
+  { key: "final", label: "Final", tkey: "filterFinal" },
 ];
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
@@ -26,6 +29,7 @@ const timeFmt = new Intl.DateTimeFormat("en-GB", {
 
 export default function CalendarSection({ fixtures }: { fixtures: WcFixture[] }) {
   const [stage, setStage] = useState<(typeof STAGES)[number]["key"]>("all");
+  const lang = useWcLang();
 
   const byDay = useMemo(() => {
     const filtered = stage === "all" ? fixtures : fixtures.filter((f) => f.stage === stage);
@@ -39,7 +43,7 @@ export default function CalendarSection({ fixtures }: { fixtures: WcFixture[] })
   }, [fixtures, stage]);
 
   if (!fixtures.length) {
-    return <div className="book-empty">Match calendar unavailable right now — retry shortly.</div>;
+    return <div className="book-empty">{wcT("calendarUnavailable", lang)}</div>;
   }
 
   return (
@@ -53,7 +57,7 @@ export default function CalendarSection({ fixtures }: { fixtures: WcFixture[] })
             className={stage === s.key ? "active" : ""}
             onClick={() => setStage(s.key)}
           >
-            {s.label}
+            {s.tkey ? wcT(s.tkey, lang) : s.label}
           </button>
         ))}
       </div>
@@ -69,13 +73,13 @@ export default function CalendarSection({ fixtures }: { fixtures: WcFixture[] })
                   {f.home_score != null && f.away_score != null ? (
                     <strong className="wc-fixture-score">{f.home_score}–{f.away_score}</strong>
                   ) : (
-                    <span className="wc-fixture-vs">vs</span>
+                    <span className="wc-fixture-vs">{wcT("vsLabel", lang)}</span>
                   )}
                   <Link href={`/world-cup/${teamSlug(f.away_team)}`} className="wc-team-link">{f.away_team}</Link>
                 </span>
                 <span className="wc-fixture-meta">
-                  {f.group ? `Group ${f.group} · ` : ""}
-                  {f.venue || "Venue TBC"}{f.city ? ` · ${f.city}` : ""}
+                  {f.group ? `${wcT("group", lang)} ${f.group} · ` : ""}
+                  {f.venue || wcT("venueTBC", lang)}{f.city ? ` · ${f.city}` : ""}
                 </span>
               </div>
             ))}
