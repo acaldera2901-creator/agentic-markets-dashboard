@@ -3882,6 +3882,14 @@ button:disabled {
 
 .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 8px 22px -8px var(--am-glow); }
 
+/* Light: usa il token "fill/gradiente" (--am-coral-2 #FF6B6B) come estremo coral
+   del gradiente. Il dark-text #1A0B05 passa AA con margine pieno (orange 6.36,
+   coral 6.92) restando entro 4.5:1 su tutto il gradiente; --am-coral (#E5484D,
+   estremo brick) era AA-borderline (4.90). Estetica invariata, solo light. */
+:root[data-theme="light"] .btn-primary {
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral-2));
+}
+
 .btn-secondary {
   height: 36px;
   padding: 0 16px;
