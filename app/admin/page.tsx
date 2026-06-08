@@ -160,13 +160,13 @@ export default function AdminPage() {
   const [nSending, setNSending] = useState(false);
   const [nResult, setNResult] = useState("");
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     setError("");
     try {
       const [mRes, nRes] = await Promise.all([
-        fetch("/api/admin/metrics"),
-        fetch("/api/admin/notifications"),
+        fetch("/api/admin/metrics", { cache: "no-store" }),
+        fetch("/api/admin/notifications", { cache: "no-store" }),
       ]);
       if (mRes.status === 401 || nRes.status === 401) {
         router.replace("/admin/login");
@@ -175,7 +175,7 @@ export default function AdminPage() {
       const [m, n] = await Promise.all([mRes.json(), nRes.json()]);
       setMetrics(m);
       setNotifications(n.notifications ?? []);
-      const pRes = await fetch("/api/admin/profiles");
+      const pRes = await fetch("/api/admin/profiles", { cache: "no-store" });
       if (pRes.status === 401) {
         router.replace("/admin/login");
         return;
@@ -194,6 +194,17 @@ export default function AdminPage() {
 
   useEffect(() => {
     queueMicrotask(() => { void fetchData(); });
+    // Keep the live admin in sync with the DB without a manual reload: poll
+    // silently every 30s and refetch whenever the tab regains focus.
+    const id = setInterval(() => { void fetchData({ silent: true }); }, 30_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void fetchData({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchData]);
 
   async function logout() {
@@ -309,7 +320,7 @@ export default function AdminPage() {
             Updated {new Date(m.generated_at).toLocaleTimeString()}
           </span>
           <button
-            onClick={fetchData}
+            onClick={() => fetchData()}
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
             Refresh
@@ -519,7 +530,7 @@ export default function AdminPage() {
                 </p>
               </div>
               <button
-                onClick={fetchData}
+                onClick={() => fetchData()}
                 className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 transition-colors hover:border-emerald-500 hover:text-white"
               >
                 Refresh profiles
