@@ -3438,7 +3438,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Pr
         {isPreview ? (
           <span className="plan-lock-badge">🔒 Base</span>
         ) : p.edge != null ? (
-          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-green-400 border-green-400/40 bg-green-400/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
+          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
             {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
           </span>
         ) : (
@@ -3475,7 +3475,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Pr
 
       {onBetNow && !isPreview && (
         <button
-          className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
+          className="w-full mt-1 py-1.5 rounded-lg border border-[var(--am-positive)]/30 bg-[var(--am-positive)]/8 text-[var(--am-positive)] text-xs font-mono tracking-wider hover:bg-[var(--am-positive)]/15 hover:border-[var(--am-positive)]/50 transition-colors"
           onClick={onBetNow}
         >
           {t.bet_now}
@@ -3554,9 +3554,9 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium }: { p: Pr
 // ─── Tennis Tab ───────────────────────────────────────────────────────────────
 
 const SURFACE_META: Record<string, { label: string; color: string }> = {
-  CLAY:  { label: "CLAY",  color: "text-orange-400 border-orange-400/40 bg-orange-400/10" },
-  GRASS: { label: "GRASS", color: "text-green-400 border-green-400/40 bg-green-400/10" },
-  HARD:  { label: "HARD",  color: "text-blue-400 border-blue-400/40 bg-blue-400/10" },
+  CLAY:  { label: "CLAY",  color: "text-[var(--am-amber)] border-[var(--am-amber)]/40 bg-[var(--am-amber)]/10" },
+  GRASS: { label: "GRASS", color: "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" },
+  HARD:  { label: "HARD",  color: "text-[var(--am-cobalt)] border-[var(--am-cobalt)]/40 bg-[var(--am-cobalt)]/10" },
 };
 
 type TennisReason = { icon: string; text: string; highlight?: boolean };
@@ -3781,7 +3781,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: T
         {isPreview ? (
           <span className="plan-lock-badge">🔒 Base</span>
         ) : m.edge != null && m.edge > 0 ? (
-          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-green-400 border-green-400/40 bg-green-400/10" : "text-gray-400 border-gray-400/30"}`}>
+          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" : "text-gray-400 border-gray-400/30"}`}>
             edge +{(m.edge * 100).toFixed(1)}%
           </span>
         ) : (
@@ -3800,7 +3800,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: T
 
       {onBetNow && !isPreview && (
         <button
-          className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
+          className="w-full mt-1 py-1.5 rounded-lg border border-[var(--am-positive)]/30 bg-[var(--am-positive)]/8 text-[var(--am-positive)] text-xs font-mono tracking-wider hover:bg-[var(--am-positive)]/15 hover:border-[var(--am-positive)]/50 transition-colors"
           onClick={onBetNow}
         >
           {t.bet_now}
@@ -3979,9 +3979,9 @@ function TennisTab({
           ].map(({ key, label, desc }) => {
             const a = agents.find((ag) => ag.name === key);
             const st = a?.status ?? "offline";
-            const dotCls = st === "alive" ? "bg-green-400 animate-pulse" : st === "stale" ? "bg-yellow-400" : "bg-red-400";
-            const txtCls = st === "alive" ? "text-green-400" : st === "stale" ? "text-yellow-400" : "text-red-400";
-            const borderCls = st === "alive" ? "border-green-400/20" : st === "stale" ? "border-yellow-400/20" : "border-red-400/20";
+            const dotCls = st === "alive" ? "bg-[var(--am-positive)] animate-pulse" : st === "stale" ? "bg-[var(--am-amber)]" : "bg-[var(--am-negative)]";
+            const txtCls = st === "alive" ? "text-[var(--am-positive)]" : st === "stale" ? "text-[var(--am-amber)]" : "text-[var(--am-negative)]";
+            const borderCls = st === "alive" ? "border-[var(--am-positive)]/20" : st === "stale" ? "border-[var(--am-amber)]/20" : "border-[var(--am-negative)]/20";
             return (
               <div key={key} className={`glass-card p-3 space-y-1 ${borderCls}`}>
                 <div className="flex items-center justify-between">
@@ -4057,19 +4057,19 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {agents.map((agent) => (
           <div key={agent.name} className={`glass-card p-4 space-y-2 ${
-            agent.status === "alive" ? "border-green-400/20" :
-            agent.status === "stale" ? "border-yellow-400/20" : "border-red-400/20"
+            agent.status === "alive" ? "border-[var(--am-positive)]/20" :
+            agent.status === "stale" ? "border-[var(--am-amber)]/20" : "border-[var(--am-negative)]/20"
           }`}>
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm text-white font-mono">{agent.name}</span>
               <div className="flex items-center gap-2">
                 <div className={`w-2.5 h-2.5 rounded-full ${
-                  agent.status === "alive" ? "bg-green-400 animate-pulse" :
-                  agent.status === "stale" ? "bg-yellow-400" : "bg-red-400"
+                  agent.status === "alive" ? "bg-[var(--am-positive)] animate-pulse" :
+                  agent.status === "stale" ? "bg-[var(--am-amber)]" : "bg-[var(--am-negative)]"
                 }`} />
                 <span className={`text-xs font-mono ${
-                  agent.status === "alive" ? "text-green-400" :
-                  agent.status === "stale" ? "text-yellow-400" : "text-red-400"
+                  agent.status === "alive" ? "text-[var(--am-positive)]" :
+                  agent.status === "stale" ? "text-[var(--am-amber)]" : "text-[var(--am-negative)]"
                 }`}>
                   {agent.status.toUpperCase()}
                 </span>
@@ -4386,7 +4386,7 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
                 <span className="text-xs font-mono text-gray-300 w-8">{l.league}</span>
                 <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${Number(l.pnl) >= 0 ? "bg-green-500" : "bg-red-500"}`}
+                    className={`h-full rounded-full ${Number(l.pnl) >= 0 ? "bg-[var(--am-positive)]" : "bg-[var(--am-negative)]"}`}
                     style={{ width: `${Math.min(Math.abs(Number(l.pnl)) / 20, 100)}%` }}
                   />
                 </div>
@@ -5082,9 +5082,9 @@ function HistoryTab({ history, stats, loading }: {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-[10px] font-mono text-gray-500">
-        <span><span className="inline-block w-3 h-3 rounded-full bg-green-400/50 mr-1 align-middle"></span>{t.hist_legend_won}</span>
-        <span><span className="inline-block w-3 h-3 rounded-full bg-red-400/50 mr-1 align-middle"></span>{t.hist_legend_lost}</span>
-        <span><span className="inline-block w-3 h-3 rounded-full bg-yellow-400/50 mr-1 align-middle"></span>{t.hist_legend_pending}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-[var(--am-positive)]/50 mr-1 align-middle"></span>{t.hist_legend_won}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-[var(--am-negative)]/50 mr-1 align-middle"></span>{t.hist_legend_lost}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-[var(--am-amber)]/50 mr-1 align-middle"></span>{t.hist_legend_pending}</span>
         <span><span className="inline-block w-3 h-3 rounded-full bg-gray-600 mr-1 align-middle"></span>{t.hist_legend_no_bet}</span>
       </div>
 
