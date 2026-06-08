@@ -26,7 +26,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme')
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable} dark`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

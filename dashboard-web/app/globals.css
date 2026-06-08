@@ -70,7 +70,7 @@
   --am-panel-2:    #131626;
   --am-panel-3:    #181B2E;
   --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
-  --am-inset:      var(--am-inset);    /* superfici recessed: input, pill, segmented */
+  --am-inset:      rgba(255,255,255,0.04);    /* superfici recessed: input, pill, segmented */
 
   /* Borders — neutral-cool, low chroma for depth */
   --am-line:       rgba(255,255,255,0.08);
@@ -1285,7 +1285,7 @@ button:disabled {
 .plan-action.is-premium {
   border-color: rgba(255,107,107,0.48);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
 }
 
 .plan-flow {
@@ -1389,7 +1389,7 @@ button:disabled {
   border: 1px solid rgba(255,107,107,0.42);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
   font-weight: 900;
 }
 
@@ -1688,7 +1688,7 @@ button:disabled {
 .preaccess-actions button:first-child {
   border: 1px solid rgba(255,107,107,0.42);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
 }
 
 .preaccess-actions button:last-child {
@@ -2362,7 +2362,7 @@ button:disabled {
   flex: 0 0 auto;
   border-color: rgba(255,107,107,0.45);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
 }
 
 /* ── Unified client dashboard ───────────────────────────────── */
@@ -2865,7 +2865,7 @@ button:disabled {
   border: 1px solid rgba(255,107,107,0.42);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
   font-weight: 900;
 }
 
@@ -3176,7 +3176,7 @@ button:disabled {
   border: 1px solid rgba(255,107,107,0.45);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -3953,7 +3953,7 @@ button:disabled {
 .plan-btn.primary {
   border-color: rgba(255,107,107,.42);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #06120A;
+  color: #1A0B05;
 }
 
 .plan-btn.active {

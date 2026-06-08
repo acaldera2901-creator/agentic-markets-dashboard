@@ -974,13 +974,13 @@ function ProbBar({ label, pct: p, color, odds, isValue }: {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
-      <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+      <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
         <div className="h-full rounded-full transition-all"
           style={{ width: `${Math.round(p * 100)}%`, background: color }} />
       </div>
       <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(p)}</span>
       {isValue && (
-        <span className="text-xs px-1.5 py-0.5 rounded border border-green-400/40 text-green-400 bg-green-400/10 font-mono">
+        <span className="text-xs px-1.5 py-0.5 rounded border border-[var(--am-positive)]/40 text-[var(--am-positive)] bg-[var(--am-positive)]/10 font-mono">
           VALUE
         </span>
       )}
@@ -3748,14 +3748,14 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium }: { m: T
             <>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P1")}>
           <span className="text-xs font-mono w-24 shrink-0 truncate" style={{ color: p1Color }}>{m.player1.split(" ").pop()}</span>
-          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+          <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(m.p1 * 100)}%`, background: p1Color }} />
           </div>
           <span className="text-xs font-mono w-8 text-right" style={{ color: p1Color }}>{Math.round(m.p1 * 100)}%</span>
         </div>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect && handleSelect("P2")}>
           <span className="text-xs font-mono w-24 shrink-0 truncate" style={{ color: p2Color }}>{m.player2.split(" ").pop()}</span>
-          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+          <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(m.p2 * 100)}%`, background: p2Color }} />
           </div>
           <span className="text-xs font-mono w-8 text-right" style={{ color: p2Color }}>{Math.round(m.p2 * 100)}%</span>
@@ -4384,7 +4384,7 @@ function BetsTab({ bets, summary, leaguePnl, tennisBets = [], tennisBetSummary }
               <div key={l.league} className="flex items-center gap-3">
                 <span className="text-xs font-mono w-8 text-gray-400">{LEAGUE_FLAGS[l.league] ?? "⚽"}</span>
                 <span className="text-xs font-mono text-gray-300 w-8">{l.league}</span>
-                <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-full rounded-full ${Number(l.pnl) >= 0 ? "bg-[var(--am-positive)]" : "bg-[var(--am-negative)]"}`}
                     style={{ width: `${Math.min(Math.abs(Number(l.pnl)) / 20, 100)}%` }}
@@ -5181,7 +5181,7 @@ function HistoryTab({ history, stats, loading }: {
                   ].map(({ label, p, color }) => (
                     <div key={label} className="flex items-center gap-1 flex-1">
                       <span className="text-[9px] text-gray-600 font-mono w-3">{label}</span>
-                      <div className="flex-1 bg-white/5 rounded-full h-1 overflow-hidden">
+                      <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1 overflow-hidden">
                         <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.round(p * 100)}%` }} />
                       </div>
                       <span className="text-[9px] text-gray-600 font-mono w-6 text-right">{Math.round(p * 100)}%</span>
