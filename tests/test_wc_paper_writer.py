@@ -104,6 +104,49 @@ def test_wc_row_competition_stage_and_venue():
     assert row["neutral_venue"] is True
 
 
+# ─── Surfacing gate flag in notes (Wave 1) ───────────────────────────────────
+
+def test_surface_flag_absent_by_default_probability_neutral():
+    # No surface arg -> no surface block, and the served probabilities in notes
+    # are byte-for-byte the model's (the gate never touches them).
+    pred = _wc_pred(p_home=0.50, p_draw=0.27, p_away=0.23)
+    row = wc_prediction_to_unified_row(pred)
+    notes = json.loads(row["notes"])
+    assert "surface" not in notes
+    assert notes["p_home"] == 0.50 and notes["p_draw"] == 0.27 and notes["p_away"] == 0.23
+    assert row["confidence_score"] == 50
+
+
+def test_surface_below_floor_written_to_notes():
+    pred = _wc_pred(p_home=0.50, p_draw=0.27, p_away=0.23)
+    row = wc_prediction_to_unified_row(pred, surface=(True, settings.SURFACE_FLOOR_FOOTBALL))
+    notes = json.loads(row["notes"])
+    assert notes["surface"] == {"below_floor": True, "floor": settings.SURFACE_FLOOR_FOOTBALL}
+    # Probability-neutral: confidence_score and the distribution are unchanged.
+    assert row["confidence_score"] == 50
+    assert notes["p_home"] == 0.50
+
+
+def test_surface_above_floor_written_to_notes():
+    pred = _wc_pred(p_home=0.70, p_draw=0.18, p_away=0.12)
+    row = wc_prediction_to_unified_row(pred, surface=(False, settings.SURFACE_FLOOR_FOOTBALL))
+    notes = json.loads(row["notes"])
+    assert notes["surface"] == {"below_floor": False, "floor": settings.SURFACE_FLOOR_FOOTBALL}
+    assert row["confidence_score"] == 70
+
+
+def test_surface_flag_coexists_with_market_odds_notes():
+    # When real odds enrich notes, the surface block survives the notes.update.
+    odds = {"home": 2.0, "draw": 3.4, "away": 4.0}
+    row = wc_prediction_to_unified_row(
+        _wc_pred(), odds_triple=odds, bookmaker="pinnacle",
+        surface=(True, settings.SURFACE_FLOOR_FOOTBALL),
+    )
+    notes = json.loads(row["notes"])
+    assert notes["surface"]["below_floor"] is True
+    assert notes["odds_home"] == 2.0
+
+
 # ─── ModelAgent flag propagation + writer gating ─────────────────────────────
 
 def _model_agent():

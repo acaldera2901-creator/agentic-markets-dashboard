@@ -23,6 +23,7 @@ from core.world_cup_probability import national_match_probabilities
 from core.world_cup_elo_model import predict_wc_match as predict_wc_elo_v2
 from core.wc_calibration import calibrate_wc_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
+from core.surfacing_gate import surface_decision
 from core.supabase_client import (
     DCPrediction,
     log_prediction_snapshot,
@@ -443,6 +444,17 @@ class ModelAgent(BaseAgent):
                 key=lambda kv: kv[1],
             )[0]
             confidence = round(max(pred.p_home, pred.p_draw, pred.p_away) * 100)
+            # Confidence-surfacing gate (Wave 1). Probability-neutral: decides
+            # only whether the row is surfaced as a directional pick. The served
+            # probabilities and `confidence` above are untouched; the result is
+            # recorded in notes.surface for the frontend.
+            _is_pick, _below_floor = surface_decision(
+                sport="football", friendly=is_friendly, confidence=confidence
+            )
+            surface_floor = (
+                settings.SURFACE_FLOOR_FRIENDLY if is_friendly
+                else settings.SURFACE_FLOOR_FOOTBALL
+            )
             explanation = build_wc_explanation(
                 home_team=payload["home_team"],
                 away_team=payload["away_team"],
@@ -479,6 +491,9 @@ class ModelAgent(BaseAgent):
                 # actually produced the probabilities (v2 when promoted),
                 # not the hard-coded v1 default.
                 model_version=served_version,
+                # Wave 1 surfacing gate -> notes.surface (frontend reads this to
+                # drop pick direction/edge when below_floor). Neutral to probs.
+                surface=(_below_floor, surface_floor),
             )
             written = await upsert_unified_rows([row])
             if written:

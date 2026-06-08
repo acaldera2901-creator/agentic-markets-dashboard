@@ -255,6 +255,7 @@ def wc_prediction_to_unified_row(
     team_news_summary: str | None = None,
     friendly: bool = False,
     model_version: str | None = None,
+    surface: tuple[bool, int] | None = None,
 ) -> dict:
     """World Cup row on the unified_predictions schema.
 
@@ -358,6 +359,17 @@ def wc_prediction_to_unified_row(
             + (", real market odds shown for reference" if has_market else ", no market odds attached")
             + ", no edge claimed. Bet responsibly."
         )
+
+    # Confidence-surfacing gate flag (Wave 1). Probability-neutral: this only
+    # records the gate's pick/non-pick verdict for the frontend. When
+    # ``below_floor`` is True the frontend must show the row without a pick
+    # direction/edge ("no clear favourite"). Contract:
+    #   notes.surface = {"below_floor": <bool>, "floor": <int|null>}
+    if surface is not None:
+        below_floor, floor = surface
+        notes = json.loads(row["notes"])
+        notes["surface"] = {"below_floor": bool(below_floor), "floor": floor}
+        row["notes"] = json.dumps(notes)
 
     if enrichment is not None:
         row["enrichment"] = enrichment
