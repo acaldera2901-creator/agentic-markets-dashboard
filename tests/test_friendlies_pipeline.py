@@ -26,14 +26,28 @@ from core.world_cup_registry import (
 )
 
 
-def _pred(league=FRIENDLIES_CODE, league_name="International Friendly"):
+def _pred(league=FRIENDLIES_CODE, league_name="International Friendly",
+          home_team="Greece", away_team="Italy"):
     return DCPrediction(
         match_id="espn:740123", league=league, league_name=league_name,
-        home_team="Greece", away_team="Italy",
+        home_team=home_team, away_team=away_team,
         kickoff="2026-06-07T19:00:00Z",
         p_home=0.30, p_draw=0.28, p_away=0.42,
         home_team_matches=20, away_team_matches=22,
     )
+
+
+def test_national_team_names_are_canonicalized():
+    """Root fix: non-canonical feed spellings ("Congo DR" / "Cabo Verde") must
+    be stored as the dataset canonical ("DR Congo" / "Cape Verde") so the board
+    agrees with the deduped squads tab and no new duplicates are introduced."""
+    row = wc_prediction_to_unified_row(
+        _pred(league="WC", league_name="FIFA World Cup 2026",
+              home_team="Congo DR", away_team="Cabo Verde")
+    )
+    assert row["home_team"] == "DR Congo"
+    assert row["away_team"] == "Cape Verde"
+    assert row["event_name"] == "DR Congo vs Cape Verde"
 
 
 # ── routing helpers ───────────────────────────────────────────────────────────

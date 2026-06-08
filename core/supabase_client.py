@@ -281,6 +281,17 @@ def wc_prediction_to_unified_row(
     omitted, falls back to the generic explanation (fail-soft).
     """
     row = dc_prediction_to_unified_row(p)
+    # Canonicalize national-team names at the source so non-canonical feed
+    # spellings (e.g. "Congo DR" / "Cabo Verde") never reach unified_predictions
+    # and the board always agrees with the squads/dataset canonical
+    # ("DR Congo" / "Cape Verde"). Club rows keep their own names (the WC
+    # canonical map is national-team only; non-WC names pass through unchanged).
+    from core.world_cup_history import canonical_team_name
+    canon_home = canonical_team_name(p.home_team)
+    canon_away = canonical_team_name(p.away_team)
+    row["home_team"] = canon_home
+    row["away_team"] = canon_away
+    row["event_name"] = f"{canon_home} vs {canon_away}"
     pick = row["pick"]
     confidence = row["confidence_score"]
     if friendly:
