@@ -10,6 +10,7 @@ import GroupsGrid from "@/components/world-cup/GroupsGrid";
 import CalendarSection from "@/components/world-cup/CalendarSection";
 import WcBoard from "@/components/world-cup/WcBoard";
 import WinnerOdds from "@/components/world-cup/WinnerOdds";
+import WinnerOddsCompact from "@/components/world-cup/WinnerOddsCompact";
 import TrackRecordStrip from "@/components/world-cup/TrackRecordStrip";
 import { fetchWcGroups, fetchWcFixtures, teamSlug } from "@/lib/world-cup";
 import { dbQuery } from "@/lib/db";
@@ -43,21 +44,39 @@ export default async function WorldCupPage() {
     <div className="portal-root wc-root">
       <SiteTopbar backLabel="Board" />
       <main className="wc-page">
-      <header className="wc-hero">
-        <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
-        <h1>World Cup Intelligence Hub</h1>
-        <p className="wc-hero-sub">
-          48 teams · 12 groups · 104 matches. Squad reveals tracked as they
-          happen, AI predictions with a transparent hit-rate record.
-        </p>
+      {/* Compact hero band — title left, live countdown right (no oversized block) */}
+      <header className="wc-hub-hero">
+        <div>
+          <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
+          <h1>World Cup Intelligence Hub</h1>
+        </div>
         <Countdown />
       </header>
 
-      <section className="wc-section" id="board">
-        <h2 className="wc-section-title">Prediction board</h2>
-        <WcBoard />
-      </section>
+      {/* Two-column hub: prediction board (main) + compact sidebar (option C) */}
+      <div className="wc-layout">
+        <div className="wc-main">
+          <section className="wc-section wc-section-flush" id="board">
+            <h2 className="wc-section-title">Prediction board</h2>
+            <WcBoard />
+          </section>
+        </div>
+        <aside className="wc-aside">
+          <div className="wc-aside-card">
+            <div className="wc-aside-title">Track record</div>
+            <TrackRecordStrip />
+          </div>
+          <WinnerOddsCompact />
+          <nav className="wc-aside-card wc-jump-links">
+            <div className="wc-aside-title">Explore</div>
+            <a href="#groups">Groups →</a>
+            <a href="#calendar">Match calendar →</a>
+            <a href="#squads">Squads &amp; call-ups →</a>
+          </nav>
+        </aside>
+      </div>
 
+      {/* Full-width reference sections below the fold */}
       <section className="wc-section" id="outlook">
         <h2 className="wc-section-title">Who wins the World Cup?</h2>
         <WinnerOdds />
@@ -94,11 +113,6 @@ export default async function WorldCupPage() {
         ) : (
           <div className="book-empty">Squad data syncing — back shortly.</div>
         )}
-      </section>
-
-      <section className="wc-section" id="track-record">
-        <h2 className="wc-section-title">Track record</h2>
-        <TrackRecordStrip />
       </section>
       </main>
     </div>

@@ -4615,6 +4615,62 @@ button:disabled {
   animation: wc-pulse 1.4s infinite;
 }
 @keyframes wc-pulse { 50% { opacity: 0.35; } }
+/* ── WC Hub — option C: compact hero band + two-column layout ─────────── */
+.wc-hub-hero {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding: 20px 2px 18px; margin-bottom: 22px;
+  border-bottom: 1px solid var(--am-line);
+}
+.wc-hub-hero h1 {
+  font-size: clamp(22px, 3.2vw, 30px); font-weight: 900;
+  letter-spacing: -0.02em; margin: 4px 0 0;
+}
+.wc-hub-hero .wc-countdown { min-height: 0; justify-content: flex-end; }
+.wc-layout {
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px; align-items: start;
+}
+.wc-main { min-width: 0; }
+.wc-section-flush { margin-top: 0; }
+.wc-aside {
+  display: flex; flex-direction: column; gap: 16px;
+  position: sticky; top: 76px;
+}
+.wc-aside-card {
+  padding: 14px 16px; border-radius: 14px;
+  border: 1px solid var(--am-line); background: var(--am-panel);
+}
+.wc-aside-title {
+  font-size: 10px; font-weight: 850; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--am-muted); margin-bottom: 10px;
+}
+.wc-aside .wc-track-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wc-aside .wc-stat { border: none; background: var(--am-inset); padding: 8px 10px; border-radius: 10px; }
+.wc-jump-links { display: flex; flex-direction: column; gap: 9px; }
+.wc-jump-links a {
+  color: var(--am-cobalt); font-size: 13px; font-weight: 700; text-decoration: none;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.wc-jump-links a:hover { text-decoration: underline; }
+.wc-winner-mini { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.wc-winner-mini li {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) 46px 34px;
+  align-items: center; gap: 8px; font-size: 12px;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.wc-winner-mini-rank { color: var(--am-muted-2); }
+.wc-winner-mini-team { color: var(--am-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wc-winner-mini-bar { height: 5px; border-radius: 3px; background: var(--am-inset); overflow: hidden; }
+.wc-winner-mini-bar span { display: block; height: 100%; background: var(--am-coral); border-radius: 3px; }
+.wc-winner-mini-pct { text-align: right; color: var(--am-text); font-variant-numeric: tabular-nums; }
+.wc-aside-link { display: inline-block; margin-top: 11px; color: var(--am-cobalt); font-size: 12px; font-weight: 700; text-decoration: none; }
+.wc-aside-link:hover { text-decoration: underline; }
+@media (max-width: 900px) {
+  .wc-layout { grid-template-columns: 1fr; gap: 0; }
+  .wc-aside { position: static; margin-top: 28px; }
+}
+
 .wc-section { margin-top: 44px; }
 .wc-section-title {
   font-size: 18px;
