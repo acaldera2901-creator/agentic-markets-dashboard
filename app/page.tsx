@@ -866,7 +866,8 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "client-area" | "settings" | "assistance" | "faq" | "history" | "partners" | "leaderboard" | "match-builder";
+type Tab = "bets" | "account" | "history" | "partners" | "leaderboard" | "match-builder";
+type AccountSection = "panoramica" | "impostazioni" | "assistenza" | "faq";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -1066,23 +1067,17 @@ function stakeFromEdge(edge: number | null, confidence: number) {
 // worked by accident (the pre-#021 tennis bars carried the literals) — when
 // those were removed, bg-cyan-400/bg-fuchsia-400 were purged from the bundle
 // and every HOME/AWAY/player bar rendered empty (bug Andrea 2026-06-06).
-const PROB_BAR_FILL: Record<string, string> = {
-  "text-cyan-400": "bg-cyan-400",
-  "text-yellow-400": "bg-yellow-400",
-  "text-fuchsia-400": "bg-fuchsia-400",
-};
-
 function ProbBar({ label, pct: p, color, odds, isValue }: {
   label: string; pct: number; color: string; odds?: number | null; isValue?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-xs font-mono w-10 shrink-0 ${color}`}>{label}</span>
+      <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
       <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${PROB_BAR_FILL[color] ?? color.replace("text-", "bg-")}`}
-          style={{ width: `${Math.round(p * 100)}%` }} />
+        <div className="h-full rounded-full transition-all"
+          style={{ width: `${Math.round(p * 100)}%`, background: color }} />
       </div>
-      <span className={`text-xs font-mono w-8 text-right ${color}`}>{pct(p)}</span>
+      <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(p)}</span>
       {isValue && (
         <span className="text-xs px-1.5 py-0.5 rounded border border-green-400/40 text-green-400 bg-green-400/10 font-mono">
           VALUE
@@ -3160,11 +3155,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         <>
           {/* Probability bars */}
           <div className="space-y-1.5">
-            <ProbBar label="HOME" pct={p.p_home} color="text-cyan-400"
+            <ProbBar label="HOME" pct={p.p_home} color="var(--am-coral)"
               odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-            <ProbBar label="DRAW" pct={p.p_draw} color="text-yellow-400"
+            <ProbBar label="DRAW" pct={p.p_draw} color="var(--am-amber)"
               odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-            <ProbBar label="AWAY" pct={p.p_away} color="text-fuchsia-400"
+            <ProbBar label="AWAY" pct={p.p_away} color="var(--am-cobalt)"
               odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
           </div>
           {belowFloor ? (
@@ -3654,14 +3649,14 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
       ) : (
         <>
-          {/* Probability bars — same ProbBar component as the football card */}
+          {/* Probability bars — corallo = favorito, cobalto = alternativo (R1) */}
           <div className="space-y-1.5">
             <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P1")}>
-              <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color="text-cyan-400"
+              <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color={m.p1 >= m.p2 ? "var(--am-coral)" : "var(--am-cobalt)"}
                 odds={m.odds_p1} isValue={isValue && m.best_selection === "P1"} />
             </div>
             <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P2")}>
-              <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color="text-fuchsia-400"
+              <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color={m.p1 >= m.p2 ? "var(--am-cobalt)" : "var(--am-coral)"}
                 odds={m.odds_p2} isValue={isValue && m.best_selection === "P2"} />
             </div>
           </div>
@@ -5170,6 +5165,64 @@ function ClientAreaTab({
   );
 }
 
+// ─── Account Tab (unione Client Area + Impostazioni + Assistenza + FAQ) ─────────
+
+function AccountTab({
+  profile,
+  onOpenDesk,
+  onPaymentSubmit,
+  onActivateFree,
+  onLogout,
+  onUnlock,
+  onSave,
+}: {
+  profile: ClientProfile | null;
+  onOpenDesk: () => void;
+  onPaymentSubmit: (plan: PublicPlanKey) => void;
+  onActivateFree: () => void;
+  onLogout: () => void;
+  onUnlock: () => void;
+  onSave: (profile: ClientProfile) => void;
+}) {
+  const lang = useLang();
+  const [section, setSection] = useState<AccountSection>("panoramica");
+  const sections: { key: AccountSection; label: string }[] = [
+    { key: "panoramica",   label: lang === "it" ? "Panoramica" : "Overview" },
+    { key: "impostazioni", label: lang === "it" ? "Impostazioni" : "Settings" },
+    { key: "assistenza",   label: lang === "it" ? "Assistenza" : "Assistance" },
+    { key: "faq",          label: "FAQ" },
+  ];
+  return (
+    <div className="account-tab">
+      <div className="segmented-filter account-subnav">
+        {sections.map((s) => (
+          <button
+            key={s.key}
+            className={section === s.key ? "is-active" : ""}
+            onClick={() => setSection(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {section === "panoramica" && (
+        <ClientAreaTab
+          profile={profile}
+          onOpenDesk={onOpenDesk}
+          onPaymentSubmit={onPaymentSubmit}
+          onActivateFree={onActivateFree}
+          onLogout={onLogout}
+        />
+      )}
+      {section === "impostazioni" && (
+        <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} />
+      )}
+      {section === "assistenza" && <AssistanceTab />}
+      {section === "faq" && <FAQTab />}
+    </div>
+  );
+}
+
 // ─── Unified Bets Tab ─────────────────────────────────────────────────────────
 
 // ─── Live Now strip (#021) ────────────────────────────────────────────────────
@@ -5322,7 +5375,7 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "client-area", "settings", "assistance", "faq", "history", "partners", "leaderboard", "match-builder"];
+const VALID_TABS: readonly Tab[] = ["bets", "account", "history", "partners", "leaderboard", "match-builder"];
 
 // BUG-008: shared/deep links sometimes use the singular ("partner"); map common
 // aliases to the canonical tab instead of silently falling back to the board.
@@ -5347,6 +5400,20 @@ export default function Dashboard() {
     setUiLanguage(next);
     localStorage.setItem("agentic-lang", next);
     trackEvent("language_change", { language: next });
+  };
+  // Theme toggle (Cobalt & Coral redesign, F1) — presentation only, no logic change.
+  // The pre-paint script in layout.tsx already set data-theme; here we just sync React.
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const current = document.documentElement.getAttribute("data-theme");
+    if (current === "light" || current === "dark") setTheme(current);
+  }, []);
+  const toggleTheme = () => {
+    const next: "dark" | "light" = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("agentic-theme", next); } catch {}
+    trackEvent("theme_change", { meta: { theme: next } });
   };
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
   // #MB-1 Match Builder: shared accumulator ids (?mb=) + influencer ref (?ref=).
@@ -5406,7 +5473,7 @@ export default function Dashboard() {
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
   useEffect(() => { trackEvent("page_view"); }, []);
   useEffect(() => {
-    if (tab === "client-area") trackEvent("plan_view");
+    if (tab === "account") trackEvent("plan_view");
   }, [tab]);
 
   // IP-based language detection — only runs when no stored preference exists
@@ -5785,16 +5852,13 @@ export default function Dashboard() {
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
-    { tab: "client-area", label: uiLanguage === "it" ? "Client Area" : "Client Area", value: clientProfile ? (isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
+    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
     { tab: "partners",    label: tNav.nav_partner },
-    { tab: "settings",    label: uiLanguage === "it" ? "Impostazioni" : "Settings" },
-    { tab: "assistance",  label: uiLanguage === "it" ? "Assistenza" : "Assistance" },
-    { tab: "faq",         label: "FAQ" },
   ];
 
   const tUI = TRANSLATIONS[uiLanguage];
@@ -5817,7 +5881,7 @@ export default function Dashboard() {
         </div>
         <div className="portal-brand-actions">
           {clientProfile ? (
-            <button className="client-access-button" onClick={() => setTab("client-area")}>
+            <button className="client-access-button" onClick={() => setTab("account")}>
               {clientProfile.name} · {isClientUnlocked ? "Signal Desk Pro" : clientProfile.plan === "free" ? "Free" : "Setup"}
             </button>
           ) : (
@@ -5830,6 +5894,14 @@ export default function Dashboard() {
               </button>
             </>
           )}
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? (uiLanguage === "it" ? "Tema chiaro" : "Light theme") : (uiLanguage === "it" ? "Tema scuro" : "Dark theme")}
+            title={theme === "dark" ? (uiLanguage === "it" ? "Tema chiaro" : "Light theme") : (uiLanguage === "it" ? "Tema scuro" : "Dark theme")}
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <button className="lang-toggle" onClick={toggleLanguage}>{uiLanguage.toUpperCase()}</button>
         </div>
       </div>
@@ -5934,24 +6006,17 @@ export default function Dashboard() {
               tennisIsPlaceholder={tennisIsPlaceholder}
             />
           )}
-          {tab === "client-area" && (
-            <ClientAreaTab
+          {tab === "account" && (
+            <AccountTab
               profile={clientProfile}
               onOpenDesk={() => setTab("bets")}
               onPaymentSubmit={submitCryptoPayment}
               onActivateFree={activateFreePlan}
               onLogout={logoutClientProfile}
-            />
-          )}
-          {tab === "settings" && (
-            <SettingsTab
-              profile={clientProfile}
               onUnlock={() => openAuth("login")}
               onSave={saveClientProfile}
             />
           )}
-          {tab === "assistance" && <AssistanceTab />}
-          {tab === "faq" && <FAQTab />}
           {tab === "history" && (
             <HistoryTab history={historyV2} stats={historyV2Stats} loading={historyV2Loading} />
           )}
