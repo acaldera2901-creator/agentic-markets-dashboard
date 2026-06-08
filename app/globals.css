@@ -1,24 +1,136 @@
 @import "tailwindcss";
 
+/* ── Agentic Markets — Sovereign Design Tokens (single source of truth) ──
+   Cobalt & Coral redesign (UI-REDESIGN-COBALT-CORAL). I token legacy
+   --bg/--panel/--line/--muted/... sono ora ALIAS verso gli --am-*, così le
+   classi bespoke esistenti si ri-skinnano senza toccarne i body. Il toggle
+   tema agisce su :root[data-theme="light"]. */
 :root {
-  --bg:      #06070F;
-  --bg-2:    #0A0C1A;
-  --panel:   #0D1020;
-  --panel-2: #11142A;
-  --panel-3: #161930;
-  --panel-4: #1A1E3A;
-  --line:    rgba(140,145,255,0.09);
-  --line-2:  rgba(140,145,255,0.18);
+  /* ── Cobalt & Coral — DARK (default). Refined Terminal aesthetic. ──────
+     Single source of truth: changing these --am-* values ripropaga su tutte
+     le classi bespoke via gli alias legacy in fondo al blocco. */
 
-  --cyan:   #22D3EE;
-  --green:  #22C55E;
-  --amber:  #F59E0B;
-  --red:    #EF4444;
-  --violet: #818CF8;
+  /* Base backgrounds — deep indigo-black, not flat black */
+  --am-bg:         #07080F;
+  --am-bg-2:       #0A0C18;
+  --am-panel:      #0F1118;
+  --am-panel-2:    #131626;
+  --am-panel-3:    #181B2E;
+  --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
+  --am-inset:      var(--am-inset);    /* superfici recessed: input, pill, segmented */
 
-  --text:   rgba(237,241,255,0.94);
-  --muted:  rgba(237,241,255,0.46);
-  --muted-2:rgba(237,241,255,0.24);
+  /* Borders — neutral-cool, low chroma for depth */
+  --am-line:       rgba(255,255,255,0.08);
+  --am-line-2:     rgba(255,255,255,0.14);
+
+  /* Brand accents — coral primary, warm orange, cool cobalt */
+  --am-coral:      #FF6B6B;   /* primary: CTA, nav attiva, top-pick */
+  --am-coral-2:    #FB7185;   /* fill/gradiente */
+  --am-orange:     #FB923C;   /* secondario caldo, gradiente con coral */
+  --am-cobalt:     #3B82F6;   /* dati e output modello, link */
+  --am-cobalt-2:   #60A5FA;
+  --am-amber:      #FBBF24;   /* highlight puntuale */
+
+  /* P&L semantics — verde SOLO per P&L positivo / ROI, rosso per perdite */
+  --am-positive:   #34D399;
+  --am-positive-dim: rgba(52,211,153,0.10);
+  --am-positive-b:   rgba(52,211,153,0.30);
+  --am-negative:   #F87171;
+  --am-negative-dim: rgba(248,113,113,0.10);
+  --am-negative-b:   rgba(248,113,113,0.30);
+
+  /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
+  --am-coral-dim:  rgba(255,107,107,0.10);
+  --am-coral-b:    rgba(255,107,107,0.30);
+
+  /* Legacy semantic names kept as internal aliases (do not reference --am-green
+     elsewhere; --green legacy alias now points to coral). */
+  --am-green:      var(--am-coral);
+  --am-green-dim:  var(--am-coral-dim);
+  --am-green-b:    var(--am-coral-b);
+  --am-red:        var(--am-negative);
+  --am-red-dim:    var(--am-negative-dim);
+  --am-red-b:      var(--am-negative-b);
+  --am-cyan:       var(--am-cobalt-2);
+  --am-indigo:     var(--am-cobalt);
+
+  /* Ambient wash + glow color (statico, non animato — fascia verde) */
+  --am-wash:       rgba(255,107,107,0.10);
+  --am-glow:       rgba(255,107,107,0.18);
+
+  /* Typography */
+  --am-text:       rgba(234,236,245,0.96);
+  --am-muted:      rgba(234,236,245,0.62);
+  --am-muted-2:    rgba(234,236,245,0.30);
+
+  /* Semantic aliases consumed by bespoke rules (--border / --accent / --ring) */
+  --accent: var(--am-panel-3);
+  --border: var(--am-line);
+  --input: var(--am-line);
+  --ring: rgba(255,107,107,0.40);
+  --radius: 0.5rem;
+
+  /* Legacy aliases — keep existing dashboard CSS working, point at --am-* */
+  --bg:      var(--am-bg);
+  --bg-2:    var(--am-bg-2);
+  --panel:   var(--am-panel);
+  --panel-2: var(--am-panel-2);
+  --panel-3: var(--am-panel-3);
+  --line:    var(--am-line);
+  --line-2:  var(--am-line-2);
+
+  --cyan:   var(--am-cyan);
+  --green:  var(--am-green);
+  --amber:  var(--am-amber);
+  --red:    var(--am-red);
+  --violet: var(--am-indigo);
+
+  --text:   var(--am-text);
+  --muted:  var(--am-muted);
+  --muted-2:var(--am-muted-2);
+}
+
+/* ── Cobalt & Coral — LIGHT override (data-theme="light" su <html>) ─────────
+   Ridefinisce SOLO i valori base --am-*; gli alias semantici e legacy ereditano
+   automaticamente perché puntano ad altri --am-*. Accenti approfonditi per AA
+   su fondo chiaro (spec §3.2). */
+:root[data-theme="light"] {
+  --am-bg:         #F6F7F9;
+  --am-bg-2:       #EEF0F4;
+  --am-panel:      #FFFFFF;
+  --am-panel-2:    #F1F3F7;
+  --am-panel-3:    #E9ECF2;
+  --am-bar:        rgba(255,255,255,0.96);
+  --am-inset:      rgba(15,18,30,0.05);
+
+  --am-line:       rgba(15,18,30,0.10);
+  --am-line-2:     rgba(15,18,30,0.16);
+
+  --am-coral:      #E5484D;   /* primary su light, contrasto AA come testo/bordo */
+  --am-coral-2:    #FF6B6B;   /* fill/gradiente */
+  --am-orange:     #EA7317;
+  --am-cobalt:     #2563EB;
+  --am-cobalt-2:   #3B82F6;
+  --am-amber:      #B5730A;
+
+  --am-positive:   #0F7A56;
+  --am-positive-dim: rgba(15,122,86,0.10);
+  --am-positive-b:   rgba(15,122,86,0.30);
+  --am-negative:   #DC2626;
+  --am-negative-dim: rgba(220,38,38,0.10);
+  --am-negative-b:   rgba(220,38,38,0.28);
+
+  --am-coral-dim:  rgba(229,72,77,0.10);
+  --am-coral-b:    rgba(229,72,77,0.30);
+
+  --am-wash:       rgba(229,72,77,0.07);
+  --am-glow:       rgba(229,72,77,0.12);
+
+  --am-text:       rgba(14,17,24,0.96);
+  --am-muted:      rgba(14,17,24,0.60);
+  --am-muted-2:    rgba(14,17,24,0.34);
+
+  --ring:         rgba(229,72,77,0.38);
 }
 
 * {
@@ -30,9 +142,9 @@ body {
   margin: 0;
   color: var(--text);
   background: var(--bg);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-image:
-    radial-gradient(ellipse 900px 520px at 50% -10%, rgba(129,140,248,0.12) 0%, transparent 68%),
+    radial-gradient(ellipse 900px 520px at 50% -10%, var(--am-wash) 0%, transparent 68%),
     linear-gradient(180deg, rgba(255,255,255,0.018), transparent 36%);
   background-size: 100% 100%;
 }
@@ -59,8 +171,8 @@ button:disabled {
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
-  50%       { box-shadow: 0 0 20px rgba(34,197,94,0.12); }
+  0%, 100% { box-shadow: 0 0 0 rgba(255,107,107,0); }
+  50%       { box-shadow: 0 0 20px rgba(255,107,107,0.12); }
 }
 
 @keyframes slide-up {
@@ -88,7 +200,7 @@ button:disabled {
   padding: 26px 28px 24px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
@@ -110,13 +222,13 @@ button:disabled {
   top: -140px;
   width: 420px;
   height: 300px;
-  background: radial-gradient(ellipse, rgba(34,197,94,0.10), transparent 68%);
+  background: radial-gradient(ellipse, rgba(255,107,107,0.10), transparent 68%);
   pointer-events: none;
 }
 
 .book-topbar h1 {
   margin: 6px 0 0;
-  color: white;
+  color: var(--text);
   font-size: clamp(2.1rem, 4vw, 3.25rem);
   line-height: 0.98;
   font-weight: 900;
@@ -136,34 +248,7 @@ button:disabled {
   line-height: 1.55;
 }
 
-/* ── Live badge ──────────────────────────────────────────────── */
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 26px;
-  padding: 0 10px;
-  border: 1px solid rgba(34,197,94,0.28);
-  border-radius: 4px;
-  background: rgba(34,197,94,0.09);
-  color: var(--green);
-  font-size: 10px;
-  font-weight: 900;
-  font-family: monospace;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.live-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: pulse-dot 1.5s ease-in-out infinite;
-  box-shadow: 0 0 8px rgba(34,197,94,0.65);
-}
+/* ── Live badge: see consolidated single source of truth near .live-score-bar ── */
 
 /* ── Eyebrow / labels ────────────────────────────────────────── */
 
@@ -177,7 +262,14 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Hero eyebrow → ambra (highlight puntuale, spec §3.3). Scoped ai contesti hero. */
+.portfolio-hero .eyebrow,
+.portfolio-balance .eyebrow,
+.plans-hero .eyebrow {
+  color: var(--am-amber);
 }
 
 /* ── Topbar stats pills ──────────────────────────────────────── */
@@ -206,23 +298,23 @@ button:disabled {
   color: rgba(255,255,255,0.65);
   font-size: 11px;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-access-button {
   min-height: 30px;
   padding: 0 12px;
-  border: 1px solid rgba(34,197,94,0.32);
+  border: 1px solid rgba(255,107,107,0.32);
   border-radius: 999px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-size: 11px;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-access-button:hover {
-  background: rgba(34,197,94,0.16);
+  background: rgba(255,107,107,0.16);
 }
 
 /* ── Layout ──────────────────────────────────────────────────── */
@@ -314,23 +406,23 @@ button:disabled {
   background: var(--panel-3);
   color: var(--muted);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .rail-item:hover,
 .rail-refresh:hover {
-  background: rgba(140,145,255,0.055);
+  background: rgba(59,130,246,0.055);
 }
 
 .rail-item.is-active {
-  border-color: rgba(129,140,248,0.24);
-  background: rgba(129,140,248,0.10);
-  color: rgba(237,241,255,0.94);
+  border-color: rgba(59,130,246,0.24);
+  background: rgba(59,130,246,0.10);
+  color: var(--text);
 }
 
 .rail-item.is-active.green {
-  border-color: rgba(34,197,94,0.30);
-  background: rgba(34,197,94,0.09);
+  border-color: rgba(255,107,107,0.30);
+  background: rgba(255,107,107,0.09);
   color: var(--green);
 }
 
@@ -343,16 +435,16 @@ button:disabled {
 .rail-refresh {
   margin-top: 6px;
   justify-content: center;
-  border-color: rgba(34,197,94,0.28);
+  border-color: rgba(255,107,107,0.28);
   color: var(--green);
-  background: rgba(34,197,94,0.08);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: rgba(255,107,107,0.08);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   text-transform: uppercase;
 }
 
 .rail-refresh:hover {
-  background: rgba(34,197,94,0.13);
+  background: rgba(255,107,107,0.13);
 }
 
 .rail-note {
@@ -360,7 +452,7 @@ button:disabled {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
@@ -372,7 +464,7 @@ button:disabled {
 }
 
 .rail-note strong {
-  color: rgba(255,255,255,0.9);
+  color: var(--text);
   margin-bottom: 3px;
 }
 
@@ -400,7 +492,7 @@ button:disabled {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   letter-spacing: 0.04em;
 }
 
@@ -413,7 +505,7 @@ button:disabled {
 
 .book-main-head h2 {
   margin: 2px 0 0;
-  color: white;
+  color: var(--text);
   font-size: 1.45rem;
   line-height: 1.1;
   font-weight: 850;
@@ -436,7 +528,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .status-dot {
@@ -449,7 +541,7 @@ button:disabled {
 
 .desk-status-pill.is-online .status-dot {
   background: var(--green);
-  box-shadow: 0 0 12px rgba(0,232,122,0.65);
+  box-shadow: 0 0 12px rgba(255,107,107,0.65);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -468,7 +560,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .sports-filter-bar label {
@@ -503,18 +595,18 @@ button:disabled {
   color: var(--muted);
   font-size: 11px;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: nowrap;
 }
 
 .segmented-filter button:hover {
-  color: rgba(237,241,255,0.88);
+  color: var(--text);
   background: rgba(255,255,255,0.04);
 }
 
 .segmented-filter button.is-active {
-  border-color: rgba(34,197,94,0.34);
-  background: rgba(34,197,94,0.12);
+  border-color: rgba(255,107,107,0.34);
+  background: rgba(255,107,107,0.12);
   color: var(--green);
 }
 
@@ -530,7 +622,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .sports-filter-bar select,
@@ -540,10 +632,10 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(6,7,15,0.72);
-  color: rgba(237,241,255,0.88);
+  color: var(--text);
   font-size: 12px;
   font-weight: 780;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   outline: none;
 }
 
@@ -553,8 +645,8 @@ button:disabled {
 
 .sports-filter-bar select:focus,
 .sports-search:focus {
-  border-color: rgba(34,197,94,0.42);
-  box-shadow: 0 0 0 2px rgba(34,197,94,0.08);
+  border-color: rgba(255,107,107,0.42);
+  box-shadow: 0 0 0 2px rgba(255,107,107,0.08);
 }
 
 .sports-filter-bar select:disabled {
@@ -585,7 +677,7 @@ button:disabled {
 .client-system-list > div {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .client-summary-strip > div {
@@ -598,7 +690,7 @@ button:disabled {
 
 .client-summary-strip strong {
   display: block;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: clamp(1.35rem, 2vw, 1.9rem);
   line-height: 1;
   font-weight: 850;
@@ -626,7 +718,7 @@ button:disabled {
 .portfolio-panel {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .portfolio-hero {
@@ -636,13 +728,18 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  border-left: 2px solid var(--green);
+  border-left: 2px solid var(--am-coral);
+  /* Hero wash: corallo (warm dominant) → cobalt (cool counterpoint), statico. */
+  background:
+    linear-gradient(110deg, rgba(255,107,107,0.10) 0%, transparent 42%),
+    linear-gradient(290deg, rgba(59,130,246,0.08) 0%, transparent 46%),
+    var(--am-panel);
 }
 
 .portfolio-hero h3,
 .portfolio-panel h4 {
   margin: 4px 0 0;
-  color: rgba(248,250,252,0.96);
+  color: var(--text);
   font-size: clamp(1.35rem, 2vw, 2rem);
   line-height: 1;
   font-weight: 850;
@@ -660,9 +757,9 @@ button:disabled {
 .portfolio-hero button {
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(34,197,94,0.36);
+  border: 1px solid rgba(255,107,107,0.36);
   border-radius: 8px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-weight: 850;
 }
@@ -683,7 +780,7 @@ button:disabled {
   top: -130px;
   width: 360px;
   height: 260px;
-  background: radial-gradient(ellipse, rgba(34,197,94,0.10), transparent 68%);
+  background: radial-gradient(ellipse, rgba(255,107,107,0.10), transparent 68%);
   pointer-events: none;
 }
 
@@ -708,7 +805,7 @@ button:disabled {
   font-style: normal;
   font-size: 15px;
   font-weight: 800;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-stat-strip {
@@ -736,7 +833,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-stat-strip strong {
@@ -782,13 +879,13 @@ button:disabled {
   background: rgba(6,7,15,0.35);
   font-size: 11px;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-panel-head > span.is-positive {
-  border-color: rgba(34,197,94,0.28);
+  border-color: rgba(255,107,107,0.28);
   color: var(--green);
-  background: rgba(34,197,94,0.08);
+  background: rgba(255,107,107,0.08);
 }
 
 .portfolio-panel-head > span.is-negative {
@@ -808,7 +905,7 @@ button:disabled {
 }
 
 .portfolio-grid-line {
-  stroke: rgba(140,145,255,0.09);
+  stroke: rgba(59,130,246,0.09);
   stroke-width: 1;
 }
 
@@ -818,7 +915,7 @@ button:disabled {
   justify-content: space-between;
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-chart-axis strong {
@@ -888,7 +985,7 @@ button:disabled {
   color: var(--muted);
   font-size: 11px;
   font-style: normal;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .portfolio-bet-row > div:last-child {
@@ -909,7 +1006,7 @@ button:disabled {
 .plan-flow {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .plans-hero {
@@ -951,9 +1048,9 @@ button:disabled {
 .plan-action {
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(34,197,94,0.34);
+  border: 1px solid rgba(255,107,107,0.34);
   border-radius: 8px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-weight: 850;
 }
@@ -971,10 +1068,10 @@ button:disabled {
 }
 
 .plan-card.is-premium {
-  border-color: rgba(34,197,94,0.28);
+  border-color: rgba(255,107,107,0.28);
   background:
-    radial-gradient(ellipse 420px 220px at 80% 0%, rgba(34,197,94,0.10), transparent 68%),
-    rgba(140,145,255,0.04);
+    radial-gradient(ellipse 420px 220px at 80% 0%, rgba(255,107,107,0.10), transparent 68%),
+    rgba(59,130,246,0.04);
 }
 
 .plan-card-head {
@@ -1006,12 +1103,12 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .is-premium .plan-card-head > span {
-  border-color: rgba(34,197,94,0.34);
-  background: rgba(34,197,94,0.10);
+  border-color: rgba(255,107,107,0.34);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
 }
 
@@ -1066,15 +1163,15 @@ button:disabled {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-size: 9px;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .plan-feature-list li strong {
-  color: rgba(237,241,255,0.84);
+  color: var(--text);
   font-size: 13px;
   line-height: 1.35;
   font-weight: 650;
@@ -1095,9 +1192,9 @@ button:disabled {
 }
 
 .plan-action.is-premium {
-  border-color: rgba(34,197,94,0.48);
+  border-color: rgba(255,107,107,0.48);
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
 }
 
 .plan-flow {
@@ -1119,7 +1216,7 @@ button:disabled {
   color: var(--muted-2);
   font-size: 10px;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .plan-flow strong {
@@ -1167,10 +1264,10 @@ button:disabled {
   align-content: center;
   justify-items: start;
   gap: 10px;
-  border: 1px solid rgba(34,197,94,0.28);
+  border: 1px solid rgba(255,107,107,0.28);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse 280px 160px at 80% 0%, rgba(34,197,94,0.12), transparent 70%),
+    radial-gradient(ellipse 280px 160px at 80% 0%, rgba(255,107,107,0.12), transparent 70%),
     rgba(13,16,32,0.94);
   box-shadow: 0 24px 80px rgba(0,0,0,0.36);
   z-index: 4;
@@ -1198,10 +1295,10 @@ button:disabled {
 .auth-modal button {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid rgba(34,197,94,0.42);
+  border: 1px solid rgba(255,107,107,0.42);
   border-radius: 8px;
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
   font-weight: 900;
 }
 
@@ -1225,7 +1322,7 @@ button:disabled {
   border: 1px solid var(--line-2);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse 360px 220px at 90% 0%, rgba(129,140,248,0.14), transparent 70%),
+    radial-gradient(ellipse 360px 220px at 90% 0%, rgba(59,130,246,0.14), transparent 70%),
     var(--panel);
   box-shadow: 0 24px 80px rgba(0,0,0,0.42);
 }
@@ -1246,7 +1343,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .auth-modal input {
@@ -1261,8 +1358,8 @@ button:disabled {
 }
 
 .auth-modal input:focus {
-  border-color: rgba(34,197,94,0.50);
-  box-shadow: 0 0 0 3px rgba(34,197,94,0.08);
+  border-color: rgba(255,107,107,0.50);
+  box-shadow: 0 0 0 3px rgba(255,107,107,0.08);
 }
 
 .auth-modal button:disabled {
@@ -1305,8 +1402,8 @@ button:disabled {
 }
 
 .auth-mode-switch button.is-active {
-  background: rgba(34,197,94,0.12) !important;
-  border: 1px solid rgba(34,197,94,0.30) !important;
+  background: rgba(255,107,107,0.12) !important;
+  border: 1px solid rgba(255,107,107,0.30) !important;
   color: var(--green) !important;
 }
 
@@ -1326,8 +1423,8 @@ button:disabled {
   min-height: 100vh;
   padding: 22px clamp(16px, 4vw, 54px) 42px;
   background:
-    radial-gradient(ellipse 900px 360px at 50% -12%, rgba(34,197,94,0.14), transparent 68%),
-    radial-gradient(ellipse 720px 320px at 100% 12%, rgba(129,140,248,0.10), transparent 70%),
+    radial-gradient(ellipse 900px 360px at 50% -12%, rgba(255,107,107,0.14), transparent 68%),
+    radial-gradient(ellipse 720px 320px at 100% 12%, rgba(59,130,246,0.10), transparent 70%),
     linear-gradient(180deg, #070A12 0%, #090B16 45%, #05070D 100%);
   color: var(--text);
 }
@@ -1386,8 +1483,8 @@ button:disabled {
 }
 
 .public-entry-actions button:last-child {
-  border-color: rgba(34,197,94,0.38);
-  background: rgba(34,197,94,0.12);
+  border-color: rgba(255,107,107,0.38);
+  background: rgba(255,107,107,0.12);
   color: var(--green);
 }
 
@@ -1408,7 +1505,7 @@ button:disabled {
   padding: 18px 0 0;
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .public-entry-footer button {
@@ -1434,7 +1531,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse 500px 260px at 100% 0%, rgba(34,197,94,0.08), transparent 70%),
+    radial-gradient(ellipse 500px 260px at 100% 0%, rgba(255,107,107,0.08), transparent 70%),
     rgba(255,255,255,0.02);
   position: relative;
   overflow: hidden;
@@ -1445,7 +1542,7 @@ button:disabled {
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(34,197,94,0.03) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(255,107,107,0.03) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -1498,9 +1595,9 @@ button:disabled {
 }
 
 .preaccess-actions button:first-child {
-  border: 1px solid rgba(34,197,94,0.42);
+  border: 1px solid rgba(255,107,107,0.42);
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
 }
 
 .preaccess-actions button:last-child {
@@ -1533,7 +1630,7 @@ button:disabled {
 
 .preaccess-grid > div > span:first-child {
   display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 900;
   color: var(--green);
@@ -1579,8 +1676,8 @@ button:disabled {
 }
 
 .preaccess-plan-strip button:hover {
-  border-color: rgba(34,197,94,0.35);
-  background: rgba(34,197,94,0.04);
+  border-color: rgba(255,107,107,0.35);
+  background: rgba(255,107,107,0.04);
 }
 
 .preaccess-plan-strip button strong {
@@ -1609,7 +1706,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   background:
-    linear-gradient(90deg, rgba(34,197,94,0.08), rgba(129,140,248,0.04)),
+    linear-gradient(90deg, rgba(255,107,107,0.08), rgba(59,130,246,0.04)),
     rgba(255,255,255,0.02);
   display: flex;
   align-items: center;
@@ -1619,7 +1716,7 @@ button:disabled {
 
 .public-sponsor-strip span,
 .sponsor-slot span {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -1663,16 +1760,16 @@ button:disabled {
 }
 
 .public-homepage .preaccess-actions button:nth-child(3) {
-  border: 1px solid rgba(129,140,248,0.35);
-  background: rgba(129,140,248,0.08);
+  border: 1px solid rgba(59,130,246,0.35);
+  background: rgba(59,130,246,0.08);
   color: var(--text);
 }
 
 .desk-preview {
-  border: 1px solid rgba(34,197,94,0.22);
+  border: 1px solid rgba(255,107,107,0.22);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse 280px 160px at 100% 0%, rgba(34,197,94,0.12), transparent 70%),
+    radial-gradient(ellipse 280px 160px at 100% 0%, rgba(255,107,107,0.12), transparent 70%),
     rgba(8,13,27,0.72);
   padding: 14px;
   display: grid;
@@ -1699,7 +1796,7 @@ button:disabled {
   border-radius: 7px;
   color: #fbbf24;
   background: rgba(245,158,11,0.08);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
 }
 
@@ -1740,7 +1837,7 @@ button:disabled {
 .desk-preview-board strong {
   color: var(--green);
   font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .desk-preview p {
@@ -1769,7 +1866,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse 360px 180px at 100% 0%, rgba(129,140,248,0.055), transparent 72%),
+    radial-gradient(ellipse 360px 180px at 100% 0%, rgba(59,130,246,0.055), transparent 72%),
     rgba(255,255,255,0.025);
   padding: 16px;
 }
@@ -1827,9 +1924,9 @@ button:disabled {
 .access-level-grid article button,
 .support-hub button {
   height: 38px;
-  border: 1px solid rgba(34,197,94,0.34);
+  border: 1px solid rgba(255,107,107,0.34);
   border-radius: 8px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-weight: 900;
   cursor: pointer;
@@ -1855,7 +1952,7 @@ button:disabled {
   display: block;
   color: var(--muted-2);
   font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .public-history-stats strong {
@@ -1912,7 +2009,7 @@ button:disabled {
 .future-sports-grid span {
   font-size: 10px;
   color: var(--muted-2);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .sponsor-slot {
@@ -1935,7 +2032,7 @@ button:disabled {
   color: var(--muted-2);
   font-size: 10px;
   font-style: normal;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .support-hub {
@@ -1980,9 +2077,9 @@ button:disabled {
   display: grid;
   gap: 6px;
   padding: 10px;
-  border: 1px solid rgba(34,197,94,0.28);
+  border: 1px solid rgba(255,107,107,0.28);
   border-radius: 8px;
-  background: rgba(34,197,94,0.07);
+  background: rgba(255,107,107,0.07);
   color: var(--green);
   font-size: 12px;
 }
@@ -1995,7 +2092,7 @@ button:disabled {
 .support-validation-hint {
   font-size: 11px;
   color: #f87171;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   margin: 0;
   padding: 0;
 }
@@ -2101,7 +2198,7 @@ button:disabled {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .profile-card {
@@ -2116,9 +2213,9 @@ button:disabled {
   height: 54px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(34,197,94,0.30);
+  border: 1px solid rgba(255,107,107,0.30);
   border-radius: 12px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-size: 1.25rem;
   font-weight: 900;
@@ -2164,17 +2261,17 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border-color: rgba(34,197,94,0.26);
+  border-color: rgba(255,107,107,0.26);
   background:
-    radial-gradient(ellipse 300px 180px at 90% 0%, rgba(34,197,94,0.10), transparent 70%),
-    rgba(140,145,255,0.04);
+    radial-gradient(ellipse 300px 180px at 90% 0%, rgba(255,107,107,0.10), transparent 70%),
+    rgba(59,130,246,0.04);
 }
 
 .upgrade-card button {
   flex: 0 0 auto;
-  border-color: rgba(34,197,94,0.45);
+  border-color: rgba(255,107,107,0.45);
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
 }
 
 /* ── Unified client dashboard ───────────────────────────────── */
@@ -2189,8 +2286,8 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse 420px 180px at 100% 0%, rgba(34,197,94,0.07), transparent 70%),
-    rgba(140,145,255,0.035);
+    radial-gradient(ellipse 420px 180px at 100% 0%, rgba(255,107,107,0.07), transparent 70%),
+    rgba(59,130,246,0.035);
   padding: 16px;
 }
 
@@ -2218,9 +2315,9 @@ button:disabled {
 .client-area-footer button {
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid rgba(34,197,94,0.38);
+  border: 1px solid rgba(255,107,107,0.38);
   border-radius: 8px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-weight: 900;
 }
@@ -2309,7 +2406,7 @@ button:disabled {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
   display: grid;
   align-content: space-between;
   gap: 8px;
@@ -2340,7 +2437,7 @@ button:disabled {
 
 .client-dashboard-section + .client-dashboard-section {
   padding-top: 18px;
-  border-top: 1px solid rgba(140,145,255,0.11);
+  border-top: 1px solid rgba(59,130,246,0.11);
 }
 
 .client-dashboard-section-head {
@@ -2372,7 +2469,7 @@ button:disabled {
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-dashboard-section .portfolio-hero,
@@ -2432,7 +2529,7 @@ button:disabled {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .bets-filter-bar label {
@@ -2447,7 +2544,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .bets-filter-bar select {
@@ -2457,16 +2554,16 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(6,7,15,0.72);
-  color: rgba(237,241,255,0.88);
+  color: var(--text);
   font-size: 12px;
   font-weight: 780;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   outline: none;
 }
 
 .bets-filter-bar select:focus {
-  border-color: rgba(34,197,94,0.42);
-  box-shadow: 0 0 0 2px rgba(34,197,94,0.08);
+  border-color: rgba(255,107,107,0.42);
+  box-shadow: 0 0 0 2px rgba(255,107,107,0.08);
 }
 
 .unified-bet-list {
@@ -2494,7 +2591,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .crypto-pay-box strong {
@@ -2549,9 +2646,9 @@ button:disabled {
 
 .crypto-pay-box button {
   min-height: 40px;
-  border: 1px solid rgba(34,197,94,0.38);
+  border: 1px solid rgba(255,107,107,0.38);
   border-radius: 8px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-weight: 900;
 }
@@ -2559,9 +2656,9 @@ button:disabled {
 .price-line {
   min-height: 58px;
   padding: 12px;
-  border: 1px solid rgba(34,197,94,0.20);
+  border: 1px solid rgba(255,107,107,0.20);
   border-radius: 10px;
-  background: rgba(34,197,94,0.06);
+  background: rgba(255,107,107,0.06);
 }
 
 .price-line strong {
@@ -2588,7 +2685,7 @@ button:disabled {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(140,145,255,0.035);
+  background: rgba(59,130,246,0.035);
 }
 
 .settings-panel.is-locked {
@@ -2660,8 +2757,8 @@ button:disabled {
 }
 
 .settings-notification-list button.is-on {
-  border-color: rgba(34,197,94,0.36);
-  background: rgba(34,197,94,0.08);
+  border-color: rgba(255,107,107,0.36);
+  background: rgba(255,107,107,0.08);
   color: var(--text);
 }
 
@@ -2674,10 +2771,10 @@ button:disabled {
 .settings-save,
 .settings-empty button {
   min-height: 42px;
-  border: 1px solid rgba(34,197,94,0.42);
+  border: 1px solid rgba(255,107,107,0.42);
   border-radius: 8px;
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
   font-weight: 900;
 }
 
@@ -2702,11 +2799,11 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
-  background: rgba(140,145,255,0.045);
+  background: rgba(59,130,246,0.045);
 }
 
 .market-section-title span {
-  color: rgba(237,241,255,0.94);
+  color: var(--text);
   font-weight: 850;
 }
 
@@ -2718,7 +2815,7 @@ button:disabled {
   color: var(--muted-2);
   font-style: normal;
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .market-list {
@@ -2741,7 +2838,7 @@ button:disabled {
 .event-cell strong {
   min-width: 0;
   overflow: hidden;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 15px;
   line-height: 1.15;
   text-overflow: ellipsis;
@@ -2755,7 +2852,7 @@ button:disabled {
   gap: 6px;
   color: var(--muted-2);
   font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .model-cell {
@@ -2763,11 +2860,11 @@ button:disabled {
   gap: 3px;
   color: var(--muted);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .model-cell strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 12px;
 }
 
@@ -2811,24 +2908,24 @@ button:disabled {
   font-size: 10px;
   font-style: normal;
   font-weight: 850;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .odds-button strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 20px;
   font-weight: 850;
 }
 
 .odds-button:hover {
   transform: translateY(-1px);
-  border-color: rgba(129,140,248,0.36);
+  border-color: rgba(59,130,246,0.36);
   box-shadow: 0 8px 22px rgba(0,0,0,0.18);
 }
 
 .odds-button.is-value {
-  border-color: rgba(34,197,94,0.40);
-  background: linear-gradient(180deg, rgba(34,197,94,0.12), rgba(34,197,94,0.055));
+  border-color: rgba(255,107,107,0.40);
+  background: linear-gradient(180deg, rgba(255,107,107,0.12), rgba(255,107,107,0.055));
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
@@ -2857,7 +2954,7 @@ button:disabled {
 
 .betslip-head h3 {
   margin: 2px 0 0;
-  color: white;
+  color: var(--text);
   font-size: 1.2rem;
   font-weight: 850;
   letter-spacing: -0.02em;
@@ -2887,7 +2984,7 @@ button:disabled {
 }
 
 .betslip-empty strong {
-  color: rgba(248,250,252,0.9);
+  color: var(--text);
 }
 
 .betslip-ticket {
@@ -2910,13 +3007,13 @@ button:disabled {
   font-size: 11px;
   font-style: normal;
   font-weight: 900;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
 }
 
 .betslip-ticket h4 {
   margin: 0;
-  color: white;
+  color: var(--text);
   font-size: 15px;
   line-height: 1.25;
 }
@@ -2925,7 +3022,7 @@ button:disabled {
   min-height: 34px;
   padding: 0 10px;
   border-radius: 8px;
-  background: rgba(140,145,255,0.045);
+  background: rgba(59,130,246,0.045);
 }
 
 .ticket-line span,
@@ -2934,12 +3031,12 @@ button:disabled {
 .ticket-note {
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .ticket-line strong,
 .ticket-summary strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 13px;
 }
 
@@ -2951,10 +3048,10 @@ button:disabled {
 .stake-input input {
   width: 100%;
   height: 42px;
-  border: 1px solid rgba(34,197,94,0.28);
+  border: 1px solid rgba(255,107,107,0.28);
   border-radius: 8px;
   background: var(--bg);
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   padding: 0 12px;
   font-size: 18px;
   font-weight: 900;
@@ -2963,8 +3060,8 @@ button:disabled {
 }
 
 .stake-input input:focus {
-  border-color: rgba(34,197,94,0.55);
-  box-shadow: 0 0 0 3px rgba(34,197,94,0.08);
+  border-color: rgba(255,107,107,0.55);
+  box-shadow: 0 0 0 3px rgba(255,107,107,0.08);
 }
 
 .ticket-summary {
@@ -2978,17 +3075,17 @@ button:disabled {
   display: grid;
   gap: 4px;
   border-radius: 7px;
-  background: rgba(140,145,255,0.045);
+  background: rgba(59,130,246,0.045);
 }
 
 /* ── Place button ────────────────────────────────────────────── */
 
 .place-live {
   min-height: 44px;
-  border: 1px solid rgba(34,197,94,0.45);
+  border: 1px solid rgba(255,107,107,0.45);
   border-radius: 8px;
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2997,7 +3094,7 @@ button:disabled {
 
 .place-live:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(34,197,94,0.24);
+  box-shadow: 0 8px 24px rgba(255,107,107,0.24);
 }
 
 .place-live.is-review {
@@ -3038,7 +3135,7 @@ button:disabled {
 
 .client-callout h3 {
   margin: 3px 0 0;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: clamp(1.3rem, 2.5vw, 2rem);
   line-height: 1;
   font-weight: 950;
@@ -3066,7 +3163,7 @@ button:disabled {
 }
 
 .client-status-card.good {
-  border-color: rgba(0,232,122,0.28);
+  border-color: rgba(255,107,107,0.28);
 }
 
 .client-status-card.warn {
@@ -3079,11 +3176,11 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .client-status-card strong {
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
   font-size: 1.35rem;
   line-height: 1;
   font-weight: 950;
@@ -3103,7 +3200,7 @@ button:disabled {
 .client-system-list strong {
   display: block;
   margin-bottom: 6px;
-  color: rgba(248,250,252,0.95);
+  color: var(--text);
 }
 
 /* ── KPI card / metric ───────────────────────────────────────── */
@@ -3131,7 +3228,7 @@ button:disabled {
 .kpi-sub {
   color: var(--muted-2);
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── Responsive ──────────────────────────────────────────────── */
@@ -3366,9 +3463,9 @@ button:disabled {
   display: grid;
   gap: 8px;
   padding: 14px;
-  border: 1px solid rgba(34,197,94,0.25);
+  border: 1px solid rgba(255,107,107,0.25);
   border-radius: 10px;
-  background: rgba(34,197,94,0.05);
+  background: rgba(255,107,107,0.05);
 }
 
 .checkout-wallet-block > span:first-child {
@@ -3377,7 +3474,7 @@ button:disabled {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--green);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .checkout-address {
@@ -3388,7 +3485,7 @@ button:disabled {
 
 .checkout-address code {
   flex: 1;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   color: var(--text);
   word-break: break-all;
@@ -3402,9 +3499,9 @@ button:disabled {
   flex-shrink: 0;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid rgba(34,197,94,0.40);
+  border: 1px solid rgba(255,107,107,0.40);
   border-radius: 6px;
-  background: rgba(34,197,94,0.10);
+  background: rgba(255,107,107,0.10);
   color: var(--green);
   font-size: 11px;
   font-weight: 700;
@@ -3413,7 +3510,7 @@ button:disabled {
 }
 
 .checkout-address button:hover {
-  background: rgba(34,197,94,0.20);
+  background: rgba(255,107,107,0.20);
 }
 
 .checkout-wallet-block > em {
@@ -3438,14 +3535,14 @@ button:disabled {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid rgba(129,140,248,0.40);
-  background: rgba(129,140,248,0.10);
-  color: rgba(129,140,248,0.90);
+  border: 1px solid rgba(59,130,246,0.40);
+  background: rgba(59,130,246,0.10);
+  color: rgba(59,130,246,0.90);
   font-size: 10px;
   font-weight: 900;
   display: grid;
   place-items: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .checkout-steps > div > span:last-child {
@@ -3493,7 +3590,7 @@ button:disabled {
 }
 
 .pending-payment-view .pending-tx span {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   color: rgba(245,158,11,0.80);
   word-break: break-all;
@@ -3533,7 +3630,7 @@ button:disabled {
   min-height: 76px;
   border-bottom: 1px solid var(--line);
   background:
-    linear-gradient(90deg, rgba(34,197,94,.06) 0%, transparent 40%),
+    linear-gradient(90deg, rgba(255,107,107,.06) 0%, transparent 40%),
     rgba(5,7,13,.98);
   display: flex;
   align-items: center;
@@ -3655,16 +3752,25 @@ button:disabled {
   height: 36px;
   padding: 0 16px;
   border-radius: 8px;
-  border: 1px solid rgba(34,197,94,.42);
-  background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  border: 1px solid var(--am-coral-b);
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
+  color: #1A0B05;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: opacity .15s;
+  box-shadow: 0 6px 18px -8px var(--am-glow);
+  transition: filter .15s ease, box-shadow .15s ease;
 }
 
-.btn-primary:hover { opacity: .85; }
+.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 8px 22px -8px var(--am-glow); }
+
+/* Light: usa il token "fill/gradiente" (--am-coral-2 #FF6B6B) come estremo coral
+   del gradiente. Il dark-text #1A0B05 passa AA con margine pieno (orange 6.36,
+   coral 6.92) restando entro 4.5:1 su tutto il gradiente; --am-coral (#E5484D,
+   estremo brick) era AA-borderline (4.90). Estetica invariata, solo light. */
+:root[data-theme="light"] .btn-primary {
+  background: linear-gradient(135deg, var(--am-orange), var(--am-coral-2));
+}
 
 .btn-secondary {
   height: 36px;
@@ -3692,7 +3798,39 @@ button:disabled {
   font-weight: 900;
   letter-spacing: .08em;
   cursor: pointer;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Theme toggle (Cobalt & Coral redesign, F1) — sibling of .lang-toggle in header. */
+.theme-toggle {
+  height: 32px;
+  width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  color: var(--am-coral);
+  border-color: var(--am-coral-b);
+  background: var(--am-coral-dim);
+}
+
+/* Account tab (UI-ACCOUNT-UNIFY-1) — wrapper + segmented sub-nav. */
+.account-tab {
+  display: grid;
+  gap: 16px;
+}
+
+.account-subnav {
+  flex-wrap: wrap;
 }
 
 /* ── Client Area & Plans ─────────────────────────────────────── */
@@ -3714,8 +3852,8 @@ button:disabled {
 }
 
 .plan-card.featured {
-  border-color: rgba(34,197,94,.4);
-  background: linear-gradient(135deg, rgba(34,197,94,.07), rgba(255,255,255,.015));
+  border-color: rgba(255,107,107,.4);
+  background: linear-gradient(135deg, rgba(255,107,107,.07), rgba(255,255,255,.015));
 }
 
 .plan-btn {
@@ -3732,14 +3870,14 @@ button:disabled {
 }
 
 .plan-btn.primary {
-  border-color: rgba(34,197,94,.42);
+  border-color: rgba(255,107,107,.42);
   background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: #06120A;
+  color: #1A0B05;
 }
 
 .plan-btn.active {
-  border-color: rgba(34,197,94,.3);
-  background: rgba(34,197,94,.08);
+  border-color: rgba(255,107,107,.3);
+  background: rgba(255,107,107,.08);
   color: var(--green);
   cursor: default;
 }
@@ -3838,7 +3976,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 12px;
   margin: 16px;
-  background: linear-gradient(135deg, rgba(34,197,94,.04) 0%, rgba(139,92,246,.04) 100%);
+  background: linear-gradient(135deg, rgba(255,107,107,.04) 0%, rgba(139,92,246,.04) 100%);
 }
 .bets-auth-gate-icon { font-size: 36px; }
 .bets-auth-gate h3 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
@@ -3857,7 +3995,7 @@ button:disabled {
 }
 .extra-markets-label {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: #4b5563;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -3869,7 +4007,7 @@ button:disabled {
   gap: 3px;
   padding: 2px 7px;
   border-radius: 99px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 600;
 }
@@ -3882,7 +4020,7 @@ button:disabled {
 /* ─── Partner collaboration form ─────────────────────────────────────────── */
 .operators-collab {
   background: var(--surface, #1e2a3a);
-  border: 1px solid rgba(255,255,255,.07);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 28px 28px 24px;
   display: flex;
@@ -3892,7 +4030,7 @@ button:disabled {
 .operators-collab-head h4 {
   font-size: 18px;
   font-weight: 700;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
   margin: 6px 0 8px;
 }
 .operators-collab-head p {
@@ -3905,8 +4043,8 @@ button:disabled {
   align-items: center;
   gap: 12px;
   padding: 18px 20px;
-  background: rgba(74,222,128,.07);
-  border: 1px solid rgba(74,222,128,.25);
+  background: rgba(52,211,153,.07);
+  border: 1px solid rgba(52,211,153,.25);
   border-radius: 8px;
   color: #4ade80;
   font-size: 14px;
@@ -3941,11 +4079,11 @@ button:disabled {
 .operators-form select,
 .operators-form textarea {
   background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.1);
+  border: 1px solid var(--line);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 13px;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
   outline: none;
   transition: border-color .15s;
   font-family: inherit;
@@ -3966,19 +4104,25 @@ button:disabled {
   padding: 7px 12px;
   border-radius: 8px;
   background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.07);
-  font-family: var(--font-mono, monospace);
+  border: 1px solid var(--line);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
 }
-.live-score-bar.live   { border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.05); }
-.live-score-bar.paused { border-color: rgba(250,204,21,.25); background: rgba(250,204,21,.04); }
-.live-score-bar.finished { border-color: rgba(148,163,184,.2); }
+/* Per-state container tint — tokenized, theme-aware (AA in both themes).
+   live = coral (red-token), paused/HT = amber, finished/FT = neutral border only. */
+.live-score-bar.live   { border-color: var(--am-coral-b);    background: var(--am-coral-dim); }
+.live-score-bar.paused { border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.05); }
+.live-score-bar.finished { border-color: var(--am-line-2); }
+
+/* ── .live-badge — single source of truth (consolidated; was also defined ~line 253).
+   JSX emits "● LIVE" text itself, so NO ::before dot here (avoids double dot).
+   Pulse/dot semantics live ONLY in the `live` state via the .blink class. */
 .live-badge {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: #ef4444;
+  color: var(--am-coral);          /* live state: coral (red-token) */
   white-space: nowrap;
 }
 .live-badge.blink { animation: livePulse 1.2s ease-in-out infinite; }
@@ -3986,30 +4130,31 @@ button:disabled {
   0%, 100% { opacity: 1; }
   50% { opacity: .35; }
 }
-.live-score-bar.paused .live-badge { color: #fbbf24; }
-.live-score-bar.finished .live-badge { color: #94a3b8; }
+/* HT/paused = amber, FT/finished = muted/neutral — no red dot, no pulse */
+.live-score-bar.paused   .live-badge { color: var(--am-amber); }
+.live-score-bar.finished .live-badge { color: var(--am-muted); }
 .live-result {
   font-size: 16px;
   font-weight: 800;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
   letter-spacing: .04em;
 }
 .live-verdict { font-size: 10px; font-weight: 700; margin-left: auto; }
-.live-verdict.correct { color: #4ade80; }
-.live-verdict.wrong   { color: #f87171; }
+.live-verdict.correct { color: var(--am-positive); }
+.live-verdict.wrong   { color: var(--am-negative); }
 
 /* ─── History Score ──────────────────────────────────────────────────────── */
 .hist-score {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 .hist-score.live .live-badge { font-size: 9px; }
 .hist-score-val {
   font-size: 14px;
   font-weight: 700;
-  color: var(--fg, #f1f5f9);
+  color: var(--text);
 }
 
 /* ─── Plan Gating ────────────────────────────────────────────────────────── */
@@ -4023,7 +4168,7 @@ button:disabled {
   background: rgba(234, 179, 8, 0.08);
   color: #eab308;
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
   white-space: nowrap;
   cursor: default;
@@ -4042,13 +4187,13 @@ button:disabled {
 .plan-upgrade-nudge > span { font-size: 14px; }
 .plan-upgrade-nudge strong {
   font-size: 11px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: #eab308;
   font-weight: 600;
 }
 .plan-upgrade-nudge em {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.35);
   font-style: normal;
 }
@@ -4057,7 +4202,7 @@ button:disabled {
   cursor: default;
   font-size: 10px;
   color: rgba(255,255,255,0.2);
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   user-select: none;
@@ -4075,13 +4220,13 @@ button:disabled {
 }
 .free-tier-banner strong {
   font-size: 11px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: #eab308;
   font-weight: 600;
 }
 .free-tier-banner span {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.35);
 }
 
@@ -4103,14 +4248,14 @@ button:disabled {
 }
 .fpw-count {
   font-size: 13px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
   color: #eab308;
   letter-spacing: 0.03em;
 }
 .fpw-sub {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.35);
 }
 
@@ -4133,7 +4278,7 @@ button:disabled {
 }
 .da-badge {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 2px 6px;
@@ -4145,7 +4290,7 @@ button:disabled {
 }
 .da-title {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(167, 139, 250, 0.6);
@@ -4155,7 +4300,7 @@ button:disabled {
   align-items: flex-start;
   gap: 8px;
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 .da-label {
   color: rgba(255,255,255,0.35);
@@ -4180,7 +4325,7 @@ button:disabled {
 }
 .da-market-pill {
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.1);
@@ -4188,9 +4333,9 @@ button:disabled {
   background: rgba(255,255,255,0.04);
 }
 .da-market-pill.value {
-  border-color: rgba(34, 197, 94, 0.35);
+  border-color: rgba(52, 211, 153, 0.35);
   color: #4ade80;
-  background: rgba(34, 197, 94, 0.07);
+  background: rgba(52, 211, 153, 0.07);
 }
 .da-research {
   display: flex;
@@ -4202,7 +4347,7 @@ button:disabled {
 }
 .da-research-text {
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.55);
   line-height: 1.55;
   margin: 0;
@@ -4213,7 +4358,7 @@ button:disabled {
   filter: blur(6px);
   user-select: none;
   pointer-events: none;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   color: rgba(255,255,255,0.4);
 }
@@ -4234,7 +4379,7 @@ button:disabled {
 }
 .locked-cta {
   font-size: 11px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(167, 139, 250, 0.85);
   margin-top: 4px;
   text-align: center;
@@ -4243,7 +4388,7 @@ button:disabled {
   display: inline-block;
   margin-top: 6px;
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
   color: #34d399;
   text-decoration: none;
@@ -4262,7 +4407,7 @@ button:disabled {
   border-radius: 6px;
   padding: 2px 8px;
   font-size: 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
   margin-top: 4px;
   letter-spacing: 0.03em;
@@ -4271,7 +4416,7 @@ button:disabled {
   margin: 8px 0 2px;
   padding: 6px 10px;
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(255,255,255,0.22);
   text-align: center;
   border-top: 1px solid rgba(255,255,255,0.05);
@@ -4288,11 +4433,46 @@ button:disabled {
   border: 1px dashed rgba(139, 92, 246, 0.18);
   background: rgba(139, 92, 246, 0.02);
   font-size: 9px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(167, 139, 250, 0.45);
   margin-top: 4px;
   cursor: default;
   user-select: none;
+}
+
+/* ── Light polish: gating/preview cluster (R3) ─────────────────────────────
+   I valori sopra sono cotti per dark (yellow #eab308, rgba(255,255,255,…)):
+   in light risultano slavati o invisibili. Override SOLO light, dark intatto.
+   Amber profondo #92590A (AA su small text, ~5.1–5.7) + sottotesti su --am-muted.
+   Niente cambi strutturali, solo contrasti. */
+:root[data-theme="light"] {
+  .market-section-title.amber span { color: #92590A; }
+
+  .plan-lock-badge {
+    border-color: rgba(146,89,10,0.40);
+    background: rgba(146,89,10,0.08);
+    color: #92590A;
+  }
+
+  .plan-upgrade-nudge { border-color: rgba(146,89,10,0.28); background: rgba(146,89,10,0.06); }
+  .plan-upgrade-nudge strong { color: #92590A; }
+  .plan-upgrade-nudge em { color: var(--am-muted); }
+
+  .why-locked-preview { color: var(--am-muted); }
+
+  .free-tier-banner {
+    border-color: rgba(146,89,10,0.28);
+    background: rgba(146,89,10,0.06);
+  }
+  .free-tier-banner strong { color: #92590A; }
+  .free-tier-banner span { color: var(--am-muted); }
+
+  .free-preview-wall {
+    border-color: rgba(146,89,10,0.32);
+    background: rgba(146,89,10,0.05);
+  }
+  .fpw-count { color: #92590A; }
+  .fpw-sub { color: var(--am-muted); }
 }
 
 /* ── World Cup hub (Track B) ─────────────────────────────────────────────── */
@@ -4318,7 +4498,7 @@ button:disabled {
   font-size: 11px;
   font-weight: 850;
   text-decoration: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -4330,7 +4510,7 @@ button:disabled {
 }
 /* #021: auth-aware topbar — logged-in identity + plan pill. */
 .wc-topbar-user {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.78rem;
   color: var(--text-2, #9ca3af);
   max-width: 180px;
@@ -4339,7 +4519,7 @@ button:disabled {
   white-space: nowrap;
 }
 .wc-topbar-plan {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
