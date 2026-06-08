@@ -11,6 +11,7 @@ import CalendarSection from "@/components/world-cup/CalendarSection";
 import WcBoard from "@/components/world-cup/WcBoard";
 import WinnerOdds from "@/components/world-cup/WinnerOdds";
 import WinnerOddsCompact from "@/components/world-cup/WinnerOddsCompact";
+import WcReferenceTabs from "@/components/world-cup/WcReferenceTabs";
 import TrackRecordStrip from "@/components/world-cup/TrackRecordStrip";
 import { fetchWcGroups, fetchWcFixtures, teamSlug } from "@/lib/world-cup";
 import { dbQuery } from "@/lib/db";
@@ -39,6 +40,26 @@ export default async function WorldCupPage() {
        FROM wc_squads ORDER BY team_canonical ASC`
     ),
   ]);
+
+  const squadsContent = squads.length ? (
+    <div className="wc-squads-grid">
+      {squads.map((s) => (
+        <Link
+          key={s.team_canonical}
+          href={`/world-cup/${teamSlug(s.team_canonical)}`}
+          className="glass-card wc-squad-chip"
+        >
+          <strong>{s.team_canonical}</strong>
+          <small>
+            {s.squad_size ?? "—"} players
+            {s.injured_count ? ` · ${s.injured_count} injured` : ""}
+          </small>
+        </Link>
+      ))}
+    </div>
+  ) : (
+    <div className="book-empty">Squad data syncing — back shortly.</div>
+  );
 
   return (
     <div className="portal-root wc-root">
@@ -76,43 +97,17 @@ export default async function WorldCupPage() {
         </aside>
       </div>
 
-      {/* Full-width reference sections below the fold */}
-      <section className="wc-section" id="outlook">
-        <h2 className="wc-section-title">Who wins the World Cup?</h2>
-        <WinnerOdds />
-      </section>
-
-      <section className="wc-section" id="groups">
-        <h2 className="wc-section-title">Groups</h2>
-        <GroupsGrid groups={groups} />
-      </section>
-
-      <section className="wc-section" id="calendar">
-        <h2 className="wc-section-title">Match calendar</h2>
-        <CalendarSection fixtures={fixtures} />
-      </section>
-
-      <section className="wc-section" id="squads">
-        <h2 className="wc-section-title">Squads &amp; call-ups</h2>
-        {squads.length ? (
-          <div className="wc-squads-grid">
-            {squads.map((s) => (
-              <Link
-                key={s.team_canonical}
-                href={`/world-cup/${teamSlug(s.team_canonical)}`}
-                className="glass-card wc-squad-chip"
-              >
-                <strong>{s.team_canonical}</strong>
-                <small>
-                  {s.squad_size ?? "—"} players
-                  {s.injured_count ? ` · ${s.injured_count} injured` : ""}
-                </small>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="book-empty">Squad data syncing — back shortly.</div>
-        )}
+      {/* Tournament reference — tabbed so the hub stops sprawling below the board */}
+      <section className="wc-section">
+        <h2 className="wc-section-title">Tournament reference</h2>
+        <WcReferenceTabs
+          tabs={[
+            { id: "outlook", label: "Who wins", content: <WinnerOdds /> },
+            { id: "groups", label: "Groups", content: <GroupsGrid groups={groups} /> },
+            { id: "calendar", label: "Match calendar", content: <CalendarSection fixtures={fixtures} /> },
+            { id: "squads", label: "Squads", content: squadsContent },
+          ]}
+        />
       </section>
       </main>
     </div>
