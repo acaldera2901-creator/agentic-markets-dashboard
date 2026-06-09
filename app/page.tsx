@@ -5827,6 +5827,36 @@ export default function Dashboard() {
       {/* ── Bottom banner ── */}
       <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
 
+      {/* ── Promo strip (demoted from sidebars) ── */}
+      <section className="promo-strip">
+        <div className="promo-card">
+          <p className="promo-eyebrow">{uiLanguage === "it" ? "Operator · API" : "Operator · API"}</p>
+          <h4>{uiLanguage === "it" ? "Probabilità via REST" : "Probabilities via REST"}</h4>
+          <p className="promo-desc">{uiLanguage === "it" ? "Integra le probabilità calibrate (Dixon-Coles + xG) nella tua piattaforma. Una chiamata, un payload, nessun bookmaker." : "Integrate calibrated probabilities (Dixon-Coles + xG) into your platform. One call, one payload, no bookmaker."}</p>
+          <a href="mailto:info@agenticmarkets.com?subject=Operator%20API%20Access"
+            className="promo-link"
+            onClick={() => trackEvent("operator_sidebar_click", {})}>
+            {uiLanguage === "it" ? "Richiedi accesso" : "Request access"} <span className="promo-ar">→</span>
+          </a>
+        </div>
+        <div className="promo-card">
+          <p className="promo-eyebrow">{uiLanguage === "it" ? "B2B · White-label" : "B2B · White-label"}</p>
+          <h4>{uiLanguage === "it" ? "Il desk col tuo brand" : "The desk with your brand"}</h4>
+          <p className="promo-desc">{uiLanguage === "it" ? "Lo stesso signal desk sul tuo dominio, reporting incluso. Tu il marchio, noi il modello." : "The same signal desk on your domain, reporting included. You the brand, us the model."}</p>
+          <button type="button" onClick={() => { setTab("partners"); trackEvent("operator_b2b_click", {}); }} className="promo-link">
+            {uiLanguage === "it" ? "Partner Program" : "Partner Program"} <span className="promo-ar">→</span>
+          </button>
+        </div>
+        <div className="promo-card">
+          <p className="promo-eyebrow">{uiLanguage === "it" ? "Sportsbook · in arrivo" : "Sportsbook · coming"}</p>
+          <h4>{uiLanguage === "it" ? "Gioca informato" : "Bet Smarter"}</h4>
+          <p className="promo-desc">{uiLanguage === "it" ? "Le nostre probabilità calibrate affiancate alle quote dei partner. Confronto prima dell'azione — mai al posto del tuo giudizio." : "Our calibrated probabilities alongside partner odds. Compare before you act — never instead of your judgment."}</p>
+          <button type="button" onClick={() => { setTab("partners"); trackEvent("sportsbook_sidebar_click", {}); }} className="promo-link">
+            {uiLanguage === "it" ? "Vedi partner" : "View partners"} <span className="promo-ar">→</span>
+          </button>
+        </div>
+      </section>
+
       <footer className="text-center text-xs text-gray-500 pb-8 font-mono space-y-2" style={{padding: "16px 24px"}}>
         <div>{tUI.footer_note}</div>
         <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] text-gray-600">
