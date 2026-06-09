@@ -25,7 +25,7 @@ class EloSurfaceModel:
         # ratings: {player_name: {overall: float, clay: float, grass: float, hard: float}}
         self.ratings: dict[str, dict[str, float]] = {}
         self._canonical_index: dict[str, str] = {}
-        self.K = 32
+        self.K = 24  # #TENNIS-K24 (2026-06-09): ECE -45% OOS, Brier flat. Mirror of update() default.
         self.decay = 0.99  # per-match decay applied to inactive players
 
     def _index_player(self, player: str) -> None:
@@ -90,7 +90,7 @@ class EloSurfaceModel:
             "r2_effective": round(r2, 1),
         }
 
-    def update(self, winner: str, loser: str, surface: str, k_factor: int = 32) -> None:
+    def update(self, winner: str, loser: str, surface: str, k_factor: int = 24) -> None:
         """Update ratings after a match result."""
         surface = surface.lower()
         w = self._get(winner)
