@@ -11,17 +11,17 @@
      le classi bespoke via gli alias legacy in fondo al blocco. */
 
   /* Base backgrounds — deep indigo-black, not flat black */
-  --am-bg:         #07080F;
-  --am-bg-2:       #0A0C18;
-  --am-panel:      #0F1118;
-  --am-panel-2:    #131626;
-  --am-panel-3:    #181B2E;
+  --am-bg:         #0B0C0E;
+  --am-bg-2:       #0E1013;
+  --am-panel:      #131519;
+  --am-panel-2:    #181B20;
+  --am-panel-3:    #1E2229;
   --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
-  --am-inset:      rgba(255,255,255,0.04);    /* superfici recessed: input, pill, segmented */
+  --am-inset:      #0C0D10;    /* superfici recessed: input, pill, segmented */
 
   /* Borders — neutral-cool, low chroma for depth */
-  --am-line:       rgba(255,255,255,0.08);
-  --am-line-2:     rgba(255,255,255,0.14);
+  --am-line:       #21252C;
+  --am-line-2:     #2C313A;
 
   /* Brand accents — coral primary, warm orange, cool cobalt */
   --am-coral:      #FF6A5E;   /* primary: CTA, nav attiva, top-pick */
@@ -59,9 +59,10 @@
   --am-glow:       rgba(255,107,107,0.18);
 
   /* Typography */
-  --am-text:       rgba(234,236,245,0.96);
-  --am-muted:      rgba(234,236,245,0.62);
-  --am-muted-2:    rgba(234,236,245,0.30);
+  --am-text:       #EDEFF2;
+  --am-muted:      #AEB4BE;
+  --am-muted-2:    #6E7682;
+  --am-hi:         rgba(255,255,255,0.05);
 
   /* Semantic aliases consumed by bespoke rules (--border / --accent / --ring) */
   --accent: var(--am-panel-3);
@@ -95,16 +96,16 @@
    automaticamente perché puntano ad altri --am-*. Accenti approfonditi per AA
    su fondo chiaro (spec §3.2). */
 :root[data-theme="light"] {
-  --am-bg:         #F6F7F9;
-  --am-bg-2:       #EEF0F4;
+  --am-bg:         #F4F5F7;
+  --am-bg-2:       #EEF0F3;
   --am-panel:      #FFFFFF;
-  --am-panel-2:    #F1F3F7;
-  --am-panel-3:    #E9ECF2;
+  --am-panel-2:    #FBFCFD;
+  --am-panel-3:    #EEF0F3;
   --am-bar:        rgba(255,255,255,0.96);
-  --am-inset:      rgba(15,18,30,0.05);
+  --am-inset:      #EEF0F3;
 
-  --am-line:       rgba(15,18,30,0.10);
-  --am-line-2:     rgba(15,18,30,0.16);
+  --am-line:       #E3E6EB;
+  --am-line-2:     #D2D7DE;
 
   --am-coral:      #D8392F;   /* primary su light, contrasto AA come testo/bordo */
   --am-coral-2:    #E5483D;   /* fill/gradiente */
@@ -126,9 +127,10 @@
   --am-wash:       rgba(229,72,77,0.07);
   --am-glow:       rgba(229,72,77,0.12);
 
-  --am-text:       rgba(14,17,24,0.96);
-  --am-muted:      rgba(14,17,24,0.60);
-  --am-muted-2:    rgba(14,17,24,0.34);
+  --am-text:       #14171C;
+  --am-muted:      #4A515B;
+  --am-muted-2:    #79818D;
+  --am-hi:         rgba(255,255,255,0.9);
 
   --ring:         rgba(229,72,77,0.38);
 }
