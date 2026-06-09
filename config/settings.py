@@ -189,6 +189,12 @@ class Settings(BaseSettings):
     TENNIS_MAX_BET_PCT: float = 0.20       # 20% cap → 2€ on 10€ bankroll (Betfair minimum)
     TENNIS_DRAWDOWN_LIMIT: float = 0.12    # 12% monthly drawdown block
     TENNIS_KELLY_FRACTION: float = 0.25
+    # Tennis market-blend SHADOW (10y lab 2026-06-08: blending closing odds ~doubles
+    # publishable volume at 72% hit). Shadow-only: logs to prediction_log, served
+    # model unchanged. Promotion to served = human APPROVE in deploy-gate.
+    TENNIS_SHADOW_VERSION: str = "tennis-market-blend-shadow"
+    TENNIS_SHADOW_ENABLED: bool = True      # compute + log the shadow A/B
+    TENNIS_SHADOW_SERVE_ENABLED: bool = False  # flip ONLY after gate-green + APPROVE
 
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60

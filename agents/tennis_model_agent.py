@@ -6,6 +6,7 @@ from agents.base import BaseAgent
 from core.redis_client import get_redis
 from core.tennis_features import TennisFeatureStore
 from core.tennis_names import canonical_player_key, clean_player_name
+from core.tennis_market_blend import devig_2way, blend_tennis, TENNIS_MARKET_BLEND_ALPHA
 from models.elo_surface import EloSurfaceModel
 
 MIN_ODDS = 1.50  # don't bet heavy favourites — compounded variance destroys EV
@@ -54,6 +55,8 @@ class TennisModelAgent(BaseAgent):
         self.fatigue = FatigueAdjustment()
         self.feature_store: TennisFeatureStore | None = None
         self.model_version = "elo_surface_v4_features_odds"
+        # market-blend shadow A/B state (insert-on-change), per-match last signature
+        self._shadow_state: dict[str, tuple] = {}
 
     # #TENNIS-1: reload Elo from DB every N cycles (~30 min at 300s/cycle) so
     # ratings updated by TennisSettlementAgent reach the scoring loop without
@@ -125,6 +128,46 @@ class TennisModelAgent(BaseAgent):
         if predictions:
             await self._write_predictions(predictions)
             self.logger.info("tennis model: scored %d fixtures", len(predictions))
+            await self._log_tennis_shadow(predictions)
+
+    async def _log_tennis_shadow(self, predictions: list[dict]) -> None:
+        """SHADOW A/B: market-blended tennis probability logged to prediction_log;
+        the SERVED model is untouched. Mirrors agents/model._log_wc_elo_v2_shadow —
+        gated, insert-on-change, fail-soft (never blocks the served loop).
+        Promotion to served requires a green gate + human APPROVE (deploy-gate)."""
+        from config.settings import settings
+        if not getattr(settings, "TENNIS_SHADOW_ENABLED", False):
+            return
+        from core.supabase_client import log_prediction_snapshot
+        for pred in predictions:
+            try:
+                p1, p2 = pred.get("p1"), pred.get("p2")
+                if p1 is None or p2 is None:
+                    continue
+                odds_p1 = self._float_or_none(pred.get("odds_p1"))
+                odds_p2 = self._float_or_none(pred.get("odds_p2"))
+                market = devig_2way(odds_p1, odds_p2)
+                b1, b2 = blend_tennis(float(p1), float(p2), market)
+                key = str(pred.get("match_id") or "")
+                sig = (round(b1, 4),)
+                if not key or self._shadow_state.get(key) == sig:
+                    continue
+                self._shadow_state[key] = sig
+                await log_prediction_snapshot(
+                    match_id=key,
+                    league=str(pred.get("tournament") or "tennis"),
+                    home_team=str(pred.get("player1") or ""),
+                    away_team=str(pred.get("player2") or ""),
+                    kickoff=str(pred.get("scheduled_at") or ""),
+                    served=(b1, 0.0, b2),               # shadow blended probability
+                    model=(float(p1), 0.0, float(p2)),  # raw served model (pre-blend)
+                    odds={"home": odds_p1, "draw": None, "away": odds_p2},
+                    market=({"home": market["p1"], "draw": 0.0, "away": market["p2"]} if market else None),
+                    model_version=settings.TENNIS_SHADOW_VERSION,
+                    blend_alpha=(TENNIS_MARKET_BLEND_ALPHA if market else None),
+                )
+            except Exception as exc:
+                self.logger.warning("tennis shadow failed (non-fatal): %s", exc)
 
     async def _load_fixtures_from_db(self) -> list[dict]:
         from config.settings import settings
