@@ -8,6 +8,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, type BestBetCandidate } from "@/lib/best-bets";
+import { SportGlyphSprite } from "./components/sport-glyphs";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -5676,6 +5677,7 @@ export default function Dashboard() {
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
     <main className="portal-root">
+      <SportGlyphSprite />
       <CookieBanner />
 
       {/* ── Top banner ── */}
@@ -5734,11 +5736,11 @@ export default function Dashboard() {
               ))}
               {/* Track B: World Cup hub is a route, not a tab */}
               <a className="rail-item" href="/world-cup">
-                <span>🏆 World Cup</span>
+                <span><svg style={{width:16,height:16,verticalAlign:'-3px',marginRight:8}}><use href="#g-trophy"/></svg>World Cup</span>
               </a>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
-                <span>⭐ Creator Picks</span>
+                <span><svg style={{width:16,height:16,verticalAlign:'-3px',marginRight:8}}><use href="#g-pick"/></svg>Creator Picks</span>
               </a>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
                 {refreshing ? "..." : tUI.refresh_odds}
