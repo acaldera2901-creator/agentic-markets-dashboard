@@ -6,6 +6,7 @@ import {
   type SyncReport,
 } from "@/lib/publication-gate";
 import { buildTennisExplanation } from "@/lib/tennis-explanation";
+import { surfaceDecision, SURFACE_FLOOR_TENNIS } from "@/lib/surfacing-gate";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -44,7 +45,7 @@ function computeStatus(scheduledAt: string | null): string {
   return "pending_settlement";
 }
 
-function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
+export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const p1 = row.p1 ?? 0;
   const p2 = row.p2 ?? 0;
   // best_selection è il codice "P1"/"P2" (non il nome del giocatore) — il
@@ -58,22 +59,31 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const hasRealMarket = odds != null && row.edge != null;
   const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
   const confidence = prob > 0 ? Math.round(prob * 100) : null;
+  // Confidence-surfacing floor (#FLOOR-UNIFORM-1, APPROVE Andrea 2026-06-09):
+  // mirror the board route — below the tennis floor there is no clear favourite,
+  // so the unified row carries NO directional pick (and no directional prose).
+  // Probability-neutral: confidence_score / fair_odds are unchanged. This stops
+  // sub-floor picks leaking onto v2 / Match Builder / Creator Picks.
+  const { belowFloor } = surfaceDecision(confidence ?? 0, SURFACE_FLOOR_TENNIS);
+  const surfacedPick = belowFloor ? null : pick;
   const surface = row.surface ? row.surface[0].toUpperCase() + row.surface.slice(1) : "n/a";
   // Why-v2: human prose, no internal jargon. The picked side's serve/return form
   // is the one paired with `pick` (P1/P2), so the comparison reads in the
   // favourite's direction. TEXT ONLY — probabilities/pick/confidence untouched.
-  const explanation = buildTennisExplanation({
-    pick,
-    opponent: pickP1 ? row.player2 : row.player1,
-    confidence,
-    surface,
-    serveFormPick: pickP1 ? row.serve_form_p1 : row.serve_form_p2,
-    serveFormOpp: pickP1 ? row.serve_form_p2 : row.serve_form_p1,
-    returnFormPick: pickP1 ? row.return_form_p1 : row.return_form_p2,
-    returnFormOpp: pickP1 ? row.return_form_p2 : row.return_form_p1,
-    featureQuality: row.feature_quality,
-    hasRealMarket,
-  });
+  const explanation = belowFloor
+    ? null
+    : buildTennisExplanation({
+        pick,
+        opponent: pickP1 ? row.player2 : row.player1,
+        confidence,
+        surface,
+        serveFormPick: pickP1 ? row.serve_form_p1 : row.serve_form_p2,
+        serveFormOpp: pickP1 ? row.serve_form_p2 : row.serve_form_p1,
+        returnFormPick: pickP1 ? row.return_form_p1 : row.return_form_p2,
+        returnFormOpp: pickP1 ? row.return_form_p2 : row.return_form_p1,
+        featureQuality: row.feature_quality,
+        hasRealMarket,
+      });
 
   return {
     external_event_id: row.match_id,
@@ -84,7 +94,7 @@ function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
     home_team: row.player1,
     away_team: row.player2,
     market: "ML",
-    pick,
+    pick: surfacedPick,
     bookmaker: hasRealMarket ? "market composite" : "no market",
     odds: hasRealMarket && odds != null ? Math.round(odds * 100) / 100 : null,
     fair_odds: fairOdds,

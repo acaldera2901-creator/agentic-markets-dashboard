@@ -167,7 +167,7 @@ class Settings(BaseSettings):
     # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
     # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.
     # Walk-forward held-out: floor 60 -> 70.9% hit (keeps 58.8%), 62 -> 72.1% (52%).
-    SURFACE_FLOOR_TENNIS: int = 60     # ATP/WTA (max-prob >= 60), commercial volume kept
+    SURFACE_FLOOR_TENNIS: int = 62     # ATP/WTA (max-prob >= 62); #FLOOR-62 2026-06-09, n=8044 OOS sweep (71.5% hit, 53.4% vol)
 
     # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
     # surface floor the copy says "favoured but open"; at/above this stronger

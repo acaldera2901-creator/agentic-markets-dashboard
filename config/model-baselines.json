@@ -23,8 +23,8 @@
       "sport": "wc",
       "holdout": "neutral 2025+ (overlaps artifact fit \u2014 regression detector only)",
       "n": 262,
-      "brier": 0.5451,
-      "ece": 0.0466
+      "brier": 0.5479,
+      "ece": 0.0479
     }
   }
 }

@@ -15,7 +15,7 @@ export const SURFACE_FLOOR_FOOTBALL = 56;
 // Tennis floor (10y lab 2026-06-08: tennis confidence IS monotone; the earlier
 // "no floor" was a 60-match artifact). Keep in sync with config/settings.py
 // SURFACE_FLOOR_TENNIS. Applied by the tennis predictions route.
-export const SURFACE_FLOOR_TENNIS = 60;
+export const SURFACE_FLOOR_TENNIS = 62;
 
 export type SurfaceDecision = {
   isPick: boolean;

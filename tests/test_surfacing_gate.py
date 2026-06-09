@@ -9,7 +9,7 @@ it only decides whether a row is surfaced as a directional pick (is_pick) or as 
 Boundaries (floors are inclusive — >= floor is a pick):
   * football WC / club:  55 -> below, 56 -> pick
   * friendlies:          60 -> below, 61 -> pick
-  * tennis:              floor 60 (10y-lab correction; was "no floor" small-sample)
+  * tennis:              floor 62 (#FLOOR-62 2026-06-09; n=8044 OOS sweep)
 """
 import pytest
 
@@ -44,10 +44,11 @@ def test_friendly_floor_is_stricter_than_competitive():
     assert surface_decision(sport="football", friendly=True, confidence=58) == (False, True)
 
 
-def test_tennis_floor_60():
-    # 10y lab 2026-06-08 correction: tennis confidence IS monotone -> floor 60.
-    assert surface_decision(sport="tennis", friendly=False, confidence=59) == (False, True)
-    assert surface_decision(sport="tennis", friendly=False, confidence=60) == (True, False)
+def test_tennis_floor_62():
+    # #FLOOR-62 (APPROVE Andrea 2026-06-09): raised 60->62 on the n=8044 OOS
+    # sweep (shown hit 69.9%->71.5%). Tennis confidence IS monotone.
+    assert surface_decision(sport="tennis", friendly=False, confidence=61) == (False, True)
+    assert surface_decision(sport="tennis", friendly=False, confidence=62) == (True, False)
     assert surface_decision(sport="tennis", friendly=False, confidence=72) == (True, False)
 
 
@@ -67,7 +68,7 @@ def test_floors_read_from_settings_not_hardcoded(monkeypatch):
 def test_sport_is_case_insensitive():
     assert surface_decision(sport="FOOTBALL", friendly=False, confidence=56) == (True, False)
     assert surface_decision(sport="Tennis", friendly=False, confidence=10) == (False, True)
-    assert surface_decision(sport="Tennis", friendly=False, confidence=60) == (True, False)
+    assert surface_decision(sport="Tennis", friendly=False, confidence=62) == (True, False)
 
 
 def test_unknown_sport_defaults_to_football_floor():
