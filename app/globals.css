@@ -2211,9 +2211,10 @@ button:disabled {
 .upgrade-card {
   min-height: 120px;
   padding: 16px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--am-line);
   border-radius: 12px;
-  background: rgba(59,130,246,0.035);
+  background: var(--am-panel);
+  box-shadow: inset 0 1px 0 var(--am-hi), 0 1px 1px rgba(0,0,0,0.5), 0 2px 6px -2px rgba(0,0,0,0.4);
 }
 
 .profile-card {
@@ -2259,16 +2260,17 @@ button:disabled {
 .upgrade-card button {
   min-height: 38px;
   padding: 0 13px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--am-line);
   border-radius: 8px;
   background: var(--am-inset);
-  color: var(--muted);
-  font-weight: 850;
+  color: var(--am-muted);
+  font-weight: 700;
+  transition: border-color .15s, color .15s, background .15s, filter .15s;
 }
 
 .profile-card button:hover {
-  border-color: rgba(239,68,68,0.30);
-  color: var(--red);
+  border-color: var(--am-negative-b);
+  color: var(--am-negative);
 }
 
 .upgrade-card {
@@ -2276,18 +2278,17 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border-color: rgba(255,107,107,0.26);
-  background:
-    radial-gradient(ellipse 300px 180px at 90% 0%, rgba(255,107,107,0.10), transparent 70%),
-    rgba(59,130,246,0.04);
+  border-color: var(--am-coral-b);
+  box-shadow: inset 0 1px 0 var(--am-hi), 0 0 0 1px var(--am-coral-dim), 0 2px 6px -2px rgba(0,0,0,0.4);
 }
 
 .upgrade-card button {
   flex: 0 0 auto;
-  border-color: rgba(255,107,107,0.45);
-  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #1A0B05;
+  border-color: var(--am-coral);
+  background: var(--am-coral);
+  color: var(--am-bg);
 }
+.upgrade-card button:hover { filter: brightness(1.06); }
 
 /* ── Unified client dashboard ───────────────────────────────── */
 

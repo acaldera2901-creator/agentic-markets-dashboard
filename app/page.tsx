@@ -2712,7 +2712,7 @@ function ProfilePanel({
         <button onClick={onLogout}>{t.profile_logout}</button>
       </div>
       {daysLeft != null && (
-        <div className="upgrade-card" style={daysLeft <= 5 ? { borderColor: "rgba(251,191,36,0.4)" } : undefined}>
+        <div className="upgrade-card" style={daysLeft <= 5 ? { borderColor: "var(--am-amber)" } : undefined}>
           <div>
             <p className="eyebrow">{lang === "it" ? "Abbonamento" : "Subscription"}</p>
             <h3>{daysLeft > 0
