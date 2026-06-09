@@ -5066,6 +5066,176 @@ function LiveNowStrip({
   );
 }
 
+// ─── Featured "Edge del giorno" (focal card) ─────────────────────────────────
+// Presentational focal block from the sleek-coral mockup (.featured). Picks the
+// single highest-edge value bet across football + tennis and renders the big
+// coral probability, the pick, the edge chip, and the model "why" on the right.
+// Gating: full content only when premium; otherwise a teaser/locked variant
+// that never exposes the pick name or the probability.
+function FeaturedEdge({
+  predictions,
+  tennisMatches,
+  isPremiumClient,
+  onGate,
+}: {
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  isPremiumClient?: boolean;
+  onGate?: () => void;
+}) {
+  const lang = useLang();
+  const it = lang === "it";
+
+  // Highest-edge value bet across both sports (reuse the board's gates).
+  const topFootball = predictions
+    .filter(isFootballBestBet)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))[0];
+  const topTennis = tennisMatches
+    .filter(isTennisBestBet)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))[0];
+
+  const fEdge = topFootball?.edge ?? -Infinity;
+  const tEdge = topTennis?.edge ?? -Infinity;
+  if (!topFootball && !topTennis) return null;
+  const sport: "football" | "tennis" = fEdge >= tEdge ? "football" : "tennis";
+
+  // Common presentational fields, resolved per sport.
+  let glyph: string;
+  let fixtureName: React.ReactNode;
+  let league: string;
+  let probability: number;
+  let pickName: string;
+  let edgePts: number;
+  let why: string;
+  let metrics: { dt: string; dd: React.ReactNode }[] = [];
+
+  if (sport === "football" && topFootball) {
+    const p = topFootball;
+    const sel = bestFootballSelection(p);
+    glyph = "#g-ball";
+    fixtureName = (
+      <>
+        {p.home_team}
+        <span className="vsmid"> {it ? "contro" : "vs"} </span>
+        {p.away_team}
+      </>
+    );
+    league = p.league_name;
+    probability = selectedFootballProbability(p);
+    pickName = sel?.name ?? p.home_team;
+    edgePts = (p.edge ?? 0) * 100;
+    why = buildFootballWhy(p, lang);
+    const fh = teamFormCounts(p.enrichment?.form_home);
+    const fa = teamFormCounts(p.enrichment?.form_away);
+    const mH = p.enrichment?.matches?.home, mA = p.enrichment?.matches?.away;
+    if (fh && fa) {
+      const fmt = (f: { w: number; d: number; l: number }) =>
+        it ? `${f.w}V·${f.d}P·${f.l}S` : `${f.w}W·${f.d}D·${f.l}L`;
+      metrics.push({ dt: it ? "Forma (5)" : "Form (5)", dd: <>{fmt(fh)} <span className="vs">vs</span> {fmt(fa)}</> });
+    }
+    if (mH != null && mA != null) {
+      metrics.push({ dt: it ? "Campione" : "Sample", dd: <span className="tnum">{mH} <span className="vs">vs</span> {mA}</span> });
+    }
+  } else {
+    const m = topTennis as TennisMatch;
+    glyph = "#g-racket";
+    fixtureName = (
+      <>
+        {m.player1}
+        <span className="vsmid"> {it ? "contro" : "vs"} </span>
+        {m.player2}
+      </>
+    );
+    const surf = it
+      ? (m.surface === "CLAY" ? "terra" : m.surface === "GRASS" ? "erba" : "cemento")
+      : (m.surface === "CLAY" ? "clay" : m.surface === "GRASS" ? "grass" : "hard");
+    league = `${m.tournament} · ${surf} · ${m.round}`;
+    probability = selectedTennisProbability(m);
+    pickName = m.best_selection === "P1" ? m.player1 : m.best_selection === "P2" ? m.player2 : (m.p1 >= m.p2 ? m.player1 : m.player2);
+    edgePts = (m.edge ?? 0) * 100;
+    why = buildTennisWhy(m, lang);
+    if (m.elo_p1 != null && m.elo_p2 != null) {
+      metrics.push({ dt: it ? `Elo ${surf}` : `Elo ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
+    }
+    if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
+      metrics.push({ dt: it ? "Match superficie" : "Surface matches", dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span> });
+    }
+  }
+
+  const eyebrow = it ? "Edge del giorno · il modello vs il mercato" : "Edge of the day · model vs market";
+
+  // Locked / teaser variant — never expose pick name or probability.
+  if (!isPremiumClient) {
+    return (
+      <section className="featured featured-locked" aria-label={eyebrow}>
+        <div className="big">
+          <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
+          <div className="fxrow">
+            <svg className="sgi" aria-hidden="true"><use href={glyph} /></svg>
+            <span className="fxname">{fixtureName}</span>
+          </div>
+          <div className="league">{league}</div>
+          <div className="hero-prob">
+            <span className="num blurred" aria-hidden="true">··<span className="pc">%</span></span>
+            <div className="col">
+              <span className="pickname locked-text">{it ? "Pick bloccato" : "Pick locked"}</span>
+              <span className="subl">{it ? "probabilità del modello" : "model probability"}</span>
+            </div>
+          </div>
+          <button className="featured-unlock" onClick={() => onGate?.()}>
+            {it ? "Edge del giorno bloccato — sblocca con Pro →" : "Edge of the day locked — unlock with Pro →"}
+          </button>
+        </div>
+        <div className="seam" />
+        <div className="why">
+          <div className="wlab"><span className="tri">▸</span> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
+          <p className="line locked-blur" aria-hidden="true">
+            {it
+              ? "L'analisi completa — Elo, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
+              : "The full breakdown — Elo, sample, head-to-head and narrative — is reserved for Pro members."}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="featured" aria-label={eyebrow}>
+      <div className="big">
+        <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
+        <div className="fxrow">
+          <svg className="sgi" aria-hidden="true"><use href={glyph} /></svg>
+          <span className="fxname">{fixtureName}</span>
+        </div>
+        <div className="league">{league}</div>
+        <div className="hero-prob">
+          <span className="num tnum">{Math.round(probability * 100)}<span className="pc">%</span></span>
+          <div className="col">
+            <span className="pickname">{pickName}</span>
+            <span className="subl">{it ? "probabilità del modello" : "model probability"}</span>
+          </div>
+        </div>
+        <span className="edge">
+          <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+          +{edgePts.toFixed(1)} pt · {it ? "edge vs quota implicita" : "edge vs implied price"}
+        </span>
+      </div>
+      <div className="seam" />
+      <div className="why">
+        <div className="wlab"><span className="tri">▸</span> {it ? `Perché il modello sceglie ${pickName}` : `Why the model picks ${pickName}`}</div>
+        {metrics.length > 0 && (
+          <dl>
+            {metrics.map((m, i) => (
+              <div className="it" key={i}><dt>{m.dt}</dt><dd>{m.dd}</dd></div>
+            ))}
+          </dl>
+        )}
+        <p className="line">{why}</p>
+      </div>
+    </section>
+  );
+}
+
 function UnifiedBetsTab({
   predictions,
   tennisMatches,
@@ -5120,6 +5290,12 @@ function UnifiedBetsTab({
           projection already strips the picks server-side; this hides the
           matchups too). Leaderboard and the public Old-bets history stay
           outside the gate. Unlock = active plan (profileHasAccess). */}
+      <FeaturedEdge
+        predictions={predictions}
+        tennisMatches={tennisMatches}
+        isPremiumClient={isPremiumClient}
+        onGate={onGate}
+      />
       <LockedGate
         isUnlocked={Boolean(isPremiumClient)}
         mode={isLoggedIn ? "plan" : "auth"}

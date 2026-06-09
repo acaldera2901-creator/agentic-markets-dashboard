@@ -2828,6 +2828,130 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* ── Featured "Edge del giorno" (sleek-coral focal card) ────────────────────
+   Ported from docs/design-craft/mockups/redesign-direction-v2.html (.featured),
+   mapped onto --am-* tokens. The radial coral wash is the only focal accent. */
+.featured {
+  position: relative;
+  overflow: hidden;
+  margin: 14px;
+  border: 1px solid var(--am-line-2);
+  border-radius: 12px;
+  background: var(--am-bg-2);
+  box-shadow: inset 0 1px 0 var(--am-hi), 0 8px 22px rgba(0, 0, 0, 0.18);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1.25fr);
+}
+.featured::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 140% at 14% 50%, var(--am-coral-dim), transparent 55%);
+}
+.featured > * { position: relative; }
+.featured .big {
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.featured .seam { background: var(--am-line); }
+.featured .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--am-coral);
+  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.featured .eyebrow .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am-coral); }
+.featured .fxrow { display: flex; align-items: center; gap: 11px; margin-bottom: 5px; }
+.featured .fxrow .sgi { width: 19px; height: 19px; flex: 0 0 auto; color: var(--am-muted); }
+.featured .fxname {
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--am-text);
+}
+.featured .fxname .vsmid { font-weight: 500; color: var(--am-muted); font-size: 0.66em; vertical-align: 2px; }
+.featured .league { font-size: 12px; color: var(--am-muted); margin-bottom: 16px; }
+.featured .hero-prob { display: flex; align-items: flex-end; gap: 16px; }
+.featured .hero-prob .num {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  font-size: 80px;
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  color: var(--am-coral);
+  font-feature-settings: "tnum" 1;
+}
+.featured .hero-prob .num .pc { font-size: 0.38em; letter-spacing: 0; color: var(--am-coral); font-weight: 500; margin-left: 2px; }
+.featured .hero-prob .num.blurred { filter: blur(9px); user-select: none; }
+.featured .hero-prob .col { display: flex; flex-direction: column; gap: 5px; padding-bottom: 7px; }
+.featured .hero-prob .pickname { font-weight: 700; font-size: 16px; color: var(--am-text); }
+.featured .hero-prob .pickname.locked-text { color: var(--am-muted); }
+.featured .hero-prob .subl { font-size: 11px; color: var(--am-muted); }
+.featured .edge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 18px 0 0;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--am-coral-b);
+  background: var(--am-coral-dim);
+  color: var(--am-coral);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+.featured .edge svg { width: 13px; height: 13px; }
+.featured .featured-unlock {
+  margin-top: 18px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--am-coral-b);
+  background: var(--am-coral-dim);
+  color: var(--am-coral);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.featured .featured-unlock:hover { filter: brightness(1.08); }
+.featured .why { padding: 26px 28px; }
+.featured .why .wlab { margin-bottom: 14px; color: var(--am-muted); font-size: 12px; font-weight: 600; }
+.featured .why .wlab .tri { color: var(--am-coral); margin-right: 6px; }
+.featured .why dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 0 0 4px; }
+.featured .why dl .it { display: flex; flex-direction: column; gap: 4px; }
+.featured .why dt { font-size: 11px; color: var(--am-muted); }
+.featured .why dd { margin: 0; font-size: 14px; font-weight: 600; color: var(--am-text); }
+.featured .why dd .vs { color: var(--am-muted-2); font-weight: 400; margin: 0 2px; }
+.featured .why dd .tnum {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-feature-settings: "tnum" 1;
+}
+.featured .why .line {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--am-muted);
+  margin-top: 16px;
+  max-width: 54ch;
+  border-top: 1px solid var(--am-line);
+  padding-top: 14px;
+}
+.featured .why .line.locked-blur { filter: blur(4px); user-select: none; }
+@media (max-width: 760px) {
+  .featured { grid-template-columns: 1fr; }
+  .featured .seam { display: none; }
+  .featured .why { border-top: 1px solid var(--am-line); }
+}
+
 .market-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
