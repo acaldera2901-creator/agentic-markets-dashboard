@@ -123,7 +123,7 @@ export default async function TeamPage(
         <h2 className="wc-section-title">Squad</h2>
         <div className="wc-roster-grid">
           {[...byPosition.entries()].map(([position, group]) => (
-            <div key={position} className="glass-card wc-roster-card">
+            <div key={position} className="wc-roster-card">
               <div className="eyebrow">{position}</div>
               <ul className="wc-roster-list">
                 {group.map((p) => (
@@ -145,7 +145,7 @@ export default async function TeamPage(
         {reveals.length ? (
           <div className="wc-timeline">
             {reveals.map((s) => (
-              <div key={s.captured_at} className="glass-card wc-timeline-entry">
+              <div key={s.captured_at} className="wc-timeline-entry">
                 <div className="eyebrow">{dateFmt.format(new Date(s.captured_at))} UTC</div>
                 {s.diff?.added?.length ? (
                   <div className="wc-timeline-line wc-in">In: {s.diff.added.join(", ")}</div>
@@ -173,7 +173,7 @@ export default async function TeamPage(
         {teamFixtures.length ? (
           <div className="wc-calendar-day">
             {teamFixtures.map((f) => (
-              <div key={f.id} className="glass-card wc-fixture-row">
+              <div key={f.id} className="wc-fixture-row">
                 <span className="wc-fixture-time">{dateFmt.format(new Date(f.date))} UTC</span>
                 <span className="wc-fixture-teams">
                   {f.home_team}

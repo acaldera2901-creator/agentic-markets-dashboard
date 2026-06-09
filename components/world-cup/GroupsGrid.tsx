@@ -11,7 +11,7 @@ export default function GroupsGrid({ groups }: { groups: WcGroup[] }) {
   return (
     <div className="wc-groups-grid">
       {groups.map((g) => (
-        <div key={g.name} className="glass-card wc-group-card">
+        <div key={g.name} className="wc-group-card">
           <div className="eyebrow">Group {g.name}</div>
           <table className="wc-table">
             <thead>

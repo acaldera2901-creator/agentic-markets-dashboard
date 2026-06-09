@@ -31,7 +31,7 @@ export default function WinnerOdds() {
   const restWinSum = rest.reduce((s, t) => s + t.win, 0);
 
   return (
-    <div className="glass-card wc-winner-card">
+    <div className="wc-winner-card">
       <div className="wc-winner-head">
         <span className="eyebrow">Model view · {simData.sims.toLocaleString("en-GB")} tournament simulations</span>
       </div>

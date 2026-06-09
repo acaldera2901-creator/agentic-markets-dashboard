@@ -5,6 +5,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
+import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import Countdown from "@/components/world-cup/Countdown";
 import GroupsGrid from "@/components/world-cup/GroupsGrid";
 import CalendarSection from "@/components/world-cup/CalendarSection";
@@ -78,7 +79,7 @@ export default async function WorldCupPage() {
         <Link
           key={s.team_canonical}
           href={`/world-cup/${teamSlug(s.team_canonical)}`}
-          className="glass-card wc-squad-chip"
+          className="wc-squad-chip"
         >
           <strong>{s.team_canonical}</strong>
           <small>
@@ -94,13 +95,19 @@ export default async function WorldCupPage() {
 
   return (
     <div className="portal-root wc-root">
+      <SportGlyphSprite />
       <SiteTopbar backLabel="Board" />
       <main className="wc-page">
       {/* Compact hero band — title left, live countdown right (no oversized block) */}
       <header className="wc-hub-hero">
-        <div>
-          <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
-          <h1>World Cup Intelligence Hub</h1>
+        <div className="wc-hub-hero-titles">
+          <span className="wc-hero-glyph" aria-hidden="true">
+            <svg><use href="#g-trophy" /></svg>
+          </span>
+          <div>
+            <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
+            <h1>World Cup Intelligence Hub</h1>
+          </div>
         </div>
         <Countdown />
       </header>

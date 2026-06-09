@@ -140,7 +140,7 @@ function ProbRow({ label, value, odds, color }: { label: string; value: number; 
       </div>
       <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(value)}</span>
       {typeof odds === "number" && (
-        <span className="text-xs font-mono text-gray-500 w-12 text-right">@{odds.toFixed(2)}</span>
+        <span className="text-xs font-mono w-12 text-right" style={{ color: "var(--am-muted-2)" }}>@{odds.toFixed(2)}</span>
       )}
     </div>
   );
@@ -326,7 +326,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const e = p.enrichment;
 
   return (
-    <div className="glass-card wc-board-card">
+    <div className="wc-board-card">
       {/* Header — World Cup badge mirrors the football league badge */}
       <div className="eyebrow">
         World Cup
@@ -339,7 +339,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
       <div className="wc-fixture-meta">
         {p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : ""}
         {/* #LIVE-2: live solo quando il feed ha davvero il match in corso */}
-        {isLive && <span style={{ marginLeft: 8, color: "#f87171" }}>● LIVE</span>}
+        {isLive && <span style={{ marginLeft: 8, color: "var(--am-coral)" }}>● LIVE</span>}
       </div>
 
       {/* Live / Final score — at parity with the home board's live-score-bar */}
@@ -400,7 +400,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
                 {p.edge_percent > 0 ? "+" : ""}{p.edge_percent.toFixed(1)}%
               </span>
             ) : pick && probs ? (
-              <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid rgba(148,163,184,0.3)", color: "#94a3b8" }}>
+              <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid var(--am-line-2)", color: "var(--am-muted-2)" }}>
                 {pct(probs[pick.toLowerCase() as "home" | "draw" | "away"])}
               </span>
             ) : null}
@@ -417,13 +417,13 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
               : {})}
             style={{
               display: "block", width: "100%", marginTop: "0.35rem", padding: "0.45rem 0",
-              borderRadius: "0.55rem", border: "1px solid var(--am-positive-b)",
-              background: "var(--am-positive-dim)", color: "var(--am-positive)", textAlign: "center",
-              fontFamily: "monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
+              borderRadius: "0.55rem", border: "1px solid var(--am-line-2)",
+              background: "var(--am-panel-2)", color: "var(--am-text)", textAlign: "center",
+              fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
               textDecoration: "none",
             }}
           >
-            {isLive ? "🔴 Live — " : ""}Place Bet →
+            {isLive ? "Live — " : ""}Place Bet →
           </a>
 
           {/* Inline Why — human paragraph in the active language (parity with

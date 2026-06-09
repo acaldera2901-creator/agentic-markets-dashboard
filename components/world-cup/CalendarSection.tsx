@@ -62,7 +62,7 @@ export default function CalendarSection({ fixtures }: { fixtures: WcFixture[] })
           <div key={day} className="wc-calendar-day">
             <div className="eyebrow">{dayFmt.format(new Date(day + "T12:00:00Z"))}</div>
             {dayFixtures.map((f) => (
-              <div key={f.id} className="glass-card wc-fixture-row">
+              <div key={f.id} className="wc-fixture-row">
                 <span className="wc-fixture-time">{timeFmt.format(new Date(f.date))} UTC</span>
                 <span className="wc-fixture-teams">
                   <Link href={`/world-cup/${teamSlug(f.home_team)}`} className="wc-team-link">{f.home_team}</Link>

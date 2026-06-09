@@ -33,10 +33,10 @@ export default function TrackRecordStrip() {
 
   return (
     <div className="wc-track-strip">
-      <div className="glass-card wc-stat"><strong>{stats.total}</strong><small>settled</small></div>
-      <div className="glass-card wc-stat"><strong>{stats.won}</strong><small>won</small></div>
-      <div className="glass-card wc-stat"><strong>{stats.lost}</strong><small>lost</small></div>
-      <div className="glass-card wc-stat"><strong>{stats.win_rate ?? "—"}</strong><small>hit rate</small></div>
+      <div className="wc-stat"><strong>{stats.total}</strong><small>settled</small></div>
+      <div className="wc-stat"><strong>{stats.won}</strong><small>won</small></div>
+      <div className="wc-stat"><strong>{stats.lost}</strong><small>lost</small></div>
+      <div className="wc-stat"><strong>{stats.win_rate ?? "—"}</strong><small>hit rate</small></div>
     </div>
   );
 }
