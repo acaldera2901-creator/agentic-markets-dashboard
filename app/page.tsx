@@ -5040,23 +5040,25 @@ function LiveNowStrip({
     m.sets_p1.map((v, i) => `${v}-${m.sets_p2[i] ?? ""}`).join(" ");
 
   return (
-    <div className="mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-red-400/30 bg-red-400/5">
-      <div className="flex items-center gap-2 flex-wrap text-xs font-mono">
-        <span className="flex items-center gap-1 text-red-400 font-bold uppercase">
-          <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          {lang === "it" ? "Live ora" : "Live now"}
-        </span>
+    <div className="am-ticker">
+      <span className="t-lab"><span className="pulse" />{lang === "it" ? "In play" : "In play"}</span>
+      <div className="scroll">
         {liveFootball.map(([id, s]) => (
-          <span key={`f-${id}`} className="px-2 py-0.5 rounded border border-white/10 text-gray-200">
-            ⚽ {s.home_team} <b className="text-white">{s.home_score ?? "–"}–{s.away_score ?? "–"}</b> {s.away_team}
-            {s.minute != null ? <span className="text-red-400"> {s.minute}′</span> : null}
-            {s.match_status === "PAUSED" ? <span className="text-gray-500"> HT</span> : null}
+          <span key={`f-${id}`} className="ti">
+            <svg className="ig" aria-hidden="true"><use href="#g-ball" /></svg>
+            {s.home_team} <b>{s.home_score ?? "–"}–{s.away_score ?? "–"}</b> {s.away_team}
+            {s.match_status === "PAUSED" ? (
+              <span className="m">HT</span>
+            ) : s.minute != null ? (
+              <span className="m">{s.minute}′</span>
+            ) : null}
           </span>
         ))}
         {liveTennis.map((m) => (
-          <span key={`t-${m.id}`} className="px-2 py-0.5 rounded border border-white/10 text-gray-200">
-            🎾 {m.player1} <b className="text-white">{setsLabel(m) || "–"}</b> {m.player2}
-            <span className="text-gray-500"> · {m.status_detail}</span>
+          <span key={`t-${m.id}`} className="ti">
+            <svg className="ig" aria-hidden="true"><use href="#g-tball" /></svg>
+            {m.player1} <b>{setsLabel(m) || "–"}</b> {m.player2}
+            <span className="m">{m.status_detail}</span>
           </span>
         ))}
       </div>
