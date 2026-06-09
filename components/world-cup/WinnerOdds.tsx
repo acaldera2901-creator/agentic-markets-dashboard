@@ -1,3 +1,5 @@
+"use client";
+
 // "Who wins the World Cup" — tournament outlook table (APPROVE Andrea
 // 2026-06-07, lab michele-claude 0c2edb8). CONTENT ONLY, not a signal:
 // 100k Monte Carlo runs of the real bracket (12 groups, best thirds, host
@@ -5,6 +7,7 @@
 // Elo noise (σ=60). Data is a frozen artifact (data/wc2026_simulation.json),
 // regenerated via scripts/lab_wc_simulator.py — zero runtime cost.
 import simData from "@/data/wc2026_simulation.json";
+import { useHasAccess } from "@/lib/use-has-access";
 
 type SimTeam = {
   team: string;
@@ -22,6 +25,7 @@ const TOP_N = 12;
 const pct = (v: number) => (v >= 10 ? v.toFixed(0) : v.toFixed(1)) + "%";
 
 export default function WinnerOdds() {
+  const hasAccess = useHasAccess();
   const teams = (simData.teams as SimTeam[]).slice(0, TOP_N);
   const rest = (simData.teams as SimTeam[]).slice(TOP_N);
   const restWinSum = rest.reduce((s, t) => s + t.win, 0);
@@ -46,7 +50,7 @@ export default function WinnerOdds() {
         <tbody>
           {teams.map((t, i) => (
             <tr key={t.team} className={i < 3 ? "wc-winner-podium" : ""}>
-              <td className="wc-team-col"><span className="wc-blur-name">{t.team}</span></td>
+              <td className="wc-team-col"><span className={hasAccess ? "" : "wc-blur-name"}>{t.team}</span></td>
               <td>{pct(t.r32)}</td>
               <td>{pct(t.r16)}</td>
               <td>{pct(t.qf)}</td>
