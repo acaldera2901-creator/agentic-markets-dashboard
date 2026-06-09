@@ -1394,6 +1394,13 @@ function SportsbookBoard({
         </label>
       </div>
 
+      <FeaturedEdge
+        predictions={predictions}
+        tennisMatches={tennisMatches}
+        isPremiumClient={isPremium}
+        onGate={onGate}
+      />
+
       {filteredTotal === 0 ? (
         <div className="book-empty">{labels.noResults}</div>
       ) : (
@@ -5300,12 +5307,6 @@ function UnifiedBetsTab({
           projection already strips the picks server-side; this hides the
           matchups too). Leaderboard and the public Old-bets history stay
           outside the gate. Unlock = active plan (profileHasAccess). */}
-      <FeaturedEdge
-        predictions={predictions}
-        tennisMatches={tennisMatches}
-        isPremiumClient={isPremiumClient}
-        onGate={onGate}
-      />
       <AdBanner lang={lang} onCta={onBetNow} tone="sportsbook" />
       <LockedGate
         isUnlocked={Boolean(isPremiumClient)}
