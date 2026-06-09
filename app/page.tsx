@@ -5055,13 +5055,22 @@ function FeaturedEdge({
   const lang = useLang();
   const it = lang === "it";
 
-  // Highest-edge value bet across both sports (reuse the board's gates).
-  const topFootball = predictions
-    .filter(isFootballBestBet)
-    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))[0];
-  const topTennis = tennisMatches
-    .filter(isTennisBestBet)
-    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))[0];
+  // The day's standout pick. Prefer a real value bet (passes the board's
+  // best-bet gate); if none qualifies right now (e.g. season pause), fall back
+  // to the highest-edge visible market that still has a model selection, so the
+  // card is present whenever there's a pick to show. Numbers stay real.
+  const pickByEdge = (a: { edge?: number | null }, b: { edge?: number | null }) =>
+    (b.edge ?? -Infinity) - (a.edge ?? -Infinity);
+  const footballValue = predictions.filter(isFootballBestBet).sort(pickByEdge);
+  const tennisValue = tennisMatches.filter(isTennisBestBet).sort(pickByEdge);
+  const footballAny = predictions
+    .filter((p) => p.best_selection && isBoardVisibleMarket(p.kickoff))
+    .sort(pickByEdge);
+  const tennisAny = tennisMatches
+    .filter((m) => m.best_selection && isTennisMarketVisible(m.scheduled))
+    .sort(pickByEdge);
+  const topFootball = footballValue[0] ?? footballAny[0];
+  const topTennis = tennisValue[0] ?? tennisAny[0];
 
   const fEdge = topFootball?.edge ?? -Infinity;
   const tEdge = topTennis?.edge ?? -Infinity;
