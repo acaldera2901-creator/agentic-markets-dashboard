@@ -5859,38 +5859,79 @@ export default function Dashboard() {
       {/* ── Top banner ── */}
       <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
 
-      {/* ── Brand row ── */}
-      <div className="portal-brand-row">
-        <div>
-          <div className="brand-name">AgenticMarkets</div>
-          <div className="brand-tagline">Bets the Future · Predictive Intelligence for Sports Markets</div>
-        </div>
-        <div className="portal-brand-actions">
-          {clientProfile ? (
-            <button className="client-access-button" onClick={() => setTab("account")}>
-              {clientProfile.name} · {isClientUnlocked ? "Signal Desk Pro" : clientProfile.plan === "free" ? "Free" : "Setup"}
+      {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
+      <header className="am-topbar">
+        <div className="am-topbar-in">
+          <div className="am-brandmark">
+            {/* logo: mira/target con cuneo coral = "probabilità di precisione" */}
+            <svg className="am-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <circle cx="16" cy="16" r="13" stroke="var(--am-muted)" strokeWidth="1.6" />
+              <circle cx="16" cy="16" r="7" stroke="var(--am-muted)" strokeWidth="1.6" />
+              <path d="M16 16 26 9.5A12 12 0 0 1 16 28Z" fill="var(--am-coral)" />
+              <circle cx="16" cy="16" r="2" fill="var(--am-text)" />
+            </svg>
+            <span className="am-wm">Agentic Markets<span className="dot">.</span></span>
+          </div>
+
+          <nav className="am-topnav">
+            {[
+              { tab: "bets" as Tab, label: "Mercati" },
+              { tab: "history" as Tab, label: tNav.nav_history },
+              { tab: "leaderboard" as Tab, label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
+              ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
+              { tab: "partners" as Tab, label: tNav.nav_partner },
+            ].map((item) => (
+              <button
+                key={item.tab}
+                className={tab === item.tab ? "active" : ""}
+                onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="am-topright">
+            {/* theme toggle segmentato DARK/LIGHT — riusa toggleTheme/theme esistenti */}
+            <div className="am-tt" role="group" aria-label={uiLanguage === "it" ? "Tema" : "Theme"}>
+              <button
+                className={theme === "dark" ? "on" : ""}
+                aria-pressed={theme === "dark"}
+                onClick={() => { if (theme !== "dark") toggleTheme(); }}
+              >
+                DARK
+              </button>
+              <button
+                className={theme === "light" ? "on" : ""}
+                aria-pressed={theme === "light"}
+                onClick={() => { if (theme !== "light") toggleTheme(); }}
+              >
+                LIGHT
+              </button>
+            </div>
+
+            {clientProfile ? (
+              <button className="am-acct" onClick={() => setTab("account")}>
+                {clientProfile.name}
+                <span className="plan">{isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP"}</span>
+              </button>
+            ) : (
+              <>
+                <button className="am-auth-secondary" onClick={() => openAuth("login")}>
+                  {uiLanguage === "it" ? "Accedi" : "Sign In"}
+                </button>
+                <button className="am-auth-primary" onClick={() => openAuth("create")}>
+                  {uiLanguage === "it" ? "Registrati" : "Register"}
+                </button>
+              </>
+            )}
+
+            <button className="am-iconbtn" onClick={toggleLanguage} title={uiLanguage === "it" ? "Lingua: Italiano" : "Language"}>
+              {uiLanguage.toUpperCase()}
             </button>
-          ) : (
-            <>
-              <button className="btn-secondary" onClick={() => openAuth("login")}>
-                {uiLanguage === "it" ? "Accedi" : "Sign In"}
-              </button>
-              <button className="btn-primary" onClick={() => openAuth("create")}>
-                {uiLanguage === "it" ? "Registrati" : "Register / Get Access"}
-              </button>
-            </>
-          )}
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            aria-label={theme === "dark" ? (uiLanguage === "it" ? "Tema chiaro" : "Light theme") : (uiLanguage === "it" ? "Tema scuro" : "Dark theme")}
-            title={theme === "dark" ? (uiLanguage === "it" ? "Tema chiaro" : "Light theme") : (uiLanguage === "it" ? "Tema scuro" : "Dark theme")}
-          >
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
-          <button className="lang-toggle" onClick={toggleLanguage}>{uiLanguage.toUpperCase()}</button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* ── 3-column layout ── */}
       <div className="portal-columns">
