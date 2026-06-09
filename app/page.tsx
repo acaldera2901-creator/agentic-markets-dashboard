@@ -3084,11 +3084,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         <>
           {/* Probability bars */}
           <div className="space-y-1.5">
-            <ProbBar label="HOME" pct={p.p_home} color="var(--am-coral)"
+            <ProbBar label="HOME" pct={p.p_home} color={!belowFloor && p.best_selection === "HOME" ? "var(--am-coral)" : "var(--am-muted-2)"}
               odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-            <ProbBar label="DRAW" pct={p.p_draw} color="var(--am-amber)"
+            <ProbBar label="DRAW" pct={p.p_draw} color={!belowFloor && p.best_selection === "DRAW" ? "var(--am-coral)" : "var(--am-muted-2)"}
               odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-            <ProbBar label="AWAY" pct={p.p_away} color="var(--am-cobalt)"
+            <ProbBar label="AWAY" pct={p.p_away} color={!belowFloor && p.best_selection === "AWAY" ? "var(--am-coral)" : "var(--am-muted-2)"}
               odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
           </div>
           {belowFloor ? (
