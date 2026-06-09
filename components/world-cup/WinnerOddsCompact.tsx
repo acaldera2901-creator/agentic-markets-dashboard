@@ -17,7 +17,7 @@ export default function WinnerOddsCompact() {
         {teams.map((t, i) => (
           <li key={t.team}>
             <span className="wc-winner-mini-rank">{i + 1}</span>
-            <span className="wc-winner-mini-team">{t.team}</span>
+            <span className="wc-winner-mini-team wc-blur-name">{t.team}</span>
             <span className="wc-winner-mini-bar"><span style={{ width: `${(t.win / max) * 100}%` }} /></span>
             <span className="wc-winner-mini-pct">{pct(t.win)}</span>
           </li>

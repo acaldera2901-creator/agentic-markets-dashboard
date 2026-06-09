@@ -4370,6 +4370,12 @@ button:disabled {
   font-size: 11px;
   color: rgba(255,255,255,0.4);
 }
+/* Who-wins teaser: blur only the team name (keep its size/weight, unlike
+   .blurred which forces the 11px placeholder font). Percentages stay sharp. */
+.wc-blur-name {
+  filter: blur(6px);
+  user-select: none;
+}
 .card-lock-overlay {
   cursor: pointer;
   display: flex;

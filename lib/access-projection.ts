@@ -1,18 +1,20 @@
 import type { AccessState } from "@/lib/auth";
 
 // Fields that are ALWAYS visible (the populated board: who plays, when).
+// `result`/`settled_at` are the settled outcome (won/lost/void) — a public fact
+// like the final score, so the honest track record (hit rate, settled history)
+// stays visible even on locked rows. The PICK itself remains gated below.
 const PUBLIC_FIELDS = [
   "id", "sport", "competition", "league", "event_name",
   "home_team", "away_team", "starts_at", "status",
+  "result", "settled_at",
 ] as const;
 
 // Fields revealed only when a row is "unlocked" for the state.
-// `result`/`settled_at` are the real settled outcome (won/lost) — the honest track
-// record, not money — revealed alongside the pick when the row is unlocked.
 const REVEAL_FIELDS = [
   "pick", "p_home", "p_draw", "p_away", "confidence_score",
   "fair_odds", "market", "signal_type", "explanation", "model_version",
-  "is_paper", "affiliate", "result", "settled_at",
+  "is_paper", "affiliate",
   // 1X2 distribution for model rows that carry it as JSON (WC paper rows,
   // off-season DC fallback) instead of dedicated p_* columns.
   "notes",

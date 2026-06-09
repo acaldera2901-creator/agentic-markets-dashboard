@@ -46,7 +46,7 @@ export default function WinnerOdds() {
         <tbody>
           {teams.map((t, i) => (
             <tr key={t.team} className={i < 3 ? "wc-winner-podium" : ""}>
-              <td className="wc-team-col">{t.team}</td>
+              <td className="wc-team-col"><span className="wc-blur-name">{t.team}</span></td>
               <td>{pct(t.r32)}</td>
               <td>{pct(t.r16)}</td>
               <td>{pct(t.qf)}</td>
