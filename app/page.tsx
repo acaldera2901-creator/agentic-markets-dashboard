@@ -2957,16 +2957,6 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
 
 
 
-const LEAGUE_BADGE_COLORS: Record<string, string> = {
-  PL:  "text-violet-400 border-violet-400/40 bg-violet-400/10",
-  SA:  "text-blue-400 border-blue-400/40 bg-blue-400/10",
-  PD:  "text-red-400 border-red-400/40 bg-red-400/10",
-  BL1: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10",
-  FL1: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
-  CL:  "text-amber-300 border-amber-300/40 bg-amber-300/10",
-  EL:  "text-orange-400 border-orange-400/40 bg-orange-400/10",
-};
-
 function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
@@ -2977,7 +2967,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const isPaused = live?.match_status === "PAUSED";
   const isFinished = live?.match_status === "FINISHED";
   const hasScore = live && (live.home_score != null || live.away_score != null);
-  const hasOdds = p.odds_home != null;
   const e = p.enrichment ?? {};
   // Confidence-surfacing gate (Wave 1): below the floor there is no clear
   // favourite — drop the pick direction, the +EV/value styling and the edge
@@ -2985,7 +2974,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   // board. Probability-neutral (server never alters p_* or confidence).
   const belowFloor = e.surface?.below_floor === true;
   const isValueBet = !belowFloor && isFootballBestBet(p);
-  const leagueBadgeColor = LEAGUE_BADGE_COLORS[p.league] ?? "text-gray-400 border-gray-400/40 bg-gray-400/10";
 
   const handleSelect = () => {
     if (!onSelect || !p.best_selection) return;
@@ -3009,191 +2997,180 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
     });
   };
 
+  // Score readout state (scorebar) — preserves all live/finished logic.
+  const scStatus = isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : null;
+  const scLabel = isLive ? `LIVE${live?.minute != null ? ` ${live.minute}'` : ""}` : isPaused ? "HT" : isFinished ? "FT" : null;
+  // Final verdict (only when a pick was asserted and not below floor).
+  const verdict = (() => {
+    if (!(isFinished && hasScore && live && live.home_score != null && live.away_score != null)) return null;
+    const actual = live.home_score > live.away_score ? "HOME" : live.home_score < live.away_score ? "AWAY" : "DRAW";
+    if (!p.best_selection || belowFloor) return null;
+    const correct = p.best_selection === actual;
+    return { correct, text: correct ? "✓ Modello corretto" : "✗ Modello errato" };
+  })();
+  const rowsData: { key: "HOME" | "DRAW" | "AWAY"; pct: number }[] = [
+    { key: "HOME", pct: p.p_home }, { key: "DRAW", pct: p.p_draw }, { key: "AWAY", pct: p.p_away },
+  ];
+  // Demoted extra-markets (schedina) — moved into the expandable analysis.
+  const extraPicks = (e.extra_markets ?? []).filter((m) => m.p >= 0.55).sort((a, b) => b.p - a.p).slice(0, 5);
+
   return (
-    <div className={`glass-card p-4 space-y-3 ${isValueBet ? "border-green-400/40" : ""}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${leagueBadgeColor}`}>
-              {p.league}
-            </span>
-            <span className="text-xs text-gray-500 font-mono">{LEAGUE_FLAGS[p.league] ?? "⚽"} {p.league_name}</span>
-          </div>
-          <div className="text-sm font-bold text-white mt-1">
-            {p.home_team}<span className="text-gray-500 font-normal mx-2">vs</span>{p.away_team}
-          </div>
-          <div className="text-xs text-gray-600 font-mono mt-0.5">
-            {fmtKickoff(p.kickoff, lang, tz)}
-            {/* #LIVE-1: in-play indicator without a live feed — only for viewers
-                who have NO feed (anonymous/free). For feed holders (paid) the
-                absence of a match in the feed means it is not live (cancelled /
-                not started), so the heuristic would mislabel it "● LIVE". */}
-            {!isPremium && !isFutureMarket(p.kickoff) && !isFinished && !hasScore && (
-              <span className="ml-2 text-red-400 animate-pulse">● LIVE</span>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          {isValueBet && p.best_selection && !isPreview && (
-            <button
-              className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono hover:bg-green-400/20 transition-colors"
-              onClick={handleSelect}
-            >
-              +EV {p.best_selection}
-            </button>
-          )}
+    <article className="card"><div className="pred">
+      {/* top: sport glyph + league + when (live pulse) */}
+      <div className="top">
+        <div className="comp">
+          <svg className="sgi" aria-hidden="true"><use href="#g-ball" /></svg>
+          <span className="league">{p.league_name || p.league}</span>
           {p.match_type && p.match_type !== "STANDARD" && <MatchTypeBadge matchType={p.match_type} />}
-          {e.research && (
-            <span className="text-xs px-1.5 py-0.5 rounded border border-purple-400/40 text-purple-400 bg-purple-400/5 font-mono">AI</span>
-          )}
         </div>
+        {/* #LIVE-1: in-play hint without a feed — only for viewers with NO feed. */}
+        {scStatus === "live" || (!isPremium && !isFutureMarket(p.kickoff) && !isFinished && !hasScore) ? (
+          <span className="when live"><span className="pulse" />{scStatus === "live" && live?.minute != null ? `${live.minute}'` : "LIVE"}</span>
+        ) : (
+          <span className="when">{fmtKickoff(p.kickoff, lang, tz)}</span>
+        )}
       </div>
 
-      {/* Live / Final Score */}
-      {hasScore && (
-        <div className={`live-score-bar ${isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : ""}`}>
-          <span className={`live-badge ${isLive ? "blink" : ""}`}>
-            {isLive ? "● LIVE" : isPaused ? "HT" : "FT"}
-            {isLive && live.minute != null && ` ${live.minute}'`}
-          </span>
-          <span className="live-result">
-            {live.home_score ?? 0} — {live.away_score ?? 0}
-          </span>
-          {isFinished && live.home_score != null && live.away_score != null && (() => {
-            const actual = live.home_score > live.away_score ? "HOME" : live.home_score < live.away_score ? "AWAY" : "DRAW";
-            const correct = p.best_selection === actual;
-            // Below floor we never asserted a pick, so we never score one.
-            return p.best_selection && !belowFloor ? (
-              <span className={`live-verdict ${correct ? "correct" : "wrong"}`}>
-                {correct ? "✓ Modello corretto" : "✗ Modello errato"}
-              </span>
-            ) : null;
-          })()}
-        </div>
-      )}
+      {/* fixture + scorebar (inset readout) */}
+      <div className="fx">
+        <div className="teams">{p.home_team}<span className="vs">v</span>{p.away_team}</div>
+        {hasScore ? (
+          <div className="scorebar">
+            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
+            <span className="sc">{live?.home_score ?? 0}<span className="x">–</span>{live?.away_score ?? 0}</span>
+            <span className="grow" />
+            {verdict && <span className={`verd ${verdict.correct ? "correct" : "wrong"}`}>{verdict.text}</span>}
+          </div>
+        ) : (
+          <div className="scorebar">
+            <span className="stt">{isFutureMarket(p.kickoff) ? (lang === "it" ? "Kickoff" : "Kickoff") : (lang === "it" ? "Programmato" : "Scheduled")}</span>
+            <span className="sc sched">{fmtKickoff(p.kickoff, lang, tz)}</span>
+          </div>
+        )}
+      </div>
 
-      {/* Per-card reveal gating (Task 7) */}
+      {/* outcome rows / gate overlay */}
       {p.locked ? (
-        <div className="card-lock-overlay" role="button" onClick={() => onGate?.()}>
+        <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
           <span className="blurred">▒▒ HOME ▒▒▒%</span>
           <span className="blurred">▒▒ DRAW ▒▒▒%</span>
           <span className="blurred">▒▒ AWAY ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
       ) : (
-        <>
-          {/* Probability bars */}
-          <div className="space-y-1.5">
-            <ProbBar label="HOME" pct={p.p_home} color={!belowFloor && p.best_selection === "HOME" ? "var(--am-coral)" : "var(--am-muted-2)"}
-              odds={p.odds_home} isValue={hasOdds && p.best_selection === "HOME" && isValueBet} />
-            <ProbBar label="DRAW" pct={p.p_draw} color={!belowFloor && p.best_selection === "DRAW" ? "var(--am-coral)" : "var(--am-muted-2)"}
-              odds={p.odds_draw} isValue={hasOdds && p.best_selection === "DRAW" && isValueBet} />
-            <ProbBar label="AWAY" pct={p.p_away} color={!belowFloor && p.best_selection === "AWAY" ? "var(--am-coral)" : "var(--am-muted-2)"}
-              odds={p.odds_away} isValue={hasOdds && p.best_selection === "AWAY" && isValueBet} />
+        <div className="rows">
+          {rowsData.map((r) => {
+            const isPick = !belowFloor && p.best_selection === r.key;
+            return (
+              <div
+                key={r.key}
+                className={`row${isPick ? " pick" : ""}${onSelect ? " sel" : ""}`}
+                onClick={onSelect && isPick ? handleSelect : undefined}
+              >
+                <span className="lab">{r.key}</span>
+                <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
+                <span className="pct">{pct(r.pct)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* edge chip — integrates the +EV signal (demote: no separate top badge) */}
+      {!p.locked && !isPreview && (
+        belowFloor ? (
+          <span className="edge flat">{t.no_clear_favorite} · {t.open_match}</span>
+        ) : p.edge != null && p.edge > 0 ? (
+          <span
+            className={`edge${isValueBet ? " evbtn" : ""}`}
+            onClick={isValueBet && p.best_selection ? handleSelect : undefined}
+          >
+            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+            +{(p.edge * 100).toFixed(1)} pt · {lang === "it" ? "edge" : "edge"}{isValueBet && p.best_selection ? ` · ${p.best_selection}` : ""}
+          </span>
+        ) : (
+          <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
+        )
+      )}
+      {isPreview && <span className="edge flat">🔒 {lang === "it" ? "edge bloccato" : "edge locked"}</span>}
+
+      {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
+      <div className="why">
+        <div className="wlab"><span className="tri">▸</span> {lang === "it" ? "Perché" : "Why"}</div>
+        <dl>
+          {(e.form_home || e.form_away) && (
+            <div className="it"><dt>{lang === "it" ? "Forma" : "Form"}</dt><dd>{fmtFormAny(e.form_home) ?? "–"} <span className="vs">vs</span> {fmtFormAny(e.form_away) ?? "–"}</dd></div>
+          )}
+          {e.kind === "world_cup" && e.matches && (e.matches.home != null || e.matches.away != null) && (
+            <div className="it"><dt>{lang === "it" ? "Campione" : "Sample"}</dt><dd>{e.matches.home ?? "–"} <span className="vs">vs</span> {e.matches.away ?? "–"}</dd></div>
+          )}
+          {(e.xg_home != null || e.xg_away != null) && (
+            <div className="it"><dt>xG</dt><dd>{e.xg_home?.toFixed(2) ?? "–"} <span className="vs">vs</span> {e.xg_away?.toFixed(2) ?? "–"}</dd></div>
+          )}
+        </dl>
+
+        {/* footer action row */}
+        <div className="act">
+          {isPreview ? (
+            <span className="why-locked-preview">{t.pred_why_show}</span>
+          ) : (
+            <button className="open" onClick={() => setShowWhy(!showWhy)}>
+              {showWhy ? t.pred_why_hide : t.pred_why_show} <span className="ar">→</span>
+            </button>
+          )}
+          {/* sober bet action — RESTA (revenue). FT → status note. */}
+          {onBetNow && !isPreview && (isFinished ? (
+            <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
+          ) : (
+            <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
+          ))}
+          <span className="model">{modelLabelFor(p)}</span>
+          {isPreview || p.locked ? (
+            <span className="gate">Pro</span>
+          ) : isFinished ? (
+            <span className="gate settled">{lang === "it" ? "Settlato" : "Settled"}</span>
+          ) : (
+            <span className="gate">Pro</span>
+          )}
+        </div>
+
+        {/* expandable analysis body */}
+        {isPreview ? (
+          <div className="nudge">
+            <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
+            <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali con Pro (49.50 USDT/mese)." : "Unlock edge%, AI reasoning and signals with Pro (49.50 USDT/month)."}</em>
           </div>
-          {belowFloor ? (
-            <div className="text-xs font-mono mt-1 wc-no-favourite-inline">
-              <strong>{t.no_clear_favorite}</strong>
-              <span className="ml-1">· {t.open_match}</span>
+        ) : showWhy && (
+        <div className="why-body">
+          <p className="why-prose">{buildFootballWhy(p, lang)}</p>
+
+          {p.pick && (
+            <p className="why-prose mono">Pick: <strong>{p.pick}</strong>{p.confidence_score != null ? ` · ${p.confidence_score}%` : ""}</p>
+          )}
+
+          {/* Schedina (extra markets) — demoted into the expansion */}
+          {extraPicks.length > 0 && (
+            <div className="extra-markets">
+              <span className="extra-markets-label">{lang === "it" ? "Schedina" : "Acca picks"}</span>
+              {extraPicks.map((m) => {
+                const strength = m.p >= 0.80 ? "high" : m.p >= 0.65 ? "mid" : "low";
+                return (
+                  <span key={m.key} className={`extra-market-pill ${strength}`}>
+                    <span className="extra-market-name">{m.label}</span>
+                    <span className="extra-market-pct">{Math.round(m.p * 100)}%</span>
+                  </span>
+                );
+              })}
             </div>
-          ) : p.pick ? (
-            <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{p.pick}</strong>{p.confidence_score != null && <span className="ml-1 text-gray-400">{p.confidence_score}%</span>}</div>
-          ) : null}
+          )}
+
+          {/* Affiliate bonus CTA — demoted into the expansion */}
           {p.affiliate && (
             <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
             </a>
           )}
           {p.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
-        </>
-      )}
-
-      {/* Extra markets — schedina optimizer */}
-      {e.extra_markets && e.extra_markets.length > 0 && (() => {
-        // Sort by probability descending, show only markets with p >= 55%
-        const picks = [...e.extra_markets]
-          .filter((m) => m.p >= 0.55)
-          .sort((a, b) => b.p - a.p)
-          .slice(0, 5);
-        if (!picks.length) return null;
-        return (
-          <div className="extra-markets">
-            <span className="extra-markets-label">{lang === "it" ? "Schedina" : "Acca picks"}</span>
-            {picks.map((m) => {
-              const strength = m.p >= 0.80 ? "high" : m.p >= 0.65 ? "mid" : "low";
-              return (
-                <span key={m.key} className={`extra-market-pill ${strength}`}>
-                  <span className="extra-market-name">{m.label}</span>
-                  <span className="extra-market-pct">{Math.round(m.p * 100)}%</span>
-                </span>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* Footer: model + edge + why toggle */}
-      <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-        {isPreview ? (
-          <span className="why-locked-preview">{t.pred_why_show}</span>
-        ) : (
-          <button
-            className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-            onClick={() => setShowWhy(!showWhy)}
-          >
-            {showWhy ? t.pred_why_hide : t.pred_why_show}
-          </button>
-        )}
-        <span className="text-gray-600">{modelLabelFor(p)}</span>
-        {isPreview || p.locked ? (
-          <span className="plan-lock-badge">🔒 Pro</span>
-        ) : belowFloor ? (
-          // No clear favourite: no edge/value badge — keep the slot quiet.
-          <span aria-hidden="true" />
-        ) : p.edge != null ? (
-          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isFootballBestBet(p) ? "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" : p.edge > 0 ? "text-gray-400 border-gray-400/30" : "text-red-400 border-red-400/30"}`}>
-            {p.edge > 0 ? "+" : ""}{(p.edge * 100).toFixed(1)}%
-          </span>
-        ) : Number.isFinite(selectedFootballProbability(p)) ? (
-          <span className="px-2 py-0.5 rounded border font-mono text-[10px] text-gray-400 border-gray-400/30">{Math.round(selectedFootballProbability(p) * 100)}%</span>
-        ) : (
-          <span className="plan-lock-badge">🔒 Pro</span>
-        )}
-      </div>
-
-      {/* Preview upgrade nudge (free plan) */}
-      {isPreview && (
-        <div className="plan-upgrade-nudge">
-          <span>🔒</span>
-          <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
-          <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali con Pro (49.50 USDT/mese)." : "Unlock edge%, AI reasoning and signals with Pro (49.50 USDT/month)."}</em>
-        </div>
-      )}
-
-      {/* Inline Why section */}
-      {!isPreview && showWhy && (
-        <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.pred_why_title}</div>
-          <p className="text-[11px] font-mono text-gray-300 leading-relaxed">{buildFootballWhy(p, lang)}</p>
-        </div>
-      )}
-
-      {/* #LIVE-1 (rev. Andrea): a match in corso la card resta visibile E il
-          bottone bet resta attivo (live betting dai partner). Solo a FT il
-          bottone lascia il posto allo stato "in arrivo nello storico". */}
-      {onBetNow && !isPreview && isFinished ? (
-        <div className="w-full mt-1 py-1.5 rounded-lg border border-red-400/20 bg-red-400/5 text-red-400/80 text-xs font-mono tracking-wider text-center">
-          {lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}
-        </div>
-      ) : onBetNow && !isPreview && (
-        <button
-          className="w-full mt-1 py-1.5 rounded-lg border border-[var(--am-line-2)] bg-[var(--am-panel-2)] text-[var(--am-text)] text-xs font-mono tracking-wider hover:border-[var(--am-coral-b)] hover:text-[var(--am-coral)] transition-colors"
-          onClick={onBetNow}
-        >
-          {t.bet_now}
-        </button>
-      )}
 
       {/* Deep Analysis — Premium only */}
       {isPremium && (
@@ -3302,14 +3279,17 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </div>
       )}
 
-      {/* Deep Analysis locked teaser — Base users only */}
-      {!isPremium && !isPreview && (
+      {/* Deep Analysis locked teaser — Base users only (demoted into expansion) */}
+      {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
           <span>{lang === "it" ? "Analisi approfondita disponibile con Signal Desk Pro (49.50 USDT/mese)" : "Deep analysis available with Signal Desk Pro (49.50 USDT/month)"}</span>
         </div>
       )}
-    </div>
+        </div>
+        )}
+      </div>
+    </div></article>
   );
 }
 
