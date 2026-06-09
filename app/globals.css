@@ -1297,12 +1297,15 @@ button:disabled {
 .auth-modal button {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid rgba(255,107,107,0.42);
+  border: 1px solid var(--am-coral);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #1A0B05;
-  font-weight: 900;
+  background: var(--am-coral);
+  color: var(--am-bg);
+  font-weight: 700;
+  transition: filter .15s, border-color .15s, background .15s, color .15s;
 }
+.locked-overlay button:hover:not(:disabled),
+.auth-modal button:hover:not(:disabled) { filter: brightness(1.06); }
 
 .auth-modal-backdrop {
   position: fixed;
@@ -1321,12 +1324,10 @@ button:disabled {
   padding: 22px;
   display: grid;
   gap: 14px;
-  border: 1px solid var(--line-2);
+  border: 1px solid var(--am-line);
   border-radius: 14px;
-  background:
-    radial-gradient(ellipse 360px 220px at 90% 0%, rgba(59,130,246,0.14), transparent 70%),
-    var(--panel);
-  box-shadow: 0 24px 80px rgba(0,0,0,0.42);
+  background: var(--am-panel);
+  box-shadow: inset 0 1px 0 var(--am-hi), 0 24px 80px rgba(0,0,0,0.55);
 }
 
 .auth-modal-head {
@@ -1360,8 +1361,8 @@ button:disabled {
 }
 
 .auth-modal input:focus {
-  border-color: rgba(255,107,107,0.50);
-  box-shadow: 0 0 0 3px rgba(255,107,107,0.08);
+  border-color: var(--am-coral-b);
+  box-shadow: 0 0 0 3px var(--am-coral-dim);
 }
 
 .auth-modal button:disabled {
@@ -1381,9 +1382,9 @@ button:disabled {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--am-line);
   border-radius: 10px;
-  background: rgba(0,0,0,0.30);
+  background: var(--am-inset);
 }
 
 .auth-mode-switch button {
@@ -1404,17 +1405,17 @@ button:disabled {
 }
 
 .auth-mode-switch button.is-active {
-  background: rgba(255,107,107,0.12) !important;
-  border: 1px solid rgba(255,107,107,0.30) !important;
-  color: var(--green) !important;
+  background: var(--am-coral-dim) !important;
+  border: 1px solid var(--am-coral-b) !important;
+  color: var(--am-coral) !important;
 }
 
 .auth-error {
   padding: 8px 12px;
-  border: 1px solid rgba(248,113,113,0.30);
+  border: 1px solid var(--am-negative-b);
   border-radius: 7px;
-  background: rgba(248,113,113,0.07);
-  color: #fca5a5;
+  background: var(--am-negative-dim);
+  color: var(--am-negative);
   font-size: 12px;
   margin: 0;
 }
@@ -5788,4 +5789,27 @@ button:disabled {
 @media (max-width:640px){
   .ad-banner{ flex-direction:column; align-items:flex-start; gap:12px; }
   .ad-banner-aside{ width:100%; justify-content:space-between; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   .am-surface — sleek-coral panel utility (parity with .pred / .wc-group-card).
+   Drop-in replacement for legacy .glass-card on modals & account area.
+   Presentation only; pair with Tailwind padding/spacing utilities.
+   ────────────────────────────────────────────────────────────────────────── */
+.am-surface {
+  position: relative;
+  min-width: 0;
+  background: var(--am-panel);
+  border: 1px solid var(--am-line);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 var(--am-hi), 0 1px 1px rgba(0,0,0,0.5), 0 2px 6px -2px rgba(0,0,0,0.4);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.am-surface:hover { border-color: var(--am-line-2); }
+/* Inset/recessed variant — for nested rows, inputs groups, segmented areas. */
+.am-surface-inset {
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 var(--am-hi);
 }
