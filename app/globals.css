@@ -24,8 +24,8 @@
   --am-line-2:     rgba(255,255,255,0.14);
 
   /* Brand accents — coral primary, warm orange, cool cobalt */
-  --am-coral:      #FF6B6B;   /* primary: CTA, nav attiva, top-pick */
-  --am-coral-2:    #FB7185;   /* fill/gradiente */
+  --am-coral:      #FF6A5E;   /* primary: CTA, nav attiva, top-pick */
+  --am-coral-2:    #C7463E;   /* fill/gradiente */
   --am-orange:     #FB923C;   /* secondario caldo, gradiente con coral */
   --am-cobalt:     #3B82F6;   /* dati e output modello, link */
   --am-cobalt-2:   #60A5FA;
@@ -40,8 +40,8 @@
   --am-negative-b:   rgba(248,113,113,0.30);
 
   /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
-  --am-coral-dim:  rgba(255,107,107,0.10);
-  --am-coral-b:    rgba(255,107,107,0.30);
+  --am-coral-dim:  rgba(255,106,94,0.13);
+  --am-coral-b:    rgba(255,106,94,0.34);
 
   /* Legacy semantic names kept as internal aliases (do not reference --am-green
      elsewhere; --green legacy alias now points to coral). */
@@ -106,8 +106,8 @@
   --am-line:       rgba(15,18,30,0.10);
   --am-line-2:     rgba(15,18,30,0.16);
 
-  --am-coral:      #E5484D;   /* primary su light, contrasto AA come testo/bordo */
-  --am-coral-2:    #FF6B6B;   /* fill/gradiente */
+  --am-coral:      #D8392F;   /* primary su light, contrasto AA come testo/bordo */
+  --am-coral-2:    #E5483D;   /* fill/gradiente */
   --am-orange:     #EA7317;
   --am-cobalt:     #2563EB;
   --am-cobalt-2:   #3B82F6;
@@ -120,8 +120,8 @@
   --am-negative-dim: rgba(220,38,38,0.10);
   --am-negative-b:   rgba(220,38,38,0.28);
 
-  --am-coral-dim:  rgba(229,72,77,0.10);
-  --am-coral-b:    rgba(229,72,77,0.30);
+  --am-coral-dim:  rgba(216,57,47,0.08);
+  --am-coral-b:    rgba(216,57,47,0.30);
 
   --am-wash:       rgba(229,72,77,0.07);
   --am-glow:       rgba(229,72,77,0.12);
