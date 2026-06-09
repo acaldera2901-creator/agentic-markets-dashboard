@@ -15,9 +15,9 @@
       "sport": "tennis",
       "holdout": "2025-26",
       "n": 8044,
-      "brier": 0.2209,
-      "ece": 0.0179,
-      "accuracy": 0.6363
+      "brier": 0.2206,
+      "ece": 0.0099,
+      "accuracy": 0.6344
     },
     "wc": {
       "sport": "wc",
