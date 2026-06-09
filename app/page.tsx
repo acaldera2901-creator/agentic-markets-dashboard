@@ -5717,33 +5717,6 @@ export default function Dashboard() {
       {/* ── 3-column layout ── */}
       <div className="portal-columns">
 
-        {/* Left ad column — Operator B2B */}
-        <aside className="portal-ad-col left">
-          <div className="portal-ad-slot" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p className="ad-eyebrow">Operator</p>
-            <div className="ad-name" style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 700, lineHeight: 1.3 }}>API Access</div>
-            <div className="ad-desc" style={{ color: "#94a3b8", fontSize: "11px", lineHeight: 1.5 }}>
-              {uiLanguage === "it" ? "Integra le probabilità calibrate nella tua piattaforma. Modello Dixon-Coles + xG via REST API." : "Integrate calibrated probabilities into your platform. Dixon-Coles + xG model via REST API."}
-            </div>
-            <a href="mailto:info@agenticmarkets.com?subject=Operator%20API%20Access"
-              className="text-[10px] font-mono px-3 py-1.5 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors text-center block mt-1"
-              onClick={() => trackEvent("operator_sidebar_click", {})}>
-              {uiLanguage === "it" ? "Richiedi accesso →" : "Request access →"}
-            </a>
-          </div>
-          <div className="portal-ad-slot tall" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p className="ad-eyebrow" style={{ color: "#64748b", fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.1em" }}>B2B</p>
-            <div className="ad-name" style={{ color: "#e2e8f0", fontSize: "12px", fontWeight: 700, lineHeight: 1.3 }}>White-label Desk</div>
-            <div className="ad-desc" style={{ color: "#94a3b8", fontSize: "11px", lineHeight: 1.5 }}>
-              {uiLanguage === "it" ? "Un signal desk col tuo brand sul tuo dominio. Reporting dati incluso." : "A branded signal desk on your domain. Full data reporting included."}
-            </div>
-            <button type="button" onClick={() => { setTab("partners"); trackEvent("operator_b2b_click", {}); }}
-              className="text-[10px] font-mono px-3 py-1.5 rounded border border-fuchsia-400/40 text-fuchsia-400 bg-fuchsia-400/5 hover:bg-fuchsia-400/15 transition-colors text-center mt-1 w-full">
-              {uiLanguage === "it" ? "Partner Program →" : "Partner Program →"}
-            </button>
-          </div>
-        </aside>
-
         {/* ── Desk (nav + content) ── */}
         <div className="portal-desk">
           <section className="book-layout">
@@ -5848,33 +5821,6 @@ export default function Dashboard() {
         </section>
         </section>{/* end book-layout */}
         </div>{/* end portal-desk */}
-
-        {/* Right ad column — Sportsbook affiliate */}
-        <aside className="portal-ad-col right">
-          <div className="portal-ad-slot" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p className="ad-eyebrow">Sportsbook</p>
-            <div className="ad-name" style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 700, lineHeight: 1.3 }}>
-              {uiLanguage === "it" ? "Gioca informato" : "Bet Smarter"}
-            </div>
-            <div className="ad-desc" style={{ color: "#94a3b8", fontSize: "11px", lineHeight: 1.5 }}>
-              {uiLanguage === "it" ? "Le nostre probabilità sono calibrate per i bookmaker partner. Confronta le quote prima di giocare." : "Our probabilities are calibrated for partner sportsbooks. Compare odds before you play."}
-            </div>
-            <button type="button" onClick={() => { setTab("partners"); trackEvent("sportsbook_sidebar_click", {}); }}
-              className="text-[10px] font-mono px-3 py-1.5 rounded border border-amber-400/40 text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 transition-colors text-center block mt-1 w-full">
-              {uiLanguage === "it" ? "Vedi partner →" : "View partners →"}
-            </button>
-          </div>
-          <div className="portal-ad-slot tall" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p className="ad-eyebrow" style={{ color: "#64748b", fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.1em" }}>{uiLanguage === "it" ? "Esclusivo" : "Exclusive"}</p>
-            <div className="ad-name" style={{ color: "#e2e8f0", fontSize: "12px", fontWeight: 700, lineHeight: 1.3 }}>Partner Sportsbook</div>
-            <div className="ad-desc" style={{ color: "#94a3b8", fontSize: "11px", lineHeight: 1.5 }}>
-              {uiLanguage === "it" ? "Integrazione partner ufficiale in arrivo. Quote migliori, payout veloci." : "Official partner integration coming soon. Best odds, fastest payouts."}
-            </div>
-            <span className="text-[9px] font-mono px-2 py-1 rounded border border-cyan-400/30 text-cyan-500 bg-cyan-400/5 text-center mt-1 block">
-              {uiLanguage === "it" ? "In arrivo" : "Coming Soon"}
-            </span>
-          </div>
-        </aside>
 
       </div>{/* end portal-columns */}
 

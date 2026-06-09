@@ -3672,7 +3672,7 @@ button:disabled {
 
 .portal-columns {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr) 190px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   min-height: 0;
 }
