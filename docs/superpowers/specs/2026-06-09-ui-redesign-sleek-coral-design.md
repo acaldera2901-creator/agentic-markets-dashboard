@@ -65,7 +65,7 @@ Budget minimo: solo il pulse del dot live + hover-lift delle card. `prefers-redu
 | **Ticker live** | Una riga, label "In play" coral con pulse; item scrollabili in orizzontale (`overflow-x:auto`, scrollbar nascosta) — non clippano la pagina. |
 | **Filtri** | Segmented control (Tutti/Football/Tennis · Tutte/Solo con edge) + search; wrap su narrow. |
 | **Featured (focal)** | Vedi §4.3. "Edge del giorno · il modello vs il mercato": numero gigante coral, pickname, chip edge, e lo stato "perché" ricco (Elo, match superficie, H2H + narrativa del modello). |
-| **Card-predizione (atomo)** | Header (glifo sport + lega + stato/quando) · fixture (nomi bold, `vs` demote) · score-readout incassato · **righe outcome monocromatiche, coral SOLO sul pick** (no rainbow) · chip edge · stato "perché" (forma, campione) · footer azione **sobria** ("Apri analisi →", gate Pro/Settlato). Stato coin-flip (50/50) = **nessun** accento ("nessun favorito netto") — onestà di calibrazione. Stato "modello errato" sugli esiti sbagliati. |
+| **Card-predizione (atomo)** | Header (glifo sport + lega + stato/quando) · fixture (nomi bold, `vs` demote) · score-readout incassato · **righe outcome monocromatiche, coral SOLO sul pick** (no rainbow) · chip edge · stato "perché" (forma, campione) · footer con toggle "perché" + bottone **bet sobrio** (resta = redirect affiliate, ma neutro, no verde/urgenza) · gate Pro/Settlato. Stato coin-flip (50/50) = **nessun** accento ("nessun favorito netto") — onestà di calibrazione. Stato "modello errato" sugli esiti sbagliati. |
 | **Storico** | "Prova di calibrazione: 100 pick settlati, niente cherry-picking." Tabella densa; P&L verde/rosso solo qui. |
 | **Promo (demote)** | Da due sidebar grasse → una fascia 3-up in fondo (API/REST · white-label · confronto quote). |
 | **Footer** | Compliance visibile: 18+, scopo informativo, GamCare/BeGambleAware, disclosure affiliati. |
@@ -80,7 +80,7 @@ Budget minimo: solo il pulse del dot live + hover-lift delle card. `prefers-redu
 ## 7. Guardrail anti-slop & etici
 
 - **Tell banditi (bible §4):** gradienti viola/indigo/coral su elementi; glass/blur/blob/mesh; Inter & co. come voce; radius/shadow uniformi; centered-everything; badge-above-H1; tre-box-icona; bento riflesso; fade-up globale; copy placeholder.
-- **Etica engagement:** niente verde-scommessa, niente urgenza, niente "Piazza la scommessa". Azione = "Apri analisi". Onestà di calibrazione esposta (coin-flip senza pick, "modello errato", hit-rate nello storico).
+- **Etica engagement:** via il **verde-scommessa** e l'urgenza ("🔴 Live —"). **Il bottone bet RESTA** (decisione Andrea 2026-06-09: è il redirect ai bookmaker/sportsbook partner = revenue affiliate), ma **reso sobrio** (neutro, niente verde/allarme), non più un CTA urlato. Il "perché"/analisi resta azione separata. Onestà di calibrazione esposta (coin-flip senza pick, "modello errato", hit-rate nello storico).
 - **Test finale §5:** ogni scelta non-default ha un *perché* legato al punto di vista, non "sembrava moderno".
 
 ## 8. Strategia di implementazione sul monolite `page.tsx`
