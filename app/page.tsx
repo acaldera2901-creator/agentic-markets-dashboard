@@ -867,6 +867,16 @@ const LEAGUE_FLAGS: Record<string, string> = {
   PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "⭐", EL: "🟠",
 };
 
+// Rail nav glyphs (mockup .rail svg <use>): tab → custom sport-glyph symbol id.
+const RAIL_GLYPHS: Record<string, string> = {
+  bets: "#g-desk",
+  history: "#g-history",
+  leaderboard: "#g-rank",
+  "match-builder": "#g-builder",
+  account: "#g-acct",
+  partners: "#g-desk",
+};
+
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
   DERBY:              { label: "Derby",          color: "text-red-400 border-red-400/40 bg-red-400/10",        priority: 5 },
   TITLE_DECIDER:      { label: "Title",          color: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10", priority: 4 },
@@ -5928,27 +5938,35 @@ export default function Dashboard() {
         <div className="portal-desk">
           <section className="book-layout">
             <aside className="sports-rail">
-              <div className="rail-title">DESK</div>
+              {/* ── DESK group — mockup .rail .navlab + boxed active state ── */}
+              <span className="rail-lab">Desk</span>
               {navItems.map((item) => (
                 <button
                   key={item.tab}
                   className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
                   onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
                 >
-                  <span>{item.label}</span>
-                  {item.value && <strong>{item.value}</strong>}
+                  <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>
+                  <span className="rail-label">{item.label}</span>
+                  {item.value && <strong className="n">{item.value}</strong>}
                 </button>
               ))}
+              {/* ── IN EVIDENZA group ── */}
+              <span className="rail-sep" />
+              <span className="rail-lab is-second">{uiLanguage === "it" ? "In evidenza" : "Featured"}</span>
               {/* Track B: World Cup hub is a route, not a tab */}
               <a className="rail-item" href="/world-cup">
-                <span><svg style={{width:16,height:16,verticalAlign:'-3px',marginRight:8}}><use href="#g-trophy"/></svg>World Cup</span>
+                <svg className="rail-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
+                <span className="rail-label">World Cup</span>
               </a>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
-                <span><svg style={{width:16,height:16,verticalAlign:'-3px',marginRight:8}}><use href="#g-pick"/></svg>Creator Picks</span>
+                <svg className="rail-ic" aria-hidden="true"><use href="#g-pick" /></svg>
+                <span className="rail-label">Creator Picks</span>
               </a>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
-                {refreshing ? "..." : tUI.refresh_odds}
+                ↻ {refreshing ? "..." : tUI.refresh_odds}
+                <span className="sync">live</span>
               </button>
             </aside>
 

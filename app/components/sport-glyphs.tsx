@@ -68,6 +68,8 @@ export function SportGlyphSprite() {
         <symbol id="g-builder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" stroke="var(--am-coral)" /><path d="M11 7.5h4.5a2 2 0 0 1 2 2V13" /></g></symbol>
         <symbol id="g-pick" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.5 14.3 9l5.7.3-4.4 3.8 1.5 5.6L12 15.8 6.9 18.7l1.5-5.6L4 9.3 9.7 9Z" stroke="var(--am-coral)" /></g></symbol>
         <symbol id="g-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6Z" fill="currentColor" /></symbol>
+        <symbol id="g-acct" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8.5" r="3.4" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" /></g></symbol>
+        <symbol id="g-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.8-4.8" /></g></symbol>
       </defs>
     </svg>
   );
