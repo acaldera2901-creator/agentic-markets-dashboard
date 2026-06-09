@@ -1336,29 +1336,26 @@ function SportsbookBoard({
         <span>Tennis {tennisRows.length}</span>
       </div>
 
-      <div className="sports-filter-bar">
-        <div className="segmented-filter" aria-label="Sport filter">
-          {[
-            ["all", labels.allSports],
-            ["football", labels.football],
-            ["tennis", labels.tennis],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              className={sportFilter === key ? "is-active" : ""}
-              onClick={() => setSportFilter(key as "all" | "football" | "tennis")}
-            >
-              {label}
-            </button>
-          ))}
+      <div className="sports-filter-bar am-filters">
+        <div className="am-seg" aria-label="Sport filter">
+          <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>{labels.allSports}</button>
+          <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
+            <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>{labels.football} <span className="ct">{footballRows.length}</span>
+          </button>
+          <button className={sportFilter === "tennis" ? "on" : ""} onClick={() => setSportFilter("tennis")}>
+            <svg className="ic" aria-hidden="true"><use href="#g-tball" /></svg>{labels.tennis} <span className="ct">{tennisRows.length}</span>
+          </button>
         </div>
 
-        <div className="segmented-filter" aria-label="Signal filter">
-          <button className={signalFilter === "all" ? "is-active" : ""} onClick={() => setSignalFilter("all")}>{labels.allSignals}</button>
-          <button className={signalFilter === "value" ? "is-active" : ""} onClick={() => setSignalFilter("value")}>{labels.valueOnly}</button>
+        <div className="am-seg" aria-label="Signal filter">
+          <button className={signalFilter === "all" ? "on" : ""} onClick={() => setSignalFilter("all")}>{labels.allSignals}</button>
+          <button className={signalFilter === "value" ? "on" : ""} onClick={() => setSignalFilter("value")}>
+            <svg className="ic" aria-hidden="true"><use href="#g-bolt" /></svg>{labels.valueOnly}
+          </button>
         </div>
 
-        <label>
+        {/* competition/surface/sort kept as sober inline selects (no lost functionality) */}
+        <label className="am-mini-field">
           <span>{labels.competition}</span>
           <select value={competitionFilter} onChange={(e) => setCompetitionFilter(e.target.value)}>
             <option value="all">{labels.allCompetitions}</option>
@@ -1368,7 +1365,7 @@ function SportsbookBoard({
           </select>
         </label>
 
-        <label>
+        <label className="am-mini-field">
           <span>{labels.surface}</span>
           <select value={surfaceFilter} onChange={(e) => setSurfaceFilter(e.target.value as "all" | TennisMatch["surface"])} disabled={sportFilter === "football"}>
             <option value="all">{labels.allSurfaces}</option>
@@ -1376,7 +1373,7 @@ function SportsbookBoard({
           </select>
         </label>
 
-        <label>
+        <label className="am-mini-field">
           <span>{labels.sort}</span>
           <select value={sortMode} onChange={(e) => setSortMode(e.target.value as "edge" | "time" | "odds" | "probability")}>
             <option value="edge">{labels.edge}</option>
@@ -1386,12 +1383,15 @@ function SportsbookBoard({
           </select>
         </label>
 
-        <input
-          className="sports-search"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={labels.search}
-        />
+        <div className="grow" />
+        <label className="am-search">
+          <svg aria-hidden="true"><use href="#g-search" /></svg>
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={labels.search}
+          />
+        </label>
       </div>
 
       {filteredTotal === 0 ? (
@@ -1575,23 +1575,17 @@ function BestBetsBoard({
         <span>Tennis {visibleTennisValue.length}</span>
       </div>
 
-      <div className="sports-filter-bar best-bets-filter-bar">
-        <div className="segmented-filter" aria-label="Best bets sport filter">
-          {[
-            ["all", labels.all],
-            ["football", labels.football],
-            ["tennis", labels.tennis],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              className={sportFilter === key ? "is-active" : ""}
-              onClick={() => setSportFilter(key as "all" | "football" | "tennis")}
-            >
-              {label}
-            </button>
-          ))}
+      <div className="sports-filter-bar best-bets-filter-bar am-filters">
+        <div className="am-seg" aria-label="Best bets sport filter">
+          <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>{labels.all}</button>
+          <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
+            <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>{labels.football} <span className="ct">{visibleFootballValue.length}</span>
+          </button>
+          <button className={sportFilter === "tennis" ? "on" : ""} onClick={() => setSportFilter("tennis")}>
+            <svg className="ic" aria-hidden="true"><use href="#g-tball" /></svg>{labels.tennis} <span className="ct">{visibleTennisValue.length}</span>
+          </button>
         </div>
-        <label>
+        <label className="am-mini-field">
           <span>{labels.sort}</span>
           <select value={sortMode} onChange={(e) => setSortMode(e.target.value as "probability" | "edge" | "time")}>
             <option value="probability">{labels.probability}</option>
@@ -1599,12 +1593,15 @@ function BestBetsBoard({
             <option value="time">{labels.time}</option>
           </select>
         </label>
-        <input
-          className="sports-search"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={labels.search}
-        />
+        <div className="grow" />
+        <label className="am-search">
+          <svg aria-hidden="true"><use href="#g-search" /></svg>
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={labels.search}
+          />
+        </label>
       </div>
 
       {totalValue ? (
