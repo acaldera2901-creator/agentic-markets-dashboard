@@ -2657,12 +2657,14 @@ button:disabled {
 
 .crypto-pay-box button {
   min-height: 40px;
-  border: 1px solid rgba(255,107,107,0.38);
+  border: 1px solid var(--am-coral-b);
   border-radius: 8px;
-  background: rgba(255,107,107,0.10);
-  color: var(--green);
-  font-weight: 900;
+  background: var(--am-coral-dim);
+  color: var(--am-coral);
+  font-weight: 700;
+  transition: background .15s, color .15s, border-color .15s, opacity .15s;
 }
+.crypto-pay-box button:not(:disabled):hover { background: var(--am-coral); color: var(--am-bg); }
 
 .price-line {
   min-height: 58px;
@@ -3618,9 +3620,9 @@ button:disabled {
   display: grid;
   gap: 8px;
   padding: 14px;
-  border: 1px solid rgba(255,107,107,0.25);
+  border: 1px solid var(--am-coral-b);
   border-radius: 10px;
-  background: rgba(255,107,107,0.05);
+  background: var(--am-coral-dim);
 }
 
 .checkout-wallet-block > span:first-child {
@@ -3628,7 +3630,7 @@ button:disabled {
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--green);
+  color: var(--am-coral);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -3654,18 +3656,18 @@ button:disabled {
   flex-shrink: 0;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid rgba(255,107,107,0.40);
+  border: 1px solid var(--am-coral-b);
   border-radius: 6px;
-  background: rgba(255,107,107,0.10);
-  color: var(--green);
+  background: var(--am-coral-dim);
+  color: var(--am-coral);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: background .15s;
+  transition: background .15s, color .15s;
 }
 
 .checkout-address button:hover {
-  background: rgba(255,107,107,0.20);
+  background: var(--am-coral); color: var(--am-bg);
 }
 
 .checkout-wallet-block > em {
@@ -3690,9 +3692,9 @@ button:disabled {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid rgba(59,130,246,0.40);
-  background: rgba(59,130,246,0.10);
-  color: rgba(59,130,246,0.90);
+  border: 1px solid var(--am-coral-b);
+  background: var(--am-coral-dim);
+  color: var(--am-coral);
   font-size: 10px;
   font-weight: 900;
   display: grid;

@@ -2117,7 +2117,7 @@ function CheckoutModal({
           <p className="eyebrow">Checkout · USDT TRC20</p>
           <h3>{PUBLIC_PAID_PLAN.label[lang === "it" ? "it" : "en"]}</h3>
           <span>
-            {lang === "it" ? <>Invia esattamente <strong style={{ color: "var(--green)" }}>{price.toFixed(2)} USDT</strong> all&apos;indirizzo qui sotto. Il piano passerà in verifica.</> : <>Send exactly <strong style={{ color: "var(--green)" }}>{price.toFixed(2)} USDT</strong> to the address below. The plan will move to review.</>}
+            {lang === "it" ? <>Invia esattamente <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong> all&apos;indirizzo qui sotto. Il piano passerà in verifica.</> : <>Send exactly <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong> to the address below. The plan will move to review.</>}
           </span>
         </div>
 
@@ -2138,9 +2138,9 @@ function CheckoutModal({
 
         {/* SLA + support (GAP7): set expectations on activation latency + give a
             channel for "I paid but see nothing". Manual activation today. */}
-        <p style={{ fontSize: "11px", fontFamily: "monospace", color: "#94a3b8", lineHeight: 1.5, margin: "4px 0 0" }}>
+        <p style={{ fontSize: "11px", fontFamily: "var(--font-mono), ui-monospace, monospace", color: "var(--am-muted)", lineHeight: 1.5, margin: "4px 0 0" }}>
           {t.checkout_sla}{" "}
-          <a href="mailto:info@agenticmarkets.com?subject=Pagamento%20-%20attivazione" style={{ color: "#67e8f9", textDecoration: "underline" }}>
+          <a href="mailto:info@agenticmarkets.com?subject=Pagamento%20-%20attivazione" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>
             info@agenticmarkets.com
           </a>
         </p>
