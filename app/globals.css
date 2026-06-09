@@ -2737,13 +2737,14 @@ button:disabled {
   padding: 0 9px;
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--am-line);
   border-radius: 999px;
-  color: var(--muted);
+  color: var(--am-muted);
   background: var(--am-inset);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .settings-copy {
@@ -2768,26 +2769,32 @@ button:disabled {
 .settings-notification-list button {
   min-height: 46px;
   padding: 10px 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--am-line);
   border-radius: 8px;
   background: var(--am-inset);
-  color: var(--muted);
+  color: var(--am-muted);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  transition: border-color .15s, background .15s, color .15s;
 }
 
 .settings-notification-list button.is-on {
-  border-color: rgba(255,107,107,0.36);
-  background: rgba(255,107,107,0.08);
+  border-color: var(--am-coral-b);
+  background: var(--am-coral-dim);
   color: var(--text);
 }
 
 .settings-notification-list strong {
-  color: var(--green);
+  color: var(--am-muted-2);
   font-size: 11px;
   text-transform: uppercase;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.settings-notification-list button.is-on strong {
+  color: var(--am-coral);
 }
 
 .settings-save,
