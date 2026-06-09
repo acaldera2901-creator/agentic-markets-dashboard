@@ -4598,7 +4598,6 @@ function HistoryTab({ history, stats, loading }: {
 }) {
   const t = useT();
   const lang = useLang();
-  const tz = useTz();
   const [sportFilter, setSportFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
@@ -4627,45 +4626,32 @@ function HistoryTab({ history, stats, loading }: {
   const countByCompetition = (c: string) =>
     c === "all" ? sportRows.length : sportRows.filter((h) => (h.competition ?? "—") === c).length;
 
-  const resultColor = (r: string) =>
-    r === "won" ? "border-green-400/40 text-green-400"
-    : r === "lost" ? "border-red-400/40 text-red-400"
-    : r === "void" ? "border-gray-500/40 text-gray-400"
-    : "border-yellow-400/30 text-yellow-300";
-
-  const cardBorder = (r: string) =>
-    r === "won" ? "border-green-400/30"
-    : r === "lost" ? "border-red-400/30"
-    : r === "void" ? "border-white/10"
-    : "border-yellow-400/20";
-
   const eventLabel = (h: V2HistoryRow) =>
     h.event_name
     ?? (h.home_team && h.away_team ? `${h.home_team} vs ${h.away_team}` : null)
     ?? (h.player_one && h.player_two ? `${h.player_one} vs ${h.player_two}` : "—");
 
-  const fmtDate = (iso: string | null) => (iso ? fmtKickoff(iso, lang, tz) : "—");
-
   return (
-    <div className="space-y-6">
-      {/* Stats strip */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-          {[
-            { label: t.hist_matches,  value: String(stats.total), color: "text-white" },
-            { label: t.hist_won,      value: String(stats.won), color: "text-green-400" },
-            { label: t.hist_lost,     value: String(stats.lost), color: "text-red-400" },
-            { label: "Void",          value: String(stats.void), color: "text-gray-400" },
-            { label: t.hist_legend_pending, value: String(stats.pending), color: "text-yellow-400" },
-            { label: t.hist_hit_rate, value: stats.win_rate ?? "—", color: "text-cyan-300" },
-          ].map((kpi) => (
-            <div key={kpi.label} className="glass-card p-3 text-center">
-              <div className={`text-lg font-black ${kpi.color}`}>{kpi.value}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5 font-mono">{kpi.label}</div>
-            </div>
-          ))}
+    <div className="am-history space-y-6">
+      {/* Header — mockup .history .hh: title + subtitle + 2 KPIs from real stats */}
+      <div className="hh">
+        <div>
+          <h2>{lang === "it" ? "Storico" : "History"}</h2>
+          <p className="hsub">
+            {lang === "it"
+              ? "La prova di calibrazione: pick settlati, esiti reali. Trasparente, niente cherry-picking."
+              : "The calibration proof: settled picks, real outcomes. Transparent, no cherry-picking."}
+          </p>
         </div>
-      )}
+        {stats && (
+          <div className="hr">
+            <div className="am-kpi"><span className="v">{stats.total}</span><span className="l">{t.hist_matches}</span></div>
+            {stats.win_rate && (
+              <div className="am-kpi"><span className="v sig">{stats.win_rate}</span><span className="l">{t.hist_hit_rate}</span></div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Filters: sport → result → competition (derived from selected sport) */}
       <div className="space-y-2">
@@ -4736,57 +4722,43 @@ function HistoryTab({ history, stats, loading }: {
           {history.length === 0 ? t.hist_empty : t.no_match_filters}
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((h) => {
-            const r = resultOf(h);
-            return (
-              <div key={h.id} className={`glass-card p-3 ${cardBorder(r)}`}>
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  {/* Event info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-500 font-mono">
-                        {SPORT_ICONS[h.sport] ?? ""} {h.competition ?? h.sport}
-                        {h.world_cup_stage ? ` · ${h.world_cup_stage}` : ""}
-                      </span>
-                      <span className="text-sm font-bold text-white">{eventLabel(h)}</span>
-                      {h.final_score && (
-                        <span className="px-2 py-0.5 rounded border border-white/15 bg-white/5 text-sm font-black font-mono text-white">
-                          {h.final_score}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">
-                      {fmtDate(h.starts_at)}
-                      {h.settled_at ? ` · ${lang === "it" ? "settled" : "settled"} ${fmtDate(h.settled_at)}` : ""}
-                    </div>
-                  </div>
-
-                  {/* Pick (projection may lock it for anonymous/free tiers) */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-right">
-                      <div className="text-[10px] text-gray-600 font-mono">{t.hist_model_pred}{h.market ? ` (${h.market})` : ""}</div>
-                      <div className="text-xs font-mono text-cyan-300">
-                        {h.locked ? "🔒" : (h.pick ?? "—")}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Result + tier chips */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`px-2 py-0.5 rounded-full border text-[10px] font-mono uppercase ${resultColor(r)}`}>
-                      {r}
-                    </span>
-                    {h.is_verified && (
-                      <span className="px-2 py-0.5 rounded-full border border-cyan-400/30 text-[10px] font-mono text-cyan-300">
-                        verified
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        /* Table — mockup .htable: Match / Pick / Modello / Esito (dot won/lost). */
+        <div className="am-htable-wrap">
+          <table className="am-htable">
+            <thead>
+              <tr>
+                <th>Match</th>
+                <th>Pick</th>
+                <th className="r">{t.hist_model_pred}</th>
+                <th className="r">{lang === "it" ? "Esito" : "Result"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((h) => {
+                const r = resultOf(h);
+                const resClass = r === "won" || r === "lost" || r === "void" ? r : "pending";
+                const resLabel =
+                  r === "won" ? (lang === "it" ? "Vinta" : "Won")
+                  : r === "lost" ? (lang === "it" ? "Persa" : "Lost")
+                  : r === "void" ? "Void"
+                  : (lang === "it" ? "Aperta" : "Pending");
+                return (
+                  <tr key={h.id}>
+                    <td className="fx-c">
+                      {SPORT_ICONS[h.sport] ?? ""} {eventLabel(h)}
+                      {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
+                    </td>
+                    <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
+                    {/* Modello: real market label from the row — no invented probability */}
+                    <td className="r">{h.market ?? "—"}</td>
+                    <td className="r">
+                      <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
