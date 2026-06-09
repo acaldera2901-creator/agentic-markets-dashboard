@@ -5111,16 +5111,27 @@ function UnifiedBetsTab({
           </div>
         </div>
       )}
-      <SportsbookBoard
-        predictions={predictions}
-        tennisMatches={tennisMatches}
-        onSelect={onSelect}
-        onBetNow={onBetNow}
-        onGate={onGate}
-        isFreeClient={isFreeClient}
-        isPremium={isPremiumClient}
-        tennisIsPlaceholder={tennisIsPlaceholder}
-      />
+      {/* Whole-board access wall: anonymous and free/pending see the board
+          blurred behind a single login/plan overlay (the per-card `locked`
+          projection already strips the picks server-side; this hides the
+          matchups too). Leaderboard and the public Old-bets history stay
+          outside the gate. Unlock = active plan (profileHasAccess). */}
+      <LockedGate
+        isUnlocked={Boolean(isPremiumClient)}
+        mode={isLoggedIn ? "plan" : "auth"}
+        onUnlock={() => onGate?.()}
+      >
+        <SportsbookBoard
+          predictions={predictions}
+          tennisMatches={tennisMatches}
+          onSelect={onSelect}
+          onBetNow={onBetNow}
+          onGate={onGate}
+          isFreeClient={isFreeClient}
+          isPremium={isPremiumClient}
+          tennisIsPlaceholder={tennisIsPlaceholder}
+        />
+      </LockedGate>
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
   );

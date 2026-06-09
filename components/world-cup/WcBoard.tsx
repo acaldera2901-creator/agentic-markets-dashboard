@@ -9,6 +9,7 @@
 // projected; missing fields just don't render (fail-soft).
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type WcEnrichment = {
   kind?: string;
@@ -452,6 +453,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
 }
 
 export default function WcBoard() {
+  const router = useRouter();
   const [rows, setRows] = useState<ProjectedRow[] | null>(null);
   // Live scores from the same feed the home board uses (/api/live covers the
   // ESPN fifa.friendly + football-data fixtures). Matched to cards by team-name
@@ -497,11 +499,31 @@ export default function WcBoard() {
     );
   }
 
-  return (
+  const grid = (
     <div className="wc-board-grid">
       {rows.map((p) => (
         <WcCard key={p.id} p={p} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} />
       ))}
+    </div>
+  );
+
+  // Whole-board access wall: when every row is locked the viewer has no access
+  // (anonymous, or free without the Pick of the Day). Mirror the home board's
+  // LockedGate — blur the grid behind a single overlay. The per-card data is
+  // already stripped server-side; this hides the matchups too. The WC hub
+  // (groups/calendar/squads/track-record) stays public around this board.
+  const viewerLocked = rows.every((r) => r.locked);
+  if (!viewerLocked) return grid;
+
+  return (
+    <div className="locked-gate">
+      <div className="locked-overlay">
+        <p className="eyebrow">World Cup board locked</p>
+        <h3>Sign in to see the World Cup predictions</h3>
+        <span>Picks, probabilities and edge stay hidden until you sign in and activate a plan.</span>
+        <button onClick={() => router.push("/")}>Sign in / Choose plan</button>
+      </div>
+      <div className="locked-content">{grid}</div>
     </div>
   );
 }
