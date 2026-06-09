@@ -3443,11 +3443,11 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {/* Probability bars — corallo = favorito, cobalto = alternativo (R1) */}
           <div className="space-y-1.5">
             <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P1")}>
-              <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color={m.p1 >= m.p2 ? "var(--am-coral)" : "var(--am-cobalt)"}
+              <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color={m.p1 > m.p2 ? "var(--am-coral)" : "var(--am-muted-2)"}
                 odds={m.odds_p1} isValue={isValue && m.best_selection === "P1"} wideLabel />
             </div>
             <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P2")}>
-              <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color={m.p1 >= m.p2 ? "var(--am-cobalt)" : "var(--am-coral)"}
+              <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color={m.p2 > m.p1 ? "var(--am-coral)" : "var(--am-muted-2)"}
                 odds={m.odds_p2} isValue={isValue && m.best_selection === "P2"} wideLabel />
             </div>
           </div>
