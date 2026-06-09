@@ -2828,6 +2828,26 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* Sport glyph in section headers (sleek-coral .sport-band .glyph) */
+.market-section-title .mst-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.market-section-title .mst-glyph {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--am-line-2);
+  border-radius: 7px;
+  background: var(--am-panel);
+  box-shadow: inset 0 1px 0 var(--am-hi);
+}
+.market-section-title .mst-glyph svg { width: 18px; height: 18px; color: var(--am-muted); }
+.market-section-title.amber .mst-glyph svg { color: rgba(255, 220, 130, 0.95); }
+
 /* ── Featured "Edge del giorno" (sleek-coral focal card) ────────────────────
    Ported from docs/design-craft/mockups/redesign-direction-v2.html (.featured),
    mapped onto --am-* tokens. The radial coral wash is the only focal accent. */

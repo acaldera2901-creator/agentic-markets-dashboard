@@ -1426,7 +1426,7 @@ function SportsbookBoard({
           {showFootballSection && (
             <section className="market-section">
               <div className="market-section-title">
-                <span>{t.board_football}</span>
+                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>{t.board_football}</span>
                 <em>{footballRows.length} {t.board_markets} · {footballValue.length} {t.board_value}</em>
               </div>
               {footballRows.length ? (
@@ -1459,7 +1459,7 @@ function SportsbookBoard({
           {showTennisSection && (
             <section className="market-section">
               <div className="market-section-title amber">
-                <span>{t.board_tennis}</span>
+                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>{t.board_tennis}</span>
                 <em>{tennisRows.length} {t.board_matches} · {tennisValue.length} {t.board_value}</em>
               </div>
               {tennisRows.length ? (
@@ -1621,7 +1621,7 @@ function BestBetsBoard({
           {visibleFootballValue.length > 0 && (
             <section className="market-section">
               <div className="market-section-title">
-                <span>{t.board_football}</span>
+                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>{t.board_football}</span>
                 <em>{visibleFootballValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</em>
               </div>
               <div className="market-list">
@@ -1633,7 +1633,7 @@ function BestBetsBoard({
           {visibleTennisValue.length > 0 && (
             <section className="market-section">
               <div className="market-section-title amber">
-                <span>{t.board_tennis}</span>
+                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>{t.board_tennis}</span>
                 <em>{visibleTennisValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</em>
               </div>
               <div className="market-list">
