@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Markets — Direzione di redesign v1</title>
+
+<!-- ============================================================
+  TYPE VOICE (Vignelli "restrict the toolkit": 1 editorial voice + 1 engineered superfamily)
+  - Fraunces  : voce editoriale/quant. opsz+wght reali. Masthead, section heads, NUMERI chiave.
+  - IBM Plex Sans : workhorse UI (label, prosa, controlli). Famiglia information-design IBM.
+  - IBM Plex Mono : SOLO cifre tabulari, ELO, score, %, metadata — dove l'allineamento e la
+                    semantica "readout da strumento" si guadagnano il monospace.
+  Vietati come voce: Inter / Geist / Space Grotesk / Roboto / system-ui.
+============================================================= -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   TOKENS — calibrati IN CONTESTO per ogni tema (Albers), non invertiti.
+   Dominante = neutro caldo "carta/inchiostro" (information design, non fintech).
+   UN accent (ocra-segnale) = verdetto del modello + edge + stato attivo. Razionato.
+   P&L: verde SOLO realizzato (won), rosso SOLO perso. Mai per CTA/urgenza.
+   ============================================================ */
+:root, :root[data-theme="dark"]{
+  /* superfici: near-black caldo, gradini di elevazione reali (no un'unica ombra molle) */
+  --bg:        #14130F;   /* fondo pagina, leggermente caldo */
+  --panel:     #1B1A15;   /* card statica */
+  --panel-2:   #211F19;   /* card sollevata / hover */
+  --inset:     #100F0C;   /* superfici incassate (barre, readout) */
+  --bar-track: #2A271F;   /* binario barra probabilità */
+
+  --line:      #2E2B22;   /* hairline */
+  --line-2:    #3B3729;   /* hairline marcata */
+
+  --ink:       #ECE7D8;   /* testo primario (avorio, non bianco puro) */
+  --ink-2:     #B7B09B;   /* testo secondario */
+  --muted:     #837C68;   /* metadata, label */
+  --faint:     #574F3F;   /* hairline-text, disabilitato */
+
+  /* UN accent — ocra segnale. Calibrato per near-black caldo. */
+  --signal:    #E0A93B;   /* verdetto modello / edge / attivo */
+  --signal-ink:#14130F;   /* testo su fondo signal */
+  --signal-dim:rgba(224,169,59,0.12);
+  --signal-line:rgba(224,169,59,0.40);
+
+  /* P&L realizzato — fuori dal sistema-accent, semantica fissa */
+  --won:  #6FB98F;        /* verde sobrio, calibrato dark, mai per CTA */
+  --lost: #C66B5E;        /* rosso terra, mai allarme acceso */
+  --live: #D9603F;        /* stato in-play (raro, informativo) */
+
+  --shadow-card: 0 1px 0 rgba(0,0,0,0.4);
+  --shadow-lift: 0 8px 30px -12px rgba(0,0,0,0.7);
+}
+:root[data-theme="light"]{
+  /* carta calda da almanacco; inchiostro caldo. Ricalibrato, non invertito. */
+  --bg:        #F2EEE3;
+  --panel:     #FBF8F0;
+  --panel-2:   #FFFFFF;
+  --inset:     #EAE4D5;
+  --bar-track: #E0D9C7;
+
+  --line:      #DDD6C4;
+  --line-2:    #CBC2AC;
+
+  --ink:       #211E16;
+  --ink-2:     #514B3B;
+  --muted:     #82795F;
+  --faint:     #B3A98E;
+
+  /* accent ricalibrato: scuro abbastanza da reggere 4.5:1 su carta come TESTO */
+  --signal:    #9A6B12;   /* ocra profondo: WCAG AA su --panel/--bg */
+  --signal-ink:#FBF8F0;
+  --signal-dim:rgba(154,107,18,0.10);
+  --signal-line:rgba(154,107,18,0.45);
+
+  --won:  #2E7D52;
+  --lost: #B0402F;
+  --live: #BF4A2A;
+
+  --shadow-card: 0 1px 0 rgba(0,0,0,0.04);
+  --shadow-lift: 0 10px 30px -14px rgba(60,50,20,0.25);
+}
+
+/* ---- baseline & spacing: tutto multiplo di 4px (baseline grid) ---- */
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",sans-serif;
+  font-size:15px; line-height:1.5;            /* WCAG 1.4.12 floor */
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"kern" 1;
+  hanging-punctuation:first;
+}
+::selection{background:var(--signal);color:var(--signal-ink)}
+
+/* tabular figures workhorse */
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum" 1,"zero" 1;}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* eyebrow / label: gerarchia da 4 leve (size + case + tracking + colore + spazio), non solo size */
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px; font-weight:500;
+  text-transform:uppercase; letter-spacing:0.18em;  /* caps tracciati */
+  color:var(--muted);
+}
+
+/* voce editoriale */
+.fraunces{font-family:"Fraunces",serif;}
+
+a{color:inherit;text-decoration:none}
+
+/* ============================================================
+   LAYOUT — griglia a 12 colonne. Rail nav (3) + corpo (9).
+   Le promo NON sono due sidebar grasse: demote a una fascia compatta in fondo.
+   ============================================================ */
+.shell{max-width:1320px;margin:0 auto;padding:0 28px}
+
+/* ---- masthead: asimmetrico, NON centrato. Wordmark editoriale a sx, strumenti a dx ---- */
+.masthead{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  gap:24px; padding:32px 0 20px;
+  border-bottom:1px solid var(--line-2);
+}
+.brand h1{
+  font-family:"Fraunces",serif;
+  font-optical-sizing:auto; font-variation-settings:"opsz" 120;
+  font-weight:600; font-size:30px; line-height:1; letter-spacing:-0.01em;
+  color:var(--ink);
+}
+.brand .tag{
+  margin-top:8px; max-width:46ch;            /* measure controllata */
+  font-size:13px; color:var(--ink-2); line-height:1.45;
+}
+.brand .tag b{font-weight:600;color:var(--ink)}
+.tools{display:flex; align-items:center; gap:10px}
+.pill{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:0.04em;
+  padding:7px 12px; border:1px solid var(--line-2); border-radius:2px;
+  color:var(--ink-2); background:transparent; cursor:pointer;
+}
+.pill.user{color:var(--signal); border-color:var(--signal-line)}
+.iconbtn{
+  width:34px;height:34px;border:1px solid var(--line-2);border-radius:2px;
+  background:transparent;color:var(--ink-2);cursor:pointer;font-size:14px;
+  display:grid;place-items:center;
+}
+.iconbtn:hover{border-color:var(--signal-line);color:var(--signal)}
+
+/* ---- corpo: rail + main ---- */
+.layout{display:grid; grid-template-columns:212px 1fr; gap:40px; padding:28px 0 8px}
+
+/* ---- rail nav: tipografico, hairline, niente box pesanti ---- */
+.rail nav{display:flex;flex-direction:column;gap:1px}
+.rail a{
+  display:flex; align-items:baseline; justify-content:space-between;
+  padding:9px 12px; border-radius:2px; color:var(--ink-2);
+  font-size:14px; font-weight:500; transition:background .12s,color .12s;
+}
+.rail a:hover{background:var(--panel);color:var(--ink)}
+.rail a.active{color:var(--ink); background:var(--panel)}
+/* stato attivo segnato dall'accent come bordo-tab sottile a sx (1 sola istanza, non stripe ovunque) */
+.rail a.active{box-shadow:inset 2px 0 0 var(--signal)}
+.rail a .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.rail a.active .n{color:var(--signal)}
+.rail .sep{height:1px;background:var(--line);margin:12px 0}
+.rail .grp{padding:0 12px 8px;}
+
+.rail .refresh{
+  margin-top:16px; width:100%; text-align:left;
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:0.14em;
+  text-transform:uppercase; color:var(--muted);
+  padding:11px 12px; border:1px dashed var(--line-2); border-radius:2px;
+  background:transparent; cursor:pointer;
+}
+.rail .refresh:hover{border-color:var(--signal-line);color:var(--signal)}
+
+/* ============================================================
+   HEADER DI SEZIONE — il "momento di respiro" (densità bassa)
+   ============================================================ */
+.deskhead{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:4px}
+.deskhead h2{
+  font-family:"Fraunces",serif; font-optical-sizing:auto;
+  font-variation-settings:"opsz" 144; font-weight:500;
+  font-size:40px; line-height:1.04; letter-spacing:-0.015em; color:var(--ink);
+}
+.deskhead .meta{display:flex;gap:18px;align-items:baseline}
+.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:20px;color:var(--ink);font-feature-settings:"tnum" 1}
+.stat .v.sig{color:var(--signal)}
+.stat .l{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+/* ---- ticker live: informativo, una riga, mono, accent SOLO sul minuto in-play ---- */
+.ticker{
+  display:flex; gap:0; flex-wrap:wrap;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  margin:20px 0 24px;
+}
+.ticker .t-lab{
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:0.16em;
+  text-transform:uppercase; color:var(--live); padding:11px 16px 11px 0;
+  display:flex;align-items:center;gap:7px; white-space:nowrap;
+}
+.ticker .t-lab::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--live);animation:bp 1.6s ease-in-out infinite}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.25}}
+.ti{
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-2);
+  padding:11px 18px; border-left:1px solid var(--line); white-space:nowrap;
+}
+.ti b{color:var(--ink);font-weight:600}
+.ti .m{color:var(--live);font-weight:500}
+
+/* ---- filtri: densi ma ordinati, nessun box arrotondato gonfio ---- */
+.filters{display:flex;flex-wrap:wrap;gap:8px 6px;align-items:center;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:2px;overflow:hidden}
+.seg button{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:0.04em;
+  padding:7px 13px;background:transparent;color:var(--muted);border:0;cursor:pointer;
+  border-left:1px solid var(--line);
+}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.filters .grow{flex:1}
+.search{
+  min-width:200px;flex:1;max-width:320px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;
+  padding:8px 12px;background:var(--inset);border:1px solid var(--line);
+  border-radius:2px;color:var(--ink);
+}
+.search::placeholder{color:var(--faint)}
+
+/* ============================================================
+   SEZIONE SPORT — header con regola tipografica forte
+   ============================================================ */
+.sport-band{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin:40px 0 16px; padding-bottom:10px; border-bottom:2px solid var(--ink);
+}
+.sport-band h3{
+  font-family:"Fraunces",serif;font-variation-settings:"opsz" 60;font-weight:600;
+  font-size:22px;letter-spacing:-0.01em;color:var(--ink);
+  display:flex;align-items:baseline;gap:12px;
+}
+.sport-band h3 .ct{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:0.1em;color:var(--muted)}
+.sport-band .note{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.06em;color:var(--muted)}
+
+/* ============================================================
+   GRIGLIA CARD — span variabili (densità che varia, non 3-up uniforme)
+   ============================================================ */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{grid-column:span 4}              /* default football: 3-up */
+.card.tennis{grid-column:span 3}       /* tennis più compatte: 4-up */
+
+/* ---------- ATOMO: card-predizione canonica ---------- */
+.pred{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:3px; padding:18px 18px 16px;
+  display:flex;flex-direction:column;gap:0;
+  box-shadow:var(--shadow-card);
+}
+.pred .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.pred .comp{display:flex;align-items:center;gap:8px}
+.pred .comp .kind{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line-2);border-radius:2px;padding:3px 6px;
+}
+.pred .comp .league{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.pred .when{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.pred .when.live{color:var(--live)}
+
+/* fixture: nomi in voce editoriale (non mono). 'vs' demote. */
+.pred .fx{margin-bottom:14px;}
+.pred .fx .teams{
+  font-family:"Fraunces",serif;font-variation-settings:"opsz" 40;font-weight:500;
+  font-size:18px;line-height:1.18;letter-spacing:-0.005em;color:var(--ink);
+}
+.pred .fx .teams .vs{font-family:"IBM Plex Sans";font-style:italic;font-weight:400;font-size:13px;color:var(--muted);margin:0 6px}
+.pred .fx .score{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-2);margin-top:6px;
+  display:flex;align-items:center;gap:8px;
+}
+.pred .fx .score .res{color:var(--live);font-weight:600}
+
+/* OUTCOME ROWS — barra MONOCROMATICA. L'accent marca SOLO l'esito-modello (pick).
+   Niente rainbow HOME/DRAW/AWAY: il colore significa "il modello sceglie questo". */
+.rows{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.row{display:grid;grid-template-columns:64px 1fr 42px;align-items:center;gap:10px}
+.row .lab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.row .track{height:6px;background:var(--bar-track);border-radius:1px;overflow:hidden}
+.row .fill{height:100%;background:var(--ink-2);border-radius:1px}
+.row .pct{font-family:"IBM Plex Mono",monospace;font-size:12.5px;text-align:right;color:var(--ink-2);font-feature-settings:"tnum" 1}
+/* l'esito scelto dal modello: accent + peso */
+.row.pick .lab{color:var(--ink)}
+.row.pick .fill{background:var(--signal)}
+.row.pick .pct{color:var(--signal);font-weight:600}
+
+/* PICK LINE — verdetto del modello, dichiarato a parole (tennis/2-way) */
+.verdict{
+  display:flex;align-items:baseline;gap:8px;margin-bottom:12px;
+  font-size:12px;color:var(--ink-2);
+}
+.verdict .lead{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
+.verdict .name{font-weight:600;color:var(--ink)}
+.verdict .p{font-family:"IBM Plex Mono",monospace;color:var(--signal);font-weight:600}
+
+/* EDGE chip — l'unico altro posto dove vive l'accent: edge vs mercato */
+.edge{
+  display:inline-flex;align-items:baseline;gap:6px;align-self:flex-start;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.04em;
+  padding:4px 8px;border-radius:2px;margin-bottom:14px;
+  background:var(--signal-dim);color:var(--signal);border:1px solid var(--signal-line);
+}
+.edge.flat{background:transparent;border-color:var(--line);color:var(--muted)}
+
+/* WHY — lo stato "perché": ragioni del modello. Densità alta, ma tabellare e quieta. */
+.why{
+  border-top:1px solid var(--line);padding-top:12px;margin-top:2px;
+}
+.why .wlab{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.why .wlab .tri{color:var(--signal)}
+.why dl{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px}
+.why .it{display:flex;flex-direction:column;gap:3px}
+.why dt{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.why dd{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink);font-feature-settings:"tnum" 1}
+.why dd .gd{color:var(--won)}
+.why dd .bd{color:var(--lost)}
+
+/* footer card — azione SOBRIA. Non "Piazza la scommessa" verde urlato.
+   Linguaggio da strumento: "Apri analisi". Pro-gate dichiarato. */
+.pred .act{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
+}
+.pred .act .open{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:0.04em;
+  color:var(--ink);background:transparent;border:0;cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.pred .act .open .ar{color:var(--signal);transition:transform .15s}
+.pred .act .open:hover .ar{transform:translateX(3px)}
+.pred .act .gate{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line-2);border-radius:2px;padding:3px 7px;
+}
+
+/* ============================================================
+   PICK IN EVIDENZA — il focal point. ROMPE la griglia (span 12, fondo invertito,
+   numero gigante in Fraunces). Circondato da respiro: è enfasi, non errore.
+   ============================================================ */
+.featured{
+  grid-column:span 12; margin:8px 0 4px;
+  background:var(--inset); border:1px solid var(--line-2); border-radius:3px;
+  display:grid; grid-template-columns:minmax(0,1.1fr) 1px minmax(0,1.4fr);
+  gap:0; overflow:hidden;
+}
+.featured .big{padding:30px 32px;display:flex;flex-direction:column;justify-content:center}
+.featured .seam{background:var(--line-2)}
+.featured .eyebrow{color:var(--signal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.featured .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--signal)}
+.featured .fxname{
+  font-family:"Fraunces",serif;font-variation-settings:"opsz" 90;font-weight:500;
+  font-size:24px;line-height:1.12;color:var(--ink);margin-bottom:6px;letter-spacing:-0.01em;
+}
+.featured .league{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.featured .hero-prob{display:flex;align-items:baseline;gap:14px;margin:22px 0 6px}
+.featured .hero-prob .num{
+  font-family:"Fraunces",serif;font-variation-settings:"opsz" 144;font-weight:600;
+  font-size:88px;line-height:.82;letter-spacing:-0.03em;color:var(--signal);
+  font-feature-settings:"tnum" 1;
+}
+.featured .hero-prob .col{display:flex;flex-direction:column;gap:6px}
+.featured .hero-prob .pickname{font-family:"Fraunces",serif;font-weight:500;font-size:17px;color:var(--ink)}
+.featured .hero-prob .sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);letter-spacing:0.04em}
+.featured .edge{margin:6px 0 0}
+
+.featured .why{padding:30px 32px;border:0;margin:0}
+.featured .why .wlab{margin-bottom:14px}
+.featured .why dl{grid-template-columns:repeat(3,1fr);gap:18px 20px}
+.featured .why dd{font-size:14px}
+.featured .why .line{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2);line-height:1.55;margin-top:16px;max-width:52ch;border-top:1px solid var(--line);padding-top:14px}
+.featured .why .line b{color:var(--ink);font-weight:600}
+.featured .why .line .sig{color:var(--signal)}
+
+/* ============================================================
+   STORICO (settlato) — la prova di calibrazione. Tabella densa, P&L con verde/rosso.
+   ============================================================ */
+.history{margin:48px 0 0}
+.history .hh{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:0}
+.history h3{font-family:"Fraunces",serif;font-variation-settings:"opsz" 60;font-weight:600;font-size:22px;letter-spacing:-0.01em}
+.history .hr{display:flex;gap:26px;align-items:baseline}
+.history .hr .v{font-family:"IBM Plex Mono",monospace;font-size:18px;color:var(--ink)}
+.history .hr .v.sig{color:var(--signal)}
+.history .hr .l{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-left:7px}
+.htable{width:100%;border-collapse:collapse}
+.htable td,.htable th{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+.htable th{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.htable .fx-c{font-family:"Fraunces",serif;font-weight:500;font-size:14px;color:var(--ink)}
+.htable .pk{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.htable .r{text-align:right;font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum" 1}
+.htable .res{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase}
+.htable .res.won{color:var(--won)}
+.htable .res.lost{color:var(--lost)}
+
+/* ============================================================
+   PROMO DEMOTE — una fascia compatta in fondo, non due sidebar.
+   ============================================================ */
+.promo{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin:48px 0 0}
+.promo .pc{background:var(--panel);padding:22px 24px}
+.promo .pc .eyebrow{margin-bottom:9px}
+.promo .pc h4{font-family:"Fraunces",serif;font-weight:600;font-size:17px;margin-bottom:7px;letter-spacing:-0.005em}
+.promo .pc p{font-size:12.5px;color:var(--ink-2);line-height:1.5;max-width:42ch;margin-bottom:12px}
+.promo .pc a{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:0.06em;color:var(--ink);display:inline-flex;gap:7px;align-items:center}
+.promo .pc a .ar{color:var(--signal)}
+
+/* ============================================================
+   FOOTER LEGALE — sobrio, compliance visibile (gioco responsabile = fascia verde guardrail)
+   ============================================================ */
+.foot{border-top:1px solid var(--line);margin-top:40px;padding:24px 0 56px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.foot span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--muted)}
+.foot .age{border:1px solid var(--line-2);border-radius:2px;padding:2px 7px;color:var(--ink-2)}
+.foot a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
+
+/* theme switch in-page */
+.themebar{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line);}
+.themebar .in{max-width:1320px;margin:0 auto;padding:9px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.themebar .note{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:0.08em;color:var(--muted)}
+.themebar .toggle{display:inline-flex;border:1px solid var(--line-2);border-radius:2px;overflow:hidden}
+.themebar .toggle button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.08em;padding:6px 13px;background:transparent;border:0;border-left:1px solid var(--line);color:var(--muted);cursor:pointer}
+.themebar .toggle button:first-child{border-left:0}
+.themebar .toggle button.on{background:var(--signal);color:var(--signal-ink)}
+
+@media (max-width:1080px){
+  .layout{grid-template-columns:1fr;gap:24px}
+  .rail nav{flex-direction:row;flex-wrap:wrap}
+  .card{grid-column:span 6}
+  .card.tennis{grid-column:span 6}
+  .featured{grid-template-columns:1fr}
+  .featured .seam{display:none}
+  .promo{grid-template-columns:1fr}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<!-- in-page theme switch (così Andrea vede dark E light) -->
+<div class="themebar">
+  <div class="in">
+    <span class="note">DIREZIONE DI REDESIGN v1 · mockup statico · contenuti reali dal sito live</span>
+    <div class="toggle" id="tt">
+      <button data-t="dark" class="on">DARK</button>
+      <button data-t="light">LIGHT</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="masthead">
+    <div class="brand">
+      <h1>Agentic Markets</h1>
+      <p class="tag">Probabilità <b>calibrate da un modello</b> — Dixon-Coles + xG sul calcio, Elo di superficie sul tennis. Numeri che si sono guadagnati il posto, non opinioni.</p>
+    </div>
+    <div class="tools">
+      <button class="pill user">calde · Signal Desk Pro</button>
+      <button class="iconbtn" title="Lingua">IT</button>
+    </div>
+  </header>
+
+  <!-- ===================== LAYOUT ===================== -->
+  <div class="layout">
+
+    <!-- ---- RAIL NAV ---- -->
+    <aside class="rail">
+      <nav>
+        <a href="#" class="active">Mercati <span class="n">53</span></a>
+        <a href="#">Storico <span class="n">100</span></a>
+        <a href="#">Classifica</a>
+        <a href="#">Match Builder</a>
+        <a href="#">Account <span class="n">PRO</span></a>
+        <div class="sep"></div>
+        <a href="#">World Cup</a>
+        <a href="#">Creator Picks</a>
+        <a href="#">Partner</a>
+      </nav>
+      <button class="refresh">↻ Aggiorna odds</button>
+    </aside>
+
+    <!-- ---- MAIN ---- -->
+    <main>
+
+      <!-- header di sezione = respiro -->
+      <div class="deskhead">
+        <h2>Mercati</h2>
+        <div class="meta">
+          <div class="stat"><span class="v tnum">53</span><span class="l">Eventi</span></div>
+          <div class="stat"><span class="v sig tnum">7</span><span class="l">+EV</span></div>
+          <div class="stat"><span class="v tnum">53.0%</span><span class="l">Hit rate 100g</span></div>
+        </div>
+      </div>
+
+      <!-- ticker live: informativo, accent solo sul minuto -->
+      <div class="ticker">
+        <span class="t-lab">In play</span>
+        <span class="ti">Congo DR <b>0–1</b> Chile <span class="m">66′</span></span>
+        <span class="ti">Belarus <b>0–0</b> Burkina Faso <span class="m">HT</span></span>
+        <span class="ti">Hungary <b>0–1</b> Kazakhstan <span class="m">31′</span></span>
+        <span class="ti">Russia <b>2–0</b> Trinidad &amp; Tobago <span class="m">27′</span></span>
+        <span class="ti">Moutet <b>0–1</b> Kyrgios <span class="m">1° set</span></span>
+      </div>
+
+      <!-- filtri -->
+      <div class="filters">
+        <div class="seg">
+          <button class="on">Tutti</button><button>Football 16</button><button>Tennis 37</button>
+        </div>
+        <div class="seg">
+          <button class="on">Tutte le prediction</button><button>Solo +EV</button>
+        </div>
+        <div class="grow"></div>
+        <input class="search" placeholder="Cerca team, player, torneo…">
+      </div>
+
+      <!-- ===================== PICK IN EVIDENZA (focal point, rompe la griglia) ===================== -->
+      <div class="grid">
+        <section class="featured">
+          <div class="big">
+            <div class="eyebrow"><span class="dot"></span> Edge del giorno · il modello vs il mercato</div>
+            <div class="fxname">Martin Landaluce <span style="font-style:italic;font-weight:400;color:var(--muted);font-size:.7em">contro</span> Taylor Fritz</div>
+            <div class="league">Boss Open · erba · 1° turno</div>
+            <div class="hero-prob">
+              <span class="num tnum">91<span style="font-size:.42em;letter-spacing:0">%</span></span>
+              <div class="col">
+                <span class="pickname">Taylor Fritz</span>
+                <span class="sub">probabilità modello</span>
+              </div>
+            </div>
+            <span class="edge">+12.4 pt &nbsp;·&nbsp; edge vs quota implicita</span>
+          </div>
+          <div class="seam"></div>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Perché il modello sceglie Fritz</div>
+            <dl>
+              <div class="it"><dt>Elo erba</dt><dd class="tnum">1768 <span style="color:var(--muted)">vs</span> 1397</dd></div>
+              <div class="it"><dt>Match superficie</dt><dd class="tnum">48 <span style="color:var(--muted)">vs</span> 0</dd></div>
+              <div class="it"><dt>Testa a testa</dt><dd class="tnum">0–0</dd></div>
+            </dl>
+            <p class="line">Divario Elo di <b>371 punti</b> sulla superficie. Fritz ha <b>48 partite su erba</b> nel campione; Landaluce <span class="bd" style="color:var(--lost)">nessuna</span> — il modello non ha segnale di adattamento per lo sfidante. L'edge nasce dal <span class="sig">mercato che sovrastima l'incertezza</span> di un esordiente sulla superficie.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===================== FOOTBALL ===================== -->
+      <div class="sport-band">
+        <h3>Football <span class="ct">16 mercati</span></h3>
+        <span class="note">amichevoli internazionali · 9–11 giu</span>
+      </div>
+
+      <div class="grid">
+
+        <!-- CARD CANONICA (3-way, settlato/sbagliato) -->
+        <article class="card"><div class="pred">
+          <div class="top">
+            <div class="comp"><span class="kind">Friendly</span><span class="league">Int'l Friendly</span></div>
+            <span class="when">FT</span>
+          </div>
+          <div class="fx">
+            <div class="teams">Equatorial Guinea <span class="vs">v</span> Comoros</div>
+            <div class="score"><span>Finale</span><span class="res">0–1</span><span style="color:var(--lost)">· modello errato</span></div>
+          </div>
+          <div class="rows">
+            <div class="row pick"><span class="lab">Home</span><div class="track"><span class="fill" style="width:49%"></span></div><span class="pct">49%</span></div>
+            <div class="row"><span class="lab">Draw</span><div class="track"><span class="fill" style="width:26%"></span></div><span class="pct">26%</span></div>
+            <div class="row"><span class="lab">Away</span><div class="track"><span class="fill" style="width:25%"></span></div><span class="pct">25%</span></div>
+          </div>
+          <span class="edge flat">nessun edge · in linea col mercato</span>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Perché</div>
+            <dl>
+              <div class="it"><dt>Forma (5)</dt><dd>1W·1D·3L <span style="color:var(--muted)">vs</span> 2W·2D·1L</dd></div>
+              <div class="it"><dt>Campione</dt><dd class="tnum">68 <span style="color:var(--muted)">vs</span> 58 gare</dd></div>
+            </dl>
+          </div>
+          <div class="act">
+            <button class="open">Apri analisi <span class="ar">→</span></button>
+            <span class="gate">Settlato</span>
+          </div>
+        </div></article>
+
+        <!-- CARD CANONICA (live) -->
+        <article class="card"><div class="pred">
+          <div class="top">
+            <div class="comp"><span class="kind">Friendly</span><span class="league">Int'l Friendly</span></div>
+            <span class="when live">● 66′</span>
+          </div>
+          <div class="fx">
+            <div class="teams">DR Congo <span class="vs">v</span> Chile</div>
+            <div class="score"><span>In play</span><span class="res">0–1</span></div>
+          </div>
+          <div class="rows">
+            <div class="row pick"><span class="lab">Home</span><div class="track"><span class="fill" style="width:49%"></span></div><span class="pct">49%</span></div>
+            <div class="row"><span class="lab">Draw</span><div class="track"><span class="fill" style="width:26%"></span></div><span class="pct">26%</span></div>
+            <div class="row"><span class="lab">Away</span><div class="track"><span class="fill" style="width:25%"></span></div><span class="pct">25%</span></div>
+          </div>
+          <span class="edge">+6.1 pt · edge su Home</span>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Perché</div>
+            <dl>
+              <div class="it"><dt>Forma (5)</dt><dd>3W·1D·1L <span style="color:var(--muted)">vs</span> 3W·1D·1L</dd></div>
+              <div class="it"><dt>Campione</dt><dd class="tnum">82 <span style="color:var(--muted)">vs</span> 86 gare</dd></div>
+            </dl>
+          </div>
+          <div class="act">
+            <button class="open">Apri analisi <span class="ar">→</span></button>
+            <span class="gate">Pro</span>
+          </div>
+        </div></article>
+
+        <!-- CARD CANONICA (favorito netto, pick of day) -->
+        <article class="card"><div class="pred">
+          <div class="top">
+            <div class="comp"><span class="kind">Friendly</span><span class="league">Int'l Friendly</span></div>
+            <span class="when">mer 02:00</span>
+          </div>
+          <div class="fx">
+            <div class="teams">Argentina <span class="vs">v</span> Iceland</div>
+            <div class="score" style="color:var(--muted)"><span>Calcio d'inizio mer · 02:00</span></div>
+          </div>
+          <div class="rows">
+            <div class="row pick"><span class="lab">Home</span><div class="track"><span class="fill" style="width:95%"></span></div><span class="pct">95%</span></div>
+            <div class="row"><span class="lab">Draw</span><div class="track"><span class="fill" style="width:4%"></span></div><span class="pct">4%</span></div>
+            <div class="row"><span class="lab">Away</span><div class="track"><span class="fill" style="width:1%"></span></div><span class="pct">1%</span></div>
+          </div>
+          <span class="edge">+8.0 pt · edge su Home</span>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Perché</div>
+            <dl>
+              <div class="it"><dt>Forma (5)</dt><dd><span class="gd" style="color:var(--won)">5W·0D·0L</span> <span style="color:var(--muted)">vs</span> 0W·2D·3L</dd></div>
+              <div class="it"><dt>Campione</dt><dd class="tnum">98 <span style="color:var(--muted)">vs</span> 100 gare</dd></div>
+            </dl>
+          </div>
+          <div class="act">
+            <button class="open">Apri analisi <span class="ar">→</span></button>
+            <span class="gate">Pro</span>
+          </div>
+        </div></article>
+
+      </div>
+
+      <!-- ===================== TENNIS (densità maggiore: 4-up) ===================== -->
+      <div class="sport-band">
+        <h3>Tennis <span class="ct">37 match</span></h3>
+        <span class="note">erba · Boss Open · Libéma · HSBC Championships</span>
+      </div>
+
+      <div class="grid">
+
+        <!-- card tennis 2-way (live, Kyrgios) -->
+        <article class="card tennis"><div class="pred">
+          <div class="top">
+            <div class="comp"><span class="kind">Grass</span></div>
+            <span class="when live">● live · 1° set</span>
+          </div>
+          <div class="fx">
+            <div class="teams" style="font-size:16px">Moutet <span class="vs">v</span> Kyrgios</div>
+            <div class="score"><span>Boss Open</span><span class="res">0–1</span></div>
+          </div>
+          <div class="verdict"><span class="lead">Pick</span><span class="name">Kyrgios</span><span class="p">64%</span></div>
+          <div class="rows">
+            <div class="row pick"><span class="lab">Kyrgios</span><div class="track"><span class="fill" style="width:64%"></span></div><span class="pct">64%</span></div>
+            <div class="row"><span class="lab">Moutet</span><div class="track"><span class="fill" style="width:37%"></span></div><span class="pct">37%</span></div>
+          </div>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Elo</div>
+            <dl>
+              <div class="it"><dt>Elo erba</dt><dd class="tnum">1681 · 1593</dd></div>
+              <div class="it"><dt>Match sup.</dt><dd class="tnum">21 · 25</dd></div>
+            </dl>
+          </div>
+          <div class="act"><button class="open">Apri <span class="ar">→</span></button><span class="gate">Pro</span></div>
+        </div></article>
+
+        <!-- card tennis (Rybakina, forte) -->
+        <article class="card tennis"><div class="pred">
+          <div class="top"><div class="comp"><span class="kind">Grass</span></div><span class="when">mer</span></div>
+          <div class="fx">
+            <div class="teams" style="font-size:16px">Rybakina <span class="vs">v</span> Maria</div>
+            <div class="score" style="color:var(--muted)"><span>HSBC Championships</span></div>
+          </div>
+          <div class="verdict"><span class="lead">Pick</span><span class="name">Rybakina</span><span class="p">79%</span></div>
+          <div class="rows">
+            <div class="row pick"><span class="lab">Rybakina</span><div class="track"><span class="fill" style="width:79%"></span></div><span class="pct">79%</span></div>
+            <div class="row"><span class="lab">Maria</span><div class="track"><span class="fill" style="width:21%"></span></div><span class="pct">21%</span></div>
+          </div>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Elo</div>
+            <dl>
+              <div class="it"><dt>Elo erba</dt><dd class="tnum">1779 · 1568</dd></div>
+              <div class="it"><dt>H2H</dt><dd class="tnum">1–1</dd></div>
+            </dl>
+          </div>
+          <div class="act"><button class="open">Apri <span class="ar">→</span></button><span class="gate">Pro</span></div>
+        </div></article>
+
+        <!-- card tennis (coin-flip, niente accent: nessun pick netto) -->
+        <article class="card tennis"><div class="pred">
+          <div class="top"><div class="comp"><span class="kind">Grass</span></div><span class="when">mer</span></div>
+          <div class="fx">
+            <div class="teams" style="font-size:16px">Shelton <span class="vs">v</span> Giron</div>
+            <div class="score" style="color:var(--muted)"><span>Boss Open</span></div>
+          </div>
+          <div class="verdict"><span class="lead">Pick</span><span class="name" style="color:var(--muted);font-weight:500">nessun favorito netto</span></div>
+          <div class="rows">
+            <div class="row"><span class="lab">Shelton</span><div class="track"><span class="fill" style="width:50%"></span></div><span class="pct">50%</span></div>
+            <div class="row"><span class="lab">Giron</span><div class="track"><span class="fill" style="width:50%"></span></div><span class="pct">50%</span></div>
+          </div>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Elo</div>
+            <dl>
+              <div class="it"><dt>Elo erba</dt><dd class="tnum">1593 · 1594</dd></div>
+              <div class="it"><dt>H2H</dt><dd class="tnum">2–1</dd></div>
+            </dl>
+          </div>
+          <div class="act"><button class="open">Apri <span class="ar">→</span></button><span class="gate">Pro</span></div>
+        </div></article>
+
+        <!-- card tennis (Medvedev) -->
+        <article class="card tennis"><div class="pred">
+          <div class="top"><div class="comp"><span class="kind">Grass</span></div><span class="when">mer</span></div>
+          <div class="fx">
+            <div class="teams" style="font-size:16px">Medvedev <span class="vs">v</span> TBD</div>
+            <div class="score" style="color:var(--muted)"><span>Libéma Open</span></div>
+          </div>
+          <div class="verdict"><span class="lead">Pick</span><span class="name">Medvedev</span><span class="p">74%</span></div>
+          <div class="rows">
+            <div class="row pick"><span class="lab">Medvedev</span><div class="track"><span class="fill" style="width:74%"></span></div><span class="pct">74%</span></div>
+            <div class="row"><span class="lab">TBD</span><div class="track"><span class="fill" style="width:26%"></span></div><span class="pct">26%</span></div>
+          </div>
+          <div class="why">
+            <div class="wlab"><span class="tri">▸</span> Elo</div>
+            <dl>
+              <div class="it"><dt>Elo erba</dt><dd class="tnum">1679 · 1500</dd></div>
+              <div class="it"><dt>Match sup.</dt><dd class="tnum">46 · 0</dd></div>
+            </dl>
+          </div>
+          <div class="act"><button class="open">Apri <span class="ar">→</span></button><span class="gate">Pro</span></div>
+        </div></article>
+
+      </div>
+
+      <!-- ===================== STORICO (prova di calibrazione) ===================== -->
+      <section class="history">
+        <div class="hh">
+          <h3>Storico</h3>
+          <div class="hr">
+            <span><span class="v tnum">100</span><span class="l">Bet</span></span>
+            <span><span class="v sig tnum">53.0%</span><span class="l">Hit rate</span></span>
+          </div>
+        </div>
+        <table class="htable">
+          <thead><tr><th>Match</th><th>Pick</th><th class="r">Modello</th><th class="r">Esito</th></tr></thead>
+          <tbody>
+            <tr><td class="fx-c">Villarreal CF — Atlético Madrid</td><td class="pk">Home</td><td class="r">58%</td><td class="res won r">vinta</td></tr>
+            <tr><td class="fx-c">Hellas Verona — AS Roma</td><td class="pk">Away</td><td class="r">61%</td><td class="res won r">vinta</td></tr>
+            <tr><td class="fx-c">Torino FC — Juventus FC</td><td class="pk">Away</td><td class="r">52%</td><td class="res lost r">persa</td></tr>
+            <tr><td class="fx-c">US Cremonese — Como 1907</td><td class="pk">Away</td><td class="r">55%</td><td class="res won r">vinta</td></tr>
+            <tr><td class="fx-c">AC Milan — Cagliari Calcio</td><td class="pk">Home</td><td class="r">71%</td><td class="res lost r">persa</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ===================== PROMO (demote: una fascia, non due sidebar) ===================== -->
+      <section class="promo">
+        <div class="pc">
+          <div class="eyebrow">Operator · API</div>
+          <h4>Probabilità via REST</h4>
+          <p>Integra le probabilità calibrate (Dixon-Coles + xG) nella tua piattaforma. Una chiamata, un payload, nessun bookmaker.</p>
+          <a href="#">Richiedi accesso <span class="ar">→</span></a>
+        </div>
+        <div class="pc">
+          <div class="eyebrow">B2B · White-label</div>
+          <h4>Il desk col tuo brand</h4>
+          <p>Lo stesso signal desk sul tuo dominio, con reporting incluso. Tu il marchio, noi il modello.</p>
+          <a href="#">Partner Program <span class="ar">→</span></a>
+        </div>
+        <div class="pc">
+          <div class="eyebrow">Sportsbook · in arrivo</div>
+          <h4>Gioca informato</h4>
+          <p>Le probabilità calibrate, accanto alle quote dei partner. Confronto prima dell'azione — mai al posto del tuo giudizio.</p>
+          <a href="#">Vedi partner <span class="ar">→</span></a>
+        </div>
+      </section>
+
+      <!-- footer legale -->
+      <footer class="foot">
+        <span class="age">18+</span>
+        <span>Contenuti a scopo informativo · le performance passate non garantiscono risultati futuri.</span>
+        <span><a href="#">GamCare</a> · <a href="#">BeGambleAware</a></span>
+        <span>I link partner sono affiliati commerciali.</span>
+        <span><a href="#">Privacy Policy</a></span>
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // theme toggle in-page (dark <-> light), nessuna dipendenza
+  const tt = document.getElementById('tt');
+  tt.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    document.documentElement.setAttribute('data-theme', b.dataset.t);
+    tt.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+  });
+</script>
+</body>
+</html>
