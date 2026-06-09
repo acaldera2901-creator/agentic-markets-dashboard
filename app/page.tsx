@@ -1399,13 +1399,16 @@ function SportsbookBoard({
           )}
 
           {showFootballSection && (
-            <section className="market-section">
-              <div className="market-section-title">
-                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>{t.board_football}</span>
-                <em>{footballRows.length} {t.board_markets} · {footballValue.length} {t.board_value}</em>
+            <section>
+              <div className="sport-band">
+                <span className="glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>
+                <h2>{t.board_football}</h2>
+                <span className="ct">{footballRows.length} {t.board_markets}</span>
+                <span className="rule" />
+                <span className="note">{footballValue.length} {t.board_value}</span>
               </div>
               {footballRows.length ? (
-                <div className="market-list">
+                <div className="am-grid">
                   {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
                     <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                   ))}
@@ -1432,13 +1435,16 @@ function SportsbookBoard({
           )}
 
           {showTennisSection && (
-            <section className="market-section">
-              <div className="market-section-title amber">
-                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>{t.board_tennis}</span>
-                <em>{tennisRows.length} {t.board_matches} · {tennisValue.length} {t.board_value}</em>
+            <section>
+              <div className="sport-band amber">
+                <span className="glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>
+                <h2>{t.board_tennis}</h2>
+                <span className="ct">{tennisRows.length} {t.board_matches}</span>
+                <span className="rule" />
+                <span className="note">{tennisValue.length} {t.board_value}</span>
               </div>
               {tennisRows.length ? (
-                <div className="market-list">
+                <div className="am-grid">
                   {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
                     <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                   ))}
@@ -1594,24 +1600,28 @@ function BestBetsBoard({
       {totalValue ? (
         <>
           {visibleFootballValue.length > 0 && (
-            <section className="market-section">
-              <div className="market-section-title">
-                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>{t.board_football}</span>
-                <em>{visibleFootballValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</em>
+            <section>
+              <div className="sport-band">
+                <span className="glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>
+                <h2>{t.board_football}</h2>
+                <span className="ct">{visibleFootballValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</span>
+                <span className="rule" />
               </div>
-              <div className="market-list">
+              <div className="am-grid">
                 {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
 
           {visibleTennisValue.length > 0 && (
-            <section className="market-section">
-              <div className="market-section-title amber">
-                <span className="mst-label"><span className="mst-glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>{t.board_tennis}</span>
-                <em>{visibleTennisValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</em>
+            <section>
+              <div className="sport-band amber">
+                <span className="glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>
+                <h2>{t.board_tennis}</h2>
+                <span className="ct">{visibleTennisValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</span>
+                <span className="rule" />
               </div>
-              <div className="market-list">
+              <div className="am-grid">
                 {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
