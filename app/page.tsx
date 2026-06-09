@@ -3500,10 +3500,10 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
       ) : onBetNow && !isPreview && (
         <button
-          className="w-full mt-1 py-1.5 rounded-lg border border-green-400/30 bg-green-400/8 text-green-400 text-xs font-mono tracking-wider hover:bg-green-400/15 hover:border-green-400/50 transition-colors"
+          className="w-full mt-1 py-1.5 rounded-lg border border-[var(--am-line-2)] bg-[var(--am-panel-2)] text-[var(--am-text)] text-xs font-mono tracking-wider hover:border-[var(--am-coral-b)] hover:text-[var(--am-coral)] transition-colors"
           onClick={onBetNow}
         >
-          {liveIsOn ? "🔴 Live — " + t.bet_now : t.bet_now}
+          {t.bet_now}
         </button>
       )}
 
