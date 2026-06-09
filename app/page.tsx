@@ -5971,14 +5971,32 @@ export default function Dashboard() {
             </aside>
 
         <section className="book-main">
-          <div className="book-main-head">
-            <div>
-              <p className="eyebrow">Agentic Markets</p>
+          <div className="book-main-head am-deskhead">
+            <div className="am-deskhead-titles">
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? "Bets"}</h2>
+              <p className="am-sub">
+                {uiLanguage === "it" ? (
+                  <>Probabilità <b>calibrate da un modello</b> — Dixon-Coles + xG sul calcio, Elo di superficie sul tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                ) : (
+                  <>Probabilities <b>calibrated by a model</b> — Dixon-Coles + xG on football, surface Elo on tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
+                )}
+              </p>
             </div>
-            <div className="book-head-kpis">
-              <span>{predictions.length + tennisMatches.length} {tUI.kpi_events}</span>
-              <span>{valueBets.length + tennisValueBets.length} {tUI.kpi_ev}</span>
+            <div className="am-statbar">
+              <div className="am-kpi">
+                <span className="v">{predictions.length + tennisMatches.length}</span>
+                <span className="l">{uiLanguage === "it" ? "Eventi" : "Events"}</span>
+              </div>
+              <div className="am-kpi">
+                <span className="v sig">{valueBets.length + tennisValueBets.length}</span>
+                <span className="l">{uiLanguage === "it" ? "Con edge" : "With edge"}</span>
+              </div>
+              {historyV2Stats?.win_rate && (
+                <div className="am-kpi">
+                  <span className="v">{historyV2Stats.win_rate}</span>
+                  <span className="l">{uiLanguage === "it" ? "Hit · 100g" : "Hit · 100g"}</span>
+                </div>
+              )}
             </div>
           </div>
 
