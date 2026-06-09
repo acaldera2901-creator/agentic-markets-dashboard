@@ -1076,31 +1076,6 @@ function stakeFromEdge(edge: number | null, confidence: number) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-// Literal text→bg class map: Tailwind's scanner only generates classes it can
-// SEE as literal strings in source. The old dynamic color.replace("text-","bg-")
-// worked by accident (the pre-#021 tennis bars carried the literals) — when
-// those were removed, bg-cyan-400/bg-fuchsia-400 were purged from the bundle
-// and every HOME/AWAY/player bar rendered empty (bug Andrea 2026-06-06).
-function ProbBar({ label, pct: p, color, odds, isValue, wideLabel }: {
-  label: string; pct: number; color: string; odds?: number | null; isValue?: boolean; wideLabel?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`text-xs font-mono shrink-0 ${wideLabel ? "w-24 truncate" : "w-10"}`} style={{ color }}>{label}</span>
-      <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
-        <div className="h-full rounded-full transition-all"
-          style={{ width: `${Math.round(p * 100)}%`, background: color }} />
-      </div>
-      <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(p)}</span>
-      {isValue && (
-        <span className="text-xs px-1.5 py-0.5 rounded border border-[var(--am-positive)]/40 text-[var(--am-positive)] bg-[var(--am-positive)]/10 font-mono">
-          VALUE
-        </span>
-      )}
-    </div>
-  );
-}
-
 function FormBadge({ result }: { result: string }) {
   const colors: Record<string, string> = {
     W: "bg-green-500/80 text-white", D: "bg-yellow-500/80 text-black", L: "bg-red-500/80 text-white",
@@ -3366,151 +3341,171 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     });
   };
 
+  // Pick / verdict (presentation derived from the model's probabilities).
+  const hasFavorite = m.p1 !== m.p2;
+  const p1IsPick = hasFavorite && m.p1 > m.p2;
+  const pickName = hasFavorite ? (p1IsPick ? m.player1 : m.player2) : null;
+  const pickPct = hasFavorite ? Math.max(m.p1, m.p2) : null;
+  // Scorebar state from the ESPN live feed.
+  const scStatus = liveMatch ? (liveIsFinal ? "finished" : "live") : null;
+  const scLabel = liveMatch ? (liveIsFinal ? "FT" : `LIVE`) : null;
+  const rowsData: { player: "P1" | "P2"; name: string; pct: number }[] = [
+    { player: "P1", name: m.player1.split(" ").pop() ?? m.player1, pct: m.p1 },
+    { player: "P2", name: m.player2.split(" ").pop() ?? m.player2, pct: m.p2 },
+  ];
+
   return (
-    <div className={`glass-card p-4 space-y-3 ${isValue ? "border-green-400/40" : ""}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${surface.color}`}>
-              {surface.label}
-            </span>
-            <span className="text-xs text-gray-500 font-mono">{m.tournament}</span>
-            <span className="text-[10px] text-gray-600 font-mono">{m.round}</span>
-          </div>
-          <div className="text-sm font-bold text-white mt-1">
-            {m.player1} <span className="text-gray-500 font-normal">vs</span> {m.player2}
-          </div>
-          <div className="text-xs text-gray-600 font-mono mt-0.5">
-            {scheduledDate}
-            {/* #LIVE-2: live solo quando il feed ESPN ha davvero questo match */}
-            {liveIsOn && (
-              <span className="ml-2 text-red-400 animate-pulse">● LIVE</span>
-            )}
-          </div>
+    <article className="card tennis"><div className="pred tennis">
+      {/* top: surface glyph + tournament + when */}
+      <div className="top">
+        <div className="comp">
+          <svg className="sgi" aria-hidden="true"><use href="#g-grass" /></svg>
+          <span className="league">{m.tournament}</span>
+          {m.round && <span className="rnd">{m.round}</span>}
         </div>
-        {isValue && m.best_selection && !isPreview && (
-          <button
-            className="text-xs px-2 py-0.5 rounded-full border border-green-400/50 text-green-400 bg-green-400/10 font-mono shrink-0 hover:bg-green-400/20 transition-colors"
-            onClick={() => handleSelect(m.best_selection as "P1" | "P2")}
-          >
-            +EV {m.best_selection}
-          </button>
+        {liveIsOn ? (
+          <span className="when live"><span className="pulse" />{lang === "it" ? "live" : "live"}</span>
+        ) : (
+          <span className="when">{scheduledDate}</span>
         )}
       </div>
 
-      {/* Live / Final score — set scores from the ESPN live feed (player1 first) */}
-      {liveMatch && (
-        <div className={`live-score-bar ${liveIsFinal ? "finished" : "live"}`}>
-          <span className={`live-badge ${liveIsFinal ? "" : "blink"}`}>
-            {liveIsFinal ? "FT" : "● LIVE"}
-          </span>
-          <span className="live-result">{liveSetsLabel || "0-0"}</span>
-          {liveMatch.status_detail && (
-            <span className="text-[10px] font-mono text-gray-500 ml-auto">{liveMatch.status_detail}</span>
-          )}
-        </div>
-      )}
+      {/* fixture + scorebar */}
+      <div className="fx">
+        <div className="teams">{m.player1}<span className="vs">v</span>{m.player2}</div>
+        {liveMatch ? (
+          <div className="scorebar">
+            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
+            <span className="sc">{liveSetsLabel || "0-0"}</span>
+            <span className="grow" />
+            {liveMatch.status_detail && <span className="verd">{liveMatch.status_detail}</span>}
+          </div>
+        ) : (
+          <div className="scorebar">
+            <span className="stt">{lang === "it" ? "Programmato" : "Scheduled"}</span>
+            <span className="sc sched">{scheduledDate} · {surface.label}</span>
+          </div>
+        )}
+      </div>
 
-      {/* Per-card reveal gating (Task 7) */}
+      {/* verdict line + rows / gate overlay */}
       {m.locked ? (
-        <div className="card-lock-overlay" role="button" onClick={() => onGate?.()}>
+        <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
           <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
           <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
       ) : (
         <>
-          {/* Probability bars — corallo = favorito, cobalto = alternativo (R1) */}
-          <div className="space-y-1.5">
-            <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P1")}>
-              <ProbBar label={(m.player1.split(" ").pop() ?? m.player1)} pct={m.p1} color={m.p1 > m.p2 ? "var(--am-coral)" : "var(--am-muted-2)"}
-                odds={m.odds_p1} isValue={isValue && m.best_selection === "P1"} wideLabel />
-            </div>
-            <div className={onSelect ? "cursor-pointer" : ""} onClick={() => onSelect && handleSelect("P2")}>
-              <ProbBar label={(m.player2.split(" ").pop() ?? m.player2)} pct={m.p2} color={m.p2 > m.p1 ? "var(--am-coral)" : "var(--am-muted-2)"}
-                odds={m.odds_p2} isValue={isValue && m.best_selection === "P2"} wideLabel />
-            </div>
+          <div className="verdict">
+            <span className="lead">Pick</span>
+            {pickName ? (
+              <>
+                <span className="name">{pickName}</span>
+                <span className="p">{pct(pickPct as number)}</span>
+              </>
+            ) : (
+              <span className="name flat">{t.no_clear_favorite}</span>
+            )}
           </div>
-          {m.pick && <div className="text-xs font-mono text-cyan-400 mt-1">Pick: <strong>{m.pick}</strong>{m.confidence_score != null && <span className="ml-1 text-gray-400">{m.confidence_score}%</span>}</div>}
+          <div className="rows">
+            {rowsData.map((r) => {
+              const isPick = hasFavorite && ((r.player === "P1") === p1IsPick);
+              return (
+                <div
+                  key={r.player}
+                  className={`row${isPick ? " pick" : ""}${onSelect ? " sel" : ""}`}
+                  onClick={() => onSelect && handleSelect(r.player)}
+                >
+                  <span className="lab">{r.name}</span>
+                  <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
+                  <span className="pct">{pct(r.pct)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* edge chip — integrates the +EV signal */}
+      {!m.locked && !isPreview && (
+        m.edge != null && m.edge > 0 ? (
+          <span
+            className={`edge${isValue ? " evbtn" : ""}`}
+            onClick={isValue && m.best_selection ? () => handleSelect(m.best_selection as "P1" | "P2") : undefined}
+          >
+            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+            +{(m.edge * 100).toFixed(1)} pt · {lang === "it" ? "edge" : "edge"}{isValue && m.best_selection ? ` · ${m.best_selection}` : ""}
+          </span>
+        ) : (
+          <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
+        )
+      )}
+      {isPreview && <span className="edge flat">🔒 {lang === "it" ? "edge bloccato" : "edge locked"}</span>}
+
+      {/* WHY — Elo readout + expandable analysis */}
+      <div className="why">
+        <div className="wlab"><span className="tri">▸</span> {lang === "it" ? "Elo superficie" : "Surface Elo"}</div>
+        <dl>
+          {(m.elo_p1 != null || m.elo_p2 != null) && (
+            <div className="it"><dt>Elo {surface.label}</dt><dd>{m.elo_p1?.toFixed(0) ?? "–"} <span className="vs">·</span> {m.elo_p2?.toFixed(0) ?? "–"}</dd></div>
+          )}
+          {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) ? (
+            <div className="it"><dt>{lang === "it" ? "Match sup." : "Surf. matches"}</dt><dd>{m.surface_matches_p1 ?? "–"} <span className="vs">·</span> {m.surface_matches_p2 ?? "–"}</dd></div>
+          ) : (m.h2h_p1_wins != null || m.h2h_p2_wins != null) ? (
+            <div className="it"><dt>H2H</dt><dd>{m.h2h_p1_wins ?? 0}–{m.h2h_p2_wins ?? 0}</dd></div>
+          ) : null}
+        </dl>
+
+        {/* footer action row */}
+        <div className="act">
+          {isPreview ? (
+            <span className="why-locked-preview">{t.tennis_why_show}</span>
+          ) : (
+            <button className="open" onClick={handleWhyClick}>
+              {loadingAnalysis ? "…" : showWhy ? t.tennis_why_hide : t.tennis_why_show} <span className="ar">→</span>
+            </button>
+          )}
+          {onBetNow && !isPreview && (liveIsFinal ? (
+            <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
+          ) : (
+            <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
+          ))}
+          <span className="model">{lang === "it" ? "Elo superficie" : "Surface Elo"}</span>
+          <span className="gate">Pro</span>
+        </div>
+
+        {/* expandable analysis body */}
+        {isPreview ? (
+          <div className="nudge">
+            <strong>{lang === "it" ? "Edge Elo e analisi richiedono Signal Desk Pro" : "Elo edge and analysis require Signal Desk Pro"}</strong>
+            <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.50 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.50 USDT/month)."}</em>
+          </div>
+        ) : showWhy && (
+        <div className="why-body">
+          {/* AI analysis — shown first when available */}
+          {aiAnalysis && lang === "it" ? (
+            <>
+              <div className="wlab"><span>🤖</span> {t.tennis_ai_label}</div>
+              <p className="why-prose mono">{aiAnalysis}</p>
+            </>
+          ) : loadingAnalysis ? (
+            <p className="why-prose">{t.tennis_ai_loading}</p>
+          ) : null}
+          {/* Human why — readable paragraph in the active language */}
+          <p className="why-prose">{buildTennisWhy(m, lang)}</p>
+
+          {m.pick && (
+            <p className="why-prose mono">Pick: <strong>{m.pick}</strong>{m.confidence_score != null ? ` · ${m.confidence_score}%` : ""}</p>
+          )}
+
+          {/* Affiliate bonus CTA + pick-of-day — demoted into the expansion */}
           {m.affiliate && (
             <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
             </a>
           )}
           {m.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
-        </>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-white/5">
-        {isPreview ? (
-          <span className="why-locked-preview">{t.tennis_why_show}</span>
-        ) : (
-          <button
-            className="text-gray-500 hover:text-cyan-400 transition-colors text-[10px] uppercase tracking-wider"
-            onClick={handleWhyClick}
-          >
-            {loadingAnalysis ? "⏳ ..." : showWhy ? t.tennis_why_hide : t.tennis_why_show}
-          </button>
-        )}
-        <span className="text-gray-600">{lang === "it" ? "Modello Elo superficie" : "Surface Elo model"}</span>
-        {isPreview ? (
-          <span className="plan-lock-badge">🔒 Pro</span>
-        ) : m.edge != null && m.edge > 0 ? (
-          <span className={`px-2 py-0.5 rounded border font-mono text-[10px] ${isValue ? "text-[var(--am-positive)] border-[var(--am-positive)]/40 bg-[var(--am-positive)]/10" : "text-gray-400 border-gray-400/30"}`}>
-            edge +{(m.edge * 100).toFixed(1)}%
-          </span>
-        ) : (
-          <span className="px-2 py-0.5 rounded border font-mono text-[10px] text-gray-400 border-gray-400/30">{Math.round(Math.max(m.p1, m.p2) * 100)}%</span>
-        )}
-      </div>
-
-      {/* Preview upgrade nudge (free plan) */}
-      {isPreview && (
-        <div className="plan-upgrade-nudge">
-          <span>🔒</span>
-          <strong>{lang === "it" ? "Edge Elo e analisi richiedono Signal Desk Pro" : "Elo edge and analysis require Signal Desk Pro"}</strong>
-          <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.50 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.50 USDT/month)."}</em>
-        </div>
-      )}
-
-      {onBetNow && !isPreview && liveIsFinal ? (
-        <div className="w-full mt-1 py-1.5 rounded-lg border border-red-400/20 bg-red-400/5 text-red-400/80 text-xs font-mono tracking-wider text-center">
-          {lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}
-        </div>
-      ) : onBetNow && !isPreview && (
-        <button
-          className="w-full mt-1 py-1.5 rounded-lg border border-[var(--am-line-2)] bg-[var(--am-panel-2)] text-[var(--am-text)] text-xs font-mono tracking-wider hover:border-[var(--am-coral-b)] hover:text-[var(--am-coral)] transition-colors"
-          onClick={onBetNow}
-        >
-          {t.bet_now}
-        </button>
-      )}
-
-      {/* Inline Why */}
-      {!isPreview && showWhy && (
-        <div className="space-y-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1 duration-150">
-          {/* AI analysis — shown first when available */}
-          {aiAnalysis && lang === "it" ? (
-            <>
-              <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest flex items-center gap-1.5">
-                <span>🤖</span> {t.tennis_ai_label}
-              </div>
-              <p className="text-[10px] font-mono text-gray-300 leading-relaxed whitespace-pre-line">
-                {aiAnalysis}
-              </p>
-              <div className="text-[9px] font-mono text-white/20 uppercase tracking-widest pt-1 border-t border-white/5">{t.tennis_elo_data}</div>
-            </>
-          ) : loadingAnalysis ? (
-            <div className="text-[10px] font-mono text-cyan-400/50 animate-pulse">{t.tennis_ai_loading}</div>
-          ) : (
-            <div className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">{t.pred_why_title}</div>
-          )}
-          {/* Human why — readable paragraph in the active language */}
-          <p className="text-[11px] font-mono text-gray-300 leading-relaxed">{buildTennisWhy(m, lang)}</p>
-        </div>
-      )}
 
       {/* Deep Analysis — Premium only */}
       {isPremium && (
@@ -3550,14 +3545,17 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
       )}
 
-      {/* Deep Analysis locked teaser — Base users only */}
-      {!isPremium && !isPreview && (
+      {/* Deep Analysis locked teaser — Base users only (demoted into expansion) */}
+      {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
           <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Signal Desk Pro (49.50 USDT/mese)" : "Deep Elo analysis available with Signal Desk Pro (49.50 USDT/month)"}</span>
         </div>
       )}
-    </div>
+        </div>
+        )}
+      </div>
+    </div></article>
   );
 }
 
