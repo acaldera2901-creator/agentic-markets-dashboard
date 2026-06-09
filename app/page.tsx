@@ -3024,8 +3024,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
           <div className="text-xs text-gray-600 font-mono mt-0.5">
             {fmtKickoff(p.kickoff, lang, tz)}
-            {/* #LIVE-1: indicatore in gioco anche senza feed live (anonimi) */}
-            {!isFutureMarket(p.kickoff) && !isFinished && !hasScore && (
+            {/* #LIVE-1: in-play indicator without a live feed — only for viewers
+                who have NO feed (anonymous/free). For feed holders (paid) the
+                absence of a match in the feed means it is not live (cancelled /
+                not started), so the heuristic would mislabel it "● LIVE". */}
+            {!isPremium && !isFutureMarket(p.kickoff) && !isFinished && !hasScore && (
               <span className="ml-2 text-red-400 animate-pulse">● LIVE</span>
             )}
           </div>
