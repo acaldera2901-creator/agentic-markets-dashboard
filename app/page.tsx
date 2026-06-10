@@ -4136,10 +4136,10 @@ const PARTNERS: Partner[] = [
 ];
 
 const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
-  featured:      "text-amber-400 border-amber-400/40 bg-amber-400/10",
-  active:        "text-green-400 border-green-400/40 bg-green-400/10",
-  coming_soon:   "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
-  in_discussion: "text-gray-400 border-gray-400/30 bg-gray-400/5",
+  featured:      "text-[var(--am-coral)] border-[var(--am-coral-b)] bg-[var(--am-coral-dim)]",
+  active:        "text-[var(--am-coral)] border-[var(--am-coral-b)] bg-[var(--am-coral-dim)]",
+  coming_soon:   "text-[var(--am-muted)] border-[var(--am-line-2)] bg-[var(--am-inset)]",
+  in_discussion: "text-[var(--am-muted-2)] border-[var(--am-line)] bg-[var(--am-inset)]",
 };
 
 function PartnerCard({ p }: { p: Partner }) {
@@ -4155,7 +4155,7 @@ function PartnerCard({ p }: { p: Partner }) {
     in_discussion: t.partners_status_negotiation,
   };
   return (
-    <div className={`glass-card p-5 space-y-4 flex flex-col ${p.featured ? "border-amber-400/30" : ""}`}>
+    <div className="am-surface p-5 space-y-4 flex flex-col" style={p.featured ? { borderColor: "var(--am-coral-b)" } : undefined}>
       {/* Header */}
       <div className="flex items-start gap-4">
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.logo_color} flex items-center justify-center text-white font-bold text-lg shrink-0`}>
@@ -4163,52 +4163,52 @@ function PartnerCard({ p }: { p: Partner }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-bold text-white">{partnerName}</span>
+            <span className="text-sm font-bold text-[var(--am-text)]">{partnerName}</span>
             {p.featured && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded border border-amber-400/50 text-amber-400 bg-amber-400/10 font-mono uppercase tracking-wider">{t.partners_status_featured}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] font-mono uppercase tracking-wider">{t.partners_status_featured}</span>
             )}
           </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-[10px] font-mono text-gray-500">{p.type}</span>
+            <span className="text-[10px] font-mono text-[var(--am-muted-2)]">{p.type}</span>
             <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${statusColor}`}>{statusLabel[p.status]}</span>
           </div>
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-xs font-mono text-gray-400 leading-relaxed flex-1">{partnerDescription}</p>
+      <p className="text-xs font-mono text-[var(--am-muted)] leading-relaxed flex-1">{partnerDescription}</p>
 
       {/* Tags */}
       {partnerTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {partnerTags.map((tag) => (
-            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-gray-500 font-mono">{tag}</span>
+            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--am-inset)] border border-[var(--am-line)] text-[var(--am-muted-2)] font-mono">{tag}</span>
           ))}
         </div>
       )}
 
       {/* Affiliate disclosure — only for real outbound (non-mailto) links */}
       {p.url && !p.url.startsWith("mailto:") && (
-        <p className="text-[9px] font-mono text-gray-700 italic">
+        <p className="text-[9px] font-mono text-[var(--am-muted-2)] italic">
           {t.partners_affiliate_note}
         </p>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-        <span className="text-[10px] font-mono text-gray-600">{t.partners_since} {p.since}</span>
+      <div className="flex items-center justify-between pt-2 border-t border-[var(--am-line)]">
+        <span className="text-[10px] font-mono text-[var(--am-muted-2)]">{t.partners_since} {p.since}</span>
         {p.url ? (
           <a
             href={p.url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackEvent("partner_click", { partner_id: p.id })}
-            className="text-[10px] font-mono px-3 py-1 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
+            className="text-[10px] font-mono px-3 py-1 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
           >
             {t.partners_visit}
           </a>
         ) : (
-          <span className="text-[10px] font-mono text-gray-600 italic">{t.partners_link_soon}</span>
+          <span className="text-[10px] font-mono text-[var(--am-muted-2)] italic">{t.partners_link_soon}</span>
         )}
       </div>
     </div>
@@ -4252,9 +4252,9 @@ function PartnersTab() {
       {/* Header */}
       <div className="space-y-1">
         <p className="eyebrow">{t.partners_eyebrow}</p>
-        <h2 className="text-xl font-bold text-white">{t.partners_title}</h2>
-        <p className="text-xs font-mono text-gray-500 max-w-lg">{t.partners_desc}</p>
-        <p className="text-[10px] font-mono text-gray-600 mt-1">
+        <h2 className="text-xl font-bold text-[var(--am-text)]">{t.partners_title}</h2>
+        <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{t.partners_desc}</p>
+        <p className="text-[10px] font-mono text-[var(--am-muted-2)] mt-1">
           {lang === "it"
             ? "I link partner sono relazioni commerciali affiliate. AgenticMarkets riceve compenso per referral qualificati."
             : "Partner links are commercial affiliate relationships. AgenticMarkets receives compensation for qualified referrals."}
@@ -4264,13 +4264,13 @@ function PartnersTab() {
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: t.partners_active,      value: String(PARTNERS.filter((p) => ["featured", "active"].includes(p.status)).length), color: "text-green-400" },
-          { label: t.partners_negotiation, value: String(PARTNERS.filter((p) => p.status === "in_discussion").length), color: "text-amber-300" },
-          { label: t.partners_coming,      value: String(PARTNERS.filter((p) => p.status === "coming_soon").length), color: "text-cyan-400" },
+          { label: t.partners_active,      value: String(PARTNERS.filter((p) => ["featured", "active"].includes(p.status)).length), color: "text-[var(--am-coral)]" },
+          { label: t.partners_negotiation, value: String(PARTNERS.filter((p) => p.status === "in_discussion").length), color: "text-[var(--am-muted)]" },
+          { label: t.partners_coming,      value: String(PARTNERS.filter((p) => p.status === "coming_soon").length), color: "text-[var(--am-muted)]" },
         ].map((s) => (
-          <div key={s.label} className="glass-card p-3 text-center">
+          <div key={s.label} className="am-surface p-3 text-center">
             <div className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</div>
-            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{s.label}</div>
+            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -4278,7 +4278,7 @@ function PartnersTab() {
       {/* Featured */}
       {featured.length > 0 && (
         <div className="space-y-3">
-          <div className="text-[9px] font-mono text-amber-400/70 uppercase tracking-widest">{t.partners_section_exclusive}</div>
+          <div className="text-[9px] font-mono text-[var(--am-coral)] uppercase tracking-widest">{t.partners_section_exclusive}</div>
           <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
             {featured.map((p) => <PartnerCard key={p.id} p={p} />)}
           </div>
@@ -4288,7 +4288,7 @@ function PartnersTab() {
       {/* Others */}
       {others.length > 0 && (
         <div className="space-y-3">
-          <div className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">{t.partners_section_network}</div>
+          <div className="text-[9px] font-mono text-[var(--am-muted-2)] uppercase tracking-widest">{t.partners_section_network}</div>
           <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
             {others.map((p) => <PartnerCard key={p.id} p={p} />)}
           </div>
