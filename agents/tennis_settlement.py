@@ -128,7 +128,7 @@ class TennisSettlementAgent(BaseAgent):
         # per row — inflating ratings (Zverev to 813 matches). The unique index
         # prevents new duplicates, and this dedup keeps the rating idempotent even
         # if duplicates ever slip through again.
-        elo_applied: set[frozenset] = set()
+        elo_applied: set = set()
         updated = 0
         for entry in resolved:
             # Resolver tuples: (pred, position) or (pred, position, score_text).
@@ -138,10 +138,17 @@ class TennisSettlementAgent(BaseAgent):
             winner_name = pred.player1 if winner_position == "P1" else pred.player2
             loser_name = pred.player2 if winner_position == "P1" else pred.player1
             surface = pred.surface or "hard"
-            match_identity = frozenset((
-                canonical_player_key(winner_name),
-                canonical_player_key(loser_name),
-            ))
+            # #18: key the dedup on the PHYSICAL match (match_id + player pair),
+            # not the pair alone. Duplicate rows of one match share match_id →
+            # Elo moves once; a legitimate REMATCH (same players, different
+            # match_id/date) gets its own key → Elo moves again, as it should.
+            match_identity = (
+                getattr(pred, "match_id", None),
+                frozenset((
+                    canonical_player_key(winner_name),
+                    canonical_player_key(loser_name),
+                )),
+            )
             if match_identity not in elo_applied:
                 self._elo.update(winner_name, loser_name, surface)
                 elo_applied.add(match_identity)
@@ -189,6 +196,24 @@ class TennisSettlementAgent(BaseAgent):
             res = by_pair.get(frozenset((k1, k2)))
             if not res:
                 continue
+            # #18: temporal guard — the same pair can meet more than once, so a
+            # pair match alone could settle a prediction with a DIFFERENT (e.g.
+            # months-old) physical match's result. When BOTH a prediction time
+            # and the ESPN event date are known, require them within 3 days;
+            # otherwise fall back to pair-matching (preserves rows without a date).
+            pred_when = (
+                getattr(pred, "scheduled", None)
+                or getattr(pred, "scheduled_at", None)
+                or getattr(pred, "starts_at", None)
+            )
+            event_date = res.get("event_date")
+            if pred_when and event_date:
+                try:
+                    pw = pred_when if hasattr(pred_when, "tzinfo") else datetime.fromisoformat(str(pred_when).replace("Z", "+00:00"))
+                    if abs((event_date - pw).total_seconds()) > 3 * 86400:
+                        continue  # different physical match — don't settle from it
+                except Exception:
+                    pass  # unparseable date → keep the pair match (no worse than before)
             resolved.append((
                 pred,
                 "P1" if res["winner_key"] == k1 else "P2",
