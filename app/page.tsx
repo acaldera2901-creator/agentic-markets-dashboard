@@ -3915,127 +3915,162 @@ function MatchBuilderTab({
     }
   };
 
+  // Presentation-only grouping for scannability. Derived from the item id
+  // prefix (f_/w_/t_) — same data, just clustered by sport family.
+  const mbGroups: { key: string; head: string; glyph: string; amber: boolean; rows: MbItem[] }[] = [
+    { key: "football", head: lang === "it" ? "Calcio" : "Football", glyph: "#g-ball", amber: false, rows: items.filter((i) => i.id.startsWith("f_")) },
+    { key: "tennis", head: "Tennis", glyph: "#g-tball", amber: false, rows: items.filter((i) => i.id.startsWith("t_")) },
+    { key: "worldcup", head: "World Cup", glyph: "#g-trophy", amber: true, rows: items.filter((i) => i.id.startsWith("w_")) },
+  ].filter((g) => g.rows.length > 0);
+
   return (
     <div className="space-y-6 p-4">
+      {/* Header */}
       <div className="space-y-1">
         <p className="eyebrow">{copy.eyebrow}</p>
         <h2 className="text-xl font-bold text-[var(--am-text)]">{copy.title}</h2>
         <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{copy.subtitle}</p>
       </div>
 
+      {/* ── Shared-view: visitor sees the matches; pick/odds gated behind CTA ── */}
       {isSharedView && (
-        <div className="am-surface p-4 space-y-2" style={{ borderColor: "var(--am-coral-b)" }}>
-          <p className="text-xs font-mono text-[var(--am-coral)] font-bold">{copy.sharedTitle}</p>
-          <p className="text-xs font-mono text-[var(--am-muted)]">{copy.sharedDesc}</p>
-          {refCode && (
-            <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{copy.sharedBy}: <span className="text-[var(--am-coral)]">{refCode}</span></p>
-          )}
+        <div className="am-surface p-5 space-y-3" style={{ borderColor: "var(--am-coral-b)" }}>
+          <div className="space-y-1">
+            <p className="text-xs font-mono font-bold text-[var(--am-coral)]">{copy.sharedTitle}</p>
+            <p className="text-xs font-mono text-[var(--am-muted)]">{copy.sharedDesc}</p>
+            {refCode && (
+              <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{copy.sharedBy}: <span className="text-[var(--am-coral)]">{refCode}</span></p>
+            )}
+          </div>
           {lockedSelected.length > 0 && (
-            <div className="space-y-1 pt-1">
+            <div className="mb-slip-list">
               {lockedSelected.map((id) => (
-                <div key={id} className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-[var(--am-text)] truncate max-w-[220px]">{lockedLabels.get(id)}</span>
-                  <span className="text-[var(--am-muted-2)]">🔒</span>
+                <div key={id} className="mb-slip-item">
+                  <span className="mb-slip-fixture">{lockedLabels.get(id)}</span>
+                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
                 </div>
               ))}
             </div>
           )}
-          <button
-            onClick={onRegister}
-            className="mt-2 text-xs font-mono px-4 py-2 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
-          >
-            {copy.registerCta} →
-          </button>
+          <button onClick={onRegister} className="mb-cta">{copy.registerCta} →</button>
         </div>
       )}
 
-      {selectedItems.length >= 2 && (
-        <div className="am-surface p-4 space-y-3" style={{ borderColor: "var(--am-coral-b)" }}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-[var(--am-muted)]">{copy.selectedLabel}: {selectedItems.length}/5</span>
-            <span className="text-xl font-black font-mono text-[var(--am-coral)]">{Math.round(combinedProb * 100)}%</span>
-          </div>
-          <div className="space-y-1">
-            {selectedItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-xs font-mono">
-                <span className="text-[var(--am-text)] truncate max-w-[220px]">{item.label}</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[var(--am-muted-2)] truncate max-w-[110px]">{item.market}</span>
-                  <span className="text-[var(--am-coral)]">{Math.round(item.prob * 100)}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">
-            {copy.combinedProb}: <strong className="text-[var(--am-coral)]">{Math.round(combinedProb * 100)}%</strong>
-          </p>
-        </div>
-      )}
-
+      {/* ── Two columns on desktop: selectable list (left) + sticky slip (right) ── */}
       {!isSharedView && (
-        <div className="am-surface p-4 space-y-3">
-          <p className="text-xs font-mono text-[var(--am-muted)]">{copy.yourCode}</p>
-          <input
-            type="text"
-            value={influencerCode}
-            onChange={(e) => setInfluencerCode(e.target.value)}
-            placeholder="YOURCODE"
-            className="w-full bg-[var(--am-inset)] border border-[var(--am-line)] rounded px-3 py-2 text-xs font-mono text-[var(--am-text)] placeholder:text-[var(--am-muted-2)] focus:outline-none focus:border-[var(--am-coral-b)]"
-            maxLength={20}
-          />
-          {selected.length >= 2 ? (
-            <>
-              <button
-                onClick={copyLink}
-                className="w-full text-xs font-mono px-4 py-2 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
-              >
-                {copied ? copy.copied : copy.copyLink}
-              </button>
-              {publishState === "published" && (
-                <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
-              )}
-              <p className="text-[9px] font-mono text-[var(--am-muted-2)] break-all">{shareLink}</p>
-            </>
-          ) : (
-            <p className="text-[10px] font-mono text-[var(--am-muted-2)] italic">{copy.empty}</p>
-          )}
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <p className="text-xs font-mono text-[var(--am-muted)] uppercase tracking-wider">{copy.selectTitle}</p>
-        {items.length === 0 ? (
-          <div className="am-surface p-8 text-center text-xs font-mono text-[var(--am-muted-2)]">{copy.noSignals}</div>
-        ) : (
-          <div className="space-y-2">
-            {items.map((item) => {
-              const isSelected = selected.includes(item.id);
-              const atCap = selected.length >= 5 && !isSelected;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => toggle(item.id)}
-                  disabled={atCap}
-                  className={`w-full am-surface p-3 flex items-center justify-between gap-3 text-left transition-colors ${atCap ? "opacity-40 cursor-not-allowed" : ""}`}
-                  style={isSelected ? { borderColor: "var(--am-coral-b)", background: "var(--am-coral-dim)" } : undefined}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-[var(--am-text)] truncate">{item.label}</p>
-                    <p className="text-[10px] font-mono text-[var(--am-muted-2)] truncate">{item.sport} · {item.market}</p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-black font-mono text-[var(--am-coral)]">{Math.round(item.prob * 100)}%</span>
-                    <div className="w-4 h-4 rounded border flex items-center justify-center" style={{ borderColor: isSelected ? "var(--am-coral)" : "var(--am-line-2)", background: isSelected ? "var(--am-coral-dim)" : "transparent" }}>
-                      {isSelected && <span className="text-[var(--am-coral)] text-[10px]">✓</span>}
+        <div className="mb-layout">
+          {/* LEFT — scannable selectable list, grouped by sport */}
+          <div className="min-w-0">
+            <p className="text-xs font-mono text-[var(--am-muted)] uppercase tracking-wider mb-3">{copy.selectTitle}</p>
+            {items.length === 0 ? (
+              <div className="am-surface p-8 text-center text-xs font-mono text-[var(--am-muted-2)]">{copy.noSignals}</div>
+            ) : (
+              <>
+                {mbGroups.map((group) => (
+                  <div key={group.key} className="mb-group">
+                    <div className={`mb-group-head${group.amber ? " amber" : ""}`}>
+                      <span className="mb-glyph"><svg aria-hidden="true"><use href={group.glyph} /></svg></span>
+                      <h3>{group.head}</h3>
+                      <span className="mb-ct">{group.rows.length}</span>
+                      <span className="mb-rule" />
+                    </div>
+                    <div className="mb-rows">
+                      {group.rows.map((item) => {
+                        const isSelected = selected.includes(item.id);
+                        const atCap = selected.length >= 5 && !isSelected;
+                        const [home, away] = item.label.split(" vs ");
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => toggle(item.id)}
+                            disabled={atCap}
+                            className={`am-surface mb-row${isSelected ? " is-selected" : ""}${atCap ? " is-disabled" : ""}`}
+                          >
+                            <span className="mb-row-glyph"><svg aria-hidden="true"><use href={group.glyph} /></svg></span>
+                            <span className="mb-row-body">
+                              <span className="mb-fixture">
+                                {away != null ? (
+                                  <>{home}<span className="mb-vs">vs</span>{away}</>
+                                ) : item.label}
+                              </span>
+                              <span className="mb-pick"><span className="mb-pick-label">{lang === "it" ? "Pick" : "Pick"}: </span><strong>{item.market}</strong></span>
+                            </span>
+                            <span className="mb-row-tail">
+                              <span className="mb-prob">{Math.round(item.prob * 100)}%</span>
+                              <span className="mb-check" aria-hidden="true">✓</span>
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                </button>
-              );
-            })}
+                ))}
+                {selected.length >= 5 && (
+                  <p className="mb-cap-note">{lang === "it" ? "Massimo 5 selezioni — deseleziona per cambiarne una." : "Maximum 5 selections — deselect one to swap."}</p>
+                )}
+              </>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* RIGHT — sticky slip */}
+          <div className="mb-slip-col">
+            <div className="am-surface p-5 space-y-4" style={selectedItems.length >= 2 ? { borderColor: "var(--am-coral-b)" } : undefined}>
+              <div className="mb-slip-head">
+                <span className="mb-slip-count">{copy.selectedLabel} · {selectedItems.length}/5</span>
+                {selectedItems.length >= 2 && (
+                  <span className="mb-slip-prob">{Math.round(combinedProb * 100)}%</span>
+                )}
+              </div>
+
+              {selectedItems.length >= 2 ? (
+                <>
+                  <p className="mb-slip-prob-cap">{copy.combinedProb}</p>
+                  <div className="mb-slip-divider" />
+                  <div className="mb-slip-list">
+                    {selectedItems.map((item) => (
+                      <div key={item.id} className="mb-slip-item">
+                        <span className="mb-slip-fixture">{item.label}</span>
+                        <span className="mb-slip-meta">
+                          <span className="mb-slip-market">{item.market}</span>
+                          <span className="mb-slip-pct">{Math.round(item.prob * 100)}%</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mb-slip-divider" />
+                </>
+              ) : (
+                <p className="mb-slip-empty">{copy.empty}</p>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-mono text-[var(--am-muted)]">{copy.yourCode}</p>
+                <input
+                  type="text"
+                  value={influencerCode}
+                  onChange={(e) => setInfluencerCode(e.target.value)}
+                  placeholder="YOURCODE"
+                  className="mb-input"
+                  maxLength={20}
+                />
+              </div>
+
+              {selected.length >= 2 && (
+                <div className="space-y-2">
+                  <button onClick={copyLink} className="mb-cta">
+                    {copied ? copy.copied : copy.copyLink}
+                  </button>
+                  {publishState === "published" && (
+                    <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
+                  )}
+                  <p className="mb-link">{shareLink}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
