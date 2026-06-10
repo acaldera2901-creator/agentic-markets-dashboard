@@ -24,6 +24,15 @@ async function sendActivation(req: Request, identifier: string, lang: "it" | "en
   await sendEmail({ to: identifier, subject: mail.subject, html: mail.html, text: mail.text, from: mail.from, replyTo: mail.replyTo });
 }
 
+// Email-confirmation gate (HIGH-3). Required ONLY when we can actually send mail
+// (RESEND_API_KEY present) and it isn't explicitly disabled. Without a mail
+// provider we cannot confirm by email, so register/login auto-activate to keep
+// signup→login→checkout usable. Setting RESEND_API_KEY (+ a verified RESEND_FROM
+// domain) re-enables the gate automatically — no code change needed.
+function emailActivationRequired(): boolean {
+  return process.env.AUTH_REQUIRE_EMAIL_ACTIVATION !== "false" && !!process.env.RESEND_API_KEY;
+}
+
 // Server-authoritative auth endpoint. Email-only login was too weak (anyone
 // knowing an email logged in as them); the session cookie is now gated by a
 // password (no email/domain dependency, unlike the OTP path).
@@ -223,6 +232,17 @@ export async function POST(req: Request) {
       console.error("[auth] register failed:", String(e));
       return NextResponse.json({ error: "registration failed" }, { status: 500 });
     }
+    // When email confirmation isn't available, auto-activate + sign in (the
+    // pre-HIGH-3 behavior) so signup→login→checkout work without a mail provider.
+    if (!emailActivationRequired()) {
+      await dbExecute(
+        "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
+        [identifier]
+      );
+      const profile = await loadProfile(identifier);
+      if (!profile) return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      return issueSession(profile);
+    }
     try {
       await sendActivation(req, identifier, lang);
     } catch (e) {
@@ -241,7 +261,9 @@ export async function POST(req: Request) {
   // No password set, or password set but never activated → cannot log in. This
   // closes the legacy-claim takeover: there is no path that turns a known email
   // into a session without clicking the activation link sent to that inbox.
-  if (!existing.password_hash || !existing.activated_at) {
+  // No password set → cannot log in (must register). When the email gate is on,
+  // an unconfirmed account also can't log in until the activation link is clicked.
+  if (!existing.password_hash || (!existing.activated_at && emailActivationRequired())) {
     return NextResponse.json(
       { error: "activation_required", message: "Conferma il tuo indirizzo email per attivare il profilo." },
       { status: 403 }
@@ -249,6 +271,14 @@ export async function POST(req: Request) {
   }
   if (!verifyPassword(password, existing.password_hash)) {
     return NextResponse.json({ error: "wrong email or password" }, { status: 401 });
+  }
+  // Email gate off: lazily activate a never-confirmed row on first valid login
+  // (heals rows created during the no-email window, e.g. failed registrations).
+  if (!existing.activated_at) {
+    await dbExecute(
+      "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
+      [identifier]
+    );
   }
 
   const profile = await loadProfile(identifier);
