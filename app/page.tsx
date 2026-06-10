@@ -8,7 +8,7 @@ import {
   planAmountUsdt,
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
-import { buildBestBetRows, type BestBetCandidate } from "@/lib/best-bets";
+import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "./components/sport-glyphs";
 
@@ -2808,9 +2808,19 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
         : `The market is already pricing this fairly — no value edge to take.`);
     }
   } else {
-    out.push(it
-      ? `Non c'è quota di mercato per questo incontro, quindi non dichiariamo nessun edge: è la lettura del modello, non una value bet.`
-      : `There's no live market price for this match, so we're not claiming an edge — it's the model's read, not a value bet.`);
+    // No market price → lead with the model edge (margin over the 2nd outcome)
+    // instead of negating an edge. Stay honest that there's no market quote.
+    const ranked = sides.slice().sort((a, b) => b.v - a.v);
+    if (ranked.length >= 2 && ranked[0].v !== ranked[1].v) {
+      const me = modelEdge(ranked[0].v, ranked[1].v);
+      out.push(it
+        ? `Il modello dà ${ranked[0].name} avanti di ${me.toFixed(1)} punti sul secondo esito. Non c'è quota di mercato qui: è la lettura del modello, non una value bet.`
+        : `The model puts ${ranked[0].name} ${me.toFixed(1)} points ahead of the second outcome. There's no market price here — it's the model's read, not a value bet.`);
+    } else {
+      out.push(it
+        ? `Non c'è quota di mercato per questo incontro: è la lettura del modello, non una value bet.`
+        : `There's no live market price for this match — it's the model's read, not a value bet.`);
+    }
   }
 
   const mH = e.matches?.home, mA = e.matches?.away;
@@ -2895,15 +2905,25 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
       : `There's value: the model beats the market price by +${((m.edge ?? 0) * 100).toFixed(1)}%.`);
   } else if (m.odds_p1 != null || m.odds_p2 != null) {
     // Market odds exist but no best-bet (edge below threshold / odds floor /
-    // outside trading window) — mirror the football copy instead of claiming
-    // "no market price" while real odds are shown on the same card.
-    out.push(it
-      ? `Il mercato prezza già correttamente questo match: nessun edge sufficiente da dichiarare.`
-      : `The market already prices this match correctly — no edge worth claiming.`);
+    // outside trading window). Lead with the model edge (margin over the
+    // underdog) rather than negating it; stay honest there's no market value.
+    const me = modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2));
+    out.push(me > 0
+      ? (it
+        ? `Il modello dà ${favName} avanti di ${me.toFixed(1)} punti sul secondo esito, ma il mercato lo prezza già correttamente: niente value bet.`
+        : `The model puts ${favName} ${me.toFixed(1)} points clear of the second outcome, but the market already prices it fairly — no value bet.`)
+      : (it
+        ? `Il mercato prezza già correttamente questo match: niente value bet da prendere.`
+        : `The market already prices this match fairly — no value bet to take.`));
   } else {
-    out.push(it
-      ? `Niente quota di mercato qui, quindi nessun edge dichiarato: è un'inclinazione, non una scommessa.`
-      : `No live market price here, so we're not claiming an edge — it's a lean, not a bet.`);
+    const me = modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2));
+    out.push(me > 0
+      ? (it
+        ? `Il modello dà ${favName} avanti di ${me.toFixed(1)} punti sul secondo esito. Niente quota di mercato qui: è un'inclinazione, non una scommessa.`
+        : `The model puts ${favName} ${me.toFixed(1)} points clear of the second outcome. No market price here — it's a lean, not a bet.`)
+      : (it
+        ? `Niente quota di mercato qui: è un'inclinazione, non una scommessa.`
+        : `No market price here — it's a lean, not a bet.`));
   }
 
   return out.join(" ");
@@ -2928,6 +2948,12 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   // board. Probability-neutral (server never alters p_* or confidence).
   const belowFloor = e.surface?.below_floor === true;
   const isValueBet = !belowFloor && isFootballBestBet(p);
+  // Model edge — margin of the pick over the second-best outcome (prediction
+  // metric, always available even without a market price). Only meaningful when
+  // there is a clear pick (not below floor).
+  const fbProbs = [p.p_home, p.p_draw, p.p_away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a);
+  const fbModelEdge =
+    !belowFloor && fbProbs.length >= 2 ? modelEdge(fbProbs[0], fbProbs[1]) : null;
 
   const handleSelect = () => {
     if (!onSelect || !p.best_selection) return;
@@ -3041,6 +3067,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           >
             <svg aria-hidden="true"><use href="#g-bolt" /></svg>
             +{(p.edge * 100).toFixed(1)} pt · {lang === "it" ? "edge" : "edge"}{isValueBet && p.best_selection ? ` · ${p.best_selection}` : ""}
+          </span>
+        ) : fbModelEdge != null ? (
+          <span className="edge model">
+            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+            +{fbModelEdge.toFixed(1)} pt · {lang === "it" ? "edge modello" : "model edge"}
           </span>
         ) : (
           <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
@@ -3286,6 +3317,12 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     }
   };
   const isValue = isTennisBestBet(m);
+  // Model edge — margin of the favourite over the underdog (always available
+  // from the model's two-way probabilities). Null when it's a dead heat.
+  const tnModelEdge =
+    Number.isFinite(m.p1) && Number.isFinite(m.p2) && m.p1 !== m.p2
+      ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2))
+      : null;
   const scheduledDate = fmtKickoff(m.scheduled, lang, tz);
   // Live ESPN score for this match (same treatment as the football card).
   const liveMatch = useLiveTennis()[tennisPairKey(m.player1, m.player2)];
@@ -3418,6 +3455,11 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           >
             <svg aria-hidden="true"><use href="#g-bolt" /></svg>
             +{(m.edge * 100).toFixed(1)} pt · {lang === "it" ? "edge" : "edge"}{isValue && m.best_selection ? ` · ${m.best_selection}` : ""}
+          </span>
+        ) : tnModelEdge != null ? (
+          <span className="edge model">
+            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+            +{tnModelEdge.toFixed(1)} pt · {lang === "it" ? "edge modello" : "model edge"}
           </span>
         ) : (
           <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
@@ -5746,12 +5788,25 @@ export default function Dashboard() {
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
   }, [fetchData, fetchPredictions, fetchAgents, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
 
-  const valueBets = predictions.filter(isFootballBestBet);
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
-  const tennisValueBets = tennisMatches.filter(isTennisBestBet);
+  // "With edge" KPI — prediction-native: count cards with a model edge ≥ 10 pt
+  // (margin of the pick over the 2nd outcome), not just market value bets. A
+  // market value bet always has a clear pick, so this is a strict superset and
+  // surfaces the model's conviction instead of sitting at 0 without odds.
+  const MODEL_EDGE_KPI_FLOOR = 10.0;
+  const fbWithEdge = predictions.filter((p) => {
+    if (p.enrichment?.surface?.below_floor === true) return false;
+    const ps = [p.p_home, p.p_draw, p.p_away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a);
+    return ps.length >= 2 && modelEdge(ps[0], ps[1]) >= MODEL_EDGE_KPI_FLOOR;
+  }).length;
+  const tnWithEdge = tennisMatches.filter((m) =>
+    Number.isFinite(m.p1) && Number.isFinite(m.p2) &&
+    modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) >= MODEL_EDGE_KPI_FLOOR,
+  ).length;
+  const withEdgeCount = fbWithEdge + tnWithEdge;
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -5923,7 +5978,7 @@ export default function Dashboard() {
                 <span className="l">{uiLanguage === "it" ? "Eventi" : "Events"}</span>
               </div>
               <div className="am-kpi">
-                <span className="v sig">{valueBets.length + tennisValueBets.length}</span>
+                <span className="v sig">{withEdgeCount}</span>
                 <span className="l">{uiLanguage === "it" ? "Con edge" : "With edge"}</span>
               </div>
               {historyV2Stats?.win_rate && (

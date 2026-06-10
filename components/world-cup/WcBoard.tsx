@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { modelEdge } from "@/lib/best-bets";
 
 type WcEnrichment = {
   kind?: string;
@@ -128,25 +129,6 @@ const canonTeam = (name?: string | null) =>
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtForm = (f?: { w: number; d: number; l: number } | null) =>
   f ? `${f.w}W-${f.d}D-${f.l}L` : null;
-
-// Bar at parity with the home board's ProbBar (app/page.tsx): monochrome track,
-// neutral fill, coral ONLY on the model's pick row (label + pct, optional odds).
-function ProbRow({ label, value, odds, isPick = false }: { label: string; value: number; odds?: number | null; isPick?: boolean }) {
-  const fill = isPick ? "var(--am-coral)" : "var(--am-muted-2)";
-  const text = isPick ? "var(--am-coral)" : "var(--am-muted-2)";
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-mono w-10 shrink-0" style={{ color: text }}>{label}</span>
-      <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(value * 100)}%`, background: fill }} />
-      </div>
-      <span className="text-xs font-mono w-8 text-right" style={{ color: text }}>{pct(value)}</span>
-      {typeof odds === "number" && (
-        <span className="text-xs font-mono w-12 text-right" style={{ color: "var(--am-muted-2)" }}>@{odds.toFixed(2)}</span>
-      )}
-    </div>
-  );
-}
 
 function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: string }) {
   const v = e.venue || {};
@@ -321,7 +303,6 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const lang = resolveWcLang();
   const copy = SURFACE_COPY[lang];
   const whyL = WC_WHY_LABELS[lang];
-  const isSignal = p.signal_type === "signal";
   const model = whyL.model;
   // Live football score (same treatment as the home board's card).
   const isLive = live?.match_status === "IN_PLAY";
@@ -330,130 +311,147 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const hasScore = !!live && (live.home_score != null || live.away_score != null);
   const e = p.enrichment;
 
+  // Model edge — margin of the pick over the 2nd-best outcome — is the primary,
+  // uniform metric across every sport (Andrea: "edge modello primario ovunque").
+  // A real market edge, when present, is surfaced as a detail inside the Why
+  // (buildWcWhy reads p.edge_percent), not as the headline chip.
+  const wcProbs = probs ? [probs.home, probs.draw, probs.away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a) : [];
+  const wcModelEdge =
+    !belowFloor && wcProbs.length >= 2 ? modelEdge(wcProbs[0], wcProbs[1]) : null;
+
+  // Live / scheduled readout for the .scorebar (mirrors the football card).
+  const scStatus = isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : null;
+  const scLabel = isLive ? `LIVE${live?.minute != null ? ` ${live.minute}'` : ""}` : isPaused ? "HT" : isFinished ? "FT" : null;
+
+  // 3-way rows at parity with the football card (.rows > .row > .lab/.track/.pct).
+  const rowsData: { key: "HOME" | "DRAW" | "AWAY"; pct: number }[] = probs
+    ? [
+        { key: "HOME", pct: probs.home },
+        { key: "DRAW", pct: probs.draw },
+        { key: "AWAY", pct: probs.away },
+      ]
+    : [];
+
   return (
-    <div className="wc-board-card">
-      {/* Header — World Cup badge mirrors the football league badge */}
-      <div className="eyebrow">
-        World Cup
-        {p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}
-        {p.is_paper ? " · paper" : ""}
-      </div>
-      <div className="wc-board-match">
-        {p.home_team && p.away_team ? `${home} vs ${away}` : p.event_name}
-      </div>
-      <div className="wc-fixture-meta">
-        {p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : ""}
-        {/* #LIVE-2: live solo quando il feed ha davvero il match in corso */}
-        {isLive && <span style={{ marginLeft: 8, color: "var(--am-coral)" }}>● LIVE</span>}
-      </div>
-
-      {/* Live / Final score — at parity with the home board's live-score-bar */}
-      {hasScore && live && (
-        <div className={`live-score-bar ${isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : ""}`}>
-          <span className={`live-badge ${isLive ? "blink" : ""}`}>
-            {isLive ? "● LIVE" : isPaused ? "HT" : "FT"}
-            {isLive && live.minute != null ? ` ${live.minute}'` : ""}
+    <article className="card"><div className="pred">
+      {/* top: World Cup glyph + league/paper badge + when (live pulse) */}
+      <div className="top">
+        <div className="comp">
+          <svg className="sgi" aria-hidden="true"><use href="#g-trophy" /></svg>
+          <span className="league">
+            World Cup
+            {p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}
+            {p.is_paper ? " · paper" : ""}
           </span>
-          <span className="live-result">{live.home_score ?? 0} — {live.away_score ?? 0}</span>
         </div>
-      )}
+        {isLive ? (
+          <span className="when live"><span className="pulse" />{lang === "it" ? "live" : "live"}</span>
+        ) : (
+          <span className="when">{p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : ""}</span>
+        )}
+      </div>
 
+      {/* fixture + scorebar */}
+      <div className="fx">
+        <div className="teams">
+          {p.home_team && p.away_team
+            ? (<>{home}<span className="vs">v</span>{away}</>)
+            : p.event_name}
+        </div>
+        {hasScore && live ? (
+          <div className="scorebar">
+            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
+            <span className="sc">{live.home_score ?? 0}<span className="x">–</span>{live.away_score ?? 0}</span>
+            <span className="grow" />
+          </div>
+        ) : (
+          <div className="scorebar">
+            <span className="stt">{lang === "it" ? "Programmato" : "Scheduled"}</span>
+            <span className="sc sched">{p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : ""}</span>
+          </div>
+        )}
+      </div>
+
+      {/* outcome rows / gate overlay */}
       {p.locked ? (
-        <Link href="/" className="card-lock-overlay wc-lock" role="button">
-          <span className="blurred">▒▒ PICK ▒▒▒ · ▒▒%</span>
+        <Link href="/" className="lock-overlay wc-lock" role="button">
+          <span className="blurred">▒▒ HOME ▒▒▒%</span>
+          <span className="blurred">▒▒ DRAW ▒▒▒%</span>
+          <span className="blurred">▒▒ AWAY ▒▒▒%</span>
           <span className="locked-cta">Sign in to reveal pick &amp; confidence</span>
         </Link>
       ) : (
         <>
-          {/* Probability bars — 3-way with real market odds when present */}
           {probs && (
-            <div className="space-y-1.5">
-              <ProbRow label="HOME" value={probs.home} odds={probs.odds_home} isPick={pick === "HOME"} />
-              <ProbRow label="DRAW" value={probs.draw} odds={probs.odds_draw} isPick={pick === "DRAW"} />
-              <ProbRow label="AWAY" value={probs.away} odds={probs.odds_away} isPick={pick === "AWAY"} />
+            <div className="rows">
+              {rowsData.map((r) => {
+                const isPick = !belowFloor && pick === r.key;
+                return (
+                  <div key={r.key} className={`row${isPick ? " pick" : ""}`}>
+                    <span className="lab">{r.key}</span>
+                    <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
+                    <span className="pct">{pct(r.pct)}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {/* Pick + confidence — OR the neutral "no clear favourite" label when
-              the surfacing gate is below floor (no pick direction is asserted). */}
+          {/* edge chip — model edge primary (uniform across sports); the neutral
+              gate label when below the surfacing floor. */}
           {belowFloor ? (
-            <div className="wc-board-pick wc-no-favourite">
-              <strong>{copy.noClearFavourite}</strong>
-              <span> · {copy.openMatch}</span>
-            </div>
-          ) : (
-            <div className="wc-board-pick">
-              <strong>{pick || "—"}</strong>
-              {typeof p.confidence_score === "number" ? (
-                <span> · confidence {Math.round(p.confidence_score)}%</span>
-              ) : null}
-            </div>
-          )}
+            <span className="edge flat wc-no-favourite-inline">
+              <strong>{copy.noClearFavourite}</strong> · <span>{copy.openMatch}</span>
+            </span>
+          ) : wcModelEdge != null ? (
+            <span className="edge model">
+              <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+              +{wcModelEdge.toFixed(1)} pt · {lang === "it" ? "edge modello" : "model edge"}
+            </span>
+          ) : null}
 
-          {/* Footer — Why toggle · model · edge (signal rows only) */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", paddingTop: "0.4rem", borderTop: "1px solid var(--am-line)", fontFamily: "monospace", fontSize: "0.7rem" }}>
-            <button
-              type="button"
-              onClick={() => setShowWhy((v) => !v)}
-              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.6 }}
+          {/* WHY — toggle + human paragraph (parity with the home board); the
+              granular form/λ/sample rows live in the premium Deep Analysis. */}
+          <div className="why">
+            <div className="wlab">
+              <button
+                type="button"
+                className="wc-why-toggle"
+                onClick={() => setShowWhy((v) => !v)}
+              >
+                <span className="tri">▸</span> {showWhy ? whyL.hide : whyL.show}
+              </button>
+              <span className="wc-why-model">{model}</span>
+            </div>
+            {showWhy && (
+              <p className="wc-why-text">{buildWcWhy(p, probs, home, away, belowFloor, lang)}</p>
+            )}
+
+            {/* Place Bet — routes to the Partners tab; real affiliate link wins
+                when present, else the deep-link. Never a fake target. */}
+            <a
+              className="wc-place-bet"
+              href={p.affiliate?.url || "/?tab=partners"}
+              {...(p.affiliate?.url
+                ? { target: "_blank", rel: "nofollow sponsored noopener" }
+                : {})}
             >
-              {showWhy ? whyL.hide : whyL.show}
-            </button>
-            <span style={{ opacity: 0.45 }}>{model}</span>
-            {belowFloor ? null : isSignal && typeof p.edge_percent === "number" ? (
-              <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid", borderColor: p.edge_percent > 0 ? "var(--am-positive-b)" : "var(--am-line-2)", color: p.edge_percent > 0 ? "var(--am-positive)" : "var(--am-muted)" }}>
-                {p.edge_percent > 0 ? "+" : ""}{p.edge_percent.toFixed(1)}%
-              </span>
-            ) : pick && probs && ["home", "draw", "away"].includes(pick.toLowerCase()) ? (
-              <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid var(--am-line-2)", color: "var(--am-muted-2)" }}>
-                {pct(probs[pick.toLowerCase() as "home" | "draw" | "away"])}
-              </span>
-            ) : null}
+              {isLive ? "Live — " : ""}Place Bet →
+            </a>
+
+            {/* Deep Analysis — premium-only (projection-gated) */}
+            {e ? (
+              <DeepAnalysis e={e} home={home} away={away} />
+            ) : (
+              <div className="deep-analysis-locked">
+                <span>⚡</span>
+                <span>Deep analysis available with Signal Desk Pro (49.50 USDT/month)</span>
+              </div>
+            )}
           </div>
-
-          {/* Place Bet — same behavior as the football card on the home
-              board: routes to the Partners tab (the home's onBetNow does
-              setTab("partners")). When a real affiliate link exists on the
-              row it wins; otherwise the deep-link. Never a fake target. */}
-          <a
-            href={p.affiliate?.url || "/?tab=partners"}
-            {...(p.affiliate?.url
-              ? { target: "_blank", rel: "nofollow sponsored noopener" }
-              : {})}
-            style={{
-              display: "block", width: "100%", marginTop: "0.35rem", padding: "0.45rem 0",
-              borderRadius: "0.55rem", border: "1px solid var(--am-line-2)",
-              background: "var(--am-panel-2)", color: "var(--am-text)", textAlign: "center",
-              fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: "0.72rem", letterSpacing: "0.06em",
-              textDecoration: "none",
-            }}
-          >
-            {isLive ? "Live — " : ""}Place Bet →
-          </a>
-
-          {/* Inline Why — human paragraph in the active language (parity with
-              the home board). The granular form/λ/sample rows live in the
-              premium Deep Analysis panel below, keeping the card essential. */}
-          {showWhy && (
-            <div style={{ paddingTop: "0.5rem", borderTop: "1px solid var(--am-line)" }}>
-              <p className="text-[11px] font-mono leading-relaxed" style={{ color: "var(--am-muted)" }}>
-                {buildWcWhy(p, probs, home, away, belowFloor, lang)}
-              </p>
-            </div>
-          )}
-
-          {/* Deep Analysis — premium-only (projection-gated) */}
-          {e ? (
-            <DeepAnalysis e={e} home={home} away={away} />
-          ) : (
-            <div className="deep-analysis-locked">
-              <span>⚡</span>
-              <span>Deep analysis available with Signal Desk Pro (49.50 USDT/month)</span>
-            </div>
-          )}
         </>
       )}
-    </div>
+    </div></article>
   );
 }
 

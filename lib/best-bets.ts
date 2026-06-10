@@ -32,6 +32,14 @@ const MIN_MODEL_SIGNAL_PROBABILITY = 0.58;
 const DEFAULT_CAP = 21;
 const TENNIS_TRADING_WINDOW_MS = 12 * 60 * 60 * 1000;
 
+// Model edge — the margin (in percentage points) the picked outcome holds over
+// the second-most-likely outcome. Prediction-first metric: always available
+// from the model's own probabilities, independent of whether a market price
+// (and therefore a market edge) exists. Inputs are fractions 0..1.
+export function modelEdge(pickProb: number, secondProb: number): number {
+  return Math.round((pickProb - secondProb) * 1000) / 10;
+}
+
 function isFutureMarket(utc: string): boolean {
   return new Date(utc).getTime() > Date.now();
 }

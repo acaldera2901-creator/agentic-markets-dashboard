@@ -5209,61 +5209,35 @@ button:disabled {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
 }
-/* Board prediction card — sleek-coral panel, parity with .pred (was
-   .glass-card + green left-rule). Real elevation, inner highlight, coral
-   reserved for the pick. */
-.wc-board-card {
-  padding: 16px 16px 14px;
-  position: relative;
-  border: 1px solid var(--am-line);
-  border-radius: 12px;
-  background: var(--am-panel);
-  box-shadow: inset 0 1px 0 var(--am-hi), 0 1px 1px rgba(0,0,0,0.5), 0 2px 6px -2px rgba(0,0,0,0.4);
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+/* WC card now renders on the shared .card/.pred structure (parity with the
+   football/tennis cards on the home board). Only WC-specific bits keep bespoke
+   rules below; the panel, top, fx, rows, edge and why styling all come from
+   `.pred` (defined later in this file). */
+/* Surfacing gate (Wave 1): "no clear favourite / open match". Neutral tokens
+   (NOT coral/positive) so the label never reads as a pick or a value call —
+   theme-aware via --am-* (AA in dark and light). Used inside the .edge.flat
+   chip on the WC card. */
+.wc-no-favourite-inline strong { color: var(--am-text); font-weight: 600; }
+.wc-no-favourite-inline span { color: var(--am-muted-2); }
+/* WC why paragraph — human read inside .pred .why (the granular form/λ/sample
+   rows stay in the premium Deep Analysis panel below). */
+.wc-why-text { margin: 0 0 2px; font-size: 11.5px; line-height: 1.5; color: var(--am-muted); }
+/* WC why-toggle button sits in .pred .why .wlab (inherits its uppercase/tracked
+   label styling); the model attribution is pushed right and de-emphasized. */
+.pred .why .wlab .wc-why-toggle { background: none; border: none; color: inherit; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; padding: 0; display: inline-flex; align-items: center; gap: 6px; }
+.pred .why .wlab .wc-why-model { margin-left: auto; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--am-muted-2); }
+/* WC Place Bet — neutral button inside .why; routes to Partners / affiliate. */
+.wc-place-bet {
+  display: block; width: 100%; margin-top: 10px; padding: 7px 0;
+  border-radius: 9px; border: 1px solid var(--am-line-2); background: var(--am-panel-2);
+  color: var(--am-text); text-align: center; text-decoration: none;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px; letter-spacing: 0.05em;
 }
-.wc-board-card:hover {
-  border-color: var(--am-line-2);
-  box-shadow: inset 0 1px 0 var(--am-hi), 0 10px 34px -14px rgba(0,0,0,0.8);
-  transform: translateY(-1px);
-}
-.wc-board-match {
-  font-weight: 700; font-size: 16px; letter-spacing: -0.015em;
-  color: var(--am-text); margin: 6px 0 2px;
-}
-.wc-board-pick { margin-top: 10px; font-size: 13px; color: var(--am-muted); }
-.wc-board-pick strong { color: var(--am-coral); }
-/* Surfacing gate (Wave 1): "no clear favourite / open match". Neutral token
-   (NOT green/coral) so the label never reads as a pick or a value call. AA on
-   the dark panel; re-maps automatically when the light theme lands. */
-.wc-board-pick.wc-no-favourite strong { color: var(--text); font-weight: 600; }
-.wc-board-pick.wc-no-favourite span { color: var(--muted); }
-/* Club football card (app/page.tsx PredictionCard) variant of the same gate. */
-.wc-no-favourite-inline strong { color: var(--text); font-weight: 600; }
-.wc-no-favourite-inline span { color: var(--muted); }
-
-/* WC card parity: 1X2 probability bars, why text (reuses .deep-analysis-* for
-   the premium panel, defined above). */
-.wc-prob-block { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
-.wc-prob-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-.wc-prob-label { width: 40px; color: rgba(255, 255, 255, 0.55); font-weight: 600; letter-spacing: 0.04em; }
-.wc-prob-row.picked .wc-prob-label { color: var(--green); }
-.wc-prob-bar { flex: 1; height: 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
-.wc-prob-fill { height: 100%; background: rgba(255, 255, 255, 0.25); border-radius: 4px; }
-.wc-prob-row.picked .wc-prob-fill { background: var(--green); }
-.wc-prob-pct { width: 36px; text-align: right; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.75); }
-.wc-prob-row.picked .wc-prob-pct { color: var(--green); font-weight: 700; }
-.wc-why {
-  margin-top: 10px;
-  font-size: 11.5px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.66);
-}
-.wc-lock {
-  display: block;
-  margin-top: 10px;
-  text-decoration: none;
-  position: static;
-}
+.wc-place-bet:hover { border-color: var(--am-coral-b); }
+/* WC lock overlay is an anchor (vs the football card's div) sitting inside
+   .pred .lock-overlay — keep its flex layout, only neutralize link styling. */
+.pred .lock-overlay.wc-lock { text-decoration: none; color: inherit; }
 .wc-track-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -5497,6 +5471,10 @@ button:disabled {
 }
 .pred .edge svg { width: 12px; height: 12px; }
 .pred .edge.flat { background: transparent; border-color: var(--am-line); color: var(--am-muted-2); }
+/* Model edge — prediction-native signal (margin over the 2nd outcome). Coral
+   to read as a real signal, but outline-only + default cursor so the filled
+   coral chip stays reserved for a true market edge (the stronger call). */
+.pred .edge.model { background: transparent; border-color: var(--am-coral-b); color: var(--am-coral); cursor: default; }
 .pred .edge.evbtn { cursor: pointer; }
 .pred .edge.evbtn:hover { filter: brightness(1.08); }
 
