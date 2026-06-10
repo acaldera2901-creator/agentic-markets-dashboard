@@ -1889,7 +1889,9 @@ function PublicOldBetsPanel({ history, stats, loading }: { history: HistoryMatch
           <div key={`${row.match_id}-${row.bet_selection ?? row.best_selection ?? index}`}>
             <span>{LEAGUE_FLAGS[row.league] ?? "FB"} {row.league}</span>
             <strong>{row.home_team} vs {row.away_team}</strong>
-            <em>{row.bet_selection ?? row.best_selection ?? "signal"} · {row.bet_status}</em>
+            {/* MEDIUM-1: pick gated server-side for non-paid viewers (selection
+                comes back null) → show a lock instead of leaking/placeholdering it. */}
+            <em>{row.bet_selection ?? row.best_selection ?? (lang === "it" ? "🔒 pick" : "🔒 pick")} · {row.bet_status}</em>
           </div>
         )) : (
           <div className="book-empty">{lang === "it" ? "Nessuno storico pubblico disponibile ora." : "No public history available right now."}</div>
@@ -3957,7 +3959,7 @@ function MatchBuilderTab({
       })
       .filter((i): i is MbItem => i !== null),
     ...tennisMatches
-      .filter((m) => isTennisMarketVisible(m.scheduled) && Boolean(m.best_selection))
+      .filter((m) => !m.locked && isTennisMarketVisible(m.scheduled) && Boolean(m.best_selection))
       .map((m): MbItem | null => {
         const prob = selectedTennisProbability(m);
         if (!Number.isFinite(prob) || prob <= 0) return null;
@@ -3982,6 +3984,11 @@ function MatchBuilderTab({
     ...wcRows
       .filter((r) => r.locked && r.home_team && r.away_team)
       .map((r) => [`w_${r.id}`, `${r.home_team} vs ${r.away_team}`] as [string, string]),
+    // MEDIUM-5: tennis was missing here, so tennis selections in a shared link
+    // vanished for anonymous visitors (locked → not in `items`, not labeled).
+    ...tennisMatches
+      .filter((m) => m.locked && m.player1 && m.player2)
+      .map((m) => [`t_${m.id}`, `${m.player1} vs ${m.player2}`] as [string, string]),
   ]);
   const selectedItems = items.filter((i) => selected.includes(i.id));
   const lockedSelected = selected.filter((id) => !items.some((i) => i.id === id) && lockedLabels.has(id));

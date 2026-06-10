@@ -1,5 +1,5 @@
 import { verifySession, SESSION_COOKIE } from "./session";
-import { dbQuery } from "./db";
+import { dbQueryStrict } from "./db";
 
 // Server-side access gating (P0 #1).
 // The plan is ALWAYS resolved fresh from the `profiles` table here — never read from
@@ -41,8 +41,10 @@ export async function getSessionPlan(req: Request): Promise<SessionContext | nul
   const token = readCookie(req, SESSION_COOKIE);
   const payload = verifySession(token);
   if (!payload) return null;
-  const rows = await dbQuery<{ identifier: string; plan: Plan; name: string | null; plan_expires_at: string | null }>(
-    "SELECT identifier, plan, name, plan_expires_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+  // Strict read: a DB error throws (→ the route 500s and the client keeps its
+  // local state) instead of returning [] and silently logging the user out.
+  const rows = await dbQueryStrict<{ identifier: string; plan: Plan; name: string | null; plan_expires_at: string | null }>(
+    "SELECT identifier, plan, name, plan_expires_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
     [payload.identifier]
   );
   if (!rows.length) return null;

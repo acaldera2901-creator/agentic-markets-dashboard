@@ -7,6 +7,7 @@ import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
 import { sendEmail, paymentReceivedEmail, activationEmail } from "@/lib/email";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken } from "@/lib/activation";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +35,11 @@ async function sendActivation(req: Request, identifier: string, lang: "it" | "en
 
 type ProfileRow = { identifier: string; plan: Plan; name: string | null };
 
+// LOW-16: deterministic resolution when an identifier could match more than one
+// row — prefer the exact match, then the oldest — instead of an arbitrary LIMIT 1.
 async function loadProfile(identifier: string): Promise<ProfileRow | null> {
   const rows = await dbQuery<ProfileRow>(
-    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+    "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
     [identifier]
   );
   return rows[0] ?? null;
@@ -46,7 +49,7 @@ type AuthRow = { identifier: string; plan: Plan; name: string | null; password_h
 
 async function loadAuthRow(identifier: string): Promise<AuthRow | null> {
   const rows = await dbQuery<AuthRow>(
-    "SELECT identifier, plan, name, password_hash, activated_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+    "SELECT identifier, plan, name, password_hash, activated_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
     [identifier]
   );
   return rows[0] ?? null;
@@ -73,6 +76,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // MEDIUM-13: brute-force / credential-stuffing limiter on the auth surface
+  // (best-effort per serverless instance).
+  if (rateLimit(`auth:${clientIp(req)}`, 20, 60_000)) {
+    return NextResponse.json({ error: "too many requests, slow down" }, { status: 429 });
+  }
   let body: Record<string, unknown>;
   try {
     body = (await req.json()) as Record<string, unknown>;
@@ -213,8 +221,10 @@ export async function POST(req: Request) {
   }
 
   // action === "login" (default)
+  // MEDIUM-13: don't enumerate accounts — "no account" and "wrong password"
+  // return the SAME generic 401 (new users use the register tab).
   if (!existing) {
-    return NextResponse.json({ error: "no account for this email" }, { status: 404 });
+    return NextResponse.json({ error: "wrong email or password" }, { status: 401 });
   }
   // No password set, or password set but never activated → cannot log in. This
   // closes the legacy-claim takeover: there is no path that turns a known email

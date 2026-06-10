@@ -3,6 +3,7 @@ import { dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { ADMIN_IDENTIFIER, ADMIN_PROFILE_PLAN } from "@/lib/admin-profile-policy";
 import { safeEqual } from "@/lib/admin-auth";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,10 @@ export const dynamic = "force-dynamic";
 // admin_full session (upsert profile + signed cookie) so the server gate grants full
 // data access. This endpoint stays public (it IS the entry point).
 export async function POST(req: Request) {
+  // LOW-2: throttle key-guessing on this admin-granting endpoint.
+  if (rateLimit(`founder:${clientIp(req)}`, 10, 60_000)) {
+    return NextResponse.json({ ok: false, error: "too many requests" }, { status: 429 });
+  }
   let body: { secret?: string };
   try {
     body = await req.json();

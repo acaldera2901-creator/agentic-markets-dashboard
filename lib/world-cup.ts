@@ -85,6 +85,17 @@ const SLUG_TO_CANONICAL: Record<string, string> = {
   "ir-iran": "iran",
 };
 
+// Canonical slug for matching ESPN names against the dataset's canonical names
+// (MEDIUM-7): ESPN displayName ("USA", "Korea Republic", "IR Iran") differs from
+// the canonical spelling the squads are keyed on ("United States", "South
+// Korea", "Iran"), so a raw teamSlug() comparison missed ~7 nations' fixtures
+// and group. Resolve both sides through this before comparing.
+export function canonTeamSlug(name: string): string {
+  const s = teamSlug(name);
+  const canonical = SLUG_TO_CANONICAL[s];
+  return canonical ? teamSlug(canonical) : s;
+}
+
 // What to feed the wc_squads ILIKE lookup for a given /world-cup/[team] slug.
 // LIKE metacharacters from the URL are escaped: an unescaped %/_ would turn
 // arbitrary slugs (/world-cup/a%25) into wildcard matches on random teams.

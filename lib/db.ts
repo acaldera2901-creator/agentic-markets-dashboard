@@ -31,6 +31,21 @@ export async function dbQuery<T = Record<string, unknown>>(
   }
 }
 
+// Fail-loud read: throws on DB error instead of masking it as an empty result.
+// Use on security/auth read paths (e.g. resolving the session plan) where a
+// transient DB error must NOT look like "no rows" — otherwise a hiccup silently
+// logs users out / strips their plan (MEDIUM-12). "No rows" still returns [].
+export async function dbQueryStrict<T = Record<string, unknown>>(
+  sql: string,
+  params: unknown[] = []
+): Promise<T[]> {
+  const db = getSupabaseAdminClient();
+  if (!db) throw new Error("[db] Supabase admin client not configured");
+  const { data, error } = await db.rpc("exec_sql", { query: interpolate(sql, params) });
+  if (error) throw new Error(`[db] read error: ${error.message ?? String(error)}`);
+  return (data as T[]) ?? [];
+}
+
 // Fail-loud variant for writes that must not be silent (checkout, signup, grants):
 // a swallowed INSERT/UPDATE here means the API answers 200 ok while the DB never
 // changed — the client believes a payment/activation went through. Throws instead.

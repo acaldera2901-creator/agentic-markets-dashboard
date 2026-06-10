@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { notFound } from "next/navigation";
 import { dbQuery } from "@/lib/db";
-import { fetchWcFixtures, fetchTeamGroupMap, teamSlug, teamNeedleFromSlug } from "@/lib/world-cup";
+import { fetchWcFixtures, fetchTeamGroupMap, teamSlug, teamNeedleFromSlug, canonTeamSlug } from "@/lib/world-cup";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -87,12 +87,15 @@ export default async function TeamPage(
     fetchTeamGroupMap(),
   ]);
 
+  // MEDIUM-7: match ESPN fixture/group names against the canonical squad name
+  // through canonTeamSlug (USA↔United States, Korea Republic↔South Korea, …),
+  // otherwise ~7 nations showed no fixtures and no group.
+  const teamKey = canonTeamSlug(squad.team_canonical);
   const teamFixtures = fixtures.filter(
-    (f) =>
-      teamSlug(f.home_team) === teamSlug(squad.team_canonical) ||
-      teamSlug(f.away_team) === teamSlug(squad.team_canonical)
+    (f) => canonTeamSlug(f.home_team) === teamKey || canonTeamSlug(f.away_team) === teamKey
   );
-  const group = groupMap[squad.team_canonical] || teamFixtures.find((f) => f.group)?.group || null;
+  const groupBySlug = new Map(Object.entries(groupMap).map(([name, g]) => [canonTeamSlug(name), g]));
+  const group = groupBySlug.get(teamKey) || teamFixtures.find((f) => f.group)?.group || null;
   const reveals = snapshots.filter(
     (s) => s.diff && ((s.diff.added?.length || 0) + (s.diff.removed?.length || 0) + (s.diff.injury_changes?.length || 0) > 0)
   );
