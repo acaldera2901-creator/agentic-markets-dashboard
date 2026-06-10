@@ -34,6 +34,23 @@ export async function POST(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  // Opt-out: remove the session's entry. Identity derived server-side, never
+  // from the body — a user can only remove their own row.
+  const ctx = await getSessionPlan(req);
+  if (!ctx) {
+    return NextResponse.json({ error: "authentication required" }, { status: 401 });
+  }
+  try {
+    const emailHash = createHash("sha256").update(ctx.identifier).digest("hex");
+    await dbExecute(`DELETE FROM leaderboard WHERE email_hash = $1`, [emailHash]);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[leaderboard] opt-out delete failed:", String(e));
+    return NextResponse.json({ error: "persistence failed" }, { status: 500 });
+  }
+}
+
 export async function GET() {
   // Product line: calibrated probabilities, not edge/profit. The leaderboard
   // ranks by points + hit-rate — no money metrics (P&L) are ever serialized.

@@ -4,9 +4,22 @@
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
+// Contact / sender identity for account emails. Andrea: le mail di attivazione
+// passano da questa casella. Resend richiede un dominio verificato per il `from`:
+// se ACTIVATION_FROM punta a un mittente verificato (es. il dominio collegato a
+// questa Gmail) lo usa; altrimenti invia dal RESEND_FROM verificato e mette
+// comunque la Gmail come reply-to + contatto nel corpo.
+export const ACCOUNT_CONTACT_EMAIL = "agenticmarketscb@gmail.com";
+
 function fromAddress(): string {
   // e.g. "Agentic Markets <login@agenticmarkets.com>"
   return process.env.RESEND_FROM || "Agentic Markets <onboarding@resend.dev>";
+}
+
+function activationFromAddress(): string {
+  // Verified sender for activation mail; defaults to the gmail contact name but
+  // falls back to the verified RESEND_FROM domain so a send never hard-fails.
+  return process.env.ACTIVATION_FROM || fromAddress();
 }
 
 export async function sendEmail(opts: {
@@ -14,6 +27,8 @@ export async function sendEmail(opts: {
   subject: string;
   html: string;
   text: string;
+  from?: string;
+  replyTo?: string;
 }): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY not configured");
@@ -22,17 +37,43 @@ export async function sendEmail(opts: {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: fromAddress(),
+      from: opts.from || fromAddress(),
       to: [opts.to],
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
+      ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
     }),
   });
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
     throw new Error(`Resend send failed: ${resp.status} ${body.slice(0, 200)}`);
   }
+}
+
+// Account activation (HIGH-3): the link the user must click to activate their
+// profile and set a usable session. Sent from the account contact mailbox.
+export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): {
+  subject: string; html: string; text: string; from: string; replyTo: string;
+} {
+  const it = lang === "it";
+  const subject = it ? "Attiva il tuo profilo Agentic Markets" : "Activate your Agentic Markets profile";
+  const intro = it
+    ? "Per completare la registrazione e proteggere il tuo account, conferma il tuo indirizzo email. Il link scade tra 1 ora."
+    : "To finish signing up and secure your account, confirm your email address. The link expires in 1 hour.";
+  const cta = it ? "Attiva il profilo" : "Activate profile";
+  const ignore = it
+    ? `Se non hai creato un account, ignora questa email o scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
+    : `If you didn't create an account, ignore this email or write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">Agentic Markets</p>
+  <p style="font-size:14px;line-height:1.5;margin:0 0 16px">${intro}</p>
+  <a href="${activateUrl}" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:14px;font-weight:600">${cta}</a>
+  <p style="font-size:12px;color:#94a3b8;margin:18px 0 0;word-break:break-all">${activateUrl}</p>
+  <p style="font-size:12px;color:#94a3b8;margin:12px 0 0">${ignore}</p>
+</div>`;
+  const text = `${intro}\n\n${cta}: ${activateUrl}\n\n${ignore}`;
+  return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
 }
 
 function shell(bodyHtml: string): string {

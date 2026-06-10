@@ -4,10 +4,24 @@ import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/sessi
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
-import { sendEmail, paymentReceivedEmail } from "@/lib/email";
+import { sendEmail, paymentReceivedEmail, activationEmail } from "@/lib/email";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
+import { siteOrigin, newActivationToken } from "@/lib/activation";
 
 export const dynamic = "force-dynamic";
+
+// Issue + persist a fresh activation token and email the activation link.
+// Throws if the email send fails so the caller surfaces a real error.
+async function sendActivation(req: Request, identifier: string, lang: "it" | "en"): Promise<void> {
+  const { token, hash, expiresIso } = newActivationToken();
+  await dbExecute(
+    "UPDATE profiles SET activation_token_hash = $2, activation_token_expires = $3, updated_at = NOW() WHERE identifier = $1",
+    [identifier, hash, expiresIso]
+  );
+  const url = `${siteOrigin(req)}/api/auth/activate?token=${token}&id=${encodeURIComponent(identifier)}`;
+  const mail = activationEmail(url, lang);
+  await sendEmail({ to: identifier, subject: mail.subject, html: mail.html, text: mail.text, from: mail.from, replyTo: mail.replyTo });
+}
 
 // Server-authoritative auth endpoint. Email-only login was too weak (anyone
 // knowing an email logged in as them); the session cookie is now gated by a
@@ -28,11 +42,11 @@ async function loadProfile(identifier: string): Promise<ProfileRow | null> {
   return rows[0] ?? null;
 }
 
-type AuthRow = { identifier: string; plan: Plan; name: string | null; password_hash: string | null };
+type AuthRow = { identifier: string; plan: Plan; name: string | null; password_hash: string | null; activated_at: string | null };
 
 async function loadAuthRow(identifier: string): Promise<AuthRow | null> {
   const rows = await dbQuery<AuthRow>(
-    "SELECT identifier, plan, name, password_hash FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+    "SELECT identifier, plan, name, password_hash, activated_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
     [identifier]
   );
   return rows[0] ?? null;
@@ -142,10 +156,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "this profile requires founder access" }, { status: 403 });
   }
 
+  const lang: "it" | "en" = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+
+  // "resend_activation": re-send the activation email for a not-yet-activated
+  // account. Never reveals whether the email exists (always 200).
+  if (action === "resend_activation") {
+    // admin_full already returned 403 above; only resend for not-yet-activated.
+    if (existing && !existing.activated_at) {
+      try { await sendActivation(req, existing.identifier, lang); }
+      catch (e) { console.error("[auth] resend activation failed:", String(e)); }
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (action === "register") {
-    // Block taking over an account that already has a password. A legacy profile
-    // with no password_hash can still be claimed here (sets the password).
-    if (existing?.password_hash) {
+    // Already a usable (activated) account → tell them to log in.
+    if (existing?.password_hash && existing.activated_at) {
       return NextResponse.json({ error: "account already exists — please log in" }, { status: 409 });
     }
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
@@ -155,6 +181,11 @@ export async function POST(req: Request) {
     // share link (first-touch — never overwrites an existing referred_by).
     const rawRef = typeof body.ref === "string" ? body.ref.trim().toUpperCase().slice(0, 20) : "";
     const referredBy = /^[A-Z0-9_-]{2,20}$/.test(rawRef) ? rawRef : null;
+    // HIGH-3: set the password but DO NOT activate or issue a session here. The
+    // profile becomes usable only after the email-activation link is clicked —
+    // this is what prevents a legacy (passwordless) profile from being claimed
+    // by anyone who simply knows the email. activated_at is left untouched
+    // (NULL for new/legacy rows; a real activated account never reaches here).
     try {
       await dbExecute(
         `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by)
@@ -172,28 +203,29 @@ export async function POST(req: Request) {
       console.error("[auth] register failed:", String(e));
       return NextResponse.json({ error: "registration failed" }, { status: 500 });
     }
-    const profile = await loadProfile(identifier);
-    if (!profile) return NextResponse.json({ error: "registration failed" }, { status: 500 });
-    return issueSession(profile);
+    try {
+      await sendActivation(req, identifier, lang);
+    } catch (e) {
+      console.error("[auth] activation email failed:", String(e));
+      return NextResponse.json({ error: "activation email failed" }, { status: 502 });
+    }
+    return NextResponse.json({ pending_activation: true, identifier }, { status: 202 });
   }
 
   // action === "login" (default)
   if (!existing) {
     return NextResponse.json({ error: "no account for this email" }, { status: 404 });
   }
-  if (!existing.password_hash) {
-    // Legacy profile with no password yet: first login sets it (claim). This is
-    // the migration path for the handful of pre-password accounts.
-    try {
-      await dbExecute(
-        "UPDATE profiles SET password_hash = $2, updated_at = NOW() WHERE identifier = $1",
-        [existing.identifier, hashPassword(password)]
-      );
-    } catch (e) {
-      console.error("[auth] password claim failed:", String(e));
-      return NextResponse.json({ error: "login failed" }, { status: 500 });
-    }
-  } else if (!verifyPassword(password, existing.password_hash)) {
+  // No password set, or password set but never activated → cannot log in. This
+  // closes the legacy-claim takeover: there is no path that turns a known email
+  // into a session without clicking the activation link sent to that inbox.
+  if (!existing.password_hash || !existing.activated_at) {
+    return NextResponse.json(
+      { error: "activation_required", message: "Conferma il tuo indirizzo email per attivare il profilo." },
+      { status: 403 }
+    );
+  }
+  if (!verifyPassword(password, existing.password_hash)) {
     return NextResponse.json({ error: "wrong email or password" }, { status: 401 });
   }
 

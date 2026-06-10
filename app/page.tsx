@@ -2102,11 +2102,13 @@ function CheckoutModal({
   onClose,
 }: {
   plan: PublicPlanKey;
-  onConfirm: (txHash: string) => void;
+  onConfirm: (txHash: string) => Promise<boolean>;
   onClose: () => void;
 }) {
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const price = planAmountUsdt(plan);
   const t = useT();
   const lang = useLang();
@@ -2163,12 +2165,29 @@ function CheckoutModal({
         </label>
 
         <button
-          disabled={txHash.length < 10}
-          onClick={() => onConfirm(txHash)}
+          disabled={txHash.length < 10 || submitting}
+          onClick={async () => {
+            setError("");
+            setSubmitting(true);
+            const ok = await onConfirm(txHash);
+            // On success the parent unmounts this modal; on failure keep it open
+            // with a retryable error — never silently swallow a lost tx_hash.
+            if (!ok) {
+              setSubmitting(false);
+              setError(lang === "it"
+                ? "Invio non riuscito: la transazione non è stata registrata. Controlla la connessione e riprova, oppure scrivi a info@agenticmarkets.com."
+                : "Submission failed: your transaction was not recorded. Check your connection and retry, or email info@agenticmarkets.com.");
+            }
+          }}
           style={{ marginTop: 4 }}
         >
-          {t.checkout_confirm} · {price.toFixed(2)} USDT
+          {submitting ? (lang === "it" ? "Invio in corso…" : "Submitting…") : <>{t.checkout_confirm} · {price.toFixed(2)} USDT</>}
         </button>
+        {error && (
+          <p style={{ fontSize: "12px", fontFamily: "var(--font-mono), ui-monospace, monospace", color: "var(--am-negative)", lineHeight: 1.5, margin: "8px 0 0" }}>
+            {error}
+          </p>
+        )}
 
         <p>
           {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
@@ -2513,9 +2532,12 @@ function ClientAuthModal({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [showResend, setShowResend] = useState(false);
   const [busy, setBusy] = useState(false);
   const t = useT();
   const lang = useLang();
+  const it = lang === "it";
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome";
   const normalizedEmail = email.trim().toLowerCase();
   const emailValid = normalizedEmail.includes("@");
@@ -2526,7 +2548,7 @@ function ClientAuthModal({
 
   const submit = async () => {
     if (!canSubmit || busy) return;
-    setBusy(true); setError("");
+    setBusy(true); setError(""); setInfo(""); setShowResend(false);
     try {
       const resp = await fetch("/api/auth", {
         method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
@@ -2541,20 +2563,47 @@ function ClientAuthModal({
             : undefined,
         }),
       });
-      if (resp.ok) {
-        const server = await resp.json() as { plan?: ClientProfile["plan"]; name?: string | null };
+      const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
+      // HIGH-3: register no longer logs in — it sends an activation email. Show
+      // a "check your inbox" notice instead of a session.
+      if (resp.status === 202 || data.pending_activation) {
+        setInfo(it
+          ? `Ti abbiamo inviato un'email di attivazione a ${normalizedEmail}. Clicca il link per attivare il profilo (controlla anche lo spam).`
+          : `We sent an activation email to ${normalizedEmail}. Click the link to activate your profile (check spam too).`);
+        setShowResend(true);
+      } else if (resp.ok) {
         onAuthed({
-          name: (server.name ?? name.trim()) || normalizedEmail,
+          name: (data.name ?? name.trim()) || normalizedEmail,
           email: normalizedEmail, plan: "free", language: lang, timezone: tz,
           risk: { maxStake: 10, dailyStopLoss: 50, maxBetsPerDay: 5, mode: "automatic" },
           betfair: { status: "not_connected" }, notifications: defaultNotifications(),
-        }, server.plan);
+        }, data.plan);
+      } else if (resp.status === 403 && data.error === "activation_required") {
+        // Account exists but the email was never confirmed → not a session.
+        setError(it
+          ? "Questo profilo non è ancora attivo. Conferma il tuo indirizzo email dal link che ti abbiamo inviato."
+          : "This profile isn't activated yet. Confirm your email via the link we sent you.");
+        setShowResend(true);
       } else if (resp.status === 401) setError(t.auth_err_wrongpw);
       else if (resp.status === 404) setError(t.auth_err_noaccount);
       else if (resp.status === 409) setError(t.auth_err_exists);
       else if (resp.status === 403) setError(t.auth_err_founder);
       else if (resp.status === 400) setError(t.auth_err_pwshort);
+      else if (resp.status === 502) setError(it ? "Invio dell'email di attivazione non riuscito. Riprova tra poco." : "Could not send the activation email. Please retry shortly.");
       else setError(t.auth_err_generic);
+    } catch { setError(t.auth_err_generic); }
+    finally { setBusy(false); }
+  };
+
+  const resendActivation = async () => {
+    if (busy || !emailValid) return;
+    setBusy(true); setError("");
+    try {
+      await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "resend_activation", identifier: normalizedEmail, language: lang }),
+      });
+      setInfo(it ? "Email di attivazione reinviata. Controlla la posta." : "Activation email resent. Check your inbox.");
     } catch { setError(t.auth_err_generic); }
     finally { setBusy(false); }
   };
@@ -2589,9 +2638,16 @@ function ClientAuthModal({
             autoComplete={mode === "login" ? "current-password" : "new-password"} />
         </label>
         {error && <p className="auth-error">{error}</p>}
+        {info && <p className="auth-info" style={{ fontSize: "12px", lineHeight: 1.5, color: "var(--am-coral)", margin: "4px 0 0" }}>{info}</p>}
+        {showResend && (
+          <button type="button" onClick={resendActivation} disabled={busy || !emailValid}
+            style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline", cursor: "pointer", fontSize: "12px", padding: "4px 0", alignSelf: "flex-start" }}>
+            {it ? "Non l'hai ricevuta? Reinvia l'email di attivazione" : "Didn't get it? Resend the activation email"}
+          </button>
+        )}
         {/* BUG-009: the submit button is disabled until the form validates;
             without this hint the click looked silently unresponsive. */}
-        {!error && !canSubmit && !busy && (email || password) && (
+        {!error && !info && !canSubmit && !busy && (email || password) && (
           <p className="auth-error">{t.auth_hint_incomplete}</p>
         )}
         <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
@@ -5393,6 +5449,39 @@ export default function Dashboard() {
   const [authIntent, setAuthIntent] = useState<ClientAuthIntent>("login");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
+  // HIGH-3: landing from the email activation link. On success the activate
+  // endpoint already set the session cookie (the hydration effect logs the user
+  // in); here we just surface a notice and clean the URL. On failure we open the
+  // auth modal so the user can retry / resend.
+  const [activationNotice, setActivationNotice] = useState<{ ok: boolean; msg: string } | null>(null);
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const activated = params.get("activated");
+      const act = params.get("activation");
+      if (!activated && !act) return;
+      const it = (window.localStorage.getItem("agentic-lang") ?? "it") !== "en";
+      // Resolve the notice (and whether to open the auth modal) from the params,
+      // then apply once. One-shot mount sync from the activation redirect URL.
+      let notice: { ok: boolean; msg: string } | null = null;
+      let openAuth = false;
+      if (activated === "1") {
+        notice = { ok: true, msg: it ? "Profilo attivato — benvenuto!" : "Profile activated — welcome!" };
+      } else if (act === "already") {
+        notice = { ok: true, msg: it ? "Profilo già attivo: accedi pure." : "Profile already active: please log in." };
+      } else if (act) {
+        notice = { ok: false, msg: act === "expired"
+          ? (it ? "Link di attivazione scaduto. Reinvia l'email dal login." : "Activation link expired. Resend it from login.")
+          : (it ? "Link di attivazione non valido. Riprova o reinvia l'email." : "Invalid activation link. Retry or resend the email.") };
+        openAuth = true;
+      }
+      /* eslint-disable react-hooks/set-state-in-effect -- one-shot mount sync from the activation redirect params; paired with history.replaceState. */
+      if (notice) setActivationNotice(notice);
+      if (openAuth) setAuthOpen(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      window.history.replaceState({}, "", window.location.pathname);
+    } catch { /* URL unavailable */ }
+  }, []);
   const [founderOpen, setFounderOpen] = useState(false);
   const founderClickRef = useRef({ count: 0, timer: null as ReturnType<typeof setTimeout> | null });
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
@@ -5529,6 +5618,28 @@ export default function Dashboard() {
     window.localStorage.setItem(CLIENT_PROFILES_KEY, JSON.stringify(nextProfiles));
   };
 
+  // Settings save: persist the profile locally AND sync the leaderboard opt-in
+  // to the server when it changes (HIGH-2: the toggle previously only touched
+  // localStorage, so POST /api/leaderboard was never called and no one could
+  // actually appear in the public leaderboard).
+  const handleSettingsSave = (profile: ClientProfile) => {
+    const wasOptedIn = clientProfile?.leaderboardOptIn ?? false;
+    const nowOptedIn = profile.leaderboardOptIn ?? false;
+    saveClientProfile(profile);
+    if (nowOptedIn === wasOptedIn) return;
+    const req = nowOptedIn
+      ? fetch("/api/leaderboard", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ displayName: profile.name }),
+        })
+      : fetch("/api/leaderboard", { method: "DELETE", credentials: "same-origin" });
+    req
+      .then((r) => { if (!r.ok) console.error(`[leaderboard] opt-${nowOptedIn ? "in" : "out"} failed: ${r.status}`); })
+      .catch((e) => console.error("[leaderboard] opt-in/out network error:", String(e)));
+  };
+
   const openAuth = (intent: ClientAuthIntent = "login") => {
     setAuthIntent(intent);
     setAuthOpen(true);
@@ -5560,11 +5671,14 @@ export default function Dashboard() {
     setTab("bets");
   };
 
-  const handleCheckoutConfirm = async (txHash: string) => {
-    if (!clientProfile || !checkoutPlan) return;
+  const handleCheckoutConfirm = async (txHash: string): Promise<boolean> => {
+    if (!clientProfile || !checkoutPlan) return false;
     const { txHash: _tx, requestedPlan: _rp, ...rest } = clientProfile;
-    // Submitting a tx_hash does NOT unlock access. The server moves the profile to
-    // 'pending_payment' until payment is confirmed; the client mirrors that waiting state.
+    // Submitting a tx_hash does NOT unlock access. Mirror the 'pending_payment'
+    // waiting state ONLY when the SERVER actually recorded it. Never fake success
+    // on a failed/timed-out write: a silently lost tx_hash means the customer
+    // believes they paid while we have no record (HIGH-1). On failure we return
+    // false so the modal stays open with a retry.
     try {
       const resp = await fetch("/api/auth", {
         method: "POST",
@@ -5572,19 +5686,17 @@ export default function Dashboard() {
         credentials: "same-origin",
         body: JSON.stringify({ action: "checkout", requested_plan: checkoutPlan, tx_hash: txHash }),
       });
-      if (resp.ok) {
-        const server = await resp.json() as { plan?: ClientProfile["plan"] };
-        saveClientProfile({ ...rest, plan: server.plan ?? "pending_payment", txHash, requestedPlan: checkoutPlan });
-      } else {
-        saveClientProfile({ ...rest, plan: "pending_payment", txHash, requestedPlan: checkoutPlan });
-      }
+      if (!resp.ok) return false;
+      const server = await resp.json() as { plan?: ClientProfile["plan"] };
+      saveClientProfile({ ...rest, plan: server.plan ?? "pending_payment", txHash, requestedPlan: checkoutPlan });
     } catch {
-      saveClientProfile({ ...rest, plan: "pending_payment", txHash, requestedPlan: checkoutPlan });
+      return false;
     }
     trackEvent("conversion", { plan: checkoutPlan, meta: { tx: txHash } });
     setCheckoutOpen(false);
     setCheckoutPlan(null);
     setTab("bets");
+    return true;
   };
 
   const handleFounderAccess = () => {
@@ -5846,6 +5958,17 @@ export default function Dashboard() {
     <main className="portal-root">
       <SportGlyphSprite />
       <CookieBanner />
+      {activationNotice && (
+        <div role="status" onClick={() => setActivationNotice(null)}
+          style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 9998,
+            padding: "10px 18px", borderRadius: 10, cursor: "pointer", maxWidth: "92vw",
+            fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13, lineHeight: 1.4,
+            background: "var(--am-panel-2)", color: "var(--am-text)",
+            border: `1px solid ${activationNotice.ok ? "var(--am-coral-b)" : "var(--am-negative-b)"}`,
+            boxShadow: "0 12px 40px rgba(0,0,0,0.28)" }}>
+          {activationNotice.msg}
+        </div>
+      )}
 
       {/* ── Top banner ── */}
       <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
@@ -6032,7 +6155,7 @@ export default function Dashboard() {
               onActivateFree={activateFreePlan}
               onLogout={logoutClientProfile}
               onUnlock={() => openAuth("login")}
-              onSave={saveClientProfile}
+              onSave={handleSettingsSave}
             />
           )}
           {tab === "history" && (
