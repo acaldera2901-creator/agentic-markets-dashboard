@@ -3613,17 +3613,17 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="glass-card p-4 border-cyan-400/10">
-        <div className="text-xs font-mono text-gray-400 space-y-1 leading-relaxed">
-          <div className="text-cyan-400 font-bold mb-2">{t.agent_arch_title}</div>
+      <div className="am-surface p-4">
+        <div className="text-xs font-mono text-[var(--am-muted)] space-y-1 leading-relaxed">
+          <div className="text-[var(--am-coral)] font-bold mb-2">{t.agent_arch_title}</div>
           <div>
-            <span className="text-cyan-300">{t.agent_arch_dashboard_title}</span> — {t.agent_arch_dashboard_desc}
+            <span className="text-[var(--am-text)]">{t.agent_arch_dashboard_title}</span> — {t.agent_arch_dashboard_desc}
           </div>
           <div>
-            <span className="text-fuchsia-300">{t.agent_arch_agents_title}</span> — {t.agent_arch_agents_desc} <code className="text-yellow-300">python run.py</code>.
+            <span className="text-[var(--am-text)]">{t.agent_arch_agents_title}</span> — {t.agent_arch_agents_desc} <code className="text-[var(--am-coral)]">python run.py</code>.
           </div>
           {!anyOnline && (
-            <div className="mt-2 text-yellow-400 border border-yellow-400/20 rounded px-2 py-1">
+            <div className="mt-2 text-[var(--am-negative)] border border-[var(--am-negative-b)] rounded px-2 py-1">
               {t.agent_arch_none} <code>python run.py</code> {t.agent_arch_none_suffix}
             </div>
           )}
@@ -3632,29 +3632,29 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {agents.map((agent) => (
-          <div key={agent.name} className={`glass-card p-4 space-y-2 ${
-            agent.status === "alive" ? "border-green-400/20" :
-            agent.status === "stale" ? "border-yellow-400/20" : "border-red-400/20"
-          }`}>
+          <div key={agent.name} className="am-surface p-4 space-y-2" style={{
+            borderColor: agent.status === "alive" ? "var(--am-positive-b)" :
+              agent.status === "stale" ? "var(--am-line-2)" : "var(--am-negative-b)"
+          }}>
             <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-white font-mono">{agent.name}</span>
+              <span className="font-bold text-sm text-[var(--am-text)] font-mono">{agent.name}</span>
               <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${
-                  agent.status === "alive" ? "bg-green-400 animate-pulse" :
-                  agent.status === "stale" ? "bg-yellow-400" : "bg-red-400"
-                }`} />
-                <span className={`text-xs font-mono ${
-                  agent.status === "alive" ? "text-green-400" :
-                  agent.status === "stale" ? "text-yellow-400" : "text-red-400"
-                }`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${agent.status === "alive" ? "animate-pulse" : ""}`} style={{
+                  background: agent.status === "alive" ? "var(--am-positive)" :
+                    agent.status === "stale" ? "var(--am-muted-2)" : "var(--am-negative)"
+                }} />
+                <span className="text-xs font-mono" style={{
+                  color: agent.status === "alive" ? "var(--am-positive)" :
+                    agent.status === "stale" ? "var(--am-muted-2)" : "var(--am-negative)"
+                }}>
                   {agent.status.toUpperCase()}
                 </span>
               </div>
             </div>
-            <p className="text-[11px] text-gray-500 font-mono leading-relaxed">
+            <p className="text-[11px] text-[var(--am-muted-2)] font-mono leading-relaxed">
               {AGENT_ROLES[agent.name] ?? "Multi-agent system component"}
             </p>
-            <div className="text-[10px] text-gray-600 font-mono">
+            <div className="text-[10px] text-[var(--am-muted-2)] font-mono">
               {agent.last_seen ? `${t.agent_last_seen}: ${timeAgo(agent.last_seen)}` : t.agent_no_heartbeat}
               {agent.age_seconds != null && ` (${agent.age_seconds}s ago)`}
             </div>
@@ -3662,37 +3662,34 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
         ))}
       </div>
 
-      <div className="glass-card p-4">
-        <h3 className="text-xs font-mono text-cyan-400/70 uppercase tracking-wider mb-3">Pipeline Flow · 16 Agents</h3>
-        <div className="text-[10px] text-gray-500 font-mono mb-1 uppercase tracking-wider">⚽ Football</div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400">
+      <div className="am-surface p-4">
+        <h3 className="text-xs font-mono text-[var(--am-coral)] uppercase tracking-wider mb-3">Pipeline Flow · 16 Agents</h3>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider">⚽ Football</div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "DataCollector", "→", "ModelAgent", "→", "ContextService", "→",
             "AnalystAgent", "→", "StrategistAgent", "→", "RiskManagerAgent", "→", "TraderAgent", "→", "ResultSettlement",
           ].map((item, i) => (
             <span key={i} className={
-              item === "→" ? "text-gray-600" :
-              item === "ContextService" ? "text-green-300" :
-              item === "ResultSettlement" ? "text-emerald-400" :
-              "text-cyan-300"
+              item === "→" ? "text-[var(--am-muted-2)]" : "text-[var(--am-text)]"
             }>{item}</span>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400 mt-1">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)] mt-1">
           {["AHCollectorAgent", "→", "AH Odds", "·", "ResearchAgent", "→", "AI Summaries", "·", "MonitorAgent", "→", "Alerts + PSI"].map((item, i) => (
-            <span key={i} className={["→", "·"].includes(item) ? "text-gray-600" : "text-fuchsia-300"}>{item}</span>
+            <span key={i} className={["→", "·"].includes(item) ? "text-[var(--am-muted-2)]" : "text-[var(--am-text)]"}>{item}</span>
           ))}
         </div>
-        <div className="text-[10px] text-gray-500 font-mono mb-1 mt-3 uppercase tracking-wider">🎾 Tennis</div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-gray-400">
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider">🎾 Tennis</div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "TennisDataCollector", "→", "TennisModel", "→", "TennisAnalyst", "→",
             "TennisRiskManager", "→", "TennisTrader", "→", "TennisSettlement",
           ].map((item, i) => (
-            <span key={i} className={item === "→" ? "text-gray-600" : "text-amber-300"}>{item}</span>
+            <span key={i} className={item === "→" ? "text-[var(--am-muted-2)]" : "text-[var(--am-text)]"}>{item}</span>
           ))}
         </div>
-        <div className="mt-3 text-[10px] text-gray-600 font-mono">
+        <div className="mt-3 text-[10px] text-[var(--am-muted-2)] font-mono">
           ContextService v5.0: LeagueStrengthAnalyzer · LeagueOddsProfiler · LeaguePredictabilityTracker · MatchTypeClassifier · CompetitionTypeFactors
         </div>
       </div>

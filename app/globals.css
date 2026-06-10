@@ -42,6 +42,7 @@
   /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
   --am-coral-dim:  rgba(255,106,94,0.13);
   --am-coral-b:    rgba(255,106,94,0.34);
+  --am-coral-ink:  #1A0F0D;   /* testo scuro leggibile su fill coral */
 
   /* Legacy semantic names kept as internal aliases (do not reference --am-green
      elsewhere; --green legacy alias now points to coral). */
@@ -123,6 +124,7 @@
 
   --am-coral-dim:  rgba(216,57,47,0.08);
   --am-coral-b:    rgba(216,57,47,0.30);
+  --am-coral-ink:  #FFFFFF;   /* testo chiaro leggibile su fill coral (light) */
 
   --am-wash:       rgba(229,72,77,0.07);
   --am-glow:       rgba(229,72,77,0.12);
