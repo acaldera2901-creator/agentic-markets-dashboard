@@ -4441,35 +4441,36 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     : null;
 
   const medalColors = [
-    "from-amber-400 to-yellow-500 border-amber-400/40",
-    "from-slate-300 to-slate-400 border-slate-300/40",
-    "from-amber-700 to-amber-800 border-amber-700/40",
+    "from-[var(--am-coral)] to-[var(--am-coral-2)]",
+    "from-[var(--am-panel-3)] to-[var(--am-panel-2)]",
+    "from-[var(--am-panel-2)] to-[var(--am-inset)]",
   ];
+  const medalBorder = ["var(--am-coral-b)", "var(--am-line-2)", "var(--am-line)"];
 
   return (
     <div className="space-y-6 p-4">
       {/* Header */}
       <div className="space-y-1">
         <p className="eyebrow">{copy.eyebrow}</p>
-        <h2 className="text-xl font-bold text-white">{copy.title}</h2>
-        <p className="text-xs font-mono text-gray-500 max-w-lg">{copy.subtitle}</p>
+        <h2 className="text-xl font-bold text-[var(--am-text)]">{copy.title}</h2>
+        <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{copy.subtitle}</p>
       </div>
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="glass-card p-4 text-center">
-          <div className="text-2xl font-black text-green-400 font-mono">{systemWins}</div>
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
+        <div className="am-surface p-4 text-center">
+          <div className="text-2xl font-black text-[var(--am-positive)] font-mono">{systemWins}</div>
+          <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
         </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-2xl font-black text-cyan-400 font-mono">{systemWins * 10}</div>
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
+        <div className="am-surface p-4 text-center">
+          <div className="text-2xl font-black text-[var(--am-coral)] font-mono">{systemWins * 10}</div>
+          <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
         </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-2xl font-black font-mono text-cyan-400">
+        <div className="am-surface p-4 text-center">
+          <div className="text-2xl font-black font-mono text-[var(--am-positive)]">
             {systemHitRate}%
           </div>
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">{copy.systemHitRate}</div>
+          <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemHitRate}</div>
         </div>
       </div>
 
@@ -4478,34 +4479,34 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
         <div className="space-y-2">
           <p className="eyebrow">{lang === "it" ? "Hall of Fame" : "Hall of Fame"}</p>
           <div className="grid grid-cols-2 gap-3">
-            <div className="glass-card p-4 space-y-1">
-              <div className="text-[10px] font-mono text-yellow-400/70 uppercase tracking-wider">
+            <div className="am-surface p-4 space-y-1">
+              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
                 {lang === "it" ? "🏆 Top hit rate" : "🏆 Top hit rate"}
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
                 return top ? (
                   <>
-                    <div className="text-sm font-bold text-white truncate">{top.name}</div>
-                    <div className="text-lg font-black font-mono text-green-400">
+                    <div className="text-sm font-bold text-[var(--am-text)] truncate">{top.name}</div>
+                    <div className="text-lg font-black font-mono text-[var(--am-positive)]">
                       {top.hit_rate}%
                     </div>
-                    <div className="text-[10px] font-mono text-gray-500">{top.bets_won}W / {top.bets_total}</div>
+                    <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{top.bets_won}W / {top.bets_total}</div>
                   </>
                 ) : null;
               })()}
             </div>
-            <div className="glass-card p-4 space-y-1">
-              <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-wider">
+            <div className="am-surface p-4 space-y-1">
+              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
                 {lang === "it" ? "🔥 Più attivo" : "🔥 Most active"}
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
                 return top ? (
                   <>
-                    <div className="text-sm font-bold text-white truncate">{top.name}</div>
-                    <div className="text-lg font-black font-mono text-cyan-400">{top.bets_total}</div>
-                    <div className="text-[10px] font-mono text-gray-500">{lang === "it" ? "scommesse totali" : "total bets"}</div>
+                    <div className="text-sm font-bold text-[var(--am-text)] truncate">{top.name}</div>
+                    <div className="text-lg font-black font-mono text-[var(--am-coral)]">{top.bets_total}</div>
+                    <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{lang === "it" ? "scommesse totali" : "total bets"}</div>
                   </>
                 ) : null;
               })()}
@@ -4515,20 +4516,20 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       )}
 
       {loading ? (
-        <div className="text-xs font-mono text-gray-500 animate-pulse py-8 text-center">{copy.loading}</div>
+        <div className="text-xs font-mono text-[var(--am-muted-2)] animate-pulse py-8 text-center">{copy.loading}</div>
       ) : entries.length === 0 ? (
-        <div className="text-xs font-mono text-gray-500 py-8 text-center">{copy.noData}</div>
+        <div className="text-xs font-mono text-[var(--am-muted-2)] py-8 text-center">{copy.noData}</div>
       ) : (
         <>
           {/* Podium */}
           {podium.length > 0 && (
             <div className="grid grid-cols-3 gap-3">
               {podium.map((e, i) => (
-                <div key={e.rank} className={`glass-card p-4 text-center space-y-2 border bg-gradient-to-b ${medalColors[i]}`}>
+                <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={{ borderColor: medalBorder[i] }}>
                   <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
-                  <div className="text-sm font-bold text-white truncate">{e.name}</div>
-                  <div className="text-xl font-black font-mono text-white">{e.points} pt</div>
-                  <div className="text-[10px] font-mono text-white/60">{e.bets_won}W · {e.hit_rate}%</div>
+                  <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
+                  <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
+                  <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-70" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
                 </div>
               ))}
             </div>
@@ -4536,10 +4537,10 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
 
           {/* Full table */}
           {rest.length > 0 && (
-            <div className="glass-card overflow-hidden">
+            <div className="am-surface overflow-hidden">
               <table className="w-full text-xs font-mono">
                 <thead>
-                  <tr className="border-b border-white/5 text-gray-500 uppercase tracking-wider">
+                  <tr className="border-b border-[var(--am-line)] text-[var(--am-muted-2)] uppercase tracking-wider">
                     <th className="px-4 py-3 text-left">{copy.rank}</th>
                     <th className="px-4 py-3 text-left">{copy.player}</th>
                     <th className="px-4 py-3 text-right">{copy.points}</th>
@@ -4551,17 +4552,18 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                 <tbody>
                   {rest.map((e) => (
                     <tr key={e.rank}
-                      className={`border-b border-white/5 hover:bg-white/3 transition-colors ${yourEntry?.rank === e.rank ? "bg-green-400/5 border-green-400/20" : ""}`}
+                      className="border-b border-[var(--am-line)] transition-colors"
+                      style={yourEntry?.rank === e.rank ? { background: "var(--am-coral-dim)", borderColor: "var(--am-coral-b)" } : undefined}
                     >
-                      <td className="px-4 py-3 text-gray-500">{e.rank}</td>
-                      <td className="px-4 py-3 text-white font-semibold">
+                      <td className="px-4 py-3 text-[var(--am-muted-2)]">{e.rank}</td>
+                      <td className="px-4 py-3 text-[var(--am-text)] font-semibold">
                         {e.name}
-                        {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-green-400 border border-green-400/40 px-1 py-0.5 rounded">YOU</span>}
+                        {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-[var(--am-coral)] border border-[var(--am-coral-b)] px-1 py-0.5 rounded">YOU</span>}
                       </td>
-                      <td className="px-4 py-3 text-right text-green-400 font-bold">{e.points}</td>
-                      <td className="px-4 py-3 text-right text-gray-400">{e.bets_won}/{e.bets_total}</td>
-                      <td className="px-4 py-3 text-right text-cyan-400">{e.hit_rate}%</td>
-                      <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell capitalize">{e.sport}</td>
+                      <td className="px-4 py-3 text-right text-[var(--am-positive)] font-bold">{e.points}</td>
+                      <td className="px-4 py-3 text-right text-[var(--am-muted)]">{e.bets_won}/{e.bets_total}</td>
+                      <td className="px-4 py-3 text-right text-[var(--am-positive)]">{e.hit_rate}%</td>
+                      <td className="px-4 py-3 text-right text-[var(--am-muted-2)] hidden md:table-cell capitalize">{e.sport}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -4572,20 +4574,20 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       )}
 
       {/* Your rank / opt-in CTA */}
-      <div className="glass-card p-5 space-y-2">
+      <div className="am-surface p-5 space-y-2">
         <p className="eyebrow">{copy.yourRank}</p>
         {isOptedIn && yourEntry ? (
           <div className="flex items-center gap-4">
-            <div className="text-3xl font-black font-mono text-green-400">#{yourEntry.rank}</div>
+            <div className="text-3xl font-black font-mono text-[var(--am-coral)]">#{yourEntry.rank}</div>
             <div>
-              <div className="text-sm font-bold text-white">{yourEntry.name}</div>
-              <div className="text-xs font-mono text-gray-500">
+              <div className="text-sm font-bold text-[var(--am-text)]">{yourEntry.name}</div>
+              <div className="text-xs font-mono text-[var(--am-muted-2)]">
                 {yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}
               </div>
             </div>
           </div>
         ) : (
-          <p className="text-xs font-mono text-gray-500">{copy.notOptedIn}</p>
+          <p className="text-xs font-mono text-[var(--am-muted-2)]">{copy.notOptedIn}</p>
         )}
       </div>
     </div>
