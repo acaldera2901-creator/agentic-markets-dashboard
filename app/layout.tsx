@@ -31,6 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="antialiased">
+        {/* Grana sub-percettiva: texture = segnale human-made (vedi .am-grain in
+            globals.css). Fissa, dietro al contenuto (z-index:-1), non interattiva. */}
+        <div className="am-grain" aria-hidden="true" />
         {children}
       </body>
     </html>
