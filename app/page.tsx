@@ -2386,20 +2386,8 @@ function SettingsTab({
     );
   }
 
-  const notifications = draft.notifications ?? defaultNotifications();
   const settingsTimezone = draft.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const sportPrefs = draft.sportPreferences ?? ["football", "tennis"];
   const leaderboard = draft.leaderboardOptIn ?? false;
-
-  const toggleSport = (sport: string) => {
-    const current = draft.sportPreferences ?? ["football", "tennis"];
-    const next = current.includes(sport) ? current.filter((s) => s !== sport) : [...current, sport];
-    setDraft({ ...draft, sportPreferences: next });
-  };
-
-  const SPORTS = lang === "it"
-    ? [["football", "⚽ Football"], ["tennis", "🎾 Tennis"], ["basketball", "🏀 Basketball"], ["other", "Altri sport"]]
-    : [["football", "⚽ Football"], ["tennis", "🎾 Tennis"], ["basketball", "🏀 Basketball"], ["other", "Other sports"]];
 
   const copy = lang === "it" ? {
     profile: "Profilo",
@@ -2443,10 +2431,6 @@ function SettingsTab({
     leaderboardOff: "Opted out",
   };
 
-  const updateNotification = (key: keyof NonNullable<ClientProfile["notifications"]>) => {
-    setDraft({ ...draft, notifications: { ...notifications, [key]: !notifications[key] } });
-  };
-
   return (
     <div className="settings-view">
       <section className="settings-panel">
@@ -2481,50 +2465,6 @@ function SettingsTab({
               {TIMEZONE_OPTIONS.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
             </select>
           </label>
-        </div>
-      </section>
-
-      <section className="settings-panel">
-        <div className="settings-panel-head">
-          <div>
-            <p className="eyebrow">{copy.notifications}</p>
-            <h3>{lang === "it" ? "Canali e trigger" : "Channels and triggers"}</h3>
-          </div>
-          <span>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</span>
-        </div>
-        <div className="settings-notification-list">
-          {([
-            ["valueBets", copy.valueBets],
-            ["dailyReport", copy.dailyReport],
-            ["paymentUpdates", copy.paymentUpdates],
-            ["securityAlerts", copy.securityAlerts],
-          ] as [keyof NonNullable<ClientProfile["notifications"]>, string][]).map(([key, label]) => (
-            <button key={key} type="button" className={notifications[key] ? "is-on" : ""} onClick={() => updateNotification(key)}>
-              <span>{label}</span>
-              <strong>{notifications[key] ? copy.enabled : copy.disabled}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="settings-panel">
-        <div className="settings-panel-head">
-          <div>
-            <p className="eyebrow">{copy.sportPrefs}</p>
-            <h3>{copy.sportPrefsDesc}</h3>
-          </div>
-          <span>{sportPrefs.length}</span>
-        </div>
-        <div className="settings-notification-list">
-          {SPORTS.map(([key, label]) => (
-            <button key={key} type="button"
-              className={sportPrefs.includes(key) ? "is-on" : ""}
-              onClick={() => toggleSport(key)}
-            >
-              <span>{label}</span>
-              <strong>{sportPrefs.includes(key) ? copy.enabled : copy.disabled}</strong>
-            </button>
-          ))}
         </div>
       </section>
 
