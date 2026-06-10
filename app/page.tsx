@@ -4659,71 +4659,74 @@ function HistoryTab({ history, stats, loading }: {
       </div>
 
       {/* Filters: sport → result → competition (derived from selected sport) */}
-      <div className="space-y-2">
-        <div className="flex gap-1 flex-wrap">
+      <div className="am-filters">
+        <div className="am-seg" aria-label="Sport filter">
           {["all", ...sports].map((s) => (
-            <button key={s} onClick={() => { setSportFilter(s); setCompetitionFilter("all"); }}
-              className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-                sportFilter === s ? "border-cyan-400 text-cyan-300 bg-cyan-400/10" : "border-white/10 text-gray-400 hover:border-cyan-400/40"
-              }`}>
-              {s === "all" ? (lang === "it" ? "Tutti gli sport" : "All sports") : `${SPORT_ICONS[s] ?? ""} ${s}`}
+            <button key={s} className={sportFilter === s ? "on" : ""}
+              onClick={() => { setSportFilter(s); setCompetitionFilter("all"); }}>
+              {s === "all"
+                ? (lang === "it" ? "Tutti gli sport" : "All sports")
+                : (<>
+                    {s === "football"
+                      ? <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>
+                      : s === "tennis"
+                        ? <svg className="ic" aria-hidden="true"><use href="#g-tball" /></svg>
+                        : null}
+                    {s}
+                  </>)}
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-1 flex-wrap">
-            {[
-              { key: "all",     label: t.hist_filter_all },
-              { key: "won",     label: t.hist_filter_won },
-              { key: "lost",    label: t.hist_filter_lost },
-              { key: "void",    label: "Void" },
-              { key: "pending", label: t.hist_legend_pending },
-            ].map((f) => {
-              const n = countByResult(f.key);
-              return (
-                <button key={f.key} onClick={() => setResultFilter(f.key)} disabled={n === 0}
-                  className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-                    n === 0 ? "border-white/5 text-gray-700 cursor-not-allowed"
-                    : resultFilter === f.key ? "border-cyan-400 text-cyan-300 bg-cyan-400/10"
-                    : "border-white/10 text-gray-400 hover:border-cyan-400/40"
-                  }`}>
-                  {f.label} ({n})
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-1 flex-wrap">
+
+        <div className="am-seg" aria-label="Result filter">
+          {[
+            { key: "all",     label: t.hist_filter_all },
+            { key: "won",     label: t.hist_filter_won },
+            { key: "lost",    label: t.hist_filter_lost },
+            { key: "void",    label: "Void" },
+            { key: "pending", label: t.hist_legend_pending },
+          ].map((f) => {
+            const n = countByResult(f.key);
+            return (
+              <button key={f.key} className={resultFilter === f.key ? "on" : ""}
+                onClick={() => setResultFilter(f.key)} disabled={n === 0}>
+                {f.label} <span className="ct">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <label className="am-mini-field">
+          <span>{lang === "it" ? "Competizione" : "Competition"}</span>
+          <select value={effectiveCompetition} onChange={(e) => setCompetitionFilter(e.target.value)}>
             {["all", ...competitions].map((c) => {
               const n = countByCompetition(c);
               return (
-                <button key={c} onClick={() => setCompetitionFilter(c)} disabled={n === 0}
-                  className={`px-3 py-1 rounded-full border text-xs font-mono transition ${
-                    n === 0 ? "border-white/5 text-gray-700 cursor-not-allowed"
-                    : effectiveCompetition === c ? "border-fuchsia-400 text-fuchsia-300 bg-fuchsia-400/10"
-                    : "border-white/10 text-gray-400 hover:border-fuchsia-400/40"
-                  }`}>
-                  {c === "all" ? (lang === "it" ? "Tutte le competizioni" : "All competitions") : `${c} (${n})`}
-                </button>
+                <option key={c} value={c}>
+                  {c === "all"
+                    ? `${lang === "it" ? "Tutte le competizioni" : "All competitions"} (${n})`
+                    : `${c} (${n})`}
+                </option>
               );
             })}
-          </div>
-        </div>
+          </select>
+        </label>
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-[10px] font-mono text-gray-500">
-        <span><span className="inline-block w-3 h-3 rounded-full bg-green-400/50 mr-1 align-middle"></span>{t.hist_legend_won}</span>
-        <span><span className="inline-block w-3 h-3 rounded-full bg-red-400/50 mr-1 align-middle"></span>{t.hist_legend_lost}</span>
-        <span><span className="inline-block w-3 h-3 rounded-full bg-yellow-400/50 mr-1 align-middle"></span>{t.hist_legend_pending}</span>
-        <span><span className="inline-block w-3 h-3 rounded-full bg-gray-600 mr-1 align-middle"></span>Void</span>
+      <div className="flex flex-wrap gap-4 text-[10px] font-mono" style={{ color: "var(--am-muted-2)" }}>
+        <span><span className="inline-block w-3 h-3 rounded-full mr-1 align-middle" style={{ background: "var(--am-positive)" }}></span>{t.hist_legend_won}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full mr-1 align-middle" style={{ background: "var(--am-negative)" }}></span>{t.hist_legend_lost}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full mr-1 align-middle" style={{ background: "var(--am-amber)" }}></span>{t.hist_legend_pending}</span>
+        <span><span className="inline-block w-3 h-3 rounded-full mr-1 align-middle" style={{ background: "var(--am-muted-2)" }}></span>Void</span>
       </div>
 
       {loading ? (
-        <div className="glass-card p-12 text-center text-gray-400 font-mono">
+        <div className="am-surface p-12 text-center font-mono" style={{ color: "var(--am-muted)" }}>
           <div className="animate-pulse">{t.hist_loading}</div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass-card p-8 text-center text-gray-400 font-mono">
+        <div className="am-surface p-8 text-center font-mono" style={{ color: "var(--am-muted)" }}>
           {history.length === 0 ? t.hist_empty : t.no_match_filters}
         </div>
       ) : (
