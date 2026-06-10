@@ -240,7 +240,10 @@ function normTeam(s?: string | null) {
   return (s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 function teamPairKey(a?: string | null, b?: string | null) {
-  return [normTeam(a), normTeam(b)].sort().join("|");
+  // Canonicalize before normalizing: the live feed (ESPN displayName, e.g.
+  // "Cape Verde") and prediction rows ("Cabo Verde") spell some teams
+  // differently, so raw names never matched and the LIVE band stayed hidden.
+  return [normTeam(canonTeam(a)), normTeam(canonTeam(b))].sort().join("|");
 }
 
 const WC_WHY_LABELS: Record<WcLang, { show: string; hide: string; model: string }> = {
@@ -401,7 +404,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
               <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid", borderColor: p.edge_percent > 0 ? "var(--am-positive-b)" : "var(--am-line-2)", color: p.edge_percent > 0 ? "var(--am-positive)" : "var(--am-muted)" }}>
                 {p.edge_percent > 0 ? "+" : ""}{p.edge_percent.toFixed(1)}%
               </span>
-            ) : pick && probs ? (
+            ) : pick && probs && ["home", "draw", "away"].includes(pick.toLowerCase()) ? (
               <span style={{ padding: "0.1rem 0.4rem", borderRadius: "0.35rem", border: "1px solid var(--am-line-2)", color: "var(--am-muted-2)" }}>
                 {pct(probs[pick.toLowerCase() as "home" | "draw" | "away"])}
               </span>

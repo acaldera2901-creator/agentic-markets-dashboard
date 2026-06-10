@@ -1272,11 +1272,13 @@ button:disabled {
   align-content: center;
   justify-items: start;
   gap: 10px;
-  border: 1px solid rgba(255,107,107,0.28);
+  /* Theme-aware panel: a hardcoded dark bg made h3/span (--text/--muted, dark
+     in light mode) unreadable on the light theme — near-black on near-black. */
+  border: 1px solid var(--am-coral-b);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse 280px 160px at 80% 0%, rgba(255,107,107,0.12), transparent 70%),
-    rgba(13,16,32,0.94);
+    radial-gradient(ellipse 280px 160px at 80% 0%, var(--am-coral-dim), transparent 70%),
+    var(--am-panel-2);
   box-shadow: 0 24px 80px rgba(0,0,0,0.36);
   z-index: 4;
 }

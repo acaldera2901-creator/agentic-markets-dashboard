@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
+import Link from "next/link";
 import {
   PUBLIC_PAID_PLAN,
   type PublicPlanKey,
@@ -8,6 +9,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, type BestBetCandidate } from "@/lib/best-bets";
+import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "./components/sport-glyphs";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
@@ -734,6 +736,9 @@ interface PredictionEnrichment {
   // every unlocked tier. below_floor=true -> no clear favourite: the card drops
   // the pick direction + edge/value badge but keeps the probabilities and why.
   surface?: { below_floor: boolean; floor: number };
+  // Server-side kickoff provenance (not premium-stripped): true when the time
+  // comes from a real source, so fmtKickoff can show a genuine 00:00 UTC slot.
+  time_confirmed?: boolean;
 }
 
 interface Prediction {
@@ -1051,11 +1056,13 @@ interface TennisBetSummary {
 
 function pct(v: number) { return `${Math.round(v * 100)}%`; }
 
-function fmtKickoff(utc: string, lang: Lang = "it", tz = "Europe/Rome") {
+function fmtKickoff(utc: string, lang: Lang = "it", tz = "Europe/Rome", confirmed?: boolean) {
   const d = new Date(utc);
   const locale = lang === "en" ? "en-GB" : "it-IT";
-  // Hide time when midnight UTC — kickoff not yet confirmed by any source
-  const timeUnknown = d.getUTCHours() === 0 && d.getUTCMinutes() === 0;
+  // Hide time when midnight UTC (the football-data "unconfirmed" placeholder),
+  // UNLESS the server marked it confirmed — 00:00 UTC is a real evening slot
+  // at the 2026 NA World Cup (20:00 ET).
+  const timeUnknown = confirmed !== true && d.getUTCHours() === 0 && d.getUTCMinutes() === 0;
   if (timeUnknown) {
     return d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz });
   }
@@ -1443,9 +1450,9 @@ function SportsbookBoard({
                   <div>{lang === "it"
                     ? "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale — kickoff 11 giugno."
                     : "No football signals right now. The first signals arrive when World Cup markets open — kickoff June 11."}</div>
-                  <a href="/world-cup" className="wc-back-link">{lang === "it"
+                  <Link href="/world-cup" className="wc-back-link">{lang === "it"
                     ? "Esplora l'hub Mondiali: gironi, calendario, convocazioni →"
-                    : "Explore the World Cup hub: groups, calendar, squads →"}</a>
+                    : "Explore the World Cup hub: groups, calendar, squads →"}</Link>
                 </div>
               )}
             </section>
@@ -2638,7 +2645,8 @@ function ProfilePanel({
   const lang = useLang();
   // Days remaining on a paid subscription (payments GAP2). Hidden for free/admin.
   const daysLeft = profile.planExpiresAt && profileHasAccess(profile) && profile.plan !== "admin_full"
-    ? Math.ceil((new Date(profile.planExpiresAt).getTime() - Date.now()) / 86_400_000)
+    ? // eslint-disable-next-line react-hooks/purity -- day-granularity countdown: Date.now() drift within a render pass cannot change the ceil'd result; panel is client-only (post-login).
+      Math.ceil((new Date(profile.planExpiresAt).getTime() - Date.now()) / 86_400_000)
     : null;
   return (
     <section className="profile-panel">
@@ -2885,6 +2893,13 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
     out.push(it
       ? `C'è valore: il modello batte la quota di mercato di +${((m.edge ?? 0) * 100).toFixed(1)}%.`
       : `There's value: the model beats the market price by +${((m.edge ?? 0) * 100).toFixed(1)}%.`);
+  } else if (m.odds_p1 != null || m.odds_p2 != null) {
+    // Market odds exist but no best-bet (edge below threshold / odds floor /
+    // outside trading window) — mirror the football copy instead of claiming
+    // "no market price" while real odds are shown on the same card.
+    out.push(it
+      ? `Il mercato prezza già correttamente questo match: nessun edge sufficiente da dichiarare.`
+      : `The market already prices this match correctly — no edge worth claiming.`);
   } else {
     out.push(it
       ? `Niente quota di mercato qui, quindi nessun edge dichiarato: è un'inclinazione, non una scommessa.`
@@ -2966,7 +2981,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         {scStatus === "live" || (!isPremium && !isFutureMarket(p.kickoff) && !isFinished && !hasScore) ? (
           <span className="when live"><span className="pulse" />{scStatus === "live" && live?.minute != null ? `${live.minute}'` : "LIVE"}</span>
         ) : (
-          <span className="when">{fmtKickoff(p.kickoff, lang, tz)}</span>
+          <span className="when">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
         )}
       </div>
 
@@ -2983,7 +2998,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         ) : (
           <div className="scorebar">
             <span className="stt">{isFutureMarket(p.kickoff) ? (lang === "it" ? "Kickoff" : "Kickoff") : (lang === "it" ? "Programmato" : "Scheduled")}</span>
-            <span className="sc sched">{fmtKickoff(p.kickoff, lang, tz)}</span>
+            <span className="sc sched">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
           </div>
         )}
       </div>
@@ -3287,6 +3302,9 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     const odds = isP1 ? m.odds_p1 : m.odds_p2;
     const probability = isP1 ? m.p1 : m.p2;
     const name = isP1 ? m.player1 : m.player2;
+    // Signal-only rows (and locked projections) carry null odds at runtime
+    // despite the type; mirror the football guard or SlipSelection.odds lies.
+    if (odds == null || !Number.isFinite(probability)) return;
     const edgeForSel = m.best_selection === player ? m.edge : null;
     const confidence = confidenceFromEdge(edgeForSel, probability);
     onSelect({
@@ -5017,7 +5035,7 @@ function FeaturedEdge({
   let pickName: string;
   let edgePts: number;
   let why: string;
-  let metrics: { dt: string; dd: React.ReactNode }[] = [];
+  const metrics: { dt: string; dd: React.ReactNode }[] = [];
 
   if (sport === "football" && topFootball) {
     const p = topFootball;
@@ -5231,6 +5249,7 @@ function CookieBanner() {
   const [visible, setVisible] = useState(false);
   const lang = useLang();
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from localStorage: a lazy initializer would mismatch the server-rendered (hidden) markup at hydration.
     try { if (!localStorage.getItem("gdpr_consent")) setVisible(true); } catch { /* SSR/no-storage */ }
   }, []);
   if (!visible) return null;
@@ -5292,6 +5311,7 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync with the pre-paint data-theme script: a lazy initializer would mismatch the server-rendered markup at hydration.
     if (current === "light" || current === "dark") setTheme(current);
   }, []);
   const toggleTheme = () => {
@@ -5313,6 +5333,7 @@ export default function Dashboard() {
       const ref = (params.get("ref") ?? "").trim().toUpperCase().slice(0, 20);
       if (/^[A-Z0-9_-]{2,20}$/.test(ref)) {
         if (!window.localStorage.getItem("am_ref")) window.localStorage.setItem("am_ref", ref);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from the share-link URL params (?ref=/?mb=): runs once, paired with a localStorage write side effect.
         setMbRefCode(ref);
       }
       const mb = params.get("mb");
@@ -5445,6 +5466,9 @@ export default function Dashboard() {
 
   const saveClientProfile = (profile: ClientProfile) => {
     const normalizedProfile = { ...profile, email: profile.email.trim().toLowerCase() };
+    // Auth state changed: drop the shared /api/auth probe cache so the
+    // world-cup islands (who-wins) re-check access on their next mount.
+    resetAccessCache();
     setClientProfile(normalizedProfile);
     if (normalizedProfile.language && normalizedProfile.language !== uiLanguage) {
       setUiLanguage(normalizedProfile.language);
@@ -5542,6 +5566,7 @@ export default function Dashboard() {
   };
 
   const logoutClientProfile = () => {
+    resetAccessCache();
     setClientProfile(null);
     setSlipSelection(null);
     setTab("bets");
@@ -5865,10 +5890,10 @@ export default function Dashboard() {
               <span className="rail-sep" />
               <span className="rail-lab is-second">{uiLanguage === "it" ? "In evidenza" : "Featured"}</span>
               {/* Track B: World Cup hub is a route, not a tab */}
-              <a className="rail-item" href="/world-cup">
+              <Link className="rail-item" href="/world-cup">
                 <svg className="rail-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
                 <span className="rail-label">World Cup</span>
-              </a>
+              </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
                 <svg className="rail-ic" aria-hidden="true"><use href="#g-pick" /></svg>

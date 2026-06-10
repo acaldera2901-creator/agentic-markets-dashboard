@@ -86,9 +86,11 @@ const SLUG_TO_CANONICAL: Record<string, string> = {
 };
 
 // What to feed the wc_squads ILIKE lookup for a given /world-cup/[team] slug.
+// LIKE metacharacters from the URL are escaped: an unescaped %/_ would turn
+// arbitrary slugs (/world-cup/a%25) into wildcard matches on random teams.
 export function teamNeedleFromSlug(slug: string): string {
   const key = slug.toLowerCase();
-  return SLUG_TO_CANONICAL[key] || key.replace(/-/g, " ").trim();
+  return (SLUG_TO_CANONICAL[key] || key.replace(/-/g, " ").trim()).replace(/[\\%_]/g, "\\$&");
 }
 
 type EspnStandingsResponse = {
@@ -104,8 +106,10 @@ type EspnStandingsResponse = {
 };
 
 export async function fetchWcGroups(): Promise<WcGroup[]> {
-  const res = await fetch(ESPN_STANDINGS, { next: { revalidate: 300 } });
-  if (!res.ok) return [];
+  // fetch() throws on network/DNS errors (not just !ok): degrade to the same
+  // empty-state instead of 500-ing the whole /world-cup render or the build.
+  const res = await fetch(ESPN_STANDINGS, { next: { revalidate: 300 } }).catch(() => null);
+  if (!res || !res.ok) return [];
   const data = (await res.json()) as EspnStandingsResponse;
   const groups: WcGroup[] = [];
   for (const child of data.children || []) {
@@ -156,10 +160,10 @@ type EspnScoreboardResponse = {
 
 export async function fetchWcFixtures(): Promise<WcFixture[]> {
   const [res, groupMap] = await Promise.all([
-    fetch(ESPN_SCOREBOARD, { next: { revalidate: 300 } }),
+    fetch(ESPN_SCOREBOARD, { next: { revalidate: 300 } }).catch(() => null),
     fetchTeamGroupMap(),
   ]);
-  if (!res.ok) return [];
+  if (!res || !res.ok) return [];
   const data = (await res.json()) as EspnScoreboardResponse;
   const fixtures: WcFixture[] = [];
   for (const ev of data.events || []) {

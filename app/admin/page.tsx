@@ -172,7 +172,17 @@ export default function AdminPage() {
         router.replace("/admin/login");
         return;
       }
+      // A non-401 error response (rate limit, WAF) can still carry a JSON body
+      // without the Metrics shape — rendering it would crash the page.
+      if (!mRes.ok || !nRes.ok) {
+        setError("Failed to load data.");
+        return;
+      }
       const [m, n] = await Promise.all([mRes.json(), nRes.json()]);
+      if (!m?.overview) {
+        setError("Failed to load data.");
+        return;
+      }
       setMetrics(m);
       setNotifications(n.notifications ?? []);
       const pRes = await fetch("/api/admin/profiles", { cache: "no-store" });
@@ -242,12 +252,17 @@ export default function AdminPage() {
       return;
     }
     setActivationBusy(identifier);
-    await updateProfilePlan(pending, pending.requested_plan);
-    setActivationResult(`Profilo ${identifier} attivato come ${pending.requested_plan}.`);
+    // Only claim success if the PATCH really succeeded: a green banner over a
+    // failed activation leaves the client pending_payment while the admin
+    // believes the USDT payment was approved.
+    const ok = await updateProfilePlan(pending, pending.requested_plan);
+    setActivationResult(ok
+      ? `Profilo ${identifier} attivato come ${pending.requested_plan}.`
+      : `Attivazione di ${identifier} FALLITA — vedi sezione profili per il dettaglio.`);
     setActivationBusy(null);
   }
 
-  async function updateProfilePlan(profile: AdminProfile, plan: Plan) {
+  async function updateProfilePlan(profile: AdminProfile, plan: Plan): Promise<boolean> {
     setProfileBusy(profile.id);
     setProfileResult("");
     try {
@@ -259,16 +274,18 @@ export default function AdminPage() {
       const data = await res.json() as { error?: string; profile?: AdminProfile };
       if (res.status === 401) {
         router.replace("/admin/login");
-        return;
+        return false;
       }
       if (!res.ok) {
         setProfileResult(data.error ?? "Plan update failed.");
-        return;
+        return false;
       }
       setProfileResult(`${profile.identifier} aggiornato a ${data.profile?.plan ?? plan}.`);
       await fetchData();
+      return true;
     } catch {
       setProfileResult("Errore durante aggiornamento piano.");
+      return false;
     } finally {
       setProfileBusy(null);
     }

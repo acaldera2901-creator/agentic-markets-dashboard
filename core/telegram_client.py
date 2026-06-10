@@ -1,3 +1,4 @@
+import html
 import httpx
 import logging
 from datetime import datetime, timezone, timedelta
@@ -44,4 +45,6 @@ def match_header(data: dict) -> str:
         ko_str = ko.strftime("%d/%m %H:%M UTC")
     except Exception:
         ko_str = kickoff
-    return f"<b>{home} vs {away}</b>  [{league}]\n🕐 {ko_str}"
+    # Escape dynamic fragments: parse_mode=HTML rejects the whole message
+    # ("can't parse entities") on raw '&'/'<' — e.g. "Brighton & Hove Albion".
+    return f"<b>{html.escape(home)} vs {html.escape(away)}</b>  [{html.escape(league)}]\n🕐 {ko_str}"

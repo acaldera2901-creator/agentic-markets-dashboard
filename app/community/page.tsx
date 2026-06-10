@@ -67,6 +67,7 @@ export default function CommunityPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("agentic-lang");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from localStorage: a lazy initializer would mismatch the server-rendered ("it") markup at hydration.
     if (stored === "en") setLang("en");
   }, []);
 
@@ -104,6 +105,7 @@ export default function CommunityPage() {
             /?tab=match-builder lands on the default Bets tab because the tab is
             resolved only in a useState initializer at mount. A full load applies
             the ?tab= deep-link correctly. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional hard nav, see comment above */}
         <a
           href="/?tab=match-builder"
           className="text-xs font-mono px-4 py-2 rounded border transition-colors shrink-0"

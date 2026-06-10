@@ -115,7 +115,7 @@ Expected: "Success. No rows returned."
 
 Alternatively via CLI (requires IPv6):
 ```bash
-psql "postgresql://postgres:PswCaldera22.@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres" \
+psql "postgresql://postgres:<DB_PASSWORD_REDACTED_ROTATED_2026-06-10>@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres" \
   -f db/migrations/001_unified_predictions.sql
 ```
 

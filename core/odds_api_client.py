@@ -141,17 +141,27 @@ async def get_odds(league: str) -> List[Dict]:
     active = await get_active_sport_keys()
     if active is not None and sport_key not in active:
         return []
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"{BASE_URL}/sports/{sport_key}/odds",
-            params={
-                "apiKey": settings.ODDS_API_KEY,
-                "regions": "eu,uk",
-                "markets": "h2h",
-                "oddsFormat": "decimal",
-            },
-            timeout=15.0,
-        )
+    # Network errors must degrade to [] like every other failure here: an
+    # unhandled timeout aborts the collector's whole per-league cycle
+    # (agents/data_collector.py catches only at the league level).
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{BASE_URL}/sports/{sport_key}/odds",
+                params={
+                    "apiKey": settings.ODDS_API_KEY,
+                    "regions": "eu,uk",
+                    "markets": "h2h",
+                    "oddsFormat": "decimal",
+                },
+                timeout=15.0,
+            )
+    except httpx.HTTPError as e:
+        logger.warning(f"odds-api get_odds({league}) network error: {e}")
+        return []
+    if resp.status_code == 429:
+        logger.warning(f"odds-api get_odds({league}) rate-limited (429), skipping cycle")
+        return []
     if resp.status_code != 200:
         return []
     return [o for event in resp.json() if (o := _best_odds(event))]

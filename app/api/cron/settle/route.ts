@@ -96,8 +96,8 @@ export async function GET(req: NextRequest) {
              SET home_score = $1, away_score = $2, match_status = $3
            WHERE match_id = $4`,
           [m.homeGoals, m.awayGoals, m.status, m.id]
-        ).catch((e: unknown) => report.errors.push(`scores:${m.id}:${String(e)}`));
-        report.scores_updated += 1;
+        ).then(() => { report.scores_updated += 1; })
+          .catch((e: unknown) => report.errors.push(`scores:${m.id}:${String(e)}`));
       }
       if (m.status === "FINISHED" && m.homeGoals != null && m.awayGoals != null) {
         await settlePredictionLog(m.id, m.homeGoals, m.awayGoals);

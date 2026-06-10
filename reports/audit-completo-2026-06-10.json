@@ -1,0 +1,826 @@
+{
+  "summary": "Audit completo Agentic Markets: backend Python, API routes, frontend, sicurezza — con verifica adversariale dei finding",
+  "agentCount": 52,
+  "logs": [
+    "Finding confermati: 59 — scartati dalla verifica: 2"
+  ],
+  "result": {
+    "confirmed": [
+      {
+        "file": "lib/db.ts",
+        "line": 48,
+        "title": "dbQuery/dbExecute non usano query parametrizzate: SQL costruito per interpolazione di stringa verso exec_sql",
+        "severity": "high",
+        "description": "Tutte le route non usano placeholder reali: `dbQuery`/`dbExecute` chiamano l'RPC `exec_sql` passando una query GIA' interpolata da `interpolate()` (lib/db.ts:48-59). La sicurezza dipende interamente da un singolo regex che raddoppia gli apici (`replace(/'/g, \"''\")`). Funziona per il caso standard (standard_conforming_strings on), ma e' fragile e bypassa completamente la parametrizzazione del driver. Il rischio e' concreto perche' endpoint NON autenticati passano stringhe interamente controllate dall'attaccante dentro questo interpolatore: es. /api/track (event_type, session_id, language, plan, partner_id) e /api/match-builder. Un solo refactor errato (nuovo tipo di colonna, valore non-stringa non gestito, cambio di standard_conforming_strings, encoding multibyte) trasforma questo in SQL injection con privilegi service_role. Inoltre il branch `typeof number` fa `String(val)` senza validare NaN/Infinity, producendo SQL invalido silenziosamente.",
+        "suggested_fix": "Sostituire `exec_sql(interpolate(...))` con vere query parametrizzate lato Postgres (RPC che accetta `query` + array di `params` e usa EXECUTE ... USING, oppure passare a un client pg con placeholder $n nativi). In subordine immediato: validare il tipo di ogni param, rifiutare number non finiti, e centralizzare/test fuzzing dell'escaping. Trattare /api/track e gli altri input anonimi come hostili.",
+        "area": "api-routes",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "The described code pattern genuinely exists: lib/db.ts (and dashboard-web/lib/db.ts) build SQL via interpolate() and call the exec_sql RPC, with the only string-injection defense being replace(/'/g, \"''\"). exec_sql (docs/supabase_schema.sql:407) is SECURITY DEFINER and runs raw SQL via EXECUTE format('...(%s) t', query) with service_role, so dbQuery/dbExecute do bypass driver parameterization — a real hardening/fragility concern.\n\nHowever, the declared HIGH severity (concrete exploitable SQLi) is overstated and not supported by the code. Under the actual deployment (Supabase PostgreSQL, UTF-8 client encoding, standard_conforming_strings = on by default), doubling single quotes is a complete and correct escape for single-quoted string literals — there is no breakout, and the multibyte 0x5c trick does not apply on UTF-8. The cited endpoints confirm no live path: /api/track passes event_type/session_id/language/plan/partner_id/meta all as quoted string params (route lines 29-42), and /api/match-builder passes mb (sliced to 500) and JSON.stringified selections as quoted string params (lines 67-80). No attacker-controlled value is interpolated in an unquoted/numeric/identifier position. The NaN/Infinity sub-claim is unreachable via JSON input (JSON.parse never yields NaN/Infinity) and would at worst cause a failed query, not injection. The anon/PUBLIC RCE on exec_sql was already closed (migration 20260605170000); it is now service_role-only.\n\nVerdict: the factual pattern is real and worth hardening (use true parameterization / a typed query builder), but it is a low-severity defense-in-depth issue, not a presently-exploitable high-severity SQL injection. The reviewer even concedes it \"funziona per il caso standard.\" Downgraded high -> low."
+        }
+      },
+      {
+        "file": "app/api/history/route.ts",
+        "line": 22,
+        "title": "/api/history espone il pick (selection) e le quote dei bet settlati a utenti anonimi, violando la policy di gating",
+        "severity": "medium",
+        "description": "L'endpoint pubblico /api/history (nessun auth) restituisce `selection AS bet_selection` e `odds AS bet_odds` per tutti i bet settlati (won/lost/void) a chiunque, anonimi inclusi (righe 19-26, poi serializzate in `history`). La policy di accesso del progetto prevede che l'anonimo veda lo storico settlato con il PICK LOCKATO; infatti il percorso moderno /api/v2/history applica `projectPrediction` che mantiene `pick` gated anche sulle righe settlate, esponendo solo result/settled_at/final_score. Questo endpoint legacy (consumato da PublicOldBetsPanel in app/page.tsx:5653) bypassa quel gating e rivela le selezioni reali del modello su match passati, contraddicendo /api/v2/history. Incoerenza di prodotto e leak della parte gated (i pick sono il prodotto).",
+        "suggested_fix": "Allineare /api/history alla proiezione per-tier: per stato anonymous/free non includere `selection`/`odds`, oppure dismettere l'endpoint e far leggere a PublicOldBetsPanel /api/v2/history (che gia' gestisce il lock). In alternativa, decidere esplicitamente che i pick settlati sono pubblici e aggiornare anche /api/v2/history per coerenza.",
+        "area": "api-routes",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "CONFERMATO. app/api/history/route.ts (righe 19-26) non ha alcun controllo auth (nessun resolveAccessState; middleware.ts protegge solo /admin/*) e restituisce `selection AS bet_selection` e `odds AS bet_odds` per tutti i bet settlati (won/lost/void, LIMIT 100), serializzati in `history` riga 37 — raggiungibile da chiunque con un GET anonimo. La policy di gating è reale e codificata: lib/access-projection.ts esclude `pick` dai PUBLIC_FIELDS con commento esplicito \"The PICK itself remains gated below\" (result/settled_at pubblici, pick in REVEAL_FIELDS mai dato ad anonymous), e /api/v2/history (righe 61-71) proietta ogni riga settlata tramite projectPrediction mantenendo il pick lockato — decisione deliberata (commit d06cbe8 \"reveal settled outcomes + blur who-wins\") coerente con la policy 2026-06-09 (anonimo: storico settlato con pick lockato). Il leak è anche renderizzato: app/page.tsx:5654 fetcha /api/history e PublicOldBetsPanel (riga 1886) mostra `row.bet_selection` in chiaro nella homepage pre-login. Confutazioni tentate: (1) \"è intenzionale\" — la visibilità dello storico è intenzionale, ma l'esposizione del pick contraddice la decisione successiva e più specifica del layer di projection; notabile che f0544de ha sanitizzato proprio questa route rimuovendo P&L/ROI/stake ma ha lasciato selection/odds; (2) \"dati vuoti/stale\" — la route legge la tabella legacy `bets` (vecchia stagione), non verificabile il contenuto DB in questa verifica, ma il commento nel codice e il panel renderizzato indicano dati reali. Severity medium corretta: sfruttabile banalmente, leak del campo prodotto gated (pick+odds) per ~100 righe, ma solo dati storici settlati di stagione passata, nessun pick futuro, nessuna metrica monetaria, nessun PII."
+        }
+      },
+      {
+        "file": "app/api/track/route.ts",
+        "line": 29,
+        "title": "/api/track non autenticato e senza validazione: avvelenamento delle metriche admin (revenue/conversion) e scritture illimitate",
+        "severity": "medium",
+        "description": "POST /api/track e' completamente pubblico e inserisce in `events` campi arbitrari (event_type, plan, partner_id, value, meta) senza validazione ne' rate limiting (righe 6-42; gli errori sono pure inghiottiti con un finto 200 a riga 47). /api/admin/metrics aggrega proprio questa tabella: somma `value` come `total_revenue_eur` e conta gli eventi `conversion` (admin/metrics/route.ts:48-50, 114-115). Un attaccante puo' inviare {event_type:'conversion', value:999999} per gonfiare revenue/conversioni nel cruscotto admin, iniettare valori `plan` arbitrari nelle distribuzioni, e inserire righe illimitate (DoS/costo storage). Le decisioni di business lette dall'admin diventano falsificabili da chiunque.",
+        "suggested_fix": "Validare in allowlist `event_type`, ignorare/azzerare `value` per eventi non finanziari (la revenue reale deve derivare solo da /api/admin/activations, non da eventi client), limitare la dimensione di `meta`, e applicare rate limiting per IP/sessione. Considerare di non far mai contribuire eventi client-side ai totali finanziari dell'admin.",
+        "area": "api-routes",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confermato nel codice. /api/track (app/api/track/route.ts, identico a dashboard-web/app/api/track/route.ts via diff) e' un POST completamente pubblico: nessuna auth, origin check o rate limit. L'unica validazione e' la presenza di event_type (riga 19); plan/partner_id/value/meta vengono inseriti as-is in events (righe 29-42, parametrizzati = niente SQLi). La catch a riga 47 restituisce {ok:true} anche in errore. I middleware (root e dashboard-web) hanno matcher [\"/admin/:path*\"] e NON coprono /api/track.\n\nL'aggregazione admin e' reale: admin/metrics/route.ts righe 48-50 sommano value e contano gli eventi 'conversion' alimentando overview.total_conversions, overview.total_revenue_eur e l'intera sezione finance (total_revenue_eur, net_eur, righe 113-115). by_plan/by_country/by_language (42-44) aggregano campi arbitrari. Quindi POST {event_type:'conversion', value:999999, plan:'x'} gonfia direttamente quelle cifre. Exploit raggiungibile in pratica senza alcuna credenziale.\n\nSfruttabilita' confermata ma impatto contenuto: (1) i dati finanziari/contabili autoritativi NON derivano da events — clients e finance.monthly_burn vengono da profiles e da costi statici (OPERATING_COSTS); solo le vanity metric total_revenue/total_conversions/distribuzioni sono avvelenabili. (2) Il client reale (page.tsx:5627) registra conversioni senza value, quindi il revenue legittimo e' gia' ~0: si tratta di iniezione su una metrica non usata per decisioni di pagamento reali. (3) Nessun leak di PII, nessuna SQLi. (4) L'admin panel e' un cruscotto interno mono-utente. Il DoS/costo storage da scritture illimitate e' plausibile ma secondario. La severity medium dichiarata e' corretta (al limite difendibile anche come low se isolata), quindi confermo medium."
+        }
+      },
+      {
+        "file": "app/api/founder/grant/route.ts",
+        "line": 12,
+        "title": "/api/founder/grant: nessun throttle/rate-limit sul brute-force della chiave che concede admin_full",
+        "severity": "medium",
+        "description": "POST /api/founder/grant e' pubblico per design e, su FOUNDER_ACCESS_KEY corretta, crea una sessione admin_full (il privilegio piu' alto) tramite cookie firmato (righe 12-46). Il confronto e' constant-time e fail-closed, ma a differenza di /api/admin/login (che inserisce un delay di 500ms sul fallimento, admin/login/route.ts:14-16) qui non c'e' alcun delay, rate limiting o lockout. Un attaccante puo' tentare la chiave ad alta frequenza; se FOUNDER_ACCESS_KEY non e' ad alta entropia, ottiene accesso completo ai dati e all'impersonazione.",
+        "suggested_fix": "Aggiungere rate limiting/lockout per IP e un delay costante sul fallimento (come admin/login), e imporre una chiave ad alta entropia. Loggare i tentativi falliti per alerting.",
+        "area": "api-routes",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "CONFIRMED in code, but severity overstated. The live source at /Users/calde/Desktop/agentic-markets/app/api/founder/grant/route.ts (lines 12-47) matches the claim exactly: a public POST endpoint that, on a correct FOUNDER_ACCESS_KEY, upserts the admin profile with plan=admin_full and sets a signed am_session cookie (lines 31-46). The comparison is constant-time (safeEqual, lib/admin-auth.ts) and fail-closed (lines 21-26). There is NO delay/rate-limit/lockout, whereas /api/admin/login does add a 500ms failure delay (route.ts:13-16). I verified middleware.ts only matches /admin/:path* so it provides no throttle here, and the only rate-limit references in the codebase are in unrelated routes (predictions, match-builder). So the defect (no anti-brute-force on a privilege-granting public endpoint) is real and reachable.\\n\\nHowever, exploitability is largely theoretical and conditioned on an unverifiable assumption. The finding's own premise — 'if FOUNDER_ACCESS_KEY is not high-entropy' — is the entire risk. For any reasonable-entropy secret, online brute-force of a network serverless endpoint (Vercel functions, subject to platform DDoS/concurrency limits and network round-trip latency) is computationally infeasible; you cannot meaningfully iterate a keyspace over HTTP. Moreover the cited 'mitigation' in admin/login (a fixed 500ms delay) is itself weak and trivially parallelized, so the inconsistency the reviewer leans on is between 'no throttle' and 'a token throttle' — both fail to stop a determined parallel attacker, making the comparison less compelling than presented. This is a legitimate defense-in-depth gap (adding rate limiting / progressive backoff on a credential endpoint is good practice and cheap), but the asset-value-times-practical-exploitability does not reach medium given a strong secret. I rate it low: real but low practical risk and dependent on an assumption that cannot be confirmed from the code."
+        }
+      },
+      {
+        "file": "app/api/cron/settle/route.ts",
+        "line": 100,
+        "title": "cron/settle: contatore scores_updated incrementato anche quando l'UPDATE fallisce",
+        "severity": "low",
+        "description": "Nello step A, l'UPDATE dei punteggi usa `.catch()` che registra l'errore in `report.errors` ma NON impedisce l'incremento successivo `report.scores_updated += 1` (righe 94-100): l'incremento avviene incondizionatamente dopo il `.catch`. Il report di settlement riporta quindi piu' aggiornamenti riusciti di quanti ne siano realmente avvenuti, rendendo fuorviante il monitoraggio del cron (un fallimento parziale appare comunque conteggiato come successo).",
+        "suggested_fix": "Spostare l'incremento dentro il ramo di successo della promise (es. `.then(() => { report.scores_updated += 1; }).catch(...)`) o usare await in try/catch incrementando solo dopo il successo dell'UPDATE.",
+        "area": "api-routes",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 5933,
+        "title": "Flusso bet slip rotto: il click su quota/pick non produce nulla (BetSlip mai renderizzato)",
+        "severity": "high",
+        "description": "Le card del board sono cliccabili (classe `sel`, cursor pointer): PredictionCard.handleSelect e TennisMatchCard.handleSelect costruiscono una SlipSelection e la passano su per la catena onSelect fino a `setSlipSelection` (riga 5933). Ma `slipSelection` non viene mai consumato: il componente BetSlip (definito a riga 1656, con stake/EV/return) non è montato da nessuna parte nel render del Dashboard. Risultato: l'utente Pro clicca una quota o il chip edge '+x pt · HOME' e non succede assolutamente nulla — feature pubblicizzata dalle traduzioni betslip_* e flusso utente morto. Stesso destino per BestBetsBoard, PreAccessLanding, ProfilePanel, PendingPaymentView, AgentStatusTab (dead code da segnalare, non rimosso).",
+        "suggested_fix": "Renderizzare `<BetSlip selection={slipSelection} onClear={() => setSlipSelection(null)} />` nel layout (es. colonna destra di book-layout quando tab === 'bets'), oppure rimuovere l'affordance di click dalle card (niente classe sel/onClick) finché lo slip non torna in produzione.",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed with direct code evidence in /Users/calde/Desktop/agentic-markets/app/page.tsx. BetSlip is defined at line 1656 but '<BetSlip' is rendered nowhere in the entire repo. slipSelection state (line 5337) is write-only: set at 5933 via UnifiedBetsTab onSelect and nulled at 5551 on logout, never read by any render. The click path is fully reachable in practice: UnifiedBetsTab is mounted on the default 'bets' tab (5926) and passes onSelect unconditionally to PredictionCard (1431) and TennisMatchCard (1467); their rows get class 'sel' with onClick=handleSelect (3008-3009, 3383-3384, 3401), and globals.css:5478 gives '.pred .row.sel { cursor: pointer; }' — so users see a clickable affordance that does nothing. The betslip_* translations (148-156) describe UI that can never appear. The other components cited (BestBetsBoard, PreAccessLanding, ProfilePanel, PendingPaymentView, AgentStatusTab) are likewise defined but never mounted — dead code, correctly flagged-not-removed per Surgical Changes rule. Severity adjusted high→medium: it is a silent no-op UX defect with no crash, data, money or security impact, and the unmounted BetSlip is plausibly intentional given the betting agent was deliberately detached at launch (the slip copy itself gates live execution on risk approval); the real defect is the lingering clickable affordance and write-only state, which misleads users but breaks nothing else."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 5514,
+        "title": "Checkout USDT: fallimento server mascherato da successo — TX hash perso silenziosamente",
+        "severity": "high",
+        "description": "handleCheckoutConfirm: se POST /api/auth action=checkout risponde non-ok (es. 401 per cookie di sessione scaduto, 500) o va in errore di rete, i rami else/catch (righe 5514-5519) impostano comunque plan='pending_payment' in localStorage, chiudono la modale, tracciano 'conversion' e mostrano all'utente lo stato 'Pagamento inviato / TX ricevuto' (AccountTab paymentReview). Ma il server non ha mai registrato il tx_hash, quindi il flusso di attivazione manuale (verifica interna entro 12h) non vedrà mai quel pagamento: il cliente ha inviato USDT reali e resta bloccato in 'Review' per sempre, senza alcun segnale di errore. È il caso peggiore per un flusso soldi: error handling mancante con perdita concreta.",
+        "suggested_fix": "Su !resp.ok / catch: NON salvare pending_payment né chiudere la modale; mostrare un errore nel CheckoutModal ('invio non riuscito, riprova o scrivi a info@...') e ritentare. Salvare lo stato locale pending solo quando il server conferma (resp.ok).",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "Confirmed in app/page.tsx:5499-5524. On non-ok response or fetch exception, handleCheckoutConfirm's else/catch branches still call saveClientProfile with plan='pending_payment' + txHash, then unconditionally fire trackEvent('conversion'), close the modal, and switch tab — identical UX to success. saveClientProfile (line 5451) is local-only (state + localStorage), so the tx_hash never reaches the server on failure. Failure paths are reachable: the server route (app/api/auth/route.ts:77-107) returns 401 without a valid session and 500 on DB write failure; submitCryptoPayment gates only on the localStorage profile, not a live session, so a user with an expired 30-day cookie can complete checkout and silently hit 401. The server route even has an explicit fail-loud comment warning that a swallowed failure here means 'silent payment loss' — which the client then masks. The UI renders pending_payment as 'TX ricevuto / TX received', so the user sees confirmed receipt while the DB-driven 12h manual verification flow will never see the payment. Partial mitigation: the mount-time reconciliation effect (lines 5403-5444) overwrites the bogus local pending_payment with the real server plan on next page load, so it's not literally 'Review forever' — but no error is ever surfaced, there is no retry path, and the tx_hash is still lost server-side (recoverable only via on-chain ops forensics or the localStorage copy). Severity high is appropriate: false success on a real-money flow with silent server-side loss of the payment record; not critical because funds remain traceable on-chain and the stale UI self-corrects on reload."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 2483,
+        "title": "Opt-in leaderboard mai persistito: POST /api/leaderboard esiste ma nessuno lo chiama",
+        "severity": "high",
+        "description": "SettingsTab promette 'Appari nella classifica pubblica' con il toggle leaderboardOptIn (riga 2483) + Salva. Ma onSave → saveClientProfile scrive solo localStorage: nessuna chiamata a POST /api/leaderboard (app/api/leaderboard/route.ts:8, che è l'endpoint di opt-in e fa l'upsert di display_name per email_hash di sessione). Quindi nessun utente può davvero entrare in classifica dalla UI; LeaderboardTab cerca poi `entries.find(e => e.name === clientName)` su righe che non esistono e mostra per sempre 'Abilita la leaderboard nelle Impostazioni'. Flusso utente promesso e completamente rotto end-to-end.",
+        "suggested_fix": "In saveClientProfile (o nel salvataggio di SettingsTab), quando leaderboardOptIn passa a true fare `fetch('/api/leaderboard', {method:'POST', credentials:'same-origin', body: JSON.stringify({displayName: profile.name})})` e gestire l'errore; valutare anche un'azione di opt-out lato server (oggi inesistente).",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "CONFERMATO con evidenza diretta nel codice. (1) app/page.tsx:2483 il toggle setta solo draft.leaderboardOptIn; il Salva (riga 2491) chiama onSave=saveClientProfile (righe 5451-5466, wiring a 5957) che scrive esclusivamente React state + localStorage — zero chiamate di rete. (2) L'unico fetch a /api/leaderboard nel frontend è il GET di LeaderboardTab (riga 4276); ho enumerato tutti i fetch/POST di page.tsx (api/track, founder/grant, auth x3, tennis-analysis, match-builder, predictions) — nessuno è il POST di opt-in. scripts/live_monitor.py fa solo health-check GET. Nessun writer server-side alternativo: la tabella leaderboard è scritta solo da app/api/leaderboard/route.ts POST (endpoint orfano, richiede emailHash+displayName; \"emailHash\" non compare mai in page.tsx) e letta da admin/metrics. /api/auth register non inserisce in leaderboard. (3) Sintomo confermato: righe 4330-4332 e 4470-4482 — senza riga in DB, yourEntry è null e anche l'utente opted-in vede per sempre il messaggio notOptedIn. Stesso pattern nella copia dashboard-web/app/page.tsx. (4) Raggiungibile dal percorso utente normale (Account → toggle → Salva), non teorico; il progetto Vercel è linkato alla root quindi è il codice deployabile. Severity high giustificata: feature promessa in UI completamente rotta end-to-end su prodotto pre-go-live, leaderboard pubblica è feature vetrina visibile anche agli anonimi; non è security/money quindi non critical. Nota secondaria: anche fixando il POST, il match UI per display name (e.name === clientName) anziché email_hash resterebbe fragile."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 5209,
+        "title": "Gating incoerente piano Free: LockedGate blurra l'intero board e rende irraggiungibile il funnel free-preview/Pick of the Day",
+        "severity": "medium",
+        "description": "UnifiedBetsTab monta il board dentro `<LockedGate isUnlocked={Boolean(isPremiumClient)}>` dove isPremiumClient = profileHasAccess (solo base/premium/admin_full). Per plan='free' il gate resta chiuso: CSS .locked-gate:not(.is-unlocked) .locked-content applica blur(10px) + pointer-events:none (globals.css:1253). Ma dentro il gate esiste un intero funnel free che diventa codice morto: banner 'Piano Free — 1 prediction per sport', footballRows.slice(0,1) preview, free-preview-wall (righe 1408-1473), nudge upsell delle card isPreview. Soprattutto: il server (app/api/predictions/route.ts projectPredictionRow + tennis route) sblocca esplicitamente il Pick of the Day per gli utenti free (isUnlocked(state, isPotD)) — quei dati sbloccati arrivano nel JSON e nel DOM ma l'utente free vede solo blur; il pick PotD è comunque leggibile via dev tools, nascosto solo da CSS. Due design in conflitto: o il free vede l'anteprima (funnel), o non deve riceverne i dati.",
+        "suggested_fix": "Decidere una policy sola: (a) per plan='free' aprire il LockedGate (isUnlocked = isFreeClient || isPremiumClient) lasciando il limite 1-preview/PotD già implementato dentro SportsbookBoard; oppure (b) mantenere il muro e smettere di servire PotD/preview sbloccati ai free lato API.",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed with direct code evidence. (1) app/page.tsx:5208-5223 wraps SportsbookBoard in LockedGate with isUnlocked=Boolean(isPremiumClient); isPremiumClient=isClientUnlocked=profileHasAccess (line 5731/2601), true only for base/premium/admin_full, so plan='free' keeps the gate closed. (2) globals.css ~1253 confirms .locked-gate:not(.is-unlocked) .locked-content applies blur(10px)+opacity .34+pointer-events:none+max-height 620px. (3) The free funnel inside SportsbookBoard is real and unreachable: free-tier banner (1409-1417), footballRows.slice(0,1)/tennisRows.slice(0,1) (1430/1466), free-preview-wall blocks (1433-1439/1469-1475), isPreview card upsells — all keyed on isFreeClient, which is true only in the exact state where the gate blurs everything; SportsbookBoard's sole usage is inside the gate. (4) Server side confirmed: lib/access-projection.ts isUnlocked returns true for state==='free' && isPickOfDay, and app/api/predictions/route.ts projectPredictionRow + app/api/tennis/route.ts ship the full PotD pick payload (probabilities, edge, best_selection, trimmed enrichment) to free users — data present in JSON/DOM but hidden only by CSS blur. Nuances: the whole-board gate appears to be a deliberate newer policy (comment at 5202-5206), and the devtools readability is not a true security leak since the server intentionally entitles free users to the PotD pick. The defect is the documented design conflict: server grants PotD to free + a full free-preview funnel exists in code, while the client gate makes both invisible/dead, so the free plan delivers zero visible value vs its advertised '1 prediction per sport'. Reachable for every logged-in free user. Impact is product/conversion incoherence and dead code rather than security, so medium is appropriate."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 3864,
+        "title": "Match Builder, link condiviso: le selezioni tennis spariscono per il visitatore anonimo",
+        "severity": "medium",
+        "description": "Nella vista condivisa (?mb=...&ref=..., visitatore anonimo) i pick devono restare gated ma i match visibili. `lockedLabels` (riga 3864) mappa però solo righe football (f_) e World Cup (w_): manca del tutto il ramo tennis (t_). Le righe tennis locked non finiscono nemmeno in `items` perché la proiezione anonima nulla best_selection. Quindi una schedina condivisa con leg tennis appare al visitatore vuota o monca (solo CTA 'Registrati per vedere i pick' senza alcun match elencato): il funnel influencer — che è il motivo del feature — mostra una schedina incompleta o vuota proprio a chi deve convertire. Monitor anche il caso utente free loggato: vede solo i leg sbloccati (PotD), gli altri spariscono senza spiegazione.",
+        "suggested_fix": "Aggiungere a lockedLabels il ramo tennis: `...tennisMatches.filter(m => m.locked && m.player1 && m.player2).map(m => [`t_${m.id}`, `${m.player1} vs ${m.player2}`])` (player1/player2 restano visibili nella proiezione locked). Per i free loggati, mostrare i leg non sbloccati come righe 🔒 invece di ometterli.",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "CONFIRMED with full evidence chain. (1) /Users/calde/Desktop/agentic-markets/app/api/tennis/route.ts (~lines 43-52): the anonymous/locked tennis projection sets best_selection=null while preserving player1/player2 (\"keep matchup + surface visible\"); lib/access-projection.ts isUnlocked() returns false for anonymous unconditionally, so anonymous visitors get ALL tennis rows locked. (2) app/page.tsx line 3846: tennis items require Boolean(m.best_selection), so locked tennis rows never enter `items`. (3) Lines 3864-3871: lockedLabels maps only f_ (predictions) and w_ (wcRows) — no t_ branch, even though locked tennis rows carry the player names needed for the label; the code comment at 3861-3863 states the visitor \"must still SEE which matches are in the slip\", which the tennis path violates. (4) Line 3873 + shared-view block 3938-3958: lockedSelected requires lockedLabels.has(id), so t_ ids are silently dropped; mixed slips render incomplete and all-tennis slips render with NO match list at all — only the register CTA. (5) Reachable in practice: tennis is selectable by logged-in paying creators (items branch + \"tennis\" group line 3924, shipped #TENNIS-BS-1 2026-06-07), share links carry t_ ids, and lines 5314-5328 parse ?mb= for anonymous visitors with isSharedView = sharedIds.length>0 && !isLoggedIn (3875). (6) Secondary claim also confirmed: free logged-in users get isSharedView=false and the slip (4028-4041) renders only selectedItems, so locked legs vanish without explanation. Severity medium is appropriate: no security/data impact, but it breaks the influencer conversion funnel — the feature's stated purpose — for any slip containing tennis legs, with total emptiness for all-tennis slips."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 1059,
+        "title": "fmtKickoff nasconde l'orario di QUALSIASI kickoff alle 00:00 UTC — falsi positivi con i Mondiali in Nord America",
+        "severity": "medium",
+        "description": "Il fix client del bug 'orari alle 02:00' (placeholder midnight di football-data) è l'euristica `d.getUTCHours() === 0 && d.getUTCMinutes() === 0` (riga 1059): se l'orario è esattamente 00:00 UTC mostra solo la data. Lato server (app/api/predictions/route.ts:448-455) il placeholder viene già sostituito con l'orario api-football quando disponibile, ma se entrambe le fonti sono a mezzanotte il timestamp resta 00:00 e il client lo tratta come 'non confermato'. Problema: il Mondiale 2026 si gioca in Nord America e 00:00 UTC = 20:00 ET è uno slot serale reale e plausibile — quei match confermati verrebbero mostrati SENZA orario (solo 'mer 17 giu') su board, scorebar e FeaturedEdge, proprio nel periodo di punta del prodotto (kickoff 11 giugno). L'informazione 'orario non confermato' viene re-inferita dal valore invece di viaggiare come flag.",
+        "suggested_fix": "Far scrivere al server un campo esplicito (es. `time_confirmed: boolean` calcolato dove già esiste fdMidnight/apifixMidnight) e usare quello in fmtKickoff invece dell'euristica sulle 00:00 UTC.",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confermato con evidenza nel codice. (1) app/page.tsx:1055-1067: fmtKickoff nasconde l'orario per QUALSIASI timestamp con getUTCHours()===0 && getUTCMinutes()===0 — nessun flag esplicito viaggia dal server, l'informazione 'non confermato' è re-inferita da un valore sentinella in-band (grep conferma assenza di time_confirmed o simili). (2) app/api/predictions/route.ts:448-455: il server sostituisce il placeholder football-data con l'orario api-football solo se quest'ultimo NON è a mezzanotte (apifixMidnight default true se assente), quindi un kickoff reale alle 00:00 UTC resta indistinguibile dal placeholder. (3) WC è nella pipeline: LEAGUES include WC (route.ts:46), lib/football-data.ts:17 (commento #021 conferma fetch World Cup), lib/odds-api.ts:11 mappa soccer_fifa_world_cup. (4) Reachability pratica: WC 2026 in Nord America (inizio 11 giugno, domani), 00:00 UTC = 20:00 EDT / 19:00 CDT / 18:00 Mexico City / 17:00 PDT — slot serali primetime plausibili su 104 match in 4 fusi; vale anche per il tennis (page.tsx:3276). Imprecisione minore del reviewer: FeaturedEdge non renderizza fmtKickoff (usa kickoff solo nel filtro isBoardVisibleMarket); le superfici colpite reali sono la card board (riga 2971), la scorebar 'Scheduled' (riga 2988) e la card tennis (3276). Severity medium confermata: display-only (no impatto su denaro/settlement), ma colpisce l'info core sulla superficie principale nella finestra di punta del prodotto, con design fragile (sentinel in-band) che merita un flag esplicito."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 3289,
+        "title": "TennisMatchCard.handleSelect non guarda odds null (tipo TennisMatch mente: odds_p1 può essere null a runtime)",
+        "severity": "medium",
+        "description": "L'interfaccia TennisMatch dichiara `odds_p1: number; odds_p2: number` (righe 908-909) ma /api/tennis normalizePrediction restituisce `odds_p1: p.odds_p1 ?? null` (route.ts:250) e la proiezione locked le nulla esplicitamente: a runtime sono spesso null (tennis 'signal-only' senza mercato). Il handler football si protegge (`if (!selOdds || selP == null) return`, riga 2921) ma quello tennis no: riga 3289 passa `odds` direttamente in SlipSelection (tipizzato `odds: number`). Ogni consumer che fa `selection.odds.toFixed(2)` (BetSlip riga ~1693) crasha con TypeError appena lo slip verrà (ri)montato — il bug è latente solo perché oggi lo slip non è renderizzato (finding #1). In più BetSlip inizializza lo stake una sola volta (`useState(() => selection?.recommendedStake...)`, riga 1657): cambiando selezione lo stake raccomandato resta quello della prima — stato stantio da props.",
+        "suggested_fix": "In handleSelect tennis: `if (odds == null || !Number.isFinite(probability)) return;` (o consentire selezione con odds null rendendo SlipSelection.odds `number | null` e gestendolo nel render). In BetSlip, resettare lo stake quando cambia selection.id (useEffect su selection?.id o key={selection.id}).",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "CONFIRMED with code evidence, every sub-claim checks out. (1) Type lie: app/page.tsx:909-910 declares odds_p1/odds_p2 as `number`, but app/api/tennis/route.ts:250 returns `odds_p1: p.odds_p1 ?? null` and the locked projection (route.ts:48) explicitly nulls odds_p1/odds_p2 — null at runtime is the normal case for signal-only tennis. (2) Missing guard: tennis handleSelect (page.tsx:3286-3308) passes `odds` (3289→3302) into SlipSelection (typed `odds: number`, line 959) with no null check, while the football handler guards at 2923 (`if (!selOdds || selP == null) return`). (3) Reachable in practice: lib/best-bets.ts:64 classifies null-odds matches as \"model_signal\" (probability >= 0.58), visibleTennisValue includes them (page.tsx:1567-1570), and the probability rows (3381-3390) are clickable whenever onSelect exists — no isValue gate — so a premium user clicking a signal-only tennis row stores odds=null in slipSelection state today. (4) Crash latent: BetSlip's `selection.odds.toFixed(2)` (1693) would throw TypeError on null, but `<BetSlip` is never rendered (zero matches in app/page.tsx and dashboard-web/app/page.tsx) and slipSelection (5337) is only written (5933) and reset (5551), never read. (5) Stale stake also confirmed: useState lazy init at 1657 never re-syncs recommendedStake on selection change — real anti-pattern, currently in dead code. SEVERITY ADJUSTED medium→low: the bug is real (type lie + live null data flow into number-typed state) but the only crash site is unrendered dead code, so there is zero user-facing impact in the current build. It escalates to medium the moment BetSlip is mounted (the onSelect plumbing through the whole tree suggests that's intended), so the fix (mirror the football null guard in the tennis handler, or type odds as number|null) is cheap insurance worth doing."
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 2890,
+        "title": "buildTennisWhy: dichiara 'Niente quota di mercato qui' anche quando la quota c'è",
+        "severity": "low",
+        "description": "Il ramo else della prosa tennis (righe 2890-2894) scatta quando `isTennisBestBet(m)` è false, ma quel predicato è false anche con quote reali presenti: edge sotto soglia 3%, odds < 1.4, o match fuori dalla finestra di trading di 12h. In quei casi la card mostra le quote di mercato reali e, nel 'perché', il testo afferma 'Niente quota di mercato qui, quindi nessun edge dichiarato' — dati incoerenti sotto gli occhi di un cliente pagante, su un prodotto che vende onestà di calibrazione. La versione football gestisce correttamente il caso con un ramo separato ('Il mercato prezza già correttamente questo incontro').",
+        "suggested_fix": "Distinguere i casi come nel football: se `m.odds_p1 != null || m.odds_p2 != null` ma il match non è best bet, usare la frase 'il mercato prezza già correttamente / edge insufficiente'; riservare 'niente quota di mercato' al solo caso odds null.",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/page.tsx",
+        "line": 5276,
+        "title": "Hydration mismatch sui deep-link ?tab= e sulla lingua: stato iniziale letto da window/localStorage nell'initializer",
+        "severity": "low",
+        "description": "Gli initializer di useState leggono `window.location.search` (tab, riga 5276) e `localStorage` (uiLanguage, riga 5282) con fallback SSR diverso ('bets', 'it'). Sui link condivisi (es. /?tab=leaderboard, /?mb=...) l'HTML prerenderizzato mostra il tab 'bets' in italiano mentre il client idrata con valori diversi: React segnala hydration mismatch e ributta l'intero albero in client-render — flash del tab sbagliato su connessioni lente, errori in console in produzione e overlay in dev. Funziona 'per recupero', ma proprio i link condivisi del Match Builder (funnel influencer) sono il percorso che lo innesca sempre.",
+        "suggested_fix": "Inizializzare tab/lingua ai default SSR e applicare il valore reale in un useEffect al mount (come già fatto per theme, righe 5296-5299), oppure usare useSearchParams + <Suspense> per il deep-link ?tab=/?mb=.",
+        "area": "frontend-monolith",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/world-cup/[team]/page.tsx",
+        "line": 90,
+        "title": "Pagine team senza fixtures e senza girone per ~7 nazionali (alias ESPN vs canonico ignorato nel matching)",
+        "severity": "high",
+        "description": "teamFixtures (righe 90-94) confronta teamSlug(f.home_team) — nome ESPN, es. 'Cape Verde', 'USA', 'Korea Republic', 'IR Iran', 'Türkiye', 'Czechia', 'Bosnia-Herzegovina' — con teamSlug(squad.team_canonical) — spelling canonico del DB wc_squads ('Cabo Verde', 'United States', 'South Korea', 'Iran', 'Turkey', 'Czech Republic', 'Bosnia and Herzegovina'). Gli slug non coincidono mai per queste squadre, quindi le loro pagine /world-cup/[team] mostrano 'Fixtures unavailable right now' e nessun 'Group X' nell'hero (riga 95: groupMap è keyed sui displayName ESPN e il fallback su teamFixtures è vuoto). La mappa SLUG_TO_CANONICAL in lib/world-cup.ts:77-86 esiste proprio per questo disallineamento ma è applicata solo al lookup slug→DB, non al matching fixtures/girone. Le pagine sono superfici SEO la cui meta description promette 'the full match schedule': per queste nazionali la promessa è rotta.",
+        "suggested_fix": "Canonicalizzare entrambi i lati prima del confronto: const canonSlug = (name: string) => { const s = teamSlug(name); return teamSlug(SLUG_TO_CANONICAL[s] ?? s); } (esportando la mappa o una helper da lib/world-cup.ts) e usare canonSlug(f.home_team) === canonSlug(squad.team_canonical); analogamente per groupMap, costruire la lookup del girone passando i displayName ESPN attraverso la stessa canonicalizzazione.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "CONFERMATO nel meccanismo, ma il blast radius dichiarato è sbagliato: 3 squadre colpite, non ~7.\n\nEvidenza (codice + dati live + DB prod):\n1. /Users/calde/Desktop/agentic-markets/app/world-cup/[team]/page.tsx:90-94 confronta teamSlug(f.home_team/away_team) — displayName ESPN — con teamSlug(squad.team_canonical), senza passare da SLUG_TO_CANONICAL (lib/world-cup.ts:77-86), che è applicata solo a teamNeedleFromSlug (lookup slug→DB). Riga 95: groupMap è keyed sui displayName ESPN (fetchTeamGroupMap, lib/world-cup.ts:134-139), quindi groupMap[squad.team_canonical] fallisce per le stesse squadre e il fallback su teamFixtures (vuoto) non salva nulla.\n2. DB prod Supabase (wc_squads, progetto izscgffubtakzvwxchqt): team_canonical = 'Turkey', 'Czech Republic', 'Bosnia and Herzegovina', 'United States', 'South Korea', 'Iran', 'Cape Verde', 'Curaçao'.\n3. API ESPN live (standings e scoreboard, 104 eventi WC2026 presenti ora): displayName = 'Türkiye', 'Czechia', 'Bosnia-Herzegovina', 'United States', 'South Korea', 'Iran', 'Cape Verde', 'Curaçao'. Il reviewer ha assunto i nomi FIFA ('USA', 'Korea Republic', 'IR Iran', 'Cabo Verde'), ma l'ESPN site API NON li usa: usa 'United States', 'South Korea', 'Iran', 'Cape Verde', i cui slug coincidono con il canonico DB.\n4. Test slug eseguito (node, stessa funzione teamSlug): mismatch SOLO per Türkiye→turkiye vs turkey, Czechia→czechia vs czech-republic, Bosnia-Herzegovina→bosnia-herzegovina vs bosnia-and-herzegovina. USA/Korea/Iran/Cape Verde/Curaçao matchano (per Curaçao la normalize NFD + strip U+0300–U+036F rimuove la cediglia su entrambi i lati).\n\nQuindi: le pagine /world-cup/turkey, /world-cup/czech-republic, /world-cup/bosnia-and-herzegovina mostrano oggi 'Fixtures unavailable right now' e nessun 'Group X' nell'hero, con kickoff domani (2026-06-11) e fixtures realmente disponibili upstream. Bug reale, raggiungibile, user-visible su superfici SEO.\n\nSeverity: da high a medium — 3 pagine su 48, sezione squad e timeline funzionano, nessun impatto su soldi/dati/sicurezza; resta però una promessa di meta description rotta su pagine SEO durante il torneo.\n\nNota collaterale (fuori dal finding, da segnalare): SLUG_TO_CANONICAL['cape-verde'] = 'cabo verde' (lib/world-cup.ts:78) è invertita rispetto al canonico reale — il DB contiene 'Cape Verde', quindi l'ILIKE con needle 'cabo verde' non matcha e /world-cup/cape-verde (lo slug generato da generateStaticParams) dovrebbe restituire 404 completo. Bug adiacente distinto, potenzialmente più grave per quella squadra, non verificato a runtime."
+        }
+      },
+      {
+        "file": "lib/use-has-access.ts",
+        "line": 8,
+        "title": "Cache modulo-level della probe /api/auth mai invalidata: utente pagante resta gated dopo login (e viceversa dopo logout)",
+        "severity": "medium",
+        "description": "fetchAccess() memoizza la Promise a livello di modulo senza alcuna invalidazione. Il funnel reale rompe: anonimo visita /world-cup (cached→false), clicca 'Accedi'/lock CTA che porta a / (Link soft-nav, app/page.tsx non fa mai location.reload dopo login), fa login, torna a /world-cup via <Link href=\"/world-cup\"> (app/page.tsx:1447/5873, soft-nav: il modulo sopravvive). SiteTopbar rifetcha /api/auth con cache:no-store e mostra il pill PRO, ma useHasAccess restituisce il false cachato: i nomi in WinnerOdds/WinnerOddsCompact restano blurrati per un utente pagante — UI incoerente nella stessa pagina, stessa classe di bug del #021 già fixato per la topbar. Simmetricamente, dopo logout i nomi restano visibili. In più il .catch(()=>false) cacha permanentemente anche un errore di rete transitorio.",
+        "suggested_fix": "Invalidare la cache: esportare una resetAccessCache() chiamata dai flussi login/logout, oppure non cachare i fallimenti (nel .catch azzerare cached prima di restituire false) e legare la cache all'identità (es. ricalcolare quando /api/auth della topbar cambia stato, condividendo lo stesso store invece di due fetch indipendenti).",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in code. lib/use-has-access.ts:8-21 caches the /api/auth probe in a module-level `let cached` that is never reset anywhere in the repo, and line 18's .catch(()=>false) permanently caches transient network errors as no-access. The exploit funnel is fully reachable with soft navigation end-to-end: (1) anonymous on /world-cup loads the module, cached resolves false (WinnerOdds.tsx:53 / WinnerOddsCompact.tsx:24 blur names via wc-blur-name); (2) SiteTopbar.tsx:117-118 \"Accedi\"/\"Registrati\" are <Link href=\"/\"> (client-side nav, module survives); (3) login on / is a modal — handleAuthed (app/page.tsx:5473-5479) only saves profile state, no window.location.reload anywhere in app/page.tsx; (4) return via <Link href=\"/world-cup\"> (app/page.tsx:1447, 5873) remounts the components, whose useEffect gets the stale cached false. Meanwhile SiteTopbar.tsx:38 refetches /api/auth with cache:no-store on each mount and shows the PRO pill — confirmed same-page inconsistency (topbar PRO, names blurred) for a paying user, the same class as the already-fixed #021. Severity medium is right: the login direction fails closed (paid-UX bug, not security), and the logout direction is cosmetic since the team names are statically imported (data/wc2026_simulation.json) into the client bundle and visible in JS to anyone anyway; a hard refresh clears it. But it directly degrades paid value in the natural lock-CTA→login→return funnel, so medium rather than low."
+        }
+      },
+      {
+        "file": "app/admin/page.tsx",
+        "line": 238,
+        "title": "approveActivation dichiara sempre successo anche quando il PATCH del piano fallisce",
+        "severity": "medium",
+        "description": "approveActivation (righe 238-248) chiama updateProfilePlan e poi setta incondizionatamente activationResult = 'Profilo X attivato come Y'. updateProfilePlan ingoia gli errori internamente settando profileResult, che però è renderizzato solo nella sezione 'profiles' (riga 540), mentre il banner activationResult è nella overview (riga 386) dove vive la lista 'Attivazioni in attesa'. Se il PATCH fallisce (500, errore di validazione, DB), l'admin che approva un pagamento USDT dalla overview vede un messaggio verde di attivazione riuscita mentre il cliente resta pending_payment — incoerenza di stato su un flusso soldi. Il refresh del poll a 30s rimette la riga in pending, ma il feedback immediato è falso.",
+        "suggested_fix": "Far ritornare a updateProfilePlan un booleano/risultato (true su res.ok) e in approveActivation settare activationResult di successo solo se true, altrimenti propagare il messaggio d'errore nel banner della overview.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in /Users/calde/Desktop/agentic-markets/app/admin/page.tsx. approveActivation (lines 238-248) awaits updateProfilePlan and then unconditionally sets activationResult to a success message. updateProfilePlan (250-275) returns void and swallows all failures: on !res.ok it sets profileResult and returns; on exception it sets profileResult in catch; it never throws or returns a status. profileResult is rendered only in the 'profiles' section (line 522/540), while the Approva button, pending-activations list, and activationResult banner are in 'overview' (lines 357/386/396-419, the default section). The green/red styling at line 388 keys off 'Errore'/'failed'/'missing', which the success string never contains, so a failed PATCH yields a green 'attivato' banner. Reachable in practice via any 500/validation/network failure of PATCH /api/admin/profiles on the USDT payment approval flow. Minor inaccuracy in the report: on failure fetchData() is not called (only on success, line 269), so the pending row never disappears — it stays visible under the green banner, a partial mitigation. Severity medium is appropriate: false-success feedback on an admin money flow, but admin-only, requires backend failure, no data corruption, and the persistent pending row plus 30s poll partially self-correct."
+        }
+      },
+      {
+        "file": "lib/world-cup.ts",
+        "line": 107,
+        "title": "fetch ESPN senza try/catch: un errore di rete fa fallire il render dell'intero hub /world-cup e delle pagine team",
+        "severity": "medium",
+        "description": "fetchWcGroups (riga 107) e fetchWcFixtures (righe 157-163) gestiscono solo !res.ok (return []), ma fetch() lancia su errori di rete/DNS/timeout. L'eccezione non è catturata e risale al Promise.all di app/world-cup/page.tsx:66 e di app/world-cup/[team]/page.tsx:74: con cache fredda o in fase di build (generateStaticParams + render statico), un'indisponibilità transitoria di site.api.espn.com produce un 500 dell'intera pagina (o un build failure), invece del fail-soft già previsto dai componenti (GroupsGrid/CalendarSection hanno gli empty-state 'unavailable right now' che non vengono mai raggiunti in questo caso).",
+        "suggested_fix": "Avvolgere il corpo di fetchWcGroups/fetchWcFixtures in try/catch restituendo [] (o usare .catch(() => null) sul fetch), così l'errore di rete degrada agli stessi empty-state del ramo !res.ok.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed. lib/world-cup.ts:107 (fetchWcGroups) and :157-163 (fetchWcFixtures) only guard !res.ok; fetch() rejects (undici TypeError 'fetch failed') on DNS/network/timeout errors, and res.json() can also throw — neither is caught. The rejection propagates through Promise.all in app/world-cup/page.tsx:66 and app/world-cup/[team]/page.tsx:74-88 (fetchWcFixtures + fetchTeamGroupMap), and there is NO error.tsx/global-error.tsx anywhere under app/, so the result is the default Next 500. The fail-soft design is real and defeated: GroupsGrid.tsx:8-9 and CalendarSection.tsx:41-42 have 'unavailable right now' empty states, and lib/db.ts dbQuery deliberately catches and returns [] — the ESPN fetches are the only fail-hard dependency on these pages. Reachability nuance: both pages are ISR (revalidate=300/3600, generateStaticParams for 48 teams), so failed background revalidations serve stale pages and steady-state users are mostly shielded; the concrete failure modes are (a) build/deploy failure if ESPN is transiently down during next build (prerender of hub + 48 team pages), and (b) 500 on cold/on-demand renders (dynamicParams=true slugs, cache eviction, first render). The reviewer correctly scoped this ('cache fredda o in fase di build'). Severity medium is right: availability/robustness bug on public SEO pages plus third-party coupling of the deploy pipeline, on a surface launching at WC kickoff 2026-06-11; partially mitigated by ISR stale-serving, no security/data impact. Fix is a trivial try/catch returning [] in both functions."
+        }
+      },
+      {
+        "file": "components/world-cup/WinnerOdds.tsx",
+        "line": 53,
+        "title": "Gating 'who wins' solo cosmetico: dati completi nel bundle client e nomi in chiaro nel DOM, blur via CSS",
+        "severity": "medium",
+        "description": "WinnerOdds e WinnerOddsCompact importano l'intero artifact data/wc2026_simulation.json nel bundle client e 'gatano' i nomi squadra applicando la classe wc-blur-name (globals.css:4738, filter: blur(6px)) quando useHasAccess è false. I nomi reali restano nel DOM e nell'HTML servito: bastano view-source o disattivare il CSS per leggere tutta la tabella, e i percentili (win%, final%) non sono nemmeno blurrati, quindi l'ordinamento rivela comunque i favoriti. È incoerente con il board principale, dove il gating è una proiezione server-side (lib/access-projection) e i campi gated non arrivano proprio al client. Se la policy ('who-wins nomi blurrati' per anonimi) vuole un gate effettivo e non solo un teaser visivo, questo non lo è.",
+        "suggested_fix": "Se il gate deve essere reale: servire il who-wins da un endpoint che proietta per sessione (nomi omessi/placeholder per anonimi) invece di importare il JSON nel client. Se invece è un teaser intenzionale, documentarlo e valutare di blurrare/quantizzare anche le percentuali per non rendere il blur dei nomi inutile.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "Confirmed: components/world-cup/WinnerOdds.tsx (line 9, 53) and WinnerOddsCompact.tsx import the full data/wc2026_simulation.json into the client bundle and gate team names only by toggling the CSS class wc-blur-name (app/globals.css:4738, filter: blur(6px)) based on a client-side useHasAccess() fetch. Real names are plain text in the DOM and in the served static HTML of app/world-cup/page.tsx; view-source or disabling CSS reveals everything, and win/final percentages are not blurred so the sorted order exposes favorites anyway. This contrasts with the main board, where lib/access-projection.ts strips gated fields server-side. The bypass is trivially exploitable, not theoretical. However, severity is downgraded from medium to low: the component is explicitly a \"teaser\" of CONTENT ONLY (frozen Monte Carlo artifact, \"not a signal\"), the unblurred footer note already names Spain as favourite in plaintext, and the data mirrors public supercomputer models — the commercially valuable paid signals (picks, edge, CLV, enrichment) remain properly gated server-side via access-projection. Impact is limited to leaking a low-value teaser table to anonymous users."
+        }
+      },
+      {
+        "file": "components/world-cup/WcBoard.tsx",
+        "line": 485,
+        "title": "Live score mai agganciato per le squadre con spelling alias: teamPairKey usa i nomi raw invece di canonTeam",
+        "severity": "low",
+        "description": "Il match tra card e feed live avviene per coppia di nomi normalizzati: alla riga 485 la mappa è costruita dai nomi del feed /api/live (displayName ESPN, es. 'Cape Verde', 'USA') e alla riga 507 il lookup usa p.home_team/p.away_team raw dalle prediction (spelling canonico del dataset, es. 'Cabo Verde', 'Congo DR', 'United States'). normTeam non risolve gli alias ('caboverde' ≠ 'capeverde', 'congodr' ≠ 'drcongo'), quindi per queste nazionali la barra LIVE/FT e il badge ● LIVE non compaiono mai, pur essendoci il dato. Esiste già WC_TEAM_CANON (righe 121-126) ma è usato solo per il display.",
+        "suggested_fix": "Applicare la canonicalizzazione su entrambi i lati della chiave: teamPairKey(canonTeam(a), canonTeam(b)) sia in costruzione mappa (estendendo WC_TEAM_CANON con gli alias ESPN→canonico, es. 'usa', 'korea republic', 'ir iran', 'turkiye', 'czechia') sia nel lookup alla riga 507.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/admin/page.tsx",
+        "line": 175,
+        "title": "setMetrics senza check di res.ok né validazione: una risposta JSON d'errore non-401 crasha la pagina admin",
+        "severity": "low",
+        "description": "fetchData gestisce solo lo status 401; per qualsiasi altra risposta con body JSON (rate-limit/WAF Vercel, futuro ramo d'errore JSON del route handler) setMetrics riceve un oggetto senza la shape Metrics, loading diventa false, e il render crasha con TypeError a riga 307/361 (m.overview.total_events.toLocaleString() su undefined) — schermata bianca client-side invece del messaggio 'Failed to load data'. Oggi il caso comune (500 con body testuale) è coperto per caso dal throw di .json(), quindi la severità è bassa, ma il guard corretto manca.",
+        "suggested_fix": "Dopo il check 401, verificare mRes.ok (e che m.overview esista) prima di setMetrics; altrimenti setError('Failed to load data.').",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "components/world-cup/WcBoard.tsx",
+        "line": 406,
+        "title": "Badge probabilità nel footer può renderizzare 'NaN%' se pick non è HOME/DRAW/AWAY",
+        "severity": "low",
+        "description": "Nel footer della card, il ramo `pct(probs[pick.toLowerCase() as \"home\" | \"draw\" | \"away\"])` assume che p.pick sia sempre HOME/DRAW/AWAY. Per una riga signal promossa con pick di mercato diverso (es. 'OVER 2.5', nome squadra) e senza edge_percent numerico, probs[...] è undefined → Math.round(undefined*100) → 'NaN%' visibile a utenti paganti. Il cast `as` maschera il caso a livello di tipi.",
+        "suggested_fix": "Guardare la chiave prima di usarla: const k = pick?.toLowerCase(); ['home','draw','away'].includes(k) ? pct(probs[k]) : null — e non renderizzare il badge altrimenti.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/world-cup/[team]/page.tsx",
+        "line": 43,
+        "title": "Lookup squadra con ILIKE su pattern non-escapato derivato dall'URL: wildcard utente rendono pagine team arbitrarie sotto slug arbitrari",
+        "severity": "low",
+        "description": "loadSquad esegue `team_canonical ILIKE $1` con needle ricavata dallo slug URL (teamNeedleFromSlug fa solo replace dei trattini, lib/world-cup.ts:89-92). I caratteri jolly % e _ non vengono escapati: /world-cup/%25 (slug '%') renderizza la prima squadra in ordine arbitrario, /world-cup/a%25 matcha qualunque squadra che inizia per 'a', ecc. Nessuna SQL injection (query parametrizzata), ma genera infinite URL duplicate indicizzabili della stessa pagina (duplicate content su superfici SEO con ISR 1h e dynamicParams=true) e può servire la squadra sbagliata per slug malformati invece del 404.",
+        "suggested_fix": "Escapare i metacaratteri del pattern (needle.replace(/[%_\\\\]/g, '\\\\$&')) o, meglio, usare un confronto esatto case-insensitive: WHERE LOWER(team_canonical) = $1 (con eventuale unaccent), dato che la needle è già lo spelling canonico completo.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/world-cup/page.tsx",
+        "line": 45,
+        "title": "Dedup squads incoerente con la pagina team: il chip 'Cape Verde' linka e mostra dati di righe DB diverse",
+        "severity": "low",
+        "description": "dedupeSquads preferisce la riga con spelling 'Cape Verde' (SQUAD_CANON) quando esistono entrambe le righe duplicate in wc_squads, e il chip ne mostra squad_size/injured_count. Il link però è /world-cup/cape-verde, che via SLUG_TO_CANONICAL ('cape-verde' → 'cabo verde', lib/world-cup.ts:78) carica con ILIKE la riga 'Cabo Verde' — l'ALTRA riga duplicata. Se le due righe divergono (è proprio il caso dei dupes segnalati nel commento alle righe 35-38), i numeri del chip sull'hub e la rosa mostrata sulla pagina team non coincidono. Il commento ammette che il dedup DB è pending; nel frattempo la preferenza UI e il routing puntano a righe opposte.",
+        "suggested_fix": "Allineare la preferenza del dedup allo stesso target del routing: quando entrambe le righe esistono, tenere la riga che loadSquad effettivamente caricherà (quella con spelling canonico DB, 'Cabo Verde'), eventualmente mostrando l'etichetta preferita solo come display name — oppure completare il dedup a DB.",
+        "area": "frontend-components",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/api/auth/route.ts",
+        "line": 184,
+        "title": "Account takeover dei profili legacy senza password (login + register \"claim\")",
+        "severity": "high",
+        "description": "Nel ramo login, se `existing.password_hash` è null (profilo legacy, pre-password), QUALSIASI password fornita viene salvata come password definitiva e viene emessa subito una sessione valida (righe 184-198). Identico nel ramo register: il blocco 409 \"account already exists\" scatta solo se `password_hash` è già presente (riga 148), quindi un profilo legacy con hash null può essere reclamato da chiunque. Conseguenza: chiunque conosca l'email di un abbonato legacy (piano base/premium creato prima dell'introduzione della password) può impossessarsene scegliendo una password arbitraria, ereditandone il piano a pagamento. Solo `admin_full` è protetto (blocco a monte). È un vettore concreto di takeover su account paganti, non solo teorico.",
+        "suggested_fix": "Non auto-impostare la password al primo login/register per profili esistenti. La migrazione dei profili legacy va fatta via flusso di verifica del possesso dell'email (OTP/magic link — il modulo otpEmail esiste già) prima di consentire l'impostazione della password. In alternativa, marcare esplicitamente i profili legacy migrabili e richiedere comunque la verifica email.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "Confirmed in code. In app/api/auth/route.ts the login branch (lines 184-198) writes ANY supplied password as the permanent hash and issues a valid session when existing.password_hash is null, with no email-ownership verification. The register branch (line 148) only returns 409 when password_hash is already present, so a legacy null-hash profile can likewise be claimed. Only admin_full is protected (line 141). The vector is reachable: the migration supabase/migrations/20260605190000_profiles_password.sql only ADDs the password_hash column with NO backfill, so every pre-2026-06-05 profile has NULL password_hash; the migration header and route comment both confirm legacy email-only accounts exist (\"the handful of pre-password accounts\"). plan is independent of password_hash, so a legacy base/premium subscriber is claimable by anyone who knows the email via a single unauthenticated POST. Mitigating context: under the prior email-only system these accounts were already accessible to anyone with the email, so this is partly a net improvement, and the window is bounded to legacy accounts that have not yet self-claimed. However, the claim path introduces a genuine new harm — the first claimant sets a permanent password, locking out the legitimate owner and persisting the takeover of a paying account. The behavior is intentional (documented migration path) but insecure: a proper migration would verify email ownership (reset link) instead of first-come-first-claim. Real and exploitable, not theoretical. High is justified by paid-account full takeover with persistent lockout; medium would be defensible given the bounded legacy-only scope and email-knowledge precondition."
+        }
+      },
+      {
+        "file": "lib/session.ts",
+        "line": 12,
+        "title": "Sessioni non revocabili: logout, downgrade piano e cambio password non invalidano il cookie da 30 giorni",
+        "severity": "high",
+        "description": "Il cookie di sessione (TTL 30 giorni, riga 12) contiene solo `identifier` + `iat` ed è validato esclusivamente su firma HMAC e freschezza. Non esiste alcun meccanismo di revoca server-side (nessun token-version/session-epoch nella tabella profiles). Conseguenze: (1) un cookie rubato/leakato resta valido per l'intero TTL; (2) il logout (auth route) cancella solo il cookie locale, non invalida copie esfiltrate; (3) un cambio password non termina le sessioni esistenti; (4) se un admin declassa o sospende un account, le sessioni in essere restano valide fino alla scadenza naturale (il piano viene risolto fresco dalla DB, quindi il piano sì decade, ma l'identità resta autenticata). Per una piattaforma con piani a pagamento la mancanza di revoca è una lacuna reale.",
+        "suggested_fix": "Aggiungere una colonna `session_epoch` (o `password_changed_at`) in profiles, includerla nel payload firmato e confrontarla in getSessionPlan (lib/auth.ts): se diversa, rifiutare. Bumpare l'epoch su logout-all, cambio password e sospensione account.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in code. /Users/calde/Desktop/agentic-markets/lib/session.ts: cookie payload is only {identifier, iat}, HMAC-SHA256 signed, TTL 30 giorni (riga 13); verifySession valida solo firma + freschezza — nessun session id, nessun token-version. Nessun meccanismo di revoca esiste: grep su app/lib/db/supabase non trova token_version/session_epoch e le migration di profiles (db/migrations/002_profiles.sql + 20260605190000_profiles_password.sql) confermano che la tabella non ha colonne di versioning sessione. /Users/calde/Desktop/agentic-markets/app/api/auth/route.ts righe 71-75: logout setta solo maxAge:0 sul client — una copia esfiltrata del cookie resta valida per tutto il TTL. Non esiste endpoint di cambio password lato cliente, ma strutturalmente una rotazione di password_hash non invalida le sessioni perché verifySession non tocca mai il DB. Anche il cookie admin_full (/api/founder/grant) usa lo stesso schema 30 giorni senza revoca. PERÒ la severity 'high' è sovrastimata per tre ragioni verificate: (1) il piano è SEMPRE risolto fresco dal DB a ogni richiesta (lib/auth.ts getSessionPlan + effectivePlan con degrado runtime a 'free') — downgrade/scadenza hanno effetto immediato, quindi zero bypass economico/di contenuti a pagamento; resta esposta solo l'identità autenticata nuda. (2) Esistono kill-switch grossolani: cancellare la riga profiles uccide la sessione (rows.length check) e ruotare SESSION_SECRET invalida tutto. (3) Il cookie è httpOnly + secure + sameSite=lax: non leggibile via XSS, quindi lo sfruttamento richiede una compromissione preliminare (leak server-side, device compromise, MITM). È una lacuna di hardening reale e raggiungibile (logout non server-side, sessioni non terminabili per-utente), in linea con le best practice OWASP violate, ma con impatto pratico contenuto: medium, non high."
+        }
+      },
+      {
+        "file": "lib/db.ts",
+        "line": 48,
+        "title": "Query costruite per interpolazione di stringa anziché parametrizzate (su exec_sql SECURITY DEFINER)",
+        "severity": "medium",
+        "description": "`dbQuery`/`dbExecute` non usano prepared statement: passano a `exec_sql` una stringa SQL costruita da `interpolate` (riga 48) che fa solo l'escape degli apici singoli (`'` -> `''`) per i tipi string, e `String(val)` per gli altri. Funziona oggi perché Postgres ha `standard_conforming_strings=on` e i parametri sono scalari, ma è fragile: (1) un valore `number` pari a `NaN`/`Infinity` produce `NaN`/`Infinity` come literal; (2) un parametro oggetto/array dà `[object Object]`/join non escapati; (3) qualunque futuro chiamante che passi un identificatore di colonna/tabella o un tipo non previsto introduce injection diretta. Il blast radius è alto perché `exec_sql` è SECURITY DEFINER (docs/supabase_schema.sql:407-425): una breakout esegue con privilegi del definer e, in caso di errore della SELECT-wrap, l'EXCEPTION esegue comunque la query raw.",
+        "suggested_fix": "Sostituire exec_sql con una RPC realmente parametrizzata (parametri tipizzati passati a USING in EXECUTE) o usare il client SQL parametrizzato. Nel frattempo, in `interpolate` rifiutare esplicitamente valori non finiti e tipi non scalari (throw) invece di stringificarli.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "The architectural core of the finding is confirmed in code: lib/db.ts:48 interpolate() builds SQL by string substitution rather than via bind parameters, and passes it to exec_sql, which is SECURITY DEFINER (docs/supabase_schema.sql:407-425) with an EXCEPTION handler that runs the raw query (line 421). So \"not parameterized, against a high-privilege function\" is accurate and verifiable.\n\nHowever, the specific exploitability claims are largely wrong or hypothetical, so it is a latent/defense-in-depth issue, NOT a reachable vulnerability:\n- String params (the only attacker-controlled type used in practice) are escaped via '\\''->'\\'''\\'' and quoted. Under Postgres default standard_conforming_strings=on this is complete and correct escaping; no string-injection path exists.\n- Claim (2) is factually false: objects/arrays are NOT in the number/boolean/null branches, so they fall through to the final branch and ARE quoted+escaped ('[object Object]', '1,2', with embedded quotes doubled). Not an injection vector.\n- Claim (1): a JS number stringifies only to digits/./-/e/NaN/Infinity — no quotes or semicolons possible, so it can cause a syntax error (caught, returns []) but not injection. JSON can't even carry NaN. Robustness nit, not security.\n- Claim (3) (identifier injection by a hypothetical future caller) is about code that doesn't exist; identifiers can't be bound in real prepared statements either.\n\nI also verified callers handling user input (app/api/auth/route.ts, app/api/track/route.ts, app/api/partner-request/route.ts) and the only WHERE-clause concatenation (app/api/v2/predictions/route.ts:51) — conditions.join joins constant SQL fragments only, with all user input pushed as $N placeholders. No caller concatenates raw user input into the SQL string.\n\nVerdict: real as a hardening/defense-in-depth item with genuinely high blast radius if it were ever reachable (SECURITY DEFINER + raw-query EXCEPTION fallback that can run multi-statement SQL), but not exploitable in the current code. The reviewer concedes it \"works today.\" Medium overstates a non-reachable issue; low is the correct severity. Relevant files: /Users/calde/Desktop/agentic-markets/lib/db.ts (interpolate, lines 48-57), /Users/calde/Desktop/agentic-markets/docs/supabase_schema.sql (exec_sql, lines 407-425)."
+        }
+      },
+      {
+        "file": "lib/db.ts",
+        "line": 28,
+        "title": "dbQuery inghiotte ogni errore e ritorna [] → logout silenzioso e letture fail-open",
+        "severity": "medium",
+        "description": "Il `catch` di `dbQuery` logga e ritorna `[]` (righe 28-30). In getSessionPlan (lib/auth.ts) un errore DB transitorio fa quindi ritornare `null`: l'utente autenticato appare disconnesso (resolveAccessState -> \"anonymous\"). Peggio per la coerenza: le route di lettura che usano dbQuery per caricare dati/gating trattano un errore di backend come \"nessuna riga\", mascherando i guasti e producendo stati incoerenti (board vuota vs errore reale) senza alcun segnale all'utente o monitoraggio. Le scritture critiche usano correttamente dbExecute (fail-loud), ma la risoluzione della sessione e dei piani passa da dbQuery silenzioso.",
+        "suggested_fix": "Distinguere \"nessuna riga\" da \"errore\": in getSessionPlan/resolveAccessState propagare l'errore (o ritornare uno stato esplicito di degrado) invece di equipararlo a sessione assente; almeno per il path auth far rilanciare l'errore così le route possono rispondere 5xx anziché trattare l'utente come anonimo.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in code. /Users/calde/Desktop/agentic-markets/lib/db.ts lines 28-31: dbQuery catches every error, logs to console, and returns [] (line 23 also returns [] when Supabase env vars are missing). /Users/calde/Desktop/agentic-markets/lib/auth.ts getSessionPlan (lines 44-48) uses dbQuery and treats empty rows as \"no session\" -> null; resolveAccessState maps null to \"anonymous\" and requireAccess/requirePremium return 401. Since every gated request resolves the plan fresh from the profiles table via db.rpc(\"exec_sql\"), any transient Supabase error (outage, rate limit, network blip) makes authenticated/paying users appear logged out, silently. Read routes (predictions, leaderboard, data, match-builder, admin metrics — 25+ files) likewise render DB errors as empty datasets with HTTP 200, masking outages from users and monitoring. The contrast claimed by the reviewer is accurate: root lib/db.ts defines a fail-loud dbExecute (with an explicit comment) used for critical writes in app/api/auth/route.ts, while session/plan resolution stays on silent dbQuery. One framing correction: for gating this is fail-CLOSED (errors deny, never grant), so no privilege escalation — the impact is reliability/observability (silent logout, fail-silent reads). Additionally, in app/api/auth/route.ts a swallowed loadAuthRow (line 137) makes `existing` null, letting register proceed to the ON CONFLICT upsert that overwrites password_hash (line 162-168) and skips the admin_full guard (line 141) — a real, if timing-dependent, account-overwrite edge. Severity medium is correct: reachable in practice, user-facing for paying customers near go-live, but not a direct security bypass."
+        }
+      },
+      {
+        "file": "app/api/auth/route.ts",
+        "line": 182,
+        "title": "User enumeration e assenza di rate limiting sull'endpoint auth",
+        "severity": "medium",
+        "description": "Le risposte distinguono gli account esistenti: login restituisce 404 \"no account for this email\" se l'email non esiste vs 401 \"wrong email or password\" se la password è errata (righe 182, 197); register restituisce 409 \"account already exists\" (riga 149). Questo consente enumerazione degli utenti. Inoltre non c'è alcun rate limiting/lockout sul POST /api/auth, quindi è possibile brute-force delle password (scrypt protegge dal cracking offline ma non dai tentativi online) ed enumerazione massiva di indirizzi.",
+        "suggested_fix": "Uniformare i messaggi (es. \"wrong email or password\" sia per email inesistente sia per password errata) e introdurre rate limiting/backoff per IP+identifier (e idealmente CAPTCHA dopo N tentativi) sull'endpoint auth.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in /Users/calde/Desktop/agentic-markets/app/api/auth/route.ts. The three distinct responses cited all exist exactly: login returns 404 \"no account for this email\" (line 182) when the identifier is missing vs 401 \"wrong email or password\" (line 197) when only the password is wrong; register returns 409 \"account already exists — please log in\" (line 149) for taken emails. This is a clear user-enumeration oracle on a public, unauthenticated endpoint (route is `dynamic = \"force-dynamic\"`, register/login require no prior session). An attacker can map which emails are registered by comparing 404 vs 401 on login or hitting 409 on register.\\n\\nRate limiting is confirmed absent for this route: middleware.ts only matches [\"/admin/:path*\"] (line 24), so it never intercepts /api/auth, and vercel.json defines no WAF or rate-limit rules. Rate limiting exists elsewhere in the codebase (app/api/match-builder slip cap, external-API limiters) but not on auth, so online brute-force and bulk enumeration are unthrottled at the application layer.\\n\\nMitigating but non-refuting: scrypt with N=16384 (~50ms/attempt, lib/password.ts) adds per-request CPU cost that slows single-threaded brute-force, and Vercel provides baseline platform DDoS protection — but neither prevents enumeration nor low-rate/distributed credential attacks. The reviewer correctly characterized scrypt as offline-only protection. Both sub-findings are real and practically reachable, not theoretical. Medium severity is appropriate: information disclosure plus a missing control that enables follow-on attacks, rather than direct account compromise on its own."
+        }
+      },
+      {
+        "file": "app/api/admin/profiles/switch/route.ts",
+        "line": 42,
+        "title": "GET che muta lo stato di sessione protetto da CSRF solo via header Sec-Fetch-Site",
+        "severity": "medium",
+        "description": "L'endpoint admin di profile-switch è una GET che imposta il cookie di sessione e reindirizza (impersona un profilo). La protezione CSRF si basa unicamente su `req.headers.get(\"sec-fetch-site\") === \"cross-site\"` (riga 42): la condizione blocca solo quando l'header è presente e vale esattamente \"cross-site\". Client/browser che non inviano Sec-Fetch-Site (header assente -> check non scatta) bypassano la difesa, e una GET che cambia stato è di per sé prefetchabile/linkabile. Trattandosi di un'azione admin che può assegnare al browser una sessione di un altro profilo, l'impatto è significativo.",
+        "suggested_fix": "Convertire l'operazione in POST con token CSRF/double-submit, oppure richiedere e validare esplicitamente Origin/Referer same-origin (fallback deny quando entrambi assenti), non solo Sec-Fetch-Site.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "Confirmed in code. app/api/admin/profiles/switch/route.ts line 39 is the sole CSRF guard and fires only on the exact string sec-fetch-site === \"cross-site\"; if the header is absent the guard does not run, and the request proceeds to set am_session to an attacker-chosen profile and redirect (lines 64-70). The reviewer's mechanism is correct.\n\nExploitability is real but narrower than the description implies. Sec-Fetch-Site is a browser-set forbidden header (JS can't forge/suppress it), so the absent-header path is only reachable from (a) non-browser clients, which carry no victim cookies (not CSRF), or (b) browsers that don't implement Fetch Metadata — chiefly WebKit/Safari and all iOS browsers, plus pre-2020 browsers. The auth cookie the attack rides on, admin_token (app/api/admin/login/route.ts:22-28), is SameSite=Lax. Lax blocks the cookie on subresource vectors (img/fetch/cross-site form POST) — those fail at isAdminAuthorized regardless — but Lax intentionally permits the cookie on top-level cross-site GET navigations. Since this is a state-changing GET reachable by top-level navigation, on a Safari/WebKit admin victim the cookie is sent, auth passes, line 39 never fires, and the session is switched. On Chrome/Firefox/Edge the same navigation carries Sec-Fetch-Site: cross-site and IS blocked, so the defense works there.\n\nSeverity: I downgrade medium -> low. Preconditions are significant (victim must be one of the two authenticated admins/founders, must use a non-Fetch-Metadata browser, attacker must know a valid profile id/identifier) and impact is constrained: it is a login/profile-switch CSRF that forces the admin's own browser into another profile's am_session. No privilege escalation and no data exfiltration — the plan is always re-resolved from the profiles table server-side (lib/session.ts contract, getSessionPlan), so a forced cookie cannot elevate a plan. The finding is valid (a real defense gap: relying solely on Sec-Fetch-Site for a state-changing GET, with SameSite=Lax not covering top-level-nav GET CSRF), but the practical risk is low."
+        }
+      },
+      {
+        "file": "lib/best-bets.ts",
+        "line": 35,
+        "title": "Best bet tennis: match già iniziati (fino a 12h dopo il via) surfacati come value/model pick pre-match",
+        "severity": "low",
+        "description": "`isTennisMarketVisible` considera visibile un match finché `scheduledAt + 12h > now` (righe 33-37), quindi una partita di tennis già iniziata — o anche conclusa entro le 12 ore — continua a essere classificata come `value`/`model_signal` e mostrata tra le best bet con edge/probabilità pre-match. A differenza del calcio (`isFutureMarket` richiede start futuro), qui si rischia di proporre come scommessa di valore eventi in-play o terminati, con edge non più validi. Possibile incoerenza dati e pick fuorvianti per l'utente.",
+        "suggested_fix": "Separare \"finestra di trading\" (per quanto mostrare il match nella UI) da \"eleggibilità a pick di valore\": classificare come value/model_signal solo se lo start è ancora futuro (o entro un margine molto stretto), oppure marcare esplicitamente le righe in-play come tali e non come pre-match value.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "app/api/auth/route.ts",
+        "line": 35,
+        "title": "Risoluzione profilo ambigua: OR su identifier con LIMIT 1 senza ORDER BY",
+        "severity": "low",
+        "description": "Le lookup usano `WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1` senza ORDER BY (route.ts:35 e lib/auth.ts:46). Se esistono profili legacy con case/spazi diversi (es. \"Foo@x.com\" e \"foo@x.com\"), la query può intercettare più righe e LIMIT 1 ne restituisce una arbitraria a discrezione del planner: rischio di autenticare/risolvere il piano del profilo sbagliato in modo non deterministico tra le chiamate.",
+        "suggested_fix": "Normalizzare gli identifier a livello DB (constraint/unique su lower(trim)) e/o aggiungere un ORDER BY deterministico (es. preferire il match esatto, poi created_at) prima del LIMIT 1, garantendo che una sola riga sia eleggibile.",
+        "area": "lib-server",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "core/matchbook_client.py",
+        "line": 170,
+        "title": "get_football_markets parsa QUALSIASI mercato come 1X2: quote sbagliate possono entrare nel feed primario",
+        "severity": "high",
+        "description": "get_football_markets itera tutti i markets di ogni evento (include=markets) senza filtrare per tipo/nome mercato. Qualsiasi mercato con >=3 runner aperti di cui uno contiene 'draw' nel nome viene emesso come 1X2: un mercato 'Half Time Result' (runner: Chelsea/Draw/Arsenal, stessi nomi squadra) produce una riga con le quote del PRIMO TEMPO spacciate per match odds. In agents/data_collector.py (riga ~301) odds_map tiene la PRIMA riga per coppia di squadre ('if key not in odds_map'), quindi se il mercato half-time precede il Match Odds nella risposta, le quote corrotte vincono e alimentano edge/predizioni pubblicate (Matchbook è la fonte odds primaria). In più il codice assume che il primo runner non-draw sia la squadra di casa: se l'ordine dei runner non è home-first, odds_home/odds_away vengono invertite silenziosamente. Stesso problema in get_tennis_markets (riga 106): qualsiasi mercato a 2 runner (es. total games Over/Under) viene emesso come moneyline.",
+        "suggested_fix": "Filtrare i mercati per tipo: passare 'market-types': 'money_line' nei params della _get('/events', ...) o scartare i market il cui name non è 'Match Odds' / 'Moneyline'. Per home/away non affidarsi all'ordine dei runner: confrontare i nomi dei runner con event.get('name') ('Home vs Away') per assegnare oh/oa.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "CONFERMATO con evidenza nel codice. (1) core/matchbook_client.py:170-217: get_football_markets richiede /events con include=markets,runners,prices senza alcun filtro per tipo/nome mercato e il parser emette come 1X2 qualsiasi mercato con >=3 runner aperti di cui uno contiene 'draw' — un 'Half Time Result' (runner Home/Draw/Away con stessi nomi squadra) supera tutti i check e produce una riga con chiave normalizzata identica al Match Odds ma quote del primo tempo. (2) agents/data_collector.py:291-304: Matchbook è la fonte odds PRIMARIA (OddsAPI solo fallback) e 'if key not in odds_map' tiene la prima riga per coppia: se il mercato HT precede il Match Odds nell'array (ordinamento non garantito né dal codice né dal contratto API), le quote corrotte vincono. (3) Impatto reale senza difese: analyst.py:_extract_odds (195-200) usa odds_home/draw/away così come sono per il calcolo edge pubblicato; model.py:302-315 le usa per devig+blend delle probabilità servite; nessun sanity check su margine/plausibilità a valle. (4) Il fallback odds_api_client.py:215 filtra esplicitamente market.key=='h2h' — conferma che il filtro è l'attesa di progetto e manca solo nel path Matchbook. (5) Inversione home/away (primo runner non-draw = home) esiste in codice ma è la parte più teorica (Matchbook ordina home-first per convenzione). (6) Tennis: il difetto esiste identico (qualsiasi mercato a 2 runner emesso come moneyline, righe 106-156) ma get_tennis_markets NON ha caller nel repo (tennis pipeline è ESPN; tennis_trader usa solo place_bet) — dead code, non raggiungibile oggi. Severity: il trigger dipende dall'ordine/presenza dei mercati nella risposta Matchbook (probabilistico, non certo a ogni ciclo), ma è corruzione silenziosa della fonte primaria che alimenta edge e predizioni pubblicate, senza alcun controllo a valle e con un fuzzy-match (substring/sim 0.65 in _build_event:498-503) che amplia la superficie: high confermata per il path football; la parte tennis da sola sarebbe low (dead code)."
+        }
+      },
+      {
+        "file": "core/supabase_client.py",
+        "line": 738,
+        "title": "settle_unified_tennis marca 'lost' le righe senza pick (below-floor) corrompendo il track record pubblico",
+        "severity": "high",
+        "description": "result = \"won\" if (row.get(\"pick\") or \"\") == winner_name else \"lost\". Le righe tennis sotto il floor di surfacing hanno pick=null nell'adapter TS (lib/tennis-adapter.ts riga 68: surfacedPick = belowFloor ? null : pick), quindi al settlement il confronto '' == winner_name è sempre False e la riga 'no clear favourite' — che per contratto NON dichiara alcuna direzione — viene scritta come 'lost' nella history pubblica (/api/v2/history), peggiorando artificialmente il track record. Inoltre il confronto è uguaglianza esatta di stringhe tra il pick (nome giocatore scritto dal TS adapter) e winner_name (da TennisPrediction lato Python): oggi coincidono perché vengono dalla stessa tabella, ma qualsiasi divergenza futura di spelling marcherebbe silenziosamente 'lost' un pick vincente.",
+        "suggested_fix": "In settle_unified_tennis: se row.get('pick') è null/vuoto, settlare come 'void' (o skippare la riga) invece di 'lost'. Per il confronto usare canonical_player_key(row.get('pick')) == canonical_player_key(winner_name) da core.tennis_names invece dell'uguaglianza raw.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "Confirmed end-to-end with code evidence. (1) lib/tennis-adapter.ts:67-68 sets surfacedPick=null when confidence < SURFACE_FLOOR_TENNIS (62, lib/surfacing-gate.ts) — common in tennis. (2) lib/publication-gate.ts:50-54 does NOT reject pick=null candidates: \"missing_pick\" is only a paper reason, so the row IS inserted into unified_predictions with pick=null, is_paper=true. (3) agents/tennis_settlement.py:152 calls settle_unified_tennis for every completed match; core/supabase_client.py:738 computes result = \"won\" if (row.get(\"pick\") or \"\") == winner_name else \"lost\", so pick=null always yields \"lost\" (should be \"void\" per the adapter's own contract comment that below-floor rows carry NO directional pick). (4) app/api/v2/history/route.ts:74-92 computes won/lost/win_rate over all historical rows with no is_paper exclusion, so the public track record win_rate is systematically and silently deflated by phantom losses. Tests (tests/test_tennis_history_bridge.py:98-102) cover only non-null picks, confirming the untested gap. The secondary string-equality fragility claim is accurate but currently benign (both sides read player names from the same tennis_predictions table). Not attacker-exploitable, but it is a deterministic, recurring data-integrity corruption of the product's core public trust metric — severity high stands."
+        }
+      },
+      {
+        "file": "core/quota_tracker.py",
+        "line": 43,
+        "title": "QuotaTracker: lockout permanente del provider dopo mezzanotte + reset quota a ogni restart (overspend)",
+        "severity": "high",
+        "description": "Doppio bug speculare. (1) Deadlock cross-midnight: can_call non controlla la data dell'entry in cache — se ieri un provider ha esaurito la quota (used >= limit), oggi can_call continua a restituire False; il reset del contatore avviene SOLO dentro increment (righe 67-69), che però non viene mai più chiamato perché tutti i call-site sono gated da can_call (es. data_hub.py:47-52,73,106). Il provider resta bloccato per sempre finché il processo non viene riavviato. (2) load() (riga 77), che ricarica l'usage da source_quota_log, non è chiamato da nessun punto del codebase (verificato via grep): a ogni restart la cache riparte da zero e il guard giornaliero su odds_api (piano pagato, 3200 crediti/giorno) può essere sforato — costo reale, dato che i LaunchAgent riavviano i servizi.",
+        "suggested_fix": "In can_call: if entry is None or entry.get('date') != str(date.today()): return True (l'entry stantia non deve bloccare il nuovo giorno). In DataHub.__init__ o all'avvio del collector chiamare await quota.load(provider) per ogni provider noto, così l'usage sopravvive ai restart.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "CONFERMATO entrambi i lati del finding con evidenza diretta nel codice. (1) Lockout cross-midnight: in /Users/calde/Desktop/agentic-markets/core/quota_tracker.py, can_call (righe 43-50) ritorna `entry[\"used\"] < entry[\"limit\"]` senza mai confrontare entry[\"date\"] con la data odierna; il reset al cambio giorno esiste SOLO nel ramo dentro increment (righe 67-69). Tutti e 6 i call-site di increment in core/data_hub.py (righe 95, 116, 121, 160, 177, 189) sono raggiungibili esclusivamente quando il rispettivo can_call ha restituito True (gate alle righe 47/49/51, early-return riga 73, condizioni 106/112). Quindi a quota esaurita increment non viene mai più invocato per quel provider e il reset non avviene mai: lockout permanente fino al restart. Raggiungibile in pratica: DataHub (e il QuotaTracker con cache in-memory) è istanziato una volta sola in agents/data_collector.py:124 dentro un agente long-running (while self._running, loop con sleep) eseguito via LaunchAgent (com.agentic-markets.agents.plist presente sul sistema), quindi il processo attraversa la mezzanotte; i limiti sono concretamente raggiungibili (api_football e tennis_rapidapi daily=100 con increment per-lega per-ciclo; odds_api 3200 dimensionato vicino al burn worst-case ~2880/giorno, di più con densificazione imminent-kickoff a 10 min). (2) load() mai chiamato: grep su tutto il codebase conferma zero call-site per QuotaTracker.load (definito a riga 77); source_quota_log è write-only via _persist. A ogni restart la cache riparte vuota (entry None → can_call True, contatore da 0), quindi i riavvii (watchdog/LaunchAgent, deploy) permettono di sforare il guard giornaliero su odds_api — piano pagato 100K crediti/mese, e il commento alle righe 18-21 dice esplicitamente che il 3200 è calibrato per stare a ~99K/mese worst-case: i restart rompono quella garanzia con costo monetario reale. I due bug sono davvero speculari (restart frequenti mitigano il lockout ma aggravano l'overspend). Severity high appropriata: blackout silenzioso permanente di fonti dati core del prodotto + overspend su piano a pagamento; non è un problema di security ma di affidabilità e costi in produzione, con impatto diretto sul prodotto."
+        }
+      },
+      {
+        "file": "core/db.py",
+        "line": 348,
+        "title": "get_pending_bets_for_settlement scarta l'offset timezone senza convertire (+ utcnow naive deprecato ovunque)",
+        "severity": "medium",
+        "description": "ko.replace(tzinfo=None) tronca l'offset SENZA convertire a UTC: un kickoff salvato come '2026-06-10T20:00:00+02:00' diventa 20:00 'UTC' invece di 18:00, spostando il confronto col cutoff di 2 ore — il bet entra in settlement 2h in ritardo (o, per offset negativi, in anticipo, quando il match potrebbe non essere finito). Il campo Bet.kickoff è una stringa ISO libera scritta da provider diversi, quindi l'arrivo di offset non-UTC è plausibile (API-Football supporta timezone arbitrarie). Inoltre l'intero file usa datetime.datetime.utcnow() (righe 32, 51, 335, 364, 403, 428, 437, ecc.): deprecato in Python 3.12+ (il progetto gira su 3.14, da cui i DeprecationWarning nei test) e produce timestamp naive nel DB mentre altri writer (es. EloRating, supabase_client) usano timestamp aware — confronti e ordinamenti incoerenti.",
+        "suggested_fix": "Usare ko.astimezone(timezone.utc).replace(tzinfo=None) (o confrontare direttamente aware vs aware) in get_pending_bets_for_settlement. Sostituire datetime.utcnow() con datetime.now(timezone.utc) in tutto il file (per le colonne naive: .replace(tzinfo=None) dopo la conversione, mantenendo la semantica attuale).",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "The code pattern is confirmed: core/db.py:347-349 does ko.replace(tzinfo=None) which truncates the ISO offset without converting to UTC, then compares against a naive utcnow() cutoff (line 335). If a non-UTC offset ever reached Bet.kickoff, settlement would shift by the offset exactly as described. The utcnow() deprecation claim is also factual (22 usages, venv is Python 3.14.4 where utcnow is deprecated since 3.12). HOWEVER, the claimed functional impact is not reachable with the current system: the only live writer of Bet.kickoff is agents/trader.py, whose kickoff originates from API-Football fixture[\"fixture\"][\"date\"] fetched by core/football_api_client.py WITHOUT a timezone param (API-Football defaults to UTC); the other fixture sources (football-data.org utcDate, OpenLigaDB matchDateTimeUTC) are UTC-only as well, and the deprecated Betfair sync writes kickoff=None (filtered by Bet.kickoff.isnot(None)). Empirical check on the production bets table: all 160 non-null kickoff values end in '+00:00', zero non-UTC offsets — so replace(tzinfo=None) currently yields the correct UTC value and no bet is settled late/early today. The aware-vs-naive mixing (EloRating timezone=True vs naive Bet columns) involves separate tables with no demonstrated cross-comparison. Verdict: real latent defect / robustness-hygiene issue worth fixing (use astimezone(timezone.utc) and datetime.now(timezone.utc)), but severity downgraded from medium to low because the harmful path is not triggered by any current data source and there is concrete DB evidence of UTC-only data."
+        }
+      },
+      {
+        "file": "core/supabase_client.py",
+        "line": 335,
+        "title": "edge_percent calcolato dalla confidence arrotondata: errore fino a ±0.5pp che può invertire il segno dell'edge",
+        "severity": "medium",
+        "description": "In wc_prediction_to_unified_row: pick_prob = confidence / 100.0, dove confidence = round(pick_prob * 100) calcolato in dc_prediction_to_unified_row (riga 150). L'edge servito al cliente (edge = pick_prob - 1/pick_odds, riga 336) viene quindi calcolato sulla probabilità arrotondata al punto percentuale intero: errore fino a ±0.5 punti, che su edge tipici di 1-3% è sostanziale e può far apparire positivo un edge negativo (es. p=0.444→44%, odds 2.26: edge reale +0.18%, edge mostrato -0.25%; o viceversa). Per un prodotto il cui valore dichiarato è l'edge vs mercato, è un dato incoerente servito al cliente. Stesso difetto sui fair_odds (round(1/pick_prob) usa la prob piena — incoerente con l'edge).",
+        "suggested_fix": "Propagare la probabilità non arrotondata: in wc_prediction_to_unified_row ricavare pick_prob direttamente da p ({'HOME': p.p_home, 'DRAW': p.p_draw, 'AWAY': p.p_away}[pick]) invece che da confidence/100.0.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "CONFERMATO con evidenza diretta nel codice.\n\nCATENA VERIFICATA:\n1. /Users/calde/Desktop/agentic-markets/core/supabase_client.py:150 — `confidence = round(pick_prob * 100)` (arrotondamento a intero, quantizzazione ±0.5pp) in dc_prediction_to_unified_row.\n2. supabase_client.py:283,296 — wc_prediction_to_unified_row riusa quella row e legge `confidence = row[\"confidence_score\"]`.\n3. supabase_client.py:335-339 — `pick_prob = confidence / 100.0`; `edge = pick_prob - (1.0 / pick_odds)`; `row[\"edge_percent\"] = round(edge * 100, 2)`. L'edge è calcolato dalla probabilità QUANTIZZATA, non da quella piena, benché la prob piena sia disponibile nello stesso scope (p.p_home/p_draw/p_away, e già serializzata in notes alla riga 206-208).\n4. Incoerenza interna confermata: fair_odds (riga 149) usa la prob PIENA (`round(1.0/pick_prob, 2)`), quindi fair_odds e edge_percent della stessa row derivano da due probabilità diverse.\n\nRAGGIUNGIBILITÀ — non teorico:\n- agents/model.py:472-498 — signal_allowed = tier in (\"signal_allowed\",\"premium_candidate\") per row WC non-friendly; con odds_triple reale → promoted → edge_percent scritto in unified_predictions (upsert_unified_rows riga 499).\n- Servito al cliente: app/api/predictions/route.ts:633 passa edge_percent così com'è; components/world-cup/WcBoard.tsx:294-295 genera la copy \"There's value here: the model beats the market price by +X%\" SOLO se edge_percent > 0, e righe 400-402 colorano il badge verde/grigio in base al segno. Quindi l'errore ±0.5pp può letteralmente accendere/spegnere il claim di valore mostrato al cliente.\n- Il flip di segno richiede |edge vero| < 0.5pp, ma è un regime comune qui: le prob servite sono market-blended α=0.3 verso il mercato de-viggato (docstring riga 274-276), quindi per costruzione gli edge vs quota sono piccoli. Inoltre il badge mostra toFixed(1): l'errore di quantizzazione (fino a 0.5pp) è ben sopra la precisione mostrata, quindi anche senza flip il numero esposto è sistematicamente impreciso.\n\nVERIFICA ESEMPIO: p=0.444, odds 2.26 → edge vero +0.15% (il reviewer scrive +0.18%, piccolo errore aritmetico suo), edge mostrato -0.25%. Meccanismo del flip esatto.\n\nSEVERITY: medium è corretta. È un difetto di correttezza su dato client-facing che è la value proposition del prodotto (edge vs mercato), ma: scope limitato alle sole row WC promosse a signal (le paper hanno edge_percent=None, riga 365), errore bounded ±0.5pp, nessun impatto su soldi gestiti (betting agent disattivato al lancio). Non critical/high perché non corrompe settlement né track record (l'esito non dipende da edge_percent); non low perché il segno dell'edge guida direttamente la copy di valore mostrata all'utente pagante. Fix banale: usare la pick_prob piena (già in scope) invece di confidence/100.",
+          "adjusted_severity": "medium"
+        }
+      },
+      {
+        "file": "core/football_data_org_client.py",
+        "line": 157,
+        "title": "get_match_result: fuzzy match a soglia 0.6 first-hit può settlare il risultato del match sbagliato",
+        "severity": "medium",
+        "description": "Il fallback di settlement cerca tra i match FINISHED in ±3 giorni e ritorna il PRIMO con similarità >=0.6 su entrambi i nomi, non il migliore. SequenceMatcher('manchester united','manchester city') ≈ 0.69, ('real sociedad','real madrid') ≈ 0.67: in una finestra di 3 giorni della stessa competizione (es. fase a gironi CL/WC con più match di squadre dal nome simile) il risultato di un altro match può superare la soglia ed essere usato per settlare won/lost — corruzione silenziosa del track record, senza alcun log dell'ambiguità.",
+        "suggested_fix": "Selezionare il match col punteggio combinato massimo (non il primo >=soglia), alzare la soglia a ~0.8, e in caso di più candidati sopra soglia con score vicini ritornare None + warning log (fail-closed, coerente col principio 'settlement must never guess').",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "CONFIRMED. core/football_data_org_client.py:157-166 returns the FIRST finished match in the window with similarity >=0.6 on both team names (not the best match), with no ambiguity check or logging. Reachable in production: it is the fallback in ResultSettlementAgent._fetch_result (result_settlement.py:282) and _fetch_unified_result (:255), triggered whenever API-Football fails (403/429 explicitly fall through) or external_event_id is non-numeric; the returned score directly settles bets (settle_bet won/lost, profit_loss) and unified_predictions (public track record, incl. WC). Measured collisions: 'Manchester United FC'/'Manchester City FC' = 0.842 (the reviewer's 0.69 understated it), WC pairs Austria/Australia 0.875, Slovakia/Slovenia 0.75, Iran/Iraq 0.75 — all above the 0.6 threshold, and 'WC' is in FREE_TIER_CODES with dense group-stage scheduling inside the -1/+2 day window. The API returns matches date-ordered, so a wrong earlier match can win even when the correct match is present. Minor reviewer inaccuracies: window is -1/+2 days (not ±3; docstring lies) and 'real sociedad'/'real madrid' is actually 0.583 (below threshold), but these do not invalidate the finding. Severity medium is correct: silent track-record corruption, but requires the fallback path plus a simultaneous double name collision in a short same-competition window."
+        }
+      },
+      {
+        "file": "core/data_hub.py",
+        "line": 139,
+        "title": "_dedup_key su spelling raw dei provider: lo stesso fixture da provider diversi genera righe duplicate",
+        "severity": "medium",
+        "description": "_merge_fixtures deduplica con home/away lowercased raw + data, ma i provider scrivono nomi diversi per la stessa squadra ('Bayern Munich' API-Football vs 'FC Bayern München' fdorg vs displayName ESPN; 'Korea Republic' vs 'South Korea'). La dedup fallisce, il merge produce due fixture con match_id diversi ('apifootball:...' e 'fdorg:...') e _write_fixtures li scrive entrambi in fixtures_enriched. È esattamente la classe di bug documentata e fixata altrove nel codebase (supabase_client.national_dedup_key, #WC-DEDUP-1: 'the same fixture arrives with different event ids ... and splits one match into duplicate board cards'), ma il path club di data_hub non applica la stessa lezione.",
+        "suggested_fix": "Riusare la ricetta di national_dedup_key/football_pair_key in _dedup_key: normalizzare i nomi (canonical_team_name + normalize_name di odds_api_client per i suffissi club) e usare la coppia ordinata, così gli spelling dei provider collassano sulla stessa chiave.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "CONFERMATO ma con severity ridotta a low. Il difetto esiste: core/data_hub.py:139-143 deduplica su spelling raw lowercased (home|away|data) senza canonicalizzazione, mentre il codebase ha già il fix di riferimento per questa esatta classe di bug (national_dedup_key in core/supabase_client.py:226, #WC-DEDUP-1, che usa normalize_team(canonical_team_name(...)) e cita 'Korea Republic vs South Korea' e le board card duplicate). L'intento cross-provider del merge è provato da tests/test_data_hub.py (asserisce merge api_football+fdorg in 1 riga, ma solo con spelling identici). PERÒ: (a) il path d'attacco principale citato dal reviewer (api_football vs fdorg) è oggi IRRAGGIUNGIBILE — _parse_fdorg legge le chiavi homeTeam/awayTeam/utcDate che non esistono nell'output di _normalize() del client fdorg (che è API-Football-shaped: fixture/teams), quindi ogni riga fdorg parsa a None; in più _collect_fdorg chiama get_historical_results che fetcha solo status=FINISHED. fdorg contribuisce zero fixture (bug separato di codice morto). ESPN non passa affatto per data_hub. (b) Esiste però un path duplicati REALE e raggiungibile: api_football vs openligadb su BL1 — data_collector.py:446 passa BL1, openligadb non richiede chiave (quota 99999/day) e restituisce teamName tedeschi raw ('FC Bayern München') vs gli anglicizzati di API-Football ('Bayern Munich'); la dedup fallisce e fixtures_enriched (PK match_id) riceve 2 righe per match Bundesliga con match_id diversi, che l'upsert merge-duplicates non può unificare. (c) Impatto attuale contenuto: in tutto il repo NESSUNO legge fixtures_enriched (solo data_hub scrive; il chiamante usa il risultato merged solo per una log line, data_collector.py:451). A differenza di #WC-DEDUP-1 non genera board card duplicate né tocca predizioni/settlement: è data poisoning latente in una tabella di enrichment write-only, destinata però per design-spec a futuri consumer. Bug reale, fix giusto è riusare la canonicalizzazione esistente, ma severity medium è sovrastimata finché la tabella non ha lettori: low."
+        }
+      },
+      {
+        "file": "core/odds_api_client.py",
+        "line": 144,
+        "title": "get_odds senza try/except né gestione 429: un timeout di rete fa saltare l'intero ciclo della lega nel collector",
+        "severity": "medium",
+        "description": "A differenza di get_all_bookmaker_odds (che ha il try) e del client fdorg (che gestisce il 429), get_odds lascia propagare qualsiasi eccezione httpx (timeout, DNS, reset). Il call-site agents/data_collector.py:311 non è wrappato individualmente: l'eccezione viene catturata solo dal try per-league esterno (riga 278), abortendo TUTTO il resto del ciclo di quella lega (venue enrichment, lineup, pubblicazione predizioni) per un semplice hiccup di rete sul fallback odds. Inoltre un 429 (rate limit) non è distinto da altri errori e non c'è alcun backoff/retry.",
+        "suggested_fix": "Wrappare la chiamata httpx in try/except restituendo [] (stesso pattern di get_all_bookmaker_odds), loggando a warning; gestire esplicitamente status 429 (skip + log) come fa football_data_org_client.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "CONFIRMED. core/odds_api_client.py:144-157 — get_odds performs the httpx GET with no try/except; only non-200 status returns []. Timeouts/DNS/connection-reset/JSON-decode errors propagate, contradicting its own docstring (\"empty list if ... API error\"). The asymmetry is real: get_all_bookmaker_odds (lines 180-196, same file) wraps the identical call in try/except→[], and core/football_data_org_client.py:106-108 handles 429 with sleep(60)+[]. Call site agents/data_collector.py:311 is unwrapped; the exception is caught only by the per-league try (278/413), skipping venue enrichment (330-351), ESPN lineups (357-362) and the entire publish loop (364-399) for that league, wasting the fixtures fetch already done at 279. Reachable: the fallback runs whenever Matchbook is unconfigured/empty, and transport hiccups to api.the-odds-api.com are routine for a long-running daemon. One inaccuracy in the report: a 429 does NOT raise — it hits the status!=200 branch and fail-softs to [] (no backoff, but no abort); only transport exceptions can kill the league cycle. Severity downgraded medium→low: blast radius is one league for one cycle, self-healing on the next iteration (900s normal, 60s in the 2h prematch window), other leagues and the collector loop unaffected, and the failure is logged with traceback and surfaced in source_errors/status detail. Fix is trivial (mirror the try/except of get_all_bookmaker_odds, optionally the fdorg 429 backoff)."
+        }
+      },
+      {
+        "file": "core/data_hub.py",
+        "line": 245,
+        "title": "Scritture Supabase fire-and-forget senza check dello status HTTP: i reject (RLS/schema) sono invisibili",
+        "severity": "low",
+        "description": "_write_fixtures fa POST su fixtures_enriched senza controllare resp.status_code: se PostgREST rifiuta (400 colonna sconosciuta — es. 'providers_used' aggiunta dal merge — 401 key, RLS), il batch va perso in silenzio totale (nemmeno il log debug scatta, perché non c'è eccezione). Stesso pattern in odds_api_client.snapshot_odds_to_supabase (riga 281) e tennis_api_client.write_fixtures_to_supabase (riga 108): l'intera pipeline di snapshot odds (#ODDS-1, base della calibrazione/CLV) può smettere di scrivere per giorni senza alcun segnale, mentre upsert_heartbeat e log_prediction_snapshot fanno correttamente il check.",
+        "suggested_fix": "Dopo ogni POST controllare resp.status_code not in (200, 201, 204) e loggare a warning con resp.text[:200], come già fatto in supabase_client.upsert_heartbeat.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "core/telegram_client.py",
+        "line": 18,
+        "title": "send con parse_mode=HTML e testo non escapato: nomi squadra con '&'/'<' fanno fallire silenziosamente gli alert",
+        "severity": "low",
+        "description": "I messaggi sono inviati con parse_mode HTML ma il testo dinamico (match_header interpola home/away/league raw dentro <b>...</b>) non viene mai escapato. Telegram rifiuta con 400 'can't parse entities' i messaggi con '&' o '<' non escapati: squadre come 'Brighton & Hove Albion' fanno fallire l'intero alert (send ritorna False, solo warning log) — il flusso di notifica si rompe esattamente per quei match, in modo sistematico e silenzioso.",
+        "suggested_fix": "Escapare il testo dinamico con html.escape() in match_header (e in generale per i frammenti dinamici prima dell'invio), mantenendo i tag <b> di markup fuori dall'escape.",
+        "area": "python-core",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "agents/risk_manager.py",
+        "line": 153,
+        "title": "Exposure e variance budget committati a ogni ciclo per la stessa partita (nessun dedup prima del commit)",
+        "severity": "critical",
+        "description": "La pipeline ripubblica le stesse fixture a ogni ciclo del DataCollector: model -> analyst -> strategist riemettono la stessa opportunity su strategy:approved finché l'edge persiste. RiskManagerAgent._process chiama self._engine.commit(...) (riga 153) per OGNI messaggio, senza alcun controllo di duplicato: l'unico dedup vive a valle nel TraderAgent (skip se esiste già un Bet pending). Risultato: per una singola partita l'ExposureManager accumula stake*N_cicli su league/matchday/total e il WeeklyVarianceBudget brucia p*(1-p) a ogni ciclo, mentre la release() al settlement libera lo stake UNA volta sola. I limiti di esposizione e il variance budget si saturano con posizioni fantasma e il sistema smette di approvare bet legittimi (exposure_factor->0). Stesso leak quando il trader skippa per duplicato o in EXPERIMENT_MODE (nessun bet, nessun settlement, nessuna release).",
+        "suggested_fix": "Dedup PRIMA del commit: tracciare i match_id già committati (es. set in-memory match_id->stake committato, o spostare il check 'esiste già un bet pending per match_id' dal trader al risk manager prima di engine.commit). In alternativa, far fare il commit al trader solo dopo la scrittura riuscita del Bet (pubblicando un evento 'trader:placed' che il risk manager consuma per commit), così commit e release sono simmetrici 1:1.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "CONFIRMED. (1) DataCollector._main_loop re-publishes all fixtures in the 10-day window to market:data every 900s (60s near kickoff) with no dedup; model/analyst/strategist are pure per-message processors with no match-level dedup, so a persistent edge re-emits the same opportunity on strategy:approved every cycle. (2) risk_manager.py:153 calls self._engine.commit() for every approved message; neither the agent nor RiskManagerEngine.commit() (risk/engine.py:176-185) tracks match_id — commit() doesn't even accept it, despite the engine docstring saying 'call after a bet is placed'. (3) The only dedup is downstream in trader.py:77-88 (skip if pending Bet exists), which returns silently with no compensating release event; the single engine.release() call site (risk_manager.py:89) is driven by settlement:results, emitted once per Bet row by result_settlement.py — so N commits vs 1 release. (4) In EXPERIMENT_MODE trader.py writes no Bet row, so committed exposure/variance is never released at all. (5) Concrete math: BANKROLL=10€, stake_floor=2€, limits league 2€/matchday 1.5€/total 4€ (risk_config.yaml) — two duplicate commits saturate total exposure (ExposureManager.evaluate returns blocked/exposure_factor=0, CompositeStakeCalculator short-circuits to skip), and ~8 duplicate commits exhaust the weekly variance budget (max 2.0, up to 0.25 each) in under 2 hours at the 15-min cadence. No persistence/reconciliation of exposure state exists (only P&L is restored at startup), so the leak persists for the process lifetime. SEVERITY ADJUSTED critical→high: the failure direction is conservative — phantom exposure blocks legitimate bets rather than enabling over-staking; no fund-loss path exists, the trader is paper-only today (paper=True, real betting agent disabled at launch), and a restart clears the ghost state. It is a genuine, quickly-reachable correctness defect that effectively DoSes the betting pipeline and corrupts risk accounting (high), but not critical (fails closed, no money at risk)."
+        }
+      },
+      {
+        "file": "agents/tennis_risk_manager.py",
+        "line": 33,
+        "title": "TennisRiskManager: _pnl mai aggiornato — drawdown limit morto e bankroll sempre pieno; floor 2€ che scavalca Kelly",
+        "severity": "high",
+        "description": "self._pnl è inizializzato a 0.0 (riga 14) e non viene MAI aggiornato in nessun punto del codebase: nessun consumer di settlement tennis lo alimenta (TennisSettlementAgent scrive solo su DB). Quindi: (1) il check 'if self._pnl < -(bankroll * TENNIS_DRAWDOWN_LIMIT)' (riga 33) non può mai scattare — il circuito di protezione drawdown tennis è dead code; (2) bankroll = settings.BANKROLL + 0 per sempre, quindi gli stake Kelly sono dimensionati su un bankroll che ignora tutte le perdite accumulate. In più, alla riga 51 'stake = max(stake, 2.0)' viene applicato DOPO il cap, quindi qualunque edge >0 (anche con Kelly che dice 0.10€) viene gonfiato a 2€, e su bankroll piccoli può superare TENNIS_MAX_BET_PCT. Confronta con RiskManagerAgent football che almeno ripristina il P&L da DB all'avvio.",
+        "suggested_fix": "All'avvio e periodicamente leggere il P&L tennis reale da DB (SUM(profit_loss) su tennis_bets settled, separando paper/live) e aggiornare self._pnl; oppure far pubblicare al TennisSettlementAgent un evento di settlement che il risk manager consuma. Applicare il floor exchange (2€) solo se kelly_stake >= una soglia minima sensata (altrimenti skip del bet), e ri-applicare il cap percentuale dopo il floor.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "Verified in agents/tennis_risk_manager.py: self._pnl is written only at init (line 14, = 0.0) and read at lines 30/33; a full-codebase grep shows no other writer, and TennisSettlementAgent settles only to DB with no feedback channel (the risk manager reads only the Redis key tennis:opportunities). Hence the drawdown check at line 33 is unreachable dead code and bankroll is frozen at settings.BANKROLL forever — stakes never shrink with losses. The football RiskManagerAgent (agents/risk_manager.py lines 51-54, 92) does restore and update cumulative P&L from DB, confirming the asymmetry. The floor at line 51 (max(stake, 2.0)) applied after the cap is also confirmed: with the real config (.env BANKROLL=10.0, TENNIS_MAX_BET_PCT=0.20) the cap is exactly 2.00€, so every edge>0 bet is forced to 2€ = 20% of bankroll regardless of Kelly output; the floor strictly exceeds the cap only for bankroll<10€ (latent). Reachability: TennisRiskManagerAgent is wired in run.py (line 72) and TennisTraderAgent consumes tennis:orders; .env has PAPER_TRADING=false (live path configured) though Matchbook credentials are empty so live placement currently falls back to paper, and project policy detaches the betting agent at launch. Net effect today: a 10€ bankroll could be wiped in 5 consecutive 2€ losses with the 12% drawdown circuit-breaker never firing — currently paper-money impact, but one credential away from live. Severity high is justified: the component's core safety control is dead code; mitigations are configuration, not code."
+        }
+      },
+      {
+        "file": "agents/model.py",
+        "line": 120,
+        "title": "Leakage nella calibrazione conformal: il set di calibrazione fa parte del training set del modello",
+        "severity": "high",
+        "description": "In _bootstrap_models: model.fit(training) viene eseguito sull'INTERO storico, poi 'calibration_set = training[-n_cal:]' (ultimo 20% dello STESSO training) viene predetto con quel modello per calibrare il conformal predictor. Il commento dice 'to avoid data leakage' ma il modello ha già visto quelle partite in fit: i nonconformity score |y - p| risultano sistematicamente più bassi del vero errore out-of-sample, quindi q_hat è sottostimato e gli intervalli conformal sono troppo stretti. Conseguenza a valle: ci_width più piccolo -> _ci_width_factor in risk/engine.py più alto -> stake gonfiati e gate 'interval troppo largo' che non scatta quando dovrebbe. È esattamente il tipo di leakage che la pipeline dichiara di evitare (learning/temporal_validator.py).",
+        "suggested_fix": "Split reale: fit del DixonColesModel solo su training[:-n_cal] e calibrazione conformal su training[-n_cal:] mai visti dal fit (eventualmente rifit finale su tutto SOLO per il serving, mantenendo q_hat dal split). In alternativa usare una cross-validation temporale per i calibration score.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "CONFERMATO con evidenza nel codice. agents/model.py:114-121: model.fit(training) usa l'INTERO storico, poi calibration_set = training[-n_cal:] (ultimo 20% dello stesso array) viene predetto con quel modello (riga 125) e passato a calibrate_from_history. Il commento riga 119 'to avoid data leakage' è errato: lo split conformal (models/conformal.py, docstring 'Calibrates on a held-out set') richiede che il calibration set sia ESCLUSO dal fit; qui è in-sample. DixonColesModel.fit (models/dixon_coles.py:70-115) massimizza la likelihood su tutte le partite passate (pesi uniformi, half_life_days=0 di default), quindi i nonconformity score |y-p| sono ottimisticamente bassi, q_hat (quantile 90%, conformal.py:48-57) è sottostimato e gli intervalli sono troppo stretti — la garanzia di copertura conformal è invalidata. Catena a valle verificata: model.py:714-734 emette ci_width, analyst.py:155 lo inoltra, risk/engine.py:206-210 calcola _ci_width_factor = 1 - ci_width/max_ci_width → intervallo più stretto = stake più alto. Path raggiunto in produzione (bootstrap a ogni avvio per ogni lega con ≥10 match). PERÒ la severity 'high' è sovrastimata per tre motivi: (1) il 'gate intervallo troppo largo' che il reviewer dice non scattare NON può scattare comunque: config/risk_config.yaml:45 ha max_ci_width=1.5 mentre la width è clampata a [0,1] (conformal.py:75-78), quindi il fattore ha floor ~0.33 indipendentemente dal leakage; (2) magnitudine modesta: con label binarie i nonconformity score sono dominati dal rumore aleatorio dell'esito (score ≈ 1-p ≈ 0.5-0.8 quando l'esito accade), non dall'overfit di un modello parametrico (~42 parametri su ~380 match) — l'inflazione dello stake è di pochi punti percentuali, non un blow-up; (3) blast radius attuale limitato: il betting agent è disabilitato al lancio, quindi oggi impatta paper trading/predizioni, non denaro reale. Bug reale e da fixare (fit su training[:-n_cal], calibrazione su training[-n_cal:] mai visto dal fit), severity adeguata: medium."
+        }
+      },
+      {
+        "file": "agents/risk_manager.py",
+        "line": 92,
+        "title": "P&L paper e live mischiati nel bankroll del risk engine e nel circuit breaker",
+        "severity": "high",
+        "description": "_handle_settlement somma event['profit_loss'] in self._cumulative_pnl (riga 92) ignorando il campo event['paper'] che il settlement pubblica apposta (result_settlement.py riga 110). Anche il restore all'avvio usa core/db.get_cumulative_pnl() che per docstring somma 'paper + live' senza filtro su Bet.paper. Oggi tutti i bet sono paper=True quindi il danno è latente, ma appena il trading live viene attivato (Matchbook è già cablato in tennis_trader.py con paper=False) il bankroll usato per Kelly sizing, exposure limits e DrawdownCircuitBreaker del flusso REALE verrà mosso dai risultati PAPER e viceversa: il circuit breaker può andare in RED per perdite di carta o, peggio, restare verde su perdite reali compensate da vincite paper.",
+        "suggested_fix": "Filtrare per modalità: in _handle_settlement aggiornare _cumulative_pnl solo se event['paper'] corrisponde alla modalità del processo (settings.PAPER_TRADING), e aggiungere un parametro paper a get_cumulative_pnl (WHERE Bet.paper = :paper). Tenere due ledger separati se si vuole monitorare entrambi.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "CONFERMATO nel codice il pattern segnalato: agents/risk_manager.py:_handle_settlement esegue self._cumulative_pnl += pl senza guardare event['paper'], campo che agents/result_settlement.py pubblica esplicitamente (\"paper\": str(bet.paper), riga ~110); quel bankroll alimenta Kelly sizing, exposure limits e _circuit_breaker.update(). Anche core/db.py:368-378 get_cumulative_pnl() somma tutti i Bet settled senza filtro su Bet.paper (docstring: \"paper + live\"). Quindi il difetto di codice esiste. PERÒ la premessa di raggiungibilità del reviewer è SBAGLIATA: il percorso live \"già cablato\" (Matchbook in tennis_trader.py riga 182, paper=False) scrive sulla tabella TennisBet, non Bet; tennis_settlement.py non pubblica nulla su Redis (zero publish in 255 righe), quindi i settlement tennis non raggiungono mai lo stream settlement:results consumato da questo RiskManagerAgent; il tennis ha un risk manager separato (tennis_risk_manager.py) con P&L proprio. Nella pipeline football, trader.py ha SOLO _execute_paper (tutto paper=True): non esiste alcun executor live attivo che possa creare Bet(paper=False) — gli unici writer sono in scripts/deprecated/ (Betfair rimosso). Inoltre il betting agent live è disabilitato al lancio per decisione di prodotto. Conclusione: difetto reale ma latente e non raggiungibile nel codice attuale; diventerebbe rilevante solo aggiungendo un executor live football, momento in cui andrà aggiunto il filtro su paper sia nel handler che in get_cumulative_pnl. Severity \"high\" non giustificata: declassato a low (debito di design da sistemare prima di qualsiasi go-live del trading reale)."
+        }
+      },
+      {
+        "file": "agents/result_settlement.py",
+        "line": 78,
+        "title": "Nessun percorso void/abandoned per la tabella bets: i bet su match annullati restano pending per sempre",
+        "severity": "medium",
+        "description": "_settlement_cycle (bets table) può solo produrre 'won'/'lost' via _outcome(); se _fetch_result torna None (match abbandonato, rinviato, cancellato, o id fixture non più risolvibile) il bet viene saltato e rimane status='pending' per sempre: nessun timeout, nessun void. Il meccanismo _should_void_abandoned + grace 6h (#PAPER-SETTLE-1) esiste SOLO nel ciclo unified_predictions (righe 144-158), non per i bet. Conseguenze: P&L e win-rate del daily report contano un bet mai chiuso, lo stake resta registrato come exposure aperta nel risk engine (mai release), e get_pending_bets_for_settlement rilegge gli stessi bet a ogni ciclo bruciando quota API-Football all'infinito.",
+        "suggested_fix": "Replicare nel ciclo bets la logica del ciclo unified: dopo una grace (es. 6-24h oltre il kickoff) interrogare la disposition ESPN/provider e settlare come 'void' con profit_loss=0, pubblicando comunque l'evento su settlement:results così il risk manager rilascia l'exposure. Aggiungere anche un expiry hard (es. 7 giorni) come fa il tennis.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in code. agents/result_settlement.py:_settlement_cycle (lines 89-91) skips bets when _fetch_result returns None with no void/timeout path; the only outcomes are won/lost via _outcome() (line 46). The _should_void_abandoned + 6h grace mechanism (#PAPER-SETTLE-1) exists only in _unified_settlement_cycle (lines 144-158, 197-219) — not for the bets table. core/db.py:get_pending_bets_for_settlement (line 333) selects all status='pending' bets with no upper age bound, so a bet on an abandoned/cancelled fixture is re-fetched every 5 minutes forever, burning API-Football + fdorg quota. agents/risk_manager.py:72-89 releases exposure only on settlement:results events, so the stake of a never-settled bet stays as open exposure indefinitely and can block future bets via is_within_limits. Reachability is proven, not theoretical: run.py wires TraderAgent (creates Bet rows), RiskManagerAgent, and ResultSettlementAgent together, and the exact trigger (abandoned match Denmark vs Ukraine, 2026-06-07) already occurred in prod — it motivated the unified-only fix, leaving the bets path uncovered. Severity medium is correct: the bets pipeline is currently paper-trading (paper=True), so no real-money loss today, but it causes compounding state corruption (distorted P&L/win-rate, stuck exposure that throttles the trader, quota waste) with a prod-observed trigger; would escalate to high if live betting is enabled."
+        }
+      },
+      {
+        "file": "agents/tennis_settlement.py",
+        "line": 56,
+        "title": "Bulk-expire delle tennis_predictions non chiude i tennis_bets corrispondenti: bet pending orfani per sempre",
+        "severity": "medium",
+        "description": "_bulk_expire_stale marca le predizioni >7 giorni come 'expired' e voida le righe unified, ma NON tocca i TennisBet pending sugli stessi match_id: _settle_bets viene chiamato solo nel percorso di risoluzione vinto/perso (_settle_recent riga 149). Un bet su un match mai risolto (Matchbook/ESPN non hanno trovato il risultato entro 7 giorni) resta status='pending' a tempo indefinito: il P&L tennis è incompleto, lo stake risulta perennemente 'aperto' in qualunque metrica di exposure, e una futura risoluzione tardiva non arriverà mai perché la prediction è ormai expired.",
+        "suggested_fix": "In _bulk_expire_stale, dopo l'update delle predictions, selezionare i TennisBet pending con match_id in stale_ids e settarli a status='void', profit_loss=0.0 (rimborso stake) nella stessa transazione.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "low",
+          "reasoning": "CONFERMATO con evidenza nel codice. In agents/tennis_settlement.py, _bulk_expire_stale (riga 56) marca le TennisPrediction stale come 'expired' e voida le righe unified, ma non tocca mai i TennisBet: _settle_bets (riga 241) è l'unico punto nel repo che chiude un bet pending ed è invocato solo da _settle_recent (riga 149) sul percorso win/loss. Una volta expired, la prediction esce per sempre da _select_pending (filtro outcome IS NULL), quindi nessuna risoluzione tardiva chiuderà mai il bet: orfano permanente. Grep su tutto il repo conferma che nessun altro codice (script, route, migrazioni) chiude bet pending. Raggiungibile in pratica: il docstring stesso documenta che i match irrisolvibili (mismatch nomi ESPN, walkover, vecchi market) vengono lasciati scadere, e TennisTraderAgent scrive bet pending su quei match (sempre paper: Matchbook non configurato in .env, _execute_live ricade su _execute_paper). Effetto: /api/tennis-bets mostra pending/total gonfiati per sempre e P&L incompleto. SEVERITY ABBASSATA a low: bet solo paper (nessun fondo reale), il track record pubblico (unified_predictions) viene voidato correttamente, l'endpoint impattato è interno/autenticato, il risk manager non usa i pending per l'exposure (Kelly su bankroll fisso), e il betting agent è comunque disabilitato al lancio. Bug di integrità dati genuino ma a impatto limitato a metriche interne."
+        }
+      },
+      {
+        "file": "agents/tennis_settlement.py",
+        "line": 180,
+        "title": "Risoluzione ESPN per coppia di giocatori senza vincolo temporale + dedup Elo che salta rematch legittimi (coda di #ELO-FIX-1)",
+        "severity": "medium",
+        "description": "Due problemi correlati. (1) _resolve_via_espn matcha pending->risultato solo con frozenset(player1_key, player2_key), senza confrontare data/match_id; e _select_pending usa computed_at (non scheduled_at) come ancora della finestra. Una prediction per un match futuro tra A e B (computata >4h fa) può essere settlata dal risultato di un ALTRO match A-B completato oggi (qualificazioni vs main draw, oppure fixture ESPN ricreata con nuovo id dopo un rinvio: l'indice unico su match_id,player1,player2 non protegge perché il match_id è diverso). (2) Il dedup Elo 'elo_applied' (riga 131-147) è keyed sulla sola coppia canonica: se nello stesso ciclo vengono risolti DUE match reali distinti tra gli stessi giocatori (caso reale entro 7 giorni: qualificazioni+tabellone, round robin), il secondo aggiornamento Elo viene silenziosamente scartato — l'opposto dell'incidente Zverev ma sempre rating sbagliato.",
+        "suggested_fix": "(1) In get_completed_results/_resolve_via_espn includere la data del risultato e accettare il match solo se |result_date - scheduled_at| <= 1 giorno (e usare scheduled_at, non computed_at, per la finestra di settlement). (2) Keyare il dedup su (coppia, match_id) o (coppia, data risultato) invece che sulla sola coppia.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "CONFIRMED with code evidence, with one mechanism correction. (1) Pair-only ESPN matching: verified — agents/tennis_settlement.py _resolve_via_espn (lines 180-197) keys results solely on frozenset(canonical player keys); core/espn_tennis_client.py get_completed_results returns no event date/id at all, so no temporal check is even possible downstream. _select_pending (lines 93-106) anchors on computed_at, ignoring TennisPrediction.scheduled_at (which exists, core/db.py:249, and is populated by tennis_model_agent._save_to_db). Fixtures are predicted up to 48h ahead (_FUTURE_HORIZON), so a pending prediction for a future A-B match (computed >4h ago) is settleable by a different completed A-B result in today's feed. The unique index (db/migrations/009_tennis_predictions_unique.sql) is on (match_id, player1, player2) and does not protect across distinct/recreated match_ids — as claimed. (2) Elo dedup keyed on pair only: confirmed at lines 131-147, BUT the reviewer's same-cycle mechanism is only reachable in theory: the Matchbook path is dead code (matchbook_client has no get_settled_tennis_result; the hasattr guard at line 209 always returns []), and the ESPN by_pair dict collapses to one result per pair per cycle, so two distinct same-pair results can never coexist in one resolved batch. However the NET effect is real via mechanism (1): both pending rows for two distinct A-B matches are settled by the single ESPN result; the second physical match's prediction is consumed (possibly with the wrong winner) and its Elo update never happens — one Elo update lost and a potentially wrong row in the public track record (/api/v2/history via settle_unified_tennis) and wrong paper-bet settlement. Reachability: real but infrequent (round-robin events, lucky-loser qualifying/main-draw rematches, recreated fixtures within the 7-day window); failure is fully silent with no reconciliation. Severity medium is right: silent data-integrity corruption of the public track record and Elo ratings (the assets #ELO-FIX-1 just protected), but low frequency, paper-only, one match per occurrence."
+        }
+      },
+      {
+        "file": "risk/exposure_manager.py",
+        "line": 37,
+        "title": "Stato di rischio (exposure, variance budget, peak watermark) solo in-memory: perso a ogni restart mentre i bet restano aperti",
+        "severity": "medium",
+        "description": "ExposureManager (_league/_matchday/_total, righe 37-39) e WeeklyVarianceBudget vivono solo in RAM di RiskManagerAgent; DrawdownCircuitBreaker e VarianceBudget hanno to_dict/from_dict ma nessuno li persiste/ripristina (in risk_manager.py si ricostruisce l'engine da zero, recuperando solo il P&L). Al riavvio: exposure aperta = 0 nonostante i bet pending in DB (i limiti per league/matchday/total non vedono le posizioni esistenti e si può sovra-esporre), il peak watermark del circuit breaker riparte dal bankroll corrente (drawdown azzerato, YELLOW/ORANGE/RED si sganciano), e il variance budget settimanale si resetta. Aggravante: MonitorAgent riavvia automaticamente l'orchestrator via launchctl kickstart -k ad ogni heartbeat stale (monitor.py riga 104-113), quindi il wipe non è un evento raro ma routine operativa. Nota: questo restart-wipe compensa di fatto il leak del finding #1 — sistemandone uno senza l'altro il comportamento peggiora.",
+        "suggested_fix": "Al boot di RiskManagerAgent ricostruire l'exposure dai Bet pending in DB (group by league, matchday: SUM(stake)) e ripristinare circuit breaker e variance budget da una riga di stato persistita (Redis o tabella risk_state) salvata a ogni commit/release/update.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed with direct code evidence. (1) ExposureManager state is plain in-memory (risk/exposure_manager.py:37-39, defaultdicts + float, no persistence API). (2) DrawdownCircuitBreaker and WeeklyVarianceBudget both have to_dict/from_dict (circuit_breaker.py docstring even says 'for DB persistence'), but repo-wide the only callers are unit tests; the BankrollHistory/VarianceBudgetLog tables in core/db.py:131-148 are only read by the dashboard, never written/restored in the risk path. (3) agents/risk_manager.py:45 constructs RiskManagerEngine fresh and _main_loop (lines 49-56) restores only cumulative P&L — no exposure rebuild from pending bets in DB, no watermark, no variance budget. (4) Effects verified: after restart open exposure=0 despite pending bets (limits blind → over-exposure possible; later settlements release() never-committed exposure, clamped to 0), circuit-breaker peak resets to settings.BANKROLL then climbs to current (drawdown understated, levels disengage), and weekly variance _used resets to 0. Extra aggravator the reviewer missed: the RED sticky _manual_review_pending flag also resets to False on restart, so a RED full-stop requiring explicit operator clear_manual_review() is silently lifted by any restart. (5) Reachability confirmed as routine: agents/monitor.py:104-115 runs launchctl kickstart -k on any stale heartbeat (checked every 30s) and the plist is actually installed at ~/Library/LaunchAgents/com.agentic-markets.agents.plist. Severity: medium is correct for the current state — the system runs PAPER_TRADING=True with BANKROLL default 10€ and the betting agent is disabled at launch, so today's blast radius is paper money; in live-money operation this would escalate to high (the restart bypass of the RED manual-review block is a safety-control defeat)."
+        }
+      },
+      {
+        "file": "learning/self_learning.py",
+        "line": 139,
+        "title": "Pattern 'derby_overconfidence' conta le predizioni confident anche quando sono CORRETTE, e il settlement lo alimenta con probabilità inventate",
+        "severity": "low",
+        "description": "Due difetti che insieme rendono il loop di self-learning fuorviante. (1) _check_derby_overconfidence riceve 'error' ma non lo usa mai: incrementa pattern.occurrences per OGNI predizione derby con selection_prob >= 0.75, anche se la predizione era giusta — dopo 3 derby pronosticati bene con alta confidenza genera comunque una CorrectionProposal per abbassare la confidence threshold ('overconfidence' senza errori). (2) result_settlement._feed_self_learning (righe 307-317) costruisce la prediction con valori hard-coded p_home=0.5/p_draw=0.25/p_away=0.25, season_phase='MID', confidence=1/odds e shap_values={} invece dei valori reali serviti: prediction_error e le feature memory vengono calcolati su dati fabbricati. Impatto contenuto solo perché le proposal restano in-memory e non vengono applicate automaticamente.",
+        "suggested_fix": "(1) In _check_derby_overconfidence incrementare il contatore solo quando la predizione è sbagliata (passare 'correct' o usare error > soglia). (2) Nel settlement recuperare le probabilità realmente servite (dalla prediction persistita) invece dei placeholder, o non alimentare affatto l'engine finché quei dati non sono disponibili.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "agents/monitor.py",
+        "line": 298,
+        "title": "Monte Carlo bankroll simulation è EV-zero per costruzione: il report di rischio settimanale non misura nulla",
+        "severity": "low",
+        "description": "_run_monte_carlo campiona win_prob = 1/odds (riga 298) e in caso di vincita paga odds_sample = 1/win_prob (riga 308), cioè esattamente le odds implicite della probabilità usata per simulare: ogni bet simulato ha EV identicamente 0 a prescindere dall'edge reale del sistema, e lo status storico won/lost letto dalla query non viene mai usato (variabile 'status' assegnata e ignorata, riga 297). Il P5/P50/P95 inviato su Telegram ogni domenica è quindi solo rumore binomiale centrato su ~0: non può segnalare né una strategia perdente né il vero rischio di drawdown. Essendo un output decisionale (risk report), è informazione attivamente fuorviante.",
+        "suggested_fix": "Stimare la win probability empirica dai risultati storici (es. per bucket di odds: wins/total dal campo status) e pagare con le odds REALI del bet campionato, così la simulazione riflette l'edge e la varianza osservati.",
+        "area": "python-agents",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "db/migrations/007_community_slips.sql",
+        "line": 9,
+        "title": "Tabella prod `community_slips` senza RLS e con grant DML completi ad `anon` (verificato live)",
+        "severity": "critical",
+        "description": "Verificato direttamente sul progetto Supabase di produzione (izscgffubtakzvwxchqt): `community_slips` ha rowsecurity=false e il ruolo `anon` ha SELECT/INSERT/UPDATE/DELETE/TRUNCATE (default privileges di Supabase). Con la NEXT_PUBLIC_SUPABASE_ANON_KEY — pubblica per definizione, presente nel bundle client — chiunque può via PostgREST: (1) leggere `creator_identifier`, che il commento del file definisce \"email profilo (per moderazione), mai esposta\" → leak di email utenti/influencer; (2) inserire, modificare o TRONCARE le Creator Picks pubbliche. Causa: la migrazione è stata applicata a mano nel SQL Editor il 2026-06-07, DOPO il blanket revoke del 2026-06-05 (supabase/migrations/20260605170000_rls_exec_sql_hardening.sql), che revoca i grant esistenti ma non tocca gli ALTER DEFAULT PRIVILEGES, quindi ogni tabella nuova rinasce esposta. È l'unica tabella del DB in questo stato.",
+        "suggested_fix": "Subito (hotfix SQL): `ALTER TABLE public.community_slips ENABLE ROW LEVEL SECURITY; REVOKE ALL ON public.community_slips FROM anon, authenticated;`. Root-cause: `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;` così le tabelle future nascono chiuse. Aggiungere RLS+REVOKE in coda a ogni futura migrazione che crea tabelle (come già fanno 004 e 008).",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "critical",
+          "reasoning": "Confirmed via static code evidence (live prod query was blocked by auto-mode, consistent with the read-only mandate, but not needed to corroborate).\n\n(1) db/migrations/007_community_slips.sql creates community_slips with NO ENABLE ROW LEVEL SECURITY and NO REVOKE — unlike its siblings 004_prediction_log.sql:67 and 008_squad_condition_reports.sql:53, which both REVOKE ALL FROM anon, authenticated. The project's own convention proves new tables need an explicit revoke; 007 omitted it.\n\n(2) The hardening migration supabase/migrations/20260605170000_rls_exec_sql_hardening.sql only iterates tables existing on 2026-06-05 (FOR r IN SELECT tablename FROM pg_tables) and explicitly does NOT touch ALTER DEFAULT PRIVILEGES (its rollback note even says re-granting is intentionally not scripted). So tables created later re-inherit Supabase's default anon/authenticated DML grants. community_slips shipped 2026-06-07 (Creator Picks go-live), i.e. after the blanket revoke.\n\n(3) The public anon key targets the same prod project: client-portal/.env.local sets NEXT_PUBLIC_SUPABASE_URL=https://izscgffubtakzvwxchqt.supabase.co and uses NEXT_PUBLIC_SUPABASE_ANON_KEY (bundle-exposed). Server access uses service_role (lib/db.ts), which bypasses RLS, so the app never surfaces the breakage.\n\n(4) creator_identifier stores the user/influencer email (match-builder/route.ts:79 inserts ctx.identifier; file comment 'mai esposta'). The API GET deliberately omits it from its SELECT — confirming it is private. A direct PostgREST call with the public anon key bypasses that gating: SELECT leaks the email and the pick/prob the API blurs for anonymous users; INSERT/UPDATE/DELETE grants allow tampering/deletion of public Creator Picks.\n\nThis is a textbook Supabase RLS/default-privileges footgun; exploitability is practical (PostgREST always on, public key, table in exposed public schema), not theoretical. The only item I could not independently re-verify is the exact live rowsecurity/grant set, but every code-level precondition is present and the sibling-migration discrepancy makes the diagnosis the only consistent reading. Critical severity stands: production PII (email) leak plus content integrity loss and an access-gating bypass."
+        }
+      },
+      {
+        "file": "docs/superpowers/plans/2026-05-26-world-cup-quality-layer.md",
+        "line": 118,
+        "title": "Password Postgres in chiaro committata in due file tracciati da git",
+        "severity": "high",
+        "description": "Il file contiene la connection string completa `postgresql://postgres:<REDACTED>@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres` con la password DB reale in chiaro. La stessa riga è duplicata in `dashboard-web/docs/superpowers/plans/2026-05-26-world-cup-quality-layer.md:118` (entrambi tracciati a HEAD, quindi anche su GitHub e visibili al collaboratore e a chiunque acceda alla repo). Il progetto è il vecchio Supabase personale, ma la password segue un pattern personale plausibilmente riusato altrove, e resta comunque una credenziale valida finché non ruotata. Anche se il file venisse cancellato ora, la password resta nella git history.",
+        "suggested_fix": "1) Ruotare la password DB del progetto xcgvfrsrcphzfctfyukz (e ovunque quel pattern di password sia riusato). 2) Sostituire la stringa nei due file con un placeholder. 3) Riscrivere la history (git filter-repo / BFG) o considerare la credenziale bruciata per sempre. 4) Aggiungere secret-scanning (es. gitleaks in pre-commit/CI).",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "high",
+          "reasoning": "Confirmed real. The plaintext Postgres connection string `postgresql://postgres:<REDACTED>@db.xcgvfrsrcphzfctfyukz.supabase.co:5432/postgres` appears at line 118 of both tracked files: /Users/calde/Desktop/agentic-markets/docs/superpowers/plans/2026-05-26-world-cup-quality-layer.md and /Users/calde/Desktop/agentic-markets/dashboard-web/docs/superpowers/plans/2026-05-26-world-cup-quality-layer.md (the dashboard-web path is a real directory, not a symlink). The password is present in the pushed origin/main blob (git show origin/main confirms 1 match), and the GitHub repo acaldera2901-creator/agentic-markets-dashboard is PUBLIC (isPrivate:false) — so the credential is world-readable, not merely visible to the collaborator. Exploitability is practical, not theoretical: per the user's own memory (project_agentic_markets_env.md), the project xcgvfrsrcphzfctfyukz is the old personal Supabase project that was disconnected from code/env/CI but explicitly NOT deleted and whose token/password was deliberately left unrotated; deletion was only planned ~28 June, which is after today (2026-06-10). The credential therefore remains valid until rotated, and even after deletion the password-reuse and git-history-persistence concerns remain. Severity high is correct: a live DB password in plaintext in a public repo and its git history. Not raising to critical only because it is the deprecated project rather than the current production DB (prod uses izscgffubtakzvwxchqt with a different password 'Agenticmagnetic!'), but public exposure plus reuse risk fully warrants high. Remediation requires rotating/deleting the old project's password AND scrubbing it from git history (deleting the file alone leaves it in history)."
+        }
+      },
+      {
+        "file": "dashboard-web/.vercel/project.json",
+        "line": 2,
+        "title": "Copia stantia dashboard-web/ linkata allo STESSO progetto Vercel di prod: un deploy da lì regredisce i fix di sicurezza",
+        "severity": "high",
+        "description": "`dashboard-web/.vercel/project.json` punta a `prj_9XzCFx3MFO7Fy4UMWVBhFXd4JyIO` — identico al root `.vercel/project.json`. Un `vercel deploy` (o `vercel --prod`) lanciato per errore dentro `dashboard-web/` pubblicherebbe in produzione la copia vecchia, che contiene regressioni di sicurezza già corrette nel root: (a) `dashboard-web/app/api/predictions/refresh/route.ts:10` ha l'auth cron FAIL-OPEN (`if (cronSecret && auth !== ...)` → con CRON_SECRET non settato l'endpoint è aperto) e confronto non constant-time; (b) `dashboard-web/app/api/admin/login/route.ts:19` salva il RAW `ADMIN_SECRET` nel cookie `admin_token` invece del token HMAC a scadenza — il middleware attuale (`verifyAdminToken`) rifiuterebbe quel cookie, rompendo anche il login admin. Inoltre `dashboard-web/.env.local` contiene SUPABASE_SERVICE_ROLE_KEY, ADMIN_SECRET, FOUNDER_ACCESS_KEY e 4 API key reali (non tracciato da git, ma una copia di segreti in più sul disco e dentro una directory che alcuni tool/agent trattano come progetto autonomo: ha i propri CLAUDE.md/AGENTS.md/.mcp.json).",
+        "suggested_fix": "Eliminare `dashboard-web/.vercel/` (unlink dal progetto prod) come minimo; idealmente archiviare/rimuovere l'intera copia stantia dalla repo o svuotarla lasciando un README \"MOVED TO ROOT\". Cancellare `dashboard-web/.env.local` e `.env.staging` dopo verifica che il root abbia tutto. Ruotare ADMIN_SECRET/FOUNDER_ACCESS_KEY se la copia è mai finita su macchine terze.",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Every factual claim verified in code. (1) dashboard-web/.vercel/project.json and root .vercel/project.json both point to prj_9XzCFx3MFO7Fy4UMWVBhFXd4JyIO / project \"agentic-markets\" — vercel --prod from dashboard-web/ would deploy the stale copy to prod with no link prompt. (2) dashboard-web/app/api/predictions/refresh/route.ts:10 has the fail-open `if (cronSecret && auth !== ...)` and non-constant-time compare; root uses verifyBearer (default-deny, constant-time). (3) dashboard-web/app/api/admin/login/route.ts sets the RAW ADMIN_SECRET as the admin_token cookie and uses `!==`; root uses issueAdminToken (expiring HMAC) + safeEqual. Nuance: a wholesale deploy ships the stale middleware too, so admin login would work but at the regressed security level — the \"breaks login\" sub-claim only holds for mixed states. (4) dashboard-web/.env.local contains SUPABASE_SERVICE_ROLE_KEY, ADMIN_SECRET, FOUNDER_ACCESS_KEY, RESEARCH_SECRET, DATABASE_URL + 4 API keys. (5) The copy is badly stale (28 divergences in app/api alone, entire route trees missing: auth, cron, match-builder, world-cup, tennis-live), is fully gitignored so it never receives fixes, and has its own CLAUDE.md/AGENTS.md/.mcp.json with no \"stale copy\" warning — its CLAUDE.md even instructs agents to log deploys, making the agent-error trigger realistic in this multi-agent workspace. Severity adjusted to medium: not remotely exploitable — the security regression requires a local/agent deploy mistake first, so it is a latent footgun (operational + security hardening) rather than a live vulnerability; impact if triggered is prod-wide (reverted security fixes + broken routes), and the fix is trivial (remove dashboard-web/.vercel or the stale copy entirely)."
+        }
+      },
+      {
+        "file": "db/migrations/001_unified_predictions.sql",
+        "line": 1,
+        "title": "Doppio binario di migrazioni: db/migrations/ applicate a mano fuori dal CI — causa diretta del buco RLS su community_slips",
+        "severity": "medium",
+        "description": "Esistono due directory di migrazioni per lo stesso DB Supabase: `supabase/migrations/` (deployata automaticamente dal workflow `.github/workflows/supabase-migrations.yml`, trigger su path `supabase/migrations/**`) e `db/migrations/` (9 file, applicati a mano nel SQL Editor o con script ad-hoc come `scripts/apply_profiles_migration.mjs` — il commento in testa a 007 dice esplicitamente \"Eseguire nel SQL Editor\"). Le migrazioni manuali bypassano sia il tracking di `supabase db push` sia gli standard di hardening: 007 è andata in prod senza RLS (finding critical), e non c'è alcuna garanzia che lo stato del DB corrisponda ai file. C'è anche una terza copia parziale in `dashboard-web/db/migrations/`.",
+        "suggested_fix": "Consolidare: spostare i file di `db/migrations/` ancora rilevanti in `supabase/migrations/` con timestamp (così il CI li traccia), oppure estendere il workflow al path `db/migrations/**`. Aggiungere al template di review una checklist: ogni CREATE TABLE deve includere ENABLE ROW LEVEL SECURITY + REVOKE da anon/authenticated.",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confermato con evidenza diretta. (1) Doppio binario reale: .github/workflows/supabase-migrations.yml deploya solo su trigger paths 'supabase/migrations/**' con `supabase db push`; db/migrations/ contiene 9 file (001-009) fuori dal CI, più una terza copia parziale in dashboard-web/db/migrations/001_unified_predictions.sql. (2) Applicazione manuale confermata: 006 e 007 hanno in testa 'Eseguire nel SQL Editor: supabase.com/dashboard/project/izscgffubtakzvwxchqt/sql'; scripts/apply_profiles_migration.mjs e apply_squad_condition_migration.mjs applicano i file via RPC exec_sql con service role key, bypassando il tracking di supabase db push. (3) Conseguenza concreta: grep 'ENABLE ROW LEVEL|CREATE POLICY' su db/migrations/*.sql dà zero risultati; le migrazioni di hardening RLS (20260605170000, 20260605173000) vivono solo nel binario CI e non coprono community_slips (creata dopo con 007) — la tabella non ha RLS in nessun file del repo, e la feature Creator Picks è live in prod, quindi il flusso manuale è stato usato davvero. (4) Drift interleaved: profiles creata manualmente (db/migrations/002) ma alterata dal CI (20260605190000_profiles_password.sql ALTER TABLE public.profiles), quindi lo stato del DB non corrisponde a nessuno dei due binari da solo. Severity medium corretta: difetto di processo non direttamente sfruttabile di per sé, ma ha già causato una regressione di sicurezza reale (il buco RLS su community_slips, finding separato) e il meccanismo che la genera resta attivo."
+        }
+      },
+      {
+        "file": "supabase/migrations/20260605170000_rls_exec_sql_hardening.sql",
+        "line": 33,
+        "title": "5 tabelle prod con RLS disabilitata: protette solo dall'assenza di grant (verificato live)",
+        "severity": "medium",
+        "description": "Sul DB di produzione `prediction_log`, `squad_condition_reports`, `wc_squads`, `wc_squad_players` e `wc_squad_snapshots` hanno rowsecurity=false. Oggi non sono raggiungibili con la anon key perché i REVOKE (blanket del 2026-06-05 + quelli espliciti in 004/008) hanno tolto i grant, ma è una difesa a un solo livello: un qualsiasi GRANT futuro (manuale, da script, o da un ripristino di default privileges) le riespone integralmente via PostgREST, esattamente come successo a community_slips. `squad_condition_reports` contiene output di ricerca proprietari, `prediction_log` è la tabella di calibrazione. Anche il security advisor di Supabase le segnala come RLS-disabled.",
+        "suggested_fix": "Migrazione one-liner: `ALTER TABLE public.prediction_log ENABLE ROW LEVEL SECURITY;` (idem per le altre 4), senza policy — deny-all per anon/authenticated, il service_role bypassa. Zero impatto sull'app, che accede solo via service_role.",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "adjusted_severity": "medium",
+          "reasoning": "Confirmed in code. The 5 tables (prediction_log, squad_condition_reports, wc_squads, wc_squad_players, wc_squad_snapshots) are created in db/migrations/003, 004, 008 and no migration anywhere in the repo enables ROW LEVEL SECURITY on them — repo-wide grep shows RLS only on profiles, deposits, and council_* tables. Protection is grants-only by explicit design: 004:67 and 008:53 carry 'REVOKE ALL ... FROM anon, authenticated' with the 'Posture #010' comment, while 003 has NO revoke in-file at all (the wc_* tables depend entirely on the blanket revoke loop in supabase/migrations/20260605170000_rls_exec_sql_hardening.sql:32-42 having run after their creation). The cited community_slips precedent is verifiable in-repo: 007_community_slips.sql was run by hand in the prod SQL Editor (project izscgffubtakzvwxchqt, per its header) after the hardening, with neither RLS nor REVOKE, so Supabase default privileges shipped it exposed — proving the re-exposure vector (future GRANT/default-privilege table creation/restore → full table via PostgREST) is real in this team's workflow, not theoretical. I could not repeat the live rowsecurity=false check (prod DB reads are policy-gated in this session), but the reviewer's live observations are fully consistent with the code. Severity medium is correct: not currently exploitable (grants absent today, per revokes in 004/008 + blanket revoke), so not high; but single-layer defense over proprietary research/calibration data with a demonstrated in-project failure mode and Supabase advisor flagging, so not low."
+        }
+      },
+      {
+        "file": "next.config.ts",
+        "line": 40,
+        "title": "CSP Report-Only senza endpoint di report: il piano di promozione a enforcing non può mai avverarsi",
+        "severity": "low",
+        "description": "Il commento in next.config.ts dice di promuovere la CSP a enforcing \"after observing zero legitimate violations in prod\", ma l'header `Content-Security-Policy-Report-Only` non include né `report-uri` né `report-to` e non esiste un endpoint /api che riceva i report. Le violazioni finiscono solo nella console dei browser dei visitatori: nessuno le osserverà mai, quindi la condizione di promozione è inverificabile e la CSP resterà report-only (cioè inattiva come protezione) a tempo indefinito.",
+        "suggested_fix": "Aggiungere `report-uri /api/csp-report` (più la direttiva `report-to` con header Reporting-Endpoints) e un piccolo route handler che logga i report, oppure decidere consapevolmente di promuovere subito a enforcing la parte sicura (frame-ancestors, object-src, base-uri, form-action) tenendo report-only solo script-src.",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      },
+      {
+        "file": "vercel.json",
+        "line": 6,
+        "title": "Cron Vercel: auth verificata corretta (nessun finding), ma dipende interamente da CRON_SECRET settato in prod",
+        "severity": "low",
+        "description": "Area solida da segnalare come tale: tutti e 3 i cron (`/api/predictions/refresh`, `/api/cron/settle`, `/api/cron/subscriptions`) usano `verifyBearer` fail-closed e constant-time (lib/admin-auth.ts:24) — con CRON_SECRET assente rispondono 401, non si aprono. Unico residuo: non c'è nulla nel repo o nel CI che verifichi che `CRON_SECRET` sia effettivamente configurato nell'environment di produzione Vercel; se mancasse, il fallimento sarebbe silenzioso (i cron girano e prendono 401, settlement e sweep abbonamenti si fermano senza alert — il settlement è il backstop pubblico del track record).",
+        "suggested_fix": "Aggiungere un check (script `vercel env ls` in CI, o un endpoint /api/health che riporta `cron_secret_configured: bool` senza rivelare il valore) e un alert se i cron ricevono 401 ripetuti (i log Vercel li mostrano già; basta un controllo periodico nel watchdog esistente).",
+        "area": "security-infra",
+        "verdict": {
+          "isReal": true,
+          "reasoning": "low severity, non verificato"
+        }
+      }
+    ],
+    "rejectedCount": 2,
+    "rejectedTitles": [
+      "lib-server: Checkout premium silenziosamente declassato a base",
+      "security-infra: Token bot Telegram hardcoded in file tracciato da git"
+    ]
+  }
+}

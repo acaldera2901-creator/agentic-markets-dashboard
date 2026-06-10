@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "../lib/password.ts";
+import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "../lib/password";
 
 test("hash is salted: same password -> different hashes", () => {
   assert.notEqual(hashPassword("correct horse battery"), hashPassword("correct horse battery"));

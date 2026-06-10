@@ -256,6 +256,12 @@ interface EnrichmentPayload {
   extra_market_odds?: Partial<Record<string, number>>;
   reliability?: string;
   team_matches?: number;
+  // True when the kickoff time comes from a real source (fd non-midnight, or
+  // api-football provided a date). Lets the client distinguish a genuine
+  // 00:00 UTC kickoff (NA evening slot at the 2026 World Cup) from the
+  // football-data "time unconfirmed" midnight placeholder. Not premium:
+  // survives the per-tier enrichment strip.
+  time_confirmed?: boolean;
   // Confidence-surfacing gate flag (Wave 1). Same contract as the Python
   // national path's notes.surface. below_floor=true -> the frontend shows the
   // row without a pick direction/edge ("no clear favourite"). Probability-
@@ -453,6 +459,9 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       const finalKickoff = fdMidnight && apifixDate && !apifixMidnight
         ? apifixDate.toISOString()
         : fix.utcDate;
+      // Confirmed unless ONLY the midnight placeholder exists: a second source
+      // (api-football) agreeing on 00:00 corroborates a real midnight slot.
+      enrichment.time_confirmed = !fdMidnight || apifixDate !== null;
 
       // Weather (async, only for matches within 48h)
       const kickoffDate = new Date(finalKickoff);

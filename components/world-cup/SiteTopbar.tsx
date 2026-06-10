@@ -62,6 +62,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync with the pre-paint data-theme script: a lazy initializer would mismatch the server-rendered markup at hydration.
     if (current === "light" || current === "dark") setTheme(current);
   }, []);
   const setThemeTo = (next: "dark" | "light") => {

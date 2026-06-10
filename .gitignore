@@ -56,3 +56,7 @@ scripts/migrate_to_company_supabase.py
 dashboard-web/
 data/transfermarkt/
 .superpowers/
+
+# Local secrets scratch — never tracked (audit 2026-06-10)
+credentials/
+data/backups/
