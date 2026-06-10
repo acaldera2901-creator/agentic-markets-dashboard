@@ -5842,3 +5842,115 @@ button:disabled {
   border-radius: 10px;
   box-shadow: inset 0 1px 0 var(--am-hi);
 }
+
+/* ==========================================================================
+   SITE ELEVATION — craft layer (branch ui/site-elevation)
+   Aggiunge il livello di "deciso da un umano" SOPRA il design system Sleek
+   Coral, senza cambiare logica né markup di prodotto.
+
+   Motivo unico (lezione Saul Bass): il brandmark è un mirino con cuneo coral
+   ("punta → aggancia"). Tutto il craft qui è lo strumento che si ACCENDE in
+   sequenza al load e si AGGANCIA alla sezione attiva. Un solo gesto, ripetuto
+   con coerenza — niente effetti sparsi.
+
+   POV: strumento di precisione per una redazione quant, NON un casinò/landing
+   di hype. Il motion è un budget, speso su UN momento; reduced-motion spegne
+   tutto (incluse le pulse-loop pre-esistenti).
+   ========================================================================== */
+
+/* ── 1. Selezione testo + focus-ring: l'accento coral sulle micro-interazioni ──
+   L'accent fa lavoro reale dove di solito è il default (selezione blu di
+   sistema, outline:none). Razionato: solo qui e sulla nav attiva. */
+::selection { background: var(--am-coral); color: var(--am-coral-ink); }
+::-moz-selection { background: var(--am-coral); color: var(--am-coral-ink); }
+
+/* Focus visibile e coerente per tastiera (oggi molte regole hanno outline:none).
+   Usa :focus-visible così il mouse non lo mostra; il ring coral è l'accento che
+   segnala "qui sei agganciato". */
+:where(a, button, input, select, textarea, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── 2. Motivo "lock-on": la hairline coral della nav attiva si POSA ──────────
+   Invece di comparire istantanea, la sottolineatura si disegna da sinistra
+   (scaleX 0→1) — la linea di mira che si appoggia sulla sezione scelta. Stesso
+   gesto del cuneo nel logo, ripetuto. */
+.am-topnav button.active::after {
+  transform-origin: left center;
+  animation: am-lockon 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes am-lockon {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* ── 3. Page-load orchestrato (UN momento, CSS-only) ──────────────────────────
+   Lo strumento si accende lungo il percorso di lettura: masthead → testata desk
+   → blocco focale → prima banda sport + card. Salita di 8px che decelera, NON un
+   fade-up uniforme su ogni sezione (tell #13): solo questi 4 nodi, scaglionati
+   una volta sola. Tutto il resto è semplicemente presente.
+   Lo scope `.portal-root >` e i selettori specifici evitano che lo stagger
+   colpisca contenuti dentro tab secondari o liste lunghe. */
+@keyframes am-boot {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.portal-root > .am-topbar,
+.portal-root .book-main > .am-deskhead,
+.portal-root .book-main .featured,
+.portal-root .book-main > .book-content .sport-band:first-of-type,
+.portal-root .book-main .sport-band:first-of-type {
+  animation: am-boot 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.portal-root > .am-topbar                          { animation-delay: 0s;    }
+.portal-root .book-main > .am-deskhead             { animation-delay: 0.07s; }
+.portal-root .book-main .featured                  { animation-delay: 0.15s; }
+.portal-root .book-main .sport-band:first-of-type  { animation-delay: 0.23s; }
+
+/* ── 4. Reduced motion: lo strumento è semplicemente già acceso ───────────────
+   Spegne lo stagger di load, la posa della hairline E le pulse-loop infinite
+   pre-esistenti (live dot, glow-pulse, WC). Un motion che non degrada con grazia
+   legge come autoindulgenza (bible §3.5). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* le card-card che salgono al load: nessuna trasformazione residua */
+  .portal-root > .am-topbar,
+  .portal-root .book-main > .am-deskhead,
+  .portal-root .book-main .featured,
+  .portal-root .book-main .sport-band:first-of-type,
+  .am-topnav button.active::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ── 5. Atmosfera: grana sub-percettiva (texture = human-made) ─────────────────
+   L'antidoto diretto al fondo "gratis" senza decisione (gradiente/blob/glass,
+   tell #1/#8/#9): una grana fotografica finissima dà materia alle superfici
+   piatte. SVG fractalNoise inline (zero richieste di rete), fissa, dietro tutto,
+   non interattiva. Calibrata bassissima e ricalibrata su light (vedi --am-grain).
+   Il wash coral ambient sul body resta — la grana gli dà tooth, non lo sostituisce. */
+:root        { --am-grain: 0.035; }
+:root[data-theme="light"] { --am-grain: 0.022; }
+.am-grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;   /* sopra il wash ambient del body, sotto tutto il contenuto */
+  pointer-events: none;
+  opacity: var(--am-grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+}
+@media (prefers-reduced-motion: reduce) { .am-grain { /* statica comunque, nessun motion da spegnere */ } }
