@@ -4975,10 +4975,12 @@ function AccountTab({
 function LiveNowStrip({
   liveScores,
   liveTennis,
+  boardTennisKeys,
   lang,
 }: {
   liveScores: Record<string, LiveScore>;
   liveTennis: LiveTennisMatch[];
+  boardTennisKeys: Set<string>;
   lang: string;
 }) {
   const liveFootball = Object.entries(liveScores).filter(
@@ -4986,7 +4988,11 @@ function LiveNowStrip({
       (s.match_status === "IN_PLAY" || s.match_status === "PAUSED") &&
       s.home_team && s.away_team
   );
-  if (liveFootball.length === 0 && liveTennis.length === 0) return null;
+  // Show only live tennis matches that also exist on the board (parity with /api/tennis board).
+  const liveTennisOnBoard = liveTennis.filter((m) =>
+    boardTennisKeys.has(tennisPairKey(m.player1, m.player2))
+  );
+  if (liveFootball.length === 0 && liveTennisOnBoard.length === 0) return null;
 
   const setsLabel = (m: LiveTennisMatch) =>
     m.sets_p1.map((v, i) => `${v}-${m.sets_p2[i] ?? ""}`).join(" ");
@@ -5006,7 +5012,7 @@ function LiveNowStrip({
             ) : null}
           </span>
         ))}
-        {liveTennis.map((m) => (
+        {liveTennisOnBoard.map((m) => (
           <span key={`t-${m.id}`} className="ti">
             <svg className="ig" aria-hidden="true"><use href="#g-tball" /></svg>
             {m.player1} <b>{setsLabel(m) || "–"}</b> {m.player2}
@@ -5997,7 +6003,7 @@ export default function Dashboard() {
             </div>
           )}
           {tab === "bets" && (
-            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} lang={uiLanguage} />
+            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))} lang={uiLanguage} />
           )}
           {tab === "bets" && (
             <UnifiedBetsTab
