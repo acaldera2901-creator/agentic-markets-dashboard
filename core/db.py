@@ -378,6 +378,24 @@ async def get_cumulative_pnl() -> float:
         return float(result.scalar() or 0.0)
 
 
+async def get_tennis_cumulative_pnl(paper: bool = True) -> float:
+    """Sum of settled tennis_bets profit_loss for one ledger (paper OR live).
+
+    Paper and live are kept separate on purpose — mixing them would let paper
+    results move the live bankroll/drawdown guard (a distinct finding).
+    """
+    from sqlalchemy import func
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            _select(func.coalesce(func.sum(TennisBet.profit_loss), 0.0)).where(
+                TennisBet.status.in_(["won", "lost"]),
+                TennisBet.profit_loss.isnot(None),
+                TennisBet.paper.is_(paper),
+            )
+        )
+        return float(result.scalar() or 0.0)
+
+
 # ── Context module persistence helpers ────────────────────────────────────────
 
 

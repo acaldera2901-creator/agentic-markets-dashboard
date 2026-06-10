@@ -41,11 +41,25 @@ class QuotaTracker:
         self._cache: dict[str, dict[str, Any]] = {}
 
     def can_call(self, provider: str) -> bool:
-        """Return True if provider has quota remaining."""
+        """Return True if provider has quota remaining.
+
+        A stale entry (no date, or a date earlier than today) never blocks the
+        new day: yesterday's exhausted counter is reset to zero here, since the
+        only writer of the counter (``increment``) is gated behind ``can_call``
+        and would otherwise never run after a lockout day.
+        """
         if provider not in self._limits:
             return True
         entry = self._cache.get(provider)
         if entry is None:
+            return True
+        today = str(date.today())
+        entry_date = entry.get("date")
+        if entry_date is not None and entry_date != today:
+            # past day — reset counter so the new day starts fresh
+            limit_cfg = self._limits[provider]
+            limit = limit_cfg.get("daily") or limit_cfg.get("monthly") or 99999
+            self._cache[provider] = {"used": 0, "limit": limit, "date": today}
             return True
         return entry["used"] < entry["limit"]
 
@@ -73,6 +87,10 @@ class QuotaTracker:
             self._cache[provider]["date"] = today
         self._cache[provider]["used"] += max(1, int(count))
         await self._persist(provider, self._cache[provider]["used"], limit)
+
+    def known_providers(self) -> list[str]:
+        """Return the providers this tracker enforces a limit for."""
+        return list(self._limits.keys())
 
     async def load(self, provider: str) -> None:
         """Load current usage from Supabase into cache."""

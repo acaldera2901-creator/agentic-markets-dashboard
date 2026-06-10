@@ -1,4 +1,5 @@
 import pytest
+from datetime import date, timedelta
 from unittest.mock import AsyncMock, patch
 from core.quota_tracker import QuotaTracker
 
@@ -35,3 +36,27 @@ async def test_increment_updates_cache():
 async def test_unknown_provider_always_allowed():
     tracker = QuotaTracker(LIMITS, supabase_url=None, supabase_key=None)
     assert tracker.can_call("unknown_provider") is True
+
+
+@pytest.mark.asyncio
+async def test_stale_exhausted_entry_unblocks_new_day():
+    """#6: yesterday's exhausted quota must not lock out today."""
+    tracker = QuotaTracker(LIMITS, supabase_url=None, supabase_key=None)
+    yesterday = str(date.today() - timedelta(days=1))
+    tracker._cache["api_football"] = {"used": 100, "limit": 100, "date": yesterday}
+    assert tracker.can_call("api_football") is True
+    # counter reset to zero for today
+    assert tracker._cache["api_football"]["used"] == 0
+    assert tracker._cache["api_football"]["date"] == str(date.today())
+
+
+@pytest.mark.asyncio
+async def test_exhausted_entry_today_still_blocks():
+    tracker = QuotaTracker(LIMITS, supabase_url=None, supabase_key=None)
+    tracker._cache["api_football"] = {"used": 100, "limit": 100, "date": str(date.today())}
+    assert tracker.can_call("api_football") is False
+
+
+def test_known_providers_lists_limited_providers():
+    tracker = QuotaTracker(LIMITS, supabase_url=None, supabase_key=None)
+    assert set(tracker.known_providers()) == set(LIMITS.keys())

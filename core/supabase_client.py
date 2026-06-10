@@ -732,10 +732,19 @@ async def settle_unified_tennis(
         if not rows:
             return False
         row = rows[0]
-        if void or not winner_name:
+        pick = (row.get("pick") or "").strip()
+        if void or not winner_name or not pick:
+            # No declared direction (rows below the surfacing floor carry
+            # pick=null, e.g. "no clear favourite") must NOT count as a loss in
+            # the public track record — settle them as void.
             result = "void"
         else:
-            result = "won" if (row.get("pick") or "") == winner_name else "lost"
+            from core.tennis_names import canonical_player_key
+            result = (
+                "won"
+                if canonical_player_key(pick) == canonical_player_key(winner_name)
+                else "lost"
+            )
         return await settle_unified_prediction(
             str(row["id"]), result, final_score=final_score
         )

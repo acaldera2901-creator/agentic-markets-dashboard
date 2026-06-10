@@ -44,6 +44,12 @@ class RiskManagerAgent(BaseAgent):
         super().__init__("RiskManagerAgent")
         self._engine = RiskManagerEngine(initial_bankroll=settings.BANKROLL)
         self._cumulative_pnl: float = 0.0
+        # match_ids already committed to the engine this process lifetime.
+        # The pipeline re-publishes the same fixture every cycle; without this
+        # guard engine.commit() would inflate exposure/variance N times on one
+        # match (the downstream trader dedups bet rows, but not engine state).
+        # Cleared on settlement, so a match can be re-committed after it closes.
+        self._committed_match_ids: set[str] = set()
 
     async def _main_loop(self) -> None:
         # Restore cumulative P&L from DB so bankroll is correct after restarts
@@ -87,6 +93,11 @@ class RiskManagerAgent(BaseAgent):
             # Release exposure so future bets aren't blocked by old open positions
             if league_id and matchday_id and stake:
                 self._engine.release(league_id, matchday_id, stake)
+
+            # Allow this match to be re-committed once it has settled
+            match_id = str(event.get("match_id", ""))
+            if match_id:
+                self._committed_match_ids.discard(match_id)
 
             # Update tracked P&L so circuit breaker sees real bankroll
             self._cumulative_pnl += pl
@@ -148,6 +159,16 @@ class RiskManagerAgent(BaseAgent):
 
             stake = decision.final_stake
 
+            # Dedup before commit: same fixture re-published every cycle must
+            # not inflate engine exposure/variance more than once.
+            match_id = str(data.get("match_id", ""))
+            if match_id and match_id in self._committed_match_ids:
+                self.logger.info(
+                    f"already committed {data.get('home_team')} vs "
+                    f"{data.get('away_team')} ({match_id}) — skipping re-commit"
+                )
+                return
+
             # Register open stake in engine
             win_prob = float(data.get(f"p_{data.get('selection','home')}", 0.5))
             self._engine.commit(
@@ -156,6 +177,8 @@ class RiskManagerAgent(BaseAgent):
                 stake=stake,
                 win_probability=win_prob,
             )
+            if match_id:
+                self._committed_match_ids.add(match_id)
 
             order = {
                 **data,

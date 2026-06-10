@@ -125,6 +125,13 @@ class DataCollectorAgent(BaseAgent):
         self._football_features: FootballFeatureStore | None = None
 
     async def _main_loop(self) -> None:
+        # Restore per-provider usage from Supabase so the daily quota survives
+        # restarts (otherwise a restart silently re-grants the full daily budget).
+        try:
+            for provider in self._hub.quota.known_providers():
+                await self._hub.quota.load(provider)
+        except Exception as e:
+            self.logger.warning(f"quota restore failed (non-fatal): {e}")
         while self._running:
             try:
                 await self._collect_cycle()

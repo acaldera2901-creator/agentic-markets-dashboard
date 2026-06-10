@@ -7,6 +7,9 @@ from core.redis_client import get_redis
 from config.settings import settings
 from risk.kelly import kelly_stake
 
+# Minimum exchange ticket size (Betfair/Matchbook back min).
+TENNIS_MIN_STAKE = 2.0
+
 
 class TennisRiskManagerAgent(BaseAgent):
     def __init__(self):
@@ -18,7 +21,19 @@ class TennisRiskManagerAgent(BaseAgent):
             await self._sizing_cycle()
             await asyncio.sleep(300)
 
+    async def _refresh_pnl(self):
+        """Load real settled tennis P&L so the drawdown guard sees live bankroll.
+
+        Paper-only at launch: read the paper ledger, kept separate from live.
+        """
+        try:
+            from core.db import get_tennis_cumulative_pnl
+            self._pnl = await get_tennis_cumulative_pnl(paper=True)
+        except Exception as e:
+            self.logger.warning(f"tennis P&L refresh failed (non-fatal): {e}")
+
     async def _sizing_cycle(self):
+        await self._refresh_pnl()
         r = await get_redis()
         raw = await r.get("tennis:opportunities")
         if not raw:
@@ -48,8 +63,12 @@ class TennisRiskManagerAgent(BaseAgent):
             # kelly_stake signature: (edge, odds, bankroll, kelly_fraction, max_bet_pct)
             stake = kelly_stake(edge, odds, bankroll, TENNIS_KELLY_FRACTION, TENNIS_MAX_BET_PCT)
             stake = min(stake, bankroll * TENNIS_MAX_BET_PCT)
-            stake = max(stake, 2.0)  # Betfair exchange minimum
-            stake = round(stake, 2)
+            # Kelly sized this to ~0 → no real edge after fractioning, skip it.
+            # Only round UP to the exchange minimum when Kelly already wants a
+            # positive stake (never as a blanket override that bets on noise).
+            if stake <= 0:
+                continue
+            stake = round(max(stake, TENNIS_MIN_STAKE), 2)
 
             orders.append({
                 **opp,

@@ -175,9 +175,28 @@ def get_football_markets() -> list[dict]:
             "per-page": 100,
             "page": 1,
         })
+        import re
+        def _norm(n):
+            return re.sub(r"\b(FC|AC|AS|SS|US|SSC|AFC|SC|SV|CF|1\. FC)\b", "", n, flags=re.I).strip().lower()
+
         results = []
         for event in data.get("events", []):
+            # Event name is "Home vs Away" — use it to assign sides instead of
+            # trusting runner order, and to reject markets whose runners aren't
+            # the two event teams (e.g. Half Time Result reuses the team names).
+            event_name = event.get("name", "")
+            ev_sides = re.split(r"\s+vs\.?\s+|\s+v\s+", event_name, maxsplit=1, flags=re.I)
+            if len(ev_sides) != 2:
+                continue
+            ev_home_norm, ev_away_norm = _norm(ev_sides[0]), _norm(ev_sides[1])
+
             for market in event.get("markets", []):
+                # Only the full-time 1X2 market — skip Half Time Result and any
+                # other market that happens to carry the same team-named runners.
+                mkt_name = str(market.get("name", "")).strip().lower()
+                if mkt_name not in ("match odds", "moneyline", "money line", "1x2"):
+                    continue
+
                 runners = [r for r in market.get("runners", []) if r.get("status") == "open"]
                 if len(runners) < 3:
                     continue
@@ -189,20 +208,15 @@ def get_football_markets() -> list[dict]:
                     odds = _best_back(r)
                     if "draw" in name.lower():
                         od = odds
-                    elif not home_name:
+                    elif _norm(name) == ev_home_norm:
                         home_name = name
                         oh = odds
-                    else:
+                    elif _norm(name) == ev_away_norm:
                         away_name = name
                         oa = odds
 
                 if not (oh and od and oa):
                     continue
-
-                # Normalize team names for odds_map key matching
-                import re
-                def _norm(n):
-                    return re.sub(r"\b(FC|AC|AS|SS|US|SSC|AFC|SC|SV|CF|1\. FC)\b", "", n, flags=re.I).strip().lower()
 
                 results.append({
                     "home_team": home_name,
