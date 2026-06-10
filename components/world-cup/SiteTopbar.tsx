@@ -18,6 +18,16 @@ type AuthState =
   | { status: "anonymous" }
   | { status: "authed"; identifier: string; plan: string; name: string | null };
 
+// Mirror the home topbar pill (app/page.tsx `.am-acct`): unlocked plan → PRO,
+// free → FREE, everything else (pending_payment, raw "premium" not yet mapped)
+// → SETUP. Keeps the WC chrome label identical to the main site instead of
+// echoing the raw plan string (e.g. "PREMIUM").
+function planPillLabel(plan: string): string {
+  if (["base", "premium", "admin_full"].includes(plan)) return "PRO";
+  if (plan === "free") return "FREE";
+  return "SETUP";
+}
+
 export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
 
@@ -99,7 +109,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
           {auth.status === "authed" ? (
             <Link href="/" className="am-acct" title={auth.identifier}>
               {auth.name || auth.identifier}
-              <span className="plan">{auth.plan}</span>
+              <span className="plan">{planPillLabel(auth.plan)}</span>
             </Link>
           ) : auth.status === "anonymous" ? (
             <>
