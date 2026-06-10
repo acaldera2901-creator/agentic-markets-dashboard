@@ -136,9 +136,19 @@ class DataHub:
                         seen[key]["providers_used"].append(provider)
         return list(seen.values())
 
+    @staticmethod
+    def _norm_team(name: str) -> str:
+        # LOW (#18): normalize accents/punctuation/spacing so the SAME fixture
+        # from different providers ("Atlético"/"Atletico", "Inter Milan"/"Inter
+        # Milan ") collapses to one dedup key instead of duplicating rows.
+        import unicodedata
+        s = unicodedata.normalize("NFKD", name or "")
+        s = "".join(c for c in s if not unicodedata.combining(c))
+        return "".join(c for c in s.lower() if c.isalnum())
+
     def _dedup_key(self, fixture: dict) -> str:
-        home = fixture.get("home_team", "").lower().strip()
-        away = fixture.get("away_team", "").lower().strip()
+        home = self._norm_team(fixture.get("home_team", ""))
+        away = self._norm_team(fixture.get("away_team", ""))
         kickoff = str(fixture.get("kickoff", ""))[:10]
         return f"{home}|{away}|{kickoff}"
 
@@ -243,7 +253,7 @@ class DataHub:
         clean = [{k: v for k, v in f.items() if not k.startswith("_")} for f in fixtures]
         try:
             async with httpx.AsyncClient(timeout=10.0) as c:
-                await c.post(
+                resp = await c.post(
                     f"{self._url.rstrip('/')}/rest/v1/fixtures_enriched",
                     json=clean,
                     headers={
@@ -252,6 +262,12 @@ class DataHub:
                         "Content-Type": "application/json",
                         "Prefer": "resolution=merge-duplicates",
                     },
+                )
+            # LOW (#20): a fire-and-forget POST hid RLS/schema rejects (4xx) — the
+            # write silently failed and no one knew. Surface non-2xx loudly.
+            if resp.status_code >= 300:
+                logger.warning(
+                    "fixtures write rejected: %s %s", resp.status_code, resp.text[:300]
                 )
         except Exception as exc:
             logger.debug("fixtures write error (non-fatal): %s", exc)

@@ -150,6 +150,12 @@ class SelfLearningEngine:
         selection_prob = p_map.get(selection, prediction.get("confidence", 0.0))
         if selection_prob < 0.75:
             return
+        # LOW (#24): "overconfidence" must count only confident picks that were
+        # WRONG. prediction_error = confidence when wrong (≥0.75 here) and
+        # 1-confidence when correct (≤0.25), so error < 0.5 ⇒ the confident pick
+        # was CORRECT — not an overconfidence error. Don't inflate the pattern.
+        if error < 0.5:
+            return
 
         pattern = self._patterns.setdefault(
             "derby_overconfidence",

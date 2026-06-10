@@ -279,6 +279,7 @@ class MonitorAgent(BaseAgent):
                     text("""
                         SELECT stake, odds, status FROM bets
                         WHERE placed_at > NOW() - INTERVAL '90 days'
+                          AND status IN ('won', 'lost')
                         ORDER BY placed_at DESC
                         LIMIT 500
                     """)
@@ -288,28 +289,23 @@ class MonitorAgent(BaseAgent):
             if len(bets) < 10:
                 return
 
-            # Build empirical distribution of (stake_pct, edge_proxy)
-            samples = []
+            # LOW (#25): the old sim drew win_prob = 1/odds and paid at those same
+            # fair odds → EV exactly 0 by construction, so the P&L distribution
+            # measured only variance and told us nothing about the strategy's real
+            # edge. Bootstrap the REALIZED per-bet P&L from actual settled bets
+            # instead — the drift now reflects whether the model has actually been
+            # winning (positive) or losing (negative).
+            realized = []  # absolute P&L per historical bet
             for row in bets:
-                stake_pct = row[0] / settings.BANKROLL
-                odds = row[1]
-                # Approximate edge from status (positive for won, negative for lost)
-                status = row[2]
-                win_prob = 1.0 / odds if odds > 1 else 0
-                samples.append((stake_pct, win_prob))
+                stake, odds, status = row[0], row[1], row[2]
+                realized.append(stake * (odds - 1) if status == "won" else -stake)
 
             results = []
             for _ in range(1000):  # 1000 simulations
-                bankroll = settings.BANKROLL
+                pnl = 0.0
                 for _ in range(500):
-                    stake_pct, win_prob = random.choice(samples)
-                    stake = stake_pct * bankroll
-                    if random.random() < win_prob:
-                        odds_sample = 1.0 / win_prob if win_prob > 0 else 2.0
-                        bankroll += stake * (odds_sample - 1)
-                    else:
-                        bankroll -= stake
-                results.append(bankroll - settings.BANKROLL)
+                    pnl += random.choice(realized)
+                results.append(pnl)
 
             results.sort()
             p5 = results[int(len(results) * 0.05)]
