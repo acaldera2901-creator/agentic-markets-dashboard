@@ -91,6 +91,18 @@ export async function POST(req: Request) {
   const action = typeof body.action === "string" ? body.action : "login";
 
   if (action === "logout") {
+    // MEDIUM-11: revoke server-side too — bump sessions_valid_from so a copy of
+    // this cookie (iat < now) is rejected on its next use, not just cleared in
+    // this browser. Best-effort: never block logout on the write.
+    const ctx = await getSessionPlan(req).catch(() => null);
+    if (ctx) {
+      try {
+        await dbExecute(
+          "UPDATE profiles SET sessions_valid_from = NOW(), updated_at = NOW() WHERE identifier = $1",
+          [ctx.identifier]
+        );
+      } catch (e) { console.error("[auth] logout revoke failed:", String(e)); }
+    }
     const res = NextResponse.json({ ok: true });
     res.cookies.set(SESSION_COOKIE, "", { ...SESSION_COOKIE_OPTIONS, maxAge: 0 });
     return res;

@@ -43,11 +43,16 @@ export async function getSessionPlan(req: Request): Promise<SessionContext | nul
   if (!payload) return null;
   // Strict read: a DB error throws (→ the route 500s and the client keeps its
   // local state) instead of returning [] and silently logging the user out.
-  const rows = await dbQueryStrict<{ identifier: string; plan: Plan; name: string | null; plan_expires_at: string | null }>(
-    "SELECT identifier, plan, name, plan_expires_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
+  const rows = await dbQueryStrict<{ identifier: string; plan: Plan; name: string | null; plan_expires_at: string | null; sessions_valid_from: string | null }>(
+    "SELECT identifier, plan, name, plan_expires_at, sessions_valid_from FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
     [payload.identifier]
   );
   if (!rows.length) return null;
+  // MEDIUM-11: revoke cookies issued before the profile's sessions_valid_from
+  // cutoff (bumped on logout / password change). NULL ⇒ no revocation, so
+  // pre-existing cookies stay valid (no lockout). iat is in unix seconds.
+  const validFrom = rows[0].sessions_valid_from;
+  if (validFrom && payload.iat * 1000 < new Date(validFrom).getTime()) return null;
   const expiresAt = rows[0].plan_expires_at ?? null;
   return {
     identifier: rows[0].identifier,
