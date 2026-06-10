@@ -5075,7 +5075,7 @@ function FeaturedEdge({
   let league: string;
   let probability: number;
   let pickName: string;
-  let edgePts: number;
+  let modelEdgePts: number;
   let why: string;
   const metrics: { dt: string; dd: React.ReactNode }[] = [];
 
@@ -5093,7 +5093,10 @@ function FeaturedEdge({
     league = p.league_name;
     probability = selectedFootballProbability(p);
     pickName = sel?.name ?? p.home_team;
-    edgePts = (p.edge ?? 0) * 100;
+    // Model edge (margin of the pick over the 2nd-best outcome) — the uniform
+    // metric used on every card; a real market edge stays in the Why prose.
+    const fProbs = [p.p_home, p.p_draw, p.p_away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a);
+    modelEdgePts = fProbs.length >= 2 ? modelEdge(fProbs[0], fProbs[1]) : 0;
     why = buildFootballWhy(p, lang);
     const fh = teamFormCounts(p.enrichment?.form_home);
     const fa = teamFormCounts(p.enrichment?.form_away);
@@ -5122,7 +5125,7 @@ function FeaturedEdge({
     league = `${m.tournament} · ${surf} · ${m.round}`;
     probability = selectedTennisProbability(m);
     pickName = m.best_selection === "P1" ? m.player1 : m.best_selection === "P2" ? m.player2 : (m.p1 >= m.p2 ? m.player1 : m.player2);
-    edgePts = (m.edge ?? 0) * 100;
+    modelEdgePts = Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
     why = buildTennisWhy(m, lang);
     if (m.elo_p1 != null && m.elo_p2 != null) {
       metrics.push({ dt: it ? `Elo ${surf}` : `Elo ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
@@ -5185,9 +5188,9 @@ function FeaturedEdge({
             <span className="subl">{it ? "probabilità del modello" : "model probability"}</span>
           </div>
         </div>
-        <span className="edge">
+        <span className="edge model">
           <svg aria-hidden="true"><use href="#g-bolt" /></svg>
-          +{edgePts.toFixed(1)} pt · {it ? "edge vs quota implicita" : "edge vs implied price"}
+          +{modelEdgePts.toFixed(1)} pt · {it ? "edge modello" : "model edge"}
         </span>
       </div>
       <div className="seam" />
