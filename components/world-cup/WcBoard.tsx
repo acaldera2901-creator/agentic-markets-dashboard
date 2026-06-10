@@ -129,16 +129,18 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtForm = (f?: { w: number; d: number; l: number } | null) =>
   f ? `${f.w}W-${f.d}D-${f.l}L` : null;
 
-// Bar at parity with the home board's ProbBar (app/page.tsx): inset track,
-// outcome-coloured fill (coral / amber / cobalt), label + pct, optional odds.
-function ProbRow({ label, value, odds, color }: { label: string; value: number; odds?: number | null; color: string }) {
+// Bar at parity with the home board's ProbBar (app/page.tsx): monochrome track,
+// neutral fill, coral ONLY on the model's pick row (label + pct, optional odds).
+function ProbRow({ label, value, odds, isPick = false }: { label: string; value: number; odds?: number | null; isPick?: boolean }) {
+  const fill = isPick ? "var(--am-coral)" : "var(--am-muted-2)";
+  const text = isPick ? "var(--am-coral)" : "var(--am-muted-2)";
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-mono w-10 shrink-0" style={{ color }}>{label}</span>
+      <span className="text-xs font-mono w-10 shrink-0" style={{ color: text }}>{label}</span>
       <div className="flex-1 bg-[var(--am-inset)] rounded-full h-1.5 overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(value * 100)}%`, background: color }} />
+        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round(value * 100)}%`, background: fill }} />
       </div>
-      <span className="text-xs font-mono w-8 text-right" style={{ color }}>{pct(value)}</span>
+      <span className="text-xs font-mono w-8 text-right" style={{ color: text }}>{pct(value)}</span>
       {typeof odds === "number" && (
         <span className="text-xs font-mono w-12 text-right" style={{ color: "var(--am-muted-2)" }}>@{odds.toFixed(2)}</span>
       )}
@@ -363,9 +365,9 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
           {/* Probability bars — 3-way with real market odds when present */}
           {probs && (
             <div className="space-y-1.5">
-              <ProbRow label="HOME" value={probs.home} odds={probs.odds_home} color="var(--am-coral)" />
-              <ProbRow label="DRAW" value={probs.draw} odds={probs.odds_draw} color="var(--am-amber)" />
-              <ProbRow label="AWAY" value={probs.away} odds={probs.odds_away} color="var(--am-cobalt)" />
+              <ProbRow label="HOME" value={probs.home} odds={probs.odds_home} isPick={pick === "HOME"} />
+              <ProbRow label="DRAW" value={probs.draw} odds={probs.odds_draw} isPick={pick === "DRAW"} />
+              <ProbRow label="AWAY" value={probs.away} odds={probs.odds_away} isPick={pick === "AWAY"} />
             </div>
           )}
 
