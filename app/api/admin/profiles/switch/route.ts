@@ -34,10 +34,12 @@ export async function GET(req: NextRequest) {
   if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // This GET mutates session state (sets the session cookie). Block cross-site
-  // triggers (img/form/prefetch CSRF) while allowing the admin's same-origin nav.
-  if (req.headers.get("sec-fetch-site") === "cross-site") {
-    return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
+  // This GET mutates session state (sets the session cookie). Allow ONLY a
+  // same-origin request or a top-level navigation ("none"); block cross-site
+  // AND same-site (subdomain) triggers — img/form/prefetch CSRF (LOW-14).
+  const fetchSite = req.headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
 
   const profileId = req.nextUrl.searchParams.get("id")?.trim() ?? "";

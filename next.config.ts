@@ -20,6 +20,9 @@ const CSP_REPORT_ONLY = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
+  // LOW-26: send violations to our sink so they're observable — without this
+  // the Report-Only policy could never be validated for promotion to enforcing.
+  "report-uri /api/csp-report",
 ].join("; ");
 
 const securityHeaders = [

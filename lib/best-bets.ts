@@ -78,7 +78,11 @@ export function classifyFootballBestBet(candidate: BestBetCandidate): BestBetKin
 }
 
 export function classifyTennisBestBet(candidate: BestBetCandidate): BestBetKind {
-  return valueClassification(candidate, TENNIS_BEST_EDGE_THRESHOLD, isTennisMarketVisible(candidate.startsAt));
+  // LOW-15: surface as a value/model pick only PRE-match (parity with football).
+  // A started match (the old isTennisMarketVisible kept it for 12h after the
+  // start) must not be presented as a pre-match pick. Board visibility/live
+  // display is handled separately by isTennisMarketVisible elsewhere.
+  return valueClassification(candidate, TENNIS_BEST_EDGE_THRESHOLD, isFutureMarket(candidate.startsAt));
 }
 
 function classify(candidate: BestBetCandidate): BestBetKind {
