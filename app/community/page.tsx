@@ -100,13 +100,17 @@ export default function CommunityPage() {
             {t.sub}
           </p>
         </div>
-        <Link
+        {/* Plain <a> (hard nav), NOT next/link: a soft client-side nav to
+            /?tab=match-builder lands on the default Bets tab because the tab is
+            resolved only in a useState initializer at mount. A full load applies
+            the ?tab= deep-link correctly. */}
+        <a
           href="/?tab=match-builder"
           className="text-xs font-mono px-4 py-2 rounded border transition-colors shrink-0"
           style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
         >
           {t.create}
-        </Link>
+        </a>
       </header>
 
       <section className="max-w-3xl mx-auto px-4 py-8 space-y-4">

@@ -4712,7 +4712,6 @@ function HistoryTab({ history, stats, loading }: {
               <tr>
                 <th>Match</th>
                 <th>Pick</th>
-                <th className="r">{t.hist_model_pred}</th>
                 <th className="r">{lang === "it" ? "Esito" : "Result"}</th>
               </tr>
             </thead>
@@ -4732,8 +4731,6 @@ function HistoryTab({ history, stats, loading }: {
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
                     <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
-                    {/* Modello: real market label from the row — no invented probability */}
-                    <td className="r">{h.market ?? "—"}</td>
                     <td className="r">
                       <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
                     </td>
