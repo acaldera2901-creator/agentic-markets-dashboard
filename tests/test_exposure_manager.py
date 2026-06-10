@@ -84,6 +84,36 @@ class TestEvaluateNotCommit:
         assert state.league_exposure == pytest.approx(50.0)
 
 
+# ── #19: restore exposure books from open bets after a restart ────────────────
+
+class TestRestoreFromPending:
+    def test_restore_rebuilds_books(self, em):
+        # Two open bets on the same league/matchday + one on another league.
+        em.restore_from_pending([
+            ("PL", "2024-10-05", 50.0),
+            ("PL", "2024-10-05", 30.0),
+            ("SA", "2024-10-05", 20.0),
+        ])
+        pl = em.evaluate(1000.0, 0.0, "PL", "2024-10-05")
+        assert pl.league_exposure == pytest.approx(80.0)
+        assert pl.matchday_exposure == pytest.approx(100.0)  # all three same day
+        assert pl.total_exposure == pytest.approx(100.0)
+
+    def test_restored_exposure_blocks_overlimit_bet(self, em):
+        # After a restart with 190 already open on PL, a fresh 15 must be blocked
+        # exactly as if the engine had never lost the in-memory state.
+        em.restore_from_pending([("PL", "2024-10-05", 190.0)])
+        state = em.evaluate(1000.0, 15.0, "PL", "2024-10-05")
+        assert state.blocked is True
+
+    def test_restore_is_idempotent(self, em):
+        # Calling twice must not double-count (resets books first).
+        em.restore_from_pending([("PL", "2024-10-05", 50.0)])
+        em.restore_from_pending([("PL", "2024-10-05", 50.0)])
+        state = em.evaluate(1000.0, 0.0, "PL", "2024-10-05")
+        assert state.league_exposure == pytest.approx(50.0)
+
+
 # ── League exposure limit ─────────────────────────────────────────────────────
 
 class TestLeagueExposureLimit:

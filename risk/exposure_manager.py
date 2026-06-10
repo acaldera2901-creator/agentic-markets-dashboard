@@ -97,6 +97,23 @@ class ExposureManager:
         self._matchday[matchday_id] += stake
         self._total += stake
 
+    def restore_from_pending(self, open_stakes: list[tuple[str, str, float]]) -> None:
+        """Rebuild exposure books from the still-open bets after a restart (#19).
+
+        Without this the exposure/total books reset to zero on every process
+        restart while the bets stay open in the DB — the engine would then
+        approve fresh bets well past the real exposure limits. The agent passes
+        the (league_id, matchday_id, stake) of each pending bet at startup.
+
+        Idempotent reset: clears the in-memory books first so calling it twice
+        never double-counts.
+        """
+        self._league.clear()
+        self._matchday.clear()
+        self._total = 0.0
+        for league_id, matchday_id, stake in open_stakes:
+            self.commit(float(stake), str(league_id), str(matchday_id))
+
     def release(self, stake: float, league_id: str, matchday_id: str) -> None:
         """Remove a settled or cancelled stake."""
         self._league[league_id] = max(0.0, self._league[league_id] - stake)

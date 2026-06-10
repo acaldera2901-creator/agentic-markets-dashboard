@@ -294,6 +294,13 @@ def wc_prediction_to_unified_row(
     row["event_name"] = f"{canon_home} vs {canon_away}"
     pick = row["pick"]
     confidence = row["confidence_score"]
+    # #14: edge must be computed from the UNROUNDED pick probability. confidence
+    # (=confidence_score) is rounded to an integer percent in
+    # dc_prediction_to_unified_row, so deriving the probability back from it
+    # loses up to ±0.5pp — enough to flip the sign of a near-threshold edge.
+    # The raw probabilities live on the prediction object; recover the picked
+    # one with the same argmax used to choose the pick.
+    raw_pick_prob = {"HOME": p.p_home, "DRAW": p.p_draw, "AWAY": p.p_away}[pick]
     if friendly:
         # model_version override (#ELO-V2 label fix): the served model decides
         # the version tag. When the caller serves v2 it passes
@@ -332,7 +339,7 @@ def wc_prediction_to_unified_row(
             "DRAW": odds_triple["draw"],
             "AWAY": odds_triple["away"],
         }[pick]
-        pick_prob = confidence / 100.0
+        pick_prob = raw_pick_prob
         edge = pick_prob - (1.0 / pick_odds) if pick_odds > 0 else None
         row["odds"] = round(float(pick_odds), 3)
         row["bookmaker"] = bookmaker or "market"

@@ -193,6 +193,10 @@ class RiskManagerEngine:
         """Release open exposure after bet settlement or cancellation."""
         self._exposure.release(stake, league_id, matchday_id)
 
+    def restore_exposure(self, open_stakes: list) -> None:
+        """Rebuild exposure books from still-open bets after a restart (#19)."""
+        self._exposure.restore_from_pending(open_stakes)
+
     def clear_circuit_breaker(self) -> None:
         """Manual operator action to lift RED block after review."""
         self._circuit_breaker.clear_manual_review()

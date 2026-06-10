@@ -52,14 +52,29 @@ class RiskManagerAgent(BaseAgent):
         self._committed_match_ids: set[str] = set()
 
     async def _main_loop(self) -> None:
-        # Restore cumulative P&L from DB so bankroll is correct after restarts
+        # Restore cumulative P&L from DB so bankroll is correct after restarts.
+        # Scoped to the active ledger (paper OR live) so paper results never move
+        # the live bankroll / circuit breaker, and vice-versa (audit LOW finding).
         try:
             from core.db import get_cumulative_pnl
-            self._cumulative_pnl = await get_cumulative_pnl()
+            self._cumulative_pnl = await get_cumulative_pnl(paper=settings.PAPER_TRADING)
             self.logger.info(f"bankroll restored: {settings.BANKROLL + self._cumulative_pnl:.2f}€ "
                              f"(base {settings.BANKROLL:.2f} + P&L {self._cumulative_pnl:+.2f})")
         except Exception as e:
             self.logger.warning(f"could not restore P&L from DB: {e}")
+
+        # Rebuild exposure books from still-open bets so a restart doesn't reset
+        # exposure to zero while bets stay open (#19). Same ledger scope.
+        try:
+            from core.db import get_pending_bet_exposure
+            open_stakes = await get_pending_bet_exposure(paper=settings.PAPER_TRADING)
+            self._engine.restore_exposure(open_stakes)
+            if open_stakes:
+                self.logger.info(
+                    f"exposure restored from {len(open_stakes)} open bet(s)"
+                )
+        except Exception as e:
+            self.logger.warning(f"could not restore exposure from DB: {e}")
 
         # Run both consumers concurrently
         await asyncio.gather(

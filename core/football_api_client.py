@@ -105,6 +105,46 @@ async def get_fixture_result(fixture_id: int) -> dict | None:
     }
 
 
+# API-Football "short" status codes that mean the fixture will never produce a
+# settleable score (canceled / abandoned / postponed / walkover / awarded).
+# Used by ResultSettlementAgent to void bets on matches that never complete
+# (#17), instead of leaving them pending forever.
+_ABANDONED_STATUSES = frozenset({"CANC", "ABD", "PST", "WO", "AWD", "SUSP", "INT"})
+_FINAL_STATUSES = frozenset({"FT", "AET", "PEN"})
+
+
+async def get_fixture_disposition(fixture_id: int) -> str | None:
+    """Return 'final' | 'abandoned' | 'pending' for a fixture, or None on error.
+
+    'abandoned' covers any status from which no final score will ever arrive
+    (canceled, postponed, walkover, awarded, interrupted/suspended). Lets the
+    settlement agent void the corresponding bet rather than poll it forever.
+    """
+    if not settings.API_FOOTBALL_KEY:
+        return None
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{_base_url()}/fixtures",
+                headers=_headers(),
+                params={"id": fixture_id},
+                timeout=15.0,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json().get("response", [])
+    except Exception:
+        return None
+    if not data:
+        return None
+    status = data[0].get("fixture", {}).get("status", {}).get("short", "")
+    if status in _FINAL_STATUSES:
+        return "final"
+    if status in _ABANDONED_STATUSES:
+        return "abandoned"
+    return "pending"
+
+
 async def get_standings(league_id: int, season: int) -> List[Dict]:
     """Return league table rows for the given league+season."""
     if not settings.API_FOOTBALL_KEY:

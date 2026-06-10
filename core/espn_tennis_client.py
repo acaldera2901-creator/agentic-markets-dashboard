@@ -277,6 +277,10 @@ async def get_completed_results() -> list[dict]:
                 "loser_name": loser,
                 "tournament": ev.get("name", ev.get("shortName", "")),
                 "score_text": score_match.group(1).strip() if score_match else None,
+                # #18: the event date lets settlement bind a result to the
+                # prediction made for THAT match, so a later rematch of the same
+                # two players is never settled against the wrong week's result.
+                "event_date": _parse_iso_date(ev.get("date") or ""),
             })
 
     logger.info("ESPN tennis: found %d completed results", len(out))

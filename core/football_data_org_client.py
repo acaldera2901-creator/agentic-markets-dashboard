@@ -154,16 +154,32 @@ async def get_match_result(
     if resp.status_code != 200:
         return None
 
+    # #15: never settle on the FIRST candidate above a loose 0.6 threshold —
+    # a near-miss on the wrong fixture would settle a bet against the wrong
+    # result. Require a strong match on BOTH teams, score the combined
+    # similarity, and keep only the single best candidate. If the best is not
+    # clearly the right match (below the strict floor), return None rather than
+    # risk settling the wrong match.
+    MIN_TEAM_SIM = 0.80          # each side must be a strong match
+    best: dict | None = None
+    best_score = 0.0
     for m in resp.json().get("matches", []):
         h = m.get("homeTeam", {}).get("name", "")
         a = m.get("awayTeam", {}).get("name", "")
-        if _sim(h, home_team) >= 0.6 and _sim(a, away_team) >= 0.6:
-            ft = m.get("score", {}).get("fullTime", {})
-            hg = ft.get("home")
-            ag = ft.get("away")
-            if hg is not None and ag is not None:
-                return {"home_goals": int(hg), "away_goals": int(ag)}
-    return None
+        sh = _sim(h, home_team)
+        sa = _sim(a, away_team)
+        if sh < MIN_TEAM_SIM or sa < MIN_TEAM_SIM:
+            continue
+        ft = m.get("score", {}).get("fullTime", {})
+        hg = ft.get("home")
+        ag = ft.get("away")
+        if hg is None or ag is None:
+            continue
+        combined = sh + sa
+        if combined > best_score:
+            best_score = combined
+            best = {"home_goals": int(hg), "away_goals": int(ag)}
+    return best
 
 
 async def get_standings(competition_code: str, api_key: str) -> List[Dict]:

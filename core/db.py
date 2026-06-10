@@ -365,15 +365,48 @@ async def settle_bet(bet_id: int, outcome: str, profit_loss: float) -> None:
             await session.commit()
 
 
-async def get_cumulative_pnl() -> float:
-    """Sum of all settled bet profit_loss values (paper + live)."""
-    from sqlalchemy import func
+async def get_pending_bet_exposure(paper: bool = True) -> list:
+    """Open-bet exposure for rebuilding the risk engine books after a restart.
+
+    Returns [(league_id, matchday_id, stake), ...] for every still-pending bet,
+    keyed exactly as RiskManagerEngine.commit() keys them (bet.league /
+    bet.matchday_id). Without this the in-memory exposure books reset to zero on
+    restart while the bets stay open (#19). Scoped to one ledger (paper/live) so
+    paper exposure never blocks the live engine.
+    """
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            _select(func.coalesce(func.sum(Bet.profit_loss), 0.0)).where(
-                Bet.status.in_(["won", "lost"]),
-                Bet.profit_loss.isnot(None),
+            _select(Bet.league, Bet.matchday_id, Bet.stake).where(
+                Bet.status == "pending",
+                Bet.paper.is_(paper),
             )
+        )
+        rows = result.all()
+    return [
+        (str(league or ""), str(matchday or ""), float(stake or 0.0))
+        for league, matchday, stake in rows
+    ]
+
+
+async def get_cumulative_pnl(paper: bool | None = None) -> float:
+    """Sum of all settled bet profit_loss values.
+
+    paper=None  -> paper + live combined (legacy behaviour, kept for callers
+                   that want the full ledger).
+    paper=True/False -> only that ledger. The football risk engine reads its own
+                   ledger so paper results never move the live bankroll / circuit
+                   breaker (parity with get_tennis_cumulative_pnl).
+    """
+    from sqlalchemy import func
+    conditions = [
+        Bet.status.in_(["won", "lost"]),
+        Bet.profit_loss.isnot(None),
+    ]
+    if paper is not None:
+        conditions.append(Bet.paper.is_(paper))
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            _select(func.coalesce(func.sum(Bet.profit_loss), 0.0)).where(*conditions)
         )
         return float(result.scalar() or 0.0)
 

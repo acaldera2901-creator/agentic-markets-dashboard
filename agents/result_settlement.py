@@ -21,7 +21,7 @@ from core.espn_soccer_client import (
     get_match_disposition as espn_get_match_disposition,
     get_match_result as espn_get_match_result,
 )
-from core.football_api_client import get_fixture_result
+from core.football_api_client import get_fixture_result, get_fixture_disposition
 from core.football_data_org_client import get_match_result as fdorg_get_match_result
 from core.redis_client import publish
 from core.supabase_client import (
@@ -88,7 +88,15 @@ class ResultSettlementAgent(BaseAgent):
             try:
                 result = await self._fetch_result(bet)
                 if result is None:
-                    continue   # match not finished yet
+                    # #17: a match that will never finish (canceled / abandoned /
+                    # postponed / walkover) must not stay pending forever. Past a
+                    # grace window, if the source reports it abandoned, void the
+                    # bet (refund, profit_loss=0) — never guess a score. Mirrors
+                    # the void path already on tennis (#5) and unified rows.
+                    void_event = await self._try_void_abandoned(bet)
+                    if void_event is not None:
+                        settled_this_cycle.append(void_event)
+                    continue   # match not finished yet (or just voided)
 
                 outcome = _outcome(bet.selection, result["home_goals"], result["away_goals"])
                 pl = _profit_loss(outcome, float(bet.stake), float(bet.odds))
@@ -127,6 +135,62 @@ class ResultSettlementAgent(BaseAgent):
 
         if settled_this_cycle:
             await self._send_telegram_summary(settled_this_cycle)
+
+    # Grace before an unfinished bet is voided. Same rationale as the unified
+    # void path: a suspension can be transient; only void once the source
+    # confirms the fixture will never complete AND enough time has passed.
+    VOID_BET_AFTER_HOURS = 6
+
+    async def _try_void_abandoned(self, bet) -> dict | None:
+        """Void a pending bet whose fixture the source reports abandoned (#17).
+
+        Returns the settlement event (for the Telegram summary) when the bet was
+        voided, else None. Void = status 'void', profit_loss=0 (refund); the
+        settlement event releases the engine exposure exactly like a win/loss.
+        """
+        if not bet.kickoff:
+            return None
+        try:
+            ko = datetime.fromisoformat(str(bet.kickoff).replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return None
+        if ko.tzinfo is None:
+            ko = ko.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) - ko < timedelta(hours=self.VOID_BET_AFTER_HOURS):
+            return None
+        try:
+            fixture_id = int(bet.match_external_id)
+        except (ValueError, TypeError):
+            return None
+        try:
+            disposition = await get_fixture_disposition(fixture_id)
+        except Exception as e:
+            self.logger.debug(f"disposition lookup failed for bet {bet.id}: {e}")
+            return None
+        if disposition != "abandoned":
+            return None
+
+        await settle_bet(bet.id, "void", 0.0)
+        settlement_event = {
+            "bet_id": str(bet.id),
+            "match_id": str(bet.match_external_id),
+            "league_id": str(bet.league or ""),
+            "matchday_id": str(bet.matchday_id or (bet.kickoff[:10] if bet.kickoff else "")),
+            "stake": str(bet.stake),
+            "odds": str(bet.odds),
+            "selection": str(bet.selection),
+            "outcome": "void",
+            "profit_loss": "0.0",
+            "home_goals": "",
+            "away_goals": "",
+            "paper": str(bet.paper),
+        }
+        await publish("settlement:results", settlement_event)
+        self.logger.info(
+            f"voided (abandoned): {bet.home_team or bet.match_external_id} vs "
+            f"{bet.away_team or '?'} | stake {bet.stake} refunded"
+        )
+        return settlement_event
 
     async def _unified_settlement_cycle(self) -> None:
         """
@@ -328,7 +392,10 @@ class ResultSettlementAgent(BaseAgent):
             total_pl = sum(float(s["profit_loss"]) for s in settled)
             wins = sum(1 for s in settled if s["outcome"] == "won")
             losses = sum(1 for s in settled if s["outcome"] == "lost")
-            cumulative = await get_cumulative_pnl()
+            # Scope the cumulative P&L to the active ledger so a [PAPER] summary
+            # never reports the live ledger (or vice-versa) — same separation the
+            # risk engine uses (audit LOW finding).
+            cumulative = await get_cumulative_pnl(paper=settings.PAPER_TRADING)
             mode = "PAPER" if settings.PAPER_TRADING else "LIVE"
             lines = [
                 f"📊 <b>Settlement [{mode}]</b>  {len(settled)} bet{'s' if len(settled)>1 else ''}",
@@ -337,10 +404,16 @@ class ResultSettlementAgent(BaseAgent):
                 "",
             ]
             for s in settled[:5]:
-                icon = "✅" if s["outcome"] == "won" else "❌"
+                outcome = s["outcome"]
+                icon = "✅" if outcome == "won" else "↩️" if outcome == "void" else "❌"
+                score = (
+                    "VOID"
+                    if outcome == "void"
+                    else f"{s['home_goals']}-{s['away_goals']}"
+                )
                 lines.append(
                     f"{icon} {s.get('match_id','')}  {s['selection'].upper()} "
-                    f"{s['home_goals']}-{s['away_goals']}  {float(s['profit_loss']):+.2f}€"
+                    f"{score}  {float(s['profit_loss']):+.2f}€"
                 )
             await tg_send("\n".join(lines))
         except Exception as e:

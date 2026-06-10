@@ -87,6 +87,33 @@ def test_no_market_stays_paper_even_when_tier_allows():
     assert "odds_home" not in notes  # nothing fabricated
 
 
+def test_edge_uses_unrounded_probability_no_sign_flip():
+    """#14 regression: edge_percent must use the raw pick probability, not the
+    rounded confidence_score. Here the true edge is NEGATIVE (the model rates
+    the pick below the market-implied probability), but rounding the
+    probability up to the nearest integer percent would flip it positive.
+
+    p_home = 0.4755 (pick=HOME, it is the max), odds_home = 2.10.
+    implied = 1/2.10 = 0.476190...
+      raw edge   = 0.4755   - 0.476190 = -0.00069  -> negative (correct)
+      rounded    = round(47.55)=48 -> 0.48 - 0.476190 = +0.00381 -> positive (bug)
+    """
+    pred = _pred(ph=0.4755, pd=0.2645, pa=0.2600)
+    row = wc_prediction_to_unified_row(
+        pred, stage="group", signal_allowed=True,
+        odds_triple=ODDS, bookmaker="bet365",
+    )
+    # display confidence still rounds to the integer percent
+    assert row["confidence_score"] == 48
+    # but the edge is computed from 0.4755, so it stays NEGATIVE
+    assert row["edge_percent"] is not None
+    assert row["edge_percent"] < 0, (
+        f"edge should be negative (true prob below implied), got {row['edge_percent']}"
+    )
+    # exact value: (0.4755 - 1/2.10) * 100, rounded to 2dp
+    assert row["edge_percent"] == round((0.4755 - 1.0 / 2.10) * 100, 2)
+
+
 def test_partial_odds_never_promote():
     row = wc_prediction_to_unified_row(
         _pred(), stage="group", signal_allowed=True,
