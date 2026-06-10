@@ -5243,6 +5243,7 @@ function UnifiedBetsTab({
   historyLoading,
   onSelect,
   onBetNow,
+  onViewPartners,
   onSignIn,
   onRegister,
   onGate,
@@ -5259,6 +5260,7 @@ function UnifiedBetsTab({
   historyLoading: boolean;
   onSelect: (s: SlipSelection) => void;
   onBetNow: () => void;
+  onViewPartners?: () => void;
   onSignIn: () => void;
   onRegister: () => void;
   onGate?: () => void;
@@ -5289,7 +5291,7 @@ function UnifiedBetsTab({
           projection already strips the picks server-side; this hides the
           matchups too). Leaderboard and the public Old-bets history stay
           outside the gate. Unlock = active plan (profileHasAccess). */}
-      <AdBanner lang={lang} onCta={onBetNow} tone="sportsbook" />
+      <AdBanner lang={lang} onCta={onViewPartners} tone="sportsbook" />
       <LockedGate
         isUnlocked={Boolean(isPremiumClient)}
         mode={isLoggedIn ? "plan" : "auth"}
@@ -5306,7 +5308,7 @@ function UnifiedBetsTab({
           tennisIsPlaceholder={tennisIsPlaceholder}
         />
       </LockedGate>
-      <AdBanner lang={lang} onCta={onBetNow} tone="operator" />
+      <AdBanner lang={lang} onCta={onViewPartners} tone="operator" />
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
   );
@@ -6017,6 +6019,7 @@ export default function Dashboard() {
               // (affiliate) tab with no context. Prompt sign-in first; a
               // logged-in user keeps the affiliate route.
               onBetNow={() => hasClientProfile ? setTab("partners") : openAuth("login")}
+              onViewPartners={() => setTab("partners")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
