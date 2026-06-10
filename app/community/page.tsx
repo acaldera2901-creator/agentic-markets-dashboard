@@ -103,7 +103,7 @@ export default function CommunityPage() {
         <Link
           href="/?tab=match-builder"
           className="text-xs font-mono px-4 py-2 rounded border transition-colors shrink-0"
-          style={{ borderColor: "var(--am-amber)", color: "var(--am-amber)", background: "var(--am-wash)" }}
+          style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
         >
           {t.create}
         </Link>
@@ -128,13 +128,13 @@ export default function CommunityPage() {
             <div className="flex items-center justify-between">
               <span
                 className="text-xs font-mono px-2 py-0.5 rounded border"
-                style={{ borderColor: "var(--am-amber)", color: "var(--am-amber)" }}
+                style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)" }}
               >
                 {slip.creator_code}
               </span>
               <div className="flex items-center gap-3">
                 {slip.combined_prob != null && (
-                  <span className="text-lg font-black font-mono" style={{ color: "var(--am-amber)" }}>
+                  <span className="text-lg font-black font-mono" style={{ color: "var(--am-coral)" }}>
                     {Math.round(slip.combined_prob * 100)}%
                   </span>
                 )}
@@ -154,7 +154,7 @@ export default function CommunityPage() {
                     {sel.market != null ? (
                       <>
                         <span className="truncate max-w-[140px] sm:max-w-[200px]" style={{ color: "var(--am-muted)" }}>{sel.market}</span>
-                        {sel.prob != null && <span style={{ color: "var(--am-cobalt-2)" }}>{Math.round(sel.prob * 100)}%</span>}
+                        {sel.prob != null && <span style={{ color: "var(--am-coral)" }}>{Math.round(sel.prob * 100)}%</span>}
                       </>
                     ) : (
                       <span style={{ color: "var(--am-muted-2)" }}>🔒</span>
@@ -168,7 +168,7 @@ export default function CommunityPage() {
                 <Link
                   href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
-                  style={{ borderColor: "var(--am-cobalt)", color: "var(--am-cobalt)", background: "color-mix(in srgb, var(--am-cobalt) 8%, transparent)" }}
+                  style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
                 >
                   {t.register}
                 </Link>
