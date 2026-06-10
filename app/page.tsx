@@ -4196,29 +4196,6 @@ type PartnerCategory = typeof PARTNER_CATEGORIES[number];
 function PartnersTab() {
   const t = useT();
   const lang = useLang();
-  const [form, setForm] = useState({ company: "", site: "", category: "sportsbook" as PartnerCategory, email: "", message: "" });
-  const [formStatus, setFormStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  const categoryLabels: Record<PartnerCategory, string> = lang === "it"
-    ? { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" }
-    : { sportsbook: "Sportsbook", casino: "Casino", exchange: "Exchange", data_provider: "Data Provider" };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.company || !form.email) return;
-    setFormStatus("sending");
-    try {
-      const res = await fetch("/api/partner-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      setFormStatus(res.ok ? "sent" : "error");
-    } catch {
-      setFormStatus("error");
-    }
-  };
-
   const featured = PARTNERS.filter((p) => p.featured);
   const others = PARTNERS.filter((p) => !p.featured);
 
@@ -4270,69 +4247,6 @@ function PartnersTab() {
         </div>
       )}
 
-      {/* Collaboration form */}
-      <div className="operators-collab">
-        <div className="operators-collab-head">
-          <p className="eyebrow">{lang === "it" ? "Sei un operatore?" : "Are you an operator?"}</p>
-          <h4>{t.partners_invite_title}</h4>
-          <p>{t.partners_invite_desc}</p>
-        </div>
-        {formStatus === "sent" ? (
-          <div className="operators-sent">
-            <span>✓</span>
-            <p>{lang === "it" ? "Richiesta inviata. Ti contatteremo entro 48 ore." : "Request sent. We'll contact you within 48 hours."}</p>
-          </div>
-        ) : (
-          <form className="operators-form" onSubmit={handleSubmit}>
-            <div className="operators-form-row">
-              <label>
-                <span>{lang === "it" ? "Azienda / Brand" : "Company / Brand"}</span>
-                <input type="text" required value={form.company}
-                  onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  placeholder={lang === "it" ? "Es. Bet365, PokerStars…" : "e.g. Bet365, PokerStars…"} />
-              </label>
-              <label>
-                <span>{lang === "it" ? "Sito web" : "Website"}</span>
-                <input type="url" value={form.site}
-                  onChange={(e) => setForm({ ...form, site: e.target.value })}
-                  placeholder="https://…" />
-              </label>
-            </div>
-            <div className="operators-form-row">
-              <label>
-                <span>{lang === "it" ? "Tipo operatore" : "Operator type"}</span>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as PartnerCategory })}>
-                  {PARTNER_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{categoryLabels[c]}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Email</span>
-                <input type="email" required value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="partnerships@yoursite.com" />
-              </label>
-            </div>
-            <label>
-              <span>{lang === "it" ? "Messaggio (opzionale)" : "Message (optional)"}</span>
-              <textarea rows={3} value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
-                placeholder={lang === "it" ? "Descrivi brevemente la tua proposta…" : "Briefly describe your proposal…"} />
-            </label>
-            <button type="submit" className="btn-primary" disabled={formStatus === "sending"}>
-              {formStatus === "sending"
-                ? (lang === "it" ? "Invio…" : "Sending…")
-                : (lang === "it" ? "Invia richiesta di partnership" : "Send partnership request")}
-            </button>
-            {formStatus === "error" && (
-              <p style={{ color: "var(--red)", fontSize: 12, marginTop: 8 }}>
-                {lang === "it" ? "Errore nell'invio. Riprova." : "Send error. Please try again."}
-              </p>
-            )}
-          </form>
-        )}
-      </div>
     </div>
   );
 }
