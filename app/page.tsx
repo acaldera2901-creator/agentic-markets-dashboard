@@ -3979,30 +3979,30 @@ function MatchBuilderTab({
     <div className="space-y-6 p-4">
       <div className="space-y-1">
         <p className="eyebrow">{copy.eyebrow}</p>
-        <h2 className="text-xl font-bold text-white">{copy.title}</h2>
-        <p className="text-xs font-mono text-gray-500 max-w-lg">{copy.subtitle}</p>
+        <h2 className="text-xl font-bold text-[var(--am-text)]">{copy.title}</h2>
+        <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{copy.subtitle}</p>
       </div>
 
       {isSharedView && (
-        <div className="glass-card p-4 border border-cyan-400/30 space-y-2">
-          <p className="text-xs font-mono text-cyan-400 font-bold">{copy.sharedTitle}</p>
-          <p className="text-xs font-mono text-gray-400">{copy.sharedDesc}</p>
+        <div className="am-surface p-4 space-y-2" style={{ borderColor: "var(--am-coral-b)" }}>
+          <p className="text-xs font-mono text-[var(--am-coral)] font-bold">{copy.sharedTitle}</p>
+          <p className="text-xs font-mono text-[var(--am-muted)]">{copy.sharedDesc}</p>
           {refCode && (
-            <p className="text-[10px] font-mono text-gray-600">{copy.sharedBy}: <span className="text-amber-400">{refCode}</span></p>
+            <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{copy.sharedBy}: <span className="text-[var(--am-coral)]">{refCode}</span></p>
           )}
           {lockedSelected.length > 0 && (
             <div className="space-y-1 pt-1">
               {lockedSelected.map((id) => (
                 <div key={id} className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-gray-300 truncate max-w-[220px]">{lockedLabels.get(id)}</span>
-                  <span className="text-gray-600">🔒</span>
+                  <span className="text-[var(--am-text)] truncate max-w-[220px]">{lockedLabels.get(id)}</span>
+                  <span className="text-[var(--am-muted-2)]">🔒</span>
                 </div>
               ))}
             </div>
           )}
           <button
             onClick={onRegister}
-            className="mt-2 text-xs font-mono px-4 py-2 rounded border border-cyan-400/40 text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/15 transition-colors"
+            className="mt-2 text-xs font-mono px-4 py-2 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
           >
             {copy.registerCta} →
           </button>
@@ -4010,62 +4010,62 @@ function MatchBuilderTab({
       )}
 
       {selectedItems.length >= 2 && (
-        <div className="glass-card p-4 border border-amber-400/30 space-y-3">
+        <div className="am-surface p-4 space-y-3" style={{ borderColor: "var(--am-coral-b)" }}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400">{copy.selectedLabel}: {selectedItems.length}/5</span>
-            <span className="text-xl font-black font-mono text-amber-400">{Math.round(combinedProb * 100)}%</span>
+            <span className="text-xs font-mono text-[var(--am-muted)]">{copy.selectedLabel}: {selectedItems.length}/5</span>
+            <span className="text-xl font-black font-mono text-[var(--am-coral)]">{Math.round(combinedProb * 100)}%</span>
           </div>
           <div className="space-y-1">
             {selectedItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between text-xs font-mono">
-                <span className="text-gray-300 truncate max-w-[220px]">{item.label}</span>
+                <span className="text-[var(--am-text)] truncate max-w-[220px]">{item.label}</span>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-gray-500 truncate max-w-[110px]">{item.market}</span>
-                  <span className="text-cyan-300">{Math.round(item.prob * 100)}%</span>
+                  <span className="text-[var(--am-muted-2)] truncate max-w-[110px]">{item.market}</span>
+                  <span className="text-[var(--am-coral)]">{Math.round(item.prob * 100)}%</span>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-[10px] font-mono text-gray-600">
-            {copy.combinedProb}: <strong className="text-amber-400">{Math.round(combinedProb * 100)}%</strong>
+          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">
+            {copy.combinedProb}: <strong className="text-[var(--am-coral)]">{Math.round(combinedProb * 100)}%</strong>
           </p>
         </div>
       )}
 
       {!isSharedView && (
-        <div className="glass-card p-4 space-y-3">
-          <p className="text-xs font-mono text-gray-400">{copy.yourCode}</p>
+        <div className="am-surface p-4 space-y-3">
+          <p className="text-xs font-mono text-[var(--am-muted)]">{copy.yourCode}</p>
           <input
             type="text"
             value={influencerCode}
             onChange={(e) => setInfluencerCode(e.target.value)}
             placeholder="YOURCODE"
-            className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-gray-700 focus:outline-none focus:border-cyan-400/40"
+            className="w-full bg-[var(--am-inset)] border border-[var(--am-line)] rounded px-3 py-2 text-xs font-mono text-[var(--am-text)] placeholder:text-[var(--am-muted-2)] focus:outline-none focus:border-[var(--am-coral-b)]"
             maxLength={20}
           />
           {selected.length >= 2 ? (
             <>
               <button
                 onClick={copyLink}
-                className="w-full text-xs font-mono px-4 py-2 rounded border border-amber-400/40 text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 transition-colors"
+                className="w-full text-xs font-mono px-4 py-2 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
               >
                 {copied ? copy.copied : copy.copyLink}
               </button>
               {publishState === "published" && (
-                <p className="text-[10px] font-mono text-emerald-400">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
+                <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
               )}
-              <p className="text-[9px] font-mono text-gray-700 break-all">{shareLink}</p>
+              <p className="text-[9px] font-mono text-[var(--am-muted-2)] break-all">{shareLink}</p>
             </>
           ) : (
-            <p className="text-[10px] font-mono text-gray-700 italic">{copy.empty}</p>
+            <p className="text-[10px] font-mono text-[var(--am-muted-2)] italic">{copy.empty}</p>
           )}
         </div>
       )}
 
       <div className="space-y-3">
-        <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">{copy.selectTitle}</p>
+        <p className="text-xs font-mono text-[var(--am-muted)] uppercase tracking-wider">{copy.selectTitle}</p>
         {items.length === 0 ? (
-          <div className="glass-card p-8 text-center text-xs font-mono text-gray-600">{copy.noSignals}</div>
+          <div className="am-surface p-8 text-center text-xs font-mono text-[var(--am-muted-2)]">{copy.noSignals}</div>
         ) : (
           <div className="space-y-2">
             {items.map((item) => {
@@ -4077,18 +4077,17 @@ function MatchBuilderTab({
                   type="button"
                   onClick={() => toggle(item.id)}
                   disabled={atCap}
-                  className={`w-full glass-card p-3 flex items-center justify-between gap-3 text-left transition-colors ${
-                    isSelected ? "border-cyan-400/40 bg-cyan-400/5" : "hover:border-white/20"
-                  } ${atCap ? "opacity-40 cursor-not-allowed" : ""}`}
+                  className={`w-full am-surface p-3 flex items-center justify-between gap-3 text-left transition-colors ${atCap ? "opacity-40 cursor-not-allowed" : ""}`}
+                  style={isSelected ? { borderColor: "var(--am-coral-b)", background: "var(--am-coral-dim)" } : undefined}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{item.label}</p>
-                    <p className="text-[10px] font-mono text-gray-500 truncate">{item.sport} · {item.market}</p>
+                    <p className="text-xs font-bold text-[var(--am-text)] truncate">{item.label}</p>
+                    <p className="text-[10px] font-mono text-[var(--am-muted-2)] truncate">{item.sport} · {item.market}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-black font-mono text-cyan-300">{Math.round(item.prob * 100)}%</span>
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "border-cyan-400 bg-cyan-400/20" : "border-white/20"}`}>
-                      {isSelected && <span className="text-cyan-400 text-[10px]">✓</span>}
+                    <span className="text-sm font-black font-mono text-[var(--am-coral)]">{Math.round(item.prob * 100)}%</span>
+                    <div className="w-4 h-4 rounded border flex items-center justify-center" style={{ borderColor: isSelected ? "var(--am-coral)" : "var(--am-line-2)", background: isSelected ? "var(--am-coral-dim)" : "transparent" }}>
+                      {isSelected && <span className="text-[var(--am-coral)] text-[10px]">✓</span>}
                     </div>
                   </div>
                 </button>
