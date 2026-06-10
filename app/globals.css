@@ -5916,7 +5916,7 @@ button:disabled {
 .mb-row.is-selected .mb-row-glyph svg { color: var(--am-coral); }
 
 /* Row body: fixture + pick */
-.mb-row-body { flex: 1; min-width: 0; }
+.mb-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mb-fixture {
   font-size: 13px; font-weight: 700; color: var(--am-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
