@@ -5909,12 +5909,15 @@ button:disabled {
 .hb-chip-row .hb-chip-v{ display:inline; font-size:16px; margin-top:0; }
 
 /* ticker scorrevole */
-.hb-ticker{ position:relative; overflow:hidden; margin:16px -32px 0; border-top:1px solid var(--am-line);
+/* #HOUSE-BANNERS-2 fix: il marquee è in position:absolute (fuori flusso) dentro
+   un container width:100% a altezza fissa, così il suo width:max-content NON
+   stira mai gli antenati (book-main/grid/featured) — niente overflow orizzontale. */
+.hb-ticker{ position:relative; overflow:hidden; width:100%; height:38px; margin:16px -32px 0; border-top:1px solid var(--am-line);
   background:color-mix(in srgb, var(--am-bg) 55%, transparent);
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
   mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent); }
-.hb-tickwrap{ display:flex; width:max-content; animation:hb-tick 24s linear infinite; }
-.hb-tickrow{ display:flex; padding:9px 0; }
+.hb-tickwrap{ position:absolute; top:0; left:0; height:100%; display:flex; align-items:center; width:max-content; animation:hb-tick 24s linear infinite; }
+.hb-tickrow{ display:flex; align-items:center; }
 .hb-ti{ display:flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:12px; color:var(--am-muted); white-space:nowrap; margin:0 13px; }
 .hb-ti svg{ width:17px; height:17px; color:var(--am-muted-2); }
 .hb-ti-e{ color:var(--am-positive); font-weight:600; }
