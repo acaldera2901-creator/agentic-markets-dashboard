@@ -11,6 +11,7 @@ import {
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "./components/sport-glyphs";
+import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -626,6 +627,8 @@ const useLive = () => useContext(LiveCtx);
 // pair key (e.g. "alcaraz|sinner").
 const LiveTennisCtx = createContext<Record<string, LiveTennisMatch>>({});
 const useLiveTennis = () => useContext(LiveTennisCtx);
+const BetLinksCtx = createContext<boolean>(false);
+const useBetLinksEnabled = () => useContext(BetLinksCtx);
 function tennisLastName(s: string) {
   return (s.split(" ").pop() ?? s).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
@@ -2993,6 +2996,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
+  const betLinksEnabled = useBetLinksEnabled();
   const tz = useTz();
   const live = useLive()[p.match_id];
   const isLive = live?.match_status === "IN_PLAY";
@@ -3213,6 +3217,21 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
             </a>
           )}
+          {betLinksEnabled && (
+            <PlaceBetMenu
+              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
+              selection={{
+                sport: p.league === "WC" ? "worldcup" : "football",
+                league: p.league,
+                homeTeam: p.home_team,
+                awayTeam: p.away_team,
+                market: "1X2",
+                pick: p.pick ?? p.best_selection ?? "",
+                odds: null,
+                eventStartUtc: p.kickoff,
+              }}
+            />
+          )}
           {p.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
 
       {/* Deep Analysis — Premium only */}
@@ -3351,6 +3370,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const t = useT();
   const lang = useLang();
+  const betLinksEnabled = useBetLinksEnabled();
   const tz = useTz();
   const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
 
@@ -3586,6 +3606,17 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
             </a>
+          )}
+          {betLinksEnabled && (
+            <PlaceBetMenu
+              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
+              selection={{
+                sport: "tennis",
+                market: "MO",
+                pick: m.pick ?? m.best_selection ?? "",
+                odds: null,
+              }}
+            />
           )}
           {m.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
 
@@ -5408,6 +5439,15 @@ export default function Dashboard() {
     const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
     return stored && LANGUAGES.includes(stored) ? stored : "it";
   });
+  const [betLinksEnabled, setBetLinksEnabled] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/bet-links")
+      .then((r) => r.json())
+      .then((j: { enabled?: boolean }) => { if (alive) setBetLinksEnabled(Boolean(j.enabled)); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const toggleLanguage = () => {
     const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
     setUiLanguage(next);
@@ -5962,6 +6002,7 @@ export default function Dashboard() {
     <TzCtx.Provider value={userTz}>
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
+    <BetLinksCtx.Provider value={betLinksEnabled}>
     <main className="portal-root">
       <SportGlyphSprite />
       <CookieBanner />
@@ -6265,6 +6306,7 @@ export default function Dashboard() {
         />
       )}
     </main>
+    </BetLinksCtx.Provider>
     </LiveTennisCtx.Provider>
     </LiveCtx.Provider>
     </TzCtx.Provider>
