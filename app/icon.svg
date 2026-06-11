@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- BetRedge mark: mira/target con cuneo coral = "edge / probabilità di precisione".
+       Stesso disegno del wordmark in topbar (.am-logo), colori hardcoded per favicon. -->
+  <rect width="32" height="32" rx="7" fill="#0B0C0E"/>
+  <circle cx="16" cy="16" r="10.5" fill="none" stroke="#4A5160" stroke-width="1.5"/>
+  <circle cx="16" cy="16" r="5.5" fill="none" stroke="#4A5160" stroke-width="1.5"/>
+  <path d="M16 16 24.2 10.7A9.8 9.8 0 0 1 16 25.8Z" fill="#FF6A5E"/>
+  <circle cx="16" cy="16" r="1.8" fill="#F5F6F7"/>
+</svg>

@@ -205,7 +205,7 @@ const BASE_TRANSLATIONS = {
     tennis_loading: "Caricamento previsioni tennis…", tennis_no_matches: "Nessuna partita disponibile",
     // Partners tab
     partners_eyebrow: "Rete commerciale", partners_title: "Casino & Scommesse Partner",
-    partners_desc: "Piattaforme di gioco e scommesse con cui Agentic Markets collabora — integrazione segnali, edge e strumenti AI per gli operatori del settore.",
+    partners_desc: "Piattaforme di gioco e scommesse con cui BetRedge collabora — integrazione segnali, edge e strumenti AI per gli operatori del settore.",
     partners_active: "Partner Attivi", partners_negotiation: "In Trattativa", partners_coming: "Coming Soon",
     partners_section_exclusive: "Partner Esclusivi", partners_section_network: "Network Partner",
     partners_invite_title: "Vuoi collaborare?", partners_invite_desc: "Contattaci per integrare i nostri segnali AI nella tua piattaforma.",
@@ -447,7 +447,7 @@ const BASE_TRANSLATIONS = {
     tennis_loading: "Loading tennis predictions…", tennis_no_matches: "No matches available",
     // Partners tab
     partners_eyebrow: "Commercial network", partners_title: "Casino & Sportsbook Partners",
-    partners_desc: "Gaming and betting platforms Agentic Markets collaborates with — signal integration, edge and AI tools for operators.",
+    partners_desc: "Gaming and betting platforms BetRedge collaborates with — signal integration, edge and AI tools for operators.",
     partners_active: "Active Partners", partners_negotiation: "In Negotiation", partners_coming: "Coming Soon",
     partners_section_exclusive: "Exclusive Partners", partners_section_network: "Partner Network",
     partners_invite_title: "Want to collaborate?", partners_invite_desc: "Contact us to integrate our AI signals into your platform.",
@@ -1790,7 +1790,7 @@ function PreAccessLanding({
 
       <section className="preaccess-hero">
         <div>
-          <p className="eyebrow">Agentic Markets</p>
+          <p className="eyebrow">{lang === "it" ? "PREVEDI. ANALIZZA. ANTICIPA." : "PREDICT. ANALYZE. EDGE."}</p>
           <h3>{lang === "it" ? "Predictive intelligence per mercati sportivi, non un tipster feed" : "Predictive intelligence for sports markets, not a tipster feed"}</h3>
           <span>
             {lang === "it"
@@ -2055,8 +2055,8 @@ function FAQSupportSection({ items }: { items: string[][] }) {
       </div>
       <div className="risk-disclaimer">
         {lang === "it"
-          ? "Nota rischio: Agentic Markets mostra analisi probabilistiche. Non garantisce profitti e non sostituisce gestione del rischio personale."
-          : "Risk note: Agentic Markets shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management."}
+          ? "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce gestione del rischio personale."
+          : "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management."}
       </div>
     </section>
   );
@@ -4262,7 +4262,7 @@ const PARTNERS: Partner[] = [
     name: "Sportsbook Partner",
     type: "Casino & Sportsbook",
     status: "in_discussion",
-    description: "Casino e piattaforma di scommesse sportive — partnership in fase di definizione. Integrazione con Agentic Markets per segnali e probabilità calibrate.",
+    description: "Casino e piattaforma di scommesse sportive — partnership in fase di definizione. Integrazione con BetRedge per segnali e probabilità calibrate.",
     url: "mailto:info@agenticmarkets.com?subject=Partner%20Inquiry",
     since: "2026",
     logo_initials: "P1",
@@ -4394,8 +4394,8 @@ function PartnersTab() {
         <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{t.partners_desc}</p>
         <p className="text-[10px] font-mono text-[var(--am-muted-2)] mt-1">
           {lang === "it"
-            ? "I link partner sono relazioni commerciali affiliate. AgenticMarkets riceve compenso per referral qualificati."
-            : "Partner links are commercial affiliate relationships. AgenticMarkets receives compensation for qualified referrals."}
+            ? "I link partner sono relazioni commerciali affiliate. BetRedge riceve compenso per referral qualificati."
+            : "Partner links are commercial affiliate relationships. BetRedge receives compensation for qualified referrals."}
         </p>
       </div>
 
@@ -6064,7 +6064,7 @@ export default function Dashboard() {
               <path d="M16 16 26 9.5A12 12 0 0 1 16 28Z" fill="var(--am-coral)" />
               <circle cx="16" cy="16" r="2" fill="var(--am-text)" />
             </svg>
-            <span className="am-wm">Agentic Markets<span className="dot">.</span></span>
+            <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
           </div>
 
           <nav className="am-topnav">

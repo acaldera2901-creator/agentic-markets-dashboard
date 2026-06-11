@@ -23,7 +23,7 @@ function reminderEmail(daysLeft: number, lang: string) {
     ? `Il tuo abbonamento Signal Desk Pro scade tra ${daysLeft} giorn${daysLeft === 1 ? "o" : "i"}. Rinnova per non perdere l'accesso ai segnali e alle probabilità calibrate.`
     : `Your Signal Desk Pro subscription expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Renew to keep access to the signals and calibrated probabilities.`;
   const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">Agentic Markets</p>
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
   <p style="font-size:14px;line-height:1.5">${body}</p>
   <a href="https://agentic-markets-roan.vercel.app/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${it ? "Rinnova ora" : "Renew now"}</a>
 </div>`;

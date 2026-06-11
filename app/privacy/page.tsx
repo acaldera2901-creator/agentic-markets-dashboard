@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Agentic Markets OS",
-  description: "Privacy Policy and GDPR information for Agentic Markets OS",
+  title: "Privacy Policy — BetRedge",
+  description: "Privacy Policy and GDPR information for BetRedge",
 };
 
 export default function PrivacyPage() {
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <div className="max-w-2xl mx-auto px-6 py-12 space-y-8">
         <div className="space-y-2">
           <Link href="/" className="text-[10px] text-[var(--am-muted-2)] hover:text-[var(--am-coral)] uppercase tracking-wider">
-            ← Back to Agentic Markets OS
+            ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
           <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: May 2026</p>
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">1. Controller</h2>
           <p className="text-xs leading-relaxed">
-            Agentic Markets OS (&quot;we&quot;, &quot;us&quot;) operates this sports prediction platform. For GDPR purposes, the data controller is Agentic Markets. Contact: <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>.
+            BetRedge (&quot;we&quot;, &quot;us&quot;) operates this sports prediction platform. For GDPR purposes, the data controller is BetRedge. Contact: <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>.
           </p>
         </section>
 
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">8. Responsible Gambling</h2>
           <p className="text-xs leading-relaxed">
-            Agentic Markets OS provides sports prediction data for informational purposes only. Past performance does not guarantee future results. We strongly support responsible gambling. If you need help, please contact:
+            BetRedge provides sports prediction data for informational purposes only. Past performance does not guarantee future results. We strongly support responsible gambling. If you need help, please contact:
           </p>
           <ul className="text-xs space-y-1 list-disc list-inside">
             <li><a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">GamCare</a> — UK gambling support</li>
@@ -101,7 +101,7 @@ export default function PrivacyPage() {
 
         <div className="pt-8 border-t border-[var(--am-line)] text-center">
           <Link href="/" className="text-[10px] text-[var(--am-muted-2)] hover:text-[var(--am-coral)] uppercase tracking-wider">
-            ← Return to Agentic Markets OS
+            ← Return to BetRedge
           </Link>
         </div>
       </div>

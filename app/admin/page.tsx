@@ -329,7 +329,7 @@ export default function AdminPage() {
       {/* Header */}
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-lg">Agentic Markets</span>
+          <span className="font-bold text-lg">BetRedge</span>
           <span className="bg-red-900 text-red-300 text-xs px-2 py-0.5 rounded-full font-medium">ADMIN</span>
         </div>
         <div className="flex items-center gap-4">

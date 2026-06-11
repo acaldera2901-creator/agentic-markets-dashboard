@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="text-2xl font-bold text-white">Admin</div>
-          <div className="text-gray-500 text-sm mt-1">Agentic Markets</div>
+          <div className="text-gray-500 text-sm mt-1">BetRedge</div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input

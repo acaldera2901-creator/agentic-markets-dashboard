@@ -76,7 +76,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
     <header className="am-topbar">
       <div className="am-topbar-in">
         <div className="am-brandmark">
-          <Link href="/" className="wc-topbar-home" aria-label="Agentic Markets">
+          <Link href="/" className="wc-topbar-home" aria-label="BetRedge">
             {/* logo: mira/target con cuneo coral = "probabilità di precisione" */}
             <svg className="am-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
               <circle cx="16" cy="16" r="13" stroke="var(--am-muted)" strokeWidth="1.6" />
@@ -84,7 +84,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
               <path d="M16 16 26 9.5A12 12 0 0 1 16 28Z" fill="var(--am-coral)" />
               <circle cx="16" cy="16" r="2" fill="var(--am-text)" />
             </svg>
-            <span className="am-wm">Agentic Markets<span className="dot">.</span></span>
+            <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
           </Link>
           <Link href={backHref} className="wc-topbar-back">← {backLabel}</Link>
         </div>

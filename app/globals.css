@@ -3840,7 +3840,10 @@ button:disabled {
   color: var(--text);
   white-space: nowrap;
 }
-.am-wm .dot { color: var(--am-coral); }
+/* BetRedge wordmark: la "R" è il perno (Bet·R·edge) + chevron, entrambi coral. */
+.am-wm .r,
+.am-wm .chev { color: var(--am-coral); }
+.am-wm .chev { margin-left: 0.14em; font-weight: 900; }
 
 .am-topnav { display: flex; align-items: center; gap: 2px; }
 .am-topnav button {

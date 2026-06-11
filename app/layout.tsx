@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agentic Markets OS — Sports Trading Desk",
+  title: "BetRedge — Predictive Sports Intelligence",
   description: "Football and tennis multi-agent AI sports prediction desk",
 };
 

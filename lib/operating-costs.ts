@@ -1,4 +1,4 @@
-// Operating costs for Agentic Markets — single source of truth for the admin dashboard.
+// Operating costs for BetRedge — single source of truth for the admin dashboard.
 // Fixed monthly costs in EUR. EDIT THESE with the real figures; they feed the
 // "Finanze" panel (monthly burn rate + net vs revenue) in /admin.
 //

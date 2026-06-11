@@ -55,7 +55,7 @@ export async function generateMetadata(
   const squad = await loadSquad(team);
   const name = squad?.team_canonical || team.replace(/-/g, " ");
   return {
-    title: `${name} — World Cup 2026 squad, call-ups & fixtures | Agentic Markets`,
+    title: `${name} — World Cup 2026 squad, call-ups & fixtures | BetRedge`,
     description: `${name} at the 2026 World Cup: official squad list with injury status, every call-up change as it was announced, and the full match schedule.`,
   };
 }

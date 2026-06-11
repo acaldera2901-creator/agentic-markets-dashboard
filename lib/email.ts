@@ -12,8 +12,8 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 export const ACCOUNT_CONTACT_EMAIL = "agenticmarketscb@gmail.com";
 
 function fromAddress(): string {
-  // e.g. "Agentic Markets <login@agenticmarkets.com>"
-  return process.env.RESEND_FROM || "Agentic Markets <onboarding@resend.dev>";
+  // e.g. "BetRedge <login@agenticmarkets.com>"
+  return process.env.RESEND_FROM || "BetRedge <onboarding@resend.dev>";
 }
 
 function activationFromAddress(): string {
@@ -57,7 +57,7 @@ export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): 
   subject: string; html: string; text: string; from: string; replyTo: string;
 } {
   const it = lang === "it";
-  const subject = it ? "Attiva il tuo profilo Agentic Markets" : "Activate your Agentic Markets profile";
+  const subject = it ? "Attiva il tuo profilo BetRedge" : "Activate your BetRedge profile";
   const intro = it
     ? "Per completare la registrazione e proteggere il tuo account, conferma il tuo indirizzo email. Il link scade tra 1 ora."
     : "To finish signing up and secure your account, confirm your email address. The link expires in 1 hour.";
@@ -66,7 +66,7 @@ export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): 
     ? `Se non hai creato un account, ignora questa email o scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
     : `If you didn't create an account, ignore this email or write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
   const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">Agentic Markets</p>
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
   <p style="font-size:14px;line-height:1.5;margin:0 0 16px">${intro}</p>
   <a href="${activateUrl}" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:14px;font-weight:600">${cta}</a>
   <p style="font-size:12px;color:#94a3b8;margin:18px 0 0;word-break:break-all">${activateUrl}</p>
@@ -78,7 +78,7 @@ export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): 
 
 function shell(bodyHtml: string): string {
   return `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">Agentic Markets</p>
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
   ${bodyHtml}
 </div>`;
 }
@@ -112,8 +112,8 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
 export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: string; html: string; text: string } {
   const it = lang === "it";
   const subject = it
-    ? `${code} — il tuo codice di accesso Agentic Markets`
-    : `${code} — your Agentic Markets login code`;
+    ? `${code} — il tuo codice di accesso BetRedge`
+    : `${code} — your BetRedge login code`;
   const intro = it
     ? "Usa questo codice per accedere al tuo Signal Desk. Scade tra 10 minuti."
     : "Use this code to sign in to your Signal Desk. It expires in 10 minutes.";
@@ -121,7 +121,7 @@ export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: str
     ? "Se non hai richiesto questo codice, ignora questa email."
     : "If you didn't request this code, you can ignore this email.";
   const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">Agentic Markets</p>
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
   <p style="font-size:14px;margin:0 0 16px">${intro}</p>
   <div style="font-size:34px;font-weight:800;letter-spacing:.3em;font-family:ui-monospace,monospace;background:#f1f5f9;border-radius:10px;padding:18px;text-align:center;color:#0f172a">${code}</div>
   <p style="font-size:12px;color:#94a3b8;margin:16px 0 0">${ignore}</p>
