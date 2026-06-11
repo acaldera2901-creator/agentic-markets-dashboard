@@ -93,6 +93,12 @@ def parse_snapshot(snapshot: dict) -> list[OddsEvent]:
     out: list[OddsEvent] = []
     for eid, ev in (snapshot.get("events") or {}).items():
         desc = ev.get("desc") or {}
+        # I match VIRTUALI (eSoccer/eTennis/eFootVolley: nomi reali ma sim, mai
+        # partite vere) vivono su sport-id separati (300/302/303…) che il
+        # whitelist sotto già scarta. Guard esplicito belt-and-suspenders nel
+        # caso un virtuale venga taggato sport=1/5 (allineato allo spec betredge).
+        if desc.get("virtual") is True:
+            continue
         sport = _SPORT_ID.get(str(desc.get("sport")))
         if not sport:
             continue
