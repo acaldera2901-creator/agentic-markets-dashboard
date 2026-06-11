@@ -12,18 +12,18 @@ Raccogliere in modo continuo le quote pre-match di **Stake** e **Roobet** per (a
 - **Sport/mercati:** calcio (1X2) + tennis (match-winner), più over/under e gli altri mercati che già paghiamo su The Odds API (per un confronto pulito).
 - **Cadenza:** pre-match periodico (refresh ogni N minuti, più fitto vicino al kickoff) + snapshot di chiusura per il CLV. Niente in-play in Fase 1.
 - **Modello live invariato in Fase 1**: l'integrazione è puramente additiva; le odds Stake/Roobet entrano nel modello live solo dopo un gate sui numeri (shadow-eval).
-- **Raccomandazione parallela (non bloccante):** check `legale-compliance` sulla misura interim.
+- **Legale-compliance:** rimandato per ora (decisione Andrea 2026-06-11); resta consigliato prima di scalare o esporre la feature.
 
-## Approccio (A — spike-gated)
-Il rischio numero uno è la fattibilità dell'estrazione. Quindi:
+## Approccio (A — l'agente scrapa, estrazione decisa allo step 1)
+Il rischio numero uno è la fattibilità dell'estrazione. L'agente fa lo scraping; il suo primo step determina il metodo di estrazione prima di scrivere il parser:
 
-### Fase 0 — Spike di fattibilità (deliverable: vai/non-vai, ~1 giorno)
-Apertura di Stake e Roobet con browser headless, ispezione del traffico di rete sulle pagine calcio/tennis. Output per ciascun sito:
+### Step 1 dell'agente — Determinare il metodo di estrazione (deliverable interno)
+È l'agente stesso a fare lo scraping; il suo **primo step di sviluppo** è capire COME estrarre i dati in modo affidabile. Apertura di Stake e Roobet con browser headless, ispezione del traffico di rete sulle pagine calcio/tennis. Output per ciascun sito:
 - esiste un **endpoint JSON/XHR/WS interno** che serve le quote? (sì/no)
 - serve login? serve proxy/geo? formato dati? copertura mercati 1X2 + O/U?
 - match-rate atteso sui nomi squadra/giocatore.
 
-Esito → decide l'estrazione: **API-interna** (preferita, via httpx) o **DOM-scraping** (fallback, via headless browser), o sito impraticabile. **Nessuna riga d'agente prima di questo esito.**
+Esito → fissa il metodo di estrazione del client: **API-interna** (preferita, via httpx) o **DOM-scraping** (fallback, via headless browser). Se un sito risulta impraticabile, si procede con l'altro e si logga. Questo step precede la scrittura della logica di fetch del client (non si scrive un parser alla cieca), ma fa parte della costruzione dell'agente, non è una fase separata che la rimanda.
 
 ## Componenti (Fase 1)
 1. **`core/stake_client.py` + `core/roobet_client.py`** — un client per book, stessa interfaccia `fetch_odds(sport) -> list[OddsEvent]`. Normalizzazione, geo/proxy e anti-bot incapsulati qui dentro, così l'arrivo dell'API ufficiale richiede di riscrivere **solo** il client.
