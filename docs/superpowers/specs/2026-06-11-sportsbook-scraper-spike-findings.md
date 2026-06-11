@@ -29,6 +29,12 @@ MA le odds non vengono servite dal dominio del book: vengono da un **feed provid
 - **Blocker reale:** per arrivare al feed odds servirebbe quasi certamente una **sessione loggata** (account ADM con KYC). L'agente **non può autenticarsi/loggarsi** (regola dura) né creare account → lo spike Stake non è completabile in autonomia. Inoltre resta il **nodo legale ADM** (scraping di un concessionario italiano).
 - **Opzioni:** (a) Andrea fa login su stake.it nel browser, poi l'agente ispeziona/cattura il feed odds della sessione loggata; (b) si congela Stake fino ai contratti (l'API ufficiale eviterebbe sia login che ADM-scraping). Roobet resta consegnato e funzionante a prescindere.
 
+### RISOLTO (2026-06-11, post-login Andrea) — Stake = Altenar, feed PUBBLICO
+Catturato dalla sessione loggata (pagina `stake.it/betting/soccer.html`): il sportsbook di stake.it è **Altenar**. Le quote vengono dal feed widget `sb2frontend-1-altenar2.biahosted.com/api/widget/GetUpcoming?...&integration=stake.it&sportId=...` che è **PUBBLICO**: verificato **raggiungibile via curl/httpx SENZA login né cookie** (HTTP 200, JSON completo). → **il blocker login-gated NON esisteva per le quote** (login serve solo per saldo/scommesse). Stake è quindi fattibile come Roobet, niente scraper login-bound.
+- Modello relazionale: events{competitorIds:[home,away], startDate, sportId, marketIds} → markets{id,typeId,oddIds} → odds{price,competitorId,name}. Calcio sportId=66 (market typeId 1 = 1x2), Tennis sportId=68 (typeId 186 = match-winner). Quota decimale in `price`.
+- Implementato in `core/sportsbook/stake.py`; CLI `--book stake|all` operativa; agente real-time scrive Stake+Roobet in odds_snapshots. Totals Stake = follow-up (GetUpcoming è vista highlights; servono i full-markets).
+- **Resta il nodo legale ADM** (stake.it concessionario italiano): scraping interim fino ai contratti, accettato da Andrea.
+
 ## Impatto sul piano di implementazione (Plan 1)
 - **Approach B (httpx) È viable** — ma i client puntano al **feed provider** (sptpub per Roobet), non al dominio del book. Buona notizia: niente scraping DOM via headless, niente proxy (per Roobet, da qui).
 - `core/roobet_client.py` = client del protocollo BetBy/sptpub (cursori + parse eventi). `core/stake_client.py` = protocollo Stake in-house (TBD dopo spike Stake). Confermato: **un client per book, formati diversi**.
