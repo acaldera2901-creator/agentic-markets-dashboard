@@ -1,0 +1,787 @@
+{
+"epoch": 1781092989577,
+"version": 1781179894837,
+"generated": 1781179895440,
+"snapshot_complete": false,
+"fixtures_complete": true,
+"sports": {
+"5": {
+"name": "Tennis",
+"slug": "tennis",
+"inside_out": false,
+"priority": 192
+},
+"10": {
+"name": "Boxing",
+"slug": "boxing",
+"inside_out": false,
+"priority": 160
+},
+"20": {
+"name": "Table Tennis",
+"slug": "table-tennis",
+"inside_out": false,
+"priority": 132
+},
+"1": {
+"name": "Soccer",
+"slug": "soccer",
+"inside_out": false,
+"priority": 205
+},
+"117": {
+"name": "Mixed Martial Arts",
+"slug": "mixed-martial-arts",
+"inside_out": false,
+"priority": 175
+},
+"2": {
+"name": "Basketball",
+"slug": "basketball",
+"inside_out": false,
+"priority": 194
+},
+"16": {
+"name": "American Football",
+"slug": "american-football",
+"inside_out": false,
+"priority": 153
+},
+"4": {
+"name": "Ice Hockey",
+"slug": "ice-hockey",
+"inside_out": false,
+"priority": 175
+},
+"302": {
+"name": "eBasketball",
+"slug": "ebasketball",
+"inside_out": false,
+"priority": 145
+},
+"21": {
+"name": "Cricket",
+"slug": "cricket",
+"inside_out": false,
+"priority": 168
+},
+"137": {
+"name": "FC 26",
+"slug": "fc-26",
+"inside_out": false,
+"priority": 0
+},
+"22": {
+"name": "Darts",
+"slug": "darts",
+"inside_out": false,
+"priority": 75
+},
+"59": {
+"name": "Rugby League",
+"slug": "rugby-league",
+"inside_out": false,
+"priority": 58
+},
+"300": {
+"name": "eSoccer",
+"slug": "esoccer",
+"inside_out": false,
+"priority": 180
+},
+"19": {
+"name": "Snooker",
+"slug": "snooker",
+"inside_out": false,
+"priority": 35
+}
+},
+"events": {
+"2675455905792925704": {
+"desc": {
+"scheduled": 1781456400,
+"type": "match",
+"slug": "keflavik-if-fh-hafnarfjordur",
+"sport": "1",
+"category": "1701370576905572352",
+"tournament": "1733100168397594624",
+"competitors": [
+{
+"id": "1900",
+"sport_id": "1",
+"name": "Keflavik IF",
+"country_code": "ISL",
+"abbreviation": "KEF"
+},
+{
+"id": "1894",
+"sport_id": "1",
+"name": "FH Hafnarfjordur",
+"country_code": "ISL",
+"abbreviation": "HAF"
+}
+],
+"player_props": false,
+"bet_builder": true
+},
+"markets": {
+"10": {
+"": {
+"10": {
+"k": "1.18"
+},
+"9": {
+"k": "1.23"
+},
+"11": {
+"k": "1.97"
+}
+}
+},
+"29": {
+"": {
+"74": {
+"k": "1.38"
+},
+"76": {
+"k": "2.76"
+}
+}
+},
+"1": {
+"": {
+"2": {
+"k": "4.2"
+},
+"1": {
+"k": "1.74"
+},
+"3": {
+"k": "3.65"
+}
+}
+},
+"60": {
+"": {
+"3": {
+"k": "3.85"
+},
+"1": {
+"k": "2.2"
+},
+"2": {
+"k": "2.6"
+}
+}
+},
+"18": {
+"total=4.5": {
+"13": {
+"k": "1.34"
+},
+"12": {
+"k": "2.92"
+}
+},
+"total=3.25": {
+"12": {
+"k": "1.67"
+},
+"13": {
+"k": "2.06"
+}
+},
+"total=2.5": {
+"12": {
+"k": "1.35"
+},
+"13": {
+"k": "2.88"
+}
+},
+"total=5.5": {
+"13": {
+"k": "1.14"
+},
+"12": {
+"k": "4.7"
+}
+},
+"total=3": {
+"12": {
+"k": "1.48"
+},
+"13": {
+"k": "2.42"
+}
+},
+"total=3.5": {
+"13": {
+"k": "1.8"
+},
+"12": {
+"k": "1.88"
+}
+},
+"total=3.75": {
+"13": {
+"k": "1.67"
+},
+"12": {
+"k": "2.04"
+}
+},
+"total=1.5": {
+"12": {
+"k": "1.1"
+},
+"13": {
+"k": "5.6"
+}
+},
+"total=4": {
+"13": {
+"k": "1.51"
+},
+"12": {
+"k": "2.34"
+}
+}
+},
+"68": {
+"total=4.5": {
+"13": {
+"k": "1.02"
+},
+"12": {
+"k": "9.4"
+}
+},
+"total=1.5": {
+"13": {
+"k": "1.77"
+},
+"12": {
+"k": "1.92"
+}
+},
+"total=2.5": {
+"13": {
+"k": "1.22"
+},
+"12": {
+"k": "3.75"
+}
+},
+"total=3.5": {
+"13": {
+"k": "1.06"
+},
+"12": {
+"k": "7.0"
+}
+},
+"total=0.5": {
+"12": {
+"k": "1.2"
+},
+"13": {
+"k": "3.9"
+}
+},
+"total=2": {
+"13": {
+"k": "1.35"
+},
+"12": {
+"k": "2.9"
+}
+},
+"total=1": {
+"12": {
+"k": "1.34"
+},
+"13": {
+"k": "2.94"
+}
+}
+}
+},
+"state": {
+"provider": "77308e7c",
+"status": 0,
+"match_status": 0
+}
+},
+"2676594360648339498": {
+"desc": {
+"scheduled": 1781373600,
+"type": "match",
+"slug": "nsi-runavik-b36-torshavn",
+"sport": "1",
+"category": "1716181604478623744",
+"tournament": "1716181604512174080",
+"competitors": [
+{
+"id": "5189",
+"sport_id": "1",
+"name": "NSI Runavik",
+"country_code": "",
+"abbreviation": "NSI"
+},
+{
+"id": "5185",
+"sport_id": "1",
+"name": "B36 Torshavn",
+"country_code": "FRO",
+"abbreviation": "B36"
+}
+],
+"player_props": false,
+"bet_builder": true
+},
+"markets": {
+"10": {
+"": {
+"9": {
+"k": "1.3"
+},
+"10": {
+"k": "1.25"
+},
+"11": {
+"k": "1.75"
+}
+}
+},
+"29": {
+"": {
+"74": {
+"k": "1.59"
+},
+"76": {
+"k": "2.18"
+}
+}
+},
+"1": {
+"": {
+"1": {
+"k": "1.93"
+},
+"2": {
+"k": "3.75"
+},
+"3": {
+"k": "3.35"
+}
+}
+},
+"60": {
+"": {
+"1": {
+"k": "2.48"
+},
+"2": {
+"k": "2.34"
+},
+"3": {
+"k": "3.7"
+}
+}
+},
+"18": {
+"total=4.5": {
+"13": {
+"k": "1.16"
+},
+"12": {
+"k": "4.4"
+}
+},
+"total=2.5": {
+"12": {
+"k": "1.63"
+},
+"13": {
+"k": "2.12"
+}
+},
+"total=5.5": {
+"13": {
+"k": "1.05"
+},
+"12": {
+"k": "7.8"
+}
+},
+"total=3": {
+"13": {
+"k": "1.68"
+},
+"12": {
+"k": "2.04"
+}
+},
+"total=3.5": {
+"13": {
+"k": "1.43"
+},
+"12": {
+"k": "2.58"
+}
+},
+"total=5": {
+"13": {
+"k": "1.06"
+},
+"12": {
+"k": "7.2"
+}
+},
+"total=1.5": {
+"12": {
+"k": "1.21"
+},
+"13": {
+"k": "3.85"
+}
+},
+"total=4": {
+"13": {
+"k": "1.21"
+},
+"12": {
+"k": "3.85"
+}
+},
+"total=2": {
+"12": {
+"k": "1.3"
+},
+"13": {
+"k": "3.15"
+}
+},
+"total=1": {
+"12": {
+"k": "1.04"
+},
+"13": {
+"k": "8.2"
+}
+}
+},
+"68": {
+"total=1.5": {
+"13": {
+"k": "1.53"
+},
+"12": {
+"k": "2.3"
+}
+},
+"total=2.5": {
+"13": {
+"k": "1.13"
+},
+"12": {
+"k": "4.9"
+}
+},
+"total=0.5": {
+"12": {
+"k": "1.29"
+},
+"13": {
+"k": "3.2"
+}
+},
+"total=2": {
+"13": {
+"k": "1.19"
+},
+"12": {
+"k": "4.0"
+}
+},
+"total=1": {
+"12": {
+"k": "1.55"
+},
+"13": {
+"k": "2.26"
+}
+}
+}
+},
+"state": {
+"provider": "48681207",
+"status": 0,
+"match_status": 0
+}
+},
+"2654433127224709127": {
+"desc": {
+"scheduled": 1782853200,
+"type": "match",
+"slug": "1i-3cdfgh",
+"sport": "1",
+"category": "1669818805871841280",
+"tournament": "1670073988614852608",
+"competitors": [
+{
+"id": "1184265",
+"sport_id": "1",
+"name": "1I",
+"abbreviation": "1I"
+},
+{
+"id": "2667004705972031531",
+"sport_id": "1",
+"name": "3CDFGH",
+"country_code": ""
+}
+],
+"player_props": false,
+"bet_builder": true
+},
+"markets": {
+"1": {
+"": {
+"1": {
+"k": "1.38"
+},
+"2": {
+"k": "5.8"
+},
+"3": {
+"k": "6.4"
+}
+}
+},
+"18": {
+"total=3.5": {
+"13": {
+"k": "1.6"
+},
+"12": {
+"k": "2.32"
+}
+}
+},
+"2": {
+"": {
+"4": {
+"k": "1.18"
+},
+"5": {
+"k": "4.4"
+}
+}
+},
+"10": {
+"": {
+"11": {
+"k": "2.86"
+},
+"10": {
+"k": "1.1"
+},
+"9": {
+"k": "1.09"
+}
+}
+}
+},
+"state": {
+"provider": "b7656e30",
+"status": 0,
+"match_status": 0
+}
+},
+"2676658824080928792": {
+"desc": {
+"scheduled": 1781204400,
+"type": "match",
+"slug": "mendonca-sofia-urrutia-maria-florencia",
+"sport": "5",
+"category": "1669817287227609088",
+"tournament": "2574198316338389011",
+"competitors": [
+{
+"id": "799062",
+"sport_id": "5",
+"name": "Mendonca, Sofia",
+"country_code": "BRA",
+"abbreviation": "MS"
+},
+{
+"id": "226170",
+"sport_id": "5",
+"name": "Urrutia, Maria Florencia",
+"country_code": "ARG",
+"abbreviation": "URR"
+}
+],
+"player_props": false,
+"bet_builder": false
+},
+"markets": {
+"189": {
+"total=16.5": {
+"13": {
+"k": "1.64"
+},
+"12": {
+"k": "2.04"
+}
+}
+},
+"202": {
+"setnr=1": {
+"5": {
+"k": "1.03"
+},
+"4": {
+"k": "8.6"
+}
+}
+},
+"186": {
+"": {
+"5": {
+"k": "1.02"
+},
+"4": {
+"k": "9.2"
+}
+}
+}
+},
+"state": {
+"provider": "48681207",
+"status": 0,
+"match_status": 0
+}
+},
+"2676674795080392719": {
+"desc": {
+"scheduled": 1781200800,
+"type": "match",
+"slug": "fenty-andrew-boosarawongse-thanaphat",
+"sport": "5",
+"category": "1669817287911280640",
+"tournament": "2544123055974789123",
+"competitors": [
+{
+"id": "353586",
+"sport_id": "5",
+"name": "Fenty, Andrew",
+"country_code": "USA",
+"abbreviation": "FEN"
+},
+{
+"id": "1098341",
+"sport_id": "5",
+"name": "Boosarawongse, Thanaphat",
+"country_code": "THA",
+"abbreviation": "BOO"
+}
+],
+"player_props": false,
+"bet_builder": false
+},
+"markets": {
+"189": {
+"total=19.5": {
+"12": {
+"k": "1.77"
+},
+"13": {
+"k": "1.87"
+}
+}
+},
+"202": {
+"setnr=1": {
+"4": {
+"k": "1.3"
+},
+"5": {
+"k": "3.05"
+}
+}
+},
+"186": {
+"": {
+"4": {
+"k": "1.2"
+},
+"5": {
+"k": "3.8"
+}
+}
+}
+},
+"state": {
+"provider": "48681207",
+"status": 0,
+"match_status": 0
+}
+},
+"2676813180159791127": {
+"desc": {
+"scheduled": 1781181600,
+"type": "match",
+"slug": "arribage-t--olivetti-a-pavlasek-a--rikl-p",
+"sport": "5",
+"category": "1669817298497703936",
+"tournament": "1749429738876837888",
+"competitors": [
+{
+"id": "2586895495926517761",
+"sport_id": "5",
+"name": "Arribage T / Olivetti A",
+"country_code": "FRA"
+},
+{
+"id": "2650192600929275904",
+"sport_id": "5",
+"name": "Pavlasek A / Rikl P",
+"country_code": "CZE"
+}
+],
+"player_props": false,
+"bet_builder": false
+},
+"markets": {
+"202": {
+"setnr=1": {
+"4": {
+"k": "1.81"
+},
+"5": {
+"k": "1.92"
+}
+}
+},
+"186": {
+"": {
+"4": {
+"k": "1.81"
+},
+"5": {
+"k": "1.92"
+}
+}
+}
+},
+"state": {
+"provider": "48681207",
+"status": 0,
+"match_status": 0
+}
+}
+}
+}
