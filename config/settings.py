@@ -196,6 +196,13 @@ class Settings(BaseSettings):
     TENNIS_SHADOW_ENABLED: bool = True      # compute + log the shadow A/B
     TENNIS_SHADOW_SERVE_ENABLED: bool = False  # flip ONLY after gate-green + APPROVE
 
+    # Stake/Roobet shadow-eval (#SPORTSBOOK-SHADOW-1). Forward-only A/B: log each
+    # served prediction with per-book SHADOW probs (served model re-blended with
+    # Stake/Roobet quotes) to sportsbook_shadow_eval, settle forward, decide
+    # keep/drop on the numbers (scripts/shadow_eval_report.py). NEVER serves.
+    SHADOW_EVAL_ENABLED: bool = True
+    SHADOW_EVAL_POLL_INTERVAL: int = 600    # seconds between collect+settle cycles
+
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
 

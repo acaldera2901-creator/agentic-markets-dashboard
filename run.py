@@ -19,6 +19,7 @@ from agents.tennis_trader import TennisTraderAgent
 from agents.tennis_settlement import TennisSettlementAgent
 from agents.tennis_research_agent import TennisResearchAgent
 from agents.sportsbook_scraper import SportsbookScraperAgent
+from agents.shadow_eval_agent import ShadowEvalAgent
 from core.db import init_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
@@ -76,6 +77,8 @@ async def main():
         TennisResearchAgent(),
         # Sportsbook odds scraper (Stake/Roobet → odds_snapshots, real-time)
         SportsbookScraperAgent(),
+        # Stake/Roobet shadow-eval (forward-only A/B → sportsbook_shadow_eval; never serves)
+        ShadowEvalAgent(),
     ]
     log.info("Starting %d agents", len(agents))
     await asyncio.gather(*[agent.run() for agent in agents])
