@@ -9,6 +9,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
+import { HouseBanner } from "@/components/HouseBanner";
+import { pickCampaign } from "@/lib/house-banners";
 
 type Lang = "it" | "en";
 
@@ -279,6 +281,16 @@ export default function LandingPage() {
           <span className="lp-soon">{t.appSoon}</span>
         </article>
       </section>
+
+      {/* ── House billboard (#HOUSE-BANNERS-1) ─────────────────── */}
+      {(() => {
+        const camp = pickCampaign("landing", "anon");
+        return camp ? (
+          <section className="lp-house">
+            <HouseBanner campaign={camp} lang={lang} />
+          </section>
+        ) : null;
+      })()}
 
       {/* ── Footer ─────────────────────────────────────────────── */}
       <footer className="lp-foot">

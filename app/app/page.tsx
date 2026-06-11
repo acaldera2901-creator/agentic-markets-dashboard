@@ -12,6 +12,8 @@ import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-b
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
+import { HouseBanner } from "@/components/HouseBanner";
+import { pickCampaign, audienceFromState } from "@/lib/house-banners";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -1442,9 +1444,18 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
-                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                  ))}
+                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).flatMap((p, i) => {
+                    const card = (
+                      <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                    );
+                    // #HOUSE-BANNERS-1: 1 house rectangle dopo la 6ª card, solo su
+                    // board pieno (no free preview) e se c'è ancora flusso sotto.
+                    if (i === 5 && !isFreeClient && footballRows.length > 6) {
+                      const camp = pickCampaign("desk-feed", isPremium ? "pro" : "free");
+                      if (camp) return [card, <HouseBanner key="house-feed" campaign={camp} lang={lang} />];
+                    }
+                    return [card];
+                  })}
                   {isFreeClient && footballRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -6062,8 +6073,13 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Top banner ── */}
-      <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
+      {/* ── Top banner ── (#HOUSE-BANNERS-1: house ad contestuale) */}
+      {(() => {
+        const camp = pickCampaign("desk-top", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
+        return camp
+          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} /></div>
+          : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
+      })()}
 
       {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
       <header className="am-topbar">
@@ -6276,8 +6292,13 @@ export default function Dashboard() {
 
       </div>{/* end portal-columns */}
 
-      {/* ── Bottom banner ── */}
-      <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />
+      {/* ── Bottom banner ── (#HOUSE-BANNERS-1: house billboard contestuale) */}
+      {(() => {
+        const camp = pickCampaign("desk-bottom", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
+        return camp
+          ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} /></div>
+          : <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
+      })()}
 
       {/* ── Promo strip (demoted from sidebars) ── */}
       <section className="promo-strip">

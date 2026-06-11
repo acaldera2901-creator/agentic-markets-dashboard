@@ -17,6 +17,7 @@ const ALLOWED_EVENTS = new Set([
   "page_view", "tab_click", "plan_view", "language_change", "theme_change",
   "conversion", "partner_click", "mb_link_copied",
   "operator_sidebar_click", "sportsbook_sidebar_click", "sportsbook_click",
+  "house_banner_view", "house_banner_click", "house_banner_dismiss",
 ]);
 
 const cap = (v: unknown, n: number): string | null =>

@@ -5804,6 +5804,96 @@ button:disabled {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+   House banners (#HOUSE-BANNERS-1) — pubblicità proprietaria BetRedge.
+   Distinti da .ad-banner (sponsorizzati/partner). Vedi components/HouseBanner.tsx.
+   ────────────────────────────────────────────────────────────────────────── */
+.house-banner{
+  position:relative; overflow:hidden;
+  font-family:var(--font-display);
+  border:1px solid var(--am-line); border-radius:12px;
+  background:linear-gradient(120deg, var(--am-coral-ink) 0%, var(--am-panel) 56%);
+  color:var(--am-text);
+}
+:root[data-theme="light"] .house-banner{
+  background:linear-gradient(120deg, var(--am-coral-dim) 0%, var(--am-panel) 60%);
+}
+.house-banner .hb-eyebrow{
+  font-family:var(--font-mono); font-size:10px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.1em; color:var(--am-coral);
+}
+.house-banner .hb-headline{ font-weight:800; letter-spacing:-0.02em; line-height:1.08; }
+.house-banner .hb-accent{ color:var(--am-coral); }
+.house-banner .hb-sub{ font-size:13px; color:var(--am-muted); line-height:1.45; }
+.house-banner .hb-cta{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap; cursor:pointer;
+  font-weight:700; font-size:13px; padding:9px 16px; border-radius:8px;
+  background:var(--am-coral); color:var(--am-coral-ink); border:0;
+  text-decoration:none; transition:filter .14s, transform .14s; align-self:flex-start;
+}
+.house-banner .hb-cta:hover{ filter:brightness(1.06); }
+.house-banner .hb-cta-block{ justify-content:center; align-self:stretch; }
+.house-banner .hb-x{
+  position:absolute; top:8px; right:9px; z-index:3;
+  width:22px; height:22px; line-height:1; font-size:17px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:0; border-radius:6px; color:var(--am-muted-2);
+  transition:background .14s, color .14s;
+}
+.house-banner .hb-x:hover{ background:var(--am-inset); color:var(--am-text); }
+.house-banner .hb-ic{ width:30px; height:30px; color:var(--am-muted); flex-shrink:0; }
+.house-banner .hb-ic-sm{ width:22px; height:22px; color:var(--am-muted); }
+.house-banner .hb-glyphs{ display:flex; gap:8px; }
+
+/* glow + glifi fluttuanti del billboard */
+.house-banner .hb-glow{
+  position:absolute; right:-50px; top:-70px; width:320px; height:320px; pointer-events:none;
+  background:radial-gradient(ellipse, var(--am-coral-dim), transparent 66%);
+}
+.house-banner .hb-float{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.house-banner .hb-fg{ position:absolute; color:var(--am-line-2); opacity:.5; animation:hb-float 7s ease-in-out infinite; }
+.house-banner .hb-fg-0{ width:58px; height:58px; top:18px; right:38px; animation-delay:0s; }
+.house-banner .hb-fg-1{ width:44px; height:44px; bottom:42px; right:120px; animation-delay:1.3s; }
+.house-banner .hb-fg-2{ width:40px; height:40px; top:30px; right:210px; animation-delay:2.1s; }
+.house-banner .hb-fg-3{ width:46px; height:46px; bottom:24px; right:290px; animation-delay:.7s; }
+@keyframes hb-float{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
+@media (prefers-reduced-motion: reduce){ .house-banner .hb-fg{ animation:none; } }
+
+/* ── Leaderboard (top desk) ── */
+.hb-leaderboard{ display:flex; align-items:center; gap:14px; padding:10px 16px; width:100%; min-height:52px; }
+.hb-leaderboard .hb-lead-text{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.hb-leaderboard .hb-headline{ font-size:16px; }
+.hb-leaderboard .hb-cta{ margin-right:24px; }
+
+/* ── Rectangle (feed tile, si comporta come una .card nella .am-grid) ── */
+.hb-rectangle{ display:flex; flex-direction:column; gap:8px; padding:18px; min-height:230px; }
+.hb-rectangle .hb-headline{ font-size:21px; }
+.hb-rectangle .hb-glyphs{ margin-top:auto; }
+.hb-rectangle .hb-cta{ margin-top:10px; }
+.am-grid > .house-banner{ grid-column:span 4; min-width:0; }
+@media (max-width:1080px){ .am-grid > .house-banner{ grid-column:span 6; } }
+@media (max-width:640px){ .am-grid > .house-banner{ grid-column:span 12; } }
+
+/* ── Billboard (bottom desk + landing) ── */
+.hb-billboard{ padding:28px 32px; }
+.hb-billboard .hb-bill-main{ position:relative; display:flex; flex-direction:column; gap:9px; max-width:560px; }
+.hb-billboard .hb-headline{ font-size:30px; }
+.hb-billboard .hb-cta{ margin-top:8px; }
+@media (max-width:640px){
+  .hb-billboard{ padding:22px 20px; }
+  .hb-billboard .hb-headline{ font-size:24px; }
+  .hb-leaderboard{ flex-wrap:wrap; }
+  .hb-leaderboard .hb-cta{ margin-right:0; }
+}
+
+/* ── Integrazione negli slot predisposti (evita doppia cornice) ── */
+.portal-top-banner .house-banner{ border:0; background:transparent; border-radius:0; width:100%; }
+.portal-bottom-banner .house-banner{ width:100%; max-width:1120px; margin:0 auto; }
+.portal-bottom-banner:has(.house-banner){ padding-top:18px; padding-bottom:18px; }
+/* Landing: billboard a tutta larghezza tra cards e footer */
+.lp-house{ padding:0 24px 8px; }
+.lp .house-banner.hb-billboard{ margin:8px auto 0; max-width:1180px; width:100%; }
+
+/* ──────────────────────────────────────────────────────────────────────────
    .am-surface — sleek-coral panel utility (parity with .pred / .wc-group-card).
    Drop-in replacement for legacy .glass-card on modals & account area.
    Presentation only; pair with Tailwind padding/spacing utilities.
