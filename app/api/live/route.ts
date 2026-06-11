@@ -29,12 +29,12 @@ const ESPN_STATUS: Record<string, string> = {
   STATUS_FINAL: "FINISHED",
 };
 
-async function fetchEspnFriendlyLive(): Promise<Record<string, LiveScore>> {
+async function fetchEspnLeagueLive(league: string): Promise<Record<string, LiveScore>> {
   const out: Record<string, LiveScore> = {};
   try {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const resp = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.friendly/scoreboard?dates=${today}`,
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${today}`,
       { cache: "no-store" }
     );
     if (!resp.ok) return out;
@@ -64,12 +64,16 @@ async function fetchEspnFriendlyLive(): Promise<Record<string, LiveScore>> {
 export async function GET(req: Request) {
   const { deny } = await requireAccess(req);
   if (deny) return deny;
-  const [matches, espnLive] = await Promise.all([
+  const [matches, espnFriendly, espnWorldCup] = await Promise.all([
     fetchAllTodayMatches(),
-    fetchEspnFriendlyLive(),
+    fetchEspnLeagueLive("fifa.friendly"),
+    // #WC-LIVE-1: the World Cup lives on ESPN's fifa.world scoreboard, not
+    // fifa.friendly. football-data's plan doesn't surface WC in-play (returns
+    // count:0 / TIER_ONE on /matches), so ESPN is the only live WC source.
+    fetchEspnLeagueLive("fifa.world"),
   ]);
 
-  const liveMap: Record<string, LiveScore> = { ...espnLive };
+  const liveMap: Record<string, LiveScore> = { ...espnFriendly, ...espnWorldCup };
   for (const m of matches) {
     liveMap[m.id] = {
       home_score: m.homeGoals,
