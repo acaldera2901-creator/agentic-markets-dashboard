@@ -3613,8 +3613,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   // Pick / verdict (presentation derived from the model's probabilities).
   const hasFavorite = m.p1 !== m.p2;
   const p1IsPick = hasFavorite && m.p1 > m.p2;
-  const pickName = hasFavorite ? (p1IsPick ? m.player1 : m.player2) : null;
-  const pickPct = hasFavorite ? Math.max(m.p1, m.p2) : null;
   // Scorebar state from the ESPN live feed.
   const scStatus = liveMatch ? (liveIsFinal ? "finished" : "live") : null;
   const scLabel = liveMatch ? (liveIsFinal ? "FT" : `LIVE`) : null;
@@ -3665,35 +3663,25 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           <span className="locked-cta">{t.locked_title}</span>
         </div>
       ) : (
-        <>
-          <div className="verdict">
-            <span className="lead">Pick</span>
-            {pickName ? (
-              <>
-                <span className="name">{pickName}</span>
-                <span className="p">{pct(pickPct as number)}</span>
-              </>
-            ) : (
-              <span className="name flat">{t.no_clear_favorite}</span>
-            )}
-          </div>
-          <div className="rows">
-            {rowsData.map((r) => {
-              const isPick = hasFavorite && ((r.player === "P1") === p1IsPick);
-              return (
-                <div
-                  key={r.player}
-                  className={`row${isPick ? " pick" : ""}${onSelect ? " sel" : ""}`}
-                  onClick={() => onSelect && handleSelect(r.player)}
-                >
-                  <span className="lab">{r.name}</span>
-                  <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
-                  <span className="pct">{pct(r.pct)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </>
+        // #CARD-STD-1: structural parity with the football card — no .verdict
+        // line above the rows; the pick is shown by the coral row (and the
+        // "Pick:" line inside the expanded why), exactly like football.
+        <div className="rows">
+          {rowsData.map((r) => {
+            const isPick = hasFavorite && ((r.player === "P1") === p1IsPick);
+            return (
+              <div
+                key={r.player}
+                className={`row${isPick ? " pick" : ""}${onSelect ? " sel" : ""}`}
+                onClick={() => onSelect && handleSelect(r.player)}
+              >
+                <span className="lab">{r.name}</span>
+                <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
+                <span className="pct">{pct(r.pct)}</span>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* edge chip — integrates the +EV signal */}

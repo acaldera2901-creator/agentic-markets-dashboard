@@ -416,42 +416,52 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
             </span>
           ) : null}
 
-          {/* WHY — toggle + human paragraph (parity with the home board); the
-              granular form/λ/sample rows live in the premium Deep Analysis. */}
+          {/* WHY — #CARD-STD-1: same structure as the football card —
+              static .wlab label + .dl readout (Form/Sample) + .act footer
+              (toggle · place bet · model · Pro) + expandable .why-body. */}
           <div className="why">
-            <div className="wlab">
-              <button
-                type="button"
-                className="wc-why-toggle"
-                onClick={() => setShowWhy((v) => !v)}
-              >
-                <span className="tri">▸</span> {showWhy ? whyL.hide : whyL.show}
+            <div className="wlab"><span className="tri">▸</span> {lang === "it" ? "Perché" : "Why"}</div>
+            <dl>
+              {(e?.form_home || e?.form_away) && (
+                <div className="it"><dt>{lang === "it" ? "Forma" : "Form"}</dt><dd>{fmtFormCount(e?.form_home, lang === "it") ?? "–"} <span className="vs">vs</span> {fmtFormCount(e?.form_away, lang === "it") ?? "–"}</dd></div>
+              )}
+              {e?.matches && (e.matches.home != null || e.matches.away != null) && (
+                <div className="it"><dt>{lang === "it" ? "Campione" : "Sample"}</dt><dd>{e.matches.home ?? "–"} <span className="vs">vs</span> {e.matches.away ?? "–"}</dd></div>
+              )}
+            </dl>
+
+            {/* footer action row — mirrors the football .act */}
+            <div className="act">
+              <button type="button" className="open" onClick={() => setShowWhy((v) => !v)}>
+                {showWhy ? (lang === "it" ? "Nascondi" : "Hide") : (lang === "it" ? "Mostra" : "Show")} <span className="ar">→</span>
               </button>
-              <span className="wc-why-model">{model}</span>
+              {/* Place Bet — real affiliate link when present, else the Partners
+                  deep-link. Styled as the football bet button; never a fake target. */}
+              <a
+                className="betbtn"
+                href={p.affiliate?.url || "/app?tab=partners"}
+                {...(p.affiliate?.url
+                  ? { target: "_blank", rel: "nofollow sponsored noopener" }
+                  : {})}
+              >
+                {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
+              </a>
+              <span className="model">{model}</span>
+              <span className="gate">Pro</span>
             </div>
+
+            {/* expandable analysis body — paragraph + Deep Analysis (premium) */}
             {showWhy && (
-              <p className="wc-why-text">{buildWcWhy(p, probs, home, away, belowFloor, lang)}</p>
-            )}
-
-            {/* Place Bet — routes to the Partners tab; real affiliate link wins
-                when present, else the deep-link. Never a fake target. */}
-            <a
-              className="wc-place-bet"
-              href={p.affiliate?.url || "/app?tab=partners"}
-              {...(p.affiliate?.url
-                ? { target: "_blank", rel: "nofollow sponsored noopener" }
-                : {})}
-            >
-              {isLive ? "Live — " : ""}Place Bet →
-            </a>
-
-            {/* Deep Analysis — premium-only (projection-gated) */}
-            {e ? (
-              <DeepAnalysis e={e} home={home} away={away} />
-            ) : (
-              <div className="deep-analysis-locked">
-                <span>⚡</span>
-                <span>Deep analysis available with Signal Desk Pro (49.50 USDT/month)</span>
+              <div className="why-body">
+                <p className="why-prose">{buildWcWhy(p, probs, home, away, belowFloor, lang)}</p>
+                {e ? (
+                  <DeepAnalysis e={e} home={home} away={away} />
+                ) : (
+                  <div className="deep-analysis-locked">
+                    <span>⚡</span>
+                    <span>Deep analysis available with Signal Desk Pro (49.50 USDT/month)</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
