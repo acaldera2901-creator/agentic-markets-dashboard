@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { dbQuery } from "@/lib/db";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
-import { activatePlan, type GrantablePlan } from "@/lib/plan-grant";
+import { activateAdminPlan } from "@/lib/plan-grant";
 
 export const dynamic = "force-dynamic";
 
@@ -35,21 +34,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "identifier required" }, { status: 400 });
   }
 
-  // Read the profile's current requested_plan before activating (admin activates
-  // whatever plan the user requested, not a hardcoded plan).
-  const pending = await dbQuery<{ requested_plan: GrantablePlan | null }>(
-    "SELECT requested_plan FROM profiles WHERE identifier = $1 LIMIT 1",
-    [identifier]
-  );
-  const wanted = pending[0]?.requested_plan;
-  if (wanted !== "base" && wanted !== "premium") {
-    return NextResponse.json(
-      { error: "profile is not pending activation or requested plan is missing" },
-      { status: 409 }
-    );
-  }
-
-  const activated = await activatePlan(identifier, wanted, null);
+  // Single atomic UPDATE: activates whatever plan the user requested, guarded on
+  // plan='pending_payment' AND requested_plan IN ('base','premium'). No SELECT-then-
+  // update (removes the TOCTOU). No row -> not pending / no valid requested plan.
+  const activated = await activateAdminPlan(identifier);
   if (!activated) {
     return NextResponse.json(
       { error: "profile is not pending activation or requested plan is missing" },

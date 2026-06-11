@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isStripeConfigured, resolvePlanFromPriceId, periodEndToIso } from "@/lib/stripe";
-import { activatePlan } from "@/lib/plan-grant";
+import { activateStripePlan } from "@/lib/plan-grant";
 import { dbQuery } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -50,28 +50,43 @@ export async function POST(req: Request) {
         const s = event.data.object as Stripe.Checkout.Session;
         const identifier = s.client_reference_id ?? s.customer_email ?? null;
         if (identifier) {
+          // I3: store SQL NULL (not "") when Stripe omits the customer/subscription.
+          const customerId = typeof s.customer === "string" ? s.customer : s.customer?.id ?? null;
+          const subscriptionId =
+            typeof s.subscription === "string" ? s.subscription : s.subscription?.id ?? null;
           await dbQuery(
             `UPDATE profiles
                 SET stripe_customer_id = $2, stripe_subscription_id = $3, updated_at = NOW()
               WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
-            [identifier, String(s.customer ?? ""), String(s.subscription ?? "")]
+            [identifier, customerId, subscriptionId]
           );
         }
         break;
       }
       case "invoice.paid": {
         const inv = event.data.object as Stripe.Invoice;
+        // I4: guard a malformed invoice with no line items — accessing price/period
+        // on undefined would throw -> 500 -> infinite Stripe retries. Ack 200 instead.
+        const line = inv.lines?.data?.[0];
+        if (!line) {
+          console.error("[stripe/webhook] invoice.paid has no line items", { invoice: inv.id });
+          break;
+        }
         // v22: price id lives at lineItem.pricing.price_details.price (string | Price)
-        const priceId = extractPriceId(inv.lines.data[0]);
+        const priceId = extractPriceId(line);
         const plan = resolvePlanFromPriceId(priceId);
         // period.end is still on the line item period object
-        const periodEnd = inv.lines.data[0]?.period?.end ?? null;
+        const periodEnd = line.period?.end ?? null;
         // identifier: from subscription metadata (preferred) or lookup by customer
         let identifier: string | null = null;
+        // C1: only activate when the subscription is actually live. A stale or
+        // redelivered invoice.paid must not re-upgrade a user who already cancelled.
+        let subActive = false;
         const subId = extractSubscriptionId(inv);
         if (subId) {
           const sub = await stripe.subscriptions.retrieve(subId);
           identifier = sub.metadata?.identifier ?? null;
+          subActive = sub.status === "active" || sub.status === "trialing";
         }
         if (!identifier && inv.customer) {
           const rows = await dbQuery<{ identifier: string }>(
@@ -80,8 +95,17 @@ export async function POST(req: Request) {
           );
           identifier = rows[0]?.identifier ?? null;
         }
+        if (!subActive) {
+          // Stripe is the source of truth: sub not active/trialing -> no activation.
+          console.error("[stripe/webhook] invoice.paid sub not active, skipping activation", {
+            identifier,
+            subId,
+          });
+          break;
+        }
         if (identifier && plan) {
-          await activatePlan(identifier, plan, periodEndToIso(periodEnd));
+          // Persist the sub id in the same update (set even if checkout.session.completed is late).
+          await activateStripePlan(identifier, plan, subId, periodEndToIso(periodEnd));
         } else {
           console.error("[stripe/webhook] invoice.paid unresolved", { identifier, priceId });
         }

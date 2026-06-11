@@ -15,49 +15,91 @@ export function expirySqlExpr(expiresAtIso: string | null): string {
 }
 
 type ActivatedRow = { identifier: string; name: string | null; plan: GrantablePlan };
+type ActivationSource = "admin" | "stripe";
 
-// Activates (or renews) a paid plan. Single path for admin and Stripe webhook.
-// - expiresAtIso null  => USDT/admin: 30 days from DB, requires plan='pending_payment'
-// - expiresAtIso set   => Stripe: expiry = current_period_end, idempotent on renewals
-export async function activatePlan(
-  identifier: string,
-  plan: GrantablePlan,
-  expiresAtIso: string | null
-): Promise<ActivatedRow | null> {
-  const guard = expiresAtIso
-    ? "" // Stripe: webhook is source of truth, activate/renew without pending guard
-    : "AND plan = 'pending_payment' AND requested_plan IN ('base','premium')";
+// Shared NOTIFICATION side-effect for both activation modes: audit `events` row +
+// best-effort activation email. The two modes must NOT share the activating SQL
+// (sharing it caused regressions) — only this notify step is shared.
+// Email is best-effort and never throws out of here.
+async function notifyPlanActivated(row: ActivatedRow, source: ActivationSource): Promise<void> {
+  await dbQuery(
+    `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+     VALUES ('admin_profile_plan_changed', $1, NULL, NULL, $2, NULL, 0, $3)`,
+    [source, row.plan, JSON.stringify({ identifier: row.identifier, name: row.name })]
+  );
 
+  if (row.identifier.includes("@")) {
+    const exp = await dbQuery<{ plan_expires_at: string | null }>(
+      "SELECT plan_expires_at::text FROM profiles WHERE identifier = $1 LIMIT 1",
+      [row.identifier]
+    );
+    const mail = planActivatedEmail(exp[0]?.plan_expires_at ?? null);
+    sendEmail({ to: row.identifier, subject: mail.subject, html: mail.html, text: mail.text })
+      .catch((e) => console.error("[plan-grant] plan-activated email failed:", String(e)));
+  }
+}
+
+// Admin / USDT activation: single atomic UPDATE guarded on pending_payment, plan
+// becomes the user's own requested_plan. Notifies on a returned row (source 'admin').
+export async function activateAdminPlan(identifier: string): Promise<ActivatedRow | null> {
   const rows = await dbQuery<ActivatedRow>(
     `UPDATE profiles
-        SET plan = $2,
+        SET plan = requested_plan,
             requested_plan = NULL,
-            plan_expires_at = ${expirySqlExpr(expiresAtIso)},
+            plan_expires_at = NOW() + INTERVAL '30 days',
             updated_at = NOW()
-      WHERE (identifier = $1 OR LOWER(TRIM(identifier)) = $1)
-        ${guard}
+      WHERE identifier = $1
+        AND plan = 'pending_payment'
+        AND requested_plan IN ('base','premium')
       RETURNING identifier, name, plan`,
-    [identifier, plan]
+    [identifier]
   );
 
   const activated = rows[0];
   if (!activated) return null;
 
-  await dbQuery(
-    `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
-     VALUES ('admin_profile_plan_changed', 'system', NULL, NULL, $1, NULL, 0, $2)`,
-    [activated.plan, JSON.stringify({ identifier: activated.identifier, name: activated.name })]
+  await notifyPlanActivated(activated, "admin");
+  return activated;
+}
+
+// Stripe webhook activation: webhook is the source of truth (status-gated by the
+// caller), so no pending guard. Detects the previous plan atomically via a CTE and
+// only notifies on a real TRANSITION (old_plan !== new plan) — renewals advance
+// expiry silently. Always updates expiry + sub id. Notifies with source 'stripe'.
+export async function activateStripePlan(
+  identifier: string,
+  plan: GrantablePlan,
+  subscriptionId: string | null,
+  expiresAtIso: string | null
+): Promise<ActivatedRow | null> {
+  const rows = await dbQuery<ActivatedRow & { old_plan: string | null }>(
+    `WITH prev AS (
+       SELECT identifier, plan AS old_plan FROM profiles
+        WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+        LIMIT 1
+     )
+     UPDATE profiles p
+        SET plan = $2,
+            requested_plan = NULL,
+            plan_expires_at = ${expirySqlExpr(expiresAtIso)},
+            stripe_subscription_id = COALESCE($3, p.stripe_subscription_id),
+            updated_at = NOW()
+       FROM prev
+      WHERE p.identifier = prev.identifier
+      RETURNING p.identifier, p.name, p.plan, prev.old_plan`,
+    [identifier, plan, subscriptionId]
   );
 
-  if (activated.identifier.includes("@")) {
-    const exp = await dbQuery<{ plan_expires_at: string | null }>(
-      "SELECT plan_expires_at::text FROM profiles WHERE identifier = $1 LIMIT 1",
-      [activated.identifier]
+  const activated = rows[0];
+  if (!activated) return null;
+
+  // Expiry is always updated by the UPDATE above; notify ONLY on a real transition.
+  if (activated.old_plan !== activated.plan) {
+    await notifyPlanActivated(
+      { identifier: activated.identifier, name: activated.name, plan: activated.plan },
+      "stripe"
     );
-    const mail = planActivatedEmail(exp[0]?.plan_expires_at ?? null);
-    sendEmail({ to: activated.identifier, subject: mail.subject, html: mail.html, text: mail.text })
-      .catch((e) => console.error("[plan-grant] plan-activated email failed:", String(e)));
   }
 
-  return activated;
+  return { identifier: activated.identifier, name: activated.name, plan: activated.plan };
 }
