@@ -23,6 +23,12 @@ MA le odds non vengono servite dal dominio del book: vengono da un **feed provid
 - **Implicazioni:** (1) scraping di un operatore ADM-regolamentato = nodo legale più pesante del previsto (non un casino offshore qualsiasi); (2) **geo-dipendenza**: l'output dello scraper dipende da DOVE gira (Italia→stake.it; altrove→stake.com global). Da decidere quale Stake vogliamo.
 - Host del feed odds **non ancora individuato** (la homepage non lo carica; serve entrare in Scommesse→Calcio e catturare le richieste). **Spike Stake incompleto.**
 
+### Aggiornamento spike Stake (2026-06-11) — materialmente più difficile di Roobet
+- Piattaforma stake.it = **Octavian Lab** (`live.octavianlab.com`, `cdn.octavianlab.com`). Le rotte ovvie del sportsbook (`/sports`, `/betting`) tornano **404**; gli endpoint Octavian (`/accounting/v3/{menubar,configs}`) richiedono parametri brand/operator e da soli tornano vuoti/400.
+- Il feed odds **non si manifesta** dalla navigazione pubblica anonima: la sezione scommesse pare **login-gated** (sito ADM, KYC) e/o le quote arrivano via **websocket** (non un JSON pulito come BetBy/sptpub di Roobet).
+- **Blocker reale:** per arrivare al feed odds servirebbe quasi certamente una **sessione loggata** (account ADM con KYC). L'agente **non può autenticarsi/loggarsi** (regola dura) né creare account → lo spike Stake non è completabile in autonomia. Inoltre resta il **nodo legale ADM** (scraping di un concessionario italiano).
+- **Opzioni:** (a) Andrea fa login su stake.it nel browser, poi l'agente ispeziona/cattura il feed odds della sessione loggata; (b) si congela Stake fino ai contratti (l'API ufficiale eviterebbe sia login che ADM-scraping). Roobet resta consegnato e funzionante a prescindere.
+
 ## Impatto sul piano di implementazione (Plan 1)
 - **Approach B (httpx) È viable** — ma i client puntano al **feed provider** (sptpub per Roobet), non al dominio del book. Buona notizia: niente scraping DOM via headless, niente proxy (per Roobet, da qui).
 - `core/roobet_client.py` = client del protocollo BetBy/sptpub (cursori + parse eventi). `core/stake_client.py` = protocollo Stake in-house (TBD dopo spike Stake). Confermato: **un client per book, formati diversi**.
