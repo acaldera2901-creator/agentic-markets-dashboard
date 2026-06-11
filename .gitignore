@@ -60,3 +60,4 @@ data/transfermarkt/
 # Local secrets scratch — never tracked (audit 2026-06-10)
 credentials/
 data/backups/
+.playwright-cli/

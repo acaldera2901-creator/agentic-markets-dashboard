@@ -10,6 +10,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { surfaceFloorFor } from "@/lib/surfacing-gate";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
@@ -1207,9 +1208,20 @@ function modelLabelFor(p: Prediction): string {
   return p.league === "WC" || p.league === "FRIENDLY" ? "National model" : "Dixon-Coles";
 }
 
+// A below-floor pick is shown on the board as "no clear favourite" (no
+// directional pick). It must NEVER resurface as a value/best bet — the market
+// edge alone is not enough when the model has no clear favourite. Floor mirrors
+// core/surfacing_gate.py via lib/surfacing-gate.ts (WC/club 56, friendly 61).
+// #BESTBET-FLOOR-1: same gate the card applies (isValueBet = !belowFloor && …).
+function isFootballSurfaced(p: Prediction): boolean {
+  return p.confidence_score == null
+    || p.confidence_score >= surfaceFloorFor("football", p.league);
+}
+
 function isFootballBestBet(p: Prediction) {
   const odds = selectedFootballOdds(p);
-  return isFutureMarket(p.kickoff)
+  return isFootballSurfaced(p)
+    && isFutureMarket(p.kickoff)
     && Boolean(p.best_selection)
     && odds != null
     && odds >= MIN_BEST_BET_ODDS
@@ -1218,7 +1230,13 @@ function isFootballBestBet(p: Prediction) {
 
 function isTennisBestBet(m: TennisMatch) {
   const odds = selectedTennisOdds(m);
-  return isTennisMarketVisible(m.scheduled)
+  // #BESTBET-FLOOR-1: below the tennis floor the serving route drops `pick` but
+  // keeps best_selection on the row → guard here too so a sub-floor coin-flip
+  // never resurfaces as a value bet (floor mirrors lib/surfacing-gate.ts = 62).
+  const surfaced = m.confidence_score == null
+    || m.confidence_score >= surfaceFloorFor("tennis", null);
+  return surfaced
+    && isTennisMarketVisible(m.scheduled)
     && Boolean(m.best_selection)
     && odds != null
     && odds >= MIN_BEST_BET_ODDS
@@ -1605,6 +1623,7 @@ function BestBetsBoard({
     probability: selectedFootballProbability(p),
     odds: selectedFootballOdds(p),
     edge: p.edge,
+    belowFloor: !isFootballSurfaced(p), // #BESTBET-FLOOR-1
   }));
   const tennisCandidates: BestBetCandidate[] = tennisMatches.map((m) => ({
     kind: "tennis",
@@ -1614,6 +1633,9 @@ function BestBetsBoard({
     probability: selectedTennisProbability(m),
     odds: selectedTennisOdds(m),
     edge: m.edge,
+    // #BESTBET-FLOOR-1: below the tennis floor → no directional pick.
+    belowFloor: m.confidence_score != null
+      && m.confidence_score < surfaceFloorFor("tennis", null),
   }));
   const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
     sportFilter,
@@ -1931,10 +1953,13 @@ function PublicOldBetsPanel({ history, stats, loading }: { history: HistoryMatch
         <p className="eyebrow">{lang === "it" ? "Old bets" : "Old bets"}</p>
         <h3>{lang === "it" ? "Storico passato visibile senza login" : "Past history visible without login"}</h3>
       </div>
+      {/* #LEGACY-HITRATE-1: the legacy `bets` feed has no confidence, so its
+          aggregate hit-rate can't be floored and contradicted the surfaced
+          track record (52% here vs the gated rate in the unified History tab).
+          Drop the misleading headline; the canonical hit-rate lives in History. */}
       <div className="public-history-stats">
         <div><span>{lang === "it" ? "Partite" : "Matches"}</span><strong>{stats?.total_matches ?? "..."}</strong></div>
         <div><span>{lang === "it" ? "Bets" : "Bets"}</span><strong>{stats?.bets_placed ?? "..."}</strong></div>
-        <div><span>{lang === "it" ? "Hit Rate" : "Hit Rate"}</span><strong>{stats ? `${stats.accuracy}%` : "..."}</strong></div>
       </div>
       <div className="public-old-bets">
         {loading ? (
@@ -4803,6 +4828,15 @@ function HistoryTab({ history, stats, loading }: {
     ?? (h.home_team && h.away_team ? `${h.home_team} vs ${h.away_team}` : null)
     ?? (h.player_one && h.player_two ? `${h.player_one} vs ${h.player_two}` : "—");
 
+  // #HISTORY-KPI-FILTER-1: the header KPIs must follow the selected sport, not
+  // stay pinned to the global all-sports figure (a user filtering "football"
+  // saw the football list but the all-sports hit rate). Derived from sportRows
+  // (sport slice, not result-filtered) so the rate is stable across result tabs.
+  const scopedTotal = sportRows.length;
+  const scopedWon = sportRows.filter((h) => resultOf(h) === "won").length;
+  const scopedDecided = scopedWon + sportRows.filter((h) => resultOf(h) === "lost").length;
+  const scopedWinRate = scopedDecided > 0 ? `${((scopedWon / scopedDecided) * 100).toFixed(1)}%` : null;
+
   return (
     <div className="am-history space-y-6">
       {/* Header — mockup .history .hh: title + subtitle + 2 KPIs from real stats */}
@@ -4817,9 +4851,9 @@ function HistoryTab({ history, stats, loading }: {
         </div>
         {stats && (
           <div className="hr">
-            <div className="am-kpi"><span className="v">{stats.total}</span><span className="l">{t.hist_matches}</span></div>
-            {stats.win_rate && (
-              <div className="am-kpi"><span className="v sig">{stats.win_rate}</span><span className="l">{t.hist_hit_rate}</span></div>
+            <div className="am-kpi"><span className="v">{scopedTotal}</span><span className="l">{t.hist_matches}</span></div>
+            {scopedWinRate && (
+              <div className="am-kpi"><span className="v sig">{scopedWinRate}</span><span className="l">{t.hist_hit_rate}</span></div>
             )}
           </div>
         )}
@@ -6271,9 +6305,9 @@ export default function Dashboard() {
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? "Bets"}</h2>
               <p className="am-sub">
                 {uiLanguage === "it" ? (
-                  <>Probabilità <b>calibrate da un modello</b> — Dixon-Coles + xG sul calcio, Elo di superficie sul tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                  <>Probabilità <b>calibrate da un modello</b> sul calcio, Elo di superficie sul tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
                 ) : (
-                  <>Probabilities <b>calibrated by a model</b> — Dixon-Coles + xG on football, surface Elo on tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
+                  <>Probabilities <b>calibrated by a model</b> on football, surface Elo on tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
               </p>
             </div>
