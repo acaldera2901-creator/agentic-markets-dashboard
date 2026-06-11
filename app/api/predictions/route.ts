@@ -668,11 +668,10 @@ async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
        AND published_at IS NOT NULL
        AND is_historical = FALSE
        AND is_demo = FALSE
-       -- Decisione Andrea 2026-06-07: il Mondiale vive SOLO nella scheda
-       -- dedicata (/world-cup, che legge /api/v2/predictions?competition=
-       -- World Cup). Il board principale serve il resto del football
-       -- (amichevoli ora, club leagues alla ripresa).
-       AND competition != 'World Cup'
+       -- #WC-MAINBOARD-1 (APPROVE Andrea 2026-06-11): durante il Mondiale il
+       -- board principale mostra ANCHE la WC. La primaria match_predictions è
+       -- vuota in off-season club, quindi questo fallback serve la WC; la WC
+       -- resta comunque su /world-cup e il Match Builder deduplica.
      ORDER BY starts_at ASC
      LIMIT 120`,
     [PREDICTION_WINDOW_DAYS]

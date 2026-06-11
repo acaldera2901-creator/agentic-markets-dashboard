@@ -3977,7 +3977,10 @@ function MatchBuilderTab({
       })
       .filter((i): i is MbItem => i !== null),
     ...wcRows
-      .filter((r) => !r.locked && r.home_team && r.away_team && r.pick && r.starts_at && isFutureMarket(r.starts_at))
+      // #WC-MAINBOARD-1: la WC ora compare anche nel board (predictions); evita
+      // il doppione tenendo nel builder solo le WC non già presenti nel board.
+      .filter((r) => !r.locked && r.home_team && r.away_team && r.pick && r.starts_at && isFutureMarket(r.starts_at)
+        && !predictions.some((p) => p.league === "WC" && p.home_team === r.home_team && p.away_team === r.away_team))
       .map((r): MbItem | null => {
         const conf = (r as { confidence_score?: number | null }).confidence_score;
         const prob = conf != null && conf > 0 ? conf / 100
@@ -4016,7 +4019,9 @@ function MatchBuilderTab({
       .filter((p) => p.locked && p.home_team && p.away_team)
       .map((p) => [`f_${p.match_id}`, `${p.home_team} vs ${p.away_team}`] as [string, string]),
     ...wcRows
-      .filter((r) => r.locked && r.home_team && r.away_team)
+      // #WC-MAINBOARD-1: niente doppione coi locked del board (predictions).
+      .filter((r) => r.locked && r.home_team && r.away_team
+        && !predictions.some((p) => p.league === "WC" && p.home_team === r.home_team && p.away_team === r.away_team))
       .map((r) => [`w_${r.id}`, `${r.home_team} vs ${r.away_team}`] as [string, string]),
     // MEDIUM-5: tennis was missing here, so tennis selections in a shared link
     // vanished for anonymous visitors (locked → not in `items`, not labeled).
