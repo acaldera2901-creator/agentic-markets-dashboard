@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from core.sportsbook.roobet import fetch_events as roobet_fetch
+from core.sportsbook.stake import fetch_events as stake_fetch
 
 
 async def _gather(book: str):
@@ -24,7 +25,7 @@ async def _gather(book: str):
     if book in ("roobet", "all"):
         events += await roobet_fetch()
     if book in ("stake", "all"):
-        print("[stake] non ancora implementato (spike stake.it/ADM in corso)", file=sys.stderr)
+        events += await stake_fetch()
     return events
 
 
