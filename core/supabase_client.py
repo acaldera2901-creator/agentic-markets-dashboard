@@ -769,3 +769,115 @@ async def settle_unified_tennis(
     except Exception as exc:
         logger.warning("unified tennis settle error for %s: %s", match_id, exc)
         return False
+
+
+# ─── sportsbook shadow-eval (#SPORTSBOOK-SHADOW-1) ──────────────────────────────
+# Forward-only A/B: per-prediction baseline + per-book (Stake/Roobet) shadow legs,
+# settled forward, to decide keep/drop on the numbers. Writes a NEW table only;
+# never touches the served path. Fail-soft like every other writer here.
+
+async def insert_shadow_eval_rows(rows: list[dict]) -> int:
+    """Append pre-built sportsbook_shadow_eval rows via PostgREST.
+
+    Plain inserts (the table is a time series — no upsert). The collector does
+    insert-on-change upstream so the cycle does not flood the log. Returns rows
+    successfully written; per-row fail-soft.
+    """
+    base = _rest_base()
+    if not base:
+        return 0
+    headers = _service_headers()
+    written = 0
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for row in rows:
+                try:
+                    resp = await client.post(
+                        f"{base}/sportsbook_shadow_eval", json=row, headers=headers
+                    )
+                    if resp.status_code in (200, 201, 204):
+                        written += 1
+                    else:
+                        logger.warning(
+                            "shadow_eval insert failed: %s %s",
+                            resp.status_code, resp.text[:200],
+                        )
+                except Exception as exc:
+                    logger.warning("shadow_eval insert error (row skipped): %s", exc)
+    except Exception as exc:
+        logger.warning("shadow_eval insert client error: %s", exc)
+    return written
+
+
+async def fetch_unsettled_shadow_eval(
+    cutoff_minutes: int = 115, limit: int = 200
+) -> list[dict]:
+    """Shadow rows whose match started >= cutoff ago and still have no result."""
+    base = _rest_base()
+    if not base:
+        return []
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(minutes=cutoff_minutes)
+    ).isoformat()
+    params = {
+        "select": (
+            "id,prediction_ref,ref_source,sport,team_pair_key,book,"
+            "shadow_p_home,shadow_p_draw,shadow_p_away,shadow_pick,taken_odds,"
+            "home_team,away_team,commence_time"
+        ),
+        "result": "is.null",
+        "commence_time": f"lt.{cutoff}",
+        "order": "commence_time.asc",
+        "limit": str(limit),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/sportsbook_shadow_eval",
+                params=params, headers=_service_headers(),
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "shadow_eval unsettled fetch failed: %s %s",
+                    resp.status_code, resp.text[:200],
+                )
+                return []
+            return resp.json() or []
+    except Exception as exc:
+        logger.warning("shadow_eval unsettled fetch error: %s", exc)
+        return []
+
+
+async def settle_shadow_eval_row(
+    row_id: int,
+    *,
+    outcome_idx: int | None,
+    result: str,
+    closing_odds: float | None = None,
+) -> bool:
+    """Settle one shadow row in place. result = won|lost|void|unresolved."""
+    base = _rest_base()
+    if not base:
+        return False
+    payload = {
+        "result": result,
+        "outcome_idx": outcome_idx,
+        "closing_odds": closing_odds,
+        "settled_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.patch(
+                f"{base}/sportsbook_shadow_eval?id=eq.{row_id}",
+                json=payload, headers=_service_headers(),
+            )
+            if resp.status_code in (200, 204):
+                return True
+            logger.warning(
+                "shadow_eval settle failed for %s: %s %s",
+                row_id, resp.status_code, resp.text[:200],
+            )
+            return False
+    except Exception as exc:
+        logger.warning("shadow_eval settle error for %s: %s", row_id, exc)
+        return False
