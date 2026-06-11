@@ -1461,18 +1461,9 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).flatMap((p, i) => {
-                    const card = (
-                      <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                    );
-                    // #HOUSE-BANNERS-1/2: 1 house rectangle dopo la 5ª card, solo su
-                    // board pieno (no free preview) e se c'è ancora flusso sotto.
-                    if (i === 4 && !isFreeClient && footballRows.length > 5) {
-                      const camp = pickCampaign("desk-feed", boardAudience);
-                      if (camp) return [card, <HouseBanner key="house-feed" campaign={camp} lang={lang} data={boardData} />];
-                    }
-                    return [card];
-                  })}
+                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
+                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                  ))}
                   {isFreeClient && footballRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -1516,17 +1507,9 @@ function SportsbookBoard({
               </div>
               {tennisRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).flatMap((m, i) => {
-                    const card = (
-                      <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                    );
-                    // #HOUSE-BANNERS-2: 1 house rectangle dopo la 5ª card tennis (board pieno).
-                    if (i === 4 && !isFreeClient && tennisRows.length > 5) {
-                      const camp = pickCampaign("desk-feed-tennis", boardAudience);
-                      if (camp) return [card, <HouseBanner key="house-feed-tennis" campaign={camp} lang={lang} data={boardData} />];
-                    }
-                    return [card];
-                  })}
+                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
+                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                  ))}
                   {isFreeClient && tennisRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -6229,11 +6212,6 @@ export default function Dashboard() {
                 ↻ {refreshing ? "..." : tUI.refresh_odds}
                 <span className="sync">live</span>
               </button>
-              {/* #HOUSE-BANNERS-2: half-page house nella sidebar */}
-              {(() => {
-                const camp = pickCampaign("desk-rail", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
-                return camp ? <div className="rail-house"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div> : null;
-              })()}
             </aside>
 
         <section className="book-main">

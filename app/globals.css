@@ -5869,9 +5869,6 @@ button:disabled {
 .hb-rectangle .hb-headline{ font-size:21px; }
 .hb-rectangle .hb-glyphs{ margin-top:auto; }
 .hb-rectangle .hb-cta{ margin-top:10px; }
-.am-grid > .house-banner{ grid-column:span 4; min-width:0; }
-@media (max-width:1080px){ .am-grid > .house-banner{ grid-column:span 6; } }
-@media (max-width:640px){ .am-grid > .house-banner{ grid-column:span 12; } }
 
 /* ── Billboard (bottom desk + landing) ── */
 .hb-billboard{ padding:28px 32px; }
@@ -5939,9 +5936,7 @@ button:disabled {
 .hb-mini-nm{ font-size:12px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .hb-mini-e{ font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--am-positive); margin-left:auto; }
 
-/* mount: rail half-page + interstitial board */
-.rail-house{ margin-top:14px; }
-.rail-house .house-banner{ width:100%; }
+/* mount: interstitial board (banda full-width tra le sezioni) */
 .house-interstitial{ margin:18px 14px; }
 .house-interstitial .house-banner{ width:100%; }
 
