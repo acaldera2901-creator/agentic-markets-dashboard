@@ -27,6 +27,10 @@ from core.football_api_client import (
     get_fixture_result_by_teams_date,
 )
 from core.football_data_org_client import get_match_result as fdorg_get_match_result
+from core.odds_api_client import (
+    SPORT_KEYS,
+    get_score_by_teams_date as odds_get_score_by_teams_date,
+)
 from core.redis_client import publish
 from core.supabase_client import (
     fetch_unsettled_unified_predictions,
@@ -66,6 +70,9 @@ class ResultSettlementAgent(BaseAgent):
         self._self_learning = SelfLearningEngine()
         self._session_settled: int = 0
         self._session_pnl: float = 0.0
+        # Per-cycle cache of The Odds API /scores responses, keyed by sport_key:
+        # one /scores call covers every row of that sport in a cycle (#ODDS-SCORES-1).
+        self._scores_cache: dict = {}
 
     async def _main_loop(self) -> None:
         while self._running:
@@ -207,6 +214,9 @@ class ResultSettlementAgent(BaseAgent):
         if not rows:
             return
 
+        # Fresh /scores window each cycle: a match that just completed must be
+        # re-fetched, not served from a stale "not completed" cache entry.
+        self._scores_cache = {}
         self.logger.info(f"unified settlement: {len(rows)} rows past cutoff")
         settled = 0
         for row in rows:
@@ -286,8 +296,21 @@ class ResultSettlementAgent(BaseAgent):
         )
         return disposition == "abandoned"
 
+    def _odds_sport_key(self, row: dict) -> str | None:
+        """Map a unified row's league/competition to a The Odds API sport key.
+
+        Reuses core.odds_api_client.SPORT_KEYS (our league codes -> Odds API
+        keys, incl. WC -> soccer_fifa_world_cup). FRIENDLY has no Odds API key
+        (the provider lists no international-friendlies sport) -> None, so those
+        rows stay on the ESPN + team/date fallback. None when unmapped, so the
+        caller never burns a /scores credit on a competition we can't query.
+        """
+        league = str(row.get("league") or "").upper()
+        return SPORT_KEYS.get(league)
+
     async def _fetch_unified_result(self, row: dict) -> dict | None:
-        """Result lookup for a unified row: fixture id first, team-name fallback."""
+        """Result lookup for a unified row: ESPN-by-id, then The Odds API
+        /scores (robust paid source), then the dead/limited api-football path."""
         ext = row.get("external_event_id")
         # ESPN-sourced rows ("espn:<event_id>") settle straight from the ESPN
         # summary by event id — the only result source for ESPN-only
@@ -324,6 +347,32 @@ class ResultSettlementAgent(BaseAgent):
                             f"friendly team+date fallback failed for {row.get('id')}: {e}"
                         )
                 return None
+
+        # The Odds API /scores: robust paid result source covering every
+        # competition we have odds for. Tried before the dead api-football
+        # path. FRIENDLY returned above (no Odds API key); WC and the club
+        # leagues map via SPORT_KEYS. None (not completed / not in the 3-day
+        # window) falls through so genuinely canceled matches stay void.
+        sport_key = self._odds_sport_key(row)
+        if (
+            sport_key and row.get("home_team") and row.get("away_team")
+            and row.get("starts_at")
+        ):
+            try:
+                result = await odds_get_score_by_teams_date(
+                    sport_key,
+                    str(row["home_team"]),
+                    str(row["away_team"]),
+                    str(row["starts_at"]),
+                    _cache=self._scores_cache,
+                )
+                if result:
+                    return result
+            except Exception as e:
+                self.logger.debug(
+                    f"odds-api /scores lookup failed for unified {row.get('id')}: {e}"
+                )
+
         try:
             result = await get_fixture_result(int(ext))
             if result:

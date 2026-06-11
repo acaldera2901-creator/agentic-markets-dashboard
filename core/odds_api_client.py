@@ -166,6 +166,125 @@ async def get_odds(league: str) -> List[Dict]:
     return [o for event in resp.json() if (o := _best_odds(event))]
 
 
+def _match_date(commence_time: str | None) -> str:
+    """UTC date (YYYY-MM-DD) of an event's commence_time, '' if unparseable."""
+    if not commence_time:
+        return ""
+    try:
+        return (
+            datetime.fromisoformat(str(commence_time).replace("Z", "+00:00"))
+            .astimezone(timezone.utc)
+            .date()
+            .isoformat()
+        )
+    except ValueError:
+        return str(commence_time)[:10]
+
+
+def _canon(name: str) -> str:
+    """Normalized + national-team-canonicalized name for /scores matching.
+
+    Reuses normalize_name (club suffixes) and canonical_team_name (national
+    aliases: 'Czechia'/'Czech Republic', 'USA'/'United States', ...) so WC and
+    international rows match the same way the odds collector's pair key does.
+    """
+    from core.world_cup_history import canonical_team_name
+
+    return normalize_name(canonical_team_name(name) or name or "")
+
+
+async def _fetch_scores(sport_key: str) -> list[dict] | None:
+    """Raw /scores list for a sport over the max plan window (daysFrom=3).
+
+    One call returns every event (live, upcoming, completed) in the window —
+    enough to settle all of that sport's rows in a cycle. None on any failure
+    so the caller falls through to the next source rather than voiding.
+    """
+    if not settings.ODDS_API_KEY or not sport_key:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                f"{BASE_URL}/sports/{sport_key}/scores",
+                params={"daysFrom": 3, "apiKey": settings.ODDS_API_KEY},
+            )
+    except httpx.HTTPError as e:
+        logger.warning(f"odds-api /scores({sport_key}) network error: {e}")
+        return None
+    if resp.status_code != 200:
+        if resp.status_code == 429:
+            logger.warning(f"odds-api /scores({sport_key}) rate-limited (429)")
+        return None
+    try:
+        return resp.json()
+    except Exception:
+        return None
+
+
+async def get_score_by_teams_date(
+    sport_key: str,
+    home: str,
+    away: str,
+    kickoff_date: str,
+    _cache: dict | None = None,
+) -> dict | None:
+    """Final score from The Odds API /scores, by team names + date.
+
+    Robust settlement source: we pay for The Odds API (~96K credits/month) and
+    it covers every competition we have odds for. Matches a COMPLETED event with
+    valid scores by normalized team names in EITHER orientation, on the same UTC
+    date as kickoff (the date guard stops a same-pair rematch settling the wrong
+    row). Returns {home_goals, away_goals} in the CALLER's home/away orientation,
+    or None when not found / not completed (so genuinely canceled matches stay
+    void downstream).
+
+    Quota-aware: pass a per-cycle ``_cache`` dict so a sport's /scores response
+    is fetched once and reused across all that sport's rows. Without it, each
+    call hits the API (one /scores credit each).
+    """
+    if not home or not away or not kickoff_date:
+        return None
+    cache_key = sport_key
+    events: list[dict] | None
+    if _cache is not None and cache_key in _cache:
+        events = _cache[cache_key]
+    else:
+        events = await _fetch_scores(sport_key)
+        if _cache is not None:
+            _cache[cache_key] = events
+    if not events:
+        return None
+
+    want_home, want_away = _canon(home), _canon(away)
+    want_day = _match_date(kickoff_date)
+    for ev in events:
+        if not ev.get("completed"):
+            continue
+        scores = ev.get("scores")
+        if not scores:
+            continue
+        if want_day and _match_date(ev.get("commence_time")) != want_day:
+            continue
+        ev_home_name = ev.get("home_team", "")
+        ev_away_name = ev.get("away_team", "")
+        ev_home, ev_away = _canon(ev_home_name), _canon(ev_away_name)
+        # Map provider's per-team score list onto the event's home/away names.
+        by_name = {s.get("name", ""): s.get("score") for s in scores}
+        raw_home, raw_away = by_name.get(ev_home_name), by_name.get(ev_away_name)
+        if raw_home is None or raw_away is None:
+            continue
+        try:
+            g_home, g_away = int(raw_home), int(raw_away)
+        except (TypeError, ValueError):
+            continue
+        if ev_home == want_home and ev_away == want_away:
+            return {"home_goals": g_home, "away_goals": g_away}
+        # Reversed orientation: flip back to the caller's home/away.
+        if ev_home == want_away and ev_away == want_home:
+            return {"home_goals": g_away, "away_goals": g_home}
+    return None
+
+
 def implied_probability(odds: float) -> float:
     return 1.0 / odds if odds > 0 else 0.0
 
