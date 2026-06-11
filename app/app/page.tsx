@@ -2205,6 +2205,20 @@ function CheckoutModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const payWithCard = async () => {
+    const res = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requested_plan: plan }),
+    });
+    if (!res.ok) {
+      console.error("stripe checkout failed", res.status);
+      return;
+    }
+    const { url } = (await res.json()) as { url?: string };
+    if (url) window.location.href = url;
+  };
+
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
       <div className="auth-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
@@ -2274,6 +2288,14 @@ function CheckoutModal({
             {error}
           </p>
         )}
+
+        <button
+          type="button"
+          onClick={payWithCard}
+          style={{ marginTop: 8, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}
+        >
+          {lang === "it" ? "Paga con carta" : "Pay with card"}
+        </button>
 
         <p>
           {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
@@ -5016,6 +5038,14 @@ function ClientAreaTab({
 }) {
   const lang = useLang();
   const t = useT();
+
+  const openBillingPortal = async () => {
+    const res = await fetch("/api/stripe/portal", { method: "POST" });
+    if (!res.ok) return;
+    const { url } = (await res.json()) as { url?: string };
+    if (url) window.location.href = url;
+  };
+
   const plan = profile?.plan ?? "unpaid";
   const accessState = profileHasPremium(profile)
     ? "Premium"
@@ -5102,6 +5132,11 @@ function ClientAreaTab({
               <span>{t.pending_tx_label}</span>
               <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
             </div>
+          )}
+          {profileHasAccess(profile) && (
+            <button className="btn-secondary" type="button" onClick={openBillingPortal}>
+              {lang === "it" ? "Gestisci abbonamento" : "Manage subscription"}
+            </button>
           )}
         </section>
       ) : (
