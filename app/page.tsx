@@ -113,16 +113,38 @@ function AthleteEnergy({ sport }: { sport: "football" | "tennis" }) {
           <path d="M30 200 C 120 60, 200 60, 290 200" strokeWidth="2" opacity="0.4" />
         </g>
 
-        {/* silhouette atleta */}
-        <g className="lp-figure" fill={coral ? "var(--am-text)" : "var(--am-text)"} opacity="0.92">
-          {coral ? (
-            // calciatore in spinta sul pallone
-            <path d="M150 70c10 0 18 8 18 18s-8 18-18 18c-7 0-13-4-16-9l-19 22 26 16 6 40-12 2-7-34-30-16c-7-4-9-13-4-20l26-32c4-5 9-9 16-11 3-1 6-1 9-1h6zm44 96c14 5 27 14 33 28l-11 5c-5-11-15-18-26-22l4-11zM118 196l24 14-20 70-13-3 16-58-22-13 15-10z" />
-          ) : (
-            // tennista al servizio, braccio in alto
-            <path d="M168 64c10 0 18 8 18 18s-8 18-18 18c-6 0-12-3-15-8l-8 10 14 44-11 56-12-2 9-50-16-46c-3-8 0-17 8-21l24-12c4-4 9-7 15-7zm26 6 30-30 9 9-31 31-8-10zM150 188l22 6-2 78h-12l1-70-15-4 6-10z" />
-          )}
-        </g>
+        {/* figura atleta — silhouette cinetica (testa + arti spessi, posa dinamica) */}
+        {coral ? (
+          // calciatore in falcata che colpisce il pallone
+          <g className="lp-figure">
+            <g stroke="var(--am-text)" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" fill="none">
+              <path d="M180 118 150 196" />            {/* busto inclinato */}
+              <path d="M168 130 212 140" />            {/* braccio dietro */}
+              <path d="M168 130 148 152 166 170" />    {/* braccio avanti piegato */}
+              <path d="M150 196 176 238 158 290" />    {/* gamba d'appoggio piegata */}
+              <path d="M150 196 106 226 70 252" />     {/* gamba di tiro estesa */}
+            </g>
+            <circle cx="187" cy="92" r="20" fill="var(--am-text)" />
+            <circle cx="158" cy="300" r="15" fill="var(--am-bg)" stroke="var(--am-text)" strokeWidth="5" />
+            <circle cx="158" cy="300" r="5" fill="var(--am-coral)" />
+          </g>
+        ) : (
+          // tennista al servizio: racchetta alzata sopra la testa, affondo
+          <g className="lp-figure">
+            <g stroke="var(--am-text)" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" fill="none">
+              <path d="M160 120 168 210" />            {/* busto */}
+              <path d="M160 132 136 92" />             {/* braccio del lancio in alto */}
+              <path d="M160 132 190 110 214 76" />     {/* braccio racchetta piegato in alto */}
+              <path d="M168 210 192 252 186 302" />    {/* gamba avanti (affondo) */}
+              <path d="M168 210 136 250 114 298" />    {/* gamba dietro */}
+            </g>
+            <circle cx="158" cy="98" r="20" fill="var(--am-text)" />
+            <g stroke="var(--am-text)" strokeWidth="6" fill="none" strokeLinecap="round">
+              <path d="M214 76 228 58" />              {/* manico racchetta */}
+              <ellipse cx="237" cy="46" rx="14" ry="19" transform="rotate(30 237 46)" />
+            </g>
+          </g>
+        )}
       </svg>
     </div>
   );
