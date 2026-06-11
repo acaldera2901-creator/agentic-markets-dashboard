@@ -697,6 +697,7 @@ async def settle_unified_tennis(
     winner_name: str | None,
     *,
     void: bool = False,
+    unresolved: bool = False,
     final_score: str | None = None,
 ) -> bool:
     """
@@ -708,10 +709,14 @@ async def settle_unified_tennis(
     fetch_unsettled_unified_predictions never picks it up — and the public
     track record (/api/v2/history) would show no tennis at all.
 
-    result mapping: void -> "void"; otherwise compare the row's pick (a player
-    name, written by lib/tennis-adapter.ts) to winner_name -> won/lost.
-    Returns True if a row was settled, False otherwise (missing row included —
-    not every Python prediction passes the publication gate into unified).
+    result mapping: unresolved -> "unresolved" (we never fetched a result, e.g.
+    a prediction that aged past the settlement window — #TENNIS-VOID-FIX-1: this
+    must NOT be reported as a confirmed "void", which falsely shrinks the public
+    track record's sample); void -> "void" (confirmed no-result / no declared
+    pick); otherwise compare the row's pick (a player name, written by
+    lib/tennis-adapter.ts) to winner_name -> won/lost. Returns True if a row was
+    settled, False otherwise (missing row included — not every Python prediction
+    passes the publication gate into unified).
     """
     base = _rest_base()
     if not base:
@@ -740,7 +745,13 @@ async def settle_unified_tennis(
             return False
         row = rows[0]
         pick = (row.get("pick") or "").strip()
-        if void or not winner_name or not pick:
+        if unresolved:
+            # #TENNIS-VOID-FIX-1: aged out without ever resolving the match.
+            # Not a confirmed void — flagged so /api/v2/history excludes it from
+            # both the win-rate sample AND the void count (a settlement-source
+            # gap must never masquerade as a real no-result).
+            result = "unresolved"
+        elif void or not winner_name or not pick:
             # No declared direction (rows below the surfacing floor carry
             # pick=null, e.g. "no clear favourite") must NOT count as a loss in
             # the public track record — settle them as void.

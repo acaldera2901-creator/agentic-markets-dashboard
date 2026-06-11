@@ -95,12 +95,16 @@ def _lookup_resp(rows):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("pick,winner,void,expected", [
-    ("Anna Kalinskaya", "Anna Kalinskaya", False, "won"),
-    ("Petra Kvitova", "Anna Kalinskaya", False, "lost"),
-    ("Anna Kalinskaya", None, True, "void"),
+@pytest.mark.parametrize("pick,winner,void,unresolved,expected", [
+    ("Anna Kalinskaya", "Anna Kalinskaya", False, False, "won"),
+    ("Petra Kvitova", "Anna Kalinskaya", False, False, "lost"),
+    ("Anna Kalinskaya", None, True, False, "void"),
+    # #TENNIS-VOID-FIX-1: aged-out rows must map to 'unresolved', and the flag
+    # takes precedence even when a winner+pick are present (never a real void).
+    ("Anna Kalinskaya", None, False, True, "unresolved"),
+    ("Anna Kalinskaya", "Anna Kalinskaya", False, True, "unresolved"),
 ])
-async def test_settle_unified_tennis_result_mapping(pick, winner, void, expected):
+async def test_settle_unified_tennis_result_mapping(pick, winner, void, unresolved, expected):
     from core import supabase_client as sc
     client = AsyncMock()
     client.get.return_value = _lookup_resp([{"id": "row-1", "pick": pick}])
@@ -110,7 +114,9 @@ async def test_settle_unified_tennis_result_mapping(pick, winner, void, expected
          patch.object(sc.settings, "SUPABASE_URL", "https://x.supabase.co"), \
          patch.object(sc.settings, "SUPABASE_SERVICE_ROLE_KEY", "k"):
         mk.return_value.__aenter__.return_value = client
-        ok = await sc.settle_unified_tennis("tennis:espn:e1:k", winner, void=void)
+        ok = await sc.settle_unified_tennis(
+            "tennis:espn:e1:k", winner, void=void, unresolved=unresolved
+        )
     assert ok is True
     settle.assert_awaited_once_with("row-1", expected, final_score=None)
 

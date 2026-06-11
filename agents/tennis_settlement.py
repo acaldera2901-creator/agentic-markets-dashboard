@@ -58,7 +58,10 @@ class TennisSettlementAgent(BaseAgent):
         cutoff = datetime.utcnow() - timedelta(days=EXPIRE_AFTER_DAYS)
         async with AsyncSessionLocal() as session:
             # Collect match_ids BEFORE the update so the unified rows can be
-            # voided too (the public history must not keep them open forever).
+            # flagged unresolved too (the public history must not keep them open
+            # forever — but #TENNIS-VOID-FIX-1: an aged-out row is NOT a real
+            # void; report it as 'unresolved' so it leaves the live board
+            # without polluting the track record as a confirmed no-result).
             stale_ids = [
                 row[0] for row in (
                     await session.execute(
@@ -83,12 +86,14 @@ class TennisSettlementAgent(BaseAgent):
             self.logger.info(
                 f"[SETTLEMENT] bulk-expired {n} stale predictions (> {EXPIRE_AFTER_DAYS}d old)"
             )
-        voided = 0
+        unresolved = 0
         for match_id in stale_ids:
-            if await settle_unified_tennis(match_id, None, void=True):
-                voided += 1
-        if voided:
-            self.logger.info(f"[SETTLEMENT] voided {voided} unified tennis rows (expired)")
+            if await settle_unified_tennis(match_id, None, unresolved=True):
+                unresolved += 1
+        if unresolved:
+            self.logger.info(
+                f"[SETTLEMENT] flagged {unresolved} unified tennis rows unresolved (expired)"
+            )
 
     async def _select_pending(self) -> list:
         """Unsettled predictions in the settlement window (outcome IS NULL)."""

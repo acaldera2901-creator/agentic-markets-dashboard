@@ -28,7 +28,15 @@ export async function GET(req: Request) {
     : 100;
 
   // Demo rows must never appear in the public track record (defensive).
-  const conditions: string[] = ["is_historical = TRUE", "is_demo = FALSE"];
+  // #TENNIS-VOID-FIX-1: 'unresolved' = the settlement source never returned a
+  // result (e.g. a tennis pick that aged out of the window). It is settled only
+  // to clear the live board — it is NOT a confirmed outcome, so it must stay out
+  // of the track record entirely (list + win-rate + void count alike).
+  const conditions: string[] = [
+    "is_historical = TRUE",
+    "is_demo = FALSE",
+    "result IS DISTINCT FROM 'unresolved'",
+  ];
   const values: unknown[] = [];
 
   if (sport && sport !== "all") {
