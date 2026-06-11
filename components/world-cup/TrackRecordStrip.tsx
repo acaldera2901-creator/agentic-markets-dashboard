@@ -4,6 +4,7 @@
 // /api/v2/history already enforces is_historical + is_demo filters and
 // computes honest stats server-side.
 import { useEffect, useState } from "react";
+import { isRateMeaningful } from "@/lib/track-record";
 
 type Stats = {
   total: number; won: number; lost: number;
@@ -31,12 +32,20 @@ export default function TrackRecordStrip() {
     );
   }
 
+  // #HITRATE-GUARD-1: the tournament starts with a handful of settled matches;
+  // a percentage over so few decided picks is variance, not a claim we stand
+  // behind. The record (won/lost) is always shown — the rate appears once the
+  // sample is meaningful.
+  const showRate = isRateMeaningful(stats.won + stats.lost);
+
   return (
     <div className="wc-track-strip">
       <div className="wc-stat"><strong>{stats.total}</strong><small>settled</small></div>
       <div className="wc-stat"><strong>{stats.won}</strong><small>won</small></div>
       <div className="wc-stat"><strong>{stats.lost}</strong><small>lost</small></div>
-      <div className="wc-stat"><strong>{stats.win_rate ?? "—"}</strong><small>hit rate</small></div>
+      {showRate && (
+        <div className="wc-stat"><strong>{stats.win_rate ?? "—"}</strong><small>hit rate</small></div>
+      )}
     </div>
   );
 }

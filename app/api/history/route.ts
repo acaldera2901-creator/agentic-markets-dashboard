@@ -34,17 +34,18 @@ export async function GET(req: Request) {
 
   const won = rows.filter((r) => r.bet_status === "won").length;
   const lost = rows.filter((r) => r.bet_status === "lost").length;
-  const settled = won + lost;
 
   // Gate the pick + odds for non-paid viewers (outcome + matchup stay public).
   const history = isPaid
     ? rows
     : rows.map((r) => ({ ...r, bet_selection: null, bet_odds: null }));
 
-  // Product line: calibrated probabilities, not edge/profit. The public track
-  // record exposes hit-rate only — no money metrics (P&L/ROI/stake) ever.
-  const accuracy = settled > 0 ? ((won / settled) * 100).toFixed(1) : "0.0";
-
+  // Product line: calibrated probabilities, not edge/profit — no money metrics
+  // (P&L/ROI/stake) ever. #HITRATE-GUARD-1: no aggregate accuracy either — the
+  // legacy `bets` book has no confidence, so its rate cannot be floor-gated and
+  // contradicted the surfaced track record (#LEGACY-HITRATE-1 dropped it from
+  // the panel; this drops it from the public payload). The canonical hit-rate
+  // lives in /api/v2/history. Raw won/lost counts stay (facts, not claims).
   return NextResponse.json({
     history,
     stats: {
@@ -53,8 +54,6 @@ export async function GET(req: Request) {
       won,
       lost,
       pending: 0,
-      accuracy,
-      model_accuracy: accuracy,
     },
   });
 }

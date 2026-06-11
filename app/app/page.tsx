@@ -11,6 +11,7 @@ import {
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
+import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
@@ -1631,8 +1632,8 @@ interface HistoryStats {
   won: number;
   lost: number;
   pending: number;
-  accuracy: string;
-  model_accuracy: string;
+  // #HITRATE-GUARD-1: accuracy/model_accuracy dropped — the legacy `bets` book
+  // has no confidence so its rate can't be floor-gated (see /api/history).
 }
 
 // Unified track record (/api/v2/history) — multi-sport, result-centric.
@@ -6081,7 +6082,11 @@ function HistoryTab({ history, stats, loading }: {
   const scopedTotal = sportRows.length;
   const scopedWon = sportRows.filter((h) => resultOf(h) === "won").length;
   const scopedDecided = scopedWon + sportRows.filter((h) => resultOf(h) === "lost").length;
-  const scopedWinRate = scopedDecided > 0 ? `${((scopedWon / scopedDecided) * 100).toFixed(1)}%` : null;
+  // #HITRATE-GUARD-1: a filtered scope can shrink to a handful of decided picks
+  // (football day-one read 93.8% on 16) — below the threshold the KPI hides and
+  // the list speaks for itself.
+  const scopedWinRate = isRateMeaningful(scopedDecided)
+    ? `${((scopedWon / scopedDecided) * 100).toFixed(1)}%` : null;
 
   return (
     <div className="am-history space-y-6">
@@ -7500,7 +7505,12 @@ export default function Dashboard() {
   ).length;
   const withEdgeCount = fbWithEdge + tnWithEdge;
   // #HOUSE-BANNERS-2: dati reali per top/bottom/rail (hit rate dallo storico v2).
-  const houseData = deskBannerData(predictions, tennisMatches, { hitRate: historyV2Stats?.win_rate });
+  // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di campione.
+  const v2RateMeaningful = historyV2Stats != null
+    && isRateMeaningful(historyV2Stats.won + historyV2Stats.lost);
+  const houseData = deskBannerData(predictions, tennisMatches, {
+    hitRate: v2RateMeaningful ? historyV2Stats?.win_rate : null,
+  });
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -7702,7 +7712,8 @@ export default function Dashboard() {
                 <span className="v sig">{withEdgeCount}</span>
                 <span className="l">{tNav.kpi_withedge}</span>
               </div>
-              {historyV2Stats?.win_rate && (
+              {/* #HITRATE-GUARD-1: the rate is a claim — hidden below the sample threshold. */}
+              {v2RateMeaningful && historyV2Stats?.win_rate && (
                 <div className="am-kpi">
                   <span className="v">{historyV2Stats.win_rate}</span>
                   <span className="l">{tNav.kpi_hit}</span>
