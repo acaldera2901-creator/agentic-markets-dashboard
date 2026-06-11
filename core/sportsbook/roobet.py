@@ -29,15 +29,30 @@ from core.sportsbook.common import OddsEvent
 
 logger = logging.getLogger("RoobetClient")
 
-BRAND = "2186449803775455232"
-_API = f"https://api-g-c7818b61-607.sptpub.com/api/v4/prematch/brand/{BRAND}/en"
-_HEADERS = {
-    "Origin": "https://roobet.com",
-    "Referer": "https://roobet.com/",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-    "Accept": "application/json",
-}
+_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+       "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36")
+
+# Tenant BetBy/sptpub: la linea odds è la STESSA (BetBy fa il trading; i tenant
+# cambiano solo il margine). FortuneJack è un FAILOVER drop-in di Roobet — stesso
+# protocollo, host+brand+origin diversi — usato solo se Roobet non risponde
+# (ban/rate-limit a livello brand). source resta 'roobet' (è la linea BetBy).
+_TENANTS = [
+    {"name": "roobet",
+     "host": "api-g-c7818b61-607.sptpub.com",
+     "brand": "2186449803775455232",
+     "origin": "https://roobet.com"},
+    {"name": "fortunejack",  # failover (verificato 2026-06-11, stesso feed BetBy)
+     "host": "api-h-c7818b61-608.sptpub.com",
+     "brand": "2271370178673643520",
+     "origin": "https://fortunejack.com"},
+]
+
+def _api(t: dict) -> str:
+    return f"https://{t['host']}/api/v4/prematch/brand/{t['brand']}/en"
+
+def _headers(t: dict) -> dict:
+    return {"Origin": t["origin"], "Referer": t["origin"] + "/",
+            "User-Agent": _UA, "Accept": "application/json"}
 
 _SPORT_ID = {"1": "soccer", "5": "tennis"}
 _MARKET_1X2 = "1"
@@ -107,21 +122,37 @@ def parse_snapshot(snapshot: dict) -> list[OddsEvent]:
     return out
 
 
+async def _fetch_tenant(t: dict) -> list[OddsEvent]:
+    """Snapshot prematch di un tenant BetBy + parse. Solleva su errore di rete
+    (così fetch_events può passare al failover); [] se semplicemente vuoto."""
+    api, headers = _api(t), _headers(t)
+    async with httpx.AsyncClient(timeout=20.0, headers=headers) as c:
+        env = (await c.get(f"{api}/0")).json()
+        versions = (env.get("rest_events_versions") or []) + (env.get("top_events_versions") or [])
+        events: list[OddsEvent] = []
+        seen: set[str] = set()
+        for v in versions:
+            snap = (await c.get(f"{api}/{v}")).json()
+            for ev in parse_snapshot(snap):
+                if ev.event_id not in seen:
+                    seen.add(ev.event_id)
+                    events.append(ev)
+        return events
+
+
 async def fetch_events() -> list[OddsEvent]:
-    """Fetch live dello snapshot prematch + parse. Ritorna [] su errore (mai solleva)."""
-    try:
-        async with httpx.AsyncClient(timeout=20.0, headers=_HEADERS) as c:
-            env = (await c.get(f"{_API}/0")).json()
-            versions = (env.get("rest_events_versions") or []) + (env.get("top_events_versions") or [])
-            events: list[OddsEvent] = []
-            seen: set[str] = set()
-            for v in versions:
-                snap = (await c.get(f"{_API}/{v}")).json()
-                for ev in parse_snapshot(snap):
-                    if ev.event_id not in seen:
-                        seen.add(ev.event_id)
-                        events.append(ev)
-            return events
-    except Exception as exc:
-        logger.warning("roobet fetch error: %s", exc)
-        return []
+    """Fetch live BetBy con failover tra tenant. Prova Roobet; se fallisce o
+    torna vuoto, passa al tenant successivo (FortuneJack). Ritorna [] solo se
+    tutti falliscono (mai solleva). source resta 'roobet' (stessa linea BetBy)."""
+    for t in _TENANTS:
+        try:
+            events = await _fetch_tenant(t)
+            if events:
+                if t["name"] != "roobet":
+                    logger.warning("roobet primario KO → failover su %s (%d eventi)",
+                                   t["name"], len(events))
+                return events
+        except Exception as exc:
+            logger.warning("betby tenant %s fetch error: %s", t["name"], exc)
+            continue
+    return []
