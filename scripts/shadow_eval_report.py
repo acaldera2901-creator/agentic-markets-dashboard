@@ -58,6 +58,9 @@ def _fetch_settled(days: int | None) -> list[dict]:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         params["settled_at"] = f"gte.{cutoff}"
     resp = httpx.get(f"{base}/sportsbook_shadow_eval", params=params, headers=headers, timeout=30)
+    if resp.status_code == 404:
+        # table not migrated yet (PENDING APPROVE) — report nothing, don't crash.
+        return []
     resp.raise_for_status()
     return resp.json() or []
 
