@@ -309,6 +309,12 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const isPaused = live?.match_status === "PAUSED";
   const isFinished = live?.match_status === "FINISHED";
   const hasScore = !!live && (live.home_score != null || live.away_score != null);
+  // #WC-LIVE-1: the live feed is matched by an unordered team pair (teamPairKey
+  // sorts the names), so its home/away orientation may differ from this card.
+  // Re-orient the score to the card before rendering, else it shows reversed.
+  const liveSwapped = !!live?.home_team && normTeam(canonTeam(live.home_team)) !== normTeam(canonTeam(p.home_team));
+  const liveHomeScore = live ? (liveSwapped ? live.away_score : live.home_score) : null;
+  const liveAwayScore = live ? (liveSwapped ? live.home_score : live.away_score) : null;
   const e = p.enrichment;
 
   // Model edge — margin of the pick over the 2nd-best outcome — is the primary,
@@ -361,7 +367,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
         {hasScore && live ? (
           <div className="scorebar">
             <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
-            <span className="sc">{live.home_score ?? 0}<span className="x">–</span>{live.away_score ?? 0}</span>
+            <span className="sc">{liveHomeScore ?? 0}<span className="x">–</span>{liveAwayScore ?? 0}</span>
             <span className="grow" />
           </div>
         ) : (
