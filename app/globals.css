@@ -5371,6 +5371,9 @@ button:disabled {
 .am-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; padding: 0 14px 14px; }
 .am-grid > .card { grid-column: span 4; min-width: 0; }
 .am-grid > .card.tennis { grid-column: span 3; }
+/* House banner inline nel board: non è una .card → di default span 1 (1/12,
+   schiacciato e rompe la riga). Lo facciamo spannare l'intera riga full-width. */
+.am-grid > .house-banner { grid-column: 1 / -1; min-width: 0; }
 @media (max-width: 1080px) { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 6; } }
 @media (max-width: 640px)  { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 12; } }
 
