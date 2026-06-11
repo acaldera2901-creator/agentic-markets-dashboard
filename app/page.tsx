@@ -4264,6 +4264,30 @@ const PARTNERS: Partner[] = [
     featured: true,
     tags: ["Esclusivo", "Sport", "Casino", "Live"],
   },
+  {
+    id: "partner-stake",
+    name: "Stake",
+    type: "Casino & Sportsbook",
+    status: "active",
+    description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    url: "https://stake.com",
+    since: "2026",
+    logo_initials: "ST",
+    logo_color: "from-slate-600 to-slate-900",
+    tags: ["Sport", "Casino", "Crypto"],
+  },
+  {
+    id: "partner-roobet",
+    name: "Roobet",
+    type: "Casino & Sportsbook",
+    status: "active",
+    description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    url: "https://roobet.com",
+    since: "2026",
+    logo_initials: "RB",
+    logo_color: "from-yellow-400 to-amber-500",
+    tags: ["Sport", "Casino", "Crypto"],
+  },
 ];
 
 const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
