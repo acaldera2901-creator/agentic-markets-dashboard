@@ -3,6 +3,7 @@ import { dbQuery } from "@/lib/db";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
+import { isSurfacedRow } from "@/lib/surfacing-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ type HistoryRow = Pick<
   | "player_one" | "player_two" | "market" | "pick" | "status"
   | "result" | "signal_type" | "is_paper" | "is_verified" | "is_demo"
   | "starts_at" | "settled_at" | "notes" | "world_cup_stage" | "group_name"
+  | "confidence_score"
 >;
 
 export async function GET(req: Request) {
@@ -48,17 +50,27 @@ export async function GET(req: Request) {
     conditions.push(`competition ILIKE $${values.length}`);
   }
 
-  const rows = await dbQuery<HistoryRow>(
+  const fetched = await dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
-            starts_at, settled_at, notes, world_cup_stage, group_name
+            starts_at, settled_at, notes, world_cup_stage, group_name,
+            confidence_score
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      ORDER BY COALESCE(settled_at, starts_at) DESC
      LIMIT ${limit}`,
     values
   );
+
+  // SURFACED-ONLY track record (#WINRATE-FLOOR-1). The confidence-surfacing gate
+  // suppresses low-confidence rows on the board as "no clear favourite" (no
+  // directional pick). The public hit-rate must measure ONLY the picks we
+  // actually surfaced — counting a match where we declined to pick as a
+  // "loss" understated the win-rate (football 55%→94%, all 52%→71% on live
+  // settled data, 2026-06-11). Floors mirror core/surfacing_gate.py via
+  // lib/surfacing-gate.ts (single source of truth). Probability-neutral.
+  const rows = fetched.filter(isSurfacedRow);
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts

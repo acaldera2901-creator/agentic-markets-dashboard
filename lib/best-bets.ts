@@ -12,6 +12,12 @@ export type BestBetCandidate = {
   probability: number;
   odds: number | null;
   edge: number | null;
+  // #BESTBET-FLOOR-1: true when the pick sits below its confidence-surfacing
+  // floor (shown as "no clear favourite" on the board). Such a row must never
+  // be classified as a value/model best bet — a market edge alone is not a
+  // pick when the model has no clear favourite. Floor is resolved upstream
+  // (lib/surfacing-gate.ts). Optional → undefined behaves as "surfaced".
+  belowFloor?: boolean;
 };
 
 export type BestBetRow = BestBetCandidate & {
@@ -62,6 +68,8 @@ function valueClassification(
   isVisible: boolean,
 ): BestBetKind {
   if (!isVisible) return "none";
+  // Below the surfacing floor there is no directional pick → never a best bet.
+  if (candidate.belowFloor) return "none";
   if (
     candidate.odds != null &&
     candidate.odds >= MIN_BEST_BET_ODDS &&
