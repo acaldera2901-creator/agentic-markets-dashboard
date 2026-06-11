@@ -18,8 +18,10 @@ MA le odds non vengono servite dal dominio del book: vengono da un **feed provid
 - Protocollo: **delta versionato**. `/en/0` ritorna un envelope `{epoch, version, top_events_versions, rest_events_versions, status:{event_id:code}}`. I payload eventi+odds completi si pescano seguendo i cursori di sessione (nel browser la prima richiesta era `/en/3562354952381`, payload grande). **Da completare:** reverse-engineering esatto del giro cursori per estrarre evento→mercati→quote (1X2, O/U) + mapping nomi competitor (le immagini competitor hanno id numerici da `d1bvoel1nv172p.cloudfront.net`).
 - **Implicazione business:** BetBy è un provider B2B noto. Un'eventuale partnership dati per Roobet passerebbe da BetBy, non da Roobet direttamente.
 
-## Stake — DA FARE
-`stake.com` è TLS-bloccato come Roobet. Stake usa un sportsbook **in-house** (non BetBy), probabilmente GraphQL/websocket. Serve la stessa indagine: aprire Stake nel browser reale, individuare l'host del feed odds nelle richieste di rete, testare se è raggiungibile direttamente. **Non ancora fatto.**
+## Stake — PARZIALE + nodo legale nuovo
+- `stake.com` è TLS-bloccato come Roobet. **Dall'Italia, stake.com redirige a `stake.it`** = **operatore ADM-licenziato italiano** (Stake Italy s.r.l., concessione GAD 16017, PIVA 01602370338). Quindi lo "Stake" che vede un utente italiano è la versione **regolamentata ADM**, dominio/mercati/odds diversi dal global stake.com.
+- **Implicazioni:** (1) scraping di un operatore ADM-regolamentato = nodo legale più pesante del previsto (non un casino offshore qualsiasi); (2) **geo-dipendenza**: l'output dello scraper dipende da DOVE gira (Italia→stake.it; altrove→stake.com global). Da decidere quale Stake vogliamo.
+- Host del feed odds **non ancora individuato** (la homepage non lo carica; serve entrare in Scommesse→Calcio e catturare le richieste). **Spike Stake incompleto.**
 
 ## Impatto sul piano di implementazione (Plan 1)
 - **Approach B (httpx) È viable** — ma i client puntano al **feed provider** (sptpub per Roobet), non al dominio del book. Buona notizia: niente scraping DOM via headless, niente proxy (per Roobet, da qui).
