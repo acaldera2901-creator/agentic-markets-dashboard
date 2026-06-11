@@ -1,7 +1,7 @@
 // components/PlaceBetMenu.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BetSelection, BetLinkOption } from "@/lib/sportsbooks/types";
 
 // CTA "Piazza scommessa" + dropdown dei book affiliati.
@@ -21,6 +21,27 @@ export function PlaceBetMenu({
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<BetLinkOption[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Chiusura: click fuori dal menu + tasto Escape. Senza questo il dropdown
+  // resta aperto ("non si chiude più").
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   async function toggle() {
     const next = !open;
@@ -57,12 +78,13 @@ export function PlaceBetMenu({
   }
 
   return (
-    <div className={open ? "place-bet-menu open" : "place-bet-menu"}>
+    <div className={open ? "place-bet-menu open" : "place-bet-menu"} ref={rootRef}>
       <button
         type="button"
         className={buttonClassName}
         onClick={toggle}
         aria-expanded={open}
+        aria-haspopup="menu"
       >
         {label}
       </button>
@@ -77,7 +99,10 @@ export function PlaceBetMenu({
               href={o.url}
               target="_blank"
               rel="nofollow sponsored noopener noreferrer"
-              onClick={() => track(o.id)}
+              onClick={() => {
+                track(o.id);
+                setOpen(false);
+              }}
             >
               <img src={o.logo} alt="" className="place-bet-logo" width={20} height={20} />
               <span>{o.name}</span>
