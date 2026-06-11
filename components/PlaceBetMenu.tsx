@@ -74,7 +74,7 @@ export function PlaceBetMenu({
               className="place-bet-option"
               href={o.url}
               target="_blank"
-              rel="nofollow sponsored noopener"
+              rel="nofollow sponsored noopener noreferrer"
               onClick={() => track(o.id)}
             >
               <img src={o.logo} alt="" className="place-bet-logo" width={20} height={20} />
