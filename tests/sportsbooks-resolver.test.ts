@@ -33,8 +33,15 @@ assert.equal(resolveBooks("US").length, 1);
 
 // buildBetUrl produce un'opzione valida e non lancia mai
 const book = allSportsbooks()[0];
-const r = buildBetUrl(book, { sport: "football", market: "1X2", pick: "HOME", odds: null });
+const sel = { sport: "football", market: "1X2", pick: "HOME", odds: null };
+const r = buildBetUrl(book, sel);
 assert.ok(r.url.includes("stake.com"));
 assert.equal(typeof r.prefilled, "boolean");
+
+// adapter-throws: l'adapter che lancia deve essere gestito dal try/catch -> fallback a baseUrl
+const badBook = { ...book, adapter: () => { throw new Error("boom"); } } as unknown as typeof book;
+const fallback = buildBetUrl(badBook, sel);
+assert.equal(fallback.url, book.baseUrl);
+assert.equal(fallback.prefilled, false);
 
 console.log("sportsbooks-resolver ok");
