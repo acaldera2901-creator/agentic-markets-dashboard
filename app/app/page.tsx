@@ -2387,7 +2387,7 @@ function PlansTab({
   const t = useT();
   const lang = useLang();
   return (
-    <div className="plans-view">
+    <div className="plans-view" id="client-plans">
       <section className="plans-hero">
         <div>
           <p className="eyebrow">{t.plans_eyebrow}</p>
@@ -5518,8 +5518,12 @@ function UnifiedBetsTab({
           matchups too). Leaderboard and the public Old-bets history stay
           outside the gate. Unlock = active plan (profileHasAccess). */}
       <AdBanner lang={lang} onCta={onViewPartners} tone="sportsbook" />
+      {/* Free (signal-preview) clients pass the whole-board wall so the inner
+          per-card free preview renders (1 pick/sport + free-preview-wall);
+          anonymous (no profile → no signal preview) still hits the auth wall,
+          and pending_payment still hits the plan wall. */}
       <LockedGate
-        isUnlocked={Boolean(isPremiumClient)}
+        isUnlocked={Boolean(isPremiumClient || isSignalPreviewUnlocked)}
         mode={isLoggedIn ? "plan" : "auth"}
         onUnlock={() => onGate?.()}
       >
@@ -5942,9 +5946,14 @@ export default function Dashboard() {
   };
 
   const focusClientPlans = () => {
-    setTab("bets");
+    // Plans live in the Account tab (PlansTab). Switching tabs mounts the
+    // target on the next render, so scroll after a double rAF (one for the
+    // setState flush, one for the mounted DOM) instead of the same frame.
+    setTab("account");
     requestAnimationFrame(() => {
-      document.getElementById("client-plans")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        document.getElementById("client-plans")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
   };
 
