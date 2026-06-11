@@ -6130,3 +6130,194 @@ button:disabled {
 .place-bet-logo { border-radius: 4px; object-fit: contain; }
 .place-bet-disclaimer { margin: 6px 2px 0; font-size: 10px; opacity: 0.6; }
 .place-bet-empty, .place-bet-loading { padding: 8px 10px; opacity: 0.6; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BetRedge Landing (#LANDING-BETREDGE-1) — home pubblica su "/".
+   Dark energetico sportsbook su token --am-*. Prefisso .lp-.
+   ══════════════════════════════════════════════════════════════════════════ */
+.lp {
+  min-height: 100vh;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,106,94,0.10), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, rgba(59,130,246,0.10), transparent 50%),
+    var(--am-bg);
+  color: var(--am-text);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* ── Topnav ── */
+.lp-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px clamp(16px, 4vw, 48px);
+  position: relative; z-index: 5;
+}
+.lp-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+.lp-nav-right { display: flex; align-items: center; gap: clamp(8px, 1.4vw, 16px); }
+.lp-theme { display: inline-flex; background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 999px; padding: 2px; }
+.lp-theme button {
+  font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  padding: 5px 11px; border: 0; border-radius: 999px; background: transparent;
+  color: var(--am-muted); cursor: pointer; transition: all .18s;
+}
+.lp-theme button.on { background: var(--am-coral); color: #fff; }
+.lp-nav-link {
+  font-size: 13.5px; font-weight: 600; color: var(--am-text); text-decoration: none;
+  padding: 8px 14px; border-radius: 9px; border: 1px solid var(--am-line-2);
+  transition: border-color .18s, background .18s;
+}
+.lp-nav-link:hover { border-color: var(--am-coral); }
+.lp-nav-cta {
+  font-size: 13.5px; font-weight: 700; color: #fff; text-decoration: none;
+  padding: 9px 16px; border-radius: 9px;
+  background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2));
+  box-shadow: 0 6px 18px rgba(255,106,94,0.28); transition: transform .15s, box-shadow .18s;
+}
+.lp-nav-cta:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(255,106,94,0.36); }
+.lp-lang {
+  font: inherit; font-size: 12px; font-weight: 700; color: var(--am-muted);
+  background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 8px;
+  padding: 7px 10px; cursor: pointer;
+}
+
+/* ── Hero ── */
+.lp-hero {
+  display: grid; grid-template-columns: 1fr minmax(280px, 0.9fr) 1fr;
+  align-items: center; gap: clamp(8px, 2vw, 32px);
+  padding: clamp(12px, 3vw, 36px) clamp(16px, 4vw, 56px) clamp(20px, 4vw, 44px);
+  position: relative;
+}
+.lp-hero-side { position: relative; display: flex; flex-direction: column; align-items: center; }
+.lp-athlete { width: 100%; max-width: 360px; aspect-ratio: 320 / 360; filter: drop-shadow(0 20px 50px rgba(0,0,0,0.5)); }
+.lp-athlete-svg { width: 100%; height: 100%; }
+.lp-streaks path { stroke-dasharray: 1; stroke-dashoffset: 0; animation: lp-swirl 9s ease-in-out infinite alternate; transform-origin: 160px 160px; }
+.lp-athlete-tennis .lp-streaks path { animation-duration: 11s; }
+@keyframes lp-swirl { from { transform: rotate(-3deg) scale(0.99); } to { transform: rotate(3deg) scale(1.02); } }
+.lp-figure { filter: drop-shadow(0 0 18px rgba(0,0,0,0.35)); }
+
+.lp-side-label {
+  margin-top: 6px; max-width: 260px; text-align: center;
+  font-weight: 800; font-size: clamp(13px, 1.4vw, 17px); line-height: 1.18;
+  letter-spacing: .01em; text-transform: uppercase; white-space: pre-line;
+  color: var(--am-text);
+}
+.lp-left .lp-side-label { text-align: left; align-self: flex-start; }
+.lp-right .lp-side-label { text-align: right; align-self: flex-end; }
+
+.lp-hero-center { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.lp-wm-big {
+  font-weight: 900; font-style: italic; letter-spacing: -0.03em;
+  font-size: clamp(40px, 7vw, 88px); line-height: 0.92; color: var(--am-text);
+  white-space: nowrap;
+}
+.lp-wm-big .r, .lp-wm-big .chev { color: var(--am-coral); }
+.lp-wm-big .chev { margin-left: 0.05em; }
+.lp-tagline { margin: 2px 0 0; font-weight: 800; letter-spacing: .12em; font-size: clamp(15px, 2vw, 24px); }
+.lp-tagword { display: inline-block; opacity: 0; transform: translateY(8px); }
+.lp[data-mounted="1"] .lp-tagword { animation: lp-rise .5s cubic-bezier(.2,.7,.3,1) forwards; }
+.lp-tagword:nth-child(2) { color: var(--am-coral); }
+@keyframes lp-rise { to { opacity: 1; transform: none; } }
+.lp-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 6px; padding: 12px 22px; border-radius: 12px;
+  background: var(--am-panel-2); border: 1px solid var(--am-line-2);
+  font-weight: 700; font-size: clamp(12px, 1.3vw, 15px); letter-spacing: .04em;
+  color: var(--am-text); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.lp-pill-dot { color: var(--am-coral); font-size: 11px; }
+
+/* ── CTA ── */
+.lp-cta { display: flex; justify-content: center; gap: 16px; padding: 4px 16px 40px; flex-wrap: wrap; }
+.lp-btn {
+  font-weight: 800; font-size: 14px; letter-spacing: .06em; text-decoration: none;
+  padding: 14px 34px; border-radius: 999px; color: #fff;
+  transition: transform .15s, box-shadow .2s;
+}
+.lp-btn-coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); box-shadow: 0 10px 26px rgba(255,106,94,0.34); }
+.lp-btn-cobalt { background: linear-gradient(180deg, var(--am-cobalt-2), var(--am-cobalt)); box-shadow: 0 10px 26px rgba(59,130,246,0.34); }
+.lp-btn:hover { transform: translateY(-2px); }
+
+/* ── Cards ── */
+.lp-cards {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 1.6vw, 20px);
+  padding: 0 clamp(16px, 4vw, 56px) clamp(28px, 5vw, 56px);
+}
+.lp-card {
+  display: flex; flex-direction: column; gap: 14px;
+  background: linear-gradient(180deg, var(--am-panel), var(--am-panel-2));
+  border: 1px solid var(--am-line); border-radius: 18px; padding: 18px;
+  position: relative; overflow: hidden;
+  transition: transform .2s, border-color .2s, box-shadow .25s;
+}
+.lp-card::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, var(--am-coral), var(--am-cobalt)); opacity: .55;
+}
+.lp-card:hover { transform: translateY(-4px); border-color: var(--am-line-2); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+.lp-card-head { display: flex; align-items: center; gap: 8px; }
+.lp-card-head .am-wm { font-size: 15px; }
+.lp-card-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px 4px; }
+.lp-card-title { font-weight: 800; font-size: 15px; letter-spacing: .02em; margin: 0; }
+.lp-card-desc { font-size: 12.5px; line-height: 1.45; color: var(--am-muted); margin: 0; }
+.lp-card-glyph { width: 34px; height: 34px; color: var(--am-coral); }
+.lp-card-orb {
+  width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
+  position: relative; margin: 4px 0 2px;
+}
+.lp-card-orb svg { width: 46px; height: 46px; position: relative; z-index: 1; color: var(--am-text); }
+.lp-card-orb.coral { background: radial-gradient(circle, rgba(255,106,94,0.30), transparent 68%); }
+.lp-card-orb.cobalt { background: radial-gradient(circle, rgba(59,130,246,0.30), transparent 68%); }
+.lp-card-orb::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  border: 1px dashed rgba(255,255,255,0.12); animation: lp-spin 14s linear infinite;
+}
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+.lp-card-btn {
+  text-align: center; text-decoration: none; font-weight: 800; font-size: 12.5px;
+  letter-spacing: .06em; padding: 11px; border-radius: 10px; transition: transform .15s, box-shadow .2s;
+}
+.lp-card-btn.coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); color: #fff; box-shadow: 0 6px 16px rgba(255,106,94,0.28); }
+.lp-card-btn.cobalt-outline { background: transparent; color: var(--am-cobalt-2); border: 1.5px solid var(--am-cobalt); }
+.lp-card-btn:hover { transform: translateY(-1px); }
+
+/* card 4 — phone mockup */
+.lp-card-app { align-items: center; justify-content: center; background: linear-gradient(180deg, var(--am-panel-2), var(--am-bg-2)); }
+.lp-phone {
+  width: 150px; border-radius: 22px; padding: 14px 12px 16px;
+  background: var(--am-bg); border: 1px solid var(--am-line-2);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 4px rgba(255,255,255,0.02);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.lp-phone-top { display: flex; align-items: center; gap: 5px; }
+.lp-phone-top .am-wm { font-size: 12px; }
+.lp-phone-rows { display: flex; flex-direction: column; gap: 6px; }
+.lp-phone-row { display: flex; align-items: center; gap: 6px; background: var(--am-panel); border-radius: 7px; padding: 6px 7px; }
+.lp-phone-row svg { width: 15px; height: 15px; color: var(--am-coral); flex: none; }
+.lp-phone-bar { flex: 1; height: 5px; border-radius: 3px; background: var(--am-line-2); }
+.lp-phone-odd { font-family: var(--font-mono, ui-monospace), monospace; font-size: 11px; color: var(--am-cobalt-2); }
+.lp-phone-cta { text-align: center; font-weight: 800; font-size: 10px; letter-spacing: .08em; color: #fff; background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); border-radius: 8px; padding: 8px; }
+.lp-soon { margin-top: 12px; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--am-muted); }
+
+/* ── Footer ── */
+.lp-foot {
+  margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 20px clamp(16px, 4vw, 56px); border-top: 1px solid var(--am-line);
+  font-size: 11.5px; color: var(--am-muted); flex-wrap: wrap;
+}
+.lp-foot p { margin: 0; max-width: 760px; }
+.lp-foot a { color: var(--am-muted); text-decoration: none; }
+.lp-foot a:hover { color: var(--am-coral); }
+
+/* ── Responsive ── */
+@media (max-width: 880px) {
+  .lp-hero { grid-template-columns: 1fr; }
+  .lp-hero-center { order: -1; }
+  .lp-athlete { max-width: 240px; }
+  .lp-left .lp-side-label, .lp-right .lp-side-label { text-align: center; align-self: center; }
+  .lp-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .lp-cards { grid-template-columns: 1fr; }
+  .lp-nav-link, .lp-theme { display: none; }
+}
