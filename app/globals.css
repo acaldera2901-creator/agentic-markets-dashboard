@@ -5447,7 +5447,10 @@ button:disabled {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pred .row .track { height: 7px; background: var(--am-inset); border-radius: 99px; overflow: hidden; }
-.pred .row .fill { height: 100%; background: var(--am-muted); border-radius: 99px; }
+/* #CARD-STD-1: the fill is a <span> — without display:block, an inline box
+   ignores width/height, so the proportional `width:${pct}%` rendered as 0px
+   (bars looked empty/uniform). Shared by football, tennis and WC cards. */
+.pred .row .fill { display: block; height: 100%; background: var(--am-muted); border-radius: 99px; }
 .pred .row .pct {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12.5px; text-align: right; color: var(--am-muted); font-feature-settings: "tnum" 1;
