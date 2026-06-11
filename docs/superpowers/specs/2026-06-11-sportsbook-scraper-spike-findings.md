@@ -1,0 +1,33 @@
+# Spike findings — estrazione odds Stake/Roobet (#SPORTSBOOK-SCRAPER-1)
+
+**Data:** 2026-06-11 · **Stato:** Roobet investigato, **Stake da fare**.
+
+## Fatto cruciale che cambia il piano
+I domini dei book (`roobet.com`, `stake.com`) **resettano la connessione al TLS Client Hello** per i client non-browser (curl/httpx/LibreSSL) — blocco per **TLS-fingerprint (JA3)**. Verificato: porta 443 aperta, ma `Recv failure: Connection reset by peer` al handshake; un sito Cloudflare normale risponde 200. → **Un client httpx puntato al dominio del book è morto in partenza.**
+
+MA le odds non vengono servite dal dominio del book: vengono da un **feed provider** separato, e quel feed **è raggiungibile direttamente via httpx**.
+
+## Roobet — RISOLTO (estrazione fattibile via httpx, no browser, no proxy)
+- Sportsbook Roobet = **widget BetBy** (URL con `bt-path=/soccer`; asset da `start5.sptpub.com`).
+- Le odds arrivano dal feed **BetBy / `sptpub.com`**:
+  - host: `https://api-g-c7818b61-607.sptpub.com`
+  - prematch: `/api/v4/prematch/brand/{BRAND}/en/{cursor}`
+  - live: `/api/v4/live/brand/{BRAND}/en/{cursor}`
+  - `BRAND = 2186449803775455232` (Roobet)
+- **Raggiungibile direttamente via curl/httpx: HTTP 200, JSON**, con header `Origin: https://roobet.com` + `Referer: https://roobet.com/`. **Nessun blocco TLS su sptpub.com** (a differenza di roobet.com). Da questa macchina/regione: nessun proxy necessario.
+- Protocollo: **delta versionato**. `/en/0` ritorna un envelope `{epoch, version, top_events_versions, rest_events_versions, status:{event_id:code}}`. I payload eventi+odds completi si pescano seguendo i cursori di sessione (nel browser la prima richiesta era `/en/3562354952381`, payload grande). **Da completare:** reverse-engineering esatto del giro cursori per estrarre evento→mercati→quote (1X2, O/U) + mapping nomi competitor (le immagini competitor hanno id numerici da `d1bvoel1nv172p.cloudfront.net`).
+- **Implicazione business:** BetBy è un provider B2B noto. Un'eventuale partnership dati per Roobet passerebbe da BetBy, non da Roobet direttamente.
+
+## Stake — DA FARE
+`stake.com` è TLS-bloccato come Roobet. Stake usa un sportsbook **in-house** (non BetBy), probabilmente GraphQL/websocket. Serve la stessa indagine: aprire Stake nel browser reale, individuare l'host del feed odds nelle richieste di rete, testare se è raggiungibile direttamente. **Non ancora fatto.**
+
+## Impatto sul piano di implementazione (Plan 1)
+- **Approach B (httpx) È viable** — ma i client puntano al **feed provider** (sptpub per Roobet), non al dominio del book. Buona notizia: niente scraping DOM via headless, niente proxy (per Roobet, da qui).
+- `core/roobet_client.py` = client del protocollo BetBy/sptpub (cursori + parse eventi). `core/stake_client.py` = protocollo Stake in-house (TBD dopo spike Stake). Confermato: **un client per book, formati diversi**.
+- I Task 3/4 del piano vanno riscritti contro questi feed reali (non contro roobet.com/stake.com).
+- Fixture reali ancora da catturare: il payload eventi completo BetBy (post reverse-engineering cursori) + Stake.
+
+## Prossimi step concreti
+1. Roobet: completare il reverse-engineering del giro cursori sptpub → catturare un payload eventi reale (calcio+tennis) come fixture → scrivere il parser.
+2. Stake: spike browser per trovare il feed odds + testarne l'accesso diretto.
+3. Aggiornare Plan 1 (Task 3/4) coi protocolli reali.
