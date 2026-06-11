@@ -10,9 +10,11 @@ import type { BetSelection, BetLinkOption } from "@/lib/sportsbooks/types";
 export function PlaceBetMenu({
   selection,
   label,
+  disclaimer,
 }: {
   selection: BetSelection;
   label: string;
+  disclaimer: string;
 }) {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<BetLinkOption[] | null>(null);
@@ -56,7 +58,7 @@ export function PlaceBetMenu({
     <div className="place-bet-menu">
       <button
         type="button"
-        className="bonus-cta place-bet-cta"
+        className="bonus-cta"
         onClick={toggle}
         aria-expanded={open}
       >
@@ -82,9 +84,7 @@ export function PlaceBetMenu({
           {options !== null && options.length === 0 && !loading && (
             <span className="place-bet-empty">—</span>
           )}
-          <p className="place-bet-disclaimer">
-            18+ · {`Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te.`}
-          </p>
+          <p className="place-bet-disclaimer">{disclaimer}</p>
         </div>
       )}
     </div>

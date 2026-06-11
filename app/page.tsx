@@ -3220,6 +3220,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {betLinksEnabled && (
             <PlaceBetMenu
               label={lang === "it" ? "Piazza scommessa" : "Place bet"}
+              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
               selection={{
                 sport: p.league === "WC" ? "worldcup" : "football",
                 league: p.league,
@@ -3610,6 +3611,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {betLinksEnabled && (
             <PlaceBetMenu
               label={lang === "it" ? "Piazza scommessa" : "Place bet"}
+              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
               selection={{
                 sport: "tennis",
                 market: "MO",

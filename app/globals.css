@@ -6113,7 +6113,7 @@ button:disabled {
 .place-bet-dropdown {
   position: absolute; z-index: 20; margin-top: 6px; min-width: 200px;
   display: flex; flex-direction: column; gap: 4px; padding: 8px;
-  background: var(--surface, #15161a); border: 1px solid var(--border, #2a2c33);
+  background: var(--am-panel, #131519); border: 1px solid var(--border, #2a2c33);
   border-radius: 10px;
 }
 .place-bet-option {
