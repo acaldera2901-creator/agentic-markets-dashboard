@@ -2289,13 +2289,15 @@ function CheckoutModal({
           </p>
         )}
 
-        <button
-          type="button"
-          onClick={payWithCard}
-          style={{ marginTop: 8, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}
-        >
-          {lang === "it" ? "Paga con carta" : "Pay with card"}
-        </button>
+        {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && (
+          <button
+            type="button"
+            onClick={payWithCard}
+            style={{ marginTop: 8, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}
+          >
+            {lang === "it" ? "Paga con carta" : "Pay with card"}
+          </button>
+        )}
 
         <p>
           {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
@@ -5133,7 +5135,7 @@ function ClientAreaTab({
               <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
             </div>
           )}
-          {profileHasAccess(profile) && (
+          {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && profileHasAccess(profile) && (
             <button className="btn-secondary" type="button" onClick={openBillingPortal}>
               {lang === "it" ? "Gestisci abbonamento" : "Manage subscription"}
             </button>
