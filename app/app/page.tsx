@@ -625,6 +625,34 @@ interface LiveScore { home_score: number | null; away_score: number | null; matc
 const LiveCtx = createContext<Record<string, LiveScore>>({});
 const useLive = () => useContext(LiveCtx);
 
+// #WC-LIVE-2: the live feed is keyed by the source match_id — football-data id
+// for the domestic leagues (where it equals the prediction id), but "espn:<id>"
+// for ESPN-only competitions like the World Cup, whose prediction rows carry a
+// different id. So a match_id lookup misses the WC live score; fall back to an
+// unordered team-name match (same approach as the WC board), then orient the
+// record to this prediction so the scorebar AND the realized-result logic stay
+// correct. Domestic leagues still hit by match_id first → no behaviour change.
+function normLiveTeam(s?: string | null) {
+  return (s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+function findLiveByTeams(map: Record<string, LiveScore>, home?: string | null, away?: string | null): LiveScore | undefined {
+  const key = [normLiveTeam(home), normLiveTeam(away)].sort().join("|");
+  if (key === "|") return undefined;
+  for (const s of Object.values(map)) {
+    if (s.home_team && s.away_team && [normLiveTeam(s.home_team), normLiveTeam(s.away_team)].sort().join("|") === key) return s;
+  }
+  return undefined;
+}
+function orientLive(live: LiveScore | undefined, home?: string | null, away?: string | null): LiveScore | undefined {
+  if (!live || !live.home_team) return live;
+  const lh = normLiveTeam(live.home_team);
+  // Swap only when the feed's home clearly corresponds to our away side.
+  if (lh === normLiveTeam(away) && lh !== normLiveTeam(home)) {
+    return { ...live, home_score: live.away_score, away_score: live.home_score, home_team: live.away_team, away_team: live.home_team };
+  }
+  return live;
+}
+
 // Live tennis scores reach the cards the same way football live scores do.
 // The /api/tennis and /api/tennis-live feeds don't share ids, so a card is
 // matched to its live ESPN score by a normalized, order-independent last-name
@@ -3139,7 +3167,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const lang = useLang();
   const betLinksEnabled = useBetLinksEnabled();
   const tz = useTz();
-  const live = useLive()[p.match_id];
+  const liveMap = useLive();
+  const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
   const isLive = live?.match_status === "IN_PLAY";
   const isPaused = live?.match_status === "PAUSED";
   const isFinished = live?.match_status === "FINISHED";
