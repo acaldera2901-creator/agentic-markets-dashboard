@@ -33,7 +33,8 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       // none). Probability-neutral: p1/p2/confidence are unchanged.
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
       const { isPick, belowFloor } = surfaceDecision(confidence, SURFACE_FLOOR_TENNIS);
-      return withAffiliate({
+      const isPro = state === "premium" || state === "admin_full";
+      const out: Record<string, unknown> = {
         ...m,
         locked: false,
         pick_of_day: isPotD,
@@ -42,7 +43,17 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
         pick: isPick
           ? (m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2)
           : null,
-      }) as T & { locked: boolean; pick_of_day: boolean };
+      };
+      // Deep Analysis tennis (elo, serve/return form, reliability) è PRO-only
+      // (#PLANS-3TIER-1): base vede pick/probabilità/edge ma non i blocchi deep.
+      if (!isPro) {
+        Object.assign(out, {
+          elo_p1: null, elo_p2: null, elo_p1_overall: null, elo_p2_overall: null,
+          serve_form_p1: null, serve_form_p2: null, return_form_p1: null, return_form_p2: null,
+          surface_reliability_p1: null, surface_reliability_p2: null, feature_quality: null,
+        });
+      }
+      return withAffiliate(out) as T & { locked: boolean; pick_of_day: boolean };
     }
     // locked: keep matchup + surface visible, blank the numbers the card would show
     return {

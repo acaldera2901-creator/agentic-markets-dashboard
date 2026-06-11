@@ -149,17 +149,20 @@ function projectPredictionRow(
   }
 
   const isPaid = state === "base" || state === "premium" || state === "admin_full";
+  // Deep Analysis (form, xG, infortuni, venue, lambdas…) è PRO-only (#PLANS-3TIER-1):
+  // base vede pick/probabilità/edge ma NON i blocchi deep dell'enrichment.
+  const isPro = state === "premium" || state === "admin_full";
 
   let enrichment: EnrichmentPayload | null = p.enrichment ?? null;
-  if (enrichment && !isPaid) {
+  if (enrichment && !isPro) {
     const e: Record<string, unknown> = { ...(enrichment as Record<string, unknown>) };
     for (const k of PREMIUM_ENRICHMENT_KEYS) delete e[k];
-    // extra_markets stay for the free Pick of the Day, but strip the per-market edge.
+    // extra_markets: l'edge per-mercato resta ai paganti (base+); free lo perde.
     const em = e.extra_markets as Array<Record<string, unknown>> | undefined;
     if (Array.isArray(em)) {
       e.extra_markets = em.map((market) => {
         const rest = { ...market };
-        delete rest.edge;
+        if (!isPaid) delete rest.edge;
         return rest;
       });
     }

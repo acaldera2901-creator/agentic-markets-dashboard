@@ -2133,7 +2133,10 @@ function CryptoPaymentBox({
 }) {
   const t = useT();
   const lang = useLang();
-  const isCurrentPlan = profileHasAccess(profile);
+  // Solo il piano ESATTO è "attuale": un utente base deve poter fare upgrade a pro.
+  const isCurrentPlan = profile?.plan === plan;
+  // Base → Pro è un upgrade; Pro → Base sarebbe un downgrade (lo etichettiamo).
+  const isDowngrade = plan === "base" && profile?.plan === "premium";
   return (
     <div className="crypto-pay-box">
       <div>
@@ -2141,12 +2144,14 @@ function CryptoPaymentBox({
         <strong>{planPriceCopy(plan, lang)}</strong>
         {!profile && <em>{t.crypto_profile_required}</em>}
       </div>
-      <button disabled={!profile || isCurrentPlan} onClick={() => onSubmit(plan)}>
+      <button disabled={!profile || isCurrentPlan || isDowngrade} onClick={() => onSubmit(plan)}>
         {isCurrentPlan
           ? (lang === "it" ? "Piano attuale" : "Current plan")
-          : profile
-            ? `${t.crypto_activate} ${PUBLIC_PAID_PLAN.label[lang === "it" ? "it" : "en"]}`
-            : t.crypto_create_first}
+          : isDowngrade
+            ? (lang === "it" ? "Già su Pro" : "Already on Pro")
+            : profile
+              ? `${t.crypto_activate} ${planLabel(plan, lang)}`
+              : t.crypto_create_first}
       </button>
     </div>
   );
