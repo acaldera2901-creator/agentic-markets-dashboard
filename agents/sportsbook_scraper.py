@@ -22,7 +22,6 @@ from core.sportsbook import stake as stake_client
 
 logger = logging.getLogger("SportsbookScraperAgent")
 
-_CLIENTS = {"roobet": roobet_client, "stake": stake_client}
 POLL_INTERVAL = getattr(settings, "SPORTSBOOK_POLL_INTERVAL", 300)
 MAX_FAILS = getattr(settings, "SPORTSBOOK_MAX_CONSECUTIVE_FAILS", 5)
 
@@ -41,7 +40,8 @@ class SportsbookScraperAgent:
     async def scrape_once(self) -> int:
         """Un ciclo: fetch di ogni book abilitato → write odds_snapshots. Ritorna righe scritte."""
         written = 0
-        for book, client in _CLIENTS.items():
+        clients = {"roobet": roobet_client, "stake": stake_client}  # risolti a runtime (patchabili)
+        for book, client in clients.items():
             if not self._enabled(book):
                 continue
             try:
