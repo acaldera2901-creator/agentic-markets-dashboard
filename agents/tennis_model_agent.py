@@ -7,6 +7,7 @@ from core.redis_client import get_redis
 from core.tennis_features import TennisFeatureStore
 from core.tennis_names import canonical_player_key, clean_player_name
 from core.tennis_market_blend import devig_2way, blend_tennis, TENNIS_MARKET_BLEND_ALPHA
+from core.market_anchor import anchor_source_for_book
 from models.elo_surface import EloSurfaceModel
 
 MIN_ODDS = 1.50  # don't bet heavy favourites — compounded variance destroys EV
@@ -278,6 +279,13 @@ class TennisModelAgent(BaseAgent):
             "fixture_date": fixture_date.isoformat() if fixture_date else None,
         }
         feature_snapshot.update(feature_context)
+        # #PINNACLE-ANCHOR-1: persist the odds-at-pick provenance so CLV/coverage
+        # is measurable per source. odds_p1/p2 already persist on the row; the
+        # book + anchor tier ride in feature_snapshot (JSONB) — no new column.
+        if odds_p1 is not None and odds_p2 is not None:
+            odds_book = fixture.get("odds_bookmaker")
+            feature_snapshot["odds_bookmaker"] = odds_book
+            feature_snapshot["odds_anchor_source"] = anchor_source_for_book(odds_book)
 
         return {
             "match_id": fixture["match_id"],

@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 from config.settings import settings
+from core.market_anchor import select_h2h_anchor, _best_margin_h2h
 
 BASE_URL = "https://api.the-odds-api.com/v4"
 
@@ -98,36 +99,34 @@ def football_pair_key(home: str, away: str, commence_time: str | None) -> str | 
 
 
 def _best_odds(event: dict) -> Optional[dict]:
-    """Extract best (lowest margin) h2h odds across all bookmakers."""
-    best: dict = {}
-    best_margin = float("inf")
+    """Extract the market 1X2 anchor odds for an event.
+
+    #PINNACLE-ANCHOR-1: when MARKET_ANCHOR_ENABLED, the anchor is Pinnacle (else
+    a sharp exchange, else legacy best-margin) via core.market_anchor; otherwise
+    the legacy lowest-margin pick across all books. The returned dict adds
+    ``anchor_source`` so the collector can persist which tier fed the blend. The
+    normalized-name fields are kept for the collector's odds_map join key.
+    """
     home = event.get("home_team", "")
     away = event.get("away_team", "")
-    for bm in event.get("bookmakers", []):
-        for mkt in bm.get("markets", []):
-            if mkt.get("key") != "h2h":
-                continue
-            outcomes = {o["name"]: o["price"] for o in mkt.get("outcomes", [])}
-            p_home = outcomes.get(home, 0)
-            p_draw = outcomes.get("Draw", 0)
-            p_away = outcomes.get(away, 0)
-            if not (p_home and p_draw and p_away):
-                continue
-            margin = 1 / p_home + 1 / p_draw + 1 / p_away - 1
-            if margin < best_margin:
-                best_margin = margin
-                best = {
-                    "home_team": home,
-                    "away_team": away,
-                    "home_team_normalized": normalize_name(home),
-                    "away_team_normalized": normalize_name(away),
-                    "odds_home": p_home,
-                    "odds_draw": p_draw,
-                    "odds_away": p_away,
-                    "bookmaker": bm.get("key", ""),
-                    "margin": round(margin, 4),
-                }
-    return best or None
+    if settings.MARKET_ANCHOR_ENABLED:
+        anchor = select_h2h_anchor(event)
+    else:
+        anchor = _best_margin_h2h(event)
+    if not anchor:
+        return None
+    return {
+        "home_team": home,
+        "away_team": away,
+        "home_team_normalized": normalize_name(home),
+        "away_team_normalized": normalize_name(away),
+        "odds_home": anchor["odds_home"],
+        "odds_draw": anchor["odds_draw"],
+        "odds_away": anchor["odds_away"],
+        "bookmaker": anchor["bookmaker"],
+        "anchor_source": anchor.get("anchor_source", "best_margin"),
+        "margin": anchor["margin"],
+    }
 
 
 async def get_odds(league: str) -> List[Dict]:

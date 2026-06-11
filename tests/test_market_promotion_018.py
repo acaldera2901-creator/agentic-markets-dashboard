@@ -68,6 +68,27 @@ def test_signal_requires_tier_and_market():
     assert notes["odds_home"] == 2.1 and notes["bookmaker"] == "bet365"
 
 
+def test_notes_persist_pinnacle_anchor_source():
+    # #PINNACLE-ANCHOR-1: the served row records which sharp tier priced it.
+    row = wc_prediction_to_unified_row(
+        _pred(), stage="group", signal_allowed=True,
+        odds_triple=ODDS, bookmaker="pinnacle", anchor_source="pinnacle",
+    )
+    notes = json.loads(row["notes"])
+    assert notes["anchor_source"] == "pinnacle"
+    assert notes["bookmaker"] == "pinnacle"
+
+
+def test_notes_anchor_source_derived_from_book_when_not_passed():
+    # Matchbook collector path doesn't set anchor_source → derived from the name.
+    row = wc_prediction_to_unified_row(
+        _pred(), stage="group", signal_allowed=True,
+        odds_triple=ODDS, bookmaker="matchbook",
+    )
+    notes = json.loads(row["notes"])
+    assert notes["anchor_source"] == "sharp_exchange"
+
+
 def test_paper_with_market_shows_reference_odds_but_no_edge():
     row = wc_prediction_to_unified_row(
         _pred(), stage="group", signal_allowed=False,

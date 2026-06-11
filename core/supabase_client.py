@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 import httpx
 from config.settings import settings
+from core.market_anchor import anchor_source_for_book as _anchor_source_for_book
 
 logger = logging.getLogger("supabase_client")
 
@@ -251,6 +252,7 @@ def wc_prediction_to_unified_row(
     enrichment: dict | None = None,
     odds_triple: dict | None = None,
     bookmaker: str | None = None,
+    anchor_source: str | None = None,
     signal_allowed: bool = False,
     team_news_summary: str | None = None,
     friendly: bool = False,
@@ -354,6 +356,12 @@ def wc_prediction_to_unified_row(
                 "odds_draw": round(float(odds_triple["draw"]), 3),
                 "odds_away": round(float(odds_triple["away"]), 3),
                 "bookmaker": bookmaker or "market",
+                # #PINNACLE-ANCHOR-1: which sharp tier priced the odds-at-pick
+                # (pinnacle / sharp_exchange / best_margin). Persisted on the
+                # SERVED row so forward CLV/coverage can be split by source.
+                # Falls back to deriving the tier from the book name (e.g. the
+                # Matchbook collector path doesn't set anchor_source explicitly).
+                "anchor_source": anchor_source or _anchor_source_for_book(bookmaker),
             }
         )
         row["notes"] = json.dumps(notes)

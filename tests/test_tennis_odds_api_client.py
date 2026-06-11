@@ -26,6 +26,7 @@ def test_parse_tennis_odds_events_extracts_h2h_prices():
         }
     ])
 
+    # #PINNACLE-ANCHOR-1: a lone soft book falls through to the best-margin tier.
     assert rows == [{
         "odds_event_id": "evt1",
         "sport_key": "tennis_atp_french_open",
@@ -35,6 +36,7 @@ def test_parse_tennis_odds_events_extracts_h2h_prices():
         "odds_p1": 1.75,
         "odds_p2": 2.15,
         "bookmaker": "book",
+        "anchor_source": "best_margin",
     }]
 
 

@@ -302,6 +302,7 @@ class ModelAgent(BaseAgent):
             odds_payload = payload.get("odds") or {}
             odds_triple = None
             bookmaker = None
+            anchor_source = None
             market = devig_1x2(
                 odds_payload.get("odds_home"),
                 odds_payload.get("odds_draw"),
@@ -319,6 +320,9 @@ class ModelAgent(BaseAgent):
                     or odds_payload.get("provider")
                     or "market"
                 )
+                # #PINNACLE-ANCHOR-1: the sharp tier that priced this anchor
+                # (set by core.odds_api_client._best_odds). Persisted on the row.
+                anchor_source = odds_payload.get("anchor_source")
             # #CALIB-2: isotonic calibration (neutral-venue fit) BEFORE the
             # blend — corrects the measured directional bias of the neutral
             # Poisson model (team_a under-predicted ~2.5pp). Fail-safe: missing
@@ -485,6 +489,7 @@ class ModelAgent(BaseAgent):
                 enrichment=enrichment,
                 odds_triple=odds_triple,
                 bookmaker=bookmaker,
+                anchor_source=anchor_source,
                 signal_allowed=signal_allowed,
                 team_news_summary=team_news_summary,
                 friendly=is_friendly,

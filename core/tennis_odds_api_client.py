@@ -81,34 +81,60 @@ def _pair_key(p1: str | None, p2: str | None, scheduled_at: str | None) -> str |
 
 
 def parse_tennis_odds_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One anchored 2-way price per event.
+
+    #PINNACLE-ANCHOR-1: the anchor is Pinnacle (else a sharp exchange, else the
+    legacy best-margin pick) via core.market_anchor.select_2way_anchor — not the
+    first bookmaker listed, as before. ``anchor_source`` is carried so the
+    collector persists which tier priced the row. Fail-soft: events with no
+    complete 2-way market are skipped.
+    """
+    from config.settings import settings
+    from core.market_anchor import select_2way_anchor
+
     rows: list[dict[str, Any]] = []
     for event in events:
         p1 = event.get("home_team") or ""
         p2 = event.get("away_team") or ""
         if not p1 or not p2:
             continue
-        for bookmaker in event.get("bookmakers", []):
-            for market in bookmaker.get("markets", []):
-                if market.get("key") != "h2h":
-                    continue
-                outcomes = {o.get("name"): o.get("price") for o in market.get("outcomes", [])}
-                odds_p1 = outcomes.get(p1)
-                odds_p2 = outcomes.get(p2)
-                if odds_p1 and odds_p2:
-                    rows.append({
-                        "odds_event_id": event.get("id", ""),
-                        "sport_key": event.get("sport_key", ""),
-                        "player1": p1,
-                        "player2": p2,
-                        "scheduled_at": event.get("commence_time", ""),
-                        "odds_p1": float(odds_p1),
-                        "odds_p2": float(odds_p2),
-                        "bookmaker": bookmaker.get("key", ""),
-                    })
-                    break
-            if rows and rows[-1].get("odds_event_id") == event.get("id"):
-                break
+        if settings.MARKET_ANCHOR_ENABLED:
+            anchor = select_2way_anchor(event)
+        else:
+            anchor = _first_2way(event, p1, p2)
+        if not anchor:
+            continue
+        rows.append({
+            "odds_event_id": event.get("id", ""),
+            "sport_key": event.get("sport_key", ""),
+            "player1": p1,
+            "player2": p2,
+            "scheduled_at": event.get("commence_time", ""),
+            "odds_p1": float(anchor["odds_p1"]),
+            "odds_p2": float(anchor["odds_p2"]),
+            "bookmaker": anchor["bookmaker"],
+            "anchor_source": anchor.get("anchor_source", "best_margin"),
+        })
     return rows
+
+
+def _first_2way(event: dict[str, Any], p1: str, p2: str) -> dict[str, Any] | None:
+    """Legacy behaviour: the first bookmaker quoting a complete 2-way market."""
+    for bookmaker in event.get("bookmakers", []):
+        for market in bookmaker.get("markets", []):
+            if market.get("key") != "h2h":
+                continue
+            outcomes = {o.get("name"): o.get("price") for o in market.get("outcomes", [])}
+            odds_p1 = outcomes.get(p1)
+            odds_p2 = outcomes.get(p2)
+            if odds_p1 and odds_p2:
+                return {
+                    "odds_p1": float(odds_p1),
+                    "odds_p2": float(odds_p2),
+                    "bookmaker": bookmaker.get("key", ""),
+                    "anchor_source": "best_margin",
+                }
+    return None
 
 
 def merge_tennis_odds(fixtures: list[dict[str, Any]], odds_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -132,6 +158,10 @@ def merge_tennis_odds(fixtures: list[dict[str, Any]], odds_rows: list[dict[str, 
             "odds_p1": odds["odds_p1"] if same_order else odds["odds_p2"],
             "odds_p2": odds["odds_p2"] if same_order else odds["odds_p1"],
             "odds_provider": "the_odds_api",
+            # #PINNACLE-ANCHOR-1: odds_bookmaker now carries the anchored book
+            # (pinnacle when available). The anchor TIER is re-derived from this
+            # name at scoring time (core.market_anchor.anchor_source_for_book)
+            # and folded into feature_snapshot — no new fixtures column needed.
             "odds_bookmaker": odds.get("bookmaker"),
             "odds_event_id": odds.get("odds_event_id"),
         })

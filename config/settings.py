@@ -207,6 +207,17 @@ class Settings(BaseSettings):
     SHADOW_EVAL_ENABLED: bool = True
     SHADOW_EVAL_POLL_INTERVAL: int = 600    # seconds between collect+settle cycles
 
+    # #PINNACLE-ANCHOR-1 — sharp market anchor. When True the odds clients pick
+    # Pinnacle (else a sharp exchange, else legacy best-margin) as the market
+    # anchor fed to the de-vig/blend, instead of the legacy best-margin-across-
+    # mixed-books pick. Changes only the SOURCE of the market odds, never the
+    # blend math. Default ON: Pinnacle is the gold-standard sharp consensus and
+    # the change is strictly an improvement on the existing best-margin pick
+    # (when Pinnacle is absent the fallback IS the old behaviour). The odds-at-
+    # pick + anchor source are persisted regardless, so CLV/ROI become
+    # measurable forward from go-live (gap #1 from the 2026-06-11 backtest).
+    MARKET_ANCHOR_ENABLED: bool = True
+
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
 
