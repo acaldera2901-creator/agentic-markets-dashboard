@@ -3165,9 +3165,26 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               {showWhy ? t.pred_why_hide : t.pred_why_show} <span className="ar">→</span>
             </button>
           )}
-          {/* sober bet action — RESTA (revenue). FT → status note. */}
-          {onBetNow && !isPreview && (isFinished ? (
+          {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
+              altrimenti vecchio CTA. FT → status note. */}
+          {!isPreview && (betLinksEnabled || onBetNow) && (isFinished ? (
             <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
+          ) : betLinksEnabled ? (
+            <PlaceBetMenu
+              buttonClassName="betbtn"
+              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
+              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
+              selection={{
+                sport: p.league === "WC" ? "worldcup" : "football",
+                league: p.league,
+                homeTeam: p.home_team,
+                awayTeam: p.away_team,
+                market: "1X2",
+                pick: p.pick ?? p.best_selection ?? "",
+                odds: null,
+                eventStartUtc: p.kickoff,
+              }}
+            />
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
@@ -3216,22 +3233,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
             </a>
-          )}
-          {betLinksEnabled && (
-            <PlaceBetMenu
-              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
-              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
-              selection={{
-                sport: p.league === "WC" ? "worldcup" : "football",
-                league: p.league,
-                homeTeam: p.home_team,
-                awayTeam: p.away_team,
-                market: "1X2",
-                pick: p.pick ?? p.best_selection ?? "",
-                odds: null,
-                eventStartUtc: p.kickoff,
-              }}
-            />
           )}
           {p.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
 
@@ -3569,8 +3570,20 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
               {loadingAnalysis ? "…" : showWhy ? t.tennis_why_hide : t.tennis_why_show} <span className="ar">→</span>
             </button>
           )}
-          {onBetNow && !isPreview && (liveIsFinal ? (
+          {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
             <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
+          ) : betLinksEnabled ? (
+            <PlaceBetMenu
+              buttonClassName="betbtn"
+              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
+              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
+              selection={{
+                sport: "tennis",
+                market: "MO",
+                pick: m.pick ?? m.best_selection ?? "",
+                odds: null,
+              }}
+            />
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
@@ -3607,18 +3620,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
             </a>
-          )}
-          {betLinksEnabled && (
-            <PlaceBetMenu
-              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
-              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
-              selection={{
-                sport: "tennis",
-                market: "MO",
-                pick: m.pick ?? m.best_selection ?? "",
-                odds: null,
-              }}
-            />
           )}
           {m.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
 

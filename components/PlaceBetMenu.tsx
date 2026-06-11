@@ -11,10 +11,12 @@ export function PlaceBetMenu({
   selection,
   label,
   disclaimer,
+  buttonClassName = "bonus-cta",
 }: {
   selection: BetSelection;
   label: string;
   disclaimer: string;
+  buttonClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<BetLinkOption[] | null>(null);
@@ -58,7 +60,7 @@ export function PlaceBetMenu({
     <div className="place-bet-menu">
       <button
         type="button"
-        className="bonus-cta"
+        className={buttonClassName}
         onClick={toggle}
         aria-expanded={open}
       >
