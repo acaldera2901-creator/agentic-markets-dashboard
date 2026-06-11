@@ -21,7 +21,11 @@ from core.espn_soccer_client import (
     get_match_disposition as espn_get_match_disposition,
     get_match_result as espn_get_match_result,
 )
-from core.football_api_client import get_fixture_result, get_fixture_disposition
+from core.football_api_client import (
+    get_fixture_result,
+    get_fixture_disposition,
+    get_fixture_result_by_teams_date,
+)
 from core.football_data_org_client import get_match_result as fdorg_get_match_result
 from core.redis_client import publish
 from core.supabase_client import (
@@ -299,8 +303,26 @@ class ResultSettlementAgent(BaseAgent):
             except Exception as e:
                 self.logger.debug(f"ESPN result lookup failed for {ext_str}: {e}")
             if str(row.get("league") or "").upper() == "FRIENDLY":
-                # No other provider covers friendlies: don't burn the
-                # API-Football/fdorg quota on lookups that cannot succeed.
+                # ESPN's fifa.friendly feed is unreliable for some
+                # internationals: it flagged Oman vs Kuwait (2026-06-09)
+                # canceled though it was played 4-2, so the row was wrongly
+                # voided. Fall back to an ESPN-independent lookup by team
+                # names + date (api-football direct host). Only FRIENDLY rows
+                # reach this — the WC/club path settled from ESPN above. None
+                # (no FINAL fixture found) keeps the abandoned-void behaviour.
+                if row.get("home_team") and row.get("away_team") and row.get("starts_at"):
+                    try:
+                        result = await get_fixture_result_by_teams_date(
+                            str(row["home_team"]),
+                            str(row["away_team"]),
+                            str(row["starts_at"]),
+                        )
+                        if result:
+                            return result
+                    except Exception as e:
+                        self.logger.debug(
+                            f"friendly team+date fallback failed for {row.get('id')}: {e}"
+                        )
                 return None
         try:
             result = await get_fixture_result(int(ext))

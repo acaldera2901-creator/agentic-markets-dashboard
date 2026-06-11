@@ -8,6 +8,10 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str = ""
     API_FOOTBALL_KEY: str = ""
+    # Direct api-sports.io application key (x-apisports-key host). Separate from
+    # the RapidAPI key above: the direct host exposes the /fixtures?date lookup
+    # used as the FRIENDLY settlement fallback. Empty -> fallback is a no-op.
+    API_FOOTBALL_DIRECT_KEY: str = ""
     ODDS_API_KEY: str = ""
     MATCHBOOK_USERNAME: str = ""
     MATCHBOOK_PASSWORD: str = ""

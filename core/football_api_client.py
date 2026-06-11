@@ -105,6 +105,70 @@ async def get_fixture_result(fixture_id: int) -> dict | None:
     }
 
 
+_DIRECT_HOST = "https://v3.football.api-sports.io"
+
+
+def _norm_team(name: str) -> str:
+    return " ".join((name or "").strip().lower().split())
+
+
+async def get_fixture_result_by_teams_date(
+    home_team: str, away_team: str, kickoff_date: str
+) -> dict | None:
+    """Result lookup by team names + date on the api-sports DIRECT host.
+
+    ESPN-independent fallback for FRIENDLY rows whose ESPN-by-id summary fails
+    or wrongly reports the match canceled (observed in prod 2026-06-09:
+    Oman 4-2 Kuwait was played but ESPN's fifa.friendly feed flagged it
+    canceled, so the row was voided). Uses ``API_FOOTBALL_DIRECT_KEY`` and the
+    direct host because the ``/fixtures?date`` lookup is unavailable on the
+    RapidAPI key.
+
+    Matches by normalized team names in EITHER orientation and only returns a
+    FINAL fixture (FT/AET/PEN) — never a guess. The returned score is
+    normalized to the caller's home/away orientation. None when the key is
+    absent, the date is outside the plan window, or no FINAL match is found
+    (caller then falls through to the abandoned-void path).
+    """
+    key = settings.API_FOOTBALL_DIRECT_KEY
+    if not key or not home_team or not away_team or not kickoff_date:
+        return None
+    date_str = str(kickoff_date)[:10]
+    want_home, want_away = _norm_team(home_team), _norm_team(away_team)
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{_DIRECT_HOST}/fixtures",
+                headers={"x-apisports-key": key},
+                params={"date": date_str},
+                timeout=15.0,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json().get("response", [])
+    except Exception:
+        return None
+    for f in data:
+        status = f.get("fixture", {}).get("status", {}).get("short", "")
+        if status not in _FINAL_STATUSES:
+            continue
+        teams = f.get("teams", {})
+        api_home = _norm_team((teams.get("home") or {}).get("name", ""))
+        api_away = _norm_team((teams.get("away") or {}).get("name", ""))
+        score = f.get("score", {}).get("fulltime", {})
+        gh, ga = score.get("home"), score.get("away")
+        if gh is None or ga is None:
+            continue
+        if api_home == want_home and api_away == want_away:
+            return {"home_goals": int(gh), "away_goals": int(ga), "status": status,
+                    "home_team": home_team, "away_team": away_team}
+        # Reversed orientation: flip the score back to OUR home/away.
+        if api_home == want_away and api_away == want_home:
+            return {"home_goals": int(ga), "away_goals": int(gh), "status": status,
+                    "home_team": home_team, "away_team": away_team}
+    return None
+
+
 # API-Football "short" status codes that mean the fixture will never produce a
 # settleable score (canceled / abandoned / postponed / walkover / awarded).
 # Used by ResultSettlementAgent to void bets on matches that never complete
