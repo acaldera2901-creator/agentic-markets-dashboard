@@ -102,12 +102,12 @@ export default function CommunityPage() {
           </p>
         </div>
         {/* Plain <a> (hard nav), NOT next/link: a soft client-side nav to
-            /?tab=match-builder lands on the default Bets tab because the tab is
+            /app?tab=match-builder lands on the default Bets tab because the tab is
             resolved only in a useState initializer at mount. A full load applies
             the ?tab= deep-link correctly. */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional hard nav, see comment above */}
         <a
-          href="/?tab=match-builder"
+          href="/app?tab=match-builder"
           className="text-xs font-mono px-4 py-2 rounded border transition-colors shrink-0"
           style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
         >

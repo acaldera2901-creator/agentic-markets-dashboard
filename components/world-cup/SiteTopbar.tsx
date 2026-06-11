@@ -108,14 +108,14 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
           </div>
 
           {auth.status === "authed" ? (
-            <Link href="/" className="am-acct" title={auth.identifier}>
+            <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
               {auth.name || auth.identifier}
               <span className="plan">{planPillLabel(auth.plan)}</span>
             </Link>
           ) : auth.status === "anonymous" ? (
             <>
-              <Link href="/" className="am-auth-secondary">Accedi</Link>
-              <Link href="/" className="am-auth-primary">Registrati</Link>
+              <Link href="/app" className="am-auth-secondary">Accedi</Link>
+              <Link href="/app?tab=account" className="am-auth-primary">Registrati</Link>
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
         </div>

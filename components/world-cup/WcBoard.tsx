@@ -374,7 +374,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
 
       {/* outcome rows / gate overlay */}
       {p.locked ? (
-        <Link href="/" className="lock-overlay wc-lock" role="button">
+        <Link href="/app" className="lock-overlay wc-lock" role="button">
           <span className="blurred">▒▒ HOME ▒▒▒%</span>
           <span className="blurred">▒▒ DRAW ▒▒▒%</span>
           <span className="blurred">▒▒ AWAY ▒▒▒%</span>
@@ -431,7 +431,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
                 when present, else the deep-link. Never a fake target. */}
             <a
               className="wc-place-bet"
-              href={p.affiliate?.url || "/?tab=partners"}
+              href={p.affiliate?.url || "/app?tab=partners"}
               {...(p.affiliate?.url
                 ? { target: "_blank", rel: "nofollow sponsored noopener" }
                 : {})}
