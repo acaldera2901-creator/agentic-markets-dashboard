@@ -2037,9 +2037,10 @@ function isTennisBestBet(m: TennisMatch) {
   const odds = selectedTennisOdds(m);
   // #BESTBET-FLOOR-1: below the tennis floor the serving route drops `pick` but
   // keeps best_selection on the row → guard here too so a sub-floor coin-flip
-  // never resurfaces as a value bet (floor mirrors lib/surfacing-gate.ts = 62).
+  // never resurfaces as a value bet. #TENNIS-SEG-FLOOR-1: the floor is
+  // segment-aware by tournament name (hi 62 / lo 64 / lo-grass 66).
   const surfaced = m.confidence_score == null
-    || m.confidence_score >= surfaceFloorFor("tennis", null);
+    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament);
   return surfaced
     && isTennisMarketVisible(m.scheduled)
     && Boolean(m.best_selection)
@@ -2458,8 +2459,9 @@ function BestBetsBoard({
     odds: selectedTennisOdds(m),
     edge: m.edge,
     // #BESTBET-FLOOR-1: below the tennis floor → no directional pick.
+    // #TENNIS-SEG-FLOOR-1: segment-aware floor resolved from the tournament.
     belowFloor: m.confidence_score != null
-      && m.confidence_score < surfaceFloorFor("tennis", null),
+      && m.confidence_score < surfaceFloorFor("tennis", m.tournament),
   }));
   const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
     sportFilter,

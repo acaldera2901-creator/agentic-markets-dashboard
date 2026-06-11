@@ -4,7 +4,7 @@ import { resolveAccessState } from "@/lib/auth";
 import { isUnlocked } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
-import { surfaceDecision, SURFACE_FLOOR_TENNIS } from "@/lib/surfacing-gate";
+import { surfaceDecision, tennisFloorFor } from "@/lib/surfacing-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +28,13 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
     const isPotD = rank === 0;
     const unlocked = isUnlocked(state, rank);
     if (unlocked) {
-      // Confidence-surfacing gate (10y lab 2026-06-08): below the tennis floor
-      // there is no clear favourite — drop the directional pick (the card shows
-      // none). Probability-neutral: p1/p2/confidence are unchanged.
+      // Confidence-surfacing gate (10y lab 2026-06-08; segment-aware floors
+      // #TENNIS-SEG-FLOOR-1 2026-06-11): below the tournament's floor there is
+      // no clear favourite — drop the directional pick (the card shows none).
+      // Probability-neutral: p1/p2/confidence are unchanged.
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
-      const { isPick, belowFloor } = surfaceDecision(confidence, SURFACE_FLOOR_TENNIS);
+      const floor = tennisFloorFor((m as { tournament?: string }).tournament);
+      const { isPick, belowFloor } = surfaceDecision(confidence, floor);
       const isPro = state === "premium" || state === "admin_full";
       const out: Record<string, unknown> = {
         ...m,

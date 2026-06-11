@@ -182,7 +182,16 @@ class Settings(BaseSettings):
     # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
     # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.
     # Walk-forward held-out: floor 60 -> 70.9% hit (keeps 58.8%), 62 -> 72.1% (52%).
-    SURFACE_FLOOR_TENNIS: int = 62     # ATP/WTA (max-prob >= 62); #FLOOR-62 2026-06-09, n=8044 OOS sweep (71.5% hit, 53.4% vol)
+    # SEGMENT-AWARE (#TENNIS-SEG-FLOOR-1, lab 2026-06-11, 19.8k held-out 2023+):
+    # at a uniform 62 the high tiers hold 73-77% while lower tiers sit at 69-70%
+    # (weakest cell = low-tier grass, the June swing). hi 62 / lo 64 / lo-grass 66
+    # lifts the published hit 72.1%->72.9% and lo-grass 69.4%->73.8% (-6.5% vol).
+    # Tier/grass resolution is keyed on the TOURNAMENT NAME (core/surfacing_gate
+    # .py + lib/surfacing-gate.ts share the keyword lists) so the board route,
+    # the unified sync and the history metric always agree on the same row.
+    SURFACE_FLOOR_TENNIS: int = 62           # hi tier: Slam/Masters/1000/Finals/Olympics
+    SURFACE_FLOOR_TENNIS_LO: int = 64        # lower tiers (250/500/WTA minors)
+    SURFACE_FLOOR_TENNIS_LO_GRASS: int = 66  # lower tiers on grass (June swing)
 
     # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
     # surface floor the copy says "favoured but open"; at/above this stronger

@@ -6,7 +6,7 @@ import {
   type SyncReport,
 } from "@/lib/publication-gate";
 import { buildTennisExplanation } from "@/lib/tennis-explanation";
-import { surfaceDecision, SURFACE_FLOOR_TENNIS } from "@/lib/surfacing-gate";
+import { surfaceDecision, tennisFloorFor } from "@/lib/surfacing-gate";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -59,12 +59,15 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const hasRealMarket = odds != null && row.edge != null;
   const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
   const confidence = prob > 0 ? Math.round(prob * 100) : null;
-  // Confidence-surfacing floor (#FLOOR-UNIFORM-1, APPROVE Andrea 2026-06-09):
-  // mirror the board route — below the tennis floor there is no clear favourite,
-  // so the unified row carries NO directional pick (and no directional prose).
+  // Confidence-surfacing floor (#FLOOR-UNIFORM-1, APPROVE Andrea 2026-06-09;
+  // segment-aware #TENNIS-SEG-FLOOR-1 2026-06-11): mirror the board route —
+  // below the tournament's floor there is no clear favourite, so the unified
+  // row carries NO directional pick (and no directional prose).
   // Probability-neutral: confidence_score / fair_odds are unchanged. This stops
-  // sub-floor picks leaking onto v2 / Match Builder / Creator Picks.
-  const { belowFloor } = surfaceDecision(confidence ?? 0, SURFACE_FLOOR_TENNIS);
+  // sub-floor picks leaking onto v2 / Match Builder / Creator Picks. The floor
+  // is keyed on the tournament NAME (not the surface column) so this sync, the
+  // board route and isSurfacedRow (history, no surface column) always agree.
+  const { belowFloor } = surfaceDecision(confidence ?? 0, tennisFloorFor(row.tournament));
   const surfacedPick = belowFloor ? null : pick;
   const surface = row.surface ? row.surface[0].toUpperCase() + row.surface.slice(1) : "n/a";
   // Why-v2: human prose, no internal jargon. The picked side's serve/return form
