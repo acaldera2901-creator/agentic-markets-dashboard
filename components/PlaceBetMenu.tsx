@@ -57,7 +57,7 @@ export function PlaceBetMenu({
   }
 
   return (
-    <div className="place-bet-menu">
+    <div className={open ? "place-bet-menu open" : "place-bet-menu"}>
       <button
         type="button"
         className={buttonClassName}
