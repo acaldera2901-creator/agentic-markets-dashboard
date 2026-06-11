@@ -14,6 +14,7 @@ const SIZES: Record<HouseFormat, { w: number; h: number; label: string }> = {
   leaderboard: { w: 728, h: 90, label: "Leaderboard 728×90" },
   rectangle: { w: 300, h: 250, label: "Rectangle 300×250" },
   billboard: { w: 970, h: 250, label: "Billboard 970×250" },
+  halfpage: { w: 300, h: 600, label: "Half Page 300×600" },
 };
 
 export default function BannersPreviewPage() {

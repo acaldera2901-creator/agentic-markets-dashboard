@@ -1,14 +1,15 @@
 "use client";
 
-// components/HouseBanner.tsx (#HOUSE-BANNERS-1)
+// components/HouseBanner.tsx (#HOUSE-BANNERS-1, ricco in #HOUSE-BANNERS-2)
 // Banner house PROPRIETARIO di BetRedge. Presentazionale: riceve una campagna
-// già risolta (vedi lib/house-banners.ts) e la renderizza nel formato richiesto.
+// già risolta (vedi lib/house-banners.ts) + dati reali opzionali del board.
+// Versione ricca (ticker/chip/mini-board) SOLO con dati veri; senza dati → sobrio.
 // Interattività: dismiss persistente (localStorage) + tracking view/click/dismiss.
 // I glifi sport usano il SportGlyphSprite già montato nelle pagine host.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { HouseCampaign, Lang } from "@/lib/house-banners";
+import { hasRichData, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
 
 const DISMISS_KEY = "br_house_dismissed";
 
@@ -52,6 +53,8 @@ function track(event_type: string, campaign: HouseCampaign) {
   }).catch(() => { /* never block UI */ });
 }
 
+const fmtEdge = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
+
 function Headline({ headline, accent }: { headline: string; accent?: string }) {
   return (
     <>
@@ -61,14 +64,68 @@ function Headline({ headline, accent }: { headline: string; accent?: string }) {
   );
 }
 
+// Ticker scorrevole coi top edge reali. Duplica le righe per loop senza stacchi.
+function Ticker({ edges }: { edges: BannerEdge[] }) {
+  const row = (k: string) => (
+    <div className="hb-tickrow" key={k}>
+      {edges.map((e, i) => (
+        <span className="hb-ti" key={`${k}-${i}`}>
+          <svg aria-hidden="true"><use href={e.glyph} /></svg>
+          {e.name} <span className="hb-ti-e">{fmtEdge(e.edge)}</span>
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className="hb-ticker" aria-hidden="true">
+      <div className="hb-tickwrap">{row("a")}{row("b")}</div>
+    </div>
+  );
+}
+
+// Mini-board verticale (half page): top edge reali come righe.
+function MiniBoard({ edges, lang }: { edges: BannerEdge[]; lang: Lang }) {
+  return (
+    <div className="hb-miniboard">
+      <span className="hb-eyebrow hb-mb-lab">{lang === "it" ? "Top edge adesso" : "Top edge now"}</span>
+      {edges.slice(0, 3).map((e, i) => (
+        <div className="hb-mini" key={i}>
+          <svg aria-hidden="true"><use href={e.glyph} /></svg>
+          <span className="hb-mini-nm">{e.name}</span>
+          <span className="hb-mini-e">{fmtEdge(e.edge)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Stat chip reali (edge medio + hit rate). Mostra solo i campi disponibili.
+function Chips({ data }: { data: BannerData }) {
+  const chips: { k: string; v: string }[] = [];
+  if (data.edgeAvgPct != null) chips.push({ k: "Edge medio", v: fmtEdge(data.edgeAvgPct) });
+  if (data.hitRate) chips.push({ k: "Hit rate", v: data.hitRate });
+  if (!chips.length) return null;
+  return (
+    <div className="hb-chips">
+      {chips.map((c) => (
+        <div className="hb-chip" key={c.k}>
+          <span className="hb-chip-k">{c.k}</span>
+          <span className="hb-chip-v">{c.v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Accetta il set lingue ampio del desk (it/en/es/fr/ru): risolve a it/en
 // (it→it, qualsiasi altro→en) per le copy bilingui delle campagne.
-export function HouseBanner({ campaign, lang }: { campaign: HouseCampaign; lang: string }) {
+export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign; lang: string; data?: BannerData | null }) {
   const [dismissed, setDismissed] = useState(false);
   const viewed = useRef(false);
   const L: Lang = lang === "it" ? "it" : "en";
   const c = campaign.copy[L];
   const ctaLabel = L === "it" ? campaign.cta.it : campaign.cta.en;
+  const rich = hasRichData(data);
 
   // Mount-sync da localStorage: se già chiuso in sessione, non mostrare.
   useEffect(() => {
@@ -92,11 +149,16 @@ export function HouseBanner({ campaign, lang }: { campaign: HouseCampaign; lang:
   const onClick = () => track("house_banner_click", campaign);
 
   const dismissBtn = (
-    <button type="button" className="hb-x" onClick={onDismiss} aria-label={lang === "it" ? "Chiudi" : "Dismiss"}>×</button>
+    <button type="button" className="hb-x" onClick={onDismiss} aria-label={L === "it" ? "Chiudi" : "Dismiss"}>×</button>
   );
 
   // ── Leaderboard (728×90) ──────────────────────────────────────────────
   if (campaign.format === "leaderboard") {
+    const subBits: string[] = [];
+    if (rich) {
+      subBits.push(`${data.eventsCount} ${L === "it" ? "match" : "matches"}`);
+      if (data.edgeAvgPct != null) subBits.push(`${fmtEdge(data.edgeAvgPct)} ${L === "it" ? "edge medio" : "avg edge"}`);
+    }
     return (
       <aside className="house-banner hb-leaderboard" aria-label={c.eyebrow}>
         <svg className="hb-ic" aria-hidden="true"><use href={campaign.glyphs[0]} /></svg>
@@ -104,6 +166,7 @@ export function HouseBanner({ campaign, lang }: { campaign: HouseCampaign; lang:
           <span className="hb-eyebrow">{c.eyebrow}</span>
           <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
         </div>
+        {subBits.length ? <span className="hb-lead-stat">{subBits.join(" · ")}</span> : null}
         <Link href={campaign.cta.href} className="hb-cta" onClick={onClick}>{ctaLabel}</Link>
         {dismissBtn}
       </aside>
@@ -112,6 +175,11 @@ export function HouseBanner({ campaign, lang }: { campaign: HouseCampaign; lang:
 
   // ── Rectangle (300×250) ───────────────────────────────────────────────
   if (campaign.format === "rectangle") {
+    const chip = rich
+      ? (data.hitRate ? { k: L === "it" ? "Hit rate" : "Hit rate", v: data.hitRate }
+        : data.edgeAvgPct != null ? { k: L === "it" ? "Edge medio" : "Avg edge", v: fmtEdge(data.edgeAvgPct) }
+        : null)
+      : null;
     return (
       <aside className="house-banner hb-rectangle" aria-label={c.eyebrow}>
         {dismissBtn}
@@ -123,14 +191,41 @@ export function HouseBanner({ campaign, lang }: { campaign: HouseCampaign; lang:
             <svg key={g} className="hb-ic-sm" aria-hidden="true"><use href={g} /></svg>
           ))}
         </div>
+        {chip ? (
+          <div className="hb-chip hb-chip-row">
+            <span className="hb-chip-k">{chip.k}</span>
+            <span className="hb-chip-v">{chip.v}</span>
+          </div>
+        ) : null}
         <Link href={campaign.cta.href} className="hb-cta hb-cta-block" onClick={onClick}>{ctaLabel}</Link>
+      </aside>
+    );
+  }
+
+  // ── Half page (300×600) ───────────────────────────────────────────────
+  if (campaign.format === "halfpage") {
+    return (
+      <aside className="house-banner hb-halfpage" aria-label={c.eyebrow}>
+        <div className="hb-glow" aria-hidden="true" />
+        {dismissBtn}
+        <span className="hb-eyebrow">{c.eyebrow}</span>
+        <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
+        <span className="hb-sub">{c.sub}</span>
+        {rich ? <MiniBoard edges={data.topEdges} lang={L} /> : (
+          <div className="hb-glyphs hb-glyphs-col">
+            {campaign.glyphs.map((g) => (
+              <svg key={g} className="hb-ic-sm" aria-hidden="true"><use href={g} /></svg>
+            ))}
+          </div>
+        )}
+        <Link href={campaign.cta.href} className="hb-cta hb-cta-block hb-cta-foot" onClick={onClick}>{ctaLabel}</Link>
       </aside>
     );
   }
 
   // ── Billboard (970×250 / full-width) ──────────────────────────────────
   return (
-    <aside className="house-banner hb-billboard" aria-label={c.eyebrow}>
+    <aside className={`house-banner hb-billboard${rich ? " hb-rich" : ""}`} aria-label={c.eyebrow}>
       <div className="hb-glow" aria-hidden="true" />
       <div className="hb-float" aria-hidden="true">
         {campaign.glyphs.map((g, i) => (
@@ -138,12 +233,16 @@ export function HouseBanner({ campaign, lang }: { campaign: HouseCampaign; lang:
         ))}
       </div>
       {dismissBtn}
-      <div className="hb-bill-main">
-        <span className="hb-eyebrow">{c.eyebrow}</span>
-        <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
-        <span className="hb-sub">{c.sub}</span>
-        <Link href={campaign.cta.href} className="hb-cta" onClick={onClick}>{ctaLabel}</Link>
+      <div className="hb-bill-row">
+        <div className="hb-bill-main">
+          <span className="hb-eyebrow">{c.eyebrow}</span>
+          <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
+          <span className="hb-sub">{c.sub}</span>
+          <Link href={campaign.cta.href} className="hb-cta" onClick={onClick}>{ctaLabel}</Link>
+        </div>
+        {rich ? <Chips data={data} /> : null}
       </div>
+      {rich ? <Ticker edges={data.topEdges} /> : null}
     </aside>
   );
 }

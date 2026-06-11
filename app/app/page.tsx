@@ -13,7 +13,7 @@ import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
-import { pickCampaign, audienceFromState } from "@/lib/house-banners";
+import { pickCampaign, audienceFromState, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -1224,6 +1224,20 @@ function isTennisBestBet(m: TennisMatch) {
     && (m.edge ?? 0) >= TENNIS_BEST_EDGE_THRESHOLD;
 }
 
+// #HOUSE-BANNERS-2: dati reali per i banner ricchi (ticker/chip/mini-board).
+// edge è decimale sul board (0.062) → ×100 in punti per il rendering "+6.2%".
+function deskBannerData(
+  predictions: Prediction[],
+  tennisMatches: TennisMatch[],
+  opts: { hitRate?: string | null } = {},
+): BannerData {
+  const matches: BannerMatchInput[] = [
+    ...predictions.map((p) => ({ sport: "football" as const, name: `${p.home_team}–${p.away_team}`, edge: p.edge != null ? p.edge * 100 : null })),
+    ...tennisMatches.map((m) => ({ sport: "tennis" as const, name: `${m.player1}–${m.player2}`, edge: m.edge != null ? m.edge * 100 : null })),
+  ];
+  return buildBannerData(matches, { eventsCount: predictions.length + tennisMatches.length, hitRate: opts.hitRate });
+}
+
 function SportsbookBoard({
   predictions,
   tennisMatches,
@@ -1264,6 +1278,9 @@ function SportsbookBoard({
   const t = useT();
   const lang = useLang();
   const query = searchTerm.trim().toLowerCase();
+  // #HOUSE-BANNERS-2: dati reali per ticker/chip/mini-board del feed e interstitial.
+  const boardData = deskBannerData(predictions, tennisMatches);
+  const boardAudience = isPremium ? "pro" : "free";
 
   const labels = lang === "it" ? {
     allSports: "Tutti",
@@ -1448,11 +1465,11 @@ function SportsbookBoard({
                     const card = (
                       <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                     );
-                    // #HOUSE-BANNERS-1: 1 house rectangle dopo la 6ª card, solo su
+                    // #HOUSE-BANNERS-1/2: 1 house rectangle dopo la 5ª card, solo su
                     // board pieno (no free preview) e se c'è ancora flusso sotto.
-                    if (i === 5 && !isFreeClient && footballRows.length > 6) {
-                      const camp = pickCampaign("desk-feed", isPremium ? "pro" : "free");
-                      if (camp) return [card, <HouseBanner key="house-feed" campaign={camp} lang={lang} />];
+                    if (i === 4 && !isFreeClient && footballRows.length > 5) {
+                      const camp = pickCampaign("desk-feed", boardAudience);
+                      if (camp) return [card, <HouseBanner key="house-feed" campaign={camp} lang={lang} data={boardData} />];
                     }
                     return [card];
                   })}
@@ -1478,6 +1495,16 @@ function SportsbookBoard({
             </section>
           )}
 
+          {/* #HOUSE-BANNERS-2: interstitial billboard tra calcio e tennis (board pieno) */}
+          {showFootballSection && showTennisSection && !isFreeClient && (() => {
+            const camp = pickCampaign("desk-interstitial", boardAudience);
+            return camp ? (
+              <div className="house-interstitial">
+                <HouseBanner campaign={camp} lang={lang} data={boardData} />
+              </div>
+            ) : null;
+          })()}
+
           {showTennisSection && (
             <section>
               <div className="sport-band amber">
@@ -1489,9 +1516,17 @@ function SportsbookBoard({
               </div>
               {tennisRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
-                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                  ))}
+                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).flatMap((m, i) => {
+                    const card = (
+                      <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                    );
+                    // #HOUSE-BANNERS-2: 1 house rectangle dopo la 5ª card tennis (board pieno).
+                    if (i === 4 && !isFreeClient && tennisRows.length > 5) {
+                      const camp = pickCampaign("desk-feed-tennis", boardAudience);
+                      if (camp) return [card, <HouseBanner key="house-feed-tennis" campaign={camp} lang={lang} data={boardData} />];
+                    }
+                    return [card];
+                  })}
                   {isFreeClient && tennisRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -6024,6 +6059,8 @@ export default function Dashboard() {
     modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) >= MODEL_EDGE_KPI_FLOOR,
   ).length;
   const withEdgeCount = fbWithEdge + tnWithEdge;
+  // #HOUSE-BANNERS-2: dati reali per top/bottom/rail (hit rate dallo storico v2).
+  const houseData = deskBannerData(predictions, tennisMatches, { hitRate: historyV2Stats?.win_rate });
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -6077,7 +6114,7 @@ export default function Dashboard() {
       {(() => {
         const camp = pickCampaign("desk-top", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
         return camp
-          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} /></div>
+          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div>
           : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
       })()}
 
@@ -6192,6 +6229,11 @@ export default function Dashboard() {
                 ↻ {refreshing ? "..." : tUI.refresh_odds}
                 <span className="sync">live</span>
               </button>
+              {/* #HOUSE-BANNERS-2: half-page house nella sidebar */}
+              {(() => {
+                const camp = pickCampaign("desk-rail", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
+                return camp ? <div className="rail-house"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div> : null;
+              })()}
             </aside>
 
         <section className="book-main">
@@ -6296,7 +6338,7 @@ export default function Dashboard() {
       {(() => {
         const camp = pickCampaign("desk-bottom", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
         return camp
-          ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} /></div>
+          ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div>
           : <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
       })()}
 

@@ -5894,6 +5894,66 @@ button:disabled {
 .lp .house-banner.hb-billboard{ margin:8px auto 0; max-width:1180px; width:100%; }
 
 /* ──────────────────────────────────────────────────────────────────────────
+   #HOUSE-BANNERS-2 — versioni ricche: ticker + stat chip + half-page + mini-board.
+   Alimentate da dati reali (lib/house-banners.ts buildBannerData).
+   ────────────────────────────────────────────────────────────────────────── */
+/* billboard ricco */
+.hb-bill-row{ position:relative; display:flex; justify-content:space-between; align-items:flex-end; gap:24px; }
+.hb-billboard.hb-rich{ padding-bottom:0; }
+.hb-billboard.hb-rich .hb-bill-row{ padding-bottom:18px; }
+
+/* stat chip */
+.hb-chips{ position:relative; display:flex; gap:10px; flex-shrink:0; }
+.hb-chip{ background:var(--am-inset); border:1px solid var(--am-line); border-radius:11px; padding:11px 14px; }
+.hb-chip-k{ display:block; font-family:var(--font-mono); font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--am-muted-2); }
+.hb-chip-v{ display:block; font-family:var(--font-mono); font-size:19px; font-weight:700; margin-top:3px; color:var(--am-positive); }
+.hb-chip-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 12px; }
+.hb-chip-row .hb-chip-k{ display:inline; }
+.hb-chip-row .hb-chip-v{ display:inline; font-size:16px; margin-top:0; }
+
+/* ticker scorrevole */
+.hb-ticker{ position:relative; overflow:hidden; margin:16px -32px 0; border-top:1px solid var(--am-line);
+  background:color-mix(in srgb, var(--am-bg) 55%, transparent);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent); }
+.hb-tickwrap{ display:flex; width:max-content; animation:hb-tick 24s linear infinite; }
+.hb-tickrow{ display:flex; padding:9px 0; }
+.hb-ti{ display:flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:12px; color:var(--am-muted); white-space:nowrap; margin:0 13px; }
+.hb-ti svg{ width:17px; height:17px; color:var(--am-muted-2); }
+.hb-ti-e{ color:var(--am-positive); font-weight:600; }
+@keyframes hb-tick{ 0%{ transform:translateX(0); } 100%{ transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce){ .hb-tickwrap{ animation:none; } }
+
+/* leaderboard: stat reale */
+.hb-lead-stat{ font-family:var(--font-mono); font-size:10px; color:var(--am-muted-2); white-space:nowrap; margin-right:14px; }
+
+/* half page (300×600) */
+.hb-halfpage{ display:flex; flex-direction:column; gap:9px; padding:20px 18px; }
+.hb-halfpage .hb-headline{ font-size:23px; }
+.hb-halfpage .hb-cta-foot{ margin-top:auto; }
+.hb-glyphs-col{ margin-top:6px; }
+.hb-miniboard{ display:flex; flex-direction:column; gap:7px; margin-top:6px; }
+.hb-mb-lab{ margin-bottom:2px; }
+.hb-mini{ display:flex; align-items:center; gap:9px; background:var(--am-inset); border:1px solid var(--am-line); border-radius:9px; padding:9px 11px; }
+.hb-mini svg{ width:20px; height:20px; color:var(--am-muted); flex-shrink:0; }
+.hb-mini-nm{ font-size:12px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hb-mini-e{ font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--am-positive); margin-left:auto; }
+
+/* mount: rail half-page + interstitial board */
+.rail-house{ margin-top:14px; }
+.rail-house .house-banner{ width:100%; }
+.house-interstitial{ margin:18px 14px; }
+.house-interstitial .house-banner{ width:100%; }
+
+@media (max-width:860px){
+  .hb-bill-row{ flex-direction:column; align-items:flex-start; }
+  .hb-chips{ width:100%; }
+}
+@media (max-width:640px){
+  .hb-ticker{ margin-left:-20px; margin-right:-20px; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
    .am-surface — sleek-coral panel utility (parity with .pred / .wc-group-card).
    Drop-in replacement for legacy .glass-card on modals & account area.
    Presentation only; pair with Tailwind padding/spacing utilities.
