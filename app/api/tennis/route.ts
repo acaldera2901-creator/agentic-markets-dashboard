@@ -3,7 +3,6 @@ import { dbQuery } from "@/lib/db";
 import { resolveAccessState } from "@/lib/auth";
 import { isUnlocked } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
-import { pickOfDayId } from "@/lib/pick-of-day";
 import { withAffiliate } from "@/lib/affiliate";
 import { surfaceDecision, SURFACE_FLOOR_TENNIS } from "@/lib/surfacing-gate";
 
@@ -13,16 +12,21 @@ export const dynamic = "force-dynamic";
 // (player1/player2/surface/p1/p2/...). When locked, the sensitive numbers are
 // nulled (frontend blurs on `locked`); the matchup + tournament stay visible so
 // the public board is populated. Distinct from the football projection on purpose.
-function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string }>(
+function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null }>(
   matches: T[],
   state: AccessState
 ): Array<T & { locked: boolean; pick_of_day: boolean }> {
-  const potd = pickOfDayId(
-    matches.map((m) => ({ id: m.id, confidence_score: Math.round(Math.max(m.p1, m.p2) * 100), starts_at: m.scheduled }))
-  );
+  // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc (fallback confidence)
+  // tra le partite tennis. free sblocca rank<1, base rank<5, premium tutto.
+  const rankById = new Map<string, number>();
+  [...matches]
+    .map((m) => ({ id: m.id, edge: typeof m.edge === "number" ? m.edge : -Infinity, conf: Math.max(m.p1, m.p2) }))
+    .sort((a, b) => b.edge - a.edge || b.conf - a.conf)
+    .forEach((r, i) => rankById.set(r.id, i));
   return matches.map((m) => {
-    const isPotD = m.id === potd;
-    const unlocked = isUnlocked(state, isPotD);
+    const rank = rankById.get(m.id) ?? Infinity;
+    const isPotD = rank === 0;
+    const unlocked = isUnlocked(state, rank);
     if (unlocked) {
       // Confidence-surfacing gate (10y lab 2026-06-08): below the tennis floor
       // there is no clear favourite — drop the directional pick (the card shows

@@ -3,7 +3,6 @@ import { dbQuery } from "@/lib/db";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
-import { pickOfDayId } from "@/lib/pick-of-day";
 import { withAffiliate } from "@/lib/affiliate";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 
@@ -77,9 +76,29 @@ export async function GET(req: Request) {
     }
   }
 
-  const potd = pickOfDayId(rows as Array<{ id: string; confidence_score?: number | null; starts_at?: string | null }>);
+  // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc DENTRO ogni sport.
+  // free sblocca rank<1, base rank<5, premium tutto (showcaseAllowance).
+  const rankById = new Map<string, number>();
+  const bySport = new Map<string, Array<Record<string, unknown>>>();
+  for (const row of rows as unknown as Array<Record<string, unknown>>) {
+    const sp = String(row.sport ?? "other");
+    if (!bySport.has(sp)) bySport.set(sp, []);
+    bySport.get(sp)!.push(row);
+  }
+  for (const list of bySport.values()) {
+    list
+      .map((r) => ({
+        id: String(r.id),
+        edge: typeof r.edge_percent === "number" ? r.edge_percent
+            : typeof r.edge === "number" ? r.edge : -Infinity,
+        conf: typeof r.confidence_score === "number" ? r.confidence_score : 0,
+      }))
+      .sort((a, b) => b.edge - a.edge || b.conf - a.conf)
+      .forEach((r, i) => rankById.set(r.id, i));
+  }
   const predictions = rows.map((row) => {
-    const projected = projectPrediction(row as unknown as Record<string, unknown>, state, (row as { id: string }).id === potd);
+    const rank = rankById.get((row as { id: string }).id) ?? Infinity;
+    const projected = projectPrediction(row as unknown as Record<string, unknown>, state, rank);
     return projected.locked ? projected : withAffiliate(projected);
   });
 

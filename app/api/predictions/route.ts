@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAccessState, type AccessState } from "@/lib/auth";
 import { isUnlocked } from "@/lib/access-projection";
-import { pickOfDayId } from "@/lib/pick-of-day";
 import { verifyBearer } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
@@ -131,7 +130,7 @@ type ProjectedPredictionRow = Partial<PredictionRow> & {
 function projectPredictionRow(
   p: PredictionRow,
   state: AccessState,
-  isPotD: boolean
+  rankInSport: number
 ): ProjectedPredictionRow {
   const base = {
     match_id: p.match_id,
@@ -141,10 +140,10 @@ function projectPredictionRow(
     away_team: p.away_team,
     kickoff: p.kickoff,
     match_type: p.match_type ?? null,
-    pick_of_day: isPotD,
+    pick_of_day: rankInSport === 0,
   };
 
-  if (!isUnlocked(state, isPotD)) {
+  if (!isUnlocked(state, rankInSport)) {
     // Locked: keep the matchup visible, blank everything the card would reveal.
     return { ...base, locked: true };
   }
@@ -734,16 +733,21 @@ export async function GET(req: Request) {
     return hydrated;
   });
 
-  const potd = pickOfDayId(
-    hydratedRows.map((p) => ({
+  // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc (fallback confidence)
+  // tra le righe football di questo endpoint. free sblocca rank<1, base rank<5,
+  // premium tutto (vedi showcaseAllowance/isUnlocked).
+  const rankById = new Map<string, number>();
+  [...hydratedRows]
+    .map((p) => ({
       id: p.match_id,
-      confidence_score: Math.round(Math.max(p.p_home, p.p_draw, p.p_away) * 100),
-      starts_at: p.kickoff,
+      edge: typeof p.edge === "number" ? p.edge : -Infinity,
+      conf: Math.max(p.p_home, p.p_draw, p.p_away),
     }))
-  );
+    .sort((a, b) => b.edge - a.edge || b.conf - a.conf)
+    .forEach((r, i) => rankById.set(r.id, i));
 
   const predictions = hydratedRows.map((p) =>
-    projectPredictionRow(p, state, p.match_id === potd)
+    projectPredictionRow(p, state, rankById.get(p.match_id) ?? Infinity)
   );
 
   return NextResponse.json(

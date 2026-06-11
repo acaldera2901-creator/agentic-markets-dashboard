@@ -6,6 +6,7 @@ import {
   PUBLIC_PAID_PLAN,
   type PublicPlanKey,
   planAmountUsdt,
+  planLabel,
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
@@ -1461,9 +1462,18 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).map((p) => (
-                    <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                  ))}
+                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).flatMap((p, i) => {
+                    const card = (
+                      <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                    );
+                    // #HOUSE-BANNERS-1: 1 house rectangle dopo la 6ª card, solo su
+                    // board pieno (no free preview) e se c'è ancora flusso sotto.
+                    if (i === 5 && !isFreeClient && footballRows.length > 6) {
+                      const camp = pickCampaign("desk-feed", isPremium ? "pro" : "free");
+                      if (camp) return [card, <HouseBanner key="house-feed" campaign={camp} lang={lang} />];
+                    }
+                    return [card];
+                  })}
                   {isFreeClient && footballRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -2170,7 +2180,7 @@ function CheckoutModal({
       <div className="auth-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-head">
           <p className="eyebrow">Checkout · USDT TRC20</p>
-          <h3>{PUBLIC_PAID_PLAN.label[lang === "it" ? "it" : "en"]}</h3>
+          <h3>{planLabel(plan, lang)}</h3>
           <span>
             {lang === "it" ? <>Invia esattamente <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong> all&apos;indirizzo qui sotto. Il piano passerà in verifica.</> : <>Send exactly <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong> to the address below. The plan will move to review.</>}
           </span>
@@ -2357,66 +2367,102 @@ function PlansTab({
         <button onClick={onOpenDesk}>{t.plans_cta}</button>
       </section>
 
-      <section className="plans-grid">
+      <section className="plans-grid plans-grid-3">
+        {/* ── FREE ── */}
         <article className="plan-card">
           <div className="plan-card-head">
             <div>
               <p className="eyebrow">Free</p>
-              <h4>Public Preview</h4>
+              <h4>BetRedge Free</h4>
             </div>
-            <span>Profile</span>
+            <span>€0</span>
           </div>
           <p className="plan-description">
             {lang === "it"
-              ? "Per creare il profilo, scegliere lingua e vedere solo preview, storico pubblico e struttura del prodotto."
-              : "Create your profile, choose language and see only previews, public history and product structure."}
+              ? "Una prediction per sport ogni settimana, sbloccata del tutto. Profilo e storico pubblico."
+              : "One prediction per sport every week, fully unlocked. Profile and public history."}
           </p>
           <div className="price-line">
             <strong>€0</strong>
-            <span>{lang === "it" ? "Nessun segnale operativo" : "No operational signals"}</span>
+            <span>{lang === "it" ? "Per sempre" : "Forever"}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{lang === "it" ? "Guardi, non operi" : "Watch, no trading"}</strong>
-            <em>{lang === "it" ? "Prediction live, edge e spiegazioni restano bloccati." : "Live predictions, edge and explanations stay locked."}</em>
+            <strong>{lang === "it" ? "1 per sport / settimana" : "1 per sport / week"}</strong>
+            <em>{lang === "it" ? "La top del modello per calcio e per tennis." : "The model's top pick for football and tennis."}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{lang === "it" ? "Profilo cliente e lingua salvati" : "Client profile and language saved"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Storico pubblico passato" : "Public past history"}</PlanFeature>
-            <PlanFeature locked>{t.plans_base_f1}</PlanFeature>
-            <PlanFeature locked>{lang === "it" ? "Tennis live e football research" : "Tennis live and football research"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "1 top prediction calcio + 1 tennis / settimana" : "1 top football + 1 tennis prediction / week"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Pick, probabilità e spiegazione su quelle" : "Pick, probabilities and explanation on those"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Profilo e lingua salvati · storico pubblico" : "Profile and language saved · public history"}</PlanFeature>
+            <PlanFeature locked>{lang === "it" ? "Resto del board, edge e Deep Analysis" : "Rest of the board, edge and Deep Analysis"}</PlanFeature>
           </ul>
           <button className="plan-action" disabled={!profile || profile.plan === "free"} onClick={onActivateFree}>
             {!profile ? t.crypto_create_first : profile.plan === "free" ? (lang === "it" ? "Free attivo" : "Free active") : (lang === "it" ? "Attiva Free" : "Activate Free")}
           </button>
         </article>
 
+        {/* ── BASE ── */}
         <article className="plan-card">
           <div className="plan-card-head">
             <div>
-              <p className="eyebrow">{lang === "it" ? "Piano unico" : "Single plan"}</p>
-              <h4>Signal Desk Pro</h4>
+              <p className="eyebrow">{lang === "it" ? "Più popolare" : "Most popular"}</p>
+              <h4>{planLabel("base", lang)}</h4>
             </div>
-            <span>49.50 USDT</span>
+            <span>{planPriceCopy("base", lang)}</span>
           </div>
-          <p className="plan-description">{t.plans_base_desc}</p>
+          <p className="plan-description">
+            {lang === "it"
+              ? "Le top 5 prediction per sport ogni settimana, con edge e spiegazioni complete."
+              : "The top 5 predictions per sport every week, with full edge and explanations."}
+          </p>
           <div className="price-line">
             <strong>{planPriceCopy("base", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
-            <strong>{t.plans_base_core}</strong>
-            <em>{t.plans_base_sub}</em>
+            <strong>{lang === "it" ? "5 per sport / settimana" : "5 per sport / week"}</strong>
+            <em>{lang === "it" ? "10 prediction a settimana, le migliori per edge." : "10 predictions a week, the best by edge."}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{t.plans_base_f1}</PlanFeature>
-            <PlanFeature>{t.plans_base_f2}</PlanFeature>
-            <PlanFeature>{t.plans_base_f3}</PlanFeature>
-            <PlanFeature>{t.plans_base_f4}</PlanFeature>
-            <PlanFeature>{t.plans_base_f5}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Tennis live V4 e Football Live V4 research" : "Tennis Live V4 and Football Live V4 research"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Best Bets +EV oppure Top Model Signals quando il mercato è vuoto" : "Best Bets +EV or Top Model Signals when markets are quiet"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Top 5 calcio + 5 tennis / settimana (10 totali)" : "Top 5 football + 5 tennis / week (10 total)"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Pick, probabilità e spiegazione" : "Pick, probabilities and explanation"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Edge %, stake suggerito, closing line value" : "Edge %, suggested stake, closing line value"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Storico completo settlato" : "Full settled history"}</PlanFeature>
+            <PlanFeature locked>{lang === "it" ? "Prediction illimitate e Deep Analysis (→ Pro)" : "Unlimited predictions and Deep Analysis (→ Pro)"}</PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
+        </article>
+
+        {/* ── PRO (premium) ── */}
+        <article className="plan-card is-premium">
+          <div className="plan-card-head">
+            <div>
+              <p className="eyebrow">{lang === "it" ? "Tutto incluso" : "Everything"}</p>
+              <h4>{planLabel("premium", lang)}</h4>
+            </div>
+            <span>{planPriceCopy("premium", lang)}</span>
+          </div>
+          <p className="plan-description">
+            {lang === "it"
+              ? "Accesso completo: tutte le prediction, illimitate, su ogni sport, con la massima profondità."
+              : "Full access: all predictions, unlimited, across every sport, at maximum depth."}
+          </p>
+          <div className="price-line">
+            <strong>{planPriceCopy("premium", lang)}</strong>
+            <span>Crypto only · USDT TRC20</span>
+          </div>
+          <div className="plan-core-line">
+            <strong>{lang === "it" ? "Illimitato" : "Unlimited"}</strong>
+            <em>{lang === "it" ? "Nessun limite settimanale, tutta la piattaforma." : "No weekly cap, the whole platform."}</em>
+          </div>
+          <ul className="plan-feature-list">
+            <PlanFeature>{lang === "it" ? "TUTTE le prediction, illimitate" : "ALL predictions, unlimited"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Deep Analysis: form, xG, infortuni, venue" : "Deep Analysis: form, xG, injuries, venue"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Tennis Live V4 e Football Live V4 research" : "Tennis Live V4 and Football Live V4 research"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Match Builder e Best Bets +EV" : "Match Builder and Best Bets +EV"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Edge, stake e CLV su tutto" : "Edge, stake and CLV on everything"}</PlanFeature>
+          </ul>
+          <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
         </article>
       </section>
 
@@ -6055,7 +6101,7 @@ export default function Dashboard() {
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
-    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
+    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
@@ -6155,7 +6201,7 @@ export default function Dashboard() {
             {clientProfile ? (
               <button className="am-acct" onClick={() => setTab("account")}>
                 {clientProfile.name}
-                <span className="plan">{isClientUnlocked ? "PRO" : clientProfile.plan === "free" ? "FREE" : "SETUP"}</span>
+                <span className="plan">{profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP"}</span>
               </button>
             ) : (
               <>

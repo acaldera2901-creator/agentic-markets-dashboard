@@ -58,9 +58,13 @@ export async function GET(req: Request) {
   // final_score (#021): the settlement agents write the REAL result into notes
   // ({"final_score": "2-1" | "6-4 6-3"}); a final score is a public fact, so it
   // is attached after projection and visible on locked rows too.
+  // History (settlata) non fa parte della vetrina settimanale: è un gate piatto
+  // per piano pagato. rank 0 = sbloccata per base/premium/admin; ∞ = bloccata
+  // per free/anonimo (comportamento invariato rispetto al vecchio flag PotD=false).
+  const paidState = state === "base" || state === "premium" || state === "admin_full";
   const history = rows.map((row) => {
     const projected = projectPrediction(
-      row as unknown as Record<string, unknown>, state, false
+      row as unknown as Record<string, unknown>, state, paidState ? 0 : Infinity
     );
     let finalScore: string | null = null;
     try {

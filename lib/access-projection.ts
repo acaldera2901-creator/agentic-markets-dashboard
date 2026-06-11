@@ -32,24 +32,34 @@ const PREMIUM_ONLY_FIELDS = ["enrichment"] as const;
 
 export type ProjectedPrediction = Record<string, unknown> & { locked: boolean };
 
-// A row is unlocked when the state pays (base/premium/admin) OR the row is the
-// free Pick of the Day (revealed to free + anonymous teaser).
-export function isUnlocked(state: AccessState, isPickOfDay: boolean): boolean {
-  if (state === "base" || state === "premium" || state === "admin_full") return true;
-  if (state === "free" && isPickOfDay) return true;
-  return false; // anonymous, pending_payment, free(non-PotD)
+// ── Vetrina curata settimanale (#PLANS-3TIER-1) ──────────────────────────────
+// Quante prediction SBLOCCATE per ciascuno sport (le top-N per edge della
+// settimana). Modello stateless: nessun conteggio per-utente, tutti i free
+// vedono le stesse top. premium/admin = illimitato.
+export function showcaseAllowance(state: AccessState): number {
+  if (state === "premium" || state === "admin_full") return Infinity;
+  if (state === "base") return 5;   // top 5 per sport
+  if (state === "free") return 1;   // top 1 per sport
+  return 0;                          // anonymous, pending_payment, unpaid
+}
+
+// Una riga è sbloccata se il suo rank (0-based, per edge desc dentro lo sport)
+// rientra nella quota della vetrina del piano.
+export function isUnlocked(state: AccessState, rankInSport: number): boolean {
+  return rankInSport < showcaseAllowance(state);
 }
 
 export function projectPrediction(
   row: Record<string, unknown>,
   state: AccessState,
-  isPickOfDay: boolean
+  rankInSport: number
 ): ProjectedPrediction {
   const out: Record<string, unknown> = {};
   for (const f of PUBLIC_FIELDS) out[f] = row[f];
-  out.pick_of_day = isPickOfDay;
+  // top-1 per sport = "pick della settimana" (badge UI, ex pick-of-day).
+  out.pick_of_day = rankInSport === 0;
 
-  const unlocked = isUnlocked(state, isPickOfDay);
+  const unlocked = isUnlocked(state, rankInSport);
   if (unlocked) {
     for (const f of REVEAL_FIELDS) if (f in row) out[f] = row[f];
     if (state === "base" || state === "premium" || state === "admin_full") {
