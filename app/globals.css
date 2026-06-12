@@ -5371,9 +5371,29 @@ button:disabled {
 .am-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; padding: 0 14px 14px; }
 .am-grid > .card { grid-column: span 4; min-width: 0; }
 .am-grid > .card.tennis { grid-column: span 3; }
-/* House banner inline nel board: non è una .card → di default span 1 (1/12,
-   schiacciato e rompe la riga). Lo facciamo spannare l'intera riga full-width. */
-.am-grid > .house-banner { grid-column: 1 / -1; min-width: 0; }
+/* House banner inline nel board (#HOUSE-PHOTO-1): usiamo TUTTI i formati, non solo
+   bande orizzontali. rectangle/halfpage = tile come una card; billboard/leaderboard
+   = banda full-width. Allineamento: calcio span 4, tennis span 3. */
+.am-grid > .house-banner { min-width: 0; }
+.am-grid > .house-banner.hb-billboard,
+.am-grid > .house-banner.hb-leaderboard { grid-column: 1 / -1; }
+.am-grid > .house-banner.hb-rectangle,
+.am-grid > .house-banner.hb-halfpage { grid-column: span 4; }
+.am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
+.am-grid:has(> .card.tennis) > .house-banner.hb-halfpage { grid-column: span 3; }
+.am-grid > .house-banner.hb-halfpage { grid-row: span 2; }
+@media (max-width: 1080px) {
+  .am-grid > .house-banner.hb-rectangle,
+  .am-grid > .house-banner.hb-halfpage,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-halfpage { grid-column: span 6; }
+}
+@media (max-width: 640px) {
+  .am-grid > .house-banner.hb-rectangle,
+  .am-grid > .house-banner.hb-halfpage,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-halfpage { grid-column: 1 / -1; grid-row: auto; }
+}
 @media (max-width: 1080px) { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 6; } }
 @media (max-width: 640px)  { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 12; } }
 
@@ -5895,6 +5915,33 @@ button:disabled {
 /* Landing: billboard a tutta larghezza tra cards e footer */
 .lp-house{ padding:0 24px 8px; }
 .lp .house-banner.hb-billboard{ margin:8px auto 0; max-width:1180px; width:100%; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   #HOUSE-PHOTO-1 — sfondo foto opzionale + overlay coral (campagne con .image).
+   Additivo: senza .hb-photo i banner restano IDENTICI. Overlay scuro fisso
+   (non legato al tema) così il testo bianco resta leggibile anche in light.
+   ────────────────────────────────────────────────────────────────────────── */
+.house-banner.hb-photo{ color:#fff; }
+.house-banner.hb-photo .hb-photo-bg{
+  position:absolute; inset:0; z-index:0;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+}
+.house-banner.hb-photo .hb-photo-ov{ position:absolute; inset:0; z-index:1; }
+/* contenuto sempre sopra foto+overlay */
+.house-banner.hb-photo > *:not(.hb-photo-bg):not(.hb-photo-ov){ position:relative; z-index:2; }
+/* testo leggibile su foto */
+.house-banner.hb-photo .hb-eyebrow{ color:#fff; opacity:.82; }
+.house-banner.hb-photo .hb-headline{ color:#fff; }
+.house-banner.hb-photo .hb-sub{ color:rgba(255,255,255,.82); }
+.house-banner.hb-photo .hb-ic,
+.house-banner.hb-photo .hb-ic-sm{ color:rgba(255,255,255,.85); }
+.house-banner.hb-photo .hb-x{ color:rgba(255,255,255,.72); }
+.house-banner.hb-photo .hb-x:hover{ background:rgba(255,255,255,.16); color:#fff; }
+.house-banner.hb-photo .hb-glow{ display:none; }
+/* direzioni overlay coral */
+.hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(255,107,107,.42) 100%); }
+.hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(255,107,107,.30) 100%); }
+.hb-photo.hb-ov-d .hb-photo-ov{ background:linear-gradient(130deg, rgba(7,8,15,.94) 32%, rgba(255,107,107,.42) 100%); }
 
 /* ──────────────────────────────────────────────────────────────────────────
    #HOUSE-BANNERS-2 — versioni ricche: ticker + stat chip + half-page + mini-board.

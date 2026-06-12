@@ -117,6 +117,17 @@ function Chips({ data }: { data: BannerData }) {
   );
 }
 
+// Sfondo foto opzionale (#HOUSE-PHOTO-1): immagine decorativa + overlay coral.
+// Puramente presentazionale; il colore testo bianco è gestito da .hb-photo nel CSS.
+function PhotoBg({ src }: { src: string }) {
+  return (
+    <>
+      <div className="hb-photo-bg" aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />
+      <div className="hb-photo-ov" aria-hidden="true" />
+    </>
+  );
+}
+
 // Accetta il set lingue ampio del desk (it/en/es/fr/ru): risolve a it/en
 // (it→it, qualsiasi altro→en) per le copy bilingui delle campagne.
 export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign; lang: string; data?: BannerData | null }) {
@@ -126,6 +137,8 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
   const c = campaign.copy[L];
   const ctaLabel = L === "it" ? campaign.cta.it : campaign.cta.en;
   const rich = hasRichData(data);
+  // Classe foto (#HOUSE-PHOTO-1): vuota se la campagna non ha image → rendering invariato.
+  const photoCls = campaign.image ? ` hb-photo hb-ov-${campaign.image.overlay ?? "l"}` : "";
 
   // Mount-sync da localStorage: se già chiuso in sessione, non mostrare.
   useEffect(() => {
@@ -160,7 +173,8 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
       if (data.edgeAvgPct != null) subBits.push(`${fmtEdge(data.edgeAvgPct)} ${L === "it" ? "edge medio" : "avg edge"}`);
     }
     return (
-      <aside className="house-banner hb-leaderboard" aria-label={c.eyebrow}>
+      <aside className={`house-banner hb-leaderboard${photoCls}`} aria-label={c.eyebrow}>
+        {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
         <svg className="hb-ic" aria-hidden="true"><use href={campaign.glyphs[0]} /></svg>
         <div className="hb-lead-text">
           <span className="hb-eyebrow">{c.eyebrow}</span>
@@ -181,7 +195,8 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
         : null)
       : null;
     return (
-      <aside className="house-banner hb-rectangle" aria-label={c.eyebrow}>
+      <aside className={`house-banner hb-rectangle${photoCls}`} aria-label={c.eyebrow}>
+        {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
         {dismissBtn}
         <span className="hb-eyebrow">{c.eyebrow}</span>
         <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
@@ -205,7 +220,8 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
   // ── Half page (300×600) ───────────────────────────────────────────────
   if (campaign.format === "halfpage") {
     return (
-      <aside className="house-banner hb-halfpage" aria-label={c.eyebrow}>
+      <aside className={`house-banner hb-halfpage${photoCls}`} aria-label={c.eyebrow}>
+        {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
         <div className="hb-glow" aria-hidden="true" />
         {dismissBtn}
         <span className="hb-eyebrow">{c.eyebrow}</span>
@@ -225,7 +241,8 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
 
   // ── Billboard (970×250 / full-width) ──────────────────────────────────
   return (
-    <aside className={`house-banner hb-billboard${rich ? " hb-rich" : ""}`} aria-label={c.eyebrow}>
+    <aside className={`house-banner hb-billboard${rich ? " hb-rich" : ""}${photoCls}`} aria-label={c.eyebrow}>
+      {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
       <div className="hb-glow" aria-hidden="true" />
       <div className="hb-float" aria-hidden="true">
         {campaign.glyphs.map((g, i) => (
