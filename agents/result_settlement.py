@@ -34,6 +34,7 @@ from core.odds_api_client import (
 from core.redis_client import publish
 from core.supabase_client import (
     fetch_unsettled_unified_predictions,
+    record_pick_settlement,
     settle_unified_prediction,
 )
 from core.telegram_client import send as tg_send
@@ -243,19 +244,44 @@ class ResultSettlementAgent(BaseAgent):
                 else:
                     outcome = _outcome(pick, result["home_goals"], result["away_goals"])
 
+                final_score = f"{result['home_goals']}-{result['away_goals']}"
                 if await settle_unified_prediction(
                     str(row["id"]),
                     outcome,
                     # #021: real final score into the served history row.
-                    final_score=f"{result['home_goals']}-{result['away_goals']}",
+                    final_score=final_score,
                 ):
                     settled += 1
                     self.logger.info(
                         f"unified settled: {row.get('home_team')} vs {row.get('away_team')} "
                         f"({row.get('competition')}) | {pick} | "
-                        f"{result['home_goals']}-{result['away_goals']} | {outcome}"
+                        f"{final_score} | {outcome}"
                         + (" | WC" if row.get("world_cup_stage") else "")
                     )
+                    # #TRACKREC-PROOF-1 — append-only settlement for the honest
+                    # ledger. Keyed to the pick_ledger row written at publish time
+                    # by lib/unified-adapter.ts (source_table='match_predictions',
+                    # source_id=external_event_id, model_version='football-v4-xg-model').
+                    # closing_odds is left NULL here (no verified joinable close yet
+                    # — never fabricated); CLV backfill from odds_snapshots is a
+                    # separate joinable step. Fully fail-soft.
+                    ext = row.get("external_event_id")
+                    if ext:
+                        realized = (
+                            "DRAW"
+                            if result["home_goals"] == result["away_goals"]
+                            else "HOME"
+                            if result["home_goals"] > result["away_goals"]
+                            else "AWAY"
+                        )
+                        await record_pick_settlement(
+                            source_table="match_predictions",
+                            source_id=str(ext),
+                            model_version="football-v4-xg-model",
+                            result=outcome,
+                            outcome=realized,
+                            final_score=final_score,
+                        )
             except Exception as e:
                 self.logger.error(f"failed to settle unified row {row.get('id')}: {e}")
 

@@ -324,6 +324,37 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
         d.neutral_venue, d.team_news_summary, d.world_cup_stage, d.source_table, d.source_id,
       ]
     );
+
+    // #TRACKREC-PROOF-1 — append-only honest-track-record ledger.
+    // Record the served pick BEFORE kickoff, once, immutably. The look-ahead
+    // CHECK (captured_at < commence_time) rejects any row timestamped at/after
+    // kickoff, so a re-sync of a row whose match already started is dropped by
+    // Postgres — that is the integrity guarantee, not an error. Fully fail-soft:
+    // a ledger failure must NEVER block serving unified_predictions.
+    try {
+      await dbQuery(
+        `INSERT INTO pick_ledger (
+          source_table, source_id, model_version, sport, league, competition,
+          home_team, away_team, market, pick,
+          p_home, p_draw, p_away, confidence,
+          odds, bookmaker, is_paper, signal_type,
+          commence_time, captured_at
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+          $11,$12,$13,$14,$15,$16,$17,$18,$19,NOW()
+        )
+        ON CONFLICT (source_table, source_id, model_version) DO NOTHING`,
+        [
+          d.source_table, d.source_id, d.model_version, d.sport, d.league, d.competition,
+          d.home_team, d.away_team, d.market, d.pick,
+          row.p_home, row.p_draw, row.p_away, pickProb(row),
+          d.odds, d.bookmaker, d.is_paper, d.signal_type,
+          row.kickoff,
+        ]
+      );
+    } catch (err) {
+      console.warn("pick_ledger write skipped (non-fatal):", err);
+    }
   }
 
   await dbQuery(

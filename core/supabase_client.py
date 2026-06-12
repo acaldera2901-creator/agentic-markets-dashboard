@@ -700,6 +700,61 @@ async def settle_unified_prediction(
         return False
 
 
+async def record_pick_settlement(
+    *,
+    source_table: str,
+    source_id: str,
+    model_version: str,
+    result: str,
+    outcome: str | None = None,
+    final_score: str | None = None,
+    closing_odds: float | None = None,
+) -> bool:
+    """#TRACKREC-PROOF-1 — append-only settlement row for the honest ledger.
+
+    Written once per pick when the event resolves, pointing back at exactly one
+    pick_ledger row via (source_table, source_id, model_version). The table has
+    no UPDATE/DELETE surface, so a correction is a NEW row (latest settled_at
+    wins in the runner), never an in-place edit. ``closing_odds`` is the price on
+    the picked selection at close for CLV; NULL when no verified closing line is
+    joinable (never fabricated). Fully fail-soft: the INSERT is rejected by the
+    pick_settlement→pick_ledger FK when no matching ledger pick exists, which is
+    correct (we only settle picks we actually recorded), and that never raises
+    out of here.
+    """
+    base = _rest_base()
+    if not base:
+        return False
+    payload = {
+        "source_table": source_table,
+        "source_id": source_id,
+        "model_version": model_version,
+        "result": result,
+        "outcome": outcome,
+        "final_score": final_score,
+        "closing_odds": closing_odds,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{base}/pick_settlement", json=payload, headers=_service_headers()
+            )
+            if resp.status_code in (200, 201, 204):
+                return True
+            # FK violation (no ledger row) / other: log and move on, never block.
+            logger.debug(
+                "pick_settlement skipped for %s/%s: %s %s",
+                source_table,
+                source_id,
+                resp.status_code,
+                resp.text[:160],
+            )
+            return False
+    except Exception as exc:
+        logger.debug("pick_settlement write skipped (non-fatal): %s", exc)
+        return False
+
+
 async def settle_unified_tennis(
     match_id: str,
     winner_name: str | None,
