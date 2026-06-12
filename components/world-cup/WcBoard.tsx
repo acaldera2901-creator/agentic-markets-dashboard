@@ -459,7 +459,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
                 ) : (
                   <div className="deep-analysis-locked">
                     <span>⚡</span>
-                    <span>Deep analysis available with Signal Desk Pro (49.50 USDT/month)</span>
+                    <span>Deep analysis available with Signal Desk Pro (49.90 USDT/month)</span>
                   </div>
                 )}
               </div>

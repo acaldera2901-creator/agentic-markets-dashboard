@@ -1328,6 +1328,12 @@ function SportsbookBoard({
   // #HOUSE-BANNERS-2: dati reali per ticker/chip/mini-board del feed e interstitial.
   const boardData = deskBannerData(predictions, tennisMatches);
   const boardAudience = isPremium ? "premium" : (isFreeClient ? "free" : "anon");
+  // #HOUSE-PHOTO-1 dedup: mai 2 banner uguali per pagina. Le campagne desk-feed
+  // sono divise in modo DISGIUNTO tra calcio (indici pari) e tennis (dispari),
+  // ognuna usata al massimo una volta → nessun banner ripetuto nel feed.
+  const feedCampsAll = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+  const footballFeed = feedCampsAll.filter((_, idx) => idx % 2 === 0);
+  const tennisFeed = feedCampsAll.filter((_, idx) => idx % 2 === 1);
 
   const labels = lang === "it" ? {
     allSports: "Tutti",
@@ -1491,8 +1497,8 @@ function SportsbookBoard({
             <div className="free-tier-banner">
               <strong>{lang === "it" ? "Piano Free — 1 prediction per sport" : "Free Plan — 1 prediction per sport"}</strong>
               <span>{lang === "it"
-                ? "Vedi 1 anteprima per sport. Sblocca prediction, edge% e analisi con Signal Desk Pro (49.50 USDT/mese)."
-                : "You see 1 preview per sport. Unlock predictions, edge% and analysis with Signal Desk Pro (49.50 USDT/month)."
+                ? "Vedi 1 anteprima per sport. Sblocca prediction, edge% e analisi con Signal Desk Pro (49.90 USDT/mese)."
+                : "You see 1 preview per sport. Unlock predictions, edge% and analysis with Signal Desk Pro (49.90 USDT/month)."
               }</span>
             </div>
           )}
@@ -1509,18 +1515,17 @@ function SportsbookBoard({
               {footballRows.length ? (
                 <div className="am-grid">
                   {(() => {
-                    // #HOUSE-PHOTO-1: banner foto intercalati ogni 7 card, in rotazione.
-                    // Solo board sbloccato (campagne desk-feed = base/premium): per anon/free
-                    // il pool è vuoto → nessun banner (il feed sarebbe comunque offuscato).
-                    const feedCamps = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+                    // #HOUSE-PHOTO-1: banner foto intercalati ogni ~8 card; ogni campagna
+                    // del pool calcio (footballFeed) usata UNA sola volta → nessun duplicato.
                     const rows = isFreeClient ? footballRows.slice(0, 1) : footballRows;
+                    let placed = 0;
                     return rows.flatMap((p, i) => {
                       const card = (
                         <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                       );
-                      if (feedCamps.length && i % 7 === 6 && i < rows.length - 1) {
-                        const camp = feedCamps[Math.floor(i / 7) % feedCamps.length];
-                        return [card, <HouseBanner key={`house-feed-${i}`} campaign={camp} lang={lang} />];
+                      if (placed < footballFeed.length && i % 8 === 7 && i < rows.length - 1) {
+                        const camp = footballFeed[placed++];
+                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={camp} lang={lang} />];
                       }
                       return [card];
                     });
@@ -1529,7 +1534,7 @@ function SportsbookBoard({
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
                       <div className="fpw-count">+{footballRows.length - 1} {lang === "it" ? "prediction bloccate" : "predictions locked"}</div>
-                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.50 USDT/mese)" : "Unlock all with Signal Desk Pro (49.50 USDT/month)"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)" : "Unlock all with Signal Desk Pro (49.90 USDT/month)"}</div>
                     </div>
                   )}
                 </div>
@@ -1569,16 +1574,17 @@ function SportsbookBoard({
               {tennisRows.length ? (
                 <div className="am-grid">
                   {(() => {
-                    // #HOUSE-PHOTO-1: banner foto intercalati anche tra le card tennis (rotazione, board sbloccato).
-                    const feedCamps = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+                    // #HOUSE-PHOTO-1: banner tennis dal pool DISGIUNTO (tennisFeed), ognuno una
+                    // volta sola → mai duplicati col feed calcio nella stessa pagina.
                     const rows = isFreeClient ? tennisRows.slice(0, 1) : tennisRows;
+                    let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
                         <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
                       );
-                      if (feedCamps.length && i % 7 === 6 && i < rows.length - 1) {
-                        const camp = feedCamps[Math.floor(i / 7) % feedCamps.length];
-                        return [card, <HouseBanner key={`house-tennis-${i}`} campaign={camp} lang={lang} />];
+                      if (placed < tennisFeed.length && i % 8 === 7 && i < rows.length - 1) {
+                        const camp = tennisFeed[placed++];
+                        return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={camp} lang={lang} />];
                       }
                       return [card];
                     });
@@ -1587,7 +1593,7 @@ function SportsbookBoard({
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
                       <div className="fpw-count">+{tennisRows.length - 1} {lang === "it" ? "match bloccati" : "matches locked"}</div>
-                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.50 USDT/mese)" : "Unlock all with Signal Desk Pro (49.50 USDT/month)"}</div>
+                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)" : "Unlock all with Signal Desk Pro (49.90 USDT/month)"}</div>
                     </div>
                   )}
                 </div>
@@ -3389,7 +3395,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         {isPreview ? (
           <div className="nudge">
             <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
-            <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali con Pro (49.50 USDT/mese)." : "Unlock edge%, AI reasoning and signals with Pro (49.50 USDT/month)."}</em>
+            <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali con Pro (49.90 USDT/mese)." : "Unlock edge%, AI reasoning and signals with Pro (49.90 USDT/month)."}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -3534,7 +3540,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi approfondita disponibile con Signal Desk Pro (49.50 USDT/mese)" : "Deep analysis available with Signal Desk Pro (49.50 USDT/month)"}</span>
+          <span>{lang === "it" ? "Analisi approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
         </div>
       )}
         </div>
@@ -3770,7 +3776,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         {isPreview ? (
           <div className="nudge">
             <strong>{lang === "it" ? "Edge Elo e analisi richiedono Signal Desk Pro" : "Elo edge and analysis require Signal Desk Pro"}</strong>
-            <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.50 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.50 USDT/month)."}</em>
+            <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.90 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.90 USDT/month)."}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -3840,7 +3846,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Signal Desk Pro (49.50 USDT/mese)" : "Deep Elo analysis available with Signal Desk Pro (49.50 USDT/month)"}</span>
+          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep Elo analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
         </div>
       )}
         </div>

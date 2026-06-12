@@ -174,7 +174,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       en: { eyebrow: "BetRedge Pro", headline: "Add the automatic", accent: "agents", sub: "Live execution, stake sizing and stop loss. Go Pro." },
     },
     cta: { href: "/app?tab=account", it: "Sali a Pro →", en: "Upgrade to Pro →" },
-    image: { src: "/banners/basket-player.jpg", overlay: "l" },
+    image: { src: "/banners/basket-court.jpg", overlay: "l" },
   },
 
   // ── DESK FEED (rectangle) — solo Pro (foto): per anon/free il feed è offuscato ──
@@ -256,7 +256,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       en: { eyebrow: "Featured · World Cup", headline: "The full bracket, read by the", accent: "model", sub: "Probabilities on every World Cup match, plus community Creator Picks." },
     },
     cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →" },
-    image: { src: "/banners/stadium-night.jpg", overlay: "l" },
+    image: { src: "/banners/football-pitch.jpg", overlay: "l" },
   },
 
   {
@@ -270,7 +270,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       en: { eyebrow: "BetRedge Pro", headline: "From signal to", accent: "execution", sub: "With Pro the agents place for you: stake sizing, stop loss, live portfolio." },
     },
     cta: { href: "/app?tab=account", it: "Sali a Pro →", en: "Upgrade to Pro →" },
-    image: { src: "/banners/football-action.jpg", overlay: "l" },
+    image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
 
   // ── DESK INTERSTITIAL (billboard) — solo Pro (foto): per anon il board è offuscato ──
