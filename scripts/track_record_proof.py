@@ -45,6 +45,7 @@ class LedgerPick:
     p_away: float | None
     confidence: float | None
     odds: float | None
+    is_backfill: bool
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,8 @@ def load_ledger(path: Path) -> dict[tuple[str, str, str], LedgerPick]:
                 p_away=_f(r.get("p_away")),
                 confidence=_f(r.get("confidence")),
                 odds=_f(r.get("odds")),
+                is_backfill=str(r.get("is_backfill", "")).strip().lower()
+                in ("true", "t", "1"),
             )
     return picks
 
@@ -201,16 +204,28 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ledger", required=True, type=Path)
     ap.add_argument("--settlement", required=True, type=Path)
     ap.add_argument("--model-version", default=None, help="filter to one model_version")
+    ap.add_argument(
+        "--cohort",
+        choices=("forward", "backfill", "all"),
+        default="forward",
+        help="forward = look-ahead-proof verified picks (default); backfill = "
+        "historical reconstruction; all = both (NEVER publish mixed as verified)",
+    )
     args = ap.parse_args(argv)
 
     picks = load_ledger(args.ledger)
     settlements = load_settlements(args.settlement)
     if args.model_version:
         picks = {k: v for k, v in picks.items() if v.model_version == args.model_version}
+    if args.cohort == "forward":
+        picks = {k: v for k, v in picks.items() if not v.is_backfill}
+    elif args.cohort == "backfill":
+        picks = {k: v for k, v in picks.items() if v.is_backfill}
 
     m = compute(picks, settlements)
     print("=" * 60)
     print(f"#TRACKREC-PROOF-1 (seed={SEED}, deterministic, read-only)")
+    print(f"cohort: {args.cohort}")
     if args.model_version:
         print(f"model_version: {args.model_version}")
     print("=" * 60)
