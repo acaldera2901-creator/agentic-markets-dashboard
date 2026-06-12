@@ -6431,6 +6431,21 @@ button:disabled {
 }
 .lp-pill-dot { color: var(--am-coral); font-size: 11px; }
 
+/* #LANDING-HERO-IMG: hero a immagine unica (calcio+tennis con nastri energia). */
+.lp-hero-img { display: block; position: relative; min-height: clamp(380px, 56vh, 580px); padding: 0; overflow: hidden; }
+.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+.lp-hero-img::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 40% 64% at 50% 46%, rgba(7,8,15,0.82), rgba(7,8,15,0.22) 58%, transparent 78%); }
+.lp-hero-img .lp-hero-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 2; width: min(92%, 560px); }
+.lp-hero-img .lp-hero-center .lp-wm-big, .lp-hero-img .lp-tagline { color: #fff; }
+.lp-hero-img .lp-side-label { position: absolute; bottom: clamp(16px, 4vw, 46px); z-index: 2; margin: 0; max-width: 30%; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,0.6); }
+.lp-hero-img .lp-side-l { left: clamp(16px, 4vw, 56px); text-align: left; }
+.lp-hero-img .lp-side-r { right: clamp(16px, 4vw, 56px); text-align: right; }
+@media (max-width: 760px) {
+  .lp-hero-img { min-height: 66vw; }
+  .lp-hero-img .lp-side-label { display: none; }
+}
+
 /* ── CTA ── */
 .lp-cta { display: flex; justify-content: center; gap: 16px; padding: 4px 16px 40px; flex-wrap: wrap; }
 .lp-btn {
@@ -6459,6 +6474,15 @@ button:disabled {
   background: linear-gradient(90deg, var(--am-coral), var(--am-cobalt)); opacity: .55;
 }
 .lp-card:hover { transform: translateY(-4px); border-color: var(--am-line-2); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+/* #LANDING-PHOTO: card con sfondo foto + overlay coral/cobalt (logica banner) */
+.lp-card-photo { color: #fff; }
+.lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(.85) brightness(.78); }
+.lp-card-photo .lp-card-ov { position: absolute; inset: 0; z-index: 0; }
+.lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(255,106,94,.42) 100%); }
+.lp-card-photo .lp-card-ov.cobalt { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(59,130,246,.42) 100%); }
+.lp-card-photo > *:not(.lp-card-bg):not(.lp-card-ov) { position: relative; z-index: 1; }
+.lp-card-photo .lp-card-title { color: #fff; }
+.lp-card-photo .lp-card-desc { color: rgba(255,255,255,.82); }
 .lp-card-head { display: flex; align-items: center; gap: 8px; }
 .lp-card-head .am-wm { font-size: 15px; }
 .lp-card-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px 4px; }
