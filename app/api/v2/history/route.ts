@@ -4,6 +4,7 @@ import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { isSurfacedRow } from "@/lib/surfacing-gate";
+import { bySegment, weeklyHit } from "@/lib/track-record-history";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const sport       = searchParams.get("sport");
   const competition = searchParams.get("competition");
+  // Additivi (default invariato se assenti): year filtra per anno di starts_at,
+  // aggregate=segments,weeks aggiunge i riepiloghi. Vedi spec §4ter: il backfill
+  // 2025 dovrà essere marcato a parte per non inquinare la query di default.
+  const year      = searchParams.get("year");
+  const aggregate = (searchParams.get("aggregate") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 
   // Clamp limit to a valid positive integer; NaN/negative/huge → default 100.
   const rawLimit = Number(searchParams.get("limit"));
@@ -48,6 +54,10 @@ export async function GET(req: Request) {
   if (competition && competition !== "all") {
     values.push(`%${competition}%`);
     conditions.push(`competition ILIKE $${values.length}`);
+  }
+  if (year && /^\d{4}$/.test(year)) {
+    values.push(Number(year));
+    conditions.push(`EXTRACT(YEAR FROM starts_at) = $${values.length}`);
   }
 
   const fetched = await dbQuery<HistoryRow>(
@@ -100,6 +110,14 @@ export async function GET(req: Request) {
   const paper    = rows.filter((r) => r.is_paper).length;
   const verified = rows.filter((r) => r.is_verified).length;
 
+  // Aggregati opzionali (solo se richiesti) — calcolati sulle stesse righe surfaced.
+  const extra: Record<string, unknown> = {};
+  const aggRows = rows.map((r) => ({
+    sport: r.sport, competition: r.competition, result: r.result, starts_at: String(r.starts_at),
+  }));
+  if (aggregate.includes("segments")) extra.segments = bySegment(aggRows);
+  if (aggregate.includes("weeks")) extra.weeks = weeklyHit(aggRows);
+
   return NextResponse.json({
     history,
     stats: {
@@ -115,5 +133,6 @@ export async function GET(req: Request) {
           ? `${((won / (won + lost)) * 100).toFixed(1)}%`
           : null,
     },
+    ...extra,
   });
 }
