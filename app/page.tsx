@@ -82,76 +82,6 @@ function BrandMark({ size = 32 }: { size?: number }) {
   );
 }
 
-// Composizione "atleta + scia di energia". Silhouette in SVG + glow radiale +
-// ribbon di luce. accent = "coral" (calcio) | "cobalt" (tennis).
-function AthleteEnergy({ sport }: { sport: "football" | "tennis" }) {
-  const coral = sport === "football";
-  const c1 = coral ? "var(--am-coral)" : "var(--am-cobalt)";
-  const c2 = coral ? "var(--am-coral-2)" : "var(--am-cobalt-2)";
-  const gid = `g-${sport}`;
-  return (
-    <div className={`lp-athlete lp-athlete-${sport}`} aria-hidden="true">
-      <svg viewBox="0 0 320 360" className="lp-athlete-svg" role="presentation">
-        <defs>
-          <radialGradient id={`${gid}-glow`} cx="50%" cy="42%" r="60%">
-            <stop offset="0%" stopColor={c1} stopOpacity="0.55" />
-            <stop offset="45%" stopColor={c2} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={c2} stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id={`${gid}-streak`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={c1} stopOpacity="0" />
-            <stop offset="50%" stopColor={c1} stopOpacity="1" />
-            <stop offset="100%" stopColor={c2} stopOpacity="0.15" />
-          </linearGradient>
-        </defs>
-
-        {/* alone di energia */}
-        <ellipse cx="160" cy="150" rx="150" ry="170" fill={`url(#${gid}-glow)`} />
-
-        {/* scie di luce che avvolgono la figura */}
-        <g className="lp-streaks" fill="none" stroke={`url(#${gid}-streak)`} strokeLinecap="round">
-          <path d="M40 250 C 70 120, 250 120, 280 250" strokeWidth="7" opacity="0.9" />
-          <path d="M55 285 C 95 95, 225 95, 265 285" strokeWidth="3.5" opacity="0.6" />
-          <path d="M30 200 C 120 60, 200 60, 290 200" strokeWidth="2" opacity="0.4" />
-        </g>
-
-        {/* figura atleta — silhouette cinetica (testa + arti spessi, posa dinamica) */}
-        {coral ? (
-          // calciatore in falcata che colpisce il pallone
-          <g className="lp-figure">
-            <g stroke="var(--am-text)" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" fill="none">
-              <path d="M180 118 150 196" />            {/* busto inclinato */}
-              <path d="M168 130 212 140" />            {/* braccio dietro */}
-              <path d="M168 130 148 152 166 170" />    {/* braccio avanti piegato */}
-              <path d="M150 196 176 238 158 290" />    {/* gamba d'appoggio piegata */}
-              <path d="M150 196 106 226 70 252" />     {/* gamba di tiro estesa */}
-            </g>
-            <circle cx="187" cy="92" r="20" fill="var(--am-text)" />
-            <circle cx="158" cy="300" r="15" fill="var(--am-bg)" stroke="var(--am-text)" strokeWidth="5" />
-            <circle cx="158" cy="300" r="5" fill="var(--am-coral)" />
-          </g>
-        ) : (
-          // tennista al servizio: racchetta alzata sopra la testa, affondo
-          <g className="lp-figure">
-            <g stroke="var(--am-text)" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" fill="none">
-              <path d="M160 120 168 210" />            {/* busto */}
-              <path d="M160 132 136 92" />             {/* braccio del lancio in alto */}
-              <path d="M160 132 190 110 214 76" />     {/* braccio racchetta piegato in alto */}
-              <path d="M168 210 192 252 186 302" />    {/* gamba avanti (affondo) */}
-              <path d="M168 210 136 250 114 298" />    {/* gamba dietro */}
-            </g>
-            <circle cx="158" cy="98" r="20" fill="var(--am-text)" />
-            <g stroke="var(--am-text)" strokeWidth="6" fill="none" strokeLinecap="round">
-              <path d="M214 76 228 58" />              {/* manico racchetta */}
-              <ellipse cx="237" cy="46" rx="14" ry="19" transform="rotate(30 237 46)" />
-            </g>
-          </g>
-        )}
-      </svg>
-    </div>
-  );
-}
-
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("it");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -201,13 +131,10 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* ── Hero ───────────────────────────────────────────────── */}
-      <section className="lp-hero">
-        <div className="lp-hero-side lp-left">
-          <AthleteEnergy sport="football" />
-          <p className="lp-side-label">{t.leftLabel}</p>
-        </div>
-
+      {/* ── Hero (#LANDING-HERO-IMG: immagine unica calcio+tennis con nastri energia) ── */}
+      <section className="lp-hero lp-hero-img">
+        <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-bg.jpg)" }} aria-hidden="true" />
+        <p className="lp-side-label lp-side-l">{t.leftLabel}</p>
         <div className="lp-hero-center">
           <div className="lp-hero-logo"><Wordmark big /></div>
           <h1 className="lp-tagline">
@@ -217,11 +144,7 @@ export default function LandingPage() {
           </h1>
           <div className="lp-pill">{t.pill}<span className="lp-pill-dot">▾</span></div>
         </div>
-
-        <div className="lp-hero-side lp-right">
-          <AthleteEnergy sport="tennis" />
-          <p className="lp-side-label lp-side-label-r">{t.rightLabel}</p>
-        </div>
+        <p className="lp-side-label lp-side-label-r lp-side-r">{t.rightLabel}</p>
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────── */}
@@ -230,23 +153,25 @@ export default function LandingPage() {
         <Link href="/app?tab=account" className="lp-btn lp-btn-cobalt">{t.joinNow}</Link>
       </div>
 
-      {/* ── Cards ──────────────────────────────────────────────── */}
+      {/* ── Cards (#LANDING-PHOTO: sfondo foto sport + overlay coral, logica banner) ── */}
       <section className="lp-cards">
         {/* 1 — brand */}
-        <article className="lp-card">
+        <article className="lp-card lp-card-photo">
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/stadium-crowd.jpg)" }} />
+          <div className="lp-card-ov coral" />
           <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
           <div className="lp-card-body lp-card-brand">
-            <svg className="lp-card-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-bolt" /></svg>
             <p className="lp-card-title">{t.cardBrandTitle}</p>
           </div>
           <Link href="/app?tab=account" className="lp-card-btn coral">{t.signNow}</Link>
         </article>
 
         {/* 2 — football odds */}
-        <article className="lp-card">
+        <article className="lp-card lp-card-photo">
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/football-ball.jpg)" }} />
+          <div className="lp-card-ov coral" />
           <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
           <div className="lp-card-body">
-            <div className="lp-card-orb coral"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ball" /></svg></div>
             <p className="lp-card-title">{t.cardFootball}</p>
             <p className="lp-card-desc">{t.cardFootballDesc}</p>
           </div>
@@ -254,10 +179,11 @@ export default function LandingPage() {
         </article>
 
         {/* 3 — live odds & insights */}
-        <article className="lp-card">
+        <article className="lp-card lp-card-photo">
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/basket-court.jpg)" }} />
+          <div className="lp-card-ov cobalt" />
           <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
           <div className="lp-card-body">
-            <div className="lp-card-orb cobalt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-rank" /></svg></div>
             <p className="lp-card-title">{t.cardLive}</p>
             <p className="lp-card-desc">{t.cardLiveDesc}</p>
           </div>
@@ -265,7 +191,9 @@ export default function LandingPage() {
         </article>
 
         {/* 4 — app */}
-        <article className="lp-card lp-card-app">
+        <article className="lp-card lp-card-app lp-card-photo">
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/stadium-night.jpg)" }} />
+          <div className="lp-card-ov coral" />
           <div className="lp-phone">
             <div className="lp-phone-top"><BrandMark size={18} /><Wordmark /></div>
             <div className="lp-phone-rows">
