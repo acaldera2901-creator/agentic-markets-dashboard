@@ -5574,6 +5574,8 @@ function UnifiedBetsTab({
   tennisIsPlaceholder?: boolean;
 }) {
   const lang = useLang();
+  // #HOUSE-PHOTO-3: dati reali per la versione RICCA del banner topbar (ticker top-edge + chip Edge medio).
+  const topbarData = deskBannerData(predictions, tennisMatches);
   const visibleHistory = history
     .filter((h) => h.bet_status && h.bet_status !== "pending")
     .slice(0, 5);
@@ -5596,7 +5598,7 @@ function UnifiedBetsTab({
           outside the gate. Unlock = active plan (profileHasAccess). */}
       {/* #HOUSE-PHOTO-3: al posto del banner partner sportsbook, il banner Creator Picks
           (house, foto) sopra la board — visibile a tutti i pacchetti. */}
-      {(() => { const c = pickCampaign("desk-topbar", "premium"); return c ? <div className="topbar-house"><HouseBanner campaign={c} lang={lang} /></div> : null; })()}
+      {(() => { const c = pickCampaign("desk-topbar", "premium"); return c ? <div className="topbar-house"><HouseBanner campaign={c} lang={lang} data={topbarData} /></div> : null; })()}
       {/* Free (signal-preview) clients pass the whole-board wall so the inner
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
