@@ -19,6 +19,7 @@ export type HouseAudience = "anon" | "free" | "base" | "premium";
 
 /** Dove vive il banner (determina formato e contesto). */
 export type HouseSlot =
+  | "desk-topbar"
   | "desk-top"
   | "desk-feed"
   | "desk-feed-tennis"
@@ -177,20 +178,22 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     image: { src: "/banners/basket-court.jpg", overlay: "l" },
   },
 
-  // ── DESK FEED (rectangle) — solo Pro (foto): per anon/free il feed è offuscato ──
+  // ── DESK TOPBAR (billboard sopra la board, al posto del banner partner) — Creator Picks per tutti ──
   {
-    id: "feed-creators",
-    slot: "desk-feed",
-    format: "halfpage",
-    audiences: ["base", "premium"],
-    glyphs: ["#g-pick", "#g-rank"],
+    id: "topbar-creators",
+    slot: "desk-topbar",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-pick", "#g-rank", "#g-trophy"],
     copy: {
       it: { eyebrow: "Creator Picks", headline: "Segui chi batte il", accent: "mercato", sub: "Schedine dei creator con track record verificato. Paper trading incluso." },
       en: { eyebrow: "Creator Picks", headline: "Follow who beats the", accent: "market", sub: "Creator slips with a verified track record. Paper trading included." },
     },
     cta: { href: "/community", it: "Scopri i creator →", en: "Discover creators →" },
-    image: { src: "/banners/tennis-player.jpg", overlay: "b" },
+    image: { src: "/banners/tennis-player.jpg", overlay: "l" },
   },
+
+  // ── DESK FEED (foto, solo Pro: per anon/free il feed è offuscato) ──
   {
     id: "feed-edge",
     slot: "desk-feed",
