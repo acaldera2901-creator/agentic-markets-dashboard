@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllTodayMatches } from "@/lib/football-data";
+import { SUMMER_LEAGUES, fetchSummerResults } from "@/lib/summer-leagues";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
 import { settlePredictionLog } from "@/lib/prediction-log";
 import { verifyBearer } from "@/lib/admin-auth";
@@ -107,6 +108,29 @@ export async function GET(req: NextRequest) {
     }
   } catch (e) {
     report.errors.push(`fetch_matches:${String(e)}`);
+  }
+
+  // ── A2. Summer leagues (#SUMMER-LEAGUES-1): fd.org does not cover them, so
+  // finished results come from ESPN scoreboards (espn:* match ids) and The
+  // Odds API /scores (oddsapi:* ids) via lib/summer-leagues. Same idempotent
+  // UPDATE + settlement semantics as step A.
+  for (const code of Object.keys(SUMMER_LEAGUES)) {
+    try {
+      const results = await fetchSummerResults(code);
+      for (const m of results) {
+        await dbQuery(
+          `UPDATE match_predictions
+             SET home_score = $1, away_score = $2, match_status = 'FINISHED'
+           WHERE match_id = $3 AND (match_status IS DISTINCT FROM 'FINISHED')`,
+          [m.homeGoals, m.awayGoals, m.id]
+        ).then(() => { report.scores_updated += 1; })
+          .catch((e: unknown) => report.errors.push(`summer_scores:${m.id}:${String(e)}`));
+        await settlePredictionLog(m.id, m.homeGoals, m.awayGoals);
+        finished.set(m.id, { homeGoals: m.homeGoals, awayGoals: m.awayGoals });
+      }
+    } catch (e) {
+      report.errors.push(`summer:${code}:${String(e)}`);
+    }
   }
 
   // ── C. unified_predictions football ───────────────────────────────────────

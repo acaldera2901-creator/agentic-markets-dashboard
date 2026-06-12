@@ -17,6 +17,13 @@ import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
+import {
+  SUMMER_LEAGUES,
+  isSummerLeague,
+  fetchSummerHistory,
+  fetchSummerFixtures,
+  matchModelTeam,
+} from "@/lib/summer-leagues";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -43,6 +50,10 @@ const LEAGUES: Record<string, string> = {
   CL: "Champions League",
   EL: "Europa League",
   WC: "World Cup",
+  // Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
+  // Display names drive the per-league surfacing floor — keep aligned with
+  // lib/surfacing-gate.ts CLUB_FLOOR_OVERRIDES and lib/summer-leagues.ts.
+  ...SUMMER_LEAGUES,
 };
 
 type PredictionRow = {
@@ -273,14 +284,30 @@ interface EnrichmentPayload {
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
   const codes = Object.keys(LEAGUES);
+  // Summer leagues are not on the football-data.org free tier: their history
+  // comes from the shipped lab snapshot and their fixtures from ESPN/Odds API
+  // events (lib/summer-leagues.ts). Everything downstream is shared.
+  const fdCodes = codes.filter((code) => !isSummerLeague(code));
+  const summerCodes = codes.filter(isSummerLeague);
   const stored: string[] = [];
   const season = new Date().getFullYear();
 
-  // ── BATCH 1: historical results (7 calls to football-data.org) ──────────
+  // ── BATCH 1: historical results (fd.org calls — fd leagues only) ─────────
   const t0 = Date.now();
   const histories = await Promise.all(
-    codes.map(async (code) => ({ code, results: await fetchHistory(code) }))
+    fdCodes.map(async (code) => ({ code, results: await fetchHistory(code) }))
   );
+  // Summer-league history: shipped snapshot (no network, no rate limit).
+  const summerHistories = summerCodes.map((code) => ({
+    code,
+    results: fetchSummerHistory(code).map((m) => ({
+      id: "",
+      utcDate: "",
+      status: "FINISHED",
+      minute: null,
+      ...m,
+    })) as Awaited<ReturnType<typeof fetchHistory>>,
+  }));
 
   // Rate limiter: football-data.org free tier = 10 req/min. Used 7 — wait for window reset.
   const elapsed = Date.now() - t0;
@@ -289,11 +316,27 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   // ── BATCH 2: fixtures + odds + Understat xG + API-Football fixture lists ─
   const [fixtureResults, oddsResults, xgResults, apifixResults] =
     await Promise.all([
-      Promise.all(codes.map(async (code) => ({ code, fixtures: await fetchFixtures(code) }))),
-      Promise.all(codes.map(async (code) => ({ code, odds: await fetchOdds(code) }))),
-      Promise.all(codes.map(async (code) => ({ code, xg: await getXGForLeague(code) }))),
       Promise.all(
-        codes.map(async (code) => ({ code, apifix: await fetchApiFixtures(code, season) }))
+        codes.map(async (code) => ({
+          code,
+          fixtures: isSummerLeague(code)
+            ? await fetchSummerFixtures(code)
+            : await fetchFixtures(code),
+        }))
+      ),
+      Promise.all(codes.map(async (code) => ({ code, odds: await fetchOdds(code) }))),
+      Promise.all(
+        codes.map(async (code) => ({
+          code,
+          // Understat has no coverage for the summer leagues — skip the call.
+          xg: isSummerLeague(code) ? ({} as XGMap) : await getXGForLeague(code),
+        }))
+      ),
+      Promise.all(
+        codes.map(async (code) => ({
+          code,
+          apifix: isSummerLeague(code) ? [] : await fetchApiFixtures(code, season),
+        }))
       ),
     ]);
 
@@ -318,7 +361,7 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   for (const r of researchRows) researchMap[r.match_id] = r.summary;
 
   // ── Per-league computation ───────────────────────────────────────────────
-  for (const { code, results } of histories) {
+  for (const { code, results } of [...histories, ...summerHistories]) {
     const training: MatchResult[] = results.map((r) => ({
       homeTeam: r.homeTeam,
       awayTeam: r.awayTeam,
@@ -345,15 +388,49 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
     console.log(`[${code}] model on ${model.matchCount} matches → ${fixtures.length} fixtures${xgBaseline ? " (xG blend on)" : ""}`);
 
     for (const fix of fixtures) {
-      const probs = predict(fix.homeTeam, fix.awayTeam, model, {
-        home: matchTeam(fix.homeTeam, leagueXG),
-        away: matchTeam(fix.awayTeam, leagueXG),
+      // Summer leagues: fixture names come from ESPN/Odds API and can drift
+      // from the snapshot names ("HJK Helsinki" vs "HJK") → resolve against
+      // the model roster; unmatched team = skip, never guess (fail-closed).
+      let homeName = fix.homeTeam;
+      let awayName = fix.awayTeam;
+      if (isSummerLeague(code)) {
+        const roster = Object.keys(model.strengths);
+        const h = matchModelTeam(fix.homeTeam, roster);
+        const a = matchModelTeam(fix.awayTeam, roster);
+        if (!h || !a) {
+          console.log(`[${code}] unmatched team, skipped: ${fix.homeTeam} vs ${fix.awayTeam}`);
+          continue;
+        }
+        homeName = h;
+        awayName = a;
+      }
+      const probs = predict(homeName, awayName, model, {
+        home: matchTeam(homeName, leagueXG),
+        away: matchTeam(awayName, leagueXG),
         league: xgBaseline,
       });
       if (!probs) continue;
 
       const key = `${normName(fix.homeTeam)}|${normName(fix.awayTeam)}`;
-      const odds = oddsMap[code]?.[key];
+      let odds = oddsMap[code]?.[key];
+      if (!odds && isSummerLeague(code)) {
+        // Diacritics/alias drift between the fixtures source and the odds
+        // names → token-level match before giving up.
+        for (const o of Object.values(oddsMap[code] ?? {})) {
+          if (
+            matchModelTeam(o.homeNorm, [fix.homeTeam]) &&
+            matchModelTeam(o.awayNorm, [fix.awayTeam])
+          ) {
+            odds = o;
+            break;
+          }
+        }
+      }
+      // Quality-first (#SUMMER-LEAGUES-1): the lab validated these leagues on
+      // the BLEND (0.3 model + 0.7 market). A summer fixture without real
+      // odds would be served on the snapshot Poisson alone — not what was
+      // validated → not served at all.
+      if (isSummerLeague(code) && !odds) continue;
 
       // ── Market blend (PROPOSAL B) ───────────────────────────────────────────
       // When real 1X2 odds exist, pull the served probabilities toward the
@@ -424,14 +501,14 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       }
 
       // Pi Rating
-      const piH = piRatings[fix.homeTeam];
-      const piA = piRatings[fix.awayTeam];
+      const piH = piRatings[homeName];
+      const piA = piRatings[awayName];
       if (piH) enrichment.pi_home = Math.round(piH.home);
       if (piA) enrichment.pi_away = Math.round(piA.away);
 
       // xG from Understat
-      const xgH = matchTeam(fix.homeTeam, leagueXG);
-      const xgA = matchTeam(fix.awayTeam, leagueXG);
+      const xgH = matchTeam(homeName, leagueXG);
+      const xgA = matchTeam(awayName, leagueXG);
       if (xgH) {
         enrichment.xg_home = xgH.xg_home;
         enrichment.xga_home = xgH.xga_home;
@@ -446,8 +523,8 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       }
 
       // Form from history
-      const formH = teamForms[fix.homeTeam];
-      const formA = teamForms[fix.awayTeam];
+      const formH = teamForms[homeName];
+      const formA = teamForms[awayName];
       if (formH) enrichment.form_home = formH.homeForm;
       if (formA) enrichment.form_away = formA.awayForm;
 
