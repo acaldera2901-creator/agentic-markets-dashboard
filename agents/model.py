@@ -43,6 +43,12 @@ from config.settings import settings
 _LEAGUE_TOTAL_MATCHES: dict[str, int] = {
     "PL": 380, "SA": 380, "PD": 380, "BL1": 306,
     "FL1": 380, "CL": 125, "EL": 96, "ECL": 96,
+    # Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12)
+    "ELI": 240,   # Norway: 16 teams, 30 rounds
+    "ALL": 240,   # Sweden: 16 teams, 30 rounds
+    "VEI": 162,   # Finland: 12 teams, 27 rounds
+    "LOI": 180,   # Ireland: 10 teams, 36 rounds
+    "CSL": 240,   # China: 16 teams, 30 rounds
 }
 
 

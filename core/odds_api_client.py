@@ -57,6 +57,14 @@ SPORT_KEYS = {
     # Provider key must be probed before live use. If The Odds API changes the key,
     # diagnostics will show odds_markets=0 and keep World Cup in monitor_only.
     "WC": "soccer_fifa_world_cup",
+    # Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
+    # All five keys VERIFIED ACTIVE on /v4/sports with the live plan on
+    # 2026-06-12 (mid WC-break: these are exactly the leagues running now).
+    "ELI": "soccer_norway_eliteserien",
+    "ALL": "soccer_sweden_allsvenskan",
+    "VEI": "soccer_finland_veikkausliiga",
+    "LOI": "soccer_league_of_ireland",
+    "CSL": "soccer_china_superleague",
 }
 
 _SUFFIXES = re.compile(r"\b(FC|CF|SC|AC|AS|SV|1\. ?FC|VfB|VfL|TSG|RB|SS|US|SSC|AFC)\b", re.IGNORECASE)

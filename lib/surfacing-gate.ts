@@ -20,6 +20,17 @@ export const SURFACE_FLOOR_FRIENDLY = 61;
 // SURFACE_FLOOR_TENNIS. Applied by the tennis predictions route.
 export const SURFACE_FLOOR_TENNIS = 62;
 
+// Per-league club floor overrides (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12,
+// walk-forward lab am-lab/lab_summer_leagues.py 2017-2026 held-out): Allsvenskan
+// and League of Ireland only clear the ~70% quality bar at 60; the other summer
+// leagues (Eliteserien, Veikkausliiga, China Super League) hold it at the
+// standard 56. Lowercase substring match on the served competition name.
+// Mirror of config/settings.py SURFACE_FLOOR_CLUB_OVERRIDES — keep in sync.
+export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
+  ["allsvenskan", 60],         // SWE — lug-ago 72.6% @60
+  ["league of ireland", 60],   // LOI — lug-ago 70.2% @60
+];
+
 export type SurfaceDecision = {
   isPick: boolean;
   belowFloor: boolean;
@@ -27,14 +38,19 @@ export type SurfaceDecision = {
 
 // Resolve the surfacing floor for a row from its sport + competition. Mirrors
 // core/surfacing_gate.py: tennis → tennis floor; football → friendly floor for
-// international friendlies, otherwise the football floor (WC + competitive club).
+// international friendlies, per-league override where the lab requires a
+// stricter bar, otherwise the football floor (WC + competitive club).
 export function surfaceFloorFor(
   sport: string | null | undefined,
   competition: string | null | undefined
 ): number {
   if ((sport ?? "").toLowerCase() === "tennis") return SURFACE_FLOOR_TENNIS;
-  const isFriendly = (competition ?? "").toLowerCase().includes("friendly");
-  return isFriendly ? SURFACE_FLOOR_FRIENDLY : SURFACE_FLOOR_FOOTBALL;
+  const name = (competition ?? "").toLowerCase();
+  if (name.includes("friendly")) return SURFACE_FLOOR_FRIENDLY;
+  for (const [keyword, floor] of CLUB_FLOOR_OVERRIDES) {
+    if (name.includes(keyword)) return floor;
+  }
+  return SURFACE_FLOOR_FOOTBALL;
 }
 
 // Was this settled row actually surfaced as a directional pick? A row whose

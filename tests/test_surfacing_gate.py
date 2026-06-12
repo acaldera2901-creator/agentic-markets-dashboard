@@ -76,3 +76,42 @@ def test_unknown_sport_defaults_to_football_floor():
     # silently surfacing a low-confidence pick.
     assert surface_decision(sport="basketball", friendly=False, confidence=55) == (False, True)
     assert surface_decision(sport="basketball", friendly=False, confidence=56) == (True, False)
+
+
+# ── #SUMMER-LEAGUES-1 (APPROVE Andrea 2026-06-12): per-league club floors ──────
+
+def test_club_floor_for_summer_league_overrides():
+    from core.surfacing_gate import club_floor_for
+    # Stricter lab floors: only Allsvenskan + League of Ireland move to 60.
+    assert club_floor_for("Allsvenskan") == 60
+    assert club_floor_for("League of Ireland") == 60
+    # The other summer leagues hold the quality bar at the standard 56.
+    assert club_floor_for("Eliteserien") == 56
+    assert club_floor_for("Veikkausliiga") == 56
+    assert club_floor_for("Chinese Super League") == 56
+    # Existing leagues are untouched.
+    assert club_floor_for("Premier League") == 56
+    assert club_floor_for("Serie A") == 56
+    # Fail-soft: unknown/None competition uses the standard club floor.
+    assert club_floor_for(None) == 56
+    assert club_floor_for("") == 56
+
+
+def test_club_floor_for_is_case_insensitive():
+    from core.surfacing_gate import club_floor_for
+    assert club_floor_for("ALLSVENSKAN") == 60
+    assert club_floor_for("league OF ireland Premier Division") == 60
+
+
+def test_summer_league_registries_are_consistent():
+    # The five summer-league codes must exist in every registry the collector
+    # and settlement read, or a league silently gets fixtures without odds
+    # (or vice versa).
+    from core.espn_soccer_client import ESPN_LEAGUE_CODES
+    from core.odds_api_client import SPORT_KEYS
+    from core.football_api_client import LEAGUE_IDS
+    for code in ("ELI", "ALL", "VEI", "LOI", "CSL"):
+        assert code in ESPN_LEAGUE_CODES, f"{code} missing from ESPN_LEAGUE_CODES"
+        assert code in SPORT_KEYS, f"{code} missing from SPORT_KEYS"
+        assert code in LEAGUE_IDS, f"{code} missing from LEAGUE_IDS"
+        assert code in settings.LEAGUES, f"{code} missing from settings.LEAGUES"

@@ -66,6 +66,14 @@ LEAGUE_IDS = {
     # API-FOOTBALL / API-SPORTS uses league id 1 for FIFA World Cup.
     # Keep this in monitor-only until diagnostics confirm 2026 coverage.
     "WC": 1,
+    # Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
+    # Fixtures are ESPN-first (provider chain): these ids only matter for the
+    # API-Football LAST-RESORT fallback, whose key is currently dead (403).
+    "ELI": 103,   # Norway Eliteserien
+    "ALL": 113,   # Sweden Allsvenskan
+    "VEI": 244,   # Finland Veikkausliiga
+    "LOI": 357,   # League of Ireland Premier Division
+    "CSL": 169,   # China Super League
 }
 
 

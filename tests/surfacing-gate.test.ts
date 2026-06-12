@@ -64,4 +64,22 @@ assert.equal(SURFACE_FLOOR_TENNIS, 62);
   assert.equal(isSurfacedRow({ sport: "football", competition: "International Friendly", confidence_score: null }), false);
 }
 
+
+// ── #SUMMER-LEAGUES-1 (APPROVE Andrea 2026-06-12): per-league club floors ────
+{
+  // Stricter lab floors: only Allsvenskan + League of Ireland move to 60.
+  assert.equal(surfaceFloorFor("football", "Allsvenskan"), 60);
+  assert.equal(surfaceFloorFor("football", "League of Ireland"), 60);
+  // Case-insensitive substring match on the served competition name.
+  assert.equal(surfaceFloorFor("football", "ALLSVENSKAN"), 60);
+  // The other summer leagues hold the quality bar at the standard 56.
+  assert.equal(surfaceFloorFor("football", "Eliteserien"), 56);
+  assert.equal(surfaceFloorFor("football", "Veikkausliiga"), 56);
+  assert.equal(surfaceFloorFor("football", "Chinese Super League"), 56);
+  // History/hit-rate guard follows the same per-league floor.
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 59 }), false);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 60 }), true);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Eliteserien", confidence_score: 56 }), true);
+}
+
 console.log("surfacing gate ok");

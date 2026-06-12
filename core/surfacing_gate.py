@@ -16,6 +16,21 @@ from __future__ import annotations
 from config.settings import settings
 
 
+def club_floor_for(competition: str | None) -> int:
+    """Per-league club floor (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
+
+    Lowercase substring match on the served competition display name against
+    settings.SURFACE_FLOOR_CLUB_OVERRIDES; anything not listed uses the standard
+    SURFACE_FLOOR_FOOTBALL. Mirrored in lib/surfacing-gate.ts clubFloorFor —
+    keep the keyword lists in sync.
+    """
+    name = (competition or "").lower()
+    for keyword, floor in settings.SURFACE_FLOOR_CLUB_OVERRIDES.items():
+        if keyword in name:
+            return floor
+    return settings.SURFACE_FLOOR_FOOTBALL
+
+
 def surface_decision(
     *,
     sport: str,

@@ -16,7 +16,7 @@ import {
 import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
-import { surfaceDecision, SURFACE_FLOOR_FOOTBALL } from "@/lib/surfacing-gate";
+import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
@@ -414,9 +414,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       const confidenceScore = Math.round(
         Math.max(probs.pHome, probs.pDraw, probs.pAway) * 100
       );
-      const surface = surfaceDecision(confidenceScore);
+      // Per-league floor (#SUMMER-LEAGUES-1): resolved from the served
+      // competition name so Allsvenskan/League of Ireland get their stricter
+      // lab floor; every current league resolves to the standard 56.
+      const clubFloor = surfaceFloorFor("football", LEAGUES[code]);
+      const surface = surfaceDecision(confidenceScore, clubFloor);
       if (surface.belowFloor) {
-        enrichment.surface = { below_floor: true, floor: SURFACE_FLOOR_FOOTBALL };
+        enrichment.surface = { below_floor: true, floor: clubFloor };
       }
 
       // Pi Rating

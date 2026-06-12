@@ -42,6 +42,16 @@ ESPN_LEAGUE_CODES: dict[str, str] = {
     # International friendlies (national teams) — pre-WC dry-run of the
     # national model. ESPN-only competition: no fdorg/API-Football coverage.
     "FRIENDLY": "fifa.friendly",
+    # Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12):
+    # quality-gated by the walk-forward lab (am-lab/lab_summer_leagues.py),
+    # W1 package ~52 picks/yr @74.6%. Slugs probed OK on 2026-06-12.
+    # NB fin.1 has a thin teams payload on ESPN — fixtures may be sparse; The
+    # Odds API events for soccer_finland_veikkausliiga are the fallback signal.
+    "ELI": "nor.1",   # Norway Eliteserien
+    "ALL": "swe.1",   # Sweden Allsvenskan
+    "VEI": "fin.1",   # Finland Veikkausliiga
+    "LOI": "irl.1",   # League of Ireland Premier Division
+    "CSL": "chn.1",   # China Super League
 }
 
 SQUAD_TTL = 6 * 3600  # squads/injuries change slowly; 6h keeps us at ~200 req/day
