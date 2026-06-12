@@ -12,13 +12,21 @@ export type LedgerRow = {
   confidence_score?: number | null;
   result: string | null;
   starts_at: string | null;
+  locked?: boolean; // proiezione per-tier: true per free/anonimo, false/undefined per Pro
 };
+
+const PREVIEW = 8; // pick visibili prima dell'espansione
 
 // Registro: SOLO pick concluse (won/lost). Una pick entra qui quando la
 // partita finisce — i pending/upcoming sono esclusi.
 export function PickLedger({ rows }: { rows: LedgerRow[] }) {
   const [sport, setSport] = useState<"all" | "football" | "tennis">("all");
+  const [expanded, setExpanded] = useState(false);
   const concluded = filterConcluded(rows).filter((r) => sport === "all" || r.sport === sport);
+  const visible = expanded ? concluded : concluded.slice(0, PREVIEW);
+  // Lock CTA solo per chi NON ha accesso (righe proiettate come locked). Pro → niente lock.
+  const isLocked = concluded.some((r) => r.locked);
+
   return (
     <div>
       <div className="tr-fil">
@@ -31,7 +39,10 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
           <button
             key={s}
             className={`tr-pill btn ${sport === s ? "on" : ""}`}
-            onClick={() => setSport(s)}
+            onClick={() => {
+              setSport(s);
+              setExpanded(false);
+            }}
           >
             {s === "all" ? "Tutti" : s === "football" ? "⚽ Calcio" : "🎾 Tennis"}
           </button>
@@ -39,7 +50,7 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
       </div>
       <div className="tr-card">
         <div className="tr-ledger">
-          {concluded.map((r, i) => (
+          {visible.map((r, i) => (
             <div key={i} className="tr-lrow">
               <span className="d">
                 {r.starts_at
@@ -60,10 +71,17 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
             </div>
           ))}
         </div>
-        <div className="tr-glock">
-          🔒 Registro completo e drill-down per-pick (prob-al-pick, CLV) —{" "}
-          <span className="tr-pill btn">Sblocca con Pro</span>
-        </div>
+        {concluded.length > PREVIEW && (
+          <button className="tr-expand" onClick={() => setExpanded((v) => !v)}>
+            {expanded ? "▴ Comprimi" : `▾ Mostra tutte le ${concluded.length} pick`}
+          </button>
+        )}
+        {isLocked && (
+          <div className="tr-glock">
+            🔒 Registro completo e drill-down per-pick (prob-al-pick, CLV) —{" "}
+            <span className="tr-pill btn">Sblocca con Pro</span>
+          </div>
+        )}
       </div>
     </div>
   );
