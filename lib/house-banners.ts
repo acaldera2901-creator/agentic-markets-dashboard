@@ -12,8 +12,10 @@
 
 export type Lang = "it" | "en";
 
-/** Chi sta guardando, derivato dallo stato profilo esistente. */
-export type HouseAudience = "anon" | "free" | "pro";
+/** Chi sta guardando, segmentato per PACCHETTO (#HOUSE-PHOTO-1):
+ *  anon = senza account · free = account gratis · base = piano Base pagato ·
+ *  premium = piano Pro pagato. Così i banner si differenziano per pacchetto. */
+export type HouseAudience = "anon" | "free" | "base" | "premium";
 
 /** Dove vive il banner (determina formato e contesto). */
 export type HouseSlot =
@@ -111,6 +113,9 @@ export interface HouseCampaign {
   glyphs: string[];
   copy: Record<Lang, HouseCopy>;
   cta: { href: string; it: string; en: string };
+  /** Foto di sfondo opzionale (#HOUSE-PHOTO-1). Se assente → rendering sobrio
+   *  identico a prima. overlay: direzione gradiente coral (l=left, b=bottom, d=diagonal). */
+  image?: { src: string; overlay?: "l" | "b" | "d" };
 }
 
 // ── Campagne ────────────────────────────────────────────────────────────────
@@ -119,106 +124,168 @@ export interface HouseCampaign {
 export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
   // ── DESK TOP (leaderboard) ──────────────────────────────────────────────
   {
+    id: "top-anon",
+    slot: "desk-top",
+    format: "leaderboard",
+    audiences: ["anon"],
+    glyphs: ["#g-ball", "#g-racket"],
+    copy: {
+      it: { eyebrow: "Inizia gratis", headline: "L'edge su ogni", accent: "sport", sub: "Crea un account e prova il modello — calcio, tennis e altro." },
+      en: { eyebrow: "Start free", headline: "The edge on every", accent: "sport", sub: "Create an account and try the model — football, tennis and more." },
+    },
+    cta: { href: "/app?tab=account", it: "Crea account gratis →", en: "Create free account →" },
+    image: { src: "/banners/football-ball.jpg", overlay: "l" },
+  },
+  {
     id: "top-upgrade",
     slot: "desk-top",
     format: "leaderboard",
-    audiences: ["anon", "free"],
+    audiences: ["free"],
     glyphs: ["#g-ball", "#g-racket"],
     copy: {
       it: { eyebrow: "BetRedge Pro", headline: "Sblocca l'edge su ogni", accent: "sport", sub: "Probabilità calibrate · calcio, tennis e altro · storico verificato." },
       en: { eyebrow: "BetRedge Pro", headline: "Unlock the edge on every", accent: "sport", sub: "Calibrated probabilities · football, tennis and more · verified track record." },
     },
     cta: { href: "/app?tab=account", it: "Passa a Pro →", en: "Go Pro →" },
+    image: { src: "/banners/basket-court.jpg", overlay: "l" },
   },
   {
     id: "top-worldcup",
     slot: "desk-top",
     format: "leaderboard",
-    audiences: ["pro"],
+    audiences: ["premium"],
     glyphs: ["#g-trophy"],
     copy: {
       it: { eyebrow: "In evidenza", headline: "World Cup è", accent: "aperta", sub: "Le probabilità del modello su tutto il tabellone, aggiornate live." },
       en: { eyebrow: "Featured", headline: "World Cup is", accent: "live", sub: "Model probabilities across the whole bracket, updated live." },
     },
     cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →" },
+    image: { src: "/banners/stadium-night.jpg", overlay: "l" },
   },
 
-  // ── DESK FEED (rectangle) ───────────────────────────────────────────────
   {
-    id: "feed-upgrade",
-    slot: "desk-feed",
-    format: "rectangle",
-    audiences: ["anon", "free"],
-    glyphs: ["#g-ball", "#g-racket", "#g-court", "#g-trophy"],
+    id: "top-base",
+    slot: "desk-top",
+    format: "leaderboard",
+    audiences: ["base"],
+    glyphs: ["#g-rank", "#g-pick"],
     copy: {
-      it: { eyebrow: "BetRedge Pro", headline: "Tutte le prediction,", accent: "senza blur", sub: "Edge calcolato su ogni match. Storico completo e Creator Picks inclusi." },
-      en: { eyebrow: "BetRedge Pro", headline: "Every prediction,", accent: "unblurred", sub: "Edge computed on every match. Full history and Creator Picks included." },
+      it: { eyebrow: "BetRedge Pro", headline: "Aggiungi gli agenti", accent: "automatici", sub: "Execution live, stake sizing e stop loss. Sali a Pro." },
+      en: { eyebrow: "BetRedge Pro", headline: "Add the automatic", accent: "agents", sub: "Live execution, stake sizing and stop loss. Go Pro." },
     },
-    cta: { href: "/app?tab=account", it: "Sblocca tutto →", en: "Unlock all →" },
+    cta: { href: "/app?tab=account", it: "Sali a Pro →", en: "Upgrade to Pro →" },
+    image: { src: "/banners/basket-player.jpg", overlay: "l" },
   },
+
+  // ── DESK FEED (rectangle) — solo Pro (foto): per anon/free il feed è offuscato ──
   {
     id: "feed-creators",
     slot: "desk-feed",
-    format: "rectangle",
-    audiences: ["pro"],
+    format: "halfpage",
+    audiences: ["base", "premium"],
     glyphs: ["#g-pick", "#g-rank"],
     copy: {
       it: { eyebrow: "Creator Picks", headline: "Segui chi batte il", accent: "mercato", sub: "Schedine dei creator con track record verificato. Paper trading incluso." },
       en: { eyebrow: "Creator Picks", headline: "Follow who beats the", accent: "market", sub: "Creator slips with a verified track record. Paper trading included." },
     },
     cta: { href: "/community", it: "Scopri i creator →", en: "Discover creators →" },
+    image: { src: "/banners/tennis-player.jpg", overlay: "b" },
+  },
+  {
+    id: "feed-edge",
+    slot: "desk-feed",
+    format: "rectangle",
+    audiences: ["base", "premium"],
+    glyphs: ["#g-ball", "#g-racket", "#g-court"],
+    copy: {
+      it: { eyebrow: "BetRedge Pro", headline: "L'edge su ogni", accent: "match", sub: "Probabilità calibrate su calcio, tennis e basket. Prima del mercato." },
+      en: { eyebrow: "BetRedge Pro", headline: "The edge on every", accent: "match", sub: "Calibrated probabilities on football, tennis and basketball. Ahead of the market." },
+    },
+    cta: { href: "/app?tab=account", it: "Esplora le pick →", en: "Explore the picks →" },
+    image: { src: "/banners/basket-player.jpg", overlay: "b" },
+  },
+  {
+    id: "feed-worldcup",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["base", "premium"],
+    glyphs: ["#g-trophy", "#g-ball"],
+    copy: {
+      it: { eyebrow: "In evidenza · World Cup", headline: "World Cup,", accent: "match per match", sub: "Ogni partita del Mondiale letta dal modello, aggiornata live." },
+      en: { eyebrow: "Featured · World Cup", headline: "World Cup,", accent: "match by match", sub: "Every World Cup game read by the model, updated live." },
+    },
+    cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →" },
+    image: { src: "/banners/football-ball.jpg", overlay: "l" },
   },
 
   // ── DESK BOTTOM (billboard) ─────────────────────────────────────────────
   {
+    id: "bottom-anon",
+    slot: "desk-bottom",
+    format: "billboard",
+    audiences: ["anon"],
+    glyphs: ["#g-ball", "#g-racket", "#g-court", "#g-trophy"],
+    copy: {
+      it: { eyebrow: "Calcio · Tennis · Basket · World Cup", headline: "Un modello. Tutti gli sport.", accent: "Gratis.", sub: "Probabilità calibrate con edge. Crea un account e provalo, senza carta." },
+      en: { eyebrow: "Football · Tennis · Basketball · World Cup", headline: "One model. Every sport.", accent: "Free.", sub: "Calibrated probabilities with edge. Create an account and try it, no card." },
+    },
+    cta: { href: "/app?tab=account", it: "Inizia gratis →", en: "Start free →" },
+    image: { src: "/banners/football-pitch.jpg", overlay: "l" },
+  },
+  {
     id: "bottom-upgrade",
     slot: "desk-bottom",
     format: "billboard",
-    audiences: ["anon", "free"],
+    audiences: ["free"],
     glyphs: ["#g-ball", "#g-racket", "#g-court", "#g-trophy"],
     copy: {
       it: { eyebrow: "Calcio · Tennis · Basket · World Cup", headline: "Un modello che trova l'edge su", accent: "ogni sport", sub: "Probabilità calibrate (Dixon-Coles + xG), prima del mercato. Provalo gratis." },
       en: { eyebrow: "Football · Tennis · Basketball · World Cup", headline: "One model that finds the edge on", accent: "every sport", sub: "Calibrated probabilities (Dixon-Coles + xG), ahead of the market. Try it free." },
     },
-    cta: { href: "/app?tab=account", it: "Inizia gratis →", en: "Start free →" },
+    cta: { href: "/app?tab=account", it: "Passa a Pro →", en: "Go Pro →" },
+    image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
   {
     id: "bottom-worldcup",
     slot: "desk-bottom",
     format: "billboard",
-    audiences: ["pro"],
+    audiences: ["premium"],
     glyphs: ["#g-trophy", "#g-ball", "#g-pick"],
     copy: {
       it: { eyebrow: "In evidenza · World Cup", headline: "Il tabellone completo, letto dal", accent: "modello", sub: "Probabilità su ogni match della World Cup, più i Creator Picks della community." },
       en: { eyebrow: "Featured · World Cup", headline: "The full bracket, read by the", accent: "model", sub: "Probabilities on every World Cup match, plus community Creator Picks." },
     },
     cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →" },
+    image: { src: "/banners/stadium-night.jpg", overlay: "l" },
   },
 
-  // ── DESK INTERSTITIAL (billboard, tra sezione calcio e tennis) ──────────
   {
-    id: "interstitial-upgrade",
-    slot: "desk-interstitial",
+    id: "bottom-base",
+    slot: "desk-bottom",
     format: "billboard",
-    audiences: ["anon", "free"],
-    glyphs: ["#g-ball", "#g-racket", "#g-court", "#g-trophy"],
+    audiences: ["base"],
+    glyphs: ["#g-rank", "#g-pick", "#g-trophy"],
     copy: {
-      it: { eyebrow: "BetRedge Pro", headline: "Stai vedendo solo una parte dell'", accent: "edge", sub: "Sblocca tutte le prediction calibrate su calcio, tennis e altro." },
-      en: { eyebrow: "BetRedge Pro", headline: "You're seeing only part of the", accent: "edge", sub: "Unlock every calibrated prediction across football, tennis and more." },
+      it: { eyebrow: "BetRedge Pro", headline: "Dal segnale all'", accent: "execution", sub: "Con Pro gli agenti piazzano per te: stake sizing, stop loss, portfolio live." },
+      en: { eyebrow: "BetRedge Pro", headline: "From signal to", accent: "execution", sub: "With Pro the agents place for you: stake sizing, stop loss, live portfolio." },
     },
-    cta: { href: "/app?tab=account", it: "Passa a Pro →", en: "Go Pro →" },
+    cta: { href: "/app?tab=account", it: "Sali a Pro →", en: "Upgrade to Pro →" },
+    image: { src: "/banners/football-action.jpg", overlay: "l" },
   },
+
+  // ── DESK INTERSTITIAL (billboard) — solo Pro (foto): per anon il board è offuscato ──
   {
     id: "interstitial-creators",
     slot: "desk-interstitial",
     format: "billboard",
-    audiences: ["pro"],
+    audiences: ["base", "premium"],
     glyphs: ["#g-pick", "#g-rank", "#g-trophy"],
     copy: {
       it: { eyebrow: "Creator Picks", headline: "Le schedine che battono il", accent: "mercato", sub: "Segui i creator con track record verificato. Paper trading incluso." },
       en: { eyebrow: "Creator Picks", headline: "The slips that beat the", accent: "market", sub: "Follow creators with a verified track record. Paper trading included." },
     },
     cta: { href: "/community", it: "Scopri i creator →", en: "Discover creators →" },
+    image: { src: "/banners/football-action.jpg", overlay: "d" },
   },
 
   // ── DESK RAIL (half page, sidebar) ──────────────────────────────────────
@@ -238,7 +305,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     id: "rail-worldcup",
     slot: "desk-rail",
     format: "halfpage",
-    audiences: ["pro"],
+    audiences: ["base", "premium"],
     glyphs: ["#g-trophy", "#g-pick", "#g-ball"],
     copy: {
       it: { eyebrow: "In evidenza", headline: "World Cup,", accent: "letta dal modello.", sub: "Probabilità live su tutto il tabellone." },
@@ -264,7 +331,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     id: "feed-tennis-creators",
     slot: "desk-feed-tennis",
     format: "rectangle",
-    audiences: ["pro"],
+    audiences: ["base", "premium"],
     glyphs: ["#g-pick", "#g-racket"],
     copy: {
       it: { eyebrow: "Creator Picks", headline: "Le pick tennis dei", accent: "creator", sub: "Track record verificato, paper trading incluso." },
@@ -278,23 +345,33 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     id: "landing-brand",
     slot: "landing",
     format: "billboard",
-    audiences: ["anon", "free", "pro"],
+    audiences: ["anon", "free", "base", "premium"],
     glyphs: ["#g-ball", "#g-racket", "#g-court", "#g-trophy"],
     copy: {
       it: { eyebrow: "Calcio · Tennis · Basket · World Cup", headline: "Un modello.", accent: "Tutti gli sport.", sub: "Probabilità calibrate con edge su ogni disciplina. Nessuna opinione da bar." },
       en: { eyebrow: "Football · Tennis · Basketball · World Cup", headline: "One model.", accent: "Every sport.", sub: "Calibrated probabilities with an edge across every discipline. No bar-stool takes." },
     },
     cta: { href: "/app?tab=account", it: "Inizia gratis →", en: "Start free →" },
+    image: { src: "/banners/football-pitch.jpg", overlay: "l" },
   },
 ];
 
-/** Deriva l'audience dallo stato profilo del desk. */
-export function audienceFromState(s: { hasProfile: boolean; isPro: boolean }): HouseAudience {
-  if (!s.hasProfile) return "anon";
-  return s.isPro ? "pro" : "free";
+/** Deriva il pacchetto dal piano del profilo client (#HOUSE-PHOTO-1).
+ *  premium/admin → premium · base → base · tutto il resto con profilo → free · nessun profilo → anon. */
+export function audienceFromPlan(plan: string | null | undefined): HouseAudience {
+  if (!plan) return "anon";
+  if (plan === "premium" || plan === "admin_full") return "premium";
+  if (plan === "base") return "base";
+  return "free";
 }
 
 /** Prima campagna valida per (slot, audience), o null se nessuna → slot non mostrato. */
 export function pickCampaign(slot: HouseSlot, audience: HouseAudience): HouseCampaign | null {
   return HOUSE_CAMPAIGNS.find((c) => c.slot === slot && c.audiences.includes(audience)) ?? null;
+}
+
+/** Tutte le campagne valide per (slot, audience), in ordine di priorità (#HOUSE-PHOTO-1).
+ *  Usato per intercalare banner DIVERSI tra le card prediction (rotazione per indice). */
+export function campaignsFor(slot: HouseSlot, audience: HouseAudience): HouseCampaign[] {
+  return HOUSE_CAMPAIGNS.filter((c) => c.slot === slot && c.audiences.includes(audience));
 }

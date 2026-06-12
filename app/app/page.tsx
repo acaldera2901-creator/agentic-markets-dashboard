@@ -15,7 +15,7 @@ import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
-import { pickCampaign, audienceFromState, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
+import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -1327,7 +1327,7 @@ function SportsbookBoard({
   const query = searchTerm.trim().toLowerCase();
   // #HOUSE-BANNERS-2: dati reali per ticker/chip/mini-board del feed e interstitial.
   const boardData = deskBannerData(predictions, tennisMatches);
-  const boardAudience = isPremium ? "pro" : "free";
+  const boardAudience = isPremium ? "premium" : (isFreeClient ? "free" : "anon");
 
   const labels = lang === "it" ? {
     allSports: "Tutti",
@@ -1508,18 +1508,23 @@ function SportsbookBoard({
               </div>
               {footballRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? footballRows.slice(0, 1) : footballRows).flatMap((p, i) => {
-                    const card = (
-                      <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                    );
-                    // #HOUSE-BANNERS-1: 1 house rectangle dopo la 6ª card, solo su
-                    // board pieno (no free preview) e se c'è ancora flusso sotto.
-                    if (i === 5 && !isFreeClient && footballRows.length > 6) {
-                      const camp = pickCampaign("desk-feed", isPremium ? "pro" : "free");
-                      if (camp) return [card, <HouseBanner key="house-feed" campaign={camp} lang={lang} />];
-                    }
-                    return [card];
-                  })}
+                  {(() => {
+                    // #HOUSE-PHOTO-1: banner foto intercalati ogni 7 card, in rotazione.
+                    // Solo board sbloccato (campagne desk-feed = base/premium): per anon/free
+                    // il pool è vuoto → nessun banner (il feed sarebbe comunque offuscato).
+                    const feedCamps = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+                    const rows = isFreeClient ? footballRows.slice(0, 1) : footballRows;
+                    return rows.flatMap((p, i) => {
+                      const card = (
+                        <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                      );
+                      if (feedCamps.length && i % 7 === 6 && i < rows.length - 1) {
+                        const camp = feedCamps[Math.floor(i / 7) % feedCamps.length];
+                        return [card, <HouseBanner key={`house-feed-${i}`} campaign={camp} lang={lang} />];
+                      }
+                      return [card];
+                    });
+                  })()}
                   {isFreeClient && footballRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -1563,9 +1568,21 @@ function SportsbookBoard({
               </div>
               {tennisRows.length ? (
                 <div className="am-grid">
-                  {(isFreeClient ? tennisRows.slice(0, 1) : tennisRows).map((m) => (
-                    <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
-                  ))}
+                  {(() => {
+                    // #HOUSE-PHOTO-1: banner foto intercalati anche tra le card tennis (rotazione, board sbloccato).
+                    const feedCamps = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+                    const rows = isFreeClient ? tennisRows.slice(0, 1) : tennisRows;
+                    return rows.flatMap((m, i) => {
+                      const card = (
+                        <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                      );
+                      if (feedCamps.length && i % 7 === 6 && i < rows.length - 1) {
+                        const camp = feedCamps[Math.floor(i / 7) % feedCamps.length];
+                        return [card, <HouseBanner key={`house-tennis-${i}`} campaign={camp} lang={lang} />];
+                      }
+                      return [card];
+                    });
+                  })()}
                   {isFreeClient && tennisRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
@@ -6171,10 +6188,12 @@ export default function Dashboard() {
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
   }, [fetchData, fetchPredictions, fetchAgents, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
 
+  // Pacchetto utente per i banner house (#HOUSE-PHOTO-1): anon|free|base|premium.
+  const houseTier = audienceFromPlan(clientProfile?.plan);
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
-  const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
+  const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
   // "With edge" KPI — prediction-native: count cards with a model edge ≥ 10 pt
   // (margin of the pick over the 2nd outcome), not just market value bets. A
   // market value bet always has a clear pick, so this is a strict superset and
@@ -6243,7 +6262,7 @@ export default function Dashboard() {
 
       {/* ── Top banner ── (#HOUSE-BANNERS-1: house ad contestuale) */}
       {(() => {
-        const camp = pickCampaign("desk-top", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
+        const camp = pickCampaign("desk-top", houseTier);
         return camp
           ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div>
           : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
@@ -6462,7 +6481,7 @@ export default function Dashboard() {
 
       {/* ── Bottom banner ── (#HOUSE-BANNERS-1: house billboard contestuale) */}
       {(() => {
-        const camp = pickCampaign("desk-bottom", audienceFromState({ hasProfile: hasClientProfile, isPro: isClientUnlocked }));
+        const camp = pickCampaign("desk-bottom", houseTier);
         return camp
           ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div>
           : <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
