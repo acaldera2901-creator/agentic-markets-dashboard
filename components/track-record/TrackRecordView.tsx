@@ -58,6 +58,8 @@ const CSS = `
 .tr-root .tr-tag{justify-self:end;font-family:var(--m);font-size:10px;font-weight:600;padding:4px 10px;border-radius:999px}
 .tr-root .tr-tag.w{color:var(--pos);background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.3)}
 .tr-root .tr-tag.l{color:var(--am-negative);background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.3)}
+.tr-root .tr-expand{width:100%;padding:13px;border:none;border-top:1px solid var(--line);background:none;color:var(--c);font-family:var(--m);font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer}
+.tr-root .tr-expand:hover{background:var(--cd)}
 .tr-root .tr-glock{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px;border-top:1px solid var(--line);color:var(--mut);font-size:13px}
 .tr-root .tr-score{padding:6px 16px}
 .tr-root .tr-score table{width:100%;border-collapse:collapse}
