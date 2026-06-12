@@ -5911,6 +5911,9 @@ button:disabled {
 /* ── Integrazione negli slot predisposti (evita doppia cornice) ── */
 .portal-top-banner .house-banner{ border:0; background:transparent; border-radius:0; width:100%; }
 .portal-bottom-banner .house-banner{ width:100%; max-width:1120px; margin:0 auto; }
+/* #HOUSE-PHOTO-3: Creator Picks sopra la board (al posto del banner partner) — banda full-width, altezza moderata */
+.topbar-house{ margin:18px 0; }
+.topbar-house .house-banner.hb-billboard{ width:100%; max-width:100%; min-height:170px; }
 .portal-bottom-banner:has(.house-banner){ padding-top:18px; padding-bottom:18px; }
 /* Landing: billboard a tutta larghezza tra cards e footer */
 .lp-house{ padding:0 24px 8px; }

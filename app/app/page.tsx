@@ -5594,7 +5594,9 @@ function UnifiedBetsTab({
           projection already strips the picks server-side; this hides the
           matchups too). Leaderboard and the public Old-bets history stay
           outside the gate. Unlock = active plan (profileHasAccess). */}
-      <AdBanner lang={lang} onCta={onViewPartners} tone="sportsbook" />
+      {/* #HOUSE-PHOTO-3: al posto del banner partner sportsbook, il banner Creator Picks
+          (house, foto) sopra la board — visibile a tutti i pacchetti. */}
+      {(() => { const c = pickCampaign("desk-topbar", "premium"); return c ? <div className="topbar-house"><HouseBanner campaign={c} lang={lang} /></div> : null; })()}
       {/* Free (signal-preview) clients pass the whole-board wall so the inner
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
