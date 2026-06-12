@@ -5,13 +5,13 @@ import { filterConcluded } from "@/lib/track-record-history";
 
 export type LedgerRow = {
   sport: string;
-  competition: string;
-  home_team: string;
-  away_team: string;
+  competition: string | null;
+  home_team: string | null;
+  away_team: string | null;
   pick: string | null;
-  confidence_score: number | null;
+  confidence_score?: number | null;
   result: string | null;
-  starts_at: string;
+  starts_at: string | null;
 };
 
 // Registro: SOLO pick concluse (won/lost). Una pick entra qui quando la
@@ -42,10 +42,12 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
           {concluded.map((r, i) => (
             <div key={i} className="tr-lrow">
               <span className="d">
-                {new Date(r.starts_at).toLocaleDateString("it", { day: "2-digit", month: "short" })}
+                {r.starts_at
+                  ? new Date(r.starts_at).toLocaleDateString("it", { day: "2-digit", month: "short" })
+                  : "—"}
               </span>
               <span>
-                {r.home_team}–{r.away_team}
+                {r.home_team ?? "?"}–{r.away_team ?? "?"}
                 {r.pick ? <span className="comp"> · {r.pick}</span> : null}
               </span>
               <span className="comp">{r.competition}</span>
