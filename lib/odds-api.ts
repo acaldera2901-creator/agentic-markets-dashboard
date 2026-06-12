@@ -9,6 +9,14 @@ const SPORT_KEYS: Record<string, string> = {
   CL: "soccer_uefa_champs_league",
   EL: "soccer_uefa_europa_league",
   WC: "soccer_fifa_world_cup", // parity with core/odds_api_client.py (#018)
+  // Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
+  // Keys verified active on /v4/sports 2026-06-12. Parity with
+  // core/odds_api_client.py SPORT_KEYS — keep in sync.
+  ELI: "soccer_norway_eliteserien",
+  ALL: "soccer_sweden_allsvenskan",
+  VEI: "soccer_finland_veikkausliiga",
+  LOI: "soccer_league_of_ireland",
+  CSL: "soccer_china_superleague",
 };
 
 export function normName(name: string): string {

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import Dict, List
 
 
 class Settings(BaseSettings):
@@ -168,6 +168,17 @@ class Settings(BaseSettings):
     # whole percent). Mirrored in lib/surfacing-gate.ts — keep in sync.
     SURFACE_FLOOR_FOOTBALL: int = 56   # WC + competitive club (max-prob >= 56)
     SURFACE_FLOOR_FRIENDLY: int = 61   # international friendlies (heavy rotation)
+    # Per-league club floor overrides (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12,
+    # walk-forward lab am-lab/lab_summer_leagues.py 2017-2026 held-out): Allsvenskan
+    # and League of Ireland only clear the ~70% quality bar at 60, the other summer
+    # leagues hold it at the standard 56. Keyed on the SERVED competition display
+    # name, lowercase substring match — mirrored in lib/surfacing-gate.ts
+    # CLUB_FLOOR_OVERRIDES (keep both lists in sync). Leagues not listed use
+    # SURFACE_FLOOR_FOOTBALL.
+    SURFACE_FLOOR_CLUB_OVERRIDES: Dict[str, int] = {
+        "allsvenskan": 60,         # SWE — lug-ago 72.6% @60
+        "league of ireland": 60,   # LOI — lug-ago 70.2% @60
+    }
     # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
     # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.
     # Walk-forward held-out: floor 60 -> 70.9% hit (keeps 58.8%), 62 -> 72.1% (52%).
@@ -228,7 +239,10 @@ class Settings(BaseSettings):
 
     # WC is included for World Cup diagnostics/monitoring. It must stay gated
     # until fixture, odds, national-team model and settlement readiness pass.
-    LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL", "WC"]
+    # ELI/ALL/VEI/LOI/CSL = summer-calendar leagues (#SUMMER-LEAGUES-1,
+    # APPROVE Andrea 2026-06-12): ESPN fixtures + The Odds API quote attive.
+    LEAGUES: List[str] = ["PL", "SA", "PD", "BL1", "FL1", "CL", "EL", "ECL", "WC",
+                          "ELI", "ALL", "VEI", "LOI", "CSL"]
     DATA_REFRESH_INTERVAL: int = 900
     PREMATCH_REFRESH_INTERVAL: int = 60
 
