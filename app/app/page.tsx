@@ -2744,6 +2744,14 @@ function ClientAuthModal({
     ? emailValid && pwValid
     : name.trim().length > 1 && emailValid && pwValid;
 
+  // Dismissible: Escape closes the modal (backdrop click already does). Matters
+  // now that the modal can surface automatically for anonymous visitors.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
@@ -2809,7 +2817,12 @@ function ClientAuthModal({
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
       <form className="auth-modal" onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => { e.preventDefault(); submit(); }}>
+        onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
+        <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
+          style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
+            color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
+          ×
+        </button>
         <div className="auth-modal-head">
           <p className="eyebrow">{t.auth_eyebrow}</p>
           <h3>{mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
@@ -4444,6 +4457,7 @@ interface Partner {
   type: PartnerType;
   status: PartnerStatus;
   description: string;
+  description_en?: string; // EN override; falls back to `description` when absent
   url: string | null;
   since: string;
   logo_initials: string;
@@ -4472,6 +4486,7 @@ const PARTNERS: Partner[] = [
     type: "Casino & Sportsbook",
     status: "active",
     description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    description_en: "Crypto casino & sportsbook. Bet straight from the picks via \"Place bet\".",
     url: "https://stake.com",
     since: "2026",
     logo_initials: "ST",
@@ -4484,6 +4499,7 @@ const PARTNERS: Partner[] = [
     type: "Casino & Sportsbook",
     status: "active",
     description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    description_en: "Crypto casino & sportsbook. Bet straight from the picks via \"Place bet\".",
     url: "https://roobet.com",
     since: "2026",
     logo_initials: "RB",
@@ -4501,9 +4517,13 @@ const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
 
 function PartnerCard({ p }: { p: Partner }) {
   const t = useT();
+  const lang = useLang();
   const statusColor = PARTNER_STATUS_COLORS[p.status];
   const partnerName = p.id === "partner-01" ? t.partner_primary_name : p.name;
-  const partnerDescription = p.id === "partner-01" ? t.partner_primary_desc : p.description;
+  const partnerDescription =
+    p.id === "partner-01"
+      ? t.partner_primary_desc
+      : lang === "it" ? p.description : (p.description_en ?? p.description);
   const partnerTags = p.id === "partner-01" ? [t.partner_tag_exclusive, "Sport", "Casino", "Live"] : (p.tags ?? []);
   const statusLabel: Record<PartnerStatus, string> = {
     featured:      t.partners_exclusive_badge,
@@ -5754,6 +5774,9 @@ export default function Dashboard() {
   const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
   const [authIntent, setAuthIntent] = useState<ClientAuthIntent>("login");
+  // True once the server-session reconcile has resolved, so we know whether the
+  // visitor is anonymous before deciding to surface the sign-in/register prompt.
+  const [authChecked, setAuthChecked] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
   // HIGH-3: landing from the email activation link. On success the activate
@@ -5901,9 +5924,26 @@ export default function Dashboard() {
           });
         }
       } catch { /* offline: leave local state as-is */ }
+      finally { if (!cancelled) setAuthChecked(true); }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Proactive access prompt: anonymous visitors used to have to hunt for the
+  // "Sign In / Register" buttons in the topbar. Once we've confirmed there is no
+  // session, surface the auth modal automatically — once per browser session
+  // (dismissible), never for logged-in users. Logging in clears `clientProfile`
+  // dependency → cleanup cancels a still-pending prompt.
+  useEffect(() => {
+    if (!authChecked || clientProfile) return;
+    try { if (window.sessionStorage.getItem("am-auth-prompted")) return; } catch { /**/ }
+    const id = window.setTimeout(() => {
+      try { window.sessionStorage.setItem("am-auth-prompted", "1"); } catch { /**/ }
+      setAuthIntent("create");
+      setAuthOpen(true);
+    }, 1200);
+    return () => window.clearTimeout(id);
+  }, [authChecked, clientProfile]);
 
   const saveClientProfile = (profile: ClientProfile) => {
     const normalizedProfile = { ...profile, email: profile.email.trim().toLowerCase() };

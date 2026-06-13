@@ -3,7 +3,6 @@
 import { PickLedger, type LedgerRow } from "./PickLedger";
 import { EdgeCard } from "./EdgeCard";
 import { SegmentTable } from "./SegmentTable";
-import { ConsistencyHeatmap } from "./ConsistencyHeatmap";
 
 // Stili namespaced .tr-* (token reali --am-*), iniettati una volta. Si evita
 // l'import di CSS globale (vincolo App Router) come nel prototipo verificato.
@@ -74,12 +73,6 @@ const CSS = `
 .tr-root .tr-score .cv{font-size:16px;font-weight:600}
 .tr-root .tr-score .cn{font-size:11px;color:var(--mut2)}
 .tr-root .tr-empty{text-align:center;color:var(--mut2);font-family:var(--font-display);font-size:13px;padding:20px}
-.tr-root .tr-ehmd{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:360px}
-.tr-root .tr-ehmd .tr-dow{font-family:var(--m);font-size:9px;color:var(--mut2);text-align:center;padding-bottom:2px}
-.tr-root .tr-ec{aspect-ratio:1;border-radius:2.5px;background:var(--inset)}
-.tr-root .tr-ehmd .tr-ec{border-radius:3.5px}
-.tr-root .tr-ec.fut{opacity:.35}
-.tr-root .tr-eleg{display:flex;align-items:center;gap:5px;margin-top:12px;font-family:var(--m);font-size:10px;color:var(--mut2)}
 .tr-root .tr-foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut2);font-size:11.5px;line-height:1.6}
 @media(max-width:760px){.tr-root .tr-vs,.tr-root .tr-hbot{grid-template-columns:1fr;flex-direction:column}.tr-root .tr-lrow{grid-template-columns:60px 1fr 64px}.tr-root .tr-lrow .comp,.tr-root .tr-lrow .pr{display:none}}
 `;
@@ -108,20 +101,19 @@ export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" 
       </div>
       <EdgeCard lang={lang} />
       <SegmentTable lang={lang} />
-      <ConsistencyHeatmap lang={lang} />
 
       <p className="tr-foot">
         {it ? (
           <>
-            <b>2026</b> = pick reali settlate man mano che le partite finiscono. La heatmap mostra
-            gli ultimi giorni con pick. Dove disponibile, il confronto <b>2025</b> nelle schede di
-            sintesi è una ricostruzione walk-forward separata: i due anni non si sommano mai.
+            <b>2026</b> = pick reali settlate man mano che le partite finiscono. Dove disponibile,
+            il confronto <b>2025</b> nelle schede di sintesi è una ricostruzione walk-forward
+            separata: i due anni non si sommano mai.
           </>
         ) : (
           <>
-            <b>2026</b> = real picks settled as matches finish. The heatmap shows the most recent
-            days with picks. Where available, the <b>2025</b> comparison in the summary cards is a
-            separate walk-forward reconstruction: the two years are never summed.
+            <b>2026</b> = real picks settled as matches finish. Where available, the <b>2025</b>
+            comparison in the summary cards is a separate walk-forward reconstruction: the two
+            years are never summed.
           </>
         )}
       </p>
