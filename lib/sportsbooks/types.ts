@@ -24,6 +24,10 @@ export type Sportsbook = {
   // path opzionali per-sport forniti dall'operatore (route verificate dall'operatore,
   // non fabbricate qui). Es: { football: "sports/soccer" }
   sportPaths?: Partial<Record<BetSport, string>>;
+  // Optional per-country base URL (referral) overrides. Keys are ISO-3166-1
+  // alpha-2 country codes UPPERCASE, plus an optional "default". Falls back to
+  // baseUrl. Populated from SPORTSBOOK_<BOOK>_URLS env JSON.
+  regionalUrls?: Record<string, string>;
   adapter: BookAdapter;
 };
 
