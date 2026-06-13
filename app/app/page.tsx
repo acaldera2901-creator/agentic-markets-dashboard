@@ -6481,7 +6481,7 @@ export default function Dashboard() {
             />
           )}
           {tab === "history" && (
-            <TrackRecordView rows={historyV2} />
+            <TrackRecordView rows={historyV2} lang={uiLanguage === "it" ? "it" : "en"} />
           )}
           {tab === "leaderboard" && (
             <LeaderboardTab
