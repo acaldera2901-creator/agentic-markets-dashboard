@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ options: [] });
   }
   const options: BetLinkOption[] = resolveBooks(country).map((b) => {
-    const { url, prefilled } = buildBetUrl(b, sel);
+    const { url, prefilled } = buildBetUrl(b, sel, country);
     return { id: b.id, name: b.name, logo: b.logo, url, prefilled };
   });
   return NextResponse.json({ options });
