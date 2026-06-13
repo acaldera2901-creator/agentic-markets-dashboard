@@ -105,6 +105,32 @@ def canonical_team_name(name: str | None) -> str:
 _CANONICAL_BY_NORM: dict[str, str] = {_norm(t): t for t in WC2026_TEAMS}
 
 
+# Official 2026 group draw (12 groups, A–L), canonical team -> group letter.
+# Authoritative offline source so group resolution never depends on a feed
+# carrying the group in a parseable round-text field (the api-football WC feed
+# does not) (#WC-REALDATA-1).
+WC2026_GROUPS: dict[str, str] = {
+    "Mexico": "A", "South Africa": "A", "South Korea": "A", "Czech Republic": "A",
+    "Canada": "B", "Bosnia and Herzegovina": "B", "Qatar": "B", "Switzerland": "B",
+    "Brazil": "C", "Morocco": "C", "Haiti": "C", "Scotland": "C",
+    "United States": "D", "Paraguay": "D", "Australia": "D", "Turkey": "D",
+    "Germany": "E", "Curaçao": "E", "Ecuador": "E", "Ivory Coast": "E",
+    "Netherlands": "F", "Japan": "F", "Sweden": "F", "Tunisia": "F",
+    "Belgium": "G", "Egypt": "G", "Iran": "G", "New Zealand": "G",
+    "Spain": "H", "Cape Verde": "H", "Saudi Arabia": "H", "Uruguay": "H",
+    "France": "I", "Senegal": "I", "Iraq": "I", "Norway": "I",
+    "Algeria": "J", "Argentina": "J", "Austria": "J", "Jordan": "J",
+    "Colombia": "K", "DR Congo": "K", "Portugal": "K", "Uzbekistan": "K",
+    "Croatia": "L", "England": "L", "Ghana": "L", "Panama": "L",
+}
+
+
+def group_for_team(name: str | None) -> str | None:
+    """Group letter (A–L) for a national team, canonicalizing the feed name
+    first. None for non-WC teams or unmatched names (fail-soft)."""
+    return WC2026_GROUPS.get(canonical_team_name(name))
+
+
 def _resolve_csv_path(csv_path: str | None) -> Path:
     raw = csv_path or settings.WC_HISTORY_CSV
     p = Path(raw)

@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.world_cup_registry import WORLD_CUP_CODE
+from core.world_cup_history import group_for_team
 
 
 HOST_TEAMS = {
@@ -111,7 +112,10 @@ def _round_text(fixture: dict[str, Any]) -> str:
 
 def infer_stage(fixture: dict[str, Any]) -> tuple[str, str | None, int | None, str | None]:
     text = _round_text(fixture).lower()
-    group_match = re.search(r"group\s+([a-h])", text, re.IGNORECASE)
+    # WC 2026 has 12 groups (A–L), not the legacy 8 (A–H). The [a-h] range
+    # silently dropped groups I–L, leaving group_name=None for a third of the
+    # field (#WC-REALDATA-1).
+    group_match = re.search(r"group\s+([a-l])", text, re.IGNORECASE)
     group_name = group_match.group(1).upper() if group_match else None
 
     matchday = None
@@ -205,6 +209,11 @@ def build_world_cup_context(
     venue_fields: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     stage, group_name, matchday, knockout_round = infer_stage(fixture)
+    # The api-football WC feed does not carry the group letter in the round
+    # text, so infer_stage's parse returns None. Resolve it from the official
+    # draw by team — authoritative and feed-independent (#WC-REALDATA-1).
+    if stage == "group" and not group_name:
+        group_name = group_for_team(team_a) or group_for_team(team_b)
     venue, city = _venue_text(fixture)
     venue_country = infer_venue_country(venue, city)
     neutral_venue, host_team = infer_host_advantage(team_a, team_b, venue_country)
