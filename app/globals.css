@@ -3848,7 +3848,7 @@ button:disabled {
    "edge" restano attaccati (Betᴿedge una parola) e la R si annida sulla giunzione. */
 .am-wm .r {
   display: inline-block; width: 0; font-size: 0.4em; vertical-align: 1.25em;
-  font-weight: 900; margin: 0; transform: translateX(0.1em);
+  font-weight: 900; margin: 0; transform: translateX(0.05em);
 }
 
 .am-topnav { display: flex; align-items: center; gap: 2px; }
@@ -6479,7 +6479,7 @@ button:disabled {
 /* "R" apice (variante B) anche sull'hero grande — stesso annidamento. */
 .lp-wm-big .r {
   display: inline-block; width: 0; font-size: 0.4em; vertical-align: 1.25em;
-  font-weight: 900; margin: 0; transform: translateX(0.1em);
+  font-weight: 900; margin: 0; transform: translateX(0.05em);
 }
 .lp-tagline { margin: 2px 0 0; font-weight: 800; letter-spacing: .12em; font-size: clamp(15px, 2vw, 24px); }
 .lp-tagword { display: inline-block; opacity: 0; transform: translateY(8px); }

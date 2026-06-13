@@ -65,7 +65,7 @@ const COPY = {
 function Wordmark({ big = false }: { big?: boolean }) {
   return (
     <span className={big ? "lp-wm-big" : "am-wm"}>
-      Bet<span className="r">R</span>dge<span className="chev">›</span>
+      Bet<span className="r">R</span>edge<span className="chev">›</span>
     </span>
   );
 }
