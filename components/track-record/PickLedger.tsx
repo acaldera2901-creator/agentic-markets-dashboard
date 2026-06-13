@@ -19,7 +19,8 @@ const PREVIEW = 8; // pick visibili prima dell'espansione
 
 // Registro: SOLO pick concluse (won/lost). Una pick entra qui quando la
 // partita finisce — i pending/upcoming sono esclusi.
-export function PickLedger({ rows }: { rows: LedgerRow[] }) {
+export function PickLedger({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en" }) {
+  const it = lang === "it";
   const [sport, setSport] = useState<"all" | "football" | "tennis">("all");
   const [expanded, setExpanded] = useState(false);
   const concluded = filterConcluded(rows).filter((r) => sport === "all" || r.sport === sport);
@@ -30,7 +31,7 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
   return (
     <div>
       <div className="tr-fil">
-        <span className="tr-pill c">{concluded.length} concluse</span>
+        <span className="tr-pill c">{concluded.length} {it ? "concluse" : "settled"}</span>
         <span className="tr-divider" />
         <span className="tr-eye" style={{ marginRight: 2 }}>
           sport
@@ -44,7 +45,7 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
               setExpanded(false);
             }}
           >
-            {s === "all" ? "Tutti" : s === "football" ? "⚽ Calcio" : "🎾 Tennis"}
+            {s === "all" ? (it ? "Tutti" : "All") : s === "football" ? (it ? "⚽ Calcio" : "⚽ Football") : "🎾 Tennis"}
           </button>
         ))}
       </div>
@@ -54,7 +55,7 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
             <div key={i} className="tr-lrow">
               <span className="d">
                 {r.starts_at
-                  ? new Date(r.starts_at).toLocaleDateString("it", { day: "2-digit", month: "short" })
+                  ? new Date(r.starts_at).toLocaleDateString(it ? "it" : "en", { day: "2-digit", month: "short" })
                   : "—"}
               </span>
               <span>
@@ -73,13 +74,15 @@ export function PickLedger({ rows }: { rows: LedgerRow[] }) {
         </div>
         {concluded.length > PREVIEW && (
           <button className="tr-expand" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? "▴ Comprimi" : `▾ Mostra tutte le ${concluded.length} pick`}
+            {expanded
+              ? (it ? "▴ Comprimi" : "▴ Collapse")
+              : (it ? `▾ Mostra tutte le ${concluded.length} pick` : `▾ Show all ${concluded.length} picks`)}
           </button>
         )}
         {isLocked && (
           <div className="tr-glock">
-            🔒 Registro completo e drill-down per-pick (prob-al-pick, CLV) —{" "}
-            <span className="tr-pill btn">Sblocca con Pro</span>
+            🔒 {it ? "Registro completo e drill-down per-pick (prob-al-pick, CLV)" : "Full log and per-pick drill-down (pick probability, CLV)"} —{" "}
+            <span className="tr-pill btn">{it ? "Sblocca con Pro" : "Unlock with Pro"}</span>
           </div>
         )}
       </div>

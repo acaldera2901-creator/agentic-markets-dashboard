@@ -26,6 +26,13 @@ export type Week = {
   hitRate: number; // 0..1
 };
 
+export type Day = {
+  date: string; // "YYYY-MM-DD" (UTC)
+  decided: number;
+  won: number;
+  hitRate: number; // 0..1
+};
+
 export function filterConcluded<T extends { result: string | null }>(rows: T[]): T[] {
   return rows.filter((r) => r.result === "won" || r.result === "lost");
 }
@@ -69,4 +76,26 @@ export function weeklyHit(rows: TrackRow[]): Week[] {
     m.set(iso, w);
   }
   return [...m.values()].sort((a, b) => a.iso.localeCompare(b.iso));
+}
+
+// Giorno solare UTC ("YYYY-MM-DD"). Vista "periodo live" per la heatmap di
+// costanza: con poche settimane di storico reale il dettaglio giornaliero è
+// leggibile e onesto, dove la griglia a 53 settimane resterebbe quasi vuota.
+function utcDate(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    d.getUTCDate(),
+  ).padStart(2, "0")}`;
+}
+
+export function dailyHit(rows: TrackRow[]): Day[] {
+  const m = new Map<string, Day>();
+  for (const r of filterConcluded(rows)) {
+    const date = utcDate(new Date(r.starts_at));
+    const day = m.get(date) ?? { date, decided: 0, won: 0, hitRate: 0 };
+    day.decided += 1;
+    if (r.result === "won") day.won += 1;
+    day.hitRate = day.won / day.decided;
+    m.set(date, day);
+  }
+  return [...m.values()].sort((a, b) => a.date.localeCompare(b.date));
 }

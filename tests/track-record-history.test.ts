@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bySegment, weeklyHit, filterConcluded } from "../lib/track-record-history";
+import { bySegment, weeklyHit, dailyHit, filterConcluded } from "../lib/track-record-history";
 
 type Row = { sport: string; competition: string; result: string | null; starts_at: string };
 
@@ -27,4 +27,16 @@ test("weeklyHit raggruppa per settimana ISO e ignora i pending", () => {
   const weeks = weeklyHit(rows);
   const total = weeks.reduce((a, w) => a + w.decided, 0);
   assert.equal(total, 3); // 3 decise (08-09 giu stessa settimana ISO)
+});
+
+test("dailyHit raggruppa per giorno UTC, calcola hit-rate e ignora i pending", () => {
+  const days = dailyHit(rows);
+  // 2 giorni distinti con pick concluse: 08 giu (1) e 09 giu (2); il pending del 20 escluso.
+  assert.equal(days.length, 2);
+  const d9 = days.find((d) => d.date === "2026-06-09")!;
+  assert.equal(d9.decided, 2);
+  assert.equal(d9.won, 1);
+  assert.equal(d9.hitRate, 0.5);
+  // ordinati cronologicamente
+  assert.deepEqual(days.map((d) => d.date), ["2026-06-08", "2026-06-09"]);
 });

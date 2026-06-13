@@ -74,42 +74,56 @@ const CSS = `
 .tr-root .tr-score .cv{font-size:16px;font-weight:600}
 .tr-root .tr-score .cn{font-size:11px;color:var(--mut2)}
 .tr-root .tr-empty{text-align:center;color:var(--mut2);font-family:var(--font-display);font-size:13px;padding:20px}
-.tr-root .tr-ehm53{display:grid;grid-template-columns:repeat(53,1fr);gap:2px}
+.tr-root .tr-ehmd{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:360px}
+.tr-root .tr-ehmd .tr-dow{font-family:var(--m);font-size:9px;color:var(--mut2);text-align:center;padding-bottom:2px}
 .tr-root .tr-ec{aspect-ratio:1;border-radius:2.5px;background:var(--inset)}
+.tr-root .tr-ehmd .tr-ec{border-radius:3.5px}
+.tr-root .tr-ec.fut{opacity:.35}
 .tr-root .tr-eleg{display:flex;align-items:center;gap:5px;margin-top:12px;font-family:var(--m);font-size:10px;color:var(--mut2)}
 .tr-root .tr-foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut2);font-size:11.5px;line-height:1.6}
 @media(max-width:760px){.tr-root .tr-vs,.tr-root .tr-hbot{grid-template-columns:1fr;flex-direction:column}.tr-root .tr-lrow{grid-template-columns:60px 1fr 64px}.tr-root .tr-lrow .comp,.tr-root .tr-lrow .pr{display:none}}
 `;
 
-export function TrackRecordView({ rows }: { rows: LedgerRow[] }) {
+export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en" }) {
+  const it = lang === "it";
   return (
     <div className="tr-root">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div style={{ marginBottom: 6 }}>
         <span className="tr-pill">
-          <span className="tr-dot live" /> si aggiorna a ogni match che finisce
+          <span className="tr-dot live" /> {it ? "si aggiorna a ogni match che finisce" : "updates as each match settles"}
         </span>
       </div>
 
       <div className="tr-sh">
         <span className="tr-glyph">🧾</span>
-        <h2>Registro pick</h2>
-        <span className="hint">pick concluse · arrivano qui quando la partita finisce</span>
+        <h2>{it ? "Registro pick" : "Pick log"}</h2>
+        <span className="hint">{it ? "pick concluse · arrivano qui quando la partita finisce" : "settled picks · they land here when the match ends"}</span>
       </div>
-      <PickLedger rows={rows} />
+      <PickLedger rows={rows} lang={lang} />
 
       <div className="tr-sh">
         <span className="tr-glyph">📈</span>
-        <h2>Lo storico in sintesi</h2>
+        <h2>{it ? "Lo storico in sintesi" : "Track record at a glance"}</h2>
       </div>
-      <EdgeCard />
-      <SegmentTable />
-      <ConsistencyHeatmap />
+      <EdgeCard lang={lang} />
+      <SegmentTable lang={lang} />
+      <ConsistencyHeatmap lang={lang} />
 
       <p className="tr-foot">
-        <b>2026</b> = pick reali settlate man mano che le partite finiscono. <b>2025</b> ={" "}
-        ricostruzione walk-forward (clic 2025 in ogni scheda per confrontare). I due anni non si
-        sommano mai.
+        {it ? (
+          <>
+            <b>2026</b> = pick reali settlate man mano che le partite finiscono. La heatmap mostra
+            gli ultimi giorni con pick. Dove disponibile, il confronto <b>2025</b> nelle schede di
+            sintesi è una ricostruzione walk-forward separata: i due anni non si sommano mai.
+          </>
+        ) : (
+          <>
+            <b>2026</b> = real picks settled as matches finish. The heatmap shows the most recent
+            days with picks. Where available, the <b>2025</b> comparison in the summary cards is a
+            separate walk-forward reconstruction: the two years are never summed.
+          </>
+        )}
       </p>
     </div>
   );
