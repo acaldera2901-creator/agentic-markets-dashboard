@@ -2,6 +2,8 @@
 // Used for customer OTP login codes. Fails loud to the caller so the auth route
 // can return a real error instead of silently "sending" nothing.
 
+import { siteUrl } from "@/lib/site-url";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 // Contact / sender identity for account emails. Andrea: le mail di attivazione
@@ -102,9 +104,10 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
     ? `Il tuo Signal Desk Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
     : `Your Signal Desk Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
   const cta = it ? "Apri il desk" : "Open the desk";
+  const url = siteUrl();
   return {
     subject,
-    html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p><a href="https://agentic-markets-roan.vercel.app/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`),
+    html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p><a href="${url}/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`),
     text: body,
   };
 }

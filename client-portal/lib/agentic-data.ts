@@ -36,7 +36,7 @@ export type RealPortfolio = {
   allocation: Array<{ name: string; value: number; color: string }>;
 };
 
-const API_BASE = process.env.AGENTIC_DESK_API_URL || "https://agentic-markets-roan.vercel.app";
+const API_BASE = process.env.AGENTIC_DESK_API_URL || "https://betredge-app.vercel.app";
 const STARTING_BANKROLL = Number(process.env.AGENTIC_STARTING_BANKROLL || 7.2);
 
 function money(value: number) {
