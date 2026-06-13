@@ -16,6 +16,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
 import { TrackRecordView } from "@/components/track-record/TrackRecordView";
+import { Backtest2025Panel } from "@/components/backtest/Backtest2025Panel";
 import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
@@ -6467,7 +6468,10 @@ export default function Dashboard() {
             />
           )}
           {tab === "history" && (
-            <TrackRecordView rows={historyV2} />
+            <>
+              <TrackRecordView rows={historyV2} />
+              <Backtest2025Panel />
+            </>
           )}
           {tab === "leaderboard" && (
             <LeaderboardTab

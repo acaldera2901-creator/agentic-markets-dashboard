@@ -61,3 +61,7 @@ data/transfermarkt/
 credentials/
 data/backups/
 .playwright-cli/
+
+# #BACKTEST-2025-1 raw per-match artifacts (regenerable via scripts/backtest_2025_*; route uses lib/backtest-2025-summary.json)
+data/backtest_2025_football.json
+data/backtest_2025_tennis.json
