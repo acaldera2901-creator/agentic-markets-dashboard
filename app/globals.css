@@ -3844,6 +3844,11 @@ button:disabled {
 .am-wm .r,
 .am-wm .chev { color: var(--am-coral); }
 .am-wm .chev { margin-left: 0.14em; font-weight: 900; }
+/* "R" apice (variante B): piccola, sollevata come esponente, sempre coral. */
+.am-wm .r {
+  display: inline-block; font-size: 0.4em; vertical-align: 1.25em;
+  font-weight: 900; margin: 0 0.03em;
+}
 
 .am-topnav { display: flex; align-items: center; gap: 2px; }
 .am-topnav button {
@@ -6470,6 +6475,11 @@ button:disabled {
 }
 .lp-wm-big .r, .lp-wm-big .chev { color: var(--am-coral); }
 .lp-wm-big .chev { margin-left: 0.05em; }
+/* "R" apice (variante B) anche sull'hero grande. */
+.lp-wm-big .r {
+  display: inline-block; font-size: 0.4em; vertical-align: 1.25em;
+  font-weight: 900; margin: 0 0.03em;
+}
 .lp-tagline { margin: 2px 0 0; font-weight: 800; letter-spacing: .12em; font-size: clamp(15px, 2vw, 24px); }
 .lp-tagword { display: inline-block; opacity: 0; transform: translateY(8px); }
 .lp[data-mounted="1"] .lp-tagword { animation: lp-rise .5s cubic-bezier(.2,.7,.3,1) forwards; }
