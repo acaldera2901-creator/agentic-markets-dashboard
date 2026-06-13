@@ -6476,10 +6476,12 @@ button:disabled {
 }
 .lp-wm-big .r, .lp-wm-big .chev { color: var(--am-coral); }
 .lp-wm-big .chev { margin-left: 0.05em; }
-/* "R" apice (variante B) anche sull'hero grande — stesso annidamento. */
+/* "R" apice (variante B) sull'hero grande. L'hero è in CORSIVO: a parità di
+   translateX la R apparirebbe spostata a sinistra (sopra la "t"); compenso
+   l'inclinazione spingendola a destra così resta sopra la "e" come nella nav. */
 .lp-wm-big .r {
   display: inline-block; width: 0; font-size: 0.4em; vertical-align: 1.25em;
-  font-weight: 900; margin: 0; transform: translateX(0.05em);
+  font-weight: 900; margin: 0; transform: translateX(0.45em);
 }
 .lp-tagline { margin: 2px 0 0; font-weight: 800; letter-spacing: .12em; font-size: clamp(15px, 2vw, 24px); }
 .lp-tagword { display: inline-block; opacity: 0; transform: translateY(8px); }
