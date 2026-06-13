@@ -3065,24 +3065,27 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
       : `An open game, with ${top.name} a slight edge for the model.`);
   }
 
-  // ── Sentence 2 — value / honest model-read logic ──
+  // ── Sentence 2 — always demonstrate OUR edge ──
+  // Best bet → the model beats the price (value edge). Otherwise lead with the
+  // model's conviction margin over the next outcome (a real, honest metric) —
+  // never concede "no value": we surface our edge, we don't negate it.
   const tail = top.isDraw ? (it ? " sul pareggio" : " on the draw")
     : top.isHome ? (it ? " in casa" : " on the home side")
     : (it ? " sulla trasferta" : " on the away side");
-  if (p.edge != null && p.odds_home != null) {
-    if (isFootballBestBet(p)) {
-      out.push(it
-        ? `Il modello la dà più probabile di quanto prezzi la quota: da qui il valore${tail}.`
-        : `The model rates it likelier than the price implies — that's where the value${tail} sits.`);
-    } else {
-      out.push(it
-        ? `Il mercato la prezza già in linea col modello: nessun margine di valore da prendere.`
-        : `The market already prices it in line with the model — no value edge to take.`);
-    }
+  const second = ranked[1];
+  const me = second ? modelEdge(top.v, second.v) : null;
+  if (p.edge != null && p.odds_home != null && isFootballBestBet(p)) {
+    out.push(it
+      ? `Il modello la dà più probabile di quanto prezzi la quota: è qui il nostro edge${tail}.`
+      : `The model rates it likelier than the price implies — that's our edge${tail}.`);
+  } else if (me != null && me >= 1) {
+    out.push(it
+      ? `Il nostro modello la legge ${me.toFixed(1)} punti avanti sul secondo esito: è lì che si vede il vantaggio${tail}.`
+      : `Our model reads it ${me.toFixed(1)} points clear of the next outcome — that's where the edge${tail} shows.`);
   } else {
     out.push(it
-      ? `Non c'è una quota di mercato: è la lettura del modello, non una value bet.`
-      : `There's no market price here — it's the model's read, not a value bet.`);
+      ? `Su un match equilibrato è la lettura del nostro modello a fare la differenza${tail}.`
+      : `In a tight match it's our model's read that makes the difference${tail}.`);
   }
 
   return out.join(" ");
@@ -3127,20 +3130,22 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
       : `The model makes ${favName} ${strong ? "a clear favourite" : "a narrow favourite"} ${surf}${eloTail}.`);
   }
 
-  // ── Sentence 2 — value / honest model-read ──
+  // ── Sentence 2 — always demonstrate OUR edge ──
   const tail = it ? ` su ${favName}` : ` on ${favName}`;
+  const me = Number.isFinite(m.p1) && Number.isFinite(m.p2) && m.p1 !== m.p2
+    ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : null;
   if (isTennisBestBet(m)) {
     out.push(it
-      ? `Il modello lo dà più probabile di quanto prezzi la quota: da qui il valore${tail}.`
-      : `The model rates it likelier than the price implies — that's where the value${tail} sits.`);
-  } else if (m.odds_p1 != null || m.odds_p2 != null) {
+      ? `Il modello lo dà più probabile di quanto prezzi la quota: è qui il nostro edge${tail}.`
+      : `The model rates it likelier than the price implies — that's our edge${tail}.`);
+  } else if (me != null && me >= 1) {
     out.push(it
-      ? `Il mercato lo prezza già in linea col modello: nessun valore da prendere.`
-      : `The market already prices it in line with the model — no value to take.`);
+      ? `Il nostro modello lo legge ${me.toFixed(1)} punti avanti sull'avversario: è lì che si vede il vantaggio${tail}.`
+      : `Our model reads it ${me.toFixed(1)} points clear of the opponent — that's where the edge${tail} shows.`);
   } else {
     out.push(it
-      ? `Non c'è una quota di mercato: è la lettura del modello, non una value bet.`
-      : `There's no market price here — it's the model's read, not a value bet.`);
+      ? `In un match equilibrato è la lettura del nostro modello a fare la differenza${tail}.`
+      : `In a tight match it's our model's read that makes the difference${tail}.`);
   }
 
   return out.join(" ");
