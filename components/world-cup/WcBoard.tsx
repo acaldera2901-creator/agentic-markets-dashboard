@@ -177,7 +177,7 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {(typeof e.lambdas?.home === "number" || typeof e.lambdas?.away === "number") && (
         <div className="da-row">
-          <span className="da-label">λ xG rate</span>
+          <span className="da-label">Goal rate</span>
           <span className="da-value">
             {e.lambdas?.home?.toFixed(2) ?? "–"} vs {e.lambdas?.away?.toFixed(2) ?? "–"}
           </span>

@@ -114,7 +114,7 @@ const BASE_TRANSLATIONS = {
     // Tennis card
     tennis_why_show: "▼ perché", tennis_why_hide: "▲ meno",
     tennis_ai_label: "Analisi AI",
-    tennis_elo_label: "Analisi Elo Surface",
+    tennis_elo_label: "Analisi del modello",
     tennis_ai_loading: "Generazione analisi AI in corso...",
     // Sportsbook board
     board_title: "Best available edges", board_eyebrow: "Market board",
@@ -178,7 +178,7 @@ const BASE_TRANSLATIONS = {
     // Page headers
     page_overview: "Dashboard cliente", page_portfolio: "Client portfolio",
     page_plans: "Client plans", page_bestbets: "Best Bets",
-    page_sports: "Sports predictions", page_tennis: "Tennis · Elo Surface v2", page_bets: "Execution log",
+    page_sports: "Sports predictions", page_tennis: "Tennis · Calibrated model", page_bets: "Execution log",
     page_history: "Storico settled",
     page_partners: "Casino & Partner Network", page_settings: "Account settings",
     page_agents: "Health & safety", page_eyebrow: "Client sportsbook",
@@ -267,11 +267,11 @@ const BASE_TRANSLATIONS = {
     founder_secret: "Codice segreto",
     founder_checking: "Verifica...",
     founder_login: "Accedi come fondatore",
-    tennis_elo_data: "Dati Elo",
+    tennis_elo_data: "Dati modello",
     tennis_pipeline_title: "Tennis Pipeline · 6 Agenti",
     tennis_last_seen: "Ultimo heartbeat",
     tennis_no_heartbeat: "Nessun heartbeat ancora",
-    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2.966 giocatori · settlement loop live",
+    tennis_footer: "Tennis AI v2.0 · modello calibrato · 2.966 giocatori · settlement loop live",
     agent_arch_title: "Architettura ibrida v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
     agent_arch_dashboard_desc: "Modello calibrato · API-Football · Odds. Sempre online, non dipende dagli agenti Python.",
@@ -356,7 +356,7 @@ const BASE_TRANSLATIONS = {
     // Tennis card
     tennis_why_show: "▼ why", tennis_why_hide: "▲ less",
     tennis_ai_label: "AI Analysis",
-    tennis_elo_label: "Elo Surface Analysis",
+    tennis_elo_label: "Model analysis",
     tennis_ai_loading: "Generating AI analysis...",
     // Sportsbook board
     board_title: "Best available edges", board_eyebrow: "Market board",
@@ -420,7 +420,7 @@ const BASE_TRANSLATIONS = {
     // Page headers
     page_overview: "Client dashboard", page_portfolio: "Client portfolio",
     page_plans: "Client plans", page_bestbets: "Best Bets",
-    page_sports: "Sports predictions", page_tennis: "Tennis · Elo Surface v2", page_bets: "Execution log",
+    page_sports: "Sports predictions", page_tennis: "Tennis · Calibrated model", page_bets: "Execution log",
     page_history: "Settled history",
     page_partners: "Casino & Partner Network", page_settings: "Account settings",
     page_agents: "Health & safety", page_eyebrow: "Client sportsbook",
@@ -509,11 +509,11 @@ const BASE_TRANSLATIONS = {
     founder_secret: "Secret code",
     founder_checking: "Checking...",
     founder_login: "Log in as founder",
-    tennis_elo_data: "Elo data",
+    tennis_elo_data: "Model data",
     tennis_pipeline_title: "Tennis Pipeline · 6 Agents",
     tennis_last_seen: "Last seen",
     tennis_no_heartbeat: "No heartbeat yet",
-    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2,966 players · settlement loop live",
+    tennis_footer: "Tennis AI v2.0 · calibrated model · 2,966 players · settlement loop live",
     agent_arch_title: "Hybrid architecture v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
     agent_arch_dashboard_desc: "Calibrated model · API-Football · Odds. Always online, independent from local Python agents.",
@@ -1949,7 +1949,7 @@ function DeskPreview() {
       </div>
       <div className="desk-preview-board">
         <div><span>Football</span><em>Live V4 research</em><strong>Pro</strong></div>
-        <div><span>Tennis</span><em>Elo Surface V4</em><strong>Pro</strong></div>
+        <div><span>Tennis</span><em>Calibrated model</em><strong>Pro</strong></div>
         <div><span>Best Bets</span><em>+EV or model signals</em><strong>Pro</strong></div>
       </div>
       <p>{lang === "it" ? "Preview pubblica: dati sensibili oscurati fino al piano." : "Public preview: sensitive data hidden until plan activation."}</p>
@@ -2555,7 +2555,7 @@ function PlansTab({
           </div>
           <ul className="plan-feature-list">
             <PlanFeature>{lang === "it" ? "TUTTE le prediction, illimitate" : "ALL predictions, unlimited"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Deep Analysis: form, xG, infortuni, venue" : "Deep Analysis: form, xG, injuries, venue"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Deep Analysis: forma, infortuni, venue" : "Deep Analysis: form, injuries, venue"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Tennis Live V4 e Football Live V4 research" : "Tennis Live V4 and Football Live V4 research"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Match Builder e Best Bets +EV" : "Match Builder and Best Bets +EV"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Edge, stake e CLV su tutto" : "Edge, stake and CLV on everything"}</PlanFeature>
@@ -3439,7 +3439,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
           {(e.xg_home != null || e.xg_away != null) && (
             <div className="da-row">
-              <span className="da-label">xG</span>
+              <span className="da-label">{lang === "it" ? "Gol attesi" : "Expected goals"}</span>
               <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
             </div>
           )}
@@ -3797,8 +3797,8 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         {/* expandable analysis body */}
         {isPreview ? (
           <div className="nudge">
-            <strong>{lang === "it" ? "Edge Elo e analisi richiedono Signal Desk Pro" : "Elo edge and analysis require Signal Desk Pro"}</strong>
-            <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.90 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.90 USDT/month)."}</em>
+            <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
+            <em>{lang === "it" ? "Sblocca edge%, analisi del modello e segnali tennis con Pro (49.90 USDT/mese)." : "Unlock edge%, model analysis and tennis signals with Pro (49.90 USDT/month)."}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -3829,15 +3829,15 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         <div className="deep-analysis-panel">
           <div className="da-header">
             <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{lang === "it" ? "Analisi Elo" : "Elo Analysis"}</span>
+            <span className="da-title">{lang === "it" ? "Analisi del modello" : "Model analysis"}</span>
           </div>
           <div className="da-row">
-            <span className="da-label">Elo {surface.label}</span>
+            <span className="da-label">Rating {surface.label}</span>
             <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
           </div>
           {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
             <div className="da-row">
-              <span className="da-label">Elo Overall</span>
+              <span className="da-label">{lang === "it" ? "Rating gen." : "Overall rating"}</span>
               <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
             </div>
           )}
@@ -3849,7 +3849,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           )}
           {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
             <div className="da-row">
-              <span className="da-label">Elo raw prob.</span>
+              <span className="da-label">{lang === "it" ? "Prob. modello" : "Model prob."}</span>
               <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
             </div>
           )}
@@ -3866,7 +3866,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep Elo analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
+          <span>{lang === "it" ? "Analisi approfondita del modello disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep model analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
         </div>
       )}
         </div>
@@ -5484,7 +5484,7 @@ function FeaturedEdge({
     modelEdgePts = Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
     why = buildTennisWhy(m, lang);
     if (m.elo_p1 != null && m.elo_p2 != null) {
-      metrics.push({ dt: it ? `Elo ${surf}` : `Elo ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
+      metrics.push({ dt: it ? `Rating ${surf}` : `Rating ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
     }
     if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
       metrics.push({ dt: it ? "Match superficie" : "Surface matches", dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span> });
@@ -5520,8 +5520,8 @@ function FeaturedEdge({
           <div className="wlab"><span className="tri">▸</span> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
           <p className="line locked-blur" aria-hidden="true">
             {it
-              ? "L'analisi completa — Elo, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
-              : "The full breakdown — Elo, sample, head-to-head and narrative — is reserved for Pro members."}
+              ? "L'analisi completa — rating, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
+              : "The full breakdown — rating, sample, head-to-head and narrative — is reserved for Pro members."}
           </p>
         </div>
       </section>
