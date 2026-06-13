@@ -102,8 +102,12 @@ export async function GET(req: Request) {
      LIMIT 30`
   );
   const slips = rows.map((r) => {
-    const sels: SlipSelection[] =
-      typeof r.selections === "string" ? JSON.parse(r.selections) : (r.selections ?? []);
+    let sels: SlipSelection[] = [];
+    if (typeof r.selections === "string") {
+      try { sels = JSON.parse(r.selections); } catch { sels = []; } // a single corrupted row must not 500 the whole feed
+    } else {
+      sels = r.selections ?? [];
+    }
     return {
       id: r.id,
       creator_code: r.creator_code,

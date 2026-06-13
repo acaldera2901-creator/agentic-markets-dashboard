@@ -217,8 +217,13 @@ async function getCachedXG(league: string): Promise<XGMap> {
     [league]
   );
   if (rows.length) {
-    const age = (Date.now() - new Date(rows[0].cached_at).getTime()) / 3_600_000;
-    if (age < 6) return rows[0].data; // fresh enough
+    const cachedMs = new Date(rows[0].cached_at).getTime();
+    // A malformed cached_at yields NaN → NaN<6 is false → cache treated as
+    // permanently stale (refetch every call). Guard so a valid cache is honored.
+    if (Number.isFinite(cachedMs)) {
+      const age = (Date.now() - cachedMs) / 3_600_000;
+      if (age < 6) return rows[0].data; // fresh enough
+    }
   }
   return {};
 }
