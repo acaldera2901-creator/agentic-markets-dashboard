@@ -52,3 +52,11 @@ assert.ok(buildBetUrl(book, sel, "US").url.startsWith("https://stake.us/"), "US 
 assert.ok(buildBetUrl(book, sel, "FR").url.startsWith("https://stake.com/"), "FR → .com default");
 
 console.log("sportsbooks-regional resolve/build ok");
+
+// Cleanup: don't leak env into other test files sharing the same process.
+delete process.env.SPORTSBOOK_STAKE_URL;
+delete process.env.SPORTSBOOK_STAKE_CODE;
+delete process.env.SPORTSBOOK_STAKE_PATHS;
+delete process.env.SPORTSBOOK_STAKE_URLS;
+delete process.env.SPORTSBOOK_LINKS_ENABLED;
+delete process.env.SPORTSBOOK_GEO_ALLOWLIST;
