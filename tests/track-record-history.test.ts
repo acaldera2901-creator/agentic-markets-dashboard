@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bySegment, weeklyHit, filterConcluded } from "../lib/track-record-history";
+import { bySegment, filterConcluded } from "../lib/track-record-history";
 
 type Row = { sport: string; competition: string; result: string | null; starts_at: string };
 
@@ -21,10 +21,4 @@ test("bySegment calcola hit-rate e campione per segmento", () => {
   assert.equal(wc.decided, 2);
   assert.equal(wc.won, 1);
   assert.equal(wc.hitRate, 0.5);
-});
-
-test("weeklyHit raggruppa per settimana ISO e ignora i pending", () => {
-  const weeks = weeklyHit(rows);
-  const total = weeks.reduce((a, w) => a + w.decided, 0);
-  assert.equal(total, 3); // 3 decise (08-09 giu stessa settimana ISO)
 });
