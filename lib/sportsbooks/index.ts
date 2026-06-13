@@ -27,11 +27,18 @@ export function resolveBooks(country: string | null | undefined): Sportsbook[] {
   return allSportsbooks();
 }
 
-// Costruisce l'URL in uscita; non lancia mai (fallback alla baseUrl affiliata).
-export function buildBetUrl(book: Sportsbook, sel: BetSelection): BuildResult {
+// Pick the book's base URL for a country: regional override → "default" → global baseUrl.
+export function resolveBaseUrl(book: Sportsbook, country: string | null | undefined): string {
+  const cc = country?.trim().toUpperCase();
+  return (cc && book.regionalUrls?.[cc]) || book.regionalUrls?.default || book.baseUrl;
+}
+
+// Costruisce l'URL in uscita; non lancia mai (fallback alla baseUrl risolta).
+export function buildBetUrl(book: Sportsbook, sel: BetSelection, country?: string | null): BuildResult {
+  const effective = { ...book, baseUrl: resolveBaseUrl(book, country) };
   try {
-    return book.adapter(sel, book);
+    return effective.adapter(sel, effective);
   } catch {
-    return { url: book.baseUrl, prefilled: false };
+    return { url: effective.baseUrl, prefilled: false };
   }
 }
