@@ -3009,85 +3009,88 @@ function teamFormCounts(f?: string | WcFormCounts | null): { w: number; d: numbe
   return null;
 }
 
+// Qualitative form word from real W-D-L counts (no raw numbers in the prose).
+function formMoodWord(f: { w: number; d: number; l: number } | null, lang: Lang): string | null {
+  if (!f) return null;
+  const it = lang === "it";
+  const played = f.w + f.d + f.l;
+  if (played === 0) return null;
+  if (f.w >= 3 || (f.w >= 2 && f.l === 0)) return it ? "in un buon momento" : "in good form";
+  if (f.l >= 3 || f.w === 0) return it ? "in un periodo difficile" : "going through a rough patch";
+  return it ? "in forma altalenante" : "in patchy form";
+}
+
+// Story-style "why": 2 short sentences, REAL but conversational. Sentence 1 =
+// the momentum/form story (qualitative, no raw W-D-L), sentence 2 = the value /
+// honest model-read logic. Deliberately does NOT repeat the % or edge numbers
+// already shown in the Market/Model/Edge block.
 function buildFootballWhy(p: Prediction, lang: Lang): string {
   const it = lang === "it";
   const e = p.enrichment ?? {};
   const sides = [
-    { k: "HOME", v: p.p_home, name: p.home_team, draw: false },
-    { k: "DRAW", v: p.p_draw, name: it ? "il pareggio" : "the draw", draw: true },
-    { k: "AWAY", v: p.p_away, name: p.away_team, draw: false },
+    { v: p.p_home, name: p.home_team, isHome: true, isDraw: false },
+    { v: p.p_draw, name: it ? "il pareggio" : "the draw", isHome: false, isDraw: true },
+    { v: p.p_away, name: p.away_team, isHome: false, isDraw: false },
   ].filter((s) => Number.isFinite(s.v));
+  if (!sides.length) return it ? "Lettura del modello in arrivo." : "Model read incoming.";
+
+  const ranked = sides.slice().sort((a, b) => b.v - a.v);
+  const top = ranked[0];
+  const tp = Math.round(top.v * 100);
   const out: string[] = [];
 
-  if (sides.length) {
-    const top = sides.slice().sort((a, b) => b.v - a.v)[0];
-    const tp = Math.round(top.v * 100);
-    if (tp < 45) {
-      out.push(it
-        ? `Partita equilibrata: nessun favorito netto, ${top.name} avanti solo di poco (${tp}%).`
-        : `A tight match with no clear favourite — ${top.name} edges it at just ${tp}%.`);
-    } else if (top.draw) {
-      out.push(it
-        ? `Il modello vede il pareggio come l'esito più probabile, al ${tp}%.`
-        : `The model makes the draw the likeliest result, at ${tp}%.`);
-    } else if (tp >= 65) {
-      out.push(it
-        ? `Il modello dà ${top.name} nettamente in vantaggio, al ${tp}%.`
-        : `The model makes ${top.name} clear favourites, at ${tp}%.`);
-    } else {
-      out.push(it
-        ? `Il modello dà ${top.name} in vantaggio al ${tp}%, ma resta una partita aperta.`
-        : `The model favours ${top.name} at ${tp}%, but it stays an open game.`);
-    }
-  }
-
-  const fh = teamFormCounts(e.form_home);
-  const fa = teamFormCounts(e.form_away);
-  if (fh && fa) {
-    const fmt = (f: { w: number; d: number; l: number }) =>
-      it ? `${f.w}V-${f.d}P-${f.l}S` : `${f.w}W-${f.d}D-${f.l}L`;
+  // ── Sentence 1 — form / momentum story ──
+  const homeW = formMoodWord(teamFormCounts(e.form_home), lang);
+  const awayW = formMoodWord(teamFormCounts(e.form_away), lang);
+  if (!top.isDraw && homeW && awayW) {
+    const pickIsHome = top.isHome;
+    const pickTeam = pickIsHome ? p.home_team : p.away_team;
+    const otherTeam = pickIsHome ? p.away_team : p.home_team;
+    const pickW = pickIsHome ? homeW : awayW;
+    const otherW = pickIsHome ? awayW : homeW;
     out.push(it
-      ? `Forma recente: ${p.home_team} ${fmt(fh)}, ${p.away_team} ${fmt(fa)}.`
-      : `Recent form: ${p.home_team} ${fmt(fh)}, ${p.away_team} ${fmt(fa)}.`);
+      ? `${pickTeam} arriva ${pickW}${pickIsHome ? "" : " e in trasferta tiene bene"}, mentre ${otherTeam} è ${otherW}.`
+      : `${pickTeam} comes in ${pickW}${pickIsHome ? "" : " and travels well"}, while ${otherTeam} is ${otherW}.`);
+  } else if (top.isDraw) {
+    out.push(it
+      ? `Le due squadre si equivalgono e il modello vede l'equilibrio reggere fino in fondo.`
+      : `The two sides are evenly matched and the model sees the balance holding to the end.`);
+  } else if (tp >= 65) {
+    out.push(it
+      ? `${top.name} parte nettamente favorito secondo il modello.`
+      : `${top.name} starts as a clear favourite for the model.`);
+  } else {
+    out.push(it
+      ? `Partita aperta, con ${top.name} leggermente avanti per il modello.`
+      : `An open game, with ${top.name} a slight edge for the model.`);
   }
 
+  // ── Sentence 2 — value / honest model-read logic ──
+  const tail = top.isDraw ? (it ? " sul pareggio" : " on the draw")
+    : top.isHome ? (it ? " in casa" : " on the home side")
+    : (it ? " sulla trasferta" : " on the away side");
   if (p.edge != null && p.odds_home != null) {
     if (isFootballBestBet(p)) {
       out.push(it
-        ? `C'è valore: il modello batte la quota di mercato di +${(p.edge * 100).toFixed(1)}%.`
-        : `There's value here: the model beats the market price by +${(p.edge * 100).toFixed(1)}%.`);
+        ? `Il modello la dà più probabile di quanto prezzi la quota: da qui il valore${tail}.`
+        : `The model rates it likelier than the price implies — that's where the value${tail} sits.`);
     } else {
       out.push(it
-        ? `Il mercato prezza già correttamente questo incontro: nessun margine di valore da prendere.`
-        : `The market is already pricing this fairly — no value edge to take.`);
+        ? `Il mercato la prezza già in linea col modello: nessun margine di valore da prendere.`
+        : `The market already prices it in line with the model — no value edge to take.`);
     }
   } else {
-    // No market price → lead with the model edge (margin over the 2nd outcome)
-    // instead of negating an edge. Stay honest that there's no market quote.
-    const ranked = sides.slice().sort((a, b) => b.v - a.v);
-    if (ranked.length >= 2 && ranked[0].v !== ranked[1].v) {
-      const me = modelEdge(ranked[0].v, ranked[1].v);
-      out.push(it
-        ? `Il modello dà ${ranked[0].name} avanti di ${me.toFixed(1)} punti sul secondo esito. Non c'è quota di mercato qui: è la lettura del modello, non una value bet.`
-        : `The model puts ${ranked[0].name} ${me.toFixed(1)} points ahead of the second outcome. There's no market price here — it's the model's read, not a value bet.`);
-    } else {
-      out.push(it
-        ? `Non c'è quota di mercato per questo incontro: è la lettura del modello, non una value bet.`
-        : `There's no live market price for this match — it's the model's read, not a value bet.`);
-    }
-  }
-
-  const mH = e.matches?.home, mA = e.matches?.away;
-  if (mH != null && mA != null) {
-    const low = mH < 10 || mA < 10;
     out.push(it
-      ? `Stima basata su ${mH} contro ${mA} partite${low ? " — campione limitato, più incertezza." : ", un campione solido."}`
-      : `Built on ${mH} vs ${mA} matches${low ? " — a small sample, so more uncertainty." : ", a solid sample."}`);
+      ? `Non c'è una quota di mercato: è la lettura del modello, non una value bet.`
+      : `There's no market price here — it's the model's read, not a value bet.`);
   }
 
   return out.join(" ");
 }
 
+// Story-style tennis "why": 2 short sentences, REAL but conversational.
+// Sentence 1 = favourite + surface read (qualitative, from surface Elo);
+// sentence 2 = value / honest model-read. No repeated % (shown in the block).
 function buildTennisWhy(m: TennisMatch, lang: Lang): string {
   const it = lang === "it";
   const surf = it
@@ -3095,89 +3098,49 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
     : (m.surface === "CLAY" ? "on clay" : m.surface === "GRASS" ? "on grass" : "on hard court");
   const p1n = m.player1.split(" ").pop() ?? m.player1;
   const p2n = m.player2.split(" ").pop() ?? m.player2;
-  const pct1 = Math.round(m.p1 * 100), pct2 = Math.round(m.p2 * 100);
-  const favName = m.p1 >= m.p2 ? p1n : p2n;
-  const favPct = Math.max(pct1, pct2);
+  const favIsP1 = m.p1 >= m.p2;
+  const favName = favIsP1 ? p1n : p2n;
+  const gap = Math.abs(m.p1 - m.p2);
   const tbd = /\bTBD\b|\bTBA\b|qualifier/i.test(`${m.player1} ${m.player2}`);
   const out: string[] = [];
 
-  if (Math.abs(pct1 - pct2) <= 6) {
-    out.push(it
-      ? `Praticamente un testa o croce ${surf}: ${pct1}% contro ${pct2}%, nessun favorito reale.`
-      : `Essentially a coin-flip ${surf}: ${pct1}% to ${pct2}%, with no real favourite.`);
-  } else if (favPct >= 65) {
-    out.push(it
-      ? `Il modello dà ${favName} nettamente favorito ${surf}, al ${favPct}%.`
-      : `The model makes ${favName} a clear favourite ${surf}, at ${favPct}%.`);
-  } else {
-    out.push(it
-      ? `${favName} è favorito ${surf} al ${favPct}%, ma con un margine ridotto.`
-      : `${favName} is favoured ${surf} at ${favPct}%, but only by a slim margin.`);
-  }
-
-  if (m.elo_p1 != null && m.elo_p2 != null) {
-    const d = Math.abs(m.elo_p1 - m.elo_p2);
-    const eloLeader = m.elo_p1 >= m.elo_p2 ? p1n : p2n;
-    if (d < 15) {
-      out.push(it ? `I rating Elo ${surf} sono quasi pari.` : `Their surface Elo ratings are almost level.`);
-    } else if (d < 60) {
-      out.push(it
-        ? `${eloLeader} parte un po' più in alto nei rating Elo ${surf}.`
-        : `${eloLeader} sits a little higher in the surface Elo ratings.`);
-    } else {
-      out.push(it
-        ? `${eloLeader} ha un netto vantaggio nei rating Elo ${surf}.`
-        : `${eloLeader} holds a clear edge in the surface Elo ratings.`);
-    }
-  }
-
+  // ── Sentence 1 — favourite + surface story ──
   if (tbd) {
     out.push(it
-      ? `L'avversario non è ancora confermato, quindi è una lettura provvisoria.`
-      : `The opponent isn't confirmed yet, so this is a provisional read.`);
-  } else if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
-    const lo = Math.min(m.surface_matches_p1, m.surface_matches_p2);
-    if (lo < 5) {
-      const thin = m.surface_matches_p1 <= m.surface_matches_p2 ? p1n : p2n;
-      out.push(it
-        ? `Da tenere presente: ${thin} ha pochissime partite ${surf}, quindi quel rating è meno affidabile.`
-        : `Worth noting: ${thin} has very few matches ${surf}, so that rating is less reliable.`);
+      ? `L'avversario non è ancora confermato: per ora è una lettura provvisoria del modello ${surf}.`
+      : `The opponent isn't confirmed yet, so for now it's a provisional model read ${surf}.`);
+  } else if (gap <= 0.06) {
+    out.push(it
+      ? `Match equilibrato ${surf}: il modello non vede un favorito reale.`
+      : `A balanced match ${surf}: the model sees no real favourite.`);
+  } else {
+    let eloTail = "";
+    if (m.elo_p1 != null && m.elo_p2 != null) {
+      const d = Math.abs(m.elo_p1 - m.elo_p2);
+      const leaderIsFav = (m.elo_p1 >= m.elo_p2) === favIsP1;
+      if (d >= 60 && leaderIsFav) eloTail = it ? `, dove ha un netto vantaggio nei rating sulla superficie` : `, where they hold a clear edge in the surface ratings`;
+      else if (d >= 15 && leaderIsFav) eloTail = it ? `, dove parte un po' più in alto nei rating sulla superficie` : `, where they sit a little higher in the surface ratings`;
     }
+    const strong = Math.max(m.p1, m.p2) >= 0.65;
+    out.push(it
+      ? `Il modello vede ${favName} ${strong ? "nettamente favorito" : "favorito di misura"} ${surf}${eloTail}.`
+      : `The model makes ${favName} ${strong ? "a clear favourite" : "a narrow favourite"} ${surf}${eloTail}.`);
   }
 
-  const h1 = m.h2h_p1_wins ?? 0, h2 = m.h2h_p2_wins ?? 0;
-  if (h1 + h2 >= 2) {
-    const hl = h1 > h2 ? p1n : h2 > h1 ? p2n : null;
-    out.push(hl
-      ? (it ? `Nei precedenti diretti è avanti ${hl} (${h1}-${h2}).` : `In their head-to-head ${hl} leads ${h1}-${h2}.`)
-      : (it ? `I precedenti diretti sono in parità (${h1}-${h2}).` : `Their head-to-head is even (${h1}-${h2}).`));
-  }
-
+  // ── Sentence 2 — value / honest model-read ──
+  const tail = it ? ` su ${favName}` : ` on ${favName}`;
   if (isTennisBestBet(m)) {
     out.push(it
-      ? `C'è valore: il modello batte la quota di mercato di +${((m.edge ?? 0) * 100).toFixed(1)}%.`
-      : `There's value: the model beats the market price by +${((m.edge ?? 0) * 100).toFixed(1)}%.`);
+      ? `Il modello lo dà più probabile di quanto prezzi la quota: da qui il valore${tail}.`
+      : `The model rates it likelier than the price implies — that's where the value${tail} sits.`);
   } else if (m.odds_p1 != null || m.odds_p2 != null) {
-    // Market odds exist but no best-bet (edge below threshold / odds floor /
-    // outside trading window). Lead with the model edge (margin over the
-    // underdog) rather than negating it; stay honest there's no market value.
-    const me = modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2));
-    out.push(me > 0
-      ? (it
-        ? `Il modello dà ${favName} avanti di ${me.toFixed(1)} punti sul secondo esito, ma il mercato lo prezza già correttamente: niente value bet.`
-        : `The model puts ${favName} ${me.toFixed(1)} points clear of the second outcome, but the market already prices it fairly — no value bet.`)
-      : (it
-        ? `Il mercato prezza già correttamente questo match: niente value bet da prendere.`
-        : `The market already prices this match fairly — no value bet to take.`));
+    out.push(it
+      ? `Il mercato lo prezza già in linea col modello: nessun valore da prendere.`
+      : `The market already prices it in line with the model — no value to take.`);
   } else {
-    const me = modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2));
-    out.push(me > 0
-      ? (it
-        ? `Il modello dà ${favName} avanti di ${me.toFixed(1)} punti sul secondo esito. Niente quota di mercato qui: è un'inclinazione, non una scommessa.`
-        : `The model puts ${favName} ${me.toFixed(1)} points clear of the second outcome. No market price here — it's a lean, not a bet.`)
-      : (it
-        ? `Niente quota di mercato qui: è un'inclinazione, non una scommessa.`
-        : `No market price here — it's a lean, not a bet.`));
+    out.push(it
+      ? `Non c'è una quota di mercato: è la lettura del modello, non una value bet.`
+      : `There's no market price here — it's the model's read, not a value bet.`);
   }
 
   return out.join(" ");
@@ -3250,6 +3213,36 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   // Demoted extra-markets (schedina) — moved into the expandable analysis.
   const extraPicks = (e.extra_markets ?? []).filter((m) => m.p >= 0.55).sort((a, b) => b.p - a.p).slice(0, 5);
 
+  // ── Direction B readout: Market vs Model vs Edge (clear-pick cards only) ──
+  // All figures are REAL: model% = the model's probability for the pick,
+  // market% = raw implied (1/odds) for that same pick, edge = p.edge (value)
+  // or the model-edge margin when there is no market price. Nothing fabricated.
+  const pickKey = !belowFloor ? p.best_selection : null;
+  const pickName =
+    pickKey === "HOME" ? p.home_team
+    : pickKey === "AWAY" ? p.away_team
+    : pickKey === "DRAW" ? (lang === "it" ? "Pareggio" : "Draw")
+    : null;
+  const pickProb =
+    pickKey === "HOME" ? p.p_home
+    : pickKey === "AWAY" ? p.p_away
+    : pickKey === "DRAW" ? p.p_draw
+    : null;
+  const pickOdds =
+    pickKey === "HOME" ? p.odds_home
+    : pickKey === "AWAY" ? p.odds_away
+    : pickKey === "DRAW" ? p.odds_draw
+    : null;
+  const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
+  const edgeVal = p.edge != null && p.edge > 0 ? p.edge * 100 : null;
+  // Confidence 0-100 → 4-dot meter + word label.
+  const confScore = p.confidence_score ?? (pickProb != null ? confidenceFromEdge(p.edge, pickProb) : null);
+  const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
+  const confLabel = confScore == null ? null
+    : confScore >= 70 ? (lang === "it" ? "alta" : "high")
+    : confScore >= 45 ? (lang === "it" ? "media" : "medium")
+    : (lang === "it" ? "bassa" : "low");
+
   return (
     <article className="card"><div className="pred">
       {/* top: sport glyph + league + when (live pulse) */}
@@ -3285,7 +3278,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         )}
       </div>
 
-      {/* outcome rows / gate overlay */}
+      {/* model-vs-market readout / gate overlay */}
       {p.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
           <span className="blurred">▒▒ HOME ▒▒▒%</span>
@@ -3293,71 +3286,79 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           <span className="blurred">▒▒ AWAY ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
-      ) : (
-        <div className="rows">
-          {rowsData.map((r) => {
-            const isPick = !belowFloor && p.best_selection === r.key;
-            return (
-              <div
-                key={r.key}
-                className={`row${isPick ? " pick" : ""}${onSelect ? " sel" : ""}`}
-                onClick={onSelect && isPick ? handleSelect : undefined}
-              >
+      ) : belowFloor ? (
+        <>
+          {/* open match — no clear favourite: keep the honest 1X2 bars */}
+          <div className="rows">
+            {rowsData.map((r) => (
+              <div key={r.key} className="row">
                 <span className="lab">{r.key}</span>
                 <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
                 <span className="pct">{pct(r.pct)}</span>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* edge chip — integrates the +EV signal (demote: no separate top badge) */}
-      {!p.locked && !isPreview && (
-        belowFloor ? (
+            ))}
+          </div>
           <span className="edge flat">{t.no_clear_favorite} · {t.open_match}</span>
-        ) : p.edge != null && p.edge > 0 ? (
-          <span
-            className={`edge${isValueBet ? " evbtn" : ""}`}
-            onClick={isValueBet && p.best_selection ? handleSelect : undefined}
+        </>
+      ) : (
+        <>
+          <div
+            className={`mvm${onSelect && isValueBet && p.best_selection ? " sel" : ""}`}
+            onClick={onSelect && isValueBet && p.best_selection ? handleSelect : undefined}
           >
-            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
-            +{(p.edge * 100).toFixed(1)} pt · {lang === "it" ? "edge" : "edge"}{isValueBet && p.best_selection ? ` · ${p.best_selection}` : ""}
-          </span>
-        ) : fbModelEdge != null ? (
-          <span className="edge model">
-            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
-            +{fbModelEdge.toFixed(1)} pt · {lang === "it" ? "edge modello" : "model edge"}
-          </span>
-        ) : (
-          <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
-        )
+            <div className="col">
+              <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
+              <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
+            </div>
+            <div className="col model">
+              <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
+              <div className="l">{lang === "it" ? "Modello" : "Model"}{pickName ? ` · ${pickName}` : ""}</div>
+            </div>
+            <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
+              <div className="n">
+                {isPreview ? "🔒"
+                  : edgeVal != null ? `+${edgeVal.toFixed(1)}%`
+                  : fbModelEdge != null ? `+${fbModelEdge.toFixed(1)}`
+                  : "–"}
+              </div>
+              <div className="l">{!isPreview && edgeVal == null && fbModelEdge != null ? (lang === "it" ? "Edge mod." : "Model edge") : "Edge"}</div>
+            </div>
+          </div>
+          {!isPreview && confScore != null && (
+            <div className="conf">
+              <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
+              {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
+              {confLabel && <span className="conf-txt">{confLabel}</span>}
+            </div>
+          )}
+          {isPreview && <span className="edge flat">🔒 {lang === "it" ? "Mercato ed edge richiedono Pro" : "Market & edge require Pro"}</span>}
+        </>
       )}
-      {isPreview && <span className="edge flat">🔒 {lang === "it" ? "edge bloccato" : "edge locked"}</span>}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
       <div className="why">
-        <div className="wlab"><span className="tri">▸</span> {lang === "it" ? "Perché" : "Why"}</div>
-        <dl>
-          {(e.form_home || e.form_away) && (
-            <div className="it"><dt>{lang === "it" ? "Forma" : "Form"}</dt><dd>{fmtFormAny(e.form_home) ?? "–"} <span className="vs">vs</span> {fmtFormAny(e.form_away) ?? "–"}</dd></div>
+        <div className="why-box">
+          <div className="why-lab">{lang === "it" ? "Perché" : "Why"}</div>
+          <p className="why-txt">
+            {isPreview
+              ? (lang === "it"
+                  ? "Il ragionamento del modello e l'edge sono riservati al piano Pro. Sblocca per leggere perché il modello sceglie questo pronostico."
+                  : "The model's reasoning and edge are reserved for the Pro plan. Unlock to read why the model makes this call.")
+              : buildFootballWhy(p, lang)}
+          </p>
+          {!isPreview && (
+            <button className="why-more" onClick={() => setShowWhy(!showWhy)}>
+              {showWhy
+                ? (lang === "it" ? "Nascondi analisi" : "Hide analysis")
+                : (lang === "it" ? "Leggi l'analisi completa" : "Read full analysis")} <span className="ar">→</span>
+            </button>
           )}
-          {e.kind === "world_cup" && e.matches && (e.matches.home != null || e.matches.away != null) && (
-            <div className="it"><dt>{lang === "it" ? "Campione" : "Sample"}</dt><dd>{e.matches.home ?? "–"} <span className="vs">vs</span> {e.matches.away ?? "–"}</dd></div>
-          )}
-          {(e.xg_home != null || e.xg_away != null) && (
-            <div className="it"><dt>xG</dt><dd>{e.xg_home?.toFixed(2) ?? "–"} <span className="vs">vs</span> {e.xg_away?.toFixed(2) ?? "–"}</dd></div>
-          )}
-        </dl>
+        </div>
 
         {/* footer action row */}
         <div className="act">
-          {isPreview ? (
-            <span className="why-locked-preview">{t.pred_why_show}</span>
-          ) : (
-            <button className="open" onClick={() => setShowWhy(!showWhy)}>
-              {showWhy ? t.pred_why_hide : t.pred_why_show} <span className="ar">→</span>
-            </button>
+          {!isPreview && pickOdds != null && (
+            <span className="odds"><span className="odds-lab">{lang === "it" ? "Quota" : "Odds"}</span><b>{pickOdds.toFixed(2)}</b></span>
           )}
           {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
               altrimenti vecchio CTA. FT → status note. */}
@@ -3400,8 +3401,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
         ) : showWhy && (
         <div className="why-body">
-          <p className="why-prose">{buildFootballWhy(p, lang)}</p>
-
           {p.pick && (
             <p className="why-prose mono">Pick: <strong>{p.pick}</strong>{p.confidence_score != null ? ` · ${p.confidence_score}%` : ""}</p>
           )}
@@ -3645,6 +3644,21 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     { player: "P2", name: m.player2.split(" ").pop() ?? m.player2, pct: m.p2 },
   ];
 
+  // ── Direction B readout (tennis): Market vs Model vs Edge ──
+  const pickPlayer = hasFavorite ? (p1IsPick ? "P1" : "P2") : null;
+  const pickName = pickPlayer === "P1" ? (m.player1.split(" ").pop() ?? m.player1)
+    : pickPlayer === "P2" ? (m.player2.split(" ").pop() ?? m.player2) : null;
+  const pickProb = pickPlayer === "P1" ? m.p1 : pickPlayer === "P2" ? m.p2 : null;
+  const pickOdds = pickPlayer === "P1" ? m.odds_p1 : pickPlayer === "P2" ? m.odds_p2 : null;
+  const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
+  const edgeVal = m.edge != null && m.edge > 0 ? m.edge * 100 : null;
+  const confScore = m.confidence_score ?? (pickProb != null ? confidenceFromEdge(m.edge, pickProb) : null);
+  const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
+  const confLabel = confScore == null ? null
+    : confScore >= 70 ? (lang === "it" ? "alta" : "high")
+    : confScore >= 45 ? (lang === "it" ? "media" : "medium")
+    : (lang === "it" ? "bassa" : "low");
+
   return (
     <article className="card tennis"><div className="pred tennis">
       {/* top: surface glyph + tournament + when */}
@@ -3686,71 +3700,81 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
-      ) : (
-        // #CARD-STD-1: structural parity with the football card — no .verdict
-        // line above the rows; the pick is shown by the coral row (and the
-        // "Pick:" line inside the expanded why), exactly like football.
-        <div className="rows">
-          {rowsData.map((r) => {
-            const isPick = hasFavorite && ((r.player === "P1") === p1IsPick);
-            return (
-              <div
-                key={r.player}
-                className={`row${isPick ? " pick" : ""}${onSelect ? " sel" : ""}`}
-                onClick={() => onSelect && handleSelect(r.player)}
-              >
+      ) : !hasFavorite ? (
+        <>
+          {/* dead heat — no favourite: keep the honest two-way bars */}
+          <div className="rows">
+            {rowsData.map((r) => (
+              <div key={r.player} className="row">
                 <span className="lab">{r.name}</span>
                 <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
                 <span className="pct">{pct(r.pct)}</span>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* edge chip — integrates the +EV signal */}
-      {!m.locked && !isPreview && (
-        m.edge != null && m.edge > 0 ? (
-          <span
-            className={`edge${isValue ? " evbtn" : ""}`}
-            onClick={isValue && m.best_selection ? () => handleSelect(m.best_selection as "P1" | "P2") : undefined}
+            ))}
+          </div>
+          <span className="edge flat">{lang === "it" ? "Nessun favorito · match aperto" : "No favourite · open match"}</span>
+        </>
+      ) : (
+        <>
+          <div
+            className={`mvm${onSelect && isValue && pickPlayer ? " sel" : ""}`}
+            onClick={onSelect && isValue && pickPlayer ? () => handleSelect(pickPlayer as "P1" | "P2") : undefined}
           >
-            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
-            +{(m.edge * 100).toFixed(1)} pt · {lang === "it" ? "edge" : "edge"}{isValue && m.best_selection ? ` · ${m.best_selection}` : ""}
-          </span>
-        ) : tnModelEdge != null ? (
-          <span className="edge model">
-            <svg aria-hidden="true"><use href="#g-bolt" /></svg>
-            +{tnModelEdge.toFixed(1)} pt · {lang === "it" ? "edge modello" : "model edge"}
-          </span>
-        ) : (
-          <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
-        )
+            <div className="col">
+              <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
+              <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
+            </div>
+            <div className="col model">
+              <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
+              <div className="l">{lang === "it" ? "Modello" : "Model"}{pickName ? ` · ${pickName}` : ""}</div>
+            </div>
+            <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
+              <div className="n">
+                {isPreview ? "🔒"
+                  : edgeVal != null ? `+${edgeVal.toFixed(1)}%`
+                  : tnModelEdge != null ? `+${tnModelEdge.toFixed(1)}`
+                  : "–"}
+              </div>
+              <div className="l">{!isPreview && edgeVal == null && tnModelEdge != null ? (lang === "it" ? "Edge mod." : "Model edge") : "Edge"}</div>
+            </div>
+          </div>
+          {!isPreview && confScore != null && (
+            <div className="conf">
+              <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
+              {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
+              {confLabel && <span className="conf-txt">{confLabel}</span>}
+            </div>
+          )}
+          {isPreview && <span className="edge flat">🔒 {lang === "it" ? "Mercato ed edge richiedono Pro" : "Market & edge require Pro"}</span>}
+        </>
       )}
-      {isPreview && <span className="edge flat">🔒 {lang === "it" ? "edge bloccato" : "edge locked"}</span>}
 
       {/* WHY — Elo readout + expandable analysis */}
       <div className="why">
-        <div className="wlab"><span className="tri">▸</span> {lang === "it" ? "Elo superficie" : "Surface Elo"}</div>
-        <dl>
-          {(m.elo_p1 != null || m.elo_p2 != null) && (
-            <div className="it"><dt>Elo {surface.label}</dt><dd>{m.elo_p1?.toFixed(0) ?? "–"} <span className="vs">·</span> {m.elo_p2?.toFixed(0) ?? "–"}</dd></div>
+        <div className="why-box">
+          <div className="why-lab">{lang === "it" ? "Perché" : "Why"}</div>
+          <p className="why-txt">
+            {isPreview
+              ? (lang === "it"
+                  ? "Il ragionamento del modello e l'edge sono riservati al piano Pro. Sblocca per leggere perché il modello sceglie questo pronostico."
+                  : "The model's reasoning and edge are reserved for the Pro plan. Unlock to read why the model makes this call.")
+              : buildTennisWhy(m, lang)}
+          </p>
+          {!isPreview && (
+            <button className="why-more" onClick={handleWhyClick}>
+              {loadingAnalysis
+                ? (lang === "it" ? "Carico l'analisi…" : "Loading analysis…")
+                : showWhy
+                  ? (lang === "it" ? "Nascondi analisi" : "Hide analysis")
+                  : (lang === "it" ? "Leggi l'analisi completa" : "Read full analysis")} <span className="ar">→</span>
+            </button>
           )}
-          {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) ? (
-            <div className="it"><dt>{lang === "it" ? "Match sup." : "Surf. matches"}</dt><dd>{m.surface_matches_p1 ?? "–"} <span className="vs">·</span> {m.surface_matches_p2 ?? "–"}</dd></div>
-          ) : (m.h2h_p1_wins != null || m.h2h_p2_wins != null) ? (
-            <div className="it"><dt>H2H</dt><dd>{m.h2h_p1_wins ?? 0}–{m.h2h_p2_wins ?? 0}</dd></div>
-          ) : null}
-        </dl>
+        </div>
 
         {/* footer action row */}
         <div className="act">
-          {isPreview ? (
-            <span className="why-locked-preview">{t.tennis_why_show}</span>
-          ) : (
-            <button className="open" onClick={handleWhyClick}>
-              {loadingAnalysis ? "…" : showWhy ? t.tennis_why_hide : t.tennis_why_show} <span className="ar">→</span>
-            </button>
+          {!isPreview && pickOdds != null && (
+            <span className="odds"><span className="odds-lab">{lang === "it" ? "Quota" : "Odds"}</span><b>{pickOdds.toFixed(2)}</b></span>
           )}
           {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
             <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
@@ -3790,8 +3814,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           ) : loadingAnalysis ? (
             <p className="why-prose">{t.tennis_ai_loading}</p>
           ) : null}
-          {/* Human why — readable paragraph in the active language */}
-          <p className="why-prose">{buildTennisWhy(m, lang)}</p>
 
           {m.pick && (
             <p className="why-prose mono">Pick: <strong>{m.pick}</strong>{m.confidence_score != null ? ` · ${m.confidence_score}%` : ""}</p>
