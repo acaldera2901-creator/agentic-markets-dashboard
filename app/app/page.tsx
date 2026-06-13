@@ -148,7 +148,7 @@ const BASE_TRANSLATIONS = {
     // Misc
     bet_now: "Piazza la scommessa →",
     refresh_odds: "AGGIORNA ODDS",
-    loading_predictions: "Calcolo Dixon-Coles + Pi Rating + xG in corso…",
+    loading_predictions: "Calcolo delle probabilità calibrate in corso…",
     no_predictions: "Nessuna prediction disponibile — clicca Refresh",
     no_match_filters: "Nessun match per i filtri selezionati",
     // BetSlip
@@ -190,7 +190,7 @@ const BASE_TRANSLATIONS = {
     // KPIs in overview
     kpi_events: "eventi", kpi_ev: "+EV", kpi_win: "% win",
     // Predictions tab
-    pred_model_badge: "Dixon-Coles · Pi Rating · xG · Form · prossimi 30 giorni",
+    pred_model_badge: "Modello calibrato · Forma · prossimi 30 giorni",
     pred_computing: "Calcolo…", pred_refresh: "↻ Aggiorna",
     pred_stale_warning: "⚠️ Prediction più vecchie di 1 ora — clicca Aggiorna per ricalcolare (~90s)",
     pred_value_bet: "value bet", pred_value_bets: "value bets",
@@ -274,7 +274,7 @@ const BASE_TRANSLATIONS = {
     tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2.966 giocatori · settlement loop live",
     agent_arch_title: "Architettura ibrida v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
-    agent_arch_dashboard_desc: "Dixon-Coles · Pi Rating · xG · API-Football · Odds. Sempre online, non dipende dagli agenti Python.",
+    agent_arch_dashboard_desc: "Modello calibrato · API-Football · Odds. Sempre online, non dipende dagli agenti Python.",
     agent_arch_agents_title: "Agenti Python (locale)",
     agent_arch_agents_desc: "Analisi real-time, League & Match Context Module, exchange execution, Ollama AI. Avvia con",
     agent_arch_none: "⚠️ Nessun agente attivo. Avvia il sistema con",
@@ -390,7 +390,7 @@ const BASE_TRANSLATIONS = {
     // Misc
     bet_now: "Place Bet →",
     refresh_odds: "REFRESH ODDS",
-    loading_predictions: "Computing Dixon-Coles + Pi Rating + xG predictions…",
+    loading_predictions: "Computing calibrated predictions…",
     no_predictions: "No predictions yet — click Refresh",
     no_match_filters: "No matches for selected filters",
     // BetSlip
@@ -432,7 +432,7 @@ const BASE_TRANSLATIONS = {
     // KPIs in overview
     kpi_events: "events", kpi_ev: "+EV", kpi_win: "% win",
     // Predictions tab
-    pred_model_badge: "Dixon-Coles · Pi Rating · xG · Form · next 30 days",
+    pred_model_badge: "Calibrated model · Form · next 30 days",
     pred_computing: "Computing…", pred_refresh: "↻ Refresh",
     pred_stale_warning: "⚠️ Predictions older than 1 hour — click Refresh to recompute (~90s)",
     pred_value_bet: "value bet", pred_value_bets: "value bets",
@@ -516,7 +516,7 @@ const BASE_TRANSLATIONS = {
     tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2,966 players · settlement loop live",
     agent_arch_title: "Hybrid architecture v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
-    agent_arch_dashboard_desc: "Dixon-Coles · Pi Rating · xG · API-Football · Odds. Always online, independent from local Python agents.",
+    agent_arch_dashboard_desc: "Calibrated model · API-Football · Odds. Always online, independent from local Python agents.",
     agent_arch_agents_title: "Python agents (local)",
     agent_arch_agents_desc: "Real-time analysis, League & Match Context Module, exchange execution, Ollama AI. Start with",
     agent_arch_none: "⚠️ No active agents. Start the system with",
@@ -1227,14 +1227,6 @@ function selectedTennisProbability(m: TennisMatch) {
   if (m.best_selection === "P1") return m.p1;
   if (m.best_selection === "P2") return m.p2;
   return Math.max(m.p1, m.p2);
-}
-
-// Honest model label per competition. WC + national friendlies run on the
-// national-team engine (Poisson-rates / Elo depending on the row); club leagues
-// on the Dixon-Coles + xG stack. "National model" is accurate for both national
-// variants — the old hardcoded "Dixon-Coles" was simply wrong on that board.
-function modelLabelFor(p: Prediction): string {
-  return p.league === "WC" || p.league === "FRIENDLY" ? "National model" : "Dixon-Coles";
 }
 
 // A below-floor pick is shown on the board as "no clear favourite" (no
@@ -3392,7 +3384,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
-          <span className="model">{modelLabelFor(p)}</span>
+          <span className="model">{lang === "it" ? "Modello calibrato" : "Calibrated model"}</span>
           {isPreview || p.locked ? (
             <span className="gate">Pro</span>
           ) : isFinished ? (
@@ -3502,7 +3494,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {(e.pi_home != null || e.pi_away != null) && (
             <div className="da-row">
-              <span className="da-label">Pi Rating</span>
+              <span className="da-label">{lang === "it" ? "Rating" : "Rating"}</span>
               <span className="da-value">{e.pi_home ?? "–"} vs {e.pi_away ?? "–"}</span>
             </div>
           )}
@@ -3798,7 +3790,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
-          <span className="model">{lang === "it" ? "Elo superficie" : "Surface Elo"}</span>
+          <span className="model">{lang === "it" ? "Modello calibrato" : "Calibrated model"}</span>
           <span className="gate">Pro</span>
         </div>
 
@@ -5373,7 +5365,7 @@ function AdBanner({ lang, onCta, tone = "sportsbook" }: { lang: Lang; onCta?: ()
     ? {
         eyebrow: it ? "Sponsorizzato · Operator" : "Sponsored · Operator",
         title: it ? "Probabilità calibrate via API" : "Calibrated probabilities via API",
-        desc: it ? "Integra il modello Dixon-Coles + xG nella tua piattaforma." : "Integrate the Dixon-Coles + xG model into your platform.",
+        desc: it ? "Integra il nostro modello calibrato nella tua piattaforma." : "Integrate our calibrated model into your platform.",
         cta: it ? "Richiedi accesso →" : "Request access →",
       }
     : {
@@ -6351,7 +6343,7 @@ export default function Dashboard() {
 
           <nav className="am-topnav">
             {[
-              { tab: "bets" as Tab, label: "Mercati" },
+              { tab: "bets" as Tab, label: uiLanguage === "it" ? "Mercati" : "Markets" },
               { tab: "history" as Tab, label: tNav.nav_history },
               { tab: "leaderboard" as Tab, label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
               ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
@@ -6454,9 +6446,9 @@ export default function Dashboard() {
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? "Bets"}</h2>
               <p className="am-sub">
                 {uiLanguage === "it" ? (
-                  <>Probabilità <b>calibrate da un modello</b> sul calcio, Elo di superficie sul tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                  <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
                 ) : (
-                  <>Probabilities <b>calibrated by a model</b> on football, surface Elo on tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
+                  <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
               </p>
             </div>
@@ -6559,7 +6551,7 @@ export default function Dashboard() {
         <div className="promo-card">
           <p className="promo-eyebrow">{uiLanguage === "it" ? "Operator · API" : "Operator · API"}</p>
           <h4>{uiLanguage === "it" ? "Probabilità via REST" : "Probabilities via REST"}</h4>
-          <p className="promo-desc">{uiLanguage === "it" ? "Integra le probabilità calibrate (Dixon-Coles + xG) nella tua piattaforma. Una chiamata, un payload, nessun bookmaker." : "Integrate calibrated probabilities (Dixon-Coles + xG) into your platform. One call, one payload, no bookmaker."}</p>
+          <p className="promo-desc">{uiLanguage === "it" ? "Integra le probabilità calibrate nella tua piattaforma. Una chiamata, un payload, nessun bookmaker." : "Integrate calibrated probabilities into your platform. One call, one payload, no bookmaker."}</p>
           <a href="mailto:info@agenticmarkets.com?subject=Operator%20API%20Access"
             className="promo-link"
             onClick={() => trackEvent("operator_sidebar_click", {})}>

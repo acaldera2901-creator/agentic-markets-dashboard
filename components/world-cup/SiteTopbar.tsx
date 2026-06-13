@@ -28,6 +28,13 @@ function planPillLabel(plan: string): string {
   return "SETUP";
 }
 
+type SiteLang = "it" | "en" | "es" | "fr" | "ru";
+function readLang(): SiteLang {
+  if (typeof window === "undefined") return "it";
+  const s = window.localStorage.getItem("agentic-lang");
+  return s === "en" || s === "es" || s === "fr" || s === "ru" ? s : "it";
+}
+
 export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
 
@@ -72,6 +79,27 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
     try { localStorage.setItem("agentic-theme", next); } catch {}
   };
 
+  // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
+  // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
+  // here dispatches `agentic-lang-change` so the board updates live in step.
+  const [lang, setLang] = useState<SiteLang>("it");
+  useEffect(() => {
+    const sync = () => setLang(readLang());
+    sync();
+    window.addEventListener("agentic-lang-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("agentic-lang-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const toggleLang = () => {
+    const next: SiteLang = lang === "it" ? "en" : "it";
+    setLang(next);
+    try { localStorage.setItem("agentic-lang", next); } catch {}
+    window.dispatchEvent(new Event("agentic-lang-change"));
+  };
+
   return (
     <header className="am-topbar">
       <div className="am-topbar-in">
@@ -114,10 +142,14 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
             </Link>
           ) : auth.status === "anonymous" ? (
             <>
-              <Link href="/app" className="am-auth-secondary">Accedi</Link>
-              <Link href="/app?tab=account" className="am-auth-primary">Registrati</Link>
+              <Link href="/app" className="am-auth-secondary">{lang === "it" ? "Accedi" : "Sign In"}</Link>
+              <Link href="/app?tab=account" className="am-auth-primary">{lang === "it" ? "Registrati" : "Register"}</Link>
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
+
+          <button className="am-iconbtn" onClick={toggleLang} title={lang === "it" ? "Lingua: Italiano" : "Language"}>
+            {lang.toUpperCase()}
+          </button>
         </div>
       </div>
     </header>

@@ -67,7 +67,7 @@ export default function WinnerOdds() {
         </tbody>
       </table>
       <p className="wc-winner-note">
-        Pure model view (Elo-rating engine, full-bracket Monte Carlo, host
+        Pure model view (our calibrated engine, full-bracket simulation, host
         advantage included) — it is <strong>not</strong> blended with betting
         markets, which price the favourites less aggressively (antepost markets
         put Spain nearer 18%). Same favourite and podium as the major public
