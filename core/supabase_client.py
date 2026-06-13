@@ -324,6 +324,12 @@ def wc_prediction_to_unified_row(
     row["neutral_venue"] = neutral_venue
     if stage:
         row["world_cup_stage"] = stage
+    # group_name column: populate from the enrichment group (set by
+    # build_wc_enrichment from the fixture's real group). Group-stage only;
+    # knockout rows carry no group. Without this the column stayed NULL even
+    # when enrichment.group was present (#WC-REALDATA-1).
+    if not friendly and enrichment and enrichment.get("group"):
+        row["group_name"] = enrichment["group"]
     if team_news_summary:
         # #LINEUP-1-ESPN: confirmed XI line (display only — probabilities are
         # NOT lineup-adjusted until a feature wins the promotion gate).
