@@ -6359,10 +6359,10 @@ export default function Dashboard() {
           <div className="am-brandmark">
             {/* logo: mira/target con cuneo coral = "probabilità di precisione" */}
             <svg className="am-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <circle cx="16" cy="16" r="13" stroke="var(--am-muted)" strokeWidth="1.6" />
-              <circle cx="16" cy="16" r="7" stroke="var(--am-muted)" strokeWidth="1.6" />
-              <path d="M16 16 26 9.5A12 12 0 0 1 16 28Z" fill="var(--am-coral)" />
-              <circle cx="16" cy="16" r="2" fill="var(--am-text)" />
+              <path d="M5 21A11 11 0 0 1 27 21" stroke="var(--am-muted)" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M5 21A11 11 0 0 1 9.2 13.2" stroke="var(--am-coral)" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="16" y1="21" x2="23.5" y2="12.5" stroke="var(--am-coral)" strokeWidth="2.2" strokeLinecap="round" />
+              <circle cx="16" cy="21" r="2.2" fill="var(--am-coral)" />
             </svg>
             <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
           </div>
