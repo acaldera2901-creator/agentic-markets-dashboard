@@ -242,8 +242,8 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     audiences: ["free"],
     glyphs: ["#g-ball", "#g-racket", "#g-court", "#g-trophy"],
     copy: {
-      it: { eyebrow: "Calcio · Tennis · Basket · World Cup", headline: "Un modello che trova l'edge su", accent: "ogni sport", sub: "Probabilità calibrate (Dixon-Coles + xG), prima del mercato. Provalo gratis." },
-      en: { eyebrow: "Football · Tennis · Basketball · World Cup", headline: "One model that finds the edge on", accent: "every sport", sub: "Calibrated probabilities (Dixon-Coles + xG), ahead of the market. Try it free." },
+      it: { eyebrow: "Calcio · Tennis · Basket · World Cup", headline: "Un modello che trova l'edge su", accent: "ogni sport", sub: "Probabilità calibrate, prima del mercato. Provalo gratis." },
+      en: { eyebrow: "Football · Tennis · Basketball · World Cup", headline: "One model that finds the edge on", accent: "every sport", sub: "Calibrated probabilities, ahead of the market. Try it free." },
     },
     cta: { href: "/app?tab=account", it: "Passa a Pro →", en: "Go Pro →" },
     image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
@@ -325,8 +325,8 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     audiences: ["anon", "free"],
     glyphs: ["#g-racket", "#g-tball"],
     copy: {
-      it: { eyebrow: "BetRedge Pro", headline: "Anche il tennis,", accent: "senza blur", sub: "Elo di superficie su ogni torneo. Storico completo." },
-      en: { eyebrow: "BetRedge Pro", headline: "Tennis too,", accent: "unblurred", sub: "Surface Elo on every tournament. Full history." },
+      it: { eyebrow: "BetRedge Pro", headline: "Anche il tennis,", accent: "senza blur", sub: "Probabilità calibrate su ogni torneo. Storico completo." },
+      en: { eyebrow: "BetRedge Pro", headline: "Tennis too,", accent: "unblurred", sub: "Calibrated probabilities on every tournament. Full history." },
     },
     cta: { href: "/app?tab=account", it: "Sblocca tutto →", en: "Unlock all →" },
   },

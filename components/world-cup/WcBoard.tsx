@@ -114,6 +114,27 @@ function resolveWcLang(): WcLang {
   return stored === "en" || stored === "es" || stored === "fr" || stored === "ru" ? stored : "it";
 }
 
+// Reactive language. resolveWcLang() at render time alone is not enough: the
+// component is SSR'd with the "it" fallback and, without a state change, React
+// keeps the server markup after hydration — so the stored language never gets
+// applied (this was the #wc-i18n bug: /world-cup stuck in Italian in EN mode).
+// Reading it in an effect forces a post-mount re-render; the events let a
+// language switch (here or on the home topbar) update the board live.
+function useWcLang(): WcLang {
+  const [lang, setLang] = useState<WcLang>("it");
+  useEffect(() => {
+    const sync = () => setLang(resolveWcLang());
+    sync();
+    window.addEventListener("agentic-lang-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("agentic-lang-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  return lang;
+}
+
 // Display-only canonicalization: some prediction rows carry a non-canonical
 // spelling (unified_predictions has "Congo DR" while the dataset canonical is
 // "DR Congo"), which made the board disagree with the deduped squads tab.
@@ -156,7 +177,7 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {(typeof e.lambdas?.home === "number" || typeof e.lambdas?.away === "number") && (
         <div className="da-row">
-          <span className="da-label">λ xG rate</span>
+          <span className="da-label">Goal rate</span>
           <span className="da-value">
             {e.lambdas?.home?.toFixed(2) ?? "–"} vs {e.lambdas?.away?.toFixed(2) ?? "–"}
           </span>
@@ -229,11 +250,11 @@ function teamPairKey(a?: string | null, b?: string | null) {
 }
 
 const WC_WHY_LABELS: Record<WcLang, { show: string; hide: string; model: string }> = {
-  it: { show: "▼ perché", hide: "▲ meno", model: "Modello nazionali" },
-  en: { show: "▼ why", hide: "▲ less", model: "National model" },
-  es: { show: "▼ por qué", hide: "▲ menos", model: "National model" },
-  fr: { show: "▼ pourquoi", hide: "▲ moins", model: "National model" },
-  ru: { show: "▼ почему", hide: "▲ меньше", model: "National model" },
+  it: { show: "▼ perché", hide: "▲ meno", model: "Modello calibrato" },
+  en: { show: "▼ why", hide: "▲ less", model: "Calibrated model" },
+  es: { show: "▼ por qué", hide: "▲ menos", model: "Modelo calibrado" },
+  fr: { show: "▼ pourquoi", hide: "▲ moins", model: "Modèle calibré" },
+  ru: { show: "▼ почему", hide: "▲ меньше", model: "Калиброванная модель" },
 };
 
 function fmtFormCount(f?: { w: number; d: number; l: number } | null, it?: boolean) {
@@ -300,7 +321,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   // the card shows the probabilities + why but no pick direction and no edge.
   const belowFloor = parseSurfaceBelowFloor(p.notes);
   const pick = belowFloor ? null : (p.pick || null);
-  const lang = resolveWcLang();
+  const lang = useWcLang();
   const copy = SURFACE_COPY[lang];
   const whyL = WC_WHY_LABELS[lang];
   const model = whyL.model;

@@ -114,7 +114,7 @@ const BASE_TRANSLATIONS = {
     // Tennis card
     tennis_why_show: "▼ perché", tennis_why_hide: "▲ meno",
     tennis_ai_label: "Analisi AI",
-    tennis_elo_label: "Analisi Elo Surface",
+    tennis_elo_label: "Analisi del modello",
     tennis_ai_loading: "Generazione analisi AI in corso...",
     // Sportsbook board
     board_title: "Best available edges", board_eyebrow: "Market board",
@@ -148,7 +148,7 @@ const BASE_TRANSLATIONS = {
     // Misc
     bet_now: "Piazza la scommessa →",
     refresh_odds: "AGGIORNA ODDS",
-    loading_predictions: "Calcolo Dixon-Coles + Pi Rating + xG in corso…",
+    loading_predictions: "Calcolo delle probabilità calibrate in corso…",
     no_predictions: "Nessuna prediction disponibile — clicca Refresh",
     no_match_filters: "Nessun match per i filtri selezionati",
     // BetSlip
@@ -178,7 +178,7 @@ const BASE_TRANSLATIONS = {
     // Page headers
     page_overview: "Dashboard cliente", page_portfolio: "Client portfolio",
     page_plans: "Client plans", page_bestbets: "Best Bets",
-    page_sports: "Sports predictions", page_tennis: "Tennis · Elo Surface v2", page_bets: "Execution log",
+    page_sports: "Sports predictions", page_tennis: "Tennis · Calibrated model", page_bets: "Execution log",
     page_history: "Storico settled",
     page_partners: "Casino & Partner Network", page_settings: "Account settings",
     page_agents: "Health & safety", page_eyebrow: "Client sportsbook",
@@ -190,7 +190,7 @@ const BASE_TRANSLATIONS = {
     // KPIs in overview
     kpi_events: "eventi", kpi_ev: "+EV", kpi_win: "% win",
     // Predictions tab
-    pred_model_badge: "Dixon-Coles · Pi Rating · xG · Form · prossimi 30 giorni",
+    pred_model_badge: "Modello calibrato · Forma · prossimi 30 giorni",
     pred_computing: "Calcolo…", pred_refresh: "↻ Aggiorna",
     pred_stale_warning: "⚠️ Prediction più vecchie di 1 ora — clicca Aggiorna per ricalcolare (~90s)",
     pred_value_bet: "value bet", pred_value_bets: "value bets",
@@ -267,14 +267,14 @@ const BASE_TRANSLATIONS = {
     founder_secret: "Codice segreto",
     founder_checking: "Verifica...",
     founder_login: "Accedi come fondatore",
-    tennis_elo_data: "Dati Elo",
+    tennis_elo_data: "Dati modello",
     tennis_pipeline_title: "Tennis Pipeline · 6 Agenti",
     tennis_last_seen: "Ultimo heartbeat",
     tennis_no_heartbeat: "Nessun heartbeat ancora",
-    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2.966 giocatori · settlement loop live",
+    tennis_footer: "Tennis AI v2.0 · modello calibrato · 2.966 giocatori · settlement loop live",
     agent_arch_title: "Architettura ibrida v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
-    agent_arch_dashboard_desc: "Dixon-Coles · Pi Rating · xG · API-Football · Odds. Sempre online, non dipende dagli agenti Python.",
+    agent_arch_dashboard_desc: "Modello calibrato · API-Football · Odds. Sempre online, non dipende dagli agenti Python.",
     agent_arch_agents_title: "Agenti Python (locale)",
     agent_arch_agents_desc: "Analisi real-time, League & Match Context Module, exchange execution, Ollama AI. Avvia con",
     agent_arch_none: "⚠️ Nessun agente attivo. Avvia il sistema con",
@@ -356,7 +356,7 @@ const BASE_TRANSLATIONS = {
     // Tennis card
     tennis_why_show: "▼ why", tennis_why_hide: "▲ less",
     tennis_ai_label: "AI Analysis",
-    tennis_elo_label: "Elo Surface Analysis",
+    tennis_elo_label: "Model analysis",
     tennis_ai_loading: "Generating AI analysis...",
     // Sportsbook board
     board_title: "Best available edges", board_eyebrow: "Market board",
@@ -390,7 +390,7 @@ const BASE_TRANSLATIONS = {
     // Misc
     bet_now: "Place Bet →",
     refresh_odds: "REFRESH ODDS",
-    loading_predictions: "Computing Dixon-Coles + Pi Rating + xG predictions…",
+    loading_predictions: "Computing calibrated predictions…",
     no_predictions: "No predictions yet — click Refresh",
     no_match_filters: "No matches for selected filters",
     // BetSlip
@@ -420,7 +420,7 @@ const BASE_TRANSLATIONS = {
     // Page headers
     page_overview: "Client dashboard", page_portfolio: "Client portfolio",
     page_plans: "Client plans", page_bestbets: "Best Bets",
-    page_sports: "Sports predictions", page_tennis: "Tennis · Elo Surface v2", page_bets: "Execution log",
+    page_sports: "Sports predictions", page_tennis: "Tennis · Calibrated model", page_bets: "Execution log",
     page_history: "Settled history",
     page_partners: "Casino & Partner Network", page_settings: "Account settings",
     page_agents: "Health & safety", page_eyebrow: "Client sportsbook",
@@ -432,7 +432,7 @@ const BASE_TRANSLATIONS = {
     // KPIs in overview
     kpi_events: "events", kpi_ev: "+EV", kpi_win: "% win",
     // Predictions tab
-    pred_model_badge: "Dixon-Coles · Pi Rating · xG · Form · next 30 days",
+    pred_model_badge: "Calibrated model · Form · next 30 days",
     pred_computing: "Computing…", pred_refresh: "↻ Refresh",
     pred_stale_warning: "⚠️ Predictions older than 1 hour — click Refresh to recompute (~90s)",
     pred_value_bet: "value bet", pred_value_bets: "value bets",
@@ -509,14 +509,14 @@ const BASE_TRANSLATIONS = {
     founder_secret: "Secret code",
     founder_checking: "Checking...",
     founder_login: "Log in as founder",
-    tennis_elo_data: "Elo data",
+    tennis_elo_data: "Model data",
     tennis_pipeline_title: "Tennis Pipeline · 6 Agents",
     tennis_last_seen: "Last seen",
     tennis_no_heartbeat: "No heartbeat yet",
-    tennis_footer: "Tennis AI v2.0 · Elo Surface v2 · 2,966 players · settlement loop live",
+    tennis_footer: "Tennis AI v2.0 · calibrated model · 2,966 players · settlement loop live",
     agent_arch_title: "Hybrid architecture v5.0",
     agent_arch_dashboard_title: "Dashboard (Vercel)",
-    agent_arch_dashboard_desc: "Dixon-Coles · Pi Rating · xG · API-Football · Odds. Always online, independent from local Python agents.",
+    agent_arch_dashboard_desc: "Calibrated model · API-Football · Odds. Always online, independent from local Python agents.",
     agent_arch_agents_title: "Python agents (local)",
     agent_arch_agents_desc: "Real-time analysis, League & Match Context Module, exchange execution, Ollama AI. Start with",
     agent_arch_none: "⚠️ No active agents. Start the system with",
@@ -1227,14 +1227,6 @@ function selectedTennisProbability(m: TennisMatch) {
   if (m.best_selection === "P1") return m.p1;
   if (m.best_selection === "P2") return m.p2;
   return Math.max(m.p1, m.p2);
-}
-
-// Honest model label per competition. WC + national friendlies run on the
-// national-team engine (Poisson-rates / Elo depending on the row); club leagues
-// on the Dixon-Coles + xG stack. "National model" is accurate for both national
-// variants — the old hardcoded "Dixon-Coles" was simply wrong on that board.
-function modelLabelFor(p: Prediction): string {
-  return p.league === "WC" || p.league === "FRIENDLY" ? "National model" : "Dixon-Coles";
 }
 
 // A below-floor pick is shown on the board as "no clear favourite" (no
@@ -1957,7 +1949,7 @@ function DeskPreview() {
       </div>
       <div className="desk-preview-board">
         <div><span>Football</span><em>Live V4 research</em><strong>Pro</strong></div>
-        <div><span>Tennis</span><em>Elo Surface V4</em><strong>Pro</strong></div>
+        <div><span>Tennis</span><em>Calibrated model</em><strong>Pro</strong></div>
         <div><span>Best Bets</span><em>+EV or model signals</em><strong>Pro</strong></div>
       </div>
       <p>{lang === "it" ? "Preview pubblica: dati sensibili oscurati fino al piano." : "Public preview: sensitive data hidden until plan activation."}</p>
@@ -2563,7 +2555,7 @@ function PlansTab({
           </div>
           <ul className="plan-feature-list">
             <PlanFeature>{lang === "it" ? "TUTTE le prediction, illimitate" : "ALL predictions, unlimited"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Deep Analysis: form, xG, infortuni, venue" : "Deep Analysis: form, xG, injuries, venue"}</PlanFeature>
+            <PlanFeature>{lang === "it" ? "Deep Analysis: forma, infortuni, venue" : "Deep Analysis: form, injuries, venue"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Tennis Live V4 e Football Live V4 research" : "Tennis Live V4 and Football Live V4 research"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Match Builder e Best Bets +EV" : "Match Builder and Best Bets +EV"}</PlanFeature>
             <PlanFeature>{lang === "it" ? "Edge, stake e CLV su tutto" : "Edge, stake and CLV on everything"}</PlanFeature>
@@ -2744,6 +2736,14 @@ function ClientAuthModal({
     ? emailValid && pwValid
     : name.trim().length > 1 && emailValid && pwValid;
 
+  // Dismissible: Escape closes the modal (backdrop click already does). Matters
+  // now that the modal can surface automatically for anonymous visitors.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
@@ -2809,7 +2809,12 @@ function ClientAuthModal({
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
       <form className="auth-modal" onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => { e.preventDefault(); submit(); }}>
+        onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
+        <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
+          style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
+            color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
+          ×
+        </button>
         <div className="auth-modal-head">
           <p className="eyebrow">{t.auth_eyebrow}</p>
           <h3>{mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
@@ -3379,7 +3384,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
-          <span className="model">{modelLabelFor(p)}</span>
+          <span className="model">{lang === "it" ? "Modello calibrato" : "Calibrated model"}</span>
           {isPreview || p.locked ? (
             <span className="gate">Pro</span>
           ) : isFinished ? (
@@ -3434,7 +3439,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
           {(e.xg_home != null || e.xg_away != null) && (
             <div className="da-row">
-              <span className="da-label">xG</span>
+              <span className="da-label">{lang === "it" ? "Gol attesi" : "Expected goals"}</span>
               <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
             </div>
           )}
@@ -3489,7 +3494,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {(e.pi_home != null || e.pi_away != null) && (
             <div className="da-row">
-              <span className="da-label">Pi Rating</span>
+              <span className="da-label">{lang === "it" ? "Rating" : "Rating"}</span>
               <span className="da-value">{e.pi_home ?? "–"} vs {e.pi_away ?? "–"}</span>
             </div>
           )}
@@ -3785,15 +3790,15 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
-          <span className="model">{lang === "it" ? "Elo superficie" : "Surface Elo"}</span>
+          <span className="model">{lang === "it" ? "Modello calibrato" : "Calibrated model"}</span>
           <span className="gate">Pro</span>
         </div>
 
         {/* expandable analysis body */}
         {isPreview ? (
           <div className="nudge">
-            <strong>{lang === "it" ? "Edge Elo e analisi richiedono Signal Desk Pro" : "Elo edge and analysis require Signal Desk Pro"}</strong>
-            <em>{lang === "it" ? "Sblocca edge%, analisi Elo Surface e segnali tennis con Pro (49.90 USDT/mese)." : "Unlock edge%, Elo Surface analysis and tennis signals with Pro (49.90 USDT/month)."}</em>
+            <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
+            <em>{lang === "it" ? "Sblocca edge%, analisi del modello e segnali tennis con Pro (49.90 USDT/mese)." : "Unlock edge%, model analysis and tennis signals with Pro (49.90 USDT/month)."}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -3824,15 +3829,15 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         <div className="deep-analysis-panel">
           <div className="da-header">
             <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{lang === "it" ? "Analisi Elo" : "Elo Analysis"}</span>
+            <span className="da-title">{lang === "it" ? "Analisi del modello" : "Model analysis"}</span>
           </div>
           <div className="da-row">
-            <span className="da-label">Elo {surface.label}</span>
+            <span className="da-label">Rating {surface.label}</span>
             <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
           </div>
           {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
             <div className="da-row">
-              <span className="da-label">Elo Overall</span>
+              <span className="da-label">{lang === "it" ? "Rating gen." : "Overall rating"}</span>
               <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
             </div>
           )}
@@ -3844,7 +3849,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           )}
           {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
             <div className="da-row">
-              <span className="da-label">Elo raw prob.</span>
+              <span className="da-label">{lang === "it" ? "Prob. modello" : "Model prob."}</span>
               <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
             </div>
           )}
@@ -3861,7 +3866,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi Elo approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep Elo analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
+          <span>{lang === "it" ? "Analisi approfondita del modello disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep model analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
         </div>
       )}
         </div>
@@ -4444,6 +4449,7 @@ interface Partner {
   type: PartnerType;
   status: PartnerStatus;
   description: string;
+  description_en?: string; // EN override; falls back to `description` when absent
   url: string | null;
   since: string;
   logo_initials: string;
@@ -4472,6 +4478,7 @@ const PARTNERS: Partner[] = [
     type: "Casino & Sportsbook",
     status: "active",
     description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    description_en: "Crypto casino & sportsbook. Bet straight from the picks via \"Place bet\".",
     url: "https://stake.com",
     since: "2026",
     logo_initials: "ST",
@@ -4484,6 +4491,7 @@ const PARTNERS: Partner[] = [
     type: "Casino & Sportsbook",
     status: "active",
     description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    description_en: "Crypto casino & sportsbook. Bet straight from the picks via \"Place bet\".",
     url: "https://roobet.com",
     since: "2026",
     logo_initials: "RB",
@@ -4501,9 +4509,13 @@ const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
 
 function PartnerCard({ p }: { p: Partner }) {
   const t = useT();
+  const lang = useLang();
   const statusColor = PARTNER_STATUS_COLORS[p.status];
   const partnerName = p.id === "partner-01" ? t.partner_primary_name : p.name;
-  const partnerDescription = p.id === "partner-01" ? t.partner_primary_desc : p.description;
+  const partnerDescription =
+    p.id === "partner-01"
+      ? t.partner_primary_desc
+      : lang === "it" ? p.description : (p.description_en ?? p.description);
   const partnerTags = p.id === "partner-01" ? [t.partner_tag_exclusive, "Sport", "Casino", "Live"] : (p.tags ?? []);
   const statusLabel: Record<PartnerStatus, string> = {
     featured:      t.partners_exclusive_badge,
@@ -5353,7 +5365,7 @@ function AdBanner({ lang, onCta, tone = "sportsbook" }: { lang: Lang; onCta?: ()
     ? {
         eyebrow: it ? "Sponsorizzato · Operator" : "Sponsored · Operator",
         title: it ? "Probabilità calibrate via API" : "Calibrated probabilities via API",
-        desc: it ? "Integra il modello Dixon-Coles + xG nella tua piattaforma." : "Integrate the Dixon-Coles + xG model into your platform.",
+        desc: it ? "Integra il nostro modello calibrato nella tua piattaforma." : "Integrate our calibrated model into your platform.",
         cta: it ? "Richiedi accesso →" : "Request access →",
       }
     : {
@@ -5472,7 +5484,7 @@ function FeaturedEdge({
     modelEdgePts = Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
     why = buildTennisWhy(m, lang);
     if (m.elo_p1 != null && m.elo_p2 != null) {
-      metrics.push({ dt: it ? `Elo ${surf}` : `Elo ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
+      metrics.push({ dt: it ? `Rating ${surf}` : `Rating ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
     }
     if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
       metrics.push({ dt: it ? "Match superficie" : "Surface matches", dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span> });
@@ -5508,8 +5520,8 @@ function FeaturedEdge({
           <div className="wlab"><span className="tri">▸</span> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
           <p className="line locked-blur" aria-hidden="true">
             {it
-              ? "L'analisi completa — Elo, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
-              : "The full breakdown — Elo, sample, head-to-head and narrative — is reserved for Pro members."}
+              ? "L'analisi completa — rating, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
+              : "The full breakdown — rating, sample, head-to-head and narrative — is reserved for Pro members."}
           </p>
         </div>
       </section>
@@ -5754,6 +5766,9 @@ export default function Dashboard() {
   const [storedProfiles, setStoredProfiles] = useState<ClientProfile[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
   const [authIntent, setAuthIntent] = useState<ClientAuthIntent>("login");
+  // True once the server-session reconcile has resolved, so we know whether the
+  // visitor is anonymous before deciding to surface the sign-in/register prompt.
+  const [authChecked, setAuthChecked] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
   // HIGH-3: landing from the email activation link. On success the activate
@@ -5901,9 +5916,26 @@ export default function Dashboard() {
           });
         }
       } catch { /* offline: leave local state as-is */ }
+      finally { if (!cancelled) setAuthChecked(true); }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Proactive access prompt: anonymous visitors used to have to hunt for the
+  // "Sign In / Register" buttons in the topbar. Once we've confirmed there is no
+  // session, surface the auth modal automatically — once per browser session
+  // (dismissible), never for logged-in users. Logging in clears `clientProfile`
+  // dependency → cleanup cancels a still-pending prompt.
+  useEffect(() => {
+    if (!authChecked || clientProfile) return;
+    try { if (window.sessionStorage.getItem("am-auth-prompted")) return; } catch { /**/ }
+    const id = window.setTimeout(() => {
+      try { window.sessionStorage.setItem("am-auth-prompted", "1"); } catch { /**/ }
+      setAuthIntent("create");
+      setAuthOpen(true);
+    }, 1200);
+    return () => window.clearTimeout(id);
+  }, [authChecked, clientProfile]);
 
   const saveClientProfile = (profile: ClientProfile) => {
     const normalizedProfile = { ...profile, email: profile.email.trim().toLowerCase() };
@@ -6311,7 +6343,7 @@ export default function Dashboard() {
 
           <nav className="am-topnav">
             {[
-              { tab: "bets" as Tab, label: "Mercati" },
+              { tab: "bets" as Tab, label: uiLanguage === "it" ? "Mercati" : "Markets" },
               { tab: "history" as Tab, label: tNav.nav_history },
               { tab: "leaderboard" as Tab, label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
               ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
@@ -6414,9 +6446,9 @@ export default function Dashboard() {
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? "Bets"}</h2>
               <p className="am-sub">
                 {uiLanguage === "it" ? (
-                  <>Probabilità <b>calibrate da un modello</b> sul calcio, Elo di superficie sul tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                  <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
                 ) : (
-                  <>Probabilities <b>calibrated by a model</b> on football, surface Elo on tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
+                  <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
               </p>
             </div>
@@ -6519,7 +6551,7 @@ export default function Dashboard() {
         <div className="promo-card">
           <p className="promo-eyebrow">{uiLanguage === "it" ? "Operator · API" : "Operator · API"}</p>
           <h4>{uiLanguage === "it" ? "Probabilità via REST" : "Probabilities via REST"}</h4>
-          <p className="promo-desc">{uiLanguage === "it" ? "Integra le probabilità calibrate (Dixon-Coles + xG) nella tua piattaforma. Una chiamata, un payload, nessun bookmaker." : "Integrate calibrated probabilities (Dixon-Coles + xG) into your platform. One call, one payload, no bookmaker."}</p>
+          <p className="promo-desc">{uiLanguage === "it" ? "Integra le probabilità calibrate nella tua piattaforma. Una chiamata, un payload, nessun bookmaker." : "Integrate calibrated probabilities into your platform. One call, one payload, no bookmaker."}</p>
           <a href="mailto:info@agenticmarkets.com?subject=Operator%20API%20Access"
             className="promo-link"
             onClick={() => trackEvent("operator_sidebar_click", {})}>
