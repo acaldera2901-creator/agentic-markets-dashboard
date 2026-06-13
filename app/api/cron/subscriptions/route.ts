@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { verifyBearer } from "@/lib/admin-auth";
+import { siteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ function reminderEmail(daysLeft: number, lang: string) {
   const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
   <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
   <p style="font-size:14px;line-height:1.5">${body}</p>
-  <a href="https://agentic-markets-roan.vercel.app/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${it ? "Rinnova ora" : "Renew now"}</a>
+  <a href="${siteUrl()}/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${it ? "Rinnova ora" : "Renew now"}</a>
 </div>`;
   return { subject, html, text: body };
 }
