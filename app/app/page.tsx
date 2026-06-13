@@ -3090,6 +3090,16 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
       : `There's no market price here — it's the model's read, not a value bet.`);
   }
 
+  // Honesty: surface a small-sample caveat so a pick built on few matches does
+  // not read as confident as one built on a solid sample.
+  const mH = e.matches?.home, mA = e.matches?.away;
+  if (mH != null && mA != null) {
+    const low = mH < 10 || mA < 10;
+    out.push(it
+      ? `Stima basata su ${mH} contro ${mA} partite${low ? " — campione limitato, più incertezza." : ", un campione solido."}`
+      : `Built on ${mH} vs ${mA} matches${low ? " — a small sample, so more uncertainty." : ", a solid sample."}`);
+  }
+
   return out.join(" ");
 }
 
@@ -3322,7 +3332,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               <div className="l">Edge</div>
             </div>
           </div>
-          {!isPreview && confScore != null && (
+          {!isPreview && edgeVal != null && confScore != null && (
             <div className="conf">
               <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
               {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
@@ -3330,7 +3340,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             </div>
           )}
           {!isPreview && edgeVal == null && (
-            <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
+            <span className="edge flat">
+              {marketImplied != null
+                ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
+                : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
+            </span>
           )}
           {isPreview && <span className="edge flat">🔒 {lang === "it" ? "Mercato ed edge richiedono Pro" : "Market & edge require Pro"}</span>}
         </>
@@ -3640,13 +3654,21 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   ];
 
   // ── Direction B readout (tennis): Market vs Model vs Edge ──
-  const pickPlayer = hasFavorite ? (p1IsPick ? "P1" : "P2") : null;
+  // Mirror the football card: the SHOWN player must be the one the edge refers
+  // to. `best_selection` is the agent's value pick (max-edge) and can be the
+  // underdog — showing the model favourite next to that edge misattributes it
+  // (and clicking the favourite then zeroed the edge in handleSelect).
+  const valuePlayer: "P1" | "P2" | null =
+    m.best_selection === "P1" || m.best_selection === "P2" ? m.best_selection : null;
+  const favPlayer: "P1" | "P2" | null = hasFavorite ? (p1IsPick ? "P1" : "P2") : null;
+  const pickPlayer: "P1" | "P2" | null = (isValue && valuePlayer) ? valuePlayer : favPlayer;
   const pickName = pickPlayer === "P1" ? (m.player1.split(" ").pop() ?? m.player1)
     : pickPlayer === "P2" ? (m.player2.split(" ").pop() ?? m.player2) : null;
   const pickProb = pickPlayer === "P1" ? m.p1 : pickPlayer === "P2" ? m.p2 : null;
   const pickOdds = pickPlayer === "P1" ? m.odds_p1 : pickPlayer === "P2" ? m.odds_p2 : null;
   const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
-  const edgeVal = m.edge != null && m.edge > 0 ? m.edge * 100 : null;
+  // Edge only when the shown player IS the value pick.
+  const edgeVal = (isValue && pickPlayer === valuePlayer && m.edge != null && m.edge > 0) ? m.edge * 100 : null;
   const confScore = m.confidence_score ?? (pickProb != null ? confidenceFromEdge(m.edge, pickProb) : null);
   const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
   const confLabel = confScore == null ? null
@@ -3732,7 +3754,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
               <div className="l">Edge</div>
             </div>
           </div>
-          {!isPreview && confScore != null && (
+          {!isPreview && edgeVal != null && confScore != null && (
             <div className="conf">
               <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
               {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
@@ -3740,7 +3762,11 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             </div>
           )}
           {!isPreview && edgeVal == null && (
-            <span className="edge flat">{lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market"}</span>
+            <span className="edge flat">
+              {marketImplied != null
+                ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
+                : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
+            </span>
           )}
           {isPreview && <span className="edge flat">🔒 {lang === "it" ? "Mercato ed edge richiedono Pro" : "Market & edge require Pro"}</span>}
         </>

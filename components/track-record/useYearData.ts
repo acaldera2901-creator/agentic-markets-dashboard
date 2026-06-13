@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Segment, Week } from "@/lib/track-record-history";
+import type { Segment } from "@/lib/track-record-history";
 
 export type YearStats = {
   won?: number;
@@ -14,10 +14,10 @@ export type YearStats = {
   beat_close?: string;
 } | null;
 
-export type YearData = { stats: YearStats; segments?: Segment[]; weeks?: Week[] };
+export type YearData = { stats: YearStats; segments?: Segment[] };
 
 // Legge /api/v2/history per anno + aggregati (additivi). Se il backend non
-// fornisce ancora gli aggregati, segments/weeks restano undefined (degrada pulito).
+// fornisce ancora gli aggregati, segments resta undefined (degrada pulito).
 export function useYearData(year: "2026" | "2025", aggregate: string): YearData | null {
   const [data, setData] = useState<YearData | null>(null);
   useEffect(() => {
@@ -25,7 +25,7 @@ export function useYearData(year: "2026" | "2025", aggregate: string): YearData 
     fetch(`/api/v2/history?year=${year}&aggregate=${aggregate}`)
       .then((r) => r.json())
       .then((d) => {
-        if (alive) setData({ stats: d.stats ?? null, segments: d.segments, weeks: d.weeks });
+        if (alive) setData({ stats: d.stats ?? null, segments: d.segments });
       })
       .catch(() => {
         if (alive) setData({ stats: null });

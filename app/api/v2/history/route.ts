@@ -4,7 +4,7 @@ import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { isSurfacedRow } from "@/lib/surfacing-gate";
-import { bySegment, weeklyHit } from "@/lib/track-record-history";
+import { bySegment } from "@/lib/track-record-history";
 
 export const dynamic = "force-dynamic";
 
@@ -116,7 +116,6 @@ export async function GET(req: Request) {
     sport: r.sport, competition: r.competition, result: r.result, starts_at: String(r.starts_at),
   }));
   if (aggregate.includes("segments")) extra.segments = bySegment(aggRows);
-  if (aggregate.includes("weeks")) extra.weeks = weeklyHit(aggRows);
 
   return NextResponse.json({
     history,
