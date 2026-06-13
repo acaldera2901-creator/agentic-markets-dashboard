@@ -84,7 +84,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
               <path d="M16 16 26 9.5A12 12 0 0 1 16 28Z" fill="var(--am-coral)" />
               <circle cx="16" cy="16" r="2" fill="var(--am-text)" />
             </svg>
-            <span className="am-wm">Bet<span className="r">R</span>dge<span className="chev">›</span></span>
+            <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
           </Link>
           <Link href={backHref} className="wc-topbar-back">← {backLabel}</Link>
         </div>
