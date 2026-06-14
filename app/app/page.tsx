@@ -5385,36 +5385,6 @@ function LiveNowStrip({
 // that never exposes the pick name or the probability.
 // On-brand partner/ad banner. Honest "Sponsorizzato · Partner" label (affiliate
 // disclosure), sober surface, single coral accent on the CTA — not a garish ad.
-function AdBanner({ lang, onCta, tone = "sportsbook" }: { lang: Lang; onCta?: () => void; tone?: "sportsbook" | "operator" }) {
-  const it = lang === "it";
-  const copy = tone === "operator"
-    ? {
-        eyebrow: it ? "Sponsorizzato · Operator" : "Sponsored · Operator",
-        title: it ? "Probabilità calibrate via API" : "Calibrated probabilities via API",
-        desc: it ? "Integra il nostro modello calibrato nella tua piattaforma." : "Integrate our calibrated model into your platform.",
-        cta: it ? "Richiedi accesso →" : "Request access →",
-      }
-    : {
-        eyebrow: it ? "Sponsorizzato · Partner" : "Sponsored · Partner",
-        title: it ? "Gioca informato con i sportsbook partner" : "Bet informed with partner sportsbooks",
-        desc: it ? "Le nostre probabilità calibrate, accanto alle quote dei partner. Confronta prima di giocare." : "Our calibrated probabilities, next to partner odds. Compare before you play.",
-        cta: it ? "Vedi partner →" : "View partners →",
-      };
-  return (
-    <aside className={`ad-banner ${tone}`} aria-label={copy.eyebrow}>
-      <div className="ad-banner-main">
-        <span className="ad-banner-eyebrow">{copy.eyebrow}</span>
-        <span className="ad-banner-title">{copy.title}</span>
-        <span className="ad-banner-desc">{copy.desc}</span>
-      </div>
-      <div className="ad-banner-aside">
-        <span className="ad-banner-age">18+</span>
-        <button className="ad-banner-cta" onClick={onCta}>{copy.cta}</button>
-      </div>
-    </aside>
-  );
-}
-
 function FeaturedEdge({
   predictions,
   tennisMatches,
@@ -5599,7 +5569,6 @@ function UnifiedBetsTab({
   historyLoading,
   onSelect,
   onBetNow,
-  onViewPartners,
   onSignIn,
   onRegister,
   onGate,
@@ -5616,7 +5585,6 @@ function UnifiedBetsTab({
   historyLoading: boolean;
   onSelect: (s: SlipSelection) => void;
   onBetNow: () => void;
-  onViewPartners?: () => void;
   onSignIn: () => void;
   onRegister: () => void;
   onGate?: () => void;
@@ -5674,7 +5642,6 @@ function UnifiedBetsTab({
           tennisIsPlaceholder={tennisIsPlaceholder}
         />
       </LockedGate>
-      <AdBanner lang={lang} onCta={onViewPartners} tone="operator" />
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
   );
@@ -6516,7 +6483,6 @@ export default function Dashboard() {
               // (affiliate) tab with no context. Prompt sign-in first; a
               // logged-in user keeps the affiliate route.
               onBetNow={() => hasClientProfile ? setTab("partners") : openAuth("login")}
-              onViewPartners={() => setTab("partners")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
