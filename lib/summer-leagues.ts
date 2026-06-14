@@ -99,7 +99,11 @@ function tokens(name: string): string[] {
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
-    .replace(/[/-]/g, " ")
+    // Punctuation separators: "/" and "-" (e.g. "Bodø/Glimt"), plus "." so an
+    // abbreviated club ("St. Patricks" in the snapshot) tokenizes to ["st",
+    // "patricks"] and matches the odds-feed "St Patricks Athletic" instead of
+    // leaving a stray "st." token that fails containment (#SUMMER-NAMEMATCH).
+    .replace(/[/.\-]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !NOISE.has(w));
 }
