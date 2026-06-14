@@ -131,20 +131,9 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* ── Hero (#LANDING-HERO-IMG: immagine unica calcio+tennis con nastri energia) ── */}
+      {/* ── Hero (#LANDING-HERO-IMG: immagine unica "BetRedge All Sports", self-contained) ── */}
       <section className="lp-hero lp-hero-img">
-        <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-bg.jpg)" }} aria-hidden="true" />
-        <p className="lp-side-label lp-side-l">{t.leftLabel}</p>
-        <div className="lp-hero-center">
-          <div className="lp-hero-logo"><Wordmark big /></div>
-          <h1 className="lp-tagline">
-            {t.tagline.map((w, i) => (
-              <span key={i} className="lp-tagword" style={{ animationDelay: `${0.15 + i * 0.12}s` }}>{w} </span>
-            ))}
-          </h1>
-          <div className="lp-pill">{t.pill}<span className="lp-pill-dot">▾</span></div>
-        </div>
-        <p className="lp-side-label lp-side-label-r lp-side-r">{t.rightLabel}</p>
+        <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-allsports.jpg)" }} role="img" aria-label="BetRedge — All Sports" />
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────── */}
