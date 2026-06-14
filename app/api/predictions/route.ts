@@ -283,7 +283,11 @@ interface EnrichmentPayload {
 }
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
-  const codes = Object.keys(LEAGUES);
+  // #WC-DEDUP-2: la WC NON si calcola qui — è di proprietà della pipeline Python
+  // `football-worldcup-v2-elo` (unified_predictions, con odds Pinnacle reali). Il
+  // modello TS non ha dati WC affidabili e scriveva righe placeholder in
+  // match_predictions che oscuravano quelle vere (#WC-DEDUP-1).
+  const codes = Object.keys(LEAGUES).filter((c) => c !== "WC");
   // Summer leagues are not on the football-data.org free tier: their history
   // comes from the shipped lab snapshot and their fixtures from ESPN/Odds API
   // events (lib/summer-leagues.ts). Everything downstream is shared.
