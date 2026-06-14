@@ -76,11 +76,34 @@ export async function GET(req: Request) {
     }
   }
 
+  // #WC-DEDUP-1: due pipeline scrivono in unified_predictions (es. WC: la
+  // completa `football-worldcup-v2-elo` con prob+odds e una stub senza
+  // distribuzione 1X2). Tieni solo le righe con una probabilità usabile (dopo
+  // il coalesce dai notes) e collassa i doppioni dello stesso fixture,
+  // preferendo quella che porta un pick. Nessun numero inventato: i match
+  // senza riga completa spariscono (opzione A, niente card vuote).
+  const served: Array<Record<string, unknown>> = [];
+  {
+    const dedup = new Map<string, Record<string, unknown>>();
+    for (const r of rows as unknown as Array<Record<string, unknown>>) {
+      if (typeof r.p_home !== "number") continue; // incompleta → nascosta
+      const key = [
+        String(r.sport ?? ""),
+        String(r.home_team ?? "").trim().toLowerCase(),
+        String(r.away_team ?? "").trim().toLowerCase(),
+        String(r.starts_at ?? "").slice(0, 10),
+      ].join("|");
+      const cur = dedup.get(key);
+      if (!cur || (r.pick && !cur.pick)) dedup.set(key, r);
+    }
+    served.push(...dedup.values());
+  }
+
   // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc DENTRO ogni sport.
   // free sblocca rank<1, base rank<5, premium tutto (showcaseAllowance).
   const rankById = new Map<string, number>();
   const bySport = new Map<string, Array<Record<string, unknown>>>();
-  for (const row of rows as unknown as Array<Record<string, unknown>>) {
+  for (const row of served) {
     const sp = String(row.sport ?? "other");
     if (!bySport.has(sp)) bySport.set(sp, []);
     bySport.get(sp)!.push(row);
@@ -96,7 +119,7 @@ export async function GET(req: Request) {
       .sort((a, b) => b.edge - a.edge || b.conf - a.conf)
       .forEach((r, i) => rankById.set(r.id, i));
   }
-  const predictions = rows.map((row) => {
+  const predictions = served.map((row) => {
     const rank = rankById.get((row as { id: string }).id) ?? Infinity;
     const projected = projectPrediction(row as unknown as Record<string, unknown>, state, rank);
     return projected.locked ? projected : withAffiliate(projected);

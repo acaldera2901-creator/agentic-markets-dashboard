@@ -786,12 +786,29 @@ export async function GET(req: Request) {
     ),
   ]);
 
-  const fallback_raw = primary_raw.length === 0 ? await fetchUnifiedFallback() : [];
-  const usingFallback = primary_raw.length === 0 && fallback_raw.length > 0;
-  const predictions_raw = usingFallback ? fallback_raw : primary_raw;
+  // #WC-DEDUP-1: match_predictions può contenere stime WC incomplete (niente
+  // odds/pick) che oscuravano la pipeline WC completa in unified_predictions.
+  // La WC si serve SEMPRE dal fallback unified (righe `football-worldcup-v2-elo`
+  // di tipo signal: prob+odds+pick); le righe WC di match_predictions si
+  // ignorano. I fixture senza riga unified completa spariscono (opzione A —
+  // niente card vuote). Il fallback resta copertura off-season per il non-WC.
+  const primaryNonWc = primary_raw.filter((p) => p.league !== "WC");
+  const fallback_raw = await fetchUnifiedFallback();
+  const fallbackWc = fallback_raw.filter((p) => p.league === "WC");
+  const fallbackNonWc = primaryNonWc.length === 0
+    ? fallback_raw.filter((p) => p.league !== "WC")
+    : [];
+  const usingFallback = primaryNonWc.length === 0;
+  // Dedup difensivo per match_id (stesso fixture da fonti diverse).
+  const seenMatch = new Set<string>();
+  const predictions_raw = [...primaryNonWc, ...fallbackNonWc, ...fallbackWc].filter((p) => {
+    if (seenMatch.has(p.match_id)) return false;
+    seenMatch.add(p.match_id);
+    return true;
+  });
 
-  const computedAt = usingFallback
-    ? fallback_raw.reduce<string | null>(
+  const computedAt = predictions_raw.length
+    ? predictions_raw.reduce<string | null>(
         (max, row) => (max === null || row.computed_at > max ? row.computed_at : max),
         null
       )
