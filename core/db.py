@@ -309,10 +309,21 @@ class EloRating(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+_connect_args: dict = {
+    # difesa in profondità: ogni connessione lasciata idle-in-transaction si
+    # auto-termina lato server, anche se il processo worker muore mid-txn
+    # (complementa ALTER DATABASE ... idle_in_transaction_session_timeout)
+    "server_settings": {"idle_in_transaction_session_timeout": "1800000"},  # 30 min (ms)
+}
+if "neon.tech" in settings.DATABASE_URL:
+    _connect_args["ssl"] = "require"
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
-    connect_args={"ssl": "require"} if "neon.tech" in settings.DATABASE_URL else {},
+    pool_pre_ping=True,   # scarta connessioni morte/stale al checkout
+    pool_recycle=1800,    # ricicla connessioni piu vecchie di 30 min (Supavisor session pooler)
+    connect_args=_connect_args,
 )
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
