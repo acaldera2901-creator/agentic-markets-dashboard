@@ -22,12 +22,18 @@ import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type Ban
 
 function getSessionId(): string {
   if (typeof window === "undefined") return "ssr";
-  let sid = sessionStorage.getItem("am_sid");
-  if (!sid) {
-    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    sessionStorage.setItem("am_sid", sid);
+  // sessionStorage access throws in Safari private mode / blocked-storage contexts
+  // even when `window` exists — guard so a tracked click never breaks the handler.
+  try {
+    let sid = sessionStorage.getItem("am_sid");
+    if (!sid) {
+      sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem("am_sid", sid);
+    }
+    return sid;
+  } catch {
+    return "ssr";
   }
-  return sid;
 }
 
 function trackEvent(
@@ -35,7 +41,8 @@ function trackEvent(
   extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown> }
 ) {
   if (typeof window === "undefined") return;
-  const language = extra?.language ?? localStorage.getItem("agentic-lang") ?? undefined;
+  let language = extra?.language;
+  try { language = language ?? localStorage.getItem("agentic-lang") ?? undefined; } catch { /* storage blocked */ }
   fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -3438,7 +3445,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
           {/* Affiliate bonus CTA — demoted into the expansion */}
           {p.affiliate && (
-            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
+            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener noreferrer">
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
             </a>
           )}
@@ -3459,7 +3466,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {(e.npxg_home != null || e.npxg_away != null) && (
             <div className="da-row">
-              <span className="da-label">npxG</span>
+              <span className="da-label">{lang === "it" ? "Gol attesi (no rig.)" : "Expected goals (non-pen.)"}</span>
               <span className="da-value">{e.npxg_home?.toFixed(2) ?? "–"} vs {e.npxg_away?.toFixed(2) ?? "–"}</span>
             </div>
           )}
@@ -3844,7 +3851,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
           {/* Affiliate bonus CTA + pick-of-day — demoted into the expansion */}
           {m.affiliate && (
-            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
+            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener noreferrer">
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
             </a>
           )}

@@ -297,6 +297,9 @@ export function predict(
   }
 
   const total = pHome + pDraw + pAway;
+  // Guard against numerical underflow (all Poisson terms → 0): dividing would
+  // emit NaN probabilities into edges/confidence. Treat as an invalid prediction.
+  if (!(total > 0)) return null;
   return {
     pHome: pHome / total,
     pDraw: pDraw / total,

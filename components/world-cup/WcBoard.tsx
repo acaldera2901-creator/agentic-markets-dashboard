@@ -462,7 +462,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
                 className="betbtn"
                 href={p.affiliate?.url || "/app?tab=partners"}
                 {...(p.affiliate?.url
-                  ? { target: "_blank", rel: "nofollow sponsored noopener" }
+                  ? { target: "_blank", rel: "nofollow sponsored noopener noreferrer" }
                   : {})}
               >
                 {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}

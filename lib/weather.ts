@@ -202,6 +202,7 @@ export async function fetchMatchWeather(
     };
 
     // Find the forecast slot closest to kickoff
+    if (!data.list?.length) return null; // empty forecast → no data (avoid undefined deref below)
     const kickoffTs = Math.floor(kickoffDate.getTime() / 1000);
     let best = data.list[0];
     let minDiff = Infinity;

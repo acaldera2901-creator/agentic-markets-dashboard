@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeEqual } from "@/lib/admin-auth";
 import { issueAdminToken } from "@/lib/admin-session";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
 export async function POST(req: NextRequest) {
+  // Throttle brute-force of ADMIN_SECRET (the 500ms delay alone still allows ~120/min).
+  if (rateLimit(`admin-login:${clientIp(req)}`, 8, 60_000)) {
+    return NextResponse.json({ error: "too many attempts" }, { status: 429 });
+  }
   try {
     const { password } = await req.json() as { password?: string };
 
