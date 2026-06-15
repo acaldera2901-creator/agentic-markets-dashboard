@@ -40,8 +40,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Nested lockfiles (dashboard-web/, client-portal/) make Next mis-infer the
-  // workspace root; pin it so dev/build always resolve from this directory.
+  // Pin the workspace root so dev/build always resolve from this directory
+  // (a stray lockfile above the repo can otherwise make Next mis-infer it).
   turbopack: { root: __dirname },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
