@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { modelEdge } from "@/lib/best-bets";
+import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 
 type WcEnrichment = {
   kind?: string;
@@ -312,7 +313,7 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
   return out.join(" ");
 }
 
-function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
+function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: LiveScore | null; betLinksEnabled?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const home = canonTeam(p.home_team) || "Home";
   const away = canonTeam(p.away_team) || "Away";
@@ -456,17 +457,36 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
               <button type="button" className="open" onClick={() => setShowWhy((v) => !v)}>
                 {showWhy ? (lang === "it" ? "Nascondi" : "Hide") : (lang === "it" ? "Mostra" : "Show")} <span className="ar">→</span>
               </button>
-              {/* Place Bet — real affiliate link when present, else the Partners
-                  deep-link. Styled as the football bet button; never a fake target. */}
-              <a
-                className="betbtn"
-                href={p.affiliate?.url || "/app?tab=partners"}
-                {...(p.affiliate?.url
-                  ? { target: "_blank", rel: "nofollow sponsored noopener" }
-                  : {})}
-              >
-                {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
-              </a>
+              {/* Place Bet — same affiliate dropdown as the football/tennis cards
+                  (PlaceBetMenu) when the geo-gate is on; otherwise the Partners
+                  deep-link fallback. Never a fake/direct target without the menu. */}
+              {betLinksEnabled ? (
+                <PlaceBetMenu
+                  buttonClassName="betbtn"
+                  label={isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
+                  disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
+                  selection={{
+                    sport: "worldcup",
+                    league: p.league || "WC",
+                    homeTeam: home,
+                    awayTeam: away,
+                    market: "1X2",
+                    pick: pick === "HOME" ? home : pick === "AWAY" ? away : pick === "DRAW" ? "Draw" : "",
+                    odds: null,
+                    eventStartUtc: p.starts_at || undefined,
+                  }}
+                />
+              ) : (
+                <a
+                  className="betbtn"
+                  href={p.affiliate?.url || "/app?tab=partners"}
+                  {...(p.affiliate?.url
+                    ? { target: "_blank", rel: "nofollow sponsored noopener" }
+                    : {})}
+                >
+                  {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
+                </a>
+              )}
               <span className="model">{model}</span>
               <span className="gate">Pro</span>
             </div>
@@ -499,6 +519,17 @@ export default function WcBoard() {
   // ESPN fifa.friendly + football-data fixtures). Matched to cards by team-name
   // pair since the live feed is keyed by match_id, not the prediction id.
   const [liveMap, setLiveMap] = useState<Record<string, LiveScore>>({});
+  // Affiliate dropdown geo-gate (server-side). Same flag the home board reads;
+  // off → cards fall back to the Partners deep-link. Fail-soft on error.
+  const [betLinksEnabled, setBetLinksEnabled] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/bet-links")
+      .then((r) => r.json())
+      .then((j: { enabled?: boolean }) => { if (alive) setBetLinksEnabled(Boolean(j.enabled)); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -542,7 +573,7 @@ export default function WcBoard() {
   const grid = (
     <div className="wc-board-grid">
       {rows.map((p) => (
-        <WcCard key={p.id} p={p} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} />
+        <WcCard key={p.id} p={p} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} betLinksEnabled={betLinksEnabled} />
       ))}
     </div>
   );
