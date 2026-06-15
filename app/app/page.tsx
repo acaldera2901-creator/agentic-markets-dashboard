@@ -79,6 +79,9 @@ const BASE_TRANSLATIONS = {
     auth_err_exists: "Account già esistente — accedi.", auth_err_founder: "Questo profilo richiede founder access.",
     auth_err_pwshort: "La password deve avere almeno 8 caratteri.", auth_err_generic: "Errore. Riprova.",
     auth_hint_incomplete: "Inserisci un'email valida e una password di almeno 8 caratteri.",
+    auth_age_confirm: "Confermo di avere almeno 18 anni.",
+    auth_tos_pre: "Accetto i ", auth_tos_link: "Termini di Servizio e l'Informativa Privacy", auth_tos_post: ".",
+    auth_hint_consent: "Conferma di essere maggiorenne e accetta i Termini per continuare.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Un piano pagante, promessa chiara",
@@ -321,6 +324,9 @@ const BASE_TRANSLATIONS = {
     auth_err_exists: "Account already exists — log in.", auth_err_founder: "This profile requires founder access.",
     auth_err_pwshort: "Password must be at least 8 characters.", auth_err_generic: "Error. Try again.",
     auth_hint_incomplete: "Enter a valid email and a password of at least 8 characters.",
+    auth_age_confirm: "I confirm I am at least 18 years old.",
+    auth_tos_pre: "I accept the ", auth_tos_link: "Terms of Service and Privacy Policy", auth_tos_post: ".",
+    auth_hint_consent: "Confirm you are of legal age and accept the Terms to continue.",
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "One paid plan, clear promise",
@@ -607,7 +613,7 @@ const TRANSLATIONS = {
 } as const;
 
 type Lang = keyof typeof TRANSLATIONS;
-const LANGUAGES: Lang[] = ["it", "en"];
+const LANGUAGES: Lang[] = ["en", "it", "es", "fr", "ru"];
 const TOPBAR_SUBTITLE: Record<Lang, string> = {
   it: "Un’unica console per segnali, analisi predittiva e live execution.",
   en: "One console for signals, predictive analytics and live execution.",
@@ -616,7 +622,7 @@ const TOPBAR_SUBTITLE: Record<Lang, string> = {
   ru: "Единая консоль для сигналов, предиктивной аналитики и live execution.",
 };
 
-const LanguageCtx = createContext<Lang>("it");
+const LanguageCtx = createContext<Lang>("en");
 function useLang() { return useContext(LanguageCtx); }
 
 const TzCtx = createContext("Europe/Rome");
@@ -2669,7 +2675,7 @@ function SettingsTab({
           </label>
           <label>
             <span>{copy.language}</span>
-            <select value={draft.language ?? "it"} onChange={(event) => setDraft({ ...draft, language: event.target.value as Lang })}>
+            <select value={draft.language ?? "en"} onChange={(event) => setDraft({ ...draft, language: event.target.value as Lang })}>
               {LANGUAGES.map((code) => (
                 <option key={code} value={code}>{languageLabel(code, t)}</option>
               ))}
@@ -2725,6 +2731,9 @@ function ClientAuthModal({
   const [info, setInfo] = useState("");
   const [showResend, setShowResend] = useState(false);
   const [busy, setBusy] = useState(false);
+  // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
+  const [ageOk, setAgeOk] = useState(false);
+  const [tosOk, setTosOk] = useState(false);
   const t = useT();
   const lang = useLang();
   const it = lang === "it";
@@ -2734,7 +2743,7 @@ function ClientAuthModal({
   const pwValid = password.length >= 8;
   const canSubmit = mode === "login"
     ? emailValid && pwValid
-    : name.trim().length > 1 && emailValid && pwValid;
+    : name.trim().length > 1 && emailValid && pwValid && ageOk && tosOk;
 
   // Dismissible: Escape closes the modal (backdrop click already does). Matters
   // now that the modal can surface automatically for anonymous visitors.
@@ -2840,6 +2849,19 @@ function ClientAuthModal({
             placeholder={mode === "create" ? t.auth_pw_placeholder_new : "••••••••"}
             autoComplete={mode === "login" ? "current-password" : "new-password"} />
         </label>
+        {/* #SIGNUP-GATE: +18 confirmation + Terms acceptance, required to create a profile */}
+        {mode === "create" && (
+          <div className="auth-consent" style={{ display: "flex", flexDirection: "column", gap: 8, margin: "4px 0 0" }}>
+            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
+              <input type="checkbox" checked={ageOk} onChange={(e) => setAgeOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
+              <span>{t.auth_age_confirm}</span>
+            </label>
+            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
+              <input type="checkbox" checked={tosOk} onChange={(e) => setTosOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
+              <span>{t.auth_tos_pre}<Link href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_link}</Link>{t.auth_tos_post}</span>
+            </label>
+          </div>
+        )}
         {error && <p className="auth-error">{error}</p>}
         {info && <p className="auth-info" style={{ fontSize: "12px", lineHeight: 1.5, color: "var(--am-coral)", margin: "4px 0 0" }}>{info}</p>}
         {showResend && (
@@ -2851,7 +2873,11 @@ function ClientAuthModal({
         {/* BUG-009: the submit button is disabled until the form validates;
             without this hint the click looked silently unresponsive. */}
         {!error && !info && !canSubmit && !busy && (email || password) && (
-          <p className="auth-error">{t.auth_hint_incomplete}</p>
+          <p className="auth-error">
+            {mode === "create" && name.trim().length > 1 && emailValid && pwValid && (!ageOk || !tosOk)
+              ? t.auth_hint_consent
+              : t.auth_hint_incomplete}
+          </p>
         )}
         <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
         <p>{t.auth_footer}</p>
@@ -5700,9 +5726,9 @@ export default function Dashboard() {
     return requested && VALID_TABS.includes(requested) ? requested : "bets";
   });
   const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "it";
+    if (typeof window === "undefined") return "en";
     const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
-    return stored && LANGUAGES.includes(stored) ? stored : "it";
+    return stored && LANGUAGES.includes(stored) ? stored : "en";
   });
   const [betLinksEnabled, setBetLinksEnabled] = useState(false);
   useEffect(() => {
@@ -5775,7 +5801,7 @@ export default function Dashboard() {
       const activated = params.get("activated");
       const act = params.get("activation");
       if (!activated && !act) return;
-      const it = (window.localStorage.getItem("agentic-lang") ?? "it") !== "en";
+      const it = (window.localStorage.getItem("agentic-lang") ?? "en") !== "en";
       // Resolve the notice (and whether to open the auth modal) from the params,
       // then apply once. One-shot mount sync from the activation redirect URL.
       let notice: { ok: boolean; msg: string } | null = null;
@@ -6323,7 +6349,7 @@ export default function Dashboard() {
       {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
       <header className="am-topbar">
         <div className="am-topbar-in">
-          <div className="am-brandmark">
+          <Link href="/" className="am-brandmark" aria-label="BetRedge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
             {/* logo: mira/target con cuneo coral = "probabilità di precisione" */}
             <svg className="am-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
               <path d="M5 21A11 11 0 0 1 27 21" stroke="var(--am-muted)" strokeWidth="1.8" strokeLinecap="round" />
@@ -6332,7 +6358,7 @@ export default function Dashboard() {
               <circle cx="16" cy="21" r="2.2" fill="var(--am-coral)" />
             </svg>
             <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
-          </div>
+          </Link>
 
           <nav className="am-topnav">
             {[
