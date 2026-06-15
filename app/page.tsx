@@ -12,7 +12,8 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { HouseBanner } from "@/components/HouseBanner";
 import { pickCampaign } from "@/lib/house-banners";
 
-type Lang = "it" | "en";
+type Lang = "it" | "en" | "es" | "fr" | "ru";
+const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
 
 const COPY = {
   it: {
@@ -59,6 +60,72 @@ const COPY = {
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. 18+.",
     privacy: "Privacy",
   },
+  es: {
+    signin: "Entrar",
+    register: "Regístrate",
+    leftLabel: "CUOTAS IMBATIBLES EN FÚTBOL Y TENIS",
+    rightLabel: "LA VENTAJA DEFINITIVA\nFÚTBOL Y TENIS",
+    tagline: ["PREDICE.", "JUEGA.", "GANA."],
+    pill: "LA VENTAJA DEFINITIVA EN LAS APUESTAS",
+    viewNow: "VER AHORA",
+    joinNow: "ÚNETE AHORA",
+    cardBrandTitle: "Tu ventaja en las apuestas deportivas",
+    signNow: "REGÍSTRATE",
+    cardFootball: "CUOTAS FÚTBOL",
+    cardFootballDesc: "Probabilidades calibradas por nuestro modelo en las principales ligas.",
+    cardLive: "CUOTAS LIVE E INSIGHTS",
+    cardLiveDesc: "Edge en tiempo real y explicaciones: el modelo se actualiza mientras corre el partido.",
+    playNow: "JUEGA AHORA",
+    cardApp: "BETREDGE APP",
+    cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
+    appSoon: "PRÓXIMAMENTE",
+    risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. 18+.",
+    privacy: "Privacidad",
+  },
+  fr: {
+    signin: "Se connecter",
+    register: "S'inscrire",
+    leftLabel: "DES COTES IMBATTABLES SUR LE FOOTBALL & LE TENNIS",
+    rightLabel: "L'AVANTAGE ULTIME\nFOOTBALL & TENNIS",
+    tagline: ["PRÉDIS.", "JOUE.", "GAGNE."],
+    pill: "L'AVANTAGE ULTIME DANS LES PARIS",
+    viewNow: "VOIR MAINTENANT",
+    joinNow: "REJOINDRE",
+    cardBrandTitle: "Ton avantage dans les paris sportifs",
+    signNow: "S'INSCRIRE",
+    cardFootball: "COTES FOOTBALL",
+    cardFootballDesc: "Probabilités calibrées par notre modèle sur les principaux championnats.",
+    cardLive: "COTES LIVE & INSIGHTS",
+    cardLiveDesc: "Edge en temps réel et explications : le modèle se met à jour pendant le match.",
+    playNow: "JOUE MAINTENANT",
+    cardApp: "BETREDGE APP",
+    cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
+    appSoon: "BIENTÔT",
+    risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. 18+.",
+    privacy: "Confidentialité",
+  },
+  ru: {
+    signin: "Войти",
+    register: "Регистрация",
+    leftLabel: "НЕПОБЕДИМЫЕ КОЭФФИЦИЕНТЫ НА ФУТБОЛ И ТЕННИС",
+    rightLabel: "АБСОЛЮТНОЕ ПРЕИМУЩЕСТВО\nФУТБОЛ И ТЕННИС",
+    tagline: ["ПРОГНОЗИРУЙ.", "ИГРАЙ.", "ВЫИГРЫВАЙ."],
+    pill: "АБСОЛЮТНОЕ ПРЕИМУЩЕСТВО В СТАВКАХ",
+    viewNow: "СМОТРЕТЬ",
+    joinNow: "ПРИСОЕДИНИТЬСЯ",
+    cardBrandTitle: "Твоё преимущество в ставках на спорт",
+    signNow: "РЕГИСТРАЦИЯ",
+    cardFootball: "КОЭФФИЦИЕНТЫ ФУТБОЛ",
+    cardFootballDesc: "Вероятности, откалиброванные нашей моделью по топ-лигам.",
+    cardLive: "LIVE КОЭФФИЦИЕНТЫ И ИНСАЙТЫ",
+    cardLiveDesc: "Edge в реальном времени и объяснения: модель обновляется во время матча.",
+    playNow: "ИГРАТЬ",
+    cardApp: "BETREDGE APP",
+    cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
+    appSoon: "СКОРО",
+    risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. 18+.",
+    privacy: "Конфиденциальность",
+  },
 } as const;
 
 // Wordmark riusabile (coerente col rebrand): Bet R edge ›
@@ -83,7 +150,7 @@ function BrandMark({ size = 32 }: { size?: number }) {
 }
 
 export default function LandingPage() {
-  const [lang, setLang] = useState<Lang>("it");
+  const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
 
@@ -91,7 +158,7 @@ export default function LandingPage() {
     setMounted(true);
     try {
       const sl = localStorage.getItem("agentic-lang");
-      if (sl === "it" || sl === "en") setLang(sl);
+      if (sl && (LANGS as string[]).includes(sl)) setLang(sl as Lang);
       const dt = document.documentElement.getAttribute("data-theme");
       if (dt === "light" || dt === "dark") setTheme(dt);
     } catch {}
@@ -100,7 +167,7 @@ export default function LandingPage() {
   const t = COPY[lang];
 
   const toggleLang = () => {
-    const next: Lang = lang === "it" ? "en" : "it";
+    const next: Lang = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
     setLang(next);
     try { localStorage.setItem("agentic-lang", next); } catch {}
   };
