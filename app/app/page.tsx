@@ -2815,8 +2815,15 @@ function ClientAuthModal({
     finally { setBusy(false); }
   };
 
+  // #UI-BUG-0616 (slide 2): an outside-click on the backdrop used to discard a
+  // half-filled registration form, forcing the user to re-enter everything.
+  // Only dismiss on backdrop click when the form is pristine; once anything is
+  // typed, require the × button or Escape so accidental clicks don't lose data.
+  const dirty = Boolean(name || email || password);
+  const onBackdrop = () => { if (!dirty) onClose(); };
+
   return (
-    <div className="auth-modal-backdrop" onClick={onClose}>
+    <div className="auth-modal-backdrop" onClick={onBackdrop}>
       <form className="auth-modal" onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
         <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
