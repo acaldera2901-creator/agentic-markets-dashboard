@@ -6650,6 +6650,138 @@ button:disabled {
 .lp-phone-cta { text-align: center; font-weight: 800; font-size: 10px; letter-spacing: .08em; color: #fff; background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); border-radius: 8px; padding: 8px; }
 .lp-soon { margin-top: 12px; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--am-muted); }
 
+/* ══ What is BetRedge (#HOME-VALUEPROP-1) ══════════════════════════════════
+   Split editoriale asimmetrico (copy 1.15fr / readout 0.85fr). Tipografia da
+   leve multiple: eyebrow mono tracciato, headline display grande con seconda
+   riga coral, KPI mono. Un solo accent coral (CTA, +7.9pt, 64%, edge). */
+.lp-eyebrow {
+  margin: 0 0 14px; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--am-muted-2); display: inline-flex; align-items: center; gap: 9px;
+}
+.lp-eyebrow::before {
+  content: ""; width: 22px; height: 1px; background: var(--am-coral); display: inline-block;
+}
+
+.lp-what {
+  display: grid; grid-template-columns: 1.15fr 0.85fr; align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+  padding: clamp(48px, 7vw, 92px) clamp(16px, 4vw, 56px) clamp(40px, 5vw, 64px);
+  max-width: 1240px; margin: 0 auto; width: 100%;
+}
+.lp-what-head {
+  margin: 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(30px, 4.2vw, 56px); line-height: 1.02; letter-spacing: -0.02em;
+  color: var(--am-text); max-width: 16ch;
+}
+.lp-what-head-2 { color: var(--am-coral); }
+.lp-what-body {
+  margin: 22px 0 0; font-size: clamp(15px, 1.25vw, 17px); line-height: 1.62;
+  color: var(--am-muted); max-width: 52ch;
+}
+.lp-kpis {
+  display: flex; gap: clamp(20px, 3vw, 44px); margin: 30px 0 0;
+  padding-top: 26px; border-top: 1px solid var(--am-line);
+}
+.lp-kpi { display: flex; flex-direction: column; gap: 4px; }
+.lp-kpi-val {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: clamp(24px, 2.6vw, 34px); line-height: 1; letter-spacing: -0.02em;
+  color: var(--am-text); font-feature-settings: "tnum" 1;
+}
+.lp-kpi-val.accent { color: var(--am-coral); }
+.lp-kpi-unit { font-size: 0.5em; font-weight: 600; margin-left: 1px; opacity: .8; }
+.lp-kpi-lab {
+  font-size: 11.5px; letter-spacing: .04em; color: var(--am-muted-2); text-transform: lowercase;
+}
+.lp-what-cta {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 32px;
+  font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: .01em;
+  color: var(--am-coral-ink); text-decoration: none;
+  background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2));
+  padding: 13px 26px; border-radius: 11px;
+  box-shadow: 0 10px 26px var(--am-coral-b); transition: transform .15s, box-shadow .2s;
+}
+.lp-what-cta span { transition: transform .2s; }
+.lp-what-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 34px var(--am-coral-b); }
+.lp-what-cta:hover span { transform: translateX(4px); }
+
+/* readout — artefatto modello vs mercato (mono, da strumento di misura) */
+.lp-readout {
+  margin: 0; background: var(--am-panel); border: 1px solid var(--am-line);
+  border-radius: 16px; padding: 22px 22px 20px;
+  box-shadow: 0 24px 60px -28px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.lp-readout-cap {
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10.5px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--am-muted-2);
+  padding-bottom: 14px; border-bottom: 1px solid var(--am-line);
+}
+.lp-readout-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; }
+.lp-readout-lab { font-size: 12.5px; color: var(--am-muted); white-space: nowrap; }
+.lp-readout-bar { height: 8px; border-radius: 999px; background: var(--am-inset); overflow: hidden; position: relative; }
+.lp-readout-bar i { display: block; height: 100%; border-radius: 999px; }
+.lp-readout-bar i.model { background: var(--am-coral); }
+.lp-readout-bar i.market { background: var(--am-muted-2); }
+.lp-readout-num {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: 15px; color: var(--am-muted); font-feature-settings: "tnum" 1; min-width: 42px; text-align: right;
+}
+.lp-readout-num.accent { color: var(--am-coral); }
+.lp-readout-edge {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-top: 2px; padding-top: 14px; border-top: 1px dashed var(--am-line-2);
+}
+.lp-readout-edge-lab { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--am-muted-2); }
+.lp-readout-edge-val {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: clamp(20px, 2vw, 26px); color: var(--am-coral); letter-spacing: -0.01em; font-feature-settings: "tnum" 1;
+}
+
+/* ══ How it works (#HOME-HOWITWORKS-1) ═════════════════════════════════════
+   4 step su una riga connessa. Numeri mono giganti (leva tipografica), glifo
+   brand piccolo, riga di connessione che lega gli step in un percorso. */
+.lp-how {
+  max-width: 1240px; margin: 0 auto; width: 100%;
+  padding: clamp(8px, 2vw, 24px) clamp(16px, 4vw, 56px) clamp(48px, 6vw, 80px);
+}
+.lp-how-head { margin-bottom: clamp(28px, 3vw, 44px); }
+.lp-how-title {
+  margin: 4px 0 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(24px, 3vw, 38px); line-height: 1.05; letter-spacing: -0.02em; color: var(--am-text);
+}
+.lp-steps {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  position: relative;
+}
+/* riga di connessione del percorso, dietro i mark. Si ferma entro l'ultima
+   colonna (dopo il glifo dello step 04) per non lasciare un moncone a destra. */
+.lp-steps::before {
+  content: ""; position: absolute; top: 23px; left: 0; right: 20%; height: 1px;
+  background: linear-gradient(90deg, var(--am-coral) 0%, var(--am-line-2) 100%);
+}
+.lp-step {
+  position: relative; padding: 0 clamp(14px, 1.6vw, 26px) 0 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lp-step-mark {
+  position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 12px;
+  background: var(--am-bg); padding-right: 14px;
+}
+.lp-step-n {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: clamp(26px, 2.6vw, 34px); line-height: 1; color: var(--am-coral);
+  letter-spacing: -0.04em; font-feature-settings: "tnum" 1;
+}
+.lp-step-glyph { width: 22px; height: 22px; color: var(--am-muted); flex: 0 0 auto; }
+.lp-step-title {
+  margin: 6px 0 0; font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(16px, 1.4vw, 19px); letter-spacing: .005em; color: var(--am-text);
+}
+.lp-step-desc { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--am-muted); max-width: 30ch; }
+
 /* ── Footer ── */
 .lp-foot {
   margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -6667,8 +6799,25 @@ button:disabled {
   .lp-athlete { max-width: 240px; }
   .lp-left .lp-side-label, .lp-right .lp-side-label { text-align: center; align-self: center; }
   .lp-cards { grid-template-columns: repeat(2, 1fr); }
+  /* value-prop: la copy sopra, il readout sotto */
+  .lp-what { grid-template-columns: 1fr; gap: clamp(28px, 5vw, 40px); }
+  .lp-what-head { max-width: none; }
+  /* how it works: 2×2, riga di connessione orizzontale rimossa */
+  .lp-steps { grid-template-columns: repeat(2, 1fr); gap: 30px 18px; }
+  .lp-steps::before { display: none; }
+  .lp-step { padding-right: 0; }
+  .lp-step-mark { background: transparent; }
 }
 @media (max-width: 520px) {
   .lp-cards { grid-template-columns: 1fr; }
   .lp-nav-link, .lp-theme { display: none; }
+  .lp-steps { grid-template-columns: 1fr; gap: 24px; }
+  .lp-kpis { gap: 22px; }
+}
+/* motion: rispetta prefers-reduced-motion (gate bible §3.5) */
+@media (prefers-reduced-motion: reduce) {
+  .lp-tagword { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .lp-card-orb::after { animation: none !important; }
+  .lp-streaks path { animation: none !important; }
+  .lp-what-cta, .lp-what-cta span, .lp-card:hover, .lp-sport:hover { transition: none !important; }
 }
