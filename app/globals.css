@@ -6042,9 +6042,14 @@ button:disabled {
 
 /* leaderboard: stat reale */
 .hb-lead-stat{ font-family:var(--font-mono); font-size:10px; color:var(--am-muted-2); white-space:nowrap; margin-right:14px; }
-/* #QA-SERGIO-BAGS-1: in light la stat su --am-muted-2 era quasi illeggibile sul
-   gradiente chiaro del banner — alza il contrasto allineandola alla .hb-sub. */
+/* #QA-SERGIO-BAGS-1: in light (banner SENZA foto) la stat su --am-muted-2 era
+   poco leggibile sul gradiente chiaro — alza il contrasto come la .hb-sub. */
 :root[data-theme="light"] .hb-lead-stat{ color:var(--am-muted); }
+/* #QA-SERGIO-BAGS-1 (fix-3b): sui banner FOTO tutto il testo è bianco
+   (eyebrow/headline/sub) ma la stat restava grigia → illeggibile sulla foto in
+   ENTRAMBI i temi. Allineala al testo-foto, con ombra per leggerla anche sulle
+   zone chiare dell'immagine. Viene dopo l'override light → vince (stessa specificità). */
+.house-banner.hb-photo .hb-lead-stat{ color:rgba(255,255,255,.92); text-shadow:0 1px 2px rgba(0,0,0,.5); }
 
 /* half page (300×600) */
 .hb-halfpage{ display:flex; flex-direction:column; gap:9px; padding:20px 18px; }
