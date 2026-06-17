@@ -2745,13 +2745,10 @@ function ClientAuthModal({
     ? emailValid && pwValid
     : name.trim().length > 1 && emailValid && pwValid && ageOk && tosOk;
 
-  // Dismissible: Escape closes the modal (backdrop click already does). Matters
-  // now that the modal can surface automatically for anonymous visitors.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // #QA-SERGIO-BAGS-1: Escape NON chiude più (come il backdrop). Il form di
+  // registrazione tiene lo stato locale (name/email/password); chiuderlo lo
+  // distrugge (unmount), quindi un Escape/click-fuori accidentale azzerava
+  // tutto. Ora la chiusura è solo esplicita via la × in alto a destra.
 
   const submit = async () => {
     if (!canSubmit || busy) return;
@@ -2816,8 +2813,8 @@ function ClientAuthModal({
   };
 
   return (
-    <div className="auth-modal-backdrop" onClick={onClose}>
-      <form className="auth-modal" onClick={(e) => e.stopPropagation()}
+    <div className="auth-modal-backdrop">
+      <form className="auth-modal"
         onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
         <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
           style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
@@ -5753,6 +5750,25 @@ export default function Dashboard() {
     const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
     return requested && VALID_TABS.includes(requested) ? requested : "bets";
   });
+  // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a /app?tab=… ma `tab` viene
+  // letto dall'URL solo al mount: un <Link> alla STESSA route (siamo già su /app)
+  // non lo risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
+  // same-page e cambiamo tab in place (come la nav laterale, setTab). Gli href
+  // cross-route (/world-cup, /community) tornano false → naviga il <Link>.
+  const handleBannerCta = (href: string): boolean => {
+    try {
+      const url = new URL(href, window.location.origin);
+      if (url.pathname === "/app") {
+        const raw = url.searchParams.get("tab");
+        const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
+        if (requested && VALID_TABS.includes(requested)) {
+          setTab(requested);
+          return true;
+        }
+      }
+    } catch { /* href non parsabile: lascia fare al <Link> */ }
+    return false;
+  };
   const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
     if (typeof window === "undefined") return "en";
     const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
@@ -6370,7 +6386,7 @@ export default function Dashboard() {
       {(() => {
         const camp = pickCampaign("desk-top", houseTier);
         return camp
-          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div>
+          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} onCta={handleBannerCta} /></div>
           : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
       })()}
 
@@ -6591,7 +6607,7 @@ export default function Dashboard() {
       {(() => {
         const camp = pickCampaign("desk-bottom", houseTier);
         return camp
-          ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} /></div>
+          ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} onCta={handleBannerCta} /></div>
           : <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
       })()}
 

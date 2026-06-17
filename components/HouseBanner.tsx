@@ -7,7 +7,7 @@
 // Interattività: dismiss persistente (localStorage) + tracking view/click/dismiss.
 // I glifi sport usano il SportGlyphSprite già montato nelle pagine host.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { hasRichData, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
 
@@ -130,7 +130,11 @@ function PhotoBg({ src }: { src: string }) {
 
 // Accetta il set lingue ampio del desk (it/en/es/fr/ru): risolve a it/en
 // (it→it, qualsiasi altro→en) per le copy bilingui delle campagne.
-export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign; lang: string; data?: BannerData | null }) {
+// #QA-SERGIO-BAGS-1: `onCta` lets the host intercept a CTA click. Per i banner
+// renderizzati DENTRO /app, gli href same-page (/app?tab=…) non risincronizzano
+// il tab dell'host (lo legge solo al mount) → il <Link> alla stessa route è un
+// no-op e il bottone sembrava morto. L'host ritorna true se ha gestito il click.
+export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const viewed = useRef(false);
   const L: Lang = lang === "it" ? "it" : "en";
@@ -159,7 +163,17 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
     track("house_banner_dismiss", campaign);
     setDismissed(true);
   };
-  const onClick = () => track("house_banner_click", campaign);
+  const onCtaClick = (e: MouseEvent) => {
+    track("house_banner_click", campaign);
+    // Solo click semplici: cmd/ctrl/shift/alt/middle restano "apri in nuova scheda".
+    if (
+      onCta &&
+      e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey &&
+      onCta(campaign.cta.href)
+    ) {
+      e.preventDefault();
+    }
+  };
 
   const dismissBtn = (
     <button type="button" className="hb-x" onClick={onDismiss} aria-label={L === "it" ? "Chiudi" : "Dismiss"}>×</button>
@@ -181,7 +195,7 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
           <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
         </div>
         {subBits.length ? <span className="hb-lead-stat">{subBits.join(" · ")}</span> : null}
-        <Link href={campaign.cta.href} className="hb-cta" onClick={onClick}>{ctaLabel}</Link>
+        <Link href={campaign.cta.href} className="hb-cta" onClick={onCtaClick}>{ctaLabel}</Link>
         {dismissBtn}
       </aside>
     );
@@ -212,7 +226,7 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
             <span className="hb-chip-v">{chip.v}</span>
           </div>
         ) : null}
-        <Link href={campaign.cta.href} className="hb-cta hb-cta-block" onClick={onClick}>{ctaLabel}</Link>
+        <Link href={campaign.cta.href} className="hb-cta hb-cta-block" onClick={onCtaClick}>{ctaLabel}</Link>
       </aside>
     );
   }
@@ -234,7 +248,7 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
             ))}
           </div>
         )}
-        <Link href={campaign.cta.href} className="hb-cta hb-cta-block hb-cta-foot" onClick={onClick}>{ctaLabel}</Link>
+        <Link href={campaign.cta.href} className="hb-cta hb-cta-block hb-cta-foot" onClick={onCtaClick}>{ctaLabel}</Link>
       </aside>
     );
   }
@@ -255,7 +269,7 @@ export function HouseBanner({ campaign, lang, data }: { campaign: HouseCampaign;
           <span className="hb-eyebrow">{c.eyebrow}</span>
           <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
           <span className="hb-sub">{c.sub}</span>
-          <Link href={campaign.cta.href} className="hb-cta" onClick={onClick}>{ctaLabel}</Link>
+          <Link href={campaign.cta.href} className="hb-cta" onClick={onCtaClick}>{ctaLabel}</Link>
         </div>
         {rich ? <Chips data={data} /> : null}
       </div>
