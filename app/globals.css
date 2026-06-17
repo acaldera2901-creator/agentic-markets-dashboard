@@ -6538,7 +6538,10 @@ button:disabled {
    il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
 .lp-hero-img { display: block; position: relative; aspect-ratio: 1642 / 360; padding: 0; overflow: hidden; }
 .lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center top; z-index: 0; }
-@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1642 / 620; } }
+/* #HOME-SPORTS-1: anche su mobile il banner è ritagliato in alto come desktop
+   (teste + wordmark + ALL SPORTS), così NON riappare il fondo "BEATS THE
+   SPORTSBOOK"/moltiplicatori. Un filo più alto del desktop per leggibilità. */
+@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1642 / 400; } }
 
 /* #HOME-SPORTS-1: barra sport reale (cliccabile) ATTACCATA sotto l'immagine —
    sfondo scuro continuo col banner + sottile seam coral. Niente più overlay/
