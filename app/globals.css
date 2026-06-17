@@ -6559,12 +6559,12 @@ button:disabled {
   transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .lp-sport:hover { transform: translateY(-2px); background: rgba(10, 11, 16, .84); box-shadow: 0 0 24px rgba(229, 72, 77, .55); }
-.lp-sport svg { width: clamp(20px, 2vw, 28px); height: clamp(20px, 2vw, 28px); color: #fff; flex: 0 0 auto; }
+.lp-sport-ic { width: clamp(30px, 2.8vw, 42px); height: auto; flex: 0 0 auto; margin: -5px 0; }
 .lp-sport-live { background: var(--am-coral); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .1em; border-radius: 999px; padding: 2px 7px; }
 @media (max-width: 640px) {
   .lp-hero-sports { gap: 8px; padding: 12px 10px; }
-  .lp-sport { font-size: 11px; padding: 6px 12px; }
-  .lp-sport svg { width: 18px; height: 18px; }
+  .lp-sport { font-size: 11px; padding: 6px 10px; }
+  .lp-sport-ic { width: 26px; }
 }
 
 /* ── CTA ── */
@@ -6613,6 +6613,9 @@ button:disabled {
 .lp-card-photo { color: #fff; }
 .lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(1.12) contrast(1.08) brightness(.74); transition: transform .45s ease; }
 .lp-card:hover .lp-card-photo .lp-card-bg, .lp-card-photo:hover .lp-card-bg { transform: scale(1.06); }
+/* #HOME-POLISH: la card wide (Model vs Market) è bassa → cover tagliava la testa.
+   Ancora la foto in alto così la testa dell'atleta resta visibile. */
+.lp-card-wide .lp-card-bg { background-position: center top; }
 .lp-card-photo .lp-card-ov { position: absolute; inset: 0; z-index: 0; }
 .lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(255,106,94,.42) 100%); }
 .lp-card-photo .lp-card-ov.cobalt { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(59,130,246,.42) 100%); }
@@ -6771,6 +6774,10 @@ button:disabled {
   letter-spacing: .14em; text-transform: uppercase; color: var(--am-muted-2);
   padding-bottom: 14px; border-bottom: 1px solid var(--am-line);
 }
+.lp-readout-match { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.lp-readout-teams { font-weight: 800; font-size: 16px; color: var(--am-text); }
+.lp-readout-teams em { font-style: normal; font-weight: 600; color: var(--am-muted); margin: 0 5px; }
+.lp-readout-pick { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--am-coral); border: 1px solid var(--am-coral); border-radius: 999px; padding: 2px 9px; }
 .lp-readout-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; }
 .lp-readout-lab { font-size: 12.5px; color: var(--am-muted); white-space: nowrap; }
 .lp-readout-bar { height: 8px; border-radius: 999px; background: var(--am-inset); overflow: hidden; position: relative; }

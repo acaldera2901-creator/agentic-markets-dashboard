@@ -43,7 +43,7 @@ const COPY = {
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTORE DI PROBABILITÀ · NON UN BOOKMAKER",
-    waHead1: "La probabilità reale di ogni partita.",
+    waHead1: "La previsione reale di ogni partita.",
     waHead2: "Prima che si muova il mercato.",
     waBody: "BetRedge legge calcio, tennis e Mondiali con un modello che calibra le probabilità e le confronta con la quota — così vedi dove c'è valore. Niente hype: ogni pick è spiegata, ogni esito è registrato. La decisione resta tua.",
     waKpi1Lab: "hit-rate", waKpi2Lab: "edge medio", waKpi3Val: "Tracciato", waKpi3Lab: "CLV verificato",
@@ -86,7 +86,7 @@ const COPY = {
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "PROBABILITY ENGINE · NOT A BOOKMAKER",
-    waHead1: "The real odds of every match.",
+    waHead1: "The real prediction for every match.",
     waHead2: "Before the market moves.",
     waBody: "BetRedge reads football, tennis and the World Cup with a model that calibrates probabilities and lines them up against the odds — so you see where the value is. No hype: every pick is explained, every outcome is logged. The call stays yours.",
     waKpi1Lab: "hit-rate", waKpi2Lab: "avg edge", waKpi3Val: "Tracked", waKpi3Lab: "verified CLV",
@@ -128,7 +128,7 @@ const COPY = {
     privacy: "Privacidad",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTOR DE PROBABILIDAD · NO UN BOOKMAKER",
-    waHead1: "La probabilidad real de cada partido.",
+    waHead1: "La predicción real de cada partido.",
     waHead2: "Antes de que se mueva el mercado.",
     waBody: "BetRedge lee fútbol, tenis y el Mundial con un modelo que calibra las probabilidades y las compara con la cuota — para que veas dónde hay valor. Sin hype: cada pick se explica, cada resultado se registra. La decisión es tuya.",
     waKpi1Lab: "acierto", waKpi2Lab: "edge medio", waKpi3Val: "Registrado", waKpi3Lab: "CLV verificado",
@@ -170,7 +170,7 @@ const COPY = {
     privacy: "Confidentialité",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTEUR DE PROBABILITÉ · PAS UN BOOKMAKER",
-    waHead1: "La vraie probabilité de chaque match.",
+    waHead1: "La vraie prévision de chaque match.",
     waHead2: "Avant que le marché ne bouge.",
     waBody: "BetRedge lit le football, le tennis et la Coupe du Monde avec un modèle qui calibre les probabilités et les confronte à la cote — pour que tu voies où est la valeur. Sans hype : chaque pronostic est expliqué, chaque résultat est enregistré. Le choix reste le tien.",
     waKpi1Lab: "réussite", waKpi2Lab: "edge moyen", waKpi3Val: "Suivi", waKpi3Lab: "CLV vérifié",
@@ -212,7 +212,7 @@ const COPY = {
     privacy: "Конфиденциальность",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "ДВИЖОК ВЕРОЯТНОСТЕЙ · НЕ БУКМЕКЕР",
-    waHead1: "Реальная вероятность каждого матча.",
+    waHead1: "Реальный прогноз на каждый матч.",
     waHead2: "Раньше, чем сдвинется рынок.",
     waBody: "BetRedge анализирует футбол, теннис и ЧМ моделью, которая калибрует вероятности и сопоставляет их с коэффициентом — чтобы ты видел, где ценность. Без хайпа: каждый прогноз объяснён, каждый исход зафиксирован. Решение остаётся за тобой.",
     waKpi1Lab: "попаданий", waKpi2Lab: "ср. edge", waKpi3Val: "Отслеж.", waKpi3Lab: "проверенный CLV",
@@ -354,15 +354,15 @@ export default function LandingPage() {
       </section>
       <nav className="lp-hero-sports" aria-label="Sports">
         <Link href="/app?tab=bets&sport=football" className="lp-sport">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ball" /></svg>
+          <img src="/banners/sport-football.png" alt="" className="lp-sport-ic" />
           <b>{t.spFootball}</b>
         </Link>
         <Link href="/app?tab=bets&sport=tennis" className="lp-sport">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-tball" /></svg>
+          <img src="/banners/sport-tennis.png" alt="" className="lp-sport-ic" />
           <b>{t.spTennis}</b>
         </Link>
         <Link href="/world-cup" className="lp-sport">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-trophy" /></svg>
+          <img src="/banners/sport-worldcup.png" alt="" className="lp-sport-ic" />
           <b>{t.spWorldCup}</b><span className="lp-sport-live">LIVE</span>
         </Link>
       </nav>
@@ -397,6 +397,10 @@ export default function LandingPage() {
         {/* readout: probabilità modello vs implicita di mercato → valore */}
         <figure className="lp-readout" aria-label={t.waReadMatch}>
           <figcaption className="lp-readout-cap">{t.waReadMatch}</figcaption>
+          <div className="lp-readout-match">
+            <span className="lp-readout-teams">Real Madrid <em>vs</em> Barcelona</span>
+            <span className="lp-readout-pick">Real Madrid</span>
+          </div>
           <div className="lp-readout-row">
             <span className="lp-readout-lab">{t.waReadModel}</span>
             <span className="lp-readout-bar"><i className="model" style={{ width: "64%" }} /></span>
