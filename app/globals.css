@@ -6533,8 +6533,88 @@ button:disabled {
 /* #LANDING-HERO-IMG: hero a immagine unica self-contained (BetRedge All Sports).
    aspect-ratio = rapporto dell'immagine (1280/512) così il testo stampato dentro
    non viene mai croppato a nessuna larghezza. */
-.lp-hero-img { display: block; position: relative; aspect-ratio: 1280 / 512; padding: 0; overflow: hidden; }
-.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+/* #HOME-SPORTS-1: immagine ancorata in alto (background-position top) e accorciata
+   (aspect più panoramico) → le TESTE in alto restano sempre intere, si taglia solo
+   il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
+.lp-hero-img { display: block; position: relative; aspect-ratio: 1642 / 360; padding: 0; overflow: hidden; }
+.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center top; z-index: 0; }
+@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1642 / 620; } }
+
+/* #HOME-SPORTS-1: barra sport reale (cliccabile) ATTACCATA sotto l'immagine —
+   sfondo scuro continuo col banner + sottile seam coral. Niente più overlay/
+   allineamento fragile; solo i nostri sport. */
+.lp-hero-sports {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: clamp(8px, 1.4vw, 18px); padding: clamp(14px, 1.8vw, 22px) 12px;
+  background: linear-gradient(180deg, #07080d 0%, var(--am-bg) 100%);
+  border-top: 1px solid rgba(229, 72, 77, .22);
+}
+/* #HOME-POLISH-4: tile sport — non più tre pillole identiche col bordo coral
+   (default = slop). Glifo line-art on-brand in un pozzetto circolare a sinistra
+   + label display + chevron "entra". Gerarchia: Football/Tennis = vetro quieto;
+   World Cup (evento LIVE) = tile coral piena = focal. Niente raster/scacchiera. */
+.lp-sport {
+  display: inline-flex; align-items: center; gap: clamp(8px, .9vw, 12px); white-space: nowrap;
+  padding: clamp(7px, .8vw, 10px) clamp(14px, 1.4vw, 18px) clamp(7px, .8vw, 10px) clamp(7px, .7vw, 9px);
+  border-radius: 14px; border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(13, 15, 20, .62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: #fff; font-weight: 700; font-size: clamp(12px, 1.25vw, 15px); letter-spacing: .005em;
+  text-decoration: none;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .25s ease;
+}
+.lp-sport-well {
+  display: block; flex: 0 0 auto; overflow: hidden;
+  width: clamp(36px, 3.2vw, 46px); height: clamp(36px, 3.2vw, 46px); border-radius: 11px;
+  background: #0d0f14; border: 1px solid rgba(255, 255, 255, .14);
+  transition: border-color .2s ease, transform .25s ease;
+}
+.lp-sport-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lp-sport-gl { width: 64%; height: 64%; color: #fff; }
+.lp-sport-lab { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+.lp-sport-arr {
+  width: 15px; height: 15px; color: rgba(255, 255, 255, .42); flex: 0 0 auto; margin-left: -2px;
+  transition: transform .2s ease, color .2s ease;
+}
+.lp-sport:hover {
+  transform: translateY(-2px); border-color: rgba(255, 106, 94, .4); background: rgba(13, 15, 20, .82);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .4);
+}
+.lp-sport:hover .lp-sport-well { background: rgba(255, 106, 94, .2); border-color: rgba(255, 106, 94, .55); transform: scale(1.06); }
+.lp-sport:hover .lp-sport-arr { transform: translateX(3px); color: var(--am-coral); }
+.lp-sport:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
+
+/* World Cup = tile focal: fill coral, pozzetto invertito, chevron pieno */
+.lp-sport-feat {
+  background: linear-gradient(135deg, var(--am-coral) 0%, var(--am-coral-2) 100%);
+  border-color: transparent; color: var(--am-coral-ink, #1A0F0D);
+  box-shadow: 0 6px 20px rgba(255, 106, 94, .35);
+}
+.lp-sport-feat .lp-sport-well { background: rgba(0, 0, 0, .16); border-color: rgba(0, 0, 0, .14); }
+.lp-sport-feat .lp-sport-gl { color: var(--am-coral-ink, #1A0F0D); }
+.lp-sport-feat .lp-sport-arr { color: rgba(26, 15, 13, .55); }
+.lp-sport-feat:hover {
+  border-color: transparent; background: linear-gradient(135deg, var(--am-coral) 0%, var(--am-coral-2) 100%);
+  box-shadow: 0 10px 28px rgba(255, 106, 94, .5);
+}
+.lp-sport-feat:hover .lp-sport-well { background: rgba(0, 0, 0, .24); border-color: rgba(0, 0, 0, .2); }
+.lp-sport-feat:hover .lp-sport-arr { color: var(--am-coral-ink, #1A0F0D); }
+/* coral-glyph dentro i glifi: nel feat l'accent coral interno sparirebbe sul fill →
+   forzo currentColor anche sulle forme che usano var(--am-coral) */
+.lp-sport-feat .lp-sport-gl [stroke="var(--am-coral)"], .lp-sport-feat .lp-sport-gl [fill="var(--am-coral)"] { stroke: currentColor; fill: currentColor; }
+
+.lp-sport-live {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(0, 0, 0, .2); color: var(--am-coral-ink, #1A0F0D);
+  font-size: 9px; font-weight: 800; letter-spacing: .12em; border-radius: 999px; padding: 3px 8px 3px 6px;
+}
+.lp-sport-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: lp-sport-pulse 1.6s ease-in-out infinite; }
+@keyframes lp-sport-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (max-width: 640px) {
+  .lp-hero-sports { gap: 8px; padding: 12px 10px; }
+  .lp-sport { font-size: 12px; padding: 6px 12px 6px 6px; gap: 8px; border-radius: 12px; }
+  .lp-sport-well { width: 34px; height: 34px; border-radius: 9px; }
+  .lp-sport-arr { display: none; }
+}
 
 /* ── CTA ── */
 .lp-cta { display: flex; justify-content: center; gap: 16px; padding: 4px 16px 40px; flex-wrap: wrap; }
@@ -6547,11 +6627,25 @@ button:disabled {
 .lp-btn-cobalt { background: linear-gradient(180deg, var(--am-cobalt-2), var(--am-cobalt)); box-shadow: 0 10px 26px rgba(59,130,246,0.34); }
 .lp-btn:hover { transform: translateY(-2px); }
 
-/* ── Cards ── */
+/* ── Cards ── #LANDING-PHOTO
+   Griglia ASIMMETRICA per dare ritmo (anti-tell #7/#11: non 4 tile identiche).
+   Track record = tile DOMINANTE (la nostra prova FTC): colonna sinistra larga,
+   span 2 righe. Le altre 3 sono cluster di supporto a scala minore. */
 .lp-cards {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 1.6vw, 20px);
+  display: grid;
+  grid-template-columns: 1.55fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "track model model"
+    "track plans app";
+  gap: clamp(12px, 1.5vw, 20px);
   padding: 0 clamp(16px, 4vw, 56px) clamp(28px, 5vw, 56px);
+  margin-top: clamp(24px, 3vw, 40px);
 }
+.lp-card-hero { grid-area: track; }
+.lp-card-wide { grid-area: model; }
+.lp-card-quiet { grid-area: plans; }
+.lp-card-app.lp-card-sm { grid-area: app; }
 .lp-card {
   display: flex; flex-direction: column; gap: 14px;
   background: linear-gradient(180deg, var(--am-panel), var(--am-panel-2));
@@ -6566,7 +6660,19 @@ button:disabled {
 .lp-card:hover { transform: translateY(-4px); border-color: var(--am-line-2); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
 /* #LANDING-PHOTO: card con sfondo foto + overlay coral/cobalt (logica banner) */
 .lp-card-photo { color: #fff; }
-.lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(.85) brightness(.78); }
+.lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(1.12) contrast(1.08) brightness(.74); transition: transform .45s ease; }
+.lp-card:hover .lp-card-photo .lp-card-bg, .lp-card-photo:hover .lp-card-bg { transform: scale(1.06); }
+/* #HOME-POLISH-4: la card wide (Model vs Market) è bassa e la foto è verticale
+   (atleta a figura intera, volto ~32% dall'alto, scia coral on-brand al centro).
+   "center top" mostrava solo il vuoto sopra la racchetta + buio. Fix: ancoro la
+   crop sul volto/scia (center 30%) e ALLEGGERISCO l'overlay rendendolo
+   DIREZIONALE — scuro solo in basso-sinistra dove vive il testo, l'atleta resta
+   luminoso. Niente più "non si vede nulla". */
+.lp-card-wide { min-height: clamp(180px, 16vw, 230px); }
+.lp-card-wide .lp-card-bg {
+  background-position: center 30%;
+  filter: saturate(1.14) contrast(1.06) brightness(.94);
+}
 .lp-card-photo .lp-card-ov { position: absolute; inset: 0; z-index: 0; }
 .lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(255,106,94,.42) 100%); }
 .lp-card-photo .lp-card-ov.cobalt { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(59,130,246,.42) 100%); }
@@ -6576,8 +6682,56 @@ button:disabled {
 .lp-card-head { display: flex; align-items: center; gap: 8px; }
 .lp-card-head .am-wm { font-size: 15px; }
 .lp-card-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px 4px; }
-.lp-card-title { font-weight: 800; font-size: 15px; letter-spacing: .02em; margin: 0; }
+.lp-card-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 1.7vw, 26px); line-height: 1.04; letter-spacing: .01em; text-transform: uppercase; margin: 0; text-shadow: 0 2px 12px rgba(0,0,0,.45); }
 .lp-card-desc { font-size: 12.5px; line-height: 1.45; color: var(--am-muted); margin: 0; }
+
+/* ── Ritmo per importanza (anti-tell #7/#11) ──────────────────────────────
+   HERO (track record): tile dominante, radius più ampio, composizione
+   editoriale left-aligned, titolo grande, eyebrow mono + body al piede coral. */
+.lp-card-hero {
+  border-radius: 24px; padding: clamp(22px, 2vw, 30px); gap: 18px;
+  min-height: clamp(300px, 26vw, 380px);
+}
+.lp-card-hero .lp-card-ov.coral {
+  background: linear-gradient(165deg, rgba(7,8,15,.5) 0%, rgba(7,8,15,.78) 48%, rgba(255,106,94,.5) 100%);
+}
+.lp-card-hero .lp-card-body { align-items: flex-start; text-align: left; padding: 0; gap: 12px; justify-content: flex-end; }
+.lp-card-eyebrow {
+  margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--am-coral); display: inline-flex; align-items: center; gap: 8px;
+}
+.lp-card-eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--am-coral); display: inline-block; }
+.lp-card-hero .lp-card-title { font-size: clamp(30px, 2.9vw, 44px); line-height: .98; }
+.lp-card-hero .lp-card-desc { font-size: clamp(13px, 1vw, 15px); line-height: 1.5; max-width: 30ch; }
+.lp-card-hero .lp-card-btn { align-self: flex-start; padding-left: 26px; padding-right: 26px; }
+
+/* WIDE (model): riga 1, titolo orizzontale, body al piede a sinistra */
+.lp-card-wide .lp-card-body { align-items: flex-start; text-align: left; padding: 0; justify-content: flex-end; gap: 8px; }
+.lp-card-wide .lp-card-title { font-size: clamp(22px, 1.9vw, 30px); }
+.lp-card-wide .lp-card-desc { max-width: 42ch; }
+/* overlay direzionale: scrim leggibilità in basso-sinistra (testo) + velo coral
+   tenue al piede; l'atleta a destra/centro resta luminoso e d'impatto. */
+.lp-card-wide .lp-card-ov.coral {
+  background:
+    linear-gradient(105deg, rgba(7,8,15,.9) 0%, rgba(7,8,15,.62) 34%, rgba(7,8,15,.08) 60%, rgba(7,8,15,0) 78%),
+    linear-gradient(0deg, rgba(7,8,15,.78) 0%, rgba(7,8,15,.18) 30%, rgba(7,8,15,0) 55%),
+    linear-gradient(0deg, rgba(255,106,94,.28) 0%, rgba(255,106,94,0) 40%);
+}
+
+/* SMALL (plans, app): radius più stretto, scala compatta = gerarchia recessiva */
+.lp-card-sm { border-radius: 14px; padding: 16px; }
+.lp-card-sm .lp-card-title { font-size: clamp(17px, 1.4vw, 21px); }
+.lp-card-sm .lp-card-head .am-wm { font-size: 13px; }
+/* plans: testo ancorato in basso (coerente con hero/wide), non galleggiante al centro */
+.lp-card-quiet .lp-card-body { align-items: flex-start; text-align: left; padding: 0; justify-content: flex-end; gap: 8px; }
+.lp-card-quiet .lp-card-desc { max-width: 28ch; }
+
+/* QUIET (plans): overlay più sobrio (meno coral) → non compete con la hero */
+.lp-card-quiet .lp-card-ov.coral {
+  background: linear-gradient(180deg, rgba(7,8,15,.62) 0%, rgba(7,8,15,.86) 60%, rgba(255,106,94,.22) 100%);
+}
+
 .lp-card-glyph { width: 34px; height: 34px; color: var(--am-coral); }
 .lp-card-orb {
   width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
@@ -6617,6 +6771,142 @@ button:disabled {
 .lp-phone-cta { text-align: center; font-weight: 800; font-size: 10px; letter-spacing: .08em; color: #fff; background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); border-radius: 8px; padding: 8px; }
 .lp-soon { margin-top: 12px; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--am-muted); }
 
+/* ══ What is BetRedge (#HOME-VALUEPROP-1) ══════════════════════════════════
+   Split editoriale asimmetrico (copy 1.15fr / readout 0.85fr). Tipografia da
+   leve multiple: eyebrow mono tracciato, headline display grande con seconda
+   riga coral, KPI mono. Un solo accent coral (CTA, +7.9pt, 64%, edge). */
+.lp-eyebrow {
+  margin: 0 0 14px; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--am-muted-2); display: inline-flex; align-items: center; gap: 9px;
+}
+.lp-eyebrow::before {
+  content: ""; width: 22px; height: 1px; background: var(--am-coral); display: inline-block;
+}
+
+.lp-what {
+  display: grid; grid-template-columns: 1.15fr 0.85fr; align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+  padding: clamp(48px, 7vw, 92px) clamp(16px, 4vw, 56px) clamp(40px, 5vw, 64px);
+  max-width: 1240px; margin: 0 auto; width: 100%;
+}
+.lp-what-head {
+  margin: 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(30px, 4.2vw, 56px); line-height: 1.02; letter-spacing: -0.02em;
+  color: var(--am-text); max-width: 16ch;
+}
+.lp-what-head-2 { color: var(--am-coral); }
+.lp-what-body {
+  margin: 22px 0 0; font-size: clamp(15px, 1.25vw, 17px); line-height: 1.62;
+  color: var(--am-muted); max-width: 52ch;
+}
+.lp-kpis {
+  display: flex; gap: clamp(20px, 3vw, 44px); margin: 30px 0 0;
+  padding-top: 26px; border-top: 1px solid var(--am-line);
+}
+.lp-kpi { display: flex; flex-direction: column; gap: 4px; }
+.lp-kpi-val {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: clamp(24px, 2.6vw, 34px); line-height: 1; letter-spacing: -0.02em;
+  color: var(--am-text); font-feature-settings: "tnum" 1;
+}
+.lp-kpi-val.accent { color: var(--am-coral); }
+.lp-kpi-unit { font-size: 0.5em; font-weight: 600; margin-left: 1px; opacity: .8; }
+.lp-kpi-lab {
+  font-size: 11.5px; letter-spacing: .04em; color: var(--am-muted-2); text-transform: lowercase;
+}
+.lp-what-cta {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 32px;
+  font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: .01em;
+  color: var(--am-coral-ink); text-decoration: none;
+  background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2));
+  padding: 13px 26px; border-radius: 11px;
+  box-shadow: 0 10px 26px var(--am-coral-b); transition: transform .15s, box-shadow .2s;
+}
+.lp-what-cta span { transition: transform .2s; }
+.lp-what-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 34px var(--am-coral-b); }
+.lp-what-cta:hover span { transform: translateX(4px); }
+
+/* readout — artefatto modello vs mercato (mono, da strumento di misura) */
+.lp-readout {
+  margin: 0; background: var(--am-panel); border: 1px solid var(--am-line);
+  border-radius: 16px; padding: 22px 22px 20px;
+  box-shadow: 0 24px 60px -28px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.lp-readout-cap {
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10.5px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--am-muted-2);
+  padding-bottom: 14px; border-bottom: 1px solid var(--am-line);
+}
+.lp-readout-match { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.lp-readout-teams { font-weight: 800; font-size: 16px; color: var(--am-text); }
+.lp-readout-teams em { font-style: normal; font-weight: 600; color: var(--am-muted); margin: 0 5px; }
+.lp-readout-pick { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--am-coral); border: 1px solid var(--am-coral); border-radius: 999px; padding: 2px 9px; }
+.lp-readout-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; }
+.lp-readout-lab { font-size: 12.5px; color: var(--am-muted); white-space: nowrap; }
+.lp-readout-bar { height: 8px; border-radius: 999px; background: var(--am-inset); overflow: hidden; position: relative; }
+.lp-readout-bar i { display: block; height: 100%; border-radius: 999px; }
+.lp-readout-bar i.model { background: var(--am-coral); }
+.lp-readout-bar i.market { background: var(--am-muted-2); }
+.lp-readout-num {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: 15px; color: var(--am-muted); font-feature-settings: "tnum" 1; min-width: 42px; text-align: right;
+}
+.lp-readout-num.accent { color: var(--am-coral); }
+.lp-readout-edge {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-top: 2px; padding-top: 14px; border-top: 1px dashed var(--am-line-2);
+}
+.lp-readout-edge-lab { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--am-muted-2); }
+.lp-readout-edge-val {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: clamp(20px, 2vw, 26px); color: var(--am-coral); letter-spacing: -0.01em; font-feature-settings: "tnum" 1;
+}
+
+/* ══ How it works (#HOME-HOWITWORKS-1) ═════════════════════════════════════
+   4 step su una riga connessa. Numeri mono giganti (leva tipografica), glifo
+   brand piccolo, riga di connessione che lega gli step in un percorso. */
+.lp-how {
+  max-width: 1240px; margin: 0 auto; width: 100%;
+  padding: clamp(8px, 2vw, 24px) clamp(16px, 4vw, 56px) clamp(28px, 3.5vw, 48px);
+}
+.lp-how-head { margin-bottom: clamp(28px, 3vw, 44px); }
+.lp-how-title {
+  margin: 4px 0 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(24px, 3vw, 38px); line-height: 1.05; letter-spacing: -0.02em; color: var(--am-text);
+}
+.lp-steps {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  position: relative;
+}
+/* riga di connessione del percorso, dietro i mark. Si ferma entro l'ultima
+   colonna (dopo il glifo dello step 04) per non lasciare un moncone a destra. */
+.lp-steps::before {
+  content: ""; position: absolute; top: 23px; left: 0; right: 20%; height: 1px;
+  background: linear-gradient(90deg, var(--am-coral) 0%, var(--am-line-2) 100%);
+}
+.lp-step {
+  position: relative; padding: 0 clamp(14px, 1.6vw, 26px) 0 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lp-step-mark {
+  position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 12px;
+  background: var(--am-bg); padding-right: 14px;
+}
+.lp-step-n {
+  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
+  font-size: clamp(26px, 2.6vw, 34px); line-height: 1; color: var(--am-coral);
+  letter-spacing: -0.04em; font-feature-settings: "tnum" 1;
+}
+.lp-step-glyph { width: 22px; height: 22px; color: var(--am-muted); flex: 0 0 auto; }
+.lp-step-title {
+  margin: 6px 0 0; font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(16px, 1.4vw, 19px); letter-spacing: .005em; color: var(--am-text);
+}
+.lp-step-desc { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--am-muted); max-width: 30ch; }
+
 /* ── Footer ── */
 .lp-foot {
   margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -6633,9 +6923,39 @@ button:disabled {
   .lp-hero-center { order: -1; }
   .lp-athlete { max-width: 240px; }
   .lp-left .lp-side-label, .lp-right .lp-side-label { text-align: center; align-self: center; }
-  .lp-cards { grid-template-columns: repeat(2, 1fr); }
+  /* cards: la hero resta a piena larghezza in cima, le altre 3 in 2-up sotto */
+  .lp-cards {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      "track track"
+      "model model"
+      "plans app";
+  }
+  .lp-card-hero { min-height: clamp(240px, 40vw, 320px); }
+  /* value-prop: la copy sopra, il readout sotto */
+  .lp-what { grid-template-columns: 1fr; gap: clamp(28px, 5vw, 40px); }
+  .lp-what-head { max-width: none; }
+  /* how it works: 2×2, riga di connessione orizzontale rimossa */
+  .lp-steps { grid-template-columns: repeat(2, 1fr); gap: 30px 18px; }
+  .lp-steps::before { display: none; }
+  .lp-step { padding-right: 0; }
+  .lp-step-mark { background: transparent; }
 }
 @media (max-width: 520px) {
-  .lp-cards { grid-template-columns: 1fr; }
+  .lp-cards {
+    grid-template-columns: 1fr;
+    grid-template-areas: "track" "model" "plans" "app";
+  }
   .lp-nav-link, .lp-theme { display: none; }
+  .lp-steps { grid-template-columns: 1fr; gap: 24px; }
+  .lp-kpis { gap: 22px; }
+}
+/* motion: rispetta prefers-reduced-motion (gate bible §3.5) */
+@media (prefers-reduced-motion: reduce) {
+  .lp-tagword { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .lp-card-orb::after { animation: none !important; }
+  .lp-streaks path { animation: none !important; }
+  .lp-what-cta, .lp-what-cta span, .lp-card:hover, .lp-sport:hover { transition: none !important; }
+  .lp-sport-dot { animation: none !important; }
+  .lp-sport:hover .lp-sport-well, .lp-sport:hover .lp-sport-arr { transform: none !important; }
 }
