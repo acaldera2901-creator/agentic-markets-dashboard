@@ -4152,6 +4152,49 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+/* Account redesign (#ACCOUNT-REDESIGN-1): pane = profilo + impostazioni +
+   logout + aiuto, impilati con lo stesso ritmo verticale della scheda. */
+.account-pane {
+  display: grid;
+  gap: 16px;
+}
+
+/* FAQ + Assistenza collassabili in fondo alla scheda Account. */
+.account-help-footer {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+.account-help-acc {
+  border: 1px solid var(--am-line);
+  border-radius: 12px;
+  background: var(--am-panel);
+  overflow: hidden;
+}
+.account-help-acc > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--am-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.account-help-acc > summary::-webkit-details-marker { display: none; }
+.account-help-acc > summary::after {
+  content: "+";
+  color: var(--am-coral);
+  font-size: 18px;
+  line-height: 1;
+}
+.account-help-acc[open] > summary::after { content: "–"; }
+.account-help-acc > summary:hover { color: var(--am-coral); }
+.account-help-acc > :not(summary) { padding: 0 16px 16px; }
+
 /* ── Client Area & Plans ─────────────────────────────────────── */
 
 .plans-grid-3 {
