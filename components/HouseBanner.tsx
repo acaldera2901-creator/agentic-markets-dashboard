@@ -9,7 +9,22 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
-import { hasRichData, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
+import { hasRichData, copyFor, ctaLabelFor, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
+
+// Micro-stringhe del componente (non-copy) per le 5 lingue del desk.
+const HB_UI: Record<Lang, {
+  matches: string; avgEdge: string; edgeMedio: string; hitRate: string;
+  topEdge: string; dismiss: string;
+}> = {
+  it: { matches: "match", avgEdge: "edge medio", edgeMedio: "Edge medio", hitRate: "Hit rate", topEdge: "Top edge adesso", dismiss: "Chiudi" },
+  en: { matches: "matches", avgEdge: "avg edge", edgeMedio: "Avg edge", hitRate: "Hit rate", topEdge: "Top edge now", dismiss: "Dismiss" },
+  es: { matches: "partidos", avgEdge: "edge medio", edgeMedio: "Edge medio", hitRate: "Hit rate", topEdge: "Top edge ahora", dismiss: "Cerrar" },
+  fr: { matches: "matchs", avgEdge: "edge moyen", edgeMedio: "Edge moyen", hitRate: "Taux de réussite", topEdge: "Top edge maintenant", dismiss: "Fermer" },
+  ru: { matches: "матчей", avgEdge: "средний эдж", edgeMedio: "Средний эдж", hitRate: "Точность", topEdge: "Топ эдж сейчас", dismiss: "Закрыть" },
+};
+function hbLang(lang: string): Lang {
+  return lang === "it" || lang === "es" || lang === "fr" || lang === "ru" ? lang : "en";
+}
 
 const DISMISS_KEY = "br_house_dismissed";
 
@@ -87,7 +102,7 @@ function Ticker({ edges }: { edges: BannerEdge[] }) {
 function MiniBoard({ edges, lang }: { edges: BannerEdge[]; lang: Lang }) {
   return (
     <div className="hb-miniboard">
-      <span className="hb-eyebrow hb-mb-lab">{lang === "it" ? "Top edge adesso" : "Top edge now"}</span>
+      <span className="hb-eyebrow hb-mb-lab">{HB_UI[lang].topEdge}</span>
       {edges.slice(0, 3).map((e, i) => (
         <div className="hb-mini" key={i}>
           <svg aria-hidden="true"><use href={e.glyph} /></svg>
@@ -100,10 +115,10 @@ function MiniBoard({ edges, lang }: { edges: BannerEdge[]; lang: Lang }) {
 }
 
 // Stat chip reali (edge medio + hit rate). Mostra solo i campi disponibili.
-function Chips({ data }: { data: BannerData }) {
+function Chips({ data, lang }: { data: BannerData; lang: Lang }) {
   const chips: { k: string; v: string }[] = [];
-  if (data.edgeAvgPct != null) chips.push({ k: "Edge medio", v: fmtEdge(data.edgeAvgPct) });
-  if (data.hitRate) chips.push({ k: "Hit rate", v: data.hitRate });
+  if (data.edgeAvgPct != null) chips.push({ k: HB_UI[lang].edgeMedio, v: fmtEdge(data.edgeAvgPct) });
+  if (data.hitRate) chips.push({ k: HB_UI[lang].hitRate, v: data.hitRate });
   if (!chips.length) return null;
   return (
     <div className="hb-chips">
@@ -128,8 +143,8 @@ function PhotoBg({ src }: { src: string }) {
   );
 }
 
-// Accetta il set lingue ampio del desk (it/en/es/fr/ru): risolve a it/en
-// (it→it, qualsiasi altro→en) per le copy bilingui delle campagne.
+// Accetta il set lingue ampio del desk (it/en/es/fr/ru): usa la copy nella
+// lingua del desk con fallback a en (copyFor/ctaLabelFor) per le campagne.
 // #QA-SERGIO-BAGS-1: `onCta` lets the host intercept a CTA click. Per i banner
 // renderizzati DENTRO /app, gli href same-page (/app?tab=…) non risincronizzano
 // il tab dell'host (lo legge solo al mount) → il <Link> alla stessa route è un
@@ -137,9 +152,9 @@ function PhotoBg({ src }: { src: string }) {
 export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const viewed = useRef(false);
-  const L: Lang = lang === "it" ? "it" : "en";
-  const c = campaign.copy[L];
-  const ctaLabel = L === "it" ? campaign.cta.it : campaign.cta.en;
+  const L: Lang = hbLang(lang);
+  const c = copyFor(campaign, L);
+  const ctaLabel = ctaLabelFor(campaign, L);
   const rich = hasRichData(data);
   // Classe foto (#HOUSE-PHOTO-1): vuota se la campagna non ha image → rendering invariato.
   const photoCls = campaign.image ? ` hb-photo hb-ov-${campaign.image.overlay ?? "l"}` : "";
@@ -176,15 +191,15 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
   };
 
   const dismissBtn = (
-    <button type="button" className="hb-x" onClick={onDismiss} aria-label={L === "it" ? "Chiudi" : "Dismiss"}>×</button>
+    <button type="button" className="hb-x" onClick={onDismiss} aria-label={HB_UI[L].dismiss}>×</button>
   );
 
   // ── Leaderboard (728×90) ──────────────────────────────────────────────
   if (campaign.format === "leaderboard") {
     const subBits: string[] = [];
     if (rich) {
-      subBits.push(`${data.eventsCount} ${L === "it" ? "match" : "matches"}`);
-      if (data.edgeAvgPct != null) subBits.push(`${fmtEdge(data.edgeAvgPct)} ${L === "it" ? "edge medio" : "avg edge"}`);
+      subBits.push(`${data.eventsCount} ${HB_UI[L].matches}`);
+      if (data.edgeAvgPct != null) subBits.push(`${fmtEdge(data.edgeAvgPct)} ${HB_UI[L].avgEdge}`);
     }
     return (
       <aside className={`house-banner hb-leaderboard${photoCls}`} aria-label={c.eyebrow}>
@@ -204,8 +219,8 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
   // ── Rectangle (300×250) ───────────────────────────────────────────────
   if (campaign.format === "rectangle") {
     const chip = rich
-      ? (data.hitRate ? { k: L === "it" ? "Hit rate" : "Hit rate", v: data.hitRate }
-        : data.edgeAvgPct != null ? { k: L === "it" ? "Edge medio" : "Avg edge", v: fmtEdge(data.edgeAvgPct) }
+      ? (data.hitRate ? { k: HB_UI[L].hitRate, v: data.hitRate }
+        : data.edgeAvgPct != null ? { k: HB_UI[L].edgeMedio, v: fmtEdge(data.edgeAvgPct) }
         : null)
       : null;
     return (
@@ -271,7 +286,7 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
           <span className="hb-sub">{c.sub}</span>
           <Link href={campaign.cta.href} className="hb-cta" onClick={onCtaClick}>{ctaLabel}</Link>
         </div>
-        {rich ? <Chips data={data} /> : null}
+        {rich ? <Chips data={data} lang={L} /> : null}
       </div>
       {rich ? <Ticker edges={data.topEdges} /> : null}
     </aside>

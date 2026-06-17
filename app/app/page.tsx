@@ -291,6 +291,26 @@ const BASE_TRANSLATIONS = {
     language_it: "Italiano",
     language_en: "Inglese",
     account_pending_detail: "Conto cliente non ancora collegato. Il saldo parte da zero.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Mercati", nav_leaderboard: "Classifica", nav_account: "Account",
+    auth_signin: "Accedi", auth_register: "Registrati",
+    theme_aria: "Tema", featured_label: "In evidenza",
+    kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit · 100g",
+    season_pause: "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026).",
+    footer_pastperf: "Le performance passate non garantiscono risultati futuri.",
+    footer_partnerlinks: "I link partner sono affiliati commerciali.",
+    footer_privacy: "Privacy Policy",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Tutti", bf_allsignals: "Tutte le prediction", bf_valueonly: "Solo best bets",
+    bf_competition: "Competizione", bf_allcompetitions: "Tutte le competizioni",
+    bf_surface: "Superficie", bf_allsurfaces: "Tutte", bf_sort: "Ordina", bf_edge: "Miglior edge",
+    bf_time: "Orario", bf_odds: "Quota più alta", bf_probability: "Probabilità modello",
+    bf_search: "Cerca team, player, torneo...", bf_showing: "Mostro",
+    bf_noresults: "Nessun mercato rispetta questi filtri. Allarga la ricerca o torna a Tutti.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Probabilità più alta", bb_time: "Prima kickoff",
+    bb_search: "Cerca match, team, player...", bb_valuemode: "+EV live",
+    bb_modelmode: "Top Model Signals", bb_noedge: "segnali modello",
   },
   en: {
     // Nav
@@ -536,6 +556,26 @@ const BASE_TRANSLATIONS = {
     language_it: "Italian",
     language_en: "English",
     account_pending_detail: "Client account not connected yet. Balance starts at zero.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Markets", nav_leaderboard: "Leaderboard", nav_account: "Account",
+    auth_signin: "Sign In", auth_register: "Register",
+    theme_aria: "Theme", featured_label: "Featured",
+    kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit · 100g",
+    season_pause: "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026).",
+    footer_pastperf: "Past performance does not guarantee future results.",
+    footer_partnerlinks: "Partner links are commercial affiliates.",
+    footer_privacy: "Privacy Policy",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "All", bf_allsignals: "All predictions", bf_valueonly: "Best bets only",
+    bf_competition: "Competition", bf_allcompetitions: "All competitions",
+    bf_surface: "Surface", bf_allsurfaces: "All", bf_sort: "Sort", bf_edge: "Best edge",
+    bf_time: "Time", bf_odds: "Highest odds", bf_probability: "Model probability",
+    bf_search: "Search team, player, tournament...", bf_showing: "Showing",
+    bf_noresults: "No markets match these filters. Widen the search or return to All.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Highest probability", bb_time: "Closest kickoff",
+    bb_search: "Search match, team, player...", bb_valuemode: "Live +EV",
+    bb_modelmode: "Top Model Signals", bb_noedge: "model signals",
   },
 } as const;
 
@@ -784,6 +824,26 @@ const EXTRA_TRANSLATIONS = {
     partner_tag_exclusive: "Exclusivo",
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
     account_pending_detail: "Cuenta de cliente aún no conectada. El saldo empieza en cero.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Mercados", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
+    auth_signin: "Entrar", auth_register: "Registrarse",
+    theme_aria: "Tema", featured_label: "Destacados",
+    kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto · 100d",
+    season_pause: "Temporada en pausa — no hay partidos programados en las próximas 48h. Las predicciones vuelven automáticamente cuando las ligas se reanuden (julio 2026).",
+    footer_pastperf: "El rendimiento pasado no garantiza resultados futuros.",
+    footer_partnerlinks: "Los enlaces de partners son afiliados comerciales.",
+    footer_privacy: "Política de Privacidad",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Todos", bf_allsignals: "Todas las predicciones", bf_valueonly: "Solo best bets",
+    bf_competition: "Competición", bf_allcompetitions: "Todas las competiciones",
+    bf_surface: "Superficie", bf_allsurfaces: "Todas", bf_sort: "Ordenar", bf_edge: "Mejor edge",
+    bf_time: "Hora", bf_odds: "Cuota más alta", bf_probability: "Probabilidad del modelo",
+    bf_search: "Buscar equipo, jugador, torneo...", bf_showing: "Mostrando",
+    bf_noresults: "Ningún mercado coincide con estos filtros. Amplía la búsqueda o vuelve a Todos.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Mayor probabilidad", bb_time: "Próximo a empezar",
+    bb_search: "Buscar partido, equipo, jugador...", bb_valuemode: "+EV en directo",
+    bb_modelmode: "Top Model Signals", bb_noedge: "señales del modelo",
   },
   fr: {
     ...BASE_TRANSLATIONS.en,
@@ -1029,6 +1089,26 @@ const EXTRA_TRANSLATIONS = {
     partner_tag_exclusive: "Exclusif",
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
     account_pending_detail: "Compte client pas encore connecté. Le solde démarre à zéro.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Marchés", nav_leaderboard: "Classement", nav_account: "Compte",
+    auth_signin: "Connexion", auth_register: "S'inscrire",
+    theme_aria: "Thème", featured_label: "À la une",
+    kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite · 100j",
+    season_pause: "Saison en pause — aucun match programmé dans les 48 prochaines heures. Les prédictions reviennent automatiquement à la reprise des ligues (juillet 2026).",
+    footer_pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
+    footer_partnerlinks: "Les liens partners sont des affiliés commerciaux.",
+    footer_privacy: "Politique de Confidentialité",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Tous", bf_allsignals: "Toutes les prédictions", bf_valueonly: "Best bets uniquement",
+    bf_competition: "Compétition", bf_allcompetitions: "Toutes les compétitions",
+    bf_surface: "Surface", bf_allsurfaces: "Toutes", bf_sort: "Trier", bf_edge: "Meilleur edge",
+    bf_time: "Heure", bf_odds: "Cote la plus élevée", bf_probability: "Probabilité du modèle",
+    bf_search: "Rechercher équipe, joueur, tournoi...", bf_showing: "Affichage",
+    bf_noresults: "Aucun marché ne correspond à ces filtres. Élargis la recherche ou reviens à Tous.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Probabilité la plus élevée", bb_time: "Coup d'envoi le plus proche",
+    bb_search: "Rechercher match, équipe, joueur...", bb_valuemode: "+EV en direct",
+    bb_modelmode: "Top Model Signals", bb_noedge: "signaux du modèle",
   },
   ru: {
     ...BASE_TRANSLATIONS.en,
@@ -1274,6 +1354,26 @@ const EXTRA_TRANSLATIONS = {
     partner_tag_exclusive: "Эксклюзив",
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
     account_pending_detail: "Аккаунт клиента ещё не подключён. Баланс начинается с нуля.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Рынки", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
+    auth_signin: "Войти", auth_register: "Регистрация",
+    theme_aria: "Тема", featured_label: "Избранное",
+    kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность · 100д",
+    season_pause: "Сезон на паузе — в ближайшие 48 часов матчей не запланировано. Прогнозы вернутся автоматически с возобновлением лиг (июль 2026).",
+    footer_pastperf: "Прошлые результаты не гарантируют будущих.",
+    footer_partnerlinks: "Партнёрские ссылки являются коммерческими аффилиатами.",
+    footer_privacy: "Политика конфиденциальности",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Все", bf_allsignals: "Все прогнозы", bf_valueonly: "Только best bets",
+    bf_competition: "Турнир", bf_allcompetitions: "Все турниры",
+    bf_surface: "Покрытие", bf_allsurfaces: "Все", bf_sort: "Сортировка", bf_edge: "Лучший эдж",
+    bf_time: "Время", bf_odds: "Высший кэф", bf_probability: "Вероятность модели",
+    bf_search: "Поиск: команда, игрок, турнир...", bf_showing: "Показано",
+    bf_noresults: "Нет рынков по этим фильтрам. Расширь поиск или вернись ко «Все».",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Высшая вероятность", bb_time: "Ближайший матч",
+    bb_search: "Поиск: матч, команда, игрок...", bb_valuemode: "+EV лайв",
+    bb_modelmode: "Top Model Signals", bb_noedge: "сигналы модели",
   },
 } as const;
 
@@ -2020,42 +2120,24 @@ function SportsbookBoard({
   const footballFeed = feedCampsAll.filter((_, idx) => idx % 2 === 0);
   const tennisFeed = feedCampsAll.filter((_, idx) => idx % 2 === 1);
 
-  const labels = lang === "it" ? {
-    allSports: "Tutti",
+  const labels = {
+    allSports: t.bf_allsports,
     football: "Football",
     tennis: "Tennis",
-    allSignals: "Tutte le prediction",
-    valueOnly: "Solo best bets",
-    competition: "Competizione",
-    allCompetitions: "Tutte le competizioni",
-    surface: "Superficie",
-    allSurfaces: "Tutte",
-    sort: "Ordina",
-    edge: "Miglior edge",
-    time: "Orario",
-    odds: "Quota più alta",
-    probability: "Probabilità modello",
-    search: "Cerca team, player, torneo...",
-    showing: "Mostro",
-    noResults: "Nessun mercato rispetta questi filtri. Allarga la ricerca o torna a Tutti.",
-  } : {
-    allSports: "All",
-    football: "Football",
-    tennis: "Tennis",
-    allSignals: "All predictions",
-    valueOnly: "Best bets only",
-    competition: "Competition",
-    allCompetitions: "All competitions",
-    surface: "Surface",
-    allSurfaces: "All",
-    sort: "Sort",
-    edge: "Best edge",
-    time: "Time",
-    odds: "Highest odds",
-    probability: "Model probability",
-    search: "Search team, player, tournament...",
-    showing: "Showing",
-    noResults: "No markets match these filters. Widen the search or return to All.",
+    allSignals: t.bf_allsignals,
+    valueOnly: t.bf_valueonly,
+    competition: t.bf_competition,
+    allCompetitions: t.bf_allcompetitions,
+    surface: t.bf_surface,
+    allSurfaces: t.bf_allsurfaces,
+    sort: t.bf_sort,
+    edge: t.bf_edge,
+    time: t.bf_time,
+    odds: t.bf_odds,
+    probability: t.bf_probability,
+    search: t.bf_search,
+    showing: t.bf_showing,
+    noResults: t.bf_noresults,
   };
 
   const competitionOptions = [
@@ -2326,32 +2408,19 @@ function BestBetsBoard({
   const [sortMode, setSortMode] = useState<"probability" | "edge" | "time">("probability");
   const [searchTerm, setSearchTerm] = useState("");
   const query = searchTerm.trim().toLowerCase();
-  const labels = lang === "it" ? {
-    all: "Tutti",
+  const labels = {
+    all: t.bf_allsports,
     football: "Football",
     tennis: "Tennis",
-    sort: "Ordina",
-    probability: "Probabilità più alta",
-    edge: "Miglior edge",
-    time: "Prima kickoff",
-    search: "Cerca match, team, player...",
-    showing: "Mostro",
-    valueMode: "+EV live",
-    modelMode: "Top Model Signals",
-    noEdge: "segnali modello",
-  } : {
-    all: "All",
-    football: "Football",
-    tennis: "Tennis",
-    sort: "Sort",
-    probability: "Highest probability",
-    edge: "Best edge",
-    time: "Closest kickoff",
-    search: "Search match, team, player...",
-    showing: "Showing",
-    valueMode: "Live +EV",
-    modelMode: "Top Model Signals",
-    noEdge: "model signals",
+    sort: t.bf_sort,
+    probability: t.bb_probability,
+    edge: t.bf_edge,
+    time: t.bb_time,
+    search: t.bb_search,
+    showing: t.bf_showing,
+    valueMode: t.bb_valuemode,
+    modelMode: t.bb_modelmode,
+    noEdge: t.bb_noedge,
   };
   const footballById = new Map(predictions.map((p) => [p.match_id, p]));
   const tennisById = new Map(tennisMatches.map((m) => [m.id, m]));
@@ -7036,7 +7105,7 @@ export default function Dashboard() {
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
-    { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
+    { tab: "leaderboard", label: tNav.nav_leaderboard },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
@@ -7096,9 +7165,9 @@ export default function Dashboard() {
 
           <nav className="am-topnav">
             {[
-              { tab: "bets" as Tab, label: uiLanguage === "it" ? "Mercati" : "Markets" },
+              { tab: "bets" as Tab, label: tNav.nav_markets },
               { tab: "history" as Tab, label: tNav.nav_history },
-              { tab: "leaderboard" as Tab, label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
+              { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
               ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
               { tab: "partners" as Tab, label: tNav.nav_partner },
             ].map((item) => (
@@ -7114,7 +7183,7 @@ export default function Dashboard() {
 
           <div className="am-topright">
             {/* theme toggle segmentato DARK/LIGHT — riusa toggleTheme/theme esistenti */}
-            <div className="am-tt" role="group" aria-label={uiLanguage === "it" ? "Tema" : "Theme"}>
+            <div className="am-tt" role="group" aria-label={tNav.theme_aria}>
               <button
                 className={theme === "dark" ? "on" : ""}
                 aria-pressed={theme === "dark"}
@@ -7139,10 +7208,10 @@ export default function Dashboard() {
             ) : (
               <>
                 <button className="am-auth-secondary" onClick={() => openAuth("login")}>
-                  {uiLanguage === "it" ? "Accedi" : "Sign In"}
+                  {tNav.auth_signin}
                 </button>
                 <button className="am-auth-primary" onClick={() => openAuth("create")}>
-                  {uiLanguage === "it" ? "Registrati" : "Register"}
+                  {tNav.auth_register}
                 </button>
               </>
             )}
@@ -7174,7 +7243,7 @@ export default function Dashboard() {
               ))}
               {/* ── IN EVIDENZA group ── */}
               <span className="rail-sep" />
-              <span className="rail-lab is-second">{uiLanguage === "it" ? "In evidenza" : "Featured"}</span>
+              <span className="rail-lab is-second">{tNav.featured_label}</span>
               {/* Track B: World Cup hub is a route, not a tab */}
               <Link className="rail-item" href="/world-cup">
                 <svg className="rail-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
@@ -7198,6 +7267,12 @@ export default function Dashboard() {
               <p className="am-sub">
                 {uiLanguage === "it" ? (
                   <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                ) : uiLanguage === "es" ? (
+                  <>Probabilidades <b>calibradas por un modelo</b> en fútbol y tenis. El modelo tiene <b>una</b> opinión, no charlas de bar.</>
+                ) : uiLanguage === "fr" ? (
+                  <>Probabilités <b>calibrées par un modèle</b> sur le football et le tennis. Le modèle a <b>une seule</b> opinion, pas des avis de comptoir.</>
+                ) : uiLanguage === "ru" ? (
+                  <>Вероятности, <b>калиброванные моделью</b> по футболу и теннису. У модели <b>одно</b> мнение, а не разговоры за барной стойкой.</>
                 ) : (
                   <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
@@ -7206,16 +7281,16 @@ export default function Dashboard() {
             <div className="am-statbar">
               <div className="am-kpi">
                 <span className="v">{predictions.length + tennisMatches.length}</span>
-                <span className="l">{uiLanguage === "it" ? "Eventi" : "Events"}</span>
+                <span className="l">{tNav.kpi_events_lbl}</span>
               </div>
               <div className="am-kpi">
                 <span className="v sig">{withEdgeCount}</span>
-                <span className="l">{uiLanguage === "it" ? "Con edge" : "With edge"}</span>
+                <span className="l">{tNav.kpi_withedge}</span>
               </div>
               {historyV2Stats?.win_rate && (
                 <div className="am-kpi">
                   <span className="v">{historyV2Stats.win_rate}</span>
-                  <span className="l">{uiLanguage === "it" ? "Hit · 100g" : "Hit · 100g"}</span>
+                  <span className="l">{tNav.kpi_hit}</span>
                 </div>
               )}
             </div>
@@ -7223,7 +7298,7 @@ export default function Dashboard() {
 
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-              <span>⚽ {uiLanguage === "it" ? "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026)." : "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026)."}</span>
+              <span>⚽ {tNav.season_pause}</span>
             </div>
           )}
           {tab === "bets" && (
@@ -7304,14 +7379,14 @@ export default function Dashboard() {
         <div>{tUI.footer_note}</div>
         <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] text-gray-600">
           <span className="border border-gray-600 rounded px-1.5 py-0.5 font-bold">18+</span>
-          <span>{uiLanguage === "it" ? "Le performance passate non garantiscono risultati futuri." : "Past performance does not guarantee future results."}</span>
+          <span>{tUI.footer_pastperf}</span>
           <span>|</span>
           <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">GamCare</a>
           <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">BeGambleAware</a>
           <span>|</span>
-          <span>{uiLanguage === "it" ? "I link partner sono affiliati commerciali." : "Partner links are commercial affiliates."}</span>
+          <span>{tUI.footer_partnerlinks}</span>
           <span>|</span>
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{uiLanguage === "it" ? "Privacy Policy" : "Privacy Policy"}</a>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{tUI.footer_privacy}</a>
         </div>
         <button
           type="button"
