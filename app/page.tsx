@@ -36,7 +36,7 @@ const COPY = {
     cardAppDesc: "Il desk in tasca. In arrivo su iOS e Android.",
     appSoon: "IN ARRIVO",
     spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali",
-    cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
+    cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 19.90 · Pro 49.90 USDT/mese.", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. 18+.",
@@ -79,7 +79,7 @@ const COPY = {
     cardAppDesc: "The desk in your pocket. Coming soon to iOS and Android.",
     appSoon: "COMING SOON",
     spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup",
-    cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
+    cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
     cardPlans: "Plans", cardPlansDesc: "Free to try · Base 19.90 · Pro 49.90 USDT/month.", cardPlansBtn: "See plans",
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. 18+.",
@@ -121,7 +121,7 @@ const COPY = {
     cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
     appSoon: "PRÓXIMAMENTE",
     spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial",
-    cardTrack: "Track record", cardTrackDesc: "66.3% de acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
+    cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "66.3% de acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
     cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 19.90 · Pro 49.90 USDT/mes.", cardPlansBtn: "Ver planes",
     risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. 18+.",
@@ -163,7 +163,7 @@ const COPY = {
     cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
     appSoon: "BIENTÔT",
     spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde",
-    cardTrack: "Track record", cardTrackDesc: "66,3% de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
+    cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "66,3% de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
     cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 19.90 · Pro 49.90 USDT/mois.", cardPlansBtn: "Voir les offres",
     risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. 18+.",
@@ -205,7 +205,7 @@ const COPY = {
     cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
     appSoon: "СКОРО",
     spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ",
-    cardTrack: "Track record", cardTrackDesc: "66.3% попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
+    cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "66.3% попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
     cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 19.90 · Pro 49.90 USDT/мес.", cardPlansBtn: "Тарифы",
     risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. 18+.",
@@ -448,23 +448,25 @@ export default function LandingPage() {
 
       {/* ── Cards (#LANDING-PHOTO: sfondo foto sport + overlay coral, logica banner) ── */}
       <section className="lp-cards">
-        {/* 1 — track record (prova reale, FTC) */}
-        <article className="lp-card lp-card-photo">
+        {/* 1 — track record (prova reale, FTC) → tile DOMINANTE: è la nostra prova.
+             Span 2 righe a sinistra, titolo più grande, eyebrow + metrica reale. */}
+        <article className="lp-card lp-card-photo lp-card-hero">
           <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-track.jpg)" }} />
           <div className="lp-card-ov coral" />
           <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
           <div className="lp-card-body">
+            <p className="lp-card-eyebrow">{t.cardTrackTag}</p>
             <p className="lp-card-title">{t.cardTrack}</p>
             <p className="lp-card-desc">{t.cardTrackDesc}</p>
           </div>
           <Link href="/app?tab=history" className="lp-card-btn coral">{t.cardTrackBtn}</Link>
         </article>
 
-        {/* 2 — modello vs mercato */}
-        <article className="lp-card lp-card-photo">
+        {/* 2 — modello vs mercato (tile larga, riga 1) */}
+        <article className="lp-card lp-card-photo lp-card-wide">
           <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-model.jpg)" }} />
           <div className="lp-card-ov coral" />
-          <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
+          <div className="lp-card-head"><BrandMark size={22} /><Wordmark /></div>
           <div className="lp-card-body">
             <p className="lp-card-title">{t.cardModel}</p>
             <p className="lp-card-desc">{t.cardModelDesc}</p>
@@ -472,11 +474,11 @@ export default function LandingPage() {
           <Link href="/app?tab=bets" className="lp-card-btn coral">{t.cardModelBtn}</Link>
         </article>
 
-        {/* 3 — piani */}
-        <article className="lp-card lp-card-photo">
+        {/* 3 — piani (tile compatta, riga 2 · trattamento più sobrio = gerarchia) */}
+        <article className="lp-card lp-card-photo lp-card-sm lp-card-quiet">
           <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-plans.jpg)" }} />
           <div className="lp-card-ov coral" />
-          <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
+          <div className="lp-card-head"><BrandMark size={22} /><Wordmark /></div>
           <div className="lp-card-body">
             <p className="lp-card-title">{t.cardPlans}</p>
             <p className="lp-card-desc">{t.cardPlansDesc}</p>
@@ -484,8 +486,8 @@ export default function LandingPage() {
           <Link href="/app?tab=account" className="lp-card-btn cobalt-outline">{t.cardPlansBtn}</Link>
         </article>
 
-        {/* 4 — app */}
-        <article className="lp-card lp-card-app lp-card-photo">
+        {/* 4 — app (tile compatta, riga 2) */}
+        <article className="lp-card lp-card-app lp-card-photo lp-card-sm">
           <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/stadium-night.jpg)" }} />
           <div className="lp-card-ov coral" />
           <div className="lp-phone">

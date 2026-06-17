@@ -6578,12 +6578,25 @@ button:disabled {
 .lp-btn-cobalt { background: linear-gradient(180deg, var(--am-cobalt-2), var(--am-cobalt)); box-shadow: 0 10px 26px rgba(59,130,246,0.34); }
 .lp-btn:hover { transform: translateY(-2px); }
 
-/* ── Cards ── */
+/* ── Cards ── #LANDING-PHOTO
+   Griglia ASIMMETRICA per dare ritmo (anti-tell #7/#11: non 4 tile identiche).
+   Track record = tile DOMINANTE (la nostra prova FTC): colonna sinistra larga,
+   span 2 righe. Le altre 3 sono cluster di supporto a scala minore. */
 .lp-cards {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 1.6vw, 20px);
+  display: grid;
+  grid-template-columns: 1.55fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "track model model"
+    "track plans app";
+  gap: clamp(12px, 1.5vw, 20px);
   padding: 0 clamp(16px, 4vw, 56px) clamp(28px, 5vw, 56px);
-  margin-top: clamp(20px, 2.5vw, 32px);
+  margin-top: clamp(24px, 3vw, 40px);
 }
+.lp-card-hero { grid-area: track; }
+.lp-card-wide { grid-area: model; }
+.lp-card-quiet { grid-area: plans; }
+.lp-card-app.lp-card-sm { grid-area: app; }
 .lp-card {
   display: flex; flex-direction: column; gap: 14px;
   background: linear-gradient(180deg, var(--am-panel), var(--am-panel-2));
@@ -6611,6 +6624,46 @@ button:disabled {
 .lp-card-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px 4px; }
 .lp-card-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 1.7vw, 26px); line-height: 1.04; letter-spacing: .01em; text-transform: uppercase; margin: 0; text-shadow: 0 2px 12px rgba(0,0,0,.45); }
 .lp-card-desc { font-size: 12.5px; line-height: 1.45; color: var(--am-muted); margin: 0; }
+
+/* ── Ritmo per importanza (anti-tell #7/#11) ──────────────────────────────
+   HERO (track record): tile dominante, radius più ampio, composizione
+   editoriale left-aligned, titolo grande, eyebrow mono + body al piede coral. */
+.lp-card-hero {
+  border-radius: 24px; padding: clamp(22px, 2vw, 30px); gap: 18px;
+  min-height: clamp(300px, 26vw, 380px);
+}
+.lp-card-hero .lp-card-ov.coral {
+  background: linear-gradient(165deg, rgba(7,8,15,.5) 0%, rgba(7,8,15,.78) 48%, rgba(255,106,94,.5) 100%);
+}
+.lp-card-hero .lp-card-body { align-items: flex-start; text-align: left; padding: 0; gap: 12px; justify-content: flex-end; }
+.lp-card-eyebrow {
+  margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--am-coral); display: inline-flex; align-items: center; gap: 8px;
+}
+.lp-card-eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--am-coral); display: inline-block; }
+.lp-card-hero .lp-card-title { font-size: clamp(30px, 2.9vw, 44px); line-height: .98; }
+.lp-card-hero .lp-card-desc { font-size: clamp(13px, 1vw, 15px); line-height: 1.5; max-width: 30ch; }
+.lp-card-hero .lp-card-btn { align-self: flex-start; padding-left: 26px; padding-right: 26px; }
+
+/* WIDE (model): riga 1, titolo orizzontale, body al piede a sinistra */
+.lp-card-wide .lp-card-body { align-items: flex-start; text-align: left; padding: 0; justify-content: flex-end; gap: 8px; }
+.lp-card-wide .lp-card-title { font-size: clamp(22px, 1.9vw, 30px); }
+.lp-card-wide .lp-card-desc { max-width: 42ch; }
+
+/* SMALL (plans, app): radius più stretto, scala compatta = gerarchia recessiva */
+.lp-card-sm { border-radius: 14px; padding: 16px; }
+.lp-card-sm .lp-card-title { font-size: clamp(17px, 1.4vw, 21px); }
+.lp-card-sm .lp-card-head .am-wm { font-size: 13px; }
+/* plans: testo ancorato in basso (coerente con hero/wide), non galleggiante al centro */
+.lp-card-quiet .lp-card-body { align-items: flex-start; text-align: left; padding: 0; justify-content: flex-end; gap: 8px; }
+.lp-card-quiet .lp-card-desc { max-width: 28ch; }
+
+/* QUIET (plans): overlay più sobrio (meno coral) → non compete con la hero */
+.lp-card-quiet .lp-card-ov.coral {
+  background: linear-gradient(180deg, rgba(7,8,15,.62) 0%, rgba(7,8,15,.86) 60%, rgba(255,106,94,.22) 100%);
+}
+
 .lp-card-glyph { width: 34px; height: 34px; color: var(--am-coral); }
 .lp-card-orb {
   width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
@@ -6744,7 +6797,7 @@ button:disabled {
    brand piccolo, riga di connessione che lega gli step in un percorso. */
 .lp-how {
   max-width: 1240px; margin: 0 auto; width: 100%;
-  padding: clamp(8px, 2vw, 24px) clamp(16px, 4vw, 56px) clamp(48px, 6vw, 80px);
+  padding: clamp(8px, 2vw, 24px) clamp(16px, 4vw, 56px) clamp(28px, 3.5vw, 48px);
 }
 .lp-how-head { margin-bottom: clamp(28px, 3vw, 44px); }
 .lp-how-title {
@@ -6798,7 +6851,15 @@ button:disabled {
   .lp-hero-center { order: -1; }
   .lp-athlete { max-width: 240px; }
   .lp-left .lp-side-label, .lp-right .lp-side-label { text-align: center; align-self: center; }
-  .lp-cards { grid-template-columns: repeat(2, 1fr); }
+  /* cards: la hero resta a piena larghezza in cima, le altre 3 in 2-up sotto */
+  .lp-cards {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      "track track"
+      "model model"
+      "plans app";
+  }
+  .lp-card-hero { min-height: clamp(240px, 40vw, 320px); }
   /* value-prop: la copy sopra, il readout sotto */
   .lp-what { grid-template-columns: 1fr; gap: clamp(28px, 5vw, 40px); }
   .lp-what-head { max-width: none; }
@@ -6809,7 +6870,10 @@ button:disabled {
   .lp-step-mark { background: transparent; }
 }
 @media (max-width: 520px) {
-  .lp-cards { grid-template-columns: 1fr; }
+  .lp-cards {
+    grid-template-columns: 1fr;
+    grid-template-areas: "track" "model" "plans" "app";
+  }
   .lp-nav-link, .lp-theme { display: none; }
   .lp-steps { grid-template-columns: 1fr; gap: 24px; }
   .lp-kpis { gap: 22px; }
