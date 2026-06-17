@@ -333,13 +333,13 @@ export default function LandingPage() {
             <button className={theme === "light" ? "on" : ""} onClick={() => setThemeMode("light")}>LIGHT</button>
           </div>
           {auth.status === "authed" ? (
-            <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
+            <a href="/app?tab=account" className="am-acct" title={auth.identifier}>
               {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
-            </Link>
+            </a>
           ) : auth.status === "anonymous" ? (
             <>
-              <Link href="/app" className="lp-nav-link">{t.signin}</Link>
-              <Link href="/app?tab=account" className="lp-nav-cta">{t.register}</Link>
+              <a href="/app" className="lp-nav-link">{t.signin}</a>
+              <a href="/app?tab=account" className="lp-nav-cta">{t.register}</a>
             </>
           ) : null /* loading: niente flicker di stato errato */}
           <button className="lp-lang" onClick={toggleLang}>{lang.toUpperCase()}</button>
@@ -353,16 +353,16 @@ export default function LandingPage() {
         <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-allsports.jpg)" }} role="img" aria-label="BetRedge — All Sports" />
       </section>
       <nav className="lp-hero-sports" aria-label="Sports">
-        <Link href="/app?tab=bets&sport=football" className="lp-sport">
+        <a href="/app?tab=bets&sport=football" className="lp-sport">
           <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.jpg" alt="" /></span>
           <b className="lp-sport-lab">{t.spFootball}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </Link>
-        <Link href="/app?tab=bets&sport=tennis" className="lp-sport">
+        </a>
+        <a href="/app?tab=bets&sport=tennis" className="lp-sport">
           <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-tennis.jpg" alt="" /></span>
           <b className="lp-sport-lab">{t.spTennis}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </Link>
+        </a>
         <Link href="/world-cup" className="lp-sport lp-sport-feat">
           <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-worldcup.jpg" alt="" /></span>
           <b className="lp-sport-lab">{t.spWorldCup}</b>
@@ -395,7 +395,7 @@ export default function LandingPage() {
               <span className="lp-kpi-lab">{t.waKpi3Lab}</span>
             </div>
           </div>
-          <Link href="/app?tab=account" className="lp-what-cta">{t.waCta}<span aria-hidden="true">→</span></Link>
+          <a href="/app?tab=account" className="lp-what-cta">{t.waCta}<span aria-hidden="true">→</span></a>
         </div>
 
         {/* readout: probabilità modello vs implicita di mercato → valore */}
@@ -467,7 +467,7 @@ export default function LandingPage() {
             <p className="lp-card-title">{t.cardTrack}</p>
             <p className="lp-card-desc">{t.cardTrackDesc}</p>
           </div>
-          <Link href="/app?tab=history" className="lp-card-btn coral">{t.cardTrackBtn}</Link>
+          <a href="/app?tab=history" className="lp-card-btn coral">{t.cardTrackBtn}</a>
         </article>
 
         {/* 2 — modello vs mercato (tile larga, riga 1) */}
@@ -479,7 +479,7 @@ export default function LandingPage() {
             <p className="lp-card-title">{t.cardModel}</p>
             <p className="lp-card-desc">{t.cardModelDesc}</p>
           </div>
-          <Link href="/app?tab=bets" className="lp-card-btn coral">{t.cardModelBtn}</Link>
+          <a href="/app?tab=bets" className="lp-card-btn coral">{t.cardModelBtn}</a>
         </article>
 
         {/* 3 — piani (tile compatta, riga 2 · trattamento più sobrio = gerarchia) */}
@@ -491,7 +491,7 @@ export default function LandingPage() {
             <p className="lp-card-title">{t.cardPlans}</p>
             <p className="lp-card-desc">{t.cardPlansDesc}</p>
           </div>
-          <Link href="/app?tab=account" className="lp-card-btn cobalt-outline">{t.cardPlansBtn}</Link>
+          <a href="/app?tab=account" className="lp-card-btn cobalt-outline">{t.cardPlansBtn}</a>
         </article>
 
         {/* 4 — app (tile compatta, riga 2) */}
