@@ -1047,6 +1047,7 @@ button:disabled {
   display: block;
   max-width: 760px;
   margin-top: 10px;
+  text-wrap: balance;
 }
 
 .plans-hero button,
@@ -5711,7 +5712,7 @@ button:disabled {
 .book-main-head.am-deskhead { align-items: flex-end; margin-bottom: 18px; }
 .am-deskhead .am-deskhead-titles { min-width: 0; }
 .am-deskhead .am-sub {
-  margin-top: 7px; max-width: 54ch; font-size: 13.5px; line-height: 1.5; color: var(--am-muted);
+  margin-top: 7px; max-width: 54ch; font-size: 13.5px; line-height: 1.5; color: var(--am-muted); text-wrap: balance;
 }
 .am-deskhead .am-sub b { color: var(--am-text); font-weight: 600; }
 .am-statbar { display: flex; gap: 10px; flex: 0 0 auto; }
@@ -6041,6 +6042,9 @@ button:disabled {
 
 /* leaderboard: stat reale */
 .hb-lead-stat{ font-family:var(--font-mono); font-size:10px; color:var(--am-muted-2); white-space:nowrap; margin-right:14px; }
+/* #QA-SERGIO-BAGS-1: in light la stat su --am-muted-2 era quasi illeggibile sul
+   gradiente chiaro del banner — alza il contrasto allineandola alla .hb-sub. */
+:root[data-theme="light"] .hb-lead-stat{ color:var(--am-muted); }
 
 /* half page (300×600) */
 .hb-halfpage{ display:flex; flex-direction:column; gap:9px; padding:20px 18px; }

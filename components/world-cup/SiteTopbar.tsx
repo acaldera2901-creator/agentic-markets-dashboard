@@ -11,7 +11,8 @@
 // been logged out. On mount we ask GET /api/auth (same call the home makes)
 // and render the real state.
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState, type MouseEvent } from "react";
 
 type AuthState =
   | { status: "loading" }
@@ -37,6 +38,32 @@ function readLang(): SiteLang {
 
 export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // #QA-SERGIO-BAGS-1: segna che l'hub WC è stato visto in questa scheda, così
+  // le pagine team possono tornarci via history back (ripristinando il tab
+  // "Match calendar"/Groups/… e lo scroll da cui l'utente è partito).
+  useEffect(() => {
+    if (pathname === "/world-cup") {
+      try { sessionStorage.setItem("wc:hubSeen", "1"); } catch { /* storage off */ }
+    }
+  }, [pathname]);
+
+  // Back dal dettaglio squadra: torna DOVE eri (tab+scroll), non al top dell'hub
+  // con un flash. Se l'hub è già stato visto in questa scheda → history back;
+  // altrimenti (deep-link/scheda nuova) lascia che il <Link> vada a backHref.
+  // Solo click semplici: modifier/middle → "apri in nuova scheda".
+  const onBack = (e: MouseEvent) => {
+    if (backHref !== "/world-cup") return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    let hubSeen = false;
+    try { hubSeen = sessionStorage.getItem("wc:hubSeen") === "1"; } catch { /* storage off */ }
+    if (hubSeen && window.history.length > 1) {
+      e.preventDefault();
+      router.back();
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +141,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
             </svg>
             <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
           </Link>
-          <Link href={backHref} className="wc-topbar-back">← {backLabel}</Link>
+          <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>
         </div>
 
         <div className="am-topright">
