@@ -17,6 +17,7 @@ import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
 import { TrackRecordView } from "@/components/track-record/TrackRecordView";
 import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
+import LangDropdown from "@/components/LangDropdown";
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
@@ -290,6 +291,26 @@ const BASE_TRANSLATIONS = {
     language_it: "Italiano",
     language_en: "Inglese",
     account_pending_detail: "Conto cliente non ancora collegato. Il saldo parte da zero.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Mercati", nav_leaderboard: "Classifica", nav_account: "Account",
+    auth_signin: "Accedi", auth_register: "Registrati",
+    theme_aria: "Tema", featured_label: "In evidenza",
+    kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit · 100g",
+    season_pause: "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026).",
+    footer_pastperf: "Le performance passate non garantiscono risultati futuri.",
+    footer_partnerlinks: "I link partner sono affiliati commerciali.",
+    footer_privacy: "Privacy Policy",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Tutti", bf_allsignals: "Tutte le prediction", bf_valueonly: "Solo best bets",
+    bf_competition: "Competizione", bf_allcompetitions: "Tutte le competizioni",
+    bf_surface: "Superficie", bf_allsurfaces: "Tutte", bf_sort: "Ordina", bf_edge: "Miglior edge",
+    bf_time: "Orario", bf_odds: "Quota più alta", bf_probability: "Probabilità modello",
+    bf_search: "Cerca team, player, torneo...", bf_showing: "Mostro",
+    bf_noresults: "Nessun mercato rispetta questi filtri. Allarga la ricerca o torna a Tutti.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Probabilità più alta", bb_time: "Prima kickoff",
+    bb_search: "Cerca match, team, player...", bb_valuemode: "+EV live",
+    bb_modelmode: "Top Model Signals", bb_noedge: "segnali modello",
   },
   en: {
     // Nav
@@ -535,75 +556,824 @@ const BASE_TRANSLATIONS = {
     language_it: "Italian",
     language_en: "English",
     account_pending_detail: "Client account not connected yet. Balance starts at zero.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Markets", nav_leaderboard: "Leaderboard", nav_account: "Account",
+    auth_signin: "Sign In", auth_register: "Register",
+    theme_aria: "Theme", featured_label: "Featured",
+    kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit · 100g",
+    season_pause: "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026).",
+    footer_pastperf: "Past performance does not guarantee future results.",
+    footer_partnerlinks: "Partner links are commercial affiliates.",
+    footer_privacy: "Privacy Policy",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "All", bf_allsignals: "All predictions", bf_valueonly: "Best bets only",
+    bf_competition: "Competition", bf_allcompetitions: "All competitions",
+    bf_surface: "Surface", bf_allsurfaces: "All", bf_sort: "Sort", bf_edge: "Best edge",
+    bf_time: "Time", bf_odds: "Highest odds", bf_probability: "Model probability",
+    bf_search: "Search team, player, tournament...", bf_showing: "Showing",
+    bf_noresults: "No markets match these filters. Widen the search or return to All.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Highest probability", bb_time: "Closest kickoff",
+    bb_search: "Search match, team, player...", bb_valuemode: "Live +EV",
+    bb_modelmode: "Top Model Signals", bb_noedge: "model signals",
   },
 } as const;
 
 const EXTRA_TRANSLATIONS = {
   es: {
     ...BASE_TRANSLATIONS.en,
-    nav_dashboard: "Panel", nav_bestbets: "Mejores apuestas", nav_sports: "Deportes", nav_bets: "Apuestas",
-    header_login: "Login / Crear perfil",
+    // Nav
+    nav_dashboard: "Panel", nav_portfolio: "Portfolio", nav_plans: "Planes",
+    nav_bestbets: "Mejores apuestas", nav_sports: "Deportes", nav_tennis: "Tenis", nav_bets: "Apuestas",
+    nav_history: "Historial", nav_partner: "Partner", nav_settings: "Ajustes", nav_status: "Estado",
+    // Header
+    header_events: "eventos", header_ev: "+EV", header_login: "Login / Crear perfil",
+    // PreAccess
+    preaccess_eyebrow: "Acceso de cliente requerido",
+    preaccess_title: "Signal Desk privado para edges verificados",
+    preaccess_subtitle: "Las predicciones, el portfolio, los importes y el wallet de pago permanecen ocultos hasta que el cliente inicia sesión y elige un plan.",
     preaccess_login: "Login", preaccess_create: "Crear perfil",
-    auth_create_title: "Crea tu perfil Signal Desk", auth_create_sub: "Crea el perfil y elige un plan para desbloquear los datos.",
-    auth_name_label: "Nombre", auth_name_placeholder: "Tu nombre", auth_create_btn: "Continuar a planes",
-    plans_eyebrow: "Planes cliente", plans_title: "Tres niveles, una sola experiencia",
-    page_overview: "Panel cliente", page_bestbets: "Mejores apuestas", page_sports: "Predicciones deportivas", page_bets: "Registro de ejecución",
-    locked_eyebrow: "Signal Desk bloqueado", locked_title: "Inicia sesión para ver predicciones, edge y explicaciones",
-    locked_desc: "Los datos sensibles permanecen ocultos hasta que inicies sesión y actives un plan.", locked_btn: "Login / Crear perfil",
-    locked_plan_eyebrow: "Upgrade requerido", locked_plan_title: "Actualiza tu paquete para desbloquear esta función",
-    locked_plan_desc: "Tu perfil está activo. Esta vista requiere un nivel superior.", locked_plan_btn: "Ver planes",
-    gate_eyebrow: "Plan Premium", gate_bets_title: "Registro de ejecución", gate_bets_desc: "Las apuestas automáticas y el registro de ejecución están disponibles solo con Premium.",
-    gate_upgrade_btn: "Pasar a Premium",
-    topbar_private: "desk privado", topbar_scanning: "analizando", topbar_plans: "planes activos", topbar_syncing: "sincronizando",
-    refresh_odds: "ACTUALIZAR ODDS", rail_exec_note: "Ejecución live solo con bet ID confirmado. Tennis en capa de señal.",
-    language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
-    footer_note: "Sportsbook Edge Desk · ejecución verificada · interfaz cliente",
-    rg_footer: "18+. Juega con responsabilidad. El contenido es informativo; cuotas y bonos son ofertas de socios afiliados.",
+    preaccess_s1_title: "Crear perfil", preaccess_s1_desc: "Cuenta de cliente con idioma, plan y estado de pago.",
+    preaccess_s2_title: "Elegir plan", preaccess_s2_desc: "Free para la vista previa, Signal Desk Pro para señales e investigación.",
+    preaccess_s3_title: "Enviar USDT", preaccess_s3_desc: "La dirección del wallet aparece solo dentro del checkout del cliente.",
+    preaccess_s4_title: "Desbloquear desk", preaccess_s4_desc: "Datos en vivo visibles solo tras activar el plan o con aprobación interna.",
+    preaccess_base_desc: "Signal Desk Pro: tenis en vivo, investigación de fútbol y Best Bets",
+    preaccess_premium_desc: "Accesos avanzados reservados al equipo interno",
+    // Auth modal
+    auth_eyebrow: "Acceso de cliente",
+    auth_login_title: "Login Signal Desk",
+    auth_create_title: "Crea tu perfil Signal Desk",
+    auth_login_sub: "Inicia sesión con el email usado para tu perfil de cliente.",
+    auth_create_sub: "Crea tu perfil y luego elige Signal Desk Pro para desbloquear los datos.",
+    auth_name_label: "Nombre", auth_name_placeholder: "Tu nombre",
+    auth_not_found: "Perfil no encontrado. Crea un perfil de cliente para continuar.",
+    auth_create_btn: "Continuar a planes",
+    auth_footer: "Signal Desk Pro es solo cripto. Los datos de predicción permanecen bloqueados hasta que el plan esté activo.",
+    auth_pw_placeholder_new: "Al menos 8 caracteres",
+    auth_err_wrongpw: "Email o contraseña incorrectos.", auth_err_noaccount: "No hay cuenta con este email. Regístrate.",
+    auth_err_exists: "La cuenta ya existe — inicia sesión.", auth_err_founder: "Este perfil requiere acceso de founder.",
+    auth_err_pwshort: "La contraseña debe tener al menos 8 caracteres.", auth_err_generic: "Error. Inténtalo de nuevo.",
+    auth_hint_incomplete: "Introduce un email válido y una contraseña de al menos 8 caracteres.",
+    auth_age_confirm: "Confirmo que tengo al menos 18 años.",
+    auth_tos_pre: "Acepto los ", auth_tos_link: "Términos del Servicio y la Política de Privacidad", auth_tos_post: ".",
+    auth_hint_consent: "Confirma que eres mayor de edad y acepta los Términos para continuar.",
+    // Plans
+    plans_eyebrow: "Planes cliente",
+    plans_title: "Un plan de pago, promesa clara",
+    plans_subtitle: "Free se mantiene como vista previa. Signal Desk Pro desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
+    plans_cta: "Ver edges en vivo",
+    plans_base_desc: "Para clientes que quieren un desk de apuestas con IA con señales controladas, probabilidades, explicaciones, calidad de datos y seguimiento live/paper.",
+    plans_base_core: "Señales e investigación, no piloto automático", plans_base_sub: "La decisión final es del cliente",
+    plans_base_f1: "Best Bets +EV cuando hay cuotas y edge disponibles",
+    plans_base_f2: "Top Model Signals cuando los mercados en vivo están tranquilos",
+    plans_base_f3: "Probabilidad del modelo, cuota disponible y explicación",
+    plans_base_f4: "Investigación Tennis Live V4 y Football Live V4",
+    plans_base_f5: "Historial y track record",
+    plans_base_f6: "Ejecución automática real",
+    plans_base_f7: "Sin promesas de beneficio garantizado",
+    plans_premium_desc: "Para el cliente que quiere delegar en los agentes: análisis, decisión, importe y colocación en vivo.",
+    plans_premium_core: "Lo hago por ti", plans_premium_sub: "Capa de ejecución con auditoría completa",
+    plans_premium_f1: "Todo lo del plan Base",
+    plans_premium_f2: "Agentes desbloqueados para colocar apuestas automáticamente",
+    plans_premium_f3: "Cálculo de importe según bankroll y perfil de riesgo",
+    plans_premium_f4: "Stop loss, límites diarios y límites por deporte",
+    plans_premium_f5: "Ejecución en vivo solo con bet ID confirmado",
+    plans_premium_f6: "Informe automático tras cada operación",
+    plans_premium_f7: "Cada cliente vincula su propia cuenta de exchange",
+    plans_premium_f8: "Panel editable para límites y perfil de riesgo",
+    plans_flow1_title: "Señal", plans_flow1_desc: "Los agentes encuentran el value bet.",
+    plans_flow2_title: "Explicar", plans_flow2_desc: "El cliente ve cuota, edge y el porqué.",
+    plans_flow3_title: "Decidir", plans_flow3_desc: "El cliente decide si entra: sin ejecución automática en el lanzamiento.",
+    plans_flow4_title: "Seguir", plans_flow4_desc: "Las predicciones se guardan antes del evento y se miden en el track record.",
+    // Prediction card
+    pred_why_show: "▼ por qué", pred_why_hide: "▲ menos",
     no_clear_favorite: "Sin favorito claro", open_match: "Partido abierto",
+    pred_why_title: "Por qué esta predicción",
+    // Tennis card
+    tennis_why_show: "▼ por qué", tennis_why_hide: "▲ menos",
+    tennis_ai_label: "Análisis IA",
+    tennis_elo_label: "Análisis del modelo",
+    tennis_ai_loading: "Generando análisis IA...",
+    // Sportsbook board
+    board_title: "Mejores edges disponibles", board_eyebrow: "Tablero de mercado",
+    board_football: "Fútbol", board_tennis: "Tenis",
+    board_value: "value", board_markets: "mercados", board_matches: "partidos",
+    board_football_empty: "No hay partidos de fútbol programados. Los mercados vuelven automáticamente cuando se reanuda la temporada.",
+    board_tennis_empty: "Cargando mercados de tenis. Los datos de respaldo aparecen cuando la API está lista.",
+    // Profile panel
+    profile_upgrade_eyebrow: "Pasar a Pro",
+    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_desc: "Desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones del modelo y track record.",
+    profile_upgrade_btn: "Pasar a Pro",
+    profile_logout: "Cerrar sesión",
+    // Settings
+    settings_empty_title: "Crea un perfil para configurar tu servicio",
+    settings_empty_btn: "Crear perfil",
+    settings_save: "Guardar ajustes",
+    // Pending payment
+    pending_title: "Pago enviado",
+    pending_subtitle: "Hash de TX recibido. El plan permanece en revisión hasta su aprobación interna.",
+    pending_tx_label: "Hash de TX enviado:",
+    pending_go_plans: "← Volver a planes",
+    // Checkout
+    checkout_title: "Comprar plan",
+    checkout_step1: "Copia la dirección del wallet USDT (TRC20)",
+    checkout_step2: "Envía el importe exacto desde tu wallet",
+    checkout_step3: "Pega el hash de TX para confirmar",
+    checkout_tx_label: "Hash de TX", checkout_sla: "Activación manual en 12h tras la confirmación on-chain. Problemas o retrasos:",
+    checkout_tx_placeholder: "Pega aquí el hash de la transacción",
+    checkout_confirm: "Enviar hash de TX",
+    // Misc
+    bet_now: "Hacer apuesta →",
+    refresh_odds: "ACTUALIZAR ODDS",
+    loading_predictions: "Calculando predicciones calibradas…",
+    no_predictions: "Aún no hay predicciones — pulsa Actualizar",
+    no_match_filters: "No hay partidos para los filtros seleccionados",
+    // BetSlip
+    betslip_eyebrow: "Boleto", betslip_live: "Ticket en vivo", betslip_signal: "Ticket de señal",
+    betslip_clear: "Borrar", betslip_no_sel: "Sin selección",
+    betslip_no_sel_desc: "Pulsa una cuota del tablero de mercado unificado para inspeccionar la calidad de ejecución.",
+    betslip_selection: "Selección", betslip_odds: "Cuota", betslip_model_prob: "Probabilidad del modelo",
+    betslip_edge: "Edge", betslip_market_only: "solo mercado", betslip_stake: "Importe",
+    betslip_return: "Retorno",
+    betslip_football_btn: "Revisar orden de fútbol", betslip_tennis_btn: "Guardar señal de tenis",
+    betslip_football_note: "El fútbol puede ejecutarse en vivo solo tras la aprobación de riesgo y cuando el exchange devuelve un bet ID confirmado.",
+    betslip_tennis_note: "El tenis es solo señal hasta que el mapeo de runners esté totalmente verificado para la ejecución en vivo.",
+    // Client summary strip
+    summary_football_edge: "Edge de Fútbol",
+    summary_tennis_signals: "Señales de Tenis", summary_exec_quality: "Calidad de Ejecución",
+    summary_pending_bets: "apuestas pendientes", summary_waiting_markets: "esperando mercados",
+    summary_signal_active: "capa de señal activa", summary_blocked: "bloqueados/rechazados con seguridad",
+    summary_id_required: "ID requerido para ejecución en vivo",
+    // LockedGate
+    locked_eyebrow: "Signal Desk bloqueado", locked_title: "Inicia sesión para ver predicciones, edge y explicaciones",
+    locked_desc: "Los datos sensibles permanecen ocultos hasta que inicies sesión y actives un plan.",
+    locked_btn: "Login / Crear perfil",
+    locked_plan_eyebrow: "Plan requerido",
+    locked_plan_title: "Elige un paquete para desbloquear el desk",
+    locked_plan_desc: "Tu perfil está activo, pero las predicciones, el edge y las explicaciones se desbloquean solo tras elegir Signal Desk Pro.",
+    locked_plan_btn: "Ir a las suscripciones",
+    // Page headers
+    page_overview: "Panel del cliente", page_portfolio: "Portfolio del cliente",
+    page_plans: "Planes cliente", page_bestbets: "Mejores apuestas",
+    page_sports: "Predicciones deportivas", page_tennis: "Tenis · Modelo calibrado", page_bets: "Registro de ejecución",
+    page_history: "Historial liquidado",
+    page_partners: "Casino & Red de Partners", page_settings: "Ajustes de la cuenta",
+    page_agents: "Salud y seguridad", page_eyebrow: "Sportsbook del cliente",
+    // Top bar
+    topbar_private: "desk privado", topbar_scanning: "analizando", topbar_plans: "planes activos", topbar_syncing: "sincronizando",
+    // Rail
+    rail_desk: "DESK", rail_exec_title: "Capa de ejecución",
+    rail_exec_note: "Ejecución en vivo solo con bet ID confirmado. Tenis en capa de señal.",
+    // KPIs in overview
+    kpi_events: "eventos", kpi_ev: "+EV", kpi_win: "% acierto",
+    // Predictions tab
+    pred_model_badge: "Modelo calibrado · Forma · próximos 30 días",
+    pred_computing: "Calculando…", pred_refresh: "↻ Actualizar",
+    pred_stale_warning: "⚠️ Predicciones de más de 1 hora — pulsa Actualizar para recalcular (~90s)",
+    pred_value_bet: "value bet", pred_value_bets: "value bets",
+    pred_sort_label: "Orden", pred_sort_closest: "Más próximos", pred_sort_farthest: "Más lejanos",
+    pred_sort_best_edge: "Mejor edge", pred_sort_importance: "Más importantes",
+    pred_cat_label: "Cat.", pred_cat_all: "Todas", pred_cat_european: "⭐ Europeas",
+    pred_cat_top5: "Top 5 ligas", pred_cat_ev: "Solo +EV",
+    pred_value_only: "Solo +EV", pred_league_label: "Liga",
+    pred_type_label: "Tipo", pred_all_types: "Todos los tipos",
+    pred_showing: "Mostrando", pred_of: "de", pred_predictions: "predicciones",
+    pred_loading_sub: "La primera carga puede tardar ~90s mientras se obtienen los datos históricos",
+    // Tennis tab
+    tennis_badge: "Tennis AI v2.0 · ATP + WTA · Capa de señal",
+    tennis_computed: "calculado", tennis_matches_loaded: "partidos cargados",
+    tennis_kpi_today: "Partidos Hoy", tennis_kpi_value: "Value Bets", tennis_kpi_markets: "Mercados Activos",
+    tennis_surface_label: "Superficie",
+    tennis_loading: "Cargando predicciones de tenis…", tennis_no_matches: "No hay partidos disponibles",
+    // Partners tab
+    partners_eyebrow: "Red comercial", partners_title: "Casino & Partners de Sportsbook",
+    partners_desc: "Plataformas de juego y apuestas con las que BetRedge colabora — integración de señales, edge y herramientas de IA para operadores.",
+    partners_active: "Partners Activos", partners_negotiation: "En Negociación", partners_coming: "Próximamente",
+    partners_section_exclusive: "Partners Exclusivos", partners_section_network: "Red de Partners",
+    partners_invite_title: "¿Quieres colaborar?", partners_invite_desc: "Contáctanos para integrar nuestras señales de IA en tu plataforma.",
+    partners_since: "Partner desde", partners_visit: "Visitar →", partners_link_soon: "Enlace en camino", partners_affiliate_note: "*Enlace de afiliado — podemos ganar una comisión sin coste para ti.",
+    partners_status_active: "Activo", partners_status_featured: "⭐ Destacado",
+    partners_status_negotiation: "En Negociación", partners_status_coming: "Próximamente",
+    partners_exclusive_badge: "Partner Exclusivo",
+    // Portfolio/Bets/Agents premium gates
+    gate_eyebrow: "Acceso interno", gate_portfolio_title: "Portfolio en vivo",
+    gate_portfolio_desc: "El portfolio en vivo, el gráfico de equity y el P&L detallado por deporte no forman parte del plan público de lanzamiento.",
+    gate_bets_title: "Registro de ejecución",
+    gate_bets_desc: "El registro de apuestas de los agentes está disponible solo con el Plan Premium. Tu cuenta de exchange se vincula durante el onboarding Premium y las apuestas las colocan automáticamente los agentes.",
+    gate_agents_title: "Estado de los agentes",
+    gate_agents_desc: "El monitor de agentes está disponible solo con el Plan Premium. Muestra heartbeat, errores y estado de cada agente de tu cuenta.",
+    gate_upgrade_btn: "Pasar a Pro",
+    // Footer
+    footer_note: "Sportsbook Edge Desk · solo ejecución verificada · interfaz de nivel cliente",
+    rg_footer: "18+. Juega con responsabilidad. El contenido es informativo; cuotas y bonos son ofertas de socios afiliados.",
+    // History
+    hist_matches: "Partidos", hist_bets: "Apuestas", hist_won: "Ganadas", hist_lost: "Perdidas",
+    hist_hit_rate: "Tasa de acierto",
+    hist_filter_all: "Todos los partidos", hist_filter_with_bet: "Con apuesta", hist_filter_won: "Ganadas",
+    hist_filter_lost: "Perdidas", hist_filter_no_bet: "Sin apuesta",
+    hist_legend_won: "Apuesta ganada", hist_legend_lost: "Apuesta perdida",
+    hist_legend_pending: "Pendiente", hist_legend_no_bet: "Sin apuesta",
+    hist_loading: "Cargando historial de los últimos 30 días…", hist_empty: "Aún no hay datos históricos — haz primero algunas apuestas",
+    hist_model_pred: "Predicción del modelo", hist_no_bet: "sin apuesta",
+    hist_model_correct: "✓ modelo correcto", hist_model_wrong: "✗ modelo incorrecto",
+    portfolio_recent_eyebrow: "Apuestas recientes",
+    portfolio_recent_title: "Últimas operaciones",
+    portfolio_total: "total",
+    portfolio_empty: "Aún no hay operaciones disponibles.",
+    portfolio_hero_title: "Portfolio unificado",
+    portfolio_hero_desc: "El rendimiento del cliente y el desk operativo ahora están en la misma página.",
+    portfolio_open_desk: "Abrir Desk",
+    portfolio_open_positions: "Posiciones Abiertas",
+    portfolio_starting_capital: "Capital Inicial",
+    portfolio_trend: "Tendencia del portfolio",
+    price_month: "mes",
+    crypto_profile_required: "Crea un perfil o inicia sesión para elegir este plan.",
+    crypto_activate: "Activar",
+    crypto_create_first: "Crea primero un perfil",
+    checkout_copy: "Copiar",
+    checkout_copied: "✓ Copiado",
+    checkout_amount: "Importe",
+    checkout_monthly: "Mensual",
+    checkout_note_prefix: "Tras la verificación, el plan se activa manualmente. No envíes importes distintos a",
+    checkout_note_suffix: "USDT.",
+    checkout_cancel: "Cancelar",
+    founder_invalid: "Código no válido.",
+    founder_network: "Error de red.",
+    founder_title: "Acceso de founder",
+    founder_desc: "Introduce el código secreto para acceder con privilegios de admin.",
+    founder_secret: "Código secreto",
+    founder_checking: "Verificando...",
+    founder_login: "Entrar como founder",
+    tennis_elo_data: "Datos del modelo",
+    tennis_pipeline_title: "Tennis Pipeline · 6 Agentes",
+    tennis_last_seen: "Visto por última vez",
+    tennis_no_heartbeat: "Aún sin heartbeat",
+    tennis_footer: "Tennis AI v2.0 · modelo calibrado · 2.966 jugadores · settlement loop en vivo",
+    agent_arch_title: "Arquitectura híbrida v5.0",
+    agent_arch_dashboard_title: "Dashboard (Vercel)",
+    agent_arch_dashboard_desc: "Modelo calibrado · API-Football · Odds. Siempre online, independiente de los agentes Python locales.",
+    agent_arch_agents_title: "Agentes Python (local)",
+    agent_arch_agents_desc: "Análisis en tiempo real, League & Match Context Module, ejecución en exchange, Ollama AI. Inicia con",
+    agent_arch_none: "⚠️ No hay agentes activos. Inicia el sistema con",
+    agent_arch_none_suffix: "dentro de la carpeta del proyecto.",
+    agent_last_seen: "Visto por última vez",
+    agent_no_heartbeat: "No se ha recibido heartbeat",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Casino y plataforma de apuestas deportivas — partner exclusivo del proyecto. Enlace de acceso en fase de finalización. Disponible en breve.",
+    partner_tag_exclusive: "Exclusivo",
+    language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
+    account_pending_detail: "Cuenta de cliente aún no conectada. El saldo empieza en cero.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Mercados", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
+    auth_signin: "Entrar", auth_register: "Registrarse",
+    theme_aria: "Tema", featured_label: "Destacados",
+    kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto · 100d",
+    season_pause: "Temporada en pausa — no hay partidos programados en las próximas 48h. Las predicciones vuelven automáticamente cuando las ligas se reanuden (julio 2026).",
+    footer_pastperf: "El rendimiento pasado no garantiza resultados futuros.",
+    footer_partnerlinks: "Los enlaces de partners son afiliados comerciales.",
+    footer_privacy: "Política de Privacidad",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Todos", bf_allsignals: "Todas las predicciones", bf_valueonly: "Solo best bets",
+    bf_competition: "Competición", bf_allcompetitions: "Todas las competiciones",
+    bf_surface: "Superficie", bf_allsurfaces: "Todas", bf_sort: "Ordenar", bf_edge: "Mejor edge",
+    bf_time: "Hora", bf_odds: "Cuota más alta", bf_probability: "Probabilidad del modelo",
+    bf_search: "Buscar equipo, jugador, torneo...", bf_showing: "Mostrando",
+    bf_noresults: "Ningún mercado coincide con estos filtros. Amplía la búsqueda o vuelve a Todos.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Mayor probabilidad", bb_time: "Próximo a empezar",
+    bb_search: "Buscar partido, equipo, jugador...", bb_valuemode: "+EV en directo",
+    bb_modelmode: "Top Model Signals", bb_noedge: "señales del modelo",
   },
   fr: {
     ...BASE_TRANSLATIONS.en,
-    nav_dashboard: "Tableau", nav_bestbets: "Meilleurs bets", nav_sports: "Sports", nav_bets: "Paris",
-    header_login: "Connexion / Créer profil",
+    // Nav
+    nav_dashboard: "Tableau", nav_portfolio: "Portfolio", nav_plans: "Plans",
+    nav_bestbets: "Meilleurs bets", nav_sports: "Sports", nav_tennis: "Tennis", nav_bets: "Paris",
+    nav_history: "Historique", nav_partner: "Partner", nav_settings: "Paramètres", nav_status: "Statut",
+    // Header
+    header_events: "événements", header_ev: "+EV", header_login: "Connexion / Créer profil",
+    // PreAccess
+    preaccess_eyebrow: "Accès client requis",
+    preaccess_title: "Signal Desk privé pour des edges vérifiés",
+    preaccess_subtitle: "Les prédictions, le portfolio, les mises et le wallet de paiement restent masqués jusqu'à ce que le client se connecte et choisisse un plan.",
     preaccess_login: "Connexion", preaccess_create: "Créer profil",
-    auth_create_title: "Crée ton profil Signal Desk", auth_create_sub: "Crée ton profil puis choisis un plan pour débloquer les données.",
-    auth_name_label: "Nom", auth_name_placeholder: "Ton nom", auth_create_btn: "Continuer vers les plans",
-    plans_eyebrow: "Plans client", plans_title: "Trois niveaux, une seule expérience",
-    page_overview: "Tableau client", page_bestbets: "Meilleurs bets", page_sports: "Prédictions sportives", page_bets: "Journal d'exécution",
-    locked_eyebrow: "Signal Desk verrouillé", locked_title: "Connecte-toi pour voir predictions, edge et explications",
-    locked_desc: "Les données sensibles restent masquées jusqu'à connexion et activation du plan.", locked_btn: "Connexion / Créer profil",
-    locked_plan_eyebrow: "Upgrade requis", locked_plan_title: "Passe à un niveau supérieur pour débloquer cette vue",
-    locked_plan_desc: "Ton profil est actif. Cette section demande un niveau supérieur.", locked_plan_btn: "Voir les plans",
-    gate_eyebrow: "Plan Premium", gate_bets_title: "Journal d'exécution", gate_bets_desc: "Les agents automatiques et le journal d'exécution sont disponibles uniquement avec Premium.",
-    gate_upgrade_btn: "Passer à Premium",
-    topbar_private: "desk privé", topbar_scanning: "analyse", topbar_plans: "plans actifs", topbar_syncing: "sync",
-    refresh_odds: "RAFRAICHIR ODDS", rail_exec_note: "Exécution live seulement avec bet ID confirmé. Tennis en couche signal.",
-    language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
-    footer_note: "Sportsbook Edge Desk · exécution vérifiée · interface client",
-    rg_footer: "18+. Jouez de façon responsable. Le contenu est informatif; les cotes et bonus sont des offres de partenaires affiliés.",
+    preaccess_s1_title: "Créer profil", preaccess_s1_desc: "Compte client avec langue, plan et statut de paiement.",
+    preaccess_s2_title: "Choisir un plan", preaccess_s2_desc: "Free pour l'aperçu, Signal Desk Pro pour les signaux et la recherche.",
+    preaccess_s3_title: "Envoyer des USDT", preaccess_s3_desc: "L'adresse du wallet n'apparaît que dans le checkout client.",
+    preaccess_s4_title: "Débloquer le desk", preaccess_s4_desc: "Données en direct visibles seulement après activation du plan ou validation interne.",
+    preaccess_base_desc: "Signal Desk Pro : tennis en direct, recherche football et Best Bets",
+    preaccess_premium_desc: "Accès avancés réservés à l'équipe interne",
+    // Auth modal
+    auth_eyebrow: "Accès client",
+    auth_login_title: "Connexion Signal Desk",
+    auth_create_title: "Crée ton profil Signal Desk",
+    auth_login_sub: "Connecte-toi avec l'email utilisé pour ton profil client.",
+    auth_create_sub: "Crée ton profil, puis choisis Signal Desk Pro pour débloquer les données.",
+    auth_name_label: "Nom", auth_name_placeholder: "Ton nom",
+    auth_not_found: "Profil introuvable. Crée un profil client pour continuer.",
+    auth_create_btn: "Continuer vers les plans",
+    auth_footer: "Signal Desk Pro est crypto uniquement. Les données de prédiction restent verrouillées tant que le plan n'est pas actif.",
+    auth_pw_placeholder_new: "Au moins 8 caractères",
+    auth_err_wrongpw: "Email ou mot de passe incorrect.", auth_err_noaccount: "Aucun compte pour cet email. Inscris-toi.",
+    auth_err_exists: "Le compte existe déjà — connecte-toi.", auth_err_founder: "Ce profil requiert un accès founder.",
+    auth_err_pwshort: "Le mot de passe doit comporter au moins 8 caractères.", auth_err_generic: "Erreur. Réessaie.",
+    auth_hint_incomplete: "Saisis un email valide et un mot de passe d'au moins 8 caractères.",
+    auth_age_confirm: "Je confirme avoir au moins 18 ans.",
+    auth_tos_pre: "J'accepte les ", auth_tos_link: "Conditions de Service et la Politique de Confidentialité", auth_tos_post: ".",
+    auth_hint_consent: "Confirme que tu es majeur et accepte les Conditions pour continuer.",
+    // Plans
+    plans_eyebrow: "Plans client",
+    plans_title: "Un seul plan payant, promesse claire",
+    plans_subtitle: "Free reste un aperçu. Signal Desk Pro débloque le tennis en direct, la recherche football, les Best Bets, les explications et le track record. Aucune promesse agressive de battre le marché.",
+    plans_cta: "Voir les edges en direct",
+    plans_base_desc: "Pour les clients qui veulent un desk de paris IA avec signaux contrôlés, probabilités, explications, qualité des données et suivi live/paper.",
+    plans_base_core: "Signaux et recherche, pas un pilote automatique", plans_base_sub: "La décision finale reste au client",
+    plans_base_f1: "Best Bets +EV quand cotes et edge sont disponibles",
+    plans_base_f2: "Top Model Signals quand les marchés en direct sont calmes",
+    plans_base_f3: "Probabilité du modèle, cote disponible et explication",
+    plans_base_f4: "Recherche Tennis Live V4 et Football Live V4",
+    plans_base_f5: "Historique et track record",
+    plans_base_f6: "Exécution automatique réelle",
+    plans_base_f7: "Aucune promesse de profit garanti",
+    plans_premium_desc: "Pour le client qui veut déléguer aux agents : analyse, décision, mise et placement en direct.",
+    plans_premium_core: "Je le fais pour toi", plans_premium_sub: "Couche d'exécution avec audit complet",
+    plans_premium_f1: "Tout le plan Base inclus",
+    plans_premium_f2: "Agents débloqués pour placer les paris automatiquement",
+    plans_premium_f3: "Dimensionnement de la mise selon bankroll et profil de risque",
+    plans_premium_f4: "Stop loss, limites journalières et limites par sport",
+    plans_premium_f5: "Exécution en direct seulement avec bet ID confirmé",
+    plans_premium_f6: "Rapport automatique après chaque opération",
+    plans_premium_f7: "Chaque client relie son propre compte exchange",
+    plans_premium_f8: "Dashboard modifiable pour limites et profil de risque",
+    plans_flow1_title: "Signal", plans_flow1_desc: "Les agents trouvent le value bet.",
+    plans_flow2_title: "Expliquer", plans_flow2_desc: "Le client voit la cote, l'edge et le pourquoi.",
+    plans_flow3_title: "Décider", plans_flow3_desc: "Le client décide d'entrer ou non : pas d'exécution automatique au lancement.",
+    plans_flow4_title: "Suivre", plans_flow4_desc: "Les prédictions sont enregistrées avant l'événement et mesurées dans le track record.",
+    // Prediction card
+    pred_why_show: "▼ pourquoi", pred_why_hide: "▲ moins",
     no_clear_favorite: "Pas de favori net", open_match: "Match ouvert",
+    pred_why_title: "Pourquoi cette prédiction",
+    // Tennis card
+    tennis_why_show: "▼ pourquoi", tennis_why_hide: "▲ moins",
+    tennis_ai_label: "Analyse IA",
+    tennis_elo_label: "Analyse du modèle",
+    tennis_ai_loading: "Génération de l'analyse IA...",
+    // Sportsbook board
+    board_title: "Meilleurs edges disponibles", board_eyebrow: "Tableau de marché",
+    board_football: "Football", board_tennis: "Tennis",
+    board_value: "value", board_markets: "marchés", board_matches: "matchs",
+    board_football_empty: "Aucun match de football programmé. Les marchés reviennent automatiquement à la reprise de la saison.",
+    board_tennis_empty: "Chargement des marchés de tennis. Les données de secours apparaissent quand l'API est prête.",
+    // Profile panel
+    profile_upgrade_eyebrow: "Passer à Pro",
+    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_desc: "Débloque le tennis en direct, la recherche football, les Best Bets, les explications du modèle et le track record.",
+    profile_upgrade_btn: "Passer à Pro",
+    profile_logout: "Déconnexion",
+    // Settings
+    settings_empty_title: "Crée un profil pour configurer ton service",
+    settings_empty_btn: "Créer profil",
+    settings_save: "Enregistrer les paramètres",
+    // Pending payment
+    pending_title: "Paiement envoyé",
+    pending_subtitle: "Hash de TX reçu. Le plan reste en cours de vérification jusqu'à son approbation interne.",
+    pending_tx_label: "Hash de TX envoyé :",
+    pending_go_plans: "← Retour aux plans",
+    // Checkout
+    checkout_title: "Acheter un plan",
+    checkout_step1: "Copie l'adresse du wallet USDT (TRC20)",
+    checkout_step2: "Envoie le montant exact depuis ton wallet",
+    checkout_step3: "Colle le hash de TX pour confirmer",
+    checkout_tx_label: "Hash de TX", checkout_sla: "Activation manuelle sous 12h après confirmation on-chain. Problèmes ou retards :",
+    checkout_tx_placeholder: "Colle ici le hash de la transaction",
+    checkout_confirm: "Envoyer le hash de TX",
+    // Misc
+    bet_now: "Placer le pari →",
+    refresh_odds: "RAFRAÎCHIR ODDS",
+    loading_predictions: "Calcul des prédictions calibrées…",
+    no_predictions: "Pas encore de prédictions — clique sur Rafraîchir",
+    no_match_filters: "Aucun match pour les filtres sélectionnés",
+    // BetSlip
+    betslip_eyebrow: "Coupon", betslip_live: "Ticket live", betslip_signal: "Ticket signal",
+    betslip_clear: "Effacer", betslip_no_sel: "Aucune sélection",
+    betslip_no_sel_desc: "Clique sur une cote du tableau de marché unifié pour inspecter la qualité d'exécution.",
+    betslip_selection: "Sélection", betslip_odds: "Cote", betslip_model_prob: "Probabilité du modèle",
+    betslip_edge: "Edge", betslip_market_only: "marché seulement", betslip_stake: "Mise",
+    betslip_return: "Retour",
+    betslip_football_btn: "Vérifier l'ordre football", betslip_tennis_btn: "Enregistrer le signal tennis",
+    betslip_football_note: "Le football ne peut s'exécuter en direct qu'après approbation du risque et lorsque l'exchange renvoie un bet ID confirmé.",
+    betslip_tennis_note: "Le tennis est en signal uniquement tant que le mapping des runners n'est pas entièrement vérifié pour l'exécution en direct.",
+    // Client summary strip
+    summary_football_edge: "Edge Football",
+    summary_tennis_signals: "Signaux Tennis", summary_exec_quality: "Qualité d'Exécution",
+    summary_pending_bets: "paris en attente", summary_waiting_markets: "en attente des marchés",
+    summary_signal_active: "couche signal active", summary_blocked: "bloqués/rejetés en sécurité",
+    summary_id_required: "ID requis pour l'exécution live",
+    // LockedGate
+    locked_eyebrow: "Signal Desk verrouillé", locked_title: "Connecte-toi pour voir prédictions, edge et explications",
+    locked_desc: "Les données sensibles restent masquées jusqu'à ta connexion et l'activation d'un plan.",
+    locked_btn: "Connexion / Créer profil",
+    locked_plan_eyebrow: "Plan requis",
+    locked_plan_title: "Choisis un pack pour débloquer le desk",
+    locked_plan_desc: "Ton profil est actif, mais les prédictions, l'edge et les explications ne se débloquent qu'après avoir choisi Signal Desk Pro.",
+    locked_plan_btn: "Aller aux abonnements",
+    // Page headers
+    page_overview: "Tableau client", page_portfolio: "Portfolio client",
+    page_plans: "Plans client", page_bestbets: "Meilleurs bets",
+    page_sports: "Prédictions sportives", page_tennis: "Tennis · Modèle calibré", page_bets: "Journal d'exécution",
+    page_history: "Historique réglé",
+    page_partners: "Casino & Réseau de Partners", page_settings: "Paramètres du compte",
+    page_agents: "Santé et sécurité", page_eyebrow: "Sportsbook client",
+    // Top bar
+    topbar_private: "desk privé", topbar_scanning: "analyse", topbar_plans: "plans actifs", topbar_syncing: "sync",
+    // Rail
+    rail_desk: "DESK", rail_exec_title: "Couche d'exécution",
+    rail_exec_note: "Exécution en direct seulement avec bet ID confirmé. Tennis en couche signal.",
+    // KPIs in overview
+    kpi_events: "événements", kpi_ev: "+EV", kpi_win: "% réussite",
+    // Predictions tab
+    pred_model_badge: "Modèle calibré · Forme · 30 prochains jours",
+    pred_computing: "Calcul…", pred_refresh: "↻ Rafraîchir",
+    pred_stale_warning: "⚠️ Prédictions de plus d'1 heure — clique sur Rafraîchir pour recalculer (~90s)",
+    pred_value_bet: "value bet", pred_value_bets: "value bets",
+    pred_sort_label: "Tri", pred_sort_closest: "Les plus proches", pred_sort_farthest: "Les plus lointains",
+    pred_sort_best_edge: "Meilleur edge", pred_sort_importance: "Les plus importants",
+    pred_cat_label: "Cat.", pred_cat_all: "Toutes", pred_cat_european: "⭐ Européennes",
+    pred_cat_top5: "Top 5 ligues", pred_cat_ev: "+EV seulement",
+    pred_value_only: "+EV seulement", pred_league_label: "Ligue",
+    pred_type_label: "Type", pred_all_types: "Tous les types",
+    pred_showing: "Affichage", pred_of: "sur", pred_predictions: "prédictions",
+    pred_loading_sub: "Le premier chargement peut prendre ~90s pour récupérer les données historiques",
+    // Tennis tab
+    tennis_badge: "Tennis AI v2.0 · ATP + WTA · Couche signal",
+    tennis_computed: "calculé", tennis_matches_loaded: "matchs chargés",
+    tennis_kpi_today: "Matchs Aujourd'hui", tennis_kpi_value: "Value Bets", tennis_kpi_markets: "Marchés Actifs",
+    tennis_surface_label: "Surface",
+    tennis_loading: "Chargement des prédictions tennis…", tennis_no_matches: "Aucun match disponible",
+    // Partners tab
+    partners_eyebrow: "Réseau commercial", partners_title: "Casino & Partners Sportsbook",
+    partners_desc: "Plateformes de jeu et de paris avec lesquelles BetRedge collabore — intégration de signaux, edge et outils IA pour les opérateurs.",
+    partners_active: "Partners Actifs", partners_negotiation: "En Négociation", partners_coming: "Bientôt",
+    partners_section_exclusive: "Partners Exclusifs", partners_section_network: "Réseau de Partners",
+    partners_invite_title: "Envie de collaborer ?", partners_invite_desc: "Contacte-nous pour intégrer nos signaux IA à ta plateforme.",
+    partners_since: "Partner depuis", partners_visit: "Visiter →", partners_link_soon: "Lien à venir", partners_affiliate_note: "*Lien d'affiliation — nous pouvons toucher une commission, sans frais pour toi.",
+    partners_status_active: "Actif", partners_status_featured: "⭐ En vedette",
+    partners_status_negotiation: "En Négociation", partners_status_coming: "Bientôt",
+    partners_exclusive_badge: "Partner Exclusif",
+    // Portfolio/Bets/Agents premium gates
+    gate_eyebrow: "Accès interne", gate_portfolio_title: "Portfolio en direct",
+    gate_portfolio_desc: "Le portfolio en direct, le graphique d'equity et le P&L détaillé par sport ne font pas partie du plan public de lancement.",
+    gate_bets_title: "Journal d'exécution",
+    gate_bets_desc: "Le journal des paris des agents est disponible uniquement avec le Plan Premium. Ton compte exchange est relié pendant l'onboarding Premium et les paris sont placés automatiquement par les agents.",
+    gate_agents_title: "Statut des agents",
+    gate_agents_desc: "Le moniteur des agents est disponible uniquement avec le Plan Premium. Il affiche le heartbeat, les erreurs et le statut de chaque agent de ton compte.",
+    gate_upgrade_btn: "Passer à Pro",
+    // Footer
+    footer_note: "Sportsbook Edge Desk · exécution vérifiée uniquement · interface de niveau client",
+    rg_footer: "18+. Jouez de façon responsable. Le contenu est informatif ; les cotes et bonus sont des offres de partenaires affiliés.",
+    // History
+    hist_matches: "Matchs", hist_bets: "Paris placés", hist_won: "Gagnés", hist_lost: "Perdus",
+    hist_hit_rate: "Taux de réussite",
+    hist_filter_all: "Tous les matchs", hist_filter_with_bet: "Avec pari", hist_filter_won: "Gagnés",
+    hist_filter_lost: "Perdus", hist_filter_no_bet: "Sans pari",
+    hist_legend_won: "Pari gagné", hist_legend_lost: "Pari perdu",
+    hist_legend_pending: "En attente", hist_legend_no_bet: "Sans pari",
+    hist_loading: "Chargement de l'historique des 30 derniers jours…", hist_empty: "Pas encore de données historiques — place d'abord quelques paris",
+    hist_model_pred: "Prédiction du modèle", hist_no_bet: "sans pari",
+    hist_model_correct: "✓ modèle correct", hist_model_wrong: "✗ modèle erroné",
+    portfolio_recent_eyebrow: "Paris récents",
+    portfolio_recent_title: "Dernières opérations",
+    portfolio_total: "total",
+    portfolio_empty: "Aucune opération disponible pour l'instant.",
+    portfolio_hero_title: "Portfolio unifié",
+    portfolio_hero_desc: "La performance du client et le desk opérationnel sont désormais sur la même page.",
+    portfolio_open_desk: "Ouvrir le Desk",
+    portfolio_open_positions: "Positions Ouvertes",
+    portfolio_starting_capital: "Capital de Départ",
+    portfolio_trend: "Tendance du portfolio",
+    price_month: "mois",
+    crypto_profile_required: "Crée un profil ou connecte-toi pour choisir ce plan.",
+    crypto_activate: "Activer",
+    crypto_create_first: "Crée d'abord un profil",
+    checkout_copy: "Copier",
+    checkout_copied: "✓ Copié",
+    checkout_amount: "Montant",
+    checkout_monthly: "Mensuel",
+    checkout_note_prefix: "Après vérification, le plan est activé manuellement. N'envoie pas de montants différents de",
+    checkout_note_suffix: "USDT.",
+    checkout_cancel: "Annuler",
+    founder_invalid: "Code invalide.",
+    founder_network: "Erreur réseau.",
+    founder_title: "Accès founder",
+    founder_desc: "Saisis le code secret pour accéder aux privilèges admin.",
+    founder_secret: "Code secret",
+    founder_checking: "Vérification...",
+    founder_login: "Se connecter en tant que founder",
+    tennis_elo_data: "Données du modèle",
+    tennis_pipeline_title: "Tennis Pipeline · 6 Agents",
+    tennis_last_seen: "Vu pour la dernière fois",
+    tennis_no_heartbeat: "Pas encore de heartbeat",
+    tennis_footer: "Tennis AI v2.0 · modèle calibré · 2 966 joueurs · settlement loop en direct",
+    agent_arch_title: "Architecture hybride v5.0",
+    agent_arch_dashboard_title: "Dashboard (Vercel)",
+    agent_arch_dashboard_desc: "Modèle calibré · API-Football · Odds. Toujours en ligne, indépendant des agents Python locaux.",
+    agent_arch_agents_title: "Agents Python (local)",
+    agent_arch_agents_desc: "Analyse en temps réel, League & Match Context Module, exécution sur exchange, Ollama AI. Démarre avec",
+    agent_arch_none: "⚠️ Aucun agent actif. Démarre le système avec",
+    agent_arch_none_suffix: "dans le dossier du projet.",
+    agent_last_seen: "Vu pour la dernière fois",
+    agent_no_heartbeat: "Aucun heartbeat reçu",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Casino et plateforme de paris sportifs — partner exclusif du projet. Lien d'accès en cours de finalisation. Disponible bientôt.",
+    partner_tag_exclusive: "Exclusif",
+    language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
+    account_pending_detail: "Compte client pas encore connecté. Le solde démarre à zéro.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Marchés", nav_leaderboard: "Classement", nav_account: "Compte",
+    auth_signin: "Connexion", auth_register: "S'inscrire",
+    theme_aria: "Thème", featured_label: "À la une",
+    kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite · 100j",
+    season_pause: "Saison en pause — aucun match programmé dans les 48 prochaines heures. Les prédictions reviennent automatiquement à la reprise des ligues (juillet 2026).",
+    footer_pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
+    footer_partnerlinks: "Les liens partners sont des affiliés commerciaux.",
+    footer_privacy: "Politique de Confidentialité",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Tous", bf_allsignals: "Toutes les prédictions", bf_valueonly: "Best bets uniquement",
+    bf_competition: "Compétition", bf_allcompetitions: "Toutes les compétitions",
+    bf_surface: "Surface", bf_allsurfaces: "Toutes", bf_sort: "Trier", bf_edge: "Meilleur edge",
+    bf_time: "Heure", bf_odds: "Cote la plus élevée", bf_probability: "Probabilité du modèle",
+    bf_search: "Rechercher équipe, joueur, tournoi...", bf_showing: "Affichage",
+    bf_noresults: "Aucun marché ne correspond à ces filtres. Élargis la recherche ou reviens à Tous.",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Probabilité la plus élevée", bb_time: "Coup d'envoi le plus proche",
+    bb_search: "Rechercher match, équipe, joueur...", bb_valuemode: "+EV en direct",
+    bb_modelmode: "Top Model Signals", bb_noedge: "signaux du modèle",
   },
   ru: {
     ...BASE_TRANSLATIONS.en,
-    nav_dashboard: "Панель", nav_bestbets: "Лучшие ставки", nav_sports: "Спорт", nav_bets: "Ставки",
-    header_login: "Войти / Создать профиль",
+    // Nav
+    nav_dashboard: "Панель", nav_portfolio: "Портфель", nav_plans: "Планы",
+    nav_bestbets: "Лучшие ставки", nav_sports: "Спорт", nav_tennis: "Теннис", nav_bets: "Ставки",
+    nav_history: "История", nav_partner: "Партнёры", nav_settings: "Настройки", nav_status: "Статус",
+    // Header
+    header_events: "события", header_ev: "+EV", header_login: "Войти / Создать профиль",
+    // PreAccess
+    preaccess_eyebrow: "Требуется доступ клиента",
+    preaccess_title: "Приватный Signal Desk для проверенных edge",
+    preaccess_subtitle: "Прогнозы, портфель, размеры ставок и платёжный кошелёк скрыты, пока клиент не войдёт и не выберет план.",
     preaccess_login: "Войти", preaccess_create: "Создать профиль",
-    auth_create_title: "Создай профиль Signal Desk", auth_create_sub: "Создай профиль и выбери план, чтобы открыть данные.",
-    auth_name_label: "Имя", auth_name_placeholder: "Твое имя", auth_create_btn: "Перейти к планам",
-    plans_eyebrow: "Планы клиента", plans_title: "Три уровня, один опыт",
-    page_overview: "Панель клиента", page_bestbets: "Лучшие ставки", page_sports: "Спортивные прогнозы", page_bets: "Журнал исполнения",
-    locked_eyebrow: "Signal Desk заблокирован", locked_title: "Войди, чтобы увидеть прогнозы, edge и объяснения",
-    locked_desc: "Чувствительные данные скрыты до входа и активации плана.", locked_btn: "Войти / Создать профиль",
-    locked_plan_eyebrow: "Нужен апгрейд", locked_plan_title: "Обнови пакет, чтобы открыть этот раздел",
-    locked_plan_desc: "Профиль активен. Этот раздел требует более высокого уровня.", locked_plan_btn: "Смотреть планы",
-    gate_eyebrow: "Premium план", gate_bets_title: "Журнал исполнения", gate_bets_desc: "Автоматические агенты и журнал исполнения доступны только в Premium.",
-    gate_upgrade_btn: "Перейти на Premium",
-    topbar_private: "приватный desk", topbar_scanning: "анализ", topbar_plans: "планы активны", topbar_syncing: "синхронизация",
-    refresh_odds: "ОБНОВИТЬ ODDS", rail_exec_note: "Live execution только с подтвержденным bet ID. Tennis в signal layer.",
-    language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
-    footer_note: "Sportsbook Edge Desk · проверенное исполнение · клиентский интерфейс",
-    rg_footer: "18+. Играй ответственно. Контент носит информационный характер; котировки и бонусы — предложения партнёров.",
+    preaccess_s1_title: "Создать профиль", preaccess_s1_desc: "Аккаунт клиента с языком, планом и статусом оплаты.",
+    preaccess_s2_title: "Выбрать план", preaccess_s2_desc: "Free для превью, Signal Desk Pro для сигналов и исследований.",
+    preaccess_s3_title: "Отправить USDT", preaccess_s3_desc: "Адрес кошелька появляется только внутри клиентского checkout.",
+    preaccess_s4_title: "Разблокировать desk", preaccess_s4_desc: "Live-данные видны только после активации плана или внутреннего одобрения.",
+    preaccess_base_desc: "Signal Desk Pro: теннис live, исследование футбола и Best Bets",
+    preaccess_premium_desc: "Расширенный доступ зарезервирован для внутренней команды",
+    // Auth modal
+    auth_eyebrow: "Доступ клиента",
+    auth_login_title: "Вход в Signal Desk",
+    auth_create_title: "Создай профиль Signal Desk",
+    auth_login_sub: "Войди с email, использованным для твоего профиля клиента.",
+    auth_create_sub: "Создай профиль, затем выбери Signal Desk Pro, чтобы открыть данные.",
+    auth_name_label: "Имя", auth_name_placeholder: "Твоё имя",
+    auth_not_found: "Профиль не найден. Создай профиль клиента, чтобы продолжить.",
+    auth_create_btn: "Перейти к планам",
+    auth_footer: "Signal Desk Pro — только крипта. Данные прогнозов остаются заблокированными, пока план не активен.",
+    auth_pw_placeholder_new: "Минимум 8 символов",
+    auth_err_wrongpw: "Неверный email или пароль.", auth_err_noaccount: "Нет аккаунта с этим email. Зарегистрируйся.",
+    auth_err_exists: "Аккаунт уже существует — войди.", auth_err_founder: "Этот профиль требует founder-доступа.",
+    auth_err_pwshort: "Пароль должен содержать минимум 8 символов.", auth_err_generic: "Ошибка. Попробуй снова.",
+    auth_hint_incomplete: "Введи корректный email и пароль не короче 8 символов.",
+    auth_age_confirm: "Подтверждаю, что мне не менее 18 лет.",
+    auth_tos_pre: "Я принимаю ", auth_tos_link: "Условия использования и Политику конфиденциальности", auth_tos_post: ".",
+    auth_hint_consent: "Подтверди совершеннолетие и прими Условия, чтобы продолжить.",
+    // Plans
+    plans_eyebrow: "Планы клиента",
+    plans_title: "Один платный план, понятное обещание",
+    plans_subtitle: "Free остаётся превью. Signal Desk Pro открывает теннис live, исследование футбола, Best Bets, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
+    plans_cta: "Смотреть live edges",
+    plans_base_desc: "Для клиентов, которым нужен AI-desk для ставок с контролируемыми сигналами, вероятностями, объяснениями, качеством данных и трекингом live/paper.",
+    plans_base_core: "Сигналы и исследования, не автопилот", plans_base_sub: "Финальное решение за клиентом",
+    plans_base_f1: "Best Bets +EV, когда есть котировки и edge",
+    plans_base_f2: "Top Model Signals, когда live-рынки пустые",
+    plans_base_f3: "Вероятность модели, доступная котировка и объяснение",
+    plans_base_f4: "Исследование Tennis Live V4 и Football Live V4",
+    plans_base_f5: "История и track record",
+    plans_base_f6: "Реальное автоматическое исполнение",
+    plans_base_f7: "Без обещаний гарантированной прибыли",
+    plans_premium_desc: "Для клиента, который хочет делегировать агентам: анализ, решение, размер ставки и live-размещение.",
+    plans_premium_core: "Я делаю это за тебя", plans_premium_sub: "Слой исполнения с полным аудитом",
+    plans_premium_f1: "Всё из плана Base",
+    plans_premium_f2: "Агенты разблокированы для автоматического размещения ставок",
+    plans_premium_f3: "Расчёт ставки по банкроллу и профилю риска",
+    plans_premium_f4: "Stop loss, дневные лимиты и лимиты по виду спорта",
+    plans_premium_f5: "Live-исполнение только с подтверждённым bet ID",
+    plans_premium_f6: "Автоматический отчёт после каждой операции",
+    plans_premium_f7: "Каждый клиент подключает свой аккаунт exchange",
+    plans_premium_f8: "Редактируемая панель для лимитов и профиля риска",
+    plans_flow1_title: "Сигнал", plans_flow1_desc: "Агенты находят value bet.",
+    plans_flow2_title: "Объяснить", plans_flow2_desc: "Клиент видит котировку, edge и почему.",
+    plans_flow3_title: "Решить", plans_flow3_desc: "Клиент решает, входить ли: без автоисполнения на старте.",
+    plans_flow4_title: "Отслеживать", plans_flow4_desc: "Прогнозы сохраняются до события и измеряются в track record.",
+    // Prediction card
+    pred_why_show: "▼ почему", pred_why_hide: "▲ меньше",
     no_clear_favorite: "Нет явного фаворита", open_match: "Открытый матч",
+    pred_why_title: "Почему этот прогноз",
+    // Tennis card
+    tennis_why_show: "▼ почему", tennis_why_hide: "▲ меньше",
+    tennis_ai_label: "AI-анализ",
+    tennis_elo_label: "Анализ модели",
+    tennis_ai_loading: "Генерация AI-анализа...",
+    // Sportsbook board
+    board_title: "Лучшие доступные edge", board_eyebrow: "Доска рынка",
+    board_football: "Футбол", board_tennis: "Теннис",
+    board_value: "value", board_markets: "рынки", board_matches: "матчи",
+    board_football_empty: "Нет запланированных футбольных матчей. Рынки вернутся автоматически с возобновлением сезона.",
+    board_tennis_empty: "Загрузка теннисных рынков. Резервные данные появятся, когда API будет готов.",
+    // Profile panel
+    profile_upgrade_eyebrow: "Перейти на Pro",
+    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_desc: "Открой теннис live, исследование футбола, Best Bets, объяснения модели и track record.",
+    profile_upgrade_btn: "Перейти на Pro",
+    profile_logout: "Выйти",
+    // Settings
+    settings_empty_title: "Создай профиль, чтобы настроить сервис",
+    settings_empty_btn: "Создать профиль",
+    settings_save: "Сохранить настройки",
+    // Pending payment
+    pending_title: "Платёж отправлен",
+    pending_subtitle: "Хэш TX получен. План остаётся на проверке до внутреннего одобрения.",
+    pending_tx_label: "Отправленный хэш TX:",
+    pending_go_plans: "← Назад к планам",
+    // Checkout
+    checkout_title: "Купить план",
+    checkout_step1: "Скопируй адрес кошелька USDT (TRC20)",
+    checkout_step2: "Отправь точную сумму со своего кошелька",
+    checkout_step3: "Вставь хэш TX для подтверждения",
+    checkout_tx_label: "Хэш TX", checkout_sla: "Ручная активация в течение 12ч после подтверждения on-chain. Проблемы или задержки:",
+    checkout_tx_placeholder: "Вставь сюда хэш транзакции",
+    checkout_confirm: "Отправить хэш TX",
+    // Misc
+    bet_now: "Сделать ставку →",
+    refresh_odds: "ОБНОВИТЬ ODDS",
+    loading_predictions: "Вычисление калиброванных прогнозов…",
+    no_predictions: "Пока нет прогнозов — нажми Обновить",
+    no_match_filters: "Нет матчей по выбранным фильтрам",
+    // BetSlip
+    betslip_eyebrow: "Купон", betslip_live: "Live-тикет", betslip_signal: "Сигнальный тикет",
+    betslip_clear: "Очистить", betslip_no_sel: "Нет выбора",
+    betslip_no_sel_desc: "Нажми на ячейку котировки на едином рынке, чтобы проверить качество исполнения.",
+    betslip_selection: "Выбор", betslip_odds: "Котировка", betslip_model_prob: "Вероятность модели",
+    betslip_edge: "Edge", betslip_market_only: "только рынок", betslip_stake: "Ставка",
+    betslip_return: "Возврат",
+    betslip_football_btn: "Проверить футбольный ордер", betslip_tennis_btn: "Сохранить теннисный сигнал",
+    betslip_football_note: "Футбол исполняется live только после одобрения риска и когда exchange возвращает подтверждённый bet ID.",
+    betslip_tennis_note: "Теннис — только сигнал, пока маппинг runner не полностью проверен для live-исполнения.",
+    // Client summary strip
+    summary_football_edge: "Edge футбола",
+    summary_tennis_signals: "Сигналы тенниса", summary_exec_quality: "Качество исполнения",
+    summary_pending_bets: "ставки в ожидании", summary_waiting_markets: "ожидание рынков",
+    summary_signal_active: "сигнальный слой активен", summary_blocked: "заблокированы/отклонены безопасно",
+    summary_id_required: "ID нужен для live-исполнения",
+    // LockedGate
+    locked_eyebrow: "Signal Desk заблокирован", locked_title: "Войди, чтобы увидеть прогнозы, edge и объяснения",
+    locked_desc: "Чувствительные данные скрыты, пока ты не войдёшь и не активируешь план.",
+    locked_btn: "Войти / Создать профиль",
+    locked_plan_eyebrow: "Нужен план",
+    locked_plan_title: "Выбери пакет, чтобы разблокировать desk",
+    locked_plan_desc: "Профиль активен, но прогнозы, edge и объяснения открываются только после выбора Signal Desk Pro.",
+    locked_plan_btn: "К подпискам",
+    // Page headers
+    page_overview: "Панель клиента", page_portfolio: "Портфель клиента",
+    page_plans: "Планы клиента", page_bestbets: "Лучшие ставки",
+    page_sports: "Спортивные прогнозы", page_tennis: "Теннис · Калиброванная модель", page_bets: "Журнал исполнения",
+    page_history: "Закрытая история",
+    page_partners: "Казино и сеть партнёров", page_settings: "Настройки аккаунта",
+    page_agents: "Здоровье и безопасность", page_eyebrow: "Клиентский sportsbook",
+    // Top bar
+    topbar_private: "приватный desk", topbar_scanning: "анализ", topbar_plans: "планы активны", topbar_syncing: "синхронизация",
+    // Rail
+    rail_desk: "DESK", rail_exec_title: "Слой исполнения",
+    rail_exec_note: "Live-исполнение только с подтверждённым bet ID. Теннис в сигнальном слое.",
+    // KPIs in overview
+    kpi_events: "события", kpi_ev: "+EV", kpi_win: "% побед",
+    // Predictions tab
+    pred_model_badge: "Калиброванная модель · Форма · ближайшие 30 дней",
+    pred_computing: "Вычисление…", pred_refresh: "↻ Обновить",
+    pred_stale_warning: "⚠️ Прогнозы старше 1 часа — нажми Обновить для пересчёта (~90с)",
+    pred_value_bet: "value bet", pred_value_bets: "value bets",
+    pred_sort_label: "Сортировка", pred_sort_closest: "Сначала ближайшие", pred_sort_farthest: "Сначала дальние",
+    pred_sort_best_edge: "Лучший edge", pred_sort_importance: "Самые важные",
+    pred_cat_label: "Кат.", pred_cat_all: "Все", pred_cat_european: "⭐ Европейские",
+    pred_cat_top5: "Топ-5 лиг", pred_cat_ev: "Только +EV",
+    pred_value_only: "Только +EV", pred_league_label: "Лига",
+    pred_type_label: "Тип", pred_all_types: "Все типы",
+    pred_showing: "Показано", pred_of: "из", pred_predictions: "прогнозов",
+    pred_loading_sub: "Первая загрузка может занять ~90с на получение исторических данных",
+    // Tennis tab
+    tennis_badge: "Tennis AI v2.0 · ATP + WTA · Сигнальный слой",
+    tennis_computed: "вычислено", tennis_matches_loaded: "матчей загружено",
+    tennis_kpi_today: "Матчи сегодня", tennis_kpi_value: "Value Bets", tennis_kpi_markets: "Активные рынки",
+    tennis_surface_label: "Покрытие",
+    tennis_loading: "Загрузка теннисных прогнозов…", tennis_no_matches: "Нет доступных матчей",
+    // Partners tab
+    partners_eyebrow: "Коммерческая сеть", partners_title: "Казино и партнёры Sportsbook",
+    partners_desc: "Игровые и беттинговые платформы, с которыми сотрудничает BetRedge — интеграция сигналов, edge и AI-инструменты для операторов.",
+    partners_active: "Активные партнёры", partners_negotiation: "В переговорах", partners_coming: "Скоро",
+    partners_section_exclusive: "Эксклюзивные партнёры", partners_section_network: "Сеть партнёров",
+    partners_invite_title: "Хотите сотрудничать?", partners_invite_desc: "Свяжитесь с нами, чтобы интегрировать наши AI-сигналы в вашу платформу.",
+    partners_since: "Партнёр с", partners_visit: "Перейти →", partners_link_soon: "Ссылка скоро", partners_affiliate_note: "*Партнёрская ссылка — мы можем получить комиссию без затрат для тебя.",
+    partners_status_active: "Активен", partners_status_featured: "⭐ Рекомендуемый",
+    partners_status_negotiation: "В переговорах", partners_status_coming: "Скоро",
+    partners_exclusive_badge: "Эксклюзивный партнёр",
+    // Portfolio/Bets/Agents premium gates
+    gate_eyebrow: "Внутренний доступ", gate_portfolio_title: "Live-портфель",
+    gate_portfolio_desc: "Live-портфель, график equity и детальный P&L по видам спорта не входят в публичный план запуска.",
+    gate_bets_title: "Журнал исполнения",
+    gate_bets_desc: "Журнал ставок агентов доступен только в плане Premium. Твой аккаунт exchange подключается во время онбординга Premium, и ставки размещаются агентами автоматически.",
+    gate_agents_title: "Статус агентов",
+    gate_agents_desc: "Монитор агентов доступен только в плане Premium. Показывает heartbeat, ошибки и статус каждого агента твоего аккаунта.",
+    gate_upgrade_btn: "Перейти на Pro",
+    // Footer
+    footer_note: "Sportsbook Edge Desk · только проверенное исполнение · интерфейс клиентского уровня",
+    rg_footer: "18+. Играй ответственно. Контент носит информационный характер; котировки и бонусы — предложения партнёров-аффилиатов.",
+    // History
+    hist_matches: "Матчи", hist_bets: "Сделано ставок", hist_won: "Выиграно", hist_lost: "Проиграно",
+    hist_hit_rate: "Доля попаданий",
+    hist_filter_all: "Все матчи", hist_filter_with_bet: "Со ставкой", hist_filter_won: "Выиграно",
+    hist_filter_lost: "Проиграно", hist_filter_no_bet: "Без ставки",
+    hist_legend_won: "Ставка выиграна", hist_legend_lost: "Ставка проиграна",
+    hist_legend_pending: "В ожидании", hist_legend_no_bet: "Без ставки",
+    hist_loading: "Загрузка истории за последние 30 дней…", hist_empty: "Пока нет исторических данных — сначала сделай несколько ставок",
+    hist_model_pred: "Прогноз модели", hist_no_bet: "без ставки",
+    hist_model_correct: "✓ модель верна", hist_model_wrong: "✗ модель ошиблась",
+    portfolio_recent_eyebrow: "Недавние ставки",
+    portfolio_recent_title: "Последние операции",
+    portfolio_total: "всего",
+    portfolio_empty: "Пока нет доступных операций.",
+    portfolio_hero_title: "Единый портфель",
+    portfolio_hero_desc: "Результаты клиента и операционный desk теперь на одной странице.",
+    portfolio_open_desk: "Открыть Desk",
+    portfolio_open_positions: "Открытые позиции",
+    portfolio_starting_capital: "Начальный капитал",
+    portfolio_trend: "Динамика портфеля",
+    price_month: "месяц",
+    crypto_profile_required: "Создай профиль или войди, чтобы выбрать этот план.",
+    crypto_activate: "Активировать",
+    crypto_create_first: "Сначала создай профиль",
+    checkout_copy: "Копировать",
+    checkout_copied: "✓ Скопировано",
+    checkout_amount: "Сумма",
+    checkout_monthly: "Ежемесячно",
+    checkout_note_prefix: "После проверки план активируется вручную. Не отправляй суммы, отличные от",
+    checkout_note_suffix: "USDT.",
+    checkout_cancel: "Отмена",
+    founder_invalid: "Неверный код.",
+    founder_network: "Ошибка сети.",
+    founder_title: "Founder-доступ",
+    founder_desc: "Введи секретный код для доступа с правами admin.",
+    founder_secret: "Секретный код",
+    founder_checking: "Проверка...",
+    founder_login: "Войти как founder",
+    tennis_elo_data: "Данные модели",
+    tennis_pipeline_title: "Tennis Pipeline · 6 агентов",
+    tennis_last_seen: "Последний раз в сети",
+    tennis_no_heartbeat: "Пока нет heartbeat",
+    tennis_footer: "Tennis AI v2.0 · калиброванная модель · 2 966 игроков · settlement loop live",
+    agent_arch_title: "Гибридная архитектура v5.0",
+    agent_arch_dashboard_title: "Dashboard (Vercel)",
+    agent_arch_dashboard_desc: "Калиброванная модель · API-Football · Odds. Всегда онлайн, независимо от локальных Python-агентов.",
+    agent_arch_agents_title: "Python-агенты (локально)",
+    agent_arch_agents_desc: "Анализ в реальном времени, League & Match Context Module, исполнение на exchange, Ollama AI. Запусти командой",
+    agent_arch_none: "⚠️ Нет активных агентов. Запусти систему командой",
+    agent_arch_none_suffix: "в папке проекта.",
+    agent_last_seen: "Последний раз в сети",
+    agent_no_heartbeat: "Heartbeat не получен",
+    partner_primary_name: "Sportsbook Partner",
+    partner_primary_desc: "Казино и платформа спортивных ставок — эксклюзивный партнёр проекта. Ссылка доступа дорабатывается. Будет доступна вскоре.",
+    partner_tag_exclusive: "Эксклюзив",
+    language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
+    account_pending_detail: "Аккаунт клиента ещё не подключён. Баланс начинается с нуля.",
+    // Topnav / shell (i18n migration)
+    nav_markets: "Рынки", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
+    auth_signin: "Войти", auth_register: "Регистрация",
+    theme_aria: "Тема", featured_label: "Избранное",
+    kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность · 100д",
+    season_pause: "Сезон на паузе — в ближайшие 48 часов матчей не запланировано. Прогнозы вернутся автоматически с возобновлением лиг (июль 2026).",
+    footer_pastperf: "Прошлые результаты не гарантируют будущих.",
+    footer_partnerlinks: "Партнёрские ссылки являются коммерческими аффилиатами.",
+    footer_privacy: "Политика конфиденциальности",
+    // Bets filter bar (i18n migration)
+    bf_allsports: "Все", bf_allsignals: "Все прогнозы", bf_valueonly: "Только best bets",
+    bf_competition: "Турнир", bf_allcompetitions: "Все турниры",
+    bf_surface: "Покрытие", bf_allsurfaces: "Все", bf_sort: "Сортировка", bf_edge: "Лучший эдж",
+    bf_time: "Время", bf_odds: "Высший кэф", bf_probability: "Вероятность модели",
+    bf_search: "Поиск: команда, игрок, турнир...", bf_showing: "Показано",
+    bf_noresults: "Нет рынков по этим фильтрам. Расширь поиск или вернись ко «Все».",
+    // Best Bets board filter bar (i18n migration)
+    bb_probability: "Высшая вероятность", bb_time: "Ближайший матч",
+    bb_search: "Поиск: матч, команда, игрок...", bb_valuemode: "+EV лайв",
+    bb_modelmode: "Top Model Signals", bb_noedge: "сигналы модели",
   },
 } as const;
 
@@ -679,6 +1449,10 @@ function tennisPairKey(a: string, b: string) {
   return [tennisLastName(a), tennisLastName(b)].sort().join("|");
 }
 function useT() { return TRANSLATIONS[useLang()]; }
+// 5-way inline localization for strings that don't live in TRANSLATIONS.
+// Replaces the `lang === "it" ? IT : EN` ternaries so es/fr/ru no longer fall
+// back to English. Pass the value per language; `pick` selects by current lang.
+function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T { return v[lang]; }
 function languageLabel(code: Lang, t: (typeof TRANSLATIONS)[Lang]) {
   const labels: Record<Lang, string> = {
     it: t.language_it,
@@ -1350,42 +2124,24 @@ function SportsbookBoard({
   const footballFeed = feedCampsAll.filter((_, idx) => idx % 2 === 0);
   const tennisFeed = feedCampsAll.filter((_, idx) => idx % 2 === 1);
 
-  const labels = lang === "it" ? {
-    allSports: "Tutti",
+  const labels = {
+    allSports: t.bf_allsports,
     football: "Football",
     tennis: "Tennis",
-    allSignals: "Tutte le prediction",
-    valueOnly: "Solo best bets",
-    competition: "Competizione",
-    allCompetitions: "Tutte le competizioni",
-    surface: "Superficie",
-    allSurfaces: "Tutte",
-    sort: "Ordina",
-    edge: "Miglior edge",
-    time: "Orario",
-    odds: "Quota più alta",
-    probability: "Probabilità modello",
-    search: "Cerca team, player, torneo...",
-    showing: "Mostro",
-    noResults: "Nessun mercato rispetta questi filtri. Allarga la ricerca o torna a Tutti.",
-  } : {
-    allSports: "All",
-    football: "Football",
-    tennis: "Tennis",
-    allSignals: "All predictions",
-    valueOnly: "Best bets only",
-    competition: "Competition",
-    allCompetitions: "All competitions",
-    surface: "Surface",
-    allSurfaces: "All",
-    sort: "Sort",
-    edge: "Best edge",
-    time: "Time",
-    odds: "Highest odds",
-    probability: "Model probability",
-    search: "Search team, player, tournament...",
-    showing: "Showing",
-    noResults: "No markets match these filters. Widen the search or return to All.",
+    allSignals: t.bf_allsignals,
+    valueOnly: t.bf_valueonly,
+    competition: t.bf_competition,
+    allCompetitions: t.bf_allcompetitions,
+    surface: t.bf_surface,
+    allSurfaces: t.bf_allsurfaces,
+    sort: t.bf_sort,
+    edge: t.bf_edge,
+    time: t.bf_time,
+    odds: t.bf_odds,
+    probability: t.bf_probability,
+    search: t.bf_search,
+    showing: t.bf_showing,
+    noResults: t.bf_noresults,
   };
 
   const competitionOptions = [
@@ -1514,11 +2270,14 @@ function SportsbookBoard({
         <>
           {isFreeClient && (
             <div className="free-tier-banner">
-              <strong>{lang === "it" ? "Piano Free — 1 prediction per sport" : "Free Plan — 1 prediction per sport"}</strong>
-              <span>{lang === "it"
-                ? "Vedi 1 anteprima per sport. Sblocca prediction, edge% e analisi con Signal Desk Pro (49.90 USDT/mese)."
-                : "You see 1 preview per sport. Unlock predictions, edge% and analysis with Signal Desk Pro (49.90 USDT/month)."
-              }</span>
+              <strong>{pick5(lang, { it: "Piano Free — 1 prediction per sport", en: "Free Plan — 1 prediction per sport", es: "Plan Free — 1 predicción por deporte", fr: "Plan Free — 1 prédiction par sport", ru: "План Free — 1 прогноз на вид спорта" })}</strong>
+              <span>{pick5(lang, {
+                it: "Vedi 1 anteprima per sport. Sblocca prediction, edge% e analisi con Signal Desk Pro (49.90 USDT/mese).",
+                en: "You see 1 preview per sport. Unlock predictions, edge% and analysis with Signal Desk Pro (49.90 USDT/month).",
+                es: "Ves 1 vista previa por deporte. Desbloquea predicciones, edge% y análisis con Signal Desk Pro (49.90 USDT/mes).",
+                fr: "Vous voyez 1 aperçu par sport. Débloquez prédictions, edge% et analyse avec Signal Desk Pro (49.90 USDT/mois).",
+                ru: "Вы видите 1 превью на вид спорта. Откройте прогнозы, edge% и анализ с Signal Desk Pro (49.90 USDT/мес).",
+              })}</span>
             </div>
           )}
 
@@ -1552,20 +2311,28 @@ function SportsbookBoard({
                   {isFreeClient && footballRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
-                      <div className="fpw-count">+{footballRows.length - 1} {lang === "it" ? "prediction bloccate" : "predictions locked"}</div>
-                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)" : "Unlock all with Signal Desk Pro (49.90 USDT/month)"}</div>
+                      <div className="fpw-count">+{footballRows.length - 1} {pick5(lang, { it: "prediction bloccate", en: "predictions locked", es: "predicciones bloqueadas", fr: "prédictions verrouillées", ru: "прогнозов заблокировано" })}</div>
+                      <div className="fpw-sub">{pick5(lang, { it: "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)", en: "Unlock all with Signal Desk Pro (49.90 USDT/month)", es: "Desbloquea todo con Signal Desk Pro (49.90 USDT/mes)", fr: "Débloquez tout avec Signal Desk Pro (49.90 USDT/mois)", ru: "Откройте всё с Signal Desk Pro (49.90 USDT/мес)" })}</div>
                     </div>
                   )}
                 </div>
               ) : (
                 /* P6: honest empty-state — WC countdown message + hub link */
                 <div className="book-empty wc-empty-state">
-                  <div>{lang === "it"
-                    ? "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale — kickoff 11 giugno."
-                    : "No football signals right now. The first signals arrive when World Cup markets open — kickoff June 11."}</div>
-                  <Link href="/world-cup" className="wc-back-link">{lang === "it"
-                    ? "Esplora l'hub Mondiali: gironi, calendario, convocazioni →"
-                    : "Explore the World Cup hub: groups, calendar, squads →"}</Link>
+                  <div>{pick5(lang, {
+                    it: "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale — kickoff 11 giugno.",
+                    en: "No football signals right now. The first signals arrive when World Cup markets open — kickoff June 11.",
+                    es: "Ninguna señal de fútbol ahora mismo. Las primeras señales llegan con la apertura de los mercados del Mundial — kickoff 11 de junio.",
+                    fr: "Aucun signal football pour le moment. Les premiers signaux arrivent à l'ouverture des marchés de la Coupe du Monde — coup d'envoi le 11 juin.",
+                    ru: "Сейчас нет футбольных сигналов. Первые сигналы появятся с открытием рынков Чемпионата мира — старт 11 июня.",
+                  })}</div>
+                  <Link href="/world-cup" className="wc-back-link">{pick5(lang, {
+                    it: "Esplora l'hub Mondiali: gironi, calendario, convocazioni →",
+                    en: "Explore the World Cup hub: groups, calendar, squads →",
+                    es: "Explora el hub del Mundial: grupos, calendario, convocatorias →",
+                    fr: "Explorez le hub Coupe du Monde : groupes, calendrier, sélections →",
+                    ru: "Откройте хаб Чемпионата мира: группы, календарь, составы →",
+                  })}</Link>
                 </div>
               )}
             </section>
@@ -1611,8 +2378,8 @@ function SportsbookBoard({
                   {isFreeClient && tennisRows.length > 1 && (
                     <div className="free-preview-wall">
                       <div className="fpw-lock">🔒</div>
-                      <div className="fpw-count">+{tennisRows.length - 1} {lang === "it" ? "match bloccati" : "matches locked"}</div>
-                      <div className="fpw-sub">{lang === "it" ? "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)" : "Unlock all with Signal Desk Pro (49.90 USDT/month)"}</div>
+                      <div className="fpw-count">+{tennisRows.length - 1} {pick5(lang, { it: "match bloccati", en: "matches locked", es: "partidos bloqueados", fr: "matchs verrouillés", ru: "матчей заблокировано" })}</div>
+                      <div className="fpw-sub">{pick5(lang, { it: "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)", en: "Unlock all with Signal Desk Pro (49.90 USDT/month)", es: "Desbloquea todo con Signal Desk Pro (49.90 USDT/mes)", fr: "Débloquez tout avec Signal Desk Pro (49.90 USDT/mois)", ru: "Откройте всё с Signal Desk Pro (49.90 USDT/мес)" })}</div>
                     </div>
                   )}
                 </div>
@@ -1656,32 +2423,19 @@ function BestBetsBoard({
   const [sortMode, setSortMode] = useState<"probability" | "edge" | "time">("probability");
   const [searchTerm, setSearchTerm] = useState("");
   const query = searchTerm.trim().toLowerCase();
-  const labels = lang === "it" ? {
-    all: "Tutti",
+  const labels = {
+    all: t.bf_allsports,
     football: "Football",
     tennis: "Tennis",
-    sort: "Ordina",
-    probability: "Probabilità più alta",
-    edge: "Miglior edge",
-    time: "Prima kickoff",
-    search: "Cerca match, team, player...",
-    showing: "Mostro",
-    valueMode: "+EV live",
-    modelMode: "Top Model Signals",
-    noEdge: "segnali modello",
-  } : {
-    all: "All",
-    football: "Football",
-    tennis: "Tennis",
-    sort: "Sort",
-    probability: "Highest probability",
-    edge: "Best edge",
-    time: "Closest kickoff",
-    search: "Search match, team, player...",
-    showing: "Showing",
-    valueMode: "Live +EV",
-    modelMode: "Top Model Signals",
-    noEdge: "model signals",
+    sort: t.bf_sort,
+    probability: t.bb_probability,
+    edge: t.bf_edge,
+    time: t.bb_time,
+    search: t.bb_search,
+    showing: t.bf_showing,
+    valueMode: t.bb_valuemode,
+    modelMode: t.bb_modelmode,
+    noEdge: t.bb_noedge,
   };
   const footballById = new Map(predictions.map((p) => [p.match_id, p]));
   const tennisById = new Map(tennisMatches.map((m) => [m.id, m]));
@@ -1912,40 +2666,65 @@ function PreAccessLanding({
     { name: "Golf", status: "Roadmap" },
     { name: "Esports", status: "Roadmap" },
   ];
-  const faq = lang === "it" ? [
-    ["Cosa vede un utente pubblico?", "Solo homepage, struttura del prodotto e storico passato/educational. I segnali live restano bloccati."],
-    ["Cosa sblocca il piano Free?", "Profilo, lingua, preview account e accesso alla struttura, senza prediction operative."],
-    ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
-    ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
-  ] : [
-    ["What can public users see?", "Only homepage, product structure and past/educational history. Live signals stay locked."],
-    ["What does Free unlock?", "Profile, language, account preview and product structure, without operational predictions."],
-    ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
-    ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
-  ];
+  const faq = pick5(lang, {
+    it: [
+      ["Cosa vede un utente pubblico?", "Solo homepage, struttura del prodotto e storico passato/educational. I segnali live restano bloccati."],
+      ["Cosa sblocca il piano Free?", "Profilo, lingua, preview account e accesso alla struttura, senza prediction operative."],
+      ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+      ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
+    ],
+    en: [
+      ["What can public users see?", "Only homepage, product structure and past/educational history. Live signals stay locked."],
+      ["What does Free unlock?", "Profile, language, account preview and product structure, without operational predictions."],
+      ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+      ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
+    ],
+    es: [
+      ["¿Qué ve un usuario público?", "Solo la homepage, la estructura del producto y el historial pasado/educativo. Las señales live siguen bloqueadas."],
+      ["¿Qué desbloquea el plan Free?", "Perfil, idioma, vista previa de cuenta y acceso a la estructura, sin predicciones operativas."],
+      ["¿Qué desbloquea Signal Desk Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
+      ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
+    ],
+    fr: [
+      ["Que voit un utilisateur public ?", "Seulement la homepage, la structure du produit et l'historique passé/éducatif. Les signaux live restent verrouillés."],
+      ["Que débloque le plan Free ?", "Profil, langue, aperçu du compte et accès à la structure, sans prédictions opérationnelles."],
+      ["Que débloque Signal Desk Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
+      ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
+    ],
+    ru: [
+      ["Что видит публичный пользователь?", "Только главную страницу, структуру продукта и прошлую/обучающую историю. Live-сигналы остаются заблокированы."],
+      ["Что открывает план Free?", "Профиль, язык, предпросмотр аккаунта и доступ к структуре, без рабочих прогнозов."],
+      ["Что открывает Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
+      ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
+    ],
+  });
   return (
     <div className="public-homepage">
       <section className="public-sponsor-strip">
         <span>Partner placement</span>
-        <strong>{lang === "it" ? "Slot sponsor generico, pronto per futuri operatori" : "Generic sponsor slot, ready for future operators"}</strong>
-        <em>{lang === "it" ? "Nessun brand reale collegato ora" : "No real brand connected now"}</em>
+        <strong>{pick5(lang, { it: "Slot sponsor generico, pronto per futuri operatori", en: "Generic sponsor slot, ready for future operators", es: "Espacio de patrocinio genérico, listo para futuros operadores", fr: "Emplacement sponsor générique, prêt pour de futurs opérateurs", ru: "Универсальный слот для спонсора, готов для будущих операторов" })}</strong>
+        <em>{pick5(lang, { it: "Nessun brand reale collegato ora", en: "No real brand connected now", es: "Ninguna marca real conectada ahora", fr: "Aucune marque réelle connectée pour le moment", ru: "Сейчас реальный бренд не подключён" })}</em>
       </section>
 
       <section className="preaccess-hero">
         <div>
-          <p className="eyebrow">{lang === "it" ? "PREVEDI. ANALIZZA. ANTICIPA." : "PREDICT. ANALYZE. EDGE."}</p>
-          <h3>{lang === "it" ? "Predictive intelligence per mercati sportivi, non un tipster feed" : "Predictive intelligence for sports markets, not a tipster feed"}</h3>
+          <p className="eyebrow">{pick5(lang, { it: "PREVEDI. ANALIZZA. ANTICIPA.", en: "PREDICT. ANALYZE. EDGE.", es: "PREDICE. ANALIZA. ANTICIPA.", fr: "PRÉDIS. ANALYSE. ANTICIPE.", ru: "ПРОГНОЗИРУЙ. АНАЛИЗИРУЙ. ОПЕРЕЖАЙ." })}</p>
+          <h3>{pick5(lang, { it: "Predictive intelligence per mercati sportivi, non un tipster feed", en: "Predictive intelligence for sports markets, not a tipster feed", es: "Inteligencia predictiva para mercados deportivos, no un feed de tipsters", fr: "Intelligence prédictive pour les marchés sportifs, pas un feed de pronostiqueurs", ru: "Предиктивная аналитика для спортивных рынков, а не лента типстеров" })}</h3>
           <span>
-            {lang === "it"
-              ? "Una homepage pubblica mostra solo struttura, storico passato e partner placeholder. Prediction, edge e live execution si sbloccano solo dopo login e piano."
-              : "The public homepage shows only structure, past history and partner placeholders. Predictions, edge and live execution unlock only after login and plan selection."}
+            {pick5(lang, {
+              it: "Una homepage pubblica mostra solo struttura, storico passato e partner placeholder. Prediction, edge e live execution si sbloccano solo dopo login e piano.",
+              en: "The public homepage shows only structure, past history and partner placeholders. Predictions, edge and live execution unlock only after login and plan selection.",
+              es: "La homepage pública muestra solo estructura, historial pasado y placeholders de partners. Predicciones, edge y live execution se desbloquean solo tras el login y la selección de plan.",
+              fr: "La homepage publique montre uniquement la structure, l'historique passé et des placeholders de partenaires. Prédictions, edge et live execution se débloquent seulement après le login et le choix du plan.",
+              ru: "Публичная главная показывает только структуру, прошлую историю и плейсхолдеры партнёров. Прогнозы, edge и live execution открываются только после входа и выбора плана.",
+            })}
           </span>
         </div>
         <DeskPreview />
         <div className="preaccess-actions">
           <button onClick={onCreate}>{t.preaccess_create}</button>
           <button onClick={onLogin}>{t.preaccess_login}</button>
-          <button onClick={onPlans}>{lang === "it" ? "Vedi livelli" : "View levels"}</button>
+          <button onClick={onPlans}>{pick5(lang, { it: "Vedi livelli", en: "View levels", es: "Ver niveles", fr: "Voir les niveaux", ru: "Смотреть уровни" })}</button>
         </div>
       </section>
 
@@ -1978,7 +2757,7 @@ function DeskPreview() {
         <div><span>Tennis</span><em>Calibrated model</em><strong>Pro</strong></div>
         <div><span>Best Bets</span><em>+EV or model signals</em><strong>Pro</strong></div>
       </div>
-      <p>{lang === "it" ? "Preview pubblica: dati sensibili oscurati fino al piano." : "Public preview: sensitive data hidden until plan activation."}</p>
+      <p>{pick5(lang, { it: "Preview pubblica: dati sensibili oscurati fino al piano.", en: "Public preview: sensitive data hidden until plan activation.", es: "Vista previa pública: datos sensibles ocultos hasta activar el plan.", fr: "Aperçu public : données sensibles masquées jusqu'à l'activation du plan.", ru: "Публичный предпросмотр: чувствительные данные скрыты до активации плана." })}</p>
     </div>
   );
 }
@@ -1988,18 +2767,33 @@ function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: ()
   const priceCopy = {
     base: planPriceCopy("base", lang),
   };
-  const levels = lang === "it" ? [
-    { name: "Free", price: "€0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-    { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
-  ] : [
-    { name: "Free", price: "€0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-    { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
-  ];
+  const levels = pick5(lang, {
+    it: [
+      { name: "Free", price: "€0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
+      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
+    ],
+    en: [
+      { name: "Free", price: "€0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
+      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
+    ],
+    es: [
+      { name: "Free", price: "€0", desc: "Perfil, idioma, vista previa e historial público. Sin señales operativas.", cta: "Crear perfil", action: onCreate },
+      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tenis live, football research, Best Bets, explicaciones y track record.", cta: "Ver plan", action: onPlans },
+    ],
+    fr: [
+      { name: "Free", price: "€0", desc: "Profil, langue, aperçu et historique public. Aucun signal opérationnel.", cta: "Créer un profil", action: onCreate },
+      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explications et track record.", cta: "Voir le plan", action: onPlans },
+    ],
+    ru: [
+      { name: "Free", price: "€0", desc: "Профиль, язык, предпросмотр и публичная история. Без рабочих сигналов.", cta: "Создать профиль", action: onCreate },
+      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, пояснения и track record.", cta: "Смотреть план", action: onPlans },
+    ],
+  });
   return (
     <section className="public-section">
       <div className="public-section-head">
-        <p className="eyebrow">{lang === "it" ? "Accesso clienti" : "Client access"}</p>
-        <h3>{lang === "it" ? "Free più un piano unico, zero ambiguità" : "Free plus one paid plan, zero ambiguity"}</h3>
+        <p className="eyebrow">{pick5(lang, { it: "Accesso clienti", en: "Client access", es: "Acceso clientes", fr: "Accès clients", ru: "Доступ клиентов" })}</p>
+        <h3>{pick5(lang, { it: "Free più un piano unico, zero ambiguità", en: "Free plus one paid plan, zero ambiguity", es: "Free más un único plan de pago, cero ambigüedad", fr: "Free plus un seul plan payant, zéro ambiguïté", ru: "Free плюс один платный план, без двусмысленности" })}</h3>
       </div>
       <div className="access-level-grid">
         {levels.map((level) => (
@@ -2020,30 +2814,30 @@ function PublicOldBetsPanel({ history, stats, loading }: { history: HistoryMatch
   return (
     <section className="public-section">
       <div className="public-section-head">
-        <p className="eyebrow">{lang === "it" ? "Old bets" : "Old bets"}</p>
-        <h3>{lang === "it" ? "Storico passato visibile senza login" : "Past history visible without login"}</h3>
+        <p className="eyebrow">Old bets</p>
+        <h3>{pick5(lang, { it: "Storico passato visibile senza login", en: "Past history visible without login", es: "Historial pasado visible sin login", fr: "Historique passé visible sans connexion", ru: "Прошлая история видна без входа" })}</h3>
       </div>
       {/* #LEGACY-HITRATE-1: the legacy `bets` feed has no confidence, so its
           aggregate hit-rate can't be floored and contradicted the surfaced
           track record (52% here vs the gated rate in the unified History tab).
           Drop the misleading headline; the canonical hit-rate lives in History. */}
       <div className="public-history-stats">
-        <div><span>{lang === "it" ? "Partite" : "Matches"}</span><strong>{stats?.total_matches ?? "..."}</strong></div>
-        <div><span>{lang === "it" ? "Bets" : "Bets"}</span><strong>{stats?.bets_placed ?? "..."}</strong></div>
+        <div><span>{pick5(lang, { it: "Partite", en: "Matches", es: "Partidos", fr: "Matchs", ru: "Матчи" })}</span><strong>{stats?.total_matches ?? "..."}</strong></div>
+        <div><span>Bets</span><strong>{stats?.bets_placed ?? "..."}</strong></div>
       </div>
       <div className="public-old-bets">
         {loading ? (
-          <div className="book-empty">{lang === "it" ? "Caricamento storico..." : "Loading history..."}</div>
+          <div className="book-empty">{pick5(lang, { it: "Caricamento storico...", en: "Loading history...", es: "Cargando historial...", fr: "Chargement de l'historique...", ru: "Загрузка истории..." })}</div>
         ) : history.length ? history.map((row, index) => (
           <div key={`${row.match_id}-${row.bet_selection ?? row.best_selection ?? index}`}>
             <span>{LEAGUE_FLAGS[row.league] ?? "FB"} {row.league}</span>
             <strong>{row.home_team} vs {row.away_team}</strong>
             {/* MEDIUM-1: pick gated server-side for non-paid viewers (selection
                 comes back null) → show a lock instead of leaking/placeholdering it. */}
-            <em>{row.bet_selection ?? row.best_selection ?? (lang === "it" ? "🔒 pick" : "🔒 pick")} · {row.bet_status}</em>
+            <em>{row.bet_selection ?? row.best_selection ?? "🔒 pick"} · {row.bet_status}</em>
           </div>
         )) : (
-          <div className="book-empty">{lang === "it" ? "Nessuno storico pubblico disponibile ora." : "No public history available right now."}</div>
+          <div className="book-empty">{pick5(lang, { it: "Nessuno storico pubblico disponibile ora.", en: "No public history available right now.", es: "No hay historial público disponible ahora.", fr: "Aucun historique public disponible pour le moment.", ru: "Сейчас публичная история недоступна." })}</div>
         )}
       </div>
     </section>
@@ -2056,7 +2850,7 @@ function FutureSportsPanel({ sports }: { sports: { name: string; status: string 
     <section className="public-section">
       <div className="public-section-head">
         <p className="eyebrow">Roadmap</p>
-        <h3>{lang === "it" ? "Sport futuri, non ancora cliccabili" : "Future sports, not clickable yet"}</h3>
+        <h3>{pick5(lang, { it: "Sport futuri, non ancora cliccabili", en: "Future sports, not clickable yet", es: "Deportes futuros, aún no clicables", fr: "Sports futurs, pas encore cliquables", ru: "Будущие виды спорта, пока недоступны для клика" })}</h3>
       </div>
       <div className="future-sports-grid">
         {sports.map((sport) => (
@@ -2087,53 +2881,128 @@ function SupportHub() {
   const [priority, setPriority] = useState("normal");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
-  const copy = lang === "it" ? {
-    eyebrow: "Supporto cliente",
-    title: "Apri una richiesta",
-    subtitle: "Descrivi il problema: il team potrà collegare questo flusso a email, Telegram o CRM senza cambiare la UI.",
-    topic: "Area",
-    priority: "Priorità",
-    message: "Messaggio",
-    placeholder: "Scrivi cosa non funziona, quale piano hai e cosa stavi provando a fare...",
-    send: "Prepara ticket",
-    sent: "Ticket preparato",
-    sentDesc: "La richiesta è pronta per essere collegata al canale supporto operativo.",
-    topics: [
-      ["access", "Accesso / login"],
-      ["payment", "Pagamento / TX hash"],
-      ["signals", "Prediction e best bets"],
-      ["execution", "Exchange / execution"],
-      ["account", "Profilo e impostazioni"],
-    ],
-    priorities: [
-      ["normal", "Normale"],
-      ["high", "Alta"],
-      ["urgent", "Urgente"],
-    ],
-  } : {
-    eyebrow: "Client support",
-    title: "Open a request",
-    subtitle: "Describe the issue: this flow can connect to email, Telegram or CRM without changing the UI.",
-    topic: "Area",
-    priority: "Priority",
-    message: "Message",
-    placeholder: "Write what is not working, which plan you have and what you were trying to do...",
-    send: "Prepare ticket",
-    sent: "Ticket prepared",
-    sentDesc: "The request is ready to be connected to the operating support channel.",
-    topics: [
-      ["access", "Access / login"],
-      ["payment", "Payment / TX hash"],
-      ["signals", "Predictions and best bets"],
-      ["execution", "Exchange / execution"],
-      ["account", "Profile and settings"],
-    ],
-    priorities: [
-      ["normal", "Normal"],
-      ["high", "High"],
-      ["urgent", "Urgent"],
-    ],
-  };
+  const copy = pick5(lang, {
+    it: {
+      eyebrow: "Supporto cliente",
+      title: "Apri una richiesta",
+      subtitle: "Descrivi il problema: il team potrà collegare questo flusso a email, Telegram o CRM senza cambiare la UI.",
+      topic: "Area",
+      priority: "Priorità",
+      message: "Messaggio",
+      placeholder: "Scrivi cosa non funziona, quale piano hai e cosa stavi provando a fare...",
+      send: "Prepara ticket",
+      sent: "Ticket preparato",
+      sentDesc: "La richiesta è pronta per essere collegata al canale supporto operativo.",
+      topics: [
+        ["access", "Accesso / login"],
+        ["payment", "Pagamento / TX hash"],
+        ["signals", "Prediction e best bets"],
+        ["execution", "Exchange / execution"],
+        ["account", "Profilo e impostazioni"],
+      ],
+      priorities: [
+        ["normal", "Normale"],
+        ["high", "Alta"],
+        ["urgent", "Urgente"],
+      ],
+    },
+    en: {
+      eyebrow: "Client support",
+      title: "Open a request",
+      subtitle: "Describe the issue: this flow can connect to email, Telegram or CRM without changing the UI.",
+      topic: "Area",
+      priority: "Priority",
+      message: "Message",
+      placeholder: "Write what is not working, which plan you have and what you were trying to do...",
+      send: "Prepare ticket",
+      sent: "Ticket prepared",
+      sentDesc: "The request is ready to be connected to the operating support channel.",
+      topics: [
+        ["access", "Access / login"],
+        ["payment", "Payment / TX hash"],
+        ["signals", "Predictions and best bets"],
+        ["execution", "Exchange / execution"],
+        ["account", "Profile and settings"],
+      ],
+      priorities: [
+        ["normal", "Normal"],
+        ["high", "High"],
+        ["urgent", "Urgent"],
+      ],
+    },
+    es: {
+      eyebrow: "Soporte al cliente",
+      title: "Abrir una solicitud",
+      subtitle: "Describe el problema: este flujo puede conectarse a email, Telegram o CRM sin cambiar la UI.",
+      topic: "Área",
+      priority: "Prioridad",
+      message: "Mensaje",
+      placeholder: "Escribe qué no funciona, qué plan tienes y qué estabas intentando hacer...",
+      send: "Preparar ticket",
+      sent: "Ticket preparado",
+      sentDesc: "La solicitud está lista para conectarse al canal de soporte operativo.",
+      topics: [
+        ["access", "Acceso / login"],
+        ["payment", "Pago / TX hash"],
+        ["signals", "Predicciones y best bets"],
+        ["execution", "Exchange / execution"],
+        ["account", "Perfil y ajustes"],
+      ],
+      priorities: [
+        ["normal", "Normal"],
+        ["high", "Alta"],
+        ["urgent", "Urgente"],
+      ],
+    },
+    fr: {
+      eyebrow: "Support client",
+      title: "Ouvrir une demande",
+      subtitle: "Décrivez le problème : ce flux peut se connecter à email, Telegram ou CRM sans changer l'UI.",
+      topic: "Domaine",
+      priority: "Priorité",
+      message: "Message",
+      placeholder: "Écrivez ce qui ne fonctionne pas, quel plan vous avez et ce que vous essayiez de faire...",
+      send: "Préparer le ticket",
+      sent: "Ticket préparé",
+      sentDesc: "La demande est prête à être connectée au canal de support opérationnel.",
+      topics: [
+        ["access", "Accès / login"],
+        ["payment", "Paiement / TX hash"],
+        ["signals", "Prédictions et best bets"],
+        ["execution", "Exchange / execution"],
+        ["account", "Profil et paramètres"],
+      ],
+      priorities: [
+        ["normal", "Normale"],
+        ["high", "Haute"],
+        ["urgent", "Urgente"],
+      ],
+    },
+    ru: {
+      eyebrow: "Поддержка клиентов",
+      title: "Открыть запрос",
+      subtitle: "Опишите проблему: этот поток можно подключить к email, Telegram или CRM без изменения UI.",
+      topic: "Раздел",
+      priority: "Приоритет",
+      message: "Сообщение",
+      placeholder: "Напишите, что не работает, какой у вас план и что вы пытались сделать...",
+      send: "Подготовить тикет",
+      sent: "Тикет подготовлен",
+      sentDesc: "Запрос готов к подключению к каналу операционной поддержки.",
+      topics: [
+        ["access", "Доступ / вход"],
+        ["payment", "Оплата / TX hash"],
+        ["signals", "Прогнозы и best bets"],
+        ["execution", "Exchange / execution"],
+        ["account", "Профиль и настройки"],
+      ],
+      priorities: [
+        ["normal", "Обычный"],
+        ["high", "Высокий"],
+        ["urgent", "Срочный"],
+      ],
+    },
+  });
 
   if (sent) {
     return (
@@ -2145,7 +3014,7 @@ function SupportHub() {
           <span>{copy.topic}: {copy.topics.find(([key]) => key === topic)?.[1]}</span>
           <span>{copy.priority}: {copy.priorities.find(([key]) => key === priority)?.[1]}</span>
         </div>
-        <button onClick={() => { setSent(false); setMessage(""); }}>{lang === "it" ? "Nuova richiesta" : "New request"}</button>
+        <button onClick={() => { setSent(false); setMessage(""); }}>{pick5(lang, { it: "Nuova richiesta", en: "New request", es: "Nueva solicitud", fr: "Nouvelle demande", ru: "Новый запрос" })}</button>
       </section>
     );
   }
@@ -2175,7 +3044,7 @@ function SupportHub() {
       </div>
       {message.trim().length > 0 && message.trim().length < 8 && (
         <p className="support-validation-hint">
-          {lang === "it" ? "Messaggio troppo corto. Scrivi almeno 8 caratteri." : "Message too short. Please write at least 8 characters."}
+          {pick5(lang, { it: "Messaggio troppo corto. Scrivi almeno 8 caratteri.", en: "Message too short. Please write at least 8 characters.", es: "Mensaje demasiado corto. Escribe al menos 8 caracteres.", fr: "Message trop court. Veuillez écrire au moins 8 caractères.", ru: "Сообщение слишком короткое. Напишите минимум 8 символов." })}
         </p>
       )}
       <button disabled={message.trim().length < 8} onClick={() => setSent(true)}>{copy.send}</button>
@@ -2189,7 +3058,7 @@ function FAQSupportSection({ items }: { items: string[][] }) {
     <section className="public-section">
       <div className="public-section-head">
         <p className="eyebrow">FAQ</p>
-        <h3>{lang === "it" ? "Domande essenziali prima del login" : "Essential questions before login"}</h3>
+        <h3>{pick5(lang, { it: "Domande essenziali prima del login", en: "Essential questions before login", es: "Preguntas esenciales antes del login", fr: "Questions essentielles avant le login", ru: "Главные вопросы перед входом" })}</h3>
       </div>
       <div className="faq-grid">
         {items.map(([q, a]) => (
@@ -2200,9 +3069,13 @@ function FAQSupportSection({ items }: { items: string[][] }) {
         ))}
       </div>
       <div className="risk-disclaimer">
-        {lang === "it"
-          ? "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce gestione del rischio personale."
-          : "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management."}
+        {pick5(lang, {
+          it: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce gestione del rischio personale.",
+          en: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management.",
+          es: "Nota de riesgo: BetRedge muestra análisis probabilístico. No garantiza beneficios ni sustituye la gestión personal del riesgo.",
+          fr: "Note de risque : BetRedge montre une analyse probabiliste. Cela ne garantit pas de profits et ne remplace pas la gestion personnelle du risque.",
+          ru: "Замечание о риске: BetRedge показывает вероятностный анализ. Это не гарантирует прибыль и не заменяет личное управление рисками.",
+        })}
       </div>
     </section>
   );
@@ -2241,9 +3114,9 @@ function CryptoPaymentBox({
       </div>
       <button disabled={!profile || isCurrentPlan || isDowngrade} onClick={() => onSubmit(plan)}>
         {isCurrentPlan
-          ? (lang === "it" ? "Piano attuale" : "Current plan")
+          ? pick5(lang, { it: "Piano attuale", en: "Current plan", es: "Plan actual", fr: "Plan actuel", ru: "Текущий план" })
           : isDowngrade
-            ? (lang === "it" ? "Già su Pro" : "Already on Pro")
+            ? pick5(lang, { it: "Già su Pro", en: "Already on Pro", es: "Ya en Pro", fr: "Déjà sur Pro", ru: "Уже на Pro" })
             : profile
               ? `${t.crypto_activate} ${planLabel(plan, lang)}`
               : t.crypto_create_first}
@@ -2296,7 +3169,17 @@ function CheckoutModal({
           <p className="eyebrow">Checkout · USDT TRC20</p>
           <h3>{planLabel(plan, lang)}</h3>
           <span>
-            {lang === "it" ? <>Invia esattamente <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong> all&apos;indirizzo qui sotto. Il piano passerà in verifica.</> : <>Send exactly <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong> to the address below. The plan will move to review.</>}
+            {(() => {
+              const amount = <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong>;
+              const parts = pick5(lang, {
+                it: ["Invia esattamente ", " all'indirizzo qui sotto. Il piano passerà in verifica."],
+                en: ["Send exactly ", " to the address below. The plan will move to review."],
+                es: ["Envía exactamente ", " a la dirección de abajo. El plan pasará a revisión."],
+                fr: ["Envoyez exactement ", " à l'adresse ci-dessous. Le plan passera en vérification."],
+                ru: ["Отправьте ровно ", " на адрес ниже. План перейдёт на проверку."],
+              });
+              return <>{parts[0]}{amount}{parts[1]}</>;
+            })()}
           </span>
         </div>
 
@@ -2344,14 +3227,18 @@ function CheckoutModal({
             // with a retryable error — never silently swallow a lost tx_hash.
             if (!ok) {
               setSubmitting(false);
-              setError(lang === "it"
-                ? "Invio non riuscito: la transazione non è stata registrata. Controlla la connessione e riprova, oppure scrivi a info@agenticmarkets.com."
-                : "Submission failed: your transaction was not recorded. Check your connection and retry, or email info@agenticmarkets.com.");
+              setError(pick5(lang, {
+                it: "Invio non riuscito: la transazione non è stata registrata. Controlla la connessione e riprova, oppure scrivi a info@agenticmarkets.com.",
+                en: "Submission failed: your transaction was not recorded. Check your connection and retry, or email info@agenticmarkets.com.",
+                es: "Envío fallido: tu transacción no se registró. Comprueba la conexión y reinténtalo, o escribe a info@agenticmarkets.com.",
+                fr: "Échec de l'envoi : votre transaction n'a pas été enregistrée. Vérifiez la connexion et réessayez, ou écrivez à info@agenticmarkets.com.",
+                ru: "Отправка не удалась: транзакция не зарегистрирована. Проверьте соединение и повторите, или напишите на info@agenticmarkets.com.",
+              }));
             }
           }}
           style={{ marginTop: 4 }}
         >
-          {submitting ? (lang === "it" ? "Invio in corso…" : "Submitting…") : <>{t.checkout_confirm} · {price.toFixed(2)} USDT</>}
+          {submitting ? pick5(lang, { it: "Invio in corso…", en: "Submitting…", es: "Enviando…", fr: "Envoi en cours…", ru: "Отправка…" }) : <>{t.checkout_confirm} · {price.toFixed(2)} USDT</>}
         </button>
         {error && (
           <p style={{ fontSize: "12px", fontFamily: "var(--font-mono), ui-monospace, monospace", color: "var(--am-negative)", lineHeight: 1.5, margin: "8px 0 0" }}>
@@ -2365,7 +3252,7 @@ function CheckoutModal({
             onClick={payWithCard}
             style={{ marginTop: 8, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}
           >
-            {lang === "it" ? "Paga con carta" : "Pay with card"}
+            {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })}
           </button>
         )}
 
@@ -2502,26 +3389,30 @@ function PlansTab({
             <span>€0</span>
           </div>
           <p className="plan-description">
-            {lang === "it"
-              ? "Una prediction per sport ogni settimana, sbloccata del tutto. Profilo e storico pubblico."
-              : "One prediction per sport every week, fully unlocked. Profile and public history."}
+            {pick5(lang, {
+              it: "Una prediction per sport ogni settimana, sbloccata del tutto. Profilo e storico pubblico.",
+              en: "One prediction per sport every week, fully unlocked. Profile and public history.",
+              es: "Una predicción por deporte cada semana, totalmente desbloqueada. Perfil e historial público.",
+              fr: "Une prédiction par sport chaque semaine, entièrement débloquée. Profil et historique public.",
+              ru: "Один прогноз на вид спорта каждую неделю, полностью открыт. Профиль и публичная история.",
+            })}
           </p>
           <div className="price-line">
             <strong>€0</strong>
-            <span>{lang === "it" ? "Per sempre" : "Forever"}</span>
+            <span>{pick5(lang, { it: "Per sempre", en: "Forever", es: "Para siempre", fr: "Pour toujours", ru: "Навсегда" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{lang === "it" ? "1 per sport / settimana" : "1 per sport / week"}</strong>
-            <em>{lang === "it" ? "La top del modello per calcio e per tennis." : "The model's top pick for football and tennis."}</em>
+            <strong>{pick5(lang, { it: "1 per sport / settimana", en: "1 per sport / week", es: "1 por deporte / semana", fr: "1 par sport / semaine", ru: "1 на вид спорта / неделя" })}</strong>
+            <em>{pick5(lang, { it: "La top del modello per calcio e per tennis.", en: "The model's top pick for football and tennis.", es: "La mejor selección del modelo para fútbol y tenis.", fr: "Le meilleur choix du modèle pour le football et le tennis.", ru: "Лучший выбор модели для футбола и тенниса." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{lang === "it" ? "1 top prediction calcio + 1 tennis / settimana" : "1 top football + 1 tennis prediction / week"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Pick, probabilità e spiegazione su quelle" : "Pick, probabilities and explanation on those"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Profilo e lingua salvati · storico pubblico" : "Profile and language saved · public history"}</PlanFeature>
-            <PlanFeature locked>{lang === "it" ? "Resto del board, edge e Deep Analysis" : "Rest of the board, edge and Deep Analysis"}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "1 top prediction calcio + 1 tennis / settimana", en: "1 top football + 1 tennis prediction / week", es: "1 predicción top de fútbol + 1 de tenis / semana", fr: "1 prédiction top football + 1 tennis / semaine", ru: "1 топ-прогноз по футболу + 1 по теннису / неделя" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione su quelle", en: "Pick, probabilities and explanation on those", es: "Selección, probabilidades y explicación sobre ellas", fr: "Choix, probabilités et explication sur ceux-ci", ru: "Выбор, вероятности и пояснение по ним" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Profilo e lingua salvati · storico pubblico", en: "Profile and language saved · public history", es: "Perfil e idioma guardados · historial público", fr: "Profil et langue enregistrés · historique public", ru: "Профиль и язык сохранены · публичная история" })}</PlanFeature>
+            <PlanFeature locked>{pick5(lang, { it: "Resto del board, edge e Deep Analysis", en: "Rest of the board, edge and Deep Analysis", es: "Resto del panel, edge y Deep Analysis", fr: "Reste du tableau, edge et Deep Analysis", ru: "Остальная часть доски, edge и Deep Analysis" })}</PlanFeature>
           </ul>
           <button className="plan-action" disabled={!profile || profile.plan === "free"} onClick={onActivateFree}>
-            {!profile ? t.crypto_create_first : profile.plan === "free" ? (lang === "it" ? "Free attivo" : "Free active") : (lang === "it" ? "Attiva Free" : "Activate Free")}
+            {!profile ? t.crypto_create_first : profile.plan === "free" ? pick5(lang, { it: "Free attivo", en: "Free active", es: "Free activo", fr: "Free actif", ru: "Free активен" }) : pick5(lang, { it: "Attiva Free", en: "Activate Free", es: "Activar Free", fr: "Activer Free", ru: "Активировать Free" })}
           </button>
         </article>
 
@@ -2529,30 +3420,34 @@ function PlansTab({
         <article className="plan-card">
           <div className="plan-card-head">
             <div>
-              <p className="eyebrow">{lang === "it" ? "Più popolare" : "Most popular"}</p>
+              <p className="eyebrow">{pick5(lang, { it: "Più popolare", en: "Most popular", es: "Más popular", fr: "Le plus populaire", ru: "Самый популярный" })}</p>
               <h4>{planLabel("base", lang)}</h4>
             </div>
             <span>{planPriceCopy("base", lang)}</span>
           </div>
           <p className="plan-description">
-            {lang === "it"
-              ? "Le top 5 prediction per sport ogni settimana, con edge e spiegazioni complete."
-              : "The top 5 predictions per sport every week, with full edge and explanations."}
+            {pick5(lang, {
+              it: "Le top 5 prediction per sport ogni settimana, con edge e spiegazioni complete.",
+              en: "The top 5 predictions per sport every week, with full edge and explanations.",
+              es: "Las 5 mejores predicciones por deporte cada semana, con edge y explicaciones completas.",
+              fr: "Les 5 meilleures prédictions par sport chaque semaine, avec edge et explications complètes.",
+              ru: "Топ-5 прогнозов на вид спорта каждую неделю, с edge и полными пояснениями.",
+            })}
           </p>
           <div className="price-line">
             <strong>{planPriceCopy("base", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
-            <strong>{lang === "it" ? "5 per sport / settimana" : "5 per sport / week"}</strong>
-            <em>{lang === "it" ? "10 prediction a settimana, le migliori per edge." : "10 predictions a week, the best by edge."}</em>
+            <strong>{pick5(lang, { it: "5 per sport / settimana", en: "5 per sport / week", es: "5 por deporte / semana", fr: "5 par sport / semaine", ru: "5 на вид спорта / неделя" })}</strong>
+            <em>{pick5(lang, { it: "10 prediction a settimana, le migliori per edge.", en: "10 predictions a week, the best by edge.", es: "10 predicciones por semana, las mejores por edge.", fr: "10 prédictions par semaine, les meilleures par edge.", ru: "10 прогнозов в неделю, лучшие по edge." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{lang === "it" ? "Top 5 calcio + 5 tennis / settimana (10 totali)" : "Top 5 football + 5 tennis / week (10 total)"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Pick, probabilità e spiegazione" : "Pick, probabilities and explanation"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Edge %, stake suggerito, closing line value" : "Edge %, suggested stake, closing line value"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Storico completo settlato" : "Full settled history"}</PlanFeature>
-            <PlanFeature locked>{lang === "it" ? "Prediction illimitate e Deep Analysis (→ Pro)" : "Unlimited predictions and Deep Analysis (→ Pro)"}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Top 5 calcio + 5 tennis / settimana (10 totali)", en: "Top 5 football + 5 tennis / week (10 total)", es: "Top 5 fútbol + 5 tenis / semana (10 en total)", fr: "Top 5 football + 5 tennis / semaine (10 au total)", ru: "Топ-5 футбол + 5 теннис / неделя (10 всего)" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Edge %, stake suggerito, closing line value", en: "Edge %, suggested stake, closing line value", es: "Edge %, stake sugerido, closing line value", fr: "Edge %, mise suggérée, closing line value", ru: "Edge %, рекомендуемая ставка, closing line value" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Storico completo settlato", en: "Full settled history", es: "Historial completo liquidado", fr: "Historique complet réglé", ru: "Полная история расчётов" })}</PlanFeature>
+            <PlanFeature locked>{pick5(lang, { it: "Prediction illimitate e Deep Analysis (→ Pro)", en: "Unlimited predictions and Deep Analysis (→ Pro)", es: "Predicciones ilimitadas y Deep Analysis (→ Pro)", fr: "Prédictions illimitées et Deep Analysis (→ Pro)", ru: "Безлимитные прогнозы и Deep Analysis (→ Pro)" })}</PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
         </article>
@@ -2561,30 +3456,34 @@ function PlansTab({
         <article className="plan-card is-premium">
           <div className="plan-card-head">
             <div>
-              <p className="eyebrow">{lang === "it" ? "Tutto incluso" : "Everything"}</p>
+              <p className="eyebrow">{pick5(lang, { it: "Tutto incluso", en: "Everything", es: "Todo incluido", fr: "Tout inclus", ru: "Всё включено" })}</p>
               <h4>{planLabel("premium", lang)}</h4>
             </div>
             <span>{planPriceCopy("premium", lang)}</span>
           </div>
           <p className="plan-description">
-            {lang === "it"
-              ? "Accesso completo: tutte le prediction, illimitate, su ogni sport, con la massima profondità."
-              : "Full access: all predictions, unlimited, across every sport, at maximum depth."}
+            {pick5(lang, {
+              it: "Accesso completo: tutte le prediction, illimitate, su ogni sport, con la massima profondità.",
+              en: "Full access: all predictions, unlimited, across every sport, at maximum depth.",
+              es: "Acceso completo: todas las predicciones, ilimitadas, en cada deporte, con la máxima profundidad.",
+              fr: "Accès complet : toutes les prédictions, illimitées, sur chaque sport, avec la profondeur maximale.",
+              ru: "Полный доступ: все прогнозы, без лимита, по каждому виду спорта, с максимальной глубиной.",
+            })}
           </p>
           <div className="price-line">
             <strong>{planPriceCopy("premium", lang)}</strong>
             <span>Crypto only · USDT TRC20</span>
           </div>
           <div className="plan-core-line">
-            <strong>{lang === "it" ? "Illimitato" : "Unlimited"}</strong>
-            <em>{lang === "it" ? "Nessun limite settimanale, tutta la piattaforma." : "No weekly cap, the whole platform."}</em>
+            <strong>{pick5(lang, { it: "Illimitato", en: "Unlimited", es: "Ilimitado", fr: "Illimité", ru: "Безлимитно" })}</strong>
+            <em>{pick5(lang, { it: "Nessun limite settimanale, tutta la piattaforma.", en: "No weekly cap, the whole platform.", es: "Sin límite semanal, toda la plataforma.", fr: "Aucune limite hebdomadaire, toute la plateforme.", ru: "Без недельного лимита, вся платформа." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{lang === "it" ? "TUTTE le prediction, illimitate" : "ALL predictions, unlimited"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Deep Analysis: forma, infortuni, venue" : "Deep Analysis: form, injuries, venue"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Tennis Live V4 e Football Live V4 research" : "Tennis Live V4 and Football Live V4 research"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Match Builder e Best Bets +EV" : "Match Builder and Best Bets +EV"}</PlanFeature>
-            <PlanFeature>{lang === "it" ? "Edge, stake e CLV su tutto" : "Edge, stake and CLV on everything"}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "TUTTE le prediction, illimitate", en: "ALL predictions, unlimited", es: "TODAS las predicciones, ilimitadas", fr: "TOUTES les prédictions, illimitées", ru: "ВСЕ прогнозы, без лимита" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Deep Analysis: forma, infortuni, venue", en: "Deep Analysis: form, injuries, venue", es: "Deep Analysis: forma, lesiones, estadio", fr: "Deep Analysis : forme, blessures, stade", ru: "Deep Analysis: форма, травмы, арена" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Match Builder e Best Bets +EV", en: "Match Builder and Best Bets +EV", es: "Match Builder y Best Bets +EV", fr: "Match Builder et Best Bets +EV", ru: "Match Builder и Best Bets +EV" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Edge, stake e CLV su tutto", en: "Edge, stake and CLV on everything", es: "Edge, stake y CLV en todo", fr: "Edge, mise et CLV sur tout", ru: "Edge, ставка и CLV по всему" })}</PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
         </article>
@@ -2631,47 +3530,113 @@ function SettingsTab({
   const settingsTimezone = draft.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const leaderboard = draft.leaderboardOptIn ?? false;
 
-  const copy = lang === "it" ? {
-    profile: "Profilo",
-    accountDetails: "Dettagli account",
-    name: "Nome",
-    language: "Lingua",
-    timezone: "Timezone",
-    notifications: "Notifiche",
-    valueBets: "Nuovi value bet",
-    dailyReport: "Report giornaliero",
-    paymentUpdates: "Pagamenti e accesso",
-    securityAlerts: "Sicurezza account",
-    enabled: "Attivo",
-    disabled: "Disattivo",
-    emailNote: "Per cambiare email contatta il supporto",
-    sportPrefs: "Sport preferiti",
-    sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
-    leaderboardTitle: "Leaderboard",
-    leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate.",
-    leaderboardOn: "Partecipo",
-    leaderboardOff: "Non partecipo",
-  } : {
-    profile: "Profile",
-    accountDetails: "Account details",
-    name: "Name",
-    language: "Language",
-    timezone: "Timezone",
-    notifications: "Notifications",
-    valueBets: "New value bets",
-    dailyReport: "Daily report",
-    paymentUpdates: "Payment and access",
-    securityAlerts: "Account security",
-    enabled: "Enabled",
-    disabled: "Disabled",
-    emailNote: "Contact support to change your email",
-    sportPrefs: "Sport preferences",
-    sportPrefsDesc: "Receive predictions only for selected sports.",
-    leaderboardTitle: "Leaderboard",
-    leaderboardDesc: "Appear in the public leaderboard ranked by hit rate.",
-    leaderboardOn: "Opted in",
-    leaderboardOff: "Opted out",
-  };
+  const copy = pick5(lang, {
+    it: {
+      profile: "Profilo",
+      accountDetails: "Dettagli account",
+      name: "Nome",
+      language: "Lingua",
+      timezone: "Timezone",
+      notifications: "Notifiche",
+      valueBets: "Nuovi value bet",
+      dailyReport: "Report giornaliero",
+      paymentUpdates: "Pagamenti e accesso",
+      securityAlerts: "Sicurezza account",
+      enabled: "Attivo",
+      disabled: "Disattivo",
+      emailNote: "Per cambiare email contatta il supporto",
+      sportPrefs: "Sport preferiti",
+      sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
+      leaderboardTitle: "Leaderboard",
+      leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate.",
+      leaderboardOn: "Partecipo",
+      leaderboardOff: "Non partecipo",
+    },
+    en: {
+      profile: "Profile",
+      accountDetails: "Account details",
+      name: "Name",
+      language: "Language",
+      timezone: "Timezone",
+      notifications: "Notifications",
+      valueBets: "New value bets",
+      dailyReport: "Daily report",
+      paymentUpdates: "Payment and access",
+      securityAlerts: "Account security",
+      enabled: "Enabled",
+      disabled: "Disabled",
+      emailNote: "Contact support to change your email",
+      sportPrefs: "Sport preferences",
+      sportPrefsDesc: "Receive predictions only for selected sports.",
+      leaderboardTitle: "Leaderboard",
+      leaderboardDesc: "Appear in the public leaderboard ranked by hit rate.",
+      leaderboardOn: "Opted in",
+      leaderboardOff: "Opted out",
+    },
+    es: {
+      profile: "Perfil",
+      accountDetails: "Detalles de la cuenta",
+      name: "Nombre",
+      language: "Idioma",
+      timezone: "Zona horaria",
+      notifications: "Notificaciones",
+      valueBets: "Nuevos value bets",
+      dailyReport: "Informe diario",
+      paymentUpdates: "Pagos y acceso",
+      securityAlerts: "Seguridad de la cuenta",
+      enabled: "Activo",
+      disabled: "Inactivo",
+      emailNote: "Para cambiar el email contacta con soporte",
+      sportPrefs: "Deportes preferidos",
+      sportPrefsDesc: "Recibe predicciones solo de los deportes seleccionados.",
+      leaderboardTitle: "Leaderboard",
+      leaderboardDesc: "Aparece en el leaderboard público de clientes por hit rate.",
+      leaderboardOn: "Participo",
+      leaderboardOff: "No participo",
+    },
+    fr: {
+      profile: "Profil",
+      accountDetails: "Détails du compte",
+      name: "Nom",
+      language: "Langue",
+      timezone: "Fuseau horaire",
+      notifications: "Notifications",
+      valueBets: "Nouveaux value bets",
+      dailyReport: "Rapport quotidien",
+      paymentUpdates: "Paiements et accès",
+      securityAlerts: "Sécurité du compte",
+      enabled: "Activé",
+      disabled: "Désactivé",
+      emailNote: "Pour changer d'email, contactez le support",
+      sportPrefs: "Sports préférés",
+      sportPrefsDesc: "Recevez des prédictions uniquement pour les sports sélectionnés.",
+      leaderboardTitle: "Leaderboard",
+      leaderboardDesc: "Apparaissez dans le leaderboard public des clients classé par hit rate.",
+      leaderboardOn: "J'y participe",
+      leaderboardOff: "Je n'y participe pas",
+    },
+    ru: {
+      profile: "Профиль",
+      accountDetails: "Данные аккаунта",
+      name: "Имя",
+      language: "Язык",
+      timezone: "Часовой пояс",
+      notifications: "Уведомления",
+      valueBets: "Новые value bets",
+      dailyReport: "Ежедневный отчёт",
+      paymentUpdates: "Платежи и доступ",
+      securityAlerts: "Безопасность аккаунта",
+      enabled: "Включено",
+      disabled: "Выключено",
+      emailNote: "Чтобы сменить email, обратитесь в поддержку",
+      sportPrefs: "Любимые виды спорта",
+      sportPrefsDesc: "Получайте прогнозы только по выбранным видам спорта.",
+      leaderboardTitle: "Leaderboard",
+      leaderboardDesc: "Появляйтесь в публичном leaderboard клиентов по hit rate.",
+      leaderboardOn: "Участвую",
+      leaderboardOff: "Не участвую",
+    },
+  });
 
   return (
     <div className="settings-view">
@@ -2964,13 +3929,13 @@ function ProfilePanel({
       {daysLeft != null && (
         <div className="upgrade-card" style={daysLeft <= 5 ? { borderColor: "var(--am-amber)" } : undefined}>
           <div>
-            <p className="eyebrow">{lang === "it" ? "Abbonamento" : "Subscription"}</p>
+            <p className="eyebrow">{pick5(lang, { it: "Abbonamento", en: "Subscription", es: "Suscripción", fr: "Abonnement", ru: "Подписка" })}</p>
             <h3>{daysLeft > 0
-              ? `${daysLeft} ${lang === "it" ? (daysLeft === 1 ? "giorno rimanente" : "giorni rimanenti") : (daysLeft === 1 ? "day left" : "days left")}`
-              : (lang === "it" ? "Scaduto" : "Expired")}</h3>
-            <span>{lang === "it" ? "Signal Desk Pro · rinnovo mensile" : "Signal Desk Pro · monthly renewal"}</span>
+              ? `${daysLeft} ${daysLeft === 1 ? pick5(lang, { it: "giorno rimanente", en: "day left", es: "día restante", fr: "jour restant", ru: "день осталось" }) : pick5(lang, { it: "giorni rimanenti", en: "days left", es: "días restantes", fr: "jours restants", ru: "дн. осталось" })}`
+              : pick5(lang, { it: "Scaduto", en: "Expired", es: "Caducado", fr: "Expiré", ru: "Истёк" })}</h3>
+            <span>{pick5(lang, { it: "Signal Desk Pro · rinnovo mensile", en: "Signal Desk Pro · monthly renewal", es: "Signal Desk Pro · renovación mensual", fr: "Signal Desk Pro · renouvellement mensuel", ru: "Signal Desk Pro · ежемесячное продление" })}</span>
           </div>
-          {daysLeft <= 7 && <button onClick={onUpgrade}>{lang === "it" ? "Rinnova" : "Renew"}</button>}
+          {daysLeft <= 7 && <button onClick={onUpgrade}>{pick5(lang, { it: "Rinnova", en: "Renew", es: "Renovar", fr: "Renouveler", ru: "Продлить" })}</button>}
         </div>
       )}
       {!hasPremium && (
@@ -3273,7 +4238,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const pickName =
     pickKey === "HOME" ? p.home_team
     : pickKey === "AWAY" ? p.away_team
-    : pickKey === "DRAW" ? (lang === "it" ? "Pareggio" : "Draw")
+    : pickKey === "DRAW" ? pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" })
     : null;
   const pickProb =
     pickKey === "HOME" ? p.p_home
@@ -3291,9 +4256,9 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const confScore = p.confidence_score ?? (pickProb != null ? confidenceFromEdge(p.edge, pickProb) : null);
   const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
   const confLabel = confScore == null ? null
-    : confScore >= 70 ? (lang === "it" ? "alta" : "high")
-    : confScore >= 45 ? (lang === "it" ? "media" : "medium")
-    : (lang === "it" ? "bassa" : "low");
+    : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
+    : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
+    : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
   return (
     <article className="card"><div className="pred">
@@ -3324,7 +4289,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
         ) : (
           <div className="scorebar">
-            <span className="stt">{isFutureMarket(p.kickoff) ? (lang === "it" ? "Kickoff" : "Kickoff") : (lang === "it" ? "Programmato" : "Scheduled")}</span>
+            <span className="stt">{isFutureMarket(p.kickoff) ? "Kickoff" : pick5(lang, { it: "Programmato", en: "Scheduled", es: "Programado", fr: "Programmé", ru: "Запланирован" })}</span>
             <span className="sc sched">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
           </div>
         )}
@@ -3360,11 +4325,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           >
             <div className="col">
               <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
-              <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
+              <div className="l">{pick5(lang, { it: "Mercato", en: "Market", es: "Mercado", fr: "Marché", ru: "Рынок" })}</div>
             </div>
             <div className="col model">
               <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l">{lang === "it" ? "Modello" : "Model"}{pickName ? ` · ${pickName}` : ""}</div>
+              <div className="l">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}{pickName ? ` · ${pickName}` : ""}</div>
             </div>
             <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
               <div className="n">
@@ -3377,7 +4342,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
           {!isPreview && edgeVal != null && confScore != null && (
             <div className="conf">
-              <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
+              <span className="conf-lab">{pick5(lang, { it: "Confidenza", en: "Confidence", es: "Confianza", fr: "Confiance", ru: "Уверенность" })}</span>
               {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
               {confLabel && <span className="conf-txt">{confLabel}</span>}
             </div>
@@ -3385,18 +4350,18 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {!isPreview && edgeVal == null && (
             <span className="edge flat">
               {marketImplied != null
-                ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
-                : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
+                ? pick5(lang, { it: "nessun edge · in linea col mercato", en: "no edge · in line with market", es: "sin edge · en línea con el mercado", fr: "pas d'edge · en ligne avec le marché", ru: "нет edge · в линии с рынком" })
+                : pick5(lang, { it: "nessuna quota · lettura del modello", en: "no market price · model read", es: "sin cuota · lectura del modelo", fr: "pas de cote · lecture du modèle", ru: "нет котировки · чтение модели" })}
             </span>
           )}
-          {isPreview && <span className="edge flat">🔒 {lang === "it" ? "Mercato ed edge richiedono Pro" : "Market & edge require Pro"}</span>}
+          {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
         </>
       )}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
       <div className="why">
         <div className="why-box">
-          <div className="why-lab">{lang === "it" ? "Perché" : "Why"}</div>
+          <div className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}</div>
           <p className="why-txt">
             {isPreview
               ? (lang === "it"
@@ -3407,8 +4372,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {!isPreview && (
             <button className="why-more" onClick={() => setShowWhy(!showWhy)}>
               {showWhy
-                ? (lang === "it" ? "Nascondi analisi" : "Hide analysis")
-                : (lang === "it" ? "Leggi l'analisi completa" : "Read full analysis")} <span className="ar">→</span>
+                ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
+                : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
             </button>
           )}
         </div>
@@ -3416,17 +4381,17 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         {/* footer action row */}
         <div className="act">
           {!isPreview && pickOdds != null && (
-            <span className="odds"><span className="odds-lab">{lang === "it" ? "Quota" : "Odds"}</span><b>{pickOdds.toFixed(2)}</b></span>
+            <span className="odds"><span className="odds-lab">{pick5(lang, { it: "Quota", en: "Odds", es: "Cuota", fr: "Cote", ru: "Кэф" })}</span><b>{pickOdds.toFixed(2)}</b></span>
           )}
           {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
               altrimenti vecchio CTA. FT → status note. */}
           {!isPreview && (betLinksEnabled || onBetNow) && (isFinished ? (
-            <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
+            <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : betLinksEnabled ? (
             <PlaceBetMenu
               buttonClassName="betbtn"
-              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
-              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
+              label={pick5(lang, { it: "Piazza scommessa", en: "Place bet", es: "Hacer apuesta", fr: "Placer le pari", ru: "Сделать ставку" })}
+              disclaimer={pick5(lang, { it: "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te.", en: "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you.", es: "18+ · Juega con responsabilidad · *Enlace de afiliado — podemos recibir una comisión, sin coste para ti.", fr: "18+ · Jouez de manière responsable · *Lien affilié — nous pouvons percevoir une commission, sans frais pour vous.", ru: "18+ · Играйте ответственно · *Партнёрская ссылка — мы можем получить комиссию без затрат для вас." })}
               selection={{
                 sport: p.league === "WC" ? "worldcup" : "football",
                 league: p.league,
@@ -3441,11 +4406,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
-          <span className="model">{lang === "it" ? "Modello calibrato" : "Calibrated model"}</span>
+          <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
           {isPreview || p.locked ? (
             <span className="gate">Pro</span>
           ) : isFinished ? (
-            <span className="gate settled">{lang === "it" ? "Settlato" : "Settled"}</span>
+            <span className="gate settled">{pick5(lang, { it: "Settlato", en: "Settled", es: "Liquidado", fr: "Réglé", ru: "Рассчитан" })}</span>
           ) : (
             <span className="gate">Pro</span>
           )}
@@ -3454,8 +4419,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         {/* expandable analysis body */}
         {isPreview ? (
           <div className="nudge">
-            <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
-            <em>{lang === "it" ? "Sblocca edge%, ragionamento AI e segnali con Pro (49.90 USDT/mese)." : "Unlock edge%, AI reasoning and signals with Pro (49.90 USDT/month)."}</em>
+            <strong>{pick5(lang, { it: "Edge e analisi richiedono Signal Desk Pro", en: "Edge and analysis require Signal Desk Pro", es: "Edge y análisis requieren Signal Desk Pro", fr: "Edge et analyse nécessitent Signal Desk Pro", ru: "Edge и анализ доступны с Signal Desk Pro" })}</strong>
+            <em>{pick5(lang, { it: "Sblocca edge%, ragionamento AI e segnali con Pro (49.90 USDT/mese).", en: "Unlock edge%, AI reasoning and signals with Pro (49.90 USDT/month).", es: "Desbloquea edge%, razonamiento de IA y señales con Pro (49.90 USDT/mes).", fr: "Débloquez edge%, raisonnement IA et signaux avec Pro (49.90 USDT/mois).", ru: "Откройте edge%, ИИ-обоснование и сигналы с Pro (49.90 USDT/мес)." })}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -3466,7 +4431,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {/* Schedina (extra markets) — demoted into the expansion */}
           {extraPicks.length > 0 && (
             <div className="extra-markets">
-              <span className="extra-markets-label">{lang === "it" ? "Schedina" : "Acca picks"}</span>
+              <span className="extra-markets-label">{pick5(lang, { it: "Schedina", en: "Acca picks", es: "Combinada", fr: "Combiné", ru: "Экспресс" })}</span>
               {extraPicks.map((m) => {
                 const strength = m.p >= 0.80 ? "high" : m.p >= 0.65 ? "mid" : "low";
                 return (
@@ -3492,11 +4457,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         <div className="deep-analysis-panel">
           <div className="da-header">
             <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{lang === "it" ? "Analisi approfondita" : "Deep Analysis"}</span>
+            <span className="da-title">{pick5(lang, { it: "Analisi approfondita", en: "Deep Analysis", es: "Análisis profundo", fr: "Analyse approfondie", ru: "Глубокий анализ" })}</span>
           </div>
           {(e.xg_home != null || e.xg_away != null) && (
             <div className="da-row">
-              <span className="da-label">{lang === "it" ? "Gol attesi" : "Expected goals"}</span>
+              <span className="da-label">{pick5(lang, { it: "Gol attesi", en: "Expected goals", es: "Goles esperados", fr: "Buts attendus", ru: "Ожидаемые голы" })}</span>
               <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
             </div>
           )}
@@ -3514,21 +4479,21 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {(e.form_home || e.form_away) && (
             <div className="da-row">
-              <span className="da-label">{lang === "it" ? "Forma" : "Form"}</span>
+              <span className="da-label">{pick5(lang, { it: "Forma", en: "Form", es: "Forma", fr: "Forme", ru: "Форма" })}</span>
               <span className="da-value">{fmtFormAny(e.form_home) ?? "–"} vs {fmtFormAny(e.form_away) ?? "–"}</span>
             </div>
           )}
           {/* World Cup context rows — real venue/squad/sample data */}
           {e.kind === "world_cup" && e.venue && (e.venue.travel_km_home != null || e.venue.travel_km_away != null) && (
             <div className="da-row">
-              <span className="da-label">✈️ {lang === "it" ? "Trasferta" : "Travel"}</span>
+              <span className="da-label">✈️ {pick5(lang, { it: "Trasferta", en: "Travel", es: "Viaje", fr: "Déplacement", ru: "Переезд" })}</span>
               <span className="da-value">{e.venue.travel_km_home != null ? `${Math.round(e.venue.travel_km_home).toLocaleString()} km` : "–"} vs {e.venue.travel_km_away != null ? `${Math.round(e.venue.travel_km_away).toLocaleString()} km` : "–"}</span>
             </div>
           )}
           {e.kind === "world_cup" && e.venue && (e.venue.rest_days_home != null || e.venue.rest_days_away != null) && (
             <div className="da-row">
-              <span className="da-label">😴 {lang === "it" ? "Riposo" : "Rest"}</span>
-              <span className="da-value">{e.venue.rest_days_home ?? "–"} vs {e.venue.rest_days_away ?? "–"} {lang === "it" ? "giorni" : "days"}</span>
+              <span className="da-label">😴 {pick5(lang, { it: "Riposo", en: "Rest", es: "Descanso", fr: "Repos", ru: "Отдых" })}</span>
+              <span className="da-value">{e.venue.rest_days_home ?? "–"} vs {e.venue.rest_days_away ?? "–"} {pick5(lang, { it: "giorni", en: "days", es: "días", fr: "jours", ru: "дней" })}</span>
             </div>
           )}
           {e.kind === "world_cup" && e.venue?.host_advantage && (
@@ -3539,31 +4504,31 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {e.kind === "world_cup" && ((e.squad?.injuries_home?.length ?? 0) > 0 || (e.squad?.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
-              <span className="da-label">🚑 {lang === "it" ? "Infortuni rosa" : "Squad injuries"}</span>
+              <span className="da-label">🚑 {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
               <span className="da-value">{e.squad?.injuries_home?.length ?? 0} vs {e.squad?.injuries_away?.length ?? 0}</span>
             </div>
           )}
           {e.kind === "world_cup" && e.matches && (e.matches.home != null || e.matches.away != null) && (
             <div className="da-row">
-              <span className="da-label">🗃️ {lang === "it" ? "Campione" : "Sample"}</span>
-              <span className="da-value">{e.matches.home ?? "–"} vs {e.matches.away ?? "–"} {lang === "it" ? "partite" : "matches"}</span>
+              <span className="da-label">🗃️ {pick5(lang, { it: "Campione", en: "Sample", es: "Muestra", fr: "Échantillon", ru: "Выборка" })}</span>
+              <span className="da-value">{e.matches.home ?? "–"} vs {e.matches.away ?? "–"} {pick5(lang, { it: "partite", en: "matches", es: "partidos", fr: "matchs", ru: "матчей" })}</span>
             </div>
           )}
           {(e.pi_home != null || e.pi_away != null) && (
             <div className="da-row">
-              <span className="da-label">{lang === "it" ? "Rating" : "Rating"}</span>
+              <span className="da-label">Rating</span>
               <span className="da-value">{e.pi_home ?? "–"} vs {e.pi_away ?? "–"}</span>
             </div>
           )}
           {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
-              <span className="da-label">🚑 {lang === "it" ? "Infortuni" : "Injuries"}</span>
+              <span className="da-label">🚑 {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
               <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
             </div>
           )}
           {e.weather && (
             <div className="da-row">
-              <span className="da-label">{e.weather.icon} {lang === "it" ? "Meteo" : "Weather"}</span>
+              <span className="da-label">{e.weather.icon} {pick5(lang, { it: "Meteo", en: "Weather", es: "Clima", fr: "Météo", ru: "Погода" })}</span>
               <span className="da-value">{e.weather.temp}°C · {e.weather.condition} · {e.weather.wind}km/h</span>
             </div>
           )}
@@ -3575,7 +4540,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
             <div className="da-row da-markets-row">
-              <span className="da-label">{lang === "it" ? "Mercati" : "Markets"}</span>
+              <span className="da-label">{pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" })}</span>
               <div className="da-markets-list">
                 {e.extra_markets.filter((m) => m.edge != null).slice(0, 4).map((m) => (
                   <span key={m.key} className={`da-market-pill${m.edge != null && m.edge > 0.02 ? " value" : ""}`}>
@@ -3598,7 +4563,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
+          <span>{pick5(lang, { it: "Analisi approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)", en: "Deep analysis available with Signal Desk Pro (49.90 USDT/month)", es: "Análisis profundo disponible con Signal Desk Pro (49.90 USDT/mes)", fr: "Analyse approfondie disponible avec Signal Desk Pro (49.90 USDT/mois)", ru: "Глубокий анализ доступен с Signal Desk Pro (49.90 USDT/мес)" })}</span>
         </div>
       )}
         </div>
@@ -3715,9 +4680,9 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   const confScore = m.confidence_score ?? (pickProb != null ? confidenceFromEdge(m.edge, pickProb) : null);
   const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
   const confLabel = confScore == null ? null
-    : confScore >= 70 ? (lang === "it" ? "alta" : "high")
-    : confScore >= 45 ? (lang === "it" ? "media" : "medium")
-    : (lang === "it" ? "bassa" : "low");
+    : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
+    : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
+    : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
   return (
     <article className="card tennis"><div className="pred tennis">
@@ -3729,7 +4694,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {m.round && <span className="rnd">{m.round}</span>}
         </div>
         {liveIsOn ? (
-          <span className="when live"><span className="pulse" />{lang === "it" ? "live" : "live"}</span>
+          <span className="when live"><span className="pulse" />live</span>
         ) : (
           <span className="when">{scheduledDate}</span>
         )}
@@ -3747,7 +4712,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           </div>
         ) : (
           <div className="scorebar">
-            <span className="stt">{lang === "it" ? "Programmato" : "Scheduled"}</span>
+            <span className="stt">{pick5(lang, { it: "Programmato", en: "Scheduled", es: "Programado", fr: "Programmé", ru: "Запланирован" })}</span>
             <span className="sc sched">{scheduledDate} · {surface.label}</span>
           </div>
         )}
@@ -3772,7 +4737,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
               </div>
             ))}
           </div>
-          <span className="edge flat">{lang === "it" ? "Nessun favorito · match aperto" : "No favourite · open match"}</span>
+          <span className="edge flat">{pick5(lang, { it: "Nessun favorito · match aperto", en: "No favourite · open match", es: "Sin favorito · partido abierto", fr: "Pas de favori · match ouvert", ru: "Нет фаворита · открытый матч" })}</span>
         </>
       ) : (
         <>
@@ -3782,11 +4747,11 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           >
             <div className="col">
               <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
-              <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
+              <div className="l">{pick5(lang, { it: "Mercato", en: "Market", es: "Mercado", fr: "Marché", ru: "Рынок" })}</div>
             </div>
             <div className="col model">
               <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l">{lang === "it" ? "Modello" : "Model"}{pickName ? ` · ${pickName}` : ""}</div>
+              <div className="l">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}{pickName ? ` · ${pickName}` : ""}</div>
             </div>
             <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
               <div className="n">
@@ -3799,7 +4764,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           </div>
           {!isPreview && edgeVal != null && confScore != null && (
             <div className="conf">
-              <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
+              <span className="conf-lab">{pick5(lang, { it: "Confidenza", en: "Confidence", es: "Confianza", fr: "Confiance", ru: "Уверенность" })}</span>
               {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
               {confLabel && <span className="conf-txt">{confLabel}</span>}
             </div>
@@ -3807,18 +4772,18 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {!isPreview && edgeVal == null && (
             <span className="edge flat">
               {marketImplied != null
-                ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
-                : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
+                ? pick5(lang, { it: "nessun edge · in linea col mercato", en: "no edge · in line with market", es: "sin edge · en línea con el mercado", fr: "pas d'edge · en ligne avec le marché", ru: "нет edge · в линии с рынком" })
+                : pick5(lang, { it: "nessuna quota · lettura del modello", en: "no market price · model read", es: "sin cuota · lectura del modelo", fr: "pas de cote · lecture du modèle", ru: "нет котировки · чтение модели" })}
             </span>
           )}
-          {isPreview && <span className="edge flat">🔒 {lang === "it" ? "Mercato ed edge richiedono Pro" : "Market & edge require Pro"}</span>}
+          {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
         </>
       )}
 
       {/* WHY — Elo readout + expandable analysis */}
       <div className="why">
         <div className="why-box">
-          <div className="why-lab">{lang === "it" ? "Perché" : "Why"}</div>
+          <div className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}</div>
           <p className="why-txt">
             {isPreview
               ? (lang === "it"
@@ -3829,10 +4794,10 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {!isPreview && (
             <button className="why-more" onClick={handleWhyClick}>
               {loadingAnalysis
-                ? (lang === "it" ? "Carico l'analisi…" : "Loading analysis…")
+                ? pick5(lang, { it: "Carico l'analisi…", en: "Loading analysis…", es: "Cargando análisis…", fr: "Chargement de l'analyse…", ru: "Загрузка анализа…" })
                 : showWhy
-                  ? (lang === "it" ? "Nascondi analisi" : "Hide analysis")
-                  : (lang === "it" ? "Leggi l'analisi completa" : "Read full analysis")} <span className="ar">→</span>
+                  ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
+                  : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
             </button>
           )}
         </div>
@@ -3840,15 +4805,15 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         {/* footer action row */}
         <div className="act">
           {!isPreview && pickOdds != null && (
-            <span className="odds"><span className="odds-lab">{lang === "it" ? "Quota" : "Odds"}</span><b>{pickOdds.toFixed(2)}</b></span>
+            <span className="odds"><span className="odds-lab">{pick5(lang, { it: "Quota", en: "Odds", es: "Cuota", fr: "Cote", ru: "Кэф" })}</span><b>{pickOdds.toFixed(2)}</b></span>
           )}
           {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
-            <span className="ft-note">{lang === "it" ? "Terminata — in arrivo nello storico" : "Full time — moving to history"}</span>
+            <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : betLinksEnabled ? (
             <PlaceBetMenu
               buttonClassName="betbtn"
-              label={lang === "it" ? "Piazza scommessa" : "Place bet"}
-              disclaimer={lang === "it" ? "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te." : "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you."}
+              label={pick5(lang, { it: "Piazza scommessa", en: "Place bet", es: "Hacer apuesta", fr: "Placer le pari", ru: "Сделать ставку" })}
+              disclaimer={pick5(lang, { it: "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te.", en: "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you.", es: "18+ · Juega con responsabilidad · *Enlace de afiliado — podemos recibir una comisión, sin coste para ti.", fr: "18+ · Jouez de manière responsable · *Lien affilié — nous pouvons percevoir une commission, sans frais pour vous.", ru: "18+ · Играйте ответственно · *Партнёрская ссылка — мы можем получить комиссию без затрат для вас." })}
               selection={{
                 sport: "tennis",
                 market: "MO",
@@ -3859,15 +4824,15 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
-          <span className="model">{lang === "it" ? "Modello calibrato" : "Calibrated model"}</span>
+          <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
           <span className="gate">Pro</span>
         </div>
 
         {/* expandable analysis body */}
         {isPreview ? (
           <div className="nudge">
-            <strong>{lang === "it" ? "Edge e analisi richiedono Signal Desk Pro" : "Edge and analysis require Signal Desk Pro"}</strong>
-            <em>{lang === "it" ? "Sblocca edge%, analisi del modello e segnali tennis con Pro (49.90 USDT/mese)." : "Unlock edge%, model analysis and tennis signals with Pro (49.90 USDT/month)."}</em>
+            <strong>{pick5(lang, { it: "Edge e analisi richiedono Signal Desk Pro", en: "Edge and analysis require Signal Desk Pro", es: "Edge y análisis requieren Signal Desk Pro", fr: "Edge et analyse nécessitent Signal Desk Pro", ru: "Edge и анализ доступны с Signal Desk Pro" })}</strong>
+            <em>{pick5(lang, { it: "Sblocca edge%, analisi del modello e segnali tennis con Pro (49.90 USDT/mese).", en: "Unlock edge%, model analysis and tennis signals with Pro (49.90 USDT/month).", es: "Desbloquea edge%, análisis del modelo y señales de tenis con Pro (49.90 USDT/mes).", fr: "Débloquez edge%, analyse du modèle et signaux tennis avec Pro (49.90 USDT/mois).", ru: "Откройте edge%, анализ модели и теннисные сигналы с Pro (49.90 USDT/мес)." })}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -3898,7 +4863,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         <div className="deep-analysis-panel">
           <div className="da-header">
             <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{lang === "it" ? "Analisi del modello" : "Model analysis"}</span>
+            <span className="da-title">{pick5(lang, { it: "Analisi del modello", en: "Model analysis", es: "Análisis del modelo", fr: "Analyse du modèle", ru: "Анализ модели" })}</span>
           </div>
           <div className="da-row">
             <span className="da-label">Rating {surface.label}</span>
@@ -3906,19 +4871,19 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           </div>
           {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
             <div className="da-row">
-              <span className="da-label">{lang === "it" ? "Rating gen." : "Overall rating"}</span>
+              <span className="da-label">{pick5(lang, { it: "Rating gen.", en: "Overall rating", es: "Rating gen.", fr: "Rating gén.", ru: "Общий рейтинг" })}</span>
               <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
             </div>
           )}
           {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) && (
             <div className="da-row">
-              <span className="da-label">{lang === "it" ? "Match sup." : "Surf. matches"}</span>
+              <span className="da-label">{pick5(lang, { it: "Match sup.", en: "Surf. matches", es: "Partidos sup.", fr: "Matchs surf.", ru: "Матчи покр." })}</span>
               <span className="da-value">{m.surface_matches_p1 ?? "–"} vs {m.surface_matches_p2 ?? "–"}</span>
             </div>
           )}
           {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
             <div className="da-row">
-              <span className="da-label">{lang === "it" ? "Prob. modello" : "Model prob."}</span>
+              <span className="da-label">{pick5(lang, { it: "Prob. modello", en: "Model prob.", es: "Prob. modelo", fr: "Prob. modèle", ru: "Вероятн. модели" })}</span>
               <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
             </div>
           )}
@@ -3935,7 +4900,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{lang === "it" ? "Analisi approfondita del modello disponibile con Signal Desk Pro (49.90 USDT/mese)" : "Deep model analysis available with Signal Desk Pro (49.90 USDT/month)"}</span>
+          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con Signal Desk Pro (49.90 USDT/mese)", en: "Deep model analysis available with Signal Desk Pro (49.90 USDT/month)", es: "Análisis profundo del modelo disponible con Signal Desk Pro (49.90 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec Signal Desk Pro (49.90 USDT/mois)", ru: "Глубокий анализ модели доступен с Signal Desk Pro (49.90 USDT/мес)" })}</span>
         </div>
       )}
         </div>
@@ -4213,29 +5178,68 @@ function MatchBuilderTab({
     return () => { alive = false; };
   }, []);
 
-  const copy = lang === "it" ? {
-    eyebrow: "Strumento influencer", title: "Match Builder",
-    subtitle: "Costruisci una schedina con le predizioni AI e condividi il link con i tuoi follower.",
-    selectTitle: "Seleziona le predizioni (2–5)", selectedLabel: "Selezionate",
-    combinedProb: "Probabilità combinata (modello)",
-    yourCode: "Il tuo codice influencer (es. MARIO10)", copyLink: "Copia e pubblica link", copied: "Copiato ✓",
-    published: "Pubblicata su Creator Picks ✓",
-    sharedTitle: "Schedina condivisa", sharedDesc: "Un creator ha costruito questa schedina per te.",
-    sharedBy: "Codice creator", registerCta: "Registrati gratis per vedere i pick",
-    noSignals: "Nessuna predizione disponibile al momento.",
-    empty: "Seleziona almeno 2 predizioni per generare il link.",
-  } : {
-    eyebrow: "Influencer tool", title: "Match Builder",
-    subtitle: "Build an accumulator from AI predictions and share the link with your followers.",
-    selectTitle: "Select predictions (2–5)", selectedLabel: "Selected",
-    combinedProb: "Combined probability (model)",
-    yourCode: "Your influencer code (e.g. JOHN10)", copyLink: "Copy & publish link", copied: "Copied ✓",
-    published: "Published to Creator Picks ✓",
-    sharedTitle: "Shared accumulator", sharedDesc: "A creator built this accumulator for you.",
-    sharedBy: "Creator code", registerCta: "Register free to reveal picks",
-    noSignals: "No predictions available right now.",
-    empty: "Select at least 2 predictions to generate a link.",
-  };
+  const copy = pick5(lang, {
+    it: {
+      eyebrow: "Strumento influencer", title: "Match Builder",
+      subtitle: "Costruisci una schedina con le predizioni AI e condividi il link con i tuoi follower.",
+      selectTitle: "Seleziona le predizioni (2–5)", selectedLabel: "Selezionate",
+      combinedProb: "Probabilità combinata (modello)",
+      yourCode: "Il tuo codice influencer (es. MARIO10)", copyLink: "Copia e pubblica link", copied: "Copiato ✓",
+      published: "Pubblicata su Creator Picks ✓",
+      sharedTitle: "Schedina condivisa", sharedDesc: "Un creator ha costruito questa schedina per te.",
+      sharedBy: "Codice creator", registerCta: "Registrati gratis per vedere i pick",
+      noSignals: "Nessuna predizione disponibile al momento.",
+      empty: "Seleziona almeno 2 predizioni per generare il link.",
+    },
+    en: {
+      eyebrow: "Influencer tool", title: "Match Builder",
+      subtitle: "Build an accumulator from AI predictions and share the link with your followers.",
+      selectTitle: "Select predictions (2–5)", selectedLabel: "Selected",
+      combinedProb: "Combined probability (model)",
+      yourCode: "Your influencer code (e.g. JOHN10)", copyLink: "Copy & publish link", copied: "Copied ✓",
+      published: "Published to Creator Picks ✓",
+      sharedTitle: "Shared accumulator", sharedDesc: "A creator built this accumulator for you.",
+      sharedBy: "Creator code", registerCta: "Register free to reveal picks",
+      noSignals: "No predictions available right now.",
+      empty: "Select at least 2 predictions to generate a link.",
+    },
+    es: {
+      eyebrow: "Herramienta influencer", title: "Match Builder",
+      subtitle: "Crea una combinada con las predicciones de IA y comparte el link con tus seguidores.",
+      selectTitle: "Selecciona las predicciones (2–5)", selectedLabel: "Seleccionadas",
+      combinedProb: "Probabilidad combinada (modelo)",
+      yourCode: "Tu código de influencer (ej. MARIO10)", copyLink: "Copiar y publicar link", copied: "Copiado ✓",
+      published: "Publicada en Creator Picks ✓",
+      sharedTitle: "Combinada compartida", sharedDesc: "Un creator construyó esta combinada para ti.",
+      sharedBy: "Código creator", registerCta: "Regístrate gratis para ver los picks",
+      noSignals: "No hay predicciones disponibles ahora.",
+      empty: "Selecciona al menos 2 predicciones para generar el link.",
+    },
+    fr: {
+      eyebrow: "Outil influenceur", title: "Match Builder",
+      subtitle: "Construisez un combiné avec les prédictions IA et partagez le lien avec vos abonnés.",
+      selectTitle: "Sélectionnez les prédictions (2–5)", selectedLabel: "Sélectionnées",
+      combinedProb: "Probabilité combinée (modèle)",
+      yourCode: "Votre code influenceur (ex. MARIO10)", copyLink: "Copier et publier le lien", copied: "Copié ✓",
+      published: "Publié sur Creator Picks ✓",
+      sharedTitle: "Combiné partagé", sharedDesc: "Un creator a construit ce combiné pour vous.",
+      sharedBy: "Code creator", registerCta: "Inscrivez-vous gratuitement pour voir les picks",
+      noSignals: "Aucune prédiction disponible pour le moment.",
+      empty: "Sélectionnez au moins 2 prédictions pour générer un lien.",
+    },
+    ru: {
+      eyebrow: "Инструмент инфлюенсера", title: "Match Builder",
+      subtitle: "Соберите экспресс из прогнозов ИИ и поделитесь ссылкой с подписчиками.",
+      selectTitle: "Выберите прогнозы (2–5)", selectedLabel: "Выбрано",
+      combinedProb: "Совокупная вероятность (модель)",
+      yourCode: "Ваш код инфлюенсера (напр. MARIO10)", copyLink: "Скопировать и опубликовать ссылку", copied: "Скопировано ✓",
+      published: "Опубликовано в Creator Picks ✓",
+      sharedTitle: "Общий экспресс", sharedDesc: "Creator собрал этот экспресс для вас.",
+      sharedBy: "Код creator", registerCta: "Зарегистрируйтесь бесплатно, чтобы увидеть пики",
+      noSignals: "Сейчас нет доступных прогнозов.",
+      empty: "Выберите минимум 2 прогноза, чтобы сгенерировать ссылку.",
+    },
+  });
 
   const items: MbItem[] = [
     ...predictions
@@ -4362,7 +5366,7 @@ function MatchBuilderTab({
   // Presentation-only grouping for scannability. Derived from the item id
   // prefix (f_/w_/t_) — same data, just clustered by sport family.
   const mbGroups: { key: string; head: string; glyph: string; amber: boolean; rows: MbItem[] }[] = [
-    { key: "football", head: lang === "it" ? "Calcio" : "Football", glyph: "#g-ball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_")) },
+    { key: "football", head: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), glyph: "#g-ball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_")) },
     { key: "tennis", head: "Tennis", glyph: "#g-tball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("t_")) },
     { key: "worldcup", head: "World Cup", glyph: "#g-trophy", amber: true, rows: visibleItems.filter((i) => i.id.startsWith("w_")) },
   ].filter((g) => g.rows.length > 0);
@@ -4442,7 +5446,7 @@ function MatchBuilderTab({
                                   <>{home}<span className="mb-vs">vs</span>{away}</>
                                 ) : item.label}
                               </span>
-                              <span className="mb-pick"><span className="mb-pick-label">{lang === "it" ? "Pick" : "Pick"}: </span><strong>{item.market}</strong></span>
+                              <span className="mb-pick"><span className="mb-pick-label">Pick: </span><strong>{item.market}</strong></span>
                             </span>
                             <span className="mb-row-tail">
                               <span className="mb-prob">{Math.round(item.prob * 100)}%</span>
@@ -4455,7 +5459,7 @@ function MatchBuilderTab({
                   </div>
                 ))}
                 {selected.length >= 5 && (
-                  <p className="mb-cap-note">{lang === "it" ? "Massimo 5 selezioni — deseleziona per cambiarne una." : "Maximum 5 selections — deselect one to swap."}</p>
+                  <p className="mb-cap-note">{pick5(lang, { it: "Massimo 5 selezioni — deseleziona per cambiarne una.", en: "Maximum 5 selections — deselect one to swap.", es: "Máximo 5 selecciones — deselecciona una para cambiarla.", fr: "Maximum 5 sélections — désélectionnez-en une pour la remplacer.", ru: "Максимум 5 выборов — снимите один, чтобы заменить." })}</p>
                 )}
               </div>
             )}
@@ -4762,45 +5766,108 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       .finally(() => setLoading(false));
   }, []);
 
-  const copy = lang === "it" ? {
-    eyebrow: "Classifica pubblica",
-    title: "Leaderboard Signal Desk",
-    subtitle: "10 punti per ogni scommessa vinta. La classifica si aggiorna ad ogni settlement.",
-    rank: "#",
-    player: "Giocatore",
-    points: "Punti",
-    won: "Vinte",
-    total: "Totali",
-    hitRate: "Hit Rate",
-    sport: "Sport",
-    systemWins: "Bet vinte dal sistema",
-    systemHitRate: "Hit rate sistema",
-    pointsFormula: "10 pt per vittoria",
-    yourRank: "La tua posizione",
-    notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
-    loading: "Caricamento classifica…",
-    noData: "Nessun dato disponibile.",
-    podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
-  } : {
-    eyebrow: "Public leaderboard",
-    title: "Signal Desk Leaderboard",
-    subtitle: "10 points for every won bet. Rankings update after each settlement.",
-    rank: "#",
-    player: "Player",
-    points: "Points",
-    won: "Won",
-    total: "Total",
-    hitRate: "Hit Rate",
-    sport: "Sport",
-    systemWins: "System wins",
-    systemHitRate: "System hit rate",
-    pointsFormula: "10 pts per win",
-    yourRank: "Your position",
-    notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
-    loading: "Loading leaderboard…",
-    noData: "No data available.",
-    podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
-  };
+  const copy = pick5(lang, {
+    it: {
+      eyebrow: "Classifica pubblica",
+      title: "Leaderboard Signal Desk",
+      subtitle: "10 punti per ogni scommessa vinta. La classifica si aggiorna ad ogni settlement.",
+      rank: "#",
+      player: "Giocatore",
+      points: "Punti",
+      won: "Vinte",
+      total: "Totali",
+      hitRate: "Hit Rate",
+      sport: "Sport",
+      systemWins: "Bet vinte dal sistema",
+      systemHitRate: "Hit rate sistema",
+      pointsFormula: "10 pt per vittoria",
+      yourRank: "La tua posizione",
+      notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
+      loading: "Caricamento classifica…",
+      noData: "Nessun dato disponibile.",
+      podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+    },
+    en: {
+      eyebrow: "Public leaderboard",
+      title: "Signal Desk Leaderboard",
+      subtitle: "10 points for every won bet. Rankings update after each settlement.",
+      rank: "#",
+      player: "Player",
+      points: "Points",
+      won: "Won",
+      total: "Total",
+      hitRate: "Hit Rate",
+      sport: "Sport",
+      systemWins: "System wins",
+      systemHitRate: "System hit rate",
+      pointsFormula: "10 pts per win",
+      yourRank: "Your position",
+      notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
+      loading: "Loading leaderboard…",
+      noData: "No data available.",
+      podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+    },
+    es: {
+      eyebrow: "Clasificación pública",
+      title: "Leaderboard Signal Desk",
+      subtitle: "10 puntos por cada apuesta ganada. La clasificación se actualiza tras cada settlement.",
+      rank: "#",
+      player: "Jugador",
+      points: "Puntos",
+      won: "Ganadas",
+      total: "Totales",
+      hitRate: "Hit Rate",
+      sport: "Deporte",
+      systemWins: "Bets ganadas por el sistema",
+      systemHitRate: "Hit rate del sistema",
+      pointsFormula: "10 pts por victoria",
+      yourRank: "Tu posición",
+      notOptedIn: "Activa la leaderboard en Ajustes para aparecer en la clasificación.",
+      loading: "Cargando clasificación…",
+      noData: "No hay datos disponibles.",
+      podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
+    },
+    fr: {
+      eyebrow: "Classement public",
+      title: "Leaderboard Signal Desk",
+      subtitle: "10 points pour chaque pari gagné. Le classement se met à jour après chaque settlement.",
+      rank: "#",
+      player: "Joueur",
+      points: "Points",
+      won: "Gagnés",
+      total: "Total",
+      hitRate: "Hit Rate",
+      sport: "Sport",
+      systemWins: "Bets gagnés par le système",
+      systemHitRate: "Hit rate du système",
+      pointsFormula: "10 pts par victoire",
+      yourRank: "Votre position",
+      notOptedIn: "Activez le leaderboard dans les Paramètres pour apparaître au classement.",
+      loading: "Chargement du classement…",
+      noData: "Aucune donnée disponible.",
+      podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
+    },
+    ru: {
+      eyebrow: "Публичный рейтинг",
+      title: "Leaderboard Signal Desk",
+      subtitle: "10 очков за каждую выигранную ставку. Рейтинг обновляется после каждого settlement.",
+      rank: "#",
+      player: "Игрок",
+      points: "Очки",
+      won: "Выиграно",
+      total: "Всего",
+      hitRate: "Hit Rate",
+      sport: "Спорт",
+      systemWins: "Ставки, выигранные системой",
+      systemHitRate: "Hit rate системы",
+      pointsFormula: "10 очков за победу",
+      yourRank: "Ваша позиция",
+      notOptedIn: "Включите leaderboard в Настройках, чтобы попасть в рейтинг.",
+      loading: "Загрузка рейтинга…",
+      noData: "Нет доступных данных.",
+      podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
+    },
+  });
 
   const podium = entries.slice(0, 3);
   const rest = entries.slice(3);
@@ -4846,11 +5913,11 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       {/* Hall of Fame */}
       {entries.length > 0 && (
         <div className="space-y-2">
-          <p className="eyebrow">{lang === "it" ? "Hall of Fame" : "Hall of Fame"}</p>
+          <p className="eyebrow">Hall of Fame</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                {lang === "it" ? "🏆 Top hit rate" : "🏆 Top hit rate"}
+                🏆 Top hit rate
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
@@ -4867,7 +5934,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             </div>
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                {lang === "it" ? "🔥 Più attivo" : "🔥 Most active"}
+                {pick5(lang, { it: "🔥 Più attivo", en: "🔥 Most active", es: "🔥 Más activo", fr: "🔥 Le plus actif", ru: "🔥 Самый активный" })}
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
@@ -4875,7 +5942,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
                   <>
                     <div className="text-sm font-bold text-[var(--am-text)] truncate">{top.name}</div>
                     <div className="text-lg font-black font-mono text-[var(--am-coral)]">{top.bets_total}</div>
-                    <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{lang === "it" ? "scommesse totali" : "total bets"}</div>
+                    <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{pick5(lang, { it: "scommesse totali", en: "total bets", es: "apuestas totales", fr: "paris totaux", ru: "всего ставок" })}</div>
                   </>
                 ) : null;
               })()}
@@ -5019,7 +6086,7 @@ function HistoryTab({ history, stats, loading }: {
       {/* Header — mockup .history .hh: title + subtitle + 2 KPIs from real stats */}
       <div className="hh">
         <div>
-          <h2>{lang === "it" ? "Storico" : "History"}</h2>
+          <h2>{pick5(lang, { it: "Storico", en: "History", es: "Historial", fr: "Historique", ru: "История" })}</h2>
           <p className="hsub">
             {lang === "it"
               ? "La prova di calibrazione: pick settlati, esiti reali. Trasparente, niente cherry-picking."
@@ -5043,7 +6110,7 @@ function HistoryTab({ history, stats, loading }: {
             <button key={s} className={sportFilter === s ? "on" : ""}
               onClick={() => { setSportFilter(s); setCompetitionFilter("all"); }}>
               {s === "all"
-                ? (lang === "it" ? "Tutti gli sport" : "All sports")
+                ? pick5(lang, { it: "Tutti gli sport", en: "All sports", es: "Todos los deportes", fr: "Tous les sports", ru: "Все виды спорта" })
                 : (<>
                     {s === "football"
                       ? <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>
@@ -5075,14 +6142,14 @@ function HistoryTab({ history, stats, loading }: {
         </div>
 
         <label className="am-mini-field">
-          <span>{lang === "it" ? "Competizione" : "Competition"}</span>
+          <span>{pick5(lang, { it: "Competizione", en: "Competition", es: "Competición", fr: "Compétition", ru: "Турнир" })}</span>
           <select value={effectiveCompetition} onChange={(e) => setCompetitionFilter(e.target.value)}>
             {["all", ...competitions].map((c) => {
               const n = countByCompetition(c);
               return (
                 <option key={c} value={c}>
                   {c === "all"
-                    ? `${lang === "it" ? "Tutte le competizioni" : "All competitions"} (${n})`
+                    ? `${pick5(lang, { it: "Tutte le competizioni", en: "All competitions", es: "Todas las competiciones", fr: "Toutes les compétitions", ru: "Все турниры" })} (${n})`
                     : `${c} (${n})`}
                 </option>
               );
@@ -5115,7 +6182,7 @@ function HistoryTab({ history, stats, loading }: {
               <tr>
                 <th>Match</th>
                 <th>Pick</th>
-                <th className="r">{lang === "it" ? "Esito" : "Result"}</th>
+                <th className="r">{pick5(lang, { it: "Esito", en: "Result", es: "Resultado", fr: "Résultat", ru: "Итог" })}</th>
               </tr>
             </thead>
             <tbody>
@@ -5123,10 +6190,10 @@ function HistoryTab({ history, stats, loading }: {
                 const r = resultOf(h);
                 const resClass = r === "won" || r === "lost" || r === "void" ? r : "pending";
                 const resLabel =
-                  r === "won" ? (lang === "it" ? "Vinta" : "Won")
-                  : r === "lost" ? (lang === "it" ? "Persa" : "Lost")
+                  r === "won" ? pick5(lang, { it: "Vinta", en: "Won", es: "Ganada", fr: "Gagné", ru: "Выиграна" })
+                  : r === "lost" ? pick5(lang, { it: "Persa", en: "Lost", es: "Perdida", fr: "Perdu", ru: "Проиграна" })
                   : r === "void" ? "Void"
-                  : (lang === "it" ? "Aperta" : "Pending");
+                  : pick5(lang, { it: "Aperta", en: "Pending", es: "Abierta", fr: "En cours", ru: "Открыта" });
                 return (
                   <tr key={h.id}>
                     <td className="fx-c">
@@ -5158,21 +6225,48 @@ function AssistanceTab() {
 
 function FAQTab() {
   const lang = useLang();
-  const faqItems = lang === "it" ? [
-    ["Cosa vede un utente pubblico?", "Solo struttura del prodotto e storico passato. I segnali live restano bloccati."],
-    ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
-    ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
-    ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
-    ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
-    ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
-  ] : [
-    ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
-    ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
-    ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
-    ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
-    ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
-    ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
-  ];
+  const faqItems = pick5(lang, {
+    it: [
+      ["Cosa vede un utente pubblico?", "Solo struttura del prodotto e storico passato. I segnali live restano bloccati."],
+      ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
+      ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+      ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
+      ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
+      ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
+    ],
+    en: [
+      ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
+      ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
+      ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+      ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
+      ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
+      ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
+    ],
+    es: [
+      ["¿Qué ve un usuario público?", "Solo la estructura del producto y el historial pasado. Las señales live siguen bloqueadas."],
+      ["¿Qué desbloquea el plan Free?", "Perfil, idioma y vista previa de cuenta, sin predicciones operativas."],
+      ["¿Qué desbloquea Signal Desk Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
+      ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
+      ["¿Cómo pago?", "Solo crypto — USDT TRC20. Envía el importe exacto a la dirección USDT indicada en el checkout."],
+      ["¿Cómo se activa el plan?", "Tras el TX hash, el plan se revisa internamente o se activa según la política operativa configurada."],
+    ],
+    fr: [
+      ["Que voit un utilisateur public ?", "Seulement la structure du produit et l'historique passé. Les signaux live restent verrouillés."],
+      ["Que débloque le plan Free ?", "Profil, langue et aperçu du compte, sans prédictions opérationnelles."],
+      ["Que débloque Signal Desk Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
+      ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
+      ["Comment payer ?", "Crypto uniquement — USDT TRC20. Envoyez le montant exact à l'adresse USDT indiquée au checkout."],
+      ["Comment le plan est-il activé ?", "Après le TX hash, le plan est vérifié en interne ou activé selon la politique opérationnelle configurée."],
+    ],
+    ru: [
+      ["Что видит публичный пользователь?", "Только структуру продукта и прошлую историю. Live-сигналы остаются заблокированы."],
+      ["Что открывает план Free?", "Профиль, язык и предпросмотр аккаунта, без рабочих прогнозов."],
+      ["Что открывает Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
+      ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
+      ["Как оплатить?", "Только крипто — USDT TRC20. Отправьте точную сумму на адрес USDT, указанный в checkout."],
+      ["Как активируется план?", "После TX hash план проверяется вручную или активируется согласно настроенной операционной политике."],
+    ],
+  });
   return <FAQSupportSection items={faqItems} />;
 }
 
@@ -5206,27 +6300,98 @@ function ClientAreaTab({
           ? "Review"
           : "Login";
   const notifications = profile?.notifications ?? defaultNotifications();
-  const statusCopy = lang === "it" ? {
-    currentPlan: "Piano attuale",
-    access: "Stato accesso",
-    timezone: "Timezone",
-    notifications: "Notifiche attive",
-    payment: "Pagamento",
-    paymentOk: "Accesso attivo",
-    paymentFree: "Free attivo",
-    paymentReview: "TX ricevuto",
-    paymentMissing: "Nessun piano selezionato",
-  } : {
-    currentPlan: "Current plan",
-    access: "Access status",
-    timezone: "Timezone",
-    notifications: "Active notifications",
-    payment: "Payment",
-    paymentOk: "Access active",
-    paymentFree: "Free active",
-    paymentReview: "TX received",
-    paymentMissing: "No plan selected",
-  };
+  const statusCopy = pick5(lang, {
+    it: {
+      title: "Dashboard cliente",
+      subtitle: "Profilo, piano e stato accesso in un solo posto.",
+      currentPlan: "Piano attuale",
+      access: "Stato accesso",
+      exchange: "Conto exchange",
+      timezone: "Timezone",
+      notifications: "Notifiche attive",
+      payment: "Pagamento",
+      paymentOk: "Accesso attivo",
+      paymentFree: "Free attivo",
+      paymentReview: "TX ricevuto",
+      paymentMissing: "Nessun piano selezionato",
+      connected: "Collegato",
+      notConnected: "Da collegare",
+      openDesk: "Apri desk",
+      logout: "Esci dall'account",
+    },
+    en: {
+      title: "Client dashboard",
+      subtitle: "Profile, plan and access status in one place.",
+      currentPlan: "Current plan",
+      access: "Access status",
+      exchange: "Exchange account",
+      timezone: "Timezone",
+      notifications: "Active notifications",
+      payment: "Payment",
+      paymentOk: "Access active",
+      paymentFree: "Free active",
+      paymentReview: "TX received",
+      paymentMissing: "No plan selected",
+      connected: "Connected",
+      notConnected: "Needs setup",
+      openDesk: "Open desk",
+      logout: "Log out",
+    },
+    es: {
+      title: "Dashboard del cliente",
+      subtitle: "Perfil, plan y estado de acceso en un solo lugar.",
+      currentPlan: "Plan actual",
+      access: "Estado de acceso",
+      exchange: "Cuenta exchange",
+      timezone: "Zona horaria",
+      notifications: "Notificaciones activas",
+      payment: "Pago",
+      paymentOk: "Acceso activo",
+      paymentFree: "Free activo",
+      paymentReview: "TX recibido",
+      paymentMissing: "Ningún plan seleccionado",
+      connected: "Conectado",
+      notConnected: "Por conectar",
+      openDesk: "Abrir desk",
+      logout: "Cerrar sesión",
+    },
+    fr: {
+      title: "Dashboard client",
+      subtitle: "Profil, plan et statut d'accès au même endroit.",
+      currentPlan: "Plan actuel",
+      access: "Statut d'accès",
+      exchange: "Compte exchange",
+      timezone: "Fuseau horaire",
+      notifications: "Notifications actives",
+      payment: "Paiement",
+      paymentOk: "Accès actif",
+      paymentFree: "Free actif",
+      paymentReview: "TX reçu",
+      paymentMissing: "Aucun plan sélectionné",
+      connected: "Connecté",
+      notConnected: "À connecter",
+      openDesk: "Ouvrir le desk",
+      logout: "Se déconnecter",
+    },
+    ru: {
+      title: "Дашборд клиента",
+      subtitle: "Профиль, план и статус доступа в одном месте.",
+      currentPlan: "Текущий план",
+      access: "Статус доступа",
+      exchange: "Аккаунт exchange",
+      timezone: "Часовой пояс",
+      notifications: "Активные уведомления",
+      payment: "Оплата",
+      paymentOk: "Доступ активен",
+      paymentFree: "Free активен",
+      paymentReview: "TX получен",
+      paymentMissing: "План не выбран",
+      connected: "Подключено",
+      notConnected: "Требует подключения",
+      openDesk: "Открыть desk",
+      logout: "Выйти из аккаунта",
+    },
+  });
   const paymentState = plan === "pending_payment"
     ? statusCopy.paymentReview
     : profileHasAccess(profile)
@@ -5269,7 +6434,7 @@ function ClientAreaTab({
       )}
       {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && profileHasAccess(profile) && (
         <button className="btn-secondary" type="button" onClick={openBillingPortal}>
-          {lang === "it" ? "Gestisci abbonamento" : "Manage subscription"}
+          {pick5(lang, { it: "Gestisci abbonamento", en: "Manage subscription", es: "Gestionar suscripción", fr: "Gérer l'abonnement", ru: "Управление подпиской" })}
         </button>
       )}
     </section>
@@ -5287,7 +6452,7 @@ function AccountHelpFooter() {
         <FAQTab />
       </details>
       <details className="account-help-acc">
-        <summary>{lang === "it" ? "Assistenza" : "Support"}</summary>
+        <summary>{pick5(lang, { it: "Assistenza", en: "Support", es: "Asistencia", fr: "Assistance", ru: "Поддержка" })}</summary>
         <AssistanceTab />
       </details>
     </div>
@@ -5317,7 +6482,7 @@ function AccountTab({
   const [section, setSection] = useState<AccountSection>("account");
   const sections: { key: AccountSection; label: string }[] = [
     { key: "account", label: "Account" },
-    { key: "piani",   label: lang === "it" ? "Piani" : "Plans" },
+    { key: "piani",   label: pick5(lang, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }) },
   ];
   return (
     <div className="account-tab">
@@ -5339,7 +6504,7 @@ function AccountTab({
           {profile && (
             <div className="client-area-footer">
               <button className="btn-secondary" onClick={onLogout}>
-                {lang === "it" ? "Esci dall'account" : "Log out"}
+                {pick5(lang, { it: "Esci dall'account", en: "Log out", es: "Cerrar sesión", fr: "Se déconnecter", ru: "Выйти" })}
               </button>
             </div>
           )}
@@ -5393,7 +6558,7 @@ function LiveNowStrip({
 
   return (
     <div className="am-ticker">
-      <span className="t-lab"><span className="pulse" />{lang === "it" ? "In play" : "In play"}</span>
+      <span className="t-lab"><span className="pulse" />In play</span>
       <div className="scroll">
         {liveFootball.map(([id, s]) => (
           <span key={`f-${id}`} className="ti">
@@ -5657,10 +6822,10 @@ function UnifiedBetsTab({
     <>
       {!isLoggedIn && (
         <div className="flex items-center justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-gray-300">
-          <span>{lang === "it" ? "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica." : "Register to save selections, get alerts and unlock auto-execution."}</span>
+          <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica.", en: "Register to save selections, get alerts and unlock auto-execution.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear la ejecución automática.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer l'exécution automatique.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть авто-исполнение." })}</span>
           <div className="flex gap-2 shrink-0">
-            <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{lang === "it" ? "Accedi" : "Sign In"}</button>
-            <button className="btn-primary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onRegister}>{lang === "it" ? "Registrati" : "Register"}</button>
+            <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{pick5(lang, { it: "Accedi", en: "Sign In", es: "Acceder", fr: "Connexion", ru: "Войти" })}</button>
+            <button className="btn-primary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onRegister}>{pick5(lang, { it: "Registrati", en: "Register", es: "Registrarse", fr: "S'inscrire", ru: "Регистрация" })}</button>
           </div>
         </div>
       )}
@@ -5784,8 +6949,8 @@ export default function Dashboard() {
       .catch(() => {});
     return () => { alive = false; };
   }, []);
-  const toggleLanguage = () => {
-    const next: Lang = LANGUAGES[(LANGUAGES.indexOf(uiLanguage) + 1) % LANGUAGES.length];
+  const selectLanguage = (next: Lang) => {
+    if (next === uiLanguage) return;
     setUiLanguage(next);
     localStorage.setItem("agentic-lang", next);
     trackEvent("language_change", { language: next });
@@ -6344,9 +7509,9 @@ export default function Dashboard() {
     }
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
-    { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
+    { tab: "bets",        label: "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "history",      label: tNav.nav_history },
-    { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
+    { tab: "leaderboard", label: tNav.nav_leaderboard },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
@@ -6408,9 +7573,9 @@ export default function Dashboard() {
 
           <nav className="am-topnav">
             {[
-              { tab: "bets" as Tab, label: uiLanguage === "it" ? "Mercati" : "Markets" },
+              { tab: "bets" as Tab, label: tNav.nav_markets },
               { tab: "history" as Tab, label: tNav.nav_history },
-              { tab: "leaderboard" as Tab, label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
+              { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
               ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
               { tab: "partners" as Tab, label: tNav.nav_partner },
             ].map((item) => (
@@ -6426,7 +7591,7 @@ export default function Dashboard() {
 
           <div className="am-topright">
             {/* theme toggle segmentato DARK/LIGHT — riusa toggleTheme/theme esistenti */}
-            <div className="am-tt" role="group" aria-label={uiLanguage === "it" ? "Tema" : "Theme"}>
+            <div className="am-tt" role="group" aria-label={tNav.theme_aria}>
               <button
                 className={theme === "dark" ? "on" : ""}
                 aria-pressed={theme === "dark"}
@@ -6451,17 +7616,15 @@ export default function Dashboard() {
             ) : (
               <>
                 <button className="am-auth-secondary" onClick={() => openAuth("login")}>
-                  {uiLanguage === "it" ? "Accedi" : "Sign In"}
+                  {tNav.auth_signin}
                 </button>
                 <button className="am-auth-primary" onClick={() => openAuth("create")}>
-                  {uiLanguage === "it" ? "Registrati" : "Register"}
+                  {tNav.auth_register}
                 </button>
               </>
             )}
 
-            <button className="am-iconbtn" onClick={toggleLanguage} title={uiLanguage === "it" ? "Lingua: Italiano" : "Language"}>
-              {uiLanguage.toUpperCase()}
-            </button>
+            <LangDropdown value={uiLanguage} onSelect={selectLanguage} />
           </div>
         </div>
       </header>
@@ -6488,7 +7651,7 @@ export default function Dashboard() {
               ))}
               {/* ── IN EVIDENZA group ── */}
               <span className="rail-sep" />
-              <span className="rail-lab is-second">{uiLanguage === "it" ? "In evidenza" : "Featured"}</span>
+              <span className="rail-lab is-second">{tNav.featured_label}</span>
               {/* Track B: World Cup hub is a route, not a tab */}
               <Link className="rail-item" href="/world-cup">
                 <svg className="rail-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
@@ -6516,6 +7679,12 @@ export default function Dashboard() {
                     : <>Your account profile, plan and settings.</>
                 ) : uiLanguage === "it" ? (
                   <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                ) : uiLanguage === "es" ? (
+                  <>Probabilidades <b>calibradas por un modelo</b> en fútbol y tenis. El modelo tiene <b>una</b> opinión, no charlas de bar.</>
+                ) : uiLanguage === "fr" ? (
+                  <>Probabilités <b>calibrées par un modèle</b> sur le football et le tennis. Le modèle a <b>une seule</b> opinion, pas des avis de comptoir.</>
+                ) : uiLanguage === "ru" ? (
+                  <>Вероятности, <b>калиброванные моделью</b> по футболу и теннису. У модели <b>одно</b> мнение, а не разговоры за барной стойкой.</>
                 ) : (
                   <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
@@ -6525,16 +7694,16 @@ export default function Dashboard() {
             <div className="am-statbar">
               <div className="am-kpi">
                 <span className="v">{predictions.length + tennisMatches.length}</span>
-                <span className="l">{uiLanguage === "it" ? "Eventi" : "Events"}</span>
+                <span className="l">{tNav.kpi_events_lbl}</span>
               </div>
               <div className="am-kpi">
                 <span className="v sig">{withEdgeCount}</span>
-                <span className="l">{uiLanguage === "it" ? "Con edge" : "With edge"}</span>
+                <span className="l">{tNav.kpi_withedge}</span>
               </div>
               {historyV2Stats?.win_rate && (
                 <div className="am-kpi">
                   <span className="v">{historyV2Stats.win_rate}</span>
-                  <span className="l">{uiLanguage === "it" ? "Hit · 100g" : "Hit · 100g"}</span>
+                  <span className="l">{tNav.kpi_hit}</span>
                 </div>
               )}
             </div>
@@ -6543,7 +7712,7 @@ export default function Dashboard() {
 
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-              <span>⚽ {uiLanguage === "it" ? "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026)." : "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026)."}</span>
+              <span>⚽ {tNav.season_pause}</span>
             </div>
           )}
           {tab === "bets" && (
@@ -6624,14 +7793,14 @@ export default function Dashboard() {
         <div>{tUI.footer_note}</div>
         <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] text-gray-600">
           <span className="border border-gray-600 rounded px-1.5 py-0.5 font-bold">18+</span>
-          <span>{uiLanguage === "it" ? "Le performance passate non garantiscono risultati futuri." : "Past performance does not guarantee future results."}</span>
+          <span>{tUI.footer_pastperf}</span>
           <span>|</span>
           <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">GamCare</a>
           <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">BeGambleAware</a>
           <span>|</span>
-          <span>{uiLanguage === "it" ? "I link partner sono affiliati commerciali." : "Partner links are commercial affiliates."}</span>
+          <span>{tUI.footer_partnerlinks}</span>
           <span>|</span>
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{uiLanguage === "it" ? "Privacy Policy" : "Privacy Policy"}</a>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{tUI.footer_privacy}</a>
         </div>
         <button
           type="button"

@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
+import LangDropdown from "@/components/LangDropdown";
 
 type AuthState =
   | { status: "loading" }
@@ -120,8 +121,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
       window.removeEventListener("storage", sync);
     };
   }, []);
-  const toggleLang = () => {
-    const next: SiteLang = lang === "it" ? "en" : "it";
+  const selectLang = (next: SiteLang) => {
     setLang(next);
     try { localStorage.setItem("agentic-lang", next); } catch {}
     window.dispatchEvent(new Event("agentic-lang-change"));
@@ -174,9 +174,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
 
-          <button className="am-iconbtn" onClick={toggleLang} title={lang === "it" ? "Lingua: Italiano" : "Language"}>
-            {lang.toUpperCase()}
-          </button>
+          <LangDropdown value={lang} onSelect={selectLang} />
         </div>
       </div>
     </header>
