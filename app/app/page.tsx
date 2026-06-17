@@ -640,7 +640,11 @@ const useLive = () => useContext(LiveCtx);
 // record to this prediction so the scorebar AND the realized-result logic stay
 // correct. Domestic leagues still hit by match_id first → no behaviour change.
 function normLiveTeam(s?: string | null) {
-  return (s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Word-order tolerant: ESPN renders "Congo DR" where our rows store
+  // "DR Congo" — concatenating in source order made the keys diverge and the
+  // live score never matched. Token-sort so both collapse to the same key.
+  return (s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean).sort().join("");
 }
 function findLiveByTeams(map: Record<string, LiveScore>, home?: string | null, away?: string | null): LiveScore | undefined {
   const key = [normLiveTeam(home), normLiveTeam(away)].sort().join("|");
@@ -1323,6 +1327,18 @@ function SportsbookBoard({
     .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
   const t = useT();
   const lang = useLang();
+  // Live-first ordering: in-play (and paused) matches always lead the board,
+  // above the chosen sort. Same matching as the cards (id → team-name fallback).
+  const liveMap = useLive();
+  const liveTennisMap = useLiveTennis();
+  const isFootballLive = (p: Prediction) => {
+    const l = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
+    return l?.match_status === "IN_PLAY" || l?.match_status === "PAUSED";
+  };
+  const isTennisLive = (m: TennisMatch) => {
+    const lm = liveTennisMap[tennisPairKey(m.player1, m.player2)];
+    return !!lm && !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || "");
+  };
   const query = searchTerm.trim().toLowerCase();
   // #HOUSE-BANNERS-2: dati reali per ticker/chip/mini-board del feed e interstitial.
   const boardData = deskBannerData(predictions, tennisMatches);
@@ -1380,6 +1396,8 @@ function SportsbookBoard({
   const surfaceOptions = Array.from(new Set(tennisMatches.map((m) => m.surface))).sort();
 
   const sortFootball = (rows: Prediction[]) => rows.sort((a, b) => {
+    const la = isFootballLive(a), lb = isFootballLive(b);
+    if (la !== lb) return la ? -1 : 1;
     if (sortMode === "time") return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
     if (sortMode === "odds") return (selectedFootballOdds(b) ?? 0) - (selectedFootballOdds(a) ?? 0);
     if (sortMode === "probability") return selectedFootballProbability(b) - selectedFootballProbability(a);
@@ -1387,6 +1405,8 @@ function SportsbookBoard({
   });
 
   const sortTennis = (rows: TennisMatch[]) => rows.sort((a, b) => {
+    const la = isTennisLive(a), lb = isTennisLive(b);
+    if (la !== lb) return la ? -1 : 1;
     if (sortMode === "time") return new Date(a.scheduled).getTime() - new Date(b.scheduled).getTime();
     if (sortMode === "odds") return (selectedTennisOdds(b) ?? 0) - (selectedTennisOdds(a) ?? 0);
     if (sortMode === "probability") return selectedTennisProbability(b) - selectedTennisProbability(a);
