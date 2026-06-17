@@ -35,6 +35,10 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Il desk in tasca. In arrivo su iOS e Android.",
     appSoon: "IN ARRIVO",
+    spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali",
+    cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
+    cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
+    cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 19.90 · Pro 49.90 USDT/mese.", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. 18+.",
     privacy: "Privacy",
   },
@@ -57,6 +61,10 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "The desk in your pocket. Coming soon to iOS and Android.",
     appSoon: "COMING SOON",
+    spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup",
+    cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
+    cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
+    cardPlans: "Plans", cardPlansDesc: "Free to try · Base 19.90 · Pro 49.90 USDT/month.", cardPlansBtn: "See plans",
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. 18+.",
     privacy: "Privacy",
   },
@@ -79,6 +87,10 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
     appSoon: "PRÓXIMAMENTE",
+    spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial",
+    cardTrack: "Track record", cardTrackDesc: "66.3% de acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
+    cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
+    cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 19.90 · Pro 49.90 USDT/mes.", cardPlansBtn: "Ver planes",
     risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. 18+.",
     privacy: "Privacidad",
   },
@@ -101,6 +113,10 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
     appSoon: "BIENTÔT",
+    spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde",
+    cardTrack: "Track record", cardTrackDesc: "66,3% de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
+    cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
+    cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 19.90 · Pro 49.90 USDT/mois.", cardPlansBtn: "Voir les offres",
     risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. 18+.",
     privacy: "Confidentialité",
   },
@@ -123,6 +139,10 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
     appSoon: "СКОРО",
+    spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ",
+    cardTrack: "Track record", cardTrackDesc: "66.3% попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
+    cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
+    cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 19.90 · Pro 49.90 USDT/мес.", cardPlansBtn: "Тарифы",
     risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. 18+.",
     privacy: "Конфиденциальность",
   },
@@ -149,10 +169,23 @@ function BrandMark({ size = 32 }: { size?: number }) {
   );
 }
 
+// #HOME-SPORTS-1: la topnav è auth-aware (come SiteTopbar). Se loggato mostra il
+// nome utente + piano; se anonimo, Sign In / Register.
+type AuthState =
+  | { status: "loading" }
+  | { status: "anonymous" }
+  | { status: "authed"; identifier: string; plan: string; name: string | null };
+function planPillLabel(plan: string): string {
+  if (["base", "premium", "admin_full"].includes(plan)) return "PRO";
+  if (plan === "free") return "FREE";
+  return "SETUP";
+}
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
+  const [auth, setAuth] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
     setMounted(true);
@@ -162,6 +195,32 @@ export default function LandingPage() {
       const dt = document.documentElement.getAttribute("data-theme");
       if (dt === "light" || dt === "dark") setTheme(dt);
     } catch {}
+  }, []);
+
+  // Auth-aware topnav: chiede a /api/auth (stessa chiamata del desk) e mostra
+  // il nome utente solo se loggato; altrimenti i link Sign In / Register.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch("/api/auth", { credentials: "same-origin", cache: "no-store" });
+        if (cancelled) return;
+        if (resp.ok) {
+          const data = await resp.json();
+          setAuth({
+            status: "authed",
+            identifier: String(data.identifier ?? ""),
+            plan: String(data.plan ?? ""),
+            name: data.name ? String(data.name) : null,
+          });
+        } else {
+          setAuth({ status: "anonymous" });
+        }
+      } catch {
+        if (!cancelled) setAuth({ status: "anonymous" });
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const t = COPY[lang];
@@ -192,58 +251,77 @@ export default function LandingPage() {
             <button className={theme === "dark" ? "on" : ""} onClick={() => setThemeMode("dark")}>DARK</button>
             <button className={theme === "light" ? "on" : ""} onClick={() => setThemeMode("light")}>LIGHT</button>
           </div>
-          <Link href="/app" className="lp-nav-link">{t.signin}</Link>
-          <Link href="/app?tab=account" className="lp-nav-cta">{t.register}</Link>
+          {auth.status === "authed" ? (
+            <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
+              {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
+            </Link>
+          ) : auth.status === "anonymous" ? (
+            <>
+              <Link href="/app" className="lp-nav-link">{t.signin}</Link>
+              <Link href="/app?tab=account" className="lp-nav-cta">{t.register}</Link>
+            </>
+          ) : null /* loading: niente flicker di stato errato */}
           <button className="lp-lang" onClick={toggleLang}>{lang.toUpperCase()}</button>
         </div>
       </header>
 
-      {/* ── Hero (#LANDING-HERO-IMG: immagine unica "BetRedge All Sports", self-contained) ── */}
+      {/* ── Hero (#HOME-SPORTS-1: immagine "All Sports" ricreata senza i loghi vecchi.
+           Ancorata in alto (teste salve) + accorciata; gli sport sono una barra
+           cliccabile attaccata SOTTO l'immagine — continua col banner. ── */}
       <section className="lp-hero lp-hero-img">
         <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-allsports.jpg)" }} role="img" aria-label="BetRedge — All Sports" />
       </section>
-
-      {/* ── CTA ────────────────────────────────────────────────── */}
-      <div className="lp-cta">
-        <Link href="/app" className="lp-btn lp-btn-coral">{t.viewNow}</Link>
-        <Link href="/app?tab=account" className="lp-btn lp-btn-cobalt">{t.joinNow}</Link>
-      </div>
+      <nav className="lp-hero-sports" aria-label="Sports">
+        <Link href="/app?tab=bets&sport=football" className="lp-sport">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ball" /></svg>
+          <b>{t.spFootball}</b>
+        </Link>
+        <Link href="/app?tab=bets&sport=tennis" className="lp-sport">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-tball" /></svg>
+          <b>{t.spTennis}</b>
+        </Link>
+        <Link href="/world-cup" className="lp-sport">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#g-trophy" /></svg>
+          <b>{t.spWorldCup}</b><span className="lp-sport-live">LIVE</span>
+        </Link>
+      </nav>
 
       {/* ── Cards (#LANDING-PHOTO: sfondo foto sport + overlay coral, logica banner) ── */}
       <section className="lp-cards">
-        {/* 1 — brand */}
+        {/* 1 — track record (prova reale, FTC) */}
         <article className="lp-card lp-card-photo">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/stadium-crowd.jpg)" }} />
-          <div className="lp-card-ov coral" />
-          <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
-          <div className="lp-card-body lp-card-brand">
-            <p className="lp-card-title">{t.cardBrandTitle}</p>
-          </div>
-          <Link href="/app?tab=account" className="lp-card-btn coral">{t.signNow}</Link>
-        </article>
-
-        {/* 2 — football odds */}
-        <article className="lp-card lp-card-photo">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/football-ball.jpg)" }} />
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-track.jpg)" }} />
           <div className="lp-card-ov coral" />
           <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
           <div className="lp-card-body">
-            <p className="lp-card-title">{t.cardFootball}</p>
-            <p className="lp-card-desc">{t.cardFootballDesc}</p>
+            <p className="lp-card-title">{t.cardTrack}</p>
+            <p className="lp-card-desc">{t.cardTrackDesc}</p>
           </div>
-          <Link href="/app?tab=bets&sport=football" className="lp-card-btn coral">{t.playNow}</Link>
+          <Link href="/app?tab=history" className="lp-card-btn coral">{t.cardTrackBtn}</Link>
         </article>
 
-        {/* 3 — live odds & insights */}
+        {/* 2 — modello vs mercato */}
         <article className="lp-card lp-card-photo">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/basket-court.jpg)" }} />
-          <div className="lp-card-ov cobalt" />
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-model.jpg)" }} />
+          <div className="lp-card-ov coral" />
           <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
           <div className="lp-card-body">
-            <p className="lp-card-title">{t.cardLive}</p>
-            <p className="lp-card-desc">{t.cardLiveDesc}</p>
+            <p className="lp-card-title">{t.cardModel}</p>
+            <p className="lp-card-desc">{t.cardModelDesc}</p>
           </div>
-          <Link href="/app?tab=bets" className="lp-card-btn cobalt-outline">{t.playNow}</Link>
+          <Link href="/app?tab=bets" className="lp-card-btn coral">{t.cardModelBtn}</Link>
+        </article>
+
+        {/* 3 — piani */}
+        <article className="lp-card lp-card-photo">
+          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-plans.jpg)" }} />
+          <div className="lp-card-ov coral" />
+          <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
+          <div className="lp-card-body">
+            <p className="lp-card-title">{t.cardPlans}</p>
+            <p className="lp-card-desc">{t.cardPlansDesc}</p>
+          </div>
+          <Link href="/app?tab=account" className="lp-card-btn cobalt-outline">{t.cardPlansBtn}</Link>
         </article>
 
         {/* 4 — app */}

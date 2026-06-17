@@ -6533,8 +6533,39 @@ button:disabled {
 /* #LANDING-HERO-IMG: hero a immagine unica self-contained (BetRedge All Sports).
    aspect-ratio = rapporto dell'immagine (1280/512) così il testo stampato dentro
    non viene mai croppato a nessuna larghezza. */
-.lp-hero-img { display: block; position: relative; aspect-ratio: 1280 / 512; padding: 0; overflow: hidden; }
-.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+/* #HOME-SPORTS-1: immagine ancorata in alto (background-position top) e accorciata
+   (aspect più panoramico) → le TESTE in alto restano sempre intere, si taglia solo
+   il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
+.lp-hero-img { display: block; position: relative; aspect-ratio: 1642 / 360; padding: 0; overflow: hidden; }
+.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center top; z-index: 0; }
+@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1642 / 620; } }
+
+/* #HOME-SPORTS-1: barra sport reale (cliccabile) ATTACCATA sotto l'immagine —
+   sfondo scuro continuo col banner + sottile seam coral. Niente più overlay/
+   allineamento fragile; solo i nostri sport. */
+.lp-hero-sports {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: clamp(8px, 1.4vw, 18px); padding: clamp(14px, 1.8vw, 22px) 12px;
+  background: linear-gradient(180deg, #07080d 0%, var(--am-bg) 100%);
+  border-top: 1px solid rgba(229, 72, 77, .22);
+}
+.lp-sport {
+  display: inline-flex; align-items: center; gap: clamp(6px, .8vw, 10px); white-space: nowrap;
+  padding: clamp(5px, .7vw, 9px) clamp(12px, 1.4vw, 18px);
+  border-radius: 999px; border: 1.5px solid var(--am-coral);
+  background: rgba(10, 11, 16, .68); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  color: #fff; font-weight: 700; font-size: clamp(11px, 1.25vw, 15px); letter-spacing: .01em;
+  text-decoration: none; box-shadow: 0 0 16px rgba(229, 72, 77, .28);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.lp-sport:hover { transform: translateY(-2px); background: rgba(10, 11, 16, .84); box-shadow: 0 0 24px rgba(229, 72, 77, .55); }
+.lp-sport svg { width: clamp(20px, 2vw, 28px); height: clamp(20px, 2vw, 28px); color: #fff; flex: 0 0 auto; }
+.lp-sport-live { background: var(--am-coral); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .1em; border-radius: 999px; padding: 2px 7px; }
+@media (max-width: 640px) {
+  .lp-hero-sports { gap: 8px; padding: 12px 10px; }
+  .lp-sport { font-size: 11px; padding: 6px 12px; }
+  .lp-sport svg { width: 18px; height: 18px; }
+}
 
 /* ── CTA ── */
 .lp-cta { display: flex; justify-content: center; gap: 16px; padding: 4px 16px 40px; flex-wrap: wrap; }
@@ -6551,6 +6582,7 @@ button:disabled {
 .lp-cards {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 1.6vw, 20px);
   padding: 0 clamp(16px, 4vw, 56px) clamp(28px, 5vw, 56px);
+  margin-top: clamp(20px, 2.5vw, 32px);
 }
 .lp-card {
   display: flex; flex-direction: column; gap: 14px;
@@ -6566,7 +6598,8 @@ button:disabled {
 .lp-card:hover { transform: translateY(-4px); border-color: var(--am-line-2); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
 /* #LANDING-PHOTO: card con sfondo foto + overlay coral/cobalt (logica banner) */
 .lp-card-photo { color: #fff; }
-.lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(.85) brightness(.78); }
+.lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(1.12) contrast(1.08) brightness(.74); transition: transform .45s ease; }
+.lp-card:hover .lp-card-photo .lp-card-bg, .lp-card-photo:hover .lp-card-bg { transform: scale(1.06); }
 .lp-card-photo .lp-card-ov { position: absolute; inset: 0; z-index: 0; }
 .lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(255,106,94,.42) 100%); }
 .lp-card-photo .lp-card-ov.cobalt { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(59,130,246,.42) 100%); }
@@ -6576,7 +6609,7 @@ button:disabled {
 .lp-card-head { display: flex; align-items: center; gap: 8px; }
 .lp-card-head .am-wm { font-size: 15px; }
 .lp-card-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px 4px; }
-.lp-card-title { font-weight: 800; font-size: 15px; letter-spacing: .02em; margin: 0; }
+.lp-card-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 1.7vw, 26px); line-height: 1.04; letter-spacing: .01em; text-transform: uppercase; margin: 0; text-shadow: 0 2px 12px rgba(0,0,0,.45); }
 .lp-card-desc { font-size: 12.5px; line-height: 1.45; color: var(--am-muted); margin: 0; }
 .lp-card-glyph { width: 34px; height: 34px; color: var(--am-coral); }
 .lp-card-orb {
