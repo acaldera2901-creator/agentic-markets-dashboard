@@ -11,6 +11,7 @@ import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { HouseBanner } from "@/components/HouseBanner";
 import { pickCampaign } from "@/lib/house-banners";
+import LangDropdown from "@/components/LangDropdown";
 
 type Lang = "it" | "en" | "es" | "fr" | "ru";
 const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
@@ -306,8 +307,7 @@ export default function LandingPage() {
 
   const t = COPY[lang];
 
-  const toggleLang = () => {
-    const next: Lang = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+  const selectLang = (next: Lang) => {
     setLang(next);
     try { localStorage.setItem("agentic-lang", next); } catch {}
   };
@@ -342,7 +342,7 @@ export default function LandingPage() {
               <a href="/app?tab=account" className="lp-nav-cta">{t.register}</a>
             </>
           ) : null /* loading: niente flicker di stato errato */}
-          <button className="lp-lang" onClick={toggleLang}>{lang.toUpperCase()}</button>
+          <LangDropdown value={lang} onSelect={selectLang} variant="landing" />
         </div>
       </header>
 

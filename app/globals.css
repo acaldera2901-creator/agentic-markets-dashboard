@@ -6477,6 +6477,36 @@ button:disabled {
   padding: 7px 10px; cursor: pointer;
 }
 
+/* ── Language dropdown (shared: landing topnav, desk topbar, WC chrome) ── */
+.lang-dd { position: relative; display: inline-flex; }
+.lang-dd-trigger { display: inline-flex; align-items: center; gap: 5px; }
+.lang-dd-caret { font-size: 9px; line-height: 1; opacity: .7; transition: transform .18s; }
+.lang-dd-trigger[aria-expanded="true"] .lang-dd-caret { transform: rotate(180deg); }
+.lang-dd-trigger[aria-expanded="true"] { border-color: var(--am-coral); color: var(--am-text, var(--text)); }
+.lang-dd-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 168px; margin: 0; padding: 6px; list-style: none;
+  background: var(--am-panel, var(--panel)); border: 1px solid var(--am-line, var(--line-2));
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+  animation: langDdIn .14s ease;
+}
+@keyframes langDdIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.lang-dd-item {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  font: inherit; font-size: 13px; font-weight: 600; text-align: left;
+  color: var(--am-text, var(--text)); background: transparent; border: 0; border-radius: 8px;
+  padding: 8px 10px; cursor: pointer; transition: background .14s, color .14s;
+}
+.lang-dd-item:hover, .lang-dd-item:focus-visible { background: var(--am-inset, var(--panel-2)); outline: none; }
+.lang-dd-item:focus-visible { box-shadow: inset 0 0 0 1px var(--am-coral); }
+.lang-dd-item[aria-selected="true"] { color: var(--am-coral); }
+.lang-dd-item[aria-selected="true"] .lang-dd-code { color: var(--am-coral); border-color: var(--am-coral); }
+.lang-dd-code {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--am-muted, var(--muted));
+  border: 1px solid var(--am-line, var(--line-2)); border-radius: 6px; padding: 2px 6px;
+}
+
 /* ── Hero ── */
 .lp-hero {
   display: grid; grid-template-columns: 1fr minmax(280px, 0.9fr) 1fr;
