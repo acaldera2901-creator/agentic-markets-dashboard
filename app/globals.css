@@ -6111,6 +6111,24 @@ button:disabled {
   .mb-slip-col { position: static; }
 }
 
+/* The signal list can be long (Premium sees every match). Bound it and scroll
+   inside the column so the page doesn't grow tall and scroll the sticky slip
+   out of view (which left a big empty right column). Natural flow on mobile,
+   where the slip sits on top. */
+.mb-select-scroll {
+  max-height: calc(100vh - 230px);
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--am-line-2) transparent;
+}
+.mb-select-scroll::-webkit-scrollbar { width: 8px; }
+.mb-select-scroll::-webkit-scrollbar-thumb { background: var(--am-line-2); border-radius: 99px; }
+.mb-select-scroll::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 900px) {
+  .mb-select-scroll { max-height: none; overflow: visible; padding-right: 0; }
+}
+
 /* Sport group: small band (echoes .sport-band) above each group of rows. */
 .mb-group + .mb-group { margin-top: 22px; }
 .mb-group-head {
@@ -6376,9 +6394,15 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) { .am-grain { /* statica comunque, nessun motion da spegnere */ } }
 
 .place-bet-menu { position: relative; display: inline-block; }
-/* quando aperto, eleva il wrapper sopra le card sorelle (le card sono z-index
-   auto e non creano stacking context, quindi questo le scavalca tutte). */
 .place-bet-menu.open { z-index: 1000; }
+/* Il dropdown è absolute dentro la card e deborda sotto, nell'area della card
+   successiva. Alzare solo .place-bet-menu NON basta: la card è il grid-item
+   (z-index auto) e .pred:hover ha un transform → stacking context, quindi lo
+   z-index del menu resta intrappolato nella card e la card dopo (DOM order) gli
+   va sopra. Fix: eleviamo la card stessa che contiene un menu aperto. Copre sia
+   il board home (.pred = grid-item) sia il World Cup (.card > .pred = grid-item). */
+.pred:has(.place-bet-menu.open),
+.card:has(.place-bet-menu.open) { position: relative; z-index: 50; }
 .place-bet-dropdown {
   position: absolute; z-index: 50; margin-top: 6px; min-width: 200px;
   display: flex; flex-direction: column; gap: 4px; padding: 8px;

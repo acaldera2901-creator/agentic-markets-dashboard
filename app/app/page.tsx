@@ -4166,6 +4166,7 @@ interface MbWcRow {
 
 function MatchBuilderTab({
   predictions, tennisMatches, onRegister, isLoggedIn, sharedIds = [], refCode = "",
+  isUnlocked = false, isPremium = false, onUnlock,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -4173,6 +4174,11 @@ function MatchBuilderTab({
   isLoggedIn: boolean;
   sharedIds?: string[];
   refCode?: string;
+  // Plan gate: Free/anon see the builder behind a LockedGate (upsell); Base
+  // sees the 3 strongest signals; Premium/admin see every signal.
+  isUnlocked?: boolean;
+  isPremium?: boolean;
+  onUnlock?: () => void;
 }) {
   const lang = useLang();
   const [selected, setSelected] = useState<string[]>(sharedIds);
@@ -4282,7 +4288,13 @@ function MatchBuilderTab({
       .filter((m) => m.locked && m.player1 && m.player2)
       .map((m) => [`t_${m.id}`, `${m.player1} vs ${m.player2}`] as [string, string]),
   ]);
-  const selectedItems = items.filter((i) => selected.includes(i.id));
+  // Plan gate on the selectable inventory: Premium/admin see every signal;
+  // Base sees only the 3 strongest (by model probability). Free/anon never
+  // interact here — the whole builder sits behind the LockedGate below.
+  const visibleItems = isPremium
+    ? items
+    : [...items].sort((a, b) => b.prob - a.prob).slice(0, 3);
+  const selectedItems = visibleItems.filter((i) => selected.includes(i.id));
   const lockedSelected = selected.filter((id) => !items.some((i) => i.id === id) && lockedLabels.has(id));
   const combinedProb = selectedItems.reduce((acc, i) => acc * i.prob, 1);
   const isSharedView = sharedIds.length > 0 && !isLoggedIn;
@@ -4333,17 +4345,18 @@ function MatchBuilderTab({
   // Presentation-only grouping for scannability. Derived from the item id
   // prefix (f_/w_/t_) — same data, just clustered by sport family.
   const mbGroups: { key: string; head: string; glyph: string; amber: boolean; rows: MbItem[] }[] = [
-    { key: "football", head: lang === "it" ? "Calcio" : "Football", glyph: "#g-ball", amber: false, rows: items.filter((i) => i.id.startsWith("f_")) },
-    { key: "tennis", head: "Tennis", glyph: "#g-tball", amber: false, rows: items.filter((i) => i.id.startsWith("t_")) },
-    { key: "worldcup", head: "World Cup", glyph: "#g-trophy", amber: true, rows: items.filter((i) => i.id.startsWith("w_")) },
+    { key: "football", head: lang === "it" ? "Calcio" : "Football", glyph: "#g-ball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_")) },
+    { key: "tennis", head: "Tennis", glyph: "#g-tball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("t_")) },
+    { key: "worldcup", head: "World Cup", glyph: "#g-trophy", amber: true, rows: visibleItems.filter((i) => i.id.startsWith("w_")) },
   ].filter((g) => g.rows.length > 0);
 
   return (
     <div className="space-y-6 p-4">
-      {/* Header */}
+      {/* Header — the page deskhead already renders the big "Match Builder"
+          title, so the component keeps only the creator-tool framing (eyebrow +
+          subtitle) to avoid the duplicated heading. */}
       <div className="space-y-1">
         <p className="eyebrow">{copy.eyebrow}</p>
-        <h2 className="text-xl font-bold text-[var(--am-text)]">{copy.title}</h2>
         <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{copy.subtitle}</p>
       </div>
 
@@ -4371,16 +4384,19 @@ function MatchBuilderTab({
         </div>
       )}
 
-      {/* ── Two columns on desktop: selectable list (left) + sticky slip (right) ── */}
+      {/* ── Two columns on desktop: selectable list (left) + sticky slip (right) ──
+           Free/anon: the whole builder sits behind the LockedGate (blurred,
+           pointer-events off) with a plan/auth upsell — same wall as the board. */}
       {!isSharedView && (
+        <LockedGate isUnlocked={isUnlocked} mode={isLoggedIn ? "plan" : "auth"} onUnlock={() => onUnlock?.()}>
         <div className="mb-layout">
           {/* LEFT — scannable selectable list, grouped by sport */}
           <div className="min-w-0">
             <p className="text-xs font-mono text-[var(--am-muted)] uppercase tracking-wider mb-3">{copy.selectTitle}</p>
-            {items.length === 0 ? (
+            {visibleItems.length === 0 ? (
               <div className="am-surface p-8 text-center text-xs font-mono text-[var(--am-muted-2)]">{copy.noSignals}</div>
             ) : (
-              <>
+              <div className="mb-select-scroll">
                 {mbGroups.map((group) => (
                   <div key={group.key} className="mb-group">
                     <div className={`mb-group-head${group.amber ? " amber" : ""}`}>
@@ -4424,7 +4440,7 @@ function MatchBuilderTab({
                 {selected.length >= 5 && (
                   <p className="mb-cap-note">{lang === "it" ? "Massimo 5 selezioni — deseleziona per cambiarne una." : "Maximum 5 selections — deselect one to swap."}</p>
                 )}
-              </>
+              </div>
             )}
           </div>
 
@@ -4485,6 +4501,7 @@ function MatchBuilderTab({
             </div>
           </div>
         </div>
+        </LockedGate>
       )}
     </div>
   );
@@ -5429,21 +5446,32 @@ function FeaturedEdge({
   // best-bet gate); if none qualifies right now (e.g. season pause), fall back
   // to the highest-edge visible market that still has a model selection, so the
   // card is present whenever there's a pick to show. Numbers stay real.
-  const pickByEdge = (a: { edge?: number | null }, b: { edge?: number | null }) =>
-    (b.edge ?? -Infinity) - (a.edge ?? -Infinity);
-  const footballValue = predictions.filter(isFootballBestBet).sort(pickByEdge);
-  const tennisValue = tennisMatches.filter(isTennisBestBet).sort(pickByEdge);
+  // Rank by the SAME metric the card shows — the model edge (margin of the
+  // pick over the 2nd-best outcome). Before, the card was ranked by market
+  // edge but displayed model edge, so the headline number looked disconnected
+  // from the fixture. Now the number is genuinely the day's max and matches
+  // the match on screen. Numbers stay real; framing stays "model edge".
+  const footballModelEdge = (p: Prediction) => {
+    const probs = [p.p_home, p.p_draw, p.p_away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a);
+    return probs.length >= 2 ? modelEdge(probs[0], probs[1]) : 0;
+  };
+  const tennisModelEdge = (m: TennisMatch) =>
+    Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
+  const byFootballEdge = (a: Prediction, b: Prediction) => footballModelEdge(b) - footballModelEdge(a);
+  const byTennisEdge = (a: TennisMatch, b: TennisMatch) => tennisModelEdge(b) - tennisModelEdge(a);
+  const footballValue = predictions.filter(isFootballBestBet).sort(byFootballEdge);
+  const tennisValue = tennisMatches.filter(isTennisBestBet).sort(byTennisEdge);
   const footballAny = predictions
     .filter((p) => p.best_selection && isBoardVisibleMarket(p.kickoff))
-    .sort(pickByEdge);
+    .sort(byFootballEdge);
   const tennisAny = tennisMatches
     .filter((m) => m.best_selection && isTennisMarketVisible(m.scheduled))
-    .sort(pickByEdge);
+    .sort(byTennisEdge);
   const topFootball = footballValue[0] ?? footballAny[0];
   const topTennis = tennisValue[0] ?? tennisAny[0];
 
-  const fEdge = topFootball?.edge ?? -Infinity;
-  const tEdge = topTennis?.edge ?? -Infinity;
+  const fEdge = topFootball ? footballModelEdge(topFootball) : -Infinity;
+  const tEdge = topTennis ? tennisModelEdge(topTennis) : -Infinity;
   if (!topFootball && !topTennis) return null;
   const sport: "football" | "tennis" = fEdge >= tEdge ? "football" : "tennis";
 
@@ -6548,6 +6576,9 @@ export default function Dashboard() {
               isLoggedIn={hasClientProfile}
               sharedIds={mbSharedIds}
               refCode={mbRefCode}
+              isUnlocked={isClientUnlocked}
+              isPremium={profileHasPremium(clientProfile)}
+              onUnlock={handleProtectedUnlock}
             />
           )}
         </section>
