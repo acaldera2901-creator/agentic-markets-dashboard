@@ -2,9 +2,13 @@
 Esegui questo script DOPO aver mandato /start al tuo bot su Telegram.
 Stampa il tuo chat_id da copiare nel .env
 """
-import httpx, sys
+import httpx, os, sys
 
-TOKEN = "8683487607:AAGxPez2Yxq297XXLF4kdb2wAvWBoN8QPpA"
+# #SEC: il token NON va hardcodato nel repo. Leggi da env (es. export TELEGRAM_BOT_TOKEN=...).
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+if not TOKEN:
+    print("❌ TELEGRAM_BOT_TOKEN non impostata. Esporta la variabile (vedi .env / @BotFather) e riprova.")
+    sys.exit(1)
 
 r = httpx.get(f"https://api.telegram.org/bot{TOKEN}/getMe", timeout=10)
 if r.status_code != 200:
