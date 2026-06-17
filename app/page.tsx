@@ -354,16 +354,20 @@ export default function LandingPage() {
       </section>
       <nav className="lp-hero-sports" aria-label="Sports">
         <Link href="/app?tab=bets&sport=football" className="lp-sport">
-          <img src="/banners/sport-football.png" alt="" className="lp-sport-ic" />
-          <b>{t.spFootball}</b>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ball" /></svg></span>
+          <b className="lp-sport-lab">{t.spFootball}</b>
+          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </Link>
         <Link href="/app?tab=bets&sport=tennis" className="lp-sport">
-          <img src="/banners/sport-tennis.png" alt="" className="lp-sport-ic" />
-          <b>{t.spTennis}</b>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-tball" /></svg></span>
+          <b className="lp-sport-lab">{t.spTennis}</b>
+          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </Link>
-        <Link href="/world-cup" className="lp-sport">
-          <img src="/banners/sport-worldcup.png" alt="" className="lp-sport-ic" />
-          <b>{t.spWorldCup}</b><span className="lp-sport-live">LIVE</span>
+        <Link href="/world-cup" className="lp-sport lp-sport-feat">
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-trophy" /></svg></span>
+          <b className="lp-sport-lab">{t.spWorldCup}</b>
+          <span className="lp-sport-live"><i className="lp-sport-dot" />LIVE</span>
+          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </Link>
       </nav>
 
