@@ -942,7 +942,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
 };
 
 type Tab = "bets" | "account" | "history" | "partners" | "leaderboard" | "match-builder";
-type AccountSection = "panoramica" | "impostazioni" | "assistenza" | "faq";
+type AccountSection = "account" | "piani";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -5180,16 +5180,10 @@ function FAQTab() {
 
 function ClientAreaTab({
   profile,
-  onOpenDesk,
-  onPaymentSubmit,
   onActivateFree,
-  onLogout,
 }: {
   profile: ClientProfile | null;
-  onOpenDesk: () => void;
-  onPaymentSubmit: (plan: PublicPlanKey) => void;
   onActivateFree: () => void;
-  onLogout: () => void;
 }) {
   const lang = useLang();
   const t = useT();
@@ -5213,11 +5207,8 @@ function ClientAreaTab({
           : "Login";
   const notifications = profile?.notifications ?? defaultNotifications();
   const statusCopy = lang === "it" ? {
-    title: "Dashboard cliente",
-    subtitle: "Profilo, piano e stato accesso in un solo posto.",
     currentPlan: "Piano attuale",
     access: "Stato accesso",
-    exchange: "Conto exchange",
     timezone: "Timezone",
     notifications: "Notifiche attive",
     payment: "Pagamento",
@@ -5225,16 +5216,9 @@ function ClientAreaTab({
     paymentFree: "Free attivo",
     paymentReview: "TX ricevuto",
     paymentMissing: "Nessun piano selezionato",
-    connected: "Collegato",
-    notConnected: "Da collegare",
-    openDesk: "Apri desk",
-    logout: "Esci dall'account",
   } : {
-    title: "Client dashboard",
-    subtitle: "Profile, plan and access status in one place.",
     currentPlan: "Current plan",
     access: "Access status",
-    exchange: "Exchange account",
     timezone: "Timezone",
     notifications: "Active notifications",
     payment: "Payment",
@@ -5242,10 +5226,6 @@ function ClientAreaTab({
     paymentFree: "Free active",
     paymentReview: "TX received",
     paymentMissing: "No plan selected",
-    connected: "Connected",
-    notConnected: "Needs setup",
-    openDesk: "Open desk",
-    logout: "Log out",
   };
   const paymentState = plan === "pending_payment"
     ? statusCopy.paymentReview
@@ -5254,67 +5234,62 @@ function ClientAreaTab({
       : plan === "free"
         ? statusCopy.paymentFree
         : statusCopy.paymentMissing;
-  return (
-    <div className="client-area-view">
-      <section className="client-area-hero">
-        <div>
-          <p className="eyebrow">Client Area</p>
-          <h3>{statusCopy.title}</h3>
-          <span>{statusCopy.subtitle}</span>
-        </div>
-        <button onClick={onOpenDesk}>{statusCopy.openDesk}</button>
+
+  if (!profile) {
+    return (
+      <section className="settings-empty">
+        <p className="eyebrow">Client profile</p>
+        <h3>{t.settings_empty_title}</h3>
+        <button onClick={onActivateFree}>{t.settings_empty_btn}</button>
       </section>
+    );
+  }
 
-      {profile ? (
-        <section className="client-account-summary">
-          <div className="client-account-main">
-            <div className="profile-avatar">{profile.name.slice(0, 1).toUpperCase()}</div>
-            <div>
-              <p className="eyebrow">{profile.email}</p>
-              <h3>{profile.name}</h3>
-              <span>{statusCopy.currentPlan}: {plan.replace("_", " ")}</span>
-            </div>
-          </div>
-          <div className="client-account-kpis">
-            <article><span>{statusCopy.access}</span><strong>{accessState}</strong></article>
-            <article><span>{statusCopy.payment}</span><strong>{paymentState}</strong></article>
-            <article><span>{statusCopy.exchange}</span><strong>{profile.betfair?.status === "connected" ? statusCopy.connected : statusCopy.notConnected}</strong></article>
-            <article><span>{statusCopy.timezone}</span><strong>{profile.timezone ?? "Europe/Rome"}</strong></article>
-            <article><span>{statusCopy.notifications}</span><strong>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</strong></article>
-          </div>
-          {profile.txHash && profile.txHash !== "test" && (
-            <div className="client-account-note">
-              <span>{t.pending_tx_label}</span>
-              <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
-            </div>
-          )}
-          {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && profileHasAccess(profile) && (
-            <button className="btn-secondary" type="button" onClick={openBillingPortal}>
-              {lang === "it" ? "Gestisci abbonamento" : "Manage subscription"}
-            </button>
-          )}
-        </section>
-      ) : (
-        <section className="settings-empty">
-          <p className="eyebrow">Client profile</p>
-          <h3>{t.settings_empty_title}</h3>
-          <button onClick={onActivateFree}>{t.settings_empty_btn}</button>
-        </section>
-      )}
-
-      <PlansTab
-        profile={profile}
-        onOpenDesk={onOpenDesk}
-        onPaymentSubmit={onPaymentSubmit}
-        onActivateFree={onActivateFree}
-      />
-      {profile && (
-        <div className="client-area-footer">
-          <button className="btn-secondary" onClick={onLogout}>
-            {statusCopy.logout}
-          </button>
+  return (
+    <section className="client-account-summary">
+      <div className="client-account-main">
+        <div className="profile-avatar">{profile.name.slice(0, 1).toUpperCase()}</div>
+        <div>
+          <p className="eyebrow">{profile.email}</p>
+          <h3>{profile.name}</h3>
+          <span>{statusCopy.currentPlan}: {plan.replace("_", " ")}</span>
+        </div>
+      </div>
+      <div className="client-account-kpis">
+        <article><span>{statusCopy.access}</span><strong>{accessState}</strong></article>
+        <article><span>{statusCopy.payment}</span><strong>{paymentState}</strong></article>
+        <article><span>{statusCopy.timezone}</span><strong>{profile.timezone ?? "Europe/Rome"}</strong></article>
+        <article><span>{statusCopy.notifications}</span><strong>{(["valueBets", "dailyReport", "paymentUpdates", "securityAlerts"] as const).filter(k => notifications[k]).length}/4</strong></article>
+      </div>
+      {plan === "pending_payment" && profile.txHash && profile.txHash !== "test" && (
+        <div className="client-account-note">
+          <span>{t.pending_tx_label}</span>
+          <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
         </div>
       )}
+      {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && profileHasAccess(profile) && (
+        <button className="btn-secondary" type="button" onClick={openBillingPortal}>
+          {lang === "it" ? "Gestisci abbonamento" : "Manage subscription"}
+        </button>
+      )}
+    </section>
+  );
+}
+
+// FAQ + Assistenza in fondo alla scheda Account — blocchi collassabili, non
+// sotto-tab a sé: contenuto riusato (SupportHub + FAQ), zero route nuove.
+function AccountHelpFooter() {
+  const lang = useLang();
+  return (
+    <div className="account-help-footer">
+      <details className="account-help-acc">
+        <summary>FAQ</summary>
+        <FAQTab />
+      </details>
+      <details className="account-help-acc">
+        <summary>{lang === "it" ? "Assistenza" : "Support"}</summary>
+        <AssistanceTab />
+      </details>
     </div>
   );
 }
@@ -5339,12 +5314,10 @@ function AccountTab({
   onSave: (profile: ClientProfile) => void;
 }) {
   const lang = useLang();
-  const [section, setSection] = useState<AccountSection>("panoramica");
+  const [section, setSection] = useState<AccountSection>("account");
   const sections: { key: AccountSection; label: string }[] = [
-    { key: "panoramica",   label: lang === "it" ? "Panoramica" : "Overview" },
-    { key: "impostazioni", label: lang === "it" ? "Impostazioni" : "Settings" },
-    { key: "assistenza",   label: lang === "it" ? "Assistenza" : "Assistance" },
-    { key: "faq",          label: "FAQ" },
+    { key: "account", label: "Account" },
+    { key: "piani",   label: lang === "it" ? "Piani" : "Plans" },
   ];
   return (
     <div className="account-tab">
@@ -5359,20 +5332,28 @@ function AccountTab({
           </button>
         ))}
       </div>
-      {section === "panoramica" && (
-        <ClientAreaTab
+      {section === "account" && (
+        <div className="account-pane">
+          <ClientAreaTab profile={profile} onActivateFree={onActivateFree} />
+          <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} />
+          {profile && (
+            <div className="client-area-footer">
+              <button className="btn-secondary" onClick={onLogout}>
+                {lang === "it" ? "Esci dall'account" : "Log out"}
+              </button>
+            </div>
+          )}
+          <AccountHelpFooter />
+        </div>
+      )}
+      {section === "piani" && (
+        <PlansTab
           profile={profile}
           onOpenDesk={onOpenDesk}
           onPaymentSubmit={onPaymentSubmit}
           onActivateFree={onActivateFree}
-          onLogout={onLogout}
         />
       )}
-      {section === "impostazioni" && (
-        <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} />
-      )}
-      {section === "assistenza" && <AssistanceTab />}
-      {section === "faq" && <FAQTab />}
     </div>
   );
 }
@@ -6364,13 +6345,14 @@ export default function Dashboard() {
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: uiLanguage === "it" ? "Bets" : "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
-    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: uiLanguage === "it" ? "Classifica" : "Leaderboard" },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
     { tab: "partners",    label: tNav.nav_partner },
+    // Account spostato in fondo, sotto Partner (richiesta Andrea 2026-06-17).
+    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
   ];
 
   const tUI = TRANSLATIONS[uiLanguage];
@@ -6528,13 +6510,18 @@ export default function Dashboard() {
             <div className="am-deskhead-titles">
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? "Bets"}</h2>
               <p className="am-sub">
-                {uiLanguage === "it" ? (
+                {tab === "account" ? (
+                  uiLanguage === "it"
+                    ? <>Profilo, piano e impostazioni del tuo account.</>
+                    : <>Your account profile, plan and settings.</>
+                ) : uiLanguage === "it" ? (
                   <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
                 ) : (
                   <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
               </p>
             </div>
+            {tab !== "account" && (
             <div className="am-statbar">
               <div className="am-kpi">
                 <span className="v">{predictions.length + tennisMatches.length}</span>
@@ -6551,6 +6538,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           {predFallback && tab === "bets" && (
