@@ -4269,7 +4269,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {/* top: sport glyph + league + when (live pulse) */}
       <div className="top">
         <div className="comp">
-          <SportIcon sport="football" size={15} className="sgi" variant="sm" />
+          <SportMark sport={p.enrichment?.kind === "world_cup" || p.league === "WC" ? "worldcup" : "football"} size={15} className="sgi" />
           <span className="league">{p.league_name || p.league}</span>
           {p.match_type && p.match_type !== "STANDARD" && <MatchTypeBadge matchType={p.match_type} />}
         </div>
