@@ -7101,3 +7101,20 @@ button:disabled {
   .lp-sport-dot { animation: none !important; }
   .lp-sport:hover .lp-sport-well, .lp-sport:hover .lp-sport-arr { transform: none !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE FIT — #RESPONSIVE-0618
+   Causa radice dei bug "il sito non si adatta allo schermo / parole sovrapposte":
+   la topbar (.am-topbar-in) NON andava mai a capo. Il suo min-content (~492px su
+   /app, ~462px su /world-cup) imponeva la larghezza all'INTERO documento → sotto
+   ~490px la pagina non entrava nel telefono e il browser la zoom-outava, e ogni
+   sezione block-level veniva stirata a quella larghezza minima.
+   Fix CSS-only e intrinseca (nessun breakpoint fisso, nessun JS): la barra va a
+   capo quando lo spazio non basta — su desktop resta su una riga (nessun cambio
+   visivo), su mobile si ricompone e la pagina rientra in 390px.
+   Verificato (Playwright @390px): docW /app 492→390, /world-cup 462→390, 0 overflow.
+   ════════════════════════════════════════════════════════════════════════════ */
+.am-topbar-in { flex-wrap: wrap; height: auto; min-height: 60px; row-gap: 10px; }
+.am-topright  { flex-wrap: wrap; justify-content: flex-end; }
+.am-topnav    { flex-wrap: wrap; }
+.wc-hub-hero  { flex-wrap: wrap; row-gap: 12px; }
