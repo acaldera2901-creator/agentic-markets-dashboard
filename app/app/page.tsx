@@ -7583,7 +7583,7 @@ export default function Dashboard() {
 
           <nav className="am-topnav">
             {[
-              { tab: "bets" as Tab, label: tNav.nav_markets },
+              { tab: "bets" as Tab, label: tNav.nav_predictions },
               { tab: "history" as Tab, label: tNav.nav_history },
               { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
               ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
