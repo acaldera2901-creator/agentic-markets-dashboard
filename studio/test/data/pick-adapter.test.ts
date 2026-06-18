@@ -40,14 +40,26 @@ const unifiedFootball: UnifiedSettledRow = {
 
 const unifiedTennis: UnifiedSettledRow = {
   sport: 'tennis',
+  home_team: 'Fabian Marozsan',
+  away_team: 'Taylor Fritz',
+  player_one: null,
+  player_two: null,
+  pick: 'Taylor Fritz',
+  confidence_score: 67,
+  result: 'won',
+  notes: '{"final_score":"6-2 6-4"}',
+};
+
+const unifiedTennisFallback: UnifiedSettledRow = {
+  sport: 'tennis',
   home_team: null,
   away_team: null,
-  player_one: 'Sinner',
-  player_two: 'Alcaraz',
-  pick: 'Sinner',
-  confidence_score: 55,
-  result: 'lost',
-  notes: { final_score: '6-4 6-3' },
+  player_one: 'A',
+  player_two: 'B',
+  pick: 'A',
+  confidence_score: 60,
+  result: 'won',
+  notes: '{"final_score":"6-3 6-2"}',
 };
 
 // ---- tests for unifiedRowToSettledPick ----
@@ -72,12 +84,26 @@ describe('unifiedRowToSettledPick', () => {
     expect(card.outcome).toBe('won');
   });
 
-  it('maps tennis row (notes as object) correctly', () => {
+  it('maps tennis row (home_team/away_team populated, player_one/two null) correctly', () => {
     const pick = unifiedRowToSettledPick(unifiedTennis);
-    expect(pick.home_team).toBe('Sinner');
-    expect(pick.away_team).toBe('Alcaraz');
-    expect(pick.final_score).toBe('6-4 6-3');
-    expect(pick.confidence).toBeCloseTo(0.55);
+    expect(pick.home_team).toBe('Fabian Marozsan');
+    expect(pick.away_team).toBe('Taylor Fritz');
+    expect(pick.final_score).toBe('6-2 6-4');
+    expect(pick.confidence).toBeCloseTo(0.67);
+  });
+
+  it('maps tennis row through settledPickToCardData end-to-end (pick passthrough)', () => {
+    const pick = unifiedRowToSettledPick(unifiedTennis);
+    const card = settledPickToCardData(pick);
+    expect(card.sport).toBe('tennis');
+    expect(card.pick).toBe('Taylor Fritz');
+    expect(card.outcome).toBe('won');
+  });
+
+  it('falls back to player_one/player_two when home_team/away_team are null', () => {
+    const pick = unifiedRowToSettledPick(unifiedTennisFallback);
+    expect(pick.home_team).toBe('A');
+    expect(pick.away_team).toBe('B');
   });
 
   it('keeps confidence in 0..1 when confidence_score is already ≤ 1', () => {

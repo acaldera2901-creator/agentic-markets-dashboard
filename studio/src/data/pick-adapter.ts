@@ -40,11 +40,10 @@ function normalizeConfidence(c: number | null): number {
 }
 
 export function unifiedRowToSettledPick(row: UnifiedSettledRow): SettledPick {
-  const isTennis = (row.sport ?? '').toLowerCase().includes('tennis');
   return {
     sport: row.sport,
-    home_team: (isTennis ? row.player_one : row.home_team) ?? '',
-    away_team: (isTennis ? row.player_two : row.away_team) ?? '',
+    home_team: row.home_team ?? row.player_one ?? '',
+    away_team: row.away_team ?? row.player_two ?? '',
     final_score: extractFinalScore(row.notes),
     pick: row.pick,
     confidence: normalizeConfidence(row.confidence_score),
