@@ -14,6 +14,14 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class BaseAgent(ABC):
+    # Restart supervisor: a transient failure inside _main_loop (e.g. a Redis
+    # blip in consume()) must NOT silently kill the agent for good. We restart
+    # it with exponential backoff while _running, resetting the backoff once a
+    # run has stayed up long enough to be considered healthy.
+    RESTART_BACKOFF_MIN: float = 1.0
+    RESTART_BACKOFF_MAX: float = 60.0
+    RESTART_STABLE_SECS: float = 60.0
+
     def __init__(self, name: str):
         self.name = name
         self.logger = logging.getLogger(name)
@@ -25,10 +33,26 @@ class BaseAgent(ABC):
         self._running = True
         self.logger.info("started")
         heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        loop = asyncio.get_event_loop()
+        backoff = self.RESTART_BACKOFF_MIN
         try:
-            await self._main_loop()
-        except Exception as e:
-            self.logger.exception(f"crashed: {e}")
+            while self._running:
+                started = loop.time()
+                try:
+                    await self._main_loop()
+                    break  # _main_loop returned on its own → nothing to restart
+                except asyncio.CancelledError:
+                    raise  # cooperative shutdown, never swallow
+                except Exception as e:
+                    if not self._running:
+                        break
+                    if loop.time() - started >= self.RESTART_STABLE_SECS:
+                        backoff = self.RESTART_BACKOFF_MIN  # was healthy → fresh backoff
+                    self.logger.exception(
+                        f"_main_loop crashed; restarting in {backoff:.0f}s: {e}"
+                    )
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2, self.RESTART_BACKOFF_MAX)
         finally:
             heartbeat_task.cancel()
             self._running = False

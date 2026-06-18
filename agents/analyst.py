@@ -229,13 +229,7 @@ class AnalystAgent(BaseAgent):
     ) -> dict:
         """Use Claude if key is set, otherwise rule-based assessment."""
         if not settings.ANTHROPIC_API_KEY or settings.ANTHROPIC_API_KEY.startswith("sk-ant-..."):
-            # Rule-based fallback: validate by edge magnitude
-            valid = edge >= settings.MIN_EDGE
-            return {
-                "valid": valid,
-                "confidence": min(0.5 + edge * 5, 0.95),
-                "notes": f"rule-based: edge={edge:.3f} on {selection}",
-            }
+            return self._rule_based_assessment(edge, selection)
 
         try:
             from core.claude_client import ask
@@ -254,5 +248,17 @@ class AnalystAgent(BaseAgent):
             response = await ask(ANALYST_SYSTEM, prompt)
             return json.loads(response)
         except Exception as e:
+            # FAIL-CLOSED: do NOT blindly return valid=True when the LLM gate is
+            # unavailable. Degrade to the same deterministic rule-based check as
+            # the no-key path (validate by edge magnitude), not an auto-pass.
             self.logger.warning(f"Claude unavailable, using rule-based: {e}")
-            return {"valid": True, "confidence": 0.6, "notes": f"fallback: {edge:.3f}"}
+            return self._rule_based_assessment(edge, selection)
+
+    def _rule_based_assessment(self, edge: float, selection: str) -> dict:
+        """Deterministic fallback gate: a value bet is valid only if its edge
+        clears MIN_EDGE. Used when the LLM gate has no key or is unreachable."""
+        return {
+            "valid": edge >= settings.MIN_EDGE,
+            "confidence": min(0.5 + edge * 5, 0.95),
+            "notes": f"rule-based: edge={edge:.3f} on {selection}",
+        }
