@@ -6657,7 +6657,9 @@ button:disabled {
   background: #0d0f14; border: 1px solid rgba(255, 255, 255, .14);
   transition: border-color .2s ease, transform .25s ease;
 }
-.lp-sport-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* contain (non cover): i loghi hanno alpha+proporzioni proprie → mostrarli INTERI,
+   non croppati. Box-padding 12% così la scia coral non tocca i bordi del pozzetto. */
+.lp-sport-img { width: 100%; height: 100%; object-fit: contain; display: block; padding: 12%; box-sizing: border-box; }
 .lp-sport-gl { width: 64%; height: 64%; color: #fff; }
 .lp-sport-lab { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
 .lp-sport-arr {

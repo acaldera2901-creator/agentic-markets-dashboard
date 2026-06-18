@@ -14,6 +14,7 @@ import { surfaceFloorFor } from "@/lib/surfacing-gate";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
+import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
 import { TrackRecordView } from "@/components/track-record/TrackRecordView";
@@ -2205,10 +2206,10 @@ function SportsbookBoard({
         <div className="am-seg" aria-label="Sport filter">
           <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>{labels.allSports}</button>
           <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
-            <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>{labels.football} <span className="ct">{footballRows.length}</span>
+            <SportIcon sport="football" size={14} className="ic" variant="sm" />{labels.football} <span className="ct">{footballRows.length}</span>
           </button>
           <button className={sportFilter === "tennis" ? "on" : ""} onClick={() => setSportFilter("tennis")}>
-            <svg className="ic" aria-hidden="true"><use href="#g-tball" /></svg>{labels.tennis} <span className="ct">{tennisRows.length}</span>
+            <SportIcon sport="tennis" size={14} className="ic" variant="sm" />{labels.tennis} <span className="ct">{tennisRows.length}</span>
           </button>
         </div>
 
@@ -2286,7 +2287,7 @@ function SportsbookBoard({
           {showFootballSection && (
             <section>
               <div className="sport-band">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>
+                <span className="glyph"><SportIcon sport="football" size={26} /></span>
                 <h2>{t.board_football}</h2>
                 <span className="ct">{footballRows.length} {t.board_markets}</span>
                 <span className="rule" />
@@ -2353,7 +2354,7 @@ function SportsbookBoard({
           {showTennisSection && (
             <section>
               <div className="sport-band amber">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>
+                <span className="glyph"><SportIcon sport="tennis" size={26} /></span>
                 <h2>{t.board_tennis}</h2>
                 <span className="ct">{tennisRows.length} {t.board_matches}</span>
                 <span className="rule" />
@@ -2496,10 +2497,10 @@ function BestBetsBoard({
         <div className="am-seg" aria-label="Best bets sport filter">
           <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>{labels.all}</button>
           <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
-            <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>{labels.football} <span className="ct">{visibleFootballValue.length}</span>
+            <SportIcon sport="football" size={14} className="ic" variant="sm" />{labels.football} <span className="ct">{visibleFootballValue.length}</span>
           </button>
           <button className={sportFilter === "tennis" ? "on" : ""} onClick={() => setSportFilter("tennis")}>
-            <svg className="ic" aria-hidden="true"><use href="#g-tball" /></svg>{labels.tennis} <span className="ct">{visibleTennisValue.length}</span>
+            <SportIcon sport="tennis" size={14} className="ic" variant="sm" />{labels.tennis} <span className="ct">{visibleTennisValue.length}</span>
           </button>
         </div>
         <label className="am-mini-field">
@@ -2526,7 +2527,7 @@ function BestBetsBoard({
           {visibleFootballValue.length > 0 && (
             <section>
               <div className="sport-band">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>
+                <span className="glyph"><SportIcon sport="football" size={26} /></span>
                 <h2>{t.board_football}</h2>
                 <span className="ct">{visibleFootballValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</span>
                 <span className="rule" />
@@ -2540,7 +2541,7 @@ function BestBetsBoard({
           {visibleTennisValue.length > 0 && (
             <section>
               <div className="sport-band amber">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>
+                <span className="glyph"><SportIcon sport="tennis" size={26} /></span>
                 <h2>{t.board_tennis}</h2>
                 <span className="ct">{visibleTennisValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</span>
                 <span className="rule" />
@@ -4268,7 +4269,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {/* top: sport glyph + league + when (live pulse) */}
       <div className="top">
         <div className="comp">
-          <svg className="sgi" aria-hidden="true"><use href="#g-ball" /></svg>
+          <SportIcon sport="football" size={15} className="sgi" variant="sm" />
           <span className="league">{p.league_name || p.league}</span>
           {p.match_type && p.match_type !== "STANDARD" && <MatchTypeBadge matchType={p.match_type} />}
         </div>
@@ -4692,7 +4693,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {/* top: surface glyph + tournament + when */}
       <div className="top">
         <div className="comp">
-          <svg className="sgi" aria-hidden="true"><use href="#g-grass" /></svg>
+          <SportIcon sport="tennis" size={15} className="sgi" variant="sm" />
           <span className="league">{m.tournament}</span>
           {m.round && <span className="rnd">{m.round}</span>}
         </div>
@@ -5368,10 +5369,10 @@ function MatchBuilderTab({
 
   // Presentation-only grouping for scannability. Derived from the item id
   // prefix (f_/w_/t_) — same data, just clustered by sport family.
-  const mbGroups: { key: string; head: string; glyph: string; amber: boolean; rows: MbItem[] }[] = [
-    { key: "football", head: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), glyph: "#g-ball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_")) },
-    { key: "tennis", head: "Tennis", glyph: "#g-tball", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("t_")) },
-    { key: "worldcup", head: "World Cup", glyph: "#g-trophy", amber: true, rows: visibleItems.filter((i) => i.id.startsWith("w_")) },
+  const mbGroups: { key: string; head: string; amber: boolean; rows: MbItem[] }[] = [
+    { key: "football", head: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_")) },
+    { key: "tennis", head: "Tennis", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("t_")) },
+    { key: "worldcup", head: "World Cup", amber: true, rows: visibleItems.filter((i) => i.id.startsWith("w_")) },
   ].filter((g) => g.rows.length > 0);
 
   return (
@@ -5424,7 +5425,7 @@ function MatchBuilderTab({
                 {mbGroups.map((group) => (
                   <div key={group.key} className="mb-group">
                     <div className={`mb-group-head${group.amber ? " amber" : ""}`}>
-                      <span className="mb-glyph"><svg aria-hidden="true"><use href={group.glyph} /></svg></span>
+                      <span className="mb-glyph"><SportMark sport={group.key as "football" | "tennis" | "worldcup"} size={16} /></span>
                       <h3>{group.head}</h3>
                       <span className="mb-ct">{group.rows.length}</span>
                       <span className="mb-rule" />
@@ -5442,7 +5443,7 @@ function MatchBuilderTab({
                             disabled={atCap}
                             className={`am-surface mb-row${isSelected ? " is-selected" : ""}${atCap ? " is-disabled" : ""}`}
                           >
-                            <span className="mb-row-glyph"><svg aria-hidden="true"><use href={group.glyph} /></svg></span>
+                            <span className="mb-row-glyph"><SportMark sport={group.key as "football" | "tennis" | "worldcup"} size={16} /></span>
                             <span className="mb-row-body">
                               <span className="mb-fixture">
                                 {away != null ? (
@@ -6120,9 +6121,9 @@ function HistoryTab({ history, stats, loading }: {
                 ? pick5(lang, { it: "Tutti gli sport", en: "All sports", es: "Todos los deportes", fr: "Tous les sports", ru: "Все виды спорта" })
                 : (<>
                     {s === "football"
-                      ? <svg className="ic" aria-hidden="true"><use href="#g-ball" /></svg>
+                      ? <SportIcon sport="football" size={14} className="ic" variant="sm" />
                       : s === "tennis"
-                        ? <svg className="ic" aria-hidden="true"><use href="#g-tball" /></svg>
+                        ? <SportIcon sport="tennis" size={14} className="ic" variant="sm" />
                         : null}
                     {s}
                   </>)}
@@ -6569,7 +6570,7 @@ function LiveNowStrip({
       <div className="scroll">
         {liveFootball.map(([id, s]) => (
           <span key={`f-${id}`} className="ti">
-            <svg className="ig" aria-hidden="true"><use href="#g-ball" /></svg>
+            <SportIcon sport="football" size={13} className="ig" variant="sm" />
             {s.home_team} <b>{s.home_score ?? "–"}–{s.away_score ?? "–"}</b> {s.away_team}
             {s.match_status === "PAUSED" ? (
               <span className="m">HT</span>
@@ -6580,7 +6581,7 @@ function LiveNowStrip({
         ))}
         {liveTennisOnBoard.map((m) => (
           <span key={`t-${m.id}`} className="ti">
-            <svg className="ig" aria-hidden="true"><use href="#g-tball" /></svg>
+            <SportIcon sport="tennis" size={13} className="ig" variant="sm" />
             {m.player1} <b>{setsLabel(m) || "–"}</b> {m.player2}
             <span className="m">{m.status_detail}</span>
           </span>
@@ -6646,7 +6647,6 @@ function FeaturedEdge({
   const sport: "football" | "tennis" = fEdge >= tEdge ? "football" : "tennis";
 
   // Common presentational fields, resolved per sport.
-  let glyph: string;
   let fixtureName: React.ReactNode;
   let league: string;
   let probability: number;
@@ -6658,7 +6658,6 @@ function FeaturedEdge({
   if (sport === "football" && topFootball) {
     const p = topFootball;
     const sel = bestFootballSelection(p);
-    glyph = "#g-ball";
     fixtureName = (
       <>
         {p.home_team}
@@ -6687,7 +6686,6 @@ function FeaturedEdge({
     }
   } else {
     const m = topTennis as TennisMatch;
-    glyph = "#g-racket";
     fixtureName = (
       <>
         {m.player1}
@@ -6720,7 +6718,7 @@ function FeaturedEdge({
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
           <div className="fxrow">
-            <svg className="sgi" aria-hidden="true"><use href={glyph} /></svg>
+            <SportIcon sport={sport} size={20} className="sgi" />
             <span className="fxname">{fixtureName}</span>
           </div>
           <div className="league">{league}</div>
@@ -6753,7 +6751,7 @@ function FeaturedEdge({
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
         <div className="fxrow">
-          <svg className="sgi" aria-hidden="true"><use href={glyph} /></svg>
+          <SportIcon sport={sport} size={20} className="sgi" />
           <span className="fxname">{fixtureName}</span>
         </div>
         <div className="league">{league}</div>

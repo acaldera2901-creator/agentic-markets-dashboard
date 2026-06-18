@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
+import { SportIcon } from "@/app/components/sport-icon";
 import { HouseBanner } from "@/components/HouseBanner";
 import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
@@ -503,7 +504,7 @@ export default function LandingPage() {
             <div className="lp-phone-rows">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="lp-phone-row">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><use href={i % 2 ? "#g-tball" : "#g-ball"} /></svg>
+                  <SportIcon sport={i % 2 ? "tennis" : "football"} size={15} variant="sm" />
                   <span className="lp-phone-bar" /><b className="lp-phone-odd">{(1.6 + i * 0.4).toFixed(2)}</b>
                 </div>
               ))}
