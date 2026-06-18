@@ -18,6 +18,11 @@
 - **Onestà FTC:** la card mostra probabilità calcolata + esito reale (anche le perse). Nessun claim "battiamo il mercato". Mai dati inventati: se mancano campi o l'esito è `unresolved`/void → niente card.
 - Segreti (eventuale chiave Supabase di lettura): solo via env, mai in repo.
 - Stile coerente con repo esistente; commit frequenti; lavorare da `~/Desktop/agentic-markets`.
+- **Isolamento dalla prod (non negoziabile):** la root del repo È l'app BetRedge in produzione (`dashboard-web`, deploy Vercel da root). `studio/` deve restare invisibile a build e deploy:
+  - `studio/` va in `.vercelignore` (Task 1) → mai caricato su Vercel.
+  - root `package.json` non ha workspaces → non aggiungerli; `npm install` di root non deve entrare in `studio/`.
+  - l'MCP si registra a **scope utente** (`~/.claude.json`), NON nel `.mcp.json` del repo (che contiene già `project-brain`).
+  - DB: **sola lettura** su tabelle esistenti, nessuna scrittura/migration.
 
 ---
 
@@ -152,10 +157,18 @@ cd ~/Desktop/agentic-markets/studio && npm install && npm test
 ```
 Expected: vitest passa con 1 test (`smoke`).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Proteggere la prod — escludere `studio/` dal deploy Vercel**
+
+Run:
+```bash
+cd ~/Desktop/agentic-markets && grep -qxF 'studio/' .vercelignore || printf '\n# Maven Studio (atelier interno, non parte del deploy app)\nstudio/\n' >> .vercelignore && tail -5 .vercelignore
+```
+Expected: `.vercelignore` contiene ora `studio/`. Verifica che la root NON usi npm workspaces (non devono esistere): `grep -c workspaces package.json` → `0`.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-cd ~/Desktop/agentic-markets && git add studio/package.json studio/package-lock.json studio/tsconfig.json studio/vitest.config.ts studio/test/smoke.test.ts && git commit -m "feat(studio): scaffold Node/TS package with vitest"
+cd ~/Desktop/agentic-markets && git add studio/package.json studio/package-lock.json studio/tsconfig.json studio/vitest.config.ts studio/test/smoke.test.ts .vercelignore && git commit -m "feat(studio): scaffold Node/TS package with vitest (isolato dal deploy Vercel)"
 ```
 
 ---
@@ -966,20 +979,21 @@ npx @modelcontextprotocol/inspector npx tsx src/mcp/server.ts
 ```
 Expected: l'Inspector elenca 3 tool (`studio_brandkit_get`, `studio_compose`, `studio_match_result_card`). Invocando `studio_match_result_card` con `data` di esempio si ottiene un PNG.
 
-- [ ] **Step 4: Registrare l'MCP per Claude Code**
+- [ ] **Step 4: Registrare l'MCP per Claude Code (scope UTENTE — NON tocca il repo)**
+
+> Il `.mcp.json` del repo contiene già `project-brain`: NON va modificato. Registriamo a scope utente (`~/.claude.json`).
 
 Run:
 ```bash
-cd ~/Desktop/agentic-markets && \
 STUDIO=~/Desktop/agentic-markets/studio && \
-claude mcp add maven-studio -s project -e STUDIO_BRANDKIT_PATH="$STUDIO/../Maven-Brain/brandkits/betredge.json" -e STUDIO_FONTS_DIR="$STUDIO/assets/fonts" -- npx tsx "$STUDIO/src/mcp/server.ts"
+claude mcp add maven-studio -s user -e STUDIO_BRANDKIT_PATH="$STUDIO/../Maven-Brain/brandkits/betredge.json" -e STUDIO_FONTS_DIR="$STUDIO/assets/fonts" -- npx tsx "$STUDIO/src/mcp/server.ts"
 ```
-Expected: in una nuova sessione Claude Code i tool `mcp__maven-studio__*` sono disponibili.
+Expected: in una nuova sessione Claude Code i tool `mcp__maven-studio__*` sono disponibili. Verifica che il `.mcp.json` del repo sia **invariato**: `cd ~/Desktop/agentic-markets && git status --short .mcp.json` → nessun output.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit (NB: `.mcp.json` del repo NON incluso)**
 
 ```bash
-cd ~/Desktop/agentic-markets && git add studio/src/mcp/server.ts studio/package.json studio/package-lock.json .mcp.json && git commit -m "feat(studio): MCP server exposing compose, brandkit, match_result_card"
+cd ~/Desktop/agentic-markets && git add studio/src/mcp/server.ts studio/package.json studio/package-lock.json && git commit -m "feat(studio): MCP server exposing compose, brandkit, match_result_card"
 ```
 
 ---
