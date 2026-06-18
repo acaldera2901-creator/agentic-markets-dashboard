@@ -4363,8 +4363,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
       <div className="why">
-        <div className="why-box">
-          <div className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}</div>
+        <details className="why-box">
+          <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
           <p className="why-txt">
             {isPreview
               ? (lang === "it"
@@ -4379,7 +4379,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
                 : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
             </button>
           )}
-        </div>
+        </details>
 
         {/* footer action row */}
         <div className="act">
@@ -4785,8 +4785,8 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
       {/* WHY — Elo readout + expandable analysis */}
       <div className="why">
-        <div className="why-box">
-          <div className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}</div>
+        <details className="why-box">
+          <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
           <p className="why-txt">
             {isPreview
               ? (lang === "it"
@@ -4803,7 +4803,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
                   : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
             </button>
           )}
-        </div>
+        </details>
 
         {/* footer action row */}
         <div className="act">

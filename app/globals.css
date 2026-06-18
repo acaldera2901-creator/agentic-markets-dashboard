@@ -7118,3 +7118,25 @@ button:disabled {
 .am-topright  { flex-wrap: wrap; justify-content: flex-end; }
 .am-topnav    { flex-wrap: wrap; }
 .wc-hub-hero  { flex-wrap: wrap; row-gap: 12px; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WHY COLLAPSIBLE — #WHY-COLLAPSE-0618
+   Il riassunto "Perché" (.why-txt) non era clampato → su card strette il testo
+   usciva dalla card ("scritte fuori"). Reso il box un <details> nativo: parte
+   CHIUSO ovunque (solo l'header "Perché ▸"), si apre al tap → niente overflow,
+   il testo esce solo se aperto. Niente stato React/JS (nessun rischio hydration).
+   ════════════════════════════════════════════════════════════════════════════ */
+.pred details.why-box { }
+.pred .why-box > summary.why-lab {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  cursor: pointer; list-style: none; user-select: none;
+}
+.pred .why-box > summary.why-lab::-webkit-details-marker { display: none; }
+.pred .why-box .why-caret {
+  flex: 0 0 auto; width: 0; height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  color: var(--am-coral); transition: transform .15s ease;
+}
+.pred details.why-box[open] .why-caret { transform: rotate(90deg); }
+.pred .why-box .why-txt { overflow-wrap: anywhere; }
