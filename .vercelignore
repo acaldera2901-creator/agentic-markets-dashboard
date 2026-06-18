@@ -13,3 +13,6 @@ node_modules/
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Maven Studio (atelier interno, non parte del deploy app)
+studio/

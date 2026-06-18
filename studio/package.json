@@ -1,0 +1,28 @@
+{
+  "name": "@maven/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "studio-render-sample": "./dist/bin/render-sample.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.json",
+    "render:sample": "tsx bin/render-sample.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "satori": "^0.12.0",
+    "satori-html": "^0.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
