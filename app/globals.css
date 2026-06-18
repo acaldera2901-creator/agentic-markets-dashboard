@@ -7140,3 +7140,20 @@ button:disabled {
 }
 .pred details.why-box[open] .why-caret { transform: rotate(90deg); }
 .pred .why-box .why-txt { overflow-wrap: anywhere; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MVM LABELS — #MVM-LABELS-0618
+   Le label "MARKET/MODEL/EDGE" sotto le percentuali si troncavano a "MA…/MO…"
+   nelle colonne strette; la MODEL aggiungeva pure "· pickName" → parola illeggibile.
+   Fix: font più piccolo (le parole entrano) + la MODEL separa la parola (sempre
+   intera) dal nome del pick (che tronca con … solo lui, senza mangiare "Model").
+   ════════════════════════════════════════════════════════════════════════════ */
+.pred .mvm .col .l { font-size: 8px; letter-spacing: 0.01em; }
+.pred .mvm .col.model .l {
+  display: flex; justify-content: center; align-items: baseline; gap: 2px; min-width: 0;
+}
+.pred .mvm .col.model .l .lw { flex: 0 0 auto; }
+.pred .mvm .col.model .l .ln {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--am-muted-2);
+}

@@ -4332,7 +4332,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             </div>
             <div className="col model">
               <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}{pickName ? ` · ${pickName}` : ""}</div>
+              <div className="l"><span className="lw">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
             </div>
             <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
               <div className="n">
@@ -4754,7 +4754,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             </div>
             <div className="col model">
               <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}{pickName ? ` · ${pickName}` : ""}</div>
+              <div className="l"><span className="lw">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
             </div>
             <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
               <div className="n">
