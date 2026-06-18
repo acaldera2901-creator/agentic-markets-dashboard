@@ -5418,7 +5418,14 @@ button:disabled {
 .sport-band .note { font-size: 11.5px; color: var(--am-muted-2); white-space: nowrap; }
 
 /* ---- 12-col grid: football span 4 (3-up), tennis span 3 (4-up) ---- */
-.am-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; padding: 0 14px 14px; }
+/* #RESP-0618: la reflow delle card è guidata dalla larghezza REALE della griglia
+   (container query), non dal viewport. Con la rail da 210px + resize/uscita da
+   fullscreen, il viewport media-query restava "desktop" mentre la colonna main si
+   restringeva: le card tenevano span 4 su ~600px → contenuto in overflow = pagina
+   deformata + scroll orizzontale. container-type:inline-size aggancia i breakpoint
+   alla colonna che contiene davvero le card. minmax(0,1fr) toglie il floor min-content
+   delle tracce (auto) che altrimenti impone un pavimento di larghezza al documento. */
+.am-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; padding: 0 14px 14px; container-type: inline-size; }
 .am-grid > .card { grid-column: span 4; min-width: 0; }
 .am-grid > .card.tennis { grid-column: span 3; }
 /* House banner inline nel board (#HOUSE-PHOTO-1): usiamo TUTTI i formati, non solo
@@ -5432,20 +5439,20 @@ button:disabled {
 .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
 .am-grid:has(> .card.tennis) > .house-banner.hb-halfpage { grid-column: span 3; }
 .am-grid > .house-banner.hb-halfpage { grid-row: span 2; }
-@media (max-width: 1080px) {
+@container (max-width: 1080px) {
   .am-grid > .house-banner.hb-rectangle,
   .am-grid > .house-banner.hb-halfpage,
   .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
   .am-grid:has(> .card.tennis) > .house-banner.hb-halfpage { grid-column: span 6; }
 }
-@media (max-width: 640px) {
+@container (max-width: 640px) {
   .am-grid > .house-banner.hb-rectangle,
   .am-grid > .house-banner.hb-halfpage,
   .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
   .am-grid:has(> .card.tennis) > .house-banner.hb-halfpage { grid-column: 1 / -1; grid-row: auto; }
 }
-@media (max-width: 1080px) { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 6; } }
-@media (max-width: 640px)  { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 12; } }
+@container (max-width: 1080px) { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 6; } }
+@container (max-width: 640px)  { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 12; } }
 
 /* ---- canonical card ---- */
 .pred {
@@ -5558,7 +5565,7 @@ button:disabled {
 .pred .edge.evbtn:hover { filter: brightness(1.08); }
 
 /* ── Direction B: Market vs Model vs Edge readout ───────────────────────── */
-.pred .mvm { display: flex; gap: 8px; margin-bottom: 12px; }
+.pred .mvm { display: flex; gap: 8px; margin-bottom: 12px; min-width: 0; }
 .pred .mvm.sel { cursor: pointer; }
 .pred .mvm .col {
   flex: 1; min-width: 0; text-align: center;
