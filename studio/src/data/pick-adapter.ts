@@ -11,6 +11,47 @@ export interface SettledPick {
   result: string;           // won | lost | void | unresolved
 }
 
+export interface UnifiedSettledRow {
+  sport: string;
+  home_team: string | null;
+  away_team: string | null;
+  player_one: string | null;
+  player_two: string | null;
+  pick: string | null;
+  confidence_score: number | null;
+  result: string;
+  notes: string | Record<string, unknown> | null;
+}
+
+function extractFinalScore(notes: UnifiedSettledRow['notes']): string | null {
+  if (!notes) return null;
+  try {
+    const n = typeof notes === 'string' ? JSON.parse(notes) : notes;
+    const fs = (n as any)?.final_score;
+    return typeof fs === 'string' && fs.trim() ? fs : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeConfidence(c: number | null): number {
+  if (c == null) return 0;
+  return c > 1 ? c / 100 : c; // unified stores 0–100; the card expects 0..1
+}
+
+export function unifiedRowToSettledPick(row: UnifiedSettledRow): SettledPick {
+  const isTennis = (row.sport ?? '').toLowerCase().includes('tennis');
+  return {
+    sport: row.sport,
+    home_team: (isTennis ? row.player_one : row.home_team) ?? '',
+    away_team: (isTennis ? row.player_two : row.away_team) ?? '',
+    final_score: extractFinalScore(row.notes),
+    pick: row.pick,
+    confidence: normalizeConfidence(row.confidence_score),
+    result: row.result,
+  };
+}
+
 function normalizeSport(s: string): Sport {
   return s.toLowerCase().includes('tennis') ? 'tennis' : 'football';
 }
@@ -55,19 +96,14 @@ export async function fetchLatestSettledPicks(limit = 5): Promise<SettledPick[]>
   if (!url || !key) throw new Error('pick-adapter: SUPABASE_URL / key mancanti in env');
   const supabase = createClient(url, key);
   const { data, error } = await supabase
-    .from('pick_settlement')
-    .select('result, final_score, pick_ledger!inner(sport, home_team, away_team, pick, confidence)')
+    .from('unified_predictions')
+    .select('sport, home_team, away_team, player_one, player_two, pick, confidence_score, result, settled_at, notes')
     .in('result', ['won', 'lost'])
     .order('settled_at', { ascending: false })
-    .limit(limit);
+    .limit(Math.max(limit * 8, 40)); // overfetch: many settled rows lack final_score
   if (error) throw new Error(`pick-adapter: query fallita — ${error.message}`);
-  return (data ?? []).map((r: any) => ({
-    sport: r.pick_ledger.sport,
-    home_team: r.pick_ledger.home_team,
-    away_team: r.pick_ledger.away_team,
-    final_score: r.final_score,
-    pick: r.pick_ledger.pick,
-    confidence: r.pick_ledger.confidence,
-    result: r.result,
-  }));
+  return (data ?? [])
+    .map((r) => unifiedRowToSettledPick(r as UnifiedSettledRow))
+    .filter((p) => !!p.final_score)
+    .slice(0, limit);
 }
