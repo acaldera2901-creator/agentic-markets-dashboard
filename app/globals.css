@@ -6686,9 +6686,22 @@ button:disabled {
 .lp-sport-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: lp-sport-pulse 1.6s ease-in-out infinite; }
 @keyframes lp-sport-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (max-width: 640px) {
-  .lp-hero-sports { gap: 8px; padding: 12px 10px; }
-  .lp-sport { font-size: 12px; padding: 6px 12px 6px 6px; gap: 8px; border-radius: 12px; }
-  .lp-sport-well { width: 34px; height: 34px; border-radius: 9px; }
+  /* #HOME-SPORTS: su mobile i tasti sport diventano una BARRA FISSA in basso
+     (bottom nav), come da richiesta Andrea 2026-06-18. */
+  .lp { padding-bottom: 92px; }
+  .lp-hero-sports {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    gap: 7px; padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(7, 8, 13, 0) 0%, #07080d 30%);
+    border-top: none;
+  }
+  .lp-sport {
+    flex: 0 0 auto; justify-content: center; gap: 7px;
+    font-size: 12px; padding: 7px 13px 7px 7px; border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+  }
+  .lp-sport-well { width: 28px; height: 28px; border-radius: 8px; }
   .lp-sport-arr { display: none; }
 }
 
