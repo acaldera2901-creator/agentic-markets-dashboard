@@ -6615,6 +6615,12 @@ button:disabled {
    (teste + wordmark + ALL SPORTS), così NON riappare il fondo "BEATS THE
    SPORTSBOOK"/moltiplicatori. Un filo più alto del desktop per leggibilità. */
 @media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1642 / 400; } }
+/* #RESP-HARDEN 2026-06-18: su schermi molto larghi l'aspect-ratio fa crescere
+   l'hero in modo sgraziato (≈560px a 2560). Cap dell'altezza + crop centrato
+   così resta panoramico e proporzionato; sotto la soglia non cambia nulla. */
+@media (min-width: 1700px) {
+  .lp-hero-img { aspect-ratio: auto; height: clamp(360px, 23vw, 460px); }
+}
 
 /* #HOME-SPORTS-1: barra sport reale (cliccabile) ATTACCATA sotto l'immagine —
    sfondo scuro continuo col banner + sottile seam coral. Niente più overlay/
@@ -6686,10 +6692,66 @@ button:disabled {
 .lp-sport-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: lp-sport-pulse 1.6s ease-in-out infinite; }
 @keyframes lp-sport-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (max-width: 640px) {
-  .lp-hero-sports { gap: 8px; padding: 12px 10px; }
-  .lp-sport { font-size: 12px; padding: 6px 12px 6px 6px; gap: 8px; border-radius: 12px; }
-  .lp-sport-well { width: 34px; height: 34px; border-radius: 9px; }
+  /* #HOME-SPORTS: su mobile i tasti sport diventano una BARRA FISSA in basso
+     (bottom nav), come da richiesta Andrea 2026-06-18.
+     #RESP-HARDEN 2026-06-18: le 3 capsule DEVONO entrare in 320–414 senza
+     scroll interno. Da overflow-x:auto (scrollava, tagliando "Calcio") a tre
+     terzi flessibili (flex:1) che si auto-adattano; tutto scala con clamp. */
+  .lp { padding-bottom: 84px; }
+  .lp-hero-sports {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    flex-wrap: nowrap; overflow: hidden;
+    gap: clamp(6px, 1.6vw, 9px);
+    padding: 10px clamp(8px, 2.4vw, 12px) calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(7, 8, 13, 0) 0%, #07080d 28%);
+    border-top: none;
+  }
+  .lp-sport {
+    flex: 1 1 0; min-width: 0; justify-content: center;
+    gap: clamp(5px, 1.6vw, 8px); white-space: nowrap;
+    font-size: clamp(11px, 3vw, 13px);
+    padding: 7px clamp(6px, 2vw, 12px); border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+  }
+  /* il pozzetto-logo scala col viewport; non deve mai mangiare la label */
+  .lp-sport-well {
+    width: clamp(22px, 6.6vw, 28px); height: clamp(22px, 6.6vw, 28px);
+    border-radius: 8px; flex: 0 0 auto;
+  }
+  /* la label non si tronca: l'ellissi è solo l'estrema ratio di sicurezza */
+  .lp-sport-lab { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .lp-sport-arr { display: none; }
+  /* World Cup porta un elemento in più (badge LIVE) ed è il focal: gli do un
+     filo di larghezza in più degli altri due (1.3 vs 1) così "World Cup" sta
+     intero. Sotto 480px il badge LIVE collassa al solo punto pulsante per non
+     rubare spazio alla label sulla capsula più carica. */
+  .lp-sport-feat { flex: 1.3 1 0; gap: clamp(4px, 1.4vw, 7px); }
+  .lp-sport-live { padding: 3px 6px; font-size: 8.5px; letter-spacing: .08em; }
+}
+@media (max-width: 480px) {
+  /* ≤480px: collassa "LIVE" al solo punto pulsante (font-size:0 nasconde il
+     testo; il dot vive su width/height, non sul font → resta visibile e
+     pulsa). La label "World Cup" recupera così lo spazio per stare intera. */
+  .lp-sport-live { padding: 0; background: transparent; gap: 0; font-size: 0; }
+  .lp-sport-live .lp-sport-dot { width: 6px; height: 6px; }
+}
+@media (max-width: 360px) {
+  /* tier estremo (≤360, incl. 320): pozzetto e padding più compatti + il dot
+     LIVE (già senza testo) si nasconde del tutto → "Football"/"World Cup"
+     recuperano i px per stare interi. Lo stato LIVE resta comunicato dal
+     trattamento coral focal; il badge testuale ritorna ≥360px. */
+  .lp-hero-sports { gap: 5px; padding-left: 7px; padding-right: 7px; }
+  .lp-sport { gap: 5px; padding-left: 6px; padding-right: 8px; }
+  .lp-sport-well { width: 20px; height: 20px; }
+  .lp-sport-feat .lp-sport-live { display: none; }
+}
+@media (max-width: 340px) {
+  /* solo i device più stretti (≤340, es. 320): un ultimo micro-recupero sul
+     pozzetto e sul gap così anche "Football" sta intero. Specificità doppia
+     (.lp-sport-well.lp-sport-well) per vincere sempre sulla regola ≤360 a
+     parità di breakpoint, qualunque sia l'ordine post-minify. */
+  .lp-hero-sports .lp-sport { gap: 4px; padding-left: 5px; padding-right: 7px; font-size: 10.5px; }
+  .lp-sport-well.lp-sport-well { width: 18px; height: 18px; }
 }
 
 /* ── CTA ── */
@@ -6716,7 +6778,11 @@ button:disabled {
     "track plans app";
   gap: clamp(12px, 1.5vw, 20px);
   padding: 0 clamp(16px, 4vw, 56px) clamp(28px, 5vw, 56px);
-  margin-top: clamp(24px, 3vw, 40px);
+  margin: clamp(24px, 3vw, 40px) auto 0;
+  /* #RESP-HARDEN: cap su ultrawide così le tile non si spalmano edge-to-edge
+     (coerente col contenitore 1240 di what/how, un filo più largo per la grid
+     asimmetrica). box-sizing per includere il padding nel max-width. */
+  width: 100%; max-width: 1320px; box-sizing: border-box;
 }
 .lp-card-hero { grid-area: track; }
 .lp-card-wide { grid-area: model; }

@@ -354,17 +354,17 @@ export default function LandingPage() {
       </section>
       <nav className="lp-hero-sports" aria-label="Sports">
         <a href="/app?tab=bets&sport=football" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.jpg" alt="" /></span>
+          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.png" alt="" /></span>
           <b className="lp-sport-lab">{t.spFootball}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         <a href="/app?tab=bets&sport=tennis" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-tennis.jpg" alt="" /></span>
+          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-tennis.png" alt="" /></span>
           <b className="lp-sport-lab">{t.spTennis}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         <Link href="/world-cup" className="lp-sport lp-sport-feat">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-worldcup.jpg" alt="" /></span>
+          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-worldcup.png" alt="" /></span>
           <b className="lp-sport-lab">{t.spWorldCup}</b>
           <span className="lp-sport-live"><i className="lp-sport-dot" />LIVE</span>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
