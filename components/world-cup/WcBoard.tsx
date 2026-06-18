@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { modelEdge } from "@/lib/best-bets";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
+import { SportIcon } from "@/app/components/sport-icon";
 
 type WcEnrichment = {
   kind?: string;
@@ -365,7 +366,7 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
       {/* top: World Cup glyph + league/paper badge + when (live pulse) */}
       <div className="top">
         <div className="comp">
-          <svg className="sgi" aria-hidden="true"><use href="#g-trophy" /></svg>
+          <SportIcon sport="worldcup" size={15} className="sgi" variant="sm" />
           <span className="league">
             World Cup
             {p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}

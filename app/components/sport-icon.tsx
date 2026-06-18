@@ -8,11 +8,12 @@
 // invece di scalare il master da 320px (che impastava e pesava 10x sui byte).
 //
 // Sorgenti:
-//   master  : public/banners/sport-{football,tennis,worldcup}.png  (320px, scia piena)
-//   small   : public/banners/sport-{football,tennis}-sm.png        (64px, alpha pulita)
-// Il trofeo World Cup NON ha small: a 13–17px la sagoma alta-e-sottile diventa una
-// macchia ambra illeggibile (peggio del glifo vettoriale #g-trophy). Nei contesti
-// piccoli per il World Cup si tiene quindi il glifo vettoriale — vedi <SportGlyph>.
+//   master  : public/banners/sport-{football,tennis,worldcup}.png       (320px, scia piena)
+//   small   : public/banners/sport-{football,tennis,worldcup}-sm.png    (64px, alpha pulita)
+// 2026-06-18 (override Andrea): il World Cup HA ora la variante -sm (downscale Lanczos
+// dal master + tail-haze ripulita) e usa il NUOVO logo trofeo anche ai piccoli (13–17px)
+// — non più il glifo vettoriale #g-trophy. A queste dimensioni il trofeo gold resta
+// leggibile con la sua scia coral; vedi <SportMark>.
 //
 // NON usare next/image: replichiamo il pattern <img> già adottato dai tasti landing
 // (.lp-sport-img) per coerenza e zero dipendenze dalla pipeline immagini.
@@ -25,11 +26,11 @@ const SRC: Record<SportKind, string> = {
   worldcup: "/banners/sport-worldcup.png",
 };
 
-// varianti 64px ottimizzate per i contesti ≤24px (football/tennis: sfere, reggono;
-// il trofeo NON ha small variant — vedi nota in testa)
+// varianti 64px ottimizzate per i contesti ≤24px (alpha-tail ripulita, downscale Lanczos)
 const SRC_SM: Partial<Record<SportKind, string>> = {
   football: "/banners/sport-football-sm.png",
   tennis: "/banners/sport-tennis-sm.png",
+  worldcup: "/banners/sport-worldcup-sm.png",
 };
 
 export function SportIcon({
@@ -64,10 +65,10 @@ export function SportIcon({
   );
 }
 
-// SportMark — usato nei contesti PICCOLI: football/tennis montano il logo raster
-// (variante -sm), il World Cup tiene il glifo vettoriale #g-trophy (a 13–17px il
-// trofeo raster impasta, vedi nota in testa). `className` va all'elemento renderizzato
-// (sia <img> che <svg>), così eredita il sizing/colore del contesto esistente.
+// SportMark — usato nei contesti PICCOLI: football/tennis/worldcup montano tutti il
+// logo raster (variante -sm). Dal 2026-06-18 anche il World Cup usa il nuovo logo
+// trofeo (override Andrea), non più il glifo vettoriale #g-trophy. `className` va
+// all'<img> renderizzato, così eredita il sizing/box del contesto esistente.
 export function SportMark({
   sport,
   size,
@@ -77,12 +78,5 @@ export function SportMark({
   size?: number;
   className?: string;
 }) {
-  if (sport === "worldcup") {
-    return (
-      <svg className={className} aria-hidden="true">
-        <use href="#g-trophy" />
-      </svg>
-    );
-  }
   return <SportIcon sport={sport} size={size} className={className} variant="sm" />;
 }
