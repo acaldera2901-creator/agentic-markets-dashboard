@@ -14,6 +14,7 @@ import { surfaceFloorFor } from "@/lib/surfacing-gate";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
+import { SportIcon } from "@/app/components/sport-icon";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
 import { TrackRecordView } from "@/components/track-record/TrackRecordView";
@@ -2286,7 +2287,7 @@ function SportsbookBoard({
           {showFootballSection && (
             <section>
               <div className="sport-band">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>
+                <span className="glyph"><SportIcon sport="football" size={26} /></span>
                 <h2>{t.board_football}</h2>
                 <span className="ct">{footballRows.length} {t.board_markets}</span>
                 <span className="rule" />
@@ -2353,7 +2354,7 @@ function SportsbookBoard({
           {showTennisSection && (
             <section>
               <div className="sport-band amber">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>
+                <span className="glyph"><SportIcon sport="tennis" size={26} /></span>
                 <h2>{t.board_tennis}</h2>
                 <span className="ct">{tennisRows.length} {t.board_matches}</span>
                 <span className="rule" />
@@ -2526,7 +2527,7 @@ function BestBetsBoard({
           {visibleFootballValue.length > 0 && (
             <section>
               <div className="sport-band">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-ball" /></svg></span>
+                <span className="glyph"><SportIcon sport="football" size={26} /></span>
                 <h2>{t.board_football}</h2>
                 <span className="ct">{visibleFootballValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</span>
                 <span className="rule" />
@@ -2540,7 +2541,7 @@ function BestBetsBoard({
           {visibleTennisValue.length > 0 && (
             <section>
               <div className="sport-band amber">
-                <span className="glyph"><svg aria-hidden="true"><use href="#g-racket" /></svg></span>
+                <span className="glyph"><SportIcon sport="tennis" size={26} /></span>
                 <h2>{t.board_tennis}</h2>
                 <span className="ct">{visibleTennisValue.length} {bestRows.mode === "model_signal" ? labels.noEdge : t.board_value}</span>
                 <span className="rule" />
@@ -6646,7 +6647,6 @@ function FeaturedEdge({
   const sport: "football" | "tennis" = fEdge >= tEdge ? "football" : "tennis";
 
   // Common presentational fields, resolved per sport.
-  let glyph: string;
   let fixtureName: React.ReactNode;
   let league: string;
   let probability: number;
@@ -6658,7 +6658,6 @@ function FeaturedEdge({
   if (sport === "football" && topFootball) {
     const p = topFootball;
     const sel = bestFootballSelection(p);
-    glyph = "#g-ball";
     fixtureName = (
       <>
         {p.home_team}
@@ -6687,7 +6686,6 @@ function FeaturedEdge({
     }
   } else {
     const m = topTennis as TennisMatch;
-    glyph = "#g-racket";
     fixtureName = (
       <>
         {m.player1}
@@ -6720,7 +6718,7 @@ function FeaturedEdge({
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
           <div className="fxrow">
-            <svg className="sgi" aria-hidden="true"><use href={glyph} /></svg>
+            <SportIcon sport={sport} size={20} className="sgi" />
             <span className="fxname">{fixtureName}</span>
           </div>
           <div className="league">{league}</div>
@@ -6753,7 +6751,7 @@ function FeaturedEdge({
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
         <div className="fxrow">
-          <svg className="sgi" aria-hidden="true"><use href={glyph} /></svg>
+          <SportIcon sport={sport} size={20} className="sgi" />
           <span className="fxname">{fixtureName}</span>
         </div>
         <div className="league">{league}</div>

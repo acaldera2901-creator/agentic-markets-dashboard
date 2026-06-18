@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
+import { SportIcon } from "@/app/components/sport-icon";
 import Countdown from "@/components/world-cup/Countdown";
 import GroupsGrid from "@/components/world-cup/GroupsGrid";
 import CalendarSection from "@/components/world-cup/CalendarSection";
@@ -102,7 +103,7 @@ export default async function WorldCupPage() {
       <header className="wc-hub-hero">
         <div className="wc-hub-hero-titles">
           <span className="wc-hero-glyph" aria-hidden="true">
-            <svg><use href="#g-trophy" /></svg>
+            <SportIcon sport="worldcup" size={28} />
           </span>
           <div>
             <div className="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</div>
