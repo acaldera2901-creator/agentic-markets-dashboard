@@ -20,7 +20,9 @@ type HeartbeatRow = {
 };
 
 function isAuthorized(req: Request): boolean {
-  const secret = process.env.RESEARCH_SECRET || process.env.CRON_SECRET;
+  // Gate on RESEARCH_SECRET only — accepting CRON_SECRET too widened the
+  // credential surface for a route that dumps DB topology (#BUGCHECK-0617).
+  const secret = process.env.RESEARCH_SECRET;
   // Default-deny: diagnostics expose DB state — never fail open on missing env.
   if (!secret) return false;
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "");

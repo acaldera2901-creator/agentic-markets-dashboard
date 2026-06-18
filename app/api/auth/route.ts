@@ -4,7 +4,8 @@ import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/sessi
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
-import { sendEmail, paymentReceivedEmail, activationEmail } from "@/lib/email";
+import { paymentReceivedEmail, activationEmail } from "@/lib/email";
+import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken } from "@/lib/activation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
@@ -21,7 +22,18 @@ async function sendActivation(req: Request, identifier: string, lang: "it" | "en
   );
   const url = `${siteOrigin(req)}/api/auth/activate?token=${token}&id=${encodeURIComponent(identifier)}`;
   const mail = activationEmail(url, lang);
-  await sendEmail({ to: identifier, subject: mail.subject, html: mail.html, text: mail.text, from: mail.from, replyTo: mail.replyTo });
+  // throwOnError: registration must fail loud if the activation email can't be
+  // delivered (otherwise the account is unreachable). The send is still recorded.
+  await sendTransactional({
+    type: "activation",
+    to: identifier,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    from: mail.from,
+    replyTo: mail.replyTo,
+    throwOnError: true,
+  });
 }
 
 // Email-confirmation gate (HIGH-3). Required ONLY when we can actually send mail
@@ -153,8 +165,14 @@ export async function POST(req: Request) {
     if (ctx.identifier.includes("@")) {
       const lang = typeof body.language === "string" && body.language === "en" ? "en" : "it";
       const mail = paymentReceivedEmail(lang);
-      sendEmail({ to: ctx.identifier, subject: mail.subject, html: mail.html, text: mail.text })
-        .catch((e) => console.error("[auth] payment-received email failed:", String(e)));
+      await sendTransactional({
+        type: "payment_received",
+        to: ctx.identifier,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
+        meta: { requested_plan: requested },
+      });
     }
     return NextResponse.json(
       {

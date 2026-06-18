@@ -64,7 +64,10 @@ type OddsEvent = {
 function bestPrice(events: OddsEvent[], homeNorm: string, awayNorm: string, marketKey: string, outcomeName: string, point?: number): number | null {
   let best: number | null = null;
   for (const ev of events) {
-    if (normName(ev.home_team) !== homeNorm && normName(ev.away_team) !== awayNorm) continue;
+    // Both teams must match — the old AND-of-inequalities only skipped when BOTH
+    // differed, so an event sharing one team could supply side-market prices off
+    // the wrong fixture (#BUGCHECK-0617).
+    if (!(normName(ev.home_team) === homeNorm && normName(ev.away_team) === awayNorm)) continue;
     for (const bm of ev.bookmakers) {
       for (const mkt of bm.markets) {
         if (mkt.key !== marketKey) continue;

@@ -49,8 +49,10 @@ async function writeAdminEvent(eventType: string, plan: Plan | null, meta: Recor
        VALUES ($1, 'admin', NULL, NULL, $2, NULL, 0, $3)`,
       [eventType, plan, JSON.stringify(meta)]
     );
-  } catch {
-    /* swallow — audit event is best-effort */
+  } catch (e) {
+    // Best-effort, but log it — a silently-lost admin/payment audit trail matters
+    // in a dispute (#BUGCHECK-0617 P2).
+    console.error("[admin] audit event write failed:", String(e));
   }
 }
 
@@ -117,14 +119,28 @@ export async function PATCH(req: NextRequest) {
   const db = getSupabaseAdminClient();
   if (!db) return NextResponse.json({ error: "Supabase service role not configured" }, { status: 500 });
 
-  const plan = identifier === ADMIN_IDENTIFIER ? ADMIN_PROFILE_PLAN : requestedPlan;
-  let query = db
+  // Resolve the target row FIRST so the admin-plan-immutability guard checks the
+  // actual row's identifier — a PATCH by id alone (identifier null) could
+  // otherwise re-plan the admin/founder profile (#BUGCHECK-0617 B4).
+  let sel = db.from("profiles").select("id, identifier");
+  sel = profileId ? sel.eq("id", profileId) : sel.eq("identifier", identifier);
+  const { data: targetRow, error: selErr } = await sel.maybeSingle();
+  if (selErr) {
+    return NextResponse.json({ error: "profile fetch failed", detail: selErr.message }, { status: 500 });
+  }
+  if (!targetRow) {
+    return NextResponse.json({ error: "profile not found", detail: { id: profileId || null, identifier } }, { status: 404 });
+  }
+  const targetId = (targetRow as { id: string }).id;
+  const targetIdentifier = normalizeIdentifier((targetRow as { identifier: string }).identifier);
+
+  const plan = targetIdentifier === ADMIN_IDENTIFIER ? ADMIN_PROFILE_PLAN : requestedPlan;
+  const { data, error } = await db
     .from("profiles")
     .update({ plan, requested_plan: null, updated_at: new Date().toISOString() })
-    .select("id, identifier, name, plan, requested_plan, tx_hash, language, timezone, created_at, updated_at");
-
-  query = profileId ? query.eq("id", profileId) : query.eq("identifier", identifier);
-  const { data, error } = await query.maybeSingle();
+    .eq("id", targetId)
+    .select("id, identifier, name, plan, requested_plan, tx_hash, language, timezone, created_at, updated_at")
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: "profile update failed", detail: error.message }, { status: 500 });
@@ -178,6 +194,13 @@ export async function POST(req: NextRequest) {
     }
     if (!data) return NextResponse.json({ error: "profile not found", detail: { id: profileId || null, identifier } }, { status: 404 });
     const profile = data as ProfileAdminRow;
+
+    // Never mint a customer session for the admin/founder identity — mirrors the
+    // public auth block (admin_full can't get a session). Without this, an admin
+    // token could impersonate the founder identity (#BUGCHECK-0617 B4).
+    if (profile.plan === ADMIN_PROFILE_PLAN || normalizeIdentifier(profile.identifier) === ADMIN_IDENTIFIER) {
+      return NextResponse.json({ error: "cannot impersonate an admin profile" }, { status: 403 });
+    }
 
     await writeAdminEvent("admin_profile_impersonated", profile.plan, { identifier: profile.identifier });
 

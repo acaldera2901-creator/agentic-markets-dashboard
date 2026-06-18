@@ -8,7 +8,7 @@ export const ACTIVATION_TTL_MS = 60 * 60 * 1000; // 1h
 
 export function siteOrigin(req: Request): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
-  try { return new URL(req.url).origin; } catch { return "https://agentic-markets-roan.vercel.app"; }
+  try { return new URL(req.url).origin; } catch { return "https://betredge.com"; }
 }
 
 // Activation token: a random secret emailed to the user; only its SHA-256 hash

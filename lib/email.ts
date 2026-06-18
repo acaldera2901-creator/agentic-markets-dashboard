@@ -9,10 +9,12 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 // se ACTIVATION_FROM punta a un mittente verificato (es. il dominio collegato a
 // questa Gmail) lo usa; altrimenti invia dal RESEND_FROM verificato e mette
 // comunque la Gmail come reply-to + contatto nel corpo.
-export const ACCOUNT_CONTACT_EMAIL = "agenticmarketscb@gmail.com";
+export const ACCOUNT_CONTACT_EMAIL =
+  process.env.ACCOUNT_CONTACT_EMAIL || "agenticmarketscb@gmail.com";
 
 function fromAddress(): string {
-  // e.g. "BetRedge <login@agenticmarkets.com>"
+  // e.g. "BetRedge <noreply@betredge.com>". Set RESEND_FROM to a verified domain
+  // in prod; the resend.dev sandbox default only works for test sends.
   return process.env.RESEND_FROM || "BetRedge <onboarding@resend.dev>";
 }
 
@@ -20,6 +22,12 @@ function activationFromAddress(): string {
   // Verified sender for activation mail; defaults to the gmail contact name but
   // falls back to the verified RESEND_FROM domain so a send never hard-fails.
   return process.env.ACTIVATION_FROM || fromAddress();
+}
+
+// Public site origin used for email CTA links. Defaults to the production domain
+// so links never point at a stale preview deploy.
+function siteUrl(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://betredge.com").replace(/\/$/, "");
 }
 
 export async function sendEmail(opts: {
@@ -104,7 +112,7 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
   const cta = it ? "Apri il desk" : "Open the desk";
   return {
     subject,
-    html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p><a href="https://agentic-markets-roan.vercel.app/" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`),
+    html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`),
     text: body,
   };
 }
@@ -128,4 +136,96 @@ export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: str
 </div>`;
   const text = `${code}\n\n${intro}\n\n${ignore}`;
   return { subject, html, text };
+}
+
+// ── Lifecycle emails ─────────────────────────────────────────────────────────
+// All bilingual (it default / en), share the BetRedge shell(), and are sent via
+// sendTransactional() (lib/notify.ts) so each send is recorded in `notifications`.
+
+// Welcome — sent once the user clicks the activation link and the profile goes live.
+export function welcomeEmail(lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const subject = it ? "Benvenuto su BetRedge 👋" : "Welcome to BetRedge 👋";
+  const body = it
+    ? "Il tuo profilo è attivo. Apri il desk per vedere segnali e probabilità calibrate, con il track record pubblico sempre verificabile."
+    : "Your profile is live. Open the desk to see the signals and calibrated probabilities, with our public track record always verifiable.";
+  const cta = it ? "Apri il desk" : "Open the desk";
+  return {
+    subject,
+    html: shell(
+      `<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`
+    ),
+    text: `${body}\n\n${cta}: ${siteUrl()}/app`,
+  };
+}
+
+// Receipt — sent on Stripe invoice.paid with the real amount. Distinct from the
+// plan-activated notice. Guard duplicate sends with Stripe event-id idempotency.
+export function receiptEmail(
+  amountMinor: number | null,
+  currency: string | null,
+  plan: string,
+  periodEndISO: string | null,
+  lang = "it"
+): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const amount =
+    amountMinor != null && currency
+      ? new Intl.NumberFormat(it ? "it-IT" : "en-GB", {
+          style: "currency",
+          currency: currency.toUpperCase(),
+        }).format(amountMinor / 100)
+      : null;
+  const until = periodEndISO
+    ? new Date(periodEndISO).toLocaleDateString(it ? "it-IT" : "en-GB")
+    : null;
+  const subject = it ? "Ricevuta di pagamento BetRedge" : "Your BetRedge payment receipt";
+  const planLabel = plan === "premium" ? "Signal Desk Pro (Premium)" : "Signal Desk Pro (Base)";
+  const lines = it
+    ? [
+        `Grazie. Abbiamo registrato il tuo pagamento per ${planLabel}.`,
+        amount ? `Importo: ${amount}.` : null,
+        until ? `Rinnovo / scadenza: ${until}.` : null,
+      ]
+    : [
+        `Thank you. We've recorded your payment for ${planLabel}.`,
+        amount ? `Amount: ${amount}.` : null,
+        until ? `Renews / expires: ${until}.` : null,
+      ];
+  const text = lines.filter(Boolean).join(" ");
+  return { subject, html: shell(`<p style="font-size:14px;line-height:1.5">${text}</p>`), text };
+}
+
+// Cancellation — sent when a subscription is deleted; the plan drops to free.
+export function cancellationEmail(lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const subject = it ? "Abbonamento annullato" : "Subscription cancelled";
+  const body = it
+    ? "Il tuo Signal Desk Pro è stato annullato e il profilo è tornato al piano gratuito. Puoi riattivarlo quando vuoi dal desk — nessun dato perso."
+    : "Your Signal Desk Pro has been cancelled and your profile is back on the free plan. You can reactivate any time from the desk — nothing is lost.";
+  const cta = it ? "Riattiva" : "Reactivate";
+  return {
+    subject,
+    html: shell(
+      `<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app?tab=account" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`
+    ),
+    text: `${body}\n\n${cta}: ${siteUrl()}/app?tab=account`,
+  };
+}
+
+// Win-back — sent (cron) to users whose plan has expired, to invite them back.
+export function winBackEmail(lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const subject = it ? "Ti riapriamo il desk?" : "Want your desk back?";
+  const body = it
+    ? "Il tuo Signal Desk Pro è scaduto. Le probabilità calibrate e il track record verificabile sono sempre lì — riattiva per tornare a vederli in pieno."
+    : "Your Signal Desk Pro has expired. The calibrated probabilities and verifiable track record are still here — reactivate to get full access again.";
+  const cta = it ? "Riattiva il desk" : "Reactivate the desk";
+  return {
+    subject,
+    html: shell(
+      `<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app?tab=account" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`
+    ),
+    text: `${body}\n\n${cta}: ${siteUrl()}/app?tab=account`,
+  };
 }

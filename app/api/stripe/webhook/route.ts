@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isStripeConfigured, resolvePlanFromPriceId, periodEndToIso } from "@/lib/stripe";
 import { activateStripePlan } from "@/lib/plan-grant";
-import { dbQuery } from "@/lib/db";
+import { dbQuery, dbExecute } from "@/lib/db";
+import { receiptEmail, cancellationEmail } from "@/lib/email";
+import { sendTransactional } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -42,6 +44,28 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("[stripe/webhook] bad signature:", String(e));
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
+  }
+
+  // Idempotency: record the event id BEFORE handling. Stripe redelivers events
+  // (and a captured signed body can be replayed) — without this, a replayed
+  // invoice.paid re-extends the plan and re-sends the receipt. INSERT ... ON
+  // CONFLICT DO NOTHING RETURNING is atomic: a returned row means we're first.
+  try {
+    const first = await dbExecute<{ event_id: string }>(
+      `INSERT INTO stripe_events (event_id, event_type)
+       VALUES ($1, $2)
+       ON CONFLICT (event_id) DO NOTHING
+       RETURNING event_id`,
+      [event.id, event.type]
+    );
+    if (first.length === 0) {
+      // Already processed — ack 200 so Stripe stops retrying.
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+  } catch (e) {
+    // Can't confirm idempotency → 500 so Stripe retries (no unguarded processing).
+    console.error("[stripe/webhook] idempotency check failed:", String(e));
+    return NextResponse.json({ error: "idempotency unavailable" }, { status: 500 });
   }
 
   try {
@@ -106,6 +130,24 @@ export async function POST(req: Request) {
         if (identifier && plan) {
           // Persist the sub id in the same update (set even if checkout.session.completed is late).
           await activateStripePlan(identifier, plan, subId, periodEndToIso(periodEnd));
+          // Receipt with the real amount. The event-id guard above ensures one
+          // send per payment event (no duplicates on Stripe redelivery).
+          if (identifier.includes("@")) {
+            const mail = receiptEmail(
+              inv.amount_paid ?? null,
+              inv.currency ?? null,
+              plan,
+              periodEndToIso(periodEnd)
+            );
+            await sendTransactional({
+              type: "receipt",
+              to: identifier,
+              subject: mail.subject,
+              html: mail.html,
+              text: mail.text,
+              meta: { invoice: inv.id, plan },
+            });
+          }
         } else {
           console.error("[stripe/webhook] invoice.paid unresolved", { identifier, priceId });
         }
@@ -113,12 +155,25 @@ export async function POST(req: Request) {
       }
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
-        await dbQuery(
+        const cancelled = await dbQuery<{ identifier: string; language: string | null }>(
           `UPDATE profiles
               SET plan = 'free', plan_expires_at = NULL, stripe_subscription_id = NULL, updated_at = NOW()
-            WHERE stripe_subscription_id = $1`,
+            WHERE stripe_subscription_id = $1
+          RETURNING identifier, language`,
           [String(sub.id)]
         );
+        // Notify the customer their subscription was cancelled (best-effort + recorded).
+        const c = cancelled[0];
+        if (c?.identifier?.includes("@")) {
+          const mail = cancellationEmail(c.language === "en" ? "en" : "it");
+          await sendTransactional({
+            type: "cancellation",
+            to: c.identifier,
+            subject: mail.subject,
+            html: mail.html,
+            text: mail.text,
+          });
+        }
         break;
       }
       default:
@@ -126,6 +181,16 @@ export async function POST(req: Request) {
     }
   } catch (e) {
     console.error("[stripe/webhook] handler error:", String(e));
+    // F1 (#REVIEW-RESEND-I18N-0617): we recorded the event id BEFORE processing
+    // (for dedup), but processing just threw — likely a transient error. Roll the
+    // idempotency record back so Stripe's retry actually reprocesses; otherwise a
+    // paid invoice that transiently failed would be acked as a duplicate next time
+    // and the customer would be charged without ever getting the plan.
+    try {
+      await dbExecute(`DELETE FROM stripe_events WHERE event_id = $1`, [event.id]);
+    } catch (delErr) {
+      console.error("[stripe/webhook] idempotency rollback failed:", String(delErr));
+    }
     return NextResponse.json({ error: "handler error" }, { status: 500 });
   }
 

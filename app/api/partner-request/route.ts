@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbExecute } from "@/lib/db";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  // Unauthenticated public write — throttle per IP to stop DB spam/DoS
+  // (#BUGCHECK-0617). Best-effort limiter (per serverless instance).
+  if (rateLimit(`partner:${clientIp(req)}`, 5, 60_000)) {
+    return NextResponse.json({ error: "too many requests, slow down" }, { status: 429 });
+  }
   try {
     const body = await req.json();
     const { company, site, category, email, message } = body as {

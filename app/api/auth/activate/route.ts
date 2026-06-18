@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { siteOrigin, hashActivationToken, tokenHashMatches } from "@/lib/activation";
+import { welcomeEmail } from "@/lib/email";
+import { sendTransactional } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,7 @@ type Row = {
   activated_at: string | null;
   activation_token_hash: string | null;
   activation_token_expires: string | null;
+  language: string | null;
 };
 
 function redirect(req: Request, query: string): NextResponse {
@@ -28,7 +31,7 @@ export async function GET(req: Request) {
   if (!token || !id) return redirect(req, "?activation=invalid");
 
   const rows = await dbQuery<Row>(
-    "SELECT identifier, activated_at, activation_token_hash, activation_token_expires FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+    "SELECT identifier, activated_at, activation_token_hash, activation_token_expires, language FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
     [id]
   );
   const row = rows[0];
@@ -56,6 +59,19 @@ export async function GET(req: Request) {
   } catch (e) {
     console.error("[auth/activate] activation write failed:", String(e));
     return redirect(req, "?activation=error");
+  }
+
+  // Welcome email — first email after a successful signup→activation. Best-effort
+  // (recorded in `notifications`); never blocks the redirect / session.
+  if (row.identifier.includes("@")) {
+    const mail = welcomeEmail(row.language === "en" ? "en" : "it");
+    await sendTransactional({
+      type: "welcome",
+      to: row.identifier,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+    });
   }
 
   // Activated → issue the session cookie and land on the board.

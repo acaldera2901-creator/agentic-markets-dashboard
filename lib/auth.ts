@@ -21,7 +21,11 @@ export type SessionContext = {
 function effectivePlan(plan: Plan, expiresAt: string | null): Plan {
   if (plan !== "base" && plan !== "premium") return plan;
   if (!expiresAt) return plan; // legacy active rows with no expiry stay active
-  return new Date(expiresAt).getTime() < Date.now() ? "free" : plan;
+  const t = new Date(expiresAt).getTime();
+  // Fail closed on a malformed expiry: NaN < Date.now() is false, which would
+  // otherwise keep a corrupt-dated paid row active forever (#BUGCHECK-0617).
+  if (Number.isNaN(t)) return "free";
+  return t < Date.now() ? "free" : plan;
 }
 
 // Header-based cookie read: robust across Next.js versions (avoids the cookie() API

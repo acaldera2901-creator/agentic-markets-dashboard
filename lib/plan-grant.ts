@@ -1,5 +1,6 @@
 import { dbQuery } from "./db";
-import { sendEmail, planActivatedEmail } from "./email";
+import { planActivatedEmail } from "./email";
+import { sendTransactional } from "./notify";
 
 export type GrantablePlan = "base" | "premium";
 
@@ -34,8 +35,14 @@ async function notifyPlanActivated(row: ActivatedRow, source: ActivationSource):
       [row.identifier]
     );
     const mail = planActivatedEmail(exp[0]?.plan_expires_at ?? null);
-    sendEmail({ to: row.identifier, subject: mail.subject, html: mail.html, text: mail.text })
-      .catch((e) => console.error("[plan-grant] plan-activated email failed:", String(e)));
+    await sendTransactional({
+      type: "plan_activated",
+      to: row.identifier,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+      meta: { source, plan: row.plan },
+    });
   }
 }
 
