@@ -294,7 +294,7 @@ const BASE_TRANSLATIONS = {
     language_en: "Inglese",
     account_pending_detail: "Conto cliente non ancora collegato. Il saldo parte da zero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Mercati", nav_leaderboard: "Classifica", nav_account: "Account",
+    nav_markets: "Mercati", nav_predictions: "Previsioni", nav_leaderboard: "Classifica", nav_account: "Account",
     auth_signin: "Accedi", auth_register: "Registrati",
     theme_aria: "Tema", featured_label: "In evidenza",
     kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit · 100g",
@@ -559,7 +559,7 @@ const BASE_TRANSLATIONS = {
     language_en: "English",
     account_pending_detail: "Client account not connected yet. Balance starts at zero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Markets", nav_leaderboard: "Leaderboard", nav_account: "Account",
+    nav_markets: "Markets", nav_predictions: "Prediction", nav_leaderboard: "Leaderboard", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
     theme_aria: "Theme", featured_label: "Featured",
     kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit · 100g",
@@ -827,7 +827,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
     account_pending_detail: "Cuenta de cliente aún no conectada. El saldo empieza en cero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Mercados", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
+    nav_markets: "Mercados", nav_predictions: "Predicciones", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
     auth_signin: "Entrar", auth_register: "Registrarse",
     theme_aria: "Tema", featured_label: "Destacados",
     kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto · 100d",
@@ -1092,7 +1092,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
     account_pending_detail: "Compte client pas encore connecté. Le solde démarre à zéro.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Marchés", nav_leaderboard: "Classement", nav_account: "Compte",
+    nav_markets: "Marchés", nav_predictions: "Prédictions", nav_leaderboard: "Classement", nav_account: "Compte",
     auth_signin: "Connexion", auth_register: "S'inscrire",
     theme_aria: "Thème", featured_label: "À la une",
     kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite · 100j",
@@ -1357,7 +1357,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
     account_pending_detail: "Аккаунт клиента ещё не подключён. Баланс начинается с нуля.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Рынки", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
+    nav_markets: "Рынки", nav_predictions: "Прогнозы", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
     auth_signin: "Войти", auth_register: "Регистрация",
     theme_aria: "Тема", featured_label: "Избранное",
     kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность · 100д",
@@ -7519,7 +7519,7 @@ export default function Dashboard() {
     }
   };
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
-    { tab: "bets",        label: "Bets", value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
+    { tab: "bets",        label: tNav.nav_predictions, value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "history",      label: tNav.nav_history },
     { tab: "leaderboard", label: tNav.nav_leaderboard },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
@@ -7664,7 +7664,7 @@ export default function Dashboard() {
               <span className="rail-lab is-second">{tNav.featured_label}</span>
               {/* Track B: World Cup hub is a route, not a tab */}
               <Link className="rail-item" href="/world-cup">
-                <svg className="rail-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
+                <SportIcon sport="worldcup" size={17} className="rail-ic" variant="sm" />
                 <span className="rail-label">World Cup</span>
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
@@ -7681,7 +7681,7 @@ export default function Dashboard() {
         <section className="book-main">
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
-              <h2>{navItems.find((n) => n.tab === tab)?.label ?? "Bets"}</h2>
+              <h2>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h2>
               <p className="am-sub">
                 {tab === "account" ? (
                   uiLanguage === "it"
