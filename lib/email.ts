@@ -84,6 +84,32 @@ export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): 
   return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
 }
 
+// Password reset: the link the user clicks to set a new password. Like
+// activation, sent from the account contact mailbox; the link carries a one-time
+// token (only its hash is stored) and expires in 1 hour.
+export function passwordResetEmail(resetUrl: string, lang: "it" | "en" = "it"): {
+  subject: string; html: string; text: string; from: string; replyTo: string;
+} {
+  const it = lang === "it";
+  const subject = it ? "Reimposta la tua password BetRedge" : "Reset your BetRedge password";
+  const intro = it
+    ? "Hai chiesto di reimpostare la password. Clicca qui sotto per sceglierne una nuova. Il link scade tra 1 ora."
+    : "You asked to reset your password. Click below to choose a new one. The link expires in 1 hour.";
+  const cta = it ? "Reimposta la password" : "Reset password";
+  const ignore = it
+    ? `Se non hai richiesto tu il reset, ignora questa email: la password resta invariata. Per dubbi scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
+    : `If you didn't request this, ignore this email — your password stays unchanged. Questions? Write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
+  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
+  <p style="font-size:14px;line-height:1.5;margin:0 0 16px">${intro}</p>
+  <a href="${resetUrl}" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:14px;font-weight:600">${cta}</a>
+  <p style="font-size:12px;color:#94a3b8;margin:18px 0 0;word-break:break-all">${resetUrl}</p>
+  <p style="font-size:12px;color:#94a3b8;margin:12px 0 0">${ignore}</p>
+</div>`;
+  const text = `${intro}\n\n${cta}: ${resetUrl}\n\n${ignore}`;
+  return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
+}
+
 function shell(bodyHtml: string): string {
   return `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
   <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>

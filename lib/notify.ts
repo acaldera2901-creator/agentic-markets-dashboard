@@ -13,6 +13,7 @@ import { dbExecute } from "./db";
 
 export type TxEmailType =
   | "activation"
+  | "password_reset"
   | "welcome"
   | "payment_received"
   | "plan_activated"

@@ -3720,6 +3720,8 @@ function ClientAuthModal({
   const [info, setInfo] = useState("");
   const [showResend, setShowResend] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const [busy, setBusy] = useState(false);
   // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
   const [ageOk, setAgeOk] = useState(false);
@@ -3806,6 +3808,64 @@ function ClientAuthModal({
     finally { setBusy(false); }
   };
 
+  // "Password dimenticata?": ask the server for a reset link. Always succeeds for
+  // the user (no account enumeration — the server returns 200 regardless), so we
+  // show the same neutral confirmation whether or not the email exists.
+  const submitForgot = async () => {
+    if (busy || !emailValid) return;
+    setBusy(true); setError("");
+    try {
+      await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "forgot_password", identifier: normalizedEmail, language: lang }),
+      });
+      setForgotSent(true);
+    } catch { setError(t.auth_err_generic); }
+    finally { setBusy(false); }
+  };
+
+  // Forgot-password view: a compact email-only form rendered inside the same modal
+  // shell. Reached from the "Password dimenticata?" link in login mode.
+  if (forgot) {
+    return (
+      <div className="auth-modal-backdrop">
+        <form className="auth-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
+          <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
+            style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
+              color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
+            ×
+          </button>
+          <div className="auth-modal-head">
+            <p className="eyebrow">{t.auth_eyebrow}</p>
+            <h3>{it ? "Recupera la password" : "Recover your password"}</h3>
+            <span>{it ? "Ti inviamo un link per impostare una nuova password." : "We'll email you a link to set a new password."}</span>
+          </div>
+          {forgotSent ? (
+            <p className="auth-info" style={{ fontSize: "13px", lineHeight: 1.5, color: "var(--am-coral)", margin: "4px 0 0" }}>
+              {it
+                ? `Se esiste un account per ${normalizedEmail}, ti abbiamo inviato un link di reset (controlla anche lo spam). Il link scade tra 1 ora.`
+                : `If an account exists for ${normalizedEmail}, we sent a reset link (check spam too). The link expires in 1 hour.`}
+            </p>
+          ) : (
+            <>
+              <label>
+                <span>Email</span>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
+              </label>
+              {error && <p className="auth-error">{error}</p>}
+              <button disabled={!emailValid || busy}>{busy ? "…" : (it ? "Invia link di reset" : "Send reset link")}</button>
+            </>
+          )}
+          <button type="button" onClick={() => { setForgot(false); setForgotSent(false); setError(""); }}
+            style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline",
+              cursor: "pointer", fontSize: "12px", padding: "6px 0", alignSelf: "center" }}>
+            {it ? "Torna all'accesso" : "Back to login"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-modal-backdrop">
       <form className="auth-modal"
@@ -3851,6 +3911,13 @@ function ClientAuthModal({
             </button>
           </div>
         </label>
+        {mode === "login" && (
+          <button type="button" onClick={() => { setForgot(true); setError(""); setInfo(""); }}
+            style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline",
+              cursor: "pointer", fontSize: "12px", padding: "2px 0", alignSelf: "flex-start" }}>
+            {it ? "Password dimenticata?" : "Forgot your password?"}
+          </button>
+        )}
         {/* #SIGNUP-GATE: +18 confirmation + Terms acceptance, required to create a profile */}
         {mode === "create" && (
           <div className="auth-consent" style={{ display: "flex", flexDirection: "column", gap: 8, margin: "4px 0 0" }}>

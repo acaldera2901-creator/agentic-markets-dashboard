@@ -25,6 +25,18 @@ export function hashActivationToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+// Password-reset token — same construction as the activation token (random
+// secret emailed to the user, only its SHA-256 hash stored), separate column +
+// TTL. Reuse hashActivationToken/tokenHashMatches to verify.
+export const RESET_TTL_MS = 60 * 60 * 1000; // 1h
+
+export function newResetToken(): { token: string; hash: string; expiresIso: string } {
+  const token = crypto.randomBytes(32).toString("base64url");
+  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const expiresIso = new Date(Date.now() + RESET_TTL_MS).toISOString();
+  return { token, hash, expiresIso };
+}
+
 // Constant-time compare of two hex hashes.
 export function tokenHashMatches(presentedHash: string, storedHash: string): boolean {
   const a = Buffer.from(presentedHash);

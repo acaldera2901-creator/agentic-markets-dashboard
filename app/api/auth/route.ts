@@ -4,10 +4,10 @@ import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/sessi
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
-import { paymentReceivedEmail, activationEmail } from "@/lib/email";
+import { paymentReceivedEmail, activationEmail, passwordResetEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
-import { siteOrigin, newActivationToken } from "@/lib/activation";
+import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -183,6 +183,37 @@ export async function POST(req: Request) {
       },
       { headers: { "cache-control": "no-store" } }
     );
+  }
+
+  // "forgot_password": email a one-time reset link. Handled BEFORE the password
+  // checks below (the user has no password to type). Never enumerates accounts —
+  // always returns 200, and only a real account with a password set (and not an
+  // admin) actually receives a link.
+  if (action === "forgot_password") {
+    const id = normalizeIdentifier(body.identifier ?? body.email);
+    const resetLang: "it" | "en" = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+    if (id && id.includes("@")) {
+      const row = await loadAuthRow(id);
+      if (row && row.password_hash && row.plan !== "admin_full") {
+        try {
+          const { token, hash, expiresIso } = newResetToken();
+          await dbExecute(
+            "UPDATE profiles SET reset_token_hash = $2, reset_token_expires = $3, updated_at = NOW() WHERE identifier = $1",
+            [row.identifier, hash, expiresIso]
+          );
+          const url = `${siteOrigin(req)}/reset-password?token=${token}&id=${encodeURIComponent(row.identifier)}`;
+          const mail = passwordResetEmail(url, resetLang);
+          // Best-effort: a non-deliverable reset email must not reveal (via a 500)
+          // that the account exists. The attempt is still recorded in notifications.
+          await sendTransactional({
+            type: "password_reset", to: row.identifier,
+            subject: mail.subject, html: mail.html, text: mail.text,
+            from: mail.from, replyTo: mail.replyTo,
+          });
+        } catch (e) { console.error("[auth] forgot_password failed:", String(e)); }
+      }
+    }
+    return NextResponse.json({ ok: true });
   }
 
   // ── Password auth (register / login) ──────────────────────────────────────
