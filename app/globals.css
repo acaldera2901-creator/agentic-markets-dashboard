@@ -7206,3 +7206,41 @@ button:disabled {
 @media (max-width: 760px) {
   .account-bento { grid-template-columns: 1fr; }
 }
+
+/* ── Mobile bottom tab bar (#MOBILE-1) — solo ≤760px, desktop invariato ── */
+.am-bottomnav { display: none; }
+.mb-entry { display: none; }
+@media (max-width: 760px) {
+  /* il "muro di menu" (sidebar) sparisce: lo sostituisce la bottom bar */
+  .sports-rail { display: none !important; }
+  /* contenuto a tutta larghezza + spazio per la barra fissa */
+  .portal-columns { display: block !important; }
+  .portal-desk { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important; }
+  /* header snello: niente toggle tema su mobile (teniamo dark) */
+  .am-tt { display: none !important; }
+
+  .am-bottomnav {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    background: color-mix(in srgb, var(--am-bg2) 92%, transparent);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--am-line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .am-bottomnav .bn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 8px 2px 7px; color: var(--am-muted-2);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 9px; letter-spacing: .03em; background: none; border: 0; cursor: pointer; min-width: 0;
+  }
+  .am-bottomnav .bn svg { width: 20px; height: 20px; }
+  .am-bottomnav .bn.on { color: var(--am-coral); }
+  .am-bottomnav .bn .bn-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* entry-point Match Builder dentro Prediction (mobile) */
+  .mb-entry {
+    display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+    padding: 7px 12px; border-radius: 9px;
+    border: 1px solid var(--am-coral-b); color: var(--am-coral); background: var(--am-coral-dim);
+  }
+}
