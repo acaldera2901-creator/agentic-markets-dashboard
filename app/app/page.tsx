@@ -6600,17 +6600,20 @@ function AccountTab({
         ))}
       </div>
       {section === "account" && (
-        <div className="account-pane">
-          <ClientAreaTab profile={profile} onActivateFree={onActivateFree} />
-          <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} />
+        <div className="account-bento">
+          <div className="ab-plan"><ClientAreaTab profile={profile} onActivateFree={onActivateFree} /></div>
+          <div className="ab-settings"><SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} /></div>
           {profile && (
-            <div className="client-area-footer">
+            <div className="am-card ab-logout p-4 flex items-center justify-between gap-3">
+              <span className="text-xs font-mono text-[var(--am-muted-2)]">
+                {pick5(lang, { it: "Sessione", en: "Session", es: "Sesión", fr: "Session", ru: "Сессия" })}
+              </span>
               <button className="btn-secondary" onClick={onLogout}>
                 {pick5(lang, { it: "Esci dall'account", en: "Log out", es: "Cerrar sesión", fr: "Se déconnecter", ru: "Выйти" })}
               </button>
             </div>
           )}
-          <AccountHelpFooter />
+          <div className="ab-help"><AccountHelpFooter /></div>
         </div>
       )}
       {section === "piani" && (
