@@ -7166,3 +7166,31 @@ button:disabled {
   flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--am-muted-2);
 }
+
+/* ── Rich cards (#REDESIGN-PA-1) — base "vetro" + glow + watermark, theme-aware via --am-* ── */
+.am-card {
+  position: relative; border: 1px solid var(--am-line); border-radius: 14px; overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,.035), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--am-panel) 92%, #fff 8%), var(--am-panel));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 2px rgba(0,0,0,.35);
+}
+.am-card::after { /* dot-grid sottile sfumato verso il basso */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: radial-gradient(rgba(127,127,127,.10) 1px, transparent 1px); background-size: 13px 13px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%); mask-image: linear-gradient(180deg, #000, transparent 70%);
+}
+.am-card-glow { border-color: var(--am-coral-b);
+  background:
+    radial-gradient(90% 120% at 0% 0%, var(--am-coral-dim), transparent 55%),
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,.04), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--am-panel) 90%, var(--am-coral) 6%), var(--am-panel));
+}
+.am-card-glow::before {
+  content: ""; position: absolute; width: 160px; height: 160px; right: -50px; bottom: -70px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--am-coral-dim), transparent); filter: blur(6px); pointer-events: none;
+}
+.am-card > * { position: relative; z-index: 1; }
+.am-wm { position: absolute; right: -16px; bottom: -22px; opacity: .13; pointer-events: none; transform: rotate(-6deg); z-index: 0; }
+.am-wm-img { width: 128px; height: 128px; background: center / contain no-repeat; }
+.am-wm-glyph { font-size: 80px; line-height: 1; font-weight: 800; }
