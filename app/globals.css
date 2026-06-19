@@ -7195,9 +7195,10 @@ button:disabled {
   background: radial-gradient(closest-side, var(--am-coral-dim), transparent); filter: blur(6px); pointer-events: none;
 }
 .am-card > * { position: relative; z-index: 1; }
-.am-wm { position: absolute; right: -16px; bottom: -22px; opacity: .13; pointer-events: none; transform: rotate(-6deg); z-index: 0; }
-.am-wm-img { width: 128px; height: 128px; background: center / contain no-repeat; }
-.am-wm-glyph { font-size: 80px; line-height: 1; font-weight: 800; }
+/* NB: RINOMINATE .am-cardwm* — .am-wm è GIÀ il wordmark del logo brand (collisione → logo sparito, fix) */
+.am-cardwm { position: absolute; right: -16px; bottom: -22px; opacity: .13; pointer-events: none; transform: rotate(-6deg); z-index: 0; }
+.am-cardwm-img { width: 128px; height: 128px; background: center / contain no-repeat; }
+.am-cardwm-glyph { font-size: 80px; line-height: 1; font-weight: 800; }
 
 /* Account pane — bento 2-col (piano a sx, impostazioni a dx, logout/help in basso) */
 .account-bento { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
