@@ -5203,7 +5203,7 @@ const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled
 // ─── Match Builder Tab (#MB-1, influencer tool) ──────────────────────────────
 //
 // L'influencer (loggato) seleziona 2–5 predizioni, vede il moltiplicatore
-// combinato e genera un link /?mb=id1,id2&ref=CODICE. Il visitatore che apre
+// combinato e genera un link /app?mb=id1,id2&ref=CODICE. Il visitatore che apre
 // il link trova la schedina precaricata: i pick/quote restano gated per gli
 // anonimi (projection server-side), quindi il link è esso stesso il funnel.
 // Onestà quote: le selezioni senza mercato reale usano le FAIR ODDS del
@@ -5419,7 +5419,7 @@ function MatchBuilderTab({
     const params = new URLSearchParams({ mb: selected.join(",") });
     const code = influencerCode.trim().toUpperCase();
     if (/^[A-Z0-9_-]{2,20}$/.test(code)) params.set("ref", code);
-    return `${base}/?${params.toString()}`;
+    return `${base}/app?${params.toString()}`;
   })();
 
   const [publishState, setPublishState] = useState<"idle" | "published">("idle");

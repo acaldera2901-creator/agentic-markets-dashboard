@@ -3,7 +3,7 @@
 // col Match Builder. Pagina pubblica di discovery: i match sono visibili a
 // tutti, pick e probabilità restano dietro la registrazione (stessa proiezione
 // per-sessione del board — il lock È la CTA). Ogni card riapre la schedina
-// originale via /?mb=...&ref=CODICE, quindi il traffico da qui mantiene
+// originale via /app?mb=...&ref=CODICE, quindi il traffico da qui mantiene
 // l'attribution del creator.
 
 import { useEffect, useState } from "react";
@@ -172,7 +172,7 @@ export default function CommunityPage() {
             <div className="flex items-center justify-between pt-1">
               {locked ? (
                 <Link
-                  href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
+                  href={`/app?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
                   style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
                 >
@@ -180,7 +180,7 @@ export default function CommunityPage() {
                 </Link>
               ) : (
                 <Link
-                  href={`/?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
+                  href={`/app?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
                   style={{ borderColor: "var(--am-line-2)", color: "var(--am-muted)" }}
                 >

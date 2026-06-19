@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
 
   await writeAdminEvent("admin_profile_switched", profile.plan, { identifier: profile.identifier });
 
-  const redirectUrl = new URL("/", req.url);
+  const redirectUrl = new URL("/app", req.url);
   redirectUrl.searchParams.set("switched", profile.identifier);
   const res = NextResponse.redirect(redirectUrl);
   res.cookies.set(SESSION_COOKIE, signSession(profile.identifier), SESSION_COOKIE_OPTIONS);
