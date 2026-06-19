@@ -227,6 +227,12 @@ class Settings(BaseSettings):
     SHADOW_EVAL_ENABLED: bool = True
     SHADOW_EVAL_POLL_INTERVAL: int = 600    # seconds between collect+settle cycles
 
+    # #FORTUNEPLAY-ODDS-1 — FortunePlay/rooster.bet (piattaforma BetConstruct),
+    # PRIMO book autorizzato (deal partnership). L'agent scraper legge il flag via
+    # getattr(default True): qui esplicito a False per partire OFF. Flip a True in
+    # prod solo dopo APPROVE umano + verifica reale (ToS/optics FTC da chiudere).
+    FORTUNEPLAY_ENABLED: bool = False
+
     # #PINNACLE-ANCHOR-1 — sharp market anchor. When True the odds clients pick
     # Pinnacle (else a sharp exchange, else legacy best-margin) as the market
     # anchor fed to the de-vig/blend, instead of the legacy best-margin-across-

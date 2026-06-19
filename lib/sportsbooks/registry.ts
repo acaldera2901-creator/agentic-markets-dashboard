@@ -1,5 +1,6 @@
 import { stakeAdapter } from "./adapters/stake";
 import { roobetAdapter } from "./adapters/roobet";
+import { fortuneplayAdapter } from "./adapters/fortuneplay";
 import type { Sportsbook, SportsbookId, BookAdapter } from "./types";
 
 function parsePaths(json: string | undefined): Sportsbook["sportPaths"] | undefined {
@@ -45,6 +46,11 @@ const SPECS: Spec[] = [
     id: "roobet", name: "Roobet", logo: "/logos/roobet.svg", adapter: roobetAdapter,
     codeEnv: "SPORTSBOOK_ROOBET_CODE", urlEnv: "SPORTSBOOK_ROOBET_URL",
     pathsEnv: "SPORTSBOOK_ROOBET_PATHS", urlsEnv: "SPORTSBOOK_ROOBET_URLS",
+  },
+  {
+    id: "fortuneplay", name: "FortunePlay", logo: "/logos/fortuneplay.svg", adapter: fortuneplayAdapter,
+    codeEnv: "SPORTSBOOK_FORTUNEPLAY_CODE", urlEnv: "SPORTSBOOK_FORTUNEPLAY_URL",
+    pathsEnv: "SPORTSBOOK_FORTUNEPLAY_PATHS", urlsEnv: "SPORTSBOOK_FORTUNEPLAY_URLS",
   },
 ];
 
