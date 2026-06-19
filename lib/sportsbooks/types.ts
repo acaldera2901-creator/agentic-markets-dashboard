@@ -1,4 +1,4 @@
-export type SportsbookId = "stake" | "roobet";
+export type SportsbookId = "stake" | "roobet" | "fortuneplay";
 
 export type BetSport = "football" | "tennis" | "worldcup";
 

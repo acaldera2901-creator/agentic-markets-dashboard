@@ -17,6 +17,7 @@ import logging
 
 from config.settings import settings
 from core.odds_api_client import snapshot_odds_to_supabase
+from core.sportsbook import fortuneplay as fortuneplay_client
 from core.sportsbook import roobet as roobet_client
 from core.sportsbook import stake as stake_client
 
@@ -31,7 +32,7 @@ class SportsbookScraperAgent:
         self.name = "SportsbookScraperAgent"
         self.logger = logger
         self._running = False
-        self._fail_counts = {"roobet": 0, "stake": 0}
+        self._fail_counts = {"roobet": 0, "stake": 0, "fortuneplay": 0}
 
     def _enabled(self, book: str) -> bool:
         flag = getattr(settings, f"{book.upper()}_ENABLED", True)
@@ -40,7 +41,8 @@ class SportsbookScraperAgent:
     async def scrape_once(self) -> int:
         """Un ciclo: fetch di ogni book abilitato → write odds_snapshots. Ritorna righe scritte."""
         written = 0
-        clients = {"roobet": roobet_client, "stake": stake_client}  # risolti a runtime (patchabili)
+        clients = {"roobet": roobet_client, "stake": stake_client,
+                   "fortuneplay": fortuneplay_client}  # risolti a runtime (patchabili)
         for book, client in clients.items():
             if not self._enabled(book):
                 continue

@@ -4520,11 +4520,27 @@ interface Partner {
   since: string;
   logo_initials: string;
   logo_color: string;
+  logo_image?: string; // logo reale dell'operatore; fallback su iniziali+colore se assente
   featured?: boolean;
   tags?: string[];
 }
 
 const PARTNERS: Partner[] = [
+  {
+    id: "partner-fortuneplay",
+    name: "FortunePlay",
+    type: "Casino & Sportsbook",
+    status: "active",
+    description: "Sportsbook e casino partner ufficiale di BetRedge. Collegamento diretto dalle pick via \"Piazza scommessa\".",
+    description_en: "Official BetRedge sportsbook & casino partner. Bet straight from the picks via \"Place bet\".",
+    url: "https://mediaroosters.com/aacugmydl8",
+    since: "2026",
+    logo_initials: "FP",
+    logo_color: "from-amber-400 to-yellow-600",
+    logo_image: "/logos/fortuneplay.svg",
+    featured: true,
+    tags: ["Ufficiale", "Sport", "Casino", "Live"],
+  },
   {
     id: "partner-01",
     name: "Sportsbook Partner",
@@ -4593,8 +4609,10 @@ function PartnerCard({ p }: { p: Partner }) {
     <div className="am-surface p-5 space-y-4 flex flex-col" style={p.featured ? { borderColor: "var(--am-coral-b)" } : undefined}>
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.logo_color} flex items-center justify-center text-white font-bold text-lg shrink-0`}>
-          {p.logo_initials}
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 overflow-hidden ${p.logo_image ? "bg-[var(--am-inset)] border border-[var(--am-line)] p-1" : `bg-gradient-to-br ${p.logo_color}`}`}>
+          {p.logo_image
+            ? <img src={p.logo_image} alt={p.name} className="w-full h-full object-contain" width={40} height={40} />
+            : p.logo_initials}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
