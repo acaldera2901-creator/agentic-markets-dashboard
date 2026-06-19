@@ -5701,7 +5701,7 @@ function PartnerCard({ p }: { p: Partner }) {
     in_discussion: t.partners_status_negotiation,
   };
   return (
-    <div className="am-surface p-5 space-y-4 flex flex-col" style={p.featured ? { borderColor: "var(--am-coral-b)" } : undefined}>
+    <div className={`am-card ${p.featured ? "am-card-glow" : ""} p-5 space-y-4 flex flex-col`}>
       {/* Header */}
       <div className="flex items-start gap-4">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 overflow-hidden ${p.logo_image ? "bg-[var(--am-inset)] border border-[var(--am-line)] p-1" : `bg-gradient-to-br ${p.logo_color}`}`}>
@@ -5749,7 +5749,7 @@ function PartnerCard({ p }: { p: Partner }) {
           <a
             href={p.url}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="nofollow sponsored noopener noreferrer"
             onClick={() => trackEvent("partner_click", { partner_id: p.id })}
             className="text-[10px] font-mono px-3 py-1 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
           >
@@ -5759,6 +5759,9 @@ function PartnerCard({ p }: { p: Partner }) {
           <span className="text-[10px] font-mono text-[var(--am-muted-2)] italic">{t.partners_link_soon}</span>
         )}
       </div>
+      {p.logo_image && (
+        <span className="am-wm am-wm-img" style={{ backgroundImage: `url(${p.logo_image})` }} aria-hidden="true" />
+      )}
     </div>
   );
 }
@@ -5786,29 +5789,34 @@ function PartnersTab() {
         </p>
       </div>
 
-      {/* Stats strip */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: t.partners_active,      value: String(PARTNERS.filter((p) => ["featured", "active"].includes(p.status)).length), color: "text-[var(--am-coral)]" },
-          { label: t.partners_negotiation, value: String(PARTNERS.filter((p) => p.status === "in_discussion").length), color: "text-[var(--am-muted)]" },
-          { label: t.partners_coming,      value: String(PARTNERS.filter((p) => p.status === "coming_soon").length), color: "text-[var(--am-muted)]" },
-        ].map((s) => (
-          <div key={s.label} className="am-surface p-3 text-center">
-            <div className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</div>
-            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{s.label}</div>
+      {/* Featured — spotlight hero (conversione) */}
+      {featured.map((p) => (
+        <div key={p.id} className="am-card am-card-glow p-6">
+          <div className="text-[9px] font-mono text-[var(--am-coral)] uppercase tracking-widest">{t.partners_status_featured}</div>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="w-14 h-14 rounded-xl bg-[var(--am-inset)] border border-[var(--am-line)] p-1.5 shrink-0 overflow-hidden grid place-items-center">
+              {p.logo_image
+                ? <img src={p.logo_image} alt={p.name} className="w-full h-full object-contain" width={48} height={48} />
+                : <span className="font-bold text-white">{p.logo_initials}</span>}
+            </div>
+            <span className="text-2xl font-bold text-[var(--am-text)] tracking-tight">{p.name}</span>
           </div>
-        ))}
-      </div>
-
-      {/* Featured */}
-      {featured.length > 0 && (
-        <div className="space-y-3">
-          <div className="text-[9px] font-mono text-[var(--am-coral)] uppercase tracking-widest">{t.partners_section_exclusive}</div>
-          <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
-            {featured.map((p) => <PartnerCard key={p.id} p={p} />)}
-          </div>
+          <p className="text-xs font-mono text-[var(--am-muted)] leading-relaxed mt-2 max-w-md">
+            {lang === "it" ? p.description : (p.description_en ?? p.description)}
+          </p>
+          {p.url && (
+            <a href={p.url} target="_blank" rel="nofollow sponsored noopener noreferrer"
+               onClick={() => trackEvent("partner_click", { partner_id: p.id })}
+               className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-[10px] font-bold text-[13px] bg-[var(--am-coral)] text-[var(--am-coral-ink)]">
+              {lang === "it" ? `Vai a ${p.name} →` : `Go to ${p.name} →`}
+            </a>
+          )}
+          <p className="text-[9px] font-mono text-[var(--am-muted-2)] italic mt-3">{t.partners_affiliate_note}</p>
+          {p.logo_image && (
+            <span className="am-wm am-wm-img" style={{ backgroundImage: `url(${p.logo_image})`, width: 150, height: 150 }} aria-hidden="true" />
+          )}
         </div>
-      )}
+      ))}
 
       {/* Others */}
       {others.length > 0 && (
@@ -5820,6 +5828,7 @@ function PartnersTab() {
         </div>
       )}
 
+      <p className="text-[10px] font-mono text-[var(--am-muted-2)] mt-2">{t.rg_footer}</p>
     </div>
   );
 }
@@ -6591,17 +6600,20 @@ function AccountTab({
         ))}
       </div>
       {section === "account" && (
-        <div className="account-pane">
-          <ClientAreaTab profile={profile} onActivateFree={onActivateFree} />
-          <SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} />
+        <div className="account-bento">
+          <div className="ab-plan"><ClientAreaTab profile={profile} onActivateFree={onActivateFree} /></div>
+          <div className="ab-settings"><SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} /></div>
           {profile && (
-            <div className="client-area-footer">
+            <div className="am-card ab-logout p-4 flex items-center justify-between gap-3">
+              <span className="text-xs font-mono text-[var(--am-muted-2)]">
+                {pick5(lang, { it: "Sessione", en: "Session", es: "Sesión", fr: "Session", ru: "Сессия" })}
+              </span>
               <button className="btn-secondary" onClick={onLogout}>
                 {pick5(lang, { it: "Esci dall'account", en: "Log out", es: "Cerrar sesión", fr: "Se déconnecter", ru: "Выйти" })}
               </button>
             </div>
           )}
-          <AccountHelpFooter />
+          <div className="ab-help"><AccountHelpFooter /></div>
         </div>
       )}
       {section === "piani" && (
