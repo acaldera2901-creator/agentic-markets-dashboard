@@ -7092,19 +7092,21 @@ export default function Dashboard() {
   };
 
   // #AUTORELOAD: quando è live un nuovo deploy, le schede aperte si aggiornano da
-  // sole. Confronta il build-id con cui la scheda è stata caricata col build-id
-  // servito (/api/version, no-store). Per non interrompere chi usa l'app, la reload
-  // avviene al RIENTRO sulla scheda (visibilitychange→visible). 'dev' = no-op (locale).
+  // sole. La baseline è il build-id della PRIMA risposta di /api/version (stesso
+  // deploy del caricamento); se nei check successivi l'id cambia → nuovo deploy.
+  // Per non interrompere chi usa l'app, la reload avviene al RIENTRO sulla scheda
+  // (visibilitychange→visible). 'dev' (locale) = no-op.
   useEffect(() => {
-    const loaded = process.env.NEXT_PUBLIC_BUILD_ID;
-    if (!loaded || loaded === "dev") return;
+    let baseline: string | null = null;
     let stale = false;
     const check = async () => {
       try {
         const r = await fetch("/api/version", { cache: "no-store" });
         if (!r.ok) return;
         const { id } = (await r.json()) as { id?: string };
-        if (id && id !== loaded) stale = true;
+        if (!id || id === "dev") return;
+        if (baseline === null) { baseline = id; return; }  // prima risposta = baseline
+        if (id !== baseline) stale = true;
       } catch { /* offline/transitorio: riprova al prossimo giro */ }
     };
     const onVisible = () => {
@@ -7114,7 +7116,7 @@ export default function Dashboard() {
     };
     document.addEventListener("visibilitychange", onVisible);
     const iv = window.setInterval(check, 5 * 60 * 1000); // marca stale; la reload è al rientro
-    void check();
+    void check(); // imposta la baseline
     return () => { document.removeEventListener("visibilitychange", onVisible); window.clearInterval(iv); };
   }, []);
 
