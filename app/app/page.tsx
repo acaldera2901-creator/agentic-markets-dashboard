@@ -7674,6 +7674,15 @@ export default function Dashboard() {
     return map;
   }, [liveTennis]);
 
+  // #MOBILE-1: voci della bottom tab bar (solo mobile). Riusa setTab + label i18n + glifi rail.
+  const BOTTOM_TABS: { tab: Tab; label: string; glyph: string }[] = [
+    { tab: "bets",        label: tNav.nav_predictions, glyph: RAIL_GLYPHS["bets"] ?? "#g-desk" },
+    { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
+    { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
+    { tab: "partners",    label: tNav.nav_partner,     glyph: RAIL_GLYPHS["partners"] ?? "#g-desk" },
+    { tab: "account",     label: "Account",            glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
+  ];
+
   return (
     <LanguageCtx.Provider value={uiLanguage}>
     <TzCtx.Provider value={userTz}>
@@ -7836,6 +7845,9 @@ export default function Dashboard() {
                 )}
               </p>
             </div>
+            {tab === "bets" && (
+              <button className="mb-entry" onClick={() => setTab("match-builder")}>Match Builder →</button>
+            )}
             {tab !== "account" && (
             <div className="am-statbar">
               <div className="am-kpi">
@@ -7979,6 +7991,21 @@ export default function Dashboard() {
           onSuccess={handleFounderAccess}
         />
       )}
+
+      {/* #MOBILE-1: bottom tab bar — visibile solo ≤760px (CSS), sostituisce la sidebar-muro */}
+      <nav className="am-bottomnav" aria-label="Mobile navigation">
+        {BOTTOM_TABS.map((b) => (
+          <button
+            key={b.tab}
+            className={`bn ${tab === b.tab ? "on" : ""}`}
+            aria-current={tab === b.tab ? "page" : undefined}
+            onClick={() => { setTab(b.tab); if (b.tab === "account") setAccountSection("account"); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
+          >
+            <svg aria-hidden="true"><use href={b.glyph} /></svg>
+            <span className="bn-l">{b.label}</span>
+          </button>
+        ))}
+      </nav>
     </main>
     </BetLinksCtx.Provider>
     </LiveTennisCtx.Provider>
