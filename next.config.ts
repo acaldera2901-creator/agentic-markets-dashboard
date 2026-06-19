@@ -43,6 +43,13 @@ const nextConfig: NextConfig = {
   // Pin the workspace root so dev/build always resolve from this directory
   // (a stray lockfile above the repo can otherwise make Next mis-infer it).
   turbopack: { root: __dirname },
+  // #AUTORELOAD: identità del build, inlinata nel client e letta da /api/version.
+  // Cambia a ogni deploy (commit sha su git-deploy; URL deploy come fallback) → le
+  // schede aperte rilevano la nuova versione e si ricaricano. 'dev' in locale = no-op.
+  env: {
+    NEXT_PUBLIC_BUILD_ID:
+      process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_URL || "dev",
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

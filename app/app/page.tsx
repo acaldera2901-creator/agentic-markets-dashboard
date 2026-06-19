@@ -7090,6 +7090,34 @@ export default function Dashboard() {
     try { localStorage.setItem("agentic-theme", next); } catch {}
     trackEvent("theme_change", { meta: { theme: next } });
   };
+
+  // #AUTORELOAD: quando è live un nuovo deploy, le schede aperte si aggiornano da
+  // sole. Confronta il build-id con cui la scheda è stata caricata col build-id
+  // servito (/api/version, no-store). Per non interrompere chi usa l'app, la reload
+  // avviene al RIENTRO sulla scheda (visibilitychange→visible). 'dev' = no-op (locale).
+  useEffect(() => {
+    const loaded = process.env.NEXT_PUBLIC_BUILD_ID;
+    if (!loaded || loaded === "dev") return;
+    let stale = false;
+    const check = async () => {
+      try {
+        const r = await fetch("/api/version", { cache: "no-store" });
+        if (!r.ok) return;
+        const { id } = (await r.json()) as { id?: string };
+        if (id && id !== loaded) stale = true;
+      } catch { /* offline/transitorio: riprova al prossimo giro */ }
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (stale) window.location.reload();
+      else void check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    const iv = window.setInterval(check, 5 * 60 * 1000); // marca stale; la reload è al rientro
+    void check();
+    return () => { document.removeEventListener("visibilitychange", onVisible); window.clearInterval(iv); };
+  }, []);
+
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
   // #MB-1 Match Builder: shared accumulator ids (?mb=) + influencer ref (?ref=).
   // The ref is first-touch: persisted once in localStorage and attached to the
