@@ -5762,7 +5762,7 @@ function PartnerCard({ p }: { p: Partner }) {
         )}
       </div>
       {p.logo_image && (
-        <span className="am-wm am-wm-img" style={{ backgroundImage: `url(${p.logo_image})` }} aria-hidden="true" />
+        <span className="am-cardwm am-cardwm-img" style={{ backgroundImage: `url(${p.logo_image})` }} aria-hidden="true" />
       )}
     </div>
   );
@@ -5815,7 +5815,7 @@ function PartnersTab() {
           )}
           <p className="text-[9px] font-mono text-[var(--am-muted-2)] italic mt-3">{t.partners_affiliate_note}</p>
           {p.logo_image && (
-            <span className="am-wm am-wm-img" style={{ backgroundImage: `url(${p.logo_image})`, width: 150, height: 150 }} aria-hidden="true" />
+            <span className="am-cardwm am-cardwm-img" style={{ backgroundImage: `url(${p.logo_image})`, width: 150, height: 150 }} aria-hidden="true" />
           )}
         </div>
       ))}
