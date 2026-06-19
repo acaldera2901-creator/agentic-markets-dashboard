@@ -5653,19 +5653,6 @@ const PARTNERS: Partner[] = [
     tags: ["Ufficiale", "Sport", "Casino", "Live"],
   },
   {
-    id: "partner-01",
-    name: "Sportsbook Partner",
-    type: "Casino & Sportsbook",
-    status: "in_discussion",
-    description: "Casino e piattaforma di scommesse sportive — partnership in fase di definizione. Integrazione con BetRedge per segnali e probabilità calibrate.",
-    url: "mailto:info@agenticmarkets.com?subject=Partner%20Inquiry",
-    since: "2026",
-    logo_initials: "P1",
-    logo_color: "from-amber-500 to-orange-600",
-    featured: true,
-    tags: ["Esclusivo", "Sport", "Casino", "Live"],
-  },
-  {
     id: "partner-stake",
     name: "Stake",
     type: "Casino & Sportsbook",
@@ -5704,12 +5691,9 @@ function PartnerCard({ p }: { p: Partner }) {
   const t = useT();
   const lang = useLang();
   const statusColor = PARTNER_STATUS_COLORS[p.status];
-  const partnerName = p.id === "partner-01" ? t.partner_primary_name : p.name;
-  const partnerDescription =
-    p.id === "partner-01"
-      ? t.partner_primary_desc
-      : lang === "it" ? p.description : (p.description_en ?? p.description);
-  const partnerTags = p.id === "partner-01" ? [t.partner_tag_exclusive, "Sport", "Casino", "Live"] : (p.tags ?? []);
+  const partnerName = p.name;
+  const partnerDescription = lang === "it" ? p.description : (p.description_en ?? p.description);
+  const partnerTags = p.tags ?? [];
   const statusLabel: Record<PartnerStatus, string> = {
     featured:      t.partners_exclusive_badge,
     active:        t.partners_status_active,
