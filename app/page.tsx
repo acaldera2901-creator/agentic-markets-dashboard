@@ -339,8 +339,8 @@ export default function LandingPage() {
             </a>
           ) : auth.status === "anonymous" ? (
             <>
-              <a href="/app" className="lp-nav-link">{t.signin}</a>
-              <a href="/app?tab=account" className="lp-nav-cta">{t.register}</a>
+              <a href="/app?auth=login" className="lp-nav-link">{t.signin}</a>
+              <a href="/app?auth=register" className="lp-nav-cta">{t.register}</a>
             </>
           ) : null /* loading: niente flicker di stato errato */}
           <LangDropdown value={lang} onSelect={selectLang} variant="landing" />

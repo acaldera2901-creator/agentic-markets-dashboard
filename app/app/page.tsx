@@ -3719,6 +3719,7 @@ function ClientAuthModal({
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [showResend, setShowResend] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
   const [ageOk, setAgeOk] = useState(false);
@@ -3761,9 +3762,13 @@ function ClientAuthModal({
       // a "check your inbox" notice instead of a session.
       if (resp.status === 202 || data.pending_activation) {
         setInfo(it
-          ? `Ti abbiamo inviato un'email di attivazione a ${normalizedEmail}. Clicca il link per attivare il profilo (controlla anche lo spam).`
-          : `We sent an activation email to ${normalizedEmail}. Click the link to activate your profile (check spam too).`);
+          ? `Ti abbiamo inviato un'email di attivazione a ${normalizedEmail}. Clicca il link per attivare il profilo (controlla anche lo spam), poi accedi qui.`
+          : `We sent an activation email to ${normalizedEmail}. Click the link to activate your profile (check spam too), then log in here.`);
         setShowResend(true);
+        // "register must lead to login, not the account page": after sign-up the
+        // account isn't a session yet (email-activation gate), so flip the modal
+        // to the login tab — the user activates via email, then logs in right here.
+        setMode("login");
       } else if (resp.ok) {
         onAuthed({
           name: (data.name ?? name.trim()) || normalizedEmail,
@@ -3831,9 +3836,20 @@ function ClientAuthModal({
         </label>
         <label>
           <span>Password</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === "create" ? t.auth_pw_placeholder_new : "••••••••"}
-            autoComplete={mode === "login" ? "current-password" : "new-password"} />
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === "create" ? t.auth_pw_placeholder_new : "••••••••"}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              style={{ width: "100%", paddingRight: 52 }} />
+            <button type="button" onClick={() => setShowPw((v) => !v)}
+              aria-pressed={showPw}
+              aria-label={showPw ? (it ? "Nascondi password" : "Hide password") : (it ? "Mostra password" : "Show password")}
+              style={{ position: "absolute", right: 8, background: "none", border: "none",
+                color: "var(--am-muted)", fontSize: 11, fontWeight: 700, letterSpacing: ".04em",
+                textTransform: "uppercase", cursor: "pointer", padding: "4px 6px" }}>
+              {showPw ? (it ? "Nascondi" : "Hide") : (it ? "Mostra" : "Show")}
+            </button>
+          </div>
         </label>
         {/* #SIGNUP-GATE: +18 confirmation + Terms acceptance, required to create a profile */}
         {mode === "create" && (
@@ -7037,6 +7053,25 @@ export default function Dashboard() {
       /* eslint-enable react-hooks/set-state-in-effect */
       window.history.replaceState({}, "", window.location.pathname);
     } catch { /* URL unavailable */ }
+  }, []);
+  // Deep-link auth intent (?auth=login | ?auth=register): the landing page CTAs
+  // navigate here with this param so the right modal opens immediately, instead
+  // of dropping the visitor on a locked desk (login looked "dead") or popping the
+  // wrong (register) auto-prompt. Marks am-auth-prompted so the 1.2s auto-prompt
+  // below doesn't also fire, then strips the param from the URL.
+  useEffect(() => {
+    try {
+      const raw = new URLSearchParams(window.location.search).get("auth");
+      if (raw !== "login" && raw !== "register") return;
+      try { window.sessionStorage.setItem("am-auth-prompted", "1"); } catch { /**/ }
+      /* eslint-disable react-hooks/set-state-in-effect -- one-shot mount sync from the ?auth= deep-link param; paired with history.replaceState. */
+      setAuthIntent(raw === "register" ? "create" : "login");
+      setAuthOpen(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      const url = new URL(window.location.href);
+      url.searchParams.delete("auth");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    } catch { /* URL/storage unavailable */ }
   }, []);
   const [founderOpen, setFounderOpen] = useState(false);
   const founderClickRef = useRef({ count: 0, timer: null as ReturnType<typeof setTimeout> | null });

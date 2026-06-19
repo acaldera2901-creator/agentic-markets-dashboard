@@ -169,8 +169,8 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
             </Link>
           ) : auth.status === "anonymous" ? (
             <>
-              <Link href="/app" className="am-auth-secondary">{lang === "it" ? "Accedi" : "Sign In"}</Link>
-              <Link href="/app?tab=account" className="am-auth-primary">{lang === "it" ? "Registrati" : "Register"}</Link>
+              <Link href="/app?auth=login" className="am-auth-secondary">{lang === "it" ? "Accedi" : "Sign In"}</Link>
+              <Link href="/app?auth=register" className="am-auth-primary">{lang === "it" ? "Registrati" : "Register"}</Link>
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
 
