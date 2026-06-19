@@ -2074,6 +2074,7 @@ function SportsbookBoard({
   isFreeClient,
   isPremium,
   tennisIsPlaceholder,
+  onBannerCta,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -2083,6 +2084,7 @@ function SportsbookBoard({
   isFreeClient?: boolean;
   isPremium?: boolean;
   tennisIsPlaceholder?: boolean;
+  onBannerCta?: (href: string) => boolean;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   // ?sport= deep-link dalla landing: applicato dopo il mount per non rompere
@@ -2306,7 +2308,7 @@ function SportsbookBoard({
                       );
                       if (placed < footballFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
-                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={camp} lang={lang} />];
+                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={camp} lang={lang} onCta={onBannerCta} />];
                       }
                       return [card];
                     });
@@ -2346,7 +2348,7 @@ function SportsbookBoard({
             const camp = pickCampaign("desk-interstitial", boardAudience);
             return camp ? (
               <div className="house-interstitial">
-                <HouseBanner campaign={camp} lang={lang} data={boardData} />
+                <HouseBanner campaign={camp} lang={lang} data={boardData} onCta={onBannerCta} />
               </div>
             ) : null;
           })()}
@@ -2373,7 +2375,7 @@ function SportsbookBoard({
                       );
                       if (placed < tennisFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
-                        return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={camp} lang={lang} />];
+                        return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={camp} lang={lang} onCta={onBannerCta} />];
                       }
                       return [card];
                     });
@@ -6571,6 +6573,8 @@ function AccountTab({
   onLogout,
   onUnlock,
   onSave,
+  section,
+  onSectionChange,
 }: {
   profile: ClientProfile | null;
   onOpenDesk: () => void;
@@ -6579,9 +6583,10 @@ function AccountTab({
   onLogout: () => void;
   onUnlock: () => void;
   onSave: (profile: ClientProfile) => void;
+  section: AccountSection;
+  onSectionChange: (s: AccountSection) => void;
 }) {
   const lang = useLang();
-  const [section, setSection] = useState<AccountSection>("account");
   const sections: { key: AccountSection; label: string }[] = [
     { key: "account", label: "Account" },
     { key: "piani",   label: pick5(lang, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }) },
@@ -6593,7 +6598,7 @@ function AccountTab({
           <button
             key={s.key}
             className={section === s.key ? "is-active" : ""}
-            onClick={() => setSection(s.key)}
+            onClick={() => onSectionChange(s.key)}
           >
             {s.label}
           </button>
@@ -6896,6 +6901,7 @@ function UnifiedBetsTab({
   isPremiumClient,
   isLoggedIn,
   tennisIsPlaceholder,
+  onBannerCta,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -6912,6 +6918,7 @@ function UnifiedBetsTab({
   isPremiumClient?: boolean;
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
+  onBannerCta?: (href: string) => boolean;
 }) {
   const lang = useLang();
   // #HOUSE-PHOTO-3: dati reali per la versione RICCA del banner topbar (ticker top-edge + chip Edge medio).
@@ -6940,7 +6947,7 @@ function UnifiedBetsTab({
           (house, foto) sopra la board — visibile a tutti i pacchetti. */}
       {/* #HOUSE-PHOTO-3b: versione ricca (ticker edge%) SOLO per chi è sbloccato (base/premium);
           anon/free vedono la versione sobria — niente edge% esposti sopra il gate. */}
-      {(() => { const c = pickCampaign("desk-topbar", "premium"); return c ? <div className="topbar-house"><HouseBanner campaign={c} lang={lang} data={isPremiumClient ? topbarData : undefined} /></div> : null; })()}
+      {(() => { const c = pickCampaign("desk-topbar", "premium"); return c ? <div className="topbar-house"><HouseBanner campaign={c} lang={lang} data={isPremiumClient ? topbarData : undefined} onCta={onBannerCta} /></div> : null; })()}
       {/* Free (signal-preview) clients pass the whole-board wall so the inner
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
@@ -6959,6 +6966,7 @@ function UnifiedBetsTab({
           isFreeClient={isFreeClient}
           isPremium={isPremiumClient}
           tennisIsPlaceholder={tennisIsPlaceholder}
+          onBannerCta={onBannerCta}
         />
       </LockedGate>
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
@@ -7018,6 +7026,13 @@ export default function Dashboard() {
     const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
     return requested && VALID_TABS.includes(requested) ? requested : "bets";
   });
+  // Sezione della scheda Account (controllata dal parent così i CTA "Upgrade/Piani"
+  // possono atterrare direttamente sui Piani). Deep-link: /app?plans=1 o ?section=piani.
+  const [accountSection, setAccountSection] = useState<AccountSection>(() => {
+    if (typeof window === "undefined") return "account";
+    const q = new URLSearchParams(window.location.search);
+    return q.get("plans") === "1" || q.get("section") === "piani" ? "piani" : "account";
+  });
   // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a /app?tab=… ma `tab` viene
   // letto dall'URL solo al mount: un <Link> alla STESSA route (siamo già su /app)
   // non lo risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
@@ -7030,6 +7045,9 @@ export default function Dashboard() {
         const raw = url.searchParams.get("tab");
         const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
         if (requested && VALID_TABS.includes(requested)) {
+          // Deep-link ai Piani (CTA upgrade/unlock): /app?tab=account&plans=1
+          const wantsPlans = url.searchParams.get("plans") === "1" || url.searchParams.get("section") === "piani";
+          if (requested === "account") setAccountSection(wantsPlans ? "piani" : "account");
           setTab(requested);
           return true;
         }
@@ -7426,9 +7444,11 @@ export default function Dashboard() {
   };
 
   const focusClientPlans = () => {
-    // Plans live in the Account tab (PlansTab). Switching tabs mounts the
-    // target on the next render, so scroll after a double rAF (one for the
-    // setState flush, one for the mounted DOM) instead of the same frame.
+    // Plans live in the Account tab → sezione "piani" (PlansTab). Serve impostare
+    // ANCHE la sezione, altrimenti si atterra sul bento Account e l'anchor #client-plans
+    // non è montato. Switching tabs mounts the target on the next render, so scroll
+    // after a double rAF (one for the setState flush, one for the mounted DOM).
+    setAccountSection("piani");
     setTab("account");
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -7860,6 +7880,7 @@ export default function Dashboard() {
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
+              onBannerCta={handleBannerCta}
               isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
               isPremiumClient={isClientUnlocked}
@@ -7876,6 +7897,8 @@ export default function Dashboard() {
               onLogout={logoutClientProfile}
               onUnlock={() => openAuth("login")}
               onSave={handleSettingsSave}
+              section={accountSection}
+              onSectionChange={setAccountSection}
             />
           )}
           {tab === "history" && (
