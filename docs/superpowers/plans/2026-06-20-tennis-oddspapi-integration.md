@@ -43,23 +43,20 @@ Worktree `~/Desktop/agentic-markets-oddspapi` su `feat/tennis-oddspapi` (da `ori
   - `async def get_oddspapi_match_odds(fixture_id: str) -> dict | None` — fetch `/odds?fixtureId` + `parse_oddspapi_match_odds`.
   - `async def get_oddspapi_tennis_odds(wanted_keys: set[str]) -> list[dict]` — orchestratore: `get_oddspapi_fixtures`, tieni i fixture il cui `_pair_key` ∈ `wanted_keys`, per ciascuno `get_oddspapi_match_odds`, ritorna righe shape-`parse_tennis_odds_events`: `{odds_event_id, player1, player2, scheduled_at, odds_p1, odds_p2, bookmaker, anchor_source}`.
 
-- [ ] **Step 1: Catturare un sample `/odds` REALE popolato (schema lock)**
+- [ ] **Step 1: Schema `/odds` — GIÀ CATTURATO E BLOCCATO**
 
-Le quote tennis su OddsPapi sono popolate solo vicino al match (di giorno, tornei erba). Catturare un payload reale con bookmaker e Pinnacle:
+Sample reale popolato già salvato in `tests/fixtures/oddspapi_odds_sample.json` (WTA Bad Homburg, Parry–Begu, 24 book). **Schema confermato (consistente su tutti i book):**
 
-```bash
-KEY=<ODDSPAPI_KEY>; BASE="https://api.oddspapi.io/v4"
-FROM=$(date -u +%Y-%m-%d); TO=$(date -u -v+2d +%Y-%m-%d 2>/dev/null || date -u -d '+2 days' +%Y-%m-%d)
-curl -s "$BASE/fixtures?apiKey=$KEY&sportId=12&from=$FROM&to=$TO&hasOdds=true" > /tmp/fx.json
-# prova /odds finché uno torna bookmakerOdds non vuoto:
-for FID in $(python3 -c "import json;d=json.load(open('/tmp/fx.json'));i=d if isinstance(d,list) else d.get('data',[]);[print(f['fixtureId']) for f in i[:30]]"); do
-  R=$(curl -s "$BASE/odds?apiKey=$KEY&fixtureId=$FID")
-  N=$(echo "$R" | python3 -c "import sys,json;print(len(json.load(sys.stdin).get('bookmakerOdds',{})))")
-  if [ "${N:-0}" -gt 0 ]; then echo "$R" > tests/fixtures/oddspapi_odds_sample.json; echo "saved $FID ($N books)"; break; fi
-done
 ```
+payload["bookmakerOdds"][<book_slug>]["markets"]["121"]["outcomes"][<oid>]["players"]["0"]["price"]
+```
+- Market **match-winner = `"121"`** (2 outcomes).
+- Outcome key **`"121"` = participant1** (il favorito, es. 1.40), outcome **`"122"` = participant2** (es. 2.73). Chiavi **canoniche** (uguali tra i book), NON per-book.
+- Prezzo decimale in `outcome["players"]["0"]["price"]` (ci sono anche `priceAmerican`/`priceFractional`/`mainLine`).
+- **I nomi NON sono in `/odds`** (solo `participant1Id`/`participant2Id`; `participant1Name` è null lì) → i nomi vanno presi da `/fixtures` (`participant1Name`/`participant2Name`).
+- **Pinnacle non sempre presente** per ogni match → anchor order: `pinnacle` → `betfair-ex` (exchange sharp) → primo book con 2-way completo.
 
-Ispezionare la struttura e ANNOTARE nel codice: il path esatto del market match-winner e degli outcomes. Struttura osservata: `payload["bookmakerOdds"][<book_slug>]["markets"][<marketId>]["outcomes"][<outcomeId>]` con prezzo dentro l'outcome. Confermare quale `marketId` è il match-winner (candidati visti: `"121"` referenziato; un book mostrava id numerici tipo `"12245"`) e come si distingue p1 vs p2 (ordine outcomes / participant mapping). **Il parser dello Step 3 si aggancia a QUESTA struttura confermata.** Se la struttura reale differisce dallo scaffold sotto, adattare il parser e i test al sample salvato (è la fonte di verità).
+Il parser dello Step 4 è già allineato a questo schema. La fixture salvata è la fonte di verità per i test.
 
 - [ ] **Step 2: Scrivere i test (sul sample reale)**
 
@@ -110,40 +107,40 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://api.oddspapi.io/v4"
 SPORT_ID = 12  # tennis
-# Market match-winner: confermare l'id reale dal sample (Step 1).
-MATCH_WINNER_MARKET_IDS = {"121", "1"}  # set di candidati; aggiornare al valore reale
-_UA = {"User-Agent": "betredge/1.0"}  # urllib default → 403; httpx manda un UA ma fissiamolo
+MATCH_WINNER_MARKET = "121"      # confermato dal sample reale
+OUTCOME_P1, OUTCOME_P2 = "121", "122"  # outcome canonici: "121"=participant1, "122"=participant2
+ANCHOR_ORDER = ("pinnacle", "betfair-ex")  # poi qualunque book con 2-way completo
+_UA = {"User-Agent": "betredge/1.0"}  # urllib default → 403; httpx manda un UA, fissiamolo
 
 
 def _key() -> str | None:
     return os.environ.get("ODDSPAPI_KEY") or None
 
 
+def _price(outcome: dict | None) -> float | None:
+    try:
+        return float(outcome["players"]["0"]["price"])
+    except (TypeError, KeyError, ValueError):
+        return None
+
+
 def parse_oddspapi_match_odds(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """Estrae il 2-way match-winner, anchored su Pinnacle. Puro, fail-soft.
-    Struttura: payload['bookmakerOdds'][book]['markets'][marketId]['outcomes'][outcomeId] -> prezzo.
-    ADATTARE i nomi di campo del prezzo/outcome alla struttura confermata nello Step 1."""
+    """Estrae il 2-way match-winner (market "121"), anchored su Pinnacle. Puro, fail-soft.
+    Schema (confermato): bookmakerOdds[book]['markets']['121']['outcomes']['121'|'122']['players']['0']['price'].
+    outcome '121'=participant1, '122'=participant2 (canonico, uguale tra i book)."""
     bk = (payload or {}).get("bookmakerOdds") or {}
     if not bk:
         return None
-    # Pinnacle prima, poi qualunque book con un 2-way completo.
-    order = (["pinnacle"] if "pinnacle" in bk else []) + [b for b in bk if b != "pinnacle"]
+    order = [b for b in ANCHOR_ORDER if b in bk] + [b for b in bk if b not in ANCHOR_ORDER]
     for book in order:
-        markets = (bk.get(book) or {}).get("markets") or {}
-        m = next((markets[mid] for mid in markets if str(mid) in MATCH_WINNER_MARKET_IDS), None)
+        m = ((bk.get(book) or {}).get("markets") or {}).get(MATCH_WINNER_MARKET)
         if not m:
             continue
         outcomes = m.get("outcomes") or {}
-        prices = []
-        for _, oc in outcomes.items():
-            # ADATTARE: chiave del prezzo confermata nello Step 1 (es. oc['price'] o oc['p'] o oc['odds']).
-            p = oc.get("price") if isinstance(oc, dict) else None
-            if p is None and isinstance(oc, dict):
-                p = oc.get("odds") or oc.get("p")
-            if p:
-                prices.append(float(p))
-        if len(prices) == 2 and all(x > 1.0 for x in prices):
-            return {"odds_p1": prices[0], "odds_p2": prices[1], "bookmaker": book}
+        p1 = _price(outcomes.get(OUTCOME_P1))
+        p2 = _price(outcomes.get(OUTCOME_P2))
+        if p1 and p2 and p1 > 1.0 and p2 > 1.0:
+            return {"odds_p1": p1, "odds_p2": p2, "bookmaker": book}
     return None
 
 
@@ -423,5 +420,6 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Note finali
 
-- Lo **schema esatto del market `/odds`** va confermato su un sample reale popolato (Task 1 Step 1): a quest'ora notturna nessun match tennis ha quote in `/odds`; l'implementer cattura il sample quando i match erba sono imminenti (di giorno). Lo scaffold del parser è sulla struttura osservata (`bookmakerOdds→book→markets→outcomes`); adattare al sample.
-- `MATCH_WINNER_MARKET_IDS` e la chiave del prezzo nell'outcome sono i due punti da bloccare sul sample reale.
+- Lo **schema `/odds` è confermato e bloccato** su un sample reale (WTA Bad Homburg, 24 book) salvato in `tests/fixtures/oddspapi_odds_sample.json`: market `"121"`, outcome `"121"`=p1 / `"122"`=p2, prezzo in `players.0.price`. Parser + test ancorati a quel file. Nessuna discovery residua.
+- **Comportamento `/odds` verificato:** quote presenti **pre-match** (da ~24h prima fino al kickoff), **ritirate all'inizio del match** (in-play → vuoto). La policy near-kickoff 6h + retry-cap è coerente. `hasOdds` di `/fixtures` è ottimistico (può essere true con `/odds` vuoto) → il retry-on-empty è necessario.
+- Rate limit: piccolo throttle per-endpoint (~0.2s, codice `RATE_LIMITED`) → spaziare leggermente le chiamate `/odds` (es. piccola pausa nel loop) per non incespicare.
