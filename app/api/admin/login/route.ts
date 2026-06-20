@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeEqual } from "@/lib/admin-auth";
 import { issueAdminToken } from "@/lib/admin-session";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,11 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
 export async function POST(req: NextRequest) {
   try {
+    // SEC #SEC-RL-ADMIN-1: throttle online brute-force of ADMIN_SECRET
+    // (same pattern as founder/grant). 5 attempts / 60s per IP.
+    if (rateLimit(`admin-login:${clientIp(req)}`, 5, 60_000)) {
+      return NextResponse.json({ error: "too many requests" }, { status: 429 });
+    }
     const { password } = await req.json() as { password?: string };
 
     if (!ADMIN_SECRET || !safeEqual(password, ADMIN_SECRET)) {
