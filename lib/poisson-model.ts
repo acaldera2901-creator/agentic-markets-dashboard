@@ -204,6 +204,33 @@ export function computeExtraMarkets(
   });
 }
 
+export interface GoalsSummary {
+  expected_goals: number;
+  band_low: number;
+  band_high: number;
+  band_p: number;
+}
+
+export function computeGoalsSummary(
+  lambdaHome: number,
+  lambdaAway: number
+): GoalsSummary {
+  const N = 9;
+  const pTotal: number[] = new Array(2 * N + 1).fill(0);
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      pTotal[i + j] += poisson(i, lambdaHome) * poisson(j, lambdaAway);
+    }
+  }
+  const expected_goals = Math.round((lambdaHome + lambdaAway) * 10) / 10;
+  const band_low = Math.floor(expected_goals);
+  const band_high = Math.ceil(expected_goals);
+  let band = 0;
+  for (let t = band_low; t <= band_high; t++) band += pTotal[t] ?? 0;
+  const band_p = Math.round(band * 10000) / 10000;
+  return { expected_goals, band_low, band_high, band_p };
+}
+
 export function buildModel(results: MatchResult[]): PoissonModel | null {
   if (results.length < 8) return null;
 
