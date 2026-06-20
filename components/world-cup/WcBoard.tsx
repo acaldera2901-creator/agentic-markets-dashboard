@@ -361,11 +361,16 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
     : displayPick === "AWAY" ? away
     : displayPick === "DRAW" ? (lang === "it" ? "Pareggio" : "Draw")
     : null;
-  const marketImplied =
-    displayPick === "HOME" ? e?.market?.p_home
-    : displayPick === "AWAY" ? e?.market?.p_away
-    : displayPick === "DRAW" ? e?.market?.p_draw
+  // Market % from the REAL bookmaker odds (Pinnacle) in notes — 1/odds, raw
+  // implied, same as the football card. `enrichment.market` is empty/null on WC
+  // rows, so we derive the market from probs.odds_* (parseProbs reads odds_* from
+  // notes). Falls back to null only when the match genuinely has no odds.
+  const pickOdds =
+    displayPick === "HOME" ? probs?.odds_home
+    : displayPick === "AWAY" ? probs?.odds_away
+    : displayPick === "DRAW" ? probs?.odds_draw
     : null;
+  const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
   // Value edge only with a real market price AND a clear favourite — never on a
   // below-floor "no clear favourite" card (no value claimed). p.edge_percent is
   // already a percentage (e.g. 3.2).
