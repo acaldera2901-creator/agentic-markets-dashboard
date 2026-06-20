@@ -15,28 +15,15 @@
 - **Framing FTC-onesto.** Probabilità calibrate del *modello* per quella partita. MAI claim tipo "X% vincenti" / win-rate.
 - **Non toccare:** modello statistico, 1X2, schema DB, settlement, `pick_ledger`/`pick_settlement`, Maven Studio, la firma di `computeExtraMarkets()` e i suoi chiamanti.
 - **Branch:** partire da `main` con branch nuovo `feat/prediction-goals-markets`. NON usare `feat/maven-studio` (obsoleto).
-- **i18n:** seguire il pattern inline già usato nella card (`lang === "it" ? "…" : "…"`), non aggiungere chiavi al dizionario.
+- **i18n:** usare l'helper `pick5(lang, { it, en, es, fr, ru })` (definito in `app/app/page.tsx:1457`, `lang: Lang`) come fa tutta la `PredictionCard` su `main` — 5 lingue, nessuna chiave nel dizionario globale.
+- **Workspace:** si lavora nel worktree isolato `~/Desktop/agentic-markets-goals` (branch `feat/prediction-goals-markets` da `origin/main`), NON in `~/Desktop/agentic-markets` (tree con modifiche di un'altra sessione, incl. `app/globals.css`).
 - **Test runner:** i test TS si eseguono con `npx tsx <file>` (vedi `tests/market-blend.test.ts` come riferimento).
 
 ---
 
-### Task 0: Setup branch
+### Task 0: Setup branch — GIÀ FATTO dal controller
 
-**Files:** nessuno (solo git).
-
-- [ ] **Step 1: Creare il branch da main aggiornato**
-
-```bash
-cd ~/Desktop/agentic-markets
-git checkout main
-git pull --ff-only
-git checkout -b feat/prediction-goals-markets
-```
-
-- [ ] **Step 2: Verificare il punto di partenza pulito**
-
-Run: `git status`
-Expected: "On branch feat/prediction-goals-markets", working tree clean.
+Worktree isolato creato: `~/Desktop/agentic-markets-goals` su branch `feat/prediction-goals-markets` (da `origin/main` @83608ba), spec+piano cherry-pickati. Tutti i task seguenti si eseguono in quel worktree. Nessuna azione richiesta.
 
 ---
 
@@ -168,7 +155,7 @@ Calcolare `goals_summary` nello stesso punto dove oggi si calcola `extra_markets
 
 **Files:**
 - Modify: `app/api/predictions/route.ts` (import ~riga 10; call site ~righe 835-836)
-- Modify: `app/app/page.tsx` (tipo `PredictionEnrichment`, blocco `extra_markets?` ~righe 771-784)
+- Modify: `app/app/page.tsx` (tipo `PredictionEnrichment`, blocco `extra_markets?` ~righe 1547-1554; il blocco chiude con `}>;` a ~riga 1554, seguito dal commento `// Confidence-surfacing gate`)
 
 **Interfaces:**
 - Consumes: `computeGoalsSummary` da `@/lib/poisson-model` (Task 1).
@@ -212,7 +199,7 @@ Nota: `goals_summary` NON va aggiunto a `PREMIUM_ENRICHMENT_KEYS` — sono proba
 
 - [ ] **Step 3: Aggiungere il campo al tipo `PredictionEnrichment` in page.tsx**
 
-In `app/app/page.tsx`, dentro l'interfaccia `PredictionEnrichment`, subito dopo la chiusura del blocco `extra_markets?: Array<{...}>;` (~riga 784), aggiungere:
+In `app/app/page.tsx`, dentro l'interfaccia `PredictionEnrichment`, subito dopo la chiusura del blocco `extra_markets?: Array<{...}>;` (~riga 1554, prima del commento `// Confidence-surfacing gate`), aggiungere:
 
 ```ts
   goals_summary?: {
@@ -244,15 +231,15 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Renderizzare il blocco "Gol" nella `PredictionCard`, sotto la readout 1X2, solo quando la card NON è lockata (free/anon restano lockati come per l'1X2) e solo quando `goals_summary` esiste (⇒ solo calcio).
 
 **Files:**
-- Modify: `app/app/page.tsx` (nuovo componente `GoalsBlock` vicino a `PredictionCard` ~riga 3209; render dentro `PredictionCard`)
+- Modify: `app/app/page.tsx` (nuovo componente `GoalsBlock` subito prima di `function PredictionCard(` a ~riga 4263; render dentro `PredictionCard`)
 
 **Interfaces:**
-- Consumes: `e.goals_summary` (tipo aggiunto in Task 2) e `e.extra_markets` (filtrando `over_1_5`/`over_2_5`/`over_3_5`), dove `e = p.enrichment ?? {}` già definito nella card a riga 3221. Helper `pct(x)` già presente nel file (usato a riga ~1230 / nelle rows). `lang` già in scope nella card.
+- Consumes: `e.goals_summary` (tipo aggiunto in Task 2) e `e.extra_markets` (filtrando `over_1_5`/`over_2_5`/`over_3_5`), dove `e = p.enrichment ?? {}` è già definito DENTRO `PredictionCard` a ~riga 4275 (attenzione: c'è un altro `const e = p.enrichment ?? {}` a ~riga 4131 in un componente diverso — usare quello dentro `PredictionCard`). `lang` (tipo `Lang`) e l'helper `pick5(lang, {...})` già in scope nella card.
 - Produces: nessuna API pubblica nuova (componente interno al file).
 
 - [ ] **Step 1: Aggiungere il componente `GoalsBlock`**
 
-In `app/app/page.tsx`, subito PRIMA della dichiarazione `function PredictionCard(` (~riga 3209), inserire:
+In `app/app/page.tsx`, subito PRIMA della dichiarazione `function PredictionCard(` (~riga 4263), inserire (i18n a 5 lingue via `pick5`, coerente con la card):
 
 ```tsx
 function GoalsBlock({
@@ -262,7 +249,7 @@ function GoalsBlock({
 }: {
   summary: NonNullable<PredictionEnrichment["goals_summary"]>;
   markets: NonNullable<PredictionEnrichment["extra_markets"]>;
-  lang: string;
+  lang: Lang;
 }) {
   const ou = (key: string) => markets.find((m) => m.key === key)?.p ?? null;
   const o15 = ou("over_1_5");
@@ -277,11 +264,11 @@ function GoalsBlock({
     <div className="goals-block">
       <div className="goals-head">
         <span className="goals-eg">
-          {lang === "it" ? "Gol attesi" : "Expected goals"}: <b>{summary.expected_goals.toFixed(1)}</b>
+          {pick5(lang, { it: "Gol attesi", en: "Expected goals", es: "Goles esperados", fr: "Buts attendus", ru: "Ожидаемые голы" })}: <b>{summary.expected_goals.toFixed(1)}</b>
         </span>
         <span className="goals-band">
-          {lang === "it" ? "Fascia più probabile" : "Most likely range"}:{" "}
-          <b>{bandLabel} {lang === "it" ? "gol" : "goals"}</b> ({Math.round(summary.band_p * 100)}%)
+          {pick5(lang, { it: "Fascia più probabile", en: "Most likely range", es: "Rango más probable", fr: "Fourchette probable", ru: "Вероятный диапазон" })}:{" "}
+          <b>{bandLabel} {pick5(lang, { it: "gol", en: "goals", es: "goles", fr: "buts", ru: "голов" })}</b> ({Math.round(summary.band_p * 100)}%)
         </span>
       </div>
       <div className="goals-ou">
@@ -296,7 +283,7 @@ function GoalsBlock({
 
 - [ ] **Step 2: Renderizzare `GoalsBlock` nella card (gated da `!p.locked`)**
 
-In `PredictionCard`, individuare la fine del blocco condizionale della readout 1X2 — il ternario `{p.locked ? (…lock-overlay…) : belowFloor ? (…bars…) : (…mvm readout…)}` (inizia ~riga 3296). Subito DOPO la chiusura di quel ternario (la `)}` che chiude l'intera espressione condizionale, prima della sezione "why"/analisi/betslip), inserire:
+In `PredictionCard` il ternario della readout 1X2 è `{p.locked ? (…lock-overlay…) : belowFloor ? (…bars…) : (…mvm readout…)}`: apre con `{p.locked ? (` a ~riga 4388 e CHIUDE con `</>` + `)}` a ~righe 4448-4449. Subito DOPO quel `)}` (riga 4449) e PRIMA del commento `{/* WHY — readout + expandable analysis … */}` e del `<div className="why">` (~riga 4450-4451), allo stesso livello di indentazione (6 spazi), inserire:
 
 ```tsx
       {!p.locked && e.goals_summary && (
@@ -304,11 +291,11 @@ In `PredictionCard`, individuare la fine del blocco condizionale della readout 1
       )}
 ```
 
-Verifica di posizionamento: il blocco deve stare DENTRO `<div className="pred">`, allo stesso livello della readout 1X2, NON dentro il ramo `belowFloor` né dentro il ramo clear-pick. Deve quindi apparire sia per le card con pick chiaro sia per quelle `below_floor`, ma mai quando `p.locked`.
+Verifica di posizionamento: il blocco deve stare DENTRO `<div className="pred">`, tra la chiusura del ternario readout e il `<div className="why">`, NON dentro il ramo `belowFloor` né dentro il ramo clear-pick. Deve quindi apparire sia per le card con pick chiaro sia per quelle `below_floor`, ma mai quando `p.locked`.
 
 - [ ] **Step 3: Aggiungere lo stile CSS del blocco**
 
-Gli stili della card vivono in `app/globals.css` (la regola `.pred .scorebar` è a ~riga 5509). Aggiungere subito dopo il blocco `.pred .scorebar` (dopo ~riga 5530), usando i token già in uso nella card (`--am-line`, `--am-text`, `--am-muted-2`, `--am-inset`) — niente colori hardcoded:
+Gli stili della card vivono in `app/globals.css` (la regola `.pred .scorebar {` è a ~riga 5499). Aggiungere subito dopo il blocco `.pred .scorebar` e le sue sotto-regole (`.pred .scorebar .verd.wrong` ~riga 5520), usando i token già in uso nella card (`--am-line`, `--am-text`, `--am-muted-2`, `--am-inset`) — niente colori hardcoded:
 
 ```css
 /* goals block — gol attesi + fascia + over/under */
