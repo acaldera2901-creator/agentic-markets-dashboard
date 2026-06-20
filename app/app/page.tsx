@@ -1552,6 +1552,12 @@ interface PredictionEnrichment {
     market_odds: number | null;
     edge: number | null;
   }>;
+  goals_summary?: {
+    expected_goals: number;
+    band_low: number;
+    band_high: number;
+    band_p: number;
+  };
   // Confidence-surfacing gate (Wave 1, club football path). Present only when
   // below_floor — same contract as the national path's notes.surface. Survives
   // the per-tier enrichment strip (NOT in PREMIUM_ENRICHMENT_KEYS), so it reaches

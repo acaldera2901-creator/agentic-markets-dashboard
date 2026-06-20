@@ -8,6 +8,7 @@ import {
   buildModel,
   predict,
   computeExtraMarkets,
+  computeGoalsSummary,
   blendWithMarket,
   devig1x2,
   MARKET_BLEND_ALPHA,
@@ -833,7 +834,8 @@ export async function GET(req: Request) {
     if (lH != null && lA != null && lH > 0 && lA > 0) {
       const marketOdds = (hydrated.enrichment as EnrichmentPayload | null)?.extra_market_odds ?? {};
       const extra_markets = computeExtraMarkets(lH, lA, marketOdds);
-      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets } };
+      const goals_summary = computeGoalsSummary(lH, lA);
+      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets, goals_summary } };
     }
     return hydrated;
   });
