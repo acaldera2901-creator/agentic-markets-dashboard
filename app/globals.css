@@ -5519,6 +5519,18 @@ button:disabled {
 .pred .scorebar .verd.correct { color: var(--am-positive); }
 .pred .scorebar .verd.wrong { color: var(--am-negative, #D06A60); }
 
+/* goals block — gol attesi + fascia + over/under */
+.pred .goals-block {
+  margin-top: 9px; padding: 8px 11px;
+  background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 7px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.pred .goals-block .goals-head,
+.pred .goals-block .goals-ou { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+.pred .goals-block .goals-head { color: var(--am-muted-2); }
+.pred .goals-block .goals-ou { color: var(--am-text); }
+.pred .goals-block b { color: var(--am-text); font-variant-numeric: tabular-nums; }
+
 /* outcome rows — monochrome; coral marks only the pick */
 .pred .rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 13px; }
 .pred .row { display: grid; grid-template-columns: 58px 1fr 40px; align-items: center; gap: 11px; }
