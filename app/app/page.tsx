@@ -1552,6 +1552,12 @@ interface PredictionEnrichment {
     market_odds: number | null;
     edge: number | null;
   }>;
+  goals_summary?: {
+    expected_goals: number;
+    band_low: number;
+    band_high: number;
+    band_p: number;
+  };
   // Confidence-surfacing gate (Wave 1, club football path). Present only when
   // below_floor — same contract as the national path's notes.surface. Survives
   // the per-tier enrichment strip (NOT in PREMIUM_ENRICHMENT_KEYS), so it reaches
@@ -4258,7 +4264,43 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
   return out.join(" ");
 }
 
-
+function GoalsBlock({
+  summary,
+  markets,
+  lang,
+}: {
+  summary: NonNullable<PredictionEnrichment["goals_summary"]>;
+  markets: NonNullable<PredictionEnrichment["extra_markets"]>;
+  lang: Lang;
+}) {
+  const ou = (key: string) => markets.find((m) => m.key === key)?.p ?? null;
+  const o15 = ou("over_1_5");
+  const o25 = ou("over_2_5");
+  const o35 = ou("over_3_5");
+  const bandLabel =
+    summary.band_low === summary.band_high
+      ? `${summary.band_low}`
+      : `${summary.band_low}–${summary.band_high}`;
+  const fmt = (p: number | null) => (p == null ? "—" : `${Math.round(p * 100)}%`);
+  return (
+    <div className="goals-block">
+      <div className="goals-head">
+        <span className="goals-eg">
+          {pick5(lang, { it: "Gol attesi", en: "Expected goals", es: "Goles esperados", fr: "Buts attendus", ru: "Ожидаемые голы" })}: <b>{summary.expected_goals.toFixed(1)}</b>
+        </span>
+        <span className="goals-band">
+          {pick5(lang, { it: "Fascia più probabile", en: "Most likely range", es: "Rango más probable", fr: "Fourchette probable", ru: "Вероятный диапазон" })}:{" "}
+          <b>{bandLabel} {pick5(lang, { it: "gol", en: "goals", es: "goles", fr: "buts", ru: "голов" })}</b> ({Math.round(summary.band_p * 100)}%)
+        </span>
+      </div>
+      <div className="goals-ou">
+        <span>Over 1.5: <b>{fmt(o15)}</b></span>
+        <span>Over 2.5: <b>{fmt(o25)}</b></span>
+        <span>Over 3.5: <b>{fmt(o35)}</b></span>
+      </div>
+    </div>
+  );
+}
 
 function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
@@ -4445,6 +4487,10 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
         </>
+      )}
+
+      {!p.locked && e.goals_summary && (
+        <GoalsBlock summary={e.goals_summary} markets={e.extra_markets ?? []} lang={lang} />
       )}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}

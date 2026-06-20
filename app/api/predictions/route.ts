@@ -8,6 +8,7 @@ import {
   buildModel,
   predict,
   computeExtraMarkets,
+  computeGoalsSummary,
   blendWithMarket,
   devig1x2,
   MARKET_BLEND_ALPHA,
@@ -710,6 +711,13 @@ function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
     (o) => Number.isFinite(o) && o > 1
   );
 
+  // World Cup goal markets: the Python national-Poisson model already writes the
+  // expected goals to enrichment.lambdas — surface them so the shared hydrate step
+  // computes Over/Under + goals_summary for WC rows too (real λ, not derived).
+  const wcLambdas = (u.enrichment as (EnrichmentPayload & { lambdas?: { home?: number; away?: number } }) | null)?.lambdas;
+  const lH = Number(wcLambdas?.home);
+  const lA = Number(wcLambdas?.away);
+
   return {
     id: 0,
     match_id: matchId,
@@ -721,8 +729,8 @@ function unifiedToPredictionRow(u: UnifiedFallbackRow): PredictionRow | null {
     p_home: pHome,
     p_draw: pDraw,
     p_away: pAway,
-    lambda_home: null,
-    lambda_away: null,
+    lambda_home: Number.isFinite(lH) && lH > 0 ? lH : null,
+    lambda_away: Number.isFinite(lA) && lA > 0 ? lA : null,
     odds_home: hasOdds ? oddsHome : null,
     odds_draw: hasOdds ? oddsDraw : null,
     odds_away: hasOdds ? oddsAway : null,
@@ -833,7 +841,8 @@ export async function GET(req: Request) {
     if (lH != null && lA != null && lH > 0 && lA > 0) {
       const marketOdds = (hydrated.enrichment as EnrichmentPayload | null)?.extra_market_odds ?? {};
       const extra_markets = computeExtraMarkets(lH, lA, marketOdds);
-      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets } };
+      const goals_summary = computeGoalsSummary(lH, lA);
+      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets, goals_summary } };
     }
     return hydrated;
   });
