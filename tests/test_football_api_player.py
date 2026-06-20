@@ -29,6 +29,15 @@ async def test_get_fixture_events_returns_list(monkeypatch):
     out = await fac.get_fixture_events(123)
     assert out[0]["type"] == "Goal"
 
+async def test_get_fixture_player_stats_returns_list(monkeypatch):
+    payload = {"response": [{"team": {"name": "PSG"},
+                             "players": [{"player": {"id": 276, "name": "Neymar"}}]}]}
+    async def fake_get(self, url, **kw): return _Resp(payload)
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+    out = await fac.get_fixture_player_stats(555)
+    assert out[0]["team"]["name"] == "PSG"
+    assert out[0]["players"][0]["player"]["id"] == 276
+
 async def test_player_stats_fail_soft_without_key(monkeypatch):
     monkeypatch.setattr(fac.settings, "API_FOOTBALL_KEY", "")
     out = await fac.get_player_season_stats(39, 2025)
