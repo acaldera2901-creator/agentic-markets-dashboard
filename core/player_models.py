@@ -101,6 +101,9 @@ def build_profile(season: PlayerSeasonStat, xg_per90: float | None, today_iso: s
     goals_per90 = season.goals / minutes * 90
     # minutes_share: minuti su un massimo teorico di 90*presenze
     minutes_share = min(1.0, season.minutes / (season.appearances * 90)) if season.appearances else 0.0
+    # last_updated_iso = today_iso intenzionale: al build il profilo è fresco per
+    # costruzione. La staleness conta in LETTURA (sotto-progetto B ricontrolla
+    # is_eligible contro il last_updated salvato in DB con la data di lettura).
     eligible = is_eligible(season.appearances, today_iso, today_iso)
     return PlayerProfile(
         player_id=season.player_id,
