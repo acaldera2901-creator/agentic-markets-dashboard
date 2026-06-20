@@ -34,6 +34,14 @@ def is_qualifying(fixture: dict) -> bool:
     return "qualifying" in _fold(fixture.get("round"))
 
 
+def is_placeholder(fixture: dict) -> bool:
+    """Draw not made yet → the source (ESPN) returns 'TBD' players. Not a real
+    match: must never be ingested or shown as a card."""
+    p1 = _fold(fixture.get("player1"))
+    p2 = _fold(fixture.get("player2"))
+    return not p1 or not p2 or p1 == "tbd" or p2 == "tbd"
+
+
 def is_denylisted(fixture: dict, denylist: tuple[str, ...]) -> bool:
     tournament = _fold(fixture.get("tournament"))
     return any(token and token in tournament for token in denylist)
@@ -54,8 +62,13 @@ def filter_main_tour(
     report = {"qualifying": n, "minor": n, "dropped_tournaments": {name: n}}
     """
     kept: list[dict] = []
-    report: dict = {"qualifying": 0, "minor": 0, "dropped_tournaments": {}}
+    report: dict = {"qualifying": 0, "minor": 0, "placeholder": 0, "dropped_tournaments": {}}
     for fixture in fixtures:
+        if is_placeholder(fixture):
+            report["placeholder"] += 1
+            name = fixture.get("tournament") or "?"
+            report["dropped_tournaments"][name] = report["dropped_tournaments"].get(name, 0) + 1
+            continue
         if not include_qualifying and is_qualifying(fixture):
             report["qualifying"] += 1
             name = fixture.get("tournament") or "?"

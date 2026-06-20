@@ -200,6 +200,10 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
         -- fabricated-looking 50/50.
         AND tp.p1 IS NOT NULL
         AND tp.p2 IS NOT NULL
+        -- No placeholder matches: ESPN returns 'TBD' players for slots whose
+        -- draw isn't made yet — never surface a "TBD vs TBD" card.
+        AND upper(btrim(tp.player1)) NOT IN ('TBD', '')
+        AND upper(btrim(tp.player2)) NOT IN ('TBD', '')
       ORDER BY COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id), tp.computed_at DESC
     ) d
     ORDER BY d.scheduled_at ASC
