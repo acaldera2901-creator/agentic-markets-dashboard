@@ -1,7 +1,9 @@
 import json
 import pathlib
+from datetime import datetime, timezone
 
-from core.tennis_oddspapi_client import parse_oddspapi_match_odds
+from core.tennis_oddspapi_client import parse_oddspapi_match_odds, _normalize_name
+from core.tennis_odds_api_client import _pair_key
 
 SAMPLE = json.loads((pathlib.Path(__file__).parent / "fixtures" / "oddspapi_odds_sample.json").read_text())
 
@@ -124,3 +126,39 @@ def test_overround_guard_rejects_exchange_artefact():
     assert r["odds_p2"] == 2.90
     overround = 1 / r["odds_p1"] + 1 / r["odds_p2"]
     assert 0.90 <= overround <= 1.30
+
+
+# --- _normalize_name tests ---
+
+def test_normalize_name_last_first():
+    assert _normalize_name("Djokovic, Novak") == "Novak Djokovic"
+
+
+def test_normalize_name_no_comma_unchanged():
+    assert _normalize_name("Novak Djokovic") == "Novak Djokovic"
+
+
+def test_normalize_name_none_returns_none():
+    assert _normalize_name(None) is None
+
+
+# --- join test: proves 'Last, First' now matches 'First Last' via _pair_key ---
+
+def test_pair_key_normalized_oddspapi_matches_our_format():
+    """OddsPapi 'Sinner, Jannik' normalized == our 'Jannik Sinner' for the same match."""
+    dt = "2026-06-20T14:00:00Z"
+    # OddsPapi raw names (what the API returns)
+    oddspapi_raw_p1 = "Sinner, Jannik"
+    oddspapi_raw_p2 = "Alcaraz, Carlos"
+    # After normalization applied in get_oddspapi_fixtures
+    oddspapi_norm_p1 = _normalize_name(oddspapi_raw_p1)
+    oddspapi_norm_p2 = _normalize_name(oddspapi_raw_p2)
+    # Our pipeline names (stored as 'First Last')
+    our_p1 = "Jannik Sinner"
+    our_p2 = "Carlos Alcaraz"
+    assert oddspapi_norm_p1 == our_p1
+    assert oddspapi_norm_p2 == our_p2
+    key_oddspapi = _pair_key(oddspapi_norm_p1, oddspapi_norm_p2, dt)
+    key_ours = _pair_key(our_p1, our_p2, dt)
+    assert key_oddspapi is not None
+    assert key_oddspapi == key_ours

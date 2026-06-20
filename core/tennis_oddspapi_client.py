@@ -19,6 +19,16 @@ def _key() -> str | None:
     return os.environ.get("ODDSPAPI_KEY") or None
 
 
+def _normalize_name(name: str | None) -> str | None:
+    """Reorder OddsPapi 'Last, First' format to 'First Last' expected by the pipeline."""
+    if not name:
+        return name
+    if ", " in name:
+        last, first = name.split(", ", 1)
+        return f"{first.strip()} {last.strip()}"
+    return name
+
+
 def _price(outcome: dict | None) -> float | None:
     try:
         return float(outcome["players"]["0"]["price"])
@@ -70,8 +80,8 @@ async def get_oddspapi_fixtures(date_from: str, date_to: str) -> list[dict[str, 
         for f in items:
             out.append({
                 "fixtureId": f.get("fixtureId"),
-                "player1": f.get("participant1Name"),
-                "player2": f.get("participant2Name"),
+                "player1": _normalize_name(f.get("participant1Name")),
+                "player2": _normalize_name(f.get("participant2Name")),
                 "scheduled_at": f.get("startTime"),
                 "tournament": f.get("tournamentName"),
                 "category": f.get("categoryName"),
