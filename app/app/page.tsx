@@ -4355,9 +4355,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
     const correct = p.best_selection === actual;
     return { correct, text: correct ? "✓ Modello corretto" : "✗ Modello errato" };
   })();
-  const rowsData: { key: "HOME" | "DRAW" | "AWAY"; pct: number }[] = [
-    { key: "HOME", pct: p.p_home }, { key: "DRAW", pct: p.p_draw }, { key: "AWAY", pct: p.p_away },
-  ];
   // Demoted extra-markets (schedina) — moved into the expandable analysis.
   const extraPicks = (e.extra_markets ?? []).filter((m) => m.p >= 0.55).sort((a, b) => b.p - a.p).slice(0, 5);
 
@@ -4365,7 +4362,13 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   // All figures are REAL: model% = the model's probability for the pick,
   // market% = raw implied (1/odds) for that same pick, edge = p.edge (value)
   // or the model-edge margin when there is no market price. Nothing fabricated.
-  const pickKey = !belowFloor ? p.best_selection : null;
+  // Unified card structure (Andrea, 2026-06-20): always the readout, never bars
+  // — even with no clear favourite, where we show the model's most-probable
+  // outcome with NO edge claimed (FTC-honest).
+  const topKey: "HOME" | "DRAW" | "AWAY" =
+    p.p_home >= p.p_draw && p.p_home >= p.p_away ? "HOME"
+    : p.p_draw >= p.p_away ? "DRAW" : "AWAY";
+  const pickKey: string = belowFloor ? topKey : (p.best_selection ?? topKey);
   const pickName =
     pickKey === "HOME" ? p.home_team
     : pickKey === "AWAY" ? p.away_team
@@ -4382,7 +4385,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
     : pickKey === "DRAW" ? p.odds_draw
     : null;
   const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
-  const edgeVal = p.edge != null && p.edge > 0 ? p.edge * 100 : null;
+  const edgeVal = !belowFloor && p.edge != null && p.edge > 0 ? p.edge * 100 : null;
   // Confidence 0-100 → 4-dot meter + word label.
   const confScore = p.confidence_score ?? (pickProb != null ? confidenceFromEdge(p.edge, pickProb) : null);
   const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
@@ -4434,20 +4437,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           <span className="blurred">▒▒ AWAY ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
-      ) : belowFloor ? (
-        <>
-          {/* open match — no clear favourite: keep the honest 1X2 bars */}
-          <div className="rows">
-            {rowsData.map((r) => (
-              <div key={r.key} className="row">
-                <span className="lab">{r.key}</span>
-                <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
-                <span className="pct">{pct(r.pct)}</span>
-              </div>
-            ))}
-          </div>
-          <span className="edge flat">{t.no_clear_favorite} · {t.open_match}</span>
-        </>
       ) : (
         <>
           <div
@@ -4480,7 +4469,9 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           )}
           {!isPreview && edgeVal == null && (
             <span className="edge flat">
-              {marketImplied != null
+              {belowFloor
+                ? pick5(lang, { it: "nessun favorito netto · lettura del modello", en: "no clear favourite · model read", es: "sin favorito claro · lectura del modelo", fr: "pas de favori net · lecture du modèle", ru: "нет явного фаворита · чтение модели" })
+                : marketImplied != null
                 ? pick5(lang, { it: "nessun edge · in linea col mercato", en: "no edge · in line with market", es: "sin edge · en línea con el mercado", fr: "pas d'edge · en ligne avec le marché", ru: "нет edge · в линии с рынком" })
                 : pick5(lang, { it: "nessuna quota · lettura del modello", en: "no market price · model read", es: "sin cuota · lectura del modelo", fr: "pas de cote · lecture du modèle", ru: "нет котировки · чтение модели" })}
             </span>
@@ -4791,10 +4782,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   // Scorebar state from the ESPN live feed.
   const scStatus = liveMatch ? (liveIsFinal ? "finished" : "live") : null;
   const scLabel = liveMatch ? (liveIsFinal ? "FT" : `LIVE`) : null;
-  const rowsData: { player: "P1" | "P2"; name: string; pct: number }[] = [
-    { player: "P1", name: m.player1.split(" ").pop() ?? m.player1, pct: m.p1 },
-    { player: "P2", name: m.player2.split(" ").pop() ?? m.player2, pct: m.p2 },
-  ];
 
   // ── Direction B readout (tennis): Market vs Model vs Edge ──
   // Mirror the football card: the SHOWN player must be the one the edge refers
@@ -4804,7 +4791,11 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   const valuePlayer: "P1" | "P2" | null =
     m.best_selection === "P1" || m.best_selection === "P2" ? m.best_selection : null;
   const favPlayer: "P1" | "P2" | null = hasFavorite ? (p1IsPick ? "P1" : "P2") : null;
-  const pickPlayer: "P1" | "P2" | null = (isValue && valuePlayer) ? valuePlayer : favPlayer;
+  // Unified card structure (Andrea, 2026-06-20): always the readout, never bars —
+  // even with no favourite (dead heat), show the model's higher-prob player with
+  // NO edge claimed (FTC-honest).
+  const topPlayer: "P1" | "P2" = m.p1 >= m.p2 ? "P1" : "P2";
+  const pickPlayer: "P1" | "P2" = (isValue && valuePlayer) ? valuePlayer : (favPlayer ?? topPlayer);
   const pickName = pickPlayer === "P1" ? (m.player1.split(" ").pop() ?? m.player1)
     : pickPlayer === "P2" ? (m.player2.split(" ").pop() ?? m.player2) : null;
   const pickProb = pickPlayer === "P1" ? m.p1 : pickPlayer === "P2" ? m.p2 : null;
@@ -4860,20 +4851,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
-      ) : !hasFavorite ? (
-        <>
-          {/* dead heat — no favourite: keep the honest two-way bars */}
-          <div className="rows">
-            {rowsData.map((r) => (
-              <div key={r.player} className="row">
-                <span className="lab">{r.name}</span>
-                <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
-                <span className="pct">{pct(r.pct)}</span>
-              </div>
-            ))}
-          </div>
-          <span className="edge flat">{pick5(lang, { it: "Nessun favorito · match aperto", en: "No favourite · open match", es: "Sin favorito · partido abierto", fr: "Pas de favori · match ouvert", ru: "Нет фаворита · открытый матч" })}</span>
-        </>
       ) : (
         <>
           <div
@@ -4906,7 +4883,9 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           )}
           {!isPreview && edgeVal == null && (
             <span className="edge flat">
-              {marketImplied != null
+              {!hasFavorite
+                ? pick5(lang, { it: "nessun favorito · match aperto", en: "no favourite · open match", es: "sin favorito · partido abierto", fr: "pas de favori · match ouvert", ru: "нет фаворита · открытый матч" })
+                : marketImplied != null
                 ? pick5(lang, { it: "nessun edge · in linea col mercato", en: "no edge · in line with market", es: "sin edge · en línea con el mercado", fr: "pas d'edge · en ligne avec le marché", ru: "нет edge · в линии с рынком" })
                 : pick5(lang, { it: "nessuna quota · lettura del modello", en: "no market price · model read", es: "sin cuota · lectura del modelo", fr: "pas de cote · lecture du modèle", ru: "нет котировки · чтение модели" })}
             </span>
