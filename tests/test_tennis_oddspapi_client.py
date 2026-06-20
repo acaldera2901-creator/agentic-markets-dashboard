@@ -19,10 +19,69 @@ def test_parse_real_sample_returns_sane_two_way():
 
 
 def test_parse_prefers_pinnacle_when_present():
-    bk = SAMPLE.get("bookmakerOdds", {})
-    r = parse_oddspapi_match_odds(SAMPLE)
-    if "pinnacle" in bk:
-        assert r["bookmaker"] == "pinnacle"
+    """Synthetic payload: pinnacle + 1xbet both sane. Must return pinnacle."""
+    payload = {
+        "bookmakerOdds": {
+            "1xbet": {
+                "markets": {
+                    "121": {
+                        "outcomes": {
+                            "121": {"players": {"0": {"price": "1.40"}}},
+                            "122": {"players": {"0": {"price": "2.734"}}},
+                        }
+                    }
+                }
+            },
+            "pinnacle": {
+                "markets": {
+                    "121": {
+                        "outcomes": {
+                            "121": {"players": {"0": {"price": "1.55"}}},
+                            "122": {"players": {"0": {"price": "2.50"}}},
+                        }
+                    }
+                }
+            },
+        }
+    }
+    r = parse_oddspapi_match_odds(payload)
+    assert r is not None
+    assert r["bookmaker"] == "pinnacle"
+    assert r["odds_p1"] == 1.55
+    assert r["odds_p2"] == 2.50
+
+
+def test_parse_prefers_betfairex_over_non_anchor():
+    """Synthetic: no pinnacle, betfair-ex sane 1.5/2.6, 1xbet sane 1.4/2.9. Must return betfair-ex."""
+    payload = {
+        "bookmakerOdds": {
+            "1xbet": {
+                "markets": {
+                    "121": {
+                        "outcomes": {
+                            "121": {"players": {"0": {"price": "1.40"}}},
+                            "122": {"players": {"0": {"price": "2.90"}}},
+                        }
+                    }
+                }
+            },
+            "betfair-ex": {
+                "markets": {
+                    "121": {
+                        "outcomes": {
+                            "121": {"players": {"0": {"price": "1.50"}}},
+                            "122": {"players": {"0": {"price": "2.60"}}},
+                        }
+                    }
+                }
+            },
+        }
+    }
+    r = parse_oddspapi_match_odds(payload)
+    assert r is not None
+    assert r["bookmaker"] == "betfair-ex"
+    assert r["odds_p1"] == 1.50
+    assert r["odds_p2"] == 2.60
 
 
 def test_parse_empty_or_no_market_returns_none():

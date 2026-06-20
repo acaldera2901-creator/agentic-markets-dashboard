@@ -10,7 +10,7 @@ BASE_URL = "https://api.oddspapi.io/v4"
 SPORT_ID = 12  # tennis
 MATCH_WINNER_MARKET = "121"      # confirmed from real sample
 OUTCOME_P1, OUTCOME_P2 = "121", "122"  # canonical outcomes: "121"=participant1, "122"=participant2
-ANCHOR_ORDER = ("pinnacle",)  # then any book with a sane 2-way (exchange artefacts rejected)
+ANCHOR_ORDER = ("pinnacle", "betfair-ex")  # then any book with a sane 2-way (exchange artefacts rejected)
 OVERROUND_MIN, OVERROUND_MAX = 0.90, 1.30  # valid range for a 2-way match-winner market
 _UA = {"User-Agent": "betredge/1.0"}  # urllib default → 403; fix with explicit UA
 
