@@ -345,3 +345,62 @@ async def get_injuries(fixture_id: int) -> Dict:
         else:
             away_inj.append(entry)
     return {"home": home_inj, "away": away_inj}
+
+
+async def get_player_season_stats(league_id: int, season: int, page: int = 1) -> dict:
+    """Aggregati stagionali per-giocatore (/players). Paginato (~20/pagina)."""
+    empty = {"response": [], "paging": {"current": 1, "total": 1}}
+    if not settings.API_FOOTBALL_KEY:
+        return empty
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/players",
+                params={"league": league_id, "season": season, "page": page},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return empty
+            data = resp.json()
+            return {
+                "response": data.get("response", []),
+                "paging": data.get("paging", {"current": page, "total": page}),
+            }
+    except Exception:
+        return empty
+
+
+async def get_fixture_player_stats(fixture_id: int) -> List[Dict]:
+    """Stat per-giocatore di una singola partita (/fixtures/players)."""
+    if not settings.API_FOOTBALL_KEY:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/fixtures/players",
+                params={"fixture": fixture_id},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return []
+            return resp.json().get("response", [])
+    except Exception:
+        return []
+
+
+async def get_fixture_events(fixture_id: int) -> List[Dict]:
+    """Eventi partita (gol/assist/cartellini) via /fixtures/events."""
+    if not settings.API_FOOTBALL_KEY:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            resp = await c.get(
+                f"{_base_url()}/fixtures/events",
+                params={"fixture": fixture_id},
+                headers=_headers(),
+            )
+            if resp.status_code != 200:
+                return []
+            return resp.json().get("response", [])
+    except Exception:
+        return []
