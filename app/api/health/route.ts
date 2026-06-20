@@ -35,9 +35,7 @@ function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {
   return age < 90 ? "alive" : age < 300 ? "stale" : "offline";
 }
 
-export async function GET() {
-
-
+export async function GET(req: Request) {
   const [rows, tennisActivityRows] = await Promise.all([
     dbQuery<HeartbeatRow>(
       `SELECT agent_name, last_seen, status_detail FROM agent_heartbeats`
@@ -89,8 +87,16 @@ export async function GET() {
   const signalAlive = signalAgents.filter((a) => a.status === "alive").length;
   const signalOffline = signalAgents.filter((a) => a.status === "offline").length;
 
+  const status = coreOffline > 0 ? "degraded" : coreStale > 0 ? "warning" : "ok";
+
+  // SEC #SEC-HEALTH-1: public callers get a bare liveness probe only — no agent
+  // names, topology, or counts. Internal monitoring authenticates with RESEARCH_SECRET.
+  if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
+    return NextResponse.json({ status, timestamp: new Date().toISOString() });
+  }
+
   return NextResponse.json({
-    status: coreOffline > 0 ? "degraded" : coreStale > 0 ? "warning" : "ok",
+    status,
     timestamp: new Date().toISOString(),
     core: {
       total: CORE_AGENTS.length,

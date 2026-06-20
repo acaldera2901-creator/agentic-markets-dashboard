@@ -7237,7 +7237,6 @@ export default function Dashboard() {
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
-  const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [tennisMatches, setTennisMatches] = useState<TennisMatch[]>([]);
   const [tennisIsPlaceholder, setTennisIsPlaceholder] = useState(false);
@@ -7569,16 +7568,6 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchAgents = useCallback(async () => {
-    try {
-      const resp = await fetch("/api/health");
-      if (resp.ok) {
-        const data = await resp.json();
-        setAgents(data.agents ?? []);
-      }
-    } catch { /**/ }
-  }, []);
-
   const fetchTennis = useCallback(async () => {
     // No access gate here: API returns per-card locked projection (Task 7)
     setTennisLoading(true);
@@ -7661,7 +7650,6 @@ export default function Dashboard() {
     queueMicrotask(() => {
       void fetchData();
       void fetchPredictions();
-      void fetchAgents();
       void fetchTennis();
       void fetchHistory();
       void fetchHistoryV2();
@@ -7670,12 +7658,11 @@ export default function Dashboard() {
     });
     const dataInt = setInterval(fetchData, 30_000);
     const predInt = setInterval(fetchPredictions, 3_600_000);
-    const agentInt = setInterval(fetchAgents, 60_000);
     const tennisInt = setInterval(fetchTennis, 120_000);
     const liveInt = setInterval(fetchLive, 60_000);
     const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
-    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(agentInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
-  }, [fetchData, fetchPredictions, fetchAgents, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
+    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
+  }, [fetchData, fetchPredictions, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
 
   // Pacchetto utente per i banner house (#HOUSE-PHOTO-1): anon|free|base|premium.
   const houseTier = audienceFromPlan(clientProfile?.plan);
