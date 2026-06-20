@@ -103,13 +103,6 @@ function parseSurfaceBelowFloor(notes?: string | null): boolean {
 // the two surface-gate strings locally — never hardcode English (5-lang parity
 // with the TRANSLATIONS dictionary in app/page.tsx).
 type WcLang = "it" | "en" | "es" | "fr" | "ru";
-const SURFACE_COPY: Record<WcLang, { noClearFavourite: string; openMatch: string }> = {
-  it: { noClearFavourite: "Nessun favorito netto", openMatch: "Partita aperta" },
-  en: { noClearFavourite: "No clear favourite", openMatch: "Open match" },
-  es: { noClearFavourite: "Sin favorito claro", openMatch: "Partido abierto" },
-  fr: { noClearFavourite: "Pas de favori net", openMatch: "Match ouvert" },
-  ru: { noClearFavourite: "Нет явного фаворита", openMatch: "Открытый матч" },
-};
 function resolveWcLang(): WcLang {
   if (typeof window === "undefined") return "it";
   const stored = window.localStorage.getItem("agentic-lang");
@@ -331,8 +324,15 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
   // the card shows the probabilities + why but no pick direction and no edge.
   const belowFloor = parseSurfaceBelowFloor(p.notes);
   const pick = belowFloor ? null : (p.pick || null);
+  // Unified card structure (Andrea, 2026-06-20): every card uses the readout,
+  // never the bars — even with no clear favourite. There we show the model's
+  // most-probable outcome as "Modello", with NO edge claimed (FTC-honest).
+  const topOutcome: "HOME" | "DRAW" | "AWAY" | null = probs
+    ? (probs.home >= probs.draw && probs.home >= probs.away ? "HOME"
+       : probs.draw >= probs.away ? "DRAW" : "AWAY")
+    : null;
+  const displayPick = pick ?? topOutcome;
   const lang = useWcLang();
-  const copy = SURFACE_COPY[lang];
   const whyL = WC_WHY_LABELS[lang];
   const model = whyL.model;
   // Live football score (same treatment as the home board's card).
@@ -352,24 +352,25 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
   // Market-implied %, model %, value edge, confidence and goal markets, all
   // from data already on the row. Shown only in the clear-pick branch below.
   const pickProb =
-    pick === "HOME" ? probs?.home
-    : pick === "AWAY" ? probs?.away
-    : pick === "DRAW" ? probs?.draw
+    displayPick === "HOME" ? probs?.home
+    : displayPick === "AWAY" ? probs?.away
+    : displayPick === "DRAW" ? probs?.draw
     : null;
   const pickName =
-    pick === "HOME" ? home
-    : pick === "AWAY" ? away
-    : pick === "DRAW" ? (lang === "it" ? "Pareggio" : "Draw")
+    displayPick === "HOME" ? home
+    : displayPick === "AWAY" ? away
+    : displayPick === "DRAW" ? (lang === "it" ? "Pareggio" : "Draw")
     : null;
   const marketImplied =
-    pick === "HOME" ? e?.market?.p_home
-    : pick === "AWAY" ? e?.market?.p_away
-    : pick === "DRAW" ? e?.market?.p_draw
+    displayPick === "HOME" ? e?.market?.p_home
+    : displayPick === "AWAY" ? e?.market?.p_away
+    : displayPick === "DRAW" ? e?.market?.p_draw
     : null;
-  // Value edge only when there is a real market price (promoted signal row).
-  // p.edge_percent is already a percentage (e.g. 3.2).
+  // Value edge only with a real market price AND a clear favourite — never on a
+  // below-floor "no clear favourite" card (no value claimed). p.edge_percent is
+  // already a percentage (e.g. 3.2).
   const edgeVal =
-    p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0
+    !belowFloor && p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0
       ? p.edge_percent
       : null;
   const confScore =
@@ -400,15 +401,6 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
   // Live / scheduled readout for the .scorebar (mirrors the football card).
   const scStatus = isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : null;
   const scLabel = isLive ? `LIVE${live?.minute != null ? ` ${live.minute}'` : ""}` : isPaused ? "HT" : isFinished ? "FT" : null;
-
-  // 3-way rows at parity with the football card (.rows > .row > .lab/.track/.pct).
-  const rowsData: { key: "HOME" | "DRAW" | "AWAY"; pct: number }[] = probs
-    ? [
-        { key: "HOME", pct: probs.home },
-        { key: "DRAW", pct: probs.draw },
-        { key: "AWAY", pct: probs.away },
-      ]
-    : [];
 
   return (
     <article className="card"><div className="pred">
@@ -460,66 +452,47 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
         </Link>
       ) : (
         <>
-          {belowFloor ? (
-            <>
-              {probs && (
-                <div className="rows">
-                  {rowsData.map((r) => (
-                    <div key={r.key} className="row">
-                      <span className="lab">{r.key}</span>
-                      <div className="track"><span className="fill" style={{ width: `${Math.round(r.pct * 100)}%` }} /></div>
-                      <span className="pct">{pct(r.pct)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <span className="edge flat wc-no-favourite-inline">
-                <strong>{copy.noClearFavourite}</strong> · <span>{copy.openMatch}</span>
-              </span>
-            </>
+          <div className="mvm">
+            <div className="col">
+              <div className="n">{marketImplied != null ? pct(marketImplied) : "–"}</div>
+              <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
+            </div>
+            <div className="col model">
+              <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
+              <div className="l"><span className="lw">{lang === "it" ? "Modello" : "Model"}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
+            </div>
+            <div className={`col edge${edgeVal != null ? " val" : ""}`}>
+              <div className="n">{edgeVal != null ? `+${edgeVal.toFixed(1)}%` : "–"}</div>
+              <div className="l">Edge</div>
+            </div>
+          </div>
+          {edgeVal != null && confScore != null ? (
+            <div className="conf">
+              <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
+              {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
+              {confLabel && <span className="conf-txt">{confLabel}</span>}
+            </div>
           ) : (
-            <>
-              <div className="mvm">
-                <div className="col">
-                  <div className="n">{marketImplied != null ? pct(marketImplied) : "–"}</div>
-                  <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
-                </div>
-                <div className="col model">
-                  <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-                  <div className="l"><span className="lw">{lang === "it" ? "Modello" : "Model"}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
-                </div>
-                <div className={`col edge${edgeVal != null ? " val" : ""}`}>
-                  <div className="n">{edgeVal != null ? `+${edgeVal.toFixed(1)}%` : "–"}</div>
-                  <div className="l">Edge</div>
-                </div>
+            <span className="edge flat">
+              {belowFloor
+                ? (lang === "it" ? "nessun favorito netto · lettura del modello" : "no clear favourite · model read")
+                : marketImplied != null
+                  ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
+                  : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
+            </span>
+          )}
+          {goals && (
+            <div className="goals-block">
+              <div className="goals-head">
+                <span className="goals-eg">{lang === "it" ? "Gol attesi" : "Expected goals"}: <b>{goals.expected_goals.toFixed(1)}</b></span>
+                <span className="goals-band">{lang === "it" ? "Fascia più probabile" : "Most likely range"}: <b>{goals.band_low === goals.band_high ? `${goals.band_low}` : `${goals.band_low}–${goals.band_high}`} {lang === "it" ? "gol" : "goals"}</b> ({Math.round(goals.band_p * 100)}%)</span>
               </div>
-              {edgeVal != null && confScore != null ? (
-                <div className="conf">
-                  <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
-                  {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
-                  {confLabel && <span className="conf-txt">{confLabel}</span>}
-                </div>
-              ) : (
-                <span className="edge flat">
-                  {marketImplied != null
-                    ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
-                    : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
-                </span>
-              )}
-              {goals && (
-                <div className="goals-block">
-                  <div className="goals-head">
-                    <span className="goals-eg">{lang === "it" ? "Gol attesi" : "Expected goals"}: <b>{goals.expected_goals.toFixed(1)}</b></span>
-                    <span className="goals-band">{lang === "it" ? "Fascia più probabile" : "Most likely range"}: <b>{goals.band_low === goals.band_high ? `${goals.band_low}` : `${goals.band_low}–${goals.band_high}`} {lang === "it" ? "gol" : "goals"}</b> ({Math.round(goals.band_p * 100)}%)</span>
-                  </div>
-                  <div className="goals-ou">
-                    <span>Over 1.5: <b>{overPct("over_1_5")}</b></span>
-                    <span>Over 2.5: <b>{overPct("over_2_5")}</b></span>
-                    <span>Over 3.5: <b>{overPct("over_3_5")}</b></span>
-                  </div>
-                </div>
-              )}
-            </>
+              <div className="goals-ou">
+                <span>Over 1.5: <b>{overPct("over_1_5")}</b></span>
+                <span>Over 2.5: <b>{overPct("over_2_5")}</b></span>
+                <span>Over 3.5: <b>{overPct("over_3_5")}</b></span>
+              </div>
+            </div>
           )}
 
           {/* WHY — #CARD-STD-1: same structure as the football card —
