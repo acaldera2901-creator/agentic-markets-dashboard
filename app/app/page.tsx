@@ -83,7 +83,7 @@ const BASE_TRANSLATIONS = {
     auth_err_pwshort: "La password deve avere almeno 8 caratteri.", auth_err_generic: "Errore. Riprova.",
     auth_hint_incomplete: "Inserisci un'email valida e una password di almeno 8 caratteri.",
     auth_age_confirm: "Confermo di avere almeno 18 anni.",
-    auth_tos_pre: "Accetto i ", auth_tos_link: "Termini di Servizio e l'Informativa Privacy", auth_tos_post: ".",
+    auth_tos_pre: "Accetto i ", auth_tos_terms: "Termini di Servizio", auth_tos_mid: " e l'", auth_tos_privacy: "Informativa Privacy", auth_tos_post: ".",
     auth_hint_consent: "Conferma di essere maggiorenne e accetta i Termini per continuare.",
     // Plans
     plans_eyebrow: "Client plans",
@@ -301,6 +301,7 @@ const BASE_TRANSLATIONS = {
     season_pause: "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026).",
     footer_pastperf: "Le performance passate non garantiscono risultati futuri.",
     footer_partnerlinks: "I link partner sono affiliati commerciali.",
+    footer_terms: "Termini di Servizio",
     footer_privacy: "Privacy Policy",
     // Bets filter bar (i18n migration)
     bf_allsports: "Tutti", bf_allsignals: "Tutte le prediction", bf_valueonly: "Solo best bets",
@@ -348,7 +349,7 @@ const BASE_TRANSLATIONS = {
     auth_err_pwshort: "Password must be at least 8 characters.", auth_err_generic: "Error. Try again.",
     auth_hint_incomplete: "Enter a valid email and a password of at least 8 characters.",
     auth_age_confirm: "I confirm I am at least 18 years old.",
-    auth_tos_pre: "I accept the ", auth_tos_link: "Terms of Service and Privacy Policy", auth_tos_post: ".",
+    auth_tos_pre: "I accept the ", auth_tos_terms: "Terms of Service", auth_tos_mid: " and the ", auth_tos_privacy: "Privacy Policy", auth_tos_post: ".",
     auth_hint_consent: "Confirm you are of legal age and accept the Terms to continue.",
     // Plans
     plans_eyebrow: "Client plans",
@@ -566,6 +567,7 @@ const BASE_TRANSLATIONS = {
     season_pause: "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026).",
     footer_pastperf: "Past performance does not guarantee future results.",
     footer_partnerlinks: "Partner links are commercial affiliates.",
+    footer_terms: "Terms of Service",
     footer_privacy: "Privacy Policy",
     // Bets filter bar (i18n migration)
     bf_allsports: "All", bf_allsignals: "All predictions", bf_valueonly: "Best bets only",
@@ -617,7 +619,7 @@ const EXTRA_TRANSLATIONS = {
     auth_err_pwshort: "La contraseña debe tener al menos 8 caracteres.", auth_err_generic: "Error. Inténtalo de nuevo.",
     auth_hint_incomplete: "Introduce un email válido y una contraseña de al menos 8 caracteres.",
     auth_age_confirm: "Confirmo que tengo al menos 18 años.",
-    auth_tos_pre: "Acepto los ", auth_tos_link: "Términos del Servicio y la Política de Privacidad", auth_tos_post: ".",
+    auth_tos_pre: "Acepto los ", auth_tos_terms: "Términos del Servicio", auth_tos_mid: " y la ", auth_tos_privacy: "Política de Privacidad", auth_tos_post: ".",
     auth_hint_consent: "Confirma que eres mayor de edad y acepta los Términos para continuar.",
     // Plans
     plans_eyebrow: "Planes cliente",
@@ -834,6 +836,7 @@ const EXTRA_TRANSLATIONS = {
     season_pause: "Temporada en pausa — no hay partidos programados en las próximas 48h. Las predicciones vuelven automáticamente cuando las ligas se reanuden (julio 2026).",
     footer_pastperf: "El rendimiento pasado no garantiza resultados futuros.",
     footer_partnerlinks: "Los enlaces de partners son afiliados comerciales.",
+    footer_terms: "Términos del Servicio",
     footer_privacy: "Política de Privacidad",
     // Bets filter bar (i18n migration)
     bf_allsports: "Todos", bf_allsignals: "Todas las predicciones", bf_valueonly: "Solo best bets",
@@ -882,7 +885,7 @@ const EXTRA_TRANSLATIONS = {
     auth_err_pwshort: "Le mot de passe doit comporter au moins 8 caractères.", auth_err_generic: "Erreur. Réessaie.",
     auth_hint_incomplete: "Saisis un email valide et un mot de passe d'au moins 8 caractères.",
     auth_age_confirm: "Je confirme avoir au moins 18 ans.",
-    auth_tos_pre: "J'accepte les ", auth_tos_link: "Conditions de Service et la Politique de Confidentialité", auth_tos_post: ".",
+    auth_tos_pre: "J'accepte les ", auth_tos_terms: "Conditions de Service", auth_tos_mid: " et la ", auth_tos_privacy: "Politique de Confidentialité", auth_tos_post: ".",
     auth_hint_consent: "Confirme que tu es majeur et accepte les Conditions pour continuer.",
     // Plans
     plans_eyebrow: "Plans client",
@@ -1099,6 +1102,7 @@ const EXTRA_TRANSLATIONS = {
     season_pause: "Saison en pause — aucun match programmé dans les 48 prochaines heures. Les prédictions reviennent automatiquement à la reprise des ligues (juillet 2026).",
     footer_pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
     footer_partnerlinks: "Les liens partners sont des affiliés commerciaux.",
+    footer_terms: "Conditions de Service",
     footer_privacy: "Politique de Confidentialité",
     // Bets filter bar (i18n migration)
     bf_allsports: "Tous", bf_allsignals: "Toutes les prédictions", bf_valueonly: "Best bets uniquement",
@@ -1147,7 +1151,7 @@ const EXTRA_TRANSLATIONS = {
     auth_err_pwshort: "Пароль должен содержать минимум 8 символов.", auth_err_generic: "Ошибка. Попробуй снова.",
     auth_hint_incomplete: "Введи корректный email и пароль не короче 8 символов.",
     auth_age_confirm: "Подтверждаю, что мне не менее 18 лет.",
-    auth_tos_pre: "Я принимаю ", auth_tos_link: "Условия использования и Политику конфиденциальности", auth_tos_post: ".",
+    auth_tos_pre: "Я принимаю ", auth_tos_terms: "Условия использования", auth_tos_mid: " и ", auth_tos_privacy: "Политику конфиденциальности", auth_tos_post: ".",
     auth_hint_consent: "Подтверди совершеннолетие и прими Условия, чтобы продолжить.",
     // Plans
     plans_eyebrow: "Планы клиента",
@@ -1364,6 +1368,7 @@ const EXTRA_TRANSLATIONS = {
     season_pause: "Сезон на паузе — в ближайшие 48 часов матчей не запланировано. Прогнозы вернутся автоматически с возобновлением лиг (июль 2026).",
     footer_pastperf: "Прошлые результаты не гарантируют будущих.",
     footer_partnerlinks: "Партнёрские ссылки являются коммерческими аффилиатами.",
+    footer_terms: "Условия использования",
     footer_privacy: "Политика конфиденциальности",
     // Bets filter bar (i18n migration)
     bf_allsports: "Все", bf_allsignals: "Все прогнозы", bf_valueonly: "Только best bets",
@@ -3935,7 +3940,7 @@ function ClientAuthModal({
             </label>
             <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
               <input type="checkbox" checked={tosOk} onChange={(e) => setTosOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
-              <span>{t.auth_tos_pre}<Link href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_link}</Link>{t.auth_tos_post}</span>
+              <span>{t.auth_tos_pre}<Link href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_terms}</Link>{t.auth_tos_mid}<Link href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_privacy}</Link>{t.auth_tos_post}</span>
             </label>
           </div>
         )}
@@ -8017,6 +8022,7 @@ export default function Dashboard() {
           <span>|</span>
           <span>{tUI.footer_partnerlinks}</span>
           <span>|</span>
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{tUI.footer_terms}</a>
           <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{tUI.footer_privacy}</a>
         </div>
         <button
