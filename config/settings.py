@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # used as the FRIENDLY settlement fallback. Empty -> fallback is a no-op.
     API_FOOTBALL_DIRECT_KEY: str = ""
     ODDS_API_KEY: str = ""
+    ODDSPAPI_KEY: str = ""
     MATCHBOOK_USERNAME: str = ""
     MATCHBOOK_PASSWORD: str = ""
     TELEGRAM_BOT_TOKEN: str = ""

@@ -1,13 +1,41 @@
 # agents/tennis_data_collector.py
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from agents.base import BaseAgent
 from config.settings import settings
 from core.tennis_api_client import TennisAPIClient
 from core.espn_tennis_client import get_fixtures as espn_get_fixtures
-from core.tennis_odds_api_client import get_tennis_odds, merge_tennis_odds
+from core.tennis_odds_api_client import get_tennis_odds, merge_tennis_odds, _pair_key
+from core.tennis_oddspapi_client import get_oddspapi_tennis_odds
 from core.tennis_tour_filter import filter_main_tour, parse_denylist
+
+NEAR_KICKOFF_HOURS = 6
+MAX_ODDSPAPI_ATTEMPTS = 3
+
+
+def oddspapi_candidates(fixtures: list[dict], tried: dict[str, int],
+                        near_hours: int = NEAR_KICKOFF_HOURS,
+                        max_attempts: int = MAX_ODDSPAPI_ATTEMPTS) -> set[str]:
+    """Pair-key dei match SCOPERTI (no odds_p1) entro `near_hours` dal kickoff e
+    sotto il cap tentativi. Puro/testabile."""
+    now = datetime.now(timezone.utc)
+    out: set[str] = set()
+    for f in fixtures:
+        if f.get("odds_p1") is not None:
+            continue
+        sa = f.get("scheduled_at")
+        try:
+            ko = datetime.fromisoformat(str(sa).replace("Z", "+00:00"))
+        except Exception:
+            continue
+        if ko < now or ko > now + timedelta(hours=near_hours):
+            continue
+        k = _pair_key(f.get("player1"), f.get("player2"), sa)
+        if not k or tried.get(k, 0) >= max_attempts:
+            continue
+        out.add(k)
+    return out
 
 # Odds columns added by the v4 migration. Every row in the PostgREST bulk upsert
 # must carry the same keys, so unmatched fixtures get explicit nulls.
@@ -18,6 +46,7 @@ class TennisDataCollectorAgent(BaseAgent):
     def __init__(self):
         super().__init__("TennisDataCollectorAgent")
         self._client = TennisAPIClient()
+        self._oddspapi_tried: dict[str, int] = {}
 
     async def _main_loop(self) -> None:
         while self._running:
@@ -40,6 +69,39 @@ class TennisDataCollectorAgent(BaseAgent):
             for field in _ODDS_FIELDS:
                 fixture.setdefault(field, None)
         return fixtures, merged_count
+
+    async def _merge_oddspapi_fallback(self, fixtures: list[dict]) -> tuple[list[dict], int]:
+        """Per i match ancora scoperti vicini al kickoff, prova OddsPapi (fetch-once
+        on-success + retry cap). Fail-soft."""
+        if not settings.ODDSPAPI_KEY:
+            return fixtures, 0
+        wanted = oddspapi_candidates(fixtures, self._oddspapi_tried)
+        if not wanted:
+            return fixtures, 0
+        for k in wanted:
+            self._oddspapi_tried[k] = self._oddspapi_tried.get(k, 0) + 1  # conta il tentativo
+        added = 0
+        try:
+            rows = await get_oddspapi_tennis_odds(wanted)
+            if rows:
+                before = sum(1 for f in fixtures if f.get("odds_p1") is not None)
+                fixtures = merge_tennis_odds(fixtures, rows)
+                # provider override per le righe arricchite da OddsPapi
+                got_keys = {_pair_key(r["player1"], r["player2"], r["scheduled_at"]) for r in rows}
+                for f in fixtures:
+                    fk = _pair_key(f.get("player1"), f.get("player2"), f.get("scheduled_at"))
+                    if fk in got_keys and f.get("odds_provider") == "the_odds_api" and f.get("odds_event_id") in {r["odds_event_id"] for r in rows}:
+                        f["odds_provider"] = "oddspapi"
+                after = sum(1 for f in fixtures if f.get("odds_p1") is not None)
+                added = after - before
+                # successo → non ritentare questi
+                for r in rows:
+                    rk = _pair_key(r["player1"], r["player2"], r["scheduled_at"])
+                    if rk:
+                        self._oddspapi_tried[rk] = MAX_ODDSPAPI_ATTEMPTS
+        except Exception as exc:
+            self.logger.warning("oddspapi fallback failed (non-fatal): %s", exc)
+        return fixtures, added
 
     async def _collect_cycle(self):
         try:
@@ -74,6 +136,10 @@ class TennisDataCollectorAgent(BaseAgent):
 
             if fixtures:
                 fixtures, odds_merged = await self._merge_market_odds(fixtures)
+                fixtures, oddspapi_added = await self._merge_oddspapi_fallback(fixtures)
+                if oddspapi_added:
+                    self.logger.info("tennis: +%d quote da OddsPapi (match erba/250 scoperti)", oddspapi_added)
+                    odds_merged += oddspapi_added
                 await self._client.write_fixtures_to_supabase(fixtures)
                 self.logger.info(
                     "tennis: %d fixtures da %s (%d con odds reali)", len(fixtures), source, odds_merged
