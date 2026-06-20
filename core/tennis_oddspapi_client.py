@@ -10,7 +10,8 @@ BASE_URL = "https://api.oddspapi.io/v4"
 SPORT_ID = 12  # tennis
 MATCH_WINNER_MARKET = "121"      # confirmed from real sample
 OUTCOME_P1, OUTCOME_P2 = "121", "122"  # canonical outcomes: "121"=participant1, "122"=participant2
-ANCHOR_ORDER = ("pinnacle", "betfair-ex")  # then any book with a complete 2-way
+ANCHOR_ORDER = ("pinnacle",)  # then any book with a sane 2-way (exchange artefacts rejected)
+OVERROUND_MIN, OVERROUND_MAX = 0.90, 1.30  # valid range for a 2-way match-winner market
 _UA = {"User-Agent": "betredge/1.0"}  # urllib default → 403; fix with explicit UA
 
 
@@ -43,6 +44,9 @@ def parse_oddspapi_match_odds(payload: dict[str, Any]) -> dict[str, Any] | None:
         p1 = _price(outcomes.get(OUTCOME_P1))
         p2 = _price(outcomes.get(OUTCOME_P2))
         if p1 and p2 and p1 > 1.0 and p2 > 1.0:
+            overround = 1 / p1 + 1 / p2
+            if not (OVERROUND_MIN <= overround <= OVERROUND_MAX):
+                continue  # reject exchange artefacts (e.g. 1.03/1.03 → overround ~1.94)
             return {"odds_p1": p1, "odds_p2": p2, "bookmaker": book}
     return None
 
