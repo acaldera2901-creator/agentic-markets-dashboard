@@ -2,11 +2,13 @@
 from __future__ import annotations
 import logging
 from dataclasses import asdict
+from urllib.parse import quote
 
 import httpx
 
 from core.supabase_client import _rest_base, _service_headers
 from core.player_models import PlayerProfile, PlayerMatchStat, PlayerLineupEntry
+from core.goalscorer_odds_normalize import PlayerOddRow
 
 logger = logging.getLogger(__name__)
 
@@ -65,3 +67,13 @@ async def upsert_player_lineups(rows: list[PlayerLineupEntry]) -> int:
         [asdict(r) for r in rows],
         lambda r: f"player_id=eq.{r['player_id']}&fixture_id=eq.{r['fixture_id']}",
     )
+
+
+async def upsert_player_odds(rows: list[PlayerOddRow]) -> int:
+    def params(r):
+        ev = quote(str(r["event_id"]), safe="")
+        bk = quote(str(r["bookmaker"]), safe="")
+        pn = quote(str(r["player_name"]), safe="")
+        mk = quote(str(r["market"]), safe="")
+        return f"event_id=eq.{ev}&bookmaker=eq.{bk}&player_name=eq.{pn}&market=eq.{mk}"
+    return await _upsert("player_odds", [asdict(r) for r in rows], params)
