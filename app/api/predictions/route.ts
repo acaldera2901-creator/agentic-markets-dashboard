@@ -41,6 +41,15 @@ export const maxDuration = 300;
 
 import { dbQuery } from "@/lib/db";
 import { syncMatchPredictionsToUnified } from "@/lib/unified-adapter";
+import {
+  buildGoalscorerByMatch,
+  groupProfilesByTeam,
+  groupOddsByMatch,
+  type GsPrediction,
+  type ProfileRow,
+  type OddRow,
+} from "@/lib/goalscorer-serve";
+import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 
 const LEAGUES: Record<string, string> = {
   SA: "Serie A",
@@ -126,6 +135,9 @@ const PREMIUM_ENRICHMENT_KEYS = [
   // World Cup enrichment (unified fallback rows): deep blocks are paid-tier,
   // mirroring the v2 projection where enrichment is premium-gated.
   "venue", "squad", "market", "lambdas",
+  // Mercati marcatore (B-serve): blocco Pro-only (scelta Andrea) — l'intero
+  // blocco (P + Edge) viene rimosso per anon/free/base.
+  "goalscorer_markets",
 ] as const;
 
 type ProjectedPredictionRow = Partial<PredictionRow> & {
@@ -198,6 +210,52 @@ function projectPredictionRow(
     is_estimate: p.is_estimate,
     enrichment,
   };
+}
+
+// #PLAYER-GOALSCORER (B-serve): batch-fetch player_profiles + player_odds per le
+// partite della pagina e costruisce i mercati marcatore per match. Fail-soft:
+// dbQuery ritorna [] su tabelle assenti/errore (la migration e` GATED), quindi
+// finche` i dati non sono live il blocco semplicemente non compare e le card
+// restano identiche a oggi. Join: player_odds.match_id == match_id servito.
+async function fetchGoalscorerMarkets(
+  rows: PredictionRow[]
+): Promise<Map<string, GoalscorerMarket[]>> {
+  const teams = Array.from(
+    new Set(rows.flatMap((p) => [p.home_team, p.away_team]).filter(Boolean))
+  );
+  const matchIds = Array.from(new Set(rows.map((p) => p.match_id).filter(Boolean)));
+  if (teams.length === 0 || matchIds.length === 0) return new Map();
+
+  const teamPh = teams.map((_, i) => `$${i + 1}`).join(",");
+  const matchPh = matchIds.map((_, i) => `$${i + 1}`).join(",");
+
+  const [profileRows, oddRows] = await Promise.all([
+    dbQuery<ProfileRow>(
+      `SELECT player_id, name, team, goals_per90_season, minutes_share, tier
+       FROM player_profiles
+       WHERE eligible_for_player_markets = true AND team IN (${teamPh})`,
+      teams
+    ),
+    dbQuery<OddRow>(
+      `SELECT match_id, player_name, price, bookmaker
+       FROM player_odds WHERE match_id IN (${matchPh})`,
+      matchIds
+    ),
+  ]);
+  if (profileRows.length === 0) return new Map();
+
+  const preds: GsPrediction[] = rows.map((p) => ({
+    matchId: p.match_id,
+    homeTeam: p.home_team,
+    awayTeam: p.away_team,
+    lambdaHome: p.lambda_home,
+    lambdaAway: p.lambda_away,
+  }));
+  return buildGoalscorerByMatch(
+    preds,
+    groupProfilesByTeam(profileRows),
+    groupOddsByMatch(oddRows)
+  );
 }
 
 // Leagues supported by Understat (no CL/EL)
@@ -833,6 +891,10 @@ export async function GET(req: Request) {
   const isOffSeason = predictions_raw.length === 0;
   const isStale = !isOffSeason && !usingFallback && ageMinutes > 60;
 
+  // Mercati marcatore (B-serve): mappa match_id -> mercati. Fail-soft (vedi
+  // fetchGoalscorerMarkets): vuota finche` i dati player non sono live.
+  const goalscorerByMatch = await fetchGoalscorerMarkets(predictions_raw);
+
   // Hydrate (estimate flag + extra markets) before projecting, then gate per tier.
   const hydratedRows = predictions_raw.map((p) => {
     const hydrated = markModelEstimate(p);
@@ -842,7 +904,14 @@ export async function GET(req: Request) {
       const marketOdds = (hydrated.enrichment as EnrichmentPayload | null)?.extra_market_odds ?? {};
       const extra_markets = computeExtraMarkets(lH, lA, marketOdds);
       const goals_summary = computeGoalsSummary(lH, lA);
-      return { ...hydrated, enrichment: { ...(hydrated.enrichment ?? {}), extra_markets, goals_summary } };
+      const enrichment: Record<string, unknown> = {
+        ...(hydrated.enrichment ?? {}),
+        extra_markets,
+        goals_summary,
+      };
+      const gs = goalscorerByMatch.get(p.match_id);
+      if (gs && gs.length > 0) enrichment.goalscorer_markets = gs;
+      return { ...hydrated, enrichment: enrichment as EnrichmentPayload };
     }
     return hydrated;
   });
