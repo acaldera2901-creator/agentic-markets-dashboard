@@ -52,6 +52,15 @@ async def main():
     except Exception as e:
         log.error("DB init failed (non-fatal): %s", e)
 
+    # Player data foundation (sotto-progetto A) — fail-soft, no-op se tabelle assenti
+    from datetime import date
+    from core.player_data_sync import sync_player_profiles
+    try:
+        psum = await sync_player_profiles(season=date.today().year, today_iso=date.today().isoformat())
+        log.info("player_profiles sync: %s", psum)
+    except Exception as exc:
+        log.warning("player_profiles sync failed (non-blocking): %s", exc)
+
     port = int(os.environ.get("PORT", 8080))
     await _health_server(port)
 
