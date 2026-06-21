@@ -1,6 +1,6 @@
 import pytest
 from core import player_data_sync as s
-from core.player_data_sync import _parse_lineup
+from core.player_data_sync import _parse_lineup, _parse_fixture_players
 
 ONE_PAGE = {"response": [{
     "player": {"id": 276, "name": "Neymar"},
@@ -57,3 +57,21 @@ async def test_sync_lineups_fail_soft(monkeypatch):
     monkeypatch.setattr(s, "get_lineups", boom)
     summary = await s.sync_player_lineups([1, 2])
     assert summary["lineups_written"] == 0 and len(summary["errors"]) == 2
+
+
+# shape reale di /fixtures/players
+RAW_FP = [{
+    "team": {"name": "PSG"},
+    "players": [{"player": {"id": 276, "name": "Neymar"},
+                 "statistics": [{"games": {"minutes": 90, "substitute": False},
+                                 "goals": {"total": 1, "assists": 1},
+                                 "shots": {"total": 4, "on": 2}}]}],
+}]
+
+def test_parse_fixture_players_builds_match_stats():
+    out = _parse_fixture_players(555, "FL1", "2026-05-01", RAW_FP)
+    assert len(out) == 1
+    m = out[0]
+    assert m.player_id == "276" and m.goals == 1 and m.assists == 1
+    assert m.minutes == 90 and m.started is True and m.xg is None
+    assert m.fixture_id == 555 and m.match_date == "2026-05-01"
