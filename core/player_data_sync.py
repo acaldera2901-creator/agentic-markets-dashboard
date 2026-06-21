@@ -6,11 +6,45 @@ from __future__ import annotations
 import logging
 
 from core.player_data_tier import LEAGUE_DATA_TIER
-from core.player_models import normalize_season_stats, build_profile
-from core.player_data_writers import upsert_player_profiles
-from core.football_api_client import get_player_season_stats
+from core.player_models import normalize_season_stats, build_profile, PlayerLineupEntry
+from core.player_data_writers import upsert_player_profiles, upsert_player_lineups
+from core.football_api_client import get_player_season_stats, get_lineups
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_lineup(fixture_id: int, raw: list[dict]) -> list[PlayerLineupEntry]:
+    out: list[PlayerLineupEntry] = []
+    for team_block in raw or []:
+        team = (team_block.get("team") or {}).get("name", "")
+        for is_starter, key in ((True, "startXI"), (False, "substitutes")):
+            for item in team_block.get(key) or []:
+                p = item.get("player") or {}
+                if not p.get("id"):
+                    continue
+                out.append(PlayerLineupEntry(
+                    player_id=str(p["id"]),
+                    fixture_id=fixture_id,
+                    team=team,
+                    position=p.get("pos", "") or "",
+                    shirt_number=p.get("number"),
+                    is_starter=is_starter,
+                ))
+    return out
+
+
+async def sync_player_lineups(fixture_ids: list[int]) -> dict:
+    summary = {"lineups_written": 0, "fixtures": 0, "errors": []}
+    for fid in fixture_ids:
+        try:
+            raw = await get_lineups(fid)
+            entries = _parse_lineup(fid, raw)
+            if entries:
+                summary["lineups_written"] += await upsert_player_lineups(entries)
+                summary["fixtures"] += 1
+        except Exception as exc:
+            summary["errors"].append(f"{fid}:{exc}")
+    return summary
 
 
 async def sync_player_profiles(

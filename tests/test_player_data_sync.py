@@ -1,5 +1,6 @@
 import pytest
 from core import player_data_sync as s
+from core.player_data_sync import _parse_lineup
 
 ONE_PAGE = {"response": [{
     "player": {"id": 276, "name": "Neymar"},
@@ -7,6 +8,13 @@ ONE_PAGE = {"response": [{
                     "games": {"appearences": 20, "minutes": 1700, "position": "Attacker"},
                     "goals": {"total": 13, "assists": 6}, "shots": {"total": 55, "on": 30}}],
 }], "paging": {"current": 1, "total": 1}}
+
+# shape reale di /fixtures/lineups
+RAW_LINEUP = [{
+    "team": {"name": "PSG"},
+    "startXI": [{"player": {"id": 276, "name": "Neymar", "number": 10, "pos": "F"}}],
+    "substitutes": [{"player": {"id": 999, "name": "Sub", "number": 23, "pos": "M"}}],
+}]
 
 async def test_sync_profiles_writes_and_attaches_xg(monkeypatch):
     async def fake_stats(league_id, season, page=1): return ONE_PAGE
@@ -35,3 +43,17 @@ async def test_sync_profiles_fail_soft_per_league(monkeypatch):
     summary = await s.sync_player_profiles(season=2025, today_iso="2026-06-20")
     assert summary["profiles_written"] == 0
     assert summary["errors"]            # errore registrato, nessuna eccezione propagata
+
+def test_parse_lineup_marks_starters_and_subs():
+    out = _parse_lineup(555, RAW_LINEUP)
+    starters = [e for e in out if e.is_starter]
+    subs = [e for e in out if not e.is_starter]
+    assert len(starters) == 1 and starters[0].player_id == "276"
+    assert starters[0].shirt_number == 10 and starters[0].fixture_id == 555
+    assert len(subs) == 1 and subs[0].player_id == "999"
+
+async def test_sync_lineups_fail_soft(monkeypatch):
+    async def boom(fid): raise RuntimeError("no lineup yet")
+    monkeypatch.setattr(s, "get_lineups", boom)
+    summary = await s.sync_player_lineups([1, 2])
+    assert summary["lineups_written"] == 0 and len(summary["errors"]) == 2
