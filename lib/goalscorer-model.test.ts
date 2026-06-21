@@ -6,13 +6,19 @@ const P = (over: Partial<GsPlayer> = {}): GsPlayer => ({
 });
 
 describe("computeGoalscorerMarkets", () => {
-  it("P(segna) = 1 - e^-lambda su un caso noto (un solo giocatore => share=1)", () => {
-    // share=1, minutesFactor=1 => lambdaPlayer = teamLambda = 1.5
-    const out = computeGoalscorerMarkets(1.5, 0, [P({ name: "Solo", goalsPer90: 0.6 })], [], []);
+  it("P(segna) = 1 - e^-lambda su un caso noto (un solo giocatore => share=1, qualunque g90)", () => {
+    // share=1 indipendentemente dal g90 assoluto, minutesFactor=1 => lambdaPlayer = teamLambda = 1.5
+    const out = computeGoalscorerMarkets(1.5, 0, [P({ name: "Solo", goalsPer90: 0.31 })], [], []);
     expect(out).toHaveLength(1);
     expect(out[0].pScores).toBeCloseTo(1 - Math.exp(-1.5), 10);
     expect(out[0].marketImplied).toBeNull();
     expect(out[0].edge).toBeNull();
+  });
+
+  it("esclude giocatori con minutesShare=0 (niente riga P=0% fuorviante)", () => {
+    const out = computeGoalscorerMarkets(1.5, 0,
+      [P({ name: "Fuori", minutesShare: 0 }), P({ name: "Dentro", minutesShare: 1.0 })], [], []);
+    expect(out.map((m) => m.name)).toEqual(["Dentro"]);
   });
 
   it("pScores e` monotona nella share (g90 piu` alto => P piu` alta a parita` di team lambda)", () => {

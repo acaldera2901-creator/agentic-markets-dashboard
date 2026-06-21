@@ -74,6 +74,7 @@ function marketsForSide(
     const share = p.goalsPer90 / denom;
     const minutesFactor = clamp01(p.minutesShare);
     const lambdaPlayer = teamLambda * share * minutesFactor;
+    if (lambdaPlayer <= 0) continue; // es. minutesShare=0 -> niente riga P=0% fuorviante
     const pScores = 1 - Math.exp(-lambdaPlayer);
 
     const odd = bestOddFor(p.name, bestOdds);
