@@ -18,3 +18,7 @@ def test_parse_returns_empty_on_garbage():
 
 def test_normalize_name():
     assert normalize_name("  Erling HAALAND ") == "erling haaland"
+
+def test_parse_skips_zero_minutes():
+    page = r'''<script>var playersData = JSON.parse('[{"player_name":"Bench Guy","time":"0","xG":"1.0"}]');</script>'''
+    assert parse_players_data(page) == {}

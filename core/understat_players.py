@@ -18,10 +18,15 @@ def parse_players_data(page_text: str) -> dict[str, float]:
     m = _BLOB.search(page_text or "")
     if not m:
         return {}
-    raw = m.group(1).encode("utf-8").decode("unicode_escape")
-    try:
-        records = json.loads(raw)
-    except (ValueError, TypeError):
+    captured = m.group(1)
+    records = None
+    for candidate in (captured, captured.encode("utf-8").decode("unicode_escape")):
+        try:
+            records = json.loads(candidate)
+            break
+        except (ValueError, TypeError):
+            continue
+    if not isinstance(records, list):
         return {}
     out: dict[str, float] = {}
     for r in records:
