@@ -5531,6 +5531,61 @@ button:disabled {
 .pred .goals-block .goals-ou { color: var(--am-text); }
 .pred .goals-block b { color: var(--am-text); font-variant-numeric: tabular-nums; }
 
+/* ── Marcatori (anytime goalscorer) — Pro-only ─────────────────────────────
+   Sibling readout di .goals-block (stesso inset/line/radius), MAI barre.
+   Grid 4 col: nome | Modello | Mercato | Edge. Numeri mono + tabular-nums,
+   coerenti con .mvm .col .n e .row .pct. Accent coral razionato sul solo
+   marker "titolare"; edge positivo nel verde --am-positive. */
+.pred .gs-block {
+  margin-top: 9px; padding: 9px 11px 8px;
+  background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 7px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.pred .gs-block .gs-head {
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 8px;
+}
+.pred .gs-block .gs-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+/* col labels — allineate alle 3 colonne numeriche dei .gs-row */
+.pred .gs-block .gs-cols {
+  display: grid; grid-template-columns: repeat(3, 46px); gap: 6px;
+  font-size: 8px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--am-muted-2); text-align: right;
+}
+.pred .gs-block .gs-sides { display: flex; flex-direction: column; gap: 8px; }
+.pred .gs-block .gs-team {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; color: var(--am-text);
+  margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pred .gs-block .gs-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.pred .gs-block .gs-row {
+  display: grid; grid-template-columns: 1fr repeat(3, 46px); gap: 6px; align-items: center;
+}
+.pred .gs-block .gs-name {
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+  font-size: 12px; color: var(--am-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pred .gs-block .gs-tier {
+  flex: 0 0 auto; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--am-coral);
+}
+.pred .gs-block .gs-model,
+.pred .gs-block .gs-market,
+.pred .gs-block .gs-edge {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px; text-align: right; font-feature-settings: "tnum" 1;
+}
+.pred .gs-block .gs-model { color: var(--am-coral); font-weight: 600; }
+.pred .gs-block .gs-market { color: var(--am-muted); }
+.pred .gs-block .gs-edge { color: var(--am-muted-2); }
+.pred .gs-block .gs-edge.pos { color: var(--am-positive); font-weight: 600; }
+.pred .gs-block .gs-note {
+  margin: 1px 0 0; font-size: 9.5px; line-height: 1.35; color: var(--am-muted-2);
+}
+
 /* outcome rows — monochrome; coral marks only the pick */
 .pred .rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 13px; }
 .pred .row { display: grid; grid-template-columns: 58px 1fr 40px; align-items: center; gap: 11px; }

@@ -1563,6 +1563,22 @@ interface PredictionEnrichment {
     band_high: number;
     band_p: number;
   };
+  // Mercati marcatore (anytime goalscorer) — Pro-only, prodotto da B-serve
+  // (lib/goalscorer-model.ts). Shape esatta NON modificabile lato FE.
+  // marketImplied/bestPrice/edge possono essere null (nessuna quota dal book):
+  // in quel caso l'Edge mostra "–", mai numeri inventati. Le quote vengono da
+  // book US → edge = "modello vs book US" (dichiarato in micro-nota).
+  goalscorer_markets?: Array<{
+    playerId: string | null;
+    name: string;
+    side: "home" | "away";
+    pScores: number;
+    marketImplied: number | null;
+    bestPrice: number | null;
+    bookmaker: string | null;
+    edge: number | null;
+    confidence: "alta" | "media";
+  }>;
   // Confidence-surfacing gate (Wave 1, club football path). Present only when
   // below_floor — same contract as the national path's notes.surface. Survives
   // the per-tier enrichment strip (NOT in PREMIUM_ENRICHMENT_KEYS), so it reaches
@@ -4307,6 +4323,85 @@ function GoalsBlock({
   );
 }
 
+function GoalscorerBlock({
+  markets,
+  homeTeam,
+  awayTeam,
+  lang,
+}: {
+  markets: NonNullable<PredictionEnrichment["goalscorer_markets"]>;
+  homeTeam: string;
+  awayTeam: string;
+  lang: Lang;
+}) {
+  // Split per lato, ordina per P modello (già ordinato da B-serve, ma difensivo).
+  const home = markets.filter((m) => m.side === "home").sort((a, b) => b.pScores - a.pScores);
+  const away = markets.filter((m) => m.side === "away").sort((a, b) => b.pScores - a.pScores);
+  if (home.length === 0 && away.length === 0) return null;
+  // Edge mostrato SOLO quando esiste una quota (book US). Mai numeri inventati.
+  const hasAnyOdds = markets.some((m) => m.edge != null);
+  const edgeTxt = (m: NonNullable<PredictionEnrichment["goalscorer_markets"]>[number]) =>
+    m.edge == null ? "–" : `${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%`;
+
+  const renderSide = (rows: typeof home, team: string) => {
+    if (rows.length === 0) return null;
+    return (
+      <div className="gs-side">
+        <div className="gs-team">{team}</div>
+        <ul className="gs-list">
+          {rows.map((m, i) => (
+            <li key={m.playerId ?? `${m.side}-${m.name}-${i}`} className="gs-row">
+              <span className="gs-name" title={m.name}>
+                {m.name}
+                {m.confidence === "alta" && <span className="gs-tier" title={pick5(lang, { it: "Titolare / alta confidenza", en: "Starter / high confidence", es: "Titular / confianza alta", fr: "Titulaire / confiance élevée", ru: "Основной / высокая уверенность" })} />}
+              </span>
+              <span className="gs-model" title={pick5(lang, { it: "Probabilità modello che segni", en: "Model probability to score", es: "Probabilidad del modelo de marcar", fr: "Probabilité du modèle de marquer", ru: "Вероятность гола по модели" })}>{pct(m.pScores)}</span>
+              <span className="gs-market">{m.marketImplied != null ? pct(m.marketImplied) : "–"}</span>
+              <span className={`gs-edge${m.edge != null && m.edge > 0 ? " pos" : ""}`}>{edgeTxt(m)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  return (
+    <div className="gs-block">
+      <div className="gs-head">
+        <span className="gs-title">
+          {pick5(lang, { it: "Marcatori", en: "Goalscorers", es: "Goleadores", fr: "Buteurs", ru: "Бомбардиры" })}
+        </span>
+        <span className="gs-cols" aria-hidden="true">
+          <span>{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}</span>
+          <span>{pick5(lang, { it: "Mercato", en: "Market", es: "Mercado", fr: "Marché", ru: "Рынок" })}</span>
+          <span>Edge</span>
+        </span>
+      </div>
+      <div className="gs-sides">
+        {renderSide(home, homeTeam)}
+        {renderSide(away, awayTeam)}
+      </div>
+      <p className="gs-note">
+        {hasAnyOdds
+          ? pick5(lang, {
+              it: "Probabilità che il giocatore segni almeno un gol. Edge = modello − quota (book US).",
+              en: "Probability the player scores at least once. Edge = model − price (US books).",
+              es: "Probabilidad de que el jugador marque al menos una vez. Edge = modelo − cuota (books US).",
+              fr: "Probabilité que le joueur marque au moins une fois. Edge = modèle − cote (books US).",
+              ru: "Вероятность, что игрок забьёт хотя бы раз. Edge = модель − котировка (US-буки).",
+            })
+          : pick5(lang, {
+              it: "Probabilità che il giocatore segni almeno un gol. Nessuna quota disponibile: Edge non calcolabile.",
+              en: "Probability the player scores at least once. No price available: edge not computable.",
+              es: "Probabilidad de que el jugador marque al menos una vez. Sin cuota: edge no calculable.",
+              fr: "Probabilité que le joueur marque au moins une fois. Pas de cote : edge non calculable.",
+              ru: "Вероятность, что игрок забьёт хотя бы раз. Котировки нет: edge не рассчитывается.",
+            })}
+      </p>
+    </div>
+  );
+}
+
 function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
@@ -4487,6 +4582,10 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
       {!p.locked && e.goals_summary && (
         <GoalsBlock summary={e.goals_summary} markets={e.extra_markets ?? []} lang={lang} />
+      )}
+
+      {!p.locked && e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
+        <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={p.home_team} awayTeam={p.away_team} lang={lang} />
       )}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
