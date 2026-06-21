@@ -49,6 +49,19 @@ def test_aggregate_sums_across_matches():
     assert s.league == "WC" and s.team == "Spain"
 
 
+def test_goals_per90_capped():
+    from core.player_models import GOALS_PER90_CAP
+    # subentrato: 2 gol in 30' -> raw 6.0/90 -> deve essere cappato
+    s = aggregate_players([
+        {"player_id": "1", "name": "Sub", "team": "X", "goals": 2, "assists": 0,
+         "shots": 2, "appearances": 1, "minutes": 30, "started": False},
+        {"player_id": "1", "name": "Sub", "team": "X", "goals": 0, "assists": 0,
+         "shots": 0, "appearances": 1, "minutes": 30, "started": False},
+    ], league="WC", season=2026)[0]
+    p = build_profile(s, None, "2026-06-21", min_appearances=2)
+    assert p.goals_per90_season == GOALS_PER90_CAP
+
+
 def test_tournament_floor_lets_wc_player_through():
     assert min_appearances_for("WC") == 2
     assert min_appearances_for("PL") == 5

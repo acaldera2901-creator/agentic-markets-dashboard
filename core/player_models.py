@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 from core.player_data_tier import tier_for_league, is_eligible, MIN_APPEARANCES
 
+# Tetto conservativo a goals_per90 (anti-rate-assurdi da campione piccolo, FTC).
+GOALS_PER90_CAP = 1.3
+
 
 @dataclass(frozen=True)
 class PlayerSeasonStat:
@@ -99,7 +102,9 @@ def normalize_season_stats(raw: list[dict], league: str, season: int) -> list[Pl
 def build_profile(season: PlayerSeasonStat, xg_per90: float | None, today_iso: str,
                   min_appearances: int = MIN_APPEARANCES) -> PlayerProfile:
     minutes = max(season.minutes, 1)
-    goals_per90 = season.goals / minutes * 90
+    # Cap conservativo anti-rate-assurdi da campione piccolo (es. subentrato che
+    # segna in ~30': 4.5/90). Nessun marcatore reale segna sostenibilmente >1.3/90.
+    goals_per90 = min(season.goals / minutes * 90, GOALS_PER90_CAP)
     # minutes_share: minuti su un massimo teorico di 90*presenze
     minutes_share = min(1.0, season.minutes / (season.appearances * 90)) if season.appearances else 0.0
     # last_updated_iso = today_iso intenzionale: al build il profilo è fresco per
