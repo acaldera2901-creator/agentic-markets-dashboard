@@ -1,13 +1,19 @@
-"""Backfill one-shot dei profili giocatore (2 stagioni) + stat recenti.
+"""Backfill one-shot dei PROFILI giocatore (aggregati stagionali) su Supabase.
 
-[GATED] Scrive sul Supabase condiviso. Eseguire SOLO dopo APPROVE umano.
+[GATED] Una run reale SCRIVE sul Supabase condiviso. Eseguire SOLO dopo APPROVE umano.
+Il backfill delle stat per-partita (player_match_stats) usa
+core.player_data_sync.backfill_recent_match_stats, che richiede una lista di
+fixture e viene cablato separatamente (follow-up) — questo runner copre i profili.
+
 Uso:
-  python -m scripts.backfill_player_stats --season 2025 --dry-run
+  python -m scripts.backfill_player_stats --season 2025 --dry-run   # NON scrive: stampa lo scope
+  python -m scripts.backfill_player_stats --season 2025            # SCRIVE (richiede APPROVE)
 """
 import argparse
 import asyncio
 from datetime import date
 
+from core.player_data_tier import LEAGUE_DATA_TIER
 from core.player_data_sync import sync_player_profiles
 
 
@@ -21,8 +27,15 @@ def main() -> None:
     ap.add_argument("--season", type=int, required=True)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    if args.dry_run:
+        leagues = ", ".join(sorted(LEAGUE_DATA_TIER))
+        print(f"DRY-RUN: nessuna scrittura. Backfill profili season={args.season} "
+              f"per {len(LEAGUE_DATA_TIER)} leghe: {leagues}")
+        return
+
     summary = asyncio.run(_run(args.season))
-    print(("DRY-RUN " if args.dry_run else "") + f"summary: {summary}")
+    print(f"summary: {summary}")
 
 
 if __name__ == "__main__":
