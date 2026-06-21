@@ -1,0 +1,480 @@
+{
+  "id": "73529a242e319a86bf3d00ddb4accc37",
+  "sport_key": "soccer_fifa_world_cup",
+  "sport_title": "FIFA World Cup",
+  "commence_time": "2026-06-21T16:00:00Z",
+  "home_team": "Spain",
+  "away_team": "Saudi Arabia",
+  "bookmakers": [
+    {
+      "key": "betrivers",
+      "title": "BetRivers",
+      "markets": [
+        {
+          "key": "player_goal_scorer_anytime",
+          "last_update": "2026-06-21T15:49:36Z",
+          "outcomes": [
+            {
+              "name": "Yes",
+              "description": "Nasser Al Dawsari",
+              "price": 18.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdulelah Al-Amri",
+              "price": 23.0
+            },
+            {
+              "name": "Yes",
+              "description": "Lamine Yamal",
+              "price": 1.82
+            },
+            {
+              "name": "Yes",
+              "description": "Abdullah Al-Khaibari",
+              "price": 29.0
+            },
+            {
+              "name": "Yes",
+              "description": "Saud Abdulhamid",
+              "price": 30.0
+            },
+            {
+              "name": "Yes",
+              "description": "Firas Al-Buraikan",
+              "price": 7.0
+            },
+            {
+              "name": "Yes",
+              "description": "Salem Al-Dawsari",
+              "price": 6.25
+            },
+            {
+              "name": "Yes",
+              "description": "Dani Olmo",
+              "price": 2.3
+            },
+            {
+              "name": "Yes",
+              "description": "Marc Cucurella",
+              "price": 7.5
+            },
+            {
+              "name": "Yes",
+              "description": "Hassan Mohammed Al Tambakti",
+              "price": 29.0
+            },
+            {
+              "name": "Yes",
+              "description": "Pau Cubarsi",
+              "price": 7.0
+            },
+            {
+              "name": "Yes",
+              "description": "Pedro Porro",
+              "price": 7.0
+            },
+            {
+              "name": "Yes",
+              "description": "Aymeric Laporte",
+              "price": 7.0
+            },
+            {
+              "name": "Yes",
+              "description": "Rodri",
+              "price": 3.8
+            },
+            {
+              "name": "Yes",
+              "description": "Mikel Oyarzabal",
+              "price": 1.57
+            },
+            {
+              "name": "Yes",
+              "description": "Moteb Al-Harbi",
+              "price": 30.0
+            },
+            {
+              "name": "Yes",
+              "description": "Musab Fahd Al-Juwayr",
+              "price": 8.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "fanduel",
+      "title": "FanDuel",
+      "markets": [
+        {
+          "key": "player_goal_scorer_anytime",
+          "last_update": "2026-06-21T15:48:58Z",
+          "outcomes": [
+            {
+              "name": "Yes",
+              "description": "Mikel Oyarzabal",
+              "price": 1.61
+            },
+            {
+              "name": "Yes",
+              "description": "Lamine Yamal",
+              "price": 1.74
+            },
+            {
+              "name": "Yes",
+              "description": "Dani Olmo",
+              "price": 2.2
+            },
+            {
+              "name": "Yes",
+              "description": "Rodri",
+              "price": 4.9
+            },
+            {
+              "name": "Yes",
+              "description": "Pedro Porro",
+              "price": 5.8
+            },
+            {
+              "name": "Yes",
+              "description": "Marc Cucurella",
+              "price": 6.0
+            },
+            {
+              "name": "Yes",
+              "description": "Firas Al-Buraikan",
+              "price": 8.5
+            },
+            {
+              "name": "Yes",
+              "description": "Aymeric Laporte",
+              "price": 8.5
+            },
+            {
+              "name": "Yes",
+              "description": "Pau Cubarsi",
+              "price": 9.0
+            },
+            {
+              "name": "Yes",
+              "description": "Salem Al-Dawsari",
+              "price": 10.5
+            },
+            {
+              "name": "Yes",
+              "description": "Musab Fahd Al-Juwayr",
+              "price": 12.0
+            },
+            {
+              "name": "Yes",
+              "description": "Nasser Al Dawsari",
+              "price": 26.0
+            },
+            {
+              "name": "Yes",
+              "description": "Saud Abdulhamid",
+              "price": 31.0
+            },
+            {
+              "name": "Yes",
+              "description": "Moteb Al-Harbi",
+              "price": 34.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdulelah Al-Amri",
+              "price": 41.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdullah Al-Khaibari",
+              "price": 51.0
+            },
+            {
+              "name": "Yes",
+              "description": "Hassan Mohammed Al Tambakti",
+              "price": 51.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "draftkings",
+      "title": "DraftKings",
+      "markets": [
+        {
+          "key": "player_goal_scorer_anytime",
+          "last_update": "2026-06-21T15:49:04Z",
+          "outcomes": [
+            {
+              "name": "Yes",
+              "description": "Mikel Oyarzabal",
+              "price": 1.61
+            },
+            {
+              "name": "Yes",
+              "description": "Lamine Yamal",
+              "price": 1.83
+            },
+            {
+              "name": "Yes",
+              "description": "Dani Olmo",
+              "price": 2.35
+            },
+            {
+              "name": "Yes",
+              "description": "Rodri",
+              "price": 5.0
+            },
+            {
+              "name": "Yes",
+              "description": "Salem Al-Dawsari",
+              "price": 7.5
+            },
+            {
+              "name": "Yes",
+              "description": "Firas Al-Buraikan",
+              "price": 7.5
+            },
+            {
+              "name": "Yes",
+              "description": "Marc Cucurella",
+              "price": 9.0
+            },
+            {
+              "name": "Yes",
+              "description": "Musab Fahd Al-Juwayr",
+              "price": 10.5
+            },
+            {
+              "name": "Yes",
+              "description": "Pedro Porro",
+              "price": 12.0
+            },
+            {
+              "name": "Yes",
+              "description": "Pau Cubarsi",
+              "price": 12.0
+            },
+            {
+              "name": "Yes",
+              "description": "Aymeric Laporte",
+              "price": 18.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdulelah Al-Amri",
+              "price": 23.0
+            },
+            {
+              "name": "Yes",
+              "description": "Saud Abdulhamid",
+              "price": 29.0
+            },
+            {
+              "name": "Yes",
+              "description": "Nasser Al Dawsari",
+              "price": 29.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdullah Al-Khaibari",
+              "price": 36.0
+            },
+            {
+              "name": "Yes",
+              "description": "Moteb Al-Harbi",
+              "price": 41.0
+            },
+            {
+              "name": "Yes",
+              "description": "Hassan Mohammed Al Tambakti",
+              "price": 66.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "betmgm",
+      "title": "BetMGM",
+      "markets": [
+        {
+          "key": "player_goal_scorer_anytime",
+          "last_update": "2026-06-21T15:49:30Z",
+          "outcomes": [
+            {
+              "name": "Yes",
+              "description": "Mikel Oyarzabal",
+              "price": 1.57
+            },
+            {
+              "name": "Yes",
+              "description": "Lamine Yamal",
+              "price": 1.8
+            },
+            {
+              "name": "Yes",
+              "description": "Dani Olmo",
+              "price": 2.1
+            },
+            {
+              "name": "Yes",
+              "description": "Firas Al-Buraikan",
+              "price": 5.0
+            },
+            {
+              "name": "Yes",
+              "description": "Pedro Porro",
+              "price": 6.25
+            },
+            {
+              "name": "Yes",
+              "description": "Marc Cucurella",
+              "price": 7.0
+            },
+            {
+              "name": "Yes",
+              "description": "Salem Al-Dawsari",
+              "price": 7.25
+            },
+            {
+              "name": "Yes",
+              "description": "Aymeric Laporte",
+              "price": 7.75
+            },
+            {
+              "name": "Yes",
+              "description": "Musab Fahd Al-Juwayr",
+              "price": 8.25
+            },
+            {
+              "name": "Yes",
+              "description": "Pau Cubarsi",
+              "price": 8.25
+            },
+            {
+              "name": "Yes",
+              "description": "Nasser Al Dawsari",
+              "price": 15.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdulelah Al-Amri",
+              "price": 15.0
+            },
+            {
+              "name": "Yes",
+              "description": "Moteb Al-Harbi",
+              "price": 18.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdullah Al-Khaibari",
+              "price": 18.0
+            },
+            {
+              "name": "Yes",
+              "description": "Saud Abdulhamid",
+              "price": 18.0
+            },
+            {
+              "name": "Yes",
+              "description": "Hassan Mohammed Al Tambakti",
+              "price": 21.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bovada",
+      "title": "Bovada",
+      "markets": [
+        {
+          "key": "player_goal_scorer_anytime",
+          "last_update": "2026-06-21T15:48:57Z",
+          "outcomes": [
+            {
+              "name": "Yes",
+              "description": "Lamine Yamal",
+              "price": 1.83
+            },
+            {
+              "name": "Yes",
+              "description": "Dani Olmo",
+              "price": 2.35
+            },
+            {
+              "name": "Yes",
+              "description": "Pau Cubarsi",
+              "price": 12.0
+            },
+            {
+              "name": "Yes",
+              "description": "Rodri",
+              "price": 5.0
+            },
+            {
+              "name": "Yes",
+              "description": "Mikel Oyarzabal",
+              "price": 1.6
+            },
+            {
+              "name": "Yes",
+              "description": "Salem Al-Dawsari",
+              "price": 7.5
+            },
+            {
+              "name": "Yes",
+              "description": "Musab Fahd Al-Juwayr",
+              "price": 11.0
+            },
+            {
+              "name": "Yes",
+              "description": "Nasser Al Dawsari",
+              "price": 31.0
+            },
+            {
+              "name": "Yes",
+              "description": "Marc Cucurella",
+              "price": 9.0
+            },
+            {
+              "name": "Yes",
+              "description": "Moteb Al-Harbi",
+              "price": 41.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdullah Al-Khaibari",
+              "price": 36.0
+            },
+            {
+              "name": "Yes",
+              "description": "Saud Abdulhamid",
+              "price": 31.0
+            },
+            {
+              "name": "Yes",
+              "description": "Firas Al-Buraikan",
+              "price": 7.5
+            },
+            {
+              "name": "Yes",
+              "description": "Hassan Mohammed Al Tambakti",
+              "price": 71.0
+            },
+            {
+              "name": "Yes",
+              "description": "Abdulelah Al-Amri",
+              "price": 26.0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
