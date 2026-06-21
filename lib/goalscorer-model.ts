@@ -30,7 +30,9 @@ export type GoalscorerMarket = {
   confidence: "alta" | "media";
 };
 
-function normName(s: string): string {
+// Normalizzazione nomi condivisa (giocatori e squadre): lowercase, trim,
+// collasso spazi interni. Unica fonte, riusata da goalscorer-serve.
+export function normName(s: string): string {
   return (s || "").trim().toLowerCase().split(/\s+/).join(" ");
 }
 

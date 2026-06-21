@@ -4,6 +4,7 @@
 // e` pura e testabile. Vedi spec 2026-06-21-goalscorer-model-design.md (B-serve).
 import {
   computeGoalscorerMarkets,
+  normName,
   GsPlayer,
   GsOdd,
   GoalscorerMarket,
@@ -17,9 +18,8 @@ export type GsPrediction = {
   lambdaAway: number | null;
 };
 
-export function normTeam(s: string): string {
-  return (s || "").trim().toLowerCase().split(/\s+/).join(" ");
-}
+// Alias: stessa normalizzazione dei nomi (unica fonte in goalscorer-model).
+export const normTeam = normName;
 
 /**
  * Costruisce la mappa matchId -> mercati marcatore.
