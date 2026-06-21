@@ -3,14 +3,11 @@
 Fail-soft: una lega che fallisce non interrompe le altre né solleva.
 """
 from __future__ import annotations
-import logging
 
 from core.player_data_tier import LEAGUE_DATA_TIER
 from core.player_models import normalize_season_stats, build_profile, PlayerLineupEntry, PlayerMatchStat
 from core.player_data_writers import upsert_player_profiles, upsert_player_lineups, upsert_player_match_stats
 from core.football_api_client import get_player_season_stats, get_lineups, get_fixture_player_stats
-
-logger = logging.getLogger(__name__)
 
 
 def _parse_lineup(fixture_id: int, raw: list[dict]) -> list[PlayerLineupEntry]:

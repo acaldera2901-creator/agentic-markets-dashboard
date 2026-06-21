@@ -10,6 +10,7 @@ ALTER TABLE public.player_profiles ADD COLUMN IF NOT EXISTS xg_per90_season FLOA
 ALTER TABLE public.player_profiles ADD COLUMN IF NOT EXISTS minutes_share FLOAT;
 ALTER TABLE public.player_profiles ADD COLUMN IF NOT EXISTS penalty_taker BOOLEAN DEFAULT false;
 ALTER TABLE public.player_profiles ADD COLUMN IF NOT EXISTS eligible_for_player_markets BOOLEAN DEFAULT false;
+ALTER TABLE public.player_profiles ADD COLUMN IF NOT EXISTS last_updated TIMESTAMPTZ;
 
 -- 2. Storico per-partita (base per la finestra forma)
 CREATE TABLE IF NOT EXISTS public.player_match_stats (
@@ -52,4 +53,4 @@ CREATE INDEX IF NOT EXISTS idx_lineups_fixture ON public.player_lineups(fixture_
 --   DROP COLUMN IF EXISTS league, DROP COLUMN IF EXISTS tier,
 --   DROP COLUMN IF EXISTS goals_per90_season, DROP COLUMN IF EXISTS xg_per90_season,
 --   DROP COLUMN IF EXISTS minutes_share, DROP COLUMN IF EXISTS penalty_taker,
---   DROP COLUMN IF EXISTS eligible_for_player_markets;
+--   DROP COLUMN IF EXISTS eligible_for_player_markets, DROP COLUMN IF EXISTS last_updated;
