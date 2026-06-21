@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from core.player_data_tier import tier_for_league, is_eligible
+from core.player_data_tier import tier_for_league, is_eligible, MIN_APPEARANCES
 
 
 @dataclass(frozen=True)
@@ -96,7 +96,8 @@ def normalize_season_stats(raw: list[dict], league: str, season: int) -> list[Pl
     return out
 
 
-def build_profile(season: PlayerSeasonStat, xg_per90: float | None, today_iso: str) -> PlayerProfile:
+def build_profile(season: PlayerSeasonStat, xg_per90: float | None, today_iso: str,
+                  min_appearances: int = MIN_APPEARANCES) -> PlayerProfile:
     minutes = max(season.minutes, 1)
     goals_per90 = season.goals / minutes * 90
     # minutes_share: minuti su un massimo teorico di 90*presenze
@@ -104,7 +105,7 @@ def build_profile(season: PlayerSeasonStat, xg_per90: float | None, today_iso: s
     # last_updated_iso = today_iso intenzionale: al build il profilo è fresco per
     # costruzione. La staleness conta in LETTURA (sotto-progetto B ricontrolla
     # is_eligible contro il last_updated salvato in DB con la data di lettura).
-    eligible = is_eligible(season.appearances, today_iso, today_iso)
+    eligible = is_eligible(season.appearances, today_iso, today_iso, min_appearances)
     return PlayerProfile(
         player_id=season.player_id,
         name=season.name,

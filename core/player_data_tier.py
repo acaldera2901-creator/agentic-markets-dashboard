@@ -6,8 +6,17 @@ Tier 1 = leghe con xG individuale (Understat). Tier 2 = solo api-football
 from datetime import date
 
 MIN_APPEARANCES = 5
+MIN_APPEARANCES_TOURNAMENT = 2  # tornei: campione piccolo (3-7 partite) -> soglia bassa
 FORM_WINDOW = 10
 STALE_DAYS = 30
+
+# Competizioni a torneo/eliminazione: poche partite per giocatore -> soglia
+# presenze piu` bassa (con confidenza dichiarata inferiore lato modello/card).
+TOURNAMENT_LEAGUES = {"WC", "FRIENDLY", "CL", "EL", "ECL"}
+
+
+def min_appearances_for(code: str) -> int:
+    return MIN_APPEARANCES_TOURNAMENT if code in TOURNAMENT_LEAGUES else MIN_APPEARANCES
 
 LEAGUE_DATA_TIER: dict[str, dict] = {
     "PL":  {"id": 39,  "name": "Premier League", "tier": 1},
@@ -30,8 +39,9 @@ def tier_for_league(code: str) -> int:
     entry = LEAGUE_DATA_TIER.get(code)
     return entry["tier"] if entry else 0
 
-def is_eligible(appearances: int, last_updated_iso: str | None, today_iso: str) -> bool:
-    if appearances < MIN_APPEARANCES:
+def is_eligible(appearances: int, last_updated_iso: str | None, today_iso: str,
+                min_appearances: int = MIN_APPEARANCES) -> bool:
+    if appearances < min_appearances:
         return False
     if not last_updated_iso:
         return False
