@@ -20,8 +20,11 @@ def PlayerOddRow_with_id(row: PlayerOddRow, player_id):
 
 
 async def collect_goalscorer_odds(sport_keys, match_resolver, now_iso: str,
-                                  player_resolver=None, within_hours: int = 48) -> dict:
-    summary = {"events": 0, "rows_written": 0, "errors": []}
+                                  player_resolver=None, within_hours: int = 48,
+                                  dry_run: bool = False) -> dict:
+    # dry_run=True: risolve+fetch+parse ma NON scrive (conta le righe che
+    # scriverebbe). Utile per verificare il matching senza toccare player_odds.
+    summary = {"events": 0, "rows_written": 0, "matched": 0, "errors": []}
     now = _parse_iso(now_iso)
     for sport in sport_keys:
         try:
@@ -39,12 +42,16 @@ async def collect_goalscorer_odds(sport_keys, match_resolver, now_iso: str,
                 match_id = match_resolver(ev)
                 if not match_id:
                     continue  # no riga orfana
+                summary["matched"] += 1
                 raw = await get_event_goalscorer_odds(sport, ev["id"])
                 rows = parse_event_odds(raw, match_id=match_id, sport_key=sport)
                 if player_resolver:
                     rows = [PlayerOddRow_with_id(r, player_resolver(r.player_name)) for r in rows]
                 if rows:
-                    summary["rows_written"] += await upsert_player_odds(rows)
+                    if dry_run:
+                        summary["rows_written"] += len(rows)  # conteggio, nessuna scrittura
+                    else:
+                        summary["rows_written"] += await upsert_player_odds(rows)
                     summary["events"] += 1
             except Exception as exc:
                 summary["errors"].append(f"{sport}:{ev.get('id')}:{exc}")
