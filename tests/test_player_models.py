@@ -38,11 +38,11 @@ def test_build_profile_computes_per90_and_eligibility():
 def test_build_profile_fail_closed_below_floor():
     raw = [{"player": {"id": 1, "name": "Rookie"},
             "statistics": [{"team": {"name": "X"}, "league": {"name": "Y"},
-                            "games": {"appearences": 3, "minutes": 200, "position": "Midfielder"},
+                            "games": {"appearences": 1, "minutes": 60, "position": "Midfielder"},
                             "goals": {"total": 0, "assists": 0},
                             "shots": {"total": 2, "on": 0}}]}]
     s = normalize_season_stats(raw, "ELI", 2025)[0]
     p = build_profile(s, xg_per90=None, today_iso="2026-06-20")
     assert p.tier == 2
     assert p.xg_per90_season is None
-    assert p.eligible_for_player_markets is False  # 3 < MIN_APPEARANCES
+    assert p.eligible_for_player_markets is False  # 1 < MIN_APPEARANCES (interim=2)

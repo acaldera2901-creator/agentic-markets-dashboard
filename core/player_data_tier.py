@@ -5,8 +5,13 @@ Tier 1 = leghe con xG individuale (Understat). Tier 2 = solo api-football
 """
 from datetime import date
 
-MIN_APPEARANCES = 5
-MIN_APPEARANCES_TOURNAMENT = 2  # tornei: campione piccolo (3-7 partite) -> soglia bassa
+# INTERIM (2026-06-22, scelta Andrea): soglie abbassate per accendere il blocco
+# Marcatori ORA su dato debole, in attesa di una fonte goal-rate affidabile.
+# Tradeoff accettato: campioni sottili (1-2 gare) -> confidenza dichiarata bassa,
+# protetti dal cap goals_per90 (1.3) in player_models. UPGRADE: appena arriva la
+# fonte paid (api-football tier a pagamento), ripristinare 5 / 2 per qualita` piena.
+MIN_APPEARANCES = 2             # era 5 (interim)
+MIN_APPEARANCES_TOURNAMENT = 1  # era 2 — tornei: campione piccolo -> soglia minima (interim)
 FORM_WINDOW = 10
 STALE_DAYS = 30
 

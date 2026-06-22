@@ -63,8 +63,8 @@ def test_goals_per90_capped():
 
 
 def test_tournament_floor_lets_wc_player_through():
-    assert min_appearances_for("WC") == 2
-    assert min_appearances_for("PL") == 5
+    assert min_appearances_for("WC") == 1   # interim (era 2)
+    assert min_appearances_for("PL") == 2   # interim (era 5)
     # WC bomber con 2 presenze e 2 gol -> eleggibile con soglia torneo, NON con 5
     s = aggregate_players([
         {"player_id": "9", "name": "B", "team": "Spain", "goals": 1, "assists": 0,
