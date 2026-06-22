@@ -231,26 +231,19 @@ const COPY = {
   },
 } as const;
 
-// Wordmark riusabile (coerente col rebrand): Bet R edge ›
-function Wordmark({ big = false }: { big?: boolean }) {
-  return (
-    <span className={big ? "lp-wm-big" : "am-wm"}>
-      Bet<span className="r">R</span>edge<span className="chev">›</span>
-    </span>
-  );
-}
-
-// Mark target (stesso del desk topbar)
+// Logo BetrEdge (rebrand 2026-06-22): immagine unica mark+wordmark (coral).
+// BrandMark rende il logo all'altezza `size`; Wordmark è incluso nell'immagine
+// (resta come no-op per non toccare i call-site esistenti).
 function BrandMark({ size = 32 }: { size?: number }) {
   return (
-    <svg className="am-logo" width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <path d="M5 21A11 11 0 0 1 27 21" stroke="var(--am-muted)" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M5 21A11 11 0 0 1 9.2 13.2" stroke="var(--am-coral)" strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="16" y1="21" x2="23.5" y2="12.5" stroke="var(--am-coral)" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="16" cy="21" r="2.2" fill="var(--am-coral)" />
-    </svg>
+    <img
+      src="/logos/betredge-logo.png"
+      alt="BetrEdge"
+      style={{ height: size, width: "auto", display: "block" }}
+    />
   );
 }
+function Wordmark() { return null; }
 
 // #HOME-SPORTS-1: la topnav è auth-aware (come SiteTopbar). Se loggato mostra il
 // nome utente + piano; se anonimo, Sign In / Register.

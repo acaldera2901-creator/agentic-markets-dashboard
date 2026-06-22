@@ -7855,15 +7855,9 @@ export default function Dashboard() {
       {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
       <header className="am-topbar">
         <div className="am-topbar-in">
-          <Link href="/" className="am-brandmark" aria-label="BetRedge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
-            {/* logo: mira/target con cuneo coral = "probabilità di precisione" */}
-            <svg className="am-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <path d="M5 21A11 11 0 0 1 27 21" stroke="var(--am-muted)" strokeWidth="1.8" strokeLinecap="round" />
-              <path d="M5 21A11 11 0 0 1 9.2 13.2" stroke="var(--am-coral)" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="16" y1="21" x2="23.5" y2="12.5" stroke="var(--am-coral)" strokeWidth="2.2" strokeLinecap="round" />
-              <circle cx="16" cy="21" r="2.2" fill="var(--am-coral)" />
-            </svg>
-            <span className="am-wm">Bet<span className="r">R</span>edge<span className="chev">›</span></span>
+          <Link href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+            {/* logo BetrEdge (rebrand 2026-06-22): immagine unica mark+wordmark coral */}
+            <img src="/logos/betredge-logo.png" alt="BetrEdge" style={{ height: 30, width: "auto", display: "block" }} />
           </Link>
 
           <nav className="am-topnav">
