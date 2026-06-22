@@ -4336,7 +4336,7 @@ function GoalscorerBlock({
   // Edge mostrato SOLO quando esiste una quota (book US). Mai numeri inventati.
   const hasAnyOdds = markets.some((m) => m.edge != null);
   const edgeTxt = (m: NonNullable<PredictionEnrichment["goalscorer_markets"]>[number]) =>
-    m.edge == null ? "–" : `${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%`;
+    m.edge == null ? "–" : m.edge > 0 ? `+${(m.edge * 100).toFixed(1)}%` : pick5(lang, { it: "in linea", en: "in line", es: "en línea", fr: "en ligne", ru: "в линии" });
 
   const renderSide = (rows: typeof home, team: string) => {
     if (rows.length === 0) return null;
