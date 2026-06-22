@@ -1,8 +1,11 @@
 # core/tennis_oddspapi_client.py
+import asyncio
 import os
 import logging
 from typing import Any
 import httpx
+
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +102,11 @@ async def get_oddspapi_match_odds(fixture_id: str) -> dict[str, Any] | None:
     try:
         async with httpx.AsyncClient(timeout=15.0, headers=_UA) as client:
             resp = await client.get(f"{BASE_URL}/odds", params={"apiKey": key, "fixtureId": fixture_id})
+            # /odds is per-endpoint rate limited: a 429 storm under the live cycle
+            # was silently dropping every match-winner price. Back off once.
+            if resp.status_code == 429:
+                await asyncio.sleep(settings.ODDSPAPI_ODDS_DELAY_S)
+                resp = await client.get(f"{BASE_URL}/odds", params={"apiKey": key, "fixtureId": fixture_id})
         if resp.status_code != 200:
             return None
         return parse_oddspapi_match_odds(resp.json())
@@ -121,10 +129,17 @@ async def get_oddspapi_tennis_odds(wanted_keys: set[str]) -> list[dict[str, Any]
     dto = (now + timedelta(days=2)).date().isoformat()
     fixtures = await get_oddspapi_fixtures(dfrom, dto)
     rows: list[dict[str, Any]] = []
+    odds_calls = 0
     for f in fixtures:
         k = _pair_key(f.get("player1"), f.get("player2"), f.get("scheduled_at"))
         if not k or k not in wanted_keys:
             continue
+        # Space the per-fixture /odds calls: back-to-back requests trip the
+        # endpoint rate limiter (429), the regression that left the cycle with
+        # '0 con odds reali' despite correctly matched fixtures.
+        if odds_calls:
+            await asyncio.sleep(settings.ODDSPAPI_ODDS_DELAY_S)
+        odds_calls += 1
         odds = await get_oddspapi_match_odds(f["fixtureId"])
         if not odds:
             continue

@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     API_FOOTBALL_DIRECT_KEY: str = ""
     ODDS_API_KEY: str = ""
     ODDSPAPI_KEY: str = ""
+    # OddsPapi /odds is per-endpoint rate limited (429 RATE_LIMITED on rapid
+    # sequential calls). Space the per-fixture odds requests by this many
+    # seconds; one 429 retry waits the same amount.
+    ODDSPAPI_ODDS_DELAY_S: float = 1.7
     MATCHBOOK_USERNAME: str = ""
     MATCHBOOK_PASSWORD: str = ""
     TELEGRAM_BOT_TOKEN: str = ""
