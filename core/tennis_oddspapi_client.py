@@ -19,7 +19,10 @@ _UA = {"User-Agent": "betredge/1.0"}  # urllib default → 403; fix with explici
 
 
 def _key() -> str | None:
-    return os.environ.get("ODDSPAPI_KEY") or None
+    # Coerente con tutti gli altri client quote (settings.* da .env via pydantic).
+    # Il processo agent NON ha ODDSPAPI_KEY in os.environ (non è nel launchd plist e
+    # non c'è load_dotenv): leggere solo os.environ → None → OddsPapi muta in silenzio.
+    return settings.ODDSPAPI_KEY or os.environ.get("ODDSPAPI_KEY") or None
 
 
 def _normalize_name(name: str | None) -> str | None:
