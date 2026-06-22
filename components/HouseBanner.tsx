@@ -70,6 +70,27 @@ function track(event_type: string, campaign: HouseCampaign) {
 
 const fmtEdge = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 
+// I glifi sport (calcio/tennis/WC) usano le icone 3D nuove (stesse del selettore
+// sport); gli altri glifi (pick/rank/…) restano line-art SVG. `className` porta la
+// dimensione esistente (.hb-ic/.hb-ic-sm/.hb-fg) — per ticker/mini la misura
+// dell'img arriva da .hb-ti/.hb-mini .hb-spi nel CSS.
+const SPORT_ICON: Record<string, string> = {
+  "#g-ball": "/banners/sport-football.png",
+  "#g-pitch": "/banners/sport-football.png",
+  "#g-racket": "/banners/sport-tennis.png",
+  "#g-tball": "/banners/sport-tennis.png",
+  "#g-grass": "/banners/sport-tennis.png",
+  "#g-court": "/banners/sport-tennis.png",
+  "#g-trophy": "/banners/sport-worldcup.png",
+};
+function Glyph({ g, className }: { g: string; className?: string }) {
+  const icon = SPORT_ICON[g];
+  if (icon) {
+    return <img src={icon} alt="" aria-hidden="true" className={`hb-spi${className ? ` ${className}` : ""}`} />;
+  }
+  return <svg className={className} aria-hidden="true"><use href={g} /></svg>;
+}
+
 function Headline({ headline, accent }: { headline: string; accent?: string }) {
   return (
     <>
@@ -85,7 +106,7 @@ function Ticker({ edges }: { edges: BannerEdge[] }) {
     <div className="hb-tickrow" key={k}>
       {edges.map((e, i) => (
         <span className="hb-ti" key={`${k}-${i}`}>
-          <svg aria-hidden="true"><use href={e.glyph} /></svg>
+          <Glyph g={e.glyph} />
           {e.name} <span className="hb-ti-e">{fmtEdge(e.edge)}</span>
         </span>
       ))}
@@ -105,7 +126,7 @@ function MiniBoard({ edges, lang }: { edges: BannerEdge[]; lang: Lang }) {
       <span className="hb-eyebrow hb-mb-lab">{HB_UI[lang].topEdge}</span>
       {edges.slice(0, 3).map((e, i) => (
         <div className="hb-mini" key={i}>
-          <svg aria-hidden="true"><use href={e.glyph} /></svg>
+          <Glyph g={e.glyph} />
           <span className="hb-mini-nm">{e.name}</span>
           <span className="hb-mini-e">{fmtEdge(e.edge)}</span>
         </div>
@@ -204,7 +225,7 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
     return (
       <aside className={`house-banner hb-leaderboard${photoCls}`} aria-label={c.eyebrow}>
         {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
-        <svg className="hb-ic" aria-hidden="true"><use href={campaign.glyphs[0]} /></svg>
+        <Glyph g={campaign.glyphs[0]} className="hb-ic" />
         <div className="hb-lead-text">
           <span className="hb-eyebrow">{c.eyebrow}</span>
           <span className="hb-headline"><Headline headline={c.headline} accent={c.accent} /></span>
@@ -232,7 +253,7 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
         <span className="hb-sub">{c.sub}</span>
         <div className="hb-glyphs">
           {campaign.glyphs.map((g) => (
-            <svg key={g} className="hb-ic-sm" aria-hidden="true"><use href={g} /></svg>
+            <Glyph key={g} g={g} className="hb-ic-sm" />
           ))}
         </div>
         {chip ? (
@@ -259,7 +280,7 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
         {rich ? <MiniBoard edges={data.topEdges} lang={L} /> : (
           <div className="hb-glyphs hb-glyphs-col">
             {campaign.glyphs.map((g) => (
-              <svg key={g} className="hb-ic-sm" aria-hidden="true"><use href={g} /></svg>
+              <Glyph key={g} g={g} className="hb-ic-sm" />
             ))}
           </div>
         )}
@@ -275,7 +296,7 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
       <div className="hb-glow" aria-hidden="true" />
       <div className="hb-float" aria-hidden="true">
         {campaign.glyphs.map((g, i) => (
-          <svg key={g} className={`hb-fg hb-fg-${i}`} aria-hidden="true"><use href={g} /></svg>
+          <Glyph key={g} g={g} className={`hb-fg hb-fg-${i}`} />
         ))}
       </div>
       {dismissBtn}
