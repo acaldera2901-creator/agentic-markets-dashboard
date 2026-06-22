@@ -11,6 +11,7 @@ import {
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
+import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
@@ -4166,63 +4167,56 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
   const ranked = sides.slice().sort((a, b) => b.v - a.v);
   const top = ranked[0];
   const tp = Math.round(top.v * 100);
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const out: string[] = [];
 
-  // ── Sentence 1 — form / momentum story ──
-  const homeW = formMoodWord(teamFormCounts(e.form_home), lang);
-  const awayW = formMoodWord(teamFormCounts(e.form_away), lang);
-  if (!top.isDraw && homeW && awayW) {
-    const pickIsHome = top.isHome;
-    const pickTeam = pickIsHome ? p.home_team : p.away_team;
-    const otherTeam = pickIsHome ? p.away_team : p.home_team;
-    const pickW = pickIsHome ? homeW : awayW;
-    const otherW = pickIsHome ? awayW : homeW;
-    out.push(it
-      ? `${pickTeam} arriva ${pickW}${pickIsHome ? "" : " e in trasferta tiene bene"}, mentre ${otherTeam} è ${otherW}.`
-      : `${pickTeam} comes in ${pickW}${pickIsHome ? "" : " and travels well"}, while ${otherTeam} is ${otherW}.`);
-  } else if (top.isDraw) {
-    out.push(it
-      ? `Le due squadre si equivalgono e il modello vede l'equilibrio reggere fino in fondo.`
-      : `The two sides are evenly matched and the model sees the balance holding to the end.`);
+  // ── 1. La chiamata, in parole semplici (sempre) ──
+  if (top.isDraw) {
+    out.push(it ? "Le due squadre si equivalgono: il modello vede l'equilibrio." : "The two sides are evenly matched — the model sees a balanced game.");
   } else if (tp >= 65) {
-    out.push(it
-      ? `${top.name} parte nettamente favorito secondo il modello.`
-      : `${top.name} starts as a clear favourite for the model.`);
+    out.push(it ? `${top.name} parte favorito netto.` : `${top.name} starts as a clear favourite.`);
+  } else if (tp >= 45) {
+    out.push(it ? `Partita aperta, ${top.name} leggermente avanti.` : `An open game, ${top.name} slightly ahead.`);
   } else {
-    out.push(it
-      ? `Partita aperta, con ${top.name} leggermente avanti per il modello.`
-      : `An open game, with ${top.name} a slight edge for the model.`);
+    out.push(it ? "Equilibrio: nessun favorito netto." : "A tight game with no clear favourite.");
   }
 
-  // ── Sentence 2 — value / honest model-read logic ──
+  // ── 2. Forma a parole (confronto se entrambe note) ──
+  const hf = formPhrase(teamFormCounts(e.form_home), lang);
+  const af = formPhrase(teamFormCounts(e.form_away), lang);
+  if (hf && af) {
+    out.push(it ? `${p.home_team} è ${hf}, ${p.away_team} ${af}.` : `${p.home_team} is ${hf}, ${p.away_team} ${af}.`);
+  }
+
+  // ── 3. Storia gol (+ marcatore chiave come clausola, per restare entro 4 frasi) ──
+  const gs = e.goals_summary;
+  if (gs && typeof gs.expected_goals === "number") {
+    const o25 = (e.extra_markets ?? []).find((m) => m.key === "over_2_5");
+    const over = o25 && typeof o25.p === "number" ? o25.p : null;
+    let s = goalsPhrase(gs.expected_goals, gs.band_low, gs.band_high, over, lang);
+    const topScorer = (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0];
+    if (topScorer && topScorer.pScores >= 0.15) {
+      s += `; ${scorerPhrase(topScorer.name, topScorer.pScores, lang)}`;
+    }
+    out.push(cap(s) + ".");
+  }
+
+  // ── 4. Confidenza + onestà value (una frase, sempre) ──
+  const mH = e.matches?.home, mA = e.matches?.away;
+  const smallSample = (mH != null && mH < 10) || (mA != null && mA < 10);
+  const conf = confidenceWord(tp >= 65, smallSample, lang);
   const tail = top.isDraw ? (it ? " sul pareggio" : " on the draw")
     : top.isHome ? (it ? " in casa" : " on the home side")
     : (it ? " sulla trasferta" : " on the away side");
+  let value: string;
   if (p.edge != null && p.odds_home != null) {
-    if (isFootballBestBet(p)) {
-      out.push(it
-        ? `Il modello la dà più probabile di quanto prezzi la quota: da qui il valore${tail}.`
-        : `The model rates it likelier than the price implies — that's where the value${tail} sits.`);
-    } else {
-      out.push(it
-        ? `Il mercato la prezza già in linea col modello: nessun margine di valore da prendere.`
-        : `The market already prices it in line with the model — no value edge to take.`);
-    }
+    value = isFootballBestBet(p)
+      ? (it ? `il modello la dà più probabile della quota: c'è valore${tail}` : `the model rates it likelier than the price — there's value${tail}`)
+      : (it ? `il mercato è già in linea, nessun margine di valore` : `the market is already in line, no value edge`);
   } else {
-    out.push(it
-      ? `Non c'è una quota di mercato: è la lettura del modello, non una value bet.`
-      : `There's no market price here — it's the model's read, not a value bet.`);
+    value = it ? `non c'è una quota di mercato: è la lettura del modello, non una value bet` : `no market price here — it's the model's read, not a value bet`;
   }
-
-  // Honesty: surface a small-sample caveat so a pick built on few matches does
-  // not read as confident as one built on a solid sample.
-  const mH = e.matches?.home, mA = e.matches?.away;
-  if (mH != null && mA != null) {
-    const low = mH < 10 || mA < 10;
-    out.push(it
-      ? `Stima basata su ${mH} contro ${mA} partite${low ? " — campione limitato, più incertezza." : ", un campione solido."}`
-      : `Built on ${mH} vs ${mA} matches${low ? " — a small sample, so more uncertainty." : ", a solid sample."}`);
-  }
+  out.push(`${cap(conf)}: ${value}.`);
 
   return out.join(" ");
 }
