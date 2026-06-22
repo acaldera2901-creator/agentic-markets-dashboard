@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
+import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } from "@/lib/why-text";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { SportIcon } from "@/app/components/sport-icon";
 import GoalscorerBlock from "@/components/GoalscorerBlock";
@@ -272,9 +273,12 @@ function fmtFormCount(f?: { w: number; d: number; l: number } | null, it?: boole
 // No codes, no λ/jargon, no "?". it = Italian, others fall back to English.
 function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: string, belowFloor: boolean, lang: WcLang): string {
   const it = lang === "it";
+  const hl: WhyLang = it ? "it" : "en"; // WC why resta it/en (convenzione esistente)
   const e = p.enrichment;
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const out: string[] = [];
 
+  // ── 1. La chiamata ──
   if (probs) {
     const sides = [
       { v: probs.home, name: home, draw: false },
@@ -294,26 +298,39 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
     }
   }
 
-  const fh = fmtFormCount(e?.form_home, it), fa = fmtFormCount(e?.form_away, it);
-  if (fh && fa) {
-    out.push(it ? `Forma recente: ${home} ${fh}, ${away} ${fa}.` : `Recent form: ${home} ${fh}, ${away} ${fa}.`);
+  // ── 2. Forma a parole ──
+  const hf = formPhrase(e?.form_home ?? null, hl);
+  const af = formPhrase(e?.form_away ?? null, hl);
+  if (hf && af) {
+    out.push(it ? `${home} è ${hf}, ${away} ${af}.` : `${home} is ${hf}, ${away} ${af}.`);
   }
 
-  if (e?.venue?.host_advantage) {
-    out.push(it ? `${e.venue.host_advantage} gioca in casa, un vantaggio in più.` : `${e.venue.host_advantage} plays at home, an added edge.`);
+  // ── 3. Storia gol (+ marcatore chiave) ──
+  const lh = e?.lambdas?.home, la = e?.lambdas?.away;
+  if (typeof lh === "number" && typeof la === "number" && lh > 0 && la > 0) {
+    const gsum = computeGoalsSummary(lh, la);
+    const ov = computeExtraMarkets(lh, la).find((x) => x.key === "over_2_5");
+    let s = goalsPhrase(gsum.expected_goals, gsum.band_low, gsum.band_high, ov ? ov.p : null, hl);
+    const topScorer = (e?.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0];
+    if (topScorer && topScorer.pScores >= 0.15) {
+      s += `; ${scorerPhrase(topScorer.name, topScorer.pScores, hl)}`;
+    }
+    out.push(cap(s) + ".");
   }
 
-  if (p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0) {
-    out.push(it ? `C'è valore: il modello batte la quota di mercato di +${p.edge_percent.toFixed(1)}%.` : `There's value here: the model beats the market price by +${p.edge_percent.toFixed(1)}%.`);
-  } else {
-    out.push(it ? `Non c'è una quota di mercato consolidata per questo match, quindi non dichiariamo nessun edge: è la lettura del modello, non una value bet.` : `There's no settled market price for this match, so we're not claiming an edge — it's the model's read, not a value bet.`);
-  }
-
+  // ── 4. Host + confidenza + onestà value (una frase) ──
   const mH = e?.matches?.home, mA = e?.matches?.away;
-  if (typeof mH === "number" && typeof mA === "number") {
-    const low = mH < 10 || mA < 10;
-    out.push(it ? `Stima basata su ${mH} contro ${mA} partite internazionali${low ? " — campione limitato, più incertezza." : ", un campione solido."}` : `Built on ${mH} vs ${mA} internationals${low ? " — a small sample, so more uncertainty." : ", a solid sample."}`);
+  const smallSample = (typeof mH === "number" && mH < 10) || (typeof mA === "number" && mA < 10);
+  const tpStrong = probs ? Math.max(probs.home, probs.draw, probs.away) >= 0.65 : false;
+  const conf = confidenceWord(tpStrong && !belowFloor, smallSample, hl);
+  const host = e?.venue?.host_advantage ? (it ? `${e.venue.host_advantage} gioca in casa; ` : `${e.venue.host_advantage} plays at home; `) : "";
+  let value: string;
+  if (p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0) {
+    value = it ? `c'è valore, il modello batte il mercato di +${p.edge_percent.toFixed(1)}%` : `there's value, the model beats the market by +${p.edge_percent.toFixed(1)}%`;
+  } else {
+    value = it ? `nessuna quota consolidata: è la lettura del modello, non una value bet` : `no settled market price — it's the model's read, not a value bet`;
   }
+  out.push(`${host}${cap(conf)}: ${value}.`);
 
   return out.join(" ");
 }
