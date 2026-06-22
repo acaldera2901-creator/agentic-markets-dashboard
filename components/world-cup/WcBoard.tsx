@@ -507,7 +507,7 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
               <div className="l"><span className="lw">{lang === "it" ? "Modello" : "Model"}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
             </div>
             <div className={`col edge${edgeVal != null ? " val" : ""}`}>
-              <div className="n">{edgeVal != null ? `+${edgeVal.toFixed(1)}%` : "–"}</div>
+              <div className="n">{edgeVal != null ? `+${edgeVal.toFixed(1)}%` : marketImplied != null ? (lang === "it" ? "in linea" : "in line") : "–"}</div>
               <div className="l">Edge</div>
             </div>
           </div>

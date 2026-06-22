@@ -4550,6 +4550,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               <div className="n">
                 {isPreview ? "🔒"
                   : edgeVal != null ? `+${edgeVal.toFixed(1)}%`
+                  : marketImplied != null ? pick5(lang, { it: "in linea", en: "in line", es: "en línea", fr: "en ligne", ru: "в линии" })
                   : "–"}
               </div>
               <div className="l">Edge</div>
@@ -4985,6 +4986,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
               <div className="n">
                 {isPreview ? "🔒"
                   : edgeVal != null ? `+${edgeVal.toFixed(1)}%`
+                  : marketImplied != null ? pick5(lang, { it: "in linea", en: "in line", es: "en línea", fr: "en ligne", ru: "в линии" })
                   : "–"}
               </div>
               <div className="l">Edge</div>
