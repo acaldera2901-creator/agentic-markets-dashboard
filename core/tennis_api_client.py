@@ -99,22 +99,38 @@ class TennisAPIClient:
                 p2_wins += 1
         return {"p1_wins": p1_wins, "p2_wins": p2_wins, "total": p1_wins + p2_wins}
 
+    # Campi odds: scritti SOLO quando reali, per non azzerare con NULL le quote
+    # già salvate (root cause "quote che svaniscono": l'upsert merge-duplicates
+    # sovrascriveva odds_* a NULL per i fixture senza quote fresche, mentre il
+    # fetch OddsPapi è once-on-success → la quota presa una volta veniva cancellata
+    # al ciclo dopo). Two-pass: (A) upsert SENZA campi odds (colonne odds intatte),
+    # (B) upsert solo i fixture CON odds reali (aggiorna solo quelle).
+    _ODDS_COLS = ("odds_p1", "odds_p2", "odds_provider", "odds_bookmaker", "odds_event_id")
+
     async def write_fixtures_to_supabase(self, fixtures: list[dict]) -> None:
-        """Upsert tennis_fixtures rows into Supabase."""
+        """Upsert tennis_fixtures rows into Supabase, preservando le odds esistenti."""
         if not fixtures or not self._supa_url or not self._supa_key:
             return
+        url = f"{self._supa_url.rstrip('/')}/rest/v1/tennis_fixtures"
+        headers = {
+            "apikey": self._supa_key,
+            "Authorization": f"Bearer {self._supa_key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates",
+        }
+        base_rows = [{k: v for k, v in f.items() if k not in self._ODDS_COLS} for f in fixtures]
+        odds_rows = [
+            {"match_id": f.get("match_id"), **{k: f[k] for k in self._ODDS_COLS if f.get(k) is not None}}
+            for f in fixtures
+            if f.get("odds_p1") is not None
+        ]
         try:
             async with httpx.AsyncClient(timeout=10.0) as c:
-                await c.post(
-                    f"{self._supa_url.rstrip('/')}/rest/v1/tennis_fixtures",
-                    json=fixtures,
-                    headers={
-                        "apikey": self._supa_key,
-                        "Authorization": f"Bearer {self._supa_key}",
-                        "Content-Type": "application/json",
-                        "Prefer": "resolution=merge-duplicates",
-                    },
-                )
+                # (A) tutte le righe senza campi odds → le colonne odds NON vengono toccate
+                await c.post(url, json=base_rows, headers=headers)
+                # (B) solo le righe con quote reali → aggiorna le sole colonne odds
+                if odds_rows:
+                    await c.post(url, json=odds_rows, headers=headers)
         except Exception as exc:
             logger.debug("tennis fixture write error (non-fatal): %s", exc)
 
