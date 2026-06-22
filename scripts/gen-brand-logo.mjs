@@ -18,8 +18,9 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, "public/brand-src");
-const HUE = -120;        // green -> coral
-const SAT = 1.15;
+// Rebrand 2026-06-22: il sito è ora a tema VERDE → logo lasciato verde (no recolor).
+const HUE = 0;
+const SAT = 1;
 
 // --- 1. Logo header: mark coral + testo bianco, trasparente, edge trimmati ---
 const logo = await sharp(path.join(SRC, "logo-white.png"))

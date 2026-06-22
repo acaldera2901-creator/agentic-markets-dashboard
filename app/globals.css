@@ -23,9 +23,9 @@
   --am-line:       #21252C;
   --am-line-2:     #2C313A;
 
-  /* Brand accents — coral primary, warm orange, cool cobalt */
-  --am-coral:      #FF6A5E;   /* primary: CTA, nav attiva, top-pick */
-  --am-coral-2:    #C7463E;   /* fill/gradiente */
+  /* Brand accents — green primary (rebrand 2026-06-22, da logo BetrEdge verde) */
+  --am-coral:      #23A559;   /* primary: CTA, nav attiva, top-pick (brand green) */
+  --am-coral-2:    #15703B;   /* fill/gradiente (green scuro) */
   --am-orange:     #FB923C;   /* secondario caldo, gradiente con coral */
   --am-cobalt:     #3B82F6;   /* dati e output modello, link */
   --am-cobalt-2:   #60A5FA;
@@ -40,9 +40,9 @@
   --am-negative-b:   rgba(248,113,113,0.30);
 
   /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
-  --am-coral-dim:  rgba(255,106,94,0.13);
-  --am-coral-b:    rgba(255,106,94,0.34);
-  --am-coral-ink:  #1A0F0D;   /* testo scuro leggibile su fill coral */
+  --am-coral-dim:  rgba(35,165,89,0.13);
+  --am-coral-b:    rgba(35,165,89,0.34);
+  --am-coral-ink:  #06140C;   /* testo scuro leggibile su fill green */
 
   /* Legacy semantic names kept as internal aliases (do not reference --am-green
      elsewhere; --green legacy alias now points to coral). */
@@ -108,8 +108,8 @@
   --am-line:       #E3E6EB;
   --am-line-2:     #D2D7DE;
 
-  --am-coral:      #D8392F;   /* primary su light, contrasto AA come testo/bordo */
-  --am-coral-2:    #E5483D;   /* fill/gradiente */
+  --am-coral:      #15803D;   /* primary su light, contrasto AA come testo/bordo (brand green) */
+  --am-coral-2:    #1B9148;   /* fill/gradiente */
   --am-orange:     #EA7317;
   --am-cobalt:     #2563EB;
   --am-cobalt-2:   #3B82F6;
@@ -122,9 +122,9 @@
   --am-negative-dim: rgba(220,38,38,0.10);
   --am-negative-b:   rgba(220,38,38,0.28);
 
-  --am-coral-dim:  rgba(216,57,47,0.08);
-  --am-coral-b:    rgba(216,57,47,0.30);
-  --am-coral-ink:  #FFFFFF;   /* testo chiaro leggibile su fill coral (light) */
+  --am-coral-dim:  rgba(21,128,61,0.08);
+  --am-coral-b:    rgba(21,128,61,0.30);
+  --am-coral-ink:  #FFFFFF;   /* testo chiaro leggibile su fill green (light) */
 
   --am-wash:       rgba(229,72,77,0.07);
   --am-glow:       rgba(229,72,77,0.12);
@@ -6688,7 +6688,7 @@ button:disabled {
    (aspect più panoramico) → le TESTE in alto restano sempre intere, si taglia solo
    il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
 .lp-hero-img { display: block; position: relative; aspect-ratio: 1642 / 360; padding: 0; overflow: hidden; }
-.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center top; z-index: 0; }
+.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center center; z-index: 0; }
 /* #HOME-SPORTS-1: anche su mobile il banner è ritagliato in alto come desktop
    (teste + wordmark + ALL SPORTS), così NON riappare il fondo "BEATS THE
    SPORTSBOOK"/moltiplicatori. Un filo più alto del desktop per leggibilità. */
