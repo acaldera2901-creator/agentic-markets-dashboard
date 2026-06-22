@@ -5093,30 +5093,30 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             <span className="da-title">{pick5(lang, { it: "Analisi del modello", en: "Model analysis", es: "Análisis del modelo", fr: "Analyse du modèle", ru: "Анализ модели" })}</span>
           </div>
           <div className="da-row">
-            <span className="da-label">Rating {surface.label}</span>
+            <span className="da-label">{pick5(lang, { it: "Forza sulla superficie", en: "Strength on this surface", es: "Fuerza en esta superficie", fr: "Niveau sur cette surface", ru: "Сила на этом покрытии" })}</span>
             <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
           </div>
           {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
             <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Rating gen.", en: "Overall rating", es: "Rating gen.", fr: "Rating gén.", ru: "Общий рейтинг" })}</span>
+              <span className="da-label">{pick5(lang, { it: "Forza generale", en: "Overall strength", es: "Fuerza general", fr: "Niveau général", ru: "Общая сила" })}</span>
               <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
             </div>
           )}
           {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) && (
             <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Match sup.", en: "Surf. matches", es: "Partidos sup.", fr: "Matchs surf.", ru: "Матчи покр." })}</span>
+              <span className="da-label">{pick5(lang, { it: "Match su questa superficie", en: "Matches on this surface", es: "Partidos en esta superficie", fr: "Matchs sur cette surface", ru: "Матчи на покрытии" })}</span>
               <span className="da-value">{m.surface_matches_p1 ?? "–"} vs {m.surface_matches_p2 ?? "–"}</span>
             </div>
           )}
           {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
             <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Prob. modello", en: "Model prob.", es: "Prob. modelo", fr: "Prob. modèle", ru: "Вероятн. модели" })}</span>
+              <span className="da-label">{pick5(lang, { it: "Probabilità modello", en: "Model probability", es: "Probabilidad del modelo", fr: "Probabilité du modèle", ru: "Вероятность модели" })}</span>
               <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
             </div>
           )}
           {(m.h2h_p1_wins != null || m.h2h_p2_wins != null) && (
             <div className="da-row">
-              <span className="da-label">H2H</span>
+              <span className="da-label">{pick5(lang, { it: "Testa a testa", en: "Head-to-head", es: "Cara a cara", fr: "Confrontations", ru: "Личные встречи" })}</span>
               <span className="da-value">{m.h2h_p1_wins ?? 0}–{m.h2h_p2_wins ?? 0}</span>
             </div>
           )}

@@ -158,41 +158,61 @@ function wcConfidenceFromEdge(edge: number | null, probability: number) {
 const fmtForm = (f?: { w: number; d: number; l: number } | null) =>
   f ? `${f.w}W-${f.d}D-${f.l}L` : null;
 
-function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: string }) {
+function DeepAnalysis({ e, home, away, lang }: { e: WcEnrichment; home: string; away: string; lang: WcLang }) {
+  const it = lang === "it";
   const v = e.venue || {};
   const sq = e.squad || {};
   const injH = sq.injuries_home?.length ?? 0;
   const injA = sq.injuries_away?.length ?? 0;
-  const hasTravel =
-    typeof v.travel_km_home === "number" || typeof v.travel_km_away === "number";
-  const hasRest =
-    typeof v.rest_days_home === "number" || typeof v.rest_days_away === "number";
+  const hasTravel = typeof v.travel_km_home === "number" || typeof v.travel_km_away === "number";
+  const hasRest = typeof v.rest_days_home === "number" || typeof v.rest_days_away === "number";
+  const lh = e.lambdas?.home, la = e.lambdas?.away;
+  const hasGoals = typeof lh === "number" && typeof la === "number" && lh > 0 && la > 0;
+  const gsum = hasGoals ? computeGoalsSummary(lh!, la!) : null;
+  const over25 = hasGoals ? computeExtraMarkets(lh!, la!).find((x) => x.key === "over_2_5") : null;
+  const topScorer = (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0];
 
   return (
     <div className="deep-analysis-panel">
       <div className="da-header">
         <span className="da-badge">⚡ Pro</span>
-        <span className="da-title">Deep Analysis</span>
+        <span className="da-title">{it ? "Analisi approfondita" : "Deep Analysis"}</span>
       </div>
+      {(typeof lh === "number" || typeof la === "number") && (
+        <div className="da-row">
+          <span className="da-label">{it ? "Gol attesi" : "Expected goals"}</span>
+          <span className="da-value">{lh?.toFixed(2) ?? "–"} vs {la?.toFixed(2) ?? "–"}</span>
+        </div>
+      )}
+      {gsum && (
+        <div className="da-row">
+          <span className="da-label">{it ? "Risultato probabile" : "Likely result"}</span>
+          <span className="da-value">{gsum.band_low === gsum.band_high ? `${gsum.band_low}` : `${gsum.band_low}-${gsum.band_high}`} {it ? "gol" : "goals"} ({Math.round(gsum.band_p * 100)}%)</span>
+        </div>
+      )}
+      {over25 && (
+        <div className="da-row">
+          <span className="da-label">Over 2.5</span>
+          <span className="da-value">{Math.round(over25.p * 100)}%</span>
+        </div>
+      )}
       {(e.form_home || e.form_away) && (
         <div className="da-row">
-          <span className="da-label">📈 Form</span>
+          <span className="da-label">{it ? "Forma" : "Form"}</span>
           <span className="da-value">
             {home.split(" ")[0]} {fmtForm(e.form_home) ?? "–"} · {away.split(" ")[0]} {fmtForm(e.form_away) ?? "–"}
           </span>
         </div>
       )}
-      {(typeof e.lambdas?.home === "number" || typeof e.lambdas?.away === "number") && (
+      {topScorer && (
         <div className="da-row">
-          <span className="da-label">Goal rate</span>
-          <span className="da-value">
-            {e.lambdas?.home?.toFixed(2) ?? "–"} vs {e.lambdas?.away?.toFixed(2) ?? "–"}
-          </span>
+          <span className="da-label">{it ? "Marcatore top" : "Top scorer"}</span>
+          <span className="da-value">{topScorer.name} {Math.round(topScorer.pScores * 100)}%</span>
         </div>
       )}
       {hasTravel && (
         <div className="da-row">
-          <span className="da-label">✈️ Travel</span>
+          <span className="da-label">✈️ {it ? "Viaggio" : "Travel"}</span>
           <span className="da-value">
             {typeof v.travel_km_home === "number" ? `${v.travel_km_home}km` : "–"} vs{" "}
             {typeof v.travel_km_away === "number" ? `${v.travel_km_away}km` : "–"}
@@ -201,28 +221,28 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {hasRest && (
         <div className="da-row">
-          <span className="da-label">🛌 Rest</span>
+          <span className="da-label">🛌 {it ? "Riposo" : "Rest"}</span>
           <span className="da-value">
-            {typeof v.rest_days_home === "number" ? `${v.rest_days_home}d` : "–"} vs{" "}
-            {typeof v.rest_days_away === "number" ? `${v.rest_days_away}d` : "–"}
+            {typeof v.rest_days_home === "number" ? `${v.rest_days_home}${it ? "g" : "d"}` : "–"} vs{" "}
+            {typeof v.rest_days_away === "number" ? `${v.rest_days_away}${it ? "g" : "d"}` : "–"}
           </span>
         </div>
       )}
       {v.host_advantage && (
         <div className="da-row">
-          <span className="da-label">🏟️ Host edge</span>
+          <span className="da-label">🏟️ {it ? "In casa" : "Host edge"}</span>
           <span className="da-value">{v.host_advantage}</span>
         </div>
       )}
       {(injH > 0 || injA > 0) && (
         <div className="da-row">
-          <span className="da-label">🚑 Injuries</span>
+          <span className="da-label">🚑 {it ? "Infortuni" : "Injuries"}</span>
           <span className="da-value">H:{injH} · A:{injA}</span>
         </div>
       )}
       {e.market && typeof e.market.p_home === "number" && (
         <div className="da-row">
-          <span className="da-label">💹 Market</span>
+          <span className="da-label">💹 {it ? "Mercato" : "Market"}</span>
           <span className="da-value">
             H:{pct(e.market.p_home)} D:{pct(e.market.p_draw ?? 0)} A:{pct(e.market.p_away ?? 0)}
           </span>
@@ -230,9 +250,9 @@ function DeepAnalysis({ e, home, away }: { e: WcEnrichment; home: string; away: 
       )}
       {(typeof e.matches?.home === "number" || typeof e.matches?.away === "number") && (
         <div className="da-row">
-          <span className="da-label">🗃️ Sample</span>
+          <span className="da-label">🗃️ {it ? "Campione" : "Sample"}</span>
           <span className="da-value">
-            {e.matches?.home ?? "–"} vs {e.matches?.away ?? "–"} matches
+            {e.matches?.home ?? "–"} vs {e.matches?.away ?? "–"} {it ? "partite" : "matches"}
           </span>
         </div>
       )}
@@ -581,7 +601,7 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
               <div className="why-body">
                 <p className="why-prose">{buildWcWhy(p, probs, home, away, belowFloor, lang)}</p>
                 {e ? (
-                  <DeepAnalysis e={e} home={home} away={away} />
+                  <DeepAnalysis e={e} home={home} away={away} lang={lang} />
                 ) : (
                   <div className="deep-analysis-locked">
                     <span>⚡</span>
