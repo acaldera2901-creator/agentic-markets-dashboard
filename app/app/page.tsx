@@ -4610,9 +4610,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
         {/* footer action row */}
         <div className="act">
-          {!isPreview && pickOdds != null && (
-            <span className="odds"><span className="odds-lab">{pick5(lang, { it: "Quota", en: "Odds", es: "Cuota", fr: "Cote", ru: "Кэф" })}</span><b>{pickOdds.toFixed(2)}</b></span>
-          )}
           {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
               altrimenti vecchio CTA. FT → status note. */}
           {!isPreview && (betLinksEnabled || onBetNow) && (isFinished ? (
@@ -5022,9 +5019,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
         {/* footer action row */}
         <div className="act">
-          {!isPreview && pickOdds != null && (
-            <span className="odds"><span className="odds-lab">{pick5(lang, { it: "Quota", en: "Odds", es: "Cuota", fr: "Cote", ru: "Кэф" })}</span><b>{pickOdds.toFixed(2)}</b></span>
-          )}
           {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : betLinksEnabled ? (

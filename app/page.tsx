@@ -37,7 +37,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Il desk in tasca. In arrivo su iOS e Android.",
     appSoon: "IN ARRIVO",
-    spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali",
+    spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali",
     cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 19.90 · Pro 49.90 USDT/mese.", cardPlansBtn: "Vedi i piani",
@@ -80,7 +80,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "The desk in your pocket. Coming soon to iOS and Android.",
     appSoon: "COMING SOON",
-    spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup",
+    spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup",
     cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "66.3% hit-rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
     cardPlans: "Plans", cardPlansDesc: "Free to try · Base 19.90 · Pro 49.90 USDT/month.", cardPlansBtn: "See plans",
@@ -122,7 +122,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
     appSoon: "PRÓXIMAMENTE",
-    spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial",
+    spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial",
     cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "66.3% de acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
     cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 19.90 · Pro 49.90 USDT/mes.", cardPlansBtn: "Ver planes",
@@ -164,7 +164,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
     appSoon: "BIENTÔT",
-    spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde",
+    spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde",
     cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "66,3% de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
     cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 19.90 · Pro 49.90 USDT/mois.", cardPlansBtn: "Voir les offres",
@@ -206,7 +206,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
     appSoon: "СКОРО",
-    spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ",
+    spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ",
     cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "66.3% попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
     cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 19.90 · Pro 49.90 USDT/мес.", cardPlansBtn: "Тарифы",
@@ -354,6 +354,18 @@ export default function LandingPage() {
         <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-allsports.jpg)" }} role="img" aria-label="BetRedge — All Sports" />
       </section>
       <nav className="lp-hero-sports" aria-label="Sports">
+        <a href="/app?tab=bets&sport=all" className="lp-sport">
+          <span className="lp-sport-well">
+            <svg className="lp-sport-gl" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </span>
+          <b className="lp-sport-lab">{t.spAllSports}</b>
+          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </a>
         <a href="/app?tab=bets&sport=football" className="lp-sport">
           <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.png" alt="" /></span>
           <b className="lp-sport-lab">{t.spFootball}</b>
