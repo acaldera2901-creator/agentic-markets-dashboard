@@ -107,30 +107,53 @@ class TennisAPIClient:
     # (B) upsert solo i fixture CON odds reali (aggiorna solo quelle).
     _ODDS_COLS = ("odds_p1", "odds_p2", "odds_provider", "odds_bookmaker", "odds_event_id")
 
+    async def _fetch_existing_odds(self, match_ids: list[str]) -> dict[str, dict]:
+        """Legge le odds già salvate in tennis_fixtures per i match_id dati."""
+        out: dict[str, dict] = {}
+        if not match_ids:
+            return out
+        url = f"{self._supa_url.rstrip('/')}/rest/v1/tennis_fixtures"
+        cols = "match_id," + ",".join(self._ODDS_COLS)
+        ids = ",".join(f'"{m}"' for m in match_ids)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as c:
+                r = await c.get(
+                    f"{url}?select={cols}&match_id=in.({ids})&odds_p1=not.is.null",
+                    headers={"apikey": self._supa_key, "Authorization": f"Bearer {self._supa_key}"},
+                )
+                if r.status_code == 200:
+                    for row in r.json():
+                        out[row["match_id"]] = {k: row.get(k) for k in self._ODDS_COLS}
+        except Exception as exc:
+            logger.debug("tennis existing-odds read error (non-fatal): %s", exc)
+        return out
+
     async def write_fixtures_to_supabase(self, fixtures: list[dict]) -> None:
-        """Upsert tennis_fixtures rows into Supabase, preservando le odds esistenti."""
+        """Upsert tennis_fixtures, preservando le odds già salvate (carry-forward):
+        per i fixture senza quote fresche questo ciclo, riusa le odds in DB invece di
+        azzerarle, poi un singolo upsert full-row (richiede le colonne NOT NULL)."""
         if not fixtures or not self._supa_url or not self._supa_key:
             return
         url = f"{self._supa_url.rstrip('/')}/rest/v1/tennis_fixtures"
-        headers = {
-            "apikey": self._supa_key,
-            "Authorization": f"Bearer {self._supa_key}",
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates",
-        }
-        base_rows = [{k: v for k, v in f.items() if k not in self._ODDS_COLS} for f in fixtures]
-        odds_rows = [
-            {"match_id": f.get("match_id"), **{k: f[k] for k in self._ODDS_COLS if f.get(k) is not None}}
-            for f in fixtures
-            if f.get("odds_p1") is not None
-        ]
+        need = [f["match_id"] for f in fixtures if f.get("odds_p1") is None and f.get("match_id")]
+        existing = await self._fetch_existing_odds(need)
+        for f in fixtures:
+            mid = f.get("match_id")
+            if f.get("odds_p1") is None and mid in existing:
+                for k in self._ODDS_COLS:
+                    f[k] = existing[mid].get(k)
         try:
             async with httpx.AsyncClient(timeout=10.0) as c:
-                # (A) tutte le righe senza campi odds → le colonne odds NON vengono toccate
-                await c.post(url, json=base_rows, headers=headers)
-                # (B) solo le righe con quote reali → aggiorna le sole colonne odds
-                if odds_rows:
-                    await c.post(url, json=odds_rows, headers=headers)
+                await c.post(
+                    url,
+                    json=fixtures,
+                    headers={
+                        "apikey": self._supa_key,
+                        "Authorization": f"Bearer {self._supa_key}",
+                        "Content-Type": "application/json",
+                        "Prefer": "resolution=merge-duplicates",
+                    },
+                )
         except Exception as exc:
             logger.debug("tennis fixture write error (non-fatal): %s", exc)
 
