@@ -355,14 +355,7 @@ export default function LandingPage() {
       </section>
       <nav className="lp-hero-sports" aria-label="Sports">
         <a href="/app?tab=bets&sport=all" className="lp-sport">
-          <span className="lp-sport-well">
-            <svg className="lp-sport-gl" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="3" width="7" height="7" rx="1.5" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" />
-              <rect x="14" y="14" width="7" height="7" rx="1.5" />
-            </svg>
-          </span>
+          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-allsports.png" alt="" /></span>
           <b className="lp-sport-lab">{t.spAllSports}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
