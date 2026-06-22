@@ -5,6 +5,7 @@ import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { withAffiliate } from "@/lib/affiliate";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
+import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,39 @@ export async function GET(req: Request) {
       if (!cur || (r.pick && !cur.pick)) dedup.set(key, r);
     }
     served.push(...dedup.values());
+  }
+
+  // #PLAYER-GOALSCORER (scheda WC): mercati marcatore dalle λ-nazionale gia` sulla
+  // riga (enrichment.lambdas) + player_profiles eleggibili, attaccati a
+  // `enrichment` PRIMA della proiezione. Siccome `enrichment` e` PREMIUM_ONLY
+  // (lib/access-projection), i mercati ereditano lo stesso gating premium del
+  // resto del deep-enrichment. Fail-soft: mappa vuota quando i dati player non
+  // sono live -> le card restano identiche.
+  {
+    const gsPreds = served.map((r) => {
+      const enr = r.enrichment as { lambdas?: { home?: number | null; away?: number | null } } | null | undefined;
+      return {
+        matchId: String(r.id),
+        homeTeam: String(r.home_team ?? ""),
+        awayTeam: String(r.away_team ?? ""),
+        lambdaHome: typeof enr?.lambdas?.home === "number" ? enr.lambdas.home : null,
+        lambdaAway: typeof enr?.lambdas?.away === "number" ? enr.lambdas.away : null,
+      };
+    });
+    const gsByMatch = await fetchGoalscorerByMatch(gsPreds);
+    if (gsByMatch.size > 0) {
+      for (const r of served) {
+        const gs = gsByMatch.get(String(r.id));
+        if (gs && gs.length > 0) {
+          const enr =
+            r.enrichment && typeof r.enrichment === "object"
+              ? (r.enrichment as Record<string, unknown>)
+              : {};
+          enr.goalscorer_markets = gs;
+          r.enrichment = enr;
+        }
+      }
+    }
   }
 
   // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc DENTRO ogni sport.

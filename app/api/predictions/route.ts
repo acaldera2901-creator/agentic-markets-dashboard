@@ -41,14 +41,7 @@ export const maxDuration = 300;
 
 import { dbQuery } from "@/lib/db";
 import { syncMatchPredictionsToUnified } from "@/lib/unified-adapter";
-import {
-  buildGoalscorerByMatch,
-  groupProfilesByTeam,
-  groupOddsByMatch,
-  type GsPrediction,
-  type ProfileRow,
-  type OddRow,
-} from "@/lib/goalscorer-serve";
+import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 
 const LEAGUES: Record<string, string> = {
@@ -220,41 +213,14 @@ function projectPredictionRow(
 async function fetchGoalscorerMarkets(
   rows: PredictionRow[]
 ): Promise<Map<string, GoalscorerMarket[]>> {
-  const teams = Array.from(
-    new Set(rows.flatMap((p) => [p.home_team, p.away_team]).filter(Boolean))
-  );
-  const matchIds = Array.from(new Set(rows.map((p) => p.match_id).filter(Boolean)));
-  if (teams.length === 0 || matchIds.length === 0) return new Map();
-
-  const teamPh = teams.map((_, i) => `$${i + 1}`).join(",");
-  const matchPh = matchIds.map((_, i) => `$${i + 1}`).join(",");
-
-  const [profileRows, oddRows] = await Promise.all([
-    dbQuery<ProfileRow>(
-      `SELECT player_id, name, team, goals_per90_season, minutes_share, tier
-       FROM player_profiles
-       WHERE eligible_for_player_markets = true AND team IN (${teamPh})`,
-      teams
-    ),
-    dbQuery<OddRow>(
-      `SELECT match_id, player_name, price, bookmaker
-       FROM player_odds WHERE match_id IN (${matchPh})`,
-      matchIds
-    ),
-  ]);
-  if (profileRows.length === 0) return new Map();
-
-  const preds: GsPrediction[] = rows.map((p) => ({
-    matchId: p.match_id,
-    homeTeam: p.home_team,
-    awayTeam: p.away_team,
-    lambdaHome: p.lambda_home,
-    lambdaAway: p.lambda_away,
-  }));
-  return buildGoalscorerByMatch(
-    preds,
-    groupProfilesByTeam(profileRows),
-    groupOddsByMatch(oddRows)
+  return fetchGoalscorerByMatch(
+    rows.map((p) => ({
+      matchId: p.match_id,
+      homeTeam: p.home_team,
+      awayTeam: p.away_team,
+      lambdaHome: p.lambda_home,
+      lambdaAway: p.lambda_away,
+    }))
   );
 }
 

@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { SportIcon } from "@/app/components/sport-icon";
+import GoalscorerBlock from "@/components/GoalscorerBlock";
+import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 
 type WcEnrichment = {
   kind?: string;
@@ -33,6 +35,7 @@ type WcEnrichment = {
   market?: { p_home?: number; p_draw?: number; p_away?: number } | null;
   group?: string | null;
   model?: string | null;
+  goalscorer_markets?: GoalscorerMarket[] | null; // premium-only (projection-gated)
 };
 
 type ProjectedRow = {
@@ -498,6 +501,9 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
                 <span>Over 3.5: <b>{overPct("over_3_5")}</b></span>
               </div>
             </div>
+          )}
+          {e?.goalscorer_markets && e.goalscorer_markets.length > 0 && (
+            <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={home} awayTeam={away} lang={lang} />
           )}
 
           {/* WHY — #CARD-STD-1: same structure as the football card —
