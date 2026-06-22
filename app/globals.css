@@ -6692,7 +6692,7 @@ button:disabled {
    (aspect più panoramico) → le TESTE in alto restano sempre intere, si taglia solo
    il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
 .lp-hero-img { display: block; position: relative; aspect-ratio: 1642 / 360; padding: 0; overflow: hidden; }
-.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center center; z-index: 0; }
+.lp-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center 20%; z-index: 0; }
 /* #HOME-SPORTS-1: anche su mobile il banner è ritagliato in alto come desktop
    (teste + wordmark + ALL SPORTS), così NON riappare il fondo "BEATS THE
    SPORTSBOOK"/moltiplicatori. Un filo più alto del desktop per leggibilità. */
