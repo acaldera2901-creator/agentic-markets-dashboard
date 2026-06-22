@@ -4687,22 +4687,40 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
             </div>
           )}
-          {(e.npxg_home != null || e.npxg_away != null) && (
+          {e.goals_summary && (
             <div className="da-row">
-              <span className="da-label">npxG</span>
-              <span className="da-value">{e.npxg_home?.toFixed(2) ?? "–"} vs {e.npxg_away?.toFixed(2) ?? "–"}</span>
+              <span className="da-label">{pick5(lang, { it: "Risultato probabile", en: "Likely result", es: "Resultado probable", fr: "Résultat probable", ru: "Вероятный счёт" })}</span>
+              <span className="da-value">{e.goals_summary.band_low === e.goals_summary.band_high ? `${e.goals_summary.band_low}` : `${e.goals_summary.band_low}-${e.goals_summary.band_high}`} {pick5(lang, { it: "gol", en: "goals", es: "goles", fr: "buts", ru: "гола" })} ({Math.round(e.goals_summary.band_p * 100)}%)</span>
             </div>
           )}
-          {(e.ppda_home != null || e.ppda_away != null) && (
-            <div className="da-row">
-              <span className="da-label">Pressing (PPDA)</span>
-              <span className="da-value">{e.ppda_home?.toFixed(1) ?? "–"} vs {e.ppda_away?.toFixed(1) ?? "–"}</span>
-            </div>
-          )}
+          {(() => {
+            const o25 = (e.extra_markets ?? []).find((m) => m.key === "over_2_5");
+            return o25 ? (
+              <div className="da-row">
+                <span className="da-label">Over 2.5</span>
+                <span className="da-value">{Math.round(o25.p * 100)}%</span>
+              </div>
+            ) : null;
+          })()}
           {(e.form_home || e.form_away) && (
             <div className="da-row">
               <span className="da-label">{pick5(lang, { it: "Forma", en: "Form", es: "Forma", fr: "Forme", ru: "Форма" })}</span>
               <span className="da-value">{fmtFormAny(e.form_home) ?? "–"} vs {fmtFormAny(e.form_away) ?? "–"}</span>
+            </div>
+          )}
+          {(() => {
+            const ts = (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0];
+            return ts ? (
+              <div className="da-row">
+                <span className="da-label">{pick5(lang, { it: "Marcatore top", en: "Top scorer", es: "Goleador top", fr: "Buteur n°1", ru: "Топ-бомбардир" })}</span>
+                <span className="da-value">{ts.name} {Math.round(ts.pScores * 100)}%</span>
+              </div>
+            ) : null;
+          })()}
+          {(e.ppda_home != null || e.ppda_away != null) && (
+            <div className="da-row">
+              <span className="da-label">{pick5(lang, { it: "Pressing", en: "Pressing", es: "Presión", fr: "Pressing", ru: "Прессинг" })}</span>
+              <span className="da-value">{e.ppda_home?.toFixed(1) ?? "–"} vs {e.ppda_away?.toFixed(1) ?? "–"}</span>
             </div>
           )}
           {/* World Cup context rows — real venue/squad/sample data */}
@@ -4736,12 +4754,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               <span className="da-value">{e.matches.home ?? "–"} vs {e.matches.away ?? "–"} {pick5(lang, { it: "partite", en: "matches", es: "partidos", fr: "matchs", ru: "матчей" })}</span>
             </div>
           )}
-          {(e.pi_home != null || e.pi_away != null) && (
-            <div className="da-row">
-              <span className="da-label">Rating</span>
-              <span className="da-value">{e.pi_home ?? "–"} vs {e.pi_away ?? "–"}</span>
-            </div>
-          )}
           {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
               <span className="da-label">🚑 {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
@@ -4754,12 +4766,20 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               <span className="da-value">{e.weather.temp}°C · {e.weather.condition} · {e.weather.wind}km/h</span>
             </div>
           )}
-          {e.api_pct_home != null && (
-            <div className="da-row">
-              <span className="da-label">API-FB</span>
-              <span className="da-value">H:{e.api_pct_home}% D:{e.api_pct_draw ?? "–"}% A:{e.api_pct_away ?? "–"}%{e.api_advice ? ` · ${e.api_advice}` : ""}</span>
-            </div>
-          )}
+          {(() => {
+            const pk = p.best_selection;
+            const pr = pk === "HOME" ? p.p_home : pk === "DRAW" ? p.p_draw : pk === "AWAY" ? p.p_away : null;
+            const od = pk === "HOME" ? p.odds_home : pk === "DRAW" ? p.odds_draw : pk === "AWAY" ? p.odds_away : null;
+            const mi = od && od > 0 ? 1 / od : null;
+            if (pr == null || mi == null) return null;
+            const ed = p.edge != null ? ` (${p.edge > 0 ? "+" : ""}${(p.edge * 100).toFixed(1)}%)` : "";
+            return (
+              <div className="da-row">
+                <span className="da-label">{pick5(lang, { it: "Modello vs Mercato", en: "Model vs Market", es: "Modelo vs Mercado", fr: "Modèle vs Marché", ru: "Модель vs Рынок" })}</span>
+                <span className="da-value">{Math.round(pr * 100)}% vs {Math.round(mi * 100)}%{ed}</span>
+              </div>
+            );
+          })()}
           {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
             <div className="da-row da-markets-row">
               <span className="da-label">{pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" })}</span>
