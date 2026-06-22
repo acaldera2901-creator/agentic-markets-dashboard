@@ -4139,17 +4139,6 @@ function teamFormCounts(f?: string | WcFormCounts | null): { w: number; d: numbe
   return null;
 }
 
-// Qualitative form word from real W-D-L counts (no raw numbers in the prose).
-function formMoodWord(f: { w: number; d: number; l: number } | null, lang: Lang): string | null {
-  if (!f) return null;
-  const it = lang === "it";
-  const played = f.w + f.d + f.l;
-  if (played === 0) return null;
-  if (f.w >= 3 || (f.w >= 2 && f.l === 0)) return it ? "in un buon momento" : "in good form";
-  if (f.l >= 3 || f.w === 0) return it ? "in un periodo difficile" : "going through a rough patch";
-  return it ? "in forma altalenante" : "in patchy form";
-}
-
 // Story-style "why": 2 short sentences, REAL but conversational. Sentence 1 =
 // the momentum/form story (qualitative, no raw W-D-L), sentence 2 = the value /
 // honest model-read logic. Deliberately does NOT repeat the % or edge numbers
@@ -4235,46 +4224,58 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
   const favName = favIsP1 ? p1n : p2n;
   const gap = Math.abs(m.p1 - m.p2);
   const tbd = /\bTBD\b|\bTBA\b|qualifier/i.test(`${m.player1} ${m.player2}`);
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const out: string[] = [];
 
-  // ── Sentence 1 — favourite + surface story ──
+  // ── 1. La chiamata + superficie ──
   if (tbd) {
     out.push(it
       ? `L'avversario non è ancora confermato: per ora è una lettura provvisoria del modello ${surf}.`
       : `The opponent isn't confirmed yet, so for now it's a provisional model read ${surf}.`);
   } else if (gap <= 0.06) {
     out.push(it
-      ? `Match equilibrato ${surf}: il modello non vede un favorito reale.`
-      : `A balanced match ${surf}: the model sees no real favourite.`);
+      ? `Match equilibrato ${surf}: il modello non vede un favorito netto.`
+      : `A balanced match ${surf}: the model sees no clear favourite.`);
   } else {
     let eloTail = "";
     if (m.elo_p1 != null && m.elo_p2 != null) {
       const d = Math.abs(m.elo_p1 - m.elo_p2);
       const leaderIsFav = (m.elo_p1 >= m.elo_p2) === favIsP1;
-      if (d >= 60 && leaderIsFav) eloTail = it ? `, dove ha un netto vantaggio nei rating sulla superficie` : `, where they hold a clear edge in the surface ratings`;
-      else if (d >= 15 && leaderIsFav) eloTail = it ? `, dove parte un po' più in alto nei rating sulla superficie` : `, where they sit a little higher in the surface ratings`;
+      if (d >= 60 && leaderIsFav) eloTail = it ? `, dove ha un netto vantaggio su questa superficie` : `, with a clear edge on this surface`;
+      else if (d >= 15 && leaderIsFav) eloTail = it ? `, dove parte un po' più in alto su questa superficie` : `, sitting a little higher on this surface`;
     }
+    const favSM = favIsP1 ? m.surface_matches_p1 : m.surface_matches_p2;
+    const smTail = typeof favSM === "number" && favSM >= 20
+      ? (it ? ` (${favSM} match giocati qui)` : ` (${favSM} matches here)`) : "";
     const strong = Math.max(m.p1, m.p2) >= 0.65;
     out.push(it
-      ? `Il modello vede ${favName} ${strong ? "nettamente favorito" : "favorito di misura"} ${surf}${eloTail}.`
-      : `The model makes ${favName} ${strong ? "a clear favourite" : "a narrow favourite"} ${surf}${eloTail}.`);
+      ? `Il modello vede ${favName} ${strong ? "favorito netto" : "favorito di misura"} ${surf}${eloTail}${smTail}.`
+      : `The model makes ${favName} ${strong ? "a clear favourite" : "a narrow favourite"} ${surf}${eloTail}${smTail}.`);
   }
 
-  // ── Sentence 2 — value / honest model-read ──
-  const tail = it ? ` su ${favName}` : ` on ${favName}`;
-  if (isTennisBestBet(m)) {
-    out.push(it
-      ? `Il modello lo dà più probabile di quanto prezzi la quota: da qui il valore${tail}.`
-      : `The model rates it likelier than the price implies — that's where the value${tail} sits.`);
-  } else if (m.odds_p1 != null || m.odds_p2 != null) {
-    out.push(it
-      ? `Il mercato lo prezza già in linea col modello: nessun valore da prendere.`
-      : `The market already prices it in line with the model — no value to take.`);
-  } else {
-    out.push(it
-      ? `Non c'è una quota di mercato: è la lettura del modello, non una value bet.`
-      : `There's no market price here — it's the model's read, not a value bet.`);
+  // ── 2. Testa a testa (se rilevante) ──
+  const h1 = m.h2h_p1_wins, h2 = m.h2h_p2_wins;
+  if (typeof h1 === "number" && typeof h2 === "number" && h1 + h2 >= 2 && h1 !== h2) {
+    const leadName = h1 > h2 ? p1n : p2n;
+    const a = Math.max(h1, h2), b = Math.min(h1, h2);
+    out.push(it ? `${leadName} conduce gli scontri diretti ${a}-${b}.` : `${leadName} leads the head-to-head ${a}-${b}.`);
   }
+
+  // ── 3. Confidenza + onestà value (una frase) ──
+  const favSM2 = favIsP1 ? m.surface_matches_p1 : m.surface_matches_p2;
+  const smallSample = typeof favSM2 === "number" && favSM2 < 10;
+  const strong = !tbd && gap > 0.06 && Math.max(m.p1, m.p2) >= 0.65;
+  const conf = confidenceWord(strong, smallSample, lang);
+  const tail = it ? ` su ${favName}` : ` on ${favName}`;
+  let value: string;
+  if (isTennisBestBet(m)) {
+    value = it ? `il modello lo dà più probabile della quota: c'è valore${tail}` : `the model rates it likelier than the price — there's value${tail}`;
+  } else if (m.odds_p1 != null || m.odds_p2 != null) {
+    value = it ? `il mercato è già in linea, nessun valore da prendere` : `the market is already in line, no value to take`;
+  } else {
+    value = it ? `non c'è una quota di mercato: è la lettura del modello, non una value bet` : `no market price here — it's the model's read, not a value bet`;
+  }
+  out.push(`${cap(conf)}: ${value}.`);
 
   return out.join(" ");
 }
