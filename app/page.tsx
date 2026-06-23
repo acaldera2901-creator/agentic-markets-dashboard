@@ -13,6 +13,9 @@ import { SportIcon } from "@/app/components/sport-icon";
 import { HouseBanner } from "@/components/HouseBanner";
 import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
+import { SiteFooter } from "@/components/SiteFooter";
+import { LiveChat } from "@/components/LiveChat";
+import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
 
 type Lang = "it" | "en" | "es" | "fr" | "ru";
 const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
@@ -21,6 +24,7 @@ const COPY = {
   it: {
     signin: "Accedi",
     register: "Registrati",
+    logout: "Esci",
     leftLabel: "QUOTE IMBATTIBILI SU CALCIO & TENNIS",
     rightLabel: "IL VANTAGGIO DEFINITIVO\nCALCIO & TENNIS",
     tagline: ["PREVEDI.", "GIOCA.", "GUADAGNA."],
@@ -64,6 +68,7 @@ const COPY = {
   en: {
     signin: "Sign In",
     register: "Register",
+    logout: "Logout",
     leftLabel: "UNBEATABLE ODDS ON FOOTBALL & TENNIS",
     rightLabel: "THE ULTIMATE EDGE\nFOOTBALL & TENNIS",
     tagline: ["PREDICT.", "PLAY.", "PROFIT."],
@@ -106,6 +111,7 @@ const COPY = {
   es: {
     signin: "Entrar",
     register: "Regístrate",
+    logout: "Salir",
     leftLabel: "CUOTAS IMBATIBLES EN FÚTBOL Y TENIS",
     rightLabel: "LA VENTAJA DEFINITIVA\nFÚTBOL Y TENIS",
     tagline: ["PREDICE.", "JUEGA.", "GANA."],
@@ -148,6 +154,7 @@ const COPY = {
   fr: {
     signin: "Se connecter",
     register: "S'inscrire",
+    logout: "Quitter",
     leftLabel: "DES COTES IMBATTABLES SUR LE FOOTBALL & LE TENNIS",
     rightLabel: "L'AVANTAGE ULTIME\nFOOTBALL & TENNIS",
     tagline: ["PRÉDIS.", "JOUE.", "GAGNE."],
@@ -190,6 +197,7 @@ const COPY = {
   ru: {
     signin: "Войти",
     register: "Регистрация",
+    logout: "Выйти",
     leftLabel: "НЕПОБЕДИМЫЕ КОЭФФИЦИЕНТЫ НА ФУТБОЛ И ТЕННИС",
     rightLabel: "АБСОЛЮТНОЕ ПРЕИМУЩЕСТВО\nФУТБОЛ И ТЕННИС",
     tagline: ["ПРОГНОЗИРУЙ.", "ИГРАЙ.", "ВЫИГРЫВАЙ."],
@@ -262,6 +270,9 @@ export default function LandingPage() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+  // #UI-HOMEAUTH-0623 (spec #4): Sign In/Register aprono la modale IN-PLACE sulla
+  // home, senza navigare su /app. null = chiusa.
+  const [authModal, setAuthModal] = useState<HomeAuthIntent | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -271,6 +282,25 @@ export default function LandingPage() {
       const dt = document.documentElement.getAttribute("data-theme");
       if (dt === "light" || dt === "dark") setTheme(dt);
     } catch {}
+  }, []);
+
+  // #THEME-CONSISTENCY-0623: segui l'impostazione di sistema (computer/browser)
+  // SOLO se l'utente non ha mai scelto un tema manualmente (agentic-theme vuoto).
+  // Appena tocca DARK/LIGHT la scelta persiste e vince. Così il tema "resta sulla
+  // scelta dell'utente OPPURE segue il sistema", senza divergere tra le pagine.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = (e: MediaQueryListEvent) => {
+      let chosen = "";
+      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+      if (chosen === "light" || chosen === "dark") return; // scelta esplicita: non sovrascrivere
+      const next: "dark" | "light" = e.matches ? "light" : "dark";
+      setTheme(next);
+      document.documentElement.setAttribute("data-theme", next);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   // Auth-aware topnav: chiede a /api/auth (stessa chiamata del desk) e mostra
@@ -310,6 +340,17 @@ export default function LandingPage() {
     document.documentElement.setAttribute("data-theme", mode);
     try { localStorage.setItem("agentic-theme", mode); } catch {}
   };
+  // #UI-LOGOUT-TOPBAR-0623: logout dalla home (route separata dal desk) → invalida
+  // la sessione lato server poi ricarica "/" in stato anonimo.
+  const logoutHome = async () => {
+    try {
+      await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "logout" }),
+      });
+    } catch { /* il reload riporta comunque allo stato pubblico */ }
+    window.location.href = "/";
+  };
 
   return (
     <div className="lp" data-mounted={mounted ? "1" : "0"}>
@@ -327,13 +368,22 @@ export default function LandingPage() {
             <button className={theme === "light" ? "on" : ""} onClick={() => setThemeMode("light")}>LIGHT</button>
           </div>
           {auth.status === "authed" ? (
-            <a href="/app?tab=account" className="am-acct" title={auth.identifier}>
-              {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
-            </a>
+            /* #UI-LOGOUT-TOPBAR-0623: da loggati il Logout è in topbar accanto alla
+               pill nome+piano (che resta link all'account). Su home/route separate
+               il logout fa POST /api/auth {action:"logout"} poi reload su "/". */
+            <>
+              <a href="/app?tab=account" className="am-acct" title={auth.identifier}>
+                {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
+              </a>
+              <button type="button" className="lp-nav-link" onClick={logoutHome}>
+                {t.logout}
+              </button>
+            </>
           ) : auth.status === "anonymous" ? (
             <>
-              <a href="/app?auth=login" className="lp-nav-link">{t.signin}</a>
-              <a href="/app?auth=register" className="lp-nav-cta">{t.register}</a>
+              {/* #UI-HOMEAUTH-0623: aprono la modale IN-PLACE, non navigano più su /app */}
+              <button type="button" className="lp-nav-link" onClick={() => setAuthModal("login")}>{t.signin}</button>
+              <button type="button" className="lp-nav-cta" onClick={() => setAuthModal("create")}>{t.register}</button>
             </>
           ) : null /* loading: niente flicker di stato errato */}
           <LangDropdown value={lang} onSelect={selectLang} variant="landing" />
@@ -523,11 +573,17 @@ export default function LandingPage() {
         ) : null;
       })()}
 
-      {/* ── Footer ─────────────────────────────────────────────── */}
-      <footer className="lp-foot">
-        <p>{t.risk}</p>
-        <Link href="/privacy">{t.privacy}</Link>
-      </footer>
+      {/* ── Footer (#UI-FOOTER-UNIFIED-0623: footer condiviso del sito) ── */}
+      <SiteFooter lang={lang} />
+
+      {/* #UI-LIVECHAT-0623: widget live chat (talk.to) dietro env flag, inerte
+          finché NEXT_PUBLIC_TALKTO_ID non è settato. */}
+      <LiveChat />
+
+      {/* #UI-HOMEAUTH-0623 (spec #4): modale auth in-place sulla home */}
+      {authModal && (
+        <HomeAuthModal intent={authModal} lang={lang} onClose={() => setAuthModal(null)} />
+      )}
     </div>
   );
 }

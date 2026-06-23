@@ -66,6 +66,17 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
     }
   };
 
+  // #UI-LOGOUT-TOPBAR-0623: logout dalla chrome WC (route separata dal desk).
+  const logout = async () => {
+    try {
+      await fetch("/api/auth", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "logout" }),
+      });
+    } catch { /* il reload riporta allo stato pubblico comunque */ }
+    window.location.href = "/";
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -106,6 +117,22 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
     document.documentElement.setAttribute("data-theme", next);
     try { localStorage.setItem("agentic-theme", next); } catch {}
   };
+  // #THEME-CONSISTENCY-0623: segue il tema di sistema SOLO finché l'utente non
+  // ha scelto manualmente (agentic-theme vuoto). Stesso contratto di home/desk.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = (e: MediaQueryListEvent) => {
+      let chosen = "";
+      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+      if (chosen === "light" || chosen === "dark") return;
+      const next: "dark" | "light" = e.matches ? "light" : "dark";
+      setTheme(next);
+      document.documentElement.setAttribute("data-theme", next);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
   // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
@@ -157,10 +184,18 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
           </div>
 
           {auth.status === "authed" ? (
-            <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
-              {auth.name || auth.identifier}
-              <span className="plan">{planPillLabel(auth.plan)}</span>
-            </Link>
+            /* #UI-LOGOUT-TOPBAR-0623: Logout in topbar accanto alla pill nome+piano.
+               WC è route separata dal desk → POST /api/auth {action:"logout"} poi
+               reload su "/". */
+            <>
+              <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
+                {auth.name || auth.identifier}
+                <span className="plan">{planPillLabel(auth.plan)}</span>
+              </Link>
+              <button type="button" className="am-auth-secondary" onClick={logout}>
+                {lang === "it" ? "Esci" : "Logout"}
+              </button>
+            </>
           ) : auth.status === "anonymous" ? (
             <>
               <Link href="/app?auth=login" className="am-auth-secondary">{lang === "it" ? "Accedi" : "Sign In"}</Link>

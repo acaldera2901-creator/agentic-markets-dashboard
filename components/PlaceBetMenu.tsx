@@ -1,22 +1,29 @@
 // components/PlaceBetMenu.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { BetSelection, BetLinkOption } from "@/lib/sportsbooks/types";
 
 // CTA "Piazza scommessa" + dropdown dei book affiliati.
 // Mostrato dal parent SOLO quando betLinksEnabled è true (geo-gate server-side).
 // Le opzioni sono caricate lazy all'apertura. Noi non gestiamo mai fondi/scommesse.
+//
+// #UI-ODDS-CLICK-0623: il parent può aprire il menu via `openRef` (es. click
+// sulla quota) — registriamo qui un handler open() che il parent invoca. Così la
+// scelta del sportsbook è raggiungibile sia dal bottone sia dal click sull'odd,
+// senza duplicare la logica /api/bet-links.
 export function PlaceBetMenu({
   selection,
   label,
   disclaimer,
   buttonClassName = "bonus-cta",
+  openRef,
 }: {
   selection: BetSelection;
   label: string;
   disclaimer: string;
   buttonClassName?: string;
+  openRef?: RefObject<(() => void) | null>;
 }) {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<BetLinkOption[] | null>(null);
@@ -43,8 +50,7 @@ export function PlaceBetMenu({
     };
   }, [open]);
 
-  async function toggle() {
-    const next = !open;
+  async function setMenuOpen(next: boolean) {
     setOpen(next);
     if (next && options === null && !loading) {
       setLoading(true);
@@ -63,6 +69,18 @@ export function PlaceBetMenu({
       }
     }
   }
+
+  function toggle() {
+    void setMenuOpen(!open);
+  }
+
+  // #UI-ODDS-CLICK-0623: espone open() al parent (click sulla quota) tramite ref.
+  useEffect(() => {
+    if (!openRef) return;
+    openRef.current = () => { void setMenuOpen(true); };
+    return () => { if (openRef) openRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- registrazione stabile dell'handler; setMenuOpen usa state aggiornato via setter.
+  }, [openRef]);
 
   // analytics beacon fire-and-forget: non blocca mai la navigazione.
   function track(book: string) {

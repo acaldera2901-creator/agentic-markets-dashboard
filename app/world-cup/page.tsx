@@ -5,6 +5,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
 import Countdown from "@/components/world-cup/Countdown";
@@ -149,6 +150,9 @@ export default async function WorldCupPage() {
         />
       </section>
       </main>
+      {/* #UI-FOOTER-UNIFIED-0623: footer condiviso anche sulle pagine World Cup
+          (prima ne erano sprovviste). Server component → lang default (en). */}
+      <SiteFooter />
     </div>
   );
 }
