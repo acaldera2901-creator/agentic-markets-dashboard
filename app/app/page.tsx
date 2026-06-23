@@ -1748,7 +1748,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "account" | "history" | "partners" | "leaderboard" | "match-builder";
+type Tab = "bets" | "plans" | "history" | "partners" | "leaderboard" | "match-builder";
 type AccountSection = "account" | "piani";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
@@ -6832,6 +6832,138 @@ function AccountHelpFooter() {
 
 // ─── Account Tab (unione Client Area + Impostazioni + Assistenza + FAQ) ─────────
 
+// #UI-ACCOUNT-DROPDOWN-0623: menu account a tendina dal pill in alto a dx.
+// Pannello ricco theme-aware: intestazione (nome+email SOLA LETTURA + piano),
+// card piano (stato + azione → tab Plans), preferenze inline (notifiche auto-save
+// + lingua), footer (aiuto → Tawk + esci). Chiude su click-fuori / Esc. Riusa i
+// contratti esistenti (save profilo, logout, piani). Nessuna modifica libera di
+// nome/email (scelta Andrea: niente "cambia nome quando vuoi").
+function AccountMenu({
+  profile,
+  lang,
+  planLabel,
+  onSaveProfile,
+  onLogout,
+  onGoToPlans,
+  onSelectLang,
+}: {
+  profile: ClientProfile;
+  lang: Lang;
+  planLabel: string;
+  onSaveProfile: (p: ClientProfile) => void;
+  onLogout: () => void;
+  onGoToPlans: () => void;
+  onSelectLang: (l: Lang) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const isPremium = profileHasPremium(profile);
+  const isAccess = profileHasAccess(profile);
+  const daysLeft = profile.planExpiresAt && isAccess && profile.plan !== "admin_full"
+    ? Math.max(0, Math.ceil((new Date(profile.planExpiresAt).getTime() - Date.now()) / 86400000))
+    : null;
+  const planName = isPremium ? "BetRedge Pro" : isAccess ? "BetRedge Base" : profile.plan === "free" ? "BetRedge Free" : "Setup";
+  const planStatus = daysLeft != null
+    ? pick5(lang, { it: `scade tra ${daysLeft}g`, en: `${daysLeft}d left`, es: `caduca en ${daysLeft}d`, fr: `expire dans ${daysLeft}j`, ru: `осталось ${daysLeft}д` })
+    : isPremium || isAccess
+    ? pick5(lang, { it: "attivo", en: "active", es: "activo", fr: "actif", ru: "активен" })
+    : pick5(lang, { it: "gratis", en: "free", es: "gratis", fr: "gratuit", ru: "бесплатно" });
+  const notif = profile.notifications ?? defaultNotifications();
+  const toggleNotif = (key: keyof NonNullable<ClientProfile["notifications"]>) =>
+    onSaveProfile({ ...profile, notifications: { ...notif, [key]: !notif[key] } });
+
+  const LANG_LABEL: Record<Lang, string> = { it: "Italiano", en: "English", es: "Español", fr: "Français", ru: "Русский" };
+  const notifRows: { key: keyof NonNullable<ClientProfile["notifications"]>; label: string }[] = [
+    { key: "valueBets", label: pick5(lang, { it: "Value bet", en: "Value bets", es: "Value bets", fr: "Value bets", ru: "Value bets" }) },
+    { key: "dailyReport", label: pick5(lang, { it: "Report giornaliero", en: "Daily report", es: "Reporte diario", fr: "Rapport quotidien", ru: "Дневной отчёт" }) },
+    { key: "securityAlerts", label: pick5(lang, { it: "Avvisi sicurezza", en: "Security alerts", es: "Alertas seguridad", fr: "Alertes sécurité", ru: "Оповещения" }) },
+  ];
+
+  return (
+    <div className="acct-menu-wrap" ref={wrapRef}>
+      <button className="am-acct" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {profile.name}
+        <span className="plan">{planLabel}</span>
+      </button>
+      {open && (
+        <div className="acct-menu" role="menu">
+          <div className="acct-menu-head">
+            <div className="acct-menu-id">
+              <div className="acct-menu-name">{profile.name}</div>
+              <div className="acct-menu-email">{profile.email}</div>
+            </div>
+            <span className={`acct-menu-badge plan-${planLabel.toLowerCase()}`}>{planLabel}</span>
+          </div>
+
+          <div className="acct-menu-plan">
+            <div className="amp-info">
+              <div className="amp-title">{planName}</div>
+              <div className="amp-status">{planStatus}</div>
+            </div>
+            <button className="amp-action" onClick={() => { setOpen(false); onGoToPlans(); }}>
+              {isPremium
+                ? pick5(lang, { it: "Gestisci", en: "Manage", es: "Gestionar", fr: "Gérer", ru: "Управлять" })
+                : pick5(lang, { it: "Vedi i piani", en: "See plans", es: "Ver planes", fr: "Voir les offres", ru: "Тарифы" })} →
+            </button>
+          </div>
+
+          <div className="acct-menu-prefs">
+            <div className="acct-menu-prefs-lab">{pick5(lang, { it: "Preferenze", en: "Preferences", es: "Preferencias", fr: "Préférences", ru: "Настройки" })}</div>
+            {notifRows.map((r) => (
+              <div className="acct-pref-row" key={r.key}>
+                <span>{r.label}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!notif[r.key]}
+                  className={`acct-switch${notif[r.key] ? " on" : ""}`}
+                  onClick={() => toggleNotif(r.key)}
+                >
+                  <span className="acct-switch-knob" />
+                </button>
+              </div>
+            ))}
+            <div className="acct-pref-row">
+              <span>{pick5(lang, { it: "Lingua", en: "Language", es: "Idioma", fr: "Langue", ru: "Язык" })}</span>
+              <select className="acct-lang-select" value={lang} onChange={(e) => onSelectLang(e.target.value as Lang)}>
+                {(["en", "it", "es", "fr", "ru"] as Lang[]).map((l) => (
+                  <option key={l} value={l}>{LANG_LABEL[l]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="acct-menu-foot">
+            <button
+              type="button"
+              className="acct-menu-help"
+              onClick={() => {
+                setOpen(false);
+                const w = window as unknown as { Tawk_API?: { maximize?: () => void } };
+                try { w.Tawk_API?.maximize?.(); } catch {}
+              }}
+            >
+              {pick5(lang, { it: "Aiuto / Supporto", en: "Help / Support", es: "Ayuda", fr: "Aide", ru: "Помощь" })}
+            </button>
+            <button type="button" className="acct-menu-logout" onClick={() => { setOpen(false); onLogout(); }}>
+              {pick5(lang, { it: "Esci", en: "Log out", es: "Cerrar sesión", fr: "Se déconnecter", ru: "Выйти" })}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccountTab({
   profile,
   onOpenDesk,
@@ -7278,11 +7410,13 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "account", "history", "partners", "leaderboard", "match-builder"];
+const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "partners", "leaderboard", "match-builder"];
 
 // BUG-008: shared/deep links sometimes use the singular ("partner"); map common
 // aliases to the canonical tab instead of silently falling back to the board.
-const TAB_ALIASES: Record<string, Tab> = { partner: "partners" };
+// #UI-ACCOUNT-DROPDOWN-0623: la vecchia tab "account" è ora il dropdown; i deep-link
+// legacy (?tab=account, banner ?tab=account&plans=1) atterrano sulla tab Plans.
+const TAB_ALIASES: Record<string, Tab> = { partner: "partners", account: "plans" };
 
 export default function Dashboard() {
   // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
@@ -7292,13 +7426,6 @@ export default function Dashboard() {
     const raw = new URLSearchParams(window.location.search).get("tab");
     const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
     return requested && VALID_TABS.includes(requested) ? requested : "bets";
-  });
-  // Sezione della scheda Account (controllata dal parent così i CTA "Upgrade/Piani"
-  // possono atterrare direttamente sui Piani). Deep-link: /app?plans=1 o ?section=piani.
-  const [accountSection, setAccountSection] = useState<AccountSection>(() => {
-    if (typeof window === "undefined") return "account";
-    const q = new URLSearchParams(window.location.search);
-    return q.get("plans") === "1" || q.get("section") === "piani" ? "piani" : "account";
   });
   // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a /app?tab=… ma `tab` viene
   // letto dall'URL solo al mount: un <Link> alla STESSA route (siamo già su /app)
@@ -7312,9 +7439,7 @@ export default function Dashboard() {
         const raw = url.searchParams.get("tab");
         const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
         if (requested && VALID_TABS.includes(requested)) {
-          // Deep-link ai Piani (CTA upgrade/unlock): /app?tab=account&plans=1
-          const wantsPlans = url.searchParams.get("plans") === "1" || url.searchParams.get("section") === "piani";
-          if (requested === "account") setAccountSection(wantsPlans ? "piani" : "account");
+          // Deep-link legacy /app?tab=account(&plans=1) → l'alias mappa account→plans.
           setTab(requested);
           return true;
         }
@@ -7537,7 +7662,7 @@ export default function Dashboard() {
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
   useEffect(() => { trackEvent("page_view"); }, []);
   useEffect(() => {
-    if (tab === "account") trackEvent("plan_view");
+    if (tab === "plans") trackEvent("plan_view");
   }, [tab]);
 
   // IP-based language detection — only runs when no stored preference exists
@@ -7777,12 +7902,10 @@ export default function Dashboard() {
   };
 
   const focusClientPlans = () => {
-    // Plans live in the Account tab → sezione "piani" (PlansTab). Serve impostare
-    // ANCHE la sezione, altrimenti si atterra sul bento Account e l'anchor #client-plans
-    // non è montato. Switching tabs mounts the target on the next render, so scroll
-    // after a double rAF (one for the setState flush, one for the mounted DOM).
-    setAccountSection("piani");
-    setTab("account");
+    // #UI-ACCOUNT-DROPDOWN-0623: i Piani sono ora una tab di primo livello ("plans").
+    // Switching tabs mounts the target on the next render, so scroll after a double
+    // rAF (one for the setState flush, one for the mounted DOM).
+    setTab("plans");
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         document.getElementById("client-plans")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -7984,7 +8107,8 @@ export default function Dashboard() {
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
     { tab: "partners",    label: tNav.nav_partner },
     // Account spostato in fondo, sotto Partner (richiesta Andrea 2026-06-17).
-    { tab: "account",     label: uiLanguage === "it" ? "Account" : "Account", value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
+    // #UI-ACCOUNT-DROPDOWN-0623: "Account" → "Plans" tab; l'account vive nel dropdown dal pill.
+    { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
   ];
 
   const tUI = TRANSLATIONS[uiLanguage];
@@ -8001,7 +8125,7 @@ export default function Dashboard() {
     { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
     { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
     { tab: "partners",    label: tNav.nav_partner,     glyph: RAIL_GLYPHS["partners"] ?? "#g-desk" },
-    { tab: "account",     label: "Account",            glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
+    { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
   ];
 
   return (
@@ -8058,12 +8182,11 @@ export default function Dashboard() {
                 {item.label}
               </button>
             ))}
-            {/* #UI-PLANS-VISIBILITY-0623: voce diretta "Piani/Plans" — i piani erano
-                sepolti nella scheda Account. Questa porta DIRETTAMENTE alla vista
-                piani (section "piani"), non al bento Account generico. */}
+            {/* #UI-ACCOUNT-DROPDOWN-0623: "Plans" è ora una tab di primo livello
+                (l'account è nel dropdown dal pill). */}
             <button
-              className={tab === "account" && accountSection === "piani" ? "active" : ""}
-              onClick={() => { setAccountSection("piani"); setTab("account"); trackEvent("tab_click", { meta: { tab: "plans" } }); }}
+              className={tab === "plans" ? "active" : ""}
+              onClick={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans" } }); }}
             >
               {pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" })}
             </button>
@@ -8089,18 +8212,17 @@ export default function Dashboard() {
             </div>
 
             {clientProfile ? (
-              /* #UI-LOGOUT-TOPBAR-0623: da loggati il Logout è in topbar (dov'erano
-                 i bottoni di accesso), facile da trovare; la pill nome+piano resta
-                 accanto e porta all'account come prima. */
-              <>
-                <button className="am-acct" onClick={() => setTab("account")}>
-                  {clientProfile.name}
-                  <span className="plan">{profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP"}</span>
-                </button>
-                <button className="am-auth-secondary" onClick={logoutClientProfile}>
-                  {pick5(uiLanguage, { it: "Esci", en: "Logout", es: "Salir", fr: "Quitter", ru: "Выйти" })}
-                </button>
-              </>
+              /* #UI-ACCOUNT-DROPDOWN-0623: il pill apre il menu account a tendina
+                 (account rifatto). Niente più tab Account né Logout separato. */
+              <AccountMenu
+                profile={clientProfile}
+                lang={uiLanguage}
+                planLabel={profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP"}
+                onSaveProfile={handleSettingsSave}
+                onLogout={logoutClientProfile}
+                onGoToPlans={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans", src: "acct-menu" } }); }}
+                onSelectLang={selectLanguage}
+              />
             ) : (
               <>
                 <button className="am-auth-secondary" onClick={() => openAuth("login")}>
@@ -8161,10 +8283,10 @@ export default function Dashboard() {
             <div className="am-deskhead-titles">
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h2>
               <p className="am-sub">
-                {tab === "account" ? (
+                {tab === "plans" ? (
                   uiLanguage === "it"
-                    ? <>Profilo, piano e impostazioni del tuo account.</>
-                    : <>Your account profile, plan and settings.</>
+                    ? <>Scegli il piano giusto per te. Sblocca prediction, edge e Deep Analysis.</>
+                    : <>Choose the plan that fits you. Unlock predictions, edge and Deep Analysis.</>
                 ) : uiLanguage === "it" ? (
                   <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
                 ) : uiLanguage === "es" ? (
@@ -8181,7 +8303,7 @@ export default function Dashboard() {
             {tab === "bets" && (
               <button className="mb-entry" onClick={() => setTab("match-builder")}>Match Builder →</button>
             )}
-            {tab !== "account" && (
+            {tab !== "plans" && (
             <div className="am-statbar">
               <div className="am-kpi">
                 <span className="v">{predictions.length + tennisMatches.length}</span>
@@ -8233,17 +8355,14 @@ export default function Dashboard() {
               tennisIsPlaceholder={tennisIsPlaceholder}
             />
           )}
-          {tab === "account" && (
-            <AccountTab
+          {/* #UI-ACCOUNT-DROPDOWN-0623: la tab "Plans" rende direttamente PlansTab.
+              L'account (profilo/preferenze/logout) è nel dropdown dal pill. */}
+          {tab === "plans" && (
+            <PlansTab
               profile={clientProfile}
               onOpenDesk={() => setTab("bets")}
               onPaymentSubmit={submitCryptoPayment}
               onActivateFree={activateFreePlan}
-              onLogout={logoutClientProfile}
-              onUnlock={() => openAuth("login")}
-              onSave={handleSettingsSave}
-              section={accountSection}
-              onSectionChange={setAccountSection}
             />
           )}
           {tab === "history" && (
@@ -8327,7 +8446,7 @@ export default function Dashboard() {
             key={b.tab}
             className={`bn ${tab === b.tab ? "on" : ""}`}
             aria-current={tab === b.tab ? "page" : undefined}
-            onClick={() => { setTab(b.tab); if (b.tab === "account") setAccountSection("account"); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
+            onClick={() => { setTab(b.tab); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
           >
             <svg aria-hidden="true"><use href={b.glyph} /></svg>
             <span className="bn-l">{b.label}</span>

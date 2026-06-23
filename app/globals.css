@@ -7265,6 +7265,50 @@ button:disabled {
 .brand-logo-light { display: none; }
 :root[data-theme="light"] .brand-logo-dark { display: none; }
 :root[data-theme="light"] .brand-logo-light { display: block; }
+
+/* #UI-ACCOUNT-DROPDOWN-0623: menu account a tendina dal pill (theme-aware via token). */
+.acct-menu-wrap { position: relative; display: inline-flex; }
+.acct-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 1000;
+  width: 300px; max-width: calc(100vw - 24px);
+  background: var(--am-panel); border: 1px solid var(--am-line-2);
+  border-radius: 12px; box-shadow: 0 16px 44px rgba(0,0,0,.30);
+  padding: 6px; display: flex; flex-direction: column; gap: 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+.acct-menu-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 10px 10px 8px; }
+.acct-menu-name { font-weight: 700; font-size: 13px; color: var(--am-text); }
+.acct-menu-email { font-size: 11px; color: var(--am-muted-2); margin-top: 2px; word-break: break-all; }
+.acct-menu-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--am-coral-b); color: var(--am-coral); background: var(--am-coral-dim); flex: 0 0 auto;
+}
+.acct-menu-plan {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px; border-radius: 9px; background: var(--am-inset); border: 1px solid var(--am-line);
+}
+.acct-menu-plan .amp-title { font-size: 12px; font-weight: 700; color: var(--am-text); }
+.acct-menu-plan .amp-status { font-size: 10px; color: var(--am-muted); margin-top: 1px; }
+.acct-menu-plan .amp-action { font-size: 11px; font-weight: 700; color: var(--am-coral); background: none; border: none; cursor: pointer; white-space: nowrap; }
+.acct-menu-plan .amp-action:hover { text-decoration: underline; }
+.acct-menu-prefs { padding: 6px 6px 2px; display: flex; flex-direction: column; gap: 2px; }
+.acct-menu-prefs-lab { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--am-muted-2); padding: 2px 4px; }
+.acct-pref-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 4px; font-size: 12px; color: var(--am-text); }
+.acct-switch {
+  width: 34px; height: 20px; border-radius: 999px; border: 1px solid var(--am-line-2);
+  background: var(--am-inset); position: relative; cursor: pointer; padding: 0; flex: 0 0 auto;
+  transition: background .15s, border-color .15s;
+}
+.acct-switch-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--am-muted); transition: transform .15s, background .15s; }
+.acct-switch.on { background: var(--am-coral); border-color: var(--am-coral); }
+.acct-switch.on .acct-switch-knob { transform: translateX(14px); background: #fff; }
+.acct-lang-select { font-family: inherit; font-size: 12px; padding: 4px 8px; border-radius: 7px; border: 1px solid var(--am-line-2); background: var(--am-inset); color: var(--am-text); cursor: pointer; }
+.acct-menu-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 6px; border-top: 1px solid var(--am-line); margin-top: 2px; }
+.acct-menu-help { font-size: 11px; color: var(--am-muted); background: none; border: none; cursor: pointer; padding: 4px; }
+.acct-menu-help:hover { color: var(--am-coral); }
+.acct-menu-logout { font-size: 11px; font-weight: 700; color: var(--am-text); background: none; border: 1px solid var(--am-line-2); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+.acct-menu-logout:hover { border-color: var(--am-coral-b); color: var(--am-coral); }
+@media (max-width: 600px) { .acct-menu { position: fixed; top: 58px; right: 12px; left: 12px; width: auto; } }
 /* #UI-FOOTER-SOCIAL-0623: icone SVG (currentColor → seguono il tema), pill tonda. */
 .site-footer-social-link,
 .site-footer-social-icon {
