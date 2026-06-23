@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import Link from "next/link";
+import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import {
   PUBLIC_PAID_PLAN,
   type PublicPlanKey,
@@ -4399,7 +4400,6 @@ function GoalscorerBlock({
 
 function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const t = useT();
   const lang = useLang();
   const betLinksEnabled = useBetLinksEnabled();
@@ -4490,25 +4490,16 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
-  // Card-expand (#CARDS-EXPAND-0623): closed shows the essentials, a tap
-  // reveals everything below the confidence meter. Locked cards aren't
-  // collapsible — their overlay opens the gate instead.
-  const collapsible = !p.locked;
-  const toggleExpand = () => { if (collapsible) setExpanded((v) => !v); };
-  const onCardKey = (ev: React.KeyboardEvent) => {
-    if (!collapsible) return;
-    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setExpanded((v) => !v); }
-  };
-  const stop = (ev: React.MouseEvent | React.KeyboardEvent) => ev.stopPropagation();
-  const expandLabel = expanded
-    ? pick5(lang, { it: "Comprimi", en: "Less", es: "Menos", fr: "Réduire", ru: "Свернуть" })
-    : pick5(lang, { it: "Dettagli", en: "Details", es: "Detalles", fr: "Détails", ru: "Подробнее" });
+  // Detail modal: la card della griglia è una sintesi compatta; il click la
+  // "ingrandisce" nella scheda-dettaglio completa. Locked/preview non aprono il
+  // modal (locked → gate via overlay; preview → niente da rivelare).
+  const modalEnabled = !p.locked && !isPreview;
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const modalTitleId = `pdm-${p.match_id}`;
 
-  return (
-    <article className="card"><div
-      className={`pred${collapsible ? " is-collapsible" : ""}${expanded ? " is-open" : ""}`}
-      {...(collapsible ? { role: "button", tabIndex: 0, "aria-expanded": expanded, onClick: toggleExpand, onKeyDown: onCardKey } : {})}
-    >
+  // ── chrome riusabile (griglia + header modal): top + fixture/scorebar ──
+  const headerNode = (
+    <>
       {/* top: sport glyph + league + when (live pulse) */}
       <div className="top">
         <div className="comp">
@@ -4541,7 +4532,12 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           </div>
         )}
       </div>
+    </>
+  );
 
+  // ── readout riusabile (griglia + lead colonna sinistra modal) ──
+  const readoutNode = (
+    <>
       {/* model-vs-market readout / gate overlay */}
       {p.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
@@ -4593,26 +4589,23 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
         </>
       )}
+    </>
+  );
 
-      {/* open/close affordance — visible on the closed card */}
-      {collapsible && (
-        <div className="pred-toggle"><span className="pt-lab">{expandLabel}</span><span className="pt-chev" aria-hidden="true" /></div>
-      )}
-
-      {/* everything below the readout collapses into the expandable region */}
-      {collapsible && (
-      <div className="pred-expand"><div className="pred-expand-in">
-      {e.goals_summary && (
+  // ── corpo completo: vive SOLO nel modal (la griglia mostra solo la sintesi) ──
+  const bodyNode = (
+    <>
+      {!p.locked && e.goals_summary && (
         <GoalsBlock summary={e.goals_summary} markets={e.extra_markets ?? []} lang={lang} />
       )}
 
-      {e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
+      {!p.locked && e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
         <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={p.home_team} awayTeam={p.away_team} lang={lang} />
       )}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
       <div className="why">
-        <details className="why-box" onClick={stop}>
+        <details className="why-box">
           <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
           <p className="why-txt">
             {isPreview
@@ -4622,7 +4615,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               : buildFootballWhy(p, lang)}
           </p>
           {!isPreview && (
-            <button className="why-more" onClick={(ev) => { ev.stopPropagation(); setShowWhy(!showWhy); }}>
+            <button className="why-more" onClick={() => setShowWhy(!showWhy)}>
               {showWhy
                 ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
                 : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
@@ -4631,7 +4624,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </details>
 
         {/* footer action row */}
-        <div className="act" onClick={stop}>
+        <div className="act">
           {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
               altrimenti vecchio CTA. FT → status note. */}
           {!isPreview && (betLinksEnabled || onBetNow) && (isFinished ? (
@@ -4695,7 +4688,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
           {/* Affiliate bonus CTA — demoted into the expansion */}
           {p.affiliate && (
-            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener" onClick={stop}>
+            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
             </a>
           )}
@@ -4838,9 +4831,47 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </div>
         )}
       </div>
-      </div></div>
-      )}
-    </div></article>
+    </>
+  );
+
+  // Locked / preview: nessun modal (gate / niente da rivelare) → resta il layout
+  // inline completo di prima, identico. Le card "vere" diventano una sintesi
+  // compatta cliccabile che apre la scheda-dettaglio.
+  if (!modalEnabled) {
+    return (
+      <article className="card"><div className="pred" {...cardProps}>
+        {headerNode}
+        {readoutNode}
+        {bodyNode}
+      </div></article>
+    );
+  }
+
+  return (
+    <>
+      <article className="card"><div className="pred is-clickable" {...cardProps}>
+        {headerNode}
+        {readoutNode}
+        <div className="pred-more" aria-hidden="true">
+          <span className="pm-lab">{pick5(lang, { it: "Apri scheda completa", en: "Open full card", es: "Abrir ficha completa", fr: "Ouvrir la fiche complète", ru: "Открыть карточку" })}</span>
+          <span className="pm-chev" />
+        </div>
+      </div></article>
+      <PredictionDetailModal
+        open={modalOpen}
+        onClose={closeModal}
+        anchorRect={modalRect}
+        titleId={modalTitleId}
+        lang={lang}
+        title={<>{p.home_team} <span className="pdm-v">v</span> {p.away_team}</>}
+        subtitle={p.league_name || p.league}
+      >
+        <div className="pdm-grid pred">
+          <div className="pdm-lead">{readoutNode}</div>
+          <div className="pdm-detail">{bodyNode}</div>
+        </div>
+      </PredictionDetailModal>
+    </>
   );
 }
 
@@ -4855,7 +4886,6 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const t = useT();
@@ -4956,23 +4986,13 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
-  // Card-expand (#CARDS-EXPAND-0623): same behaviour as the football card.
-  const collapsible = !m.locked;
-  const toggleExpand = () => { if (collapsible) setExpanded((v) => !v); };
-  const onCardKey = (ev: React.KeyboardEvent) => {
-    if (!collapsible) return;
-    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setExpanded((v) => !v); }
-  };
-  const stop = (ev: React.MouseEvent | React.KeyboardEvent) => ev.stopPropagation();
-  const expandLabel = expanded
-    ? pick5(lang, { it: "Comprimi", en: "Less", es: "Menos", fr: "Réduire", ru: "Свернуть" })
-    : pick5(lang, { it: "Dettagli", en: "Details", es: "Detalles", fr: "Détails", ru: "Подробнее" });
+  // Detail modal (stesso shell del calcio). Locked/preview restano inline.
+  const modalEnabled = !m.locked && !isPreview;
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const modalTitleId = `pdm-t-${m.id}`;
 
-  return (
-    <article className="card tennis"><div
-      className={`pred tennis${collapsible ? " is-collapsible" : ""}${expanded ? " is-open" : ""}`}
-      {...(collapsible ? { role: "button", tabIndex: 0, "aria-expanded": expanded, onClick: toggleExpand, onKeyDown: onCardKey } : {})}
-    >
+  const headerNode = (
+    <>
       {/* top: surface glyph + tournament + when */}
       <div className="top">
         <div className="comp">
@@ -5004,7 +5024,11 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           </div>
         )}
       </div>
+    </>
+  );
 
+  const readoutNode = (
+    <>
       {/* verdict line + rows / gate overlay */}
       {m.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
@@ -5055,18 +5079,14 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
         </>
       )}
+    </>
+  );
 
-      {/* open/close affordance — visible on the closed card */}
-      {collapsible && (
-        <div className="pred-toggle"><span className="pt-lab">{expandLabel}</span><span className="pt-chev" aria-hidden="true" /></div>
-      )}
-
-      {/* everything below the readout collapses into the expandable region */}
-      {collapsible && (
-      <div className="pred-expand"><div className="pred-expand-in">
+  const bodyNode = (
+    <>
       {/* WHY — Elo readout + expandable analysis */}
       <div className="why">
-        <details className="why-box" onClick={stop}>
+        <details className="why-box">
           <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
           <p className="why-txt">
             {isPreview
@@ -5076,7 +5096,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
               : buildTennisWhy(m, lang)}
           </p>
           {!isPreview && (
-            <button className="why-more" onClick={(ev) => { ev.stopPropagation(); void handleWhyClick(); }}>
+            <button className="why-more" onClick={handleWhyClick}>
               {loadingAnalysis
                 ? pick5(lang, { it: "Carico l'analisi…", en: "Loading analysis…", es: "Cargando análisis…", fr: "Chargement de l'analyse…", ru: "Загрузка анализа…" })
                 : showWhy
@@ -5087,7 +5107,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </details>
 
         {/* footer action row */}
-        <div className="act" onClick={stop}>
+        <div className="act">
           {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : betLinksEnabled ? (
@@ -5133,7 +5153,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
           {/* Affiliate bonus CTA + pick-of-day — demoted into the expansion */}
           {m.affiliate && (
-            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener" onClick={stop}>
+            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
             </a>
           )}
@@ -5187,9 +5207,44 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
         )}
       </div>
-      </div></div>
-      )}
-    </div></article>
+    </>
+  );
+
+  if (!modalEnabled) {
+    return (
+      <article className="card tennis"><div className="pred tennis" {...cardProps}>
+        {headerNode}
+        {readoutNode}
+        {bodyNode}
+      </div></article>
+    );
+  }
+
+  return (
+    <>
+      <article className="card tennis"><div className="pred tennis is-clickable" {...cardProps}>
+        {headerNode}
+        {readoutNode}
+        <div className="pred-more" aria-hidden="true">
+          <span className="pm-lab">{pick5(lang, { it: "Apri scheda completa", en: "Open full card", es: "Abrir ficha completa", fr: "Ouvrir la fiche complète", ru: "Открыть карточку" })}</span>
+          <span className="pm-chev" />
+        </div>
+      </div></article>
+      <PredictionDetailModal
+        open={modalOpen}
+        onClose={closeModal}
+        anchorRect={modalRect}
+        titleId={modalTitleId}
+        lang={lang}
+        title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
+        subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
+      >
+        <div className="pdm-grid pred tennis">
+          <div className="pdm-lead">{readoutNode}</div>
+          <div className="pdm-detail">{bodyNode}</div>
+        </div>
+      </PredictionDetailModal>
+    </>
   );
 }
 

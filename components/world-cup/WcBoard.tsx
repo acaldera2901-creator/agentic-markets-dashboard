@@ -7,13 +7,14 @@
 // pick + why, premium additionally gets the Deep Analysis panel (form, venue,
 // squad, lambdas, market). Zero new gate logic — every field arrives already
 // projected; missing fields just don't render (fail-soft).
-import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } from "@/lib/why-text";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { SportIcon } from "@/app/components/sport-icon";
+import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import GoalscorerBlock from "@/components/GoalscorerBlock";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 
@@ -357,7 +358,6 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
 
 function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: LiveScore | null; betLinksEnabled?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const home = canonTeam(p.home_team) || "Home";
   const away = canonTeam(p.away_team) || "Away";
   const probs = parseProbs(p.notes);
@@ -448,22 +448,14 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
   const scStatus = isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : null;
   const scLabel = isLive ? `LIVE${live?.minute != null ? ` ${live.minute}'` : ""}` : isPaused ? "HT" : isFinished ? "FT" : null;
 
-  // Card-expand (#CARDS-EXPAND-0623): same behaviour as the football/tennis
-  // cards. Locked cards aren't collapsible — their overlay links to sign-in.
-  const collapsible = !p.locked;
-  const toggleExpand = () => { if (collapsible) setExpanded((v) => !v); };
-  const onCardKey = (ev: ReactKeyboardEvent) => {
-    if (!collapsible) return;
-    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setExpanded((v) => !v); }
-  };
-  const stop = (ev: ReactMouseEvent | ReactKeyboardEvent) => ev.stopPropagation();
-  const expandLabel = expanded ? (lang === "it" ? "Comprimi" : "Less") : (lang === "it" ? "Dettagli" : "Details");
+  // Detail modal (stesso shell di calcio/tennis). Le card locked non lo aprono
+  // (gate via overlay → /app); le card vere diventano una sintesi cliccabile.
+  const modalEnabled = !p.locked;
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const modalTitleId = `pdm-wc-${p.id}`;
 
-  return (
-    <article className="card"><div
-      className={`pred${collapsible ? " is-collapsible" : ""}${expanded ? " is-open" : ""}`}
-      {...(collapsible ? { role: "button", tabIndex: 0, "aria-expanded": expanded, onClick: toggleExpand, onKeyDown: onCardKey } : {})}
-    >
+  const headerNode = (
+    <>
       {/* top: World Cup glyph + league/paper badge + when (live pulse) */}
       <div className="top">
         <div className="comp">
@@ -501,7 +493,12 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
           </div>
         )}
       </div>
+    </>
+  );
 
+  // readout (mvm + conf/flat) — griglia + lead colonna sinistra modal
+  const readoutNode = (
+    <>
       {/* outcome rows / gate overlay */}
       {p.locked ? (
         <Link href="/app" className="lock-overlay wc-lock" role="button">
@@ -541,11 +538,14 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
                   : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
             </span>
           )}
-          {/* open/close affordance — visible on the closed card */}
-          <div className="pred-toggle"><span className="pt-lab">{expandLabel}</span><span className="pt-chev" aria-hidden="true" /></div>
+        </>
+      )}
+    </>
+  );
 
-          {/* everything below the readout collapses into the expandable region */}
-          <div className="pred-expand"><div className="pred-expand-in">
+  // corpo completo (gol · marcatori · why · deep analysis) — solo nel modal
+  const bodyNode = (
+    <>
           {goals && (
             <div className="goals-block">
               <div className="goals-head">
@@ -578,7 +578,7 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
             </dl>
 
             {/* footer action row — mirrors the football .act */}
-            <div className="act" onClick={stop}>
+            <div className="act">
               <button type="button" className="open" onClick={() => setShowWhy((v) => !v)}>
                 {showWhy ? (lang === "it" ? "Nascondi" : "Hide") : (lang === "it" ? "Mostra" : "Show")} <span className="ar">→</span>
               </button>
@@ -631,10 +631,44 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
               </div>
             )}
           </div>
-          </div></div>
-        </>
-      )}
-    </div></article>
+    </>
+  );
+
+  // Locked → resta inline (overlay gate). Card vera → sintesi compatta + modal.
+  if (!modalEnabled) {
+    return (
+      <article className="card"><div className="pred" {...cardProps}>
+        {headerNode}
+        {readoutNode}
+      </div></article>
+    );
+  }
+
+  return (
+    <>
+      <article className="card"><div className="pred is-clickable" {...cardProps}>
+        {headerNode}
+        {readoutNode}
+        <div className="pred-more" aria-hidden="true">
+          <span className="pm-lab">{lang === "it" ? "Apri scheda completa" : "Open full card"}</span>
+          <span className="pm-chev" />
+        </div>
+      </div></article>
+      <PredictionDetailModal
+        open={modalOpen}
+        onClose={closeModal}
+        anchorRect={modalRect}
+        titleId={modalTitleId}
+        lang={lang}
+        title={p.home_team && p.away_team ? <>{home} <span className="pdm-v">v</span> {away}</> : p.event_name}
+        subtitle={<>World Cup{p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}{p.is_paper ? " · paper" : ""}</>}
+      >
+        <div className="pdm-grid pred">
+          <div className="pdm-lead">{readoutNode}</div>
+          <div className="pdm-detail">{bodyNode}</div>
+        </div>
+      </PredictionDetailModal>
+    </>
   );
 }
 

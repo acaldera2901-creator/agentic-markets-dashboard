@@ -7317,61 +7317,151 @@ button:disabled {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   CARD EXPAND — #CARDS-EXPAND-0623
-   Le prediction card erano affollate (tutto sempre aperto). Ora lo stato CHIUSO
-   mostra solo l'essenziale (sport·lega·orario, fixture, readout Mercato/Modello/
-   Edge, Confidenza) e TUTTO il resto (gol, marcatori, schedina, "Perché", deep
-   analysis, CTA bet, badge) vive in una regione espandibile. La CARD INTERA è
-   cliccabile (role=button) e apre/chiude con animazione fluida. I controlli
-   interni (bet menu, link, gate) fermano la propagazione → non triggerano
-   l'espansione. Presentation-only: nessun dato/probabilità/prop toccati.
-   Tecnica: grid-template-rows 0fr→1fr (anima l'altezza senza max-height fissa,
-   niente salto di layout). Il chevron ruota 180°.
+   PREDICTION DETAIL MODAL — #CARDS-DETAIL-MODAL-0623
+   La card della griglia è una SINTESI compatta; al click si "ingrandisce" in una
+   scheda-dettaglio completa centrata (~75% viewport) con backdrop oscurato.
+   Animazione "zoom dalla posizione": il pannello parte dalla bounding-rect della
+   card (transform via JS) e cresce fino all'identità (~280ms ease-out).
+   POV: dossier-strumento (non card lucida) → superficie scura, radius del pannello
+   16px > 12px della card (gerarchia via radius), hairline verde brand in cima a
+   marcare lo stato "aperto/attivo", accent verde razionato. Niente glow/blob.
    ════════════════════════════════════════════════════════════════════════════ */
-/* la card chiusa invita al tap; l'hover-lift esistente (.pred:hover) resta. */
-.pred.is-collapsible { cursor: pointer; }
-.pred.is-collapsible:focus-visible {
-  outline: 2px solid var(--am-coral); outline-offset: 2px; border-radius: 12px;
-}
-
-/* affordance: chevron in basso a destra, sempre visibile sulla card chiusa */
-.pred .pred-toggle {
+/* la card è cliccabile → affordance "Apri scheda completa" in basso */
+.pred.is-clickable { cursor: pointer; }
+.pred.is-clickable:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; border-radius: 12px; }
+.pred.is-clickable:hover { border-color: var(--am-coral-b); }
+.pred .pred-more {
   display: flex; align-items: center; justify-content: flex-end; gap: 7px;
-  margin-top: 2px; padding-top: 4px;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--am-line);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase;
   color: var(--am-muted-2); user-select: none;
 }
-.pred .pred-toggle .pt-lab { transition: color 0.15s; }
-.pred .pred-toggle .pt-chev {
+.pred.is-clickable:hover .pred-more, .pred.is-clickable:focus-visible .pred-more { color: var(--am-text); }
+.pred .pred-more .pm-chev {
   flex: 0 0 auto; width: 0; height: 0;
-  border-left: 5px solid transparent; border-right: 5px solid transparent;
-  border-top: 6px solid var(--am-coral);
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--am-coral);
+  transition: transform 0.18s ease-out;
 }
-.pred.is-collapsible:hover .pred-toggle .pt-lab,
-.pred.is-collapsible:focus-visible .pred-toggle .pt-lab { color: var(--am-text); }
-.pred.is-open .pred-toggle .pt-chev { transform: rotate(180deg); }
+.pred.is-clickable:hover .pred-more .pm-chev { transform: translateX(2px); }
 
-/* la regione espandibile — anima l'altezza via grid-template-rows */
-.pred .pred-expand {
-  display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+/* ── backdrop ── */
+.pdm-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4vh 4vw;
+  background: rgba(6, 8, 11, 0);
+  backdrop-filter: blur(0px);
+  transition: background 0.28s ease-out, backdrop-filter 0.28s ease-out;
 }
-.pred.is-open .pred-expand { grid-template-rows: 1fr; }
-.pred .pred-expand > .pred-expand-in {
-  min-height: 0; overflow: hidden;
-  opacity: 0; transform: translateY(-4px);
-  transition: opacity 0.2s ease-out, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.pred.is-open .pred-expand > .pred-expand-in { opacity: 1; transform: none; }
-/* il primo blocco dentro la regione stacca dalla confidenza con un filo di aria */
-.pred .pred-expand-in > :first-child { margin-top: 12px; }
+.pdm-backdrop.is-shown { background: rgba(6, 8, 11, 0.62); backdrop-filter: blur(3px); }
 
-/* reduced-motion: niente animazione, solo toggle istantaneo (gate bible §3.5) */
+/* ── pannello: ~75% viewport, scroll interno ── */
+.pdm-panel {
+  position: relative;
+  width: min(940px, 92vw); max-width: 940px; max-height: 85vh;
+  display: flex; flex-direction: column;
+  background: var(--am-panel);
+  border: 1px solid var(--am-line-2);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px -24px rgba(0,0,0,0.85), 0 2px 0 var(--am-hi) inset;
+  overflow: hidden;
+  opacity: 0;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease-out;
+  will-change: transform, opacity;
+}
+.pdm-panel:focus { outline: none; }
+.pdm-panel.is-shown { opacity: 1; }
+/* hairline verde brand in cima = "scheda attiva" */
+.pdm-panel::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--am-coral), var(--am-coral-2));
+}
+
+/* ── head ── */
+.pdm-head {
+  flex: 0 0 auto;
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--am-line);
+}
+.pdm-titlewrap { min-width: 0; }
+.pdm-title {
+  margin: 0; font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px; line-height: 1.15; font-weight: 700; color: var(--am-text);
+  letter-spacing: -0.01em;
+}
+.pdm-title .pdm-v { color: var(--am-muted-2); font-weight: 400; margin: 0 6px; font-size: 0.78em; }
+.pdm-sub {
+  margin-top: 5px; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--am-muted-2);
+}
+.pdm-close {
+  flex: 0 0 auto; margin-left: auto;
+  width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--am-line-2); border-radius: 9px; background: var(--am-inset);
+  color: var(--am-muted); font-size: 22px; line-height: 1; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pdm-close:hover { color: var(--am-text); border-color: var(--am-coral-b); }
+.pdm-close:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
+
+/* ── body: scroll interno + griglia 2 colonne su desktop ── */
+.pdm-body { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px 22px; -webkit-overflow-scrolling: touch; }
+/* .pdm-grid riusa la classe .pred → tutte le regole `.pred .mvm/.why/.goals-block/…`
+   si applicano al contenuto del modal senza duplicare CSS. Qui neutralizziamo la
+   chrome della card (sfondo/bordo/ombra/padding/hover) e la riusiamo come GRIGLIA. */
+.pdm-grid.pred {
+  display: grid; grid-template-columns: minmax(0, 0.62fr) minmax(0, 1fr); gap: 24px; align-items: start;
+  background: none; border: none; border-radius: 0; box-shadow: none; padding: 0; cursor: default;
+  transition: none;
+}
+.pdm-grid.pred:hover { border: none; box-shadow: none; transform: none; }
+.pdm-lead { position: sticky; top: 0; min-width: 0; }
+/* nel modal la readout non è cliccabile: niente cursor pointer ereditato dal .mvm.sel */
+.pdm-lead .mvm.sel { cursor: default; }
+.pdm-detail { min-width: 0; }
+/* il why dentro il modal non ha più bisogno del bordo-top separatore: il body lo incornicia già */
+.pdm-detail .why { margin-top: 4px; }
+
+/* ── sezione "Mercati extra — in arrivo" (placeholder onesto, niente numeri) ── */
+.pdm-soon {
+  margin-top: 20px; padding: 14px 16px;
+  border: 1px dashed var(--am-line-2); border-radius: 12px;
+  background: var(--am-inset);
+}
+.pdm-soon-head { display: flex; align-items: center; gap: 10px; }
+.pdm-soon-title {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--am-muted); font-weight: 600;
+}
+.pdm-soon-tag {
+  margin-left: auto; flex: 0 0 auto;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+  padding: 3px 8px; border-radius: 6px;
+  color: var(--am-amber); border: 1px solid color-mix(in oklab, var(--am-amber) 34%, transparent);
+  background: color-mix(in oklab, var(--am-amber) 10%, transparent);
+}
+.pdm-soon-txt { margin: 8px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--am-muted-2); max-width: 62ch; }
+
+/* ── mobile ≤760px: sheet quasi a tutto schermo, 1 colonna ── */
+@media (max-width: 760px) {
+  .pdm-backdrop { padding: 0; align-items: flex-end; }
+  .pdm-panel {
+    width: 100vw; max-width: 100vw; max-height: 94vh;
+    border-radius: 16px 16px 0 0; border-left: none; border-right: none; border-bottom: none;
+  }
+  .pdm-head { padding: 16px 16px 12px; }
+  .pdm-title { font-size: 19px; }
+  .pdm-body { padding: 16px 16px 22px; }
+  .pdm-grid.pred { grid-template-columns: 1fr; gap: 18px; }
+  .pdm-lead { position: static; }
+}
+
+/* ── reduced-motion: niente zoom, apertura istantanea (gate bible §3.5) ── */
 @media (prefers-reduced-motion: reduce) {
-  .pred .pred-expand,
-  .pred .pred-expand > .pred-expand-in,
-  .pred .pred-toggle .pt-chev { transition: none; }
-  .pred .pred-expand > .pred-expand-in { transform: none; }
+  .pdm-backdrop, .pdm-panel, .pred .pred-more .pm-chev { transition: none; }
 }
