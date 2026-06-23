@@ -7242,14 +7242,22 @@ button:disabled {
   border: 1px solid var(--am-line-2); border-radius: 4px; padding: 1px 6px;
   font-weight: 800; color: var(--am-muted);
 }
-.site-footer-social { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.site-footer-social { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .site-footer-social-lab { text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
-.site-footer-social-link {
-  color: var(--am-muted); text-decoration: none; font-weight: 700;
-  padding: 3px 9px; border: 1px solid var(--am-line-2); border-radius: 999px;
+/* #UI-FOOTER-SOCIAL-0623: icone SVG (currentColor → seguono il tema), pill tonda. */
+.site-footer-social-link,
+.site-footer-social-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0;
+  color: var(--am-muted); text-decoration: none;
+  border: 1px solid var(--am-line-2); border-radius: 999px;
   transition: color .14s, border-color .14s;
 }
+.site-footer-social-link svg,
+.site-footer-social-icon svg { width: 15px; height: 15px; display: block; }
 .site-footer-social-link:hover { color: var(--am-coral); border-color: var(--am-coral-b); }
+/* Telegram: icona presente ma non cliccabile finché non c'è il canale community. */
+.site-footer-social-icon { opacity: .45; cursor: default; }
 
 /* ── Responsive ── */
 @media (max-width: 880px) {

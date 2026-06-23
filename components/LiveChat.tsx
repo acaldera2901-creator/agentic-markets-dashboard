@@ -1,50 +1,42 @@
 "use client";
 
-// components/LiveChat.tsx (#UI-LIVECHAT-0623)
-// Scaffold per la live chat (talk.to). L'account non è ancora pronto, quindi
-// questo componente è INERTE finché non viene settata la env pubblica:
+// components/LiveChat.tsx (#UI-LIVECHAT-0623 → Tawk.to live)
+// Widget live chat Tawk.to. L'id del widget è PUBBLICO (lo snippet ufficiale di
+// Tawk.to gira lato client e l'id è visibile nel sorgente per design) → non è un
+// segreto e può stare nel codice. Caricato dinamicamente solo lato client al
+// mount, con guard anti-doppia-iniezione (fast-refresh / doppio mount).
 //
-//   NEXT_PUBLIC_TALKTO_ID   (id del widget talk.to)
-//
-// Senza valore: NON renderizza nulla, NON carica script, NON fa richieste di
-// rete e NON genera errori. Quando l'id sarà disponibile, basta settare la env
-// e ridistribuire: lo snippet talk.to viene iniettato lato client.
-//
-// NOTA CSP: quando si attiva, aggiungere i domini talk.to a script-src/connect-src
-// in next.config.ts (oggi la CSP è Report-Only, quindi non blocca nulla; va
-// promossa con i domini corretti prima di passare a enforcing).
-//
-// Nessuno snippet/segreto è hardcoded qui.
+// NOTA CSP: i domini Tawk.to sono aggiunti a script-src/connect-src/img-src/
+// frame-src in next.config.ts. Oggi la CSP è Report-Only (non blocca), ma è
+// pronta per l'enforcing.
 
 import { useEffect } from "react";
 
-const TALKTO_ID = process.env.NEXT_PUBLIC_TALKTO_ID;
+// embed.tawk.to/<propertyId>/<widgetId> — account Tawk.to BetRedge.
+const TAWK_SRC = "https://embed.tawk.to/6a3ac896707bc21d4a185b17/1jrqpv3j1";
 
 export function LiveChat() {
   useEffect(() => {
-    // Flag spento (env non settata): no-op assoluto, nessuna richiesta di rete.
-    if (!TALKTO_ID) return;
-    // Evita doppia iniezione (es. fast-refresh o doppio mount).
-    if (document.getElementById("talkto-widget")) return;
+    if (typeof window === "undefined") return;
+    // Già iniettato (HMR / doppio mount): no-op.
+    if (document.getElementById("tawkto-widget")) return;
 
-    // Snippet ufficiale talk.to caricato dinamicamente SOLO quando l'id esiste.
-    // L'id arriva dalla env pubblica, non è hardcoded.
+    // Bootstrap ufficiale Tawk.to.
+    const w = window as unknown as { Tawk_API?: unknown; Tawk_LoadStart?: Date };
+    w.Tawk_API = w.Tawk_API || {};
+    w.Tawk_LoadStart = new Date();
+
     const s = document.createElement("script");
-    s.id = "talkto-widget";
+    s.id = "tawkto-widget";
     s.async = true;
-    s.src = `https://widgets.talk.to/${encodeURIComponent(TALKTO_ID)}.js`;
+    s.src = TAWK_SRC;
+    s.charset = "UTF-8";
+    s.setAttribute("crossorigin", "*");
     document.body.appendChild(s);
-
-    return () => {
-      // Cleanup difensivo in dev/HMR.
-      document.getElementById("talkto-widget")?.remove();
-    };
+    // Niente cleanup: Tawk inietta il proprio launcher/iframe; il guard sull'id
+    // basta a evitare doppie iniezioni. Il componente è montato una volta a pagina.
   }, []);
 
-  // Flag spento: renderizza nulla (stato inerte) — niente launcher fantasma.
-  if (!TALKTO_ID) return null;
-
-  // Con la env attiva il widget talk.to porta il suo launcher; non aggiungiamo
-  // un bottone duplicato. Manteniamo un nodo segnaposto per eventuali hook futuri.
-  return <div id="live-chat-root" aria-hidden="true" />;
+  // Il widget Tawk porta il proprio launcher: non renderizziamo nulla qui.
+  return null;
 }

@@ -8,14 +8,17 @@ const CSP_REPORT_ONLY = [
   "default-src 'self'",
   // Next.js injects inline bootstrap + hydration scripts; 'unsafe-eval' kept for
   // dev/runtime. Tighten to nonces when promoting to enforcing.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
+  // Tawk.to live-chat widget loads its script/styles/fonts/iframe from *.tawk.to.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to",
+  "style-src 'self' 'unsafe-inline' https://*.tawk.to",
   "img-src 'self' data: https:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://*.tawk.to",
   // Browser talks only to our own origin (the server proxies external APIs).
-  // Supabase is allowed for any client SDK usage; widen here if a real CSP
-  // report shows a legitimate blocked origin.
-  "connect-src 'self' https://*.supabase.co",
+  // Supabase is allowed for any client SDK usage; Tawk.to needs https+wss for the
+  // live chat channel; widen here if a real CSP report shows a legitimate origin.
+  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to",
+  // Tawk.to renders its chat UI inside an iframe from *.tawk.to.
+  "frame-src 'self' https://*.tawk.to",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",
