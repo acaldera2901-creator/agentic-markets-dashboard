@@ -43,6 +43,11 @@ const nextConfig: NextConfig = {
   // Pin the workspace root so dev/build always resolve from this directory
   // (a stray lockfile above the repo can otherwise make Next mis-infer it).
   turbopack: { root: __dirname },
+  // #UI-SCROLLTOP-0623: route navigations land at the top (and restore the
+  // remembered position on back/forward) instead of inheriting the previous
+  // scroll. Supported in this Next version (config-schema: experimental
+  // .scrollRestoration). Presentational only.
+  experimental: { scrollRestoration: true },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

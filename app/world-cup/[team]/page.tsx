@@ -4,6 +4,7 @@
 // team's World Cup fixtures. No money fields, nothing gated here.
 import type { Metadata } from "next";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
+import { SiteFooter } from "@/components/SiteFooter";
 import { notFound } from "next/navigation";
 import { dbQuery } from "@/lib/db";
 import { fetchWcFixtures, fetchTeamGroupMap, teamSlug, teamNeedleFromSlug, canonTeamSlug } from "@/lib/world-cup";
@@ -199,6 +200,8 @@ export default async function TeamPage(
         )}
       </section>
       </main>
+      {/* #UI-FOOTER-UNIFIED-0623: footer condiviso anche sulle pagine squadra WC */}
+      <SiteFooter />
     </div>
   );
 }

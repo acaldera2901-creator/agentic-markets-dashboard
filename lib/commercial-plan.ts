@@ -5,17 +5,21 @@ export type SupportedLang = "it" | "en" | "es" | "fr" | "ru";
 // I due piani pagati pubblici (#PLANS-3TIER-1).
 // base = BetRedge Base (vetrina top 5/sport); premium = BetRedge Pro (tutto).
 export const PUBLIC_PAID_PLANS = {
+  // #UI-USD-DISPLAY-0623: prezzi presentati in USD ($) lato pubblico. SOLO display:
+  // `amountUsdt` (l'importo addebitato in USDT) NON cambia, così la logica di
+  // checkout/pricing resta identica. Il rail crypto (USDT TRC20) resta indicato a
+  // parte nella PlansTab.
   base: {
     key: "base" as const,
     amountUsdt: 19.9,
     label: { it: "BetRedge Base", en: "BetRedge Base" },
-    priceLabel: { it: "19.90 USDT/mese", en: "19.90 USDT/month" },
+    priceLabel: { it: "$19.90/mese", en: "$19.90/month" },
   },
   premium: {
     key: "premium" as const,
     amountUsdt: 49.9,
     label: { it: "BetRedge Pro", en: "BetRedge Pro" },
-    priceLabel: { it: "49.90 USDT/mese", en: "49.90 USDT/month" },
+    priceLabel: { it: "$49.90/mese", en: "$49.90/month" },
   },
 } as const;
 

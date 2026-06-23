@@ -19,6 +19,8 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { PlaceBetMenu } from "@/components/PlaceBetMenu";
 import { HouseBanner } from "@/components/HouseBanner";
+import { SiteFooter } from "@/components/SiteFooter";
+import { LiveChat } from "@/components/LiveChat";
 import { TrackRecordView } from "@/components/track-record/TrackRecordView";
 import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
@@ -2650,11 +2652,12 @@ function BetSlip({ selection, onClear }: { selection: SlipSelection | null; onCl
           <div className="ticket-summary">
             <div>
               <span>{t.betslip_return}</span>
-              <strong>{returns.toFixed(2)}€</strong>
+              {/* #UI-USD-DISPLAY-0623: simbolo valuta in USD ($), display-only */}
+              <strong>${returns.toFixed(2)}</strong>
             </div>
             <div>
               <span>EV</span>
-              <strong className={ev >= 0 ? "text-green-300" : "text-red-300"}>{ev >= 0 ? "+" : ""}{ev.toFixed(2)}€</strong>
+              <strong className={ev >= 0 ? "text-green-300" : "text-red-300"}>{ev >= 0 ? "+" : ""}${ev.toFixed(2)}</strong>
             </div>
           </div>
           <button className={`place-live ${isFootballLive ? "is-review" : "is-disabled"}`}>
@@ -2804,23 +2807,23 @@ function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: ()
   };
   const levels = pick5(lang, {
     it: [
-      { name: "Free", price: "€0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
+      { name: "Free", price: "$0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
       { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
     ],
     en: [
-      { name: "Free", price: "€0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
+      { name: "Free", price: "$0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
       { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
     ],
     es: [
-      { name: "Free", price: "€0", desc: "Perfil, idioma, vista previa e historial público. Sin señales operativas.", cta: "Crear perfil", action: onCreate },
+      { name: "Free", price: "$0", desc: "Perfil, idioma, vista previa e historial público. Sin señales operativas.", cta: "Crear perfil", action: onCreate },
       { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tenis live, football research, Best Bets, explicaciones y track record.", cta: "Ver plan", action: onPlans },
     ],
     fr: [
-      { name: "Free", price: "€0", desc: "Profil, langue, aperçu et historique public. Aucun signal opérationnel.", cta: "Créer un profil", action: onCreate },
+      { name: "Free", price: "$0", desc: "Profil, langue, aperçu et historique public. Aucun signal opérationnel.", cta: "Créer un profil", action: onCreate },
       { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explications et track record.", cta: "Voir le plan", action: onPlans },
     ],
     ru: [
-      { name: "Free", price: "€0", desc: "Профиль, язык, предпросмотр и публичная история. Без рабочих сигналов.", cta: "Создать профиль", action: onCreate },
+      { name: "Free", price: "$0", desc: "Профиль, язык, предпросмотр и публичная история. Без рабочих сигналов.", cta: "Создать профиль", action: onCreate },
       { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, пояснения и track record.", cta: "Смотреть план", action: onPlans },
     ],
   });
@@ -3421,7 +3424,7 @@ function PlansTab({
               <p className="eyebrow">Free</p>
               <h4>BetRedge Free</h4>
             </div>
-            <span>€0</span>
+            <span>$0</span>
           </div>
           <p className="plan-description">
             {pick5(lang, {
@@ -3433,7 +3436,7 @@ function PlansTab({
             })}
           </p>
           <div className="price-line">
-            <strong>€0</strong>
+            <strong>$0</strong>
             <span>{pick5(lang, { it: "Per sempre", en: "Forever", es: "Para siempre", fr: "Pour toujours", ru: "Навсегда" })}</span>
           </div>
           <div className="plan-core-line">
@@ -3958,7 +3961,9 @@ function ClientAuthModal({
             </label>
             <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
               <input type="checkbox" checked={tosOk} onChange={(e) => setTosOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
-              <span>{t.auth_tos_pre}<Link href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_terms}</Link>{t.auth_tos_mid}<Link href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_privacy}</Link>{t.auth_tos_post}</span>
+              {/* #UI-TERMS-INSITE-0623: /terms e /privacy sono route interne →
+                  navigano nel sito (back funziona). Niente più target="_blank". */}
+              <span>{t.auth_tos_pre}<Link href="/terms" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_terms}</Link>{t.auth_tos_mid}<Link href="/privacy" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_privacy}</Link>{t.auth_tos_post}</span>
             </label>
           </div>
         )}
@@ -6628,9 +6633,14 @@ function FAQTab() {
 function ClientAreaTab({
   profile,
   onActivateFree,
+  onUpgrade,
 }: {
   profile: ClientProfile | null;
   onActivateFree: () => void;
+  // #UI-PLANS-CTA-0623: porta DIRETTAMENTE alla vista piani. Prima un onUpgrade
+  // era referenziato in ProfilePanel ma ClientAreaTab non lo accettava/inoltrava
+  // → il bottone Upgrade era morto. Ora è cablato fino al cambio di sezione piani.
+  onUpgrade: () => void;
 }) {
   const lang = useLang();
   const t = useT();
@@ -6785,6 +6795,14 @@ function ClientAreaTab({
           <code>{profile.txHash.length > 24 ? `${profile.txHash.slice(0, 12)}...${profile.txHash.slice(-8)}` : profile.txHash}</code>
         </div>
       )}
+      {/* #UI-PLANS-CTA-0623: CTA upgrade diretto ai piani per chi non è ancora Pro */}
+      {!profileHasPremium(profile) && (
+        <button className="plan-action" type="button" onClick={onUpgrade}>
+          {profileHasAccess(profile)
+            ? pick5(lang, { it: "Passa a Pro", en: "Upgrade to Pro", es: "Pasar a Pro", fr: "Passer à Pro", ru: "Перейти на Pro" })
+            : pick5(lang, { it: "Vedi i piani", en: "See plans", es: "Ver planes", fr: "Voir les offres", ru: "Смотреть тарифы" })}
+        </button>
+      )}
       {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && profileHasAccess(profile) && (
         <button className="btn-secondary" type="button" onClick={openBillingPortal}>
           {pick5(lang, { it: "Gestisci abbonamento", en: "Manage subscription", es: "Gestionar suscripción", fr: "Gérer l'abonnement", ru: "Управление подпиской" })}
@@ -6855,7 +6873,7 @@ function AccountTab({
       </div>
       {section === "account" && (
         <div className="account-bento">
-          <div className="ab-plan"><ClientAreaTab profile={profile} onActivateFree={onActivateFree} /></div>
+          <div className="ab-plan"><ClientAreaTab profile={profile} onActivateFree={onActivateFree} onUpgrade={() => onSectionChange("piani")} /></div>
           <div className="ab-settings"><SettingsTab profile={profile} onUnlock={onUnlock} onSave={onSave} /></div>
           {profile && (
             <div className="am-card ab-logout p-4 flex items-center justify-between gap-3">
@@ -7339,6 +7357,34 @@ export default function Dashboard() {
     try { localStorage.setItem("agentic-theme", next); } catch {}
     trackEvent("theme_change", { meta: { theme: next } });
   };
+  // #THEME-CONSISTENCY-0623: segue il tema di sistema SOLO se l'utente non ha
+  // mai scelto manualmente (agentic-theme vuoto). La scelta esplicita vince e
+  // persiste. Mantiene il desk allineato a home e /community sullo stesso
+  // contratto. Presentazionale, nessuna logica di modello/gate.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = (e: MediaQueryListEvent) => {
+      let chosen = "";
+      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+      if (chosen === "light" || chosen === "dark") return;
+      const next: "dark" | "light" = e.matches ? "light" : "dark";
+      setTheme(next);
+      document.documentElement.setAttribute("data-theme", next);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // #UI-SCROLLTOP-0623: cambiare scheda è solo client-state (setTab), quindi la
+  // pagina restava ferma a metà contenuto della scheda precedente. Riporta in
+  // cima a ogni cambio tab (instant). I CTA che puntano ai Piani fanno il loro
+  // scrollIntoView in un doppio rAF DOPO questo reset, quindi vincono e atterrano
+  // sui piani. Presentazionale.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo(0, 0);
+  }, [tab]);
 
   // #AUTORELOAD: quando è live un nuovo deploy, le schede aperte si aggiornano da
   // sole. La baseline è il build-id della PRIMA risposta di /api/version (stesso
@@ -8002,6 +8048,15 @@ export default function Dashboard() {
                 {item.label}
               </button>
             ))}
+            {/* #UI-PLANS-VISIBILITY-0623: voce diretta "Piani/Plans" — i piani erano
+                sepolti nella scheda Account. Questa porta DIRETTAMENTE alla vista
+                piani (section "piani"), non al bento Account generico. */}
+            <button
+              className={tab === "account" && accountSection === "piani" ? "active" : ""}
+              onClick={() => { setAccountSection("piani"); setTab("account"); trackEvent("tab_click", { meta: { tab: "plans" } }); }}
+            >
+              {pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" })}
+            </button>
           </nav>
 
           <div className="am-topright">
@@ -8024,10 +8079,18 @@ export default function Dashboard() {
             </div>
 
             {clientProfile ? (
-              <button className="am-acct" onClick={() => setTab("account")}>
-                {clientProfile.name}
-                <span className="plan">{profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP"}</span>
-              </button>
+              /* #UI-LOGOUT-TOPBAR-0623: da loggati il Logout è in topbar (dov'erano
+                 i bottoni di accesso), facile da trovare; la pill nome+piano resta
+                 accanto e porta all'account come prima. */
+              <>
+                <button className="am-acct" onClick={() => setTab("account")}>
+                  {clientProfile.name}
+                  <span className="plan">{profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP"}</span>
+                </button>
+                <button className="am-auth-secondary" onClick={logoutClientProfile}>
+                  {pick5(uiLanguage, { it: "Esci", en: "Logout", es: "Salir", fr: "Quitter", ru: "Выйти" })}
+                </button>
+              </>
             ) : (
               <>
                 <button className="am-auth-secondary" onClick={() => openAuth("login")}>
@@ -8211,27 +8274,21 @@ export default function Dashboard() {
       })()}
 
 
-      <footer className="text-center text-xs text-gray-500 pb-8 font-mono space-y-2" style={{padding: "16px 24px"}}>
-        <div>{tUI.footer_note}</div>
-        <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] text-gray-600">
-          <span className="border border-gray-600 rounded px-1.5 py-0.5 font-bold">18+</span>
-          <span>{tUI.footer_pastperf}</span>
-          <span>|</span>
-          <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">GamCare</a>
-          <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">BeGambleAware</a>
-          <span>|</span>
-          <span>{tUI.footer_partnerlinks}</span>
-          <span>|</span>
-          <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{tUI.footer_terms}</a>
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">{tUI.footer_privacy}</a>
-        </div>
+      {/* #UI-FOOTER-UNIFIED-0623: footer condiviso (Terms/Privacy in-site, social
+          placeholder, 18+/gioco responsabile). Sostituisce il footer bespoke del
+          desk mantenendone il contenuto equivalente. Il trigger founder nascosto
+          resta sotto, invariato. */}
+      <SiteFooter lang={uiLanguage} />
+      {/* #UI-LIVECHAT-0623: live chat talk.to dietro env flag, inerte se non settata */}
+      <LiveChat />
+      <div style={{ textAlign: "center", paddingBottom: 16 }}>
         <button
           type="button"
           onClick={handleFounderTrigger}
-          style={{ background: "none", border: "none", color: "transparent", cursor: "default", userSelect: "none", marginLeft: 8, width: 10, height: 10 }}
+          style={{ background: "none", border: "none", color: "transparent", cursor: "default", userSelect: "none", width: 10, height: 10 }}
           aria-hidden="true"
         >·</button>
-      </footer>
+      </div>
       {authOpen && (
         <ClientAuthModal
           intent={authIntent}
