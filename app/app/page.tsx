@@ -7343,12 +7343,21 @@ export default function Dashboard() {
     trackEvent("language_change", { language: next });
   };
   // Theme toggle (Cobalt & Coral redesign, F1) — presentation only, no logic change.
-  // The pre-paint script in layout.tsx already set data-theme; here we just sync React.
+  // #UI-THEME-HARDEN-0623: il pre-paint setta data-theme, MA su /app l'idratazione
+  // può resettare data-theme al valore SSR ("dark"), lasciando il desk scuro
+  // nonostante la scelta light. Qui non ci limitiamo a leggere data-theme: ri-leggiamo
+  // la scelta salvata (localStorage → prefers, stessa logica del pre-paint) e la
+  // RI-APPLICHIAMO a data-theme, così il tema scelto vince sempre.
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync with the pre-paint data-theme script: a lazy initializer would mismatch the server-rendered markup at hydration.
-    if (current === "light" || current === "dark") setTheme(current);
+    let t = "";
+    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    if (t !== "light" && t !== "dark") {
+      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
+    setTheme(t as "dark" | "light");
+    document.documentElement.setAttribute("data-theme", t);
   }, []);
   const toggleTheme = () => {
     const next: "dark" | "light" = theme === "dark" ? "light" : "dark";
@@ -8028,8 +8037,9 @@ export default function Dashboard() {
       <header className="am-topbar">
         <div className="am-topbar-in">
           <Link href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
-            {/* logo BetrEdge (rebrand 2026-06-22): immagine unica mark+wordmark coral */}
-            <img src="/logos/betredge-logo.png" alt="BetrEdge" style={{ height: 30, width: "auto", display: "block" }} />
+            {/* #UI-LOGO-THEME-0623: logo theme-aware (bianco dark / nero light), swap CSS no-flash */}
+            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
 
           <nav className="am-topnav">

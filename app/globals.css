@@ -4935,6 +4935,20 @@ button:disabled {
   }
   .fpw-count { color: #92590A; }
   .fpw-sub { color: var(--am-muted); }
+
+  /* #UI-LIGHT-DEEP-0623: il cluster Deep Analysis / preview è cotto per dark
+     (testo bianco o viola a bassa opacità) → in light era invisibile/slavato.
+     Rimappo i testi sui token tema; struttura invariata. */
+  .da-title { color: var(--am-muted); }
+  .da-label { color: var(--am-muted-2); }
+  .da-value { color: var(--am-text); }
+  .da-research-text { color: var(--am-muted); }
+  .da-market-pill { color: var(--am-muted); border-color: var(--am-line-2); background: var(--am-inset); }
+  .locked-cta { color: var(--am-coral); }
+  .deep-analysis-locked { color: var(--am-muted); border-color: var(--am-line-2); }
+  .deep-analysis-locked svg { color: var(--am-coral); }
+  .blurred { color: rgba(0,0,0,0.40); }
+  .rg-footer { color: var(--am-muted-2); border-top-color: var(--am-line); }
 }
 
 /* ── World Cup hub (Track B) ─────────────────────────────────────────────── */
@@ -7244,6 +7258,13 @@ button:disabled {
 }
 .site-footer-social { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .site-footer-social-lab { text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
+/* #UI-LOGO-THEME-0623: logo theme-aware, no-flash (data-theme settato pre-paint).
+   .brand-logo-dark = logo testo BIANCO (mostrato in dark); .brand-logo-light =
+   logo testo NERO (mostrato in light). Entrambi montati, si alternano via CSS. */
+.brand-logo-dark { display: block; }
+.brand-logo-light { display: none; }
+:root[data-theme="light"] .brand-logo-dark { display: none; }
+:root[data-theme="light"] .brand-logo-light { display: block; }
 /* #UI-FOOTER-SOCIAL-0623: icone SVG (currentColor → seguono il tema), pill tonda. */
 .site-footer-social-link,
 .site-footer-social-icon {

@@ -107,9 +107,16 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
   // React tree, so the WC chrome owns its own toggle, same contract.
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync with the pre-paint data-theme script: a lazy initializer would mismatch the server-rendered markup at hydration.
-    if (current === "light" || current === "dark") setTheme(current);
+    // #UI-THEME-HARDEN-0623: ri-applica la scelta salvata (localStorage → prefers) e
+    // ri-asserta data-theme, così un reset da idratazione non lascia il tema sbagliato.
+    let t = "";
+    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    if (t !== "light" && t !== "dark") {
+      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
+    setTheme(t as "dark" | "light");
+    document.documentElement.setAttribute("data-theme", t);
   }, []);
   const setThemeTo = (next: "dark" | "light") => {
     if (next === theme) return;
@@ -159,8 +166,9 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
       <div className="am-topbar-in">
         <div className="am-brandmark">
           <Link href="/" className="wc-topbar-home" aria-label="BetrEdge">
-            {/* logo BetrEdge (rebrand 2026-06-22): immagine unica mark+wordmark coral */}
-            <img src="/logos/betredge-logo.png" alt="BetrEdge" style={{ height: 30, width: "auto", display: "block" }} />
+            {/* #UI-LOGO-THEME-0623: logo theme-aware (bianco dark / nero light), swap CSS no-flash */}
+            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
           <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>
         </div>

@@ -243,12 +243,14 @@ const COPY = {
 // BrandMark rende il logo all'altezza `size`; Wordmark è incluso nell'immagine
 // (resta come no-op per non toccare i call-site esistenti).
 function BrandMark({ size = 32 }: { size?: number }) {
+  // #UI-LOGO-THEME-0623: due loghi (bianco per dark, nero per light), swap via CSS
+  // su data-theme → no flash, niente JS.
+  const s = { height: size, width: "auto" as const };
   return (
-    <img
-      src="/logos/betredge-logo.png"
-      alt="BetrEdge"
-      style={{ height: size, width: "auto", display: "block" }}
-    />
+    <span style={{ display: "inline-flex", alignItems: "center" }}>
+      <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={s} />
+      <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={s} />
+    </span>
   );
 }
 function Wordmark() { return null; }
@@ -279,9 +281,17 @@ export default function LandingPage() {
     try {
       const sl = localStorage.getItem("agentic-lang");
       if (sl && (LANGS as string[]).includes(sl)) setLang(sl as Lang);
-      const dt = document.documentElement.getAttribute("data-theme");
-      if (dt === "light" || dt === "dark") setTheme(dt);
     } catch {}
+    // #UI-THEME-HARDEN-0623: ri-applica la scelta salvata (localStorage → prefers,
+    // stessa logica del pre-paint) e ri-asserta data-theme, così un eventuale reset
+    // da idratazione non lascia il tema sbagliato.
+    let t = "";
+    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    if (t !== "light" && t !== "dark") {
+      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+    }
+    setTheme(t as "dark" | "light");
+    document.documentElement.setAttribute("data-theme", t);
   }, []);
 
   // #THEME-CONSISTENCY-0623: segui l'impostazione di sistema (computer/browser)
