@@ -7315,3 +7315,63 @@ button:disabled {
     border: 1px solid var(--am-coral-b); color: var(--am-coral); background: var(--am-coral-dim);
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CARD EXPAND — #CARDS-EXPAND-0623
+   Le prediction card erano affollate (tutto sempre aperto). Ora lo stato CHIUSO
+   mostra solo l'essenziale (sport·lega·orario, fixture, readout Mercato/Modello/
+   Edge, Confidenza) e TUTTO il resto (gol, marcatori, schedina, "Perché", deep
+   analysis, CTA bet, badge) vive in una regione espandibile. La CARD INTERA è
+   cliccabile (role=button) e apre/chiude con animazione fluida. I controlli
+   interni (bet menu, link, gate) fermano la propagazione → non triggerano
+   l'espansione. Presentation-only: nessun dato/probabilità/prop toccati.
+   Tecnica: grid-template-rows 0fr→1fr (anima l'altezza senza max-height fissa,
+   niente salto di layout). Il chevron ruota 180°.
+   ════════════════════════════════════════════════════════════════════════════ */
+/* la card chiusa invita al tap; l'hover-lift esistente (.pred:hover) resta. */
+.pred.is-collapsible { cursor: pointer; }
+.pred.is-collapsible:focus-visible {
+  outline: 2px solid var(--am-coral); outline-offset: 2px; border-radius: 12px;
+}
+
+/* affordance: chevron in basso a destra, sempre visibile sulla card chiusa */
+.pred .pred-toggle {
+  display: flex; align-items: center; justify-content: flex-end; gap: 7px;
+  margin-top: 2px; padding-top: 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--am-muted-2); user-select: none;
+}
+.pred .pred-toggle .pt-lab { transition: color 0.15s; }
+.pred .pred-toggle .pt-chev {
+  flex: 0 0 auto; width: 0; height: 0;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 6px solid var(--am-coral);
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pred.is-collapsible:hover .pred-toggle .pt-lab,
+.pred.is-collapsible:focus-visible .pred-toggle .pt-lab { color: var(--am-text); }
+.pred.is-open .pred-toggle .pt-chev { transform: rotate(180deg); }
+
+/* la regione espandibile — anima l'altezza via grid-template-rows */
+.pred .pred-expand {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pred.is-open .pred-expand { grid-template-rows: 1fr; }
+.pred .pred-expand > .pred-expand-in {
+  min-height: 0; overflow: hidden;
+  opacity: 0; transform: translateY(-4px);
+  transition: opacity 0.2s ease-out, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pred.is-open .pred-expand > .pred-expand-in { opacity: 1; transform: none; }
+/* il primo blocco dentro la regione stacca dalla confidenza con un filo di aria */
+.pred .pred-expand-in > :first-child { margin-top: 12px; }
+
+/* reduced-motion: niente animazione, solo toggle istantaneo (gate bible §3.5) */
+@media (prefers-reduced-motion: reduce) {
+  .pred .pred-expand,
+  .pred .pred-expand > .pred-expand-in,
+  .pred .pred-toggle .pt-chev { transition: none; }
+  .pred .pred-expand > .pred-expand-in { transform: none; }
+}

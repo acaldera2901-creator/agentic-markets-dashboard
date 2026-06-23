@@ -4399,6 +4399,7 @@ function GoalscorerBlock({
 
 function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const t = useT();
   const lang = useLang();
   const betLinksEnabled = useBetLinksEnabled();
@@ -4489,8 +4490,25 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
+  // Card-expand (#CARDS-EXPAND-0623): closed shows the essentials, a tap
+  // reveals everything below the confidence meter. Locked cards aren't
+  // collapsible — their overlay opens the gate instead.
+  const collapsible = !p.locked;
+  const toggleExpand = () => { if (collapsible) setExpanded((v) => !v); };
+  const onCardKey = (ev: React.KeyboardEvent) => {
+    if (!collapsible) return;
+    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setExpanded((v) => !v); }
+  };
+  const stop = (ev: React.MouseEvent | React.KeyboardEvent) => ev.stopPropagation();
+  const expandLabel = expanded
+    ? pick5(lang, { it: "Comprimi", en: "Less", es: "Menos", fr: "Réduire", ru: "Свернуть" })
+    : pick5(lang, { it: "Dettagli", en: "Details", es: "Detalles", fr: "Détails", ru: "Подробнее" });
+
   return (
-    <article className="card"><div className="pred">
+    <article className="card"><div
+      className={`pred${collapsible ? " is-collapsible" : ""}${expanded ? " is-open" : ""}`}
+      {...(collapsible ? { role: "button", tabIndex: 0, "aria-expanded": expanded, onClick: toggleExpand, onKeyDown: onCardKey } : {})}
+    >
       {/* top: sport glyph + league + when (live pulse) */}
       <div className="top">
         <div className="comp">
@@ -4536,7 +4554,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         <>
           <div
             className={`mvm${onSelect && isValueBet && p.best_selection ? " sel" : ""}`}
-            onClick={onSelect && isValueBet && p.best_selection ? handleSelect : undefined}
+            onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="col">
               <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
@@ -4576,17 +4594,25 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </>
       )}
 
-      {!p.locked && e.goals_summary && (
+      {/* open/close affordance — visible on the closed card */}
+      {collapsible && (
+        <div className="pred-toggle"><span className="pt-lab">{expandLabel}</span><span className="pt-chev" aria-hidden="true" /></div>
+      )}
+
+      {/* everything below the readout collapses into the expandable region */}
+      {collapsible && (
+      <div className="pred-expand"><div className="pred-expand-in">
+      {e.goals_summary && (
         <GoalsBlock summary={e.goals_summary} markets={e.extra_markets ?? []} lang={lang} />
       )}
 
-      {!p.locked && e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
+      {e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
         <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={p.home_team} awayTeam={p.away_team} lang={lang} />
       )}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
       <div className="why">
-        <details className="why-box">
+        <details className="why-box" onClick={stop}>
           <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
           <p className="why-txt">
             {isPreview
@@ -4596,7 +4622,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
               : buildFootballWhy(p, lang)}
           </p>
           {!isPreview && (
-            <button className="why-more" onClick={() => setShowWhy(!showWhy)}>
+            <button className="why-more" onClick={(ev) => { ev.stopPropagation(); setShowWhy(!showWhy); }}>
               {showWhy
                 ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
                 : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
@@ -4605,7 +4631,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </details>
 
         {/* footer action row */}
-        <div className="act">
+        <div className="act" onClick={stop}>
           {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
               altrimenti vecchio CTA. FT → status note. */}
           {!isPreview && (betLinksEnabled || onBetNow) && (isFinished ? (
@@ -4669,7 +4695,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
           {/* Affiliate bonus CTA — demoted into the expansion */}
           {p.affiliate && (
-            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
+            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener" onClick={stop}>
               {p.affiliate.bonus} · {p.affiliate.bookmaker} →
             </a>
           )}
@@ -4812,6 +4838,8 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         </div>
         )}
       </div>
+      </div></div>
+      )}
     </div></article>
   );
 }
@@ -4827,6 +4855,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const t = useT();
@@ -4927,8 +4956,23 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
+  // Card-expand (#CARDS-EXPAND-0623): same behaviour as the football card.
+  const collapsible = !m.locked;
+  const toggleExpand = () => { if (collapsible) setExpanded((v) => !v); };
+  const onCardKey = (ev: React.KeyboardEvent) => {
+    if (!collapsible) return;
+    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setExpanded((v) => !v); }
+  };
+  const stop = (ev: React.MouseEvent | React.KeyboardEvent) => ev.stopPropagation();
+  const expandLabel = expanded
+    ? pick5(lang, { it: "Comprimi", en: "Less", es: "Menos", fr: "Réduire", ru: "Свернуть" })
+    : pick5(lang, { it: "Dettagli", en: "Details", es: "Detalles", fr: "Détails", ru: "Подробнее" });
+
   return (
-    <article className="card tennis"><div className="pred tennis">
+    <article className="card tennis"><div
+      className={`pred tennis${collapsible ? " is-collapsible" : ""}${expanded ? " is-open" : ""}`}
+      {...(collapsible ? { role: "button", tabIndex: 0, "aria-expanded": expanded, onClick: toggleExpand, onKeyDown: onCardKey } : {})}
+    >
       {/* top: surface glyph + tournament + when */}
       <div className="top">
         <div className="comp">
@@ -4972,7 +5016,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         <>
           <div
             className={`mvm${onSelect && isValue && pickPlayer ? " sel" : ""}`}
-            onClick={onSelect && isValue && pickPlayer ? () => handleSelect(pickPlayer as "P1" | "P2") : undefined}
+            onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="col">
               <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
@@ -5012,9 +5056,17 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </>
       )}
 
+      {/* open/close affordance — visible on the closed card */}
+      {collapsible && (
+        <div className="pred-toggle"><span className="pt-lab">{expandLabel}</span><span className="pt-chev" aria-hidden="true" /></div>
+      )}
+
+      {/* everything below the readout collapses into the expandable region */}
+      {collapsible && (
+      <div className="pred-expand"><div className="pred-expand-in">
       {/* WHY — Elo readout + expandable analysis */}
       <div className="why">
-        <details className="why-box">
+        <details className="why-box" onClick={stop}>
           <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
           <p className="why-txt">
             {isPreview
@@ -5024,7 +5076,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
               : buildTennisWhy(m, lang)}
           </p>
           {!isPreview && (
-            <button className="why-more" onClick={handleWhyClick}>
+            <button className="why-more" onClick={(ev) => { ev.stopPropagation(); void handleWhyClick(); }}>
               {loadingAnalysis
                 ? pick5(lang, { it: "Carico l'analisi…", en: "Loading analysis…", es: "Cargando análisis…", fr: "Chargement de l'analyse…", ru: "Загрузка анализа…" })
                 : showWhy
@@ -5035,7 +5087,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </details>
 
         {/* footer action row */}
-        <div className="act">
+        <div className="act" onClick={stop}>
           {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : betLinksEnabled ? (
@@ -5081,7 +5133,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
           {/* Affiliate bonus CTA + pick-of-day — demoted into the expansion */}
           {m.affiliate && (
-            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
+            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener" onClick={stop}>
               {m.affiliate.bonus} · {m.affiliate.bookmaker} →
             </a>
           )}
@@ -5135,6 +5187,8 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         </div>
         )}
       </div>
+      </div></div>
+      )}
     </div></article>
   );
 }
