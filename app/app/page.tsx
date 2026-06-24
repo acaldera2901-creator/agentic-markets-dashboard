@@ -6842,7 +6842,6 @@ function AccountMenu({
   profile,
   lang,
   planLabel,
-  onSaveProfile,
   onLogout,
   onGoToPlans,
   onSelectLang,
@@ -6850,7 +6849,6 @@ function AccountMenu({
   profile: ClientProfile;
   lang: Lang;
   planLabel: string;
-  onSaveProfile: (p: ClientProfile) => void;
   onLogout: () => void;
   onGoToPlans: () => void;
   onSelectLang: (l: Lang) => void;
@@ -6877,16 +6875,8 @@ function AccountMenu({
     : isPremium || isAccess
     ? pick5(lang, { it: "attivo", en: "active", es: "activo", fr: "actif", ru: "активен" })
     : pick5(lang, { it: "gratis", en: "free", es: "gratis", fr: "gratuit", ru: "бесплатно" });
-  const notif = profile.notifications ?? defaultNotifications();
-  const toggleNotif = (key: keyof NonNullable<ClientProfile["notifications"]>) =>
-    onSaveProfile({ ...profile, notifications: { ...notif, [key]: !notif[key] } });
-
   const LANG_LABEL: Record<Lang, string> = { it: "Italiano", en: "English", es: "Español", fr: "Français", ru: "Русский" };
-  const notifRows: { key: keyof NonNullable<ClientProfile["notifications"]>; label: string }[] = [
-    { key: "valueBets", label: pick5(lang, { it: "Value bet", en: "Value bets", es: "Value bets", fr: "Value bets", ru: "Value bets" }) },
-    { key: "dailyReport", label: pick5(lang, { it: "Report giornaliero", en: "Daily report", es: "Reporte diario", fr: "Rapport quotidien", ru: "Дневной отчёт" }) },
-    { key: "securityAlerts", label: pick5(lang, { it: "Avvisi sicurezza", en: "Security alerts", es: "Alertas seguridad", fr: "Alertes sécurité", ru: "Оповещения" }) },
-  ];
+  const TEAM_EMAIL = "info@betredge.com";
 
   return (
     <div className="acct-menu-wrap" ref={wrapRef}>
@@ -6917,21 +6907,6 @@ function AccountMenu({
           </div>
 
           <div className="acct-menu-prefs">
-            <div className="acct-menu-prefs-lab">{pick5(lang, { it: "Preferenze", en: "Preferences", es: "Preferencias", fr: "Préférences", ru: "Настройки" })}</div>
-            {notifRows.map((r) => (
-              <div className="acct-pref-row" key={r.key}>
-                <span>{r.label}</span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={!!notif[r.key]}
-                  className={`acct-switch${notif[r.key] ? " on" : ""}`}
-                  onClick={() => toggleNotif(r.key)}
-                >
-                  <span className="acct-switch-knob" />
-                </button>
-              </div>
-            ))}
             <div className="acct-pref-row">
               <span>{pick5(lang, { it: "Lingua", en: "Language", es: "Idioma", fr: "Langue", ru: "Язык" })}</span>
               <select className="acct-lang-select" value={lang} onChange={(e) => onSelectLang(e.target.value as Lang)}>
@@ -6940,20 +6915,20 @@ function AccountMenu({
                 ))}
               </select>
             </div>
+
+            {/* #UI-ACCOUNT-FAQ-0623: FAQ + Contatta il team al posto dei toggle notifiche. */}
+            <details className="acct-menu-faq">
+              <summary>FAQ</summary>
+              <div className="acct-menu-faq-body"><FAQTab /></div>
+            </details>
+
+            <a className="acct-menu-contact" href={`mailto:${TEAM_EMAIL}`}>
+              <span>{pick5(lang, { it: "Contatta il team", en: "Contact the team", es: "Contacta al equipo", fr: "Contacter l'équipe", ru: "Связаться с командой" })}</span>
+              <span className="acct-contact-mail">{TEAM_EMAIL}</span>
+            </a>
           </div>
 
-          <div className="acct-menu-foot">
-            <button
-              type="button"
-              className="acct-menu-help"
-              onClick={() => {
-                setOpen(false);
-                const w = window as unknown as { Tawk_API?: { maximize?: () => void } };
-                try { w.Tawk_API?.maximize?.(); } catch {}
-              }}
-            >
-              {pick5(lang, { it: "Aiuto / Supporto", en: "Help / Support", es: "Ayuda", fr: "Aide", ru: "Помощь" })}
-            </button>
+          <div className="acct-menu-foot acct-menu-foot-end">
             <button type="button" className="acct-menu-logout" onClick={() => { setOpen(false); onLogout(); }}>
               {pick5(lang, { it: "Esci", en: "Log out", es: "Cerrar sesión", fr: "Se déconnecter", ru: "Выйти" })}
             </button>
@@ -8218,7 +8193,6 @@ export default function Dashboard() {
                 profile={clientProfile}
                 lang={uiLanguage}
                 planLabel={profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP"}
-                onSaveProfile={handleSettingsSave}
                 onLogout={logoutClientProfile}
                 onGoToPlans={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans", src: "acct-menu" } }); }}
                 onSelectLang={selectLanguage}

@@ -7271,6 +7271,7 @@ button:disabled {
 .acct-menu {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 1000;
   width: 300px; max-width: calc(100vw - 24px);
+  max-height: min(80vh, 560px); overflow-y: auto;
   background: var(--am-panel); border: 1px solid var(--am-line-2);
   border-radius: 12px; box-shadow: 0 16px 44px rgba(0,0,0,.30);
   padding: 6px; display: flex; flex-direction: column; gap: 4px;
@@ -7308,6 +7309,23 @@ button:disabled {
 .acct-menu-help:hover { color: var(--am-coral); }
 .acct-menu-logout { font-size: 11px; font-weight: 700; color: var(--am-text); background: none; border: 1px solid var(--am-line-2); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
 .acct-menu-logout:hover { border-color: var(--am-coral-b); color: var(--am-coral); }
+.acct-menu-foot-end { justify-content: flex-end; }
+/* #UI-ACCOUNT-FAQ-0623: FAQ accordion + contatta il team nel dropdown. */
+.acct-menu-faq { border-radius: 8px; }
+.acct-menu-faq > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 4px; font-size: 12px; color: var(--am-text);
+}
+.acct-menu-faq > summary::-webkit-details-marker { display: none; }
+.acct-menu-faq > summary::after { content: "▸"; color: var(--am-muted-2); font-size: 11px; }
+.acct-menu-faq[open] > summary::after { content: "▾"; }
+.acct-menu-faq-body { padding: 2px 2px 6px; font-size: 11px; color: var(--am-muted); line-height: 1.5; }
+.acct-menu-contact {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 4px; font-size: 12px; color: var(--am-text); text-decoration: none;
+}
+.acct-menu-contact:hover { color: var(--am-coral); }
+.acct-contact-mail { font-size: 11px; color: var(--am-coral); }
 @media (max-width: 600px) { .acct-menu { position: fixed; top: 58px; right: 12px; left: 12px; width: auto; } }
 /* #UI-FOOTER-SOCIAL-0623: icone SVG (currentColor → seguono il tema), pill tonda. */
 .site-footer-social-link,
