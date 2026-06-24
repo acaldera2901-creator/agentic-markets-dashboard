@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">1. Controller</h2>
           <p className="text-xs leading-relaxed">
-            BetRedge (&quot;we&quot;, &quot;us&quot;) operates this sports prediction platform. For GDPR purposes, the data controller is BetRedge. Contact: <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>.
+            BetRedge (&quot;we&quot;, &quot;us&quot;) operates this sports prediction platform. For GDPR purposes, the data controller is BetRedge. Contact: <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>.
           </p>
         </section>
 
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">7. Your Rights (GDPR)</h2>
           <p className="text-xs leading-relaxed">
-            Under GDPR you have the right to: access, rectify, erase, restrict processing, data portability, and object to processing. To exercise these rights, email <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>. You may also lodge a complaint with your local supervisory authority.
+            Under GDPR you have the right to: access, rectify, erase, restrict processing, data portability, and object to processing. To exercise these rights, email <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>. You may also lodge a complaint with your local supervisory authority.
           </p>
         </section>
 

@@ -61,7 +61,7 @@ export default function TermsPage() {
           <ul className="text-xs space-y-2 list-disc list-inside">
             <li><strong className="text-[var(--am-text)]">Auto-renewal:</strong> Recurring subscriptions renew automatically at the end of each billing period unless cancelled beforehand.</li>
             <li><strong className="text-[var(--am-text)]">Cancellation:</strong> You may cancel at any time. Cancellation stops future renewals; you retain access until the end of the period already paid for.</li>
-            <li><strong className="text-[var(--am-text)]">Refunds:</strong> Except where a refund is required by mandatory consumer-protection law, subscription fees already paid are non-refundable. To request a cancellation or refund, email <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>.</li>
+            <li><strong className="text-[var(--am-text)]">Refunds:</strong> Except where a refund is required by mandatory consumer-protection law, subscription fees already paid are non-refundable. To request a cancellation or refund, email <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>.</li>
             <li><strong className="text-[var(--am-text)]">Disputes:</strong> If you believe you were charged in error, contact us before initiating a chargeback so we can resolve the issue directly.</li>
           </ul>
         </section>
@@ -83,7 +83,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">9. Responsible Use &amp; Account Measures</h2>
           <p className="text-xs leading-relaxed">
-            We support responsible gambling. On request, you may ask us to: close your profile, self-exclude from the platform for a defined period, or opt out of promotional and affiliate communications. To exercise any of these, email <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>. If you need support, see <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">BeGambleAware</a>, <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">GamCare</a>, or <a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">Gambling Therapy</a>.
+            We support responsible gambling. On request, you may ask us to: close your profile, self-exclude from the platform for a defined period, or opt out of promotional and affiliate communications. To exercise any of these, email <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>. If you need support, see <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">BeGambleAware</a>, <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">GamCare</a>, or <a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--am-coral)]">Gambling Therapy</a>.
           </p>
         </section>
 
@@ -132,7 +132,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">16. Contact</h2>
           <p className="text-xs leading-relaxed">
-            Questions about these Terms? Email <a href="mailto:info@agenticmarkets.com" className="underline hover:text-[var(--am-coral)]">info@agenticmarkets.com</a>.
+            Questions about these Terms? Email <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>.
           </p>
         </section>
 

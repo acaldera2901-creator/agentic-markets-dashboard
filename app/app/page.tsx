@@ -3240,8 +3240,8 @@ function CheckoutModal({
             channel for "I paid but see nothing". Manual activation today. */}
         <p style={{ fontSize: "11px", fontFamily: "var(--font-mono), ui-monospace, monospace", color: "var(--am-muted)", lineHeight: 1.5, margin: "4px 0 0" }}>
           {t.checkout_sla}{" "}
-          <a href="mailto:info@agenticmarkets.com?subject=Pagamento%20-%20attivazione" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>
-            info@agenticmarkets.com
+          <a href="mailto:info@betredge.com?subject=Pagamento%20-%20attivazione" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>
+            info@betredge.com
           </a>
         </p>
 
@@ -3266,11 +3266,11 @@ function CheckoutModal({
             if (!ok) {
               setSubmitting(false);
               setError(pick5(lang, {
-                it: "Invio non riuscito: la transazione non è stata registrata. Controlla la connessione e riprova, oppure scrivi a info@agenticmarkets.com.",
-                en: "Submission failed: your transaction was not recorded. Check your connection and retry, or email info@agenticmarkets.com.",
-                es: "Envío fallido: tu transacción no se registró. Comprueba la conexión y reinténtalo, o escribe a info@agenticmarkets.com.",
-                fr: "Échec de l'envoi : votre transaction n'a pas été enregistrée. Vérifiez la connexion et réessayez, ou écrivez à info@agenticmarkets.com.",
-                ru: "Отправка не удалась: транзакция не зарегистрирована. Проверьте соединение и повторите, или напишите на info@agenticmarkets.com.",
+                it: "Invio non riuscito: la transazione non è stata registrata. Controlla la connessione e riprova, oppure scrivi a info@betredge.com.",
+                en: "Submission failed: your transaction was not recorded. Check your connection and retry, or email info@betredge.com.",
+                es: "Envío fallido: tu transacción no se registró. Comprueba la conexión y reinténtalo, o escribe a info@betredge.com.",
+                fr: "Échec de l'envoi : votre transaction n'a pas été enregistrée. Vérifiez la connexion et réessayez, ou écrivez à info@betredge.com.",
+                ru: "Отправка не удалась: транзакция не зарегистрирована. Проверьте соединение и повторите, или напишите на info@betredge.com.",
               }));
             }
           }}
