@@ -14,13 +14,15 @@ async def fetch_team_recent(team_id, before_iso, window=12):
     out = {f"{m}_for": [] for m in MARKETS} | {f"{m}_against": [] for m in MARKETS}
     async with httpx.AsyncClient(timeout=20.0) as c:
         r = await c.get(f"{_DIRECT}/fixtures", headers=_hdr(),
-                        params={"team": team_id, "last": window + 5, "status": "FT"})
+                        params={"team": team_id, "last": window * 2, "status": "FT"})
         if r.status_code != 200:
             return out
-        fixtures = [f for f in r.json().get("response", [])
-                    if f["fixture"]["date"] < before_iso][:window]
+        prior = [f for f in r.json().get("response", []) if f["fixture"]["date"] < before_iso]
+        # most-recent-first, then take the window (robust se l'API non garantisce l'ordine)
+        prior.sort(key=lambda f: f["fixture"]["date"], reverse=True)
+        fixtures = prior[:window]
         for f in fixtures:
-            fid = f["fixture"]["id"]; is_home = f["teams"]["home"]["id"] == team_id
+            fid = f["fixture"]["id"]
             s = await c.get(f"{_DIRECT}/fixtures/statistics", headers=_hdr(), params={"fixture": fid})
             if s.status_code != 200:
                 continue
