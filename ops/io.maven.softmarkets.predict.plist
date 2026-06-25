@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>io.maven.softmarkets.predict</string>
+  <!-- bash -c inline (NON un file-script in ~/Desktop): evita il blocco TCC
+       "Operation not permitted" su launchd, come fa il daemon agents. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd "$HOME/Desktop/agentic-markets" &amp;&amp; "$HOME/Desktop/agentic-markets/venv/bin/python" -m scripts.predict_soft_markets &amp;&amp; "$HOME/Desktop/agentic-markets/venv/bin/python" -m scripts.settle_soft_markets</string>
+  </array>
+  <key>StartInterval</key><integer>7200</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/Users/calde/Library/Logs/agentic-markets/softmarkets-predict.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/calde/Library/Logs/agentic-markets/softmarkets-predict.err.log</string>
+</dict>
+</plist>
