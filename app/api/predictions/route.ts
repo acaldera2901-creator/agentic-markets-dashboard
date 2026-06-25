@@ -877,23 +877,34 @@ export async function GET(req: Request) {
   // Una query batch; mappa match_key -> { corners?, cards?, fouls? }.
   // Fail-soft: tabella assente o vuota → mappa vuota, card invariate.
   type SoftEntry = { expected: number; main_line: number; p_over: number; is_generic: boolean };
-  type SoftMap = Record<string, { corners?: SoftEntry; cards?: SoftEntry; fouls?: SoftEntry }>;
+  type SoftMarkets = { corners?: SoftEntry; cards?: SoftEntry; fouls?: SoftEntry };
+  type SoftMap = Record<string, SoftMarkets>;
   let softByKey: SoftMap = {};
+  // Lista per il fuzzy fallback (board=ESPN/OddsAPI names ≠ soft=api-football names):
+  // se la chiave esatta non matcha, si prova il token-match per data (#SOFT-MARKETS).
+  const softMatches: Array<{ home: string; away: string; date: string; markets: SoftMarkets }> = [];
   try {
     const softRows = await dbQuery<{
       match_key: string;
+      home_team: string;
+      away_team: string;
+      kickoff: string;
       market: string;
       expected: number;
       main_line: number;
       p_over: number;
       is_generic: boolean;
     }>(
-      `SELECT match_key, market, expected, main_line, p_over, is_generic
+      `SELECT match_key, home_team, away_team, kickoff, market, expected, main_line, p_over, is_generic
        FROM soft_predictions
        WHERE kickoff > NOW() - interval '150 minutes'`
     );
+    const byKeyMeta: Record<string, { home: string; away: string; date: string }> = {};
     for (const row of softRows) {
       if (!softByKey[row.match_key]) softByKey[row.match_key] = {};
+      byKeyMeta[row.match_key] = {
+        home: row.home_team, away: row.away_team, date: String(row.kickoff).slice(0, 10),
+      };
       const entry: SoftEntry = {
         expected: row.expected,
         main_line: row.main_line,
@@ -904,10 +915,30 @@ export async function GET(req: Request) {
       else if (row.market === "cards") softByKey[row.match_key].cards = entry;
       else if (row.market === "fouls") softByKey[row.match_key].fouls = entry;
     }
+    for (const [key, meta] of Object.entries(byKeyMeta)) {
+      softMatches.push({ home: meta.home, away: meta.away, date: meta.date, markets: softByKey[key] });
+    }
   } catch {
     // Fail-soft: tabella non ancora disponibile o errore DB — nessun impatto sulla serve.
     softByKey = {};
   }
+
+  // Lookup soft: chiave esatta, poi fuzzy (token-match nomi, stessa data) — riusa
+  // matchModelTeam come per le odds. Ritorna i mercati o null.
+  const lookupSoft = (home: string, away: string, kickoff: string): SoftMarkets | null => {
+    const key = `${normName(home)}|${normName(away)}|${kickoff.slice(0, 10)}`;
+    const exact = softByKey[key];
+    if (exact && Object.keys(exact).length > 0) return exact;
+    const date = kickoff.slice(0, 10);
+    for (const s of softMatches) {
+      if (s.date !== date) continue;
+      if (matchModelTeam(home, [s.home]) && matchModelTeam(away, [s.away])
+          && Object.keys(s.markets).length > 0) {
+        return s.markets;
+      }
+    }
+    return null;
+  };
 
   const isPro = state === "premium" || state === "admin_full";
 
@@ -929,9 +960,8 @@ export async function GET(req: Request) {
       if (gs && gs.length > 0) enrichment.goalscorer_markets = gs;
 
       // Soft markets: Pro → valori reali; non-Pro + dati presenti → locked flag.
-      const softKey = `${normName(p.home_team)}|${normName(p.away_team)}|${p.kickoff.slice(0, 10)}`;
-      const softData = softByKey[softKey];
-      if (softData && Object.keys(softData).length > 0) {
+      const softData = lookupSoft(p.home_team, p.away_team, p.kickoff);
+      if (softData) {
         if (isPro) {
           enrichment.soft = softData;
         } else {
@@ -943,9 +973,8 @@ export async function GET(req: Request) {
     }
 
     // No lambdas path: still attach soft if present.
-    const softKey = `${normName(p.home_team)}|${normName(p.away_team)}|${p.kickoff.slice(0, 10)}`;
-    const softData = softByKey[softKey];
-    if (softData && Object.keys(softData).length > 0) {
+    const softData = lookupSoft(p.home_team, p.away_team, p.kickoff);
+    if (softData) {
       const enrichment: Record<string, unknown> = { ...(hydrated.enrichment ?? {}) };
       if (isPro) {
         enrichment.soft = softData;
