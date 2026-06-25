@@ -131,6 +131,9 @@ const PREMIUM_ENRICHMENT_KEYS = [
   // Mercati marcatore (B-serve): blocco Pro-only (scelta Andrea) — l'intero
   // blocco (P + Edge) viene rimosso per anon/free/base.
   "goalscorer_markets",
+  // Mercati soft (corner/cartellini/falli) — Pro-only (#SOFT-MARKETS).
+  // soft = valori reali (Pro); soft_locked = flag senza valori (non-Pro).
+  "soft",
 ] as const;
 
 type ProjectedPredictionRow = Partial<PredictionRow> & {
@@ -294,6 +297,15 @@ interface EnrichmentPayload {
   extra_market_odds?: Partial<Record<string, number>>;
   reliability?: string;
   team_matches?: number;
+  // Mercati soft (corner/cartellini/falli) — Pro-only (#SOFT-MARKETS).
+  // Attaccato dalla query soft_predictions nel GET; strip per non-Pro in
+  // PREMIUM_ENRICHMENT_KEYS. Non-Pro ma con dati: soft_locked=true (no values).
+  soft?: {
+    corners?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+    cards?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+    fouls?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+  };
+  soft_locked?: boolean;
   // True when the kickoff time comes from a real source (fd non-midnight, or
   // api-football provided a date). Lets the client distinguish a genuine
   // 00:00 UTC kickoff (NA evening slot at the 2026 World Cup) from the
@@ -861,6 +873,44 @@ export async function GET(req: Request) {
   // fetchGoalscorerMarkets): vuota finche` i dati player non sono live.
   const goalscorerByMatch = await fetchGoalscorerMarkets(predictions_raw);
 
+  // Mercati soft (#SOFT-MARKETS): corners/cards/fouls da soft_predictions.
+  // Una query batch; mappa match_key -> { corners?, cards?, fouls? }.
+  // Fail-soft: tabella assente o vuota → mappa vuota, card invariate.
+  type SoftEntry = { expected: number; main_line: number; p_over: number; is_generic: boolean };
+  type SoftMap = Record<string, { corners?: SoftEntry; cards?: SoftEntry; fouls?: SoftEntry }>;
+  let softByKey: SoftMap = {};
+  try {
+    const softRows = await dbQuery<{
+      match_key: string;
+      market: string;
+      expected: number;
+      main_line: number;
+      p_over: number;
+      is_generic: boolean;
+    }>(
+      `SELECT match_key, market, expected, main_line, p_over, is_generic
+       FROM soft_predictions
+       WHERE kickoff > NOW() - interval '150 minutes'`
+    );
+    for (const row of softRows) {
+      if (!softByKey[row.match_key]) softByKey[row.match_key] = {};
+      const entry: SoftEntry = {
+        expected: row.expected,
+        main_line: row.main_line,
+        p_over: row.p_over,
+        is_generic: row.is_generic,
+      };
+      if (row.market === "corners") softByKey[row.match_key].corners = entry;
+      else if (row.market === "cards") softByKey[row.match_key].cards = entry;
+      else if (row.market === "fouls") softByKey[row.match_key].fouls = entry;
+    }
+  } catch {
+    // Fail-soft: tabella non ancora disponibile o errore DB — nessun impatto sulla serve.
+    softByKey = {};
+  }
+
+  const isPro = state === "premium" || state === "admin_full";
+
   // Hydrate (estimate flag + extra markets) before projecting, then gate per tier.
   const hydratedRows = predictions_raw.map((p) => {
     const hydrated = markModelEstimate(p);
@@ -877,8 +927,34 @@ export async function GET(req: Request) {
       };
       const gs = goalscorerByMatch.get(p.match_id);
       if (gs && gs.length > 0) enrichment.goalscorer_markets = gs;
+
+      // Soft markets: Pro → valori reali; non-Pro + dati presenti → locked flag.
+      const softKey = `${normName(p.home_team)}|${normName(p.away_team)}|${p.kickoff.slice(0, 10)}`;
+      const softData = softByKey[softKey];
+      if (softData && Object.keys(softData).length > 0) {
+        if (isPro) {
+          enrichment.soft = softData;
+        } else {
+          enrichment.soft_locked = true;
+        }
+      }
+
       return { ...hydrated, enrichment: enrichment as EnrichmentPayload };
     }
+
+    // No lambdas path: still attach soft if present.
+    const softKey = `${normName(p.home_team)}|${normName(p.away_team)}|${p.kickoff.slice(0, 10)}`;
+    const softData = softByKey[softKey];
+    if (softData && Object.keys(softData).length > 0) {
+      const enrichment: Record<string, unknown> = { ...(hydrated.enrichment ?? {}) };
+      if (isPro) {
+        enrichment.soft = softData;
+      } else {
+        enrichment.soft_locked = true;
+      }
+      return { ...hydrated, enrichment: enrichment as EnrichmentPayload };
+    }
+
     return hydrated;
   });
 

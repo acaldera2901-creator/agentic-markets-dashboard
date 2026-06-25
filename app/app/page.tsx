@@ -1592,6 +1592,15 @@ interface PredictionEnrichment {
   // Server-side kickoff provenance (not premium-stripped): true when the time
   // comes from a real source, so fmtKickoff can show a genuine 00:00 UTC slot.
   time_confirmed?: boolean;
+  // Mercati soft (#SOFT-MARKETS): corner/cartellini/falli. Pro-only.
+  // soft = valori reali (Pro); soft_locked = true senza valori (non-Pro con dati).
+  // Mai edge — framing MODEL ESTIMATE soltanto.
+  soft?: {
+    corners?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+    cards?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+    fouls?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+  };
+  soft_locked?: boolean;
 }
 
 interface Prediction {
@@ -4403,6 +4412,77 @@ function GoalscorerBlock({
   );
 }
 
+// ─── SoftBlock (#SOFT-MARKETS) ────────────────────────────────────────────────
+// Rende i mercati soft (corner/cartellini/falli) nella card football.
+// Framing esclusivo: STIMA DEL MODELLO — mai edge, mai value-bet claim.
+// Pro → valori reali; non-Pro con dati → teaser blurrato via LockedGate.
+function SoftBlock({
+  soft,
+  softLocked,
+  lang,
+  onGate,
+}: {
+  soft?: PredictionEnrichment["soft"];
+  softLocked?: boolean;
+  lang: Lang;
+  onGate?: () => void;
+}) {
+  const fmt = (p: number) => `${Math.round(p * 100)}%`;
+
+  if (soft && Object.keys(soft).length > 0) {
+    return (
+      <div className="goals-block">
+        <div className="goals-head">
+          <span className="goals-eg">
+            {pick5(lang, { it: "Mercati extra", en: "Extra markets", es: "Mercados extra", fr: "Marchés supplémentaires", ru: "Дополнительные рынки" })}
+          </span>
+        </div>
+        <div className="goals-ou">
+          {soft.fouls && (
+            <span>
+              {pick5(lang, { it: "Falli attesi", en: "Fouls exp.", es: "Faltas esp.", fr: "Fautes att.", ru: "Фолы" })} ~<b>{soft.fouls.expected.toFixed(1)}</b> · Over {soft.fouls.main_line} <b>{fmt(soft.fouls.p_over)}</b>
+            </span>
+          )}
+          {soft.cards && (
+            <span>
+              {pick5(lang, { it: "Cartellini attesi", en: "Cards exp.", es: "Tarjetas esp.", fr: "Cartons att.", ru: "Карточки" })} ~<b>{soft.cards.expected.toFixed(1)}</b> · Over {soft.cards.main_line} <b>{fmt(soft.cards.p_over)}</b>
+            </span>
+          )}
+          {soft.corners && (
+            <span>
+              {pick5(lang, { it: "Corner attesi", en: "Corners exp.", es: "Córners esp.", fr: "Corners att.", ru: "Угловые" })} ~<b>{soft.corners.expected.toFixed(1)}</b> · Over {soft.corners.main_line} <b>{fmt(soft.corners.p_over)}</b>
+              {soft.corners.is_generic && (
+                <> · <em>{pick5(lang, { it: "stima generica", en: "generic estimate", es: "estimación genérica", fr: "estimation générique", ru: "общая оценка" })}</em></>
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (softLocked) {
+    return (
+      <LockedGate isUnlocked={false} onUnlock={() => onGate?.()} mode="plan">
+        <div className="goals-block">
+          <div className="goals-head">
+            <span className="goals-eg">
+              {pick5(lang, { it: "Corner · Cartellini · Falli", en: "Corners · Cards · Fouls", es: "Córners · Tarjetas · Faltas", fr: "Corners · Cartons · Fautes", ru: "Угловые · Карточки · Фолы" })}
+            </span>
+          </div>
+          <div className="goals-ou">
+            <span>— · —</span>
+            <span>— · —</span>
+            <span>— · —</span>
+          </div>
+        </div>
+      </LockedGate>
+    );
+  }
+
+  return null;
+}
+
 function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
@@ -4606,6 +4686,11 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
 
       {!p.locked && e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
         <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={p.home_team} awayTeam={p.away_team} lang={lang} />
+      )}
+
+      {/* Mercati soft (#SOFT-MARKETS): corners/cartellini/falli — Pro-only */}
+      {!p.locked && (e.soft || e.soft_locked) && (
+        <SoftBlock soft={e.soft} softLocked={e.soft_locked} lang={lang} onGate={onGate} />
       )}
 
       {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
