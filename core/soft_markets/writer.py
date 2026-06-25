@@ -1,11 +1,16 @@
 import re
+import unicodedata
 from core.soft_markets.model import predict_lambda, p_over, MAIN_LINE, IS_GENERIC
 
 MODEL_VERSION = "soft-leagueagnostic-v1"
 _NOISE = re.compile(r"\b(FC|CF|SC|AC|AS|SV|SS|US|SSC|AFC|Calcio)\b", re.I)
 
 def norm_name(s):
-    s = _NOISE.sub("", s or "")
+    # Fold diacritici (Göteborg->Goteborg) IDENTICO al normName TS di lib/odds-api.ts:
+    # le fonti divergono sui segni e il join cross-source falliva. (#SOFT-MARKETS)
+    s = unicodedata.normalize("NFKD", s or "")
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = _NOISE.sub("", s)
     return re.sub(r"\s+", " ", s).strip().lower()
 
 def build_rows(home, away, kickoff_iso, league, rates):

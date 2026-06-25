@@ -21,7 +21,11 @@ const SPORT_KEYS: Record<string, string> = {
 };
 
 export function normName(name: string): string {
+  // Fold diacritics first (Göteborg→Goteborg, Malmö→Malmo): le fonti divergono
+  // sui segni diacritici e il join cross-source (odds + soft) falliva. (#SOFT-MARKETS)
   return name
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/\b(FC|CF|SC|AC|AS|SV|SS|US|SSC|AFC|Calcio)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim()
