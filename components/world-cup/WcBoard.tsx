@@ -38,6 +38,12 @@ type WcEnrichment = {
   group?: string | null;
   model?: string | null;
   goalscorer_markets?: GoalscorerMarket[] | null; // premium-only (projection-gated)
+  // Mercati soft (#SOFT-MARKETS): corners/cards/fouls — Pro-only (projection-gated).
+  soft?: {
+    corners?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+    cards?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+    fouls?: { expected: number; main_line: number; p_over: number; is_generic: boolean };
+  } | null;
 };
 
 type ProjectedRow = {
@@ -561,6 +567,37 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
           )}
           {e?.goalscorer_markets && e.goalscorer_markets.length > 0 && (
             <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={home} awayTeam={away} lang={lang} />
+          )}
+
+          {/* Mercati soft (#SOFT-MARKETS, WC): corners/cartellini/falli — Pro-only.
+              Framing: STIMA DEL MODELLO — mai edge. Non-Pro: enrichment stripped
+              entirely by projectPrediction → e?.soft is never present → nothing renders. */}
+          {e?.soft && Object.keys(e.soft).length > 0 && (
+            <div className="goals-block">
+              <div className="goals-head">
+                <span className="goals-eg">{lang === "it" ? "Mercati extra" : "Extra markets"}</span>
+              </div>
+              <div className="goals-ou">
+                {e.soft.fouls && (
+                  <span>
+                    {lang === "it" ? "Falli attesi" : "Fouls exp."} ~<b>{e.soft.fouls.expected.toFixed(1)}</b> · Over {e.soft.fouls.main_line} <b>{Math.round(e.soft.fouls.p_over * 100)}%</b>
+                  </span>
+                )}
+                {e.soft.cards && (
+                  <span>
+                    {lang === "it" ? "Cartellini attesi" : "Cards exp."} ~<b>{e.soft.cards.expected.toFixed(1)}</b> · Over {e.soft.cards.main_line} <b>{Math.round(e.soft.cards.p_over * 100)}%</b>
+                  </span>
+                )}
+                {e.soft.corners && (
+                  <span>
+                    {lang === "it" ? "Corner attesi" : "Corners exp."} ~<b>{e.soft.corners.expected.toFixed(1)}</b> · Over {e.soft.corners.main_line} <b>{Math.round(e.soft.corners.p_over * 100)}%</b>
+                    {e.soft.corners.is_generic && (
+                      <> · <em>{lang === "it" ? "stima generica" : "generic estimate"}</em></>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
           )}
 
           {/* WHY — #CARD-STD-1: same structure as the football card —

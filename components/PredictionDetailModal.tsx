@@ -16,6 +16,9 @@ import { createPortal } from "react-dom";
 export type DetailLang = "it" | "en" | "es" | "fr" | "ru";
 function L<T>(lang: DetailLang, v: { it: T; en: T; es: T; fr: T; ru: T }): T { return v[lang]; }
 
+export type SoftEntry = { expected: number; main_line: number; p_over: number; is_generic: boolean };
+export type SoftMarkets = { corners?: SoftEntry; cards?: SoftEntry; fouls?: SoftEntry };
+
 // Stato + wiring condiviso: una card "ingrandibile" registra la sua rect al
 // click e apre il modal. I controlli interni della card (bet/affiliate/select)
 // fermano la propagazione → non aprono il modal.
@@ -49,7 +52,7 @@ export function useDetailModal(enabled: boolean) {
 export const stopCardClick = (ev: ReactMouseEvent | ReactKeyboardEvent) => ev.stopPropagation();
 
 export function PredictionDetailModal({
-  open, onClose, anchorRect, titleId, title, subtitle, lang, children,
+  open, onClose, anchorRect, titleId, title, subtitle, lang, soft, softLocked, children,
 }: {
   open: boolean;
   onClose: () => void;
@@ -58,6 +61,8 @@ export function PredictionDetailModal({
   title: ReactNode;
   subtitle?: ReactNode;
   lang: DetailLang;
+  soft?: SoftMarkets | null;
+  softLocked?: boolean;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -157,22 +162,57 @@ export function PredictionDetailModal({
         </div>
         <div className="pdm-body">
           {children}
-          {/* NUOVA sezione predisposta — Mercati soft in costruzione. Nessun
-              numero inventato: placeholder onesto "In arrivo". */}
-          <section className="pdm-soon" aria-label={L(lang, { it: "Mercati extra in arrivo", en: "Extra markets coming soon", es: "Mercados extra próximamente", fr: "Marchés supplémentaires à venir", ru: "Дополнительные рынки скоро" })}>
+          {/* Mercati soft (#SOFT-MARKETS): corners/cartellini/falli.
+              Framing esclusivo: STIMA DEL MODELLO — mai edge, mai value-bet claim. */}
+          <section className="pdm-soon" aria-label={L(lang, { it: "Mercati extra", en: "Extra markets", es: "Mercados extra", fr: "Marchés supplémentaires", ru: "Дополнительные рынки" })}>
             <div className="pdm-soon-head">
               <span className="pdm-soon-title">{L(lang, { it: "Mercati extra — Corner · Cartellini · Falli", en: "Extra markets — Corners · Cards · Fouls", es: "Mercados extra — Córners · Tarjetas · Faltas", fr: "Marchés extra — Corners · Cartons · Fautes", ru: "Доп. рынки — Угловые · Карточки · Фолы" })}</span>
-              <span className="pdm-soon-tag">{L(lang, { it: "In arrivo", en: "Coming soon", es: "Próximamente", fr: "À venir", ru: "Скоро" })}</span>
+              {(!soft || Object.keys(soft).length === 0) && !softLocked && (
+                <span className="pdm-soon-tag">{L(lang, { it: "In arrivo", en: "Coming soon", es: "Próximamente", fr: "À venir", ru: "Скоро" })}</span>
+              )}
             </div>
-            <p className="pdm-soon-txt">
-              {L(lang, {
-                it: "Stiamo costruendo i modelli per i mercati soft. Compariranno qui quando i dati saranno affidabili — niente stime improvvisate.",
-                en: "We are building the models for the soft markets. They'll appear here once the data is reliable — no guessed numbers.",
-                es: "Estamos construyendo los modelos para los mercados soft. Aparecerán aquí cuando los datos sean fiables — sin cifras improvisadas.",
-                fr: "Nous construisons les modèles pour les marchés soft. Ils apparaîtront ici une fois les données fiables — aucun chiffre improvisé.",
-                ru: "Мы строим модели для soft-рынков. Они появятся здесь, когда данные будут надёжными — без выдуманных цифр.",
-              })}
-            </p>
+            {soft && Object.keys(soft).length > 0 ? (
+              <div className="goals-ou" style={{ marginTop: "0.4rem" }}>
+                {soft.fouls && (
+                  <span>
+                    {L(lang, { it: "Falli attesi", en: "Fouls exp.", es: "Faltas esp.", fr: "Fautes att.", ru: "Фолы" })} ~<b>{soft.fouls.expected.toFixed(1)}</b> · Over {soft.fouls.main_line} <b>{Math.round(soft.fouls.p_over * 100)}%</b>
+                  </span>
+                )}
+                {soft.cards && (
+                  <span>
+                    {L(lang, { it: "Cartellini attesi", en: "Cards exp.", es: "Tarjetas esp.", fr: "Cartons att.", ru: "Карточки" })} ~<b>{soft.cards.expected.toFixed(1)}</b> · Over {soft.cards.main_line} <b>{Math.round(soft.cards.p_over * 100)}%</b>
+                  </span>
+                )}
+                {soft.corners && (
+                  <span>
+                    {L(lang, { it: "Corner attesi", en: "Corners exp.", es: "Córners esp.", fr: "Corners att.", ru: "Угловые" })} ~<b>{soft.corners.expected.toFixed(1)}</b> · Over {soft.corners.main_line} <b>{Math.round(soft.corners.p_over * 100)}%</b>
+                    {soft.corners.is_generic && (
+                      <> · <em>{L(lang, { it: "stima generica", en: "generic estimate", es: "estimación genérica", fr: "estimation générique", ru: "общая оценка" })}</em></>
+                    )}
+                  </span>
+                )}
+              </div>
+            ) : softLocked ? (
+              <p className="pdm-soon-txt" style={{ opacity: 0.5, filter: "blur(4px)", userSelect: "none" }}>
+                {L(lang, {
+                  it: "Corner attesi ~9.2 · Over 9.5 68% · Cartellini attesi ~3.8 · Over 3.5 55%",
+                  en: "Corners exp. ~9.2 · Over 9.5 68% · Cards exp. ~3.8 · Over 3.5 55%",
+                  es: "Córners esp. ~9.2 · Over 9.5 68% · Tarjetas esp. ~3.8 · Over 3.5 55%",
+                  fr: "Corners att. ~9.2 · Over 9.5 68% · Cartons att. ~3.8 · Over 3.5 55%",
+                  ru: "Угловые ~9.2 · Over 9.5 68% · Карточки ~3.8 · Over 3.5 55%",
+                })}
+              </p>
+            ) : (
+              <p className="pdm-soon-txt">
+                {L(lang, {
+                  it: "Stiamo costruendo i modelli per i mercati soft. Compariranno qui quando i dati saranno affidabili — niente stime improvvisate.",
+                  en: "We are building the models for the soft markets. They'll appear here once the data is reliable — no guessed numbers.",
+                  es: "Estamos construyendo los modelos para los mercados soft. Aparecerán aquí cuando los datos sean fiables — sin cifras improvisadas.",
+                  fr: "Nous construisons les modèles pour les marchés soft. Ils apparaîtront ici une fois les données fiables — aucun chiffre improvisé.",
+                  ru: "Мы строим модели для soft-рынков. Они появятся здесь, когда данные будут надёжными — без выдуманных цифр.",
+                })}
+              </p>
+            )}
           </section>
         </div>
       </div>

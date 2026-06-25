@@ -6,6 +6,7 @@ import { projectPrediction } from "@/lib/access-projection";
 import { withAffiliate } from "@/lib/affiliate";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
+import { buildSoftLookup } from "@/lib/soft-lookup";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,33 @@ export async function GET(req: Request) {
           r.enrichment = enr;
         }
       }
+    }
+  }
+
+  // Mercati soft (#SOFT-MARKETS, WC): corners/cards/fouls da soft_predictions.
+  // Attached to `enrichment` BEFORE projection: since `enrichment` is PREMIUM_ONLY
+  // (lib/access-projection), soft inherits the same premium-only gating as the
+  // rest of the deep-enrichment. Non-Pro users receive no enrichment → no soft leak.
+  {
+    const isPro = state === "premium" || state === "admin_full";
+    const lookupSoft = await buildSoftLookup();
+    for (const r of served) {
+      const home = String(r.home_team ?? "");
+      const away = String(r.away_team ?? "");
+      const kickoff = String(r.starts_at ?? "");
+      if (!home || !away || !kickoff) continue;
+      const softData = lookupSoft(home, away, kickoff);
+      if (!softData) continue;
+      if (isPro) {
+        const enr =
+          r.enrichment && typeof r.enrichment === "object"
+            ? (r.enrichment as Record<string, unknown>)
+            : {};
+        enr.soft = softData;
+        r.enrichment = enr;
+      }
+      // Non-Pro: soft_locked would live outside enrichment, but WcBoard renders
+      // nothing for non-Pro (no LockedGate pattern there) — no field needed.
     }
   }
 
