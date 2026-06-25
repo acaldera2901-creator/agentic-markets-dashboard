@@ -31,6 +31,7 @@ logger = logging.getLogger("predict_soft_markets")
 _DIRECT = "https://v3.football.api-sports.io"
 
 LEAGUES = {
+    1: "WC",   # World Cup (nazionali): modello league-agnostic con shrinkage (#SOFT-MARKETS)
     39: "PL",
     135: "SA",
     140: "PD",
