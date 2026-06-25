@@ -47,10 +47,17 @@ async def get_lineups(fixture_id: int) -> List[Dict]:
         return resp.json().get("response", [])
 
 async def get_historical_results(league_id: int, season: int) -> List[Dict]:
+    # Scoped to league-history bootstrap ONLY: use the working direct api-sports
+    # key here when present. The shared _base_url()/_headers() (and thus the
+    # player-data sync) stay untouched on the RapidAPI path. (#APIFOOTBALL-KEY-FIX-2)
+    if settings.API_FOOTBALL_DIRECT_KEY:
+        base, headers = _DIRECT_BASE, {"x-apisports-key": settings.API_FOOTBALL_DIRECT_KEY}
+    else:
+        base, headers = _base_url(), _headers()
     async with httpx.AsyncClient() as client:
         resp = await client.get(
-            f"{_base_url()}/fixtures",
-            headers=_headers(),
+            f"{base}/fixtures",
+            headers=headers,
             params={"league": league_id, "season": season, "status": "FT", "last": 50},
             timeout=15.0,
         )
