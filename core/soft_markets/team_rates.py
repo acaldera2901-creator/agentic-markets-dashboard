@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 from config.settings import settings
 from core.soft_markets.model import team_rate, IS_GENERIC
@@ -9,12 +10,20 @@ WARMUP = 3
 def _hdr():
     return {"x-apisports-key": settings.API_FOOTBALL_DIRECT_KEY}
 
+async def _get(c, path, params):
+    """GET con backoff sul rate-limit al minuto di api-football (429)."""
+    for attempt in range(4):
+        r = await c.get(f"{_DIRECT}{path}", headers=_hdr(), params=params)
+        if r.status_code != 429:
+            return r
+        await asyncio.sleep(2.0 * (attempt + 1))
+    return r
+
 async def fetch_team_recent(team_id, before_iso, window=12):
     """Ultima `window` partite FT della squadra prima di before_iso -> for/against per mercato."""
     out = {f"{m}_for": [] for m in MARKETS} | {f"{m}_against": [] for m in MARKETS}
     async with httpx.AsyncClient(timeout=20.0) as c:
-        r = await c.get(f"{_DIRECT}/fixtures", headers=_hdr(),
-                        params={"team": team_id, "last": window * 2, "status": "FT"})
+        r = await _get(c, "/fixtures", {"team": team_id, "last": window * 2, "status": "FT"})
         if r.status_code != 200:
             return out
         prior = [f for f in r.json().get("response", []) if f["fixture"]["date"] < before_iso]
@@ -23,7 +32,7 @@ async def fetch_team_recent(team_id, before_iso, window=12):
         fixtures = prior[:window]
         for f in fixtures:
             fid = f["fixture"]["id"]
-            s = await c.get(f"{_DIRECT}/fixtures/statistics", headers=_hdr(), params={"fixture": fid})
+            s = await _get(c, "/fixtures/statistics", {"fixture": fid})
             if s.status_code != 200:
                 continue
             resp = s.json().get("response", [])
