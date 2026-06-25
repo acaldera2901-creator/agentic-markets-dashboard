@@ -1,3 +1,4 @@
+import { isSummerLeague } from "@/lib/summer-leagues";
 const BASE = "https://api.the-odds-api.com/v4";
 
 const SPORT_KEYS: Record<string, string> = {
@@ -90,12 +91,27 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
   try {
     const url = new URL(`${BASE}/sports/${sportKey}/odds`);
     url.searchParams.set("apiKey", apiKey);
-    url.searchParams.set("regions", "eu,uk");
-    url.searchParams.set("markets", "h2h,totals,btts,double_chance");
     url.searchParams.set("oddsFormat", "decimal");
-    url.searchParams.set("bookmakers", "betfair,pinnacle,bet365");
+    // Top leagues stay on the sharp trio (Pinnacle/Bet365/Betfair) for closing-line
+    // quality. Summer leagues (NOR/SWE/FIN/IRL/CHN) are frequently NOT priced by
+    // those three — restricting to them returned 0 h2h for Allsvenskan/Veikkausliiga,
+    // so every summer fixture was dropped (route.ts:462 needs real odds). Widen to
+    // all eu/uk books for summer leagues so the validated blend can be served.
+    url.searchParams.set("regions", "eu,uk");
+    if (!isSummerLeague(league)) {
+      url.searchParams.set("bookmakers", "betfair,pinnacle,bet365");
+    }
 
-    const r = await fetch(url.toString(), { cache: "no-store" });
+    // btts/double_chance aren't supported for every league (e.g. the summer
+    // calendar) → The Odds API returns 422 INVALID_MARKET and the whole league's
+    // odds were lost, dropping every fixture. Request the full set, then fall back
+    // to the core markets on 422 so odds still attach. (#FIX-SUMMER-ODDS-0625)
+    url.searchParams.set("markets", "h2h,totals,btts,double_chance");
+    let r = await fetch(url.toString(), { cache: "no-store" });
+    if (r.status === 422) {
+      url.searchParams.set("markets", "h2h,totals");
+      r = await fetch(url.toString(), { cache: "no-store" });
+    }
     if (!r.ok) return [];
 
     const events = await r.json() as OddsEvent[];
