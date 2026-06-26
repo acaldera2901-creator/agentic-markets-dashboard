@@ -21,3 +21,9 @@ export function withAffiliate<T extends Record<string, unknown>>(row: T): T {
   const offer = affiliateOffer();
   return offer ? ({ ...row, affiliate: offer } as T) : row;
 }
+
+// #PARTNER-REMOVE-0626: single sportsbook partner for now. "Place bet" links
+// straight to the FortunePlay invite link in every geo (the multi-book dropdown
+// infra in lib/sportsbooks + PlaceBetMenu is kept but unwired).
+// Upgrade path: when more partners return, re-wire PlaceBetMenu via /api/bet-links.
+export const FORTUNEPLAY_BET_URL = "https://mediaroosters.com/aacugmydl8";

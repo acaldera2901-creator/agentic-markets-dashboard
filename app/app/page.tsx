@@ -17,7 +17,7 @@ import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
-import { PlaceBetMenu } from "@/components/PlaceBetMenu";
+import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LiveChat } from "@/components/LiveChat";
@@ -1451,8 +1451,6 @@ function orientLive(live: LiveScore | undefined, home?: string | null, away?: st
 // pair key (e.g. "alcaraz|sinner").
 const LiveTennisCtx = createContext<Record<string, LiveTennisMatch>>({});
 const useLiveTennis = () => useContext(LiveTennisCtx);
-const BetLinksCtx = createContext<boolean>(false);
-const useBetLinksEnabled = () => useContext(BetLinksCtx);
 function tennisLastName(s: string) {
   return (s.split(" ").pop() ?? s).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
@@ -1741,7 +1739,6 @@ const RAIL_GLYPHS: Record<string, string> = {
   leaderboard: "#g-rank",
   "match-builder": "#g-builder",
   account: "#g-acct",
-  partners: "#g-desk",
 };
 
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
@@ -1757,7 +1754,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "plans" | "history" | "partners" | "leaderboard" | "match-builder";
+type Tab = "bets" | "plans" | "history" | "leaderboard" | "match-builder";
 type AccountSection = "account" | "piani";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
@@ -4451,7 +4448,6 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
-  const betLinksEnabled = useBetLinksEnabled();
   const tz = useTz();
   const liveMap = useLive();
   const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
@@ -4676,24 +4672,9 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         <div className="act">
           {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
               altrimenti vecchio CTA. FT → status note. */}
-          {!isPreview && (betLinksEnabled || onBetNow) && (isFinished ? (
+          {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (via onBetNow). */}
+          {!isPreview && onBetNow && (isFinished ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
-          ) : betLinksEnabled ? (
-            <PlaceBetMenu
-              buttonClassName="betbtn"
-              label={pick5(lang, { it: "Piazza scommessa", en: "Place bet", es: "Hacer apuesta", fr: "Placer le pari", ru: "Сделать ставку" })}
-              disclaimer={pick5(lang, { it: "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te.", en: "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you.", es: "18+ · Juega con responsabilidad · *Enlace de afiliado — podemos recibir una comisión, sin coste para ti.", fr: "18+ · Jouez de manière responsable · *Lien affilié — nous pouvons percevoir une commission, sans frais pour vous.", ru: "18+ · Играйте ответственно · *Партнёрская ссылка — мы можем получить комиссию без затрат для вас." })}
-              selection={{
-                sport: p.league === "WC" ? "worldcup" : "football",
-                league: p.league,
-                homeTeam: p.home_team,
-                awayTeam: p.away_team,
-                market: "1X2",
-                pick: p.pick ?? p.best_selection ?? "",
-                odds: null,
-                eventStartUtc: p.kickoff,
-              }}
-            />
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
@@ -4941,7 +4922,6 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const t = useT();
   const lang = useLang();
-  const betLinksEnabled = useBetLinksEnabled();
   const tz = useTz();
   const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
 
@@ -5159,20 +5139,9 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
 
         {/* footer action row */}
         <div className="act">
-          {!isPreview && (betLinksEnabled || onBetNow) && (liveIsFinal ? (
+          {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (via onBetNow). */}
+          {!isPreview && onBetNow && (liveIsFinal ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
-          ) : betLinksEnabled ? (
-            <PlaceBetMenu
-              buttonClassName="betbtn"
-              label={pick5(lang, { it: "Piazza scommessa", en: "Place bet", es: "Hacer apuesta", fr: "Placer le pari", ru: "Сделать ставку" })}
-              disclaimer={pick5(lang, { it: "18+ · Gioca responsabilmente · *Link affiliato — potremmo ricevere una commissione, senza costi per te.", en: "18+ · Play responsibly · *Affiliate link — we may earn a commission at no cost to you.", es: "18+ · Juega con responsabilidad · *Enlace de afiliado — podemos recibir una comisión, sin coste para ti.", fr: "18+ · Jouez de manière responsable · *Lien affilié — nous pouvons percevoir une commission, sans frais pour vous.", ru: "18+ · Играйте ответственно · *Партнёрская ссылка — мы можем получить комиссию без затрат для вас." })}
-              selection={{
-                sport: "tennis",
-                market: "MO",
-                pick: m.pick ?? m.best_selection ?? "",
-                odds: null,
-              }}
-            />
           ) : (
             <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
           ))}
@@ -5913,224 +5882,6 @@ function MatchBuilderTab({
         </div>
         </LockedGate>
       )}
-    </div>
-  );
-}
-
-// ─── Partners Tab ─────────────────────────────────────────────────────────────
-
-type PartnerType = "Casino & Sportsbook" | "Sportsbook" | "Exchange" | "Casino" | "Crypto Casino";
-type PartnerStatus = "featured" | "active" | "coming_soon" | "in_discussion";
-
-interface Partner {
-  id: string;
-  name: string;
-  type: PartnerType;
-  status: PartnerStatus;
-  description: string;
-  description_en?: string; // EN override; falls back to `description` when absent
-  url: string | null;
-  since: string;
-  logo_initials: string;
-  logo_color: string;
-  logo_image?: string; // logo reale dell'operatore; fallback su iniziali+colore se assente
-  featured?: boolean;
-  tags?: string[];
-}
-
-const PARTNERS: Partner[] = [
-  {
-    id: "partner-fortuneplay",
-    name: "FortunePlay",
-    type: "Casino & Sportsbook",
-    status: "active",
-    description: "Sportsbook e casino partner ufficiale di BetRedge. Collegamento diretto dalle pick via \"Piazza scommessa\".",
-    description_en: "Official BetRedge sportsbook & casino partner. Bet straight from the picks via \"Place bet\".",
-    url: "https://mediaroosters.com/aacugmydl8",
-    since: "2026",
-    logo_initials: "FP",
-    logo_color: "from-amber-400 to-yellow-600",
-    logo_image: "/logos/fortuneplay.svg",
-    featured: true,
-    tags: ["Ufficiale", "Sport", "Casino", "Live"],
-  },
-  {
-    id: "partner-stake",
-    name: "Stake",
-    type: "Casino & Sportsbook",
-    status: "active",
-    description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
-    description_en: "Crypto casino & sportsbook. Bet straight from the picks via \"Place bet\".",
-    url: "https://stake.com",
-    since: "2026",
-    logo_initials: "ST",
-    logo_color: "from-slate-600 to-slate-900",
-    tags: ["Sport", "Casino", "Crypto"],
-  },
-  {
-    id: "partner-roobet",
-    name: "Roobet",
-    type: "Casino & Sportsbook",
-    status: "active",
-    description: "Casino e sportsbook crypto. Collegamento diretto dalle pick via \"Piazza scommessa\".",
-    description_en: "Crypto casino & sportsbook. Bet straight from the picks via \"Place bet\".",
-    url: "https://roobet.com",
-    since: "2026",
-    logo_initials: "RB",
-    logo_color: "from-yellow-400 to-amber-500",
-    tags: ["Sport", "Casino", "Crypto"],
-  },
-];
-
-const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
-  featured:      "text-[var(--am-coral)] border-[var(--am-coral-b)] bg-[var(--am-coral-dim)]",
-  active:        "text-[var(--am-coral)] border-[var(--am-coral-b)] bg-[var(--am-coral-dim)]",
-  coming_soon:   "text-[var(--am-muted)] border-[var(--am-line-2)] bg-[var(--am-inset)]",
-  in_discussion: "text-[var(--am-muted-2)] border-[var(--am-line)] bg-[var(--am-inset)]",
-};
-
-function PartnerCard({ p }: { p: Partner }) {
-  const t = useT();
-  const lang = useLang();
-  const statusColor = PARTNER_STATUS_COLORS[p.status];
-  const partnerName = p.name;
-  const partnerDescription = lang === "it" ? p.description : (p.description_en ?? p.description);
-  const partnerTags = p.tags ?? [];
-  const statusLabel: Record<PartnerStatus, string> = {
-    featured:      t.partners_exclusive_badge,
-    active:        t.partners_status_active,
-    coming_soon:   t.partners_status_coming,
-    in_discussion: t.partners_status_negotiation,
-  };
-  return (
-    <div className={`am-card ${p.featured ? "am-card-glow" : ""} p-5 space-y-4 flex flex-col`}>
-      {/* Header */}
-      <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 overflow-hidden ${p.logo_image ? "bg-[var(--am-inset)] border border-[var(--am-line)] p-1" : `bg-gradient-to-br ${p.logo_color}`}`}>
-          {p.logo_image
-            ? <img src={p.logo_image} alt={p.name} className="w-full h-full object-contain" width={40} height={40} />
-            : p.logo_initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-bold text-[var(--am-text)]">{partnerName}</span>
-            {p.featured && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] font-mono uppercase tracking-wider">{t.partners_status_featured}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-[10px] font-mono text-[var(--am-muted-2)]">{p.type}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${statusColor}`}>{statusLabel[p.status]}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Description */}
-      <p className="text-xs font-mono text-[var(--am-muted)] leading-relaxed flex-1">{partnerDescription}</p>
-
-      {/* Tags */}
-      {partnerTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {partnerTags.map((tag) => (
-            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--am-inset)] border border-[var(--am-line)] text-[var(--am-muted-2)] font-mono">{tag}</span>
-          ))}
-        </div>
-      )}
-
-      {/* Affiliate disclosure — only for real outbound (non-mailto) links */}
-      {p.url && !p.url.startsWith("mailto:") && (
-        <p className="text-[9px] font-mono text-[var(--am-muted-2)] italic">
-          {t.partners_affiliate_note}
-        </p>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-[var(--am-line)]">
-        <span className="text-[10px] font-mono text-[var(--am-muted-2)]">{t.partners_since} {p.since}</span>
-        {p.url ? (
-          <a
-            href={p.url}
-            target="_blank"
-            rel="nofollow sponsored noopener noreferrer"
-            onClick={() => trackEvent("partner_click", { partner_id: p.id })}
-            className="text-[10px] font-mono px-3 py-1 rounded border border-[var(--am-coral-b)] text-[var(--am-coral)] bg-[var(--am-coral-dim)] hover:bg-[var(--am-coral-dim)] transition-colors"
-          >
-            {t.partners_visit}
-          </a>
-        ) : (
-          <span className="text-[10px] font-mono text-[var(--am-muted-2)] italic">{t.partners_link_soon}</span>
-        )}
-      </div>
-      {p.logo_image && (
-        <span className="am-cardwm am-cardwm-img" style={{ backgroundImage: `url(${p.logo_image})` }} aria-hidden="true" />
-      )}
-    </div>
-  );
-}
-
-const PARTNER_CATEGORIES = ["sportsbook", "casino", "exchange", "data_provider"] as const;
-type PartnerCategory = typeof PARTNER_CATEGORIES[number];
-
-function PartnersTab() {
-  const t = useT();
-  const lang = useLang();
-  const featured = PARTNERS.filter((p) => p.featured);
-  const others = PARTNERS.filter((p) => !p.featured);
-
-  return (
-    <div className="space-y-8 p-4">
-      {/* Header */}
-      <div className="space-y-1">
-        <p className="eyebrow">{t.partners_eyebrow}</p>
-        <h2 className="text-xl font-bold text-[var(--am-text)]">{t.partners_title}</h2>
-        <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{t.partners_desc}</p>
-        <p className="text-[10px] font-mono text-[var(--am-muted-2)] mt-1">
-          {lang === "it"
-            ? "I link partner sono relazioni commerciali affiliate. BetRedge riceve compenso per referral qualificati."
-            : "Partner links are commercial affiliate relationships. BetRedge receives compensation for qualified referrals."}
-        </p>
-      </div>
-
-      {/* Featured — spotlight hero (conversione) */}
-      {featured.map((p) => (
-        <div key={p.id} className="am-card am-card-glow p-6">
-          <div className="text-[9px] font-mono text-[var(--am-coral)] uppercase tracking-widest">{t.partners_status_featured}</div>
-          <div className="flex items-center gap-3 mt-2">
-            <div className="w-14 h-14 rounded-xl bg-[var(--am-inset)] border border-[var(--am-line)] p-1.5 shrink-0 overflow-hidden grid place-items-center">
-              {p.logo_image
-                ? <img src={p.logo_image} alt={p.name} className="w-full h-full object-contain" width={48} height={48} />
-                : <span className="font-bold text-white">{p.logo_initials}</span>}
-            </div>
-            <span className="text-2xl font-bold text-[var(--am-text)] tracking-tight">{p.name}</span>
-          </div>
-          <p className="text-xs font-mono text-[var(--am-muted)] leading-relaxed mt-2 max-w-md">
-            {lang === "it" ? p.description : (p.description_en ?? p.description)}
-          </p>
-          {p.url && (
-            <a href={p.url} target="_blank" rel="nofollow sponsored noopener noreferrer"
-               onClick={() => trackEvent("partner_click", { partner_id: p.id })}
-               className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-[10px] font-bold text-[13px] bg-[var(--am-coral)] text-[var(--am-coral-ink)]">
-              {lang === "it" ? `Vai a ${p.name} →` : `Go to ${p.name} →`}
-            </a>
-          )}
-          <p className="text-[9px] font-mono text-[var(--am-muted-2)] italic mt-3">{t.partners_affiliate_note}</p>
-          {p.logo_image && (
-            <span className="am-cardwm am-cardwm-img" style={{ backgroundImage: `url(${p.logo_image})`, width: 150, height: 150 }} aria-hidden="true" />
-          )}
-        </div>
-      ))}
-
-      {/* Others */}
-      {others.length > 0 && (
-        <div className="space-y-3">
-          <div className="text-[9px] font-mono text-[var(--am-muted-2)] uppercase tracking-widest">{t.partners_section_network}</div>
-          <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-            {others.map((p) => <PartnerCard key={p.id} p={p} />)}
-          </div>
-        </div>
-      )}
-
-      <p className="text-[10px] font-mono text-[var(--am-muted-2)] mt-2">{t.rg_footer}</p>
     </div>
   );
 }
@@ -7434,13 +7185,13 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "partners", "leaderboard", "match-builder"];
+const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "leaderboard", "match-builder"];
 
-// BUG-008: shared/deep links sometimes use the singular ("partner"); map common
-// aliases to the canonical tab instead of silently falling back to the board.
 // #UI-ACCOUNT-DROPDOWN-0623: la vecchia tab "account" è ora il dropdown; i deep-link
 // legacy (?tab=account, banner ?tab=account&plans=1) atterrano sulla tab Plans.
-const TAB_ALIASES: Record<string, Tab> = { partner: "partners", account: "plans" };
+// #PARTNER-REMOVE-0626: la tab Partner è stata rimossa; i deep-link legacy
+// ?tab=partner(s) ricadono sul board (default), nessun alias.
+const TAB_ALIASES: Record<string, Tab> = { account: "plans" };
 
 export default function Dashboard() {
   // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
@@ -7476,15 +7227,6 @@ export default function Dashboard() {
     const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
     return stored && LANGUAGES.includes(stored) ? stored : "en";
   });
-  const [betLinksEnabled, setBetLinksEnabled] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/bet-links")
-      .then((r) => r.json())
-      .then((j: { enabled?: boolean }) => { if (alive) setBetLinksEnabled(Boolean(j.enabled)); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
   const selectLanguage = (next: Lang) => {
     if (next === uiLanguage) return;
     setUiLanguage(next);
@@ -8128,8 +7870,6 @@ export default function Dashboard() {
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
-    { tab: "partners",    label: tNav.nav_partner },
-    // Account spostato in fondo, sotto Partner (richiesta Andrea 2026-06-17).
     // #UI-ACCOUNT-DROPDOWN-0623: "Account" → "Plans" tab; l'account vive nel dropdown dal pill.
     { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
   ];
@@ -8147,7 +7887,6 @@ export default function Dashboard() {
     { tab: "bets",        label: tNav.nav_predictions, glyph: RAIL_GLYPHS["bets"] ?? "#g-desk" },
     { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
     { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
-    { tab: "partners",    label: tNav.nav_partner,     glyph: RAIL_GLYPHS["partners"] ?? "#g-desk" },
     { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
   ];
 
@@ -8156,7 +7895,6 @@ export default function Dashboard() {
     <TzCtx.Provider value={userTz}>
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
-    <BetLinksCtx.Provider value={betLinksEnabled}>
     <main className="portal-root">
       <SportGlyphSprite />
       <CookieBanner />
@@ -8195,7 +7933,6 @@ export default function Dashboard() {
               { tab: "history" as Tab, label: tNav.nav_history },
               { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
               ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
-              { tab: "partners" as Tab, label: tNav.nav_partner },
             ].map((item) => (
               <button
                 key={item.tab}
@@ -8364,8 +8101,8 @@ export default function Dashboard() {
               onSelect={(s) => setSlipSelection(s)}
               // BUG-011: an anonymous "Place Bet" used to jump to the Partners
               // (affiliate) tab with no context. Prompt sign-in first; a
-              // logged-in user keeps the affiliate route.
-              onBetNow={() => hasClientProfile ? setTab("partners") : openAuth("login")}
+              // #PARTNER-REMOVE-0626: Place bet apre direttamente il link invito FortunePlay.
+              onBetNow={() => window.open(FORTUNEPLAY_BET_URL, "_blank", "noopener,noreferrer")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
@@ -8397,7 +8134,6 @@ export default function Dashboard() {
               isOptedIn={clientProfile?.leaderboardOptIn ?? false}
             />
           )}
-          {tab === "partners" && <PartnersTab />}
           {tab === "match-builder" && (
             <MatchBuilderTab
               predictions={predictions}
@@ -8478,7 +8214,6 @@ export default function Dashboard() {
         ))}
       </nav>
     </main>
-    </BetLinksCtx.Provider>
     </LiveTennisCtx.Provider>
     </LiveCtx.Provider>
     </TzCtx.Provider>
