@@ -2105,6 +2105,49 @@ function deskBannerData(
   return buildBannerData(matches, { eventsCount: predictions.length + tennisMatches.length, hitRate: opts.hitRate });
 }
 
+// #FREE-PRED-REVAMP-0626: paywall curato per i Free. Sostituisce i wall gialli +
+// i "🔒" placeholder: l'assaggio (1 pick reale per sport, già sbloccata dal server)
+// resta sopra, questo pannello converte il resto. CTA → tab Piani via onUpgrade.
+function FreePaywall({ count, hitRate, lang, onUpgrade }: {
+  count: number;
+  hitRate?: string | null;
+  lang: Lang;
+  onUpgrade?: () => void;
+}) {
+  const bullets = [
+    pick5(lang, { it: "Edge% e pick su ogni match", en: "Edge% and pick on every match", es: "Edge% y pick en cada partido", fr: "Edge% et pick sur chaque match", ru: "Edge% и пик в каждом матче" }),
+    pick5(lang, { it: "Il ragionamento del modello dietro ogni scelta", en: "The model's reasoning behind every call", es: "El razonamiento del modelo en cada elección", fr: "Le raisonnement du modèle derrière chaque choix", ru: "Обоснование модели за каждым выбором" }),
+    pick5(lang, { it: "Tutte le competizioni + World Cup, calcio e tennis", en: "Every competition + World Cup, football and tennis", es: "Todas las competiciones + Mundial, fútbol y tenis", fr: "Toutes les compétitions + Coupe du Monde, football et tennis", ru: "Все турниры + Чемпионат мира, футбол и теннис" }),
+  ];
+  return (
+    <section className="free-paywall">
+      <p className="fp-eyebrow">{pick5(lang, { it: "Questo è l'assaggio gratis", en: "This is your free taste", es: "Esta es tu muestra gratis", fr: "Ceci est votre aperçu gratuit", ru: "Это ваш бесплатный пробник" })}</p>
+      <h3>{pick5(lang, { it: `Sblocca tutte le ${count} prediction di oggi`, en: `Unlock all ${count} predictions today`, es: `Desbloquea las ${count} predicciones de hoy`, fr: `Débloquez les ${count} prédictions du jour`, ru: `Откройте все ${count} прогнозов на сегодня` })}</h3>
+      <ul className="fp-bullets">
+        {bullets.map((b, i) => (
+          <li key={i} className="fp-bullet">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      {hitRate && (
+        <p className="fp-proof">
+          <strong>{hitRate}</strong> {pick5(lang, { it: "hit rate · ultime 100 pick concluse", en: "hit rate · last 100 settled picks", es: "hit rate · últimas 100 picks", fr: "hit rate · 100 derniers picks réglés", ru: "hit rate · последние 100 закрытых пиков" })}
+        </p>
+      )}
+      <div className="fp-actions">
+        <button type="button" className="fp-cta" onClick={() => onUpgrade?.()}>
+          {pick5(lang, { it: "Passa a Pro — 49.90 USDT/mese", en: "Upgrade to Pro — 49.90 USDT/month", es: "Pasa a Pro — 49.90 USDT/mes", fr: "Passez à Pro — 49.90 USDT/mois", ru: "Перейти на Pro — 49.90 USDT/мес" })}
+        </button>
+        <button type="button" className="fp-link" onClick={() => onUpgrade?.()}>
+          {pick5(lang, { it: "Vedi i piani", en: "See plans", es: "Ver los planes", fr: "Voir les offres", ru: "Смотреть тарифы" })}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function SportsbookBoard({
   predictions,
   tennisMatches,
@@ -2115,6 +2158,7 @@ function SportsbookBoard({
   isPremium,
   tennisIsPlaceholder,
   onBannerCta,
+  hitRate,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -2125,6 +2169,7 @@ function SportsbookBoard({
   isPremium?: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
+  hitRate?: string | null;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   // ?sport= deep-link dalla landing: applicato dopo il mount per non rompere
@@ -2313,19 +2358,6 @@ function SportsbookBoard({
         <div className="book-empty">{labels.noResults}</div>
       ) : (
         <>
-          {isFreeClient && (
-            <div className="free-tier-banner">
-              <strong>{pick5(lang, { it: "Piano Free — 1 prediction per sport", en: "Free Plan — 1 prediction per sport", es: "Plan Free — 1 predicción por deporte", fr: "Plan Free — 1 prédiction par sport", ru: "План Free — 1 прогноз на вид спорта" })}</strong>
-              <span>{pick5(lang, {
-                it: "Vedi 1 anteprima per sport. Sblocca prediction, edge% e analisi con Signal Desk Pro (49.90 USDT/mese).",
-                en: "You see 1 preview per sport. Unlock predictions, edge% and analysis with Signal Desk Pro (49.90 USDT/month).",
-                es: "Ves 1 vista previa por deporte. Desbloquea predicciones, edge% y análisis con Signal Desk Pro (49.90 USDT/mes).",
-                fr: "Vous voyez 1 aperçu par sport. Débloquez prédictions, edge% et analyse avec Signal Desk Pro (49.90 USDT/mois).",
-                ru: "Вы видите 1 превью на вид спорта. Откройте прогнозы, edge% и анализ с Signal Desk Pro (49.90 USDT/мес).",
-              })}</span>
-            </div>
-          )}
-
           {showFootballSection && (
             <section>
               <div className="sport-band">
@@ -2340,11 +2372,14 @@ function SportsbookBoard({
                   {(() => {
                     // #HOUSE-PHOTO-1: banner foto intercalati ogni ~8 card; ogni campagna
                     // del pool calcio (footballFeed) usata UNA sola volta → nessun duplicato.
-                    const rows = isFreeClient ? footballRows.slice(0, 1) : footballRows;
+                    // #FREE-PRED-REVAMP-0626: il Free vede come ASSAGGIO le righe già
+                    // sbloccate dal server (top-1 per sport, !locked) come card COMPLETE.
+                    // Il resto è rappresentato dal <FreePaywall>, non da card blurrate.
+                    const rows = isFreeClient ? footballRows.filter((p) => !p.locked) : footballRows;
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const card = (
-                        <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                        <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
                       if (placed < footballFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
@@ -2353,13 +2388,6 @@ function SportsbookBoard({
                       return [card];
                     });
                   })()}
-                  {isFreeClient && footballRows.length > 1 && (
-                    <div className="free-preview-wall">
-                      <div className="fpw-lock">🔒</div>
-                      <div className="fpw-count">+{footballRows.length - 1} {pick5(lang, { it: "prediction bloccate", en: "predictions locked", es: "predicciones bloqueadas", fr: "prédictions verrouillées", ru: "прогнозов заблокировано" })}</div>
-                      <div className="fpw-sub">{pick5(lang, { it: "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)", en: "Unlock all with Signal Desk Pro (49.90 USDT/month)", es: "Desbloquea todo con Signal Desk Pro (49.90 USDT/mes)", fr: "Débloquez tout avec Signal Desk Pro (49.90 USDT/mois)", ru: "Откройте всё с Signal Desk Pro (49.90 USDT/мес)" })}</div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 /* P6: honest empty-state — WC countdown message + hub link */
@@ -2407,11 +2435,11 @@ function SportsbookBoard({
                   {(() => {
                     // #HOUSE-PHOTO-1: banner tennis dal pool DISGIUNTO (tennisFeed), ognuno una
                     // volta sola → mai duplicati col feed calcio nella stessa pagina.
-                    const rows = isFreeClient ? tennisRows.slice(0, 1) : tennisRows;
+                    const rows = isFreeClient ? tennisRows.filter((m) => !m.locked) : tennisRows;
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPreview={isFreeClient} isPremium={isPremium} />
+                        <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
                       if (placed < tennisFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
@@ -2420,18 +2448,16 @@ function SportsbookBoard({
                       return [card];
                     });
                   })()}
-                  {isFreeClient && tennisRows.length > 1 && (
-                    <div className="free-preview-wall">
-                      <div className="fpw-lock">🔒</div>
-                      <div className="fpw-count">+{tennisRows.length - 1} {pick5(lang, { it: "match bloccati", en: "matches locked", es: "partidos bloqueados", fr: "matchs verrouillés", ru: "матчей заблокировано" })}</div>
-                      <div className="fpw-sub">{pick5(lang, { it: "Sblocca tutto con Signal Desk Pro (49.90 USDT/mese)", en: "Unlock all with Signal Desk Pro (49.90 USDT/month)", es: "Desbloquea todo con Signal Desk Pro (49.90 USDT/mes)", fr: "Débloquez tout avec Signal Desk Pro (49.90 USDT/mois)", ru: "Откройте всё с Signal Desk Pro (49.90 USDT/мес)" })}</div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="book-empty">{t.board_tennis_empty}</div>
               )}
             </section>
+          )}
+
+          {/* #FREE-PRED-REVAMP-0626: paywall curato dopo l'assaggio (solo Free). */}
+          {isFreeClient && (
+            <FreePaywall count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} />
           )}
         </>
       )}
@@ -7296,6 +7322,7 @@ function UnifiedBetsTab({
   isLoggedIn,
   tennisIsPlaceholder,
   onBannerCta,
+  hitRate,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -7313,6 +7340,7 @@ function UnifiedBetsTab({
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
+  hitRate?: string | null;
 }) {
   const lang = useLang();
   // #HOUSE-PHOTO-3: dati reali per la versione RICCA del banner topbar (ticker top-edge + chip Edge medio).
@@ -7361,6 +7389,7 @@ function UnifiedBetsTab({
           isPremium={isPremiumClient}
           tennisIsPlaceholder={tennisIsPlaceholder}
           onBannerCta={onBannerCta}
+          hitRate={hitRate}
         />
       </LockedGate>
       <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
@@ -8346,6 +8375,7 @@ export default function Dashboard() {
               isPremiumClient={isClientUnlocked}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
+              hitRate={v2RateMeaningful ? historyV2Stats?.win_rate ?? null : null}
             />
           )}
           {/* #UI-ACCOUNT-DROPDOWN-0623: la tab "Plans" rende direttamente PlansTab.

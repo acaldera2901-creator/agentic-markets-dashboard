@@ -4659,56 +4659,45 @@ button:disabled {
   user-select: none;
 }
 
-.free-tier-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  border: 1px solid rgba(234, 179, 8, 0.15);
-  background: rgba(234, 179, 8, 0.03);
-  margin: 8px 16px;
+/* ─── Free paywall (#FREE-PRED-REVAMP-0626) ─────────────────────────────────── */
+.free-paywall {
+  margin: 22px 16px 8px;
+  padding: 22px;
+  border-radius: 14px;
+  border: 1px solid var(--am-coral-b);
+  background: linear-gradient(180deg, var(--am-coral-dim), var(--am-panel-2));
+  box-shadow: inset 0 1px 0 var(--am-hi);
 }
-.free-tier-banner strong {
-  font-size: 11px;
+.free-paywall .fp-eyebrow {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700;
+  color: var(--am-coral); margin: 0 0 6px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: #eab308;
-  font-weight: 600;
 }
-.free-tier-banner span {
-  font-size: 10px;
+.free-paywall h3 {
+  font-size: 20px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2;
+  color: var(--am-text); margin: 0 0 14px;
+}
+.free-paywall .fp-bullets { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.free-paywall .fp-bullet { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--am-text); }
+.free-paywall .fp-bullet svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--am-coral); }
+.free-paywall .fp-proof {
+  font-size: 12.5px; color: var(--am-muted); margin: 0 0 16px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(255,255,255,0.35);
 }
-
-/* ─── Free preview wall ─────────────────────────────────────────────────────── */
-.free-preview-wall {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 20px 16px;
-  border-radius: 8px;
-  border: 1px dashed rgba(234, 179, 8, 0.25);
-  background: rgba(234, 179, 8, 0.03);
-  text-align: center;
+.free-paywall .fp-proof strong { color: var(--am-positive); font-size: 15px; font-weight: 700; }
+.free-paywall .fp-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.free-paywall .fp-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 11px 20px; border-radius: 9px; border: 0; cursor: pointer;
+  background: var(--am-coral); color: #fff; font-weight: 700; font-size: 14px;
+  box-shadow: 0 6px 18px -8px var(--am-coral);
 }
-.fpw-lock {
-  font-size: 22px;
-  opacity: 0.7;
+.free-paywall .fp-cta:hover { filter: brightness(1.06); }
+.free-paywall .fp-link {
+  background: none; border: 0; cursor: pointer; padding: 6px 0;
+  color: var(--am-muted); font-size: 13px; text-decoration: underline; text-underline-offset: 3px;
 }
-.fpw-count {
-  font-size: 13px;
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 600;
-  color: #eab308;
-  letter-spacing: 0.03em;
-}
-.fpw-sub {
-  font-size: 10px;
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(255,255,255,0.35);
-}
+.free-paywall .fp-link:hover { color: var(--am-text); }
 
 /* ─── Deep Analysis Panel (Premium) ─────────────────────────────────────────── */
 .deep-analysis-panel {
@@ -4921,20 +4910,6 @@ button:disabled {
   .plan-upgrade-nudge em { color: var(--am-muted); }
 
   .why-locked-preview { color: var(--am-muted); }
-
-  .free-tier-banner {
-    border-color: rgba(146,89,10,0.28);
-    background: rgba(146,89,10,0.06);
-  }
-  .free-tier-banner strong { color: #92590A; }
-  .free-tier-banner span { color: var(--am-muted); }
-
-  .free-preview-wall {
-    border-color: rgba(146,89,10,0.32);
-    background: rgba(146,89,10,0.05);
-  }
-  .fpw-count { color: #92590A; }
-  .fpw-sub { color: var(--am-muted); }
 
   /* #UI-LIGHT-DEEP-0623: il cluster Deep Analysis / preview è cotto per dark
      (testo bianco o viola a bassa opacità) → in light era invisibile/slavato.
