@@ -63,8 +63,22 @@ export type ProfileRow = {
   tier: number | null;
 };
 
+// Keep the more relevant of two same-name records: higher goalsPer90×minutesShare
+// (the player's weight in the model), tie-broken by tier 1 (high confidence).
+function moreRelevant(a: GsPlayer, b: GsPlayer): boolean {
+  const wa = (a.goalsPer90 || 0) * (a.minutesShare || 0);
+  const wb = (b.goalsPer90 || 0) * (b.minutesShare || 0);
+  if (wa !== wb) return wa > wb;
+  if ((a.tier === 1) !== (b.tier === 1)) return a.tier === 1;
+  return false; // full tie → keep the one already seen (stable)
+}
+
 export function groupProfilesByTeam(rows: ProfileRow[]): Map<string, GsPlayer[]> {
-  const m = new Map<string, GsPlayer[]>();
+  // #GS-DEDUP-0626: player_profiles può contenere lo STESSO giocatore due volte
+  // (player_id diversi, doppia ingestione legacy/moderno) → le schede Marcatori
+  // ripetevano i nomi. Dedup per nome normalizzato dentro la squadra, tenendo il
+  // record più rilevante (vedi moreRelevant).
+  const byTeam = new Map<string, Map<string, GsPlayer>>();
   for (const r of rows || []) {
     const key = normTeam(r.team);
     if (!key) continue;
@@ -75,10 +89,14 @@ export function groupProfilesByTeam(rows: ProfileRow[]): Map<string, GsPlayer[]>
       minutesShare: r.minutes_share ?? 0,
       tier: r.tier ?? 0,
     };
-    const arr = m.get(key);
-    if (arr) arr.push(player);
-    else m.set(key, [player]);
+    let players = byTeam.get(key);
+    if (!players) { players = new Map(); byTeam.set(key, players); }
+    const nameKey = normName(r.name);
+    const existing = players.get(nameKey);
+    if (!existing || moreRelevant(player, existing)) players.set(nameKey, player);
   }
+  const m = new Map<string, GsPlayer[]>();
+  for (const [team, players] of byTeam) m.set(team, [...players.values()]);
   return m;
 }
 
