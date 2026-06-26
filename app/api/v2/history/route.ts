@@ -3,8 +3,23 @@ import { dbQuery } from "@/lib/db";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
-import { isSurfacedRow } from "@/lib/surfacing-gate";
 import { bySegment } from "@/lib/track-record-history";
+
+// #TRACKREC-REAL-0626: a row counts in the track record iff the board ACTUALLY
+// showed it as a directional pick. We read the board's own persisted verdict
+// instead of re-deriving the floor (which would drift from what was shown when
+// floors change, and mis-handle legacy rows):
+//   - `pick` null  → no directional pick was shown (e.g. tennis below floor).
+//   - notes.surface.below_floor === true → shown as "no clear favourite", not a pick.
+// No surface flag (legacy rows) → the board defaults to showing the pick, so we count it.
+function wasShownAsPick(row: { pick?: string | null; notes?: string | null }): boolean {
+  if (!row.pick) return false;
+  try {
+    const surface = (JSON.parse(row.notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;
+    if (surface?.below_floor === true) return false;
+  } catch { /* unparseable/absent notes → board shows the pick → count it */ }
+  return true;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +55,13 @@ export async function GET(req: Request) {
   // result (e.g. a tennis pick that aged out of the window). It is settled only
   // to clear the live board — it is NOT a confirmed outcome, so it must stay out
   // of the track record entirely (list + win-rate + void count alike).
+  // #TRACKREC-REAL-0626: paper/shadow picks (signal_type='paper', is_paper=TRUE)
+  // are the model's tracked-but-never-published predictions. They must NEVER enter
+  // the public track record — only real surfaced signals count. Defensive, like is_demo.
   const conditions: string[] = [
     "is_historical = TRUE",
     "is_demo = FALSE",
+    "is_paper = FALSE",
     "result IS DISTINCT FROM 'unresolved'",
   ];
   const values: unknown[] = [];
@@ -60,6 +79,13 @@ export async function GET(req: Request) {
     conditions.push(`EXTRACT(YEAR FROM starts_at) = $${values.length}`);
   }
 
+  // #TRACKREC-REAL-0626: the public win-rate is an ALL-TIME track record, not a
+  // recent window — so stats/segments must be computed over every real settled
+  // signal, while `limit` only bounds the displayed pick-log list. We fetch up to
+  // STATS_CAP rows for the aggregates and slice the list afterwards. Cap is a
+  // defensive backstop (real surfaced signals ~75 today); raise it (or move the
+  // aggregates into SQL COUNTs) if real settled signals ever approach it.
+  const STATS_CAP = 5000;
   const fetched = await dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
@@ -69,18 +95,18 @@ export async function GET(req: Request) {
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      ORDER BY COALESCE(settled_at, starts_at) DESC
-     LIMIT ${limit}`,
+     LIMIT ${STATS_CAP}`,
     values
   );
 
-  // SURFACED-ONLY track record (#WINRATE-FLOOR-1). The confidence-surfacing gate
-  // suppresses low-confidence rows on the board as "no clear favourite" (no
-  // directional pick). The public hit-rate must measure ONLY the picks we
-  // actually surfaced — counting a match where we declined to pick as a
-  // "loss" understated the win-rate (football 55%→94%, all 52%→71% on live
-  // settled data, 2026-06-11). Floors mirror core/surfacing_gate.py via
-  // lib/surfacing-gate.ts (single source of truth). Probability-neutral.
-  const rows = fetched.filter(isSurfacedRow);
+  // SHOWN-PICKS-ONLY track record (#WINRATE-FLOOR-1 → #TRACKREC-REAL-0626). The
+  // board suppresses below-floor rows as "no clear favourite" (no directional
+  // pick), so the public hit-rate must measure ONLY the picks we actually showed
+  // — counting a match where we declined to pick as a "loss" understated it.
+  // We now read the board's PERSISTED verdict (wasShownAsPick) rather than
+  // re-deriving the floor, so the metric matches exactly what was displayed and
+  // is stable across floor changes. Probability-neutral.
+  const rows = fetched.filter(wasShownAsPick);
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
@@ -92,7 +118,9 @@ export async function GET(req: Request) {
   // per piano pagato. rank 0 = sbloccata per base/premium/admin; ∞ = bloccata
   // per free/anonimo (comportamento invariato rispetto al vecchio flag PotD=false).
   const paidState = state === "base" || state === "premium" || state === "admin_full";
-  const history = rows.map((row) => {
+  // Stats/segments below run over ALL surfaced real rows; the displayed list is
+  // capped to `limit` (the pick-log paginates) — #TRACKREC-REAL-0626.
+  const history = rows.slice(0, limit).map((row) => {
     const projected = projectPrediction(
       row as unknown as Record<string, unknown>, state, paidState ? 0 : Infinity
     );
