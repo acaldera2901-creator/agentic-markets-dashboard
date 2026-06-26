@@ -3750,10 +3750,15 @@ function ClientAuthModal({
   intent,
   onClose,
   onAuthed,
+  dismissible = true,
 }: {
   intent: ClientAuthIntent;
   onClose: () => void;
   onAuthed: (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => void;
+  // #LOGIN-WALL-0626: false on the desk auth wall → no × (Escape/backdrop already
+  // don't close, see #QA-SERGIO-BAGS-1), so the modal can only be dismissed by
+  // logging in or registering.
+  dismissible?: boolean;
 }) {
   const [mode, setMode] = useState<ClientAuthIntent>(intent);
   const [name, setName] = useState("");
@@ -3873,11 +3878,13 @@ function ClientAuthModal({
     return (
       <div className="auth-modal-backdrop">
         <form className="auth-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
-          <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
-            style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
-              color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
-            ×
-          </button>
+          {dismissible && (
+            <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
+              style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
+                color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
+              ×
+            </button>
+          )}
           <div className="auth-modal-head">
             <p className="eyebrow">{t.auth_eyebrow}</p>
             <h3>{it ? "Recupera la password" : "Recover your password"}</h3>
@@ -3913,11 +3920,13 @@ function ClientAuthModal({
     <div className="auth-modal-backdrop">
       <form className="auth-modal"
         onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
-        <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
-          style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
-            color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
-          ×
-        </button>
+        {dismissible && (
+          <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
+            style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
+              color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
+            ×
+          </button>
+        )}
         <div className="auth-modal-head">
           <p className="eyebrow">{t.auth_eyebrow}</p>
           <h3>{mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
@@ -7563,6 +7572,10 @@ export default function Dashboard() {
   // True once the server-session reconcile has resolved, so we know whether the
   // visitor is anonymous before deciding to surface the sign-in/register prompt.
   const [authChecked, setAuthChecked] = useState(false);
+  // #LOGIN-WALL-0626: real server-session signal (cookie), NOT clientProfile —
+  // a stale localStorage profile survives an expired cookie (see the 401 branch
+  // of the probe), so gating the hard auth wall on the profile would be leaky.
+  const [hasSession, setHasSession] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
   // HIGH-3: landing from the email activation link. On success the activate
@@ -7599,15 +7612,13 @@ export default function Dashboard() {
     } catch { /* URL unavailable */ }
   }, []);
   // Deep-link auth intent (?auth=login | ?auth=register): the landing page CTAs
-  // navigate here with this param so the right modal opens immediately, instead
-  // of dropping the visitor on a locked desk (login looked "dead") or popping the
-  // wrong (register) auto-prompt. Marks am-auth-prompted so the 1.2s auto-prompt
-  // below doesn't also fire, then strips the param from the URL.
+  // navigate here with this param so the right modal opens with the right tab
+  // (login vs register) instead of the default. #LOGIN-WALL-0626: the desk auth
+  // modal is force-shown for anonymous visitors anyway; this only picks the tab.
   useEffect(() => {
     try {
       const raw = new URLSearchParams(window.location.search).get("auth");
       if (raw !== "login" && raw !== "register") return;
-      try { window.sessionStorage.setItem("am-auth-prompted", "1"); } catch { /**/ }
       /* eslint-disable react-hooks/set-state-in-effect -- one-shot mount sync from the ?auth= deep-link param; paired with history.replaceState. */
       setAuthIntent(raw === "register" ? "create" : "login");
       setAuthOpen(true);
@@ -7691,6 +7702,7 @@ export default function Dashboard() {
         const resp = await fetch("/api/auth", { credentials: "same-origin", cache: "no-store" });
         if (cancelled) return;
         if (resp.ok) {
+          setHasSession(true); // #LOGIN-WALL-0626
           const server = await resp.json() as { identifier?: string; plan?: ClientProfile["plan"]; name?: string | null; plan_expires_at?: string | null };
           setClientProfile((prev) => {
             // BUG-003: a valid server session with no locally-stored profile
@@ -7719,6 +7731,7 @@ export default function Dashboard() {
             return prev;
           });
         } else if (resp.status === 401) {
+          setHasSession(false); // #LOGIN-WALL-0626
           // No server session: keep the user identity but strip any premium plan locally.
           setClientProfile((prev) => {
             if (!prev || !profileHasAccess(prev)) return prev;
@@ -7733,21 +7746,10 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  // Proactive access prompt: anonymous visitors used to have to hunt for the
-  // "Sign In / Register" buttons in the topbar. Once we've confirmed there is no
-  // session, surface the auth modal automatically — once per browser session
-  // (dismissible), never for logged-in users. Logging in clears `clientProfile`
-  // dependency → cleanup cancels a still-pending prompt.
-  useEffect(() => {
-    if (!authChecked || clientProfile) return;
-    try { if (window.sessionStorage.getItem("am-auth-prompted")) return; } catch { /**/ }
-    const id = window.setTimeout(() => {
-      try { window.sessionStorage.setItem("am-auth-prompted", "1"); } catch { /**/ }
-      setAuthIntent("create");
-      setAuthOpen(true);
-    }, 1200);
-    return () => window.clearTimeout(id);
-  }, [authChecked, clientProfile]);
+  // #LOGIN-WALL-0626: the desk is now a hard auth wall — anonymous visitors get a
+  // non-dismissible login/register modal that's force-shown whenever there's no
+  // server session (see `mustAuth` in render). The modal defaults to the Login
+  // tab; the landing CTAs deep-link ?auth=register to open the register tab.
 
   const saveClientProfile = (profile: ClientProfile) => {
     const normalizedProfile = { ...profile, email: profile.email.trim().toLowerCase() };
@@ -7800,6 +7802,7 @@ export default function Dashboard() {
     // The modal already authenticated (register/login with password) and the
     // server set the signed session cookie. We only adopt the DB plan and persist
     // the local UX profile — the cookie, not localStorage, is the data authority.
+    setHasSession(true); // #LOGIN-WALL-0626: cookie now set → lift the auth wall
     saveClientProfile({ ...profile, plan: serverPlan ?? profile.plan });
     setTab("bets");
   };
@@ -7875,6 +7878,7 @@ export default function Dashboard() {
 
   const logoutClientProfile = () => {
     resetAccessCache();
+    setHasSession(false); // #LOGIN-WALL-0626: drop the session → re-arm the auth wall
     setClientProfile(null);
     setSlipSelection(null);
     setTab("bets");
@@ -8046,6 +8050,10 @@ export default function Dashboard() {
     const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
   }, [fetchData, fetchPredictions, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
+
+  // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
+  // session, the desk is walled — the auth modal is force-shown and locked.
+  const mustAuth = authChecked && !hasSession;
 
   // Pacchetto utente per i banner house (#HOUSE-PHOTO-1): anon|free|base|premium.
   const houseTier = audienceFromPlan(clientProfile?.plan);
@@ -8403,10 +8411,11 @@ export default function Dashboard() {
           aria-hidden="true"
         >·</button>
       </div>
-      {authOpen && (
+      {(authOpen || mustAuth) && (
         <ClientAuthModal
           intent={authIntent}
-          onClose={() => setAuthOpen(false)}
+          dismissible={!mustAuth}
+          onClose={() => { if (!mustAuth) setAuthOpen(false); }}
           onAuthed={handleAuthed}
         />
       )}
