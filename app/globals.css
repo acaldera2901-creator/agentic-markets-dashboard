@@ -5951,6 +5951,13 @@ button:disabled {
   flex: 1; border: 0; background: transparent; color: var(--am-text); font-size: 13px; outline: none; min-width: 0;
 }
 .am-search input::placeholder { color: var(--am-muted-2); }
+/* #PRED-FILTER-WRAP-0626: keep the search on its OWN full-width row in every
+   language. Before, it shared the wrapping flex row with the segmented filters
+   + selects, so longer locales (IT/RU/FR) pushed it onto a second line while EN
+   kept it inline → the bar "moved" depending on the chosen language. Forcing a
+   100% basis makes the layout identical across locales (the .grow spacer just
+   fills the trailing filters line). */
+.am-filters .am-search { flex: 1 1 100%; max-width: none; }
 /* sober inline selects kept alongside the mockup segments (no lost functionality) */
 .am-filters .am-mini-field { display: inline-flex; flex-direction: column; gap: 4px; }
 .am-filters .am-mini-field > span {
