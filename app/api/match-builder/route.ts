@@ -16,6 +16,9 @@ export const dynamic = "force-dynamic";
 const CODE_RE = /^[A-Z0-9_-]{2,20}$/;
 const MAX_SELECTIONS = 5;
 const MIN_SELECTIONS = 2;
+// #CREATOR-GATE-0626: Creator Picks è a livelli — Base vede le prime N schedine,
+// il resto bloccato; Pro tutte; Free/anon nessuna (solo upsell). Tunable.
+const BASE_SLIP_ALLOWANCE = 3;
 
 type SlipSelection = {
   id: string;
@@ -87,7 +90,18 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req);
-  const locked = state === "anonymous";
+  // #CREATOR-GATE-0626: tiered reveal by plan. Pro → all unlocked; Base → first
+  // BASE_SLIP_ALLOWANCE unlocked, rest locked; Free/anon → none (all locked +
+  // upsell). Locked slips null out pick/prob server-side (no leak); the matchup
+  // labels stay as a teaser. `access` drives the page's upsell/CTA copy.
+  const allowance =
+    state === "premium" || state === "admin_full" ? Infinity
+    : state === "base" ? BASE_SLIP_ALLOWANCE
+    : 0;
+  const access: "none" | "partial" | "full" =
+    state === "premium" || state === "admin_full" ? "full"
+    : state === "base" ? "partial"
+    : "none";
   const rows = await dbQuery<{
     id: string;
     creator_code: string;
@@ -101,24 +115,26 @@ export async function GET(req: Request) {
      ORDER BY created_at DESC
      LIMIT 30`
   );
-  const slips = rows.map((r) => {
+  const slips = rows.map((r, i) => {
     const sels: SlipSelection[] =
       typeof r.selections === "string" ? JSON.parse(r.selections) : (r.selections ?? []);
+    const slipLocked = i >= allowance;
     return {
       id: r.id,
       creator_code: r.creator_code,
       mb_param: r.mb_param,
       created_at: r.created_at,
-      combined_prob: locked ? null : (r.combined_prob != null ? Number(r.combined_prob) : null),
-      // Anonymous projection: match names visible, pick/prob behind register.
+      locked: slipLocked,
+      combined_prob: slipLocked ? null : (r.combined_prob != null ? Number(r.combined_prob) : null),
+      // Locked projection: match names visible (teaser), pick/prob hidden.
       selections: sels.map((s) => ({
         label: s.label,
         sport: s.sport,
         when: s.when,
-        market: locked ? null : s.market,
-        prob: locked ? null : s.prob,
+        market: slipLocked ? null : s.market,
+        prob: slipLocked ? null : s.prob,
       })),
     };
   });
-  return NextResponse.json({ locked, slips });
+  return NextResponse.json({ access, slips });
 }

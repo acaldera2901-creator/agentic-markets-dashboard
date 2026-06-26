@@ -22,9 +22,12 @@ type Slip = {
   creator_code: string;
   mb_param: string;
   created_at: string;
+  locked: boolean;
   combined_prob: number | null;
   selections: SlipSelection[];
 };
+
+type Access = "none" | "partial" | "full";
 
 // BUG-007: the page was Italian-only and ignored the user's language choice.
 // Mirror the board's `agentic-lang` (default IT, the prior behavior) so an EN
@@ -41,6 +44,11 @@ const COPY = {
     emptySub: "Sii il primo: costruiscila col Match Builder e condividila.",
     register: "Registrati per vedere i pick →",
     open: "Apri schedina →",
+    unlock: "Sblocca con Pro →",
+    gateNoneTitle: "Le Creator Picks sono incluse in Base e Pro",
+    gateNoneSub: "Sblocca le schedine dei creator con un piano a pagamento.",
+    gatePartial: "Passa a Pro per vedere tutte le schedine.",
+    seePlans: "Vedi i piani →",
     responsible: "18+ · gioca responsabilmente",
     locale: "it-IT",
   },
@@ -54,6 +62,11 @@ const COPY = {
     emptySub: "Be the first: build one with the Match Builder and share it.",
     register: "Register to see the picks →",
     open: "Open slip →",
+    unlock: "Unlock with Pro →",
+    gateNoneTitle: "Creator Picks is included in Base and Pro",
+    gateNoneSub: "Unlock the creators' slips with a paid plan.",
+    gatePartial: "Upgrade to Pro to see every slip.",
+    seePlans: "See plans →",
     responsible: "18+ · gamble responsibly",
     locale: "en-GB",
   },
@@ -61,7 +74,7 @@ const COPY = {
 
 export default function CommunityPage() {
   const [slips, setSlips] = useState<Slip[] | null>(null);
-  const [locked, setLocked] = useState(true);
+  const [access, setAccess] = useState<Access>("none");
   const [lang, setLang] = useState<"it" | "en">("it");
   const t = COPY[lang];
 
@@ -78,7 +91,7 @@ export default function CommunityPage() {
       .then((d) => {
         if (!alive) return;
         setSlips(Array.isArray(d?.slips) ? d.slips : []);
-        setLocked(Boolean(d?.locked));
+        setAccess(d?.access === "full" || d?.access === "partial" ? d.access : "none");
       })
       .catch(() => { if (alive) setSlips([]); });
     return () => { alive = false; };
@@ -116,6 +129,30 @@ export default function CommunityPage() {
       </header>
 
       <section className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+        {/* #CREATOR-GATE-0626: upsell quando l'accesso non è pieno (Free/anon → none, Base → partial). */}
+        {access !== "full" && (
+          <div
+            className="rounded-lg border p-4 flex items-center justify-between gap-3"
+            style={{ borderColor: "var(--am-coral-b)", background: "var(--am-coral-dim)" }}
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-bold" style={{ color: "var(--am-text)" }}>
+                {access === "none" ? t.gateNoneTitle : t.gatePartial}
+              </p>
+              {access === "none" && (
+                <p className="text-xs font-mono mt-0.5" style={{ color: "var(--am-muted)" }}>{t.gateNoneSub}</p>
+              )}
+            </div>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so the ?tab= deep-link resolves (see header note) */}
+            <a
+              href="/app?tab=plans"
+              className="text-xs font-mono px-4 py-2 rounded shrink-0"
+              style={{ background: "var(--am-coral)", color: "#fff", fontWeight: 700 }}
+            >
+              {t.seePlans}
+            </a>
+          </div>
+        )}
         {slips === null && (
           <p className="text-center text-xs font-mono py-16" style={{ color: "var(--am-muted-2)" }}>{t.loading}</p>
         )}
@@ -149,7 +186,11 @@ export default function CommunityPage() {
                 </span>
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div
+              className="space-y-1.5"
+              style={slip.locked ? { filter: "blur(4px)", opacity: 0.55, pointerEvents: "none", userSelect: "none" } : undefined}
+              aria-hidden={slip.locked || undefined}
+            >
               {slip.selections.map((sel, i) => (
                 <div key={i} className="flex items-center justify-between text-xs font-mono gap-3">
                   <div className="min-w-0">
@@ -170,14 +211,16 @@ export default function CommunityPage() {
               ))}
             </div>
             <div className="flex items-center justify-between pt-1">
-              {locked ? (
-                <Link
-                  href={`/app?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
+              {slip.locked ? (
+                /* #CREATOR-GATE-0626: schedina bloccata → upsell ai Piani (hard nav). */
+                /* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so ?tab= resolves */
+                <a
+                  href="/app?tab=plans"
                   className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
                   style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
                 >
-                  {t.register}
-                </Link>
+                  {t.unlock}
+                </a>
               ) : (
                 <Link
                   href={`/app?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
