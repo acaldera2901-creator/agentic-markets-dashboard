@@ -17,6 +17,7 @@ import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
+import { MenuIcon } from "@/app/components/menu-icon";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -1739,6 +1740,15 @@ const RAIL_GLYPHS: Record<string, string> = {
   leaderboard: "#g-rank",
   "match-builder": "#g-builder",
   account: "#g-acct",
+};
+
+// #MENU-ICONS-0626: voci del rail con la nuova icona illustrata (MenuIcon raster).
+// Le voci non mappate (es. leaderboard, in attesa del podio) restano sui glifi SVG.
+const RAIL_ICONS: Record<string, "prediction" | "history" | "plans" | "creator" | "builder"> = {
+  bets: "prediction",
+  history: "history",
+  "match-builder": "builder",
+  plans: "plans",
 };
 
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
@@ -8013,7 +8023,9 @@ export default function Dashboard() {
                   className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
                   onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
                 >
-                  <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>
+                  {RAIL_ICONS[item.tab]
+                    ? <MenuIcon name={RAIL_ICONS[item.tab]} size={18} className="rail-ic" />
+                    : <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>}
                   <span className="rail-label">{item.label}</span>
                   {item.value && <strong className="n">{item.value}</strong>}
                 </button>
@@ -8028,7 +8040,7 @@ export default function Dashboard() {
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
-                <svg className="rail-ic" aria-hidden="true"><use href="#g-pick" /></svg>
+                <MenuIcon name="creator" size={18} className="rail-ic" />
                 <span className="rail-label">Creator Picks</span>
               </a>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
