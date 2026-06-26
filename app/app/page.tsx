@@ -62,25 +62,25 @@ const BASE_TRANSLATIONS = {
     header_events: "eventi", header_ev: "+EV", header_login: "Login / Crea profilo",
     // PreAccess
     preaccess_eyebrow: "Client access required",
-    preaccess_title: "Signal Desk privato per edge verificati",
+    preaccess_title: "BetRedge privato per edge verificati",
     preaccess_subtitle: "Le prediction, il portafoglio, le size e il wallet di pagamento restano nascosti finché il cliente non accede e non sceglie un piano.",
     preaccess_login: "Login", preaccess_create: "Crea profilo",
     preaccess_s1_title: "Crea profilo", preaccess_s1_desc: "Account cliente con lingua, piano e stato pagamento.",
-    preaccess_s2_title: "Scegli piano", preaccess_s2_desc: "Free per preview, Signal Desk Pro per segnali e ricerca.",
+    preaccess_s2_title: "Scegli piano", preaccess_s2_desc: "Free per preview, BetRedge Pro per segnali e ricerca.",
     preaccess_s3_title: "Invia USDT", preaccess_s3_desc: "Il wallet compare solo dentro il checkout cliente.",
     preaccess_s4_title: "Sblocca desk", preaccess_s4_desc: "Dati reali visibili solo dopo piano attivo o approval interno.",
-    preaccess_base_desc: "Signal Desk Pro: tennis live, football research e Best Bets",
+    preaccess_base_desc: "BetRedge Pro: tennis live, football research e Best Bets",
     preaccess_premium_desc: "Accessi avanzati riservati al team interno",
     // Auth modal
     auth_eyebrow: "Client access",
-    auth_login_title: "Login Signal Desk",
-    auth_create_title: "Crea il tuo profilo Signal Desk",
+    auth_login_title: "Login BetRedge",
+    auth_create_title: "Crea il tuo profilo BetRedge",
     auth_login_sub: "Accedi con l'email usata per il tuo profilo cliente.",
-    auth_create_sub: "Crea il profilo, poi scegli Signal Desk Pro per sbloccare i dati.",
+    auth_create_sub: "Crea il profilo, poi scegli BetRedge Pro per sbloccare i dati.",
     auth_name_label: "Nome", auth_name_placeholder: "Il tuo nome",
     auth_not_found: "Profilo non trovato. Crea un profilo cliente per continuare.",
     auth_create_btn: "Continue to plans",
-    auth_footer: "Signal Desk Pro è crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
+    auth_footer: "BetRedge Pro è crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
     auth_pw_placeholder_new: "Almeno 8 caratteri",
     auth_err_wrongpw: "Email o password errata.", auth_err_noaccount: "Nessun account con questa email. Registrati.",
     auth_err_exists: "Account già esistente — accedi.", auth_err_founder: "Questo profilo richiede founder access.",
@@ -92,7 +92,7 @@ const BASE_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Un piano pagante, promessa chiara",
-    plans_subtitle: "Free resta preview. Signal Desk Pro sblocca tennis live, football research, Best Bets, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
+    plans_subtitle: "Free resta preview. BetRedge Pro sblocca tennis live, football research, Best Bets, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
     plans_cta: "View live edges",
     plans_base_desc: "Per chi vuole un desk AI operativo ma controllato: segnali, probabilità, spiegazioni, qualità dati e storico live/paper.",
     plans_base_core: "Segnali e ricerca, non autopilot", plans_base_sub: "Decisione finale al cliente",
@@ -134,7 +134,7 @@ const BASE_TRANSLATIONS = {
     board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
     // Profile panel
     profile_upgrade_eyebrow: "Passa a Pro",
-    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_title: "BetRedge Pro",
     profile_upgrade_desc: "Sblocca tennis live, football research, Best Bets, spiegazioni modello e track record.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
@@ -178,12 +178,12 @@ const BASE_TRANSLATIONS = {
     summary_signal_active: "signal layer attivo", summary_blocked: "bloccati/rifiutati",
     summary_id_required: "ID richiesto per live exec",
     // LockedGate
-    locked_eyebrow: "Signal Desk bloccato", locked_title: "Accedi per vedere prediction, edge e spiegazioni",
+    locked_eyebrow: "BetRedge bloccato", locked_title: "Accedi per vedere prediction, edge e spiegazioni",
     locked_desc: "I dati sensibili restano offuscati finché non accedi e non attivi un piano.",
     locked_btn: "Login / Crea profilo",
     locked_plan_eyebrow: "Piano richiesto",
     locked_plan_title: "Scegli un pacchetto per sbloccare il desk",
-    locked_plan_desc: "Il profilo è attivo, ma prediction, edge e spiegazioni si sbloccano solo dopo aver selezionato Signal Desk Pro.",
+    locked_plan_desc: "Il profilo è attivo, ma prediction, edge e spiegazioni si sbloccano solo dopo aver selezionato BetRedge Pro.",
     locked_plan_btn: "Vai agli abbonamenti",
     // Page headers
     page_overview: "Dashboard cliente", page_portfolio: "Client portfolio",
@@ -328,25 +328,25 @@ const BASE_TRANSLATIONS = {
     header_events: "events", header_ev: "+EV", header_login: "Login / Create profile",
     // PreAccess
     preaccess_eyebrow: "Client access required",
-    preaccess_title: "Private Signal Desk for verified edges",
+    preaccess_title: "Private BetRedge for verified edges",
     preaccess_subtitle: "Predictions, portfolio, stake sizes and payment wallet are hidden until the client signs in and chooses a plan.",
     preaccess_login: "Login", preaccess_create: "Create profile",
     preaccess_s1_title: "Create profile", preaccess_s1_desc: "Client account with language, plan and payment status.",
-    preaccess_s2_title: "Choose plan", preaccess_s2_desc: "Free for preview, Signal Desk Pro for signals and research.",
+    preaccess_s2_title: "Choose plan", preaccess_s2_desc: "Free for preview, BetRedge Pro for signals and research.",
     preaccess_s3_title: "Send USDT", preaccess_s3_desc: "Wallet address appears only inside the client checkout.",
     preaccess_s4_title: "Unlock desk", preaccess_s4_desc: "Live data visible only after plan is active or internal approval.",
-    preaccess_base_desc: "Signal Desk Pro: tennis live, football research and Best Bets",
+    preaccess_base_desc: "BetRedge Pro: tennis live, football research and Best Bets",
     preaccess_premium_desc: "Advanced access reserved for the internal team",
     // Auth modal
     auth_eyebrow: "Client access",
-    auth_login_title: "Login Signal Desk",
-    auth_create_title: "Create your Signal Desk profile",
+    auth_login_title: "Login BetRedge",
+    auth_create_title: "Create your BetRedge profile",
     auth_login_sub: "Sign in with the email used for your client profile.",
-    auth_create_sub: "Create your profile, then choose Signal Desk Pro to unlock data.",
+    auth_create_sub: "Create your profile, then choose BetRedge Pro to unlock data.",
     auth_name_label: "Name", auth_name_placeholder: "Your name",
     auth_not_found: "Profile not found. Create a client profile to continue.",
     auth_create_btn: "Continue to plans",
-    auth_footer: "Signal Desk Pro is crypto-only. Prediction data stays locked until the plan is active.",
+    auth_footer: "BetRedge Pro is crypto-only. Prediction data stays locked until the plan is active.",
     auth_pw_placeholder_new: "At least 8 characters",
     auth_err_wrongpw: "Wrong email or password.", auth_err_noaccount: "No account for this email. Sign up.",
     auth_err_exists: "Account already exists — log in.", auth_err_founder: "This profile requires founder access.",
@@ -358,7 +358,7 @@ const BASE_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "One paid plan, clear promise",
-    plans_subtitle: "Free stays as preview. Signal Desk Pro unlocks tennis live, football research, Best Bets, explanations and track record. No aggressive market-beating promise.",
+    plans_subtitle: "Free stays as preview. BetRedge Pro unlocks tennis live, football research, Best Bets, explanations and track record. No aggressive market-beating promise.",
     plans_cta: "View live edges",
     plans_base_desc: "For clients who want an AI betting desk with controlled signals, probabilities, explanations, data quality and live/paper tracking.",
     plans_base_core: "Signals and research, not autopilot", plans_base_sub: "Final decision stays with the client",
@@ -400,7 +400,7 @@ const BASE_TRANSLATIONS = {
     board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
     // Profile panel
     profile_upgrade_eyebrow: "Upgrade to Pro",
-    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_title: "BetRedge Pro",
     profile_upgrade_desc: "Unlock tennis live, football research, Best Bets, model explanations and track record.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
@@ -444,12 +444,12 @@ const BASE_TRANSLATIONS = {
     summary_signal_active: "signal layer active", summary_blocked: "blocked/rejected safely",
     summary_id_required: "ID required for live exec",
     // LockedGate
-    locked_eyebrow: "Signal Desk locked", locked_title: "Sign in to see predictions, edge and explanations",
+    locked_eyebrow: "BetRedge locked", locked_title: "Sign in to see predictions, edge and explanations",
     locked_desc: "Sensitive data stays hidden until you sign in and activate a plan.",
     locked_btn: "Login / Create profile",
     locked_plan_eyebrow: "Plan required",
     locked_plan_title: "Choose a package to unlock the desk",
-    locked_plan_desc: "Your profile is active, but predictions, edge and explanations unlock only after choosing Signal Desk Pro.",
+    locked_plan_desc: "Your profile is active, but predictions, edge and explanations unlock only after choosing BetRedge Pro.",
     locked_plan_btn: "Go to subscriptions",
     // Page headers
     page_overview: "Client dashboard", page_portfolio: "Client portfolio",
@@ -598,25 +598,25 @@ const EXTRA_TRANSLATIONS = {
     header_events: "eventos", header_ev: "+EV", header_login: "Login / Crear perfil",
     // PreAccess
     preaccess_eyebrow: "Acceso de cliente requerido",
-    preaccess_title: "Signal Desk privado para edges verificados",
+    preaccess_title: "BetRedge privado para edges verificados",
     preaccess_subtitle: "Las predicciones, el portfolio, los importes y el wallet de pago permanecen ocultos hasta que el cliente inicia sesión y elige un plan.",
     preaccess_login: "Login", preaccess_create: "Crear perfil",
     preaccess_s1_title: "Crear perfil", preaccess_s1_desc: "Cuenta de cliente con idioma, plan y estado de pago.",
-    preaccess_s2_title: "Elegir plan", preaccess_s2_desc: "Free para la vista previa, Signal Desk Pro para señales e investigación.",
+    preaccess_s2_title: "Elegir plan", preaccess_s2_desc: "Free para la vista previa, BetRedge Pro para señales e investigación.",
     preaccess_s3_title: "Enviar USDT", preaccess_s3_desc: "La dirección del wallet aparece solo dentro del checkout del cliente.",
     preaccess_s4_title: "Desbloquear desk", preaccess_s4_desc: "Datos en vivo visibles solo tras activar el plan o con aprobación interna.",
-    preaccess_base_desc: "Signal Desk Pro: tenis en vivo, investigación de fútbol y Best Bets",
+    preaccess_base_desc: "BetRedge Pro: tenis en vivo, investigación de fútbol y Best Bets",
     preaccess_premium_desc: "Accesos avanzados reservados al equipo interno",
     // Auth modal
     auth_eyebrow: "Acceso de cliente",
-    auth_login_title: "Login Signal Desk",
-    auth_create_title: "Crea tu perfil Signal Desk",
+    auth_login_title: "Login BetRedge",
+    auth_create_title: "Crea tu perfil BetRedge",
     auth_login_sub: "Inicia sesión con el email usado para tu perfil de cliente.",
-    auth_create_sub: "Crea tu perfil y luego elige Signal Desk Pro para desbloquear los datos.",
+    auth_create_sub: "Crea tu perfil y luego elige BetRedge Pro para desbloquear los datos.",
     auth_name_label: "Nombre", auth_name_placeholder: "Tu nombre",
     auth_not_found: "Perfil no encontrado. Crea un perfil de cliente para continuar.",
     auth_create_btn: "Continuar a planes",
-    auth_footer: "Signal Desk Pro es solo cripto. Los datos de predicción permanecen bloqueados hasta que el plan esté activo.",
+    auth_footer: "BetRedge Pro es solo cripto. Los datos de predicción permanecen bloqueados hasta que el plan esté activo.",
     auth_pw_placeholder_new: "Al menos 8 caracteres",
     auth_err_wrongpw: "Email o contraseña incorrectos.", auth_err_noaccount: "No hay cuenta con este email. Regístrate.",
     auth_err_exists: "La cuenta ya existe — inicia sesión.", auth_err_founder: "Este perfil requiere acceso de founder.",
@@ -628,7 +628,7 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Planes cliente",
     plans_title: "Un plan de pago, promesa clara",
-    plans_subtitle: "Free se mantiene como vista previa. Signal Desk Pro desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
+    plans_subtitle: "Free se mantiene como vista previa. BetRedge Pro desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
     plans_cta: "Ver edges en vivo",
     plans_base_desc: "Para clientes que quieren un desk de apuestas con IA con señales controladas, probabilidades, explicaciones, calidad de datos y seguimiento live/paper.",
     plans_base_core: "Señales e investigación, no piloto automático", plans_base_sub: "La decisión final es del cliente",
@@ -670,7 +670,7 @@ const EXTRA_TRANSLATIONS = {
     board_tennis_empty: "Cargando mercados de tenis. Los datos de respaldo aparecen cuando la API está lista.",
     // Profile panel
     profile_upgrade_eyebrow: "Pasar a Pro",
-    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_title: "BetRedge Pro",
     profile_upgrade_desc: "Desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones del modelo y track record.",
     profile_upgrade_btn: "Pasar a Pro",
     profile_logout: "Cerrar sesión",
@@ -714,12 +714,12 @@ const EXTRA_TRANSLATIONS = {
     summary_signal_active: "capa de señal activa", summary_blocked: "bloqueados/rechazados con seguridad",
     summary_id_required: "ID requerido para ejecución en vivo",
     // LockedGate
-    locked_eyebrow: "Signal Desk bloqueado", locked_title: "Inicia sesión para ver predicciones, edge y explicaciones",
+    locked_eyebrow: "BetRedge bloqueado", locked_title: "Inicia sesión para ver predicciones, edge y explicaciones",
     locked_desc: "Los datos sensibles permanecen ocultos hasta que inicies sesión y actives un plan.",
     locked_btn: "Login / Crear perfil",
     locked_plan_eyebrow: "Plan requerido",
     locked_plan_title: "Elige un paquete para desbloquear el desk",
-    locked_plan_desc: "Tu perfil está activo, pero las predicciones, el edge y las explicaciones se desbloquean solo tras elegir Signal Desk Pro.",
+    locked_plan_desc: "Tu perfil está activo, pero las predicciones, el edge y las explicaciones se desbloquean solo tras elegir BetRedge Pro.",
     locked_plan_btn: "Ir a las suscripciones",
     // Page headers
     page_overview: "Panel del cliente", page_portfolio: "Portfolio del cliente",
@@ -864,25 +864,25 @@ const EXTRA_TRANSLATIONS = {
     header_events: "événements", header_ev: "+EV", header_login: "Connexion / Créer profil",
     // PreAccess
     preaccess_eyebrow: "Accès client requis",
-    preaccess_title: "Signal Desk privé pour des edges vérifiés",
+    preaccess_title: "BetRedge privé pour des edges vérifiés",
     preaccess_subtitle: "Les prédictions, le portfolio, les mises et le wallet de paiement restent masqués jusqu'à ce que le client se connecte et choisisse un plan.",
     preaccess_login: "Connexion", preaccess_create: "Créer profil",
     preaccess_s1_title: "Créer profil", preaccess_s1_desc: "Compte client avec langue, plan et statut de paiement.",
-    preaccess_s2_title: "Choisir un plan", preaccess_s2_desc: "Free pour l'aperçu, Signal Desk Pro pour les signaux et la recherche.",
+    preaccess_s2_title: "Choisir un plan", preaccess_s2_desc: "Free pour l'aperçu, BetRedge Pro pour les signaux et la recherche.",
     preaccess_s3_title: "Envoyer des USDT", preaccess_s3_desc: "L'adresse du wallet n'apparaît que dans le checkout client.",
     preaccess_s4_title: "Débloquer le desk", preaccess_s4_desc: "Données en direct visibles seulement après activation du plan ou validation interne.",
-    preaccess_base_desc: "Signal Desk Pro : tennis en direct, recherche football et Best Bets",
+    preaccess_base_desc: "BetRedge Pro : tennis en direct, recherche football et Best Bets",
     preaccess_premium_desc: "Accès avancés réservés à l'équipe interne",
     // Auth modal
     auth_eyebrow: "Accès client",
-    auth_login_title: "Connexion Signal Desk",
-    auth_create_title: "Crée ton profil Signal Desk",
+    auth_login_title: "Connexion BetRedge",
+    auth_create_title: "Crée ton profil BetRedge",
     auth_login_sub: "Connecte-toi avec l'email utilisé pour ton profil client.",
-    auth_create_sub: "Crée ton profil, puis choisis Signal Desk Pro pour débloquer les données.",
+    auth_create_sub: "Crée ton profil, puis choisis BetRedge Pro pour débloquer les données.",
     auth_name_label: "Nom", auth_name_placeholder: "Ton nom",
     auth_not_found: "Profil introuvable. Crée un profil client pour continuer.",
     auth_create_btn: "Continuer vers les plans",
-    auth_footer: "Signal Desk Pro est crypto uniquement. Les données de prédiction restent verrouillées tant que le plan n'est pas actif.",
+    auth_footer: "BetRedge Pro est crypto uniquement. Les données de prédiction restent verrouillées tant que le plan n'est pas actif.",
     auth_pw_placeholder_new: "Au moins 8 caractères",
     auth_err_wrongpw: "Email ou mot de passe incorrect.", auth_err_noaccount: "Aucun compte pour cet email. Inscris-toi.",
     auth_err_exists: "Le compte existe déjà — connecte-toi.", auth_err_founder: "Ce profil requiert un accès founder.",
@@ -894,7 +894,7 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Plans client",
     plans_title: "Un seul plan payant, promesse claire",
-    plans_subtitle: "Free reste un aperçu. Signal Desk Pro débloque le tennis en direct, la recherche football, les Best Bets, les explications et le track record. Aucune promesse agressive de battre le marché.",
+    plans_subtitle: "Free reste un aperçu. BetRedge Pro débloque le tennis en direct, la recherche football, les Best Bets, les explications et le track record. Aucune promesse agressive de battre le marché.",
     plans_cta: "Voir les edges en direct",
     plans_base_desc: "Pour les clients qui veulent un desk de paris IA avec signaux contrôlés, probabilités, explications, qualité des données et suivi live/paper.",
     plans_base_core: "Signaux et recherche, pas un pilote automatique", plans_base_sub: "La décision finale reste au client",
@@ -936,7 +936,7 @@ const EXTRA_TRANSLATIONS = {
     board_tennis_empty: "Chargement des marchés de tennis. Les données de secours apparaissent quand l'API est prête.",
     // Profile panel
     profile_upgrade_eyebrow: "Passer à Pro",
-    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_title: "BetRedge Pro",
     profile_upgrade_desc: "Débloque le tennis en direct, la recherche football, les Best Bets, les explications du modèle et le track record.",
     profile_upgrade_btn: "Passer à Pro",
     profile_logout: "Déconnexion",
@@ -980,12 +980,12 @@ const EXTRA_TRANSLATIONS = {
     summary_signal_active: "couche signal active", summary_blocked: "bloqués/rejetés en sécurité",
     summary_id_required: "ID requis pour l'exécution live",
     // LockedGate
-    locked_eyebrow: "Signal Desk verrouillé", locked_title: "Connecte-toi pour voir prédictions, edge et explications",
+    locked_eyebrow: "BetRedge verrouillé", locked_title: "Connecte-toi pour voir prédictions, edge et explications",
     locked_desc: "Les données sensibles restent masquées jusqu'à ta connexion et l'activation d'un plan.",
     locked_btn: "Connexion / Créer profil",
     locked_plan_eyebrow: "Plan requis",
     locked_plan_title: "Choisis un pack pour débloquer le desk",
-    locked_plan_desc: "Ton profil est actif, mais les prédictions, l'edge et les explications ne se débloquent qu'après avoir choisi Signal Desk Pro.",
+    locked_plan_desc: "Ton profil est actif, mais les prédictions, l'edge et les explications ne se débloquent qu'après avoir choisi BetRedge Pro.",
     locked_plan_btn: "Aller aux abonnements",
     // Page headers
     page_overview: "Tableau client", page_portfolio: "Portfolio client",
@@ -1130,25 +1130,25 @@ const EXTRA_TRANSLATIONS = {
     header_events: "события", header_ev: "+EV", header_login: "Войти / Создать профиль",
     // PreAccess
     preaccess_eyebrow: "Требуется доступ клиента",
-    preaccess_title: "Приватный Signal Desk для проверенных edge",
+    preaccess_title: "Приватный BetRedge для проверенных edge",
     preaccess_subtitle: "Прогнозы, портфель, размеры ставок и платёжный кошелёк скрыты, пока клиент не войдёт и не выберет план.",
     preaccess_login: "Войти", preaccess_create: "Создать профиль",
     preaccess_s1_title: "Создать профиль", preaccess_s1_desc: "Аккаунт клиента с языком, планом и статусом оплаты.",
-    preaccess_s2_title: "Выбрать план", preaccess_s2_desc: "Free для превью, Signal Desk Pro для сигналов и исследований.",
+    preaccess_s2_title: "Выбрать план", preaccess_s2_desc: "Free для превью, BetRedge Pro для сигналов и исследований.",
     preaccess_s3_title: "Отправить USDT", preaccess_s3_desc: "Адрес кошелька появляется только внутри клиентского checkout.",
     preaccess_s4_title: "Разблокировать desk", preaccess_s4_desc: "Live-данные видны только после активации плана или внутреннего одобрения.",
-    preaccess_base_desc: "Signal Desk Pro: теннис live, исследование футбола и Best Bets",
+    preaccess_base_desc: "BetRedge Pro: теннис live, исследование футбола и Best Bets",
     preaccess_premium_desc: "Расширенный доступ зарезервирован для внутренней команды",
     // Auth modal
     auth_eyebrow: "Доступ клиента",
-    auth_login_title: "Вход в Signal Desk",
-    auth_create_title: "Создай профиль Signal Desk",
+    auth_login_title: "Вход в BetRedge",
+    auth_create_title: "Создай профиль BetRedge",
     auth_login_sub: "Войди с email, использованным для твоего профиля клиента.",
-    auth_create_sub: "Создай профиль, затем выбери Signal Desk Pro, чтобы открыть данные.",
+    auth_create_sub: "Создай профиль, затем выбери BetRedge Pro, чтобы открыть данные.",
     auth_name_label: "Имя", auth_name_placeholder: "Твоё имя",
     auth_not_found: "Профиль не найден. Создай профиль клиента, чтобы продолжить.",
     auth_create_btn: "Перейти к планам",
-    auth_footer: "Signal Desk Pro — только крипта. Данные прогнозов остаются заблокированными, пока план не активен.",
+    auth_footer: "BetRedge Pro — только крипта. Данные прогнозов остаются заблокированными, пока план не активен.",
     auth_pw_placeholder_new: "Минимум 8 символов",
     auth_err_wrongpw: "Неверный email или пароль.", auth_err_noaccount: "Нет аккаунта с этим email. Зарегистрируйся.",
     auth_err_exists: "Аккаунт уже существует — войди.", auth_err_founder: "Этот профиль требует founder-доступа.",
@@ -1160,7 +1160,7 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Планы клиента",
     plans_title: "Один платный план, понятное обещание",
-    plans_subtitle: "Free остаётся превью. Signal Desk Pro открывает теннис live, исследование футбола, Best Bets, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
+    plans_subtitle: "Free остаётся превью. BetRedge Pro открывает теннис live, исследование футбола, Best Bets, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
     plans_cta: "Смотреть live edges",
     plans_base_desc: "Для клиентов, которым нужен AI-desk для ставок с контролируемыми сигналами, вероятностями, объяснениями, качеством данных и трекингом live/paper.",
     plans_base_core: "Сигналы и исследования, не автопилот", plans_base_sub: "Финальное решение за клиентом",
@@ -1202,7 +1202,7 @@ const EXTRA_TRANSLATIONS = {
     board_tennis_empty: "Загрузка теннисных рынков. Резервные данные появятся, когда API будет готов.",
     // Profile panel
     profile_upgrade_eyebrow: "Перейти на Pro",
-    profile_upgrade_title: "Signal Desk Pro",
+    profile_upgrade_title: "BetRedge Pro",
     profile_upgrade_desc: "Открой теннис live, исследование футбола, Best Bets, объяснения модели и track record.",
     profile_upgrade_btn: "Перейти на Pro",
     profile_logout: "Выйти",
@@ -1246,12 +1246,12 @@ const EXTRA_TRANSLATIONS = {
     summary_signal_active: "сигнальный слой активен", summary_blocked: "заблокированы/отклонены безопасно",
     summary_id_required: "ID нужен для live-исполнения",
     // LockedGate
-    locked_eyebrow: "Signal Desk заблокирован", locked_title: "Войди, чтобы увидеть прогнозы, edge и объяснения",
+    locked_eyebrow: "BetRedge заблокирован", locked_title: "Войди, чтобы увидеть прогнозы, edge и объяснения",
     locked_desc: "Чувствительные данные скрыты, пока ты не войдёшь и не активируешь план.",
     locked_btn: "Войти / Создать профиль",
     locked_plan_eyebrow: "Нужен план",
     locked_plan_title: "Выбери пакет, чтобы разблокировать desk",
-    locked_plan_desc: "Профиль активен, но прогнозы, edge и объяснения открываются только после выбора Signal Desk Pro.",
+    locked_plan_desc: "Профиль активен, но прогнозы, edge и объяснения открываются только после выбора BetRedge Pro.",
     locked_plan_btn: "К подпискам",
     // Page headers
     page_overview: "Панель клиента", page_portfolio: "Портфель клиента",
@@ -2743,31 +2743,31 @@ function PreAccessLanding({
     it: [
       ["Cosa vede un utente pubblico?", "Solo homepage, struttura del prodotto e storico passato/educational. I segnali live restano bloccati."],
       ["Cosa sblocca il piano Free?", "Profilo, lingua, preview account e accesso alla struttura, senza prediction operative."],
-      ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+      ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
     ],
     en: [
       ["What can public users see?", "Only homepage, product structure and past/educational history. Live signals stay locked."],
       ["What does Free unlock?", "Profile, language, account preview and product structure, without operational predictions."],
-      ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+      ["What does BetRedge Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
     ],
     es: [
       ["¿Qué ve un usuario público?", "Solo la homepage, la estructura del producto y el historial pasado/educativo. Las señales live siguen bloqueadas."],
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma, vista previa de cuenta y acceso a la estructura, sin predicciones operativas."],
-      ["¿Qué desbloquea Signal Desk Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
+      ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
     ],
     fr: [
       ["Que voit un utilisateur public ?", "Seulement la homepage, la structure du produit et l'historique passé/éducatif. Les signaux live restent verrouillés."],
       ["Que débloque le plan Free ?", "Profil, langue, aperçu du compte et accès à la structure, sans prédictions opérationnelles."],
-      ["Que débloque Signal Desk Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
+      ["Que débloque BetRedge Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
     ],
     ru: [
       ["Что видит публичный пользователь?", "Только главную страницу, структуру продукта и прошлую/обучающую историю. Live-сигналы остаются заблокированы."],
       ["Что открывает план Free?", "Профиль, язык, предпросмотр аккаунта и доступ к структуре, без рабочих прогнозов."],
-      ["Что открывает Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
+      ["Что открывает BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
     ],
   });
@@ -2843,23 +2843,23 @@ function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: ()
   const levels = pick5(lang, {
     it: [
       { name: "Free", price: "$0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
     ],
     en: [
       { name: "Free", price: "$0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
     ],
     es: [
       { name: "Free", price: "$0", desc: "Perfil, idioma, vista previa e historial público. Sin señales operativas.", cta: "Crear perfil", action: onCreate },
-      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tenis live, football research, Best Bets, explicaciones y track record.", cta: "Ver plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tenis live, football research, Best Bets, explicaciones y track record.", cta: "Ver plan", action: onPlans },
     ],
     fr: [
       { name: "Free", price: "$0", desc: "Profil, langue, aperçu et historique public. Aucun signal opérationnel.", cta: "Créer un profil", action: onCreate },
-      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explications et track record.", cta: "Voir le plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explications et track record.", cta: "Voir le plan", action: onPlans },
     ],
     ru: [
       { name: "Free", price: "$0", desc: "Профиль, язык, предпросмотр и публичная история. Без рабочих сигналов.", cta: "Создать профиль", action: onCreate },
-      { name: "Signal Desk Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, пояснения и track record.", cta: "Смотреть план", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, пояснения и track record.", cta: "Смотреть план", action: onPlans },
     ],
   });
   return (
@@ -4100,7 +4100,7 @@ function ProfilePanel({
             <h3>{daysLeft > 0
               ? `${daysLeft} ${daysLeft === 1 ? pick5(lang, { it: "giorno rimanente", en: "day left", es: "día restante", fr: "jour restant", ru: "день осталось" }) : pick5(lang, { it: "giorni rimanenti", en: "days left", es: "días restantes", fr: "jours restants", ru: "дн. осталось" })}`
               : pick5(lang, { it: "Scaduto", en: "Expired", es: "Caducado", fr: "Expiré", ru: "Истёк" })}</h3>
-            <span>{pick5(lang, { it: "Signal Desk Pro · rinnovo mensile", en: "Signal Desk Pro · monthly renewal", es: "Signal Desk Pro · renovación mensual", fr: "Signal Desk Pro · renouvellement mensuel", ru: "Signal Desk Pro · ежемесячное продление" })}</span>
+            <span>{pick5(lang, { it: "BetRedge Pro · rinnovo mensile", en: "BetRedge Pro · monthly renewal", es: "BetRedge Pro · renovación mensual", fr: "BetRedge Pro · renouvellement mensuel", ru: "BetRedge Pro · ежемесячное продление" })}</span>
           </div>
           {daysLeft <= 7 && <button onClick={onUpgrade}>{pick5(lang, { it: "Rinnova", en: "Renew", es: "Renovar", fr: "Renouveler", ru: "Продлить" })}</button>}
         </div>
@@ -4710,7 +4710,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
         {/* expandable analysis body */}
         {isPreview ? (
           <div className="nudge">
-            <strong>{pick5(lang, { it: "Edge e analisi richiedono Signal Desk Pro", en: "Edge and analysis require Signal Desk Pro", es: "Edge y análisis requieren Signal Desk Pro", fr: "Edge et analyse nécessitent Signal Desk Pro", ru: "Edge и анализ доступны с Signal Desk Pro" })}</strong>
+            <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
             <em>{pick5(lang, { it: "Sblocca edge%, ragionamento AI e segnali con Pro (49.90 USDT/mese).", en: "Unlock edge%, AI reasoning and signals with Pro (49.90 USDT/month).", es: "Desbloquea edge%, razonamiento de IA y señales con Pro (49.90 USDT/mes).", fr: "Débloquez edge%, raisonnement IA et signaux avec Pro (49.90 USDT/mois).", ru: "Откройте edge%, ИИ-обоснование и сигналы с Pro (49.90 USDT/мес)." })}</em>
           </div>
         ) : showWhy && (
@@ -4874,7 +4874,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita disponibile con Signal Desk Pro (49.90 USDT/mese)", en: "Deep analysis available with Signal Desk Pro (49.90 USDT/month)", es: "Análisis profundo disponible con Signal Desk Pro (49.90 USDT/mes)", fr: "Analyse approfondie disponible avec Signal Desk Pro (49.90 USDT/mois)", ru: "Глубокий анализ доступен с Signal Desk Pro (49.90 USDT/мес)" })}</span>
+          <span>{pick5(lang, { it: "Analisi approfondita disponibile con BetRedge Pro (49.90 USDT/mese)", en: "Deep analysis available with BetRedge Pro (49.90 USDT/month)", es: "Análisis profundo disponible con BetRedge Pro (49.90 USDT/mes)", fr: "Analyse approfondie disponible avec BetRedge Pro (49.90 USDT/mois)", ru: "Глубокий анализ доступен с BetRedge Pro (49.90 USDT/мес)" })}</span>
         </div>
       )}
         </div>
@@ -5183,7 +5183,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
         {/* expandable analysis body */}
         {isPreview ? (
           <div className="nudge">
-            <strong>{pick5(lang, { it: "Edge e analisi richiedono Signal Desk Pro", en: "Edge and analysis require Signal Desk Pro", es: "Edge y análisis requieren Signal Desk Pro", fr: "Edge et analyse nécessitent Signal Desk Pro", ru: "Edge и анализ доступны с Signal Desk Pro" })}</strong>
+            <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
             <em>{pick5(lang, { it: "Sblocca edge%, analisi del modello e segnali tennis con Pro (49.90 USDT/mese).", en: "Unlock edge%, model analysis and tennis signals with Pro (49.90 USDT/month).", es: "Desbloquea edge%, análisis del modelo y señales de tenis con Pro (49.90 USDT/mes).", fr: "Débloquez edge%, analyse du modèle et signaux tennis avec Pro (49.90 USDT/mois).", ru: "Откройте edge%, анализ модели и теннисные сигналы с Pro (49.90 USDT/мес)." })}</em>
           </div>
         ) : showWhy && (
@@ -5252,7 +5252,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con Signal Desk Pro (49.90 USDT/mese)", en: "Deep model analysis available with Signal Desk Pro (49.90 USDT/month)", es: "Análisis profundo del modelo disponible con Signal Desk Pro (49.90 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec Signal Desk Pro (49.90 USDT/mois)", ru: "Глубокий анализ модели доступен с Signal Desk Pro (49.90 USDT/мес)" })}</span>
+          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con BetRedge Pro (49.90 USDT/mese)", en: "Deep model analysis available with BetRedge Pro (49.90 USDT/month)", es: "Análisis profundo del modelo disponible con BetRedge Pro (49.90 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec BetRedge Pro (49.90 USDT/mois)", ru: "Глубокий анализ модели доступен с BetRedge Pro (49.90 USDT/мес)" })}</span>
         </div>
       )}
         </div>
@@ -6169,7 +6169,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
   const copy = pick5(lang, {
     it: {
       eyebrow: "Classifica pubblica",
-      title: "Leaderboard Signal Desk",
+      title: "Leaderboard BetRedge",
       subtitle: "10 punti per ogni scommessa vinta. La classifica si aggiorna ad ogni settlement.",
       rank: "#",
       player: "Giocatore",
@@ -6189,7 +6189,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     },
     en: {
       eyebrow: "Public leaderboard",
-      title: "Signal Desk Leaderboard",
+      title: "BetRedge Leaderboard",
       subtitle: "10 points for every won bet. Rankings update after each settlement.",
       rank: "#",
       player: "Player",
@@ -6209,7 +6209,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     },
     es: {
       eyebrow: "Clasificación pública",
-      title: "Leaderboard Signal Desk",
+      title: "Leaderboard BetRedge",
       subtitle: "10 puntos por cada apuesta ganada. La clasificación se actualiza tras cada settlement.",
       rank: "#",
       player: "Jugador",
@@ -6229,7 +6229,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     },
     fr: {
       eyebrow: "Classement public",
-      title: "Leaderboard Signal Desk",
+      title: "Leaderboard BetRedge",
       subtitle: "10 points pour chaque pari gagné. Le classement se met à jour après chaque settlement.",
       rank: "#",
       player: "Joueur",
@@ -6249,7 +6249,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     },
     ru: {
       eyebrow: "Публичный рейтинг",
-      title: "Leaderboard Signal Desk",
+      title: "Leaderboard BetRedge",
       subtitle: "10 очков за каждую выигранную ставку. Рейтинг обновляется после каждого settlement.",
       rank: "#",
       player: "Игрок",
@@ -6633,7 +6633,7 @@ function FAQTab() {
     it: [
       ["Cosa vede un utente pubblico?", "Solo struttura del prodotto e storico passato. I segnali live restano bloccati."],
       ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
-      ["Cosa sblocca Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+      ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
       ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
       ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
@@ -6641,7 +6641,7 @@ function FAQTab() {
     en: [
       ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
       ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
-      ["What does Signal Desk Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+      ["What does BetRedge Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
       ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
       ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
@@ -6649,7 +6649,7 @@ function FAQTab() {
     es: [
       ["¿Qué ve un usuario público?", "Solo la estructura del producto y el historial pasado. Las señales live siguen bloqueadas."],
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma y vista previa de cuenta, sin predicciones operativas."],
-      ["¿Qué desbloquea Signal Desk Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
+      ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
       ["¿Cómo pago?", "Solo crypto — USDT TRC20. Envía el importe exacto a la dirección USDT indicada en el checkout."],
       ["¿Cómo se activa el plan?", "Tras el TX hash, el plan se revisa internamente o se activa según la política operativa configurada."],
@@ -6657,7 +6657,7 @@ function FAQTab() {
     fr: [
       ["Que voit un utilisateur public ?", "Seulement la structure du produit et l'historique passé. Les signaux live restent verrouillés."],
       ["Que débloque le plan Free ?", "Profil, langue et aperçu du compte, sans prédictions opérationnelles."],
-      ["Que débloque Signal Desk Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
+      ["Que débloque BetRedge Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
       ["Comment payer ?", "Crypto uniquement — USDT TRC20. Envoyez le montant exact à l'adresse USDT indiquée au checkout."],
       ["Comment le plan est-il activé ?", "Après le TX hash, le plan est vérifié en interne ou activé selon la politique opérationnelle configurée."],
@@ -6665,7 +6665,7 @@ function FAQTab() {
     ru: [
       ["Что видит публичный пользователь?", "Только структуру продукта и прошлую историю. Live-сигналы остаются заблокированы."],
       ["Что открывает план Free?", "Профиль, язык и предпросмотр аккаунта, без рабочих прогнозов."],
-      ["Что открывает Signal Desk Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
+      ["Что открывает BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
       ["Как оплатить?", "Только крипто — USDT TRC20. Отправьте точную сумму на адрес USDT, указанный в checkout."],
       ["Как активируется план?", "После TX hash план проверяется вручную или активируется согласно настроенной операционной политике."],

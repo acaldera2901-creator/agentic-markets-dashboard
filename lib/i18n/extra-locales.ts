@@ -1,7 +1,7 @@
 // Customer-frontend translations for the 9 non-base locales (#i18n-0617).
 // English (BASE_TRANSLATIONS.en in app/app/page.tsx) is spread UNDER each of these,
 // so any missing key falls back to English automatically. Brand/proper terms
-// (BetRedge, Signal Desk Pro, Best Bets, +EV, USDT, TRC20, bet ID, etc.) are kept
+// (BetRedge, BetRedge Pro, Best Bets, +EV, USDT, TRC20, bet ID, etc.) are kept
 // verbatim. One file per language under ./locales; assembled here.
 
 import es from "./locales/es";

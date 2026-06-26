@@ -122,8 +122,8 @@ export function paymentReceivedEmail(lang = "it"): { subject: string; html: stri
   const it = lang !== "en";
   const subject = it ? "Pagamento ricevuto — in verifica" : "Payment received — under review";
   const body = it
-    ? "Abbiamo ricevuto la tua richiesta di Signal Desk Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo."
-    : "We received your Signal Desk Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.";
+    ? "Abbiamo ricevuto la tua richiesta di BetRedge Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo."
+    : "We received your BetRedge Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.";
   return { subject, html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p>`), text: body };
 }
 
@@ -131,10 +131,10 @@ export function paymentReceivedEmail(lang = "it"): { subject: string; html: stri
 export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { subject: string; html: string; text: string } {
   const it = lang !== "en";
   const until = expiresAtISO ? new Date(expiresAtISO).toLocaleDateString(it ? "it-IT" : "en-GB") : null;
-  const subject = it ? "Signal Desk Pro attivato ✅" : "Signal Desk Pro activated ✅";
+  const subject = it ? "BetRedge Pro attivato ✅" : "BetRedge Pro activated ✅";
   const body = it
-    ? `Il tuo Signal Desk Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
-    : `Your Signal Desk Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
+    ? `Il tuo BetRedge Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
+    : `Your BetRedge Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
   const cta = it ? "Apri il desk" : "Open the desk";
   return {
     subject,
@@ -149,8 +149,8 @@ export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: str
     ? `${code} — il tuo codice di accesso BetRedge`
     : `${code} — your BetRedge login code`;
   const intro = it
-    ? "Usa questo codice per accedere al tuo Signal Desk. Scade tra 10 minuti."
-    : "Use this code to sign in to your Signal Desk. It expires in 10 minutes.";
+    ? "Usa questo codice per accedere al tuo BetRedge. Scade tra 10 minuti."
+    : "Use this code to sign in to your BetRedge. It expires in 10 minutes.";
   const ignore = it
     ? "Se non hai richiesto questo codice, ignora questa email."
     : "If you didn't request this code, you can ignore this email.";
@@ -206,7 +206,7 @@ export function receiptEmail(
     ? new Date(periodEndISO).toLocaleDateString(it ? "it-IT" : "en-GB")
     : null;
   const subject = it ? "Ricevuta di pagamento BetRedge" : "Your BetRedge payment receipt";
-  const planLabel = plan === "premium" ? "Signal Desk Pro (Premium)" : "Signal Desk Pro (Base)";
+  const planLabel = plan === "premium" ? "BetRedge Pro (Premium)" : "BetRedge Pro (Base)";
   const lines = it
     ? [
         `Grazie. Abbiamo registrato il tuo pagamento per ${planLabel}.`,
@@ -227,8 +227,8 @@ export function cancellationEmail(lang = "it"): { subject: string; html: string;
   const it = lang !== "en";
   const subject = it ? "Abbonamento annullato" : "Subscription cancelled";
   const body = it
-    ? "Il tuo Signal Desk Pro è stato annullato e il profilo è tornato al piano gratuito. Puoi riattivarlo quando vuoi dal desk — nessun dato perso."
-    : "Your Signal Desk Pro has been cancelled and your profile is back on the free plan. You can reactivate any time from the desk — nothing is lost.";
+    ? "Il tuo BetRedge Pro è stato annullato e il profilo è tornato al piano gratuito. Puoi riattivarlo quando vuoi dal desk — nessun dato perso."
+    : "Your BetRedge Pro has been cancelled and your profile is back on the free plan. You can reactivate any time from the desk — nothing is lost.";
   const cta = it ? "Riattiva" : "Reactivate";
   return {
     subject,
@@ -244,8 +244,8 @@ export function winBackEmail(lang = "it"): { subject: string; html: string; text
   const it = lang !== "en";
   const subject = it ? "Ti riapriamo il desk?" : "Want your desk back?";
   const body = it
-    ? "Il tuo Signal Desk Pro è scaduto. Le probabilità calibrate e il track record verificabile sono sempre lì — riattiva per tornare a vederli in pieno."
-    : "Your Signal Desk Pro has expired. The calibrated probabilities and verifiable track record are still here — reactivate to get full access again.";
+    ? "Il tuo BetRedge Pro è scaduto. Le probabilità calibrate e il track record verificabile sono sempre lì — riattiva per tornare a vederli in pieno."
+    : "Your BetRedge Pro has expired. The calibrated probabilities and verifiable track record are still here — reactivate to get full access again.";
   const cta = it ? "Riattiva il desk" : "Reactivate the desk";
   return {
     subject,

@@ -662,7 +662,7 @@ function WcCard({ p, live, betLinksEnabled = false }: { p: ProjectedRow; live?: 
                 ) : (
                   <div className="deep-analysis-locked">
                     <span>⚡</span>
-                    <span>Deep analysis available with Signal Desk Pro (49.90 USDT/month)</span>
+                    <span>Deep analysis available with BetRedge Pro (49.90 USDT/month)</span>
                   </div>
                 )}
               </div>

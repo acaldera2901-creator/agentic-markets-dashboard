@@ -20,11 +20,11 @@ type ExpiringRow = { identifier: string; name: string | null; plan_expires_at: s
 function reminderEmail(daysLeft: number, lang: string) {
   const it = lang !== "en";
   const subject = it
-    ? `Il tuo Signal Desk Pro scade tra ${daysLeft} giorn${daysLeft === 1 ? "o" : "i"}`
-    : `Your Signal Desk Pro expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
+    ? `Il tuo BetRedge Pro scade tra ${daysLeft} giorn${daysLeft === 1 ? "o" : "i"}`
+    : `Your BetRedge Pro expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
   const body = it
-    ? `Il tuo abbonamento Signal Desk Pro scade tra ${daysLeft} giorn${daysLeft === 1 ? "o" : "i"}. Rinnova per non perdere l'accesso ai segnali e alle probabilità calibrate.`
-    : `Your Signal Desk Pro subscription expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Renew to keep access to the signals and calibrated probabilities.`;
+    ? `Il tuo abbonamento BetRedge Pro scade tra ${daysLeft} giorn${daysLeft === 1 ? "o" : "i"}. Rinnova per non perdere l'accesso ai segnali e alle probabilità calibrate.`
+    : `Your BetRedge Pro subscription expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Renew to keep access to the signals and calibrated probabilities.`;
   const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
   <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
   <p style="font-size:14px;line-height:1.5">${body}</p>
