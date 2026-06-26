@@ -1,21 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { YearToggle } from "./YearToggle";
 import { useYearData } from "./useYearData";
 
-// Scheda "Per segmento" con bottone 2025 indipendente. Hit-rate + campione per segmento.
+// #HISTORY-TRIM-0626: "Per segmento" sul track record live (nessun filtro anno).
+// Hit-rate + campione per segmento.
 export function SegmentTable({ lang }: { lang: "it" | "en" }) {
   const it = lang === "it";
-  const [year, setYear] = useState<"2026" | "2025">("2026");
-  const d = useYearData(year, "segments");
+  const d = useYearData("segments");
   const segs = d?.segments ?? [];
   return (
     <>
       <div className="tr-sh">
         <span className="tr-glyph">📊</span>
         <h2>{it ? "Per segmento" : "By segment"}</h2>
-        <YearToggle value={year} onChange={setYear} lang={lang} />
       </div>
       <div className="tr-card tr-score">
         <table>
@@ -30,7 +27,7 @@ export function SegmentTable({ lang }: { lang: "it" | "en" }) {
             {segs.length === 0 ? (
               <tr>
                 <td colSpan={3} className="tr-empty">
-                  {it ? `Nessun dato per il ${year}` : `No data for ${year} yet`}
+                  {it ? "Nessun dato ancora" : "No data yet"}
                 </td>
               </tr>
             ) : (

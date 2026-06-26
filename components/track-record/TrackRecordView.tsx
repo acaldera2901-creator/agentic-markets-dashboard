@@ -34,17 +34,9 @@ const CSS = `
 .tr-root .tr-seg{display:inline-flex;background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;margin-left:auto}
 .tr-root .tr-seg button{font-family:var(--m);font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;color:var(--mut);background:none;border:none;cursor:pointer}
 .tr-root .tr-seg button.on{background:var(--c);color:#fff}
-.tr-root .tr-cardtop{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .tr-root .tr-hero{position:relative;overflow:hidden;padding:26px;border-radius:16px}
 .tr-root .tr-hero::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--c),var(--cobalt));opacity:.55}
 .tr-root .tr-hero h1{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0 0 18px}
-.tr-root .tr-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center}
-.tr-root .tr-vside{padding:18px;border-radius:12px;text-align:center}
-.tr-root .tr-vside .tr-big{font-size:34px;margin-top:10px}
-.tr-root .tr-us{border:1px solid var(--cb);background:linear-gradient(180deg,var(--cd),transparent)}
-.tr-root .tr-mk{border:1px solid var(--line);background:var(--panel)}
-.tr-root .tr-mk .tr-big{color:var(--mut)}
-.tr-root .tr-vx{font-family:var(--m);color:var(--mut2);font-size:14px}
 .tr-root .tr-hbot{display:flex;gap:10px;margin-top:14px}
 .tr-root .tr-hbot .tr-card{flex:1;padding:14px;text-align:center}
 .tr-root .tr-fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -73,8 +65,7 @@ const CSS = `
 .tr-root .tr-score .cv{font-size:16px;font-weight:600}
 .tr-root .tr-score .cn{font-size:11px;color:var(--mut2)}
 .tr-root .tr-empty{text-align:center;color:var(--mut2);font-family:var(--font-display);font-size:13px;padding:20px}
-.tr-root .tr-foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut2);font-size:11.5px;line-height:1.6}
-@media(max-width:760px){.tr-root .tr-vs,.tr-root .tr-hbot{grid-template-columns:1fr;flex-direction:column}.tr-root .tr-lrow{grid-template-columns:60px 1fr 64px}.tr-root .tr-lrow .comp,.tr-root .tr-lrow .pr{display:none}}
+@media(max-width:760px){.tr-root .tr-hbot{flex-direction:column}.tr-root .tr-lrow{grid-template-columns:60px 1fr 64px}.tr-root .tr-lrow .comp,.tr-root .tr-lrow .pr{display:none}}
 `;
 
 export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en" }) {
@@ -101,22 +92,6 @@ export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" 
       </div>
       <EdgeCard lang={lang} />
       <SegmentTable lang={lang} />
-
-      <p className="tr-foot">
-        {it ? (
-          <>
-            <b>2026</b> = pick reali settlate man mano che le partite finiscono. Dove disponibile,
-            il confronto <b>2025</b> nelle schede di sintesi è una ricostruzione walk-forward
-            separata: i due anni non si sommano mai.
-          </>
-        ) : (
-          <>
-            <b>2026</b> = real picks settled as matches finish. Where available, the <b>2025</b>
-            comparison in the summary cards is a separate walk-forward reconstruction: the two
-            years are never summed.
-          </>
-        )}
-      </p>
     </div>
   );
 }

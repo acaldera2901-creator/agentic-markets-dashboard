@@ -16,13 +16,14 @@ export type YearStats = {
 
 export type YearData = { stats: YearStats; segments?: Segment[] };
 
-// Legge /api/v2/history per anno + aggregati (additivi). Se il backend non
-// fornisce ancora gli aggregati, segments resta undefined (degrada pulito).
-export function useYearData(year: "2026" | "2025", aggregate: string): YearData | null {
+// #HISTORY-TRIM-0626: legge /api/v2/history sul track record live (nessun filtro
+// anno) + aggregati (additivi). Se il backend non fornisce ancora gli aggregati,
+// segments resta undefined (degrada pulito).
+export function useYearData(aggregate: string): YearData | null {
   const [data, setData] = useState<YearData | null>(null);
   useEffect(() => {
     let alive = true;
-    fetch(`/api/v2/history?year=${year}&aggregate=${aggregate}`)
+    fetch(`/api/v2/history?aggregate=${aggregate}`)
       .then((r) => r.json())
       .then((d) => {
         if (alive) setData({ stats: d.stats ?? null, segments: d.segments });
@@ -33,6 +34,6 @@ export function useYearData(year: "2026" | "2025", aggregate: string): YearData 
     return () => {
       alive = false;
     };
-  }, [year, aggregate]);
+  }, [aggregate]);
   return data;
 }
