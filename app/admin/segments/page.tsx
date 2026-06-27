@@ -1,7 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 
-type Clause = { field: string; op: string; value?: unknown };
+let clauseSeq = 0;
+
+type Clause = { field: string; op: string; value?: unknown; _k?: number };
 type Segment = {
   id: string; key: string; name: string; description: string | null;
   rule: { all: Clause[] }; active: boolean;
@@ -35,10 +37,15 @@ export default function SegmentsPage() {
   const runPreview = useCallback(async () => {
     const res = await fetch("/api/admin/segments/preview/count".replace("preview", "00000000-0000-0000-0000-000000000000"), {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rule: { all: draft.clauses } }),
+      body: JSON.stringify({ rule: { all: draft.clauses.map(({ field, op, value }) => ({ field, op, value })) } }),
     });
+    if (!res.ok) {
+      let msg = "Preview fallita";
+      try { const d = await res.json(); msg = d.error ?? msg; } catch {}
+      setError(msg);
+      return;
+    }
     const data = await res.json();
-    if (!res.ok) { setError(data.error ?? "Preview fallita"); return; }
     setError(null); setPreview(data.count ?? 0);
   }, [draft.clauses]);
 
@@ -46,30 +53,42 @@ export default function SegmentsPage() {
     setBusy(true); setError(null);
     const res = await fetch("/api/admin/segments", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: draft.key, name: draft.name, rule: { all: draft.clauses } }),
+      body: JSON.stringify({ key: draft.key, name: draft.name, rule: { all: draft.clauses.map(({ field, op, value }) => ({ field, op, value })) } }),
     });
-    const data = await res.json();
+    if (!res.ok) {
+      let msg = "Creazione fallita";
+      try { const d = await res.json(); msg = d.error ?? msg; } catch {}
+      setError(msg);
+      setBusy(false);
+      return;
+    }
+    await res.json();
     setBusy(false);
-    if (!res.ok) { setError(data.error ?? "Creazione fallita"); return; }
     setDraft({ key: "", name: "", clauses: [] }); setPreview(null); void load();
   }, [draft, load]);
 
   const sync = useCallback(async (id: string) => {
     setBusy(true); setError(null);
     const res = await fetch(`/api/admin/segments/${id}/sync`, { method: "POST" });
-    const data = await res.json();
+    if (!res.ok) {
+      let msg = "Sync fallito";
+      try { const d = await res.json(); msg = d.error ?? msg; } catch {}
+      setError(msg);
+      setBusy(false);
+      return;
+    }
     setBusy(false);
-    if (!res.ok) { setError(data.error ?? "Sync fallito"); return; }
     void load();
   }, [load]);
 
-  const addClause = () => setDraft((d) => ({ ...d, clauses: [...d.clauses, { field: "plan", op: "eq", value: "" }] }));
+  const addClause = () => setDraft((d) => ({ ...d, clauses: [...d.clauses, { field: "plan", op: "eq", value: "", _k: clauseSeq++ }] }));
   const updClause = (i: number, patch: Partial<Clause>) =>
     setDraft((d) => ({ ...d, clauses: d.clauses.map((c, j) => (j === i ? { ...c, ...patch } : c)) }));
   const delClause = (i: number) => setDraft((d) => ({ ...d, clauses: d.clauses.filter((_, j) => j !== i) }));
 
   return (
     <div style={{ maxWidth: 920, margin: "0 auto", padding: 24, fontFamily: "system-ui,sans-serif", color: "#0f172a" }}>
+      <a href="/admin" style={{ fontSize: 13, color: "#2563eb", textDecoration: "none" }}>← Dashboard</a>
       <h1 style={{ fontSize: 22, fontWeight: 800 }}>Marketing — Segmenti</h1>
       <p style={{ color: "#64748b", fontSize: 13 }}>
         I segmenti sincronizzati su Resend non inviano email: i Broadcast si compongono nella dashboard Resend.
@@ -87,7 +106,7 @@ export default function SegmentsPage() {
             style={{ flex: 2, padding: 8, border: "1px solid #cbd5e1", borderRadius: 6 }} />
         </div>
         {draft.clauses.map((c, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, margin: "6px 0" }}>
+          <div key={c._k ?? i} style={{ display: "flex", gap: 8, margin: "6px 0" }}>
             <select value={c.field} onChange={(e) => updClause(i, { field: e.target.value, op: FIELD_OPS[e.target.value][0] })}>
               {Object.keys(FIELD_OPS).map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
