@@ -94,7 +94,7 @@ La regola è JSON con un solo nodo logico `all` (AND) in Fase 1 (YAGNI: niente O
 | `language` | `eq`, `in` | es. `it`, `en` |
 | `requested_plan` | `eq`, `in`, `is_null` | `base,premium` |
 | `activated` | `eq` | `true` / `false` (mappa su `activated_at IS [NOT] NULL`) |
-| `created_within_days` | `lte`, `gte` | intero (giorni da `created_at`) |
+| `account_age_days` | `lte`, `gte` | intero (giorni da `created_at`; `lte`=account creato negli ultimi N giorni) |
 | `plan_expires_at` | `expired`, `active`, `expiring_in_days` | (no value / no value / intero) |
 
 **Compilazione → SQL parametrico.** Una funzione `compileSegmentRule(rule)` (in `lib/segments.ts`) valida ogni clausola contro la whitelist e produce `{ whereSql, params }` **solo con placeholder `$n`** — nessuna interpolazione di valori/identificatori non whitelistati. Input non valido → throw (la route ritorna 400). Questo è il confine di fiducia: **mai SQL raw dall'input dell'operatore.**
