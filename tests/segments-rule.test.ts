@@ -33,4 +33,11 @@ assert.match(q2.sql, /SELECT id, identifier, name, plan, language, requested_pla
 // — 'in' richiede un array non vuoto —
 assert.throws(() => validateRule({ all: [{ field: "plan", op: "in", value: [] }] }), /array/i);
 
+// — requested_plan value must be base/premium —
+assert.throws(() => validateRule({ all: [{ field: "requested_plan", op: "eq", value: "enterprise" }] }), /requested_plan|invalid/i);
+// — language must look like a locale code (lowercase, 2-5 letters) —
+assert.throws(() => validateRule({ all: [{ field: "language", op: "eq", value: "'; DROP TABLE x; --" }] }), /language|invalid/i);
+// — valid language still accepted —
+assert.deepEqual(validateRule({ all: [{ field: "language", op: "eq", value: "it" }] }).all[0].value, "it");
+
 console.log("segments rule ok");

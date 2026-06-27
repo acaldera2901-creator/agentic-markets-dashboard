@@ -21,6 +21,8 @@ const FIELD_OPS: Record<string, string[]> = {
 };
 
 const PLAN_VALUES = new Set(["free", "pending_payment", "base", "premium"]);
+const REQUESTED_PLAN_VALUES = new Set(["base", "premium"]);
+const LANG_RE = /^[a-z]{2,5}$/;
 
 function fail(msg: string): never {
   throw new Error(`segment rule invalid: ${msg}`);
@@ -43,9 +45,13 @@ export function validateRule(input: unknown): SegmentRule {
     if (c.op === "in") {
       if (!Array.isArray(c.value) || c.value.length === 0) fail(`op 'in' requires a non-empty array for '${c.field}'`);
       if (c.field === "plan" && !c.value.every((v) => PLAN_VALUES.has(String(v)))) fail("invalid plan value");
+      if (c.field === "requested_plan" && !c.value.every((v) => REQUESTED_PLAN_VALUES.has(String(v)))) fail(`invalid requested_plan value`);
+      if (c.field === "language" && !c.value.every((v) => LANG_RE.test(String(v)))) fail(`invalid language value`);
     } else if (c.op === "eq") {
       if (c.value === undefined || c.value === null) fail(`op 'eq' requires a value for '${c.field}'`);
       if (c.field === "plan" && !PLAN_VALUES.has(String(c.value))) fail("invalid plan value");
+      if (c.field === "requested_plan" && !REQUESTED_PLAN_VALUES.has(String(c.value))) fail(`invalid requested_plan value`);
+      if (c.field === "language" && !LANG_RE.test(String(c.value))) fail(`invalid language value`);
       if (c.field === "activated" && typeof c.value !== "boolean") fail("'activated' requires boolean value");
     } else if (c.op === "expiring_in_days" || c.op === "lte" || c.op === "gte") {
       if (typeof c.value !== "number" || !Number.isFinite(c.value) || c.value < 0) fail(`op '${c.op}' requires a non-negative number for '${c.field}'`);
