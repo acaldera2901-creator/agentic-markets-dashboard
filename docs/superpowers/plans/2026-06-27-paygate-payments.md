@@ -606,6 +606,8 @@ git commit -m "feat(pay): UI checkout → PayGate + toggle mensile/annuale (#PAY
 - [ ] **Idempotenza:** ripetere lo stesso callback valido → nessun doppio grant (ordine già `paid`).
 - [ ] **Payout:** verificare l'arrivo di USDC sul wallet `0x72e3…7fa2` (Polygon).
 - [ ] **VERIFICA-PERNO Check Status:** confermare params dell'endpoint Check Payment Status PayGate; cablarlo in `checkPaymentStatus`; poi impostare `PAYGATE_STATUS_CHECK=1` e ripetere la verifica.
+- [ ] **DECISIONE go-live autenticità (review finale, Important #2):** al lancio lo strato (c) è OFF → l'autenticità del callback poggia SOLO sul token monouso a 32 byte (l'importo `value_coin` arriva nello stesso GET non firmato, protegge solo da underpayment onesto, non da forgery). Il token è unguessable + monouso + claim atomico → tecnicamente solido. Scelta: (A) NON impostare `NEXT_PUBLIC_PAYGATE_ENABLED=true` in prod finché `checkPaymentStatus` non è cablato (Task 7), **oppure** (B) Andrea accetta esplicitamente l'autenticità token-only al lancio. Annotare la decisione.
+- [ ] **Follow-up UX (review finale, Important #3 — non bloccante money):** il modal è storicamente USDT TRC20 con il bottone carta aggiunto in coda; valutare lo split in due modal (USDT vs carta) così la copy (indirizzo TRON, "invia esattamente", nota di chiusura) non si mescola col flusso carta. Money già corretto (periodo confinato al rail carta).
 - [ ] **Minimi d'ordine:** verificare che il mensile Base $19.90 non sia sotto il minimo dei provider mostrati; se lo è, decidere (alzare prezzo / nascondere mensile Base).
 - [ ] **Visual check** del modal checkout (toggle + prezzi + nota rinnovo) da loggato.
 
