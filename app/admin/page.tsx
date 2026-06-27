@@ -366,6 +366,12 @@ export default function AdminPage() {
             {s}
           </button>
         ))}
+        <a
+          href="/admin/segments"
+          className="py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          Segmenti
+        </a>
       </nav>
 
       <main className="px-6 py-6 max-w-7xl mx-auto space-y-6">
