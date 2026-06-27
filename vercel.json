@@ -13,6 +13,10 @@
       "schedule": "*/30 * * * *"
     },
     {
+      "path": "/api/cron/segments-sync",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/subscriptions",
       "schedule": "0 6 * * *"
     }
