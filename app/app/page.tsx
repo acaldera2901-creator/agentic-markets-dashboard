@@ -3291,7 +3291,7 @@ function CheckoutModal({
             <code>{USDT_TRC20_ADDRESS}</code>
             <button type="button" onClick={handleCopy}>{copied ? t.checkout_copied : t.checkout_copy}</button>
           </div>
-          <em>{t.checkout_amount}: {(displayPrice ?? price).toFixed(2)} USDT · {t.checkout_monthly}</em>
+          <em>{t.checkout_amount}: {(displayPrice ?? price).toFixed(2)} USDT · {period === "annual" ? pick5(lang, { it: "Annuale", en: "Annual", es: "Anual", fr: "Annuel", ru: "Годовой" }) : (t.checkout_monthly ?? pick5(lang, { it: "Mensile", en: "Monthly", es: "Mensual", fr: "Mensuel", ru: "Месячный" }))}</em>
         </div>
 
         <div className="checkout-steps">
@@ -3348,7 +3348,7 @@ function CheckoutModal({
           </p>
         )}
 
-        {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && (
+        {process.env.NEXT_PUBLIC_PAYGATE_ENABLED === "true" && (
           <button
             type="button"
             onClick={payWithCard}
