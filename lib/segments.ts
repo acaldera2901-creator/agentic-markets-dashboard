@@ -4,11 +4,15 @@
 // SOLO da questa whitelist; i valori dall'operatore passano come param ($n) e
 // vengono escapati da lib/db.interpolate. Mai SQL raw dall'input.
 
+import { ADMIN_IDENTIFIER } from "./admin-profile-policy";
+
 export type SegmentClause = { field: string; op: string; value?: unknown };
 export type SegmentRule = { all: SegmentClause[] };
 
 // Email dell'identità admin, esclusa dal marketing (allineata a lib/admin-profile-policy).
-export const ADMIN_ELIGIBILITY_EXCLUDE_EMAIL = "acaldera2901@gmail.com";
+export const ADMIN_ELIGIBILITY_EXCLUDE_EMAIL = ADMIN_IDENTIFIER;
+
+// NB: lib/db interpola i $n come literal (escaped), NON come bind del driver → la whitelist field/op qui sotto è l'UNICA difesa da SQL injection: ogni nuovo campo DEVE restare whitelistato e i valori passare solo via params.
 
 // Operatori ammessi per ciascun campo. Qualunque cosa fuori da qui → throw.
 const FIELD_OPS: Record<string, string[]> = {

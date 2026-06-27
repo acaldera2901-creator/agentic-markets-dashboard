@@ -23,13 +23,13 @@ assert.equal(lifecycleStage({ ...base, plan: "free", plan_expires_at: null }, NO
 
 const payload = buildContactPayload(base, ["pro_it", "renewers"], NOW);
 assert.equal(payload.email, "a@b.com");
-assert.equal(payload.firstName, "Mario");
+assert.equal(payload.first_name, "Mario");
 assert.equal(payload.properties.plan, "premium");
 assert.equal(payload.properties.language, "it");
 assert.equal(payload.properties.lifecycle_stage, "active");
 assert.equal(payload.properties.cohort_month, "2026-05");
-assert.equal(payload.properties.seg_pro_it, true);
-assert.equal(payload.properties.seg_renewers, true);
+// membership solo via array `segments`, NON come proprietà seg_*
+assert.equal("seg_pro_it" in payload.properties, false);
 assert.deepEqual(payload.segments, ["pro_it", "renewers"]);
 // MAI impostare unsubscribed nell'upsert
 assert.equal("unsubscribed" in payload, false);

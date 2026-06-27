@@ -35,7 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: "update failed", detail: String(e) }, { status: 500 });
+    console.error("[admin/segments] update failed:", String(e));
+    return NextResponse.json({ error: "update failed" }, { status: 500 });
   }
 }
 
@@ -46,6 +47,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await dbExecute("DELETE FROM segments WHERE id = $1", [id]);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: "delete failed", detail: String(e) }, { status: 500 });
+    console.error("[admin/segments] delete failed:", String(e));
+    return NextResponse.json({ error: "delete failed" }, { status: 500 });
   }
 }

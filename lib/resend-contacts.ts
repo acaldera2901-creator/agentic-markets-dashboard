@@ -33,25 +33,28 @@ export function lifecycleStage(c: SegmentContact, nowISO: string): "prospect" | 
   return "active";
 }
 
+// L'appartenenza ai segmenti è espressa SOLO tramite l'array `segments` (i doc
+// Resend mostrano che si assegna al contatto). Le `properties` portano solo
+// attributi stabili (plan/language/lifecycle/cohort), riscritti per intero a
+// ogni sync → nessuna proprietà "seg_*" stale da ripulire.
 export function buildContactPayload(
   c: SegmentContact,
   matchedSegmentKeys: string[],
   nowISO: string
-): { email: string; firstName?: string; properties: Record<string, string | boolean>; segments: string[] } {
+): { email: string; first_name?: string; properties: Record<string, string>; segments: string[] } {
   const firstName = c.name?.trim().split(/\s+/)[0];
-  const properties: Record<string, string | boolean> = {
+  const properties: Record<string, string> = {
     plan: c.plan,
     language: c.language ?? "",
     lifecycle_stage: lifecycleStage(c, nowISO),
     cohort_month: cohortMonth(c.created_at),
   };
-  for (const k of matchedSegmentKeys) properties[`seg_${k}`] = true;
-  const payload: { email: string; firstName?: string; properties: Record<string, string | boolean>; segments: string[] } = {
+  const payload: { email: string; first_name?: string; properties: Record<string, string>; segments: string[] } = {
     email: c.identifier,
     properties,
     segments: matchedSegmentKeys,
   };
-  if (firstName) payload.firstName = firstName;
+  if (firstName) payload.first_name = firstName;
   return payload;
 }
 
@@ -60,7 +63,11 @@ async function upsertContact(
   apiKey: string,
   payload: ReturnType<typeof buildContactPayload>
 ): Promise<void> {
-  // Resend: upsert contatto nell'audience. audience_id nel body.
+  // ASSUNZIONE da VERIFICARE live in Task 8 (gated): `POST /contacts` con
+  // audience_id nel body fa UPSERT per email e l'array `segments` SOSTITUISCE
+  // l'appartenenza; `first_name`/`properties` sono accettati in snake_case.
+  // I doc Resend non lo esplicitano → il primo sync reale conferma verbo e
+  // semantica prima del go-live. `unsubscribed` non è MAI inviato.
   const resp = await fetch(RESEND_CONTACTS_ENDPOINT, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -72,11 +79,9 @@ async function upsertContact(
   }
 }
 
-// Sincronizza i contatti di UN segmento. `segmentKeysByContact` mappa
-// identifier → tutte le key di segmento che quel contatto matcha ora (così il
-// contatto porta su Resend l'appartenenza completa, non solo questo segmento).
+// Upsert di un insieme di contatti. `segmentKeysByContact` mappa identifier →
+// TUTTE le key dei segmenti che il contatto matcha ora (appartenenza completa).
 export async function syncSegmentToResend(
-  _segmentKey: string,
   contacts: SegmentContact[],
   segmentKeysByContact: Map<string, string[]>
 ): Promise<{ ok: number; failed: number }> {

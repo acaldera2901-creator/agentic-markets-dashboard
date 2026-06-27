@@ -1,48 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { dbQuery, dbExecute } from "@/lib/db";
-import { validateRule, buildSegmentQuery } from "@/lib/segments";
-import { syncSegmentToResend, type SegmentContact } from "@/lib/resend-contacts";
+import { dbQuery } from "@/lib/db";
+import { runSegmentSync } from "@/lib/segment-sync";
 
 export const dynamic = "force-dynamic";
 
-type SegRow = { id: string; key: string; rule: unknown; active: boolean };
+type SegRow = { id: string; active: boolean };
 
+// "Sync su Resend" lancia un REFRESH COMPLETO (tutti i segmenti attivi),
+// identico al cron, così lo stato dei contatti resta coerente. L'[id] serve
+// solo a 404 se il segmento non esiste e a bloccare se è inattivo.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAdminAuthorized(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const segs = await dbQuery<SegRow>("SELECT id, key, rule, active FROM segments WHERE id = $1", [id]);
+  const segs = await dbQuery<SegRow>("SELECT id, active FROM segments WHERE id = $1", [id]);
   const seg = segs?.[0];
   if (!seg) return NextResponse.json({ error: "segment not found" }, { status: 404 });
+  if (!seg.active) return NextResponse.json({ error: "segmento inattivo: attivalo per sincronizzarlo" }, { status: 400 });
 
-  let rule;
   try {
-    rule = validateRule(seg.rule);
+    const result = await runSegmentSync();
+    return NextResponse.json(result);
   } catch (e) {
-    return NextResponse.json({ error: `stored rule invalid: ${String(e)}` }, { status: 500 });
+    console.error("[segments/sync] failed:", String(e));
+    return NextResponse.json({ error: "sync failed" }, { status: 500 });
   }
-
-  // Match dei contatti idonei (eligibility consenso applicata in buildSegmentQuery).
-  const { sql, params: qp } = buildSegmentQuery(rule, { select: "contacts" });
-  const contacts = (await dbQuery<SegmentContact>(sql, qp)) ?? [];
-
-  // Per Fase 1 il sync è per-segmento: ogni contatto porta SOLO questo segmento.
-  // (L'appartenenza multi-segmento completa arriva dal refresh-all del cron, Task 7.)
-  const byContact = new Map<string, string[]>();
-  for (const c of contacts) byContact.set(c.identifier, [seg.key]);
-
-  let result: { ok: number; failed: number };
-  try {
-    result = await syncSegmentToResend(seg.key, contacts, byContact);
-  } catch (e) {
-    return NextResponse.json({ error: "sync failed", detail: String(e) }, { status: 500 });
-  }
-
-  await dbExecute(
-    "UPDATE segments SET last_count = $2, last_synced_at = NOW(), resend_segment = COALESCE(resend_segment, $3) WHERE id = $1",
-    [id, contacts.length, seg.key]
-  );
-
-  return NextResponse.json({ ok: result.failed === 0, synced: result.ok, failed: result.failed, count: contacts.length });
 }

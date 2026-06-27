@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     );
     return NextResponse.json({ ok: true, id: (rows?.[0] as { id?: string })?.id ?? null });
   } catch (e) {
-    return NextResponse.json({ error: "insert failed", detail: String(e) }, { status: 500 });
+    console.error("[admin/segments] insert failed:", String(e));
+    return NextResponse.json({ error: "insert failed" }, { status: 500 });
   }
 }
