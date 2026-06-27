@@ -3,6 +3,7 @@ import { fetchAllTodayMatches } from "@/lib/football-data";
 import { dbQuery } from "@/lib/db";
 import { requireAccess } from "@/lib/auth";
 import { settlePredictionLog } from "@/lib/prediction-log";
+import { SUMMER_LIVE_ESPN_SLUGS } from "@/lib/summer-leagues";
 
 export const dynamic = "force-dynamic";
 
@@ -64,16 +65,20 @@ async function fetchEspnLeagueLive(league: string): Promise<Record<string, LiveS
 export async function GET(req: Request) {
   const { deny } = await requireAccess(req);
   if (deny) return deny;
-  const [matches, espnFriendly, espnWorldCup] = await Promise.all([
+  const [matches, espnFriendly, espnWorldCup, ...espnSummer] = await Promise.all([
     fetchAllTodayMatches(),
     fetchEspnLeagueLive("fifa.friendly"),
     // #WC-LIVE-1: the World Cup lives on ESPN's fifa.world scoreboard, not
     // fifa.friendly. football-data's plan doesn't surface WC in-play (returns
     // count:0 / TIER_ONE on /matches), so ESPN is the only live WC source.
     fetchEspnLeagueLive("fifa.world"),
+    // #LIVE-LEAGUES-0627: summer leagues (Allsvenskan/Eliteserien/LoI/Chinese SL)
+    // — same ESPN scoreboards the settler uses, so their cards show in-play/FT
+    // scores like the WC. Keyed `espn:<id>` → direct match to the served fixture.
+    ...SUMMER_LIVE_ESPN_SLUGS.map((slug) => fetchEspnLeagueLive(slug)),
   ]);
 
-  const liveMap: Record<string, LiveScore> = { ...espnFriendly, ...espnWorldCup };
+  const liveMap: Record<string, LiveScore> = { ...espnFriendly, ...espnWorldCup, ...Object.assign({}, ...espnSummer) };
   for (const m of matches) {
     liveMap[m.id] = {
       home_score: m.homeGoals,

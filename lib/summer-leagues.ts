@@ -52,6 +52,13 @@ const ESPN_SLUGS: Record<string, string> = {
   CSL: "chn.1",
 };
 
+// #LIVE-LEAGUES-0627: slug ESPN da interrogare anche nel feed LIVE del board
+// (/api/live), così le card delle leghe estive mostrano punteggio in-play/finale
+// come la World Cup. fin.1 (VEI) escluso: ESPN lo restituisce vuoto e The Odds
+// API non va chiamata nel polling 60s (quota). Le card estive hanno match_id
+// `espn:<id>` → match diretto col live scoreboard.
+export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1"];
+
 const ODDS_SPORT_KEYS: Record<string, string> = {
   ELI: "soccer_norway_eliteserien",
   ALL: "soccer_sweden_allsvenskan",
