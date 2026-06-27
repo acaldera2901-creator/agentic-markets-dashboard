@@ -58,7 +58,7 @@ Due step obbligatori, REST senza API key, no SDK:
 
 **Callback di pagamento:** quando il cliente paga, PayGate invia un **GET al nostro `callback_url`** con tutti i nostri parametri + `value_coin` (USDC effettivi inviati dal provider). **Nessuna firma HMAC** documentata.
 
-Endpoint accessori citati (params esatti **da confermare in implementazione**): **Check Payment Status**, **Convert to USD** (non necessario: prezziamo già in USD).
+Endpoint accessori: **Convert to USD** (`convert.php?value=&from=`, non necessario: prezziamo già in USD). ⚠️ **Verificato 2026-06-28 sui plugin ufficiali PayGate (WooCommerce hosted+custom): NON esiste un "Check Payment Status" usato per verificare il pagamento** — la verifica del callback è **nonce/token + importo**, esattamente il nostro modello. Il callback restituisce `txid_out`, `value_coin`, `coin`.
 
 ---
 
@@ -103,13 +103,13 @@ Mirror di `stripe/checkout`:
    - Salva `polygon_address_in` sull'ordine.
 7. Costruisce `pay.php?address=<address_in>&amount=<amount_usd>&email=<enc>&currency=USD` → ritorna `{ url }`.
 
-### 3.3 `GET /api/paygate/callback` — verifica anti-spoof a 3 strati
+### 3.3 `GET /api/paygate/callback` — verifica anti-spoof (token + importo)
 
 Il callback è un GET **non firmato** → il callback grezzo **non è fonte di verità**. Concessione del piano **solo** se TUTTO torna:
 
 1. **(a) Autenticità — token monouso.** `token` dalla query → `sha256` → cerca `paygate_orders` per `token_hash` con `status='pending'`. Assente/non-pending → 200 ok ma **nessuna azione** (no leak, no retry-storm). Un attaccante non può indovinare il token a 32 byte → non può simulare un "pagato".
 2. **(b) Importo.** `value_coin` (USDC) ≥ `amount_usd` − tolleranza fee (es. 2%). Sotto soglia → ordine resta `pending`, log, niente grant.
-3. **(c) Conferma server-side (difesa in profondità).** Ri-verifica via **Check Payment Status** PayGate (params esatti da confermare in impl.) usando `polygon_address_in`/`ipn_token`. Se non confermato → niente grant.
+3. **(c) ~~Conferma server-side~~ RIMOSSA (2026-06-28).** Verificato sui plugin ufficiali PayGate: non esiste un endpoint di re-verifica; il modello ufficiale è (a)+(b) — esattamente il nostro. Si salva `txid_out` dal callback in `paygate_orders` per riconciliazione on-chain.
 4. Se (a)+(b)+(c) ok → **transazione idempotente**: marca l'ordine `paid` (guard `WHERE status='pending'` → un secondo callback non concede 2 volte) e chiama `activatePaygatePlan(identifier, plan, period)`.
 
 ### 3.4 `activatePaygatePlan` (in `lib/plan-grant.ts`)
@@ -127,7 +127,7 @@ Unità isolata, REST no-SDK:
 - `PAYGATE_PRICES`: tabella prezzi server-side (sopra) + `amountFor(plan, period)`.
 - `createReceivingWallet(payout, callbackUrl)`: GET wallet.php → `{ address_in, polygon_address_in, ipn_token }` (throw su !ok).
 - `buildPayUrl({ addressIn, amount, email })`: stringa `pay.php?...currency=USD`.
-- `checkPaymentStatus(...)`: GET check-status (params da confermare in impl.) → `{ confirmed: boolean, valueCoin?: number }`.
+- *(rimosso `checkPaymentStatus`: nessun endpoint di re-verifica nel modello PayGate)*.
 
 ### 3.6 UI — `PlansTab` (in `app/app/page.tsx`)
 - Toggle **Mensile / Annuale (−30%)**; mostra i 4 prezzi.
@@ -145,7 +145,7 @@ Unità isolata, REST no-SDK:
 
 **Integrazione/gated (Task finale, dopo APPROVE):**
 4. Migration `paygate_orders` applicata (idempotente, rollback testato).
-5. **Verifica-perno live PayGate:** confermare params di Check Payment Status; eseguire un pagamento test su importo minimo; verificare callback→grant; verificare che un callback con token errato NON conceda; verificare arrivo USDC sul wallet.
+5. **Pagamento test live PayGate:** eseguire un pagamento test su importo minimo; verificare callback→grant; verificare che un callback con token errato NON conceda; verificare arrivo USDC sul wallet e che `txid_out` venga salvato.
 6. Minimi d'ordine per provider (il mensile Base $19.90 potrebbe essere sotto soglia).
 7. Visual check `PlansTab` da utente loggato.
 
@@ -153,7 +153,7 @@ Unità isolata, REST no-SDK:
 
 ## 5. Rischi / blast radius
 - **Soldi/prod:** Fase build non incassa nulla; go-live gated.
-- **Spoofing callback:** mitigato da token monouso a 32 byte + check importo + ri-verifica stato; il grant è idempotente.
+- **Spoofing callback:** mitigato da token monouso a 32 byte + check importo (= modello ufficiale PayGate: nonce + importo); il grant è idempotente.
 - **Gateway anonimo no-KYC:** rischio compliance/affidabilità payout accettato da Andrea (OK legale attestato); payout su wallet self-custodial.
 - **DB:** una tabella nuova additiva, RLS-deny, rollback fornito; `profiles` toccato solo via UPDATE già esistenti come pattern.
 - **Mensile senza auto-rinnovo:** UX nota; mostrare chiaramente "rinnovo manuale" nella UI.

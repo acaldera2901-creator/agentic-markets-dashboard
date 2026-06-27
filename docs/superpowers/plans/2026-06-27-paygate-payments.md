@@ -8,17 +8,19 @@
 
 **Tech Stack:** Next.js App Router (route handlers), TypeScript, Supabase (`lib/db` RPC `exec_sql`), PayGate.to REST (no SDK, no API key), `node:crypto`, test `tsx` + `node:assert/strict`.
 
+> **UPDATE 2026-06-28 (post-verifica).** Verificato sui plugin ufficiali PayGate (WooCommerce hosted+custom) che **non esiste un endpoint "Check Payment Status"** per la verifica: il modello ufficiale è **nonce/token + importo**, identico al nostro gate (a)+(b). Di conseguenza il layer (c) `checkPaymentStatus` + l'env `PAYGATE_STATUS_CHECK` sono stati **RIMOSSI dal codice** (commit `8b1095e`) e si **salva `txid_out`** dal callback in `paygate_orders`. I blocchi di codice qui sotto che mostrano `checkPaymentStatus`/`PAYGATE_STATUS_CHECK` (Task 2 e Task 5) sono **superati** su quei punti — fa fede il codice nel branch.
+
 ## Global Constraints
 
 - **Gate aziendale:** nessuna esecuzione in produzione (migration su DB reale, deploy, env wallet reale, callback pubblico, primo pagamento reale) senza `APPROVE #id` umano. I task producono codice + test locali.
-- **Sicurezza pagamenti (trust boundary):** il callback PayGate è un GET **non firmato** → non è fonte di verità. Concedere il piano **solo** dopo: (a) match del **token monouso** a 32 byte dell'ordine, (b) `value_coin` ≥ importo atteso − tolleranza fee, (c) ri-verifica stato server-side (strato extra, attivo via env `PAYGATE_STATUS_CHECK=1` una volta confermati i params in Task 7). Grant **idempotente** (un secondo callback non concede 2 volte).
+- **Sicurezza pagamenti (trust boundary):** il callback PayGate è un GET **non firmato** → non è fonte di verità. Concedere il piano **solo** dopo: (a) match del **token monouso** a 32 byte dell'ordine, (b) `value_coin` ≥ importo atteso − tolleranza fee. Questo è il modello ufficiale PayGate (nonce + importo); **nessun layer (c)** (vedi UPDATE 2026-06-28). Grant **idempotente** (un secondo callback non concede 2 volte). Si salva `txid_out` dal callback.
 - **Importi server-side:** gli importi vengono SEMPRE da `lib/paygate.ts` (`amountFor`), mai dal client. Base: 19.90/169 · Pro: 49.90/419 (mensile/annuale USD).
 - **Auth:** `/api/paygate/checkout` valida `getSessionPlan` + blocca cross-site (come `stripe/checkout`). Il callback non è autenticato (lo chiama PayGate) → la sicurezza è il token monouso.
 - **No SDK / no API key:** chiamate REST a `api.paygate.to` / `checkout.paygate.to` con `fetch` (stile `lib/email.ts`).
 - **Mai iframe:** il checkout è un redirect diretto (vincolo PayGate).
 - **Surgical:** non rimuovere il codice Stripe/CoinsPaid (resta dormiente); ripuntare solo i call-site UI. Non toccare `lib/email.ts` né le lifecycle.
 - **Test command:** `npx tsx <file>`. Lint: `npm run lint`. Build: `npm run build`.
-- **Env nuove:** `PAYGATE_PAYOUT_WALLET=0x72e348d948e984c7d57d8ccb93fdd52710e47fa2` (USDC Polygon, self-custodial). `PAYGATE_STATUS_CHECK` (off finché Task 7 non conferma l'endpoint).
+- **Env nuove:** `PAYGATE_PAYOUT_WALLET=0x72e348d948e984c7d57d8ccb93fdd52710e47fa2` (USDC Polygon, self-custodial) e `NEXT_PUBLIC_PAYGATE_ENABLED=true` (mostra il bottone carta). *(L'env `PAYGATE_STATUS_CHECK` è stato rimosso — vedi UPDATE 2026-06-28.)*
 
 ---
 
@@ -595,7 +597,7 @@ git commit -m "feat(pay): UI checkout → PayGate + toggle mensile/annuale (#PAY
 > Non è codice. Richiede `APPROVE` umano + accesso a Supabase prod, env Vercel e un pagamento di test reale. Trasforma "Costruito" in "Verificato/Operativo".
 
 **Pre-requisiti (gated):**
-- [ ] Impostare env Vercel (prod + preview): `PAYGATE_PAYOUT_WALLET=0x72e348d948e984c7d57d8ccb93fdd52710e47fa2` e `NEXT_PUBLIC_PAYGATE_ENABLED=true` (rende visibile il bottone "Paga con carta" → PayGate). Lasciare `PAYGATE_STATUS_CHECK` **non** impostato finché lo step "Check Status" non è confermato.
+- [ ] Impostare env Vercel (prod + preview): `PAYGATE_PAYOUT_WALLET=0x72e348d948e984c7d57d8ccb93fdd52710e47fa2` e `NEXT_PUBLIC_PAYGATE_ENABLED=true` (rende visibile il bottone "Paga con carta" → PayGate).
 - [ ] Applicare la migration `paygate_orders` (Task 1) — `supabase db push` o MCP `apply_migration` — solo dopo APPROVE.
 
 **Verifica funzionale:**
@@ -605,8 +607,8 @@ git commit -m "feat(pay): UI checkout → PayGate + toggle mensile/annuale (#PAY
 - [ ] **Anti-spoof:** chiamare il callback con un `token` casuale/errato → **nessun** cambiamento di piano (resta `pending`).
 - [ ] **Idempotenza:** ripetere lo stesso callback valido → nessun doppio grant (ordine già `paid`).
 - [ ] **Payout:** verificare l'arrivo di USDC sul wallet `0x72e3…7fa2` (Polygon).
-- [ ] **VERIFICA-PERNO Check Status:** confermare params dell'endpoint Check Payment Status PayGate; cablarlo in `checkPaymentStatus`; poi impostare `PAYGATE_STATUS_CHECK=1` e ripetere la verifica.
-- [ ] **DECISIONE go-live autenticità (review finale, Important #2):** al lancio lo strato (c) è OFF → l'autenticità del callback poggia SOLO sul token monouso a 32 byte (l'importo `value_coin` arriva nello stesso GET non firmato, protegge solo da underpayment onesto, non da forgery). Il token è unguessable + monouso + claim atomico → tecnicamente solido. Scelta: (A) NON impostare `NEXT_PUBLIC_PAYGATE_ENABLED=true` in prod finché `checkPaymentStatus` non è cablato (Task 7), **oppure** (B) Andrea accetta esplicitamente l'autenticità token-only al lancio. Annotare la decisione.
+- [x] ~~VERIFICA-PERNO Check Status~~ **RISOLTA (2026-06-28):** verificato sui plugin ufficiali PayGate che non esiste un endpoint di re-verifica; il modello ufficiale è token/nonce + importo = il nostro. Layer (c) rimosso dal codice (commit `8b1095e`).
+- [ ] **Autenticità al lancio (accettata):** l'autenticità del callback poggia sul **token monouso a 32 byte** (unguessable + sha256 + claim atomico) + check importo — lo stesso modello dei plugin ufficiali PayGate. Nessuna azione ulteriore richiesta; verificare in test che un token errato non conceda.
 - [ ] **Follow-up UX (review finale, Important #3 — non bloccante money):** il modal è storicamente USDT TRC20 con il bottone carta aggiunto in coda; valutare lo split in due modal (USDT vs carta) così la copy (indirizzo TRON, "invia esattamente", nota di chiusura) non si mescola col flusso carta. Money già corretto (periodo confinato al rail carta).
 - [ ] **Minimi d'ordine:** verificare che il mensile Base $19.90 non sia sotto il minimo dei provider mostrati; se lo è, decidere (alzare prezzo / nascondere mensile Base).
 - [ ] **Visual check** del modal checkout (toggle + prezzi + nota rinnovo) da loggato.
