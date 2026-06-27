@@ -3355,7 +3355,7 @@ function CheckoutModal({
         )}
 
         <p>
-          {t.checkout_note_prefix} {(displayPrice ?? price).toFixed(2)} {t.checkout_note_suffix}{" "}
+          {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
           <button
             type="button"
             onClick={onClose}
