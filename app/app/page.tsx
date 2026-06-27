@@ -3218,7 +3218,10 @@ function CheckoutModal({
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [period, setPeriod] = useState<"monthly" | "annual">("annual");
+  const ANNUAL_PRICE: Record<string, number> = { base: 169, premium: 419 };
   const price = planAmountUsdt(plan);
+  const displayPrice = period === "annual" ? (ANNUAL_PRICE[plan] ?? price) : price;
   const t = useT();
   const lang = useLang();
 
@@ -3229,13 +3232,14 @@ function CheckoutModal({
   };
 
   const payWithCard = async () => {
-    const res = await fetch("/api/stripe/checkout", {
+    const res = await fetch("/api/paygate/checkout", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ requested_plan: plan }),
+      body: JSON.stringify({ requested_plan: plan, period }),
     });
     if (!res.ok) {
-      console.error("stripe checkout failed", res.status);
+      console.error("paygate checkout failed", res.status);
+      setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
       return;
     }
     const { url } = (await res.json()) as { url?: string };
@@ -3269,7 +3273,7 @@ function CheckoutModal({
             <code>{USDT_TRC20_ADDRESS}</code>
             <button type="button" onClick={handleCopy}>{copied ? t.checkout_copied : t.checkout_copy}</button>
           </div>
-          <em>{t.checkout_amount}: {price.toFixed(2)} USDT · {t.checkout_monthly}</em>
+          <em>{t.checkout_amount}: {price.toFixed(2)} USDT</em>
         </div>
 
         <div className="checkout-steps">
@@ -3326,14 +3330,28 @@ function CheckoutModal({
           </p>
         )}
 
-        {process.env.NEXT_PUBLIC_STRIPE_ENABLED === "true" && (
-          <button
-            type="button"
-            onClick={payWithCard}
-            style={{ marginTop: 8, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}
-          >
-            {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })}
-          </button>
+        {process.env.NEXT_PUBLIC_PAYGATE_ENABLED === "true" && (
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--am-coral)", paddingTop: 12 }}>
+            <div style={{ display: "flex", gap: 8, margin: "0 0 6px" }}>
+              <button type="button" onClick={() => setPeriod("monthly")} aria-pressed={period === "monthly"}
+                style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "monthly" ? "var(--am-coral)" : "none", color: period === "monthly" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
+                {pick5(lang, { it: "Mensile", en: "Monthly", es: "Mensual", fr: "Mensuel", ru: "Месячный" })}
+              </button>
+              <button type="button" onClick={() => setPeriod("annual")} aria-pressed={period === "annual"}
+                style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "annual" ? "var(--am-coral)" : "none", color: period === "annual" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
+                {pick5(lang, { it: "Annuale −30%", en: "Annual −30%", es: "Anual −30%", fr: "Annuel −30%", ru: "Год −30%" })}
+              </button>
+            </div>
+            <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
+              {period === "monthly"
+                ? pick5(lang, { it: "Pagamento singolo, sblocca 30 giorni (rinnovo manuale).", en: "One-time payment, unlocks 30 days (manual renewal).", es: "Pago único, desbloquea 30 días (renovación manual).", fr: "Paiement unique, débloque 30 jours (renouvellement manuel).", ru: "Разовый платёж, 30 дней (ручное продление)." })
+                : pick5(lang, { it: "Pagamento singolo, sblocca 12 mesi.", en: "One-time payment, unlocks 12 months.", es: "Pago único, desbloquea 12 meses.", fr: "Paiement unique, débloque 12 mois.", ru: "Разовый платёж, 12 месяцев." })}
+            </p>
+            <button type="button" onClick={payWithCard}
+              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}>
+              {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD
+            </button>
+          </div>
         )}
 
         <p>

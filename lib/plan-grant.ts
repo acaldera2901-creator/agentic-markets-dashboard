@@ -16,7 +16,7 @@ export function expirySqlExpr(expiresAtIso: string | null): string {
 }
 
 type ActivatedRow = { identifier: string; name: string | null; plan: GrantablePlan };
-type ActivationSource = "admin" | "stripe";
+type ActivationSource = "admin" | "stripe" | "paygate";
 
 // Shared NOTIFICATION side-effect for both activation modes: audit `events` row +
 // best-effort activation email. The two modes must NOT share the activating SQL
@@ -108,5 +108,44 @@ export async function activateStripePlan(
     );
   }
 
+  return { identifier: activated.identifier, name: activated.name, plan: activated.plan };
+}
+
+// PayGate activation: il callback è già verificato a monte (token monouso +
+// importo) e l'ordine fa da lock di idempotenza, quindi nessun pending-guard qui.
+// Expiry per periodo: monthly +30gg, annual +365gg. Notifica solo su transizione
+// reale (come activateStripePlan). source 'paygate'.
+export async function activatePaygatePlan(
+  identifier: string,
+  plan: GrantablePlan,
+  period: "monthly" | "annual"
+): Promise<ActivatedRow | null> {
+  const days = period === "annual" ? 365 : 30;
+  const rows = await dbQuery<ActivatedRow & { old_plan: string | null }>(
+    `WITH prev AS (
+       SELECT identifier, plan AS old_plan FROM profiles
+        WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+        LIMIT 1
+     )
+     UPDATE profiles p
+        SET plan = $2,
+            requested_plan = NULL,
+            plan_expires_at = NOW() + make_interval(days => $3),
+            updated_at = NOW()
+       FROM prev
+      WHERE p.identifier = prev.identifier
+      RETURNING p.identifier, p.name, p.plan, prev.old_plan`,
+    [identifier, plan, days]
+  );
+
+  const activated = rows[0];
+  if (!activated) return null;
+
+  if (activated.old_plan !== activated.plan) {
+    await notifyPlanActivated(
+      { identifier: activated.identifier, name: activated.name, plan: activated.plan },
+      "paygate"
+    );
+  }
   return { identifier: activated.identifier, name: activated.name, plan: activated.plan };
 }
