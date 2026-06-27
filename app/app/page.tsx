@@ -5731,12 +5731,16 @@ function MatchBuilderTab({
     }
   };
 
-  // Presentation-only grouping for scannability. Derived from the item id
-  // prefix (f_/w_/t_) — same data, just clustered by sport family.
+  // Presentation-only grouping for scannability. Mostly by item id prefix
+  // (f_/w_/t_), MA #MB-WC-GROUP-0627: da quando /api/predictions include anche la
+  // World Cup (league "WC"), quelle righe arrivano come item football (f_, sport
+  // "World Cup") e le wcRows (w_) duplicate vengono dedotte via → la WC finiva
+  // sepolta sotto "Calcio". Raggruppo la WC per LABEL sport, non solo per prefisso.
+  const isWcItem = (i: MbItem) => i.id.startsWith("w_") || i.sport === "World Cup";
   const mbGroups: { key: string; head: string; amber: boolean; rows: MbItem[] }[] = [
-    { key: "football", head: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_")) },
+    { key: "football", head: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), amber: false, rows: visibleItems.filter((i) => i.id.startsWith("f_") && !isWcItem(i)) },
     { key: "tennis", head: "Tennis", amber: false, rows: visibleItems.filter((i) => i.id.startsWith("t_")) },
-    { key: "worldcup", head: "World Cup", amber: true, rows: visibleItems.filter((i) => i.id.startsWith("w_")) },
+    { key: "worldcup", head: "World Cup", amber: true, rows: visibleItems.filter(isWcItem) },
   ].filter((g) => g.rows.length > 0);
 
   return (
