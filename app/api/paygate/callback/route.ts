@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
-import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
+import { hashToken, evaluateCallback } from "@/lib/paygate";
 import { activatePaygatePlan } from "@/lib/plan-grant";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     const token = url.searchParams.get("token") ?? "";
     const rawValue = url.searchParams.get("value_coin");
     const valueCoin = rawValue != null && rawValue !== "" ? Number(rawValue) : null;
+    const txidOut = url.searchParams.get("txid_out");
     if (!token) return NextResponse.json({ ok: true });
 
     const tokenHash = hashToken(token);
@@ -44,22 +45,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // NB: checkPaymentStatus è uno STUB finché Task 7 non lo cabla → tiene PAYGATE_STATUS_CHECK
-    // NON impostato fino ad allora, altrimenti questo strato fa fallire OGNI grant.
-    // (c) difesa in profondità (attiva solo quando confermato l'endpoint, Task 7)
-    if (process.env.PAYGATE_STATUS_CHECK === "1" && order) {
-      const st = await checkPaymentStatus({ polygonAddressIn: order.polygon_address_in ?? "", ipnToken: "" });
-      if (!st.confirmed) {
-        console.warn(`[paygate/callback] status not confirmed (order=${order.id})`);
-        return NextResponse.json({ ok: true });
-      }
-    }
-
     // Lock idempotente: solo il primo callback "vince" l'UPDATE pending→paid.
     const claimed = await dbExecute<{ id: string }>(
-      `UPDATE paygate_orders SET status = 'paid', value_coin = $2, paid_at = NOW()
+      `UPDATE paygate_orders SET status = 'paid', value_coin = $2, txid_out = $3, paid_at = NOW()
         WHERE id = $1 AND status = 'pending' RETURNING id`,
-      [order!.id, valueCoin]
+      [order!.id, valueCoin, txidOut]
     );
     if (!claimed?.length) return NextResponse.json({ ok: true }); // già processato
 

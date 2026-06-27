@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.paygate_orders (
   token_hash         TEXT NOT NULL UNIQUE,
   status             TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','expired')),
   value_coin         NUMERIC(20,6),
+  txid_out           TEXT,
   polygon_address_in TEXT,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   paid_at            TIMESTAMPTZ

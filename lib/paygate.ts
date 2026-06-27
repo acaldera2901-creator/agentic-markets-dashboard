@@ -2,7 +2,7 @@
 // Client PayGate.to (#PAYGATE-PAY). REST, no SDK, no API key (stile lib/email.ts).
 // Due step: wallet.php (genera address_in cifrato + callback unico) → pay.php
 // (redirect multi-provider). Il callback di pagamento NON è firmato: la verifica
-// anti-spoof vive in evaluateCallback (token monouso + importo) + checkPaymentStatus.
+// anti-spoof vive in evaluateCallback (token monouso + importo).
 
 import crypto from "node:crypto";
 
@@ -85,13 +85,3 @@ export function buildPayUrl(opts: { addressIn: string; amount: number; email: st
   return `${PAY_ENDPOINT}?${p.toString()}`;
 }
 
-// Difesa in profondità: ri-verifica lo stato lato PayGate. Params esatti da
-// confermare con la doc in Task 7 (gated). Finché PAYGATE_STATUS_CHECK non è "1"
-// il caller NON usa questo strato (token+importo restano il gate hard).
-export async function checkPaymentStatus(_opts: {
-  polygonAddressIn: string;
-  ipnToken: string;
-}): Promise<{ confirmed: boolean; valueCoin?: number }> {
-  // TODO-GATED (Task 7): cablare l'endpoint reale di Check Payment Status.
-  return { confirmed: false };
-}
