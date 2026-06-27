@@ -3218,7 +3218,10 @@ function CheckoutModal({
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [period, setPeriod] = useState<"monthly" | "annual">("annual");
+  const ANNUAL_PRICE: Record<string, number> = { base: 169, premium: 419 };
   const price = planAmountUsdt(plan);
+  const displayPrice = period === "annual" ? ANNUAL_PRICE[plan] : price;
   const t = useT();
   const lang = useLang();
 
@@ -3229,13 +3232,14 @@ function CheckoutModal({
   };
 
   const payWithCard = async () => {
-    const res = await fetch("/api/stripe/checkout", {
+    const res = await fetch("/api/paygate/checkout", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ requested_plan: plan }),
+      body: JSON.stringify({ requested_plan: plan, period }),
     });
     if (!res.ok) {
-      console.error("stripe checkout failed", res.status);
+      console.error("paygate checkout failed", res.status);
+      setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
       return;
     }
     const { url } = (await res.json()) as { url?: string };
@@ -3250,7 +3254,7 @@ function CheckoutModal({
           <h3>{planLabel(plan, lang)}</h3>
           <span>
             {(() => {
-              const amount = <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong>;
+              const amount = <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{(displayPrice ?? price).toFixed(2)} USDT</strong>;
               const parts = pick5(lang, {
                 it: ["Invia esattamente ", " all'indirizzo qui sotto. Il piano passerà in verifica."],
                 en: ["Send exactly ", " to the address below. The plan will move to review."],
@@ -3263,13 +3267,31 @@ function CheckoutModal({
           </span>
         </div>
 
+        <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
+          <button
+            type="button"
+            onClick={() => setPeriod("monthly")}
+            aria-pressed={period === "monthly"}
+            style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "monthly" ? "var(--am-coral)" : "none", color: period === "monthly" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}
+          >Mensile</button>
+          <button
+            type="button"
+            onClick={() => setPeriod("annual")}
+            aria-pressed={period === "annual"}
+            style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "annual" ? "var(--am-coral)" : "none", color: period === "annual" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}
+          >Annuale −30%</button>
+        </div>
+        <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
+          {period === "monthly" ? "Pagamento singolo, sblocca 30 giorni (rinnovo manuale)." : "Pagamento singolo, sblocca 12 mesi."}
+        </p>
+
         <div className="checkout-wallet-block">
           <span>Network: TRC20 (Tron) · USDT</span>
           <div className="checkout-address">
             <code>{USDT_TRC20_ADDRESS}</code>
             <button type="button" onClick={handleCopy}>{copied ? t.checkout_copied : t.checkout_copy}</button>
           </div>
-          <em>{t.checkout_amount}: {price.toFixed(2)} USDT · {t.checkout_monthly}</em>
+          <em>{t.checkout_amount}: {(displayPrice ?? price).toFixed(2)} USDT · {t.checkout_monthly}</em>
         </div>
 
         <div className="checkout-steps">
@@ -3318,7 +3340,7 @@ function CheckoutModal({
           }}
           style={{ marginTop: 4 }}
         >
-          {submitting ? pick5(lang, { it: "Invio in corso…", en: "Submitting…", es: "Enviando…", fr: "Envoi en cours…", ru: "Отправка…" }) : <>{t.checkout_confirm} · {price.toFixed(2)} USDT</>}
+          {submitting ? pick5(lang, { it: "Invio in corso…", en: "Submitting…", es: "Enviando…", fr: "Envoi en cours…", ru: "Отправка…" }) : <>{t.checkout_confirm} · {(displayPrice ?? price).toFixed(2)} USDT</>}
         </button>
         {error && (
           <p style={{ fontSize: "12px", fontFamily: "var(--font-mono), ui-monospace, monospace", color: "var(--am-negative)", lineHeight: 1.5, margin: "8px 0 0" }}>
@@ -3337,7 +3359,7 @@ function CheckoutModal({
         )}
 
         <p>
-          {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
+          {t.checkout_note_prefix} {(displayPrice ?? price).toFixed(2)} {t.checkout_note_suffix}{" "}
           <button
             type="button"
             onClick={onClose}
