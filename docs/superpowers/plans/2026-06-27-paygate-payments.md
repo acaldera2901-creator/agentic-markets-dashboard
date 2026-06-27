@@ -595,7 +595,7 @@ git commit -m "feat(pay): UI checkout → PayGate + toggle mensile/annuale (#PAY
 > Non è codice. Richiede `APPROVE` umano + accesso a Supabase prod, env Vercel e un pagamento di test reale. Trasforma "Costruito" in "Verificato/Operativo".
 
 **Pre-requisiti (gated):**
-- [ ] Impostare env Vercel (prod + preview): `PAYGATE_PAYOUT_WALLET=0x72e348d948e984c7d57d8ccb93fdd52710e47fa2`. Lasciare `PAYGATE_STATUS_CHECK` **non** impostato finché lo step "Check Status" non è confermato.
+- [ ] Impostare env Vercel (prod + preview): `PAYGATE_PAYOUT_WALLET=0x72e348d948e984c7d57d8ccb93fdd52710e47fa2` e `NEXT_PUBLIC_PAYGATE_ENABLED=true` (rende visibile il bottone "Paga con carta" → PayGate). Lasciare `PAYGATE_STATUS_CHECK` **non** impostato finché lo step "Check Status" non è confermato.
 - [ ] Applicare la migration `paygate_orders` (Task 1) — `supabase db push` o MCP `apply_migration` — solo dopo APPROVE.
 
 **Verifica funzionale:**
