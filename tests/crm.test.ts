@@ -23,6 +23,8 @@ assert.equal(isEligible(base), true);
 assert.equal(isEligible({ ...base, plan: "admin_full" }), false);
 assert.equal(isEligible({ ...base, marketing_opt_out: true }), false);
 assert.equal(isEligible({ ...base, identifier: "telegram_123" }), false);
+assert.equal(isEligible({ ...base, plan: "free", activated_at: null }), false); // soft opt-in: non-attivato escluso
+assert.equal(isEligible({ ...base, plan: "premium", activated_at: null }), true); // cliente pagante: incluso
 
 // dueTriggers: direction-aware catch-up logic
 const tps: Touchpoint[] = [

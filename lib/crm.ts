@@ -30,7 +30,10 @@ export function isEligible(p: CrmProfile): boolean {
   if (p.plan === "admin_full") return false;
   if (p.marketing_opt_out) return false;
   if (!p.identifier.includes("@")) return false;
-  return true;
+  // Consenso = SOFT OPT-IN CLIENTI (decisione Andrea 2026-06-28, opzione A):
+  // si contattano solo i clienti (base/premium) e gli utenti attivati. I profili
+  // non attivati sono esclusi (niente marketing senza attivazione).
+  return p.plan === "base" || p.plan === "premium" || p.activated_at != null;
 }
 
 export function resolveFlow(p: CrmProfile, nowISO: string): { flow: CrmFlow; dayInFlow: number } {
