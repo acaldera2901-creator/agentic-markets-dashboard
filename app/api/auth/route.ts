@@ -259,6 +259,9 @@ export async function POST(req: Request) {
     // share link (first-touch — never overwrites an existing referred_by).
     const rawRef = typeof body.ref === "string" ? body.ref.trim().toUpperCase().slice(0, 20) : "";
     const referredBy = /^[A-Z0-9_-]{2,20}$/.test(rawRef) ? rawRef : null;
+    // Consenso marketing FACOLTATIVO dal signup (#CRM-LIFECYCLE): sblocca i flussi
+    // CRM acquisition. Si registra anche il timestamp come prova del consenso.
+    const marketingOptIn = body.marketing_opt_in === true;
     // HIGH-3: set the password but DO NOT activate or issue a session here. The
     // profile becomes usable only after the email-activation link is clicked —
     // this is what prevents a legacy (passwordless) profile from being claimed
@@ -266,16 +269,18 @@ export async function POST(req: Request) {
     // (NULL for new/legacy rows; a real activated account never reaches here).
     try {
       await dbExecute(
-        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by)
-         VALUES ($1, $2, $3, $4, 'free', $5, $6)
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at)
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END)
        ON CONFLICT (identifier) DO UPDATE
          SET name = COALESCE(EXCLUDED.name, profiles.name),
              language = COALESCE(EXCLUDED.language, profiles.language),
              timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
              password_hash = EXCLUDED.password_hash,
              referred_by = COALESCE(profiles.referred_by, EXCLUDED.referred_by),
+             marketing_opt_in = EXCLUDED.marketing_opt_in,
+             marketing_opt_in_at = CASE WHEN EXCLUDED.marketing_opt_in THEN NOW() ELSE profiles.marketing_opt_in_at END,
              updated_at = NOW()`,
-        [identifier, name, language, timezone, hashPassword(password), referredBy]
+        [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn]
       );
     } catch (e) {
       console.error("[auth] register failed:", String(e));

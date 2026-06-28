@@ -33,7 +33,7 @@ const COPY: Record<AuthLang, {
   eyebrow: string; loginTitle: string; createTitle: string; loginSub: string; createSub: string;
   login: string; create: string; name: string; namePh: string; pwPhNew: string;
   show: string; hide: string; forgot: string; backLogin: string; recoverTitle: string; recoverSub: string;
-  sendReset: string; close: string; age: string; tosPre: string; tosTerms: string; tosMid: string; tosPriv: string; tosPost: string;
+  sendReset: string; close: string; age: string; marketing: string; tosPre: string; tosTerms: string; tosMid: string; tosPriv: string; tosPost: string;
   errWrong: string; errNoAcct: string; errExists: string; errPwShort: string; errGeneric: string; footer: string;
   pendingMail: (e: string) => string; resetSent: (e: string) => string; activationReq: string; resend: string; sendMail: string;
 }> = {
@@ -45,6 +45,7 @@ const COPY: Record<AuthLang, {
     recoverTitle: "Recupera la password", recoverSub: "Ti inviamo un link per impostare una nuova password.",
     sendReset: "Invia link di reset", close: "Chiudi",
     age: "Confermo di avere almeno 18 anni.",
+    marketing: "Voglio ricevere offerte e novità BetRedge via email (facoltativo).",
     tosPre: "Accetto i ", tosTerms: "Termini", tosMid: " e la ", tosPriv: "Privacy", tosPost: ".",
     errWrong: "Password errata.", errNoAcct: "Nessun account con questa email.", errExists: "Email già registrata.",
     errPwShort: "La password deve avere almeno 8 caratteri.", errGeneric: "Qualcosa è andato storto. Riprova.",
@@ -62,6 +63,7 @@ const COPY: Record<AuthLang, {
     recoverTitle: "Recover your password", recoverSub: "We'll email you a link to set a new password.",
     sendReset: "Send reset link", close: "Close",
     age: "I confirm I am at least 18 years old.",
+    marketing: "I want to receive BetRedge offers and news by email (optional).",
     tosPre: "I accept the ", tosTerms: "Terms", tosMid: " and ", tosPriv: "Privacy", tosPost: ".",
     errWrong: "Wrong password.", errNoAcct: "No account with this email.", errExists: "Email already registered.",
     errPwShort: "Password must be at least 8 characters.", errGeneric: "Something went wrong. Please retry.",
@@ -79,6 +81,7 @@ const COPY: Record<AuthLang, {
     recoverTitle: "Recupera tu contraseña", recoverSub: "Te enviamos un enlace para una nueva contraseña.",
     sendReset: "Enviar enlace", close: "Cerrar",
     age: "Confirmo que tengo al menos 18 años.",
+    marketing: "Quiero recibir ofertas y novedades de BetRedge por email (opcional).",
     tosPre: "Acepto los ", tosTerms: "Términos", tosMid: " y la ", tosPriv: "Privacidad", tosPost: ".",
     errWrong: "Contraseña incorrecta.", errNoAcct: "No hay cuenta con este email.", errExists: "Email ya registrado.",
     errPwShort: "La contraseña debe tener al menos 8 caracteres.", errGeneric: "Algo salió mal. Inténtalo de nuevo.",
@@ -96,6 +99,7 @@ const COPY: Record<AuthLang, {
     recoverTitle: "Récupère ton mot de passe", recoverSub: "Nous t'envoyons un lien pour un nouveau mot de passe.",
     sendReset: "Envoyer le lien", close: "Fermer",
     age: "Je confirme avoir au moins 18 ans.",
+    marketing: "Je veux recevoir les offres et actus BetRedge par email (facultatif).",
     tosPre: "J'accepte les ", tosTerms: "Conditions", tosMid: " et la ", tosPriv: "Confidentialité", tosPost: ".",
     errWrong: "Mot de passe incorrect.", errNoAcct: "Aucun compte avec cet email.", errExists: "Email déjà enregistré.",
     errPwShort: "Le mot de passe doit faire au moins 8 caractères.", errGeneric: "Une erreur est survenue. Réessaie.",
@@ -113,6 +117,7 @@ const COPY: Record<AuthLang, {
     recoverTitle: "Восстановить пароль", recoverSub: "Пришлём ссылку для нового пароля.",
     sendReset: "Отправить ссылку", close: "Закрыть",
     age: "Подтверждаю, что мне есть 18 лет.",
+    marketing: "Хочу получать предложения и новости BetRedge по email (необязательно).",
     tosPre: "Принимаю ", tosTerms: "Условия", tosMid: " и ", tosPriv: "Политику", tosPost: ".",
     errWrong: "Неверный пароль.", errNoAcct: "Аккаунт с этим email не найден.", errExists: "Email уже зарегистрирован.",
     errPwShort: "Пароль должен быть не короче 8 символов.", errGeneric: "Что-то пошло не так. Повторите.",
@@ -145,6 +150,7 @@ export function HomeAuthModal({
   const [showPw, setShowPw] = useState(false);
   const [ageOk, setAgeOk] = useState(false);
   const [tosOk, setTosOk] = useState(false);
+  const [marketingOk, setMarketingOk] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [showResend, setShowResend] = useState(false);
@@ -171,6 +177,7 @@ export function HomeAuthModal({
           action: mode === "login" ? "login" : "register",
           identifier: normalizedEmail, password,
           name: mode === "create" ? name.trim() : undefined,
+          marketing_opt_in: mode === "create" ? marketingOk : undefined,
           language: lang, timezone: tz,
           ref: mode === "create"
             ? (() => { try { return window.localStorage.getItem("am_ref") ?? undefined; } catch { return undefined; } })()
@@ -320,6 +327,12 @@ export function HomeAuthModal({
               <input type="checkbox" checked={tosOk} onChange={(e) => setTosOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
               {/* link in-site (route interne), niente target="_blank" */}
               <span>{t.tosPre}<Link href="/terms" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.tosTerms}</Link>{t.tosMid}<Link href="/privacy" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.tosPriv}</Link>{t.tosPost}</span>
+            </label>
+            {/* Consenso marketing FACOLTATIVO (non pre-flaggato, separato da ToS/+18) —
+                sblocca i flussi CRM acquisition. Non incide su canSubmit. */}
+            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
+              <input type="checkbox" checked={marketingOk} onChange={(e) => setMarketingOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
+              <span>{t.marketing}</span>
             </label>
           </div>
         )}
