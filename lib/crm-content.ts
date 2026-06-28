@@ -1,8 +1,28 @@
 // lib/crm-content.ts
 // Touchpoint email del CRM (#CRM-LIFECYCLE). Copy bilingue, tono doc.
 import type { Touchpoint } from "./crm";
+import { unsubToken } from "./crm-unsub";
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://betredge.com").replace(/\/$/, "");
+
+// Footer legale conforme (legale-compliance 2026-06-28): mittente identificabile
+// (dati Maven via env, [DA COMPILARE] finché non impostati), disclaimer +18 /
+// non-gambling, link di disiscrizione one-click. Niente affiliate bookmaker.
+function footer(identifier: string, lang: "it" | "en"): string {
+  const co = process.env.COMPANY_LEGAL_NAME || "Maven Agency";
+  const addr = process.env.COMPANY_ADDRESS || "";
+  const vat = process.env.COMPANY_VAT || "";
+  const contact = process.env.COMPANY_CONTACT_EMAIL || "info@betredge.com";
+  const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
+  const it = lang === "it";
+  const disc = it
+    ? "BetRedge è un servizio di analisi statistica e informativa sportiva, non un operatore di gioco. Contenuto 18+. Il gioco può causare dipendenza. Gioca responsabilmente."
+    : "BetRedge is a statistical analysis and sports information service, not a gambling operator. 18+. Gambling can be addictive. Play responsibly.";
+  const unl = it ? "Disiscriviti" : "Unsubscribe";
+  const idline = [co, addr, vat ? `P.IVA ${vat}` : ""].filter(Boolean).join(" · ");
+  return `<hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0 12px">
+  <p style="font-size:11px;color:#94a3b8;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#94a3b8;text-decoration:underline">${unl}</a><br>${disc}</p>`;
+}
 
 function shell(bodyHtml: string): string {
   return `<div style="font-family:system-ui,sans-serif;max-width:440px;margin:0 auto;padding:24px;color:#0f172a">
@@ -56,15 +76,17 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     body: { it: "Ultimo richiamo prima di tornare al flusso Free. Riattiva per non perdere lo storico.", en: "Last call before returning to the Free flow. Reactivate to keep your history." } },
 ];
 
-export function renderCrm(key: string, lang: "it" | "en"): { subject: string; html: string; text: string } | null {
+export function renderCrm(key: string, lang: "it" | "en", identifier: string): { subject: string; html: string; text: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
   const href = `${SITE}/app?tab=plans&crm=${encodeURIComponent(t.key)}`;
   const label = lang === "it" ? "Apri BetRedge" : "Open BetRedge";
   const body = t.body[lang];
+  const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
+  const unl = lang === "it" ? "Disiscriviti" : "Unsubscribe";
   return {
     subject: t.subject[lang],
-    html: shell(`<p style="font-size:14px;line-height:1.5;margin:0">${body}</p>${cta(label, href)}`),
-    text: `${body}\n\n${label}: ${href}`,
+    html: shell(`<p style="font-size:14px;line-height:1.5;margin:0">${body}</p>${cta(label, href)}${footer(identifier, lang)}`),
+    text: `${body}\n\n${label}: ${href}\n\n— ${unl}: ${unsub}`,
   };
 }

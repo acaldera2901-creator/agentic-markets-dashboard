@@ -54,7 +54,7 @@ export async function GET(req: Request) {
       try { await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [t.key, p.identifier]); } catch (e) { console.error("[cron/crm] suppress insert failed:", String(e)); }
     }
     const lang = p.language === "en" ? "en" : "it";
-    const mail = renderCrm(toSend.key, lang);
+    const mail = renderCrm(toSend.key, lang, p.identifier);
     if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
     let res: { sent: boolean; error?: string };
     try {

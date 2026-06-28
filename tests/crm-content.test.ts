@@ -9,9 +9,10 @@ assert.equal(new Set(keys).size, keys.length);
 const flows = new Set(CRM_TOUCHPOINTS.map(t => t.flow));
 ["onboarding","acquisition","retention","winback"].forEach(f => assert.ok(flows.has(f as never), `manca flow ${f}`));
 // render
-const r = renderCrm("acq_day7_offer", "it");
+const r = renderCrm("acq_day7_offer", "it", "test@example.com");
 assert.ok(r && r.subject.length > 0 && r.html.includes("BetRedge") && r.text.length > 0);
-assert.equal(renderCrm("inesistente", "it"), null);
+assert.ok(r && r.html.includes("/api/crm/unsubscribe") && /18\+|operatore di gioco/.test(r.html)); // footer: unsubscribe + disclaimer
+assert.equal(renderCrm("inesistente", "it", "test@example.com"), null);
 // niente parole vietate
 for (const t of CRM_TOUCHPOINTS) for (const lang of ["it","en"] as const)
   assert.doesNotMatch((t.subject[lang]+t.body[lang]).toLowerCase(), /guaranteed|safe bet|vincita sicura/);
