@@ -3250,8 +3250,9 @@ function CheckoutModal({
     <div className="auth-modal-backdrop" onClick={onClose}>
       <div className="auth-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-head">
-          <p className="eyebrow">Checkout · USDT TRC20</p>
+          <p className="eyebrow">Checkout</p>
           <h3>{planLabel(plan, lang)}</h3>
+          {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (
           <span>
             {(() => {
               const amount = <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong>;
@@ -3265,8 +3266,10 @@ function CheckoutModal({
               return <>{parts[0]}{amount}{parts[1]}</>;
             })()}
           </span>
+          )}
         </div>
 
+        {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>
         <div className="checkout-wallet-block">
           <span>Network: TRC20 (Tron) · USDT</span>
           <div className="checkout-address">
@@ -3324,6 +3327,7 @@ function CheckoutModal({
         >
           {submitting ? pick5(lang, { it: "Invio in corso…", en: "Submitting…", es: "Enviando…", fr: "Envoi en cours…", ru: "Отправка…" }) : <>{t.checkout_confirm} · {price.toFixed(2)} USDT</>}
         </button>
+        </>)}
         {error && (
           <p style={{ fontSize: "12px", fontFamily: "var(--font-mono), ui-monospace, monospace", color: "var(--am-negative)", lineHeight: 1.5, margin: "8px 0 0" }}>
             {error}
@@ -3355,7 +3359,7 @@ function CheckoutModal({
         )}
 
         <p>
-          {t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}
+          {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>{t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}</>)}
           <button
             type="button"
             onClick={onClose}
