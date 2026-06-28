@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
-import { dbExecute, dbQuery } from "@/lib/db";
+import { dbExecute } from "@/lib/db";
 import { siteOrigin } from "@/lib/activation";
 import { amountFor, newOrderToken, createReceivingWallet, buildPayUrl, type PlanKey, type Period } from "@/lib/paygate";
 
@@ -51,13 +51,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "order create failed" }, { status: 500 });
   }
 
-  // Segna pending_payment (come il path Stripe/USDT).
-  await dbQuery(
-    `UPDATE profiles SET plan = 'pending_payment', requested_plan = $2, updated_at = NOW()
-      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
-    [ctx.identifier, plan]
-  );
-
+  // NB: NON segniamo 'pending_payment' qui. Il pagamento PayGate è istantaneo
+  // (callback in pochi secondi) e marcare pending_payment prima del pagamento
+  // nascondeva la board ai free che cliccavano "Paga" senza completare. Il piano
+  // cambia SOLO al callback verificato (activatePaygatePlan). L'ordine resta
+  // tracciato in paygate_orders.
   const origin = siteOrigin(req);
   const callbackUrl = `${origin}/api/paygate/callback?token=${encodeURIComponent(token)}&order=${orderId}`;
 

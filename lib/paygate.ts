@@ -78,6 +78,10 @@ export async function createReceivingWallet(
   };
 }
 
+// Branding della pagina hosted PayGate (pay.php): logo + tema verde BetRedge.
+const PAY_LOGO = "https://www.betredge.com/logos/betredge-logo-black.png";
+const PAY_THEME = "#23A559"; // verde BetRedge (rebrand)
+
 export function buildPayUrl(opts: { addressIn: string; amount: number; email: string }): string {
   // URLSearchParams ri-encoda il valore address_in (che contiene già %2F/%3D)
   // una volta, come richiede PayGate (es. %2F -> %252F).
@@ -86,6 +90,9 @@ export function buildPayUrl(opts: { addressIn: string; amount: number; email: st
     amount: String(opts.amount),
     email: opts.email,
     currency: "USD",
+    logo: PAY_LOGO,
+    theme: PAY_THEME,
+    button: PAY_THEME,
   });
   return `${PAY_ENDPOINT}?${p.toString()}`;
 }
