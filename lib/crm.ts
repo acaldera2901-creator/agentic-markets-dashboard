@@ -12,9 +12,19 @@ export type CrmProfile = {
   activated_at: string | null;
   plan_expires_at: string | null;
   marketing_opt_out?: boolean;
+  marketing_opt_in?: boolean;
 };
 
 export type Touchpoint = { key: string; flow: Exclude<CrmFlow, "none">; day: number };
+
+// Consenso per-flow (legale-compliance 2026-06-28): l'acquisition (sconti marketing
+// a utenti free MAI paganti) richiede OPT-IN ESPLICITO; retention/win-back/onboarding
+// stanno sul soft opt-in clienti (già filtrato da isEligible). Finché non esiste la
+// checkbox al signup, marketing_opt_in=false → nessuna email di acquisition.
+export function flowAllowed(flow: CrmFlow, p: CrmProfile): boolean {
+  if (flow === "acquisition") return p.marketing_opt_in === true;
+  return true;
+}
 
 const DAY = 86_400_000;
 const WINBACK_WINDOW_DAYS = 30;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
 import { dbQuery, dbExecute } from "@/lib/db";
-import { resolveFlow, dueTriggers, isEligible, type CrmProfile } from "@/lib/crm";
+import { resolveFlow, dueTriggers, isEligible, flowAllowed, type CrmProfile } from "@/lib/crm";
 import { CRM_TOUCHPOINTS, renderCrm } from "@/lib/crm-content";
 import { sendTransactional } from "@/lib/notify";
 
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const nowISO = new Date().toISOString();
 
   const profiles = (await dbQuery<CrmProfile>(
-    `SELECT identifier, plan, language, created_at::text, activated_at::text, plan_expires_at::text, marketing_opt_out
+    `SELECT identifier, plan, language, created_at::text, activated_at::text, plan_expires_at::text, marketing_opt_out, marketing_opt_in
        FROM profiles`
   )) ?? [];
 
@@ -40,6 +40,8 @@ export async function GET(req: Request) {
     if (!isEligible(p)) continue;
     const { flow, dayInFlow } = resolveFlow(p, nowISO);
     if (flow === "none") continue;
+    // Consenso per-flow (legale): acquisition (sconti a free) solo con opt-in esplicito.
+    if (!flowAllowed(flow, p)) continue;
     const due = dueTriggers(flow, dayInFlow, CRM_TOUCHPOINTS, sentByUser.get(p.identifier) ?? new Set());
     if (due.length === 0) continue;
     const toSend = due[due.length - 1];           // il più recente dovuto

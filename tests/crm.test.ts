@@ -1,6 +1,6 @@
 // tests/crm.test.ts
 import assert from "node:assert/strict";
-import { resolveFlow, dueTriggers, isEligible, type CrmProfile, type Touchpoint } from "../lib/crm";
+import { resolveFlow, dueTriggers, isEligible, flowAllowed, type CrmProfile, type Touchpoint } from "../lib/crm";
 
 const base: CrmProfile = { identifier: "a@b.com", plan: "free", language: "it", created_at: "2026-06-01T00:00:00Z", activated_at: "2026-06-01T00:00:00Z", plan_expires_at: null };
 const NOW = "2026-06-15T00:00:00Z"; // 14 giorni dopo
@@ -41,5 +41,12 @@ assert.deepEqual(dueTriggers("acquisition", 14, tps, new Set(["acq_day7"])).map(
 // retention: match esatto (decrescente)
 assert.deepEqual(dueTriggers("retention", 14, tps, new Set()).map(t => t.key), []);
 assert.deepEqual(dueTriggers("retention", 3, tps, new Set()).map(t => t.key), ["ret_3d"]);
+
+// flowAllowed: acquisition richiede opt-in esplicito; gli altri flussi no
+assert.equal(flowAllowed("acquisition", { ...base, marketing_opt_in: false }), false);
+assert.equal(flowAllowed("acquisition", { ...base, marketing_opt_in: true }), true);
+assert.equal(flowAllowed("retention", { ...base, marketing_opt_in: false }), true);
+assert.equal(flowAllowed("winback", { ...base, marketing_opt_in: false }), true);
+assert.equal(flowAllowed("onboarding", { ...base, marketing_opt_in: false }), true);
 
 console.log("crm ok");
