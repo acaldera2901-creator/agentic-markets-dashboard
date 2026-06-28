@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
-import { dbQuery, dbExecute } from "@/lib/db";
+import { dbExecute, dbQuery } from "@/lib/db";
 import { siteOrigin } from "@/lib/activation";
 import { amountFor, newOrderToken, createReceivingWallet, buildPayUrl, type PlanKey, type Period } from "@/lib/paygate";
 
@@ -9,9 +10,8 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const payoutWallet = process.env.PAYGATE_PAYOUT_WALLET;
-  if (!payoutWallet) { console.warn("[PGDIAG] 503 payout wallet missing"); return NextResponse.json({ error: "paygate not configured" }, { status: 503 }); }
+  if (!payoutWallet) return NextResponse.json({ error: "paygate not configured" }, { status: 503 });
   if (req.headers.get("sec-fetch-site") === "cross-site") {
-    console.warn("[PGDIAG] 403 cross-site:", req.headers.get("sec-fetch-site"));
     return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
   }
 
@@ -19,32 +19,37 @@ export async function POST(req: Request) {
   try {
     ctx = await getSessionPlan(req);
   } catch (e) {
-    console.warn("[PGDIAG] 401 getSessionPlan THREW:", String(e));
+    console.error("[paygate/checkout] session lookup failed:", String(e));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (!ctx) { console.warn("[PGDIAG] 401 no session (cookie not recognized)"); return NextResponse.json({ error: "unauthorized" }, { status: 401 }); }
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   let body: { requested_plan?: unknown; period?: unknown };
   try { body = (await req.json()) as typeof body; }
-  catch { console.warn("[PGDIAG] 400 invalid json"); return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
+  catch { return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
 
   const plan = body.requested_plan;
   const period = body.period;
-  if (plan !== "base" && plan !== "premium") { console.warn("[PGDIAG] 400 invalid requested_plan:", JSON.stringify(plan)); return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 }); }
-  if (period !== "monthly" && period !== "annual") { console.warn("[PGDIAG] 400 invalid period:", JSON.stringify(period)); return NextResponse.json({ error: "invalid period" }, { status: 400 }); }
-  console.warn("[PGDIAG] reached order-create for", String(ctx.identifier), plan, period);
+  if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
+  if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
 
   const amount = amountFor(plan as PlanKey, period as Period);
   const { token, tokenHash } = newOrderToken();
 
-  // Crea l'ordine pending (fonte dell'idempotenza + del token anti-spoof).
-  const created = await dbExecute<{ id: string }>(
-    `INSERT INTO paygate_orders (identifier, plan, period, amount_usd, token_hash)
-     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-    [ctx.identifier, plan, period, amount, tokenHash]
-  );
-  const orderId = created?.[0]?.id;
-  if (!orderId) { console.warn("[PGDIAG] 500 order create failed (no id returned)"); return NextResponse.json({ error: "order create failed" }, { status: 500 }); }
+  // NB: la RPC exec_sql NON restituisce le righe di RETURNING (esegue lo statement
+  // ma torna []). Per questo generiamo l'id qui e lo inseriamo esplicitamente,
+  // invece di leggerlo da un RETURNING.
+  const orderId = crypto.randomUUID();
+  try {
+    await dbExecute(
+      `INSERT INTO paygate_orders (id, identifier, plan, period, amount_usd, token_hash)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [orderId, ctx.identifier, plan, period, amount, tokenHash]
+    );
+  } catch (e) {
+    console.error("[paygate/checkout] order insert failed:", String(e));
+    return NextResponse.json({ error: "order create failed" }, { status: 500 });
+  }
 
   // Segna pending_payment (come il path Stripe/USDT).
   await dbQuery(

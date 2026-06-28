@@ -1,4 +1,4 @@
-import { dbQuery } from "./db";
+import { dbQuery, dbExecute } from "./db";
 import { planActivatedEmail } from "./email";
 import { sendTransactional } from "./notify";
 
@@ -121,31 +121,32 @@ export async function activatePaygatePlan(
   period: "monthly" | "annual"
 ): Promise<ActivatedRow | null> {
   const days = period === "annual" ? 365 : 30;
-  const rows = await dbQuery<ActivatedRow & { old_plan: string | null }>(
-    `WITH prev AS (
-       SELECT identifier, plan AS old_plan FROM profiles
-        WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
-        LIMIT 1
-     )
-     UPDATE profiles p
+
+  // NB: la RPC exec_sql NON restituisce le righe di RETURNING (esegue lo statement
+  // ma torna []), quindi NON usiamo `... RETURNING`: leggiamo prima il piano
+  // attuale con un SELECT, poi facciamo l'UPDATE, e notifichiamo sulla transizione.
+  const prev = await dbQuery<{ plan: string; name: string | null }>(
+    `SELECT plan, name FROM profiles
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+      LIMIT 1`,
+    [identifier]
+  );
+  const before = prev[0];
+  if (!before) return null;
+
+  await dbExecute(
+    `UPDATE profiles
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = NOW() + make_interval(days => $3),
             updated_at = NOW()
-       FROM prev
-      WHERE p.identifier = prev.identifier
-      RETURNING p.identifier, p.name, p.plan, prev.old_plan`,
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
     [identifier, plan, days]
   );
 
-  const activated = rows[0];
-  if (!activated) return null;
-
-  if (activated.old_plan !== activated.plan) {
-    await notifyPlanActivated(
-      { identifier: activated.identifier, name: activated.name, plan: activated.plan },
-      "paygate"
-    );
+  const activated: ActivatedRow = { identifier, name: before.name, plan };
+  if (before.plan !== plan) {
+    await notifyPlanActivated(activated, "paygate");
   }
-  return { identifier: activated.identifier, name: activated.name, plan: activated.plan };
+  return activated;
 }

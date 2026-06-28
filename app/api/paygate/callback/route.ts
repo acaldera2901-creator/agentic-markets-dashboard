@@ -45,13 +45,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Lock idempotente: solo il primo callback "vince" l'UPDATE pending→paid.
-    const claimed = await dbExecute<{ id: string }>(
+    // Marca pending→paid. NB: exec_sql non restituisce RETURNING (né il row-count),
+    // quindi l'anti-doppio-grant si appoggia al controllo status='pending' fatto da
+    // evaluateCallback sopra (un secondo callback rilegge status='paid' → no-grant)
+    // più il guard WHERE status='pending' qui.
+    await dbExecute(
       `UPDATE paygate_orders SET status = 'paid', value_coin = $2, txid_out = $3, paid_at = NOW()
-        WHERE id = $1 AND status = 'pending' RETURNING id`,
+        WHERE id = $1 AND status = 'pending'`,
       [order!.id, valueCoin, txidOut]
     );
-    if (!claimed?.length) return NextResponse.json({ ok: true }); // già processato
 
     await activatePaygatePlan(order!.identifier, order!.plan, order!.period);
   } catch (e) {
