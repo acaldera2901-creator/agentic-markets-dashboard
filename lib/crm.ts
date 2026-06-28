@@ -59,6 +59,11 @@ export function resolveFlow(p: CrmProfile, nowISO: string): { flow: CrmFlow; day
     }
   }
 
+  // Difesa: un cliente pagante (base/premium) non deve MAI finire in acquisition
+  // (niente email di conversione "passa a Plus" a chi già paga). Se non è retention
+  // né winback — es. dato anomalo: pagante senza plan_expires_at — → nessun flow.
+  if (p.plan === "base" || p.plan === "premium") return { flow: "none", dayInFlow: 0 };
+
   // Acquisition: free attivato (default). dayInFlow = giorni da activated_at.
   return { flow: "acquisition", dayInFlow: daysSince(p.activated_at, now) };
 }

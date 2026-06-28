@@ -17,6 +17,8 @@ assert.deepEqual(resolveFlow({ ...base, plan: "free", plan_expires_at: "2026-06-
 assert.equal(resolveFlow({ ...base, plan: "free", plan_expires_at: "2026-05-01T00:00:00Z" }, NOW).flow, "acquisition");
 // admin escluso
 assert.equal(resolveFlow({ ...base, plan: "admin_full" }, NOW).flow, "none");
+// pagante senza scadenza (dato anomalo) → MAI acquisition → none
+assert.equal(resolveFlow({ ...base, plan: "premium", plan_expires_at: null }, NOW).flow, "none");
 
 // isEligible
 assert.equal(isEligible(base), true);
