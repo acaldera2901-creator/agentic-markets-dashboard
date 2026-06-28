@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     sentByUser.set(r.identifier, s);
   }
 
-  let planned = 0, sent = 0, failed = 0;
+  let planned = 0, sent = 0, failed = 0, skipped = 0;
   const preview: { to: string; flow: string; key: string }[] = [];
 
   for (const p of profiles) {
@@ -47,8 +47,15 @@ export async function GET(req: Request) {
       if (!live) continue;
       const lang = p.language === "en" ? "en" : "it";
       const mail = renderCrm(t.key, lang);
-      if (!mail) continue;
-      const res = await sendTransactional({ type: "winback", to: p.identifier, subject: mail.subject, html: mail.html, text: mail.text, meta: { crm: t.key, flow } });
+      if (!mail) { console.warn("[cron/crm] no template for", t.key); skipped++; continue; }
+      let res: { sent: boolean; error?: string };
+      try {
+        res = await sendTransactional({ type: "winback", to: p.identifier, subject: mail.subject, html: mail.html, text: mail.text, meta: { crm: t.key, flow } });
+      } catch (e) {
+        console.error("[cron/crm] send error:", p.identifier, t.key, String(e));
+        failed++;
+        continue;
+      }
       if (res.sent) {
         sent++;
         try {
@@ -58,5 +65,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, live, profiles: profiles.length, planned, sent, failed, preview });
+  return NextResponse.json({ ok: true, live, profiles: profiles.length, planned, sent, failed, skipped, preview });
 }
