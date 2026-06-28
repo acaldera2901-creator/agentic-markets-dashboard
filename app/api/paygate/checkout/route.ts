@@ -9,22 +9,30 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const payoutWallet = process.env.PAYGATE_PAYOUT_WALLET;
-  if (!payoutWallet) return NextResponse.json({ error: "paygate not configured" }, { status: 503 });
+  if (!payoutWallet) { console.warn("[PGDIAG] 503 payout wallet missing"); return NextResponse.json({ error: "paygate not configured" }, { status: 503 }); }
   if (req.headers.get("sec-fetch-site") === "cross-site") {
+    console.warn("[PGDIAG] 403 cross-site:", req.headers.get("sec-fetch-site"));
     return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
   }
 
-  const ctx = await getSessionPlan(req);
-  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  let ctx;
+  try {
+    ctx = await getSessionPlan(req);
+  } catch (e) {
+    console.warn("[PGDIAG] 401 getSessionPlan THREW:", String(e));
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (!ctx) { console.warn("[PGDIAG] 401 no session (cookie not recognized)"); return NextResponse.json({ error: "unauthorized" }, { status: 401 }); }
 
   let body: { requested_plan?: unknown; period?: unknown };
   try { body = (await req.json()) as typeof body; }
-  catch { return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
+  catch { console.warn("[PGDIAG] 400 invalid json"); return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
 
   const plan = body.requested_plan;
   const period = body.period;
-  if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
-  if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
+  if (plan !== "base" && plan !== "premium") { console.warn("[PGDIAG] 400 invalid requested_plan:", JSON.stringify(plan)); return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 }); }
+  if (period !== "monthly" && period !== "annual") { console.warn("[PGDIAG] 400 invalid period:", JSON.stringify(period)); return NextResponse.json({ error: "invalid period" }, { status: 400 }); }
+  console.warn("[PGDIAG] reached order-create for", String(ctx.identifier), plan, period);
 
   const amount = amountFor(plan as PlanKey, period as Period);
   const { token, tokenHash } = newOrderToken();
@@ -36,7 +44,7 @@ export async function POST(req: Request) {
     [ctx.identifier, plan, period, amount, tokenHash]
   );
   const orderId = created?.[0]?.id;
-  if (!orderId) return NextResponse.json({ error: "order create failed" }, { status: 500 });
+  if (!orderId) { console.warn("[PGDIAG] 500 order create failed (no id returned)"); return NextResponse.json({ error: "order create failed" }, { status: 500 }); }
 
   // Segna pending_payment (come il path Stripe/USDT).
   await dbQuery(
