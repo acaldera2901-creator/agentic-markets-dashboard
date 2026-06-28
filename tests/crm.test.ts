@@ -24,15 +24,18 @@ assert.equal(isEligible({ ...base, plan: "admin_full" }), false);
 assert.equal(isEligible({ ...base, marketing_opt_out: true }), false);
 assert.equal(isEligible({ ...base, identifier: "telegram_123" }), false);
 
-// dueTriggers: solo trigger del flow corrente, al giorno esatto, non già inviati
+// dueTriggers: direction-aware catch-up logic
 const tps: Touchpoint[] = [
   { key: "acq_day7", flow: "acquisition", day: 7 },
   { key: "acq_day14", flow: "acquisition", day: 14 },
   { key: "ret_3d", flow: "retention", day: 3 },
 ];
-assert.deepEqual(dueTriggers("acquisition", 14, tps, new Set()).map(t => t.key), ["acq_day14"]);
-assert.deepEqual(dueTriggers("acquisition", 14, tps, new Set(["acq_day14"])).map(t => t.key), []); // dedup
-assert.deepEqual(dueTriggers("retention", 14, tps, new Set()).map(t => t.key), []); // giorno non combacia
+// ascendente: tutti i dovuti (<=), ordinati; il cron invierà l'ultimo
+assert.deepEqual(dueTriggers("acquisition", 14, tps, new Set()).map(t => t.key), ["acq_day7", "acq_day14"]);
+assert.deepEqual(dueTriggers("acquisition", 9, tps, new Set()).map(t => t.key), ["acq_day7"]); // day14 non ancora dovuto
+assert.deepEqual(dueTriggers("acquisition", 14, tps, new Set(["acq_day7"])).map(t => t.key), ["acq_day14"]); // dedup
+// retention: match esatto (decrescente)
+assert.deepEqual(dueTriggers("retention", 14, tps, new Set()).map(t => t.key), []);
 assert.deepEqual(dueTriggers("retention", 3, tps, new Set()).map(t => t.key), ["ret_3d"]);
 
 console.log("crm ok");

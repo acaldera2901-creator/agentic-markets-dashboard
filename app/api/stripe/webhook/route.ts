@@ -157,7 +157,7 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription;
         const cancelled = await dbQuery<{ identifier: string; language: string | null }>(
           `UPDATE profiles
-              SET plan = 'free', plan_expires_at = NULL, stripe_subscription_id = NULL, updated_at = NOW()
+              SET plan = 'free', stripe_subscription_id = NULL, updated_at = NOW()
             WHERE stripe_subscription_id = $1
           RETURNING identifier, language`,
           [String(sub.id)]

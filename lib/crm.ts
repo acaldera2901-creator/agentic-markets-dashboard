@@ -66,5 +66,12 @@ export function dueTriggers(
   touchpoints: Touchpoint[],
   alreadySent: Set<string>
 ): Touchpoint[] {
-  return touchpoints.filter((t) => t.flow === flow && t.day === dayInFlow && !alreadySent.has(t.key));
+  const inFlow = touchpoints.filter((t) => t.flow === flow && !alreadySent.has(t.key));
+  // Retention: `day` = giorni ALLA scadenza (decrescente) → match esatto (un `<=`
+  // spammerebbe ogni giorno dell'ultima settimana).
+  if (flow === "retention") return inFlow.filter((t) => t.day === dayInFlow);
+  // Flussi ascendenti (day = giorni dall'ancora): includi tutti i dovuti (<=),
+  // ordinati per day crescente. Il cron invia SOLO l'ultimo (il più recente) e
+  // segna i precedenti come consumati → recupero senza burst né replay.
+  return inFlow.filter((t) => t.day <= dayInFlow).sort((a, b) => a.day - b.day);
 }

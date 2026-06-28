@@ -41,28 +41,31 @@ export async function GET(req: Request) {
     const { flow, dayInFlow } = resolveFlow(p, nowISO);
     if (flow === "none") continue;
     const due = dueTriggers(flow, dayInFlow, CRM_TOUCHPOINTS, sentByUser.get(p.identifier) ?? new Set());
-    for (const t of due) {
-      planned++;
-      if (preview.length < 50) preview.push({ to: p.identifier, flow, key: t.key });
-      if (!live) continue;
-      const lang = p.language === "en" ? "en" : "it";
-      const mail = renderCrm(t.key, lang);
-      if (!mail) { console.warn("[cron/crm] no template for", t.key); skipped++; continue; }
-      let res: { sent: boolean; error?: string };
-      try {
-        res = await sendTransactional({ type: "winback", to: p.identifier, subject: mail.subject, html: mail.html, text: mail.text, meta: { crm: t.key, flow } });
-      } catch (e) {
-        console.error("[cron/crm] send error:", p.identifier, t.key, String(e));
-        failed++;
-        continue;
-      }
-      if (res.sent) {
-        sent++;
-        try {
-          await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [t.key, p.identifier]);
-        } catch (e) { console.error("[cron/crm] dedup insert failed:", String(e)); }
-      } else { failed++; }
+    if (due.length === 0) continue;
+    const toSend = due[due.length - 1];           // il più recente dovuto
+    const toSuppress = due.slice(0, -1);          // dovuti precedenti mancati → consuma senza inviare
+    planned++;
+    if (preview.length < 50) preview.push({ to: p.identifier, flow, key: toSend.key });
+    if (!live) continue;
+    // segna i precedenti come consumati (no invio) per non rigiocarli in ordine sbagliato
+    for (const t of toSuppress) {
+      try { await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [t.key, p.identifier]); } catch (e) { console.error("[cron/crm] suppress insert failed:", String(e)); }
     }
+    const lang = p.language === "en" ? "en" : "it";
+    const mail = renderCrm(toSend.key, lang);
+    if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
+    let res: { sent: boolean; error?: string };
+    try {
+      res = await sendTransactional({ type: "winback", to: p.identifier, subject: mail.subject, html: mail.html, text: mail.text, meta: { crm: toSend.key, flow } });
+    } catch (e) {
+      console.error("[cron/crm] send error:", p.identifier, toSend.key, String(e));
+      failed++;
+      continue;
+    }
+    if (res.sent) {
+      sent++;
+      try { await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [toSend.key, p.identifier]); } catch (e) { console.error("[cron/crm] dedup insert failed:", String(e)); }
+    } else { failed++; }
   }
 
   return NextResponse.json({ ok: true, live, profiles: profiles.length, planned, sent, failed, skipped, preview });
