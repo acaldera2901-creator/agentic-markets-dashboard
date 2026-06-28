@@ -55,6 +55,7 @@ export async function GET(req: Request) {
       [order!.id, valueCoin, txidOut]
     );
 
+    console.log(`[paygate/callback] GRANT order=${order!.id} plan=${order!.plan} period=${order!.period} value_coin=${String(valueCoin)} amount_usd=${String(order!.amount_usd)}`);
     await activatePaygatePlan(order!.identifier, order!.plan, order!.period);
   } catch (e) {
     console.error("[paygate/callback] error:", String(e));

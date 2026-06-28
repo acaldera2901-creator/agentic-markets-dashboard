@@ -8,7 +8,12 @@ import crypto from "node:crypto";
 
 const WALLET_ENDPOINT = "https://api.paygate.to/control/wallet.php";
 const PAY_ENDPOINT = "https://checkout.paygate.to/pay.php";
-const DEFAULT_FEE_TOLERANCE = 0.02; // 2%: copre lo scostamento fee/cambio sul value_coin
+// PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto), quindi il
+// `value_coin` del callback è sensibilmente < importo richiesto. L'autenticità
+// vera è il token monouso; l'importo è fisso nel link (l'utente non può pagare
+// meno), perciò qui teniamo solo un FLOOR di sanità generoso (accetta fino a
+// -50%) per scartare callback a zero/malformati senza falsi rifiuti sulle fee.
+const DEFAULT_FEE_TOLERANCE = 0.5;
 
 export type PlanKey = "base" | "premium";
 export type Period = "monthly" | "annual";
