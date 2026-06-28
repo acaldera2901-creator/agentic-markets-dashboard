@@ -6715,7 +6715,7 @@ button:disabled {
 /* #HOME-SPORTS-1: immagine ancorata in alto (background-position top) e accorciata
    (aspect più panoramico) → le TESTE in alto restano sempre intere, si taglia solo
    il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
-.lp-hero-img { display: block; position: relative; aspect-ratio: 1642 / 360; padding: 0; overflow: hidden; }
+.lp-hero-img { display: block; position: relative; aspect-ratio: 1280 / 474; padding: 0; overflow: hidden; }
 /* #UI-BANNER-SIZE-0623: il bg copre sempre il box (cover → mai bande vuote per
    crop). Aggiungo un colore di fallback sul tema così durante il load / se
    l'immagine manca NON resta una fascia nera/grigia fissa; e background-color
@@ -6723,13 +6723,13 @@ button:disabled {
 .lp-hero-bg {
   position: absolute; inset: 0;
   background-color: var(--am-bg);
-  background-size: cover; background-position: center 20%; background-repeat: no-repeat;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
   z-index: 0;
 }
 /* #HOME-SPORTS-1: anche su mobile il banner è ritagliato in alto come desktop
    (teste + wordmark + ALL SPORTS), così NON riappare il fondo "BEATS THE
    SPORTSBOOK"/moltiplicatori. Un filo più alto del desktop per leggibilità. */
-@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1642 / 400; } }
+@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1280 / 474; } }
 /* #RESP-HARDEN 2026-06-18: su schermi molto larghi l'aspect-ratio fa crescere
    l'hero in modo sgraziato (≈560px a 2560). Cap dell'altezza + crop centrato
    così resta panoramico e proporzionato; sotto la soglia non cambia nulla. */
