@@ -6737,6 +6737,123 @@ button:disabled {
   .lp-hero-img { aspect-ratio: auto; height: clamp(360px, 23vw, 460px); }
 }
 
+/* ── HERO CAROUSEL (#HOME-BETMODE-1) ────────────────────────────────────────
+   Sostituisce il mega-hero statico (.lp-hero-img) con un banner che ruota,
+   stile "betmode": 2 slide/vista su desktop, 1 su mobile, frecce + dots,
+   autoplay gestito in JS (LandingCarousel.tsx) con pausa hover/focus e stop su
+   prefers-reduced-motion. Prefisso dedicato .lp-carousel* per non collidere con
+   classi esistenti. Token --am-* riusati, non ridefiniti. */
+.lp-carousel-wrap {
+  /* width:100% perché il contenitore di pagina .lp è un flex column: senza
+     larghezza esplicita il wrap fa shrink-to-fit (collassa alla larghezza delle
+     frecce) invece di stendersi. box-sizing:border-box è globale. */
+  width: 100%; max-width: 1180px; margin: 0 auto;
+  padding: clamp(14px, 2.4vw, 22px) clamp(16px, 4vw, 56px) 0;
+}
+.lp-carousel { position: relative; }
+.lp-carousel-vp { overflow: hidden; border-radius: 18px; }
+.lp-carousel-track {
+  display: flex; align-items: stretch; list-style: none; margin: 0; padding: 0;
+  /* width:100% così flex-basis:50% delle slide = metà del viewport (senza, il
+     track shrink-to-fit collassa e le slide diventano sottili). gap tramite
+     padding interno della slide → translateX in % resta lineare. */
+  width: 100%;
+  transition: transform .55s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-carousel-track { transition: none; }
+}
+.lp-carousel-slide {
+  position: relative; min-width: 0;
+  /* larghezza = 1/perView del viewport. --lp-per-view è impostata sul track dal
+     componente (1 mobile / 2 desktop); fallback 1 per SSR / no-JS. */
+  flex: 0 0 calc(100% / var(--lp-per-view, 1));
+  height: 228px; padding: 0 8px;
+}
+.lp-carousel-art {
+  position: absolute; inset: 0 8px; border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--am-line);
+}
+.lp-carousel-img { object-fit: cover; }
+/* Overlay scuro→trasparente da sinistra (dove vive il testo) + velo coral in
+   basso a sinistra: garantisce contrasto WCAG del testo bianco sopra la foto. */
+.lp-carousel-ov {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(6, 8, 7, .82) 0%, rgba(6, 8, 7, .5) 42%, rgba(6, 8, 7, .12) 100%),
+    radial-gradient(120% 130% at 0% 100%, var(--am-coral-dim), transparent 55%);
+}
+.lp-carousel-body {
+  position: absolute; z-index: 2; inset: auto auto 0 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 26px 30px; max-width: 30rem;
+}
+.lp-carousel-eyebrow {
+  font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .82); margin-bottom: 8px;
+}
+.lp-carousel-head {
+  margin: 0; font-weight: 800; letter-spacing: -.025em; line-height: 1.05;
+  font-size: clamp(22px, 2.4vw, 30px); color: #fff; text-wrap: balance;
+}
+.lp-carousel-accent { color: var(--am-coral); }
+.lp-carousel-sub {
+  margin: 10px 0 0; font-size: 13px; line-height: 1.45;
+  color: rgba(255, 255, 255, .74); max-width: 42ch;
+}
+.lp-carousel-cta {
+  align-self: flex-start; margin-top: 16px; text-decoration: none;
+  background: var(--am-coral); color: var(--am-coral-ink);
+  font-weight: 800; font-size: 13px; padding: 9px 18px; border-radius: 10px;
+  transition: filter .15s ease, transform .15s ease;
+}
+.lp-carousel-cta:hover { filter: brightness(1.06); }
+.lp-carousel-cta:active { transform: translateY(1px); }
+
+/* Frecce ‹ › */
+.lp-carousel-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 10, 9, .72); border: 1px solid var(--am-line); color: #fff;
+  backdrop-filter: blur(5px); cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.lp-carousel-arrow:hover {
+  background: var(--am-coral); color: var(--am-coral-ink); border-color: var(--am-coral);
+}
+.lp-carousel-prev { left: -14px; }
+.lp-carousel-next { right: -14px; }
+
+/* Dots — attivo allungato in coral */
+.lp-carousel-dots {
+  display: flex; gap: 7px; justify-content: center; margin-top: 14px;
+}
+.lp-carousel-dot {
+  width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--am-line-2); cursor: pointer;
+  transition: width .3s ease, background .3s ease;
+}
+.lp-carousel-dot.is-active {
+  width: 24px; border-radius: 4px; background: var(--am-coral);
+}
+
+/* Focus visibile (a11y) su frecce, dots e CTA */
+.lp-carousel-arrow:focus-visible,
+.lp-carousel-dot:focus-visible,
+.lp-carousel-cta:focus-visible {
+  outline: 2px solid var(--am-coral); outline-offset: 3px;
+}
+
+/* Mobile: 1 slide per vista, frecce a filo per non uscire dal viewport */
+@media (max-width: 860px) {
+  .lp-carousel-slide { height: 210px; }
+  .lp-carousel-body { padding: 20px 22px; }
+  .lp-carousel-prev { left: 6px; }
+  .lp-carousel-next { right: 6px; }
+}
+
 /* #HOME-SPORTS-1: barra sport reale (cliccabile) ATTACCATA sotto l'immagine —
    sfondo scuro continuo col banner + sottile seam coral. Niente più overlay/
    allineamento fragile; solo i nostri sport. */

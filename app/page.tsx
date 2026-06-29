@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
+import LandingCarousel from "@/app/components/LandingCarousel"; // #HOME-BETMODE-1
 import { HouseBanner } from "@/components/HouseBanner";
 import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
@@ -400,12 +401,12 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* ── Hero (#HOME-SPORTS-1: immagine "All Sports" ricreata senza i loghi vecchi.
-           Ancorata in alto (teste salve) + accorciata; gli sport sono una barra
-           cliccabile attaccata SOTTO l'immagine — continua col banner. ── */}
-      <section className="lp-hero lp-hero-img">
-        <div className="lp-hero-bg" style={{ backgroundImage: "url(/banners/hero-allsports.jpg)" }} role="img" aria-label="BetRedge — All Sports" />
-      </section>
+      {/* ── Hero (#HOME-BETMODE-1: il mega-hero a tutto schermo è ora un banner più
+           piccolo che RUOTA in carosello — foto reali + copy 5-lingue riusate da
+           lib/house-banners.ts. La barra sport SOTTO resta invariata e continua
+           col banner. Le vecchie classi .lp-hero/.lp-hero-img/.lp-hero-bg non sono
+           più referenziate da qui → orfane (vedi report); lasciate nel CSS. ── */}
+      <LandingCarousel lang={lang} />
       <nav className="lp-hero-sports" aria-label="Sports">
         <a href="/app?tab=bets&sport=all" className="lp-sport">
           <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-allsports.png" alt="" /></span>
