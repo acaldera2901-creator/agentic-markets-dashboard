@@ -7223,7 +7223,7 @@ button:disabled {
    Split asimmetrico: punto di vista a sx, terminale quant a dx. Il terminale
    "scansiona" (beam che spazza + righe in entrata). Mono+tabular sui numeri,
    accent --am-coral razionato solo su edge + eyebrow. Token brand riusati, mai
-   ridefiniti. Sostituisce il vecchio split .lp-what/.lp-readout (ora orfani). */
+   ridefiniti. (Il vecchio split value-prop è stato rimosso col cleanup #CSS-CLEANUP-0630.) */
 .lp-scan {
   display: grid; grid-template-columns: 0.86fr 1.14fr; align-items: center;
   gap: clamp(28px, 4.5vw, 64px);
