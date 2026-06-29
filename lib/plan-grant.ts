@@ -115,6 +115,32 @@ export async function activateStripePlan(
 // importo) e l'ordine fa da lock di idempotenza, quindi nessun pending-guard qui.
 // Expiry per periodo: monthly +30gg, annual +365gg. Notifica solo su transizione
 // reale (come activateStripePlan). source 'paygate'.
+// #PAYGATE-PREFLIGHT-0629 finding #3 (anti-downgrade) — PURA/testabile. Calcola
+// piano+scadenza di un grant PayGate senza MAI declassare/accorciare un piano
+// migliore ancora attivo: i rinnovi ESTENDONO (stack del tempo residuo), e un
+// acquisto di tier inferiore mentre un tier superiore è attivo NON declassa.
+const PLAN_RANK: Record<string, number> = { base: 1, premium: 2 };
+export function computePaygateGrant(opts: {
+  currentPlan: string;
+  currentExpiryISO: string | null;
+  purchasedPlan: GrantablePlan;
+  days: number;
+  nowISO: string;
+}): { plan: GrantablePlan; expiryISO: string } {
+  const now = new Date(opts.nowISO).getTime();
+  const curExp = opts.currentExpiryISO ? new Date(opts.currentExpiryISO).getTime() : 0;
+  const active = curExp > now;
+  // estendi dalla scadenza residua se ancora attiva, altrimenti da ora
+  const baseTime = active ? curExp : now;
+  const expiryISO = new Date(baseTime + opts.days * 86_400_000).toISOString();
+  // anti-downgrade: se un piano attivo è di rango superiore al comprato, lo si mantiene
+  const keepHigher = active && (PLAN_RANK[opts.currentPlan] ?? 0) > (PLAN_RANK[opts.purchasedPlan] ?? 0);
+  const plan: GrantablePlan = keepHigher ? (opts.currentPlan as GrantablePlan) : opts.purchasedPlan;
+  return { plan, expiryISO };
+}
+
+// Concede/estende un piano PayGate. Ritorna null SOLO se l'identifier non esiste
+// in profiles (caso da gestire a monte: pagato-senza-piano → riconciliazione).
 export async function activatePaygatePlan(
   identifier: string,
   plan: GrantablePlan,
@@ -122,30 +148,36 @@ export async function activatePaygatePlan(
 ): Promise<ActivatedRow | null> {
   const days = period === "annual" ? 365 : 30;
 
-  // NB: la RPC exec_sql NON restituisce le righe di RETURNING (esegue lo statement
-  // ma torna []), quindi NON usiamo `... RETURNING`: leggiamo prima il piano
-  // attuale con un SELECT, poi facciamo l'UPDATE, e notifichiamo sulla transizione.
-  const prev = await dbQuery<{ plan: string; name: string | null }>(
-    `SELECT plan, name FROM profiles
+  // NB: exec_sql non restituisce RETURNING → SELECT prima, poi UPDATE.
+  const prev = await dbQuery<{ plan: string; name: string | null; plan_expires_at: string | null }>(
+    `SELECT plan, name, plan_expires_at::text AS plan_expires_at FROM profiles
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
       LIMIT 1`,
     [identifier]
   );
   const before = prev[0];
-  if (!before) return null;
+  if (!before) return null; // identifier-not-found → il chiamante logga la riconciliazione
+
+  const { plan: newPlan, expiryISO } = computePaygateGrant({
+    currentPlan: before.plan,
+    currentExpiryISO: before.plan_expires_at,
+    purchasedPlan: plan,
+    days,
+    nowISO: new Date().toISOString(),
+  });
 
   await dbExecute(
     `UPDATE profiles
         SET plan = $2,
             requested_plan = NULL,
-            plan_expires_at = NOW() + make_interval(days => $3),
+            plan_expires_at = $3::timestamptz,
             updated_at = NOW()
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
-    [identifier, plan, days]
+    [identifier, newPlan, expiryISO]
   );
 
-  const activated: ActivatedRow = { identifier, name: before.name, plan };
-  if (before.plan !== plan) {
+  const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
+  if (before.plan !== newPlan) {
     await notifyPlanActivated(activated, "paygate");
   }
   return activated;

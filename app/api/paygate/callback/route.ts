@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dbQuery, dbExecute } from "@/lib/db";
+import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback } from "@/lib/paygate";
 import { activatePaygatePlan } from "@/lib/plan-grant";
 
@@ -45,18 +45,32 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Marca pending→paid. NB: exec_sql non restituisce RETURNING (né il row-count),
-    // quindi l'anti-doppio-grant si appoggia al controllo status='pending' fatto da
-    // evaluateCallback sopra (un secondo callback rilegge status='paid' → no-grant)
-    // più il guard WHERE status='pending' qui.
-    await dbExecute(
-      `UPDATE paygate_orders SET status = 'paid', value_coin = $2, txid_out = $3, paid_at = NOW()
-        WHERE id = $1 AND status = 'pending'`,
-      [order!.id, valueCoin, txidOut]
-    );
+    // #3 — CLAIM ATOMICO: solo il vincitore della race passa pending→paid.
+    // La RPC ritorna true SOLO se ha davvero cambiato la riga (no row-count via exec_sql).
+    const db = getSupabaseAdminClient();
+    if (!db) { console.error("[paygate/callback] no supabase client"); return NextResponse.json({ ok: true }); }
+    const { data: claimed, error: claimErr } = await db.rpc("claim_paygate_order", {
+      p_id: order!.id, p_value: valueCoin, p_txid: txidOut,
+    });
+    if (claimErr) {
+      // Non marcato paid → l'ordine resta 'pending' → PayGate può ritentare.
+      console.error("[paygate/callback] claim rpc error:", claimErr.message);
+      return NextResponse.json({ ok: true });
+    }
+    if (claimed !== true) {
+      // Già processato o non vincitore della race → nessun grant (anti doppio-grant).
+      return NextResponse.json({ ok: true });
+    }
 
-    console.log(`[paygate/callback] GRANT order=${order!.id} plan=${order!.plan} period=${order!.period} value_coin=${String(valueCoin)} amount_usd=${String(order!.amount_usd)}`);
-    await activatePaygatePlan(order!.identifier, order!.plan, order!.period);
+    // #2 — grant DOPO il claim; identifier-not-found e fallimenti → riconciliazione
+    // (granted_at resta NULL + log loud), NON più 200 silenzioso.
+    const granted = await activatePaygatePlan(order!.identifier, order!.plan, order!.period);
+    if (!granted) {
+      console.error(`[paygate/callback] RECONCILE: paid ma piano NON concesso (identifier-not-found) order=${order!.id} identifier=${order!.identifier}`);
+    } else {
+      await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order!.id]);
+      console.log(`[paygate/callback] GRANT order=${order!.id} plan=${granted.plan} value_coin=${String(valueCoin)} amount_usd=${String(order!.amount_usd)}`);
+    }
   } catch (e) {
     console.error("[paygate/callback] error:", String(e));
   }
