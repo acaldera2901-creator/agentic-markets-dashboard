@@ -6659,13 +6659,6 @@ button:disabled {
 }
 
 /* ── Hero ── */
-.lp-hero {
-  display: grid; grid-template-columns: 1fr minmax(280px, 0.9fr) 1fr;
-  align-items: center; gap: clamp(8px, 2vw, 32px);
-  padding: clamp(12px, 3vw, 36px) clamp(16px, 4vw, 56px) clamp(20px, 4vw, 44px);
-  position: relative;
-}
-.lp-hero-side { position: relative; display: flex; flex-direction: column; align-items: center; }
 .lp-athlete { width: 100%; max-width: 360px; aspect-ratio: 320 / 360; filter: drop-shadow(0 20px 50px rgba(0,0,0,0.5)); }
 .lp-athlete-svg { width: 100%; height: 100%; }
 .lp-streaks path { stroke-dasharray: 1; stroke-dashoffset: 0; animation: lp-swirl 9s ease-in-out infinite alternate; transform-origin: 160px 160px; }
@@ -6682,7 +6675,6 @@ button:disabled {
 .lp-left .lp-side-label { text-align: left; align-self: flex-start; }
 .lp-right .lp-side-label { text-align: right; align-self: flex-end; }
 
-.lp-hero-center { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
 .lp-wm-big {
   font-weight: 900; font-style: italic; letter-spacing: -0.03em;
   font-size: clamp(40px, 7vw, 88px); line-height: 0.92; color: var(--am-text);
@@ -6710,34 +6702,6 @@ button:disabled {
   color: var(--am-text); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .lp-pill-dot { color: var(--am-coral); font-size: 11px; }
-
-/* #LANDING-HERO-IMG: hero a immagine unica self-contained (BetRedge All Sports).
-   aspect-ratio = rapporto dell'immagine (1280/512) così il testo stampato dentro
-   non viene mai croppato a nessuna larghezza. */
-/* #HOME-SPORTS-1: immagine ancorata in alto (background-position top) e accorciata
-   (aspect più panoramico) → le TESTE in alto restano sempre intere, si taglia solo
-   il fondo. Su mobile mostra più immagine (meno larghezza = ok più alta). */
-.lp-hero-img { display: block; position: relative; aspect-ratio: 1280 / 474; padding: 0; overflow: hidden; }
-/* #UI-BANNER-SIZE-0623: il bg copre sempre il box (cover → mai bande vuote per
-   crop). Aggiungo un colore di fallback sul tema così durante il load / se
-   l'immagine manca NON resta una fascia nera/grigia fissa; e background-color
-   evita lo "stacco" scuro ai bordi quando l'immagine non riempie in altezza. */
-.lp-hero-bg {
-  position: absolute; inset: 0;
-  background-color: var(--am-bg);
-  background-size: cover; background-position: center; background-repeat: no-repeat;
-  z-index: 0;
-}
-/* #HOME-SPORTS-1: anche su mobile il banner è ritagliato in alto come desktop
-   (teste + wordmark + ALL SPORTS), così NON riappare il fondo "BEATS THE
-   SPORTSBOOK"/moltiplicatori. Un filo più alto del desktop per leggibilità. */
-@media (max-width: 760px) { .lp-hero-img { aspect-ratio: 1280 / 474; } }
-/* #RESP-HARDEN 2026-06-18: su schermi molto larghi l'aspect-ratio fa crescere
-   l'hero in modo sgraziato (≈560px a 2560). Cap dell'altezza + crop centrato
-   così resta panoramico e proporzionato; sotto la soglia non cambia nulla. */
-@media (min-width: 1700px) {
-  .lp-hero-img { aspect-ratio: auto; height: clamp(360px, 23vw, 460px); }
-}
 
 /* ── HERO CAROUSEL (#HOME-BETMODE-1) ────────────────────────────────────────
    Sostituisce il mega-hero statico (.lp-hero-img) con un banner che ruota,
@@ -6829,21 +6793,6 @@ button:disabled {
   outline: 2px solid var(--am-coral); outline-offset: 3px;
 }
 
-/* Frecce ‹ › */
-.lp-carousel-arrow {
-  position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
-  width: 42px; height: 42px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(8, 10, 9, .72); border: 1px solid var(--am-line); color: #fff;
-  backdrop-filter: blur(5px); cursor: pointer;
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
-}
-.lp-carousel-arrow:hover {
-  background: var(--am-coral); color: var(--am-coral-ink); border-color: var(--am-coral);
-}
-.lp-carousel-prev { left: -14px; }
-.lp-carousel-next { right: -14px; }
-
 /* Dots — attivo allungato in coral */
 .lp-carousel-dots {
   display: flex; gap: 7px; justify-content: center; margin-top: 14px;
@@ -6857,19 +6806,16 @@ button:disabled {
   width: 24px; border-radius: 4px; background: var(--am-coral);
 }
 
-/* Focus visibile (a11y) su frecce, dots e CTA */
-.lp-carousel-arrow:focus-visible,
+/* Focus visibile (a11y) su dots e CTA */
 .lp-carousel-dot:focus-visible,
 .lp-carousel-cta:focus-visible {
   outline: 2px solid var(--am-coral); outline-offset: 3px;
 }
 
-/* Mobile: 1 slide per vista, frecce a filo per non uscire dal viewport */
+/* Mobile: 1 slide per vista */
 @media (max-width: 860px) {
   .lp-carousel-slide { height: 210px; }
   .lp-carousel-body { padding: 20px 22px; }
-  .lp-carousel-prev { left: 6px; }
-  .lp-carousel-next { right: 6px; }
 }
 
 /* #HOME-SPORTS-1: barra sport reale (cliccabile) ATTACCATA sotto l'immagine —
@@ -7228,12 +7174,6 @@ button:disabled {
   content: ""; width: 22px; height: 1px; background: var(--am-coral); display: inline-block;
 }
 
-.lp-what {
-  display: grid; grid-template-columns: 1.15fr 0.85fr; align-items: center;
-  gap: clamp(28px, 5vw, 72px);
-  padding: clamp(48px, 7vw, 92px) clamp(16px, 4vw, 56px) clamp(40px, 5vw, 64px);
-  max-width: 1240px; margin: 0 auto; width: 100%;
-}
 .lp-what-head {
   margin: 0; font-family: var(--font-display); font-weight: 800;
   font-size: clamp(30px, 4.2vw, 56px); line-height: 1.02; letter-spacing: -0.02em;
@@ -7270,43 +7210,6 @@ button:disabled {
 .lp-what-cta span { transition: transform .2s; }
 .lp-what-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 34px var(--am-coral-b); }
 .lp-what-cta:hover span { transform: translateX(4px); }
-
-/* readout — artefatto modello vs mercato (mono, da strumento di misura) */
-.lp-readout {
-  margin: 0; background: var(--am-panel); border: 1px solid var(--am-line);
-  border-radius: 16px; padding: 22px 22px 20px;
-  box-shadow: 0 24px 60px -28px rgba(0,0,0,0.55);
-  display: flex; flex-direction: column; gap: 16px;
-}
-.lp-readout-cap {
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10.5px;
-  letter-spacing: .14em; text-transform: uppercase; color: var(--am-muted-2);
-  padding-bottom: 14px; border-bottom: 1px solid var(--am-line);
-}
-.lp-readout-match { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.lp-readout-teams { font-weight: 800; font-size: 16px; color: var(--am-text); }
-.lp-readout-teams em { font-style: normal; font-weight: 600; color: var(--am-muted); margin: 0 5px; }
-.lp-readout-pick { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--am-coral); border: 1px solid var(--am-coral); border-radius: 999px; padding: 2px 9px; }
-.lp-readout-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; }
-.lp-readout-lab { font-size: 12.5px; color: var(--am-muted); white-space: nowrap; }
-.lp-readout-bar { height: 8px; border-radius: 999px; background: var(--am-inset); overflow: hidden; position: relative; }
-.lp-readout-bar i { display: block; height: 100%; border-radius: 999px; }
-.lp-readout-bar i.model { background: var(--am-coral); }
-.lp-readout-bar i.market { background: var(--am-muted-2); }
-.lp-readout-num {
-  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
-  font-size: 15px; color: var(--am-muted); font-feature-settings: "tnum" 1; min-width: 42px; text-align: right;
-}
-.lp-readout-num.accent { color: var(--am-coral); }
-.lp-readout-edge {
-  display: flex; align-items: baseline; justify-content: space-between;
-  margin-top: 2px; padding-top: 14px; border-top: 1px dashed var(--am-line-2);
-}
-.lp-readout-edge-lab { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--am-muted-2); }
-.lp-readout-edge-val {
-  font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
-  font-size: clamp(20px, 2vw, 26px); color: var(--am-coral); letter-spacing: -0.01em; font-feature-settings: "tnum" 1;
-}
 
 /* ══ Edge Scanner (#LANDING-EDGE-SCANNER-1) ════════════════════════════════════
    Split asimmetrico: punto di vista a sx, terminale quant a dx. Il terminale
@@ -7570,8 +7473,6 @@ button:disabled {
 
 /* ── Responsive ── */
 @media (max-width: 880px) {
-  .lp-hero { grid-template-columns: 1fr; }
-  .lp-hero-center { order: -1; }
   .lp-athlete { max-width: 240px; }
   .lp-left .lp-side-label, .lp-right .lp-side-label { text-align: center; align-self: center; }
   /* cards: la hero resta a piena larghezza in cima, le altre 3 in 2-up sotto */
@@ -7585,7 +7486,6 @@ button:disabled {
   .lp-card-hero { min-height: clamp(240px, 40vw, 320px); }
   /* value-prop: la copy sopra, il terminale sotto */
   .lp-scan { grid-template-columns: 1fr; gap: clamp(28px, 5vw, 40px); }
-  .lp-what { grid-template-columns: 1fr; gap: clamp(28px, 5vw, 40px); }
   .lp-what-head { max-width: none; }
   /* how it works: 2×2, riga di connessione orizzontale rimossa */
   .lp-steps { grid-template-columns: repeat(2, 1fr); gap: 30px 18px; }
