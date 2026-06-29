@@ -6586,15 +6586,10 @@ button:disabled {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  /* #HOME-SPORTS-BOTTOM-0629: spazio per la barra sport fissa in basso. */
-  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
 }
-@media (max-width: 860px) {
-  /* #HOME-CREATIVE-3: su mobile la barra sport fissa copriva i testi → rimossa.
-     Niente barra ⇒ niente padding-bottom di compensazione. */
-  .lp { padding-bottom: 0; }
-  .lp-hero-sports { display: none; }
-}
+/* #HOME-CREATIVE-3: i tasti sport (.lp-hero-sports) sono stati RIMOSSI dal landing
+   (mobile + desktop, richiesta Andrea) → niente più barra fissa né padding di
+   compensazione. La regola .lp-hero-sports resta orfana ma inerte. */
 
 /* ── Topnav ── */
 .lp-nav {
