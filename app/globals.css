@@ -6776,6 +6776,9 @@ button:disabled {
   flex: 0 0 calc(100% / var(--lp-per-view, 1));
   height: 228px; padding: 0 8px;
 }
+/* #HOME-CREATIVE-2: slide creative = altezza auto (la detta l'aspect-ratio 16/9
+   del banner) così l'immagine è intera, non tagliata a 228px. */
+.lp-carousel-slide.is-creative { height: auto; }
 .lp-carousel-art {
   position: absolute; inset: 0 8px; border-radius: 18px; overflow: hidden;
   border: 1px solid var(--am-line);
@@ -6819,8 +6822,10 @@ button:disabled {
 /* CREATIVE (#HOME-CREATIVE-1): slide con banner finito (logo+testo+CTA già
    nell'immagine). Niente overlay/body: il Link riempie lo slot e fa da cornice,
    l'<Image> object-fit:cover ritaglia il 16:9 in alto/basso (atteso). */
+/* #HOME-CREATIVE-2: i creativi (16:9 finiti) si vedono INTERI, niente ritaglio.
+   Box in-flow con aspect-ratio 16/9 → l'altezza della slide la guida l'immagine. */
 .lp-carousel-creative {
-  position: absolute; inset: 0 8px; display: block;
+  position: relative; display: block; width: 100%; aspect-ratio: 16 / 9;
   border-radius: 18px; overflow: hidden; border: 1px solid var(--am-line);
 }
 .lp-carousel-creative:focus-visible {

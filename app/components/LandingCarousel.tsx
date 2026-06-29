@@ -60,20 +60,20 @@ const ACCOUNT_HREF = "/app?tab=account";
 // headline centrati, footer non indispensabile). I restanti creativi su disco
 // (5849/5851/5852/5857/5858) sono tenuti per altri usi.
 const SLIDE_DEFS: SlideDef[] = [
-  // 1 · creativo "grosso" hero — IT'S AN EDGE / MORE THAN PREDICTIONS (calcio, esultanza)
-  //     con pannelli Leaderboard + Big Wins. Prima slide, priority.
-  { kind: "creative", img: "/banners/creatives/creative-5855.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — It's an edge. More than predictions. Calciatore in esultanza con classifica e vincite" },
-  // 2 · creativo calcio — MORE INSIGHT. MORE PROFITS. (soggetto a destra, layout pulito)
-  { kind: "creative", img: "/banners/creatives/creative-5854.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight. More profits. Calciatore in azione" },
-  // 3 · creativo tennis — PREDICT. BET. WIN BIG. (tennista, layout pulito e leggibile)
-  { kind: "creative", img: "/banners/creatives/creative-5850.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Predict. Bet. Win big. Tennista in azione" },
-  // 4 · creativo basket — SMARTER PICKS. BIGGER WINS. (cestista, buon contrasto)
-  { kind: "creative", img: "/banners/creatives/creative-5853.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Smarter picks. Bigger wins. Cestista in azione" },
-  // 5 · creativo tennis — DATA. STRATEGY. WINNING EDGE. (tennista donna)
-  { kind: "creative", img: "/banners/creatives/creative-5859.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Data. Strategy. Winning edge. Tennista in azione" },
-  // 6 · vecchio hero grosso betredge — banner storico tutti-gli-sport (Andrea: tienine
-  //     uno come quello vecchio grosso). Image-only come i creativi. #HOME-CREATIVE-1
+  // 1 · hero BetRedge multi-sport — banner storico "BETR EDGE" tutti-gli-sport.
+  //     PRIMA slide (Andrea: "il banner betredge deve essere il primo"), priority.
   { kind: "creative", img: "/banners/hero-allsports.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — La tua edge su ogni sport" },
+  // 2 · creativo "grosso" hero — IT'S AN EDGE / MORE THAN PREDICTIONS (calcio, esultanza)
+  //     con pannelli Leaderboard + Big Wins.
+  { kind: "creative", img: "/banners/creatives/creative-5855.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — It's an edge. More than predictions. Calciatore in esultanza con classifica e vincite" },
+  // 3 · creativo calcio — MORE INSIGHT. MORE PROFITS. (soggetto a destra, layout pulito)
+  { kind: "creative", img: "/banners/creatives/creative-5854.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight. More profits. Calciatore in azione" },
+  // 4 · creativo tennis — PREDICT. BET. WIN BIG. (tennista, layout pulito e leggibile)
+  { kind: "creative", img: "/banners/creatives/creative-5850.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Predict. Bet. Win big. Tennista in azione" },
+  // 5 · creativo basket — SMARTER PICKS. BIGGER WINS. (cestista, buon contrasto)
+  { kind: "creative", img: "/banners/creatives/creative-5853.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Smarter picks. Bigger wins. Cestista in azione" },
+  // 6 · creativo tennis — DATA. STRATEGY. WINNING EDGE. (tennista donna)
+  { kind: "creative", img: "/banners/creatives/creative-5859.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Data. Strategy. Winning edge. Tennista in azione" },
 ];
 
 type Slide =
@@ -218,7 +218,8 @@ export default function LandingCarousel({ lang }: { lang: string }) {
                         fill
                         sizes="(max-width:860px) 100vw, 580px"
                         className="lp-carousel-img"
-                        priority={i === 0}
+                        priority={i < 2}
+                        loading={i < 2 ? undefined : "eager"}
                       />
                     </Link>
                   </li>
