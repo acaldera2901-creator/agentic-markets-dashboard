@@ -8,6 +8,7 @@ import crypto from "node:crypto";
 
 const WALLET_ENDPOINT = "https://api.paygate.to/control/wallet.php";
 const PAY_ENDPOINT = "https://checkout.paygate.to/pay.php";
+const STATUS_ENDPOINT = "https://api.paygate.to/control/payment-status.php";
 // PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto), quindi il
 // `value_coin` del callback è sensibilmente < importo richiesto. L'autenticità
 // vera è il token monouso; l'importo è fisso nel link (l'utente non può pagare
@@ -95,5 +96,32 @@ export function buildPayUrl(opts: { addressIn: string; amount: number; email: st
     button: PAY_THEME,
   });
   return `${PAY_ENDPOINT}?${p.toString()}`;
+}
+
+// #PAYGATE-PREFLIGHT-0629 finding #1: verifica server-side dell'esito reale presso
+// PayGate (non fidarsi del callback non firmato). GET payment-status.php?ipn_token=…
+// → { status:'paid'|'unpaid', value_coin, txid_out, coin }. Doc: uso "casual" (1
+// chiamata per callback). Ritorna null se la chiamata fallisce (→ il caller NON concede).
+export async function checkPaymentStatus(
+  ipnToken: string
+): Promise<{ status: string; valueCoin: number | null; txidOut: string | null } | null> {
+  if (!ipnToken) return null;
+  let resp: Response;
+  try {
+    resp = await fetch(`${STATUS_ENDPOINT}?ipn_token=${encodeURIComponent(ipnToken)}`);
+  } catch {
+    return null;
+  }
+  if (!resp.ok) return null;
+  const d = (await resp.json().catch(() => null)) as
+    | { status?: string; value_coin?: string | number; txid_out?: string }
+    | null;
+  if (!d) return null;
+  const v = d.value_coin;
+  return {
+    status: typeof d.status === "string" ? d.status : "",
+    valueCoin: v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : null,
+    txidOut: typeof d.txid_out === "string" ? d.txid_out : null,
+  };
 }
 
