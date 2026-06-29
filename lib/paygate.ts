@@ -6,9 +6,21 @@
 
 import crypto from "node:crypto";
 
-const WALLET_ENDPOINT = "https://api.paygate.to/control/wallet.php";
-const PAY_ENDPOINT = "https://checkout.paygate.to/pay.php";
-const STATUS_ENDPOINT = "https://api.paygate.to/control/payment-status.php";
+// Host configurabili per il white-label (dominio custom su Cloudflare Worker).
+// Default = domini PayGate → comportamento invariato finché le env NON sono settate.
+// Il blocco DNS/VPN colpisce SOLO la pagina hosted vista dall'utente (checkout host);
+// le chiamate API (wallet/status) sono server-side dal nostro backend → non bloccate,
+// quindi basta proxare il SOLO checkout host. Quando il checkout host è custom,
+// passiamo `domain=<host>` a wallet.php/pay.php: è il meccanismo white-label ufficiale
+// (replica ciò che il Cloudflare Worker fa sulle richieste API) → PayGate genera la
+// pagina hosted e i link interni (process-payment.php) sul nostro dominio.
+const API_HOST = process.env.PAYGATE_API_HOST || "api.paygate.to";
+const CHECKOUT_HOST = process.env.PAYGATE_CHECKOUT_HOST || "checkout.paygate.to";
+const WHITE_LABEL = CHECKOUT_HOST !== "checkout.paygate.to";
+
+const WALLET_ENDPOINT = `https://${API_HOST}/control/wallet.php`;
+const PAY_ENDPOINT = `https://${CHECKOUT_HOST}/pay.php`;
+const STATUS_ENDPOINT = `https://${API_HOST}/control/payment-status.php`;
 // PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto), quindi il
 // `value_coin` del callback è sensibilmente < importo richiesto. L'autenticità
 // vera è il token monouso; l'importo è fisso nel link (l'utente non può pagare
@@ -67,7 +79,9 @@ export async function createReceivingWallet(
   payoutAddress: string,
   callbackUrl: string
 ): Promise<{ addressIn: string; polygonAddressIn: string; ipnToken: string }> {
-  const url = `${WALLET_ENDPOINT}?address=${encodeURIComponent(payoutAddress)}&callback=${encodeURIComponent(callbackUrl)}`;
+  // white-label: domain=<checkout host> → PayGate genera la pagina hosted sul nostro dominio
+  const domainParam = WHITE_LABEL ? `&domain=${encodeURIComponent(CHECKOUT_HOST)}` : "";
+  const url = `${WALLET_ENDPOINT}?address=${encodeURIComponent(payoutAddress)}&callback=${encodeURIComponent(callbackUrl)}${domainParam}`;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`paygate wallet.php failed: ${resp.status}`);
   const data = (await resp.json()) as { address_in?: string; polygon_address_in?: string; ipn_token?: string };
@@ -95,6 +109,8 @@ export function buildPayUrl(opts: { addressIn: string; amount: number; email: st
     theme: PAY_THEME,
     button: PAY_THEME,
   });
+  // white-label: rende i link interni della pagina hosted sul nostro dominio
+  if (WHITE_LABEL) p.set("domain", CHECKOUT_HOST);
   return `${PAY_ENDPOINT}?${p.toString()}`;
 }
 
