@@ -67,9 +67,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "paygate wallet failed" }, { status: 502 });
   }
 
+  // Salviamo anche ipn_token: serve al callback per la verifica server-side
+  // dell'esito reale presso PayGate (finding #1).
   await dbExecute(
-    "UPDATE paygate_orders SET polygon_address_in = $2 WHERE id = $1",
-    [orderId, wallet.polygonAddressIn]
+    "UPDATE paygate_orders SET polygon_address_in = $2, ipn_token = $3 WHERE id = $1",
+    [orderId, wallet.polygonAddressIn, wallet.ipnToken]
   );
 
   const url = buildPayUrl({ addressIn: wallet.addressIn, amount, email: ctx.identifier });
