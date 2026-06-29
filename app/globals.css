@@ -6585,7 +6585,9 @@ button:disabled {
   color: var(--am-text);
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  /* #HOME-CREATIVE-3e: `clip` (non `hidden`) blocca l'overflow orizzontale SENZA
+     creare un contenitore di scroll → così l'header .lp-nav sticky resta in cima. */
+  overflow-x: clip;
   /* #HOME-SPORTS-BOTTOM-0629: spazio per la barra sport fissa in basso. */
   padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
 }
@@ -6594,7 +6596,13 @@ button:disabled {
 .lp-nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px clamp(16px, 4vw, 48px);
-  position: relative; z-index: 5;
+  /* #HOME-CREATIVE-3e: header SEMPRE visibile in cima durante lo scroll. sticky =
+     niente layout shift; sfondo+blur per leggibilità sopra carosello/contenuti.
+     z 50 = sopra contenuto (5) e barra sport (30), sotto dropdown (60)/modali. */
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8, 11, 10, .78);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--am-line);
 }
 .lp-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .lp-nav-right { display: flex; align-items: center; gap: clamp(8px, 1.4vw, 16px); }
