@@ -6590,7 +6590,10 @@ button:disabled {
   padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 860px) {
-  .lp { padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+  /* #HOME-CREATIVE-3: su mobile la barra sport fissa copriva i testi → rimossa.
+     Niente barra ⇒ niente padding-bottom di compensazione. */
+  .lp { padding-bottom: 0; }
+  .lp-hero-sports { display: none; }
 }
 
 /* ── Topnav ── */
@@ -6755,7 +6758,7 @@ button:disabled {
   width: 100%; max-width: 1180px; margin: 0 auto;
   padding: clamp(14px, 2.4vw, 22px) clamp(16px, 4vw, 56px) 0;
 }
-.lp-carousel { position: relative; }
+.lp-carousel { position: relative; touch-action: pan-y; }
 .lp-carousel-vp { overflow: hidden; border-radius: 18px; }
 .lp-carousel-track {
   display: flex; align-items: stretch; list-style: none; margin: 0; padding: 0;
