@@ -22,8 +22,17 @@ export function LiveChat() {
     if (document.getElementById("tawkto-widget")) return;
 
     // Bootstrap ufficiale Tawk.to.
-    const w = window as unknown as { Tawk_API?: unknown; Tawk_LoadStart?: Date };
+    const w = window as unknown as { Tawk_API?: Record<string, unknown>; Tawk_LoadStart?: Date };
     w.Tawk_API = w.Tawk_API || {};
+    // #HOME-CREATIVE-3d: su mobile il launcher copriva il tile "World Cup" della
+    // barra sport in basso → lo alzo (yOffset) sopra la barra. Posizione standard
+    // su desktop. customStyle dev'essere settato PRIMA del caricamento dello script.
+    w.Tawk_API.customStyle = {
+      visibility: {
+        desktop: { position: "br", xOffset: 20, yOffset: 20 },
+        mobile: { position: "br", xOffset: 12, yOffset: 88 },
+      },
+    };
     w.Tawk_LoadStart = new Date();
 
     const s = document.createElement("script");
