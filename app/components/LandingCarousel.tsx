@@ -118,6 +118,10 @@ export default function LandingCarousel({ lang }: { lang: string }) {
     setIdx((i) => Math.min(i, Math.max(0, total - perView)));
   }, [perView, total]);
 
+  // #HOME-CREATIVE-3: swipe col dito (touch) — trascinamento orizzontale.
+  const touchX = useRef<number | null>(null);
+  const touchDX = useRef(0);
+
   const stopAuto = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }, []);
@@ -158,6 +162,15 @@ export default function LandingCarousel({ lang }: { lang: string }) {
         onMouseLeave={onLeave}
         onFocusCapture={onEnter}
         onBlurCapture={onLeave}
+        onTouchStart={(e) => { touchX.current = e.touches[0].clientX; touchDX.current = 0; stopAuto(); }}
+        onTouchMove={(e) => { if (touchX.current != null) touchDX.current = e.touches[0].clientX - touchX.current; }}
+        onTouchEnd={() => {
+          const dx = touchDX.current;
+          if (dx <= -40) go(idx + 1);
+          else if (dx >= 40) go(idx - 1);
+          touchX.current = null; touchDX.current = 0;
+          startAuto();
+        }}
       >
         <button
           type="button"
