@@ -23,7 +23,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { copyFor, ctaLabelFor, HOUSE_CAMPAIGNS, type HouseCampaign, type Lang } from "@/lib/house-banners";
 
-const AUTOPLAY_MS = 6000;
+const AUTOPLAY_MS = 3500;
 const MOBILE_BP = 860; // sotto = 1 slide per vista (coerente con il proto)
 
 // Set lingua ampio del desk → cade su "en" per le lingue non coperte (copyFor lo
