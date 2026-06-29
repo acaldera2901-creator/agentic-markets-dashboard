@@ -172,27 +172,8 @@ export default function LandingCarousel({ lang }: { lang: string }) {
           startAuto();
         }}
       >
-        <button
-          type="button"
-          className="lp-carousel-arrow lp-carousel-prev"
-          onClick={() => go(idx - 1)}
-          aria-label={L === "it" ? "Slide precedente" : "Previous slide"}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-            <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          className="lp-carousel-arrow lp-carousel-next"
-          onClick={() => go(idx + 1)}
-          aria-label={L === "it" ? "Slide successiva" : "Next slide"}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-
+        {/* #HOME-CREATIVE-3: frecce ‹ › rimosse (richiesta Andrea) — navigazione
+            via swipe (touch) + dots + autoplay. */}
         <div className="lp-carousel-vp">
           <ul
             className="lp-carousel-track"
