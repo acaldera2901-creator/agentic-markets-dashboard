@@ -7598,7 +7598,9 @@ button:disabled {
     grid-template-columns: 1fr;
     grid-template-areas: "track" "model" "plans" "app";
   }
-  .lp-nav-link, .lp-theme { display: none; }
+  /* #HOME-CREATIVE-3d: il Login (.lp-nav-link) ora resta visibile su mobile
+     (prima nascosto → c'era solo Register). Theme toggle resta nascosto su mobile. */
+  .lp-theme { display: none; }
   .lp-steps { grid-template-columns: 1fr; gap: 24px; }
   .lp-kpis { gap: 22px; }
   /* edge scanner: colonne più compatte, padding ridotto, tag nascosto */
