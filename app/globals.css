@@ -6586,6 +6586,11 @@ button:disabled {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  /* #HOME-SPORTS-BOTTOM-0629: spazio per la barra sport fissa in basso. */
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+@media (max-width: 860px) {
+  .lp { padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── Topnav ── */
@@ -6858,10 +6863,18 @@ button:disabled {
    sfondo scuro continuo col banner + sottile seam coral. Niente più overlay/
    allineamento fragile; solo i nostri sport. */
 .lp-hero-sports {
+  /* #HOME-SPORTS-BOTTOM-0629: barra sport ANCORATA al fondo del viewport (fixed),
+     così la sezione sottostante risale ed è visibile più in alto. Compensata da
+     padding-bottom su .lp affinché nessuna sezione resti coperta. z-index 30 =
+     sopra il contenuto (z5), sotto dropdown lingua (60) e modali (1000). */
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-  gap: clamp(8px, 1.4vw, 18px); padding: clamp(14px, 1.8vw, 22px) 12px;
-  background: linear-gradient(180deg, #07080d 0%, var(--am-bg) 100%);
+  gap: clamp(8px, 1.4vw, 18px);
+  padding: clamp(10px, 1.4vw, 16px) 12px calc(clamp(10px, 1.4vw, 16px) + env(safe-area-inset-bottom, 0px));
+  background: rgba(7, 8, 13, .82);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   border-top: 1px solid rgba(229, 72, 77, .22);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, .45);
 }
 /* #HOME-POLISH-4: tile sport — non più tre pillole identiche col bordo coral
    (default = slop). Glifo line-art on-brand in un pozzetto circolare a sinistra
