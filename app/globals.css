@@ -6816,6 +6816,17 @@ button:disabled {
 .lp-carousel-cta:hover { filter: brightness(1.06); }
 .lp-carousel-cta:active { transform: translateY(1px); }
 
+/* CREATIVE (#HOME-CREATIVE-1): slide con banner finito (logo+testo+CTA già
+   nell'immagine). Niente overlay/body: il Link riempie lo slot e fa da cornice,
+   l'<Image> object-fit:cover ritaglia il 16:9 in alto/basso (atteso). */
+.lp-carousel-creative {
+  position: absolute; inset: 0 8px; display: block;
+  border-radius: 18px; overflow: hidden; border: 1px solid var(--am-line);
+}
+.lp-carousel-creative:focus-visible {
+  outline: 2px solid var(--am-coral); outline-offset: 3px;
+}
+
 /* Frecce ‹ › */
 .lp-carousel-arrow {
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;

@@ -1,16 +1,22 @@
 "use client";
 
-// app/components/LandingCarousel.tsx (#HOME-BETMODE-1)
+// app/components/LandingCarousel.tsx (#HOME-BETMODE-1 · #HOME-CREATIVE-1)
 // Hero della landing pubblica: il vecchio mega-hero a tutto schermo
 // (.lp-hero-img) è sostituito da un banner più piccolo che RUOTA in carosello,
 // stile "betmode": 2 slide per vista su desktop, 1 su mobile, frecce ‹ ›, dots
 // (attivo allungato in coral), autoplay 6s con pausa su hover/focus, disattivato
 // con prefers-reduced-motion.
 //
-// Le slide riusano le CAMPAGNE già tradotte a 5 lingue in lib/house-banners.ts
-// (eyebrow/headline/accent/cta) — niente duplicazione di copy né nuovo sistema
-// i18n. Le FOTO sono le nostre reali in /public/banners, con overlay scuro→coral
-// per garantire leggibilità del testo (contrasto) sopra l'immagine.
+// Due TIPI di slide:
+//  · "overlay"  — foto reale (/public/banners) + copy HTML sovrapposta, riusa le
+//    CAMPAGNE i18n di lib/house-banners.ts (eyebrow/headline/accent/cta). Overlay
+//    scuro→coral per contrasto WCAG del testo bianco. [comportamento storico]
+//  · "creative" — banner creativo FINITO (16:9, logo+testo+CTA GIÀ nell'immagine),
+//    /public/banners/creatives/*. Si renderizza SOLO l'<Image> dentro un <Link>:
+//    niente overlay, niente body HTML (sarebbe doppio-testo). #HOME-CREATIVE-1
+//
+// NB: i creativi 16:9 nello slot 2-up (~518×228, ratio ~2.27) vengono ritagliati
+// in alto/basso con object-fit:cover — atteso/accettato (decisione Andrea).
 
 import Link from "next/link";
 import Image from "next/image";
@@ -26,33 +32,56 @@ function asLang(lang: string): Lang {
   return lang === "it" || lang === "es" || lang === "fr" || lang === "ru" ? lang : "en";
 }
 
-// Slide = (campagna riusata per la copy) + foto reale + alt descrittivo.
-// L'ordine dell'array è l'ordine in carosello. Le campagne sono recuperate per
-// id da HOUSE_CAMPAIGNS: se un id sparisse, la slide viene semplicemente saltata
-// (nessun crash). #HOME-BETMODE-1
-type SlideDef = {
+// L'ordine dell'array è l'ordine in carosello.
+//
+// Slide "creative": banner finito (image-only). Solo img + href + alt.
+// Slide "overlay": foto + campagna i18n (campaignId → HOUSE_CAMPAIGNS); se l'id
+// sparisse la slide viene saltata, nessun crash. #HOME-BETMODE-1 / #HOME-CREATIVE-1
+type CreativeDef = {
+  kind: "creative";
+  img: string;
+  href: string;
+  /** alt descrittivo del banner (contenuto + sport). */
+  imgAlt: string;
+};
+type OverlayDef = {
+  kind: "overlay";
   campaignId: string;
   img: string;
   /** alt fotografico oltre alla headline (descrive l'immagine, non ripete la copy). */
   imgAlt: string;
 };
+type SlideDef = CreativeDef | OverlayDef;
 
+const ACCOUNT_HREF = "/app?tab=account";
+
+// Rotazione curata di creativi (16:9 finiti). #HOME-CREATIVE-1
+// Sono scelti puntando a quelli che reggono meglio il ritaglio 2-up (soggetto +
+// headline centrati, footer non indispensabile). I restanti creativi su disco
+// (5849/5851/5852/5857/5858) sono tenuti per altri usi.
 const SLIDE_DEFS: SlideDef[] = [
-  // 1 · brand / inizia gratis — "L'edge su ogni sport" → /app?tab=account
-  // #HOME-BETMODE-1: foto PULITA senza wordmark stampato (hero-allsports.jpg aveva
-  // "BETR EDGE" dentro l'immagine → doppio-branding sotto l'overlay).
-  { campaignId: "top-anon", img: "/banners/hero-bg.jpg", imgAlt: "Calciatore e tennista in azione" },
-  // 2 · World Cup — "World Cup è aperta" → /world-cup
-  { campaignId: "top-worldcup", img: "/banners/stadium-night.jpg", imgAlt: "Stadio illuminato di sera" },
-  // 3 · Creator Picks — "track record verificato" → /community
-  { campaignId: "topbar-creators", img: "/banners/football-action.jpg", imgAlt: "Azione di gioco nel calcio" },
-  // 4 · tutti gli sport — "Un modello. Tutti gli sport." → /app?tab=account
-  { campaignId: "landing-brand", img: "/banners/stadium-crowd.jpg", imgAlt: "Tifosi sugli spalti dello stadio" },
+  // 1 · creativo "grosso" hero — IT'S AN EDGE / MORE THAN PREDICTIONS (calcio, esultanza)
+  //     con pannelli Leaderboard + Big Wins. Prima slide, priority.
+  { kind: "creative", img: "/banners/creatives/creative-5855.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — It's an edge. More than predictions. Calciatore in esultanza con classifica e vincite" },
+  // 2 · creativo calcio — MORE INSIGHT. MORE PROFITS. (soggetto a destra, layout pulito)
+  { kind: "creative", img: "/banners/creatives/creative-5854.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight. More profits. Calciatore in azione" },
+  // 3 · creativo tennis — PREDICT. BET. WIN BIG. (tennista, layout pulito e leggibile)
+  { kind: "creative", img: "/banners/creatives/creative-5850.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Predict. Bet. Win big. Tennista in azione" },
+  // 4 · creativo basket — SMARTER PICKS. BIGGER WINS. (cestista, buon contrasto)
+  { kind: "creative", img: "/banners/creatives/creative-5853.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Smarter picks. Bigger wins. Cestista in azione" },
+  // 5 · creativo tennis — DATA. STRATEGY. WINNING EDGE. (tennista donna)
+  { kind: "creative", img: "/banners/creatives/creative-5859.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Data. Strategy. Winning edge. Tennista in azione" },
+  // 6 · vecchio hero grosso betredge — banner storico tutti-gli-sport (Andrea: tienine
+  //     uno come quello vecchio grosso). Image-only come i creativi. #HOME-CREATIVE-1
+  { kind: "creative", img: "/banners/hero-allsports.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — La tua edge su ogni sport" },
 ];
 
-type Slide = SlideDef & { campaign: HouseCampaign };
+type Slide =
+  | (CreativeDef & { campaign?: undefined })
+  | (OverlayDef & { campaign: HouseCampaign });
 
-const SLIDES: Slide[] = SLIDE_DEFS.flatMap((d) => {
+const SLIDES: Slide[] = SLIDE_DEFS.flatMap((d): Slide[] => {
+  if (d.kind === "creative") return [d];
   const campaign = HOUSE_CAMPAIGNS.find((c) => c.id === d.campaignId);
   return campaign ? [{ ...d, campaign }] : [];
 });
@@ -161,11 +190,44 @@ export default function LandingCarousel({ lang }: { lang: string }) {
             }}
           >
             {SLIDES.map((s, i) => {
-              const c = copyFor(s.campaign, L);
-              const cta = ctaLabelFor(s.campaign, L);
               // Visibile = nel range [idx, idx+perView). Le altre sono fuori
               // schermo → fuori dal flusso di tabulazione (aria-hidden/inert-like).
               const visible = i >= idx && i < idx + perView;
+
+              // CREATIVE — banner finito: solo <Image> dentro <Link>, niente
+              // overlay/body (il testo è già nell'immagine). #HOME-CREATIVE-1
+              if (s.kind === "creative") {
+                return (
+                  <li
+                    key={s.img}
+                    className="lp-carousel-slide is-creative"
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`${i + 1} / ${total}`}
+                    aria-hidden={!visible}
+                  >
+                    <Link
+                      href={s.href}
+                      className="lp-carousel-creative"
+                      aria-label={s.imgAlt}
+                      tabIndex={visible ? undefined : -1}
+                    >
+                      <Image
+                        src={s.img}
+                        alt={s.imgAlt}
+                        fill
+                        sizes="(max-width:860px) 100vw, 580px"
+                        className="lp-carousel-img"
+                        priority={i === 0}
+                      />
+                    </Link>
+                  </li>
+                );
+              }
+
+              // OVERLAY — foto + copy i18n sovrapposta. [storico #HOME-BETMODE-1]
+              const c = copyFor(s.campaign, L);
+              const cta = ctaLabelFor(s.campaign, L);
               return (
                 <li
                   key={s.campaignId}
