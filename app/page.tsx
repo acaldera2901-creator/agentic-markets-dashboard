@@ -48,16 +48,22 @@ const COPY = {
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 19.90 · Pro 49.90 USDT/mese.", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. 18+.",
     privacy: "Privacy",
-    // ── What is BetRedge (value-prop) ──
+    // ── Edge Scanner (value-prop) ──
     waEyebrow: "MOTORE DI PROBABILITÀ · NON UN BOOKMAKER",
-    waHead1: "La previsione reale di ogni partita.",
-    waHead2: "Prima che si muova il mercato.",
-    waBody: "BetRedge legge calcio, tennis e Mondiali con un modello che calibra le probabilità e le confronta con la quota — così vedi dove c'è valore. Niente hype: ogni pick è spiegata, ogni esito è registrato. La decisione resta tua.",
+    waHead1: "Il modello legge ogni partita.",
+    waHead2: "Tu vedi solo l'edge.",
+    waBody: "Calcio, tennis e Mondiali passano nel modello: probabilità calibrate confrontate con la quota del bookmaker. Dove divergono, è il tuo edge. Ogni pick è spiegata e registrata prima del fischio.",
     waKpi1Lab: "hit-rate", waKpi2Lab: "edge medio", waKpi3Val: "Tracciato", waKpi3Lab: "CLV verificato",
     waCta: "Inizia gratis",
-    // mini readout artifact
-    waReadMatch: "Esempio · esito modellato",
-    waReadModel: "Modello", waReadMarket: "Mercato implicito", waReadEdge: "valore",
+    waCtaSub: "Senza carta",
+    // terminale edge_scanner — header colonne + stati + footer
+    waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
+    waScanLive: "live", waScanExample: "esempio", waScanning: "scanning",
+    waTermAllExample: "Esempio · output del modello",
+    waTagExample: "esempio",
+    waFootReal: "Riga in alto: dato reale di oggi · le altre illustrano il formato",
+    waFootExample: "Output illustrativo del modello · dati reali nel desk",
+    waFootEvents: (n: number, e: number) => `${n} eventi · ${e} con edge`,
     // ── How it works ──
     hwEyebrow: "COME FUNZIONA",
     hwHead: "Dal segnale alla tua decisione.",
@@ -94,13 +100,19 @@ const COPY = {
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "PROBABILITY ENGINE · NOT A BOOKMAKER",
-    waHead1: "The real prediction for every match.",
-    waHead2: "Before the market moves.",
-    waBody: "BetRedge reads football, tennis and the World Cup with a model that calibrates probabilities and lines them up against the odds — so you see where the value is. No hype: every pick is explained, every outcome is logged. The call stays yours.",
+    waHead1: "The model reads every match.",
+    waHead2: "You only see the edge.",
+    waBody: "Football, tennis and the World Cup run through the model: calibrated probabilities lined up against the bookmaker's odds. Where they diverge, that's your edge. Every pick is explained and logged before kick-off.",
     waKpi1Lab: "hit-rate", waKpi2Lab: "avg edge", waKpi3Val: "Tracked", waKpi3Lab: "verified CLV",
     waCta: "Start free",
-    waReadMatch: "Example · modelled outcome",
-    waReadModel: "Model", waReadMarket: "Market implied", waReadEdge: "value",
+    waCtaSub: "No card",
+    waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
+    waScanLive: "live", waScanExample: "example", waScanning: "scanning",
+    waTermAllExample: "Example · model output",
+    waTagExample: "example",
+    waFootReal: "Top row: today's real data · the rest illustrate the format",
+    waFootExample: "Illustrative model output · live data in the desk",
+    waFootEvents: (n: number, e: number) => `${n} events · ${e} with edge`,
     // ── How it works ──
     hwEyebrow: "HOW IT WORKS",
     hwHead: "From signal to your call.",
@@ -137,13 +149,19 @@ const COPY = {
     privacy: "Privacidad",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTOR DE PROBABILIDAD · NO UN BOOKMAKER",
-    waHead1: "La predicción real de cada partido.",
-    waHead2: "Antes de que se mueva el mercado.",
-    waBody: "BetRedge lee fútbol, tenis y el Mundial con un modelo que calibra las probabilidades y las compara con la cuota — para que veas dónde hay valor. Sin hype: cada pick se explica, cada resultado se registra. La decisión es tuya.",
+    waHead1: "El modelo lee cada partido.",
+    waHead2: "Tú solo ves el edge.",
+    waBody: "Fútbol, tenis y el Mundial pasan por el modelo: probabilidades calibradas frente a la cuota del bookmaker. Donde divergen, ahí está tu edge. Cada pick se explica y se registra antes del pitido.",
     waKpi1Lab: "acierto", waKpi2Lab: "edge medio", waKpi3Val: "Registrado", waKpi3Lab: "CLV verificado",
     waCta: "Empieza gratis",
-    waReadMatch: "Ejemplo · resultado modelado",
-    waReadModel: "Modelo", waReadMarket: "Implícito del mercado", waReadEdge: "valor",
+    waCtaSub: "Sin tarjeta",
+    waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
+    waScanLive: "live", waScanExample: "ejemplo", waScanning: "scanning",
+    waTermAllExample: "Ejemplo · salida del modelo",
+    waTagExample: "ejemplo",
+    waFootReal: "Fila superior: dato real de hoy · las demás ilustran el formato",
+    waFootExample: "Salida ilustrativa del modelo · datos reales en el desk",
+    waFootEvents: (n: number, e: number) => `${n} eventos · ${e} con edge`,
     // ── How it works ──
     hwEyebrow: "CÓMO FUNCIONA",
     hwHead: "De la señal a tu decisión.",
@@ -180,13 +198,19 @@ const COPY = {
     privacy: "Confidentialité",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTEUR DE PROBABILITÉ · PAS UN BOOKMAKER",
-    waHead1: "La vraie prévision de chaque match.",
-    waHead2: "Avant que le marché ne bouge.",
-    waBody: "BetRedge lit le football, le tennis et la Coupe du Monde avec un modèle qui calibre les probabilités et les confronte à la cote — pour que tu voies où est la valeur. Sans hype : chaque pronostic est expliqué, chaque résultat est enregistré. Le choix reste le tien.",
+    waHead1: "Le modèle lit chaque match.",
+    waHead2: "Tu ne vois que l'edge.",
+    waBody: "Football, tennis et Coupe du Monde passent dans le modèle : des probabilités calibrées confrontées à la cote du bookmaker. Là où elles divergent, c'est ton edge. Chaque pronostic est expliqué et enregistré avant le coup d'envoi.",
     waKpi1Lab: "réussite", waKpi2Lab: "edge moyen", waKpi3Val: "Suivi", waKpi3Lab: "CLV vérifié",
     waCta: "Commencer gratuitement",
-    waReadMatch: "Exemple · résultat modélisé",
-    waReadModel: "Modèle", waReadMarket: "Implicite du marché", waReadEdge: "valeur",
+    waCtaSub: "Sans carte",
+    waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
+    waScanLive: "live", waScanExample: "exemple", waScanning: "scanning",
+    waTermAllExample: "Exemple · sortie du modèle",
+    waTagExample: "exemple",
+    waFootReal: "Ligne du haut : donnée réelle du jour · les autres illustrent le format",
+    waFootExample: "Sortie illustrative du modèle · données réelles dans le desk",
+    waFootEvents: (n: number, e: number) => `${n} événements · ${e} avec edge`,
     // ── How it works ──
     hwEyebrow: "COMMENT ÇA MARCHE",
     hwHead: "Du signal à ta décision.",
@@ -223,13 +247,19 @@ const COPY = {
     privacy: "Конфиденциальность",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "ДВИЖОК ВЕРОЯТНОСТЕЙ · НЕ БУКМЕКЕР",
-    waHead1: "Реальный прогноз на каждый матч.",
-    waHead2: "Раньше, чем сдвинется рынок.",
-    waBody: "BetRedge анализирует футбол, теннис и ЧМ моделью, которая калибрует вероятности и сопоставляет их с коэффициентом — чтобы ты видел, где ценность. Без хайпа: каждый прогноз объяснён, каждый исход зафиксирован. Решение остаётся за тобой.",
+    waHead1: "Модель читает каждый матч.",
+    waHead2: "Ты видишь только edge.",
+    waBody: "Футбол, теннис и ЧМ проходят через модель: калиброванные вероятности сопоставляются с коэффициентом букмекера. Там, где они расходятся, — твой edge. Каждый прогноз объяснён и зафиксирован до свистка.",
     waKpi1Lab: "попаданий", waKpi2Lab: "ср. edge", waKpi3Val: "Отслеж.", waKpi3Lab: "проверенный CLV",
     waCta: "Начать бесплатно",
-    waReadMatch: "Пример · смоделированный исход",
-    waReadModel: "Модель", waReadMarket: "Подразум. рынком", waReadEdge: "ценность",
+    waCtaSub: "Без карты",
+    waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
+    waScanLive: "live", waScanExample: "пример", waScanning: "scanning",
+    waTermAllExample: "Пример · вывод модели",
+    waTagExample: "пример",
+    waFootReal: "Верхняя строка: реальные данные сегодня · остальные показывают формат",
+    waFootExample: "Иллюстративный вывод модели · реальные данные в деске",
+    waFootEvents: (n: number, e: number) => `${n} событий · ${e} с edge`,
     // ── How it works ──
     hwEyebrow: "КАК ЭТО РАБОТАЕТ",
     hwHead: "От сигнала к твоему решению.",
@@ -268,6 +298,44 @@ function planPillLabel(plan: string): string {
   return "SETUP";
 }
 
+// #LANDING-EDGE-SCANNER-1 — riga reale del terminale derivata da /api/predictions.
+type ScanRow = { match: string; glyph: "ball" | "tball" | "trophy"; model: number; market: number; edge: number };
+type PredApiRow = {
+  home_team?: string; away_team?: string; league?: string; locked?: boolean;
+  p_home?: number | null; p_draw?: number | null; p_away?: number | null;
+  edge?: number | null; best_selection?: string | null;
+};
+// Probabilità della selezione (HOME/DRAW/AWAY) usata dal board. Edge è una FRAZIONE
+// (0.08 = 8 pt). Market% = Model% − edge (implicita di mercato), come da pipeline GET.
+function rowFromPrediction(p: PredApiRow): ScanRow | null {
+  if (!p || p.locked) return null;
+  const sel = p.best_selection;
+  const edge = typeof p.edge === "number" ? p.edge : null;
+  if (!sel || edge == null || edge <= 0) return null;
+  const prob = sel === "HOME" ? p.p_home : sel === "DRAW" ? p.p_draw : sel === "AWAY" ? p.p_away : null;
+  if (typeof prob !== "number" || prob <= 0 || prob > 1) return null;
+  const model = Math.round(prob * 100);
+  const market = Math.round((prob - edge) * 100);
+  const edgePt = Math.round(edge * 1000) / 10; // un decimale, in punti
+  if (market < 0 || market > 100 || edgePt <= 0) return null;
+  const home = (p.home_team ?? "").trim();
+  const away = (p.away_team ?? "").trim();
+  if (!home || !away) return null;
+  return {
+    match: `${home}–${away}`,
+    glyph: p.league === "WC" ? "trophy" : "ball",
+    model, market, edge: edgePt,
+  };
+}
+// Righe esempio del terminale — illustrano il FORMATO, marcate "esempio" in UI.
+// Non sono claim sui risultati: matchup neutri, edge plausibili decrescenti.
+const SCAN_EXAMPLE_ROWS: ScanRow[] = [
+  { match: "Brasile–Argentina", glyph: "trophy", model: 49, market: 42, edge: 7.1 },
+  { match: "Inter–Napoli", glyph: "ball", model: 54, market: 48, edge: 6.2 },
+  { match: "Sinner–Zverev", glyph: "tball", model: 66, market: 61, edge: 5.4 },
+  { match: "Bayern–Dortmund", glyph: "ball", model: 58, market: 54, edge: 4.1 },
+];
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -276,6 +344,12 @@ export default function LandingPage() {
   // #UI-HOMEAUTH-0623 (spec #4): Sign In/Register aprono la modale IN-PLACE sulla
   // home, senza navigare su /app. null = chiusa.
   const [authModal, setAuthModal] = useState<HomeAuthIntent | null>(null);
+  // #LANDING-EDGE-SCANNER-1: prima riga del terminale = dato REALE del giorno
+  // (match con edge più alto da /api/predictions, sbloccato = pick_of_day per anon).
+  // null finché non popolato/fallita la fetch → terminale tutto-esempio (FTC: mai
+  // numeri finti spacciati per reali). SSR-safe: parte null, popola al mount.
+  const [scanLive, setScanLive] = useState<ScanRow | null>(null);
+  const [scanCounts, setScanCounts] = useState<{ events: number; withEdge: number } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -336,6 +410,31 @@ export default function LandingPage() {
       } catch {
         if (!cancelled) setAuth({ status: "anonymous" });
       }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // #LANDING-EDGE-SCANNER-1: popola la riga reale del terminale. Fail-soft:
+  // qualunque errore / off-season / nessun match con edge → resta null e il
+  // terminale mostra il formato tutto-esempio (label "esempio"). Mai riga finta.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch("/api/predictions", { credentials: "same-origin", cache: "no-store" });
+        if (!resp.ok || cancelled) return;
+        const data = await resp.json();
+        const rows: PredApiRow[] = Array.isArray(data?.predictions) ? data.predictions : [];
+        // Il pick_of_day (rank 0, edge più alto) è l'unica riga sbloccata per anon.
+        const best = rows.map(rowFromPrediction).filter((r): r is ScanRow => r !== null)
+          .sort((a, b) => b.edge - a.edge)[0] ?? null;
+        const withEdge = rows.filter((r) => typeof r.edge === "number" && (r.edge as number) > 0).length;
+        if (cancelled) return;
+        if (best) {
+          setScanLive(best);
+          setScanCounts({ events: typeof data?.count === "number" ? data.count : rows.length, withEdge });
+        }
+      } catch { /* fail-soft: terminale tutto-esempio */ }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -431,11 +530,14 @@ export default function LandingPage() {
         </Link>
       </nav>
 
-      {/* ── What is BetRedge (#HOME-VALUEPROP-1) — split editoriale asimmetrico:
-           a sinistra cosa È il prodotto, a destra un readout reale modello-vs-mercato
-           (artefatto specifico, niente stock/icone). Un solo accent coral. ── */}
-      <section className="lp-what">
-        <div className="lp-what-copy">
+      {/* ── Edge Scanner (#LANDING-EDGE-SCANNER-1) — split asimmetrico: a sinistra
+           il punto di vista (motore di probabilità, non bookmaker) + 3 KPI-prova +
+           CTA; a destra un terminale quant che "scansiona" le partite e fa emergere
+           l'edge. Riga 1 = dato REALE del giorno (fetch /api/predictions, match con
+           edge più alto); le altre illustrano il formato (FTC: mai numeri finti
+           spacciati per reali). Fallback off-season → terminale tutto-esempio. ── */}
+      <section className="lp-scan">
+        <div className="lp-scan-copy">
           <p className="lp-eyebrow">{t.waEyebrow}</p>
           <h2 className="lp-what-head">
             {t.waHead1}<br /><span className="lp-what-head-2">{t.waHead2}</span>
@@ -455,29 +557,56 @@ export default function LandingPage() {
               <span className="lp-kpi-lab">{t.waKpi3Lab}</span>
             </div>
           </div>
-          <a href="/app?tab=account" className="lp-what-cta">{t.waCta}<span aria-hidden="true">→</span></a>
+          <div className="lp-scan-cta-row">
+            <a href="/app?tab=account" className="lp-what-cta">{t.waCta}<span aria-hidden="true">→</span></a>
+            <span className="lp-scan-cta-sub">{t.waCtaSub}</span>
+          </div>
         </div>
 
-        {/* readout: probabilità modello vs implicita di mercato → valore */}
-        <figure className="lp-readout" aria-label={t.waReadMatch}>
-          <figcaption className="lp-readout-cap">{t.waReadMatch}</figcaption>
-          <div className="lp-readout-match">
-            <span className="lp-readout-teams">Real Madrid <em>vs</em> Barcelona</span>
-            <span className="lp-readout-pick">Real Madrid</span>
+        {/* terminale edge_scanner: header + beam di scansione + righe + footer */}
+        <figure className="lp-term" aria-label="Edge Scanner">
+          <figcaption className="lp-term-top">
+            <span className="lp-term-dot" aria-hidden="true" />
+            <span className="lp-term-dot" aria-hidden="true" />
+            <span className="lp-term-dot" aria-hidden="true" />
+            <span className="lp-term-ttl">edge_scanner.{scanLive ? t.waScanLive : t.waScanExample}</span>
+            <span className="lp-term-scan">{t.waScanning}</span>
+          </figcaption>
+          <span className="lp-term-beam" aria-hidden="true" />
+          <div className="lp-term-head" role="row">
+            <span>{t.waColMatch}</span>
+            <span>{t.waReadModel}</span>
+            <span>{t.waReadMarket}</span>
+            <span>{t.waReadEdge}</span>
           </div>
-          <div className="lp-readout-row">
-            <span className="lp-readout-lab">{t.waReadModel}</span>
-            <span className="lp-readout-bar"><i className="model" style={{ width: "64%" }} /></span>
-            <b className="lp-readout-num accent">64%</b>
-          </div>
-          <div className="lp-readout-row">
-            <span className="lp-readout-lab">{t.waReadMarket}</span>
-            <span className="lp-readout-bar"><i className="market" style={{ width: "56%" }} /></span>
-            <b className="lp-readout-num">56%</b>
-          </div>
-          <div className="lp-readout-edge">
-            <span className="lp-readout-edge-lab">{t.waReadEdge}</span>
-            <b className="lp-readout-edge-val">+8.0 pt</b>
+          {scanLive ? (
+            <div className="lp-term-row is-real" role="row">
+              <span className="lp-term-fx">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href={scanLive.glyph === "trophy" ? "#g-trophy" : scanLive.glyph === "tball" ? "#g-tball" : "#g-ball"} /></svg>
+                <span className="lp-term-name">{scanLive.match}</span>
+              </span>
+              <span className="lp-term-c">{scanLive.model}%</span>
+              <span className="lp-term-c">{scanLive.market}%</span>
+              <span className="lp-term-edge">+{scanLive.edge.toFixed(1)}</span>
+            </div>
+          ) : null}
+          {SCAN_EXAMPLE_ROWS.map((r, i) => (
+            <div className="lp-term-row" role="row" key={r.match} style={{ ["--d" as string]: `${(i + (scanLive ? 1 : 0)) * 0.09 + 0.05}s` }}>
+              <span className="lp-term-fx">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href={r.glyph === "trophy" ? "#g-trophy" : r.glyph === "tball" ? "#g-tball" : "#g-ball"} /></svg>
+                <span className="lp-term-name">{r.match}</span>
+                <span className="lp-term-tag">{t.waTagExample}</span>
+              </span>
+              <span className="lp-term-c">{r.model}%</span>
+              <span className="lp-term-c">{r.market}%</span>
+              <span className="lp-term-edge">+{r.edge.toFixed(1)}</span>
+            </div>
+          ))}
+          <div className="lp-term-foot">
+            <span className="lp-term-foot-n">
+              {scanLive && scanCounts ? t.waFootEvents(scanCounts.events, scanCounts.withEdge) : t.waTermAllExample}
+            </span>
+            <span className="lp-term-foot-note">{scanLive ? t.waFootReal : t.waFootExample}</span>
           </div>
         </figure>
       </section>
