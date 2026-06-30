@@ -13,4 +13,8 @@ assert.equal(canonicalPlayerKey("Stefanos Tsitsipas"), "stefanos tsitsipas");
 assert.equal(canonicalPlayerKey("Jean-Pierre Müller"), "jean pierre muller");
 assert.equal(canonicalPlayerKey(null), "");
 
+// regressione diacritici non-decomponibili (allineamento Python encode('ascii','ignore'))
+assert.equal(canonicalPlayerKey("Sørensen"), "srensen");
+assert.equal(canonicalPlayerKey("Björn Borg"), "bjorn borg");
+
 console.log("tennis-names OK");

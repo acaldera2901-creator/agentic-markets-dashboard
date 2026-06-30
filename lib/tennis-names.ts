@@ -4,6 +4,7 @@ const SEEDING = /\(\d+\)\s*/g;
 const NATION = /\([A-Z]{2,3}\)/g;
 const SCORE_SUFFIX =
   /\s+\d+(?:[-–]\d+)?(?:\(\d+\))?(?:\s+\d+(?:[-–]\d+)?(?:\(\d+\))?)*(?:\s+(?:ret|w\/o|wo|walkover))?\s*$/i;
+// Dopo toLowerCase() — rimuove char non-ASCII dopo decomposizione (equiv a encode('ascii','ignore') Python)
 const PUNCT = /[^a-z0-9\s]/g;
 
 export function cleanPlayerName(raw: string | null): string {
@@ -18,7 +19,7 @@ export function cleanPlayerName(raw: string | null): string {
 
 export function canonicalPlayerKey(raw: string | null): string {
   let name = cleanPlayerName(raw);
-  name = name.normalize("NFKD").replace(/[̀-ͯ]/g, "");
+  name = name.normalize("NFKD").replace(/[^\x00-\x7F]/g, "");
   name = name.toLowerCase().replace(/-/g, " ");
   name = name.replace(PUNCT, " ");
   return name.replace(/\s+/g, " ").trim();
