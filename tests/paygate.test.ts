@@ -19,12 +19,15 @@ const t = newOrderToken();
 assert.equal(t.tokenHash, hashToken(t.token));
 assert.notEqual(newOrderToken().token, newOrderToken().token);
 
-// — buildPayUrl: currency=USD, address re-encodato una volta (%2F -> %252F) —
+// — buildPayUrl (#PAYGATE-ENCODE-FIX): address_in è GIÀ url-encoded e va passato
+//   COSÌ COM'È (no doppia codifica: %2F resta %2F, non %252F). Gli altri param
+//   sono encodati normalmente.
 const u = buildPayUrl({ addressIn: "abc%2Fdef%3D%3D", amount: 169, email: "a@b.com" });
 assert.match(u, /^https:\/\/checkout\.paygate\.to\/pay\.php\?/);
 assert.match(u, /currency=USD/);
 assert.match(u, /amount=169/);
-assert.match(u, /address=abc%252Fdef%253D%253D/);
+assert.match(u, /address=abc%2Fdef%3D%3D(&|$)/);
+assert.doesNotMatch(u, /%252F/);
 assert.match(u, /email=a%40b\.com/);
 
 // — evaluateCallback: gate (a)+(b) —
