@@ -79,3 +79,52 @@ export function fpEdge(pPick: number, oddsDecimal: number | null): number | null
   // Round to 10 decimal places to avoid floating-point drift (0.6*2.0-1 → 0.2).
   return Math.round((pPick * oddsDecimal - 1) * 1e10) / 1e10;
 }
+
+// --- fetch + TTL cache (append in lib/fortuneplay-live.ts) ---
+const BASE = "https://www.fortuneplay.com/_sb_api/api/v2/matches";
+const HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+  Accept: "application/json",
+  Origin: "https://www.fortuneplay.com",
+  Referer: "https://www.fortuneplay.com/it/sports",
+};
+const PAGE_LIMIT = 50;
+const MAX_PAGES = 20; // cap anti-hammering (come lo scraper Python)
+const TTL_MS = 30_000;
+
+type Fetcher = (page: number) => Promise<unknown>;
+
+async function defaultFetcher(page: number): Promise<unknown> {
+  const qs = new URLSearchParams({
+    bettable: "true", sport_type: "regular", sort_by: "bets_count:desc",
+    limit: String(PAGE_LIMIT), page: String(page),
+  });
+  qs.append("match_status", "0");
+  qs.append("match_status", "1");
+  const resp = await fetch(`${BASE}?${qs.toString()}`, { headers: HEADERS });
+  if (!resp.ok) throw new Error(`fortuneplay HTTP ${resp.status}`);
+  return resp.json();
+}
+
+let _fetcher: Fetcher = defaultFetcher;
+export function __setFpFetcherForTest(f: Fetcher) { _fetcher = f; }
+
+let _cache: { at: number; map: Map<string, FpMatch> } | null = null;
+
+export async function fetchFortuneplayBoard(now = Date.now()): Promise<Map<string, FpMatch>> {
+  if (_cache && now - _cache.at < TTL_MS) return _cache.map;
+  const map = new Map<string, FpMatch>();
+  try {
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const payload: any = await _fetcher(page);
+      for (const fm of parseFortuneplayMatches(payload)) map.set(fm.teamPairKey, fm);
+      const last = payload?.pagination?.last_page ?? page;
+      if (page >= last) break;
+    }
+    _cache = { at: now, map };
+  } catch {
+    if (_cache) return _cache.map; // su errore, riusa l'ultima buona
+  }
+  return map;
+}
