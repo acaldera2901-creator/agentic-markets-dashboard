@@ -84,10 +84,12 @@ const PAY_LOGO = "https://www.betredge.com/logos/betredge-logo-black.png";
 const PAY_THEME = "#23A559"; // verde BetRedge (rebrand)
 
 export function buildPayUrl(opts: { addressIn: string; amount: number; email: string }): string {
-  // URLSearchParams ri-encoda il valore address_in (che contiene già %2F/%3D)
-  // una volta, come richiede PayGate (es. %2F -> %252F).
-  const p = new URLSearchParams({
-    address: opts.addressIn,
+  // #PAYGATE-ENCODE-FIX: address_in da wallet.php è GIÀ url-encoded (contiene
+  // %2F/%2B/%3D) → va passato COSÌ COM'È, concatenato direttamente (come l'esempio
+  // ufficiale PHP di PayGate). Passarlo dentro URLSearchParams lo doppio-encodava
+  // (%2F→%252F) e PayGate rifiutava con "Provided wallet address is not allowed".
+  // Gli ALTRI parametri vanno invece encodati normalmente.
+  const rest = new URLSearchParams({
     amount: String(opts.amount),
     email: opts.email,
     currency: "USD",
@@ -95,7 +97,7 @@ export function buildPayUrl(opts: { addressIn: string; amount: number; email: st
     theme: PAY_THEME,
     button: PAY_THEME,
   });
-  return `${PAY_ENDPOINT}?${p.toString()}`;
+  return `${PAY_ENDPOINT}?address=${opts.addressIn}&${rest.toString()}`;
 }
 
 // #PAYGATE-PREFLIGHT-0629 finding #1: verifica server-side dell'esito reale presso
