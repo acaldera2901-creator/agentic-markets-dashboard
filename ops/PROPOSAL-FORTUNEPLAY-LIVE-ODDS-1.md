@@ -1,7 +1,11 @@
 # PROPOSAL #FORTUNEPLAY-LIVE-ODDS-1 — Quote live FortunePlay + deep-link partita sulle card
 
 **Origine:** piano `docs/superpowers/plans/2026-06-30-fortuneplay-live-odds.md`. Branch `feat/fortuneplay-live-odds`.
-**Stato:** ⏳ in attesa di `APPROVE #FORTUNEPLAY-LIVE-ODDS-1` (umano: Andrea o Michele) **+ OK `legale-compliance`** sul copy.
+**Stato:** ✅ `APPROVE #FORTUNEPLAY-LIVE-ODDS-1` — Andrea, 2026-07-01.
+Decisioni Andrea:
+1. **Approvato.**
+2. **Teniamo il deep-link** (la scommessa passa dal sito FortunePlay) — nessun fallback-a-landing per le partite nel feed. Env `SPORTSBOOK_FORTUNEPLAY_CODE`/`_URL` da settare da Andrea su Vercel col codice affiliate quando disponibile (finché vuoto, deep-link senza `?stag=`).
+3. **Review legale del copy → prima del go-live del progetto** (non bloccante per merge/preview).
 
 ## Task
 Mostrare la **quota live FortunePlay** sulle card (calcio/tennis/WC), con **value del modello vs quota FP**, e trasformare "Place bet" in un **deep-link alla pagina-partita** FortunePlay (con param affiliate), fallback al landing attuale.
