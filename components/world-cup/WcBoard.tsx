@@ -515,35 +515,21 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
         </Link>
       ) : (
         <>
-          <div className="mvm">
-            <div className="col">
-              <div className="n">{marketImplied != null ? pct(marketImplied) : "–"}</div>
-              <div className="l">{lang === "it" ? "Mercato" : "Market"}</div>
+          {/* #CARD-REDESIGN-V2: readout allineato al main board (rimossi square Mercato/Edge). */}
+          <div className="v2r">
+            <div className="v2r-l">
+              <span className="v2r-eye">{lang === "it" ? "Il nostro pronostico" : "Our prediction"}</span>
+              <span className="v2r-pick">{pickName ?? (lang === "it" ? "Lettura modello" : "Model read")}</span>
+              {confScore != null && !belowFloor && (
+                <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
+              )}
+              {belowFloor && <span className="v2r-flat">{lang === "it" ? "nessun favorito netto" : "no clear favourite"}</span>}
             </div>
-            <div className="col model">
-              <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l"><span className="lw">{lang === "it" ? "Modello" : "Model"}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
-            </div>
-            <div className={`col edge${edgeVal != null ? " val" : ""}`}>
-              <div className="n">{edgeVal != null ? `+${edgeVal.toFixed(1)}%` : marketImplied != null ? (lang === "it" ? "in linea" : "in line") : "–"}</div>
-              <div className="l">Edge</div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{lang === "it" ? "probabilità modello" : "model probability"}</span>
+              <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "–"}</span>
             </div>
           </div>
-          {edgeVal != null && confScore != null ? (
-            <div className="conf">
-              <span className="conf-lab">{lang === "it" ? "Confidenza" : "Confidence"}</span>
-              {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
-              {confLabel && <span className="conf-txt">{confLabel}</span>}
-            </div>
-          ) : (
-            <span className="edge flat">
-              {belowFloor
-                ? (lang === "it" ? "nessun favorito netto · lettura del modello" : "no clear favourite · model read")
-                : marketImplied != null
-                  ? (lang === "it" ? "nessun edge · in linea col mercato" : "no edge · in line with market")
-                  : (lang === "it" ? "nessuna quota · lettura del modello" : "no market price · model read")}
-            </span>
-          )}
         </>
       )}
     </>

@@ -5667,12 +5667,51 @@ button:disabled {
 .pred .mvm .col.model .n { color: var(--am-coral); }
 .pred .mvm .col.edge.val .n { color: var(--am-positive); }
 .pred .mvm.sel:hover .col.model { filter: brightness(1.05); }
+
+/* #CARD-REDESIGN-V2: readout "quota in primo piano" (rimpiazza i 3 square mercato/modello/edge).
+   Sinistra = il nostro pronostico (pick + confidenza); destra = quota FortunePlay hero + value
+   (o probabilità modello se la partita non è nel feed). Theme-aware via --am-*. */
+.pred .v2r { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px; min-width: 0; border-radius: 12px; padding: 10px 12px;
+  background: var(--am-inset); border: 1px solid var(--am-line); }
+.pred .v2r.sel { cursor: pointer; }
+.pred .v2r.sel:hover { border-color: var(--am-coral-b); }
+.pred .v2r-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pred .v2r-eye { font-family: var(--am-mono, ui-monospace, monospace); font-size: 9px; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--am-coral); font-weight: 700; }
+.pred .v2r-pick { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--am-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pred .v2r-conf { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+.pred .v2r-conf .d { width: 6px; height: 6px; border-radius: 50%; background: var(--am-line-2); }
+.pred .v2r-conf .d.on { background: var(--am-positive); }
+.pred .v2r-conf-t { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10px; color: var(--am-muted); }
+.pred .v2r-flat { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10.5px; color: var(--am-muted-2); margin-top: 1px; }
+.pred .v2r-q { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; flex: none; text-align: right; }
+.pred .v2r-qlab { font-family: var(--am-mono, ui-monospace, monospace); font-size: 8.5px; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--am-muted-2); margin-bottom: 4px; }
+.pred .v2r-qn { font-family: var(--am-mono, ui-monospace, monospace); font-size: 26px; font-weight: 780;
+  letter-spacing: -0.02em; color: var(--am-text); font-variant-numeric: tabular-nums; }
+.pred .v2r-qn.lock { font-size: 18px; color: var(--am-muted-2); }
+.pred .v2r-sub { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10px; color: var(--am-muted);
+  margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.pred .v2r-val { font-size: 9.5px; font-weight: 800; color: var(--am-coral); background: var(--am-coral-dim);
+  border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 1px 7px; cursor: help; }
 /* confidence meter */
 .pred .conf { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 11px; color: var(--am-muted); }
 .pred .conf .conf-lab { font-size: 10px; letter-spacing: 0.04em; color: var(--am-muted-2); }
 .pred .conf .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--am-line-2); }
 .pred .conf .dot.on { background: var(--am-positive); }
 .pred .conf .conf-txt { color: var(--am-muted); font-weight: 600; }
+
+/* #FORTUNEPLAY-LIVE-ODDS-1: riga quota live FortunePlay + value (sotto il readout) */
+.pred .fp-odds-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 11px; color: var(--am-muted); }
+.pred .fp-odds-row .fp-odds-label { font-size: 10px; letter-spacing: 0.04em; color: var(--am-muted-2); text-transform: uppercase; }
+.pred .fp-odds-row .fp-odds-val { font-weight: 700; color: var(--am-text); font-variant-numeric: tabular-nums; }
+.pred .fp-odds-row .fp-edge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.02em; padding: 1px 7px; border-radius: 999px;
+  color: var(--am-coral); background: var(--am-coral-dim); border: 1px solid var(--am-coral-b);
+  cursor: help;
+}
 
 /* WHY — prominent prose readout + expandable analysis */
 .pred .why-box {
@@ -7753,6 +7792,96 @@ button:disabled {
 
 /* ── body: scroll interno + griglia 2 colonne su desktop ── */
 .pdm-body { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px 22px; -webkit-overflow-scrolling: touch; }
+.pdm-body.pdm-body-flush { padding: 0; }
+.pdm-close-float { position: absolute; top: 12px; right: 12px; z-index: 5; }
+/* #CARD-REDESIGN-V2: scheda info = modal compatto (~mockup 460px), non il wide 940. */
+.pdm-panel.pdm-compact { width: min(468px, 94vw); max-width: 468px; }
+
+/* #CARD-REDESIGN-V2: scheda info "la nostra prediction, evidenziata". Theme-aware --am-*. */
+.mds { --mds-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--am-text); }
+.mds-defs { position: absolute; width: 0; height: 0; }
+.mds-ico { width: 15px; height: 15px; display: inline-block; vertical-align: middle; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.mds-hero { position: relative; padding: 18px 18px 16px; background: radial-gradient(150% 150% at 100% 0%, var(--am-coral-dim), transparent 55%); border-bottom: 1px solid var(--am-line); }
+.mds-htop { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.mds-comp { display: flex; align-items: center; gap: 8px; font-family: var(--mds-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--am-muted); }
+.mds-comp .mds-ico { color: var(--am-coral); }
+.mds-when { font-family: var(--mds-mono); font-size: 10.5px; color: var(--am-muted-2); }
+.mds-fx { font-size: 21px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 13px; }
+.mds-fx .mds-vs { color: var(--am-muted-2); font-weight: 500; margin: 0 8px; font-size: 14px; }
+.mds-call { display: flex; align-items: flex-end; gap: 13px; }
+.mds-pick { flex: 1; min-width: 0; }
+.mds-flagtag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mds-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--am-coral); background: var(--am-coral-dim); border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 2px 8px; margin-bottom: 7px; }
+.mds-flagtag .mds-ico { width: 11px; height: 11px; }
+.mds-pk { display: block; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.mds-rd { display: flex; align-items: center; gap: 6px; font-family: var(--mds-mono); font-size: 11px; color: var(--am-muted); margin-top: 3px; }
+.mds-dots { display: inline-flex; gap: 3px; }
+.mds-dots .mds-d { width: 5px; height: 5px; border-radius: 50%; background: var(--am-line-2); }
+.mds-dots .mds-d.on { background: var(--am-positive); }
+.mds-hq { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; flex: none; }
+.mds-qlab { font-family: var(--mds-mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted-2); margin-bottom: 5px; }
+.mds-qn { font-family: var(--mds-mono); font-size: 31px; font-weight: 780; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mds-val { font-family: var(--mds-mono); font-size: 10.5px; font-weight: 800; color: var(--am-coral); background: var(--am-coral-dim); border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 2px 8px; margin-top: 6px; }
+.mds-grp { padding: 12px 15px; border-top: 1px solid var(--am-line); }
+.mds-grph { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.mds-gt { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 640; }
+.mds-gt .mds-ico { color: var(--am-muted); }
+.mds-gmeta { font-family: var(--mds-mono); font-size: 10px; color: var(--am-muted-2); }
+.mds-src { margin-left: auto; font-family: var(--mds-mono); font-size: 8.5px; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; }
+.mds-src.fp { color: var(--am-coral); background: var(--am-coral-dim); border: 1px solid var(--am-coral-b); }
+.mds-src.us { color: #9db4d6; background: rgba(120,150,200,.14); border: 1px solid rgba(120,150,200,.30); }
+.mds-src.est { color: #d79a34; background: rgba(215,154,52,.14); border: 1px solid rgba(215,154,52,.30); }
+.mds-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mds-chip { position: relative; flex: 1 1 auto; min-width: 108px; appearance: none; cursor: pointer; text-align: left; color: var(--am-text); background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 12px; padding: 9px 11px 8px; display: flex; flex-direction: column; gap: 4px; transition: border-color .12s, background .12s, transform .04s; }
+.mds-chip:hover { border-color: var(--am-line-2); }
+.mds-chip:active { transform: scale(.98); }
+.mds-chip:focus-visible { outline: 2px solid var(--am-positive); outline-offset: 2px; }
+.mds-chip.rec { border-color: var(--am-coral-b); background: color-mix(in srgb, var(--am-coral) 8%, var(--am-inset)); }
+.mds-chip.on { border-color: var(--am-coral); background: var(--am-coral-dim); }
+.mds-pickbadge { position: absolute; top: -8px; left: 10px; display: inline-flex; align-items: center; gap: 3px; font-family: var(--mds-mono); font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: var(--am-coral); border-radius: 999px; padding: 2px 7px; }
+.mds-pickbadge .mds-ico { width: 9px; height: 9px; color: #fff; }
+.mds-tick { position: absolute; top: 8px; right: 8px; width: 15px; height: 15px; color: var(--am-coral); }
+.mds-cl { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 16px; }
+.mds-cm { display: flex; align-items: baseline; gap: 7px; }
+.mds-cm .mds-p { font-family: var(--mds-mono); font-size: 10.5px; color: var(--am-muted); font-weight: 600; }
+.mds-cm .mds-q { font-family: var(--mds-mono); font-size: 15px; font-weight: 760; letter-spacing: -0.01em; }
+.mds-cm .mds-q.est { font-size: 10px; font-weight: 700; color: #d79a34; }
+.mds-cm .mds-cv { font-family: var(--mds-mono); font-size: 9.5px; font-weight: 800; color: var(--am-coral); margin-left: auto; }
+.mds-note { font-family: var(--mds-mono); font-size: 9.5px; color: var(--am-muted-2); margin: 9px 0 0; line-height: 1.5; }
+/* Altri mercati FortunePlay (collassabile) */
+.mds-more { padding-top: 12px; padding-bottom: 12px; }
+.mds-more-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: transparent; border: 0; cursor: pointer; color: inherit; padding: 0; }
+.mds-more-btn .mds-more-n { font-family: var(--mds-mono); font-size: 10px; color: #04140A; background: var(--am-coral); border-radius: 999px; padding: 0 6px; margin-left: 4px; font-weight: 700; }
+[data-theme="light"] .mds-more-btn .mds-more-n { color: #fff; }
+.mds-more-btn .mds-chevw { transition: transform .2s; }
+.mds-more-btn.open .mds-chevw { transform: rotate(180deg); }
+.mds-more-body { margin-top: 4px; }
+.mds-more-body .mds-grp:first-child { border-top: 0; padding-top: 8px; }
+.mds-betbar { position: sticky; bottom: 0; background: var(--am-panel); border-top: 1px solid var(--am-coral-b); }
+.mds-legs { max-height: 250px; overflow-y: auto; }
+.mds-leg { display: flex; align-items: center; gap: 9px; padding: 9px 15px; border-bottom: 1px solid var(--am-line); }
+.mds-ls { flex: 1; min-width: 0; }
+.mds-lsel { display: block; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mds-lmkt { display: block; font-family: var(--mds-mono); font-size: 9px; color: var(--am-muted-2); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+.mds-lq { font-family: var(--mds-mono); font-size: 12.5px; font-weight: 760; }
+.mds-lq.est { color: #d79a34; font-size: 9.5px; }
+.mds-rm { width: 19px; height: 19px; border-radius: 6px; border: 1px solid var(--am-line-2); background: transparent; color: var(--am-muted-2); display: grid; place-items: center; cursor: pointer; flex: none; }
+.mds-rm .mds-ico { width: 11px; height: 11px; }
+.mds-rm:hover { border-color: #d05a5a; color: #d05a5a; }
+.mds-bar { display: flex; align-items: center; gap: 11px; padding: 11px 14px; }
+.mds-info { flex: 1; min-width: 0; background: transparent; border: 0; text-align: left; cursor: pointer; color: inherit; }
+.mds-k { display: block; font-family: var(--mds-mono); font-size: 9.5px; color: var(--am-muted-2); text-transform: uppercase; letter-spacing: 0.07em; }
+.mds-row { display: flex; align-items: baseline; gap: 7px; margin-top: 2px; }
+.mds-cmb { font-family: var(--mds-mono); font-size: 20px; font-weight: 770; letter-spacing: -0.01em; }
+.mds-qsuf { font-family: var(--mds-mono); font-size: 9.5px; color: var(--am-muted-2); text-transform: uppercase; letter-spacing: 0.05em; }
+.mds-chevw { width: 11px; height: 11px; color: var(--am-muted-2); }
+.mds-info.open .mds-chevw { transform: rotate(180deg); }
+.mds-cta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 680; font-size: 13px; color: #04140A; background: var(--am-coral); border-radius: 11px; padding: 11px 15px; text-decoration: none; transition: filter .15s; }
+.mds-cta:hover { filter: brightness(1.08); }
+.mds-cta.disabled { opacity: .4; pointer-events: none; }
+.mds-cta .mds-ico { width: 14px; height: 14px; }
+.mds-disc { font-family: var(--mds-mono); font-size: 8.5px; color: var(--am-muted-2); text-align: center; padding: 0 14px 10px; margin: 0; line-height: 1.5; }
+.mds-side { font-family: var(--mds-mono); font-size: 10px; color: var(--am-muted-2); text-align: center; padding: 12px 16px 4px; margin: 0; line-height: 1.6; }
+[data-theme="light"] .mds-cta { color: #fff; }
 /* .pdm-grid riusa la classe .pred → tutte le regole `.pred .mvm/.why/.goals-block/…`
    si applicano al contenuto del modal senza duplicare CSS. Qui neutralizziamo la
    chrome della card (sfondo/bordo/ombra/padding/hover) e la riusiamo come GRIGLIA. */
