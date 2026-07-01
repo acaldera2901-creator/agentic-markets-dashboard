@@ -7,6 +7,8 @@
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
 import { useEffect, useMemo, useState } from "react";
 import { MarketIcon } from "./MarketIcon";
+import { joinFpWithModel } from "../lib/market-join";
+import type { ExtraMarket } from "../lib/poisson-model";
 
 const MARKET_ICON: Record<string, "result" | "goals" | "scorer" | "soft"> = {
   result: "result", goal: "goals", boot: "scorer", flag: "soft",
@@ -48,6 +50,9 @@ export type MdsData = {
   groups: MdsGroup[];
   matchUrl: string;
   fpMatchId?: number | null;
+  /** our model markets (enrichment.extra_markets) — used to attach a real
+   * prediction + edge to every FortunePlay "Altri mercati" outcome we can model. */
+  extraMarkets?: ExtraMarket[];
   moreLabel?: string;
   // #MULTIBOOK-1: book disponibili per questa partita (deep-link per-book con stag).
   // Se >1 la bet-bar mostra una CTA per book ("Apri su {book}"); scelta del bookmaker.
@@ -93,6 +98,12 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         if (!alive || !mk.length) return;
         const iconFor = (n: string): MdsGroup["icon"] =>
           /corner|card|foul/i.test(n) ? "flag" : /goal/i.test(n) ? "goal" : "result";
+        // Attach OUR model prediction + edge to each FP outcome we can model
+        // (goal-derived markets). Unmodeled (soft/handicap) stay quote-only.
+        const joined = joinFpWithModel(mk, data.extraMarkets ?? [], data.home, data.away);
+        const predBy = new Map<string, { p: number | null; edge: number | null }>();
+        for (const jm of joined)
+          for (const o of jm.outcomes) predBy.set(`${jm.name}|${jm.line}|${o.label}`, { p: o.p, edge: o.edge });
         // Unisci le linee dello stesso mercato (es. Total Goals 0.5/1.5/2.5/…) in UN
         // gruppo: le chip Over/Under di tutte le linee vanno a capo compatte, senza
         // moltiplicare le intestazioni e allungare la scheda.
@@ -109,7 +120,17 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
             title: name + (!multi && entries[0].line != null ? ` ${entries[0].line}` : ""),
             src: { kind: "fp", label: "FortunePlay" },
             chips: entries.flatMap((m, ei) =>
-              m.outcomes.map((o, oi) => ({ id: `x-${gi}-${ei}-${oi}`, mkt: name + (m.line != null ? ` ${m.line}` : ""), sel: o.label, q: o.odds }))),
+              m.outcomes.map((o, oi) => {
+                const pr = predBy.get(`${m.name}|${m.line}|${o.label}`);
+                return {
+                  id: `x-${gi}-${ei}-${oi}`,
+                  mkt: name + (m.line != null ? ` ${m.line}` : ""),
+                  sel: o.label,
+                  q: o.odds,
+                  prob: pr && pr.p != null ? `${Math.round(pr.p * 100)}%` : null,
+                  value: pr && pr.edge != null && pr.edge >= 0.05 ? `+${Math.round(pr.edge * 100)}%` : null,
+                };
+              })),
           };
         });
         setExtraGroups(groups);
