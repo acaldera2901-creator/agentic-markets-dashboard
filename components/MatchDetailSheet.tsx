@@ -177,9 +177,9 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
                 {c.prob && (
                   <span
                     className={`mds-p${c.probMkt ? " mkt" : ""}`}
-                    title={c.probMkt ? "Probabilità implicita dal mercato (quote de-viggate) — non è una nostra stima da modello" : "Nostra stima dal modello"}
+                    title={c.probMkt ? "Probabilità implicita dal mercato (quote de-viggate)" : "La nostra prediction — modello BetRedge"}
                   >
-                    {c.prob}{c.probMkt ? " mkt" : ""}
+                    <span className="mds-pmark">{c.probMkt ? "mkt" : "R²"}</span>{c.prob}
                   </span>
                 )}
                 <span className={`mds-q${c.est ? " est" : ""}`}>{c.est ? "stima" : (c.q ? c.q.toFixed(2) : "–")}</span>
