@@ -5,6 +5,8 @@ import type { FpMatch } from "../lib/fortuneplay-live";
 
 const fm: FpMatch = {
   teamPairKey: "2026-07-01:internazionale|milan",
+  homeKey: "milan",
+  awayKey: "internazionale",
   sport: "soccer",
   slug: "milan-inter",
   id: 42,
@@ -26,6 +28,8 @@ const res = boardToResponse(map, {
 
 const e = res["2026-07-01:internazionale|milan"];
 assert.equal(e.oddsHome, 2.1);
+assert.equal(e.homeKey, "milan");
+assert.equal(e.awayKey, "internazionale");
 assert.equal(e.prefilled, true);
 assert.ok(e.matchUrl.includes("milan-inter-42"), "matchUrl deep-link");
 assert.ok(e.matchUrl.includes("stag=AFF1"), "matchUrl porta il param affiliate");

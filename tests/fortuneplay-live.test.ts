@@ -11,6 +11,10 @@ assert.ok(matches.length >= 1, "almeno 1 match");
 const m = matches[0];
 assert.ok(m.teamPairKey && m.teamPairKey.includes(":"), "teamPairKey valido");
 assert.ok(typeof m.id === "number" && m.slug.length > 0, "id+slug presenti");
+// homeKey/awayKey: chiavi normalizzate dei due lati (per allineare la quota al lato
+// giusto — home/away FortunePlay ≠ per forza home/away nostro, es. WC campo neutro).
+assert.ok(m.homeKey.length > 0 && m.awayKey.length > 0, "homeKey/awayKey presenti");
+assert.ok(m.teamPairKey.includes(m.homeKey) && m.teamPairKey.includes(m.awayKey), "le side key compongono la pair key");
 // odds in range decimale plausibile (×1000 → ÷1000)
 for (const o of [m.oddsHome, m.oddsAway]) {
   if (o !== null) assert.ok(o > 1 && o < 1000, "odds decimale plausibile");

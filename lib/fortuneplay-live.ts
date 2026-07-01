@@ -2,9 +2,20 @@
 // Sorgente quote live FortunePlay/BetConstruct (#FORTUNEPLAY-LIVE-ODDS-1).
 // Parse PER POSIZIONE (il `name` è localizzato). Odds = intero ÷ 1000.
 import { teamPairKey } from "./team-pair-key";
+import { normName } from "./odds-api";
+import { canonicalPlayerKey } from "./tennis-names";
+
+// Chiave normalizzata di un singolo lato, coerente con teamPairKey (calcio→normName,
+// tennis→canonicalPlayerKey). Serve al FE per mappare la pick sulla quota del lato
+// giusto: home/away di FortunePlay non coincidono per forza con home/away nostro.
+function sideKey(sport: "soccer" | "tennis", name: string): string {
+  return sport === "tennis" ? canonicalPlayerKey(name) : normName(name);
+}
 
 export type FpMatch = {
   teamPairKey: string;
+  homeKey: string;
+  awayKey: string;
   sport: "soccer" | "tennis";
   slug: string;
   id: number;
@@ -61,9 +72,12 @@ export function parseFortuneplayMatches(payload: unknown): FpMatch[] {
     const key = teamPairKey(sport as "soccer" | "tennis", home, away, m?.start_time ?? null);
     if (!key) continue;
     const [line, over, under] = parseTotals(m?.secondary_market);
+    const sp = sport as "soccer" | "tennis";
     out.push({
       teamPairKey: key,
-      sport: sport as "soccer" | "tennis",
+      homeKey: sideKey(sp, home),
+      awayKey: sideKey(sp, away),
+      sport: sp,
       slug: String(m?.slug ?? ""),
       id: Number(m?.id),
       urnId: String(m?.urn_id ?? ""),
