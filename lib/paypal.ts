@@ -2,6 +2,7 @@
 // Flusso una-tantum: createOrder → utente approva (bottone PayPal/Apple Pay) →
 // captureOrder. La concessione del piano NON si fida del client: evaluateCapture
 // (puro) + claim atomico DB stanno nel route handler /capture.
+import { Buffer } from "node:buffer";
 import { amountFor, periodDays, type PlanKey, type Period } from "./paygate";
 
 export { amountFor, periodDays };
@@ -73,6 +74,7 @@ export async function captureOrder(
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   });
   // PayPal può tornare 201 (catturato) o 422 (già catturato/non approvabile).
+  if (!resp.ok) console.warn(`[paypal] captureOrder http ${resp.status}`);
   const d = (await resp.json().catch(() => null)) as
     | {
         status?: string;
@@ -113,6 +115,12 @@ export async function verifyWebhookSignature(opts: {
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
   if (!webhookId) return false;
   const token = await getAccessToken();
+  let webhookEvent: unknown;
+  try {
+    webhookEvent = JSON.parse(opts.body);
+  } catch {
+    return false;
+  }
   const resp = await fetch(`${paypalApiBase()}/v1/notifications/verify-webhook-signature`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -123,7 +131,7 @@ export async function verifyWebhookSignature(opts: {
       transmission_sig: opts.headers["paypal-transmission-sig"],
       transmission_time: opts.headers["paypal-transmission-time"],
       webhook_id: webhookId,
-      webhook_event: JSON.parse(opts.body),
+      webhook_event: webhookEvent,
     }),
   });
   if (!resp.ok) return false;
