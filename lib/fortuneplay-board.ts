@@ -2,7 +2,8 @@
 // Degradazione pulita: senza slug/id validi → matchUrl = landing affiliate garantito
 // (mediaroosters), prefilled=false. Nessuna card regredisce mai.
 import type { FpMatch } from "./fortuneplay-live";
-import { buildFortuneplayMatchUrl } from "./fortuneplay-url";
+// buildFortuneplayMatchUrl (lib/fortuneplay-url.ts) resta pronto per quando FortunePlay
+// fornirà il formato deep-link ufficiale; oggi non usato (vedi nota #FORTUNEPLAY-DEEPLINK-404).
 
 export type FpOddsEntry = {
   id: number;
@@ -22,18 +23,16 @@ export function boardToResponse(
   map: Map<string, FpMatch>,
   cfg: { baseUrl: string; locale: string; code?: string; landingUrl: string }
 ): Record<string, FpOddsEntry> {
+  // #FORTUNEPLAY-DEEPLINK-404: il deep-link pagina-partita NON è costruibile dal
+  // feed pubblico — FortunePlay usa uno slug canonico (es. "...-m-<id>") aggiunto
+  // dal frontend, assente da lista E dettaglio API → `/it/sports/{sport}/{slug}-{id}`
+  // costruito dallo slug del feed dà 404 (verificato 2026-07-01, anche con segmento
+  // sport). Finché FortunePlay non fornisce il formato ufficiale / un betslip-link
+  // operatore, la CTA punta al landing affiliate (mediaroosters): affidabile +
+  // attribuzione garantita. Le quote/mercati restano (via API per-id, indipendenti
+  // dalla URL web). buildFortuneplayMatchUrl resta pronto per quando avremo il formato.
   const out: Record<string, FpOddsEntry> = {};
   for (const [key, m] of map) {
-    const deep =
-      m.slug && m.id
-        ? buildFortuneplayMatchUrl({
-            baseUrl: cfg.baseUrl,
-            locale: cfg.locale,
-            slug: m.slug,
-            id: m.id,
-            code: cfg.code,
-          })
-        : null;
     out[key] = {
       id: m.id,
       homeKey: m.homeKey,
@@ -44,8 +43,8 @@ export function boardToResponse(
       totalLine: m.totalLine,
       totalOver: m.totalOver,
       totalUnder: m.totalUnder,
-      matchUrl: deep ?? cfg.landingUrl,
-      prefilled: Boolean(deep),
+      matchUrl: cfg.landingUrl,
+      prefilled: false,
     };
   }
   return out;

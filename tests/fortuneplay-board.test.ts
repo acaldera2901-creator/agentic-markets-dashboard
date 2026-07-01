@@ -30,18 +30,10 @@ const e = res["2026-07-01:internazionale|milan"];
 assert.equal(e.oddsHome, 2.1);
 assert.equal(e.homeKey, "milan");
 assert.equal(e.awayKey, "internazionale");
-assert.equal(e.prefilled, true);
-assert.ok(e.matchUrl.includes("milan-inter-42"), "matchUrl deep-link");
-assert.ok(e.matchUrl.includes("stag=AFF1"), "matchUrl porta il param affiliate");
-
-// degradazione: senza slug/id → matchUrl = landing, prefilled false
-const bad: FpMatch = { ...fm, teamPairKey: "k2", slug: "", id: 0 };
-const res2 = boardToResponse(new Map([[bad.teamPairKey, bad]]), {
-  baseUrl: "https://www.fortuneplay.com",
-  locale: "it",
-  landingUrl: "https://mediaroosters.com/aacugmydl8",
-});
-assert.equal(res2["k2"].matchUrl, "https://mediaroosters.com/aacugmydl8");
-assert.equal(res2["k2"].prefilled, false);
+assert.equal(e.id, 42);
+// #FORTUNEPLAY-DEEPLINK-404: il deep-link partita non è costruibile dal feed
+// (slug canonico assente dall'API) → matchUrl = landing affiliate, prefilled=false.
+assert.equal(e.matchUrl, "https://mediaroosters.com/aacugmydl8");
+assert.equal(e.prefilled, false);
 
 console.log("fortuneplay-board OK");
