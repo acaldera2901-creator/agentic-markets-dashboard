@@ -4638,7 +4638,22 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     }
 
     // Marcatore (anytime) — quote best book US
-    const gs = (e.goalscorer_markets ?? []).slice(0, 4);
+    // #GS-DEDUP-SHEET: dedup duplicati (es. "D. Muñoz" vs "Daniel Muñoz") per
+    // lato+cognome+iniziale, tiene il pScores più alto (preferendo chi ha quota).
+    const gsRaw = e.goalscorer_markets ?? [];
+    const gsKey = (n: string) => {
+      const parts = canonicalPlayerKey(n).split(" ").filter(Boolean);
+      const last = parts.length ? parts[parts.length - 1] : "";
+      const initial = parts.length ? parts[0][0] : "";
+      return `${last}|${initial}`;
+    };
+    const gsMap = new Map<string, (typeof gsRaw)[number]>();
+    for (const x of gsRaw) {
+      const k = `${x.side}|${gsKey(x.name)}`;
+      const prev = gsMap.get(k);
+      if (!prev || x.pScores > prev.pScores || (x.pScores === prev.pScores && x.bestPrice != null && prev.bestPrice == null)) gsMap.set(k, x);
+    }
+    const gs = [...gsMap.values()].sort((a, b) => b.pScores - a.pScores).slice(0, 4);
     if (gs.length) {
       const topP = Math.max(...gs.map((x) => x.pScores));
       groups.push({
