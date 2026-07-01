@@ -292,8 +292,12 @@ type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
   | { status: "authed"; identifier: string; plan: string; name: string | null };
+// Etichetta pill = pacchetto REALE del cliente. Deve combaciare con la logica del
+// desk (app/app/page.tsx: profileHasPremium/profileHasAccess): solo premium/admin
+// è PRO, base è BASE (prima base veniva mostrato come PRO → badge sbagliato in home).
 function planPillLabel(plan: string): string {
-  if (["base", "premium", "admin_full"].includes(plan)) return "PRO";
+  if (["premium", "admin_full"].includes(plan)) return "PRO";
+  if (plan === "base") return "BASE";
   if (plan === "free") return "FREE";
   return "SETUP";
 }
