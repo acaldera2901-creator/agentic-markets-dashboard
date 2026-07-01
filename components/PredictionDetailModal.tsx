@@ -52,7 +52,7 @@ export function useDetailModal(enabled: boolean) {
 export const stopCardClick = (ev: ReactMouseEvent | ReactKeyboardEvent) => ev.stopPropagation();
 
 export function PredictionDetailModal({
-  open, onClose, anchorRect, titleId, title, subtitle, lang, soft, softLocked, children,
+  open, onClose, anchorRect, titleId, title, subtitle, lang, soft, softLocked, hideExtraMarkets, hideHead, children,
 }: {
   open: boolean;
   onClose: () => void;
@@ -63,6 +63,10 @@ export function PredictionDetailModal({
   lang: DetailLang;
   soft?: SoftMarkets | null;
   softLocked?: boolean;
+  // #CARD-REDESIGN-V2: la scheda info nuova (MatchDetailSheet) gestisce da sé
+  // header e mercati soft come chip → sopprimi lo head e la sezione soft di default.
+  hideExtraMarkets?: boolean;
+  hideHead?: boolean;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -145,25 +149,39 @@ export function PredictionDetailModal({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="pdm-head">
-          <div className="pdm-titlewrap">
-            <h2 className="pdm-title" id={titleId}>{title}</h2>
-            {subtitle && <div className="pdm-sub">{subtitle}</div>}
-          </div>
+        {hideHead ? (
           <button
             type="button"
-            className="pdm-close"
+            className="pdm-close pdm-close-float"
             data-modal-initial-focus
             onClick={onClose}
             aria-label={L(lang, { it: "Chiudi", en: "Close", es: "Cerrar", fr: "Fermer", ru: "Закрыть" })}
           >
             <span aria-hidden="true">×</span>
           </button>
-        </div>
-        <div className="pdm-body">
+        ) : (
+          <div className="pdm-head">
+            <div className="pdm-titlewrap">
+              <h2 className="pdm-title" id={titleId}>{title}</h2>
+              {subtitle && <div className="pdm-sub">{subtitle}</div>}
+            </div>
+            <button
+              type="button"
+              className="pdm-close"
+              data-modal-initial-focus
+              onClick={onClose}
+              aria-label={L(lang, { it: "Chiudi", en: "Close", es: "Cerrar", fr: "Fermer", ru: "Закрыть" })}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+        )}
+        <div className={`pdm-body${hideHead ? " pdm-body-flush" : ""}`}>
           {children}
           {/* Mercati soft (#SOFT-MARKETS): corners/cartellini/falli.
-              Framing esclusivo: STIMA DEL MODELLO — mai edge, mai value-bet claim. */}
+              Framing esclusivo: STIMA DEL MODELLO — mai edge, mai value-bet claim.
+              Soppresso quando la nuova scheda info li rende già come chip. */}
+          {!hideExtraMarkets && (
           <section className="pdm-soon" aria-label={L(lang, { it: "Mercati extra", en: "Extra markets", es: "Mercados extra", fr: "Marchés supplémentaires", ru: "Дополнительные рынки" })}>
             <div className="pdm-soon-head">
               <span className="pdm-soon-title">{L(lang, { it: "Mercati extra — Corner · Cartellini · Falli", en: "Extra markets — Corners · Cards · Fouls", es: "Mercados extra — Córners · Tarjetas · Faltas", fr: "Marchés extra — Corners · Cartons · Fautes", ru: "Доп. рынки — Угловые · Карточки · Фолы" })}</span>
@@ -214,6 +232,7 @@ export function PredictionDetailModal({
               </p>
             )}
           </section>
+          )}
         </div>
       </div>
     </div>,

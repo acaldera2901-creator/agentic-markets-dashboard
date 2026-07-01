@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import Link from "next/link";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
+import { MatchDetailSheet, type MdsData, type MdsGroup, type MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
   type PublicPlanKey,
@@ -4588,6 +4589,111 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   })();
   const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
 
+  // #CARD-REDESIGN-V2: dati risolti per la scheda info (MatchDetailSheet). Il modal
+  // si apre solo per card sbloccate (modalEnabled) → qui i dati sono sempre completi.
+  const mdsData: MdsData = (() => {
+    const fpq = (key: "HOME" | "DRAW" | "AWAY"): number | null => {
+      if (!fp) return null;
+      if (key === "DRAW") return fp.oddsDraw;
+      const k = normName(key === "HOME" ? p.home_team : p.away_team);
+      if (k && k === fp.homeKey) return fp.oddsHome;
+      if (k && k === fp.awayKey) return fp.oddsAway;
+      return null;
+    };
+    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    const groups: MdsGroup[] = [];
+
+    // Esito 1X2
+    const esito: Array<{ key: "HOME" | "DRAW" | "AWAY"; sel: string; prob: number }> = [
+      { key: "HOME", sel: p.home_team, prob: p.p_home },
+      { key: "DRAW", sel: pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" }), prob: p.p_draw },
+      { key: "AWAY", sel: p.away_team, prob: p.p_away },
+    ];
+    groups.push({
+      key: "esito", icon: "result", title: pick5(lang, { it: "Esito 1X2", en: "Match result", es: "Resultado 1X2", fr: "Résultat 1X2", ru: "Исход 1X2" }),
+      src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
+      chips: esito.map((o) => {
+        const q = fpq(o.key);
+        return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: p.best_selection === o.key };
+      }),
+    });
+
+    // Gol Over/Under (solo se FortunePlay quota i totali)
+    if (fp && fp.totalLine != null && (fp.totalOver != null || fp.totalUnder != null)) {
+      const line = fp.totalLine;
+      const findP = (side: string) => (e.extra_markets ?? []).find((x) => x.label && x.label.toLowerCase().includes(side) && x.label.includes(String(line)))?.p ?? null;
+      const overP = findP("over"), underP = findP("under");
+      const overVal = fp.totalOver != null && overP != null ? fpEdge(overP, fp.totalOver) : null;
+      const underVal = fp.totalUnder != null && underP != null ? fpEdge(underP, fp.totalUnder) : null;
+      const recOver = overP != null && underP != null ? overP >= underP : (overVal ?? -1) > (underVal ?? -1);
+      groups.push({
+        key: "gol", icon: "goal", title: pick5(lang, { it: "Gol", en: "Goals", es: "Goles", fr: "Buts", ru: "Голы" }),
+        meta: `${pick5(lang, { it: "linea", en: "line", es: "línea", fr: "ligne", ru: "линия" })} ${line}${e.goals_summary ? ` · ${pick5(lang, { it: "attesi", en: "exp.", es: "esp.", fr: "att.", ru: "ожид." })} ${e.goals_summary.expected_goals.toFixed(1)}` : ""}`,
+        src: { kind: "fp", label: "FortunePlay" },
+        chips: [
+          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: recOver },
+          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: !recOver },
+        ],
+      });
+    }
+
+    // Marcatore (anytime) — quote best book US
+    const gs = (e.goalscorer_markets ?? []).slice(0, 4);
+    if (gs.length) {
+      const topP = Math.max(...gs.map((x) => x.pScores));
+      groups.push({
+        key: "marcatore", icon: "boot", title: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }),
+        src: { kind: "us", label: pick5(lang, { it: "best · book US", en: "best · US book", es: "best · casa US", fr: "best · book US", ru: "best · US" }) },
+        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: x.pScores === topP && x.bestPrice != null })),
+        note: pick5(lang, { it: "Edge = modello vs book US (FortunePlay non quota i marcatori). La scommessa si piazza sulla partita.", en: "Edge = model vs US book (FortunePlay doesn't price scorers). The bet is placed on the match.", es: "Edge = modelo vs casa US (FortunePlay no cotiza goleadores). La apuesta se coloca en el partido.", fr: "Edge = modèle vs book US (FortunePlay ne cote pas les buteurs). Le pari se place sur le match.", ru: "Edge = модель против US-book (FortunePlay не котирует бомбардиров)." }),
+      });
+    }
+
+    // Soft: corner/cartellini/falli — solo stima
+    const sf = e.soft;
+    if (sf && (sf.corners || sf.cards || sf.fouls)) {
+      const chips: MdsChip[] = [];
+      if (sf.corners) chips.push({ id: "soft-corner", mkt: "Corner", sel: `Corner Over ${sf.corners.main_line}`, prob: pct(sf.corners.p_over), est: true });
+      if (sf.cards) chips.push({ id: "soft-cards", mkt: pick5(lang, { it: "Cartellini", en: "Cards", es: "Tarjetas", fr: "Cartons", ru: "Карточки" }), sel: `${pick5(lang, { it: "Cartellini", en: "Cards", es: "Tarjetas", fr: "Cartons", ru: "Карточки" })} Over ${sf.cards.main_line}`, prob: pct(sf.cards.p_over), est: true });
+      if (sf.fouls) chips.push({ id: "soft-fouls", mkt: pick5(lang, { it: "Falli", en: "Fouls", es: "Faltas", fr: "Fautes", ru: "Фолы" }), sel: `${pick5(lang, { it: "Falli", en: "Fouls", es: "Faltas", fr: "Fautes", ru: "Фолы" })} Over ${sf.fouls.main_line}`, prob: pct(sf.fouls.p_over), est: true });
+      groups.push({
+        key: "soft", icon: "flag", title: pick5(lang, { it: "Corner · Cartellini · Falli", en: "Corners · Cards · Fouls", es: "Córners · Tarjetas · Faltas", fr: "Corners · Cartons · Fautes", ru: "Угловые · Карточки · Фолы" }),
+        src: { kind: "est", label: pick5(lang, { it: "stima · Pro", en: "estimate · Pro", es: "estimación · Pro", fr: "estimation · Pro", ru: "оценка · Pro" }) },
+        chips,
+        note: pick5(lang, { it: "Mercati soft: solo stima del modello, senza quota né edge — non entrano nella quota combinata.", en: "Soft markets: model estimate only, no odds or edge — excluded from the combined odds.", es: "Mercados soft: solo estimación del modelo, sin cuota ni edge — fuera de la cuota combinada.", fr: "Marchés soft : estimation du modèle seulement, sans cote ni edge — hors cote combinée.", ru: "Soft-рынки: только оценка модели, без кэфа и edge — вне комбинированного кэфа." }),
+      });
+    }
+
+    return {
+      league: p.league_name || p.league,
+      when: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
+      home: p.home_team, away: p.away_team,
+      hero: {
+        flag: pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
+        pick: pickName ? (pickKey === "DRAW" ? pickName : `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`) : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" }),
+        read: `${pickProb != null ? pct(pickProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        confDots,
+        quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
+        quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
+        value: fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+      },
+      groups,
+      matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
+      labels: {
+        schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
+        quotaComb: pick5(lang, { it: "quota combinata", en: "combined odds", es: "cuota combinada", fr: "cote combinée", ru: "комбо кэф" }),
+        quotaOne: pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "кэф" }),
+        touch: pick5(lang, { it: "tocca i mercati", en: "tap the markets", es: "toca los mercados", fr: "touchez les marchés", ru: "выберите рынки" }),
+        apri: pick5(lang, { it: "Apri su FortunePlay", en: "Open on FortunePlay", es: "Abrir en FortunePlay", fr: "Ouvrir sur FortunePlay", ru: "Открыть на FortunePlay" }),
+        apriMulti: pick5(lang, { it: "Apri la multipla su FortunePlay", en: "Open the accumulator on FortunePlay", es: "Abrir la combinada en FortunePlay", fr: "Ouvrir le combiné sur FortunePlay", ru: "Открыть экспресс на FortunePlay" }),
+        disc: pick5(lang, { it: "Value indicativo del modello vs quota FortunePlay — non è garanzia di vincita. +18 · gioca responsabilmente.", en: "Indicative model value vs FortunePlay odds — not a guarantee of winning. 18+ · play responsibly.", es: "Value indicativo del modelo vs cuota FortunePlay — no garantiza ganancias. +18 · juega con responsabilidad.", fr: "Valeur indicative du modèle vs cote FortunePlay — aucune garantie de gain. 18+ · jouez responsable.", ru: "Ориентировочная ценность vs кэф FortunePlay — не гарантия выигрыша. 18+" }),
+        side: pick5(lang, { it: "Schedina composta lato BetRedge → il bottone apre la partita su FortunePlay.", en: "Betslip composed on BetRedge → the button opens the match on FortunePlay.", es: "Boleto compuesto en BetRedge → el botón abre el partido en FortunePlay.", fr: "Coupon composé sur BetRedge → le bouton ouvre le match sur FortunePlay.", ru: "Купон собран в BetRedge → кнопка открывает матч на FortunePlay." }),
+        selOne: pick5(lang, { it: "1 selezione", en: "1 selection", es: "1 selección", fr: "1 sélection", ru: "1 выбор" }),
+        selMany: pick5(lang, { it: "{n} selezioni", en: "{n} selections", es: "{n} selecciones", fr: "{n} sélections", ru: "{n} выборов" }),
+      },
+    };
+  })();
+
   // Detail modal: la card della griglia è una sintesi compatta; il click la
   // "ingrandisce" nella scheda-dettaglio completa. Locked/preview non aprono il
   // modal (locked → gate via overlay; preview → niente da rivelare).
@@ -4959,13 +5065,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         lang={lang}
         title={<>{p.home_team} <span className="pdm-v">v</span> {p.away_team}</>}
         subtitle={p.league_name || p.league}
-        soft={e.soft ?? null}
-        softLocked={e.soft_locked}
+        hideHead
+        hideExtraMarkets
       >
-        <div className="pdm-grid pred">
-          <div className="pdm-lead">{readoutNode}</div>
-          <div className="pdm-detail">{bodyNode}</div>
-        </div>
+        <MatchDetailSheet data={mdsData} />
       </PredictionDetailModal>
     </>
   );
