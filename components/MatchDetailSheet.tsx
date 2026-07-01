@@ -49,6 +49,9 @@ export type MdsData = {
   matchUrl: string;
   fpMatchId?: number | null;
   moreLabel?: string;
+  // #MULTIBOOK-1: book disponibili per questa partita (deep-link per-book con stag).
+  // Se >1 la bet-bar mostra una CTA per book ("Apri su {book}"); scelta del bookmaker.
+  books?: { name: string; matchUrl: string }[];
   labels: {
     schedina: string;
     quotaComb: string;
@@ -56,6 +59,7 @@ export type MdsData = {
     touch: string;
     apri: string;
     apriMulti: string;
+    openBook?: string; // "Apri su {book}" (multi-book)
     disc: string;
     side: string;
     selOne: string;
@@ -240,15 +244,33 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
               {legs.length > 0 && <span className="mds-chevw"><Ico id="chev" /></span>}
             </span>
           </button>
-          <a
-            className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-            href={legs.length ? data.matchUrl : undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-disabled={legs.length === 0}
-          >
-            {ctaLabel}<Ico id="arrow" />
-          </a>
+          {/* #MULTIBOOK-1: una CTA per book se >1 (scelta bookmaker), altrimenti singola */}
+          {data.books && data.books.length > 1 ? (
+            <div className="mds-ctas">
+              {data.books.map((b) => (
+                <a
+                  key={b.name}
+                  className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
+                  href={legs.length ? b.matchUrl : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-disabled={legs.length === 0}
+                >
+                  {(data.labels.openBook ?? "Apri su {book}").replace("{book}", b.name)}<Ico id="arrow" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <a
+              className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
+              href={legs.length ? data.matchUrl : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-disabled={legs.length === 0}
+            >
+              {ctaLabel}<Ico id="arrow" />
+            </a>
+          )}
         </div>
         <p className="mds-disc">{data.labels.disc}</p>
       </div>
