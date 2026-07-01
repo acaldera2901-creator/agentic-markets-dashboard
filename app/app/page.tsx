@@ -5195,6 +5195,58 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
   })();
   const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
 
+  // #CARD-REDESIGN-V2: dati scheda info tennis (match-winner 2 vie, niente draw/gol/soft).
+  const mdsData: MdsData = (() => {
+    const fpq = (player: "P1" | "P2"): number | null => {
+      if (!fp) return null;
+      const k = canonicalPlayerKey(player === "P1" ? m.player1 : m.player2);
+      if (k && k === fp.homeKey) return fp.oddsHome;
+      if (k && k === fp.awayKey) return fp.oddsAway;
+      return null;
+    };
+    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    const esito: Array<{ key: "P1" | "P2"; sel: string; prob: number }> = [
+      { key: "P1", sel: m.player1, prob: m.p1 },
+      { key: "P2", sel: m.player2, prob: m.p2 },
+    ];
+    const groups: MdsGroup[] = [{
+      key: "esito", icon: "result", title: pick5(lang, { it: "Vincente match", en: "Match winner", es: "Ganador del partido", fr: "Vainqueur du match", ru: "Победитель матча" }),
+      src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
+      chips: esito.map((o) => {
+        const q = fpq(o.key);
+        return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: pickPlayer === o.key };
+      }),
+    }];
+    return {
+      league: m.tournament,
+      when: fmtKickoff(m.scheduled, lang, tz),
+      home: m.player1, away: m.player2,
+      hero: {
+        flag: pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
+        pick: pickName ? `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}` : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" }),
+        read: `${pickProb != null ? pct(pickProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        confDots,
+        quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
+        quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
+        value: fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+      },
+      groups,
+      matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
+      labels: {
+        schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
+        quotaComb: pick5(lang, { it: "quota combinata", en: "combined odds", es: "cuota combinada", fr: "cote combinée", ru: "комбо кэф" }),
+        quotaOne: pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "кэф" }),
+        touch: pick5(lang, { it: "tocca i mercati", en: "tap the markets", es: "toca los mercados", fr: "touchez les marchés", ru: "выберите рынки" }),
+        apri: pick5(lang, { it: "Apri su FortunePlay", en: "Open on FortunePlay", es: "Abrir en FortunePlay", fr: "Ouvrir sur FortunePlay", ru: "Открыть на FortunePlay" }),
+        apriMulti: pick5(lang, { it: "Apri la multipla su FortunePlay", en: "Open the accumulator on FortunePlay", es: "Abrir la combinada en FortunePlay", fr: "Ouvrir le combiné sur FortunePlay", ru: "Открыть экспресс на FortunePlay" }),
+        disc: pick5(lang, { it: "Value indicativo del modello vs quota FortunePlay — non è garanzia di vincita. +18 · gioca responsabilmente.", en: "Indicative model value vs FortunePlay odds — not a guarantee of winning. 18+ · play responsibly.", es: "Value indicativo del modelo vs cuota FortunePlay — no garantiza ganancias. +18 · juega con responsabilidad.", fr: "Valeur indicative du modèle vs cote FortunePlay — aucune garantie de gain. 18+ · jouez responsable.", ru: "Ориентировочная ценность vs кэф FortunePlay — не гарантия выигрыша. 18+" }),
+        side: pick5(lang, { it: "Schedina composta lato BetRedge → il bottone apre la partita su FortunePlay.", en: "Betslip composed on BetRedge → the button opens the match on FortunePlay.", es: "Boleto compuesto en BetRedge → el botón abre el partido en FortunePlay.", fr: "Coupon composé sur BetRedge → le bouton ouvre le match sur FortunePlay.", ru: "Купон собран в BetRedge → кнопка открывает матч на FortunePlay." }),
+        selOne: pick5(lang, { it: "1 selezione", en: "1 selection", es: "1 selección", fr: "1 sélection", ru: "1 выбор" }),
+        selMany: pick5(lang, { it: "{n} selezioni", en: "{n} selections", es: "{n} selecciones", fr: "{n} sélections", ru: "{n} выборов" }),
+      },
+    };
+  })();
+
   // Detail modal (stesso shell del calcio). Locked/preview restano inline.
   const modalEnabled = !m.locked && !isPreview;
   const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
@@ -5447,11 +5499,10 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
         lang={lang}
         title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
         subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
+        hideHead
+        hideExtraMarkets
       >
-        <div className="pdm-grid pred tennis">
-          <div className="pdm-lead">{readoutNode}</div>
-          <div className="pdm-detail">{bodyNode}</div>
-        </div>
+        <MatchDetailSheet data={mdsData} />
       </PredictionDetailModal>
     </>
   );
