@@ -20,12 +20,12 @@ type AuthState =
   | { status: "anonymous" }
   | { status: "authed"; identifier: string; plan: string; name: string | null };
 
-// Mirror the home topbar pill (app/page.tsx `.am-acct`): unlocked plan → PRO,
-// free → FREE, everything else (pending_payment, raw "premium" not yet mapped)
-// → SETUP. Keeps the WC chrome label identical to the main site instead of
-// echoing the raw plan string (e.g. "PREMIUM").
+// Mirror the home topbar pill (app/page.tsx `.am-acct`): premium/admin → PRO,
+// base → BASE, free → FREE, everything else (pending_payment, …) → SETUP. Keeps
+// the WC chrome label identical to the main site (base was wrongly shown as PRO).
 function planPillLabel(plan: string): string {
-  if (["base", "premium", "admin_full"].includes(plan)) return "PRO";
+  if (["premium", "admin_full"].includes(plan)) return "PRO";
+  if (plan === "base") return "BASE";
   if (plan === "free") return "FREE";
   return "SETUP";
 }
