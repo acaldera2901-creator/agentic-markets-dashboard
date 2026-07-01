@@ -19,6 +19,12 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+// #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
+import { teamPairKey } from "@/lib/team-pair-key";
+import { fpEdge } from "@/lib/fortuneplay-live";
+import { normName } from "@/lib/odds-api";
+import { canonicalPlayerKey } from "@/lib/tennis-names";
+import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LiveChat } from "@/components/LiveChat";
@@ -2157,6 +2163,7 @@ function FreePaywall({ count, hitRate, lang, onUpgrade }: {
 
 function SportsbookBoard({
   predictions,
+  fpOdds,
   tennisMatches,
   onSelect,
   onBetNow,
@@ -2168,6 +2175,7 @@ function SportsbookBoard({
   hitRate,
 }: {
   predictions: Prediction[];
+  fpOdds: Record<string, FpOddsEntry>;
   tennisMatches: TennisMatch[];
   onSelect: (selection: SlipSelection) => void;
   onBetNow?: () => void;
@@ -2386,7 +2394,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const card = (
-                        <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
+                        <PredictionCard key={p.match_id} p={p} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
                       if (placed < footballFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
@@ -2446,7 +2454,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
+                        <TennisMatchCard key={m.id} m={m} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
                       if (placed < tennisFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
@@ -4476,7 +4484,7 @@ function GoalscorerBlock({
   );
 }
 
-function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -4566,6 +4574,19 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
     : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
+
+  // #FORTUNEPLAY-LIVE-ODDS-1: quota live FortunePlay allineata al LATO della pick
+  // (per nome normalizzato, non per posizione: home/away FP ≠ per forza il nostro)
+  // + value del modello vs quota FP. Solo card sbloccate/non-preview.
+  const fpPickOdds: number | null = (() => {
+    if (!fp || isPreview || p.locked) return null;
+    if (pickKey === "DRAW") return fp.oddsDraw;
+    const k = normName(pickKey === "HOME" ? p.home_team : p.away_team);
+    if (k && k === fp.homeKey) return fp.oddsHome;
+    if (k && k === fp.awayKey) return fp.oddsAway;
+    return null;
+  })();
+  const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
 
   // Detail modal: la card della griglia è una sintesi compatta; il click la
   // "ingrandisce" nella scheda-dettaglio completa. Locked/preview non aprono il
@@ -4664,6 +4685,17 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
             </span>
           )}
           {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
+          {fpPickOdds != null && (
+            <div className="fp-odds-row">
+              <span className="fp-odds-label">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" })}</span>
+              <span className="fp-odds-val">{fpPickOdds.toFixed(2)}</span>
+              {fpValue != null && fpValue > 0 && (
+                <span className="fp-edge" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non è una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du modèle par rapport à la cote FortunePlay. Aucune garantie de gain. 18+, jouez de manière responsable.", ru: "Ориентировочная ценность модели относительно коэффициента FortunePlay. Не гарантия выигрыша. 18+, играйте ответственно." })}>
+                  value {(fpValue * 100).toFixed(1)}%
+                </span>
+              )}
+            </div>
+          )}
         </>
       )}
     </>
@@ -4708,7 +4740,7 @@ function PredictionCard({ p, onSelect, onBetNow, isPreview, isPremium, onGate }:
           {!isPreview && onBetNow && (isFinished ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : (
-            <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
+            <button className="betbtn" onClick={fp?.matchUrl ? () => window.open(fp.matchUrl, "_blank", "noopener,noreferrer") : onBetNow}>{t.bet_now}</button>
           ))}
           <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
           {isPreview || p.locked ? (
@@ -4948,7 +4980,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 };
 
 
-function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -5049,6 +5081,17 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
 
+  // #FORTUNEPLAY-LIVE-ODDS-1: quota live FortunePlay allineata al giocatore della
+  // pick (per nome canonico) + value. Tennis = 2 vie, niente draw.
+  const fpPickOdds: number | null = (() => {
+    if (!fp || isPreview || m.locked) return null;
+    const k = canonicalPlayerKey(pickPlayer === "P1" ? m.player1 : m.player2);
+    if (k && k === fp.homeKey) return fp.oddsHome;
+    if (k && k === fp.awayKey) return fp.oddsAway;
+    return null;
+  })();
+  const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
+
   // Detail modal (stesso shell del calcio). Locked/preview restano inline.
   const modalEnabled = !m.locked && !isPreview;
   const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
@@ -5140,6 +5183,17 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
             </span>
           )}
           {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
+          {fpPickOdds != null && (
+            <div className="fp-odds-row">
+              <span className="fp-odds-label">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" })}</span>
+              <span className="fp-odds-val">{fpPickOdds.toFixed(2)}</span>
+              {fpValue != null && fpValue > 0 && (
+                <span className="fp-edge" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non è una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du modèle par rapport à la cote FortunePlay. Aucune garantie de gain. 18+, jouez de manière responsable.", ru: "Ориентировочная ценность модели относительно коэффициента FortunePlay. Не гарантия выигрыша. 18+, играйте ответственно." })}>
+                  value {(fpValue * 100).toFixed(1)}%
+                </span>
+              )}
+            </div>
+          )}
         </>
       )}
     </>
@@ -5175,7 +5229,7 @@ function TennisMatchCard({ m, onSelect, onBetNow, isPreview, isPremium, onGate }
           {!isPreview && onBetNow && (liveIsFinal ? (
             <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
           ) : (
-            <button className="betbtn" onClick={onBetNow}>{t.bet_now}</button>
+            <button className="betbtn" onClick={fp?.matchUrl ? () => window.open(fp.matchUrl, "_blank", "noopener,noreferrer") : onBetNow}>{t.bet_now}</button>
           ))}
           <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
           <span className="gate">Pro</span>
@@ -7094,6 +7148,7 @@ function FeaturedEdge({
 
 function UnifiedBetsTab({
   predictions,
+  fpOdds,
   tennisMatches,
   history,
   historyStats,
@@ -7112,6 +7167,7 @@ function UnifiedBetsTab({
   hitRate,
 }: {
   predictions: Prediction[];
+  fpOdds: Record<string, FpOddsEntry>;
   tennisMatches: TennisMatch[];
   history: HistoryMatch[];
   historyStats: HistoryStats | null;
@@ -7168,6 +7224,7 @@ function UnifiedBetsTab({
       >
         <SportsbookBoard
           predictions={predictions}
+          fpOdds={fpOdds}
           tennisMatches={tennisMatches}
           onSelect={onSelect}
           onBetNow={onBetNow}
@@ -7441,6 +7498,8 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  // #FORTUNEPLAY-LIVE-ODDS-1: quote live FortunePlay indicizzate per team_pair_key.
+  const [fpOdds, setFpOdds] = useState<Record<string, FpOddsEntry>>({});
   const [tennisMatches, setTennisMatches] = useState<TennisMatch[]>([]);
   const [tennisIsPlaceholder, setTennisIsPlaceholder] = useState(false);
   const [tennisSummary, setTennisSummary] = useState<TennisSummary | null>(null);
@@ -7762,6 +7821,15 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // #FORTUNEPLAY-LIVE-ODDS-1: quote live FortunePlay (server fa 1 fetch + TTL-cache
+  // 30s; qui poll ~30s). Degrada in silenzio: su errore le card restano com'oggi.
+  const fetchFpOdds = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/fortuneplay-odds", { credentials: "same-origin" });
+      if (resp.ok) { const d = await resp.json(); setFpOdds(d.odds ?? {}); }
+    } catch { /* degrada al landing */ }
+  }, []);
+
   const fetchTennis = useCallback(async () => {
     // No access gate here: API returns per-card locked projection (Task 7)
     setTennisLoading(true);
@@ -7844,6 +7912,7 @@ export default function Dashboard() {
     queueMicrotask(() => {
       void fetchData();
       void fetchPredictions();
+      void fetchFpOdds();
       void fetchTennis();
       void fetchHistory();
       void fetchHistoryV2();
@@ -7852,11 +7921,12 @@ export default function Dashboard() {
     });
     const dataInt = setInterval(fetchData, 30_000);
     const predInt = setInterval(fetchPredictions, 3_600_000);
+    const fpInt = setInterval(fetchFpOdds, 30_000);
     const tennisInt = setInterval(fetchTennis, 120_000);
     const liveInt = setInterval(fetchLive, 60_000);
     const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
-    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
-  }, [fetchData, fetchPredictions, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
+    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
+  }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
 
   // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
   // session, the desk is walled — the auth modal is force-shown and locked.
@@ -8132,6 +8202,7 @@ export default function Dashboard() {
           {tab === "bets" && (
             <UnifiedBetsTab
               predictions={predictions}
+              fpOdds={fpOdds}
               tennisMatches={tennisMatches}
               history={history}
               historyStats={historyStats}

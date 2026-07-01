@@ -5674,6 +5674,16 @@ button:disabled {
 .pred .conf .dot.on { background: var(--am-positive); }
 .pred .conf .conf-txt { color: var(--am-muted); font-weight: 600; }
 
+/* #FORTUNEPLAY-LIVE-ODDS-1: riga quota live FortunePlay + value (sotto il readout) */
+.pred .fp-odds-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 11px; color: var(--am-muted); }
+.pred .fp-odds-row .fp-odds-label { font-size: 10px; letter-spacing: 0.04em; color: var(--am-muted-2); text-transform: uppercase; }
+.pred .fp-odds-row .fp-odds-val { font-weight: 700; color: var(--am-text); font-variant-numeric: tabular-nums; }
+.pred .fp-odds-row .fp-edge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.02em; padding: 1px 7px; border-radius: 999px;
+  color: var(--am-coral); background: var(--am-coral-dim); border: 1px solid var(--am-coral-b);
+  cursor: help;
+}
+
 /* WHY — prominent prose readout + expandable analysis */
 .pred .why-box {
   background: var(--am-inset); border: 1px solid var(--am-line);
