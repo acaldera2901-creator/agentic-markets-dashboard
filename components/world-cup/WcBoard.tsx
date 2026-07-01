@@ -757,7 +757,10 @@ export default function WcBoard() {
         <p className="eyebrow">World Cup board locked</p>
         <h3>Sign in to see the World Cup predictions</h3>
         <span>Picks, probabilities and edge stay hidden until you sign in and activate a plan.</span>
-        <button onClick={() => router.push("/")}>Sign in / Choose plan</button>
+        {/* Anonimo → apri il popup di iscrizione sul desk (stessa convenzione della
+            chrome WC / SiteTopbar): /app?auth=register forza il login-wall sul tab
+            "Registrati". Prima puntava a "/" (home) che NON apre nessun popup. */}
+        <button onClick={() => router.push("/app?auth=register")}>Sign in / Choose plan</button>
       </div>
       <div className="locked-content">{grid}</div>
     </div>
