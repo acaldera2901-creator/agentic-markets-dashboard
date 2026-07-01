@@ -82,18 +82,20 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
   return (
     <div className="mds">
       <svg className="mds-defs" aria-hidden="true">
+        {/* Icon set su misura — Maven Studio (art-director), 2026-07-01. Line-style
+            24-grid, stroke ereditato da .mds-ico; star piena (badge PICK). */}
         <defs>
-          <symbol id="mds-trophy" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" /><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" /><path d="M9.5 15h5M12 13v4M9 20h6M10 17h4" /></symbol>
-          <symbol id="mds-result" viewBox="0 0 24 24"><path d="M6 3v18" /><path d="M6 4h11l-2.5 3.5L17 11H6" /></symbol>
-          <symbol id="mds-goal" viewBox="0 0 24 24"><path d="M3 20V8h18v12" /><path d="M3 13h18M8.5 8v12M15.5 8v12" /></symbol>
-          <symbol id="mds-boot" viewBox="0 0 24 24"><path d="M4 6h5l2 5 6 1.2A3 3 0 0 1 20 15v3H4Z" /><path d="M4 18h16" /></symbol>
-          <symbol id="mds-flag" viewBox="0 0 24 24"><path d="M6 21V4" /><path d="M6 5c3.5-2 6.5 2 10 0v7c-3.5 2-6.5-2-10 0" /></symbol>
-          <symbol id="mds-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
-          <symbol id="mds-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
-          <symbol id="mds-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
-          <symbol id="mds-star" viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9.3l-4 4 1 6-5-2.8L7 19.3l1-6-4-4 5.5-.8Z" fill="currentColor" stroke="none" /></symbol>
-          <symbol id="mds-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></symbol>
-          <symbol id="mds-ticket" viewBox="0 0 24 24"><path d="M4 7h16v4a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4Z" /><path d="M13 7v13" /></symbol>
+          <symbol id="mds-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" /><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" /><path d="M12 14v3M9 20h6M10 20a2 2 0 0 1 4 0" /></symbol>
+          <symbol id="mds-result" viewBox="0 0 24 24"><path d="M6 3v18" /><path d="M6 4h12v9H6" /><path d="M6 8.5h12M12 4v9" /></symbol>
+          <symbol id="mds-goal" viewBox="0 0 24 24"><path d="M4 6h16v12H4Z" /><path d="M4 10h16M4 14h16M8 6v12M12 6v12M16 6v12" strokeWidth="1" /><circle cx="12" cy="14" r="2.2" /></symbol>
+          <symbol id="mds-boot" viewBox="0 0 24 24"><path d="M3 8h8l3 3 5 1a3 3 0 0 1 3 3v2H5a2 2 0 0 1-2-2V8Z" /><path d="M6 20v1M10 20v1M14 20v1M18 20v1" /></symbol>
+          <symbol id="mds-flag" viewBox="0 0 24 24"><path d="M6 3v18" /><path d="M6 4h11l-3 3.5L17 11H6" /></symbol>
+          <symbol id="mds-ticket" viewBox="0 0 24 24"><path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4V7Z" /><path d="M10 6v2M10 11v2M10 16v2" strokeDasharray="0.1 3.2" /></symbol>
+          <symbol id="mds-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 6.5" /></symbol>
+          <symbol id="mds-x" viewBox="0 0 24 24"><path d="M6 6 18 18M18 6 6 18" /></symbol>
+          <symbol id="mds-chev" viewBox="0 0 24 24"><path d="M6 9.5 12 15.5 18 9.5" /></symbol>
+          <symbol id="mds-star" viewBox="0 0 24 24"><path d="M12 3.2l2.55 5.36 5.7.72-4.2 3.98 1.08 5.74L12 16.2l-5.13 2.8 1.08-5.74-4.2-3.98 5.7-.72Z" fill="currentColor" stroke="none" /></symbol>
+          <symbol id="mds-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6.5 19 12 13 17.5" /></symbol>
         </defs>
       </svg>
 
