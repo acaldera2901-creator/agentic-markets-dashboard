@@ -21,7 +21,7 @@
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/cron/crm",
+      "path": "/api/cron/crm?send=1",
       "schedule": "0 7 * * *"
     }
   ]
