@@ -7876,6 +7876,11 @@ button:disabled {
 .mds-chevw { width: 11px; height: 11px; color: var(--am-muted-2); }
 .mds-info.open .mds-chevw { transform: rotate(180deg); }
 .mds-cta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 680; font-size: 13px; color: #04140A; background: var(--am-coral); border-radius: 11px; padding: 11px 15px; text-decoration: none; transition: filter .15s; }
+/* #MULTIBOOK-1: una CTA per book (scelta bookmaker) — impilate, compatte */
+.mds-ctas { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.mds-ctas .mds-cta { font-size: 12px; padding: 8px 13px; justify-content: center; }
+.mds-ctas .mds-cta:nth-child(2) { background: transparent; color: var(--am-coral); border: 1px solid var(--am-coral-b); }
+[data-theme="light"] .mds-ctas .mds-cta:nth-child(2) { color: var(--am-coral); }
 .mds-cta:hover { filter: brightness(1.08); }
 .mds-cta.disabled { opacity: .4; pointer-events: none; }
 .mds-cta .mds-ico { width: 14px; height: 14px; }

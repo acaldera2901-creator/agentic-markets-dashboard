@@ -4695,6 +4695,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
       fpMatchId: fp?.id ?? null,
+      books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
       moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
@@ -4703,6 +4704,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         touch: pick5(lang, { it: "tocca i mercati", en: "tap the markets", es: "toca los mercados", fr: "touchez les marchés", ru: "выберите рынки" }),
         apri: pick5(lang, { it: "Apri su FortunePlay", en: "Open on FortunePlay", es: "Abrir en FortunePlay", fr: "Ouvrir sur FortunePlay", ru: "Открыть на FortunePlay" }),
         apriMulti: pick5(lang, { it: "Apri la multipla su FortunePlay", en: "Open the accumulator on FortunePlay", es: "Abrir la combinada en FortunePlay", fr: "Ouvrir le combiné sur FortunePlay", ru: "Открыть экспресс на FortunePlay" }),
+        openBook: pick5(lang, { it: "Apri su {book}", en: "Open on {book}", es: "Abrir en {book}", fr: "Ouvrir sur {book}", ru: "Открыть на {book}" }),
         disc: pick5(lang, { it: "Value indicativo del modello vs quota FortunePlay — non è garanzia di vincita. +18 · gioca responsabilmente.", en: "Indicative model value vs FortunePlay odds — not a guarantee of winning. 18+ · play responsibly.", es: "Value indicativo del modelo vs cuota FortunePlay — no garantiza ganancias. +18 · juega con responsabilidad.", fr: "Valeur indicative du modèle vs cote FortunePlay — aucune garantie de gain. 18+ · jouez responsable.", ru: "Ориентировочная ценность vs кэф FortunePlay — не гарантия выигрыша. 18+" }),
         side: pick5(lang, { it: "Schedina composta lato BetRedge → il bottone apre la partita su FortunePlay.", en: "Betslip composed on BetRedge → the button opens the match on FortunePlay.", es: "Boleto compuesto en BetRedge → el botón abre el partido en FortunePlay.", fr: "Coupon composé sur BetRedge → le bouton ouvre le match sur FortunePlay.", ru: "Купон собран в BetRedge → кнопка открывает матч на FortunePlay." }),
         selOne: pick5(lang, { it: "1 selezione", en: "1 selection", es: "1 selección", fr: "1 sélection", ru: "1 выбор" }),
@@ -5229,6 +5231,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
       fpMatchId: fp?.id ?? null,
+      books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
       moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
@@ -5237,6 +5240,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
         touch: pick5(lang, { it: "tocca i mercati", en: "tap the markets", es: "toca los mercados", fr: "touchez les marchés", ru: "выберите рынки" }),
         apri: pick5(lang, { it: "Apri su FortunePlay", en: "Open on FortunePlay", es: "Abrir en FortunePlay", fr: "Ouvrir sur FortunePlay", ru: "Открыть на FortunePlay" }),
         apriMulti: pick5(lang, { it: "Apri la multipla su FortunePlay", en: "Open the accumulator on FortunePlay", es: "Abrir la combinada en FortunePlay", fr: "Ouvrir le combiné sur FortunePlay", ru: "Открыть экспресс на FortunePlay" }),
+        openBook: pick5(lang, { it: "Apri su {book}", en: "Open on {book}", es: "Abrir en {book}", fr: "Ouvrir sur {book}", ru: "Открыть на {book}" }),
         disc: pick5(lang, { it: "Value indicativo del modello vs quota FortunePlay — non è garanzia di vincita. +18 · gioca responsabilmente.", en: "Indicative model value vs FortunePlay odds — not a guarantee of winning. 18+ · play responsibly.", es: "Value indicativo del modelo vs cuota FortunePlay — no garantiza ganancias. +18 · juega con responsabilidad.", fr: "Valeur indicative du modèle vs cote FortunePlay — aucune garantie de gain. 18+ · jouez responsable.", ru: "Ориентировочная ценность vs кэф FortunePlay — не гарантия выигрыша. 18+" }),
         side: pick5(lang, { it: "Schedina composta lato BetRedge → il bottone apre la partita su FortunePlay.", en: "Betslip composed on BetRedge → the button opens the match on FortunePlay.", es: "Boleto compuesto en BetRedge → el botón abre el partido en FortunePlay.", fr: "Coupon composé sur BetRedge → le bouton ouvre le match sur FortunePlay.", ru: "Купон собран в BetRedge → кнопка открывает матч на FortunePlay." }),
         selOne: pick5(lang, { it: "1 selezione", en: "1 selection", es: "1 selección", fr: "1 sélection", ru: "1 выбор" }),
