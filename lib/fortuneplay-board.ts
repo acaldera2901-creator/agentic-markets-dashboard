@@ -2,8 +2,7 @@
 // Degradazione pulita: senza slug/id validi → matchUrl = landing affiliate garantito
 // (mediaroosters), prefilled=false. Nessuna card regredisce mai.
 import type { FpMatch } from "./fortuneplay-live";
-// buildFortuneplayMatchUrl (lib/fortuneplay-url.ts) resta pronto per quando FortunePlay
-// fornirà il formato deep-link ufficiale; oggi non usato (vedi nota #FORTUNEPLAY-DEEPLINK-404).
+import { buildFortuneplayMatchUrl } from "./fortuneplay-url";
 
 export type FpOddsEntry = {
   id: number;
@@ -23,16 +22,15 @@ export function boardToResponse(
   map: Map<string, FpMatch>,
   cfg: { baseUrl: string; locale: string; code?: string; landingUrl: string }
 ): Record<string, FpOddsEntry> {
-  // #FORTUNEPLAY-DEEPLINK-404: il deep-link pagina-partita NON è costruibile dal
-  // feed pubblico — FortunePlay usa uno slug canonico (es. "...-m-<id>") aggiunto
-  // dal frontend, assente da lista E dettaglio API → `/it/sports/{sport}/{slug}-{id}`
-  // costruito dallo slug del feed dà 404 (verificato 2026-07-01, anche con segmento
-  // sport). Finché FortunePlay non fornisce il formato ufficiale / un betslip-link
-  // operatore, la CTA punta al landing affiliate (mediaroosters): affidabile +
-  // attribuzione garantita. Le quote/mercati restano (via API per-id, indipendenti
-  // dalla URL web). buildFortuneplayMatchUrl resta pronto per quando avremo il formato.
+  // #FORTUNEPLAY-DEEPLINK-0701: deep-link pagina-partita VERIFICATO costruibile dal
+  // feed → {baseUrl}/{locale}/sports/{sport}/{slug}-m-{id} (segmento sport + token
+  // fisso "-m", verificato calcio/tennis M+W). Fallback landing se manca slug/id/sport.
   const out: Record<string, FpOddsEntry> = {};
   for (const [key, m] of map) {
+    const deep =
+      m.slug && m.id && m.sport
+        ? buildFortuneplayMatchUrl({ baseUrl: cfg.baseUrl, locale: cfg.locale, sport: m.sport, slug: m.slug, id: m.id, code: cfg.code })
+        : null;
     out[key] = {
       id: m.id,
       homeKey: m.homeKey,
@@ -43,8 +41,8 @@ export function boardToResponse(
       totalLine: m.totalLine,
       totalOver: m.totalOver,
       totalUnder: m.totalUnder,
-      matchUrl: cfg.landingUrl,
-      prefilled: false,
+      matchUrl: deep ?? cfg.landingUrl,
+      prefilled: Boolean(deep),
     };
   }
   return out;
