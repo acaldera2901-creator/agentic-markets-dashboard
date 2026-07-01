@@ -15,7 +15,7 @@ export default function PrivacyPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: May 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: July 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">5. Data Sharing</h2>
           <p className="text-xs leading-relaxed">
-            We do not sell personal data. We use Supabase (EU-hosted) as our database provider. Vercel (US-based) hosts the application; their DPA applies. No other third parties receive your personal data.
+            We do not sell personal data. We use Supabase (EU-hosted) as our database provider. Vercel (US-based) hosts the application; their DPA applies. We use Resend, Inc. (US-based) to deliver account and marketing emails, as our processor under a Data Processing Agreement, with EU-US transfers covered by Standard Contractual Clauses and/or the EU-US Data Privacy Framework. No other third parties receive your personal data.
           </p>
         </section>
 
@@ -93,7 +93,23 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">10. Changes</h2>
+          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">10. Direct Marketing (CRM &amp; Email)</h2>
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Purpose.</strong> We send marketing communications about BetRedge and Maven Agency (product news, content, offers and promotions) by email through our CRM.
+          </p>
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Legal basis.</strong> For prospects (free users who have never purchased) we rely on your explicit consent (Art. 6(1)(a) GDPR), collected via an unticked opt-in checkbox at sign-up. For current and former clients we rely on the &quot;soft opt-in&quot; for similar services (Art. 6(1)(f) GDPR and Art. 130(4) of the Italian Privacy Code), with a free right to object at any time.
+          </p>
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Email processor &amp; transfers.</strong> Marketing and account emails are delivered through Resend, Inc. (USA), acting as our processor under a Data Processing Agreement (Art. 28 GDPR); US transfers are covered by Standard Contractual Clauses (Art. 46) and/or the EU-US Data Privacy Framework, with supplementary measures.
+          </p>
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Retention &amp; your choices.</strong> We keep your email in the marketing list until you withdraw consent or object; consent metadata (timestamp, text, version) is retained as proof of consent. You can withdraw consent or object at any time via the one-click unsubscribe link in every email, or by emailing <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a> — free of charge and without affecting your use of the service.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">11. Changes</h2>
           <p className="text-xs leading-relaxed">
             We may update this policy periodically. Continued use of the platform after changes constitutes acceptance of the updated policy.
           </p>

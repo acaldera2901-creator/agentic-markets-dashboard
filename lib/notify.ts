@@ -30,6 +30,7 @@ export async function sendTransactional(opts: {
   text: string;
   from?: string;
   replyTo?: string;
+  headers?: Record<string, string>;
   meta?: Record<string, unknown>;
   throwOnError?: boolean;
 }): Promise<{ sent: boolean; error?: string }> {
@@ -44,6 +45,7 @@ export async function sendTransactional(opts: {
       text: opts.text,
       from: opts.from,
       replyTo: opts.replyTo,
+      headers: opts.headers,
     });
     sent = true;
   } catch (e) {

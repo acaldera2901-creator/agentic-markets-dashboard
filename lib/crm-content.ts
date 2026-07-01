@@ -2,6 +2,7 @@
 // Touchpoint email del CRM (#CRM-LIFECYCLE). Copy bilingue, tono doc.
 import type { Touchpoint } from "./crm";
 import { unsubToken } from "./crm-unsub";
+import { brandedShell, brandCta } from "./email";
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://betredge.com").replace(/\/$/, "");
 
@@ -20,18 +21,8 @@ function footer(identifier: string, lang: "it" | "en"): string {
     : "BetRedge is a statistical analysis and sports information service, not a gambling operator. 18+. Gambling can be addictive. Play responsibly.";
   const unl = it ? "Disiscriviti" : "Unsubscribe";
   const idline = [co, addr, vat ? `P.IVA ${vat}` : ""].filter(Boolean).join(" · ");
-  return `<hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0 12px">
-  <p style="font-size:11px;color:#94a3b8;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#94a3b8;text-decoration:underline">${unl}</a><br>${disc}</p>`;
-}
-
-function shell(bodyHtml: string): string {
-  return `<div style="font-family:system-ui,sans-serif;max-width:440px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
-  ${bodyHtml}
-</div>`;
-}
-function cta(label: string, href: string): string {
-  return `<a href="${href}" style="display:inline-block;margin-top:14px;padding:11px 20px;border-radius:8px;background:#23A559;color:#fff;text-decoration:none;font-size:14px;font-weight:600">${label}</a>`;
+  // Footer legale renderizzato nell'area footer scura del brandedShell.
+  return `<p style="font-size:11px;color:#8b98a4;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#8b98a4;text-decoration:underline">${unl}</a><br>${disc}</p>`;
 }
 
 type CrmTouchpoint = Touchpoint & { subject: { it: string; en: string }; body: { it: string; en: string } };
@@ -76,7 +67,7 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     body: { it: "Ultimo richiamo prima di tornare al flusso Free. Riattiva per non perdere lo storico.", en: "Last call before returning to the Free flow. Reactivate to keep your history." } },
 ];
 
-export function renderCrm(key: string, lang: "it" | "en", identifier: string): { subject: string; html: string; text: string } | null {
+export function renderCrm(key: string, lang: "it" | "en", identifier: string): { subject: string; html: string; text: string; unsubUrl: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
   const href = `${SITE}/app?tab=plans&crm=${encodeURIComponent(t.key)}`;
@@ -84,9 +75,11 @@ export function renderCrm(key: string, lang: "it" | "en", identifier: string): {
   const body = t.body[lang];
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
   const unl = lang === "it" ? "Disiscriviti" : "Unsubscribe";
+  const inner = `<p style="font-size:14px;line-height:1.6;margin:0;color:#cdd6dd;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">${body}</p>${brandCta(label, href)}`;
   return {
     subject: t.subject[lang],
-    html: shell(`<p style="font-size:14px;line-height:1.5;margin:0">${body}</p>${cta(label, href)}${footer(identifier, lang)}`),
+    html: brandedShell(inner, { lang, footerHtml: footer(identifier, lang) }),
     text: `${body}\n\n${label}: ${href}\n\n— ${unl}: ${unsub}`,
+    unsubUrl: unsub,
   };
 }
