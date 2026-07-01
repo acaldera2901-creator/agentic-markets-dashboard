@@ -10,8 +10,13 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const map = await fetchFortuneplayBoard();
+  // #FIX-DEEPLINK-BASE-0701: la base del deep-link è SEMPRE il sito FortunePlay
+  // (dove vivono le pagine-partita). NON usare SPORTSBOOK_FORTUNEPLAY_URL qui: era
+  // impostata sullo short-link affiliate mediaroosters → produceva URL rotte tipo
+  // mediaroosters.com/<code>/it/sports/... . Lo short-link mediaroosters è SOLO il
+  // landing di fallback (FORTUNEPLAY_BET_URL), non una base a cui appendere path.
   const odds = boardToResponse(map, {
-    baseUrl: process.env.SPORTSBOOK_FORTUNEPLAY_URL || "https://www.fortuneplay.com",
+    baseUrl: "https://www.fortuneplay.com",
     locale: "it",
     code: process.env.SPORTSBOOK_FORTUNEPLAY_CODE || "",
     landingUrl: FORTUNEPLAY_BET_URL,
