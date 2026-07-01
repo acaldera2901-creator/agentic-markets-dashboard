@@ -162,46 +162,159 @@ export interface ExtraMarket {
   edge: number | null;
 }
 
+// First-half share of a full-match goal expectation. Empirically first halves
+// carry ~45% of match goals (fewer early goals, more late ones); this is a
+// documented approximation, NOT a fitted 1st-half model — upgrade path is a
+// dedicated 1st-half goals model if the FP 1st-half markets prove worth serving.
+export const FIRST_HALF_GOAL_SHARE = 0.45;
+
+/** Total-goals distribution (index = total goals) from two independent Poissons. */
+function totalGoalsDist(lambdaHome: number, lambdaAway: number, N = 9): number[] {
+  const pTotal = new Array(2 * N + 1).fill(0);
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      pTotal[i + j] += poisson(i, lambdaHome) * poisson(j, lambdaAway);
+    }
+  }
+  return pTotal;
+}
+
+/** P(team goals >= k) from the marginal Poisson(lambda). */
+function poissonAtLeast(k: number, lambda: number): number {
+  let below = 0;
+  for (let i = 0; i < k; i++) below += poisson(i, lambda);
+  return 1 - below;
+}
+
+/** 1X2 probabilities from a bivariate Poisson (pure, no Dixon-Coles tau — matches served model). */
+function result1x2(lambdaHome: number, lambdaAway: number, N = 9): TripleProb {
+  let h = 0, d = 0, a = 0;
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      const p = poisson(i, lambdaHome) * poisson(j, lambdaAway);
+      if (i > j) h += p; else if (i === j) d += p; else a += p;
+    }
+  }
+  const t = h + d + a;
+  return { pHome: h / t, pDraw: d / t, pAway: a / t };
+}
+
+/**
+ * All goal-derived markets shown on the FortunePlay match card, each with a REAL
+ * model probability (from the same validated bivariate-Poisson goal distribution),
+ * fair odds, and edge vs the FP price. Every market here is honestly derivable from
+ * (lambdaHome, lambdaAway) — no new data, no speculative model. Markets that need a
+ * separate model (corners-by-team, red/yellow split) are owned by the soft-markets
+ * track and intentionally NOT synthesized here.
+ */
 export function computeExtraMarkets(
   lambdaHome: number,
   lambdaAway: number,
   marketOdds: Partial<Record<string, number>> = {}
 ): ExtraMarket[] {
   const N = 9;
-  let pBTTS = 0, pO15 = 0, pO25 = 0, pO35 = 0, p1X = 0, pX2 = 0, p12 = 0;
+  let pBTTS = 0, p1X = 0, pX2 = 0, p12 = 0, pOdd = 0;
+  let pHomeWin = 0, pDrawEq = 0, pAwayWin = 0;
+  const csCells: [number, number, number][] = [];
   for (let i = 0; i < N; i++) {
     for (let j = 0; j < N; j++) {
       const p = poisson(i, lambdaHome) * poisson(j, lambdaAway);
       if (i >= 1 && j >= 1) pBTTS += p;
-      if (i + j >= 2) pO15 += p;
-      if (i + j >= 3) pO25 += p;
-      if (i + j >= 4) pO35 += p;
       if (i >= j) p1X += p;
       if (j >= i) pX2 += p;
       if (i !== j) p12 += p;
+      if ((i + j) % 2 === 1) pOdd += p;
+      if (i > j) pHomeWin += p; else if (i === j) pDrawEq += p; else pAwayWin += p;
+      csCells.push([i, j, p]);
     }
   }
+  const rTot = pHomeWin + pDrawEq + pAwayWin;
+  const dnbHome = pHomeWin / (pHomeWin + pAwayWin);
+  const dnbAway = pAwayWin / (pHomeWin + pAwayWin);
+
+  // Over/Under by line, from the total-goals distribution
+  const tot = totalGoalsDist(lambdaHome, lambdaAway, N);
+  const overAt = (line: number) => {
+    let over = 0;
+    for (let t = Math.ceil(line); t < tot.length; t++) over += tot[t];
+    return over;
+  };
 
   const mOdds = (p: number) =>
     Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100;
   const edge = (p: number, mkt: number | null) =>
     mkt != null ? Math.round((p * mkt - 1) * 10000) / 10000 : null;
 
+  // First-half markets (approximate half-share lambdas)
+  const fhH = lambdaHome * FIRST_HALF_GOAL_SHARE;
+  const fhA = lambdaAway * FIRST_HALF_GOAL_SHARE;
+  const fhRes = result1x2(fhH, fhA, N);
+  const fhTot = totalGoalsDist(fhH, fhA, N);
+  const fhOver = (line: number) => {
+    let over = 0;
+    for (let t = Math.ceil(line); t < fhTot.length; t++) over += fhTot[t];
+    return over;
+  };
+  let fhBTTS = 0;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (i >= 1 && j >= 1) fhBTTS += poisson(i, fhH) * poisson(j, fhA);
+
   const raw: [string, string, number][] = [
-    ["over_1_5", "O1.5", pO15],
-    ["over_2_5", "O2.5", pO25],
-    ["over_3_5", "O3.5", pO35],
-    ["btts_yes",  "GG",   pBTTS],
-    ["btts_no",   "NG",   1 - pBTTS],
-    ["double_1x", "1X",  p1X],
-    ["double_x2", "X2",  pX2],
-    ["double_12", "12",  p12],
+    // Over/Under goals (all lines the card shows)
+    ["over_0_5", "O0.5", overAt(0.5)],
+    ["over_1_5", "O1.5", overAt(1.5)],
+    ["over_2_5", "O2.5", overAt(2.5)],
+    ["over_3_5", "O3.5", overAt(3.5)],
+    ["over_4_5", "O4.5", overAt(4.5)],
+    ["under_0_5", "U0.5", 1 - overAt(0.5)],
+    ["under_1_5", "U1.5", 1 - overAt(1.5)],
+    ["under_2_5", "U2.5", 1 - overAt(2.5)],
+    ["under_3_5", "U3.5", 1 - overAt(3.5)],
+    ["under_4_5", "U4.5", 1 - overAt(4.5)],
+    // Both teams to score
+    ["btts_yes", "GG", pBTTS],
+    ["btts_no",  "NG", 1 - pBTTS],
+    // Double chance
+    ["double_1x", "1X", p1X],
+    ["double_x2", "X2", pX2],
+    ["double_12", "12", p12],
+    // Draw no bet
+    ["dnb_home", "DNB 1", dnbHome],
+    ["dnb_away", "DNB 2", dnbAway],
+    // Goals odd/even
+    ["goals_odd",  "Dispari", pOdd],
+    ["goals_even", "Pari",    1 - pOdd],
+    // Team totals (marginal Poisson per side)
+    ["team1_over_0_5", "Casa O0.5", poissonAtLeast(1, lambdaHome)],
+    ["team1_over_1_5", "Casa O1.5", poissonAtLeast(2, lambdaHome)],
+    ["team1_over_2_5", "Casa O2.5", poissonAtLeast(3, lambdaHome)],
+    ["team2_over_0_5", "Ospite O0.5", poissonAtLeast(1, lambdaAway)],
+    ["team2_over_1_5", "Ospite O1.5", poissonAtLeast(2, lambdaAway)],
+    ["team2_over_2_5", "Ospite O2.5", poissonAtLeast(3, lambdaAway)],
+    // First half
+    ["fh_home", "1T 1", fhRes.pHome],
+    ["fh_draw", "1T X", fhRes.pDraw],
+    ["fh_away", "1T 2", fhRes.pAway],
+    ["fh_over_0_5", "1T O0.5", fhOver(0.5)],
+    ["fh_over_1_5", "1T O1.5", fhOver(1.5)],
+    ["fh_btts_yes", "1T GG", fhBTTS],
+    ["fh_btts_no",  "1T NG", 1 - fhBTTS],
   ];
 
-  return raw.map(([key, label, p]) => {
+  const markets = raw.map(([key, label, p]) => {
     const mo = marketOdds[key] ?? null;
     return { key, label, p: Math.round(p * 10000) / 10000, model_odds: mOdds(p), market_odds: mo, edge: edge(p, mo) };
   });
+
+  // Correct score: top-7 exact scores by model probability (normalized)
+  csCells.sort((x, y) => y[2] - x[2]);
+  for (const [i, j, p] of csCells.slice(0, 7)) {
+    const key = `cs_${i}_${j}`;
+    const prob = p / rTot;
+    const mo = marketOdds[key] ?? null;
+    markets.push({ key, label: `${i}-${j}`, p: Math.round(prob * 10000) / 10000, model_odds: mOdds(prob), market_odds: mo, edge: edge(prob, mo) });
+  }
+
+  return markets;
 }
 
 export interface GoalsSummary {

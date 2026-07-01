@@ -139,3 +139,25 @@ class DixonColesModel:
 
         total = home_win + draw + away_win
         return home_win / total, draw / total, away_win / total
+
+    def over_prob(self, home_team: str, away_team: str, line: float = 2.5, max_goals: int = 10) -> float:
+        """P(total goals > line) from the same Dixon-Coles scoreline (tau low-score
+        correction included). Used for Over/Under markets."""
+        if not self.fitted:
+            raise ValueError("Model not fitted — call fit() first")
+        n = len(self.teams)
+        i = self._team_idx[home_team]
+        j = self._team_idx[away_team]
+        attack, defence = self.params[:n], self.params[n : 2 * n]
+        home_adv, rho = self.params[-2], self.params[-1]
+        lam = np.exp(attack[i] + defence[j] + home_adv)
+        mu = np.exp(attack[j] + defence[i])
+
+        over = total = 0.0
+        for hg in range(max_goals + 1):
+            for ag in range(max_goals + 1):
+                p = _tau(hg, ag, lam, mu, rho) * poisson.pmf(hg, lam) * poisson.pmf(ag, mu)
+                total += p
+                if hg + ag > line:
+                    over += p
+        return over / total if total > 0 else float("nan")
