@@ -2275,10 +2275,21 @@ function SportsbookBoard({
     return (b.edge ?? -1) - (a.edge ?? -1);
   });
 
+  // #ONLY-WITH-ODDS-1: mostra sul board SOLO i match per cui abbiamo la quota FortunePlay.
+  // "Ha quota" = entry FP presente con un prezzo 1X2/moneyline reale. Applicato solo quando
+  // le quote sono già caricate (fail-open: se l'endpoint quote è giù/non ancora risolto,
+  // mostra tutto invece di un board vuoto).
+  const fpLoaded = Object.keys(fpOdds).length > 0;
+  const hasFpOdds = (key: string | null) => {
+    const e = key ? fpOdds[key] : undefined;
+    return !!e && (((e.oddsHome ?? 0) > 1) || ((e.oddsAway ?? 0) > 1));
+  };
+
   const footballRows = sortFootball(predictions
     .filter((p) => sportFilter !== "tennis")
     .filter(() => surfaceFilter === "all")
     .filter((p) => isBoardVisibleMarket(p.kickoff))
+    .filter((p) => !fpLoaded || hasFpOdds(teamPairKey("soccer", p.home_team, p.away_team, p.kickoff)))
     .filter((p) => signalFilter === "all" || isFootballBestBet(p))
     .filter((p) => competitionFilter === "all" || competitionFilter === `football:${p.league}`)
     .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query)))
@@ -2287,6 +2298,7 @@ function SportsbookBoard({
   const tennisRows = sortTennis(tennisMatches
     .filter((m) => sportFilter !== "football")
     .filter((m) => tennisIsPlaceholder || isTennisMarketVisible(m.scheduled))
+    .filter((m) => tennisIsPlaceholder || !fpLoaded || hasFpOdds(teamPairKey("tennis", m.player1, m.player2, m.scheduled)))
     .filter((m) => tennisIsPlaceholder || signalFilter === "all" || isTennisBestBet(m))
     .filter((m) => competitionFilter === "all" || competitionFilter === `tennis:${m.tournament}`)
     .filter((m) => surfaceFilter === "all" || m.surface === surfaceFilter)
