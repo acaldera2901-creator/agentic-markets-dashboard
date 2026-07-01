@@ -59,6 +59,70 @@ export async function sendEmail(opts: {
   }
 }
 
+// ── Branded shell (#EMAIL-BRAND-0701) ────────────────────────────────────────
+// Porta nel codice il design del template Resend "Welcome to BETREDGE": header
+// col logo su fondo scuro, container 600px table-based (email-safe, regge Outlook),
+// accento verde. Le immagini sono nostre, servite da betredge.com/banners/email/.
+// `hero:true` mostra in più il banner "Your first edge is ready" (mail welcome).
+const BRAND = { bg: "#060708", card: "#0e1417", green: "#23A559", head: "#ffffff", text: "#cdd6dd", muted: "#8b98a4" };
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+function logoUrl(): string { return `${siteUrl()}/banners/email/logo.jpg`; }
+function heroUrl(): string { return `${siteUrl()}/banners/email/hero.jpg`; }
+
+// CTA verde, leggibile su fondo scuro. Sostituisce i vecchi bottoni #0f172a
+// (invisibili su sfondo scuro).
+export function brandCta(label: string, href: string): string {
+  return `<a href="${href}" style="display:inline-block;margin-top:18px;padding:13px 24px;border-radius:8px;background:${BRAND.green};color:#04140b;text-decoration:none;font-size:14px;font-weight:700;font-family:${FONT}">${label}</a>`;
+}
+// Helper testo/titolo dentro la card (colori chiari su scuro).
+export function brandHeading(t: string): string {
+  return `<p style="margin:0 0 12px;color:${BRAND.head};font-size:20px;font-weight:700;font-family:${FONT}">${t}</p>`;
+}
+export function brandText(t: string): string {
+  return `<p style="margin:0 0 14px;color:${BRAND.text};font-size:14px;line-height:1.6;font-family:${FONT}">${t}</p>`;
+}
+
+function defaultFooter(lang: "it" | "en"): string {
+  const it = lang !== "en";
+  const tagline = it ? "Il tuo vantaggio in ogni scommessa" : "Your edge in every bet";
+  const year = new Date().getFullYear();
+  return `<p style="margin:0 0 4px;color:#c7d0d8;font-weight:600">The BetRedge Team</p>
+  <p style="margin:0">${tagline}</p>
+  <p style="margin:8px 0 0">© ${year} BetRedge · <a href="mailto:${ACCOUNT_CONTACT_EMAIL}" style="color:${BRAND.muted};text-decoration:underline">${ACCOUNT_CONTACT_EMAIL}</a></p>`;
+}
+
+// Wrapper condiviso da tutte le email. `footerHtml` permette al CRM di passare il
+// footer legale conforme (mittente/disclaimer/unsubscribe); se assente usa il
+// footer transazionale minimale (le mail account non sono marketing).
+export function brandedShell(
+  bodyHtml: string,
+  opts: { hero?: boolean; footerHtml?: string; lang?: "it" | "en" } = {}
+): string {
+  const { hero = false, footerHtml, lang = "it" } = opts;
+  const footer = footerHtml ?? defaultFooter(lang);
+  return `<!doctype html>
+<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"></head>
+<body style="margin:0;padding:0;background:${BRAND.bg};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.bg};padding:24px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;">
+      <tr><td align="center" style="padding:6px 0 18px;">
+        <img src="${logoUrl()}" alt="BetRedge" width="176" style="display:block;width:176px;max-width:58%;height:auto;border:0;" />
+      </td></tr>
+      ${hero ? `<tr><td style="padding:0 0 14px;"><img src="${heroUrl()}" alt="" width="600" style="display:block;width:100%;height:auto;border-radius:12px;border:0;" /></td></tr>` : ``}
+      <tr><td style="background:${BRAND.card};border-radius:14px;padding:28px 26px;">
+        ${bodyHtml}
+      </td></tr>
+      <tr><td style="padding:20px 10px 6px;color:${BRAND.muted};font-size:12px;line-height:1.5;text-align:center;font-family:${FONT}">
+        ${footer}
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
 // Account activation (HIGH-3): the link the user must click to activate their
 // profile and set a usable session. Sent from the account contact mailbox.
 export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): {
@@ -73,13 +137,10 @@ export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): 
   const ignore = it
     ? `Se non hai creato un account, ignora questa email o scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
     : `If you didn't create an account, ignore this email or write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
-  const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
-  <p style="font-size:14px;line-height:1.5;margin:0 0 16px">${intro}</p>
-  <a href="${activateUrl}" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:14px;font-weight:600">${cta}</a>
-  <p style="font-size:12px;color:#94a3b8;margin:18px 0 0;word-break:break-all">${activateUrl}</p>
-  <p style="font-size:12px;color:#94a3b8;margin:12px 0 0">${ignore}</p>
-</div>`;
+  const body = `${brandText(intro)}${brandCta(cta, activateUrl)}
+  <p style="font-size:12px;color:${BRAND.muted};margin:18px 0 0;word-break:break-all;font-family:${FONT}">${activateUrl}</p>
+  <p style="font-size:12px;color:${BRAND.muted};margin:12px 0 0;font-family:${FONT}">${ignore}</p>`;
+  const html = brandedShell(body, { hero: true, lang });
   const text = `${intro}\n\n${cta}: ${activateUrl}\n\n${ignore}`;
   return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
 }
@@ -99,48 +160,12 @@ export function passwordResetEmail(resetUrl: string, lang: "it" | "en" = "it"): 
   const ignore = it
     ? `Se non hai richiesto tu il reset, ignora questa email: la password resta invariata. Per dubbi scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
     : `If you didn't request this, ignore this email — your password stays unchanged. Questions? Write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
-  const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
-  <p style="font-size:14px;line-height:1.5;margin:0 0 16px">${intro}</p>
-  <a href="${resetUrl}" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:14px;font-weight:600">${cta}</a>
-  <p style="font-size:12px;color:#94a3b8;margin:18px 0 0;word-break:break-all">${resetUrl}</p>
-  <p style="font-size:12px;color:#94a3b8;margin:12px 0 0">${ignore}</p>
-</div>`;
+  const body = `${brandText(intro)}${brandCta(cta, resetUrl)}
+  <p style="font-size:12px;color:${BRAND.muted};margin:18px 0 0;word-break:break-all;font-family:${FONT}">${resetUrl}</p>
+  <p style="font-size:12px;color:${BRAND.muted};margin:12px 0 0;font-family:${FONT}">${ignore}</p>`;
+  const html = brandedShell(body, { lang });
   const text = `${intro}\n\n${cta}: ${resetUrl}\n\n${ignore}`;
   return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
-}
-
-function shell(bodyHtml: string): string {
-  return `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
-  ${bodyHtml}
-</div>`;
-}
-
-// Payment received → plan in review (GAP4).
-export function paymentReceivedEmail(lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const subject = it ? "Pagamento ricevuto — in verifica" : "Payment received — under review";
-  const body = it
-    ? "Abbiamo ricevuto la tua richiesta di BetRedge Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo."
-    : "We received your BetRedge Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.";
-  return { subject, html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p>`), text: body };
-}
-
-// Plan activated (GAP4).
-export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const until = expiresAtISO ? new Date(expiresAtISO).toLocaleDateString(it ? "it-IT" : "en-GB") : null;
-  const subject = it ? "BetRedge Pro attivato ✅" : "BetRedge Pro activated ✅";
-  const body = it
-    ? `Il tuo BetRedge Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
-    : `Your BetRedge Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
-  const cta = it ? "Apri il desk" : "Open the desk";
-  return {
-    subject,
-    html: shell(`<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`),
-    text: body,
-  };
 }
 
 export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: string; html: string; text: string } {
@@ -154,33 +179,60 @@ export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: str
   const ignore = it
     ? "Se non hai richiesto questo codice, ignora questa email."
     : "If you didn't request this code, you can ignore this email.";
-  const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#0f172a">
-  <p style="font-size:13px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px">BetRedge</p>
-  <p style="font-size:14px;margin:0 0 16px">${intro}</p>
-  <div style="font-size:34px;font-weight:800;letter-spacing:.3em;font-family:ui-monospace,monospace;background:#f1f5f9;border-radius:10px;padding:18px;text-align:center;color:#0f172a">${code}</div>
-  <p style="font-size:12px;color:#94a3b8;margin:16px 0 0">${ignore}</p>
-</div>`;
+  const body = `${brandText(intro)}
+  <div style="font-size:32px;font-weight:800;letter-spacing:.3em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#0a0f12;border:1px solid rgba(35,165,89,.35);border-radius:10px;padding:18px;text-align:center;color:#ffffff">${code}</div>
+  <p style="font-size:12px;color:${BRAND.muted};margin:16px 0 0;font-family:${FONT}">${ignore}</p>`;
+  const html = brandedShell(body, { lang });
   const text = `${code}\n\n${intro}\n\n${ignore}`;
   return { subject, html, text };
 }
 
-// ── Lifecycle emails ─────────────────────────────────────────────────────────
-// All bilingual (it default / en), share the BetRedge shell(), and are sent via
+// ── Lifecycle / account emails ───────────────────────────────────────────────
+// All bilingual (it default / en), share brandedShell(), and are sent via
 // sendTransactional() (lib/notify.ts) so each send is recorded in `notifications`.
+
+// Payment received → plan in review (GAP4).
+export function paymentReceivedEmail(lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const subject = it ? "Pagamento ricevuto — in verifica" : "Payment received — under review";
+  const body = it
+    ? "Abbiamo ricevuto la tua richiesta di BetRedge Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo."
+    : "We received your BetRedge Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.";
+  return {
+    subject,
+    html: brandedShell(brandText(body), { lang: it ? "it" : "en" }),
+    text: body,
+  };
+}
+
+// Plan activated (GAP4).
+export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { subject: string; html: string; text: string } {
+  const it = lang !== "en";
+  const until = expiresAtISO ? new Date(expiresAtISO).toLocaleDateString(it ? "it-IT" : "en-GB") : null;
+  const subject = it ? "BetRedge Pro attivato ✅" : "BetRedge Pro activated ✅";
+  const body = it
+    ? `Il tuo BetRedge Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
+    : `Your BetRedge Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
+  const cta = it ? "Apri il desk" : "Open the desk";
+  return {
+    subject,
+    html: brandedShell(`${brandText(body)}${brandCta(cta, `${siteUrl()}/app`)}`, { lang: it ? "it" : "en" }),
+    text: `${body}\n\n${cta}: ${siteUrl()}/app`,
+  };
+}
 
 // Welcome — sent once the user clicks the activation link and the profile goes live.
 export function welcomeEmail(lang = "it"): { subject: string; html: string; text: string } {
   const it = lang !== "en";
   const subject = it ? "Benvenuto su BetRedge 👋" : "Welcome to BetRedge 👋";
+  const head = it ? "Il tuo profilo è attivo" : "Your profile is live";
   const body = it
-    ? "Il tuo profilo è attivo. Apri il desk per vedere segnali e probabilità calibrate, con il track record pubblico sempre verificabile."
-    : "Your profile is live. Open the desk to see the signals and calibrated probabilities, with our public track record always verifiable.";
+    ? "Apri il desk per vedere segnali e probabilità calibrate, con il track record pubblico sempre verificabile."
+    : "Open the desk to see the signals and calibrated probabilities, with our public track record always verifiable.";
   const cta = it ? "Apri il desk" : "Open the desk";
   return {
     subject,
-    html: shell(
-      `<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`
-    ),
+    html: brandedShell(`${brandHeading(head)}${brandText(body)}${brandCta(cta, `${siteUrl()}/app`)}`, { hero: true, lang: it ? "it" : "en" }),
     text: `${body}\n\n${cta}: ${siteUrl()}/app`,
   };
 }
@@ -219,7 +271,7 @@ export function receiptEmail(
         until ? `Renews / expires: ${until}.` : null,
       ];
   const text = lines.filter(Boolean).join(" ");
-  return { subject, html: shell(`<p style="font-size:14px;line-height:1.5">${text}</p>`), text };
+  return { subject, html: brandedShell(brandText(text), { lang: it ? "it" : "en" }), text };
 }
 
 // Cancellation — sent when a subscription is deleted; the plan drops to free.
@@ -232,9 +284,7 @@ export function cancellationEmail(lang = "it"): { subject: string; html: string;
   const cta = it ? "Riattiva" : "Reactivate";
   return {
     subject,
-    html: shell(
-      `<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app?tab=account" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`
-    ),
+    html: brandedShell(`${brandText(body)}${brandCta(cta, `${siteUrl()}/app?tab=account`)}`, { lang: it ? "it" : "en" }),
     text: `${body}\n\n${cta}: ${siteUrl()}/app?tab=account`,
   };
 }
@@ -249,9 +299,7 @@ export function winBackEmail(lang = "it"): { subject: string; html: string; text
   const cta = it ? "Riattiva il desk" : "Reactivate the desk";
   return {
     subject,
-    html: shell(
-      `<p style="font-size:14px;line-height:1.5">${body}</p><a href="${siteUrl()}/app?tab=account" style="display:inline-block;margin-top:12px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;text-decoration:none;font-size:13px">${cta}</a>`
-    ),
+    html: brandedShell(`${brandText(body)}${brandCta(cta, `${siteUrl()}/app?tab=account`)}`, { lang: it ? "it" : "en" }),
     text: `${body}\n\n${cta}: ${siteUrl()}/app?tab=account`,
   };
 }
