@@ -4614,7 +4614,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
       chips: esito.map((o) => {
         const q = fpq(o.key);
-        return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: p.best_selection === o.key };
+        return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: pickKey === o.key };
       }),
     });
 

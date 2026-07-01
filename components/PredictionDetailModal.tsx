@@ -142,7 +142,7 @@ export function PredictionDetailModal({
     >
       <div
         ref={panelRef}
-        className={`pdm-panel${shown ? " is-shown" : ""}`}
+        className={`pdm-panel${shown ? " is-shown" : ""}${hideHead ? " pdm-compact" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
