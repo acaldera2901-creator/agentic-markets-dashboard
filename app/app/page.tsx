@@ -3416,14 +3416,15 @@ function CheckoutModal({
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}>
               {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD
             </button>
-            {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && (
-              <div style={{ marginTop: 10 }}>
-                <p style={{ fontSize: 11, opacity: 0.7, textAlign: "center", margin: "0 0 6px" }}>
-                  {pick5(lang, { it: "oppure paga con PayPal", en: "or pay with PayPal", es: "o paga con PayPal", fr: "ou payez avec PayPal", ru: "или оплатите через PayPal" })}
-                </p>
-                <div id="paypal-button-container" />
-              </div>
-            )}
+          </div>
+        )}
+
+        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ fontSize: 11, opacity: 0.7, textAlign: "center", margin: "0 0 6px" }}>
+              {pick5(lang, { it: "oppure paga con PayPal", en: "or pay with PayPal", es: "o paga con PayPal", fr: "ou payez avec PayPal", ru: "или оплатите через PayPal" })}
+            </p>
+            <div id="paypal-button-container" />
           </div>
         )}
 
