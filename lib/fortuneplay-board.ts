@@ -5,6 +5,7 @@ import type { FpMatch } from "./fortuneplay-live";
 import { buildFortuneplayMatchUrl } from "./fortuneplay-url";
 
 export type FpOddsEntry = {
+  id: number;
   homeKey: string;
   awayKey: string;
   oddsHome: number | null;
@@ -34,6 +35,7 @@ export function boardToResponse(
           })
         : null;
     out[key] = {
+      id: m.id,
       homeKey: m.homeKey,
       awayKey: m.awayKey,
       oddsHome: m.oddsHome,

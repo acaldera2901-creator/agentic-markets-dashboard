@@ -7845,6 +7845,15 @@ button:disabled {
 .mds-cm .mds-q.est { font-size: 10px; font-weight: 700; color: #d79a34; }
 .mds-cm .mds-cv { font-family: var(--mds-mono); font-size: 9.5px; font-weight: 800; color: var(--am-coral); margin-left: auto; }
 .mds-note { font-family: var(--mds-mono); font-size: 9.5px; color: var(--am-muted-2); margin: 9px 0 0; line-height: 1.5; }
+/* Altri mercati FortunePlay (collassabile) */
+.mds-more { padding-top: 12px; padding-bottom: 12px; }
+.mds-more-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: transparent; border: 0; cursor: pointer; color: inherit; padding: 0; }
+.mds-more-btn .mds-more-n { font-family: var(--mds-mono); font-size: 10px; color: #04140A; background: var(--am-coral); border-radius: 999px; padding: 0 6px; margin-left: 4px; font-weight: 700; }
+[data-theme="light"] .mds-more-btn .mds-more-n { color: #fff; }
+.mds-more-btn .mds-chevw { transition: transform .2s; }
+.mds-more-btn.open .mds-chevw { transform: rotate(180deg); }
+.mds-more-body { margin-top: 4px; }
+.mds-more-body .mds-grp:first-child { border-top: 0; padding-top: 8px; }
 .mds-betbar { position: sticky; bottom: 0; background: var(--am-panel); border-top: 1px solid var(--am-coral-b); }
 .mds-legs { max-height: 250px; overflow-y: auto; }
 .mds-leg { display: flex; align-items: center; gap: 9px; padding: 9px 15px; border-bottom: 1px solid var(--am-line); }

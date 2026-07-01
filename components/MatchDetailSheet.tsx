@@ -5,7 +5,7 @@
 // dipende dagli helper interni di app/page.tsx. Icone SVG su misura (no emoji).
 // La schedina è componibile lato client: le chip PICK (rec) sono pre-inserite;
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MarketIcon } from "./MarketIcon";
 
 const MARKET_ICON: Record<string, "result" | "goals" | "scorer" | "soft"> = {
@@ -47,6 +47,8 @@ export type MdsData = {
   };
   groups: MdsGroup[];
   matchUrl: string;
+  fpMatchId?: number | null;
+  moreLabel?: string;
   labels: {
     schedina: string;
     quotaComb: string;
@@ -70,10 +72,39 @@ function Ico({ id }: { id: string }) {
 }
 
 export function MatchDetailSheet({ data }: { data: MdsData }) {
-  const allChips = useMemo(() => data.groups.flatMap((g) => g.chips), [data.groups]);
-  const [selected, setSelected] = useState<string[]>(() => allChips.filter((c) => c.rec).map((c) => c.id));
+  // #FORTUNEPLAY-LIVE-ODDS-2: tutti i mercati FortunePlay, fetch SOLO all'apertura
+  // (per-partita, cache lato server) → sezione "Altri mercati" collassabile.
+  const [extraGroups, setExtraGroups] = useState<MdsGroup[]>([]);
+  const [showExtra, setShowExtra] = useState(false);
+  useEffect(() => {
+    const id = data.fpMatchId;
+    if (!id) return;
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/fortuneplay-match?id=${id}`, { credentials: "same-origin" });
+        if (!r.ok) return;
+        const d = await r.json();
+        const mk: Array<{ name: string; line: number | null; outcomes: Array<{ label: string; odds: number }> }> = d.markets ?? [];
+        if (!alive || !mk.length) return;
+        const iconFor = (n: string): MdsGroup["icon"] =>
+          /corner|card|foul/i.test(n) ? "flag" : /goal/i.test(n) ? "goal" : "result";
+        setExtraGroups(mk.map((m, gi) => ({
+          key: `x-${gi}`,
+          icon: iconFor(m.name),
+          title: m.name + (m.line != null ? ` ${m.line}` : ""),
+          src: { kind: "fp", label: "FortunePlay" },
+          chips: m.outcomes.map((o, oi) => ({ id: `x-${gi}-${oi}`, mkt: m.name, sel: o.label, q: o.odds })),
+        })));
+      } catch { /* degrada: nessun mercato extra */ }
+    })();
+    return () => { alive = false; };
+  }, [data.fpMatchId]);
 
-  const legs = selected.map((id) => allChips.find((c) => c.id === id)).filter(Boolean) as MdsChip[];
+  const poolChips = useMemo(() => [...data.groups, ...extraGroups].flatMap((g) => g.chips), [data.groups, extraGroups]);
+  const [selected, setSelected] = useState<string[]>(() => data.groups.flatMap((g) => g.chips).filter((c) => c.rec).map((c) => c.id));
+
+  const legs = selected.map((id) => poolChips.find((c) => c.id === id)).filter(Boolean) as MdsChip[];
   const priced = legs.filter((l) => !l.est && l.q && l.q > 1);
   const combined = priced.reduce((acc, l) => acc * (l.q as number), 1);
   const [expanded, setExpanded] = useState(false);
@@ -83,6 +114,34 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
 
   const ctaLabel = priced.length > 1 ? data.labels.apriMulti : data.labels.apri;
   const countLabel = legs.length === 1 ? data.labels.selOne : data.labels.selMany;
+
+  const renderGroup = (g: MdsGroup) => (
+    <div className="mds-grp" key={g.key}>
+      <div className="mds-grph">
+        <span className="mds-gt"><MarketIcon name={MARKET_ICON[g.icon] ?? "result"} size={18} className="mds-mkico" />{g.title}</span>
+        {g.meta && <span className="mds-gmeta">{g.meta}</span>}
+        <span className={`mds-src ${g.src.kind}`}>{g.src.label}</span>
+      </div>
+      <div className="mds-chips">
+        {g.chips.map((c) => {
+          const on = selected.includes(c.id);
+          return (
+            <button key={c.id} type="button" className={`mds-chip${c.rec ? " rec" : ""}${on ? " on" : ""}`} onClick={() => toggle(c.id)}>
+              {c.rec && <span className="mds-pickbadge"><Ico id="star" />pick</span>}
+              {on && <span className="mds-tick"><Ico id="check" /></span>}
+              <span className="mds-cl">{c.sel}</span>
+              <span className="mds-cm">
+                {c.prob && <span className="mds-p">{c.prob}</span>}
+                <span className={`mds-q${c.est ? " est" : ""}`}>{c.est ? "stima" : (c.q ? c.q.toFixed(2) : "–")}</span>
+                {c.value && <span className="mds-cv">{c.value}</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {g.note && <p className="mds-note">{g.note}</p>}
+    </div>
+  );
 
   return (
     <div className="mds">
@@ -129,39 +188,19 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         </div>
       </div>
 
-      {/* MARKET GROUPS */}
-      {data.groups.map((g) => (
-        <div className="mds-grp" key={g.key}>
-          <div className="mds-grph">
-            <span className="mds-gt"><MarketIcon name={MARKET_ICON[g.icon] ?? "result"} size={18} className="mds-mkico" />{g.title}</span>
-            {g.meta && <span className="mds-gmeta">{g.meta}</span>}
-            <span className={`mds-src ${g.src.kind}`}>{g.src.label}</span>
-          </div>
-          <div className="mds-chips">
-            {g.chips.map((c) => {
-              const on = selected.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`mds-chip${c.rec ? " rec" : ""}${on ? " on" : ""}`}
-                  onClick={() => toggle(c.id)}
-                >
-                  {c.rec && <span className="mds-pickbadge"><Ico id="star" />pick</span>}
-                  {on && <span className="mds-tick"><Ico id="check" /></span>}
-                  <span className="mds-cl">{c.sel}</span>
-                  <span className="mds-cm">
-                    {c.prob && <span className="mds-p">{c.prob}</span>}
-                    <span className={`mds-q${c.est ? " est" : ""}`}>{c.est ? "stima" : (c.q ? c.q.toFixed(2) : "–")}</span>
-                    {c.value && <span className="mds-cv">{c.value}</span>}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {g.note && <p className="mds-note">{g.note}</p>}
+      {/* MARKET GROUPS (modello + FortunePlay base) */}
+      {data.groups.map(renderGroup)}
+
+      {/* ALTRI MERCATI FortunePlay (fetch on-open, collassabile) */}
+      {extraGroups.length > 0 && (
+        <div className="mds-grp mds-more">
+          <button type="button" className={`mds-more-btn${showExtra ? " open" : ""}`} onClick={() => setShowExtra((v) => !v)}>
+            <span className="mds-gt"><MarketIcon name="betslip" size={18} className="mds-mkico" />{data.moreLabel ?? "Altri mercati FortunePlay"} <span className="mds-more-n">{extraGroups.length}</span></span>
+            <span className="mds-chevw"><Ico id="chev" /></span>
+          </button>
+          {showExtra && <div className="mds-more-body">{extraGroups.map(renderGroup)}</div>}
         </div>
-      ))}
+      )}
 
       {/* STICKY BET BAR */}
       <div className="mds-betbar">

@@ -4694,6 +4694,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
+      fpMatchId: fp?.id ?? null,
+      moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
         quotaComb: pick5(lang, { it: "quota combinata", en: "combined odds", es: "cuota combinada", fr: "cote combinée", ru: "комбо кэф" }),
@@ -5226,6 +5228,8 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
+      fpMatchId: fp?.id ?? null,
+      moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
         quotaComb: pick5(lang, { it: "quota combinata", en: "combined odds", es: "cuota combinada", fr: "cote combinée", ru: "комбо кэф" }),
