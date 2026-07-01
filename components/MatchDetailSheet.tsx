@@ -6,6 +6,11 @@
 // La schedina è componibile lato client: le chip PICK (rec) sono pre-inserite;
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
 import { useMemo, useState } from "react";
+import { MarketIcon } from "./MarketIcon";
+
+const MARKET_ICON: Record<string, "result" | "goals" | "scorer" | "soft"> = {
+  result: "result", goal: "goals", boot: "scorer", flag: "soft",
+};
 
 export type MdsChip = {
   id: string;
@@ -128,7 +133,7 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
       {data.groups.map((g) => (
         <div className="mds-grp" key={g.key}>
           <div className="mds-grph">
-            <span className="mds-gt"><Ico id={g.icon} />{g.title}</span>
+            <span className="mds-gt"><MarketIcon name={MARKET_ICON[g.icon] ?? "result"} size={18} className="mds-mkico" />{g.title}</span>
             {g.meta && <span className="mds-gmeta">{g.meta}</span>}
             <span className={`mds-src ${g.src.kind}`}>{g.src.label}</span>
           </div>
