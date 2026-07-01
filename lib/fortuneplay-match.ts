@@ -46,18 +46,30 @@ export function curateMarkets(markets: FpFullMarket[]): FpFullMarket[] {
   const norm = (s: string) => s.toLowerCase().trim();
   const first = (pred: (m: FpFullMarket) => boolean) => markets.find(pred);
   const out: FpFullMarket[] = [];
-  const add = (m?: FpFullMarket) => { if (m && !out.includes(m)) out.push(m); };
+  const CAP = 8; // max esiti per mercato (es. Correct Score ne ha molti)
+  const add = (m?: FpFullMarket) => {
+    if (m && !out.includes(m)) out.push(m.outcomes.length > CAP ? { ...m, outcomes: m.outcomes.slice(0, CAP) } : m);
+  };
 
+  // esito & doppie
   add(first((m) => norm(m.name) === "double chance"));
   add(first((m) => norm(m.name) === "draw no bet"));
   add(first((m) => norm(m.name) === "both teams to score"));
-  // linee gol chiave (evita di listarle tutte)
-  for (const line of [1.5, 2.5, 3.5]) add(first((m) => norm(m.name) === "total goals" && m.line === line));
+  add(first((m) => /goals handicap$/i.test(m.name) && m.line != null));
+  // gol: più linee + odd/even + squadre
+  for (const line of [0.5, 1.5, 2.5, 3.5, 4.5]) add(first((m) => norm(m.name) === "total goals" && m.line === line));
   add(first((m) => norm(m.name) === "total goals odd/even"));
-  add(first((m) => norm(m.name) === "1st half result"));
+  add(first((m) => /^team 1 total goals$/i.test(m.name) && m.line != null));
+  add(first((m) => /^team 2 total goals$/i.test(m.name) && m.line != null));
+  add(first((m) => /correct score$/i.test(m.name)));
+  // primo tempo
+  add(first((m) => /^1st half result$/i.test(m.name)));
+  add(first((m) => /^1st half total goals$/i.test(m.name) && m.line != null));
+  add(first((m) => /^1st half both teams to score$/i.test(m.name)));
   // SOFT con quote FortunePlay reali (corner/cartellini)
   add(first((m) => /^corners: total$/i.test(m.name) && m.line != null));
-  add(first((m) => /total.*(cards|red cards|yellow)/i.test(m.name) && m.line != null));
+  add(first((m) => /^corners: result$/i.test(m.name)));
+  add(first((m) => /total.*(red cards|cards)/i.test(m.name) && m.line != null));
   return out;
 }
 
