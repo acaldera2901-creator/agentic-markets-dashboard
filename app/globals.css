@@ -7845,9 +7845,6 @@ button:disabled {
 /* #PREDICT-EVERY-MARKET-1: la nostra probabilità è protagonista (verde BetRedge, marchio R²). */
 .mds-cm .mds-p { font-family: var(--mds-mono); font-size: 13px; color: var(--am-coral); font-weight: 820; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 3px; }
 .mds-cm .mds-p .mds-pmark { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 4px; background: color-mix(in srgb, var(--am-coral) 16%, transparent); color: var(--am-coral); line-height: 1; }
-/* market-implied (de-vig quote): visibile ma chiaramente distinta, non "nostra stima". */
-.mds-cm .mds-p.mkt { color: var(--am-muted); font-weight: 700; }
-.mds-cm .mds-p.mkt .mds-pmark { background: color-mix(in srgb, var(--am-muted) 14%, transparent); color: var(--am-muted-2); text-transform: uppercase; }
 .mds-cm .mds-q { font-family: var(--mds-mono); font-size: 15px; font-weight: 760; letter-spacing: -0.01em; }
 .mds-cm .mds-q.est { font-size: 10px; font-weight: 700; color: #d79a34; }
 .mds-cm .mds-cv { font-family: var(--mds-mono); font-size: 9.5px; font-weight: 800; color: var(--am-coral); margin-left: auto; }

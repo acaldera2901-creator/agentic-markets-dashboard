@@ -26,7 +26,10 @@ assert.equal(keyForOutcome("1st Half Total Goals", 0.5, "Over 0.5", HOME, AWAY),
 assert.equal(keyForOutcome("1st Half Both Teams To Score", null, "No", HOME, AWAY), "fh_btts_no");
 // unmodeled → null
 assert.equal(keyForOutcome("Corners: Total", 9.5, "Over 9.5", HOME, AWAY), null);
-assert.equal(keyForOutcome("Goals Handicap", -1.5, "England -1.5", HOME, AWAY), null);
+assert.equal(keyForOutcome("Goals Handicap", null, "England (-1.5)", HOME, AWAY), "ah_home_-1_5"); // handicap dal label
+assert.equal(keyForOutcome("Goals Handicap", null, "DR Congo (+1.5)", HOME, AWAY), "ah_away_1_5");
+assert.equal(keyForOutcome("1st Half Goals Handicap", null, "England (-1.5)", HOME, AWAY), null); // 1°tempo NON modellato
+assert.equal(keyForOutcome("Goals Handicap", null, "England (no-parens)", HOME, AWAY), null);
 console.log("keyForOutcome mapping OK");
 
 // end-to-end join
@@ -43,28 +46,34 @@ const joined = joinFpWithModel(fp, extra, HOME, AWAY);
 const tg = joined.find((m) => m.name === "Total Goals")!;
 assert.ok(tg.modeled, "Total Goals modeled");
 const over = tg.outcomes.find((o) => o.label === "Over 2.5")!;
-assert.equal(over.source, "model", "over 2.5 from model");
-assert.ok(Math.abs(over.p - 0.53) < 0.03, `over 2.5 p=${over.p}`);
-assert.ok(over.edge !== null && Math.abs(over.edge - (over.p * 1.9 - 1)) < 2e-4, "model edge vs FP odds");
+assert.ok(over.p !== null && Math.abs(over.p - 0.53) < 0.03, `over 2.5 p=${over.p}`);
+assert.ok(over.edge !== null && Math.abs(over.edge - (over.p! * 1.9 - 1)) < 2e-4, "model edge vs FP odds");
 const under = tg.outcomes.find((o) => o.label === "Under 2.5")!;
-assert.ok(Math.abs(over.p + under.p - 1) < 0.02, "over+under ~1");
+assert.ok(under.p !== null && Math.abs(over.p! + under.p - 1) < 0.02, "over+under ~1");
 
 // team-2 under derived from over sibling
 const t2 = joined.find((m) => m.name === "Team 2 Total Goals")!;
 const t2u = t2.outcomes.find((o) => o.label === "Under 1.5")!;
-assert.equal(t2u.source, "model", "team2 under derived from model over");
+assert.ok(t2u.p !== null, "team2 under derived from model over");
 
-// unmodeled soft market: NOW market-implied (de-vig), source=market, NO edge
+// unmodeled market → HIDDEN (p null, never market-derived)
 const corners = joined.find((m) => m.name === "Corners: Total")!;
-assert.equal(corners.modeled, false, "corners not modeled by us");
-assert.ok(corners.outcomes.every((o) => o.source === "market" && o.edge === null && o.p > 0 && o.p < 1 && o.fpOdds > 1),
-  "corners: market-implied prob, no fabricated edge");
-// de-vig sums to ~1 across the market's outcomes
-const cSum = corners.outcomes.reduce((a, o) => a + o.p, 0);
-assert.ok(Math.abs(cSum - 1) < 0.01, `corners de-vig sums to 1 (got ${cSum.toFixed(3)})`);
-// de-vig removes margin: implied prob < raw 1/odds
-const cRaw = corners.outcomes.reduce((a, o) => a + 1 / o.fpOdds, 0);
-assert.ok(cRaw > 1, "raw inverse-odds carry margin >1");
+assert.equal(corners.modeled, false, "corners not modeled");
+assert.ok(corners.outcomes.every((o) => o.p === null && o.edge === null && o.fpOdds > 1),
+  "corners: no number (hidden), odds kept");
+
+// GOALS HANDICAP — now our model prediction (favourite covers less as line steepens)
+assert.equal(keyForOutcome("Goals Handicap", null, `${HOME} (-1.5)`, HOME, AWAY), "ah_home_-1_5");
+assert.equal(keyForOutcome("Goals Handicap", null, `${AWAY} (-1.5)`, HOME, AWAY), "ah_away_-1_5");
+const hk = (lh: number, la: number, line: number, side: "home" | "away") =>
+  computeExtraMarkets(lh, la).find((m) => m.key === `ah_${side}_${String(line).replace(".", "_")}`)!.p;
+// strong favourite (2.2 vs 0.6): home -1.5 cover > away +1.5? and monotonic in line
+assert.ok(hk(2.2, 0.6, -0.5, "home") > hk(2.2, 0.6, -1.5, "home"), "home cover falls as line steepens");
+assert.ok(hk(2.2, 0.6, -1.5, "home") > hk(2.2, 0.6, -2.5, "home"), "home cover monotonic");
+// complementary half-line pair: home -0.5 + away +0.5 = 1
+assert.ok(Math.abs(hk(1.4, 1.4, -0.5, "home") + hk(1.4, 1.4, 0.5, "away") - 1) < 0.02, "half-line home(-0.5)+away(+0.5) ~1");
+// symmetric teams: home -0.5 cover ≈ away -0.5 cover ≈ 0.5-ish, home>away when home favoured
+assert.ok(hk(2.2, 0.6, -0.5, "home") > 0.6, "clear favourite covers -0.5 comfortably");
 
 console.log("joinFpWithModel OK");
 console.log("ALL MARKET-JOIN CHECKS PASSED");

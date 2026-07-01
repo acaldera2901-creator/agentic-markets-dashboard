@@ -240,6 +240,18 @@ export function computeExtraMarkets(
     return over;
   };
 
+  // Goals handicap keyed by EACH SIDE's own handicap value h (as FP labels it,
+  // e.g. "Home (+1.5)", "Away (-1.5)"), from the goal-difference D = home - away:
+  //   home covers with h_home:  home + h_home > away  ⇔  D > -h_home
+  //   away covers with h_away:  away + h_away > home  ⇔  D <  h_away
+  // Half-lines: no push. Whole lines: exact tie (D = ∓h) is a push (counted for neither).
+  const homeCover = (h: number) => {
+    let s = 0; for (const [i, j, p] of csCells) if (i - j > -h) s += p; return s;
+  };
+  const awayCover = (h: number) => {
+    let s = 0; for (const [i, j, p] of csCells) if (i - j < h) s += p; return s;
+  };
+
   const mOdds = (p: number) =>
     Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100;
   const edge = (p: number, mkt: number | null) =>
@@ -298,6 +310,15 @@ export function computeExtraMarkets(
     ["fh_over_1_5", "1T O1.5", fhOver(1.5)],
     ["fh_btts_yes", "1T GG", fhBTTS],
     ["fh_btts_no",  "1T NG", 1 - fhBTTS],
+    // Goals handicap: keyed by each side's own handicap value h (matches FP labels).
+    ...[-2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5].flatMap((h): [string, string, number][] => {
+      const k = String(h).replace(".", "_");
+      const sgn = h > 0 ? `+${h}` : `${h}`;
+      return [
+        [`ah_home_${k}`, `H ${sgn}`, homeCover(h)],
+        [`ah_away_${k}`, `A ${sgn}`, awayCover(h)],
+      ];
+    }),
   ];
 
   const markets = raw.map(([key, label, p]) => {
