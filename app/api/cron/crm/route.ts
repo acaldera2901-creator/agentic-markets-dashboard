@@ -58,7 +58,20 @@ export async function GET(req: Request) {
     if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
     let res: { sent: boolean; error?: string };
     try {
-      res = await sendTransactional({ type: "winback", to: p.identifier, subject: mail.subject, html: mail.html, text: mail.text, meta: { crm: toSend.key, flow } });
+      res = await sendTransactional({
+        type: "winback",
+        to: p.identifier,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
+        // One-click unsubscribe (RFC 8058): richiesto da Gmail/Yahoo per invii
+        // bulk e per l'obbligo di disiscrizione facile (legale-compliance).
+        headers: {
+          "List-Unsubscribe": `<${mail.unsubUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+        meta: { crm: toSend.key, flow },
+      });
     } catch (e) {
       console.error("[cron/crm] send error:", p.identifier, toSend.key, String(e));
       failed++;

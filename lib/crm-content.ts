@@ -67,7 +67,7 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     body: { it: "Ultimo richiamo prima di tornare al flusso Free. Riattiva per non perdere lo storico.", en: "Last call before returning to the Free flow. Reactivate to keep your history." } },
 ];
 
-export function renderCrm(key: string, lang: "it" | "en", identifier: string): { subject: string; html: string; text: string } | null {
+export function renderCrm(key: string, lang: "it" | "en", identifier: string): { subject: string; html: string; text: string; unsubUrl: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
   const href = `${SITE}/app?tab=plans&crm=${encodeURIComponent(t.key)}`;
@@ -80,5 +80,6 @@ export function renderCrm(key: string, lang: "it" | "en", identifier: string): {
     subject: t.subject[lang],
     html: brandedShell(inner, { lang, footerHtml: footer(identifier, lang) }),
     text: `${body}\n\n${label}: ${href}\n\n— ${unl}: ${unsub}`,
+    unsubUrl: unsub,
   };
 }

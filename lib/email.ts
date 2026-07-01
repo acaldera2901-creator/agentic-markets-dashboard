@@ -37,6 +37,7 @@ export async function sendEmail(opts: {
   text: string;
   from?: string;
   replyTo?: string;
+  headers?: Record<string, string>;
 }): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY not configured");
@@ -51,6 +52,7 @@ export async function sendEmail(opts: {
       html: opts.html,
       text: opts.text,
       ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+      ...(opts.headers ? { headers: opts.headers } : {}),
     }),
   });
   if (!resp.ok) {

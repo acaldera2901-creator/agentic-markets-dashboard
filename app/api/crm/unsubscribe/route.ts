@@ -4,6 +4,27 @@ import { verifyUnsub } from "@/lib/crm-unsub";
 
 export const dynamic = "force-dynamic";
 
+async function optOut(id: string): Promise<void> {
+  await dbExecute(
+    "UPDATE profiles SET marketing_opt_out = true, updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
+    [id]
+  );
+}
+
+// One-click unsubscribe (RFC 8058): il mail client fa POST all'URL, senza UI.
+// Deve essere idempotente e rispondere 200 anche se ripetuto.
+export async function POST(req: Request) {
+  const token = new URL(req.url).searchParams.get("t") ?? "";
+  const id = verifyUnsub(token);
+  if (!id) return new NextResponse(null, { status: 400 });
+  try {
+    await optOut(id);
+  } catch (e) {
+    console.error("[crm/unsubscribe] POST update failed:", String(e));
+  }
+  return new NextResponse(null, { status: 200 });
+}
+
 // Disiscrizione marketing one-click (no login). GET ?t=<token firmato>.
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("t") ?? "";
@@ -16,10 +37,7 @@ export async function GET(req: Request) {
     });
   }
   try {
-    await dbExecute(
-      "UPDATE profiles SET marketing_opt_out = true, updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
-      [id]
-    );
+    await optOut(id);
   } catch (e) {
     console.error("[crm/unsubscribe] update failed:", String(e));
   }
