@@ -11,6 +11,7 @@ type OrderRow = {
   identifier: string;
   plan: "base" | "premium";
   period: "monthly" | "annual";
+  amount_usd: number;
   status: string;
 };
 
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
   catch (e) { console.error("[paypal/webhook] verify error:", String(e)); }
   if (!ok) { console.warn("[paypal/webhook] firma non valida → ignoro"); return NextResponse.json({ ok: true }); }
 
-  let event: { event_type?: string; resource?: { custom_id?: string; amount?: { value?: string }; id?: string } };
+  let event: { event_type?: string; resource?: { custom_id?: string; amount?: { value?: string; currency_code?: string }; id?: string } };
   try { event = JSON.parse(raw); } catch { return NextResponse.json({ ok: true }); }
   if (event.event_type !== "PAYMENT.CAPTURE.COMPLETED") return NextResponse.json({ ok: true });
 
@@ -39,14 +40,26 @@ export async function POST(req: Request) {
   if (!orderId) return NextResponse.json({ ok: true });
 
   const orders = await dbQuery<OrderRow>(
-    `SELECT id, identifier, plan, period, status FROM paypal_orders WHERE id = $1 LIMIT 1`,
+    `SELECT id, identifier, plan, period, amount_usd::float8 AS amount_usd, status FROM paypal_orders WHERE id = $1 LIMIT 1`,
     [orderId]
   );
   const order = orders[0] ?? null;
   if (!order || order.status !== "pending") return NextResponse.json({ ok: true }); // idempotenza
 
   const value = Number(event.resource?.amount?.value ?? NaN);
+  const currencyCode = event.resource?.amount?.currency_code;
   const captureId = event.resource?.id ?? null;
+
+  // Gate anti-spoof (parità con /capture: evaluateCapture): l'esito dell'evento
+  // non basta, valida importo/valuta prima del claim.
+  if (!Number.isFinite(value) || value + 1e-9 < order.amount_usd) {
+    console.warn(`[paypal/webhook] no-grant: amount below expected (order=${order.id})`);
+    return NextResponse.json({ ok: true });
+  }
+  if (currencyCode != null && currencyCode !== "USD") {
+    console.warn(`[paypal/webhook] no-grant: wrong currency (order=${order.id})`);
+    return NextResponse.json({ ok: true });
+  }
 
   const db = getSupabaseAdminClient();
   if (!db) return NextResponse.json({ ok: true });
