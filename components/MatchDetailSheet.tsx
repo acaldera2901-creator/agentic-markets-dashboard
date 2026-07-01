@@ -19,6 +19,9 @@ export type MdsChip = {
   mkt: string;
   sel: string;
   prob?: string | null;
+  /** true = `prob` è la probabilità IMPLICITA dal mercato (de-vig), non la nostra
+   * stima da modello → mostrata con marcatore "mkt" per onestà. */
+  probMkt?: boolean;
   q?: number | null;
   value?: string | null;
   est?: boolean;
@@ -98,12 +101,13 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         if (!alive || !mk.length) return;
         const iconFor = (n: string): MdsGroup["icon"] =>
           /corner|card|foul/i.test(n) ? "flag" : /goal/i.test(n) ? "goal" : "result";
-        // Attach OUR model prediction + edge to each FP outcome we can model
-        // (goal-derived markets). Unmodeled (soft/handicap) stay quote-only.
+        // Ogni esito ha una probabilità: modello dove lo abbiamo (gol-derivati) con
+        // edge; altrimenti probabilità IMPLICITA di mercato (de-vig delle quote),
+        // etichettata come "mkt" (mai spacciata per edge nostro).
         const joined = joinFpWithModel(mk, data.extraMarkets ?? [], data.home, data.away);
-        const predBy = new Map<string, { p: number | null; edge: number | null }>();
+        const predBy = new Map<string, { p: number; edge: number | null; source: "model" | "market" }>();
         for (const jm of joined)
-          for (const o of jm.outcomes) predBy.set(`${jm.name}|${jm.line}|${o.label}`, { p: o.p, edge: o.edge });
+          for (const o of jm.outcomes) predBy.set(`${jm.name}|${jm.line}|${o.label}`, { p: o.p, edge: o.edge, source: o.source });
         // Unisci le linee dello stesso mercato (es. Total Goals 0.5/1.5/2.5/…) in UN
         // gruppo: le chip Over/Under di tutte le linee vanno a capo compatte, senza
         // moltiplicare le intestazioni e allungare la scheda.
@@ -127,7 +131,8 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
                   mkt: name + (m.line != null ? ` ${m.line}` : ""),
                   sel: o.label,
                   q: o.odds,
-                  prob: pr && pr.p != null ? `${Math.round(pr.p * 100)}%` : null,
+                  prob: pr ? `${Math.round(pr.p * 100)}%` : null,
+                  probMkt: pr ? pr.source === "market" : false,
                   value: pr && pr.edge != null && pr.edge >= 0.05 ? `+${Math.round(pr.edge * 100)}%` : null,
                 };
               })),
@@ -169,7 +174,14 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
               {on && <span className="mds-tick"><Ico id="check" /></span>}
               <span className="mds-cl">{c.sel}</span>
               <span className="mds-cm">
-                {c.prob && <span className="mds-p">{c.prob}</span>}
+                {c.prob && (
+                  <span
+                    className={`mds-p${c.probMkt ? " mkt" : ""}`}
+                    title={c.probMkt ? "Probabilità implicita dal mercato (quote de-viggate) — non è una nostra stima da modello" : "Nostra stima dal modello"}
+                  >
+                    {c.prob}{c.probMkt ? " mkt" : ""}
+                  </span>
+                )}
                 <span className={`mds-q${c.est ? " est" : ""}`}>{c.est ? "stima" : (c.q ? c.q.toFixed(2) : "–")}</span>
                 {c.value && <span className="mds-cv">{c.value}</span>}
               </span>

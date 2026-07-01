@@ -43,20 +43,28 @@ const joined = joinFpWithModel(fp, extra, HOME, AWAY);
 const tg = joined.find((m) => m.name === "Total Goals")!;
 assert.ok(tg.modeled, "Total Goals modeled");
 const over = tg.outcomes.find((o) => o.label === "Over 2.5")!;
-assert.ok(over.p !== null && Math.abs(over.p - 0.53) < 0.03, `over 2.5 p=${over.p}`);
-assert.ok(over.edge !== null && Math.abs(over.edge - (over.p! * 1.9 - 1)) < 2e-4, "edge computed vs FP odds");
+assert.equal(over.source, "model", "over 2.5 from model");
+assert.ok(Math.abs(over.p - 0.53) < 0.03, `over 2.5 p=${over.p}`);
+assert.ok(over.edge !== null && Math.abs(over.edge - (over.p * 1.9 - 1)) < 2e-4, "model edge vs FP odds");
 const under = tg.outcomes.find((o) => o.label === "Under 2.5")!;
-assert.ok(under.p !== null && Math.abs(over.p! + under.p - 1) < 0.02, "over+under ~1");
+assert.ok(Math.abs(over.p + under.p - 1) < 0.02, "over+under ~1");
 
 // team-2 under derived from over sibling
 const t2 = joined.find((m) => m.name === "Team 2 Total Goals")!;
 const t2u = t2.outcomes.find((o) => o.label === "Under 1.5")!;
-assert.ok(t2u.p !== null, "team2 under derived from over");
+assert.equal(t2u.source, "model", "team2 under derived from model over");
 
-// unmodeled soft market: FP odds kept, prediction null
+// unmodeled soft market: NOW market-implied (de-vig), source=market, NO edge
 const corners = joined.find((m) => m.name === "Corners: Total")!;
-assert.equal(corners.modeled, false, "corners not modeled");
-assert.ok(corners.outcomes.every((o) => o.p === null && o.fpOdds > 1), "corners: odds kept, no fabricated pred");
+assert.equal(corners.modeled, false, "corners not modeled by us");
+assert.ok(corners.outcomes.every((o) => o.source === "market" && o.edge === null && o.p > 0 && o.p < 1 && o.fpOdds > 1),
+  "corners: market-implied prob, no fabricated edge");
+// de-vig sums to ~1 across the market's outcomes
+const cSum = corners.outcomes.reduce((a, o) => a + o.p, 0);
+assert.ok(Math.abs(cSum - 1) < 0.01, `corners de-vig sums to 1 (got ${cSum.toFixed(3)})`);
+// de-vig removes margin: implied prob < raw 1/odds
+const cRaw = corners.outcomes.reduce((a, o) => a + 1 / o.fpOdds, 0);
+assert.ok(cRaw > 1, "raw inverse-odds carry margin >1");
 
 console.log("joinFpWithModel OK");
 console.log("ALL MARKET-JOIN CHECKS PASSED");

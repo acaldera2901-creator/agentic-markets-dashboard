@@ -1,28 +1,47 @@
-// #CARD-REAL-PREDICTIONS-1 — join FortunePlay curated markets with our model.
-// For every outcome the card shows, attach the model probability, fair odds and
-// edge from lib/poisson-model.computeExtraMarkets. Markets we do NOT model
-// honestly (soft corners/cards per-team, goals handicap) are returned with
-// prediction=null — the card shows the FP odds but claims no pick. We never
-// fabricate a probability.
+// #CARD-REAL-PREDICTIONS-1 / #PREDICT-EVERY-MARKET-1 — join FP curated markets with our model.
+// EVERY shown outcome gets a probability + a `source`:
+//   - source="model": our fundamental prediction (computeExtraMarkets, goal-derived
+//     markets) — carries an `edge` vs the shown price (real added value).
+//   - source="market": the de-vigged book-implied probability (margin removed from
+//     the sportsbook odds) for markets we don't model fundamentally (handicap,
+//     corners-result, red/yellow split, …). Honest baseline, labeled as market-derived,
+//     NO edge (edge vs the book's own price is meaningless — never presented as ours).
+// Soft totals (corners/cards) use the soft-markets track's predictions upstream when
+// present; otherwise they fall here to market-implied. We never fabricate a number.
 import type { ExtraMarket } from "./poisson-model";
 import type { FpFullMarket } from "./fortuneplay-match";
 
 export interface JoinedOutcome {
   label: string;
   fpOdds: number;
-  /** our model probability for this outcome, or null when unmodeled */
-  p: number | null;
-  fairOdds: number | null;
-  /** p*fpOdds-1, rounded; null when unmodeled */
+  /** displayed probability: our model where we have one, else the de-vigged
+   * market-implied probability (book margin removed). Never null: every shown
+   * outcome gets a probability. `source` says which. */
+  p: number;
+  fairOdds: number;
+  /** "model" = our fundamental prediction; "market" = de-vigged book odds. */
+  source: "model" | "market";
+  /** p*fpOdds-1 (value vs the shown price) ONLY when source="model". For
+   * market-implied outcomes it's null — edge vs the book's own price is
+   * meaningless and must never be presented as our edge. */
   edge: number | null;
 }
 
 export interface JoinedMarket {
   name: string;
   line: number | null;
-  /** true if at least one outcome carries a model prediction */
+  /** true if at least one outcome carries a MODEL prediction (not just market-implied) */
   modeled: boolean;
   outcomes: JoinedOutcome[];
+}
+
+/** De-vig a market's outcome odds into implied probabilities (margin removed,
+ * normalized across the shown outcomes). Exact for 2/3-way markets; approximate
+ * for truncated many-way markets (which we model ourselves anyway). */
+function marketImplied(odds: number[]): number[] {
+  const inv = odds.map((o) => (o && o > 1 ? 1 / o : 0));
+  const s = inv.reduce((a, b) => a + b, 0);
+  return s > 0 ? inv.map((x) => x / s) : odds.map(() => 0);
 }
 
 const lineKey = (line: number) => String(line).replace(".", "_");
@@ -125,27 +144,33 @@ export function joinFpWithModel(
   for (const m of extra) byKey.set(m.key, m);
   const round = (x: number) => Math.round(x * 10000) / 10000;
 
+  const fair = (p: number) => Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100;
+
   return fpMarkets.map((mkt) => {
     let modeled = false;
-    const outcomes: JoinedOutcome[] = mkt.outcomes.map((o) => {
+    const implied = marketImplied(mkt.outcomes.map((o) => o.odds)); // de-vig, per market
+    const outcomes: JoinedOutcome[] = mkt.outcomes.map((o, i) => {
       const key = keyForOutcome(mkt.name, mkt.line, o.label, homeTeam, awayTeam);
-      let p: number | null = null;
+      let modelP: number | null = null;
       if (key) {
         const em = byKey.get(key);
-        if (em) p = em.p;
+        if (em) modelP = em.p;
       }
       // derive Under for team totals when only Over is modeled
-      if (p == null && norm(o.label).includes("under")) {
+      if (modelP == null && norm(o.label).includes("under")) {
         const overKey = keyForOutcome(mkt.name, mkt.line, o.label.replace(/under/i, "Over"), homeTeam, awayTeam);
         if (overKey) {
           const em = byKey.get(overKey);
-          if (em) p = round(1 - em.p);
+          if (em) modelP = round(1 - em.p);
         }
       }
-      if (p != null) modeled = true;
-      const fairOdds = p != null ? Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100 : null;
-      const edge = p != null ? round(p * o.odds - 1) : null;
-      return { label: o.label, fpOdds: o.odds, p, fairOdds, edge };
+      if (modelP != null) {
+        modeled = true;
+        return { label: o.label, fpOdds: o.odds, p: round(modelP), fairOdds: fair(modelP), source: "model" as const, edge: round(modelP * o.odds - 1) };
+      }
+      // no fundamental model → de-vigged market-implied probability (honest baseline)
+      const mp = round(implied[i]);
+      return { label: o.label, fpOdds: o.odds, p: mp, fairOdds: fair(mp), source: "market" as const, edge: null };
     });
     return { name: mkt.name, line: mkt.line, modeled, outcomes };
   });
