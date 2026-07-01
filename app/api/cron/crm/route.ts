@@ -14,6 +14,29 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const url = new URL(req.url);
+
+  // QA test-send: ?test=<email>&key=<touchpoint>&lang=it|en invia UN solo
+  // touchpoint brandizzato a quell'indirizzo, SENZA scrivere su crm_trigger_sends
+  // (nessun effetto sul giro reale). Per verificare il rendering in una casella
+  // vera prima del primo invio ai clienti.
+  const testTo = url.searchParams.get("test");
+  if (testTo) {
+    const key = url.searchParams.get("key") || "onb_activate";
+    const lang = url.searchParams.get("lang") === "en" ? "en" : "it";
+    const mail = renderCrm(key, lang, testTo);
+    if (!mail) return NextResponse.json({ error: `unknown touchpoint key '${key}'`, keys: CRM_TOUCHPOINTS.map((t) => t.key) }, { status: 400 });
+    const res = await sendTransactional({
+      type: "winback",
+      to: testTo,
+      subject: `[TEST] ${mail.subject}`,
+      html: mail.html,
+      text: mail.text,
+      headers: { "List-Unsubscribe": `<${mail.unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+      meta: { crm: key, test: true },
+    });
+    return NextResponse.json({ ok: true, test: true, to: testTo, key, lang, sent: res.sent, error: res.error });
+  }
+
   const live = url.searchParams.get("send") === "1" && process.env.CRM_SEND_ENABLED === "1";
   const nowISO = new Date().toISOString();
 
