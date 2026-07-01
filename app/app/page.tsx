@@ -4647,55 +4647,34 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       ) : (
         <>
           <div
-            className={`mvm${onSelect && isValueBet && p.best_selection ? " sel" : ""}`}
+            className={`v2r${onSelect && isValueBet && p.best_selection ? " sel" : ""}`}
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
-            <div className="col">
-              <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
-              <div className="l">{pick5(lang, { it: "Mercato", en: "Market", es: "Mercado", fr: "Marché", ru: "Рынок" })}</div>
+            <div className="v2r-l">
+              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {!isPreview && confScore != null && !belowFloor && (
+                <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
+              )}
+              {belowFloor && !isPreview && <span className="v2r-flat">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>}
             </div>
-            <div className="col model">
-              <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l"><span className="lw">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
-            </div>
-            <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
-              <div className="n">
-                {isPreview ? "🔒"
-                  : edgeVal != null ? `+${edgeVal.toFixed(1)}%`
-                  : marketImplied != null ? pick5(lang, { it: "in linea", en: "in line", es: "en línea", fr: "en ligne", ru: "в линии" })
-                  : "–"}
-              </div>
-              <div className="l">Edge</div>
-            </div>
-          </div>
-          {!isPreview && edgeVal != null && confScore != null && (
-            <div className="conf">
-              <span className="conf-lab">{pick5(lang, { it: "Confidenza", en: "Confidence", es: "Confianza", fr: "Confiance", ru: "Уверенность" })}</span>
-              {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
-              {confLabel && <span className="conf-txt">{confLabel}</span>}
-            </div>
-          )}
-          {!isPreview && edgeVal == null && (
-            <span className="edge flat">
-              {belowFloor
-                ? pick5(lang, { it: "nessun favorito netto · lettura del modello", en: "no clear favourite · model read", es: "sin favorito claro · lectura del modelo", fr: "pas de favori net · lecture du modèle", ru: "нет явного фаворита · чтение модели" })
-                : marketImplied != null
-                ? pick5(lang, { it: "nessun edge · in linea col mercato", en: "no edge · in line with market", es: "sin edge · en línea con el mercado", fr: "pas d'edge · en ligne avec le marché", ru: "нет edge · в линии с рынком" })
-                : pick5(lang, { it: "nessuna quota · lettura del modello", en: "no market price · model read", es: "sin cuota · lectura del modelo", fr: "pas de cote · lecture du modèle", ru: "нет котировки · чтение модели" })}
-            </span>
-          )}
-          {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
-          {fpPickOdds != null && (
-            <div className="fp-odds-row">
-              <span className="fp-odds-label">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" })}</span>
-              <span className="fp-odds-val">{fpPickOdds.toFixed(2)}</span>
-              {fpValue != null && fpValue > 0 && (
-                <span className="fp-edge" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non è una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du modèle par rapport à la cote FortunePlay. Aucune garantie de gain. 18+, jouez de manière responsable.", ru: "Ориентировочная ценность модели относительно коэффициента FortunePlay. Не гарантия выигрыша. 18+, играйте ответственно." })}>
-                  value {(fpValue * 100).toFixed(1)}%
-                </span>
+            <div className="v2r-q">
+              {isPreview ? (
+                <span className="v2r-qn lock">🔒</span>
+              ) : fpPickOdds != null ? (
+                <>
+                  <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
+                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
+                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? <span className="v2r-val" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {(fpValue * 100).toFixed(1)}%</span> : null}</span>
+                </>
+              ) : (
+                <>
+                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "\u2013"}</span>
+                </>
               )}
             </div>
-          )}
+          </div>
         </>
       )}
     </>
@@ -5145,55 +5124,34 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
       ) : (
         <>
           <div
-            className={`mvm${onSelect && isValue && pickPlayer ? " sel" : ""}`}
+            className={`v2r${onSelect && isValue && pickPlayer ? " sel" : ""}`}
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
-            <div className="col">
-              <div className="n">{isPreview ? "🔒" : marketImplied != null ? pct(marketImplied) : "–"}</div>
-              <div className="l">{pick5(lang, { it: "Mercato", en: "Market", es: "Mercado", fr: "Marché", ru: "Рынок" })}</div>
+            <div className="v2r-l">
+              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {!isPreview && confScore != null && hasFavorite && (
+                <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
+              )}
+              {!hasFavorite && !isPreview && <span className="v2r-flat">{pick5(lang, { it: "nessun favorito \u00b7 match aperto", en: "no favourite \u00b7 open match", es: "sin favorito", fr: "pas de favori", ru: "\u043d\u0435\u0442 \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>}
             </div>
-            <div className="col model">
-              <div className="n">{pickProb != null ? pct(pickProb) : "–"}</div>
-              <div className="l"><span className="lw">{pick5(lang, { it: "Modello", en: "Model", es: "Modelo", fr: "Modèle", ru: "Модель" })}</span>{pickName ? <span className="ln"> · {pickName}</span> : null}</div>
-            </div>
-            <div className={`col edge${edgeVal != null && !isPreview ? " val" : ""}`}>
-              <div className="n">
-                {isPreview ? "🔒"
-                  : edgeVal != null ? `+${edgeVal.toFixed(1)}%`
-                  : marketImplied != null ? pick5(lang, { it: "in linea", en: "in line", es: "en línea", fr: "en ligne", ru: "в линии" })
-                  : "–"}
-              </div>
-              <div className="l">Edge</div>
-            </div>
-          </div>
-          {!isPreview && edgeVal != null && confScore != null && (
-            <div className="conf">
-              <span className="conf-lab">{pick5(lang, { it: "Confidenza", en: "Confidence", es: "Confianza", fr: "Confiance", ru: "Уверенность" })}</span>
-              {[0, 1, 2, 3].map((i) => <span key={i} className={`dot${i < confDots ? " on" : ""}`} />)}
-              {confLabel && <span className="conf-txt">{confLabel}</span>}
-            </div>
-          )}
-          {!isPreview && edgeVal == null && (
-            <span className="edge flat">
-              {!hasFavorite
-                ? pick5(lang, { it: "nessun favorito · match aperto", en: "no favourite · open match", es: "sin favorito · partido abierto", fr: "pas de favori · match ouvert", ru: "нет фаворита · открытый матч" })
-                : marketImplied != null
-                ? pick5(lang, { it: "nessun edge · in linea col mercato", en: "no edge · in line with market", es: "sin edge · en línea con el mercado", fr: "pas d'edge · en ligne avec le marché", ru: "нет edge · в линии с рынком" })
-                : pick5(lang, { it: "nessuna quota · lettura del modello", en: "no market price · model read", es: "sin cuota · lectura del modelo", fr: "pas de cote · lecture du modèle", ru: "нет котировки · чтение модели" })}
-            </span>
-          )}
-          {isPreview && <span className="edge flat">🔒 {pick5(lang, { it: "Mercato ed edge richiedono Pro", en: "Market & edge require Pro", es: "Mercado y edge requieren Pro", fr: "Marché et edge nécessitent Pro", ru: "Рынок и edge доступны с Pro" })}</span>}
-          {fpPickOdds != null && (
-            <div className="fp-odds-row">
-              <span className="fp-odds-label">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" })}</span>
-              <span className="fp-odds-val">{fpPickOdds.toFixed(2)}</span>
-              {fpValue != null && fpValue > 0 && (
-                <span className="fp-edge" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non è una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du modèle par rapport à la cote FortunePlay. Aucune garantie de gain. 18+, jouez de manière responsable.", ru: "Ориентировочная ценность модели относительно коэффициента FortunePlay. Не гарантия выигрыша. 18+, играйте ответственно." })}>
-                  value {(fpValue * 100).toFixed(1)}%
-                </span>
+            <div className="v2r-q">
+              {isPreview ? (
+                <span className="v2r-qn lock">🔒</span>
+              ) : fpPickOdds != null ? (
+                <>
+                  <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
+                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
+                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? <span className="v2r-val" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {(fpValue * 100).toFixed(1)}%</span> : null}</span>
+                </>
+              ) : (
+                <>
+                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "\u2013"}</span>
+                </>
               )}
             </div>
-          )}
+          </div>
         </>
       )}
     </>
