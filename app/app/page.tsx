@@ -3205,6 +3205,19 @@ function CryptoPaymentBox({
   );
 }
 
+// PayPal JS SDK loader — cached on window.paypal, loaded once per page.
+function loadPayPalSdk(clientId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return resolve();
+    if ((window as unknown as { paypal?: unknown }).paypal) return resolve();
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&components=buttons`;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("paypal sdk load failed"));
+    document.head.appendChild(s);
+  });
+}
+
 function CheckoutModal({
   plan,
   onConfirm,
@@ -3224,6 +3237,54 @@ function CheckoutModal({
   const displayPrice = period === "annual" ? (ANNUAL_PRICE[plan] ?? price) : price;
   const t = useT();
   const lang = useLang();
+
+  // PayPal one-click button: renders into #paypal-button-container only when
+  // NEXT_PUBLIC_PAYPAL_CLIENT_ID is set (feature-flag off => no button, UI unchanged).
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (!clientId) return;
+    let cancelled = false;
+    loadPayPalSdk(clientId)
+      .then(() => {
+        if (cancelled) return;
+        const paypal = (window as unknown as {
+          paypal: {
+            Buttons: (cfg: {
+              createOrder: () => Promise<string>;
+              onApprove: (data: { orderID: string }) => Promise<void>;
+            }) => { render: (sel: string) => void };
+          };
+        }).paypal;
+        const container = document.querySelector("#paypal-button-container");
+        if (!container) return;
+        container.innerHTML = ""; // avoid double-render on re-run (plan/period change)
+        paypal.Buttons({
+          createOrder: async () => {
+            const r = await fetch("/api/paypal/create-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ requested_plan: plan, period }),
+            });
+            const d = (await r.json()) as { id?: string; error?: string };
+            if (!d.id) throw new Error(d.error ?? "create-order failed");
+            return d.id;
+          },
+          onApprove: async (data) => {
+            const r = await fetch("/api/paypal/capture", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paypal_order_id: data.orderID }),
+            });
+            const d = (await r.json()) as { ok?: boolean; granted?: boolean };
+            window.location.assign(d.granted ? "/app?paypal=success" : "/app?paypal=pending");
+          },
+        }).render("#paypal-button-container");
+      })
+      .catch((e) => console.error("[paypal] sdk:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [plan, period]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(USDT_TRC20_ADDRESS).catch(() => undefined);
@@ -3355,6 +3416,14 @@ function CheckoutModal({
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}>
               {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD
             </button>
+            {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && (
+              <div style={{ marginTop: 10 }}>
+                <p style={{ fontSize: 11, opacity: 0.7, textAlign: "center", margin: "0 0 6px" }}>
+                  {pick5(lang, { it: "oppure paga con PayPal", en: "or pay with PayPal", es: "o paga con PayPal", fr: "ou payez avec PayPal", ru: "или оплатите через PayPal" })}
+                </p>
+                <div id="paypal-button-container" />
+              </div>
+            )}
           </div>
         )}
 
