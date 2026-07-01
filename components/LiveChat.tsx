@@ -13,7 +13,20 @@
 import { useEffect } from "react";
 
 // embed.tawk.to/<propertyId>/<widgetId> — account Tawk.to BetRedge.
-const TAWK_SRC = "https://embed.tawk.to/6a3ac896707bc21d4a185b17/1jrqpv3j1";
+// #CHAT-PROXY-VPN: le VPN con filtro anti-tracker (NordVPN Threat Protection,
+// Proton NetShield, AdGuard DNS…) bloccano *.tawk.to SUL DISPOSITIVO dell'utente
+// → lo script non carica e il widget non appare (blocco client-side, non nostro).
+// Se `NEXT_PUBLIC_TAWK_PROXY_HOST` è settato (es. chat.betredge.com, Cloudflare
+// Worker), carichiamo lo script — e di riflesso tutte le risorse/XHR/WS del widget,
+// perché il Worker riscrive i riferimenti *.tawk.to — dal NOSTRO dominio, che le VPN
+// non bloccano. Default = embed.tawk.to diretto → comportamento INVARIATO finché
+// l'env NON è settata. Worker: infra/cloudflare/tawk-proxy-worker.js.
+const TAWK_PROPERTY = "6a3ac896707bc21d4a185b17";
+const TAWK_WIDGET = "1jrqpv3j1";
+const TAWK_PROXY_HOST = process.env.NEXT_PUBLIC_TAWK_PROXY_HOST || "";
+const TAWK_SRC = TAWK_PROXY_HOST
+  ? `https://${TAWK_PROXY_HOST}/__tk/embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}`
+  : `https://embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}`;
 
 export function LiveChat() {
   useEffect(() => {
