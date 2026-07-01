@@ -89,13 +89,26 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         if (!alive || !mk.length) return;
         const iconFor = (n: string): MdsGroup["icon"] =>
           /corner|card|foul/i.test(n) ? "flag" : /goal/i.test(n) ? "goal" : "result";
-        setExtraGroups(mk.map((m, gi) => ({
-          key: `x-${gi}`,
-          icon: iconFor(m.name),
-          title: m.name + (m.line != null ? ` ${m.line}` : ""),
-          src: { kind: "fp", label: "FortunePlay" },
-          chips: m.outcomes.map((o, oi) => ({ id: `x-${gi}-${oi}`, mkt: m.name, sel: o.label, q: o.odds })),
-        })));
+        // Unisci le linee dello stesso mercato (es. Total Goals 0.5/1.5/2.5/…) in UN
+        // gruppo: le chip Over/Under di tutte le linee vanno a capo compatte, senza
+        // moltiplicare le intestazioni e allungare la scheda.
+        const byName = new Map<string, typeof mk>();
+        for (const m of mk) {
+          const arr = byName.get(m.name);
+          if (arr) arr.push(m); else byName.set(m.name, [m]);
+        }
+        const groups: MdsGroup[] = [...byName.entries()].map(([name, entries], gi) => {
+          const multi = entries.length > 1;
+          return {
+            key: `x-${gi}`,
+            icon: iconFor(name),
+            title: name + (!multi && entries[0].line != null ? ` ${entries[0].line}` : ""),
+            src: { kind: "fp", label: "FortunePlay" },
+            chips: entries.flatMap((m, ei) =>
+              m.outcomes.map((o, oi) => ({ id: `x-${gi}-${ei}-${oi}`, mkt: name + (m.line != null ? ` ${m.line}` : ""), sel: o.label, q: o.odds }))),
+          };
+        });
+        setExtraGroups(groups);
       } catch { /* degrada: nessun mercato extra */ }
     })();
     return () => { alive = false; };
