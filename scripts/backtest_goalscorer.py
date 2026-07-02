@@ -135,13 +135,18 @@ def run() -> None:
     print(f"  reliability top bin (p>0.35): raw pred {xte[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f} "
           f"→ cal {cal_te[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f}  actual {yte[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f}")
 
-    # export a compact monotone curve (breakpoints) to embed in the TS model
+    # SHIPPED curve: fit on 100% of the data (max sample) — the 60% split above was
+    # only for the honest out-of-sample validation. Export breakpoints to embed in TS.
+    iso_full = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(
+        np.array(new_p), np.array(y_all))
     xs = np.linspace(0, 0.8, 33)
-    curve = [[round(float(x), 4), round(float(iso.predict([x])[0]), 4)] for x in xs]
+    curve = [[round(float(x), 4), round(float(iso_full.predict([x])[0]), 4)] for x in xs]
+    leagues = sorted({fp.stem for fp in BACKFILL.glob("*.json")})
     out = ROOT / "data" / "goalscorer_calibration.json"
-    out.write_text(json.dumps({"method": "isotonic", "trained_on": "PL 2023-24 (60% earliest)",
-                               "n_train": len(tr), "curve": curve}, indent=2))
-    print(f"  exported calibration curve → {out.relative_to(ROOT)} ({len(curve)} points)")
+    out.write_text(json.dumps({"method": "isotonic", "trained_on": leagues,
+                               "n_train_all": len(new_p), "curve": curve}, indent=2))
+    print(f"  exported FULL-DATA calibration curve → {out.relative_to(ROOT)} "
+          f"({len(curve)} pts, {len(new_p)} samples, {len(leagues)} datasets)")
 
 
 if __name__ == "__main__":
