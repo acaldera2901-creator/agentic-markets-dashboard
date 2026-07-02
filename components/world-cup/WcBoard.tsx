@@ -15,8 +15,13 @@ import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } f
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
 import { SportIcon } from "@/app/components/sport-icon";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
-import GoalscorerBlock from "@/components/GoalscorerBlock";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
+// #WC-UNIFY-0702: stessa pipeline card/scheda del board principale (quote FortunePlay + MatchDetailSheet).
+import { teamPairKey as fpPairKey } from "@/lib/team-pair-key";
+import { fpEdge } from "@/lib/fortuneplay-live";
+import { normName } from "@/lib/odds-api";
+import type { FpOddsEntry } from "@/lib/fortuneplay-board";
+import { MatchDetailSheet, type MdsData, type MdsGroup, type MdsChip } from "@/components/MatchDetailSheet";
 
 type WcEnrichment = {
   kind?: string;
@@ -315,7 +320,7 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
     const top = sides.slice().sort((a, b) => b.v - a.v)[0];
     const tp = Math.round(top.v * 100);
     if (belowFloor || tp < 45) {
-      out.push(it ? `Partita equilibrata: nessun favorito netto, ${top.name} avanti solo di poco (${tp}%).` : `A tight match with no clear favourite — ${top.name} edges it at just ${tp}%.`);
+      out.push(it ? `Partita equilibrata, ${top.name} avanti di poco (${tp}%).` : `A tight match — ${top.name} edges it at ${tp}%.`);
     } else if (top.draw) {
       out.push(it ? `Il modello vede il pareggio come l'esito più probabile, al ${tp}%.` : `The model makes the draw the likeliest result, at ${tp}%.`);
     } else if (tp >= 65) {
@@ -362,7 +367,7 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
   return out.join(" ");
 }
 
-function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
+function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: LiveScore | null }) {
   const [showWhy, setShowWhy] = useState(false);
   const home = canonTeam(p.home_team) || "Home";
   const away = canonTeam(p.away_team) || "Away";
@@ -445,10 +450,130 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   const overs = goals && typeof lh === "number" && typeof la === "number"
     ? computeExtraMarkets(lh, la)
     : [];
-  const overPct = (key: string) => {
-    const m = overs.find((x) => x.key === key);
-    return m ? `${Math.round(m.p * 100)}%` : "—";
-  };
+  // #WC-UNIFY-0702: quota live FortunePlay allineata al LATO della pick (per nome
+  // normalizzato, non per posizione) + value del modello vs quota FP.
+  const fpPickOdds: number | null = (() => {
+    if (!fp || p.locked) return null;
+    if (displayPick === "DRAW") return fp.oddsDraw;
+    const k = normName(displayPick === "HOME" ? (p.home_team ?? "") : (p.away_team ?? ""));
+    if (k && k === fp.homeKey) return fp.oddsHome;
+    if (k && k === fp.awayKey) return fp.oddsAway;
+    return null;
+  })();
+  const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds ?? null) : null;
+  const L2 = (it: string, en: string) => (lang === "it" ? it : en);
+
+  // Stessa MdsData del board principale (calcio/tennis): esito 1X2 + gol O/U +
+  // marcatori + soft, con quote FortunePlay e value. La scheda WC diventa identica.
+  const mdsData: MdsData = (() => {
+    const fpq = (key: "HOME" | "DRAW" | "AWAY"): number | null => {
+      if (!fp) return null;
+      if (key === "DRAW") return fp.oddsDraw;
+      const k = normName(key === "HOME" ? (p.home_team ?? "") : (p.away_team ?? ""));
+      if (k && k === fp.homeKey) return fp.oddsHome;
+      if (k && k === fp.awayKey) return fp.oddsAway;
+      return null;
+    };
+    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    const groups: MdsGroup[] = [];
+
+    // Esito 1X2
+    if (probs) {
+      const esito: Array<{ key: "HOME" | "DRAW" | "AWAY"; sel: string; prob: number }> = [
+        { key: "HOME", sel: home, prob: probs.home },
+        { key: "DRAW", sel: L2("Pareggio", "Draw"), prob: probs.draw },
+        { key: "AWAY", sel: away, prob: probs.away },
+      ];
+      groups.push({
+        key: "esito", icon: "result", title: L2("Esito 1X2", "Match result"),
+        src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : L2("solo modello", "model only") },
+        chips: esito.map((o) => {
+          const q = fpq(o.key);
+          return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: pct(o.prob), q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: displayPick === o.key };
+        }),
+      });
+    }
+
+    // Gol Over/Under (solo se FortunePlay quota i totali)
+    if (fp && fp.totalLine != null && (fp.totalOver != null || fp.totalUnder != null)) {
+      const line = fp.totalLine;
+      const overKey = `over_${String(line).replace(".", "_")}`;
+      const overP = overs.find((x) => x.key === overKey)?.p ?? null;
+      const underP = overP != null ? 1 - overP : null;
+      const overVal = fp.totalOver != null && overP != null ? fpEdge(overP, fp.totalOver) : null;
+      const underVal = fp.totalUnder != null && underP != null ? fpEdge(underP, fp.totalUnder) : null;
+      const recOver = overP != null && underP != null ? overP >= underP : (overVal ?? -1) > (underVal ?? -1);
+      groups.push({
+        key: "gol", icon: "goal", title: L2("Gol", "Goals"),
+        meta: `${L2("linea", "line")} ${line}${goals ? ` · ${L2("attesi", "exp.")} ${goals.expected_goals.toFixed(1)}` : ""}`,
+        src: { kind: "fp", label: "FortunePlay" },
+        chips: [
+          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: recOver },
+          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: !recOver },
+        ],
+      });
+    }
+
+    // Marcatore (goalscorer_markets, già deduplicati upstream #109) — top 4 per pScores.
+    const gs = [...(e?.goalscorer_markets ?? [])].sort((a, b) => b.pScores - a.pScores).slice(0, 4);
+    if (gs.length) {
+      const topP = Math.max(...gs.map((x) => x.pScores));
+      groups.push({
+        key: "marcatore", icon: "boot", title: L2("Marcatore", "Goalscorer"),
+        src: { kind: "us", label: L2("best · book US", "best · US book") },
+        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: L2("Marcatore", "Goalscorer"), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: x.pScores === topP && x.bestPrice != null })),
+        note: L2("La nostra probabilità che ogni giocatore segni almeno un gol.", "Our probability that each player scores at least once."),
+      });
+    }
+
+    // Soft: cartellini + falli come NOSTRE predizioni (solo modello reale, no is_generic).
+    const sf = e?.soft;
+    if (sf) {
+      const chips: MdsChip[] = [];
+      if (sf.cards && !sf.cards.is_generic) chips.push({ id: "soft-cards", mkt: L2("Cartellini", "Cards"), sel: `${L2("Cartellini", "Cards")} Over ${sf.cards.main_line}`, prob: pct(sf.cards.p_over) });
+      if (sf.fouls && !sf.fouls.is_generic) chips.push({ id: "soft-fouls", mkt: L2("Falli", "Fouls"), sel: `${L2("Falli", "Fouls")} Over ${sf.fouls.main_line}`, prob: pct(sf.fouls.p_over) });
+      if (chips.length) groups.push({
+        key: "soft", icon: "flag", title: L2("Cartellini · Falli", "Cards · Fouls"),
+        src: { kind: "est", label: L2("modello · Pro", "model · Pro") },
+        chips,
+        note: L2("Cartellini e falli: la nostra probabilità Over dal modello (Pro).", "Cards & fouls: our model's Over probability (Pro)."),
+      });
+    }
+
+    return {
+      league: p.league && p.league !== "World Cup" ? `World Cup · ${p.league}` : "World Cup",
+      when: p.starts_at ? `${kickFmt.format(new Date(p.starts_at))} UTC` : "",
+      home, away,
+      extraMarkets: overs.length ? overs : undefined,
+      hero: {
+        flag: L2("La nostra prediction", "Our prediction"),
+        pick: pickName ? (displayPick === "DRAW" ? pickName : `${pickName} ${L2("vince", "to win")}`) : L2("Lettura modello", "Model read"),
+        read: `${pickProb != null ? pct(pickProb) + " " : ""}${L2("modello", "model")}${confLabel ? ` · ${L2("conf.", "conf.")} ${confLabel}` : ""}`,
+        confDots,
+        quotaLabel: L2("Quota FortunePlay", "FortunePlay odds"),
+        quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
+        value: fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+      },
+      groups,
+      matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
+      fpMatchId: fp?.id ?? null,
+      books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
+      moreLabel: L2("Altri mercati FortunePlay", "More FortunePlay markets"),
+      labels: {
+        schedina: L2("La tua schedina", "Your betslip"),
+        quotaComb: L2("quota combinata", "combined odds"),
+        quotaOne: L2("quota", "odds"),
+        touch: L2("tocca i mercati", "tap the markets"),
+        apri: L2("Apri su FortunePlay", "Open on FortunePlay"),
+        apriMulti: L2("Apri la multipla su FortunePlay", "Open the accumulator on FortunePlay"),
+        openBook: L2("Apri su {book}", "Open on {book}"),
+        disc: L2("Value indicativo del modello vs quota FortunePlay — non è garanzia di vincita. +18 · gioca responsabilmente.", "Indicative model value vs FortunePlay odds — not a guarantee of winning. 18+ · play responsibly."),
+        side: L2("Schedina composta lato BetRedge → il bottone apre la partita su FortunePlay.", "Betslip composed on BetRedge → the button opens the match on FortunePlay."),
+        selOne: L2("1 selezione", "1 selection"),
+        selMany: L2("{n} selezioni", "{n} selections"),
+      },
+    };
+  })();
 
   // Live / scheduled readout for the .scorebar (mirrors the football card).
   const scStatus = isLive ? "live" : isPaused ? "paused" : isFinished ? "finished" : null;
@@ -520,14 +645,23 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
             <div className="v2r-l">
               <span className="v2r-eye">{lang === "it" ? "Il nostro pronostico" : "Our prediction"}</span>
               <span className="v2r-pick">{pickName ?? (lang === "it" ? "Lettura modello" : "Model read")}</span>
-              {confScore != null && !belowFloor && (
+              {confScore != null && (
                 <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
               )}
-              {belowFloor && <span className="v2r-flat">{lang === "it" ? "nessun favorito netto" : "no clear favourite"}</span>}
             </div>
             <div className="v2r-q">
-              <span className="v2r-qlab">{lang === "it" ? "probabilità modello" : "model probability"}</span>
-              <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "–"}</span>
+              {fpPickOdds != null ? (
+                <>
+                  <span className="v2r-qlab">{lang === "it" ? "Quota FortunePlay" : "FortunePlay odds"}</span>
+                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
+                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{lang === "it" ? "modello" : "model"}{fpValue != null && fpValue > 0 ? <span className="v2r-val">value {(fpValue * 100).toFixed(1)}%</span> : null}</span>
+                </>
+              ) : (
+                <>
+                  <span className="v2r-qlab">{lang === "it" ? "probabilità modello" : "model probability"}</span>
+                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "–"}</span>
+                </>
+              )}
             </div>
           </div>
         </>
@@ -536,53 +670,10 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
   );
 
   // corpo completo (gol · marcatori · why · deep analysis) — solo nel modal
-  const bodyNode = (
+  // #WC-UNIFY-0702: gol/marcatori/soft ora vivono nella MatchDetailSheet; qui resta
+  // solo l'analisi "Perché" + Deep Analysis (contenuto premium WC non presente sul board).
+  const analysisNode = (
     <>
-          {goals && (
-            <div className="goals-block">
-              <div className="goals-head">
-                <span className="goals-eg">{lang === "it" ? "Gol attesi" : "Expected goals"}: <b>{goals.expected_goals.toFixed(1)}</b></span>
-                <span className="goals-band">{lang === "it" ? "Fascia più probabile" : "Most likely range"}: <b>{goals.band_low === goals.band_high ? `${goals.band_low}` : `${goals.band_low}–${goals.band_high}`} {lang === "it" ? "gol" : "goals"}</b> ({Math.round(goals.band_p * 100)}%)</span>
-              </div>
-              <div className="goals-ou">
-                <span>Over 1.5: <b>{overPct("over_1_5")}</b></span>
-                <span>Over 2.5: <b>{overPct("over_2_5")}</b></span>
-                <span>Over 3.5: <b>{overPct("over_3_5")}</b></span>
-              </div>
-            </div>
-          )}
-          {e?.goalscorer_markets && e.goalscorer_markets.length > 0 && (
-            <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={home} awayTeam={away} lang={lang} />
-          )}
-
-          {/* Mercati soft (#SOFT-MARKETS, WC): corners/cartellini/falli — Pro-only.
-              Framing: STIMA DEL MODELLO — mai edge. Non-Pro: enrichment stripped
-              entirely by projectPrediction → e?.soft is never present → nothing renders. */}
-          {e?.soft && Object.keys(e.soft).length > 0 && (
-            <div className="goals-block">
-              <div className="goals-head">
-                <span className="goals-eg">{lang === "it" ? "Mercati extra" : "Extra markets"}</span>
-              </div>
-              <div className="goals-ou">
-                {e.soft.fouls && (
-                  <span>
-                    {lang === "it" ? "Falli attesi" : "Fouls exp."} ~<b>{e.soft.fouls.expected.toFixed(1)}</b> · Over {e.soft.fouls.main_line} <b>{Math.round(e.soft.fouls.p_over * 100)}%</b>
-                  </span>
-                )}
-                {e.soft.cards && (
-                  <span>
-                    {lang === "it" ? "Cartellini attesi" : "Cards exp."} ~<b>{e.soft.cards.expected.toFixed(1)}</b> · Over {e.soft.cards.main_line} <b>{Math.round(e.soft.cards.p_over * 100)}%</b>
-                  </span>
-                )}
-                {e.soft.corners && (
-                  <span>
-                    {lang === "it" ? "Corner attesi" : "Corners exp."} ~<b>{e.soft.corners.expected.toFixed(1)}</b> · Over {e.soft.corners.main_line} <b>{Math.round(e.soft.corners.p_over * 100)}%</b>
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* WHY — #CARD-STD-1: same structure as the football card —
               static .wlab label + .dl readout (Form/Sample) + .act footer
               (toggle · place bet · model · Pro) + expandable .why-body. */}
@@ -660,13 +751,13 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
         titleId={modalTitleId}
         lang={lang}
         title={p.home_team && p.away_team ? <>{home} <span className="pdm-v">v</span> {away}</> : p.event_name}
-        subtitle={<>World Cup{p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}{/* #GOLIVE: nessun badge "paper" verso i clienti */}</>}
+        subtitle={<>World Cup{p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}</>}
+        hideHead
         hideExtraMarkets
       >
-        <div className="pdm-grid pred">
-          <div className="pdm-lead">{readoutNode}</div>
-          <div className="pdm-detail">{bodyNode}</div>
-        </div>
+        {/* #WC-UNIFY-0702: stessa scheda del board principale + analisi WC (Perché/Deep) sotto. */}
+        <MatchDetailSheet data={mdsData} />
+        <div className="pred">{analysisNode}</div>
       </PredictionDetailModal>
     </>
   );
@@ -679,6 +770,20 @@ export default function WcBoard() {
   // ESPN fifa.friendly + football-data fixtures). Matched to cards by team-name
   // pair since the live feed is keyed by match_id, not the prediction id.
   const [liveMap, setLiveMap] = useState<Record<string, LiveScore>>({});
+  // #WC-UNIFY-0702: quote live FortunePlay (stesso endpoint del board principale).
+  const [fpOdds, setFpOdds] = useState<Record<string, FpOddsEntry>>({});
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch("/api/fortuneplay-odds", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (alive && d) setFpOdds(d.odds ?? {}); })
+        .catch(() => { /* fail-soft: card restano senza quota */ });
+    load();
+    const int = setInterval(load, 30_000);
+    return () => { alive = false; clearInterval(int); };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -722,7 +827,7 @@ export default function WcBoard() {
   const grid = (
     <div className="wc-board-grid">
       {rows.map((p) => (
-        <WcCard key={p.id} p={p} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} />
+        <WcCard key={p.id} p={p} fp={fpOdds[fpPairKey("soccer", p.home_team ?? "", p.away_team ?? "", p.starts_at ?? null) ?? ""]} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} />
       ))}
     </div>
   );
