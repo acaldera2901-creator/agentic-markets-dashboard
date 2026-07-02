@@ -6,7 +6,13 @@ import { mergeBooksToResponse } from "@/lib/fortuneplay-board";
 import { fetchAllBooks } from "@/lib/betconstruct-feed";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"; // la funzione gira sempre fresca (no build-time fetch cache)
+
+// #PERF-ODDS-0702: le quote sono GLOBALI (non per-utente) → cacheabili sull'edge.
+// La CDN Vercel rispetta s-maxage anche su route dinamiche: serve SUBITO l'ultima
+// risposta buona a tutti gli utenti (~edge, non 5-10s) e rivalida in background
+// (stale-while-revalidate). Niente attesa del fetch upstream BetConstruct lato utente.
+const ODDS_CACHE = "public, s-maxage=25, stale-while-revalidate=300";
 
 // #MULTIBOOK-1: quote live da TUTTI i book BetConstruct (FortunePlay + YBets…),
 // unite in best-odds per team_pair_key. Deep-link/attribuzione per-book (stag dal
@@ -17,5 +23,5 @@ export async function GET() {
     locale: "it",
     landingUrl: FORTUNEPLAY_BET_URL,
   });
-  return NextResponse.json({ odds });
+  return NextResponse.json({ odds }, { headers: { "Cache-Control": ODDS_CACHE } });
 }
