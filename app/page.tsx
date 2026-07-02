@@ -46,14 +46,14 @@ const COPY = {
     cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate alta-confidenza · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 19.90 · Pro 49.90 USDT/mese.", cardPlansBtn: "Vedi i piani",
-    risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. 18+.",
+    risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. I risultati passati non garantiscono risultati futuri. 18+.",
     privacy: "Privacy",
     // ── Edge Scanner (value-prop) ──
     waEyebrow: "MOTORE DI PROBABILITÀ · NON UN BOOKMAKER",
     waHead1: "Non battiamo il banco.",
     waHead2: "Lo rendiamo leggibile.",
     waBody: "Ogni partita passa nel modello: probabilità calibrate, confrontate con la quota. Dove c'è scarto lo evidenziamo e lo spieghiamo — prima del fischio — e lo registriamo. Niente soffiate, niente scatola nera: numeri onesti e il loro perché.",
-    waKpi1Lab: "hit-rate", waKpi2Lab: "edge medio", waKpi3Val: "Tracciato", waKpi3Lab: "CLV verificato",
+    waKpi1Lab: "hit-rate", waKpi2Lab: "prima del fischio", waKpi3Val: "Tracciato", waKpi3Lab: "CLV verificato",
     waCta: "Inizia gratis",
     waCtaSub: "Senza carta",
     // terminale edge_scanner — header colonne + stati + footer
@@ -96,14 +96,14 @@ const COPY = {
     cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "High-confidence hit-rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
     cardPlans: "Plans", cardPlansDesc: "Free to try · Base 19.90 · Pro 49.90 USDT/month.", cardPlansBtn: "See plans",
-    risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. 18+.",
+    risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. Past results do not guarantee future results. 18+.",
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "PROBABILITY ENGINE · NOT A BOOKMAKER",
     waHead1: "We don't beat the book.",
     waHead2: "We make it readable.",
     waBody: "Every match runs through the model: calibrated probabilities, lined up against the odds. Where there's a gap we flag it and explain it — before kick-off — and we log it. No tips, no black box: honest numbers and the reasoning behind them.",
-    waKpi1Lab: "hit-rate", waKpi2Lab: "avg edge", waKpi3Val: "Tracked", waKpi3Lab: "verified CLV",
+    waKpi1Lab: "hit-rate", waKpi2Lab: "logged pre-match", waKpi3Val: "Tracked", waKpi3Lab: "verified CLV",
     waCta: "Start free",
     waCtaSub: "No card",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -145,14 +145,14 @@ const COPY = {
     cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto de alta confianza · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
     cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 19.90 · Pro 49.90 USDT/mes.", cardPlansBtn: "Ver planes",
-    risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. 18+.",
+    risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. Los resultados pasados no garantizan resultados futuros. 18+.",
     privacy: "Privacidad",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTOR DE PROBABILIDAD · NO UN BOOKMAKER",
     waHead1: "No batimos a la casa.",
     waHead2: "La hacemos legible.",
     waBody: "Cada partido pasa por el modelo: probabilidades calibradas, frente a la cuota. Donde hay diferencia la señalamos y la explicamos — antes del pitido — y la registramos. Sin soplos, sin caja negra: números honestos y su porqué.",
-    waKpi1Lab: "acierto", waKpi2Lab: "edge medio", waKpi3Val: "Registrado", waKpi3Lab: "CLV verificado",
+    waKpi1Lab: "acierto", waKpi2Lab: "antes del partido", waKpi3Val: "Registrado", waKpi3Lab: "CLV verificado",
     waCta: "Empieza gratis",
     waCtaSub: "Sin tarjeta",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -194,14 +194,14 @@ const COPY = {
     cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite haute-confiance · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
     cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 19.90 · Pro 49.90 USDT/mois.", cardPlansBtn: "Voir les offres",
-    risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. 18+.",
+    risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. Les résultats passés ne garantissent pas les résultats futurs. 18+.",
     privacy: "Confidentialité",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTEUR DE PROBABILITÉ · PAS UN BOOKMAKER",
     waHead1: "On ne bat pas le bookmaker.",
     waHead2: "On le rend lisible.",
     waBody: "Chaque match passe dans le modèle : des probabilités calibrées, confrontées à la cote. Là où il y a un écart, on le signale et on l'explique — avant le coup d'envoi — et on l'enregistre. Pas de tuyaux, pas de boîte noire : des chiffres honnêtes et leur pourquoi.",
-    waKpi1Lab: "réussite", waKpi2Lab: "edge moyen", waKpi3Val: "Suivi", waKpi3Lab: "CLV vérifié",
+    waKpi1Lab: "réussite", waKpi2Lab: "avant le match", waKpi3Val: "Suivi", waKpi3Lab: "CLV vérifié",
     waCta: "Commencer gratuitement",
     waCtaSub: "Sans carte",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -243,14 +243,14 @@ const COPY = {
     cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Высокая точность попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
     cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 19.90 · Pro 49.90 USDT/мес.", cardPlansBtn: "Тарифы",
-    risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. 18+.",
+    risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. Прошлые результаты не гарантируют будущих результатов. 18+.",
     privacy: "Конфиденциальность",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "ДВИЖОК ВЕРОЯТНОСТЕЙ · НЕ БУКМЕКЕР",
     waHead1: "Мы не обыгрываем букмекера.",
     waHead2: "Мы делаем его понятным.",
     waBody: "Каждый матч проходит через модель: калиброванные вероятности, сопоставленные с коэффициентом. Где есть расхождение — мы отмечаем его и объясняем — до свистка — и фиксируем. Никаких подсказок, никакого чёрного ящика: честные цифры и их причина.",
-    waKpi1Lab: "попаданий", waKpi2Lab: "ср. edge", waKpi3Val: "Отслеж.", waKpi3Lab: "проверенный CLV",
+    waKpi1Lab: "попаданий", waKpi2Lab: "до матча", waKpi3Val: "Отслеж.", waKpi3Lab: "проверенный CLV",
     waCta: "Начать бесплатно",
     waCtaSub: "Без карты",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -556,7 +556,7 @@ export default function LandingPage() {
               <span className="lp-kpi-lab">{t.waKpi1Lab}</span>
             </div>
             <div className="lp-kpi">
-              <b className="lp-kpi-val accent">+7.9<span className="lp-kpi-unit">pt</span></b>
+              <b className="lp-kpi-val accent">100<span className="lp-kpi-unit">%</span></b>
               <span className="lp-kpi-lab">{t.waKpi2Lab}</span>
             </div>
             <div className="lp-kpi">
