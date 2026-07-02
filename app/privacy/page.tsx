@@ -95,10 +95,10 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">10. Direct Marketing (CRM &amp; Email)</h2>
           <p className="text-xs leading-relaxed">
-            <strong className="text-[var(--am-text)]">Purpose.</strong> We send marketing communications about BetRedge and Maven Agency (product news, content, offers and promotions) by email through our CRM.
+            <strong className="text-[var(--am-text)]">Purpose.</strong> We send marketing communications about BetRedge (product news, content, offers and promotions) by email through our CRM.
           </p>
           <p className="text-xs leading-relaxed">
-            <strong className="text-[var(--am-text)]">Legal basis.</strong> For prospects (free users who have never purchased) we rely on your explicit consent (Art. 6(1)(a) GDPR), collected via an unticked opt-in checkbox at sign-up. For current and former clients we rely on the &quot;soft opt-in&quot; for similar services (Art. 6(1)(f) GDPR and Art. 130(4) of the Italian Privacy Code), with a free right to object at any time.
+            <strong className="text-[var(--am-text)]">Legal basis.</strong> For prospects (free users who have never purchased) we rely on your explicit consent (Art. 6(1)(a) GDPR), collected via an unticked opt-in checkbox at sign-up. For current and former clients we rely on the &quot;soft opt-in&quot; for similar services (Art. 6(1)(f) GDPR), with a free right to object at any time.
           </p>
           <p className="text-xs leading-relaxed">
             <strong className="text-[var(--am-text)]">Email processor &amp; transfers.</strong> Marketing and account emails are delivered through Resend, Inc. (USA), acting as our processor under a Data Processing Agreement (Art. 28 GDPR); US transfers are covered by Standard Contractual Clauses (Art. 46) and/or the EU-US Data Privacy Framework, with supplementary measures.
