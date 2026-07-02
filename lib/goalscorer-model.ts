@@ -60,11 +60,40 @@ function indexBestOdds(odds: GsOdd[]): Map<string, GsOdd> {
   return best;
 }
 
+// #GOALSCORER-CALIB-1 (fase 2): calibrazione isotonica addestrata su PL 2023-24
+// (scripts/backtest_goalscorer.py, 11.817 player-match train). Il modello grezzo, pur
+// corretto in aggregato, SOVRA-stima i bomber (fascia alta) e sotto-stima la fascia
+// bassa; questa curva monotòna riallinea P(segna) ai tassi reali (Brier −0.6% out-of-sample).
+// Coppie [p_grezzo, p_calibrato]; interpolazione lineare, clamp ai bordi.
+const GS_CALIBRATION: readonly [number, number][] = [
+  [0, 0.0408], [0.05, 0.0639], [0.075, 0.0787], [0.1, 0.0938], [0.125, 0.1079],
+  [0.15, 0.1303], [0.175, 0.1509], [0.2, 0.1692], [0.225, 0.1818], [0.25, 0.1849],
+  [0.275, 0.2065], [0.3, 0.2322], [0.325, 0.2411], [0.35, 0.2655], [0.425, 0.2655],
+  [0.45, 0.3941], [0.575, 0.3941], [0.6, 0.4068], [0.775, 0.4068], [0.8, 0.4587],
+];
+
+/** Applica la calibrazione isotonica (interpolazione lineare monotòna) a P(segna). */
+export function calibrateScorerProb(p: number): number {
+  if (!Number.isFinite(p)) return 0;
+  const c = GS_CALIBRATION;
+  if (p <= c[0][0]) return c[0][1];
+  if (p >= c[c.length - 1][0]) return c[c.length - 1][1];
+  for (let i = 1; i < c.length; i++) {
+    if (p <= c[i][0]) {
+      const [x0, y0] = c[i - 1], [x1, y1] = c[i];
+      const t = (p - x0) / (x1 - x0 || 1);
+      return y0 + t * (y1 - y0);
+    }
+  }
+  return p;
+}
+
 function marketsForSide(
   side: "home" | "away",
   teamLambda: number,
   players: GsPlayer[],
   bestOdds: Map<string, GsOdd>,
+  calibrate = true,
 ): GoalscorerMarket[] {
   if (!Number.isFinite(teamLambda) || teamLambda <= 0) return [];
   // Alloca i gol attesi della squadra (teamLambda) tra i giocatori per la loro
@@ -82,9 +111,10 @@ function marketsForSide(
   const out: GoalscorerMarket[] = [];
   for (const p of valid) {
     const share = weight(p) / denom;
-    const lambdaPlayer = teamLambda * share; // Σ su tutti i giocatori = teamLambda
+    const lambdaPlayer = teamLambda * share; // Σ su tutti i giocatori = teamLambda (grezzo)
     if (lambdaPlayer <= 0) continue;
-    const pScores = 1 - Math.exp(-lambdaPlayer);
+    const rawP = 1 - Math.exp(-lambdaPlayer);
+    const pScores = calibrate ? calibrateScorerProb(rawP) : rawP;
 
     const odd = bestOddFor(p.name, bestOdds);
     const bestPrice = odd ? odd.price : null;
@@ -117,12 +147,13 @@ export function computeGoalscorerMarkets(
   awayPlayers: GsPlayer[],
   odds: GsOdd[],
   topN = 5,
+  calibrate = true,
 ): GoalscorerMarket[] {
   const bestOdds = indexBestOdds(odds);
-  const home = marketsForSide("home", lambdaHome, homePlayers, bestOdds)
+  const home = marketsForSide("home", lambdaHome, homePlayers, bestOdds, calibrate)
     .sort((a, b) => b.pScores - a.pScores)
     .slice(0, topN);
-  const away = marketsForSide("away", lambdaAway, awayPlayers, bestOdds)
+  const away = marketsForSide("away", lambdaAway, awayPlayers, bestOdds, calibrate)
     .sort((a, b) => b.pScores - a.pScores)
     .slice(0, topN);
   return [...home, ...away];
