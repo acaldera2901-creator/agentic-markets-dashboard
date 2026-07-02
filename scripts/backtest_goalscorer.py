@@ -50,7 +50,7 @@ def run() -> None:
     tg = defaultdict(float); tn = defaultdict(int)                            # team goals scored / matches
 
     old_b, new_b = [], []          # brier
-    old_p, new_p, y_all = [], [], []
+    old_p, new_p, y_all, dates_all = [], [], [], []
     n_eval = 0
 
     for fx in fixtures:
@@ -88,7 +88,7 @@ def run() -> None:
                 pnw = 1 - math.exp(-lam_new)
                 y = x["scored"]
                 old_b.append((po - y) ** 2); new_b.append((pnw - y) ** 2)
-                old_p.append(po); new_p.append(pnw); y_all.append(y)
+                old_p.append(po); new_p.append(pnw); y_all.append(y); dates_all.append(fx["date"])
                 n_eval += 1
 
         # update AFTER the match
@@ -117,6 +117,31 @@ def run() -> None:
         idx = [k for k, pp in enumerate(new_p) if (pp > lo if i else pp >= lo) and pp <= hi]
         if idx:
             print(f"  {lo:.2f}-{hi:.2f}  {len(idx):>4}  {mean([new_p[k] for k in idx]):.3f}  {mean([y_all[k] for k in idx]):.3f}")
+
+    # ── ISOTONIC CALIBRATION: fit on the earliest 60% (by date), test on the last 40% ──
+    import numpy as np
+    from sklearn.isotonic import IsotonicRegression
+    order = sorted(range(len(new_p)), key=lambda k: dates_all[k])
+    cut = int(len(order) * 0.6)
+    tr, te = order[:cut], order[cut:]
+    xtr = np.array([new_p[k] for k in tr]); ytr = np.array([y_all[k] for k in tr])
+    xte = np.array([new_p[k] for k in te]); yte = np.array([y_all[k] for k in te])
+    iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(xtr, ytr)
+    cal_te = iso.predict(xte)
+    b_raw = float(np.mean((xte - yte) ** 2)); b_cal = float(np.mean((cal_te - yte) ** 2))
+    print(f"\n── ISOTONIC (train {len(tr)} → test {len(te)}, out-of-sample) ──")
+    print(f"  NEW raw       : Brier {b_raw:.5f}  mean P {xte.mean():.4f}  (actual {yte.mean():.4f})")
+    print(f"  NEW+isotonic  : Brier {b_cal:.5f}  mean P {cal_te.mean():.4f}")
+    print(f"  reliability top bin (p>0.35): raw pred {xte[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f} "
+          f"→ cal {cal_te[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f}  actual {yte[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f}")
+
+    # export a compact monotone curve (breakpoints) to embed in the TS model
+    xs = np.linspace(0, 0.8, 33)
+    curve = [[round(float(x), 4), round(float(iso.predict([x])[0]), 4)] for x in xs]
+    out = ROOT / "data" / "goalscorer_calibration.json"
+    out.write_text(json.dumps({"method": "isotonic", "trained_on": "PL 2023-24 (60% earliest)",
+                               "n_train": len(tr), "curve": curve}, indent=2))
+    print(f"  exported calibration curve → {out.relative_to(ROOT)} ({len(curve)} points)")
 
 
 if __name__ == "__main__":
