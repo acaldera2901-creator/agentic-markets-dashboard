@@ -1,163 +1,932 @@
 {
-  "global_mean": 3.906,
+  "global_mean": 4.355,
   "shrink": 8.0,
   "min_matches": 5,
   "refs": {
-    "m oliver": {
-      "n": 134,
-      "mult": 0.9109
-    },
-    "p tierney": {
-      "n": 94,
-      "mult": 0.9694
-    },
-    "d coote": {
-      "n": 63,
-      "mult": 1.1475
-    },
-    "j moss": {
-      "n": 25,
-      "mult": 0.7234
+    "a taylor": {
+      "n": 88,
+      "mult": 0.9395
     },
     "a madley": {
-      "n": 104,
-      "mult": 0.9217
-    },
-    "c pawson": {
-      "n": 109,
-      "mult": 1.007
-    },
-    "m dean": {
-      "n": 26,
-      "mult": 0.8678
-    },
-    "a marriner": {
-      "n": 32,
-      "mult": 0.9104
-    },
-    "m atkinson": {
-      "n": 26,
-      "mult": 0.7322
-    },
-    "a taylor": {
-      "n": 146,
-      "mult": 1.0011
-    },
-    "d": {
-      "n": 87,
-      "mult": 1.0759
-    },
-    "g scott": {
-      "n": 24,
-      "mult": 0.826
-    },
-    "s attwell": {
-      "n": 106,
-      "mult": 1.0201
-    },
-    "p bankes": {
-      "n": 88,
-      "mult": 1.0753
-    },
-    "r jones": {
-      "n": 100,
-      "mult": 1.0435
-    },
-    "k friend": {
-      "n": 18,
-      "mult": 1.0855
-    },
-    "c kavanagh": {
-      "n": 105,
-      "mult": 1.011
-    },
-    "j gillett": {
-      "n": 85,
-      "mult": 0.9669
+      "n": 67,
+      "mult": 0.8965
     },
     "s hooper": {
-      "n": 107,
-      "mult": 1.029
+      "n": 78,
+      "mult": 0.9847
     },
-    "m salisbury": {
-      "n": 61,
-      "mult": 1.0175
+    "p bankes": {
+      "n": 54,
+      "mult": 1.003
+    },
+    "a marriner": {
+      "n": 13,
+      "mult": 0.9276
+    },
+    "r jones": {
+      "n": 70,
+      "mult": 1.0357
+    },
+    "c pawson": {
+      "n": 62,
+      "mult": 1.0031
+    },
+    "p tierney": {
+      "n": 55,
+      "mult": 0.9032
+    },
+    "j gillett": {
+      "n": 54,
+      "mult": 0.9178
+    },
+    "m oliver": {
+      "n": 80,
+      "mult": 0.9206
     },
     "j brooks": {
-      "n": 74,
-      "mult": 1.1247
+      "n": 57,
+      "mult": 1.0627
     },
     "t harrington": {
-      "n": 48,
-      "mult": 0.952
+      "n": 34,
+      "mult": 0.9449
+    },
+    "d": {
+      "n": 50,
+      "mult": 0.9851
+    },
+    "d coote": {
+      "n": 43,
+      "mult": 1.0527
+    },
+    "g scott": {
+      "n": 12,
+      "mult": 0.7903
+    },
+    "s attwell": {
+      "n": 61,
+      "mult": 0.9412
+    },
+    "m salisbury": {
+      "n": 42,
+      "mult": 0.9498
     },
     "t bramall": {
-      "n": 52,
-      "mult": 1.0379
+      "n": 30,
+      "mult": 0.9779
+    },
+    "c kavanagh": {
+      "n": 58,
+      "mult": 0.9805
     },
     "r madley": {
       "n": 2,
-      "mult": 1.056
+      "mult": 1.0296
     },
     "d bond": {
       "n": 23,
-      "mult": 1.0591
+      "mult": 1.0061
     },
     "t robinson": {
-      "n": 48,
-      "mult": 1.08
+      "n": 38,
+      "mult": 1.0124
     },
     "j smith": {
       "n": 8,
-      "mult": 1.028
+      "mult": 1.0022
     },
     "s barrott": {
-      "n": 62,
-      "mult": 1.0103
+      "n": 38,
+      "mult": 0.9575
     },
     "r welch": {
       "n": 2,
-      "mult": 1.0304
+      "mult": 1.0066
     },
     "s allison": {
-      "n": 4,
-      "mult": 1.072
+      "n": 5,
+      "mult": 1.0393
     },
     "l smith": {
-      "n": 10,
-      "mult": 1.0702
+      "n": 9,
+      "mult": 1.0243
     },
     "s singh": {
       "n": 1,
-      "mult": 1.0311
+      "mult": 1.0164
     },
     "m donohue": {
-      "n": 5,
-      "mult": 1.1668
-    },
-    "k kavanagh": {
-      "n": 1,
-      "mult": 0.9742
-    },
-    "o oliver": {
-      "n": 1,
-      "mult": 1.0311
+      "n": 2,
+      "mult": 1.0985
     },
     "a kitchen": {
-      "n": 6,
-      "mult": 0.9189
+      "n": 2,
+      "mult": 0.8918
     },
     "d webb": {
       "n": 2,
-      "mult": 0.9792
+      "mult": 0.9607
     },
-    "t kirk": {
+    "d aytekin": {
+      "n": 42,
+      "mult": 0.8855
+    },
+    "s stegemann": {
+      "n": 45,
+      "mult": 0.9697
+    },
+    "d siebert": {
+      "n": 48,
+      "mult": 1.0489
+    },
+    "b dankert": {
+      "n": 42,
+      "mult": 0.9085
+    },
+    "f zwayer": {
+      "n": 49,
+      "mult": 0.9701
+    },
+    "m fritz": {
+      "n": 28,
+      "mult": 0.9875
+    },
+    "f brych": {
+      "n": 41,
+      "mult": 0.7818
+    },
+    "t stieler": {
+      "n": 46,
+      "mult": 0.8242
+    },
+    "r schr\u00f6der": {
+      "n": 35,
+      "mult": 0.9122
+    },
+    "t welz": {
+      "n": 31,
+      "mult": 1.0705
+    },
+    "f willenborg": {
+      "n": 35,
+      "mult": 1.0937
+    },
+    "r hartmann": {
+      "n": 36,
+      "mult": 0.928
+    },
+    "p ittrich": {
+      "n": 21,
+      "mult": 0.8855
+    },
+    "b cortus": {
+      "n": 10,
+      "mult": 1.0822
+    },
+    "b brand": {
+      "n": 36,
+      "mult": 1.1054
+    },
+    "s jablonski": {
+      "n": 47,
+      "mult": 0.9386
+    },
+    "d schlager": {
+      "n": 44,
+      "mult": 1.0502
+    },
+    "h osmers": {
+      "n": 46,
+      "mult": 1.007
+    },
+    "m j\u00f6llenbeck": {
+      "n": 38,
+      "mult": 0.9675
+    },
+    "f badst\u00fcbner": {
+      "n": 40,
+      "mult": 0.9463
+    },
+    "t reichel": {
+      "n": 32,
+      "mult": 1.0093
+    },
+    "m petersen": {
+      "n": 33,
+      "mult": 1.0687
+    },
+    "c dingert": {
+      "n": 43,
+      "mult": 1.0257
+    },
+    "t gerach": {
+      "n": 20,
+      "mult": 0.9499
+    },
+    "r braun": {
+      "n": 3,
+      "mult": 0.9777
+    },
+    "s storks": {
+      "n": 18,
+      "mult": 1.023
+    },
+    "f exner": {
+      "n": 12,
+      "mult": 1.1347
+    },
+    "m burda": {
+      "n": 2,
+      "mult": 0.9378
+    },
+    "b bastien": {
+      "n": 57,
+      "mult": 0.9743
+    },
+    "f letexier": {
+      "n": 48,
+      "mult": 0.9587
+    },
+    "j stinat": {
+      "n": 58,
+      "mult": 0.9039
+    },
+    "j hamel": {
+      "n": 8,
+      "mult": 0.8587
+    },
+    "h ben el hadj": {
+      "n": 50,
+      "mult": 0.9613
+    },
+    "e wattellier": {
+      "n": 59,
+      "mult": 0.8082
+    },
+    "p gaillouste": {
+      "n": 32,
+      "mult": 0.9519
+    },
+    "t l\u00e9onard": {
+      "n": 56,
+      "mult": 0.8604
+    },
+    "b dechepy": {
+      "n": 50,
+      "mult": 0.9059
+    },
+    "j brisard": {
+      "n": 56,
+      "mult": 0.8927
+    },
+    "j pignard": {
+      "n": 53,
+      "mult": 1.0307
+    },
+    "w delajod": {
+      "n": 60,
+      "mult": 0.9111
+    },
+    "s frappart": {
+      "n": 50,
+      "mult": 0.9336
+    },
+    "r buquet": {
+      "n": 39,
+      "mult": 1.0153
+    },
+    "m bollengier": {
+      "n": 51,
+      "mult": 0.8516
+    },
+    "m vernice": {
+      "n": 44,
+      "mult": 1.0457
+    },
+    "gustavo correia": {
+      "n": 1,
+      "mult": 0.9654
+    },
+    "c turpin": {
+      "n": 56,
+      "mult": 0.8066
+    },
+    "b millot": {
+      "n": 55,
+      "mult": 0.9324
+    },
+    "f batta": {
+      "n": 43,
+      "mult": 0.8186
+    },
+    "miguel nogueira": {
+      "n": 2,
+      "mult": 1.0066
+    },
+    "k abed": {
+      "n": 1,
+      "mult": 0.9399
+    },
+    "r lissorgue": {
+      "n": 27,
+      "mult": 0.9502
+    },
+    "g angoula": {
+      "n": 21,
+      "mult": 0.8142
+    },
+    "a kherradji": {
+      "n": 17,
+      "mult": 0.9169
+    },
+    "carlos del cerro": {
+      "n": 21,
+      "mult": 1.0359
+    },
+    "miguel ortiz": {
+      "n": 36,
+      "mult": 1.0689
+    },
+    "mario melero": {
+      "n": 38,
+      "mult": 0.8976
+    },
+    "alejandro hern\u00e1ndez": {
+      "n": 37,
+      "mult": 1.387
+    },
+    "isidro d\u00edaz de mera": {
+      "n": 36,
+      "mult": 1.1785
+    },
+    "jorge figueroa": {
+      "n": 19,
+      "mult": 1.2232
+    },
+    "juan mart\u00ednez": {
+      "n": 36,
+      "mult": 1.2254
+    },
+    "javier iglesias": {
+      "n": 20,
+      "mult": 1.0811
+    },
+    "jos\u00e9 s\u00e1nchez": {
+      "n": 38,
+      "mult": 1.2071
+    },
+    "guillermo cuadra": {
+      "n": 37,
+      "mult": 1.2492
+    },
+    "juan pulido": {
+      "n": 35,
+      "mult": 1.1311
+    },
+    "antonio mateu": {
+      "n": 20,
+      "mult": 0.9991
+    },
+    "pablo gonz\u00e1lez": {
+      "n": 39,
+      "mult": 1.0837
+    },
+    "jes\u00fas gil": {
+      "n": 21,
+      "mult": 1.2259
+    },
+    "c\u00e9sar soto": {
+      "n": 43,
+      "mult": 1.2103
+    },
+    "ricardo de burgos": {
+      "n": 43,
+      "mult": 1.0842
+    },
+    "jos\u00e9 munuera": {
+      "n": 37,
+      "mult": 1.2033
+    },
+    "alejandro mu\u00f1iz": {
+      "n": 38,
+      "mult": 1.1222
+    },
+    "valent\u00edn pizarro": {
+      "n": 16,
+      "mult": 1.003
+    },
+    "javier alberola": {
+      "n": 36,
+      "mult": 0.8028
+    },
+    "antonio alberola rojas spain": {
+      "n": 1,
+      "mult": 0.9909
+    },
+    "jose maria sanchez martinez spain": {
+      "n": 20,
+      "mult": 1.2451
+    },
+    "francisco hernandez maeso spain": {
+      "n": 18,
+      "mult": 1.0583
+    },
+    "victor garcia verdura spain": {
+      "n": 19,
+      "mult": 0.9936
+    },
+    "jesus gil manzano spain": {
+      "n": 18,
+      "mult": 1.0936
+    },
+    "pablo gonzales fuertes spain": {
+      "n": 10,
+      "mult": 0.9036
+    },
+    "miguel angel ortiz arias spain": {
+      "n": 21,
+      "mult": 0.9726
+    },
+    "cesar soto grado spain": {
+      "n": 21,
+      "mult": 1.2101
+    },
+    "isidro diaz de mera escuderos spain": {
+      "n": 18,
+      "mult": 1.1819
+    },
+    "juan luis pulido santana spain": {
+      "n": 20,
+      "mult": 1.2123
+    },
+    "javier alberola rojas spain": {
+      "n": 16,
+      "mult": 0.8404
+    },
+    "javier iglesias villanueva spain": {
+      "n": 19,
+      "mult": 1.0191
+    },
+    "jos\u00e9 luis munuera montero spain": {
+      "n": 19,
+      "mult": 1.1637
+    },
+    "jorge figueroa vazquez spain": {
+      "n": 20,
+      "mult": 1.1467
+    },
+    "alejandro muniz ruiz spain": {
+      "n": 18,
+      "mult": 1.2349
+    },
+    "ricardo de burgos bengoetxea spain": {
+      "n": 19,
+      "mult": 0.9851
+    },
+    "guillermo cuadra fernandez spain": {
+      "n": 19,
+      "mult": 1.2147
+    },
+    "alejandro hernandez spain": {
+      "n": 19,
+      "mult": 1.1977
+    },
+    "juan martinez munuera spain": {
+      "n": 17,
+      "mult": 1.0363
+    },
+    "mario melero lopez spain": {
+      "n": 16,
+      "mult": 1.0413
+    },
+    "mateo busquets ferrer spain": {
+      "n": 20,
+      "mult": 1.2123
+    },
+    "alejandro ruiz aguilera spain": {
+      "n": 1,
+      "mult": 1.042
+    },
+    "ignacio iglesias villanueva spain": {
+      "n": 1,
+      "mult": 1.042
+    },
+    "pablo gonz\u00e1lez fuertes spain": {
+      "n": 10,
+      "mult": 1.1843
+    },
+    "miguel martinez munuera spain": {
+      "n": 1,
+      "mult": 1.0675
+    },
+    "alejandro quintero": {
+      "n": 19,
+      "mult": 0.9596
+    },
+    "francisco hern\u00e1ndez": {
+      "n": 19,
+      "mult": 1.0786
+    },
+    "adri\u00e1n cordero": {
+      "n": 19,
+      "mult": 1.1466
+    },
+    "gil manzano": {
+      "n": 19,
+      "mult": 1.2997
+    },
+    "v\u00edctor garc\u00eda": {
+      "n": 19,
+      "mult": 1.0786
+    },
+    "mateo busquets": {
+      "n": 19,
+      "mult": 1.2657
+    },
+    "l marinelli": {
+      "n": 39,
+      "mult": 0.9176
+    },
+    "f dionisi": {
+      "n": 22,
+      "mult": 0.9784
+    },
+    "a prontera": {
+      "n": 17,
+      "mult": 0.9445
+    },
+    "m mariani": {
+      "n": 47,
+      "mult": 0.9636
+    },
+    "l massimi": {
+      "n": 20,
+      "mult": 1.0401
+    },
+    "j sacchi": {
+      "n": 35,
+      "mult": 0.9282
+    },
+    "s sozza": {
+      "n": 39,
+      "mult": 1.0007
+    },
+    "d chiffi": {
+      "n": 41,
+      "mult": 0.9832
+    },
+    "m fabbri": {
+      "n": 43,
+      "mult": 1.0212
+    },
+    "a rapuano": {
+      "n": 43,
+      "mult": 1.1293
+    },
+    "g aureliano": {
+      "n": 24,
+      "mult": 0.9316
+    },
+    "m piccinini": {
+      "n": 37,
+      "mult": 0.9482
+    },
+    "a colombo": {
+      "n": 44,
+      "mult": 1.1296
+    },
+    "d ghersini": {
+      "n": 9,
+      "mult": 0.9298
+    },
+    "f fourneau": {
+      "n": 26,
+      "mult": 1.0119
+    },
+    "m marchetti": {
+      "n": 34,
+      "mult": 0.9394
+    },
+    "f maresca": {
+      "n": 38,
+      "mult": 1.2271
+    },
+    "m marcenaro": {
+      "n": 32,
+      "mult": 1.1815
+    },
+    "r abisso": {
+      "n": 29,
+      "mult": 1.0353
+    },
+    "m di bello": {
+      "n": 37,
+      "mult": 0.9431
+    },
+    "m irrati": {
+      "n": 10,
+      "mult": 1.1587
+    },
+    "p valeri": {
+      "n": 7,
+      "mult": 1.0691
+    },
+    "g manganiello": {
+      "n": 35,
+      "mult": 0.8748
+    },
+    "f cosso": {
+      "n": 8,
+      "mult": 0.9879
+    },
+    "d massa": {
+      "n": 49,
+      "mult": 1.2037
+    },
+    "a santoro": {
+      "n": 10,
+      "mult": 1.1077
+    },
+    "g ayroldi": {
+      "n": 31,
+      "mult": 1.3237
+    },
+    "m serra": {
+      "n": 2,
+      "mult": 1.0296
+    },
+    "d doveri": {
+      "n": 48,
+      "mult": 0.8316
+    },
+    "l pairetto": {
+      "n": 40,
+      "mult": 1.0659
+    },
+    "a giua": {
+      "n": 27,
+      "mult": 1.1207
+    },
+    "m volpi": {
+      "n": 4,
+      "mult": 0.9728
+    },
+    "g camplone": {
+      "n": 4,
+      "mult": 1.0111
+    },
+    "d orsato": {
+      "n": 31,
+      "mult": 0.9763
+    },
+    "n baroni": {
+      "n": 4,
+      "mult": 1.0493
+    },
+    "m ferrieri caputi": {
+      "n": 13,
+      "mult": 0.9385
+    },
+    "d minelli": {
+      "n": 1,
+      "mult": 1.042
+    },
+    "d perenzoni": {
+      "n": 4,
+      "mult": 1.0302
+    },
+    "e feliciani": {
+      "n": 28,
+      "mult": 0.7771
+    },
+    "f la penna": {
+      "n": 36,
+      "mult": 1.048
+    },
+    "i pezzuto": {
       "n": 6,
-      "mult": 0.9189
+      "mult": 1.047
     },
-    "f hallam": {
-      "n": 5,
-      "mult": 0.8714
+    "l zufferli": {
+      "n": 24,
+      "mult": 0.7522
+    },
+    "m guida": {
+      "n": 31,
+      "mult": 0.9881
+    },
+    "d paterna": {
+      "n": 1,
+      "mult": 1.093
+    },
+    "f meraviglia": {
+      "n": 1,
+      "mult": 0.9654
+    },
+    "p tremolada": {
+      "n": 8,
+      "mult": 1.074
+    },
+    "g collu": {
+      "n": 9,
+      "mult": 0.9298
+    },
+    "d di marco": {
+      "n": 4,
+      "mult": 0.8771
+    },
+    "k bonacina": {
+      "n": 4,
+      "mult": 0.9154
+    },
+    "a arena": {
+      "n": 1,
+      "mult": 0.9654
+    },
+    "v crezzini": {
+      "n": 1,
+      "mult": 1.0164
+    },
+    "m monaldi": {
+      "n": 1,
+      "mult": 1.0675
+    },
+    "d rutella": {
+      "n": 1,
+      "mult": 0.9144
+    },
+    "wilton pereira sampaio brazil": {
+      "n": 2,
+      "mult": 0.9378
+    },
+    "amin mohamed omar egypt": {
+      "n": 2,
+      "mult": 0.9148
+    },
+    "facundo raul tello figueroa argentina": {
+      "n": 2,
+      "mult": 0.9607
+    },
+    "danny makkelie netherlands": {
+      "n": 3,
+      "mult": 0.9151
+    },
+    "said martinez honduras": {
+      "n": 2,
+      "mult": 0.9148
+    },
+    "slavko vin\u010di\u0107 slovenia": {
+      "n": 3,
+      "mult": 0.8943
+    },
+    "mustapha ghorbal algeria": {
+      "n": 2,
+      "mult": 0.9148
+    },
+    "jes\u00fas valenzuela venezuela": {
+      "n": 3,
+      "mult": 0.8108
+    },
+    "jalal jayed morocco": {
+      "n": 2,
+      "mult": 0.8459
+    },
+    "ismail elfath usa": {
+      "n": 2,
+      "mult": 0.9837
+    },
+    "fran\u00e7ois letexier france": {
+      "n": 2,
+      "mult": 0.9837
+    },
+    "yael falcon perez argentina": {
+      "n": 2,
+      "mult": 0.8459
+    },
+    "adham mohammad jordan": {
+      "n": 3,
+      "mult": 0.8525
+    },
+    "ramon abatti abel brazil": {
+      "n": 2,
+      "mult": 0.9607
+    },
+    "maurizio mariani italy": {
+      "n": 3,
+      "mult": 0.9151
+    },
+    "c\u00e9sar ramos palazuelos mexico": {
+      "n": 2,
+      "mult": 0.8918
+    },
+    "alireza faghani australia": {
+      "n": 2,
+      "mult": 0.823
+    },
+    "pierre ghislain atcho gabon": {
+      "n": 2,
+      "mult": 0.8689
+    },
+    "szymon marciniak poland": {
+      "n": 2,
+      "mult": 0.9607
+    },
+    "dahane beida mauritania": {
+      "n": 1,
+      "mult": 0.9144
+    },
+    "abdulrahman al-jassim qatar": {
+      "n": 2,
+      "mult": 0.9607
+    },
+    "clement turpin france": {
+      "n": 2,
+      "mult": 0.8459
+    },
+    "glenn nyberg sweden": {
+      "n": 2,
+      "mult": 0.9378
+    },
+    "anthony taylor": {
+      "n": 2,
+      "mult": 0.9607
+    },
+    "tori penso usa": {
+      "n": 2,
+      "mult": 0.9607
+    },
+    "joao pedro pinheiro portugal": {
+      "n": 2,
+      "mult": 0.9378
+    },
+    "cristian garay chile": {
+      "n": 1,
+      "mult": 0.9909
+    },
+    "gustavo tejera uruguay": {
+      "n": 1,
+      "mult": 0.9399
+    },
+    "felix zwayer germany": {
+      "n": 2,
+      "mult": 1.0755
+    },
+    "ilgiz tantashev uzbekistan": {
+      "n": 1,
+      "mult": 0.9399
+    },
+    "iv\u00e1n barton el salvador": {
+      "n": 2,
+      "mult": 0.9378
+    },
+    "michael oliver": {
+      "n": 2,
+      "mult": 0.9148
+    },
+    "juan gabriel benitez paraguay": {
+      "n": 1,
+      "mult": 0.8889
+    },
+    "ma ning china": {
+      "n": 1,
+      "mult": 1.042
+    },
+    "istvan kovacs romania": {
+      "n": 1,
+      "mult": 0.8889
+    },
+    "raphael claus brazil": {
+      "n": 1,
+      "mult": 0.9399
+    },
+    "dario herrera argentina": {
+      "n": 1,
+      "mult": 0.9654
+    },
+    "espen eskas norway": {
+      "n": 1,
+      "mult": 0.9909
+    },
+    "omar mohamed al ali united arab emirates": {
+      "n": 1,
+      "mult": 0.9654
+    },
+    "drew fischer canada": {
+      "n": 2,
+      "mult": 0.8689
+    },
+    "katia garc\u00eda mexico": {
+      "n": 1,
+      "mult": 0.8889
+    },
+    "i tantashev": {
+      "n": 1,
+      "mult": 0.9144
+    },
+    "i kovacs": {
+      "n": 1,
+      "mult": 0.9654
     }
-  }
+  },
+  "source": "API-Football (all leagues + WC)"
 }
