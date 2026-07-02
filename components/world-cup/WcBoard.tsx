@@ -8,6 +8,7 @@
 // squad, lambdas, market). Zero new gate logic — every field arrives already
 // projected; missing fields just don't render (fail-soft).
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
@@ -21,7 +22,9 @@ import { teamPairKey as fpPairKey } from "@/lib/team-pair-key";
 import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
-import { MatchDetailSheet, type MdsData, type MdsGroup, type MdsChip } from "@/components/MatchDetailSheet";
+import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
+// #BUNDLE-SLIM-0702: la scheda pesante si carica on-demand (all'apertura del modal).
+const MatchDetailSheet = dynamic(() => import("@/components/MatchDetailSheet").then((m) => m.MatchDetailSheet));
 
 type WcEnrichment = {
   kind?: string;

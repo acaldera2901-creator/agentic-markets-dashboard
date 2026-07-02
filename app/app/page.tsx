@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
-import { MatchDetailSheet, type MdsData, type MdsGroup, type MdsChip } from "@/components/MatchDetailSheet";
+import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
   type PublicPlanKey,
@@ -28,10 +29,16 @@ import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
-import { LiveChat } from "@/components/LiveChat";
-import { TrackRecordView } from "@/components/track-record/TrackRecordView";
 import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
+
+// #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
+// fuori dal bundle iniziale di /app. MatchDetailSheet = solo all'apertura scheda
+// (il modal è null finché chiuso); TrackRecordView = solo tab Storico; LiveChat =
+// widget chat non necessario al primo paint.
+const MatchDetailSheet = dynamic(() => import("@/components/MatchDetailSheet").then((m) => m.MatchDetailSheet));
+const TrackRecordView = dynamic(() => import("@/components/track-record/TrackRecordView").then((m) => m.TrackRecordView));
+const LiveChat = dynamic(() => import("@/components/LiveChat").then((m) => m.LiveChat), { ssr: false });
 
 // ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
 
