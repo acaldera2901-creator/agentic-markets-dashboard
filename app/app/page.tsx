@@ -3226,6 +3226,36 @@ function CryptoPaymentBox({
   );
 }
 
+// PayPal JS SDK loader — cached on window.paypal, loaded once per page.
+// components=buttons,applepay: applepay adds the window.paypal.Applepay()
+// component used by the Apple Pay button below (Task 8).
+function loadPayPalSdk(clientId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return resolve();
+    if ((window as unknown as { paypal?: unknown }).paypal) return resolve();
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&components=buttons,applepay`;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("paypal sdk load failed"));
+    document.head.appendChild(s);
+  });
+}
+
+// Minimal typing for the vanilla PayPal JS SDK's Apple Pay component.
+// Method names (config/validateMerchant/confirmOrder) verified against
+// developer.paypal.com/docs/checkout/apm/apple-pay/ (2026-07-01).
+type PayPalApplepayConfig = {
+  isEligible: boolean;
+  countryCode: string;
+  merchantCapabilities: string[];
+  supportedNetworks: string[];
+};
+type PayPalApplepayComponent = {
+  config: () => Promise<PayPalApplepayConfig>;
+  validateMerchant: (o: { validationUrl: string }) => Promise<{ merchantSession: unknown }>;
+  confirmOrder: (o: { orderId: string; token: unknown; billingContact?: unknown }) => Promise<void>;
+};
+
 function CheckoutModal({
   plan,
   onConfirm,
@@ -3240,11 +3270,177 @@ function CheckoutModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState<"monthly" | "annual">("annual");
+  const [applePayReady, setApplePayReady] = useState(false);
+  const [applePayBusy, setApplePayBusy] = useState(false);
   const ANNUAL_PRICE: Record<string, number> = { base: 169, premium: 419 };
   const price = planAmountUsdt(plan);
   const displayPrice = period === "annual" ? (ANNUAL_PRICE[plan] ?? price) : price;
   const t = useT();
   const lang = useLang();
+
+  // PayPal one-click button: renders into #paypal-button-container only when
+  // NEXT_PUBLIC_PAYPAL_CLIENT_ID is set (feature-flag off => no button, UI unchanged).
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (!clientId) return;
+    let cancelled = false;
+    loadPayPalSdk(clientId)
+      .then(() => {
+        if (cancelled) return;
+        const paypal = (window as unknown as {
+          paypal: {
+            Buttons: (cfg: {
+              createOrder: () => Promise<string>;
+              onApprove: (data: { orderID: string }) => Promise<void>;
+            }) => { render: (sel: string) => void };
+          };
+        }).paypal;
+        const container = document.querySelector("#paypal-button-container");
+        if (!container) return;
+        container.innerHTML = ""; // avoid double-render on re-run (plan/period change)
+        paypal.Buttons({
+          createOrder: async () => {
+            const r = await fetch("/api/paypal/create-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ requested_plan: plan, period }),
+            });
+            const d = (await r.json()) as { id?: string; error?: string };
+            if (!d.id) throw new Error(d.error ?? "create-order failed");
+            return d.id;
+          },
+          onApprove: async (data) => {
+            const r = await fetch("/api/paypal/capture", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paypal_order_id: data.orderID }),
+            });
+            const d = (await r.json()) as { ok?: boolean; granted?: boolean };
+            window.location.assign(d.granted ? "/app?paypal=success" : "/app?paypal=pending");
+          },
+        }).render("#paypal-button-container");
+      })
+      .catch((e) => console.error("[paypal] sdk:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [plan, period]);
+
+  // Apple Pay eligibility: only surface the button on Apple devices/browsers
+  // (canMakePayments) AND when the PayPal merchant is Apple Pay eligible
+  // (applepay.config().isEligible). Everywhere else applePayReady stays
+  // false and no button renders — no layout shift, no dead button.
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (!clientId) return;
+    let cancelled = false;
+    const AppleSession = (window as unknown as {
+      ApplePaySession?: { canMakePayments: () => boolean };
+    }).ApplePaySession;
+    // applePayReady defaults to false (useState above) — nothing to do if
+    // this device/browser can't run Apple Pay at all.
+    if (!AppleSession?.canMakePayments()) return;
+    loadPayPalSdk(clientId)
+      .then(async () => {
+        if (cancelled) return;
+        const paypal = (window as unknown as { paypal: { Applepay: () => PayPalApplepayComponent } }).paypal;
+        const applepay = paypal.Applepay();
+        const cfg = await applepay.config();
+        if (!cancelled) setApplePayReady(!!cfg.isEligible);
+      })
+      .catch((e) => {
+        console.error("[applepay] config:", e);
+        if (!cancelled) setApplePayReady(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [plan, period]);
+
+  const handleApplePay = async () => {
+    setError("");
+    setApplePayBusy(true);
+    try {
+      const paypal = (window as unknown as { paypal: { Applepay: () => PayPalApplepayComponent } }).paypal;
+      const applepay = paypal.Applepay();
+      const cfg = await applepay.config();
+      if (!cfg.isEligible) throw new Error("applepay not eligible");
+
+      const r = await fetch("/api/paypal/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requested_plan: plan, period }),
+      });
+      const d = (await r.json()) as { id?: string; error?: string };
+      if (!d.id) throw new Error(d.error ?? "create-order failed");
+      const orderId = d.id;
+
+      const AppleSession = (window as unknown as {
+        ApplePaySession: new (
+          version: number,
+          request: Record<string, unknown>
+        ) => {
+          begin: () => void;
+          completeMerchantValidation: (s: unknown) => void;
+          completePayment: (status: number) => void;
+          onvalidatemerchant: (e: { validationURL: string }) => void;
+          onpaymentauthorized: (e: { payment: { token: unknown; billingContact?: unknown } }) => void;
+          oncancel: () => void;
+        };
+      } & { ApplePaySession: { STATUS_SUCCESS: number; STATUS_FAILURE: number } }).ApplePaySession;
+
+      // Displayed amount only — the server (create-order) is the authority
+      // on the actual charged amount; this total is cosmetic on the sheet.
+      const session = new AppleSession(4, {
+        countryCode: cfg.countryCode,
+        currencyCode: "USD",
+        merchantCapabilities: cfg.merchantCapabilities,
+        supportedNetworks: cfg.supportedNetworks,
+        total: { label: "BetRedge", type: "final", amount: displayPrice.toFixed(2) },
+      });
+
+      session.onvalidatemerchant = async (e) => {
+        try {
+          const { merchantSession } = await applepay.validateMerchant({ validationUrl: e.validationURL });
+          session.completeMerchantValidation(merchantSession);
+        } catch (err) {
+          console.error("[applepay] validateMerchant:", err);
+          session.completePayment(AppleSession.STATUS_FAILURE);
+        }
+      };
+
+      session.onpaymentauthorized = async (e) => {
+        try {
+          await applepay.confirmOrder({
+            orderId,
+            token: e.payment.token,
+            billingContact: e.payment.billingContact,
+          });
+          const capRes = await fetch("/api/paypal/capture", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paypal_order_id: orderId }),
+          });
+          const capData = (await capRes.json()) as { ok?: boolean; granted?: boolean };
+          session.completePayment(capData.granted ? AppleSession.STATUS_SUCCESS : AppleSession.STATUS_FAILURE);
+          window.location.assign(capData.granted ? "/app?paypal=success" : "/app?paypal=pending");
+        } catch (err) {
+          console.error("[applepay] confirmOrder/capture:", err);
+          session.completePayment(AppleSession.STATUS_FAILURE);
+        } finally {
+          setApplePayBusy(false);
+        }
+      };
+
+      session.oncancel = () => setApplePayBusy(false);
+
+      session.begin();
+    } catch (e) {
+      console.error("[applepay] flow:", e);
+      setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
+      setApplePayBusy(false);
+    }
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(USDT_TRC20_ADDRESS).catch(() => undefined);
@@ -3375,6 +3571,40 @@ function CheckoutModal({
             <button type="button" onClick={payWithCard}
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}>
               {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD
+            </button>
+          </div>
+        )}
+
+        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ fontSize: 11, opacity: 0.7, textAlign: "center", margin: "0 0 6px" }}>
+              {pick5(lang, { it: "oppure paga con PayPal", en: "or pay with PayPal", es: "o paga con PayPal", fr: "ou payez avec PayPal", ru: "или оплатите через PayPal" })}
+            </p>
+            <div id="paypal-button-container" />
+          </div>
+        )}
+
+        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && applePayReady && (
+          <div style={{ marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={handleApplePay}
+              disabled={applePayBusy}
+              aria-label="Apple Pay"
+              style={{
+                width: "100%",
+                padding: "10px 0",
+                borderRadius: 6,
+                background: "#000",
+                border: "none",
+                color: "#fff",
+                cursor: applePayBusy ? "default" : "pointer",
+                opacity: applePayBusy ? 0.6 : 1,
+                fontSize: 15,
+                fontWeight: 600,
+              }}
+            >
+              {applePayBusy ? "…" : " Pay"}
             </button>
           </div>
         )}
