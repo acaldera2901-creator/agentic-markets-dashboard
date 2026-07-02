@@ -98,8 +98,9 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         if (!alive || !mk.length) return;
         const iconFor = (n: string): MdsGroup["icon"] =>
           /corner|card|foul/i.test(n) ? "flag" : /goal/i.test(n) ? "goal" : "result";
-        // Attach OUR model prediction + edge to each FP outcome we can model
-        // (goal-derived markets). Unmodeled (soft/handicap) stay quote-only.
+        // Mostriamo SOLO le nostre predizioni: ogni esito che modelliamo (gol-derivati
+        // incl. handicap) porta la nostra probabilità + edge. Gli esiti che non
+        // modelliamo NON vengono mostrati (niente quota-di-mercato spacciata per nostra).
         const joined = joinFpWithModel(mk, data.extraMarkets ?? [], data.home, data.away);
         const predBy = new Map<string, { p: number | null; edge: number | null }>();
         for (const jm of joined)
@@ -118,21 +119,22 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
             key: `x-${gi}`,
             icon: iconFor(name),
             title: name + (!multi && entries[0].line != null ? ` ${entries[0].line}` : ""),
-            src: { kind: "fp", label: "FortunePlay" },
+            src: { kind: "fp" as const, label: "FortunePlay" },
             chips: entries.flatMap((m, ei) =>
               m.outcomes.map((o, oi) => {
                 const pr = predBy.get(`${m.name}|${m.line}|${o.label}`);
+                const p = pr ? pr.p : null;
                 return {
                   id: `x-${gi}-${ei}-${oi}`,
                   mkt: name + (m.line != null ? ` ${m.line}` : ""),
                   sel: o.label,
                   q: o.odds,
-                  prob: pr && pr.p != null ? `${Math.round(pr.p * 100)}%` : null,
+                  prob: p != null ? `${Math.round(p * 100)}%` : null,
                   value: pr && pr.edge != null && pr.edge >= 0.05 ? `+${Math.round(pr.edge * 100)}%` : null,
                 };
-              })),
+              }).filter((c) => c.prob != null)), // solo mercati con una NOSTRA predizione
           };
-        });
+        }).filter((g) => g.chips.length > 0); // niente gruppi senza nostre predizioni
         setExtraGroups(groups);
       } catch { /* degrada: nessun mercato extra */ }
     })();
@@ -153,7 +155,11 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
   const ctaLabel = priced.length > 1 ? data.labels.apriMulti : data.labels.apri;
   const countLabel = legs.length === 1 ? data.labels.selOne : data.labels.selMany;
 
-  const renderGroup = (g: MdsGroup) => (
+  const renderGroup = (g: MdsGroup) => {
+    // Solo nostre predizioni: niente chip "stima" (soft grezzo).
+    const chips = g.chips.filter((c) => !c.est);
+    if (!chips.length) return null;
+    return (
     <div className="mds-grp" key={g.key}>
       <div className="mds-grph">
         <span className="mds-gt"><MarketIcon name={MARKET_ICON[g.icon] ?? "result"} size={18} className="mds-mkico" />{g.title}</span>
@@ -161,7 +167,7 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         <span className={`mds-src ${g.src.kind}`}>{g.src.label}</span>
       </div>
       <div className="mds-chips">
-        {g.chips.map((c) => {
+        {chips.map((c) => {
           const on = selected.includes(c.id);
           return (
             <button key={c.id} type="button" className={`mds-chip${c.rec ? " rec" : ""}${on ? " on" : ""}`} onClick={() => toggle(c.id)}>
@@ -169,7 +175,11 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
               {on && <span className="mds-tick"><Ico id="check" /></span>}
               <span className="mds-cl">{c.sel}</span>
               <span className="mds-cm">
-                {c.prob && <span className="mds-p">{c.prob}</span>}
+                {c.prob && (
+                  <span className="mds-p" title="La nostra prediction — modello BetRedge">
+                    <span className="mds-pmark">R²</span>{c.prob}
+                  </span>
+                )}
                 <span className={`mds-q${c.est ? " est" : ""}`}>{c.est ? "stima" : (c.q ? c.q.toFixed(2) : "–")}</span>
                 {c.value && <span className="mds-cv">{c.value}</span>}
               </span>
@@ -179,7 +189,8 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
       </div>
       {g.note && <p className="mds-note">{g.note}</p>}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="mds">

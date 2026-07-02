@@ -1,19 +1,22 @@
-// #CARD-REAL-PREDICTIONS-1 — join FortunePlay curated markets with our model.
-// For every outcome the card shows, attach the model probability, fair odds and
-// edge from lib/poisson-model.computeExtraMarkets. Markets we do NOT model
-// honestly (soft corners/cards per-team, goals handicap) are returned with
-// prediction=null — the card shows the FP odds but claims no pick. We never
-// fabricate a probability.
+// #CARD-REAL-PREDICTIONS-1 / #PREDICT-EVERY-MARKET-1 — join FP curated markets with OUR model.
+// ONLY our predictions are shown. Each outcome we model (goal-derived markets incl. Over/Under,
+// BTTS, Double Chance, DNB, Odd/Even, Team Totals, 1st Half, Correct Score, Goals Handicap)
+// gets our probability + edge vs the shown price. Outcomes we do NOT model return p=null and
+// are HIDDEN by the card — we never show a market-derived number dressed up as ours.
+// Soft markets (corners/cards/fouls) come from the soft-markets model upstream; markets with
+// no model at all are simply not shown.
 import type { ExtraMarket } from "./poisson-model";
 import type { FpFullMarket } from "./fortuneplay-match";
 
 export interface JoinedOutcome {
   label: string;
   fpOdds: number;
-  /** our model probability for this outcome, or null when unmodeled */
+  /** OUR model probability for this outcome, or null when we don't model it.
+   * Outcomes with p=null are hidden by the card — we only show our predictions,
+   * never a market-derived number dressed up as ours. */
   p: number | null;
   fairOdds: number | null;
-  /** p*fpOdds-1, rounded; null when unmodeled */
+  /** p*fpOdds-1 (value vs the shown price); null when unmodeled. */
   edge: number | null;
 }
 
@@ -107,7 +110,17 @@ export function keyForOutcome(
     if (l.includes("no")) return "fh_btts_no";
     return null;
   }
-  // soft (corners/cards) + goals handicap: not modeled here
+  // Goals handicap (FULL match only — not "1st half goals handicap"). FP puts the
+  // per-side handicap in the label parentheses, e.g. "Belgium (+1.5)" / "Senegal (-1.5)".
+  if (n === "goals handicap") {
+    const mH = label.match(/\(\s*([+-]?\d+(?:\.\d+)?)\s*\)/);
+    if (!mH) return null;
+    const k = String(Number(mH[1])).replace(".", "_"); // "+1.5"→"1_5", "-1.5"→"-1_5"
+    if (hasHome) return `ah_home_${k}`;
+    if (hasAway) return `ah_away_${k}`;
+    return null;
+  }
+  // soft (corners/cards) not modeled here
   return null;
 }
 
@@ -125,27 +138,31 @@ export function joinFpWithModel(
   for (const m of extra) byKey.set(m.key, m);
   const round = (x: number) => Math.round(x * 10000) / 10000;
 
+  const fair = (p: number) => Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100;
+
   return fpMarkets.map((mkt) => {
     let modeled = false;
     const outcomes: JoinedOutcome[] = mkt.outcomes.map((o) => {
       const key = keyForOutcome(mkt.name, mkt.line, o.label, homeTeam, awayTeam);
-      let p: number | null = null;
+      let modelP: number | null = null;
       if (key) {
         const em = byKey.get(key);
-        if (em) p = em.p;
+        if (em) modelP = em.p;
       }
       // derive Under for team totals when only Over is modeled
-      if (p == null && norm(o.label).includes("under")) {
+      if (modelP == null && norm(o.label).includes("under")) {
         const overKey = keyForOutcome(mkt.name, mkt.line, o.label.replace(/under/i, "Over"), homeTeam, awayTeam);
         if (overKey) {
           const em = byKey.get(overKey);
-          if (em) p = round(1 - em.p);
+          if (em) modelP = round(1 - em.p);
         }
       }
-      if (p != null) modeled = true;
-      const fairOdds = p != null ? Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100 : null;
-      const edge = p != null ? round(p * o.odds - 1) : null;
-      return { label: o.label, fpOdds: o.odds, p, fairOdds, edge };
+      if (modelP == null) {
+        // we don't model it → NO number (card hides it). Never show market-derived as ours.
+        return { label: o.label, fpOdds: o.odds, p: null, fairOdds: null, edge: null };
+      }
+      modeled = true;
+      return { label: o.label, fpOdds: o.odds, p: round(modelP), fairOdds: fair(modelP), edge: round(modelP * o.odds - 1) };
     });
     return { name: mkt.name, line: mkt.line, modeled, outcomes };
   });

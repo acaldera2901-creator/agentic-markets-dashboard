@@ -4906,18 +4906,19 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       });
     }
 
-    // Soft: corner/cartellini/falli — solo stima
+    // Soft: cartellini + falli come NOSTRE predizioni (segnale reale dal backtest).
+    // Corner ESCLUSI: nessuna skill validata (backtest peggiore della media-lega).
+    // Solo mercati con modello reale (!is_generic) — mai una stima generica.
     const sf = e.soft;
-    if (sf && (sf.corners || sf.cards || sf.fouls)) {
+    if (sf) {
       const chips: MdsChip[] = [];
-      if (sf.corners) chips.push({ id: "soft-corner", mkt: "Corner", sel: `Corner Over ${sf.corners.main_line}`, prob: pct(sf.corners.p_over), est: true });
-      if (sf.cards) chips.push({ id: "soft-cards", mkt: pick5(lang, { it: "Cartellini", en: "Cards", es: "Tarjetas", fr: "Cartons", ru: "Карточки" }), sel: `${pick5(lang, { it: "Cartellini", en: "Cards", es: "Tarjetas", fr: "Cartons", ru: "Карточки" })} Over ${sf.cards.main_line}`, prob: pct(sf.cards.p_over), est: true });
-      if (sf.fouls) chips.push({ id: "soft-fouls", mkt: pick5(lang, { it: "Falli", en: "Fouls", es: "Faltas", fr: "Fautes", ru: "Фолы" }), sel: `${pick5(lang, { it: "Falli", en: "Fouls", es: "Faltas", fr: "Fautes", ru: "Фолы" })} Over ${sf.fouls.main_line}`, prob: pct(sf.fouls.p_over), est: true });
-      groups.push({
-        key: "soft", icon: "flag", title: pick5(lang, { it: "Corner · Cartellini · Falli", en: "Corners · Cards · Fouls", es: "Córners · Tarjetas · Faltas", fr: "Corners · Cartons · Fautes", ru: "Угловые · Карточки · Фолы" }),
-        src: { kind: "est", label: pick5(lang, { it: "stima · Pro", en: "estimate · Pro", es: "estimación · Pro", fr: "estimation · Pro", ru: "оценка · Pro" }) },
+      if (sf.cards && !sf.cards.is_generic) chips.push({ id: "soft-cards", mkt: pick5(lang, { it: "Cartellini", en: "Cards", es: "Tarjetas", fr: "Cartons", ru: "Карточки" }), sel: `${pick5(lang, { it: "Cartellini", en: "Cards", es: "Tarjetas", fr: "Cartons", ru: "Карточки" })} Over ${sf.cards.main_line}`, prob: pct(sf.cards.p_over) });
+      if (sf.fouls && !sf.fouls.is_generic) chips.push({ id: "soft-fouls", mkt: pick5(lang, { it: "Falli", en: "Fouls", es: "Faltas", fr: "Fautes", ru: "Фолы" }), sel: `${pick5(lang, { it: "Falli", en: "Fouls", es: "Faltas", fr: "Fautes", ru: "Фолы" })} Over ${sf.fouls.main_line}`, prob: pct(sf.fouls.p_over) });
+      if (chips.length) groups.push({
+        key: "soft", icon: "flag", title: pick5(lang, { it: "Cartellini · Falli", en: "Cards · Fouls", es: "Tarjetas · Faltas", fr: "Cartons · Fautes", ru: "Карточки · Фолы" }),
+        src: { kind: "est", label: pick5(lang, { it: "modello · Pro", en: "model · Pro", es: "modelo · Pro", fr: "modèle · Pro", ru: "модель · Pro" }) },
         chips,
-        note: pick5(lang, { it: "Mercati soft: solo stima del modello, senza quota né edge — non entrano nella quota combinata.", en: "Soft markets: model estimate only, no odds or edge — excluded from the combined odds.", es: "Mercados soft: solo estimación del modelo, sin cuota ni edge — fuera de la cuota combinada.", fr: "Marchés soft : estimation du modèle seulement, sans cote ni edge — hors cote combinée.", ru: "Soft-рынки: только оценка модели, без кэфа и edge — вне комбинированного кэфа." }),
+        note: pick5(lang, { it: "Predizioni soft del nostro modello (Pro): probabilità Over, senza quota FortunePlay — fuori dalla quota combinata.", en: "Our soft-market predictions (Pro): Over probabilities, no FortunePlay odds — excluded from the combined odds.", es: "Predicciones soft de nuestro modelo (Pro): probabilidades Over, sin cuota FortunePlay — fuera de la cuota combinada.", fr: "Prédictions soft de notre modèle (Pro) : probabilités Over, sans cote FortunePlay — hors cote combinée.", ru: "Наши soft-прогнозы (Pro): вероятности Over, без кэфа FortunePlay — вне комбо." }),
       });
     }
 
