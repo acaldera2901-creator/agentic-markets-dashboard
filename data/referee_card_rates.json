@@ -1,0 +1,163 @@
+{
+  "global_mean": 3.906,
+  "shrink": 8.0,
+  "min_matches": 5,
+  "refs": {
+    "m oliver": {
+      "n": 134,
+      "mult": 0.9109
+    },
+    "p tierney": {
+      "n": 94,
+      "mult": 0.9694
+    },
+    "d coote": {
+      "n": 63,
+      "mult": 1.1475
+    },
+    "j moss": {
+      "n": 25,
+      "mult": 0.7234
+    },
+    "a madley": {
+      "n": 104,
+      "mult": 0.9217
+    },
+    "c pawson": {
+      "n": 109,
+      "mult": 1.007
+    },
+    "m dean": {
+      "n": 26,
+      "mult": 0.8678
+    },
+    "a marriner": {
+      "n": 32,
+      "mult": 0.9104
+    },
+    "m atkinson": {
+      "n": 26,
+      "mult": 0.7322
+    },
+    "a taylor": {
+      "n": 146,
+      "mult": 1.0011
+    },
+    "d": {
+      "n": 87,
+      "mult": 1.0759
+    },
+    "g scott": {
+      "n": 24,
+      "mult": 0.826
+    },
+    "s attwell": {
+      "n": 106,
+      "mult": 1.0201
+    },
+    "p bankes": {
+      "n": 88,
+      "mult": 1.0753
+    },
+    "r jones": {
+      "n": 100,
+      "mult": 1.0435
+    },
+    "k friend": {
+      "n": 18,
+      "mult": 1.0855
+    },
+    "c kavanagh": {
+      "n": 105,
+      "mult": 1.011
+    },
+    "j gillett": {
+      "n": 85,
+      "mult": 0.9669
+    },
+    "s hooper": {
+      "n": 107,
+      "mult": 1.029
+    },
+    "m salisbury": {
+      "n": 61,
+      "mult": 1.0175
+    },
+    "j brooks": {
+      "n": 74,
+      "mult": 1.1247
+    },
+    "t harrington": {
+      "n": 48,
+      "mult": 0.952
+    },
+    "t bramall": {
+      "n": 52,
+      "mult": 1.0379
+    },
+    "r madley": {
+      "n": 2,
+      "mult": 1.056
+    },
+    "d bond": {
+      "n": 23,
+      "mult": 1.0591
+    },
+    "t robinson": {
+      "n": 48,
+      "mult": 1.08
+    },
+    "j smith": {
+      "n": 8,
+      "mult": 1.028
+    },
+    "s barrott": {
+      "n": 62,
+      "mult": 1.0103
+    },
+    "r welch": {
+      "n": 2,
+      "mult": 1.0304
+    },
+    "s allison": {
+      "n": 4,
+      "mult": 1.072
+    },
+    "l smith": {
+      "n": 10,
+      "mult": 1.0702
+    },
+    "s singh": {
+      "n": 1,
+      "mult": 1.0311
+    },
+    "m donohue": {
+      "n": 5,
+      "mult": 1.1668
+    },
+    "k kavanagh": {
+      "n": 1,
+      "mult": 0.9742
+    },
+    "o oliver": {
+      "n": 1,
+      "mult": 1.0311
+    },
+    "a kitchen": {
+      "n": 6,
+      "mult": 0.9189
+    },
+    "d webb": {
+      "n": 2,
+      "mult": 0.9792
+    },
+    "t kirk": {
+      "n": 6,
+      "mult": 0.9189
+    },
+    "f hallam": {
+      "n": 5,
+      "mult": 0.8714
+    }
+  }
+}
