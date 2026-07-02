@@ -4497,7 +4497,7 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
   } else if (tp >= 45) {
     out.push(it ? `Partita aperta, ${top.name} leggermente avanti.` : `An open game, ${top.name} slightly ahead.`);
   } else {
-    out.push(it ? "Equilibrio: nessun favorito netto." : "A tight game with no clear favourite.");
+    out.push(it ? `Partita equilibrata, ${top.name} il più probabile.` : `A tight game — ${top.name} is the model's most likely.`);
   }
 
   // ── 2. Forma a parole (confronto se entrambe note) ──
@@ -4564,8 +4564,8 @@ function buildTennisWhy(m: TennisMatch, lang: Lang): string {
       : `The opponent isn't confirmed yet, so for now it's a provisional model read ${surf}.`);
   } else if (gap <= 0.06) {
     out.push(it
-      ? `Match equilibrato ${surf}: il modello non vede un favorito netto.`
-      : `A balanced match ${surf}: the model sees no clear favourite.`);
+      ? `Match equilibrato ${surf}.`
+      : `A balanced match ${surf}.`);
   } else {
     let eloTail = "";
     if (m.elo_p1 != null && m.elo_p2 != null) {
@@ -5022,10 +5022,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             <div className="v2r-l">
               <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {!isPreview && confScore != null && !belowFloor && (
+              {!isPreview && confScore != null && (
                 <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
               )}
-              {belowFloor && !isPreview && <span className="v2r-flat">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>}
             </div>
             <div className="v2r-q">
               {isPreview ? (
@@ -5552,10 +5551,9 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
             <div className="v2r-l">
               <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {!isPreview && confScore != null && hasFavorite && (
+              {!isPreview && confScore != null && (
                 <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
               )}
-              {!hasFavorite && !isPreview && <span className="v2r-flat">{pick5(lang, { it: "nessun favorito \u00b7 match aperto", en: "no favourite \u00b7 open match", es: "sin favorito", fr: "pas de favori", ru: "\u043d\u0435\u0442 \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>}
             </div>
             <div className="v2r-q">
               {isPreview ? (

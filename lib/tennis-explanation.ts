@@ -95,7 +95,7 @@ export function buildTennisExplanation(input: TennisExplanationInput): string {
   } else if (conf !== null && conf >= TENNIS_FAVOURED_FLOOR) {
     parts.push(`${input.pick} is favoured against ${input.opponent}${onSurface} at ${confTxt}, but it is far from settled.`);
   } else if (conf !== null) {
-    parts.push(`${input.pick} vs ${input.opponent}${onSurface} is close to a coin-flip — no clear favourite, with ${input.pick} edging it at just ${confTxt}.`);
+    parts.push(`${input.pick} vs ${input.opponent}${onSurface} is close to a coin-flip, with ${input.pick} edging it at just ${confTxt}.`);
   } else {
     parts.push(`${input.pick} vs ${input.opponent}${onSurface}: the model leans ${input.pick}, but without a firm probability it is best read as a toss-up.`);
   }
