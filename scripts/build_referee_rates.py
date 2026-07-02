@@ -68,11 +68,27 @@ def rows_from_football_data() -> list[tuple[str, int]]:
     return out
 
 
+def rows_from_api_football() -> list[tuple[str, int]]:
+    """(referee, total_cards) from data/referee_cards_backfill.json — ALL leagues + WC.
+    Preferred over football-data.co.uk: covers every league AND referee names match the
+    LIVE path (both API-Football), so the live lookup actually hits the table."""
+    fp = ROOT / "data" / "referee_cards_backfill.json"
+    if not fp.exists():
+        return []
+    data = json.loads(fp.read_text())
+    return [(m["referee"], int(m["cards"])) for m in data.values() if m.get("referee") and m.get("cards") is not None]
+
+
 def run() -> None:
-    rows = rows_from_football_data()
+    rows = rows_from_api_football()  # all leagues + WC, live-matching names
+    src = "API-Football (all leagues + WC)"
+    if not rows:  # fallback to football-data.co.uk (PL only) if backfill not present
+        rows = rows_from_football_data()
+        src = "football-data.co.uk (PL only)"
     table = build(rows)
+    table["source"] = src
     OUT.write_text(json.dumps(table, indent=2))
-    print(f"referees: {len(table['refs'])}  global_mean_cards={table['global_mean']}  (from {len(rows)} matches)")
+    print(f"referees: {len(table['refs'])}  global_mean_cards={table['global_mean']}  (from {len(rows)} matches, {src})")
     top = sorted(table["refs"].items(), key=lambda kv: kv[1]["mult"], reverse=True)
     print("strictest:", [(k, v["mult"], v["n"]) for k, v in top[:3]])
     print("lenient  :", [(k, v["mult"], v["n"]) for k, v in top[-3:]])
