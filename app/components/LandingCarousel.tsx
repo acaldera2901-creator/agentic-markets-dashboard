@@ -74,6 +74,8 @@ const SLIDE_DEFS: SlideDef[] = [
   { kind: "creative", img: "/banners/creatives/creative-5853.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Smarter picks. Bigger wins. Cestista in azione" },
   // 6 · creativo tennis — DATA. STRATEGY. WINNING EDGE. (tennista donna)
   { kind: "creative", img: "/banners/creatives/creative-5859.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Data. Strategy. Winning edge. Tennista in azione" },
+  // 7 · creativo calcio — SHARP PREDICTIONS. REAL RESULTS. (calciatrice, offerta daily 15-30%)
+  { kind: "creative", img: "/banners/creatives/creative-5860.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Sharp predictions. Real results. Calciatrice in azione con offerta giornaliera 15–30%" },
 ];
 
 type Slide =
