@@ -106,7 +106,8 @@ async def main() -> None:
                 await asyncio.sleep(0.2)
                 continue
 
-            rows = build_rows(home_name, away_name, kickoff_iso, league_code, rates)
+            referee = (fixture.get("fixture") or {}).get("referee")  # #REFEREE-BIAS-1
+            rows = build_rows(home_name, away_name, kickoff_iso, league_code, rates, referee=referee)
             for row in rows:
                 row["external_fixture_id"] = fixture_id
 
