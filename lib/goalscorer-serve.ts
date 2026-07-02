@@ -73,6 +73,18 @@ function moreRelevant(a: GsPlayer, b: GsPlayer): boolean {
   return false; // full tie → keep the one already seen (stable)
 }
 
+// #GOLIVE: ripara i nomi mojibake (UTF-8 salvato come latin1: es. "Östman" → "Ã stman")
+// che arrivano da alcune fonti player. Guardato: agisce solo se c'è la firma mojibake e
+// la ri-decodifica non introduce caratteri di sostituzione — altrimenti lascia com'è.
+export function fixMojibake(s: string): string {
+  if (!s || !/[ÃÂ][-¿ –—]/.test(s)) return s;
+  try {
+    const fixed = Buffer.from(s, "latin1").toString("utf8");
+    if (fixed && fixed !== s && !fixed.includes("�")) return fixed;
+  } catch { /* keep original */ }
+  return s;
+}
+
 export function groupProfilesByTeam(rows: ProfileRow[]): Map<string, GsPlayer[]> {
   // #GS-DEDUP-0626: player_profiles può contenere lo STESSO giocatore due volte
   // (player_id diversi, doppia ingestione legacy/moderno) → le schede Marcatori

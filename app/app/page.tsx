@@ -4902,7 +4902,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         key: "marcatore", icon: "boot", title: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }),
         src: { kind: "us", label: pick5(lang, { it: "best · book US", en: "best · US book", es: "best · casa US", fr: "best · book US", ru: "best · US" }) },
         chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: x.pScores === topP && x.bestPrice != null })),
-        note: pick5(lang, { it: "Edge = modello vs book US (FortunePlay non quota i marcatori). La scommessa si piazza sulla partita.", en: "Edge = model vs US book (FortunePlay doesn't price scorers). The bet is placed on the match.", es: "Edge = modelo vs casa US (FortunePlay no cotiza goleadores). La apuesta se coloca en el partido.", fr: "Edge = modèle vs book US (FortunePlay ne cote pas les buteurs). Le pari se place sur le match.", ru: "Edge = модель против US-book (FortunePlay не котирует бомбардиров)." }),
+        note: pick5(lang, { it: "La nostra probabilità che ogni giocatore segni almeno un gol.", en: "Our probability that each player scores at least once.", es: "Nuestra probabilidad de que cada jugador marque al menos una vez.", fr: "Notre probabilité que chaque joueur marque au moins une fois.", ru: "Наша вероятность того, что игрок забьёт хотя бы раз." }),
       });
     }
 
@@ -4918,7 +4918,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         key: "soft", icon: "flag", title: pick5(lang, { it: "Cartellini · Falli", en: "Cards · Fouls", es: "Tarjetas · Faltas", fr: "Cartons · Fautes", ru: "Карточки · Фолы" }),
         src: { kind: "est", label: pick5(lang, { it: "modello · Pro", en: "model · Pro", es: "modelo · Pro", fr: "modèle · Pro", ru: "модель · Pro" }) },
         chips,
-        note: pick5(lang, { it: "Predizioni soft del nostro modello (Pro): probabilità Over, senza quota FortunePlay — fuori dalla quota combinata.", en: "Our soft-market predictions (Pro): Over probabilities, no FortunePlay odds — excluded from the combined odds.", es: "Predicciones soft de nuestro modelo (Pro): probabilidades Over, sin cuota FortunePlay — fuera de la cuota combinada.", fr: "Prédictions soft de notre modèle (Pro) : probabilités Over, sans cote FortunePlay — hors cote combinée.", ru: "Наши soft-прогнозы (Pro): вероятности Over, без кэфа FortunePlay — вне комбо." }),
+        note: pick5(lang, { it: "Cartellini e falli: la nostra probabilità Over dal modello (Pro).", en: "Cards & fouls: our model's Over probability (Pro).", es: "Tarjetas y faltas: nuestra probabilidad Over del modelo (Pro).", fr: "Cartons et fautes : notre probabilité Over du modèle (Pro).", ru: "Карточки и фолы: наша вероятность Over от модели (Pro)." }),
       });
     }
 

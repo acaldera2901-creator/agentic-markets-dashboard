@@ -174,13 +174,13 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
               {c.rec && <span className="mds-pickbadge"><Ico id="star" />pick</span>}
               {on && <span className="mds-tick"><Ico id="check" /></span>}
               <span className="mds-cl">{c.sel}</span>
-              <span className="mds-cm">
+              <span className={`mds-cm${c.q && c.q > 1 ? "" : " noodds"}`}>
                 {c.prob && (
                   <span className="mds-p" title="La nostra prediction — modello BetRedge">
                     <span className="mds-pmark">R²</span>{c.prob}
                   </span>
                 )}
-                <span className={`mds-q${c.est ? " est" : ""}`}>{c.est ? "stima" : (c.q ? c.q.toFixed(2) : "–")}</span>
+                {c.q && c.q > 1 ? <span className="mds-q">{c.q.toFixed(2)}</span> : null}
                 {c.value && <span className="mds-cv">{c.value}</span>}
               </span>
             </button>
@@ -261,7 +261,7 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
                   <span className="mds-lsel">{l.sel}</span>
                   <span className="mds-lmkt">{l.mkt}</span>
                 </div>
-                {l.est ? <span className="mds-lq est">STIMA</span> : <span className="mds-lq">{l.q ? l.q.toFixed(2) : "–"}</span>}
+                {l.q && l.q > 1 ? <span className="mds-lq">{l.q.toFixed(2)}</span> : null}
                 <button type="button" className="mds-rm" aria-label="rimuovi" onClick={() => toggle(l.id)}><Ico id="x" /></button>
               </div>
             ))}
