@@ -67,16 +67,23 @@ function marketsForSide(
   bestOdds: Map<string, GsOdd>,
 ): GoalscorerMarket[] {
   if (!Number.isFinite(teamLambda) || teamLambda <= 0) return [];
-  const valid = (players || []).filter((p) => Number.isFinite(p.goalsPer90) && p.goalsPer90 > 0);
-  const denom = valid.reduce((s, p) => s + p.goalsPer90, 0);
-  if (denom <= 0) return []; // fail-closed: nessun dato di share
+  // Alloca i gol attesi della squadra (teamLambda) tra i giocatori per la loro
+  // CONTRIBUZIONE attesa = gol/90 × quota-minuti. Normalizzando su questo peso, la
+  // somma dei λ_giocatore = teamLambda (gol conservati). Il modello precedente
+  // normalizzava solo su gol/90 e poi moltiplicava per i minuti → Σλ < teamLambda,
+  // cioè SOTTO-stimava sistematicamente P(segna) di ogni giocatore (bug di calibrazione).
+  const valid = (players || []).filter(
+    (p) => Number.isFinite(p.goalsPer90) && p.goalsPer90 > 0 && Number.isFinite(p.minutesShare) && p.minutesShare > 0,
+  );
+  const weight = (p: GsPlayer) => p.goalsPer90 * clamp01(p.minutesShare);
+  const denom = valid.reduce((s, p) => s + weight(p), 0);
+  if (denom <= 0) return []; // fail-closed: nessun dato di contribuzione
 
   const out: GoalscorerMarket[] = [];
   for (const p of valid) {
-    const share = p.goalsPer90 / denom;
-    const minutesFactor = clamp01(p.minutesShare);
-    const lambdaPlayer = teamLambda * share * minutesFactor;
-    if (lambdaPlayer <= 0) continue; // es. minutesShare=0 -> niente riga P=0% fuorviante
+    const share = weight(p) / denom;
+    const lambdaPlayer = teamLambda * share; // Σ su tutti i giocatori = teamLambda
+    if (lambdaPlayer <= 0) continue;
     const pScores = 1 - Math.exp(-lambdaPlayer);
 
     const odd = bestOddFor(p.name, bestOdds);
