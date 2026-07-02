@@ -35,10 +35,9 @@ let _fetcher: Fetcher = defaultFetcher;
 export function __setBookFetcherForTest(f: Fetcher) { _fetcher = f; }
 
 const _cache = new Map<string, { at: number; map: Map<string, FpMatch> }>();
+const _refreshing = new Set<string>();
 
-export async function fetchBookBoard(book: BookConfig, now = Date.now()): Promise<Map<string, FpMatch>> {
-  const hit = _cache.get(book.key);
-  if (hit && now - hit.at < TTL_MS) return hit.map;
+async function _refreshBook(book: BookConfig, now: number): Promise<Map<string, FpMatch>> {
   const map = new Map<string, FpMatch>();
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
@@ -48,10 +47,27 @@ export async function fetchBookBoard(book: BookConfig, now = Date.now()): Promis
       if (page >= last) break;
     }
     _cache.set(book.key, { at: now, map });
+    return map;
   } catch {
-    if (hit) return hit.map; // riusa l'ultima buona su errore
+    const hit = _cache.get(book.key);
+    return hit ? hit.map : map; // riusa l'ultima buona su errore
   }
-  return map;
+}
+
+export async function fetchBookBoard(book: BookConfig, now = Date.now()): Promise<Map<string, FpMatch>> {
+  const hit = _cache.get(book.key);
+  if (hit && now - hit.at < TTL_MS) return hit.map;
+  // #PERF-ODDS-0702: serve-stale-while-revalidate. Se esiste una copia (anche
+  // scaduta) la ritorniamo SUBITO e aggiorniamo in background (una sola rivalida
+  // per book alla volta). Solo il primissimo caricamento a freddo attende.
+  if (hit) {
+    if (!_refreshing.has(book.key)) {
+      _refreshing.add(book.key);
+      void _refreshBook(book, now).finally(() => _refreshing.delete(book.key));
+    }
+    return hit.map;
+  }
+  return _refreshBook(book, now);
 }
 
 export type BookBoard = { book: BookConfig; map: Map<string, FpMatch> };
