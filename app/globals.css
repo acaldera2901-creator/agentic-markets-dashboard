@@ -5592,6 +5592,11 @@ button:disabled {
 .pred .gs-block .gs-market { color: var(--am-muted); }
 .pred .gs-block .gs-edge { color: var(--am-muted-2); }
 .pred .gs-block .gs-edge.pos { color: var(--am-positive); font-weight: 600; }
+/* #GOLIVE: senza quote scorer mostriamo solo la NOSTRA prediction — 2 colonne,
+   % enfatizzata, niente colonne Mercato/Edge vuote. */
+.pred .gs-block.gs-noodds .gs-cols { grid-template-columns: 54px; }
+.pred .gs-block.gs-noodds .gs-row { grid-template-columns: 1fr 54px; }
+.pred .gs-block.gs-noodds .gs-model { font-size: 14px; font-weight: 800; }
 .pred .gs-block .gs-note {
   margin: 1px 0 0; font-size: 9.5px; line-height: 1.35; color: var(--am-muted-2);
 }
@@ -5679,8 +5684,10 @@ button:disabled {
 .pred .v2r-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pred .v2r-eye { font-family: var(--am-mono, ui-monospace, monospace); font-size: 9px; letter-spacing: 0.09em;
   text-transform: uppercase; color: var(--am-coral); font-weight: 700; }
-.pred .v2r-pick { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--am-text);
+/* #GOLIVE: la NOSTRA prediction è protagonista anche nelle card piccole. */
+.pred .v2r-pick { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--am-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pred .v2r-eye { font-size: 9.5px; }
 .pred .v2r-conf { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
 .pred .v2r-conf .d { width: 6px; height: 6px; border-radius: 50%; background: var(--am-line-2); }
 .pred .v2r-conf .d.on { background: var(--am-positive); }
@@ -5689,11 +5696,11 @@ button:disabled {
 .pred .v2r-q { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; flex: none; text-align: right; }
 .pred .v2r-qlab { font-family: var(--am-mono, ui-monospace, monospace); font-size: 8.5px; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--am-muted-2); margin-bottom: 4px; }
-.pred .v2r-qn { font-family: var(--am-mono, ui-monospace, monospace); font-size: 26px; font-weight: 780;
-  letter-spacing: -0.02em; color: var(--am-text); font-variant-numeric: tabular-nums; }
-.pred .v2r-qn.lock { font-size: 18px; color: var(--am-muted-2); }
-.pred .v2r-sub { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10px; color: var(--am-muted);
-  margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.pred .v2r-qn { font-family: var(--am-mono, ui-monospace, monospace); font-size: 21px; font-weight: 760;
+  letter-spacing: -0.02em; color: var(--am-muted); font-variant-numeric: tabular-nums; }
+.pred .v2r-qn.lock { font-size: 16px; color: var(--am-muted-2); }
+.pred .v2r-sub { font-family: var(--am-mono, ui-monospace, monospace); font-size: 11px; color: var(--am-text);
+  font-weight: 640; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
 .pred .v2r-val { font-size: 9.5px; font-weight: 800; color: var(--am-coral); background: var(--am-coral-dim);
   border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 1px 7px; cursor: help; }
 /* confidence meter */
@@ -7802,7 +7809,8 @@ button:disabled {
 .mds-defs { position: absolute; width: 0; height: 0; }
 .mds-ico { width: 15px; height: 15px; display: inline-block; vertical-align: middle; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .mds-hero { position: relative; padding: 18px 18px 16px; background: radial-gradient(150% 150% at 100% 0%, var(--am-coral-dim), transparent 55%); border-bottom: 1px solid var(--am-line); }
-.mds-htop { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+/* #GOLIVE: clearance a destra per non far finire la data sotto la × di chiusura. */
+.mds-htop { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding-right: 44px; }
 .mds-comp { display: flex; align-items: center; gap: 8px; font-family: var(--mds-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--am-muted); }
 .mds-comp .mds-ico { color: var(--am-coral); }
 .mds-when { font-family: var(--mds-mono); font-size: 10.5px; color: var(--am-muted-2); }
@@ -7842,12 +7850,13 @@ button:disabled {
 .mds-tick { position: absolute; top: 8px; right: 8px; width: 15px; height: 15px; color: var(--am-coral); }
 .mds-cl { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 16px; }
 .mds-cm { display: flex; align-items: baseline; gap: 7px; }
-/* #PREDICT-EVERY-MARKET-1: la nostra probabilità è protagonista (verde BetRedge, marchio R²). */
-.mds-cm .mds-p { font-family: var(--mds-mono); font-size: 13px; color: var(--am-coral); font-weight: 820; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 3px; }
-.mds-cm .mds-p .mds-pmark { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 4px; background: color-mix(in srgb, var(--am-coral) 16%, transparent); color: var(--am-coral); line-height: 1; }
-.mds-cm .mds-q { font-family: var(--mds-mono); font-size: 15px; font-weight: 760; letter-spacing: -0.01em; }
-.mds-cm .mds-q.est { font-size: 10px; font-weight: 700; color: #d79a34; }
-.mds-cm .mds-cv { font-family: var(--mds-mono); font-size: 9.5px; font-weight: 800; color: var(--am-coral); margin-left: auto; }
+/* #GOLIVE: la NOSTRA prediction è protagonista (verde BetRedge, marchio R², più grande
+   della quota). La quota FortunePlay è secondaria. Quando non c'è quota, la % è l'unico hero. */
+.mds-cm .mds-p { font-family: var(--mds-mono); font-size: 16px; color: var(--am-coral); font-weight: 840; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 4px; }
+.mds-cm .mds-p .mds-pmark { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 4px; background: color-mix(in srgb, var(--am-coral) 18%, transparent); color: var(--am-coral); line-height: 1; }
+.mds-cm .mds-q { font-family: var(--mds-mono); font-size: 12.5px; font-weight: 720; letter-spacing: -0.01em; color: var(--am-muted); margin-left: auto; }
+.mds-cm.noodds .mds-p { font-size: 17px; }
+.mds-cm .mds-cv { font-family: var(--mds-mono); font-size: 9.5px; font-weight: 800; color: var(--am-coral); }
 .mds-note { font-family: var(--mds-mono); font-size: 9.5px; color: var(--am-muted-2); margin: 9px 0 0; line-height: 1.5; }
 /* Altri mercati FortunePlay (collassabile) */
 .mds-more { padding-top: 12px; padding-bottom: 12px; }

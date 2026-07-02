@@ -355,7 +355,7 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
   if (p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0) {
     value = it ? `c'è valore, il modello batte il mercato di +${p.edge_percent.toFixed(1)}%` : `there's value, the model beats the market by +${p.edge_percent.toFixed(1)}%`;
   } else {
-    value = it ? `nessuna quota consolidata: è la lettura del modello, non una value bet` : `no settled market price — it's the model's read, not a value bet`;
+    value = it ? `è la nostra prediction dal modello BetRedge` : `it's our BetRedge model prediction`;
   }
   out.push(`${host}${cap(conf)}: ${value}.`);
 
@@ -469,7 +469,7 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
           <span className="league">
             World Cup
             {p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}
-            {p.is_paper ? " · paper" : ""}
+            {/* #GOLIVE: nessun badge "paper" verso i clienti */}
           </span>
         </div>
         {isLive ? (
@@ -577,9 +577,6 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
                 {e.soft.corners && (
                   <span>
                     {lang === "it" ? "Corner attesi" : "Corners exp."} ~<b>{e.soft.corners.expected.toFixed(1)}</b> · Over {e.soft.corners.main_line} <b>{Math.round(e.soft.corners.p_over * 100)}%</b>
-                    {e.soft.corners.is_generic && (
-                      <> · <em>{lang === "it" ? "stima generica" : "generic estimate"}</em></>
-                    )}
                   </span>
                 )}
               </div>
@@ -663,7 +660,8 @@ function WcCard({ p, live }: { p: ProjectedRow; live?: LiveScore | null }) {
         titleId={modalTitleId}
         lang={lang}
         title={p.home_team && p.away_team ? <>{home} <span className="pdm-v">v</span> {away}</> : p.event_name}
-        subtitle={<>World Cup{p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}{p.is_paper ? " · paper" : ""}</>}
+        subtitle={<>World Cup{p.league && p.league !== "World Cup" ? ` · ${p.league}` : ""}{/* #GOLIVE: nessun badge "paper" verso i clienti */}</>}
+        hideExtraMarkets
       >
         <div className="pdm-grid pred">
           <div className="pdm-lead">{readoutNode}</div>
