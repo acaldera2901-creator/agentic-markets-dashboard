@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { fetchAllTodayMatches } from "@/lib/football-data";
 import { dbQuery } from "@/lib/db";
 import { requireAccess } from "@/lib/auth";
@@ -6,6 +6,15 @@ import { settlePredictionLog } from "@/lib/prediction-log";
 import { SUMMER_LIVE_ESPN_SLUGS } from "@/lib/summer-leagues";
 
 export const dynamic = "force-dynamic";
+
+// #LIVE-LATENCY: live scores are GLOBAL (not per-user), so we can share the
+// computed feed across requests with a short in-memory TTL. This makes reloads
+// and the 60s client poll near-instant instead of re-hitting football-data +
+// 6 ESPN scoreboards every single time. Per-instance on serverless — still
+// cuts the external round-trips that caused the 5-10s "card appears late".
+const LIVE_TTL_MS = 10_000;
+type TodayMatch = Awaited<ReturnType<typeof fetchAllTodayMatches>>[number];
+let liveCache: { liveMap: Record<string, LiveScore>; matches: TodayMatch[]; ts: number } | null = null;
 
 export interface LiveScore {
   home_score: number | null;
@@ -62,9 +71,9 @@ async function fetchEspnLeagueLive(league: string): Promise<Record<string, LiveS
   return out;
 }
 
-export async function GET(req: Request) {
-  const { deny } = await requireAccess(req);
-  if (deny) return deny;
+// Fetch the live feed from all sources and build the served map. No DB writes
+// here — persistence/settlement is a side effect scheduled via `after()`.
+async function computeLive(): Promise<{ liveMap: Record<string, LiveScore>; matches: TodayMatch[] }> {
   const [matches, espnFriendly, espnWorldCup, ...espnSummer] = await Promise.all([
     fetchAllTodayMatches(),
     fetchEspnLeagueLive("fifa.friendly"),
@@ -89,7 +98,13 @@ export async function GET(req: Request) {
       away_team: m.awayTeam,
     };
   }
+  return { liveMap, matches };
+}
 
+// Persist live scores + settle finished matches. Runs OFF the response path via
+// `after()`: its output never fed the JSON response (the map is built above), so
+// awaiting it before responding only added latency. Logic unchanged.
+async function persistLive(matches: TodayMatch[]): Promise<void> {
   for (const m of matches) {
     if (m.status === "IN_PLAY" || m.status === "PAUSED" || m.status === "FINISHED") {
       await dbQuery(
@@ -106,6 +121,24 @@ export async function GET(req: Request) {
       await settlePredictionLog(m.id, m.homeGoals, m.awayGoals);
     }
   }
+}
 
-  return NextResponse.json({ live: liveMap, updated: new Date().toISOString() });
+export async function GET(req: Request) {
+  const { deny } = await requireAccess(req);
+  if (deny) return deny;
+
+  const now = Date.now();
+  if (liveCache && now - liveCache.ts < LIVE_TTL_MS) {
+    // Warm cache: serve immediately, no external fetches, no DB writes.
+    return NextResponse.json({ live: liveCache.liveMap, updated: new Date(liveCache.ts).toISOString() });
+  }
+
+  const { liveMap, matches } = await computeLive();
+  liveCache = { liveMap, matches, ts: now };
+  // Fresh feed → persist scores + settle finished matches after the response is
+  // sent (Vercel keeps the invocation alive via waitUntil). Idempotent, so
+  // running it once per TTL window instead of once per request is safe.
+  after(() => persistLive(matches));
+
+  return NextResponse.json({ live: liveMap, updated: new Date(now).toISOString() });
 }
