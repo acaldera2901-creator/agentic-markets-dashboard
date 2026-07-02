@@ -32,8 +32,10 @@ MIN_MINUTES = 180
 def load_fixtures() -> list[dict]:
     out = []
     for fp in sorted(BACKFILL.glob("*.json")):
+        league = fp.stem.rsplit("_", 1)[0]  # "PL_2023" -> "PL", "WC_2026" -> "WC"
         for fid, m in json.loads(fp.read_text()).items():
             m["fixture_id"] = fid
+            m["league"] = league
             out.append(m)
     out.sort(key=lambda x: x["date"])
     return out
@@ -50,7 +52,7 @@ def run() -> None:
     tg = defaultdict(float); tn = defaultdict(int)                            # team goals scored / matches
 
     old_b, new_b = [], []          # brier
-    old_p, new_p, y_all, dates_all = [], [], [], []
+    old_p, new_p, y_all, dates_all, leagues_all = [], [], [], [], []
     n_eval = 0
 
     for fx in fixtures:
@@ -88,7 +90,7 @@ def run() -> None:
                 pnw = 1 - math.exp(-lam_new)
                 y = x["scored"]
                 old_b.append((po - y) ** 2); new_b.append((pnw - y) ** 2)
-                old_p.append(po); new_p.append(pnw); y_all.append(y); dates_all.append(fx["date"])
+                old_p.append(po); new_p.append(pnw); y_all.append(y); dates_all.append(fx["date"]); leagues_all.append(fx["league"])
                 n_eval += 1
 
         # update AFTER the match
@@ -135,18 +137,46 @@ def run() -> None:
     print(f"  reliability top bin (p>0.35): raw pred {xte[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f} "
           f"→ cal {cal_te[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f}  actual {yte[xte>0.35].mean() if (xte>0.35).any() else float('nan'):.3f}")
 
-    # SHIPPED curve: fit on 100% of the data (max sample) — the 60% split above was
-    # only for the honest out-of-sample validation. Export breakpoints to embed in TS.
-    iso_full = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(
-        np.array(new_p), np.array(y_all))
+    # ── PER-LEAGUE vs GLOBAL: does a league-specific curve beat the global one OOS? ──
     xs = np.linspace(0, 0.8, 33)
-    curve = [[round(float(x), 4), round(float(iso_full.predict([x])[0]), 4)] for x in xs]
-    leagues = sorted({fp.stem for fp in BACKFILL.glob("*.json")})
+    def curve_of(iso_):
+        return [[round(float(x), 4), round(float(iso_.predict([x])[0]), 4)] for x in xs]
+    P, Y, L, D = np.array(new_p), np.array(y_all), np.array(leagues_all), np.array(dates_all)
+    MIN_TRAIN = 3000  # a per-league curve needs enough train samples to be trustworthy
+    iso_global_full = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(P, Y)
+
+    print("\n── PER-LEAGUE calibration (OOS, 60/40 by date within league) ──")
+    print(f"{'league':<6}{'n':>7}{'Brier raw':>11}{'glob-cal':>10}{'league-cal':>12}  winner")
+    league_curves = {}
+    for lg in sorted(set(leagues_all)):
+        idx = [k for k in range(len(P)) if L[k] == lg]
+        idx.sort(key=lambda k: D[k])
+        c = int(len(idx) * 0.6)
+        if c < 500 or len(idx) - c < 300:
+            print(f"{lg:<6}{len(idx):>7}   (too few samples → global fallback)")
+            continue
+        tr_l, te_l = idx[:c], idx[c:]
+        xtr_l, ytr_l = P[tr_l], Y[tr_l]
+        xte_l, yte_l = P[te_l], Y[te_l]
+        iso_l = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(xtr_l, ytr_l)
+        b_raw_l = float(np.mean((xte_l - yte_l) ** 2))
+        b_glob = float(np.mean((iso.predict(xte_l) - yte_l) ** 2))       # global curve (train-fit)
+        b_lg = float(np.mean((iso_l.predict(xte_l) - yte_l) ** 2))       # per-league curve
+        win = "league" if (b_lg < b_glob - 1e-5 and len(tr_l) >= MIN_TRAIN) else "global"
+        print(f"{lg:<6}{len(idx):>7}{b_raw_l:>11.5f}{b_glob:>10.5f}{b_lg:>12.5f}  {win}")
+        if win == "league":
+            # ship a per-league curve fit on 100% of that league's data
+            iso_l_full = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(P[idx], Y[idx])
+            league_curves[lg] = curve_of(iso_l_full)
+
     out = ROOT / "data" / "goalscorer_calibration.json"
-    out.write_text(json.dumps({"method": "isotonic", "trained_on": leagues,
-                               "n_train_all": len(new_p), "curve": curve}, indent=2))
-    print(f"  exported FULL-DATA calibration curve → {out.relative_to(ROOT)} "
-          f"({len(curve)} pts, {len(new_p)} samples, {len(leagues)} datasets)")
+    out.write_text(json.dumps({
+        "method": "isotonic", "n_train_all": len(new_p),
+        "global": curve_of(iso_global_full),
+        "leagues": league_curves,  # only leagues that beat global OOS with enough data
+    }, indent=2))
+    print(f"\n  exported → {out.relative_to(ROOT)}: global + {len(league_curves)} per-league curves "
+          f"({sorted(league_curves)})")
 
 
 if __name__ == "__main__":
