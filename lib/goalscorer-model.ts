@@ -60,16 +60,18 @@ function indexBestOdds(odds: GsOdd[]): Map<string, GsOdd> {
   return best;
 }
 
-// #GOALSCORER-CALIB-1 (fase 2): calibrazione isotonica addestrata su PL 2023-24
-// (scripts/backtest_goalscorer.py, 11.817 player-match train). Il modello grezzo, pur
-// corretto in aggregato, SOVRA-stima i bomber (fascia alta) e sotto-stima la fascia
-// bassa; questa curva monotòna riallinea P(segna) ai tassi reali (Brier −0.6% out-of-sample).
+// #GOALSCORER-CALIB-1 (fase 2): calibrazione isotonica addestrata su TUTTI i dati
+// (5 leghe top × 3 stagioni + WC 2026 = 143.751 player-match; scripts/backtest_goalscorer.py).
+// Il modello grezzo, pur corretto in aggregato, SOVRA-stima i bomber (fascia alta) e sotto-stima
+// la fascia bassa; questa curva monotòna riallinea P(segna) ai tassi reali (Brier −0.3% out-of-sample,
+// validato train/test temporale multi-lega). Curva fittata sul 100% dei dati (max campione).
 // Coppie [p_grezzo, p_calibrato]; interpolazione lineare, clamp ai bordi.
 const GS_CALIBRATION: readonly [number, number][] = [
-  [0, 0.0408], [0.05, 0.0639], [0.075, 0.0787], [0.1, 0.0938], [0.125, 0.1079],
-  [0.15, 0.1303], [0.175, 0.1509], [0.2, 0.1692], [0.225, 0.1818], [0.25, 0.1849],
-  [0.275, 0.2065], [0.3, 0.2322], [0.325, 0.2411], [0.35, 0.2655], [0.425, 0.2655],
-  [0.45, 0.3941], [0.575, 0.3941], [0.6, 0.4068], [0.775, 0.4068], [0.8, 0.4587],
+  [0, 0.0306], [0.025, 0.0384], [0.05, 0.0542], [0.075, 0.0769], [0.1, 0.0924],
+  [0.125, 0.1153], [0.15, 0.1261], [0.175, 0.146], [0.2, 0.1621], [0.225, 0.174],
+  [0.25, 0.2083], [0.275, 0.2205], [0.3, 0.2565], [0.325, 0.2784], [0.35, 0.2789],
+  [0.4, 0.2844], [0.425, 0.3255], [0.475, 0.3299], [0.5, 0.402], [0.575, 0.4552],
+  [0.775, 0.5], [0.8, 0.5],
 ];
 
 /** Applica la calibrazione isotonica (interpolazione lineare monotòna) a P(segna). */
