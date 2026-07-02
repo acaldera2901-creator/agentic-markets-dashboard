@@ -53,7 +53,7 @@ const COPY = {
     waHead1: "Non battiamo il banco.",
     waHead2: "Lo rendiamo leggibile.",
     waBody: "Ogni partita passa nel modello: probabilità calibrate, confrontate con la quota. Dove c'è scarto lo evidenziamo e lo spieghiamo — prima del fischio — e lo registriamo. Niente soffiate, niente scatola nera: numeri onesti e il loro perché.",
-    waKpi1Lab: "hit-rate", waKpi2Lab: "prima del fischio", waKpi3Val: "Tracciato", waKpi3Lab: "CLV verificato",
+    waKpi1Val: "Hit-rate", waKpi1Lab: "alta-confidenza", waKpi2Lab: "prima del fischio", waKpi3Val: "Tracciato", waKpi3Lab: "CLV verificato",
     waCta: "Inizia gratis",
     waCtaSub: "Senza carta",
     // terminale edge_scanner — header colonne + stati + footer
@@ -103,7 +103,7 @@ const COPY = {
     waHead1: "We don't beat the book.",
     waHead2: "We make it readable.",
     waBody: "Every match runs through the model: calibrated probabilities, lined up against the odds. Where there's a gap we flag it and explain it — before kick-off — and we log it. No tips, no black box: honest numbers and the reasoning behind them.",
-    waKpi1Lab: "hit-rate", waKpi2Lab: "logged pre-match", waKpi3Val: "Tracked", waKpi3Lab: "verified CLV",
+    waKpi1Val: "Hit-rate", waKpi1Lab: "high-confidence", waKpi2Lab: "logged pre-match", waKpi3Val: "Tracked", waKpi3Lab: "verified CLV",
     waCta: "Start free",
     waCtaSub: "No card",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -152,7 +152,7 @@ const COPY = {
     waHead1: "No batimos a la casa.",
     waHead2: "La hacemos legible.",
     waBody: "Cada partido pasa por el modelo: probabilidades calibradas, frente a la cuota. Donde hay diferencia la señalamos y la explicamos — antes del pitido — y la registramos. Sin soplos, sin caja negra: números honestos y su porqué.",
-    waKpi1Lab: "acierto", waKpi2Lab: "antes del partido", waKpi3Val: "Registrado", waKpi3Lab: "CLV verificado",
+    waKpi1Val: "Acierto", waKpi1Lab: "alta confianza", waKpi2Lab: "antes del partido", waKpi3Val: "Registrado", waKpi3Lab: "CLV verificado",
     waCta: "Empieza gratis",
     waCtaSub: "Sin tarjeta",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -201,7 +201,7 @@ const COPY = {
     waHead1: "On ne bat pas le bookmaker.",
     waHead2: "On le rend lisible.",
     waBody: "Chaque match passe dans le modèle : des probabilités calibrées, confrontées à la cote. Là où il y a un écart, on le signale et on l'explique — avant le coup d'envoi — et on l'enregistre. Pas de tuyaux, pas de boîte noire : des chiffres honnêtes et leur pourquoi.",
-    waKpi1Lab: "réussite", waKpi2Lab: "avant le match", waKpi3Val: "Suivi", waKpi3Lab: "CLV vérifié",
+    waKpi1Val: "Réussite", waKpi1Lab: "haute-confiance", waKpi2Lab: "avant le match", waKpi3Val: "Suivi", waKpi3Lab: "CLV vérifié",
     waCta: "Commencer gratuitement",
     waCtaSub: "Sans carte",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -250,7 +250,7 @@ const COPY = {
     waHead1: "Мы не обыгрываем букмекера.",
     waHead2: "Мы делаем его понятным.",
     waBody: "Каждый матч проходит через модель: калиброванные вероятности, сопоставленные с коэффициентом. Где есть расхождение — мы отмечаем его и объясняем — до свистка — и фиксируем. Никаких подсказок, никакого чёрного ящика: честные цифры и их причина.",
-    waKpi1Lab: "попаданий", waKpi2Lab: "до матча", waKpi3Val: "Отслеж.", waKpi3Lab: "проверенный CLV",
+    waKpi1Val: "Точность", waKpi1Lab: "высокая уверенность", waKpi2Lab: "до матча", waKpi3Val: "Отслеж.", waKpi3Lab: "проверенный CLV",
     waCta: "Начать бесплатно",
     waCtaSub: "Без карты",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -552,7 +552,7 @@ export default function LandingPage() {
           <p className="lp-what-body">{t.waBody}</p>
           <div className="lp-kpis">
             <div className="lp-kpi">
-              <b className="lp-kpi-val">66.3<span className="lp-kpi-unit">%</span></b>
+              <b className="lp-kpi-val">{t.waKpi1Val}</b>
               <span className="lp-kpi-lab">{t.waKpi1Lab}</span>
             </div>
             <div className="lp-kpi">
