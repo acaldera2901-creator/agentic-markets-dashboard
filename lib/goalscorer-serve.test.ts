@@ -3,6 +3,7 @@ import {
   buildGoalscorerByMatch,
   groupProfilesByTeam,
   groupOddsByMatch,
+  fixMojibake,
   GsPrediction,
   ProfileRow,
   OddRow,
@@ -30,6 +31,36 @@ describe("groupProfilesByTeam", () => {
     const p = groupProfilesByTeam(rows).get("italy")![0];
     expect(p.goalsPer90).toBe(0);
     expect(p.tier).toBe(0);
+  });
+  it("#GS-DEDUP: fonde varianti accento/iniziale dello stesso giocatore (stessa squadra)", () => {
+    const rows: ProfileRow[] = [
+      { player_id: "1", name: "Marko Arnautović", team: "Austria", goals_per90_season: 0.4, minutes_share: 1.0, tier: 1 },
+      { player_id: "2", name: "M. Arnautovic", team: "Austria", goals_per90_season: 0.3, minutes_share: 0.6, tier: 2 },
+      { player_id: "3", name: "R. Schmid", team: "Austria", goals_per90_season: 0.2, minutes_share: 0.5, tier: 2 },
+      { player_id: "4", name: "Romano Schmid", team: "Austria", goals_per90_season: 0.5, minutes_share: 1.0, tier: 1 },
+    ];
+    const players = groupProfilesByTeam(rows).get("austria")!;
+    expect(players).toHaveLength(2); // Arnautović + Schmid, non 4
+    // tiene il record più rilevante (peso g90×minuti maggiore) per ciascuno
+    expect(players.find((p) => /arnaut/i.test(p.name))!.goalsPer90).toBe(0.4);
+    expect(players.find((p) => /schmid/i.test(p.name))!.goalsPer90).toBe(0.5);
+  });
+  it("#GS-DEDUP: NON fonde cognomi diversi né iniziali diverse", () => {
+    const rows: ProfileRow[] = [
+      { player_id: "1", name: "M. Arnautovic", team: "Austria", goals_per90_season: 0.4, minutes_share: 1.0, tier: 1 },
+      { player_id: "2", name: "D. Alaba", team: "Austria", goals_per90_season: 0.3, minutes_share: 1.0, tier: 1 },
+      { player_id: "3", name: "K. Schmid", team: "Austria", goals_per90_season: 0.2, minutes_share: 1.0, tier: 2 },
+      { player_id: "4", name: "R. Schmid", team: "Austria", goals_per90_season: 0.2, minutes_share: 1.0, tier: 2 },
+    ];
+    expect(groupProfilesByTeam(rows).get("austria")!).toHaveLength(4);
+  });
+  it("#GOLIVE: fixMojibake ripara il nome nel profilo, guardato sui non-mojibake", () => {
+    const mojibake = Buffer.from("L. Östman", "utf8").toString("latin1"); // "L. Ã–stman"
+    expect(mojibake).not.toBe("L. Östman");
+    expect(fixMojibake(mojibake)).toBe("L. Östman");
+    expect(fixMojibake("Kevin De Bruyne")).toBe("Kevin De Bruyne"); // niente firma → invariato
+    const row: ProfileRow = { player_id: "1", name: mojibake, team: "Sweden", goals_per90_season: 0.5, minutes_share: 1.0, tier: 1 };
+    expect(groupProfilesByTeam([row]).get("sweden")![0].name).toBe("L. Östman");
   });
 });
 

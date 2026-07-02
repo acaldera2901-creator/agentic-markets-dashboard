@@ -7,8 +7,9 @@ const P = (over: Partial<GsPlayer> = {}): GsPlayer => ({
 
 describe("computeGoalscorerMarkets", () => {
   it("P(segna) = 1 - e^-lambda su un caso noto (un solo giocatore => share=1, qualunque g90)", () => {
-    // share=1 indipendentemente dal g90 assoluto, minutesFactor=1 => lambdaPlayer = teamLambda = 1.5
-    const out = computeGoalscorerMarkets(1.5, 0, [P({ name: "Solo", goalsPer90: 0.31 })], [], []);
+    // share=1 indipendentemente dal g90 assoluto, minutesFactor=1 => lambdaPlayer = teamLambda = 1.5.
+    // calibrate=false per verificare la matematica grezza (la calibrazione isotonica è testata a parte).
+    const out = computeGoalscorerMarkets(1.5, 0, [P({ name: "Solo", goalsPer90: 0.31 })], [], [], 5, false);
     expect(out).toHaveLength(1);
     expect(out[0].pScores).toBeCloseTo(1 - Math.exp(-1.5), 10);
     expect(out[0].marketImplied).toBeNull();
@@ -61,9 +62,14 @@ describe("computeGoalscorerMarkets", () => {
     expect(out[0].edge).toBeNull();
   });
 
-  it("minutesShare riduce lambda (panchina < titolare)", () => {
-    const starter = computeGoalscorerMarkets(1.5, 0, [P({ name: "S", minutesShare: 1.0 })], [], [])[0];
-    const bench = computeGoalscorerMarkets(1.5, 0, [P({ name: "B", minutesShare: 0.3 })], [], [])[0];
+  it("minutesShare riduce lambda (panchina < titolare, stessa squadra)", () => {
+    // Conservazione Σλ: con più giocatori nella STESSA squadra chi ha meno minuti
+    // riceve una share minore del teamLambda → pScores più basso. Con un solo
+    // giocatore la share è sempre 1, quindi serve un compagno per il confronto.
+    const out = computeGoalscorerMarkets(1.5, 0,
+      [P({ name: "S", minutesShare: 1.0 }), P({ name: "B", minutesShare: 0.3 })], [], [], 5, false);
+    const starter = out.find((m) => m.name === "S")!;
+    const bench = out.find((m) => m.name === "B")!;
     expect(bench.pScores).toBeLessThan(starter.pScores);
   });
 
