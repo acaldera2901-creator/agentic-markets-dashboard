@@ -16,7 +16,7 @@ export function expirySqlExpr(expiresAtIso: string | null): string {
 }
 
 type ActivatedRow = { identifier: string; name: string | null; plan: GrantablePlan };
-type ActivationSource = "admin" | "stripe" | "paygate";
+type ActivationSource = "admin" | "stripe" | "paygate" | "paypal";
 
 // Shared NOTIFICATION side-effect for both activation modes: audit `events` row +
 // best-effort activation email. The two modes must NOT share the activating SQL
@@ -179,6 +179,50 @@ export async function activatePaygatePlan(
   const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
   if (before.plan !== newPlan) {
     await notifyPlanActivated(activated, "paygate");
+  }
+  return activated;
+}
+
+// Concede/estende un piano PayPal/Apple Pay. Stesso modello una-tantum di PayGate:
+// riusa computePaygateGrant (stack del residuo + anti-downgrade). Ritorna null se
+// l'identifier non esiste in profiles (→ il chiamante logga la riconciliazione).
+export async function activatePaypalPlan(
+  identifier: string,
+  plan: GrantablePlan,
+  period: "monthly" | "annual"
+): Promise<ActivatedRow | null> {
+  const days = period === "annual" ? 365 : 30;
+
+  const prev = await dbQuery<{ plan: string; name: string | null; plan_expires_at: string | null }>(
+    `SELECT plan, name, plan_expires_at::text AS plan_expires_at FROM profiles
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+      LIMIT 1`,
+    [identifier]
+  );
+  const before = prev[0];
+  if (!before) return null;
+
+  const { plan: newPlan, expiryISO } = computePaygateGrant({
+    currentPlan: before.plan,
+    currentExpiryISO: before.plan_expires_at,
+    purchasedPlan: plan,
+    days,
+    nowISO: new Date().toISOString(),
+  });
+
+  await dbExecute(
+    `UPDATE profiles
+        SET plan = $2,
+            requested_plan = NULL,
+            plan_expires_at = $3::timestamptz,
+            updated_at = NOW()
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
+    [identifier, newPlan, expiryISO]
+  );
+
+  const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
+  if (before.plan !== newPlan) {
+    await notifyPlanActivated(activated, "paypal");
   }
   return activated;
 }
