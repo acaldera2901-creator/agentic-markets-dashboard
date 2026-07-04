@@ -91,9 +91,12 @@ export function mergeBooksToResponse(
       if (!bm) continue;
       const a = aligned(bm);
       if (!a) continue;
+      // Deep-link solo per i book col sito utente noto (matchUrlBase); altrimenti
+      // landing affiliate garantita. #YBETS-DEEPLINK-404: `book.base` è l'host del
+      // feed e NON serve le pagine-partita di ogni book (YBets → 404).
       const url =
-        bm.slug && bm.id && bm.sport
-          ? buildFortuneplayMatchUrl({ baseUrl: book.base, locale: cfg.locale, sport: bm.sport, slug: bm.slug, id: bm.id, code: book.stag })
+        book.matchUrlBase && bm.slug && bm.id && bm.sport
+          ? buildFortuneplayMatchUrl({ baseUrl: book.matchUrlBase, locale: cfg.locale, sport: bm.sport, slug: bm.slug, id: bm.id, code: book.stag })
           : book.landing;
       books.push({ key: book.key, name: book.name, oddsHome: a.home, oddsDraw: a.draw, oddsAway: a.away, matchUrl: url });
     }
