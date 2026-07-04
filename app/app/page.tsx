@@ -1657,39 +1657,6 @@ interface AgentStatus {
   age_seconds: number | null;
 }
 
-interface HistoryMatch {
-  match_id: string;
-  league: string;
-  league_name: string;
-  home_team: string;
-  away_team: string;
-  kickoff: string;
-  p_home: number;
-  p_draw: number;
-  p_away: number;
-  odds_home: number | null;
-  odds_draw: number | null;
-  odds_away: number | null;
-  edge: number | null;
-  best_selection: string | null;
-  home_score: number | null;
-  away_score: number | null;
-  match_status: string | null;
-  bet_selection: string | null;
-  bet_status: string | null;
-  bet_odds: number | null;
-}
-
-interface HistoryStats {
-  total_matches: number;
-  bets_placed: number;
-  won: number;
-  lost: number;
-  pending: number;
-  // #HITRATE-GUARD-1: accuracy/model_accuracy dropped — the legacy `bets` book
-  // has no confidence so its rate can't be floor-gated (see /api/history).
-}
-
 // Unified track record (/api/v2/history) — multi-sport, result-centric.
 // Rows pass the same per-tier projection as the board: `locked` rows hide pick.
 interface V2HistoryRow {
@@ -2748,20 +2715,13 @@ function PreAccessLanding({
   onLogin,
   onCreate,
   onPlans,
-  history,
-  historyStats,
-  historyLoading,
 }: {
   onLogin: () => void;
   onCreate: () => void;
   onPlans: () => void;
-  history: HistoryMatch[];
-  historyStats: HistoryStats | null;
-  historyLoading: boolean;
 }) {
   const t = useT();
   const lang = useLang();
-  const visibleHistory = history.filter((item) => item.bet_status && item.bet_status !== "pending").slice(0, 5);
   const sponsorSlots = [
     { label: "Top sponsor", title: "Operator slot", desc: "Reserved placement for a future sportsbook or casino partner." },
     { label: "Side partner", title: "Acquisition partner", desc: "Generic partner card ready for tracked campaign placement." },
@@ -2839,7 +2799,6 @@ function PreAccessLanding({
       <section className="public-content-grid">
         <div className="public-main-column">
           <AccessLevels onCreate={onCreate} onPlans={onPlans} />
-          <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
           <FutureSportsPanel sports={futureSports} />
           <FAQSupportSection items={faq} />
         </div>
@@ -2912,41 +2871,6 @@ function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: ()
             <button onClick={level.action}>{level.cta}</button>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function PublicOldBetsPanel({ history, stats, loading }: { history: HistoryMatch[]; stats: HistoryStats | null; loading: boolean }) {
-  const lang = useLang();
-  return (
-    <section className="public-section">
-      <div className="public-section-head">
-        <p className="eyebrow">Old bets</p>
-        <h3>{pick5(lang, { it: "Storico passato visibile senza login", en: "Past history visible without login", es: "Historial pasado visible sin login", fr: "Historique passé visible sans connexion", ru: "Прошлая история видна без входа" })}</h3>
-      </div>
-      {/* #LEGACY-HITRATE-1: the legacy `bets` feed has no confidence, so its
-          aggregate hit-rate can't be floored and contradicted the surfaced
-          track record (52% here vs the gated rate in the unified History tab).
-          Drop the misleading headline; the canonical hit-rate lives in History. */}
-      <div className="public-history-stats">
-        <div><span>{pick5(lang, { it: "Partite", en: "Matches", es: "Partidos", fr: "Matchs", ru: "Матчи" })}</span><strong>{stats?.total_matches ?? "..."}</strong></div>
-        <div><span>Bets</span><strong>{stats?.bets_placed ?? "..."}</strong></div>
-      </div>
-      <div className="public-old-bets">
-        {loading ? (
-          <div className="book-empty">{pick5(lang, { it: "Caricamento storico...", en: "Loading history...", es: "Cargando historial...", fr: "Chargement de l'historique...", ru: "Загрузка истории..." })}</div>
-        ) : history.length ? history.map((row, index) => (
-          <div key={`${row.match_id}-${row.bet_selection ?? row.best_selection ?? index}`}>
-            <span>{LEAGUE_FLAGS[row.league] ?? "FB"} {row.league}</span>
-            <strong>{row.home_team} vs {row.away_team}</strong>
-            {/* MEDIUM-1: pick gated server-side for non-paid viewers (selection
-                comes back null) → show a lock instead of leaking/placeholdering it. */}
-            <em>{row.bet_selection ?? row.best_selection ?? "🔒 pick"} · {row.bet_status}</em>
-          </div>
-        )) : (
-          <div className="book-empty">{pick5(lang, { it: "Nessuno storico pubblico disponibile ora.", en: "No public history available right now.", es: "No hay historial público disponible ahora.", fr: "Aucun historique public disponible pour le moment.", ru: "Сейчас публичная история недоступна." })}</div>
-        )}
       </div>
     </section>
   );
@@ -7534,9 +7458,6 @@ function UnifiedBetsTab({
   predictions,
   fpOdds,
   tennisMatches,
-  history,
-  historyStats,
-  historyLoading,
   onSelect,
   onBetNow,
   onSignIn,
@@ -7553,9 +7474,6 @@ function UnifiedBetsTab({
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
   tennisMatches: TennisMatch[];
-  history: HistoryMatch[];
-  historyStats: HistoryStats | null;
-  historyLoading: boolean;
   onSelect: (s: SlipSelection) => void;
   onBetNow: () => void;
   onSignIn: () => void;
@@ -7572,9 +7490,6 @@ function UnifiedBetsTab({
   const lang = useLang();
   // #HOUSE-PHOTO-3: dati reali per la versione RICCA del banner topbar (ticker top-edge + chip Edge medio).
   const topbarData = deskBannerData(predictions, tennisMatches);
-  const visibleHistory = history
-    .filter((h) => h.bet_status && h.bet_status !== "pending")
-    .slice(0, 5);
 
   return (
     <>
@@ -7620,7 +7535,6 @@ function UnifiedBetsTab({
           hitRate={hitRate}
         />
       </LockedGate>
-      <PublicOldBetsPanel history={visibleHistory} stats={historyStats} loading={historyLoading} />
     </>
   );
 }
@@ -7891,8 +7805,6 @@ export default function Dashboard() {
   const [tennisBets, setTennisBets] = useState<TennisBet[]>([]);
   const [tennisBetSummary, setTennisBetSummary] = useState<TennisBetSummary | null>(null);
   const [computedAt, setComputedAt] = useState<string | null>(null);
-  const [history, setHistory] = useState<HistoryMatch[]>([]);
-  const [historyStats, setHistoryStats] = useState<HistoryStats | null>(null);
   const [historyV2, setHistoryV2] = useState<V2HistoryRow[]>([]);
   const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
   const [historyV2Loading, setHistoryV2Loading] = useState(false);
@@ -7901,7 +7813,6 @@ export default function Dashboard() {
   const [tennisLoading, setTennisLoading] = useState(true);
   const [predStale, setPredStale] = useState(false);
   const [predFallback, setPredFallback] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -8234,20 +8145,7 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchHistory = useCallback(async () => {
-    setHistoryLoading(true);
-    try {
-      const resp = await fetch("/api/history");
-      if (resp.ok) {
-        const data = await resp.json();
-        setHistory(data.history ?? []);
-        setHistoryStats(data.stats ?? null);
-      }
-    } catch { /**/ } finally { setHistoryLoading(false); }
-  }, []);
-
-  // Unified multi-sport track record for the History tab (the legacy
-  // /api/history feed above stays only for PublicOldBetsPanel).
+  // Unified multi-sport track record for the History tab.
   const fetchHistoryV2 = useCallback(async () => {
     setHistoryV2Loading(true);
     try {
@@ -8288,7 +8186,7 @@ export default function Dashboard() {
     setRefreshing(true);
     try {
       await fetch("/api/predictions", { method: "POST" });
-      await Promise.all([fetchPredictions(), fetchTennis(), fetchHistory(), fetchHistoryV2()]);
+      await Promise.all([fetchPredictions(), fetchTennis(), fetchHistoryV2()]);
     } finally { setRefreshing(false); }
   };
 
@@ -8298,7 +8196,6 @@ export default function Dashboard() {
       void fetchPredictions();
       void fetchFpOdds();
       void fetchTennis();
-      void fetchHistory();
       void fetchHistoryV2();
       void fetchLive();
       void fetchTennisLive();
@@ -8310,7 +8207,7 @@ export default function Dashboard() {
     const liveInt = setInterval(fetchLive, 60_000);
     const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
-  }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchHistory, fetchLive, fetchTennisLive]);
+  }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchLive, fetchTennisLive]);
 
   // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
   // session, the desk is walled — the auth modal is force-shown and locked.
@@ -8588,9 +8485,6 @@ export default function Dashboard() {
               predictions={predictions}
               fpOdds={fpOdds}
               tennisMatches={tennisMatches}
-              history={history}
-              historyStats={historyStats}
-              historyLoading={historyLoading}
               onSelect={(s) => setSlipSelection(s)}
               // BUG-011: an anonymous "Place Bet" used to jump to the Partners
               // (affiliate) tab with no context. Prompt sign-in first; a
