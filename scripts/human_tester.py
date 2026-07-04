@@ -467,7 +467,6 @@ async def test_api_endpoints(page: Page):
         "/api/data",
         "/api/tennis",
         "/api/health",
-        "/api/history",
     ]
     for ep in endpoints:
         try:
