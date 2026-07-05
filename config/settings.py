@@ -207,6 +207,15 @@ class Settings(BaseSettings):
     # Mirrored in lib/surfacing-gate.ts — keep in sync.
     SURFACE_FLOOR_BASEBALL: int = 62   # MLB moneyline (max-prob >= 62)
     SURFACE_FLOOR_MMA: int = 70        # UFC moneyline (max-prob >= 70)
+    # Premium tier bars (Gate 1: MLB 65 -> 71.8%, UFC 75 -> 86.5%). Same
+    # PROVISIONAL status as the floors above.
+    NEWSPORT_BASEBALL_PREMIUM: int = 65
+    NEWSPORT_MMA_PREMIUM: int = 75
+    # #NEWSPORTS ingestion agents — DARK by default: without these flags the
+    # agents are not even registered in run.py (and their loops self-guard).
+    # Flip only via deploy-gate at activation (docs/NEWSPORTS-INTEGRATION.md).
+    NEWSPORT_BASEBALL_AGENT_ENABLED: bool = False
+    NEWSPORT_MMA_AGENT_ENABLED: bool = False
 
     # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
     # surface floor the copy says "favoured but open"; at/above this stronger

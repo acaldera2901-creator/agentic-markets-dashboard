@@ -65,6 +65,13 @@ SPORT_KEYS = {
     "VEI": "soccer_finland_veikkausliiga",
     "LOI": "soccer_league_of_ireland",
     "CSL": "soccer_china_superleague",
+    # #NEWSPORTS (Gate 1 lab 2026-07-04/05). Keys verified live by the lab
+    # shadow harness (mlb_v2/ufc_v2 run daily on them). The MMA feed key
+    # covers ALL orgs — the mma agent filters UFC-only via TheSportsDB
+    # (fail-closed). These entries also let the existing unified settlement
+    # resolve MLB/UFC rows through get_score_by_teams_date.
+    "MLB": "baseball_mlb",
+    "UFC": "mma_mixed_martial_arts",
 }
 
 _SUFFIXES = re.compile(r"\b(FC|CF|SC|AC|AS|SV|1\. ?FC|VfB|VfL|TSG|RB|SS|US|SSC|AFC)\b", re.IGNORECASE)
@@ -172,6 +179,116 @@ async def get_odds(league: str) -> List[Dict]:
     if resp.status_code != 200:
         return []
     return [o for event in resp.json() if (o := _best_odds(event))]
+
+
+# ─── #NEWSPORTS: raw per-book h2h events (2-outcome sports) ───────────────────
+# The MLB/UFC serving formula is "market devig, Pinnacle preferred else median
+# across books" (Gate 1 lab) — it needs the per-book probabilities, not the
+# best-margin pick that _best_odds returns. Fail-soft to [] like get_odds.
+
+def devig_two_way(odds_a: float, odds_b: float) -> float | None:
+    """Devigged probability of side A from a 2-outcome price pair."""
+    if not odds_a or not odds_b or odds_a <= 1 or odds_b <= 1:
+        return None
+    inv_a, inv_b = 1.0 / odds_a, 1.0 / odds_b
+    return inv_a / (inv_a + inv_b)
+
+
+async def get_h2h_events(league: str, regions: str = "eu,us") -> List[Dict]:
+    """Raw h2h events for a SPORT_KEYS league, one entry per event:
+    {event_id, home_team, away_team, commence_time,
+     books: [{book, p_home, odds_home, odds_away}]}  (p_home devigged)."""
+    if not settings.ODDS_API_KEY:
+        return []
+    sport_key = SPORT_KEYS.get(league)
+    if not sport_key:
+        return []
+    active = await get_active_sport_keys()
+    if active is not None and sport_key not in active:
+        return []
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{BASE_URL}/sports/{sport_key}/odds",
+                params={
+                    "apiKey": settings.ODDS_API_KEY,
+                    "regions": regions,
+                    "markets": "h2h",
+                    "oddsFormat": "decimal",
+                },
+                timeout=15.0,
+            )
+    except httpx.HTTPError as e:
+        logger.warning(f"odds-api get_h2h_events({league}) network error: {e}")
+        return []
+    if resp.status_code == 429:
+        logger.warning(f"odds-api get_h2h_events({league}) rate-limited (429), skipping cycle")
+        return []
+    if resp.status_code != 200:
+        # Key/quota errors must be VISIBLE (lab audit M9), not silent empties.
+        logger.error(f"odds-api get_h2h_events({league}) HTTP {resp.status_code}: {resp.text[:200]}")
+        return []
+    out: List[Dict] = []
+    for event in resp.json():
+        home = event.get("home_team")
+        away = event.get("away_team")
+        if not home or not away:
+            continue
+        books = []
+        for b in event.get("bookmakers") or []:
+            m = next((m for m in (b.get("markets") or []) if m.get("key") == "h2h"), None)
+            if not m:
+                continue
+            oh = next((o for o in (m.get("outcomes") or []) if o.get("name") == home), None)
+            oa = next((o for o in (m.get("outcomes") or []) if o.get("name") == away), None)
+            if not oh or not oa:
+                continue
+            p = devig_two_way(oh.get("price"), oa.get("price"))
+            if p is None:
+                continue
+            books.append({"book": b.get("key"), "p_home": p,
+                          "odds_home": oh.get("price"), "odds_away": oa.get("price")})
+        out.append({
+            "event_id": event.get("id"),
+            "home_team": home,
+            "away_team": away,
+            "commence_time": event.get("commence_time"),
+            "books": books,
+        })
+    return out
+
+
+def market_consensus(books: List[Dict]) -> Optional[Dict]:
+    """Gate 1 market probability: Pinnacle if present, else the true median
+    across books (even-n aware — lab audit B4). Returns
+    {p_home, source, n_books, odds_home, odds_away} or None."""
+    if not books:
+        return None
+    pinn = next((b for b in books if b.get("book") == "pinnacle"), None)
+    chosen = pinn
+    if chosen is None:
+        ordered = sorted(books, key=lambda b: b["p_home"])
+        n = len(ordered)
+        if n % 2:
+            chosen = ordered[(n - 1) // 2]
+        else:
+            lo, hi = ordered[n // 2 - 1], ordered[n // 2]
+            return {
+                "p_home": (lo["p_home"] + hi["p_home"]) / 2,
+                "source": "median",
+                "n_books": n,
+                # median of an even pool has no single book: keep the pair
+                # closest to the median for display odds (probability-neutral).
+                "odds_home": lo["odds_home"],
+                "odds_away": lo["odds_away"],
+            }
+    return {
+        "p_home": chosen["p_home"],
+        "source": "pinnacle" if pinn else "median",
+        "n_books": len(books),
+        "odds_home": chosen["odds_home"],
+        "odds_away": chosen["odds_away"],
+    }
 
 
 def _match_date(commence_time: str | None) -> str:
