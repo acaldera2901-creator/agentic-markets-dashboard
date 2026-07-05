@@ -110,8 +110,41 @@ def test_sport_is_case_insensitive():
 def test_unknown_sport_defaults_to_football_floor():
     # Fail-safe: an unrecognised sport applies the football floor rather than
     # silently surfacing a low-confidence pick.
-    assert surface_decision(sport="basketball", friendly=False, confidence=55) == (False, True)
-    assert surface_decision(sport="basketball", friendly=False, confidence=56) == (True, False)
+    assert surface_decision(sport="cricket", friendly=False, confidence=55) == (False, True)
+    assert surface_decision(sport="cricket", friendly=False, confidence=56) == (True, False)
+
+
+# ── #NEWSPORTS Gate 1 (lab am-lab/nuovi-sport 2026-07-04/05) ──────────────────
+# Floors are PROVISIONAL (pending the Gate 2 live shadow); the boundary contract
+# is the same as football/tennis: inclusive, probability-neutral, explicit
+# branch so the sport can never fall onto the football floor.
+
+def test_baseball_boundary_61_below_62_pick():
+    assert surface_decision(sport="baseball", friendly=False, confidence=61) == (False, True)
+    assert surface_decision(sport="baseball", friendly=False, confidence=62) == (True, False)
+    # 'mlb' alias resolves to the same floor.
+    assert surface_decision(sport="mlb", friendly=False, confidence=62) == (True, False)
+
+
+def test_mma_boundary_69_below_70_pick():
+    assert surface_decision(sport="mma", friendly=False, confidence=69) == (False, True)
+    assert surface_decision(sport="mma", friendly=False, confidence=70) == (True, False)
+    # 'ufc' alias resolves to the same floor.
+    assert surface_decision(sport="ufc", friendly=False, confidence=70) == (True, False)
+
+
+def test_newsports_are_case_insensitive_and_ignore_friendly():
+    assert surface_decision(sport="Baseball", friendly=True, confidence=62) == (True, False)
+    assert surface_decision(sport="UFC", friendly=True, confidence=70) == (True, False)
+
+
+def test_newsports_floors_read_from_settings_not_hardcoded(monkeypatch):
+    monkeypatch.setattr(settings, "SURFACE_FLOOR_BASEBALL", 65)
+    monkeypatch.setattr(settings, "SURFACE_FLOOR_MMA", 75)
+    assert surface_decision(sport="baseball", friendly=False, confidence=64) == (False, True)
+    assert surface_decision(sport="baseball", friendly=False, confidence=65) == (True, False)
+    assert surface_decision(sport="mma", friendly=False, confidence=74) == (False, True)
+    assert surface_decision(sport="mma", friendly=False, confidence=75) == (True, False)
 
 
 # ── #SUMMER-LEAGUES-1 (APPROVE Andrea 2026-06-12): per-league club floors ──────

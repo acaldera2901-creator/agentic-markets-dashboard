@@ -25,6 +25,13 @@ export const SURFACE_FLOOR_FRIENDLY = 61;
 export const SURFACE_FLOOR_TENNIS = 62; // hi tier: Slam / Masters / 1000 / Finals / Olympics
 export const SURFACE_FLOOR_TENNIS_LO = 64; // lower tiers (250/500/WTA minors)
 export const SURFACE_FLOOR_TENNIS_LO_GRASS = 66; // lower tiers on grass (June swing)
+// New-sports floors (#NEWSPORTS Gate 1, lab am-lab/nuovi-sport 2026-07-04/05,
+// walk-forward on sealed test windows: MLB 2018-21 floor 62 → 67.5% hit,
+// UFC 2021-23 floor 70 → 81.4%). PROVISIONAL until the live shadow (Gate 2)
+// confirms them — final values land here before the sport flag is turned on.
+// Mirror of config/settings.py SURFACE_FLOOR_BASEBALL / SURFACE_FLOOR_MMA.
+export const SURFACE_FLOOR_BASEBALL = 62; // MLB moneyline (max-prob >= 62)
+export const SURFACE_FLOOR_MMA = 70; // UFC moneyline (max-prob >= 70)
 
 // High-tier tournament keywords (case-insensitive substring). Conservative on
 // purpose: only unambiguous names — anything unmatched falls to the LOWER tier,
@@ -88,7 +95,12 @@ export function surfaceFloorFor(
   sport: string | null | undefined,
   competition: string | null | undefined
 ): number {
-  if ((sport ?? "").toLowerCase() === "tennis") return tennisFloorFor(competition);
+  const s = (sport ?? "").toLowerCase();
+  if (s === "tennis") return tennisFloorFor(competition);
+  // #NEWSPORTS Gate 1: explicit branches so a new sport can never fall
+  // silently onto the football floor. Mirrors core/surfacing_gate.py.
+  if (s === "baseball" || s === "mlb") return SURFACE_FLOOR_BASEBALL;
+  if (s === "mma" || s === "ufc") return SURFACE_FLOOR_MMA;
   const name = (competition ?? "").toLowerCase();
   if (name.includes("friendly")) return SURFACE_FLOOR_FRIENDLY;
   for (const [keyword, floor] of CLUB_FLOOR_OVERRIDES) {

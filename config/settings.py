@@ -198,6 +198,16 @@ class Settings(BaseSettings):
     SURFACE_FLOOR_TENNIS_LO: int = 64        # lower tiers (250/500/WTA minors)
     SURFACE_FLOOR_TENNIS_LO_GRASS: int = 66  # lower tiers on grass (June swing)
 
+    # New-sports floors (#NEWSPORTS Gate 1, lab am-lab/nuovi-sport 2026-07-04/05,
+    # walk-forward on sealed test windows: MLB 2018-21 floor 62 -> 67.5% hit on
+    # ~550 picks/season (65 -> 71.8%); UFC 2021-23 floor 70 -> 81.4% (75 -> 86.5%)).
+    # PROVISIONAL until the live shadow (Gate 2) confirms them — final values land
+    # here before the sport flag is ever turned on. Upstream formula = market
+    # devig + floor only; the model feeds the why/warning, never the probability.
+    # Mirrored in lib/surfacing-gate.ts — keep in sync.
+    SURFACE_FLOOR_BASEBALL: int = 62   # MLB moneyline (max-prob >= 62)
+    SURFACE_FLOOR_MMA: int = 70        # UFC moneyline (max-prob >= 70)
+
     # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
     # surface floor the copy says "favoured but open"; at/above this stronger
     # bar it says "strong pick". Below the floor it says "no clear favourite".

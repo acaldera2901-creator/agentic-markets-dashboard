@@ -5,6 +5,8 @@ import {
   SURFACE_FLOOR_TENNIS,
   SURFACE_FLOOR_TENNIS_LO,
   SURFACE_FLOOR_TENNIS_LO_GRASS,
+  SURFACE_FLOOR_BASEBALL,
+  SURFACE_FLOOR_MMA,
   surfaceDecision,
   surfaceFloorFor,
   tennisFloorFor,
@@ -114,6 +116,27 @@ assert.equal(SURFACE_FLOOR_TENNIS_LO_GRASS, 66);
   assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 59 }), false);
   assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 60 }), true);
   assert.equal(isSurfacedRow({ sport: "football", competition: "Eliteserien", confidence_score: 56 }), true);
+}
+
+// ── #NEWSPORTS Gate 1 (lab 2026-07-04/05): baseball/MMA floors, PROVISIONAL ──
+{
+  assert.equal(SURFACE_FLOOR_BASEBALL, 62);
+  assert.equal(SURFACE_FLOOR_MMA, 70);
+  // Explicit branch: a new sport must never fall onto the football floor (56).
+  assert.equal(surfaceFloorFor("baseball", "MLB"), 62);
+  assert.equal(surfaceFloorFor("mlb", null), 62);
+  assert.equal(surfaceFloorFor("mma", "UFC 305"), 70);
+  assert.equal(surfaceFloorFor("ufc", null), 70);
+  // Case-insensitive like the other sports.
+  assert.equal(surfaceFloorFor("Baseball", "MLB"), 62);
+  assert.equal(surfaceFloorFor("MMA", "UFC Fight Night"), 70);
+  // Boundaries are inclusive, same contract as football/tennis.
+  assert.equal(isSurfacedRow({ sport: "baseball", competition: "MLB", confidence_score: 61 }), false);
+  assert.equal(isSurfacedRow({ sport: "baseball", competition: "MLB", confidence_score: 62 }), true);
+  assert.equal(isSurfacedRow({ sport: "mma", competition: "UFC 305", confidence_score: 69 }), false);
+  assert.equal(isSurfacedRow({ sport: "mma", competition: "UFC 305", confidence_score: 70 }), true);
+  // Truly unknown sports still fail-safe to the football floor.
+  assert.equal(surfaceFloorFor("cricket", null), 56);
 }
 
 console.log("surfacing gate ok");

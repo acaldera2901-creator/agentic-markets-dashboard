@@ -83,10 +83,21 @@ def surface_decision(
     ``tournament`` matters only for tennis (segment-aware floor); omitted, the
     row resolves to the lower tier = the stricter floor (fail-closed).
     """
-    if sport.lower() == "tennis":
+    s = sport.lower()
+    if s == "tennis":
         # 10y lab 2026-06-08: tennis confidence IS monotone (the prior "no floor"
         # was a 60-match artifact). Segment-aware floors #TENNIS-SEG-FLOOR-1.
         is_pick = confidence >= tennis_floor_for(tournament)
+        return is_pick, not is_pick
+
+    # #NEWSPORTS Gate 1 (lab 2026-07-04/05): explicit branches so a new sport
+    # can never fall silently onto the football floor (56 would be far too
+    # loose for MLB/UFC). Floors are PROVISIONAL until the shadow confirms them.
+    if s in ("baseball", "mlb"):
+        is_pick = confidence >= settings.SURFACE_FLOOR_BASEBALL
+        return is_pick, not is_pick
+    if s in ("mma", "ufc"):
+        is_pick = confidence >= settings.SURFACE_FLOOR_MMA
         return is_pick, not is_pick
 
     floor = settings.SURFACE_FLOOR_FRIENDLY if friendly else settings.SURFACE_FLOOR_FOOTBALL
