@@ -14,7 +14,7 @@
 | Tests (boundaries, aliases, settings-driven) | `tests/test_surfacing_gate.py`, `tests/surfacing-gate.test.ts` | ✅ done |
 | Enrichment/ingestion contract | this document | ✅ done |
 | Serving route (dark, `NEWSPORT_SERVE_ENABLED`) | `app/api/newsports/route.ts` | ✅ done |
-| Why builders + board UI (5 languages) | `app/app/page.tsx`, `lib/why-text.ts` | ⏳ next tranche |
+| Why builders + board UI (5 languages) | `app/app/page.tsx`, `lib/why-text.ts` | ⏳ next tranche — see worklist below |
 | Ingestion module | depends on #NEWSPORTS-INTEGRATION-0705 answer (Python agent vs TS cron) | ⏸ pending Andrea |
 | Sportsbook bet-link (`BetSport` union, `fortuneplay-live.ts` SPORTS set) | `lib/sportsbooks/*` | ⏸ pending BetConstruct coverage check |
 | Settlement | `agents/result_settlement.py` | ⏳ with ingestion module |
@@ -141,6 +141,29 @@ uniform shape, one serving parser.
 - (ingestion-side flag named by whichever runtime is chosen, e.g. `MLB_AGENT_ENABLED`)
 
 All default **absent/false** = current behavior, byte-identical.
+
+## UI tranche worklist (next — best done with Andrea's groupBuilder-registry direction)
+
+The card layer is deeply integrated in `app/app/page.tsx` (inline `pick5` i18n,
+`MdsData` sheet payloads, FortunePlay odds, slip selection — helpers are
+module-private). Andrea's answer #2 (2026-07-04): at the 2nd sport, refactor the
+per-sport payload builders into a `groupBuilder` registry instead of copying the
+tennis function. Worklist, all behind `NEXT_PUBLIC_NEWSPORT_*_ENABLED`:
+
+1. `NewsportMatchCard` next to `TennisMatchCard` (2-outcome readout Market/Model/
+   Confidence, no edge claim — market-anchored) consuming `/api/newsports`.
+2. Board sections + sport filter tabs in the two board components
+   (`sportFilter` unions at page.tsx ~2164 and ~2489) + `SPORT_ICONS`/`SportIcon`
+   entries (⚾ baseball, 🥊 mma).
+3. `buildBaseballWhy` / `buildMmaWhy` beside `buildTennisWhy` (IT/EN like the
+   existing ones — the es/fr/ru frame-phrase debt is pre-existing and tracked
+   separately) reading the enrichment contract fields (sp FIP duel, run form,
+   record / org_verified, window, tier).
+4. i18n board labels (`board_baseball`, `board_mma`, empty-states) in the TR
+   dictionaries ×5 languages.
+5. `MdsGroup` icon union: reuse `"result"` for v1 (2-outcome winner market only);
+   sport-specific groups (pitcher props, method-of-victory) are post-activation.
+6. QA loggata multi-lingua + visual check (product pipeline).
 
 ## Activation checklist (deploy-gate, in order)
 
