@@ -13,6 +13,7 @@
 | Gate branches (Py + TS mirror) | `core/surfacing_gate.py`, `lib/surfacing-gate.ts` | ✅ done |
 | Tests (boundaries, aliases, settings-driven) | `tests/test_surfacing_gate.py`, `tests/surfacing-gate.test.ts` | ✅ done |
 | Enrichment/ingestion contract | this document | ✅ done |
+| Serving route (dark, `NEWSPORT_SERVE_ENABLED`) | `app/api/newsports/route.ts` | ✅ done |
 | Why builders + board UI (5 languages) | `app/app/page.tsx`, `lib/why-text.ts` | ⏳ next tranche |
 | Ingestion module | depends on #NEWSPORTS-INTEGRATION-0705 answer (Python agent vs TS cron) | ⏸ pending Andrea |
 | Sportsbook bet-link (`BetSport` union, `fortuneplay-live.ts` SPORTS set) | `lib/sportsbooks/*` | ⏸ pending BetConstruct coverage check |
@@ -63,6 +64,10 @@ No migration needed. Both sports are 2-outcome (no draw).
 }
 ```
 
+Ingestion MUST also set the visibility guards the serving layer filters on
+(same as the football unified path): `published_at` (NOT NULL when servable),
+`expires_at` (event start + duration), `is_historical = false`, `is_demo = false`.
+
 `enrichment` (all fields produced today by the shadow harness `mlb_v2.mjs`):
 
 ```jsonc
@@ -85,7 +90,12 @@ No migration needed. Both sports are 2-outcome (no draw).
 
 ### MMA (UFC)
 
-Uses `player_one`/`player_two` (like tennis), not home/away:
+**Prod convention check (2026-07-05, read-only):** even tennis rows in
+`unified_predictions` carry the sides in `home_team`/`away_team` (the
+`player_one/two` columns exist but are null in practice). MMA follows the same
+convention: fighter A in the `home_team` slot, fighter B in `away_team`, and
+`notes` keys stay `p_home/p_away/odds_home/odds_away` for both sports — one
+uniform shape, one serving parser.
 
 ```jsonc
 {
@@ -94,13 +104,13 @@ Uses `player_one`/`player_two` (like tennis), not home/away:
   "source_id": "<odds-api event id>",
   "league": "UFC",
   "competition": "UFC 318",
-  "player_one": "Fighter A",
-  "player_two": "Fighter B",
+  "home_team": "Fighter A",
+  "away_team": "Fighter B",
   "starts_at": "2026-07-11T02:00:00Z",
-  "pick": "P1" | "P2",
+  "pick": "HOME" | "AWAY",
   "signal_type": "signal" | "paper",
   "edge_percent": null,
-  "notes": "{\"p_p1\":0.74,\"p_p2\":0.26,\"odds_p1\":1.35,\"odds_p2\":3.20,\"mkt_source\":\"median\",\"n_books\":6}",
+  "notes": "{\"p_home\":0.74,\"p_away\":0.26,\"odds_home\":1.35,\"odds_away\":3.20,\"mkt_source\":\"median\",\"n_books\":6}",
   "enrichment": {
     "tier": "standard" | "premium",     // floor 70 vs 75
     "org_verified": true,               // TheSportsDB fail-closed UFC-only filter
