@@ -16,7 +16,7 @@
 | Serving route (dark, `NEWSPORT_SERVE_ENABLED`) | `app/api/newsports/route.ts` | ✅ done |
 | Why builders + board UI (5 languages) | `app/app/page.tsx`, `lib/why-text.ts` | ⏳ next tranche — see worklist below |
 | Ingestion module | depends on #NEWSPORTS-INTEGRATION-0705 answer (Python agent vs TS cron) | ⏸ pending Andrea |
-| Sportsbook bet-link (`BetSport` union, `fortuneplay-live.ts` SPORTS set) | `lib/sportsbooks/*` | ⏸ pending BetConstruct coverage check |
+| Sportsbook bet-link plumbing (`BetSport`+`PairSport` unions, feed `SPORTS` set) | `lib/sportsbooks/types.ts`, `lib/team-pair-key.ts`, `lib/fortuneplay-live.ts` | ✅ done — coverage CONFIRMED by Andrea 2026-07-05 (feed live: MLB 35 matches/81 markets, UFC 32 matches). Coverage-agnostic: CTA only when the match is in the feed. Residual: Tommy's affiliate deep-link OK for baseball/mma |
 | Settlement | `agents/result_settlement.py` | ⏳ with ingestion module |
 
 ## Sport naming (canonical)
@@ -172,6 +172,7 @@ tennis function. Worklist, all behind `NEXT_PUBLIC_NEWSPORT_*_ENABLED`:
 2. Andrea+Maven joint GO (product decision — committed 2026-07-04).
 3. Ingestion runtime decision executed + deployed (Andrea's lane).
 4. `THE_ODDS_API_KEY` in prod env (~2-3 credits/day).
-5. BetConstruct coverage verdict → widen `BetSport`/`SPORTS` set, or serve
-   without bet-link CTA.
+5. ~~BetConstruct coverage verdict~~ ✅ RESOLVED 2026-07-05 (Andrea: MLB+UFC in
+   the feed; unions/set widened in this branch). Residual: Tommy confirms the
+   affiliate deep-link/betslip works for baseball/mma.
 6. Flags ON via deploy-gate APPROVE.
