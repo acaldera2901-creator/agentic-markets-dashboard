@@ -225,9 +225,9 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
       <aside
         className="house-banner hb-creative"
         aria-label={c.eyebrow}
-        style={{ position: "relative", display: "block", height: "auto", minHeight: 0, padding: 0, background: "transparent", overflow: "hidden", borderRadius: 14 }}
+        style={{ position: "relative", display: "block", height: "auto", minHeight: 0, padding: 0, background: "transparent", overflow: "hidden", borderRadius: 14, width: "100%", maxWidth: 560, marginInline: "auto" }}
       >
-        <img src={creative} alt={c.headline} style={{ display: "block", width: "100%", height: "auto" }} />
+        <img src={creative} alt={c.headline} style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }} />
         <Link href={campaign.cta.href} className="hb-cta" onClick={onCtaClick} style={{ position: "absolute", left: 20, bottom: 20, zIndex: 2 }}>
           {ctaLabel}
         </Link>
