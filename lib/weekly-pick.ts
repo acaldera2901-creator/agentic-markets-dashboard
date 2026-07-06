@@ -1,0 +1,62 @@
+// lib/weekly-pick.ts — #WEEKLY-PICK-1 (item 2).
+// La "Weekly Pick" è la MULTIPLA DELLA CASA: le migliori pick della settimana
+// combinate (schedina più probabile del modello). Venduta one-off a €12.99 a chi
+// non è Pro; inclusa nel Pro.
+//
+// Questo file è la FONDAZIONE PURA (prezzo, flag, settimana corrente, costruzione
+// della multipla). Il wiring pagamenti (checkout/callback/grant), il gating e la
+// UI sono separati e GATED: nulla qui tocca il DB o attiva la feature finché
+// WEEKLY_PICK_ENABLED non è "true" (attivazione al gate, dopo allineamento Michele
+// + APPROVE ch_deploy_gate).
+
+export const WEEKLY_PICK_PRICE_USD = 12.99;
+// Gambe massime nella multipla della casa (min 2 per essere una multipla).
+export const WEEKLY_PICK_MAX_LEGS = 5;
+
+// Feature spenta di default: col flag OFF il prodotto è inerte (nessun checkout,
+// nessuna generazione, nessuna CTA).
+export function weeklyPickEnabled(): boolean {
+  return process.env.WEEKLY_PICK_ENABLED === "true";
+}
+
+// Inclusa nel Pro (premium/admin) → nessun paywall; gli altri la comprano one-off.
+export function weeklyPickIncludedInPlan(plan: string): boolean {
+  return plan === "premium" || plan === "admin_full";
+}
+
+export type WeeklyPickLeg = {
+  id: string;
+  label: string;
+  market: string;
+  sport: string;
+  prob: number;
+};
+
+// Lunedì 00:00 UTC della settimana che contiene `now`, come "YYYY-MM-DD". PURA.
+// (la weekly pick è unica per settimana; questa è la chiave.)
+export function currentWeekStart(now: Date): string {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const deltaToMonday = (d.getUTCDay() + 6) % 7; // Dom=0..Sab=6 → Lun=0
+  d.setUTCDate(d.getUTCDate() - deltaToMonday);
+  return d.toISOString().slice(0, 10);
+}
+
+// Costruisce la multipla della casa: prende le pick a probabilità più alta della
+// settimana e le combina (prodotto delle prob). Deterministica (tie-break stabile
+// per id). Ritorna null se non ci sono almeno 2 candidate valide. PURA.
+export function buildHouseMultipla(
+  items: WeeklyPickLeg[],
+  maxLegs: number = WEEKLY_PICK_MAX_LEGS
+): { selections: WeeklyPickLeg[]; combinedProb: number } | null {
+  const valid = items.filter(
+    (i) => i.id && i.label && i.market && Number.isFinite(i.prob) && i.prob > 0 && i.prob <= 1
+  );
+  if (valid.length < 2) return null;
+  const sorted = [...valid].sort(
+    (a, b) => b.prob - a.prob || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  );
+  const legs = Math.max(2, Math.min(maxLegs, sorted.length));
+  const selections = sorted.slice(0, legs);
+  const combinedProb = selections.reduce((acc, i) => acc * i.prob, 1);
+  return { selections, combinedProb };
+}
