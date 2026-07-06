@@ -6,7 +6,7 @@
 // originale via /app?mb=...&ref=CODICE, quindi il traffico da qui mantiene
 // l'attribution del creator.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 type SlipSelection = {
@@ -30,9 +30,9 @@ type Slip = {
 type Access = "none" | "partial" | "full";
 
 // BUG-007: the page was Italian-only and ignored the user's language choice.
-// Mirror the board's `agentic-lang` (default IT, the prior behavior) so an EN
-// user gets EN copy. Standalone route, so a tiny local dict beats wiring the
-// full i18n provider.
+// Mirror the board's `agentic-lang` (default IT, the prior behavior) so users in
+// any of the board's 5 languages get matching copy. Standalone route, so a tiny
+// local dict beats wiring the full i18n provider.
 const COPY = {
   it: {
     back: "← Board",
@@ -40,6 +40,8 @@ const COPY = {
     sub: "Schedine costruite dalla community col Match Builder, basate sulle probabilità del nostro modello. Nessuna quota, nessun edge promesso — solo predizioni AI selezionate dai creator.",
     create: "Crea la tua →",
     loading: "Caricamento…",
+    loadError: "Impossibile caricare le schedine.",
+    retry: "Riprova",
     emptyTitle: "Nessuna schedina pubblicata ancora.",
     emptySub: "Sii il primo: costruiscila col Match Builder e condividila.",
     register: "Registrati per vedere i pick →",
@@ -58,6 +60,8 @@ const COPY = {
     sub: "Accumulators built by the community with the Match Builder, based on our model's probabilities. No odds, no promised edge — just AI predictions hand-picked by creators.",
     create: "Build yours →",
     loading: "Loading…",
+    loadError: "Couldn't load the slips.",
+    retry: "Retry",
     emptyTitle: "No slips published yet.",
     emptySub: "Be the first: build one with the Match Builder and share it.",
     register: "Register to see the picks →",
@@ -70,21 +74,86 @@ const COPY = {
     responsible: "18+ · gamble responsibly",
     locale: "en-GB",
   },
+  es: {
+    back: "← Board",
+    title: "Creator Picks",
+    sub: "Combinadas creadas por la comunidad con el Match Builder, basadas en las probabilidades de nuestro modelo. Sin cuotas, sin edge prometido — solo predicciones de IA seleccionadas por creators.",
+    create: "Crea la tuya →",
+    loading: "Cargando…",
+    loadError: "No se pudieron cargar las combinadas.",
+    retry: "Reintentar",
+    emptyTitle: "Aún no hay combinadas publicadas.",
+    emptySub: "Sé el primero: constrúyela con el Match Builder y compártela.",
+    register: "Regístrate para ver los picks →",
+    open: "Abrir combinada →",
+    unlock: "Desbloquea con Pro →",
+    gateNoneTitle: "Creator Picks está incluido en Base y Pro",
+    gateNoneSub: "Desbloquea las combinadas de los creators con un plan de pago.",
+    gatePartial: "Pasa a Pro para ver todas las combinadas.",
+    seePlans: "Ver planes →",
+    responsible: "18+ · juega con responsabilidad",
+    locale: "es-ES",
+  },
+  fr: {
+    back: "← Board",
+    title: "Creator Picks",
+    sub: "Combinés créés par la communauté avec le Match Builder, basés sur les probabilités de notre modèle. Aucune cote, aucun edge promis — juste des prédictions IA sélectionnées par les creators.",
+    create: "Créez le vôtre →",
+    loading: "Chargement…",
+    loadError: "Impossible de charger les combinés.",
+    retry: "Réessayer",
+    emptyTitle: "Aucun combiné publié pour le moment.",
+    emptySub: "Soyez le premier : construisez-le avec le Match Builder et partagez-le.",
+    register: "Inscrivez-vous pour voir les picks →",
+    open: "Ouvrir le combiné →",
+    unlock: "Débloquez avec Pro →",
+    gateNoneTitle: "Creator Picks est inclus dans Base et Pro",
+    gateNoneSub: "Débloquez les combinés des creators avec un abonnement payant.",
+    gatePartial: "Passez à Pro pour voir tous les combinés.",
+    seePlans: "Voir les offres →",
+    responsible: "18+ · jouez de manière responsable",
+    locale: "fr-FR",
+  },
+  ru: {
+    back: "← Board",
+    title: "Creator Picks",
+    sub: "Экспрессы, собранные сообществом в Match Builder, на основе вероятностей нашей модели. Без коэффициентов и обещанного edge — только AI-прогнозы, отобранные креаторами.",
+    create: "Создать свой →",
+    loading: "Загрузка…",
+    loadError: "Не удалось загрузить экспрессы.",
+    retry: "Повторить",
+    emptyTitle: "Пока нет опубликованных экспрессов.",
+    emptySub: "Будьте первым: соберите его в Match Builder и поделитесь.",
+    register: "Зарегистрируйтесь, чтобы увидеть пики →",
+    open: "Открыть экспресс →",
+    unlock: "Открыть с Pro →",
+    gateNoneTitle: "Creator Picks входит в Base и Pro",
+    gateNoneSub: "Откройте экспрессы креаторов с платным планом.",
+    gatePartial: "Перейдите на Pro, чтобы видеть все экспрессы.",
+    seePlans: "Смотреть планы →",
+    responsible: "18+ · играйте ответственно",
+    locale: "ru-RU",
+  },
 } as const;
+
+type Lang = keyof typeof COPY;
 
 export default function CommunityPage() {
   const [slips, setSlips] = useState<Slip[] | null>(null);
   const [access, setAccess] = useState<Access>("none");
-  const [lang, setLang] = useState<"it" | "en">("it");
+  const [error, setError] = useState(false);
+  const [lang, setLang] = useState<Lang>("it");
   const t = COPY[lang];
 
   useEffect(() => {
     const stored = localStorage.getItem("agentic-lang");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from localStorage: a lazy initializer would mismatch the server-rendered ("it") markup at hydration.
-    if (stored === "en") setLang("en");
+    if (stored && stored in COPY) setLang(stored as Lang);
   }, []);
 
-  useEffect(() => {
+  // Fetch only sets state in async callbacks (never synchronously) so the mount
+  // effect stays free of the set-state-in-effect rule, mirroring the original.
+  const fetchSlips = useCallback(() => {
     let alive = true;
     fetch("/api/match-builder", { credentials: "same-origin", cache: "no-store" })
       .then((r) => r.json())
@@ -93,9 +162,18 @@ export default function CommunityPage() {
         setSlips(Array.isArray(d?.slips) ? d.slips : []);
         setAccess(d?.access === "full" || d?.access === "partial" ? d.access : "none");
       })
-      .catch(() => { if (alive) setSlips([]); });
+      // BUG-006: a network failure used to leave `slips=[]`, indistinguishable
+      // from the legit empty state. Keep slips null + flag an error so we render
+      // a dedicated message with retry, not a false "nothing published yet".
+      .catch(() => { if (alive) setError(true); });
     return () => { alive = false; };
   }, []);
+
+  useEffect(() => fetchSlips(), [fetchSlips]);
+
+  // Retry is a user event (not an effect) → resetting state synchronously here
+  // is fine and re-shows the loading line before the refetch.
+  const retry = () => { setError(false); setSlips(null); fetchSlips(); };
 
   // BUG-002: page was dark-only (hardcoded bg-[#070b14]/text-white + fixed
   // gray utilities) and ignored the theme toggle. Drive surfaces/text off the
@@ -153,10 +231,22 @@ export default function CommunityPage() {
             </a>
           </div>
         )}
-        {slips === null && (
+        {error && (
+          <div className="text-center py-16 space-y-3">
+            <p className="text-sm font-mono" style={{ color: "var(--am-muted)" }}>{t.loadError}</p>
+            <button
+              onClick={retry}
+              className="text-xs font-mono px-4 py-2 rounded border transition-colors"
+              style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
+            >
+              {t.retry}
+            </button>
+          </div>
+        )}
+        {!error && slips === null && (
           <p className="text-center text-xs font-mono py-16" style={{ color: "var(--am-muted-2)" }}>{t.loading}</p>
         )}
-        {slips !== null && slips.length === 0 && (
+        {!error && slips !== null && slips.length === 0 && (
           <div className="text-center py-16 space-y-3">
             <p className="text-sm font-mono" style={{ color: "var(--am-muted)" }}>{t.emptyTitle}</p>
             <p className="text-xs font-mono" style={{ color: "var(--am-muted-2)" }}>{t.emptySub}</p>
@@ -203,9 +293,13 @@ export default function CommunityPage() {
                         <span className="truncate max-w-[140px] sm:max-w-[200px]" style={{ color: "var(--am-muted)" }}>{sel.market}</span>
                         {sel.prob != null && <span style={{ color: "var(--am-coral)" }}>{Math.round(sel.prob * 100)}%</span>}
                       </>
-                    ) : (
+                    ) : !slip.locked ? (
+                      // #7: a locked slip is already fully blurred (the single lock
+                      // cue) + has the "Unlock with Pro" button — the per-row 🔒 sat
+                      // under the blur, redundant. Keep 🔒 only for a rare non-locked
+                      // row with no market.
                       <span style={{ color: "var(--am-muted-2)" }}>🔒</span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               ))}
