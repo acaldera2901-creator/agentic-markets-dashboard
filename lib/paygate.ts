@@ -28,12 +28,13 @@ export type PlanKey = "base" | "premium";
 export type Period = "monthly" | "annual";
 
 // Prezzi server-side (USD). Mai dal client.
-// #PRICING-CREATORS-0706 (decisione Andrea, council 06/07): mensili ABBASSATI
-// a 14.99/29.99 (da 19.90/49.90). Annuali PROPOSTI a rapporto invariato
-// (~8.5 mesi: 129/255, prima 169/419) — confermare con Andrea al gate.
+// #PRICING-CREATORS-0706: mensili 14.99/29.99 (decisione Andrea, council
+// 06/07); annuali = 11 MENSILITA arrotondate al numero psicologico (decisione
+// Michele 06/07): 14.99x11=164.89->164.99 - 29.99x11=329.89->329.99. Lo sconto
+// annunciato in UI e' "1 mese gratis" (vs 12x: -14.89/-29.87, ~1 mensilita).
 export const PAYGATE_PRICES: Record<PlanKey, Record<Period, number>> = {
-  base: { monthly: 14.99, annual: 129 },
-  premium: { monthly: 29.99, annual: 255 },
+  base: { monthly: 14.99, annual: 164.99 },
+  premium: { monthly: 29.99, annual: 329.99 },
 };
 
 // ── #PRICING-CREATORS-0706 (rev. Michele): promo di LANCIO -50% primo mese ──
@@ -54,15 +55,16 @@ export function launchPromoActive(now: Date = new Date()): boolean {
 }
 
 // Importo effettivo al checkout. Lo sconto si applica SOLO se: promo attiva
-// (flag + deadline reale) · PRIMO ordine pagato dell'utente (primo ciclo) ·
-// periodo mensile. Nessuna condizione referral: è l'offerta di lancio di tutti.
+// (flag + deadline reale) e PRIMO ordine pagato dell'utente. Vale su OGNI
+// periodo (rev. Michele: durante il lancio anche il primo acquisto ANNUALE e'
+// a meta' prezzo; il rinnovo torna pieno). Nessuna condizione referral.
 export function discountedAmountFor(
   plan: PlanKey,
   period: Period,
   opts: { firstPaidOrder: boolean; now?: Date }
 ): { amount: number; discounted: boolean } {
   const full = amountFor(plan, period);
-  if (period !== "monthly" || !opts.firstPaidOrder || !launchPromoActive(opts.now)) {
+  if (!opts.firstPaidOrder || !launchPromoActive(opts.now)) {
     return { amount: full, discounted: false };
   }
   const amount = Math.round(full * (1 - LAUNCH_PROMO_DISCOUNT) * 100) / 100;

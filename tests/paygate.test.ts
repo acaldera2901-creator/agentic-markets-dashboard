@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import { amountFor, periodDays, hashToken, newOrderToken, buildPayUrl, evaluateCallback, launchPromoActive, discountedAmountFor } from "../lib/paygate";
 
 // — prezzi server-side —
-// #PRICING-CREATORS-0706 (decisione Andrea 06/07): mensili 14.99/29.99;
-// annuali 129/255 PROPOSTI (rapporto ~8.5 mesi invariato), conferma al gate.
+// #PRICING-CREATORS-0706: mensili 14.99/29.99 (Andrea); annuali = 12 × mensile
+// secco (Michele, 06/07 — niente sconto annuale per ora).
 assert.equal(amountFor("base", "monthly"), 14.99);
-assert.equal(amountFor("base", "annual"), 129);
+assert.equal(amountFor("base", "annual"), 164.99);
 assert.equal(amountFor("premium", "monthly"), 29.99);
-assert.equal(amountFor("premium", "annual"), 255);
+assert.equal(amountFor("premium", "annual"), 329.99);
 // @ts-expect-error combinazione invalida
 assert.throws(() => amountFor("enterprise", "monthly"), /plan/i);
 
@@ -65,9 +65,12 @@ assert.equal(evaluateCallback({ order: okOrder, valueCoin: 120 }).grant, true); 
   assert.deepEqual(discountedAmountFor("base", "monthly", eligible), { amount: 7.5, discounted: true });
   assert.deepEqual(discountedAmountFor("premium", "monthly", eligible), { amount: 15, discounted: true });
 
-  // Condizioni: SOLO mensile, SOLO primo ordine pagato (nessuna condizione referral).
-  assert.equal(discountedAmountFor("base", "annual", eligible).discounted, false);
+  // Vale anche sull'ANNUALE (rev. Michele: primo acquisto a meta', poi pieno).
+  assert.deepEqual(discountedAmountFor("base", "annual", eligible), { amount: 82.5, discounted: true });
+  assert.deepEqual(discountedAmountFor("premium", "annual", eligible), { amount: 165, discounted: true });
+  // Unica condizione utente: primo ordine pagato (nessuna condizione referral).
   assert.equal(discountedAmountFor("base", "monthly", { ...eligible, firstPaidOrder: false }).discounted, false);
+  assert.equal(discountedAmountFor("base", "annual", { ...eligible, firstPaidOrder: false }).discounted, false);
 
   // Deadline REALE passata: la promo si spegne da sola anche lato server.
   process.env.LAUNCH_PROMO_DEADLINE = "2026-01-01T00:00:00Z";

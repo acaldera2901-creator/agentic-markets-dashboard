@@ -3203,7 +3203,9 @@ function CheckoutModal({
   const [period, setPeriod] = useState<"monthly" | "annual">("annual");
   const [applePayReady, setApplePayReady] = useState(false);
   const [applePayBusy, setApplePayBusy] = useState(false);
-  const ANNUAL_PRICE: Record<string, number> = { base: 169, premium: 419 };
+  // #PRICING-CREATORS-0706: annuale = 11 mensilita arrotondate (1 mese gratis).
+  // Mirror display di PAYGATE_PRICES (lib/paygate.ts) — tenere in sync.
+  const ANNUAL_PRICE: Record<string, number> = { base: 164.99, premium: 329.99 };
   const price = planAmountUsdt(plan);
   const displayPrice = period === "annual" ? (ANNUAL_PRICE[plan] ?? price) : price;
   const t = useT();
@@ -3491,13 +3493,13 @@ function CheckoutModal({
               </button>
               <button type="button" onClick={() => setPeriod("annual")} aria-pressed={period === "annual"}
                 style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "annual" ? "var(--am-coral)" : "none", color: period === "annual" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
-                {pick5(lang, { it: "Annuale −30%", en: "Annual −30%", es: "Anual −30%", fr: "Annuel −30%", ru: "Год −30%" })}
+                {pick5(lang, { it: "Annuale — 1 mese gratis", en: "Annual — 1 month free", es: "Anual — 1 mes gratis", fr: "Annuel — 1 mois offert", ru: "Год — 1 месяц бесплатно" })}
               </button>
             </div>
             <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
               {period === "monthly"
                 ? pick5(lang, { it: "Pagamento singolo, sblocca 30 giorni (rinnovo manuale).", en: "One-time payment, unlocks 30 days (manual renewal).", es: "Pago único, desbloquea 30 días (renovación manual).", fr: "Paiement unique, débloque 30 jours (renouvellement manuel).", ru: "Разовый платёж, 30 дней (ручное продление)." })
-                : pick5(lang, { it: "Pagamento singolo, sblocca 12 mesi.", en: "One-time payment, unlocks 12 months.", es: "Pago único, desbloquea 12 meses.", fr: "Paiement unique, débloque 12 mois.", ru: "Разовый платёж, 12 месяцев." })}
+                : pick5(lang, { it: "Pagamento singolo, sblocca 12 mesi: paghi 11 mensilità, 1 mese è gratis.", en: "One-time payment, unlocks 12 months: you pay 11 monthly instalments, 1 month is free.", es: "Pago único, desbloquea 12 meses: pagas 11 mensualidades, 1 mes es gratis.", fr: "Paiement unique, débloque 12 mois : vous payez 11 mensualités, 1 mois est offert.", ru: "Разовый платёж, 12 месяцев: вы платите за 11 месяцев, 1 месяц бесплатно." })}
             </p>
             <button type="button" onClick={payWithCard}
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}>
@@ -3667,14 +3669,14 @@ function LaunchPromoBanner() {
     <section className="plans-hero" style={{ borderColor: "var(--coral, #ff6b5e)" }}>
       <div>
         <p className="eyebrow">{pick5(lang, { it: "Offerta di lancio", en: "Launch offer", es: "Oferta de lanzamiento", fr: "Offre de lancement", ru: "Стартовое предложение" })}</p>
-        <h3>{pick5(lang, { it: "-50% sul primo mese", en: "-50% on your first month", es: "-50% en tu primer mes", fr: "-50% sur votre premier mois", ru: "-50% на первый месяц" })}</h3>
+        <h3>{pick5(lang, { it: "-50% sul primo acquisto", en: "-50% on your first purchase", es: "-50% en tu primera compra", fr: "-50% sur votre premier achat", ru: "-50% на первую покупку" })}</h3>
         <span>
           {pick5(lang, {
-            it: "Per il lancio, il primo mese dei piani mensili è a metà prezzo per tutti: lo sconto si applica da solo al checkout. L'offerta scade tra ",
-            en: "For launch, the first month of monthly plans is half price for everyone: the discount applies automatically at checkout. Offer ends in ",
-            es: "Por el lanzamiento, el primer mes de los planes mensuales está a mitad de precio para todos: el descuento se aplica solo al pagar. La oferta termina en ",
-            fr: "Pour le lancement, le premier mois des offres mensuelles est à moitié prix pour tous : la remise s'applique automatiquement au paiement. L'offre expire dans ",
-            ru: "В честь запуска первый месяц месячных тарифов — за полцены для всех: скидка применится автоматически при оплате. Предложение истекает через ",
+            it: "Per il lancio, il primo acquisto — mensile o annuale — è a metà prezzo per tutti: lo sconto si applica da solo al checkout. L'offerta scade tra ",
+            en: "For launch, your first purchase — monthly or annual — is half price for everyone: the discount applies automatically at checkout. Offer ends in ",
+            es: "Por el lanzamiento, tu primera compra — mensual o anual — está a mitad de precio para todos: el descuento se aplica solo al pagar. La oferta termina en ",
+            fr: "Pour le lancement, votre premier achat — mensuel ou annuel — est à moitié prix pour tous : la remise s'applique automatiquement au paiement. L'offre expire dans ",
+            ru: "В честь запуска первая покупка — месячная или годовая — за полцены для всех: скидка применится автоматически при оплате. Предложение истекает через ",
           })}
           <strong>{countdown}</strong>.
         </span>
