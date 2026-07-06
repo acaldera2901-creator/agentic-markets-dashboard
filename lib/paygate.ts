@@ -36,40 +36,36 @@ export const PAYGATE_PRICES: Record<PlanKey, Record<Period, number>> = {
   premium: { monthly: 29.99, annual: 255 },
 };
 
-// ── #PRICING-CREATORS-0706: promo creator (-50% primo mese, APPROVE Andrea A2) ──
-// Sconto SOLO server-side, mai dal client. DARK finché CREATOR_PROMO_ENABLED
-// non è "true" (attivazione al gate, dopo la conferma T1 di Tommy sugli importi
-// variabili PayGate). La deadline è REALE e unica per la campagna (A4 FTC:
-// niente countdown per-utente che si resetta — dark pattern); scaduta la data,
-// lo sconto si spegne da solo anche lato server.
-export const CREATOR_PROMO_DISCOUNT = 0.5; // -50% sul primo ciclo mensile
+// ── #PRICING-CREATORS-0706 (rev. Michele): promo di LANCIO -50% primo mese ──
+// Vale per TUTTI (non è legata ai creator — il link creator fa SOLO
+// attribuzione). Sconto SOLO server-side, mai dal client. DARK finché
+// LAUNCH_PROMO_ENABLED non è "true" (attivazione al gate, dopo la conferma T1
+// di Tommy sugli importi variabili PayGate). La deadline è REALE e unica per
+// la campagna di lancio (~1 mese; A4 FTC: niente countdown per-utente che si
+// resetta); scaduta la data, lo sconto si spegne da solo anche lato server.
+export const LAUNCH_PROMO_DISCOUNT = 0.5; // -50% sul primo ciclo mensile
 
-export function creatorPromoActive(now: Date = new Date()): boolean {
-  if (process.env.CREATOR_PROMO_ENABLED !== "true") return false;
-  const deadline = process.env.CREATOR_PROMO_DEADLINE;
+export function launchPromoActive(now: Date = new Date()): boolean {
+  if (process.env.LAUNCH_PROMO_ENABLED !== "true") return false;
+  const deadline = process.env.LAUNCH_PROMO_DEADLINE;
   if (!deadline) return false; // niente deadline reale = niente promo (A4)
   const d = new Date(deadline);
   return Number.isFinite(d.getTime()) && now < d;
 }
 
 // Importo effettivo al checkout. Lo sconto si applica SOLO se: promo attiva
-// (flag + deadline reale) · utente arrivato da un link creator (referred_by
-// valorizzato) · primo ordine pagato (primo ciclo, A2) · periodo mensile.
+// (flag + deadline reale) · PRIMO ordine pagato dell'utente (primo ciclo) ·
+// periodo mensile. Nessuna condizione referral: è l'offerta di lancio di tutti.
 export function discountedAmountFor(
   plan: PlanKey,
   period: Period,
-  opts: { referred: boolean; firstPaidOrder: boolean; now?: Date }
+  opts: { firstPaidOrder: boolean; now?: Date }
 ): { amount: number; discounted: boolean } {
   const full = amountFor(plan, period);
-  if (
-    period !== "monthly" ||
-    !opts.referred ||
-    !opts.firstPaidOrder ||
-    !creatorPromoActive(opts.now)
-  ) {
+  if (period !== "monthly" || !opts.firstPaidOrder || !launchPromoActive(opts.now)) {
     return { amount: full, discounted: false };
   }
-  const amount = Math.round(full * (1 - CREATOR_PROMO_DISCOUNT) * 100) / 100;
+  const amount = Math.round(full * (1 - LAUNCH_PROMO_DISCOUNT) * 100) / 100;
   return { amount, discounted: true };
 }
 

@@ -3638,28 +3638,26 @@ function PendingPaymentView({
   );
 }
 
-// #PRICING-CREATORS-0706 (Andrea A2+A4): banner -50% primo mese per chi arriva
-// da un link creator (/r/CODICE -> am_ref). DARK finché NEXT_PUBLIC_CREATOR_
-// PROMO_ENABLED non è "true". Il countdown è sulla DEADLINE UNICA di campagna
-// (NEXT_PUBLIC_CREATOR_PROMO_DEADLINE, data reale): mai un timer per-utente che
-// si resetta (dark pattern FTC). Display only: il prezzo scontato vero viene
-// applicato SERVER-SIDE al checkout (lib/creator-promo + discountedAmountFor).
-function CreatorPromoBanner() {
+// #PRICING-CREATORS-0706 (rev. Michele, A4): banner PROMO DI LANCIO -50% sul
+// primo mese — vale per TUTTI (nessuna condizione referral; il link creator
+// /r/CODICE fa solo attribuzione). DARK finché NEXT_PUBLIC_LAUNCH_PROMO_ENABLED
+// non è "true". Il countdown è sulla DEADLINE UNICA della campagna di lancio
+// (NEXT_PUBLIC_LAUNCH_PROMO_DEADLINE, data reale ~1 mese): mai un timer
+// per-utente che si resetta (dark pattern FTC). Display only: il prezzo
+// scontato vero viene applicato SERVER-SIDE al checkout (lib/creator-promo +
+// discountedAmountFor).
+function LaunchPromoBanner() {
   const lang = useLang();
-  const enabled = process.env.NEXT_PUBLIC_CREATOR_PROMO_ENABLED === "true";
-  const deadlineIso = process.env.NEXT_PUBLIC_CREATOR_PROMO_DEADLINE || "";
+  const enabled = process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true";
+  const deadlineIso = process.env.NEXT_PUBLIC_LAUNCH_PROMO_DEADLINE || "";
   const deadline = enabled && deadlineIso ? new Date(deadlineIso).getTime() : NaN;
   const [now, setNow] = useState(() => Date.now());
-  const [referred, setReferred] = useState(false);
-  useEffect(() => {
-    try { setReferred(!!window.localStorage.getItem("am_ref")); } catch { /* storage bloccato */ }
-  }, []);
   useEffect(() => {
     if (!enabled) return;
     const iv = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(iv);
   }, [enabled]);
-  if (!enabled || !referred || !Number.isFinite(deadline) || now >= deadline) return null;
+  if (!enabled || !Number.isFinite(deadline) || now >= deadline) return null;
   const left = deadline - now;
   const dd = Math.floor(left / 86_400_000);
   const hh = Math.floor((left % 86_400_000) / 3_600_000);
@@ -3668,15 +3666,15 @@ function CreatorPromoBanner() {
   return (
     <section className="plans-hero" style={{ borderColor: "var(--coral, #ff6b5e)" }}>
       <div>
-        <p className="eyebrow">{pick5(lang, { it: "Invito creator", en: "Creator invite", es: "Invitación creator", fr: "Invitation créateur", ru: "Приглашение от криэйтора" })}</p>
+        <p className="eyebrow">{pick5(lang, { it: "Offerta di lancio", en: "Launch offer", es: "Oferta de lanzamiento", fr: "Offre de lancement", ru: "Стартовое предложение" })}</p>
         <h3>{pick5(lang, { it: "-50% sul primo mese", en: "-50% on your first month", es: "-50% en tu primer mes", fr: "-50% sur votre premier mois", ru: "-50% на первый месяц" })}</h3>
         <span>
           {pick5(lang, {
-            it: "Sei arrivato dal link di un creator: lo sconto si applica da solo al checkout (solo primo mese, piani mensili). L'offerta scade tra ",
-            en: "You came from a creator link: the discount applies automatically at checkout (first month only, monthly plans). Offer ends in ",
-            es: "Llegaste desde el enlace de un creator: el descuento se aplica solo al pagar (solo primer mes, planes mensuales). La oferta termina en ",
-            fr: "Vous venez du lien d'un créateur : la remise s'applique automatiquement au paiement (premier mois seulement, offres mensuelles). L'offre expire dans ",
-            ru: "Вы пришли по ссылке криэйтора: скидка применится автоматически при оплате (только первый месяц, месячные тарифы). Предложение истекает через ",
+            it: "Per il lancio, il primo mese dei piani mensili è a metà prezzo per tutti: lo sconto si applica da solo al checkout. L'offerta scade tra ",
+            en: "For launch, the first month of monthly plans is half price for everyone: the discount applies automatically at checkout. Offer ends in ",
+            es: "Por el lanzamiento, el primer mes de los planes mensuales está a mitad de precio para todos: el descuento se aplica solo al pagar. La oferta termina en ",
+            fr: "Pour le lancement, le premier mois des offres mensuelles est à moitié prix pour tous : la remise s'applique automatiquement au paiement. L'offre expire dans ",
+            ru: "В честь запуска первый месяц месячных тарифов — за полцены для всех: скидка применится автоматически при оплате. Предложение истекает через ",
           })}
           <strong>{countdown}</strong>.
         </span>
@@ -3709,7 +3707,7 @@ function PlansTab({
         <button onClick={onOpenDesk}>{t.plans_cta}</button>
       </section>
 
-      <CreatorPromoBanner />
+      <LaunchPromoBanner />
 
       <section className="plans-grid plans-grid-3">
         {/* ── FREE ── */}

@@ -34,12 +34,12 @@ export async function POST(req: Request) {
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
 
-  // #PRICING-CREATORS-0706: -50% primo mese per gli utenti arrivati da un link
-  // creator (referred_by), primo ordine pagato su QUALUNQUE rail, campagna
-  // attiva. Col flag spento promoEligibility non tocca il DB e il percorso è
-  // identico a prima. Lo sconto vive nell'amount dell'ordine → il callback
-  // anti-spoof valida già contro amount_usd scontato, nessun secondo punto di
-  // verità.
+  // #PRICING-CREATORS-0706 (rev. Michele): PROMO DI LANCIO -50% primo mese,
+  // vale per TUTTI (primo ordine pagato su qualunque rail, campagna attiva —
+  // nessuna condizione referral). Col flag spento promoEligibility non tocca
+  // il DB e il percorso è identico a prima. Lo sconto vive nell'amount
+  // dell'ordine → il callback anti-spoof valida già contro amount_usd
+  // scontato, nessun secondo punto di verità.
   const eligibility = await promoEligibility(ctx.identifier);
   const { amount } = discountedAmountFor(plan as PlanKey, period as Period, eligibility);
   const { token, tokenHash } = newOrderToken();
