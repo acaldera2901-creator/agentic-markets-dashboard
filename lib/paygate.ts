@@ -6,8 +6,16 @@
 
 import crypto from "node:crypto";
 
+// Host configurabili per il white-label (#PAYGATE-WL-DOMAIN, Cloudflare Worker
+// su checkout.betredge.com). Default = domini PayGate → comportamento invariato
+// finché PAYGATE_CHECKOUT_HOST non è settata. Solo l'host del checkout hosted
+// (visto dall'utente) va white-labeled: le chiamate wallet.php/payment-status.php
+// sono server-side dal nostro backend, non toccate da blocchi VPN/DNS lato client.
+const CHECKOUT_HOST = process.env.PAYGATE_CHECKOUT_HOST || "checkout.paygate.to";
+const WHITE_LABEL = CHECKOUT_HOST !== "checkout.paygate.to";
+
 const WALLET_ENDPOINT = "https://api.paygate.to/control/wallet.php";
-const PAY_ENDPOINT = "https://checkout.paygate.to/pay.php";
+const PAY_ENDPOINT = `https://${CHECKOUT_HOST}/pay.php`;
 const STATUS_ENDPOINT = "https://api.paygate.to/control/payment-status.php";
 // PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto), quindi il
 // `value_coin` del callback è sensibilmente < importo richiesto. L'autenticità
@@ -67,7 +75,10 @@ export async function createReceivingWallet(
   payoutAddress: string,
   callbackUrl: string
 ): Promise<{ addressIn: string; polygonAddressIn: string; ipnToken: string }> {
-  const url = `${WALLET_ENDPOINT}?address=${encodeURIComponent(payoutAddress)}&callback=${encodeURIComponent(callbackUrl)}`;
+  // white-label: domain=<checkout host> → PayGate genera la pagina hosted E i
+  // link interni (process-payment.php) sul nostro dominio invece di checkout.paygate.to.
+  const domainParam = WHITE_LABEL ? `&domain=${encodeURIComponent(CHECKOUT_HOST)}` : "";
+  const url = `${WALLET_ENDPOINT}?address=${encodeURIComponent(payoutAddress)}&callback=${encodeURIComponent(callbackUrl)}${domainParam}`;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`paygate wallet.php failed: ${resp.status}`);
   const data = (await resp.json()) as { address_in?: string; polygon_address_in?: string; ipn_token?: string };
