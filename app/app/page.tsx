@@ -1746,7 +1746,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
 };
 
 type Tab = "bets" | "plans" | "history" | "leaderboard" | "match-builder";
-type AccountSection = "account" | "piani";
+type AccountSection = "account" | "piani" | "invita";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -5949,7 +5949,7 @@ interface MbWcRow {
 
 function MatchBuilderTab({
   predictions, tennisMatches, onRegister, isLoggedIn, sharedIds = [], refCode = "",
-  isUnlocked = false, isPremium = false, onUnlock,
+  isUnlocked = false, isPremium = false, onUnlock, loading = false,
 }: {
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
@@ -5962,6 +5962,9 @@ function MatchBuilderTab({
   isUnlocked?: boolean;
   isPremium?: boolean;
   onUnlock?: () => void;
+  // Parent board still fetching predictions: distinguishes "loading" from the
+  // genuine "no signals" empty state (#MB-FIX #4).
+  loading?: boolean;
 }) {
   const lang = useLang();
   const [selected, setSelected] = useState<string[]>(sharedIds);
@@ -6113,15 +6116,38 @@ function MatchBuilderTab({
   // Plan gate on the selectable inventory: Premium/admin see every signal;
   // Base sees only the 3 strongest (by model probability). Free/anon never
   // interact here — the whole builder sits behind the LockedGate below.
-  const visibleItems = isPremium
+  const cappedItems = isPremium
     ? items
     : [...items].sort((a, b) => b.prob - a.prob).slice(0, 3);
+  // #MB-FIX #1: a slip opened from a shared link (selected = sharedIds, up to 5)
+  // must never lose legs to the Base 3-signal cap — otherwise legs 4-5 vanished
+  // silently AND the combined prob was computed on a subset. Always keep any
+  // already-selected unlocked leg visible/priced; the cap only limits new picks.
+  const visibleItems = isPremium
+    ? items
+    : [...cappedItems, ...items.filter((i) => selected.includes(i.id) && !cappedItems.some((c) => c.id === i.id))];
   const selectedItems = visibleItems.filter((i) => selected.includes(i.id));
-  const lockedSelected = selected.filter((id) => !items.some((i) => i.id === id) && lockedLabels.has(id));
   const combinedProb = selectedItems.reduce((acc, i) => acc * i.prob, 1);
   const isSharedView = sharedIds.length > 0 && !isLoggedIn;
+  // #MB-FIX #2: shared-link teaser (anon) must show EVERY leg of the slip —
+  // names visible, pick/odds gated. Cover both locked legs (label from
+  // lockedLabels) and any leg already unlocked for this visitor (in `items`);
+  // a leg that dropped out of the feed entirely is simply omitted. The old code
+  // rendered only locked legs, so a slip whose matches were unlocked/expired
+  // showed an empty teaser (header + CTA, no fixtures).
+  const sharedRows: { id: string; label: string }[] = sharedIds
+    .map((id) => {
+      const it = items.find((i) => i.id === id);
+      if (it) return { id, label: it.label };
+      const ll = lockedLabels.get(id);
+      return ll ? { id, label: ll } : null;
+    })
+    .filter((r): r is { id: string; label: string } => r !== null);
 
   const toggle = (id: string) => {
+    // #MB-FIX #3: editing the slip invalidates a prior "published ✓" note, which
+    // otherwise stayed pinned to a slip the user has already changed.
+    setPublishState("idle");
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 5 ? [...prev, id] : prev
     );
@@ -6196,11 +6222,11 @@ function MatchBuilderTab({
               <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{copy.sharedBy}: <span className="text-[var(--am-coral)]">{refCode}</span></p>
             )}
           </div>
-          {lockedSelected.length > 0 && (
+          {sharedRows.length > 0 && (
             <div className="mb-slip-list">
-              {lockedSelected.map((id) => (
-                <div key={id} className="mb-slip-item">
-                  <span className="mb-slip-fixture">{lockedLabels.get(id)}</span>
+              {sharedRows.map((row) => (
+                <div key={row.id} className="mb-slip-item">
+                  <span className="mb-slip-fixture">{row.label}</span>
                   <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
                 </div>
               ))}
@@ -6220,7 +6246,11 @@ function MatchBuilderTab({
           <div className="min-w-0">
             <p className="text-xs font-mono text-[var(--am-muted)] uppercase tracking-wider mb-3">{copy.selectTitle}</p>
             {visibleItems.length === 0 ? (
-              <div className="am-surface p-8 text-center text-xs font-mono text-[var(--am-muted-2)]">{copy.noSignals}</div>
+              <div className="am-surface p-8 text-center text-xs font-mono text-[var(--am-muted-2)]">
+                {/* #MB-FIX #4: during the parent's predictions fetch, items is
+                    empty — show a loading line, not the false "no signals". */}
+                {loading ? pick5(lang, { it: "Caricamento predizioni…", en: "Loading predictions…", es: "Cargando predicciones…", fr: "Chargement des prédictions…", ru: "Загрузка прогнозов…" }) : copy.noSignals}
+              </div>
             ) : (
               <div className="mb-select-scroll">
                 {mbGroups.map((group) => (
@@ -7183,6 +7213,107 @@ function AccountMenu({
   );
 }
 
+// #REFERRAL-PANEL (item 3) — Account → "Invita". Model per #PRICING-CREATORS-0706:
+// the creator shares betredge.com/r/CODE; sign-ups with that code are attributed
+// via profiles.referred_by (first-touch). Follower gets the launch −50% (same for
+// everyone), creator sees a counter; per-code revenue is a backend toggle on
+// request. Code is self-declared + remembered in localStorage — persisting a
+// referral_code on the profile is a gated follow-up.
+function ReferralPanel() {
+  const lang = useLang();
+  const [code, setCode] = useState("");
+  const [stats, setStats] = useState<{ signups: number; paid: number } | null>(null);
+  const [statsErr, setStatsErr] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("am_creator_code");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot restore from localStorage at mount
+    if (saved) setCode(saved);
+  }, []);
+
+  const normalized = code.trim().toUpperCase();
+  const valid = /^[A-Z0-9_-]{2,20}$/.test(normalized);
+  const link = valid && typeof window !== "undefined" ? `${window.location.origin}/r/${normalized}` : "";
+
+  // Effect only fetches (state set in async callbacks) — resets happen in the
+  // change handler below, keeping this clear of the set-state-in-effect rule.
+  useEffect(() => {
+    if (!valid) return;
+    localStorage.setItem("am_creator_code", normalized);
+    let alive = true;
+    fetch(`/api/referral/stats?code=${encodeURIComponent(normalized)}`, { credentials: "same-origin", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("stats"))))
+      .then((d) => { if (alive) setStats({ signups: Number(d?.signups) || 0, paid: Number(d?.paid) || 0 }); })
+      .catch(() => { if (alive) setStatsErr(true); });
+    return () => { alive = false; };
+  }, [normalized, valid]);
+
+  const onCodeChange = (v: string) => { setCode(v); setStats(null); setStatsErr(false); };
+
+  const copyLink = async () => {
+    if (!link) return;
+    try { await navigator.clipboard.writeText(link); } catch { /* clipboard denied: link shown below anyway */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    trackEvent("referral_link_copied", { meta: { code: normalized } });
+  };
+
+  const c = pick5(lang, {
+    it: { title: "Invita", intro: "Condividi il tuo link: chi si iscrive col tuo codice ti viene attribuito. I nuovi iscritti hanno la promo di lancio −50% sul primo acquisto (uguale per tutti).", codeLabel: "Il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paid: "Di cui abbonati", statsErr: "Statistiche non disponibili al momento.", note: "Guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
+    en: { title: "Invite", intro: "Share your link: anyone who signs up with your code is attributed to you. New sign-ups get the −50% launch promo on their first purchase (same for everyone).", codeLabel: "Your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paid: "Subscribers among them", statsErr: "Stats unavailable right now.", note: "You earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
+    es: { title: "Invitar", intro: "Comparte tu link: quien se registre con tu código se te atribuye. Los nuevos registros tienen la promo de lanzamiento −50% en su primera compra (igual para todos).", codeLabel: "Tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paid: "De ellos, suscriptores", statsErr: "Estadísticas no disponibles ahora.", note: "Ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
+    fr: { title: "Inviter", intro: "Partagez votre lien : toute inscription avec votre code vous est attribuée. Les nouveaux inscrits ont la promo de lancement −50% sur leur premier achat (identique pour tous).", codeLabel: "Votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paid: "Dont abonnés", statsErr: "Statistiques indisponibles pour le moment.", note: "Vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
+    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый, кто зарегистрируется по вашему коду, закрепляется за вами. Новые регистрации получают промо запуска −50% на первую покупку (для всех одинаково).", codeLabel: "Ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paid: "Из них подписчиков", statsErr: "Статистика сейчас недоступна.", note: "Вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам, чтобы запросить." },
+  });
+
+  return (
+    <div className="account-bento">
+      <div className="am-card p-5 space-y-4" style={{ gridColumn: "1 / -1" }}>
+        <div className="space-y-1">
+          <p className="eyebrow">{c.title}</p>
+          <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{c.intro}</p>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.codeLabel}</p>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => onCodeChange(e.target.value)}
+            placeholder={c.placeholder}
+            className="mb-input"
+            maxLength={20}
+          />
+          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.hint}</p>
+        </div>
+        {valid && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.linkLabel}</p>
+            <p className="mb-link">{link}</p>
+            <button onClick={copyLink} className="mb-cta">{copied ? c.copied : c.copy}</button>
+          </div>
+        )}
+        {valid && (
+          <div className="flex gap-3">
+            <div className="am-surface p-3 flex-1 text-center">
+              <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.signups : "…"}</div>
+              <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.signups}</div>
+            </div>
+            <div className="am-surface p-3 flex-1 text-center">
+              <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.paid : "…"}</div>
+              <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.paid}</div>
+            </div>
+          </div>
+        )}
+        {valid && statsErr && (
+          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.statsErr}</p>
+        )}
+        <p className="text-[10px] font-mono text-[var(--am-muted-2)] border-t pt-3" style={{ borderColor: "var(--am-line)" }}>{c.note}</p>
+      </div>
+    </div>
+  );
+}
+
 function AccountTab({
   profile,
   onOpenDesk,
@@ -7208,6 +7339,7 @@ function AccountTab({
   const sections: { key: AccountSection; label: string }[] = [
     { key: "account", label: "Account" },
     { key: "piani",   label: pick5(lang, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }) },
+    { key: "invita",  label: pick5(lang, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" }) },
   ];
   return (
     <div className="account-tab">
@@ -7247,6 +7379,7 @@ function AccountTab({
           onActivateFree={onActivateFree}
         />
       )}
+      {section === "invita" && <ReferralPanel />}
     </div>
   );
 }
@@ -8581,6 +8714,7 @@ export default function Dashboard() {
               isUnlocked={isClientUnlocked}
               isPremium={profileHasPremium(clientProfile)}
               onUnlock={handleProtectedUnlock}
+              loading={predLoading}
             />
           )}
         </section>
