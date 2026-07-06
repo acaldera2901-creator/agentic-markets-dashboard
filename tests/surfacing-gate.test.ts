@@ -5,6 +5,7 @@ import {
   SURFACE_FLOOR_TENNIS,
   SURFACE_FLOOR_TENNIS_LO,
   SURFACE_FLOOR_TENNIS_LO_GRASS,
+  SURFACE_FLOOR_WC,
   surfaceDecision,
   surfaceFloorFor,
   tennisFloorFor,
@@ -19,6 +20,7 @@ assert.equal(SURFACE_FLOOR_FRIENDLY, 61);
 assert.equal(SURFACE_FLOOR_TENNIS, 62);
 assert.equal(SURFACE_FLOOR_TENNIS_LO, 64);
 assert.equal(SURFACE_FLOOR_TENNIS_LO_GRASS, 66);
+assert.equal(SURFACE_FLOOR_WC, 26);
 
 // ── Boundary: club football floor (inclusive) ────────────────────────────────
 {
@@ -48,7 +50,9 @@ assert.equal(SURFACE_FLOOR_TENNIS_LO_GRASS, 66);
 // ── surfaceFloorFor: per-segment floor resolution ────────────────────────────
 {
   assert.equal(surfaceFloorFor("football", "Premier League"), 56);
-  assert.equal(surfaceFloorFor("football", "World Cup"), 56);
+  // #WC-SURFACE-FLOOR: il WC ha il floor dedicato (knockout visibili).
+  assert.equal(surfaceFloorFor("football", "World Cup"), 26);
+  assert.equal(surfaceFloorFor("football", "FIFA World Cup 2026"), 26);
   assert.equal(surfaceFloorFor("football", "International Friendly"), 61);
   assert.equal(surfaceFloorFor(null, null), 56); // fail-soft default
 }
@@ -101,19 +105,21 @@ assert.equal(SURFACE_FLOOR_TENNIS_LO_GRASS, 66);
 
 // ── #SUMMER-LEAGUES-1 (APPROVE Andrea 2026-06-12): per-league club floors ────
 {
-  // Stricter lab floors: only Allsvenskan + League of Ireland move to 60.
-  assert.equal(surfaceFloorFor("football", "Allsvenskan"), 60);
-  assert.equal(surfaceFloorFor("football", "League of Ireland"), 60);
+  // #MINORS-TIGHTEN (Michele 07/07, live data): floors RAISED on minor leagues.
+  assert.equal(surfaceFloorFor("football", "Allsvenskan"), 65);
+  assert.equal(surfaceFloorFor("football", "League of Ireland"), 70);
+  assert.equal(surfaceFloorFor("football", "Chinese Super League"), 70);
+  assert.equal(surfaceFloorFor("football", "Veikkausliiga"), 65);
+  assert.equal(surfaceFloorFor("football", "Eliteserien"), 60);
   // Case-insensitive substring match on the served competition name.
-  assert.equal(surfaceFloorFor("football", "ALLSVENSKAN"), 60);
-  // The other summer leagues hold the quality bar at the standard 56.
-  assert.equal(surfaceFloorFor("football", "Eliteserien"), 56);
-  assert.equal(surfaceFloorFor("football", "Veikkausliiga"), 56);
-  assert.equal(surfaceFloorFor("football", "Chinese Super League"), 56);
-  // History/hit-rate guard follows the same per-league floor.
-  assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 59 }), false);
-  assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 60 }), true);
-  assert.equal(isSurfacedRow({ sport: "football", competition: "Eliteserien", confidence_score: 56 }), true);
+  assert.equal(surfaceFloorFor("football", "ALLSVENSKAN"), 65);
+  // History/hit-rate guard follows the same per-league floor (serving-side).
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 64 }), false);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Allsvenskan", confidence_score: 65 }), true);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Eliteserien", confidence_score: 60 }), true);
+  // WC dedicated floor flows into isSurfacedRow too.
+  assert.equal(isSurfacedRow({ sport: "football", competition: "World Cup", confidence_score: 26 }), true);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "World Cup", confidence_score: 25 }), false);
 }
 
 console.log("surfacing gate ok");

@@ -118,13 +118,12 @@ def test_unknown_sport_defaults_to_football_floor():
 
 def test_club_floor_for_summer_league_overrides():
     from core.surfacing_gate import club_floor_for
-    # Stricter lab floors: only Allsvenskan + League of Ireland move to 60.
-    assert club_floor_for("Allsvenskan") == 60
-    assert club_floor_for("League of Ireland") == 60
-    # The other summer leagues hold the quality bar at the standard 56.
-    assert club_floor_for("Eliteserien") == 56
-    assert club_floor_for("Veikkausliiga") == 56
-    assert club_floor_for("Chinese Super League") == 56
+    # #MINORS-TIGHTEN (Michele 07/07, dati live): floor ALZATI sui minori.
+    assert club_floor_for("Allsvenskan") == 65
+    assert club_floor_for("League of Ireland") == 70
+    assert club_floor_for("Eliteserien") == 60
+    assert club_floor_for("Veikkausliiga") == 65
+    assert club_floor_for("Chinese Super League") == 70
     # Existing leagues are untouched.
     assert club_floor_for("Premier League") == 56
     assert club_floor_for("Serie A") == 56
@@ -135,8 +134,34 @@ def test_club_floor_for_summer_league_overrides():
 
 def test_club_floor_for_is_case_insensitive():
     from core.surfacing_gate import club_floor_for
-    assert club_floor_for("ALLSVENSKAN") == 60
-    assert club_floor_for("league OF ireland Premier Division") == 60
+    assert club_floor_for("ALLSVENSKAN") == 65
+    assert club_floor_for("league OF ireland Premier Division") == 70
+
+
+# ── #WC-SURFACE-FLOOR (APPROVE Andrea + decisione Michele 07/07) ──────────────
+
+def test_world_cup_floor_boundary_25_below_26_pick():
+    assert surface_decision(sport="football", friendly=False, confidence=25,
+                            world_cup=True) == (False, True)
+    assert surface_decision(sport="football", friendly=False, confidence=26,
+                            world_cup=True) == (True, False)
+
+
+def test_world_cup_flag_does_not_touch_friendlies_or_club():
+    # friendly=True vince sul flag WC (le amichevoli restano al loro floor).
+    assert surface_decision(sport="football", friendly=True, confidence=60,
+                            world_cup=True) == (False, True)
+    # senza flag il club resta a 56: nessun abbassamento globale.
+    assert surface_decision(sport="football", friendly=False, confidence=55) == (False, True)
+    assert surface_decision(sport="football", friendly=False, confidence=56) == (True, False)
+
+
+def test_wc_floor_reads_settings(monkeypatch):
+    monkeypatch.setattr(settings, "SURFACE_FLOOR_WC", 40)
+    assert surface_decision(sport="football", friendly=False, confidence=39,
+                            world_cup=True) == (False, True)
+    assert surface_decision(sport="football", friendly=False, confidence=40,
+                            world_cup=True) == (True, False)
 
 
 def test_summer_league_registries_are_consistent():

@@ -25,6 +25,10 @@ export const SURFACE_FLOOR_FRIENDLY = 61;
 export const SURFACE_FLOOR_TENNIS = 62; // hi tier: Slam / Masters / 1000 / Finals / Olympics
 export const SURFACE_FLOOR_TENNIS_LO = 64; // lower tiers (250/500/WTA minors)
 export const SURFACE_FLOOR_TENNIS_LO_GRASS = 66; // lower tiers on grass (June swing)
+// #WC-SURFACE-FLOOR (APPROVE Andrea + Michele 07/07): dedicated LOW floor for
+// the World Cup ONLY (68.5% live on 92 settled — the product's strong suit;
+// balanced knockouts must surface). Club stays at 56. Mirror of settings.py.
+export const SURFACE_FLOOR_WC = 26;
 
 // High-tier tournament keywords (case-insensitive substring). Conservative on
 // purpose: only unambiguous names — anything unmatched falls to the LOWER tier,
@@ -69,9 +73,16 @@ export function tennisFloorFor(tournament: string | null | undefined): number {
 // leagues (Eliteserien, Veikkausliiga, China Super League) hold it at the
 // standard 56. Lowercase substring match on the served competition name.
 // Mirror of config/settings.py SURFACE_FLOOR_CLUB_OVERRIDES — keep in sync.
+// #MINORS-TIGHTEN (Michele 07/07, LIVE data: CSL 14.3%, LOI 14.3%, VEI 40%,
+// ALL 50% — summer leagues running far below the lab backtests): floors RAISED
+// to shut the coin-flip tap on minor leagues. Serving-only: already-published
+// history stays (no survivorship). Mirror of settings.py — keep in sync.
 export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
-  ["allsvenskan", 60],         // SWE — lug-ago 72.6% @60
-  ["league of ireland", 60],   // LOI — lug-ago 70.2% @60
+  ["allsvenskan", 65],           // live 50% @60
+  ["league of ireland", 70],     // live 14.3% @60 -> nearly closed
+  ["chinese super league", 70],  // live 14.3% @56 -> nearly closed
+  ["veikkausliiga", 65],         // live 40% @56
+  ["eliteserien", 60],           // no live sample -> precautionary
 ];
 
 export type SurfaceDecision = {
@@ -90,6 +101,8 @@ export function surfaceFloorFor(
 ): number {
   if ((sport ?? "").toLowerCase() === "tennis") return tennisFloorFor(competition);
   const name = (competition ?? "").toLowerCase();
+  // #WC-SURFACE-FLOOR: World Cup only — before the friendly/club resolution.
+  if (name.includes("world cup")) return SURFACE_FLOOR_WC;
   if (name.includes("friendly")) return SURFACE_FLOOR_FRIENDLY;
   for (const [keyword, floor] of CLUB_FLOOR_OVERRIDES) {
     if (name.includes(keyword)) return floor;

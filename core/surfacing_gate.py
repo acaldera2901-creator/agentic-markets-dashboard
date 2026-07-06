@@ -74,6 +74,7 @@ def surface_decision(
     friendly: bool,
     confidence: int,
     tournament: str | None = None,
+    world_cup: bool = False,
 ) -> tuple[bool, bool]:
     """Return ``(is_pick, below_threshold)`` for a row.
 
@@ -87,6 +88,12 @@ def surface_decision(
         # 10y lab 2026-06-08: tennis confidence IS monotone (the prior "no floor"
         # was a 60-match artifact). Segment-aware floors #TENNIS-SEG-FLOOR-1.
         is_pick = confidence >= tennis_floor_for(tournament)
+        return is_pick, not is_pick
+
+    # #WC-SURFACE-FLOOR: floor dedicato SOLO World Cup (knockout equilibrati
+    # visibili; il club resta al floor standard — nessun abbassamento globale).
+    if world_cup and not friendly:
+        is_pick = confidence >= settings.SURFACE_FLOOR_WC
         return is_pick, not is_pick
 
     floor = settings.SURFACE_FLOOR_FRIENDLY if friendly else settings.SURFACE_FLOOR_FOOTBALL

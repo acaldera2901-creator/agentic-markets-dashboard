@@ -171,8 +171,13 @@ class Settings(BaseSettings):
     # gate flips a publish flag only — p_home/p_draw/p_away and confidence_score
     # are never altered. Floors are on the picked-outcome probability (max-prob,
     # whole percent). Mirrored in lib/surfacing-gate.ts — keep in sync.
-    SURFACE_FLOOR_FOOTBALL: int = 56   # WC + competitive club (max-prob >= 56)
+    SURFACE_FLOOR_FOOTBALL: int = 56   # competitive club (max-prob >= 56)
     SURFACE_FLOOR_FRIENDLY: int = 61   # international friendlies (heavy rotation)
+    # #WC-SURFACE-FLOOR (APPROVE Andrea + decisione Michele 07/07): il WC e'
+    # il punto forte del prodotto (68.5% live su 92 regolate) e i knockout
+    # equilibrati DEVONO comparire -> floor dedicato BASSO, solo World Cup.
+    # Il club resta a 56: nessun abbassamento globale (linea qualita'>volume).
+    SURFACE_FLOOR_WC: int = 26
     # Per-league club floor overrides (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12,
     # walk-forward lab am-lab/lab_summer_leagues.py 2017-2026 held-out): Allsvenskan
     # and League of Ireland only clear the ~70% quality bar at 60, the other summer
@@ -180,9 +185,18 @@ class Settings(BaseSettings):
     # name, lowercase substring match — mirrored in lib/surfacing-gate.ts
     # CLUB_FLOOR_OVERRIDES (keep both lists in sync). Leagues not listed use
     # SURFACE_FLOOR_FOOTBALL.
+    # #MINORS-TIGHTEN (decisione Michele 07/07, dati LIVE prod: CSL 14.3%,
+    # LOI 14.3%, Veikkausliiga 40%, Allsvenskan 50% — i summer stanno andando
+    # MOLTO sotto i backtest): floor ALZATI per chiudere il rubinetto delle
+    # pick-moneta sui campionati minori. "Meno pick di partite meno conosciute"
+    # -> sale il win-rate pubblico. Vale solo sul SERVING futuro: lo storico
+    # gia' pubblicato resta (niente survivorship). Mirror in surfacing-gate.ts.
     SURFACE_FLOOR_CLUB_OVERRIDES: Dict[str, int] = {
-        "allsvenskan": 60,         # SWE — lug-ago 72.6% @60
-        "league of ireland": 60,   # LOI — lug-ago 70.2% @60
+        "allsvenskan": 65,           # live 50% @60 (lab 72.6 non confermato)
+        "league of ireland": 70,     # live 14.3% @60 -> quasi-chiuso
+        "chinese super league": 70,  # live 14.3% @56 -> quasi-chiuso
+        "veikkausliiga": 65,         # live 40% @56
+        "eliteserien": 60,           # zero campione live -> precauzionale
     }
     # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
     # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.

@@ -458,12 +458,16 @@ class ModelAgent(BaseAgent):
             # only whether the row is surfaced as a directional pick. The served
             # probabilities and `confidence` above are untouched; the result is
             # recorded in notes.surface for the frontend.
+            # #WC-SURFACE-FLOOR: in questo path nazionale il non-amichevole
+            # e' il World Cup per costruzione -> floor dedicato (26), i
+            # knockout equilibrati vengono surfacciati come pick.
             _is_pick, _below_floor = surface_decision(
-                sport="football", friendly=is_friendly, confidence=confidence
+                sport="football", friendly=is_friendly, confidence=confidence,
+                world_cup=not is_friendly,
             )
             surface_floor = (
                 settings.SURFACE_FLOOR_FRIENDLY if is_friendly
-                else settings.SURFACE_FLOOR_FOOTBALL
+                else settings.SURFACE_FLOOR_WC
             )
             explanation = build_wc_explanation(
                 home_team=payload["home_team"],
