@@ -1,4 +1,5 @@
--- 013_weekly_pick.sql — #WEEKLY-PICK-1 (item 2). Additiva + idempotente.
+-- 014_weekly_pick.sql — #WEEKLY-PICK-1 (item 2). Additiva + idempotente.
+-- (rinumerata da 013→014: il 013 è stato preso da 013_referral_code.sql #REFERRAL-HARDENING)
 -- ⚠️ NON ANCORA APPLICATA a prod: attende allineamento Michele + APPROVE
 -- ch_deploy_gate (tocca pagamenti). Applicare con lo stesso processo di 012.
 --
