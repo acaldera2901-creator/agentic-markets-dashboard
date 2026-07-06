@@ -15,8 +15,9 @@
 //    /public/banners/creatives/*. Si renderizza SOLO l'<Image> dentro un <Link>:
 //    niente overlay, niente body HTML (sarebbe doppio-testo). #HOME-CREATIVE-1
 //
-// NB: i creativi 16:9 nello slot 2-up (~518×228, ratio ~2.27) vengono ritagliati
-// in alto/basso con object-fit:cover — atteso/accettato (decisione Andrea).
+// NB: lo slot creative è aspect-ratio 16/9 (#HOME-CREATIVE-2) e mostra il banner
+// INTERO (niente ritaglio). I creativi di Ole sono 1672×941 = 16:9 esatto → logo
+// in alto e disclaimer in basso restano interamente visibili.
 
 import Link from "next/link";
 import Image from "next/image";
@@ -55,27 +56,27 @@ type SlideDef = CreativeDef | OverlayDef;
 
 const ACCOUNT_HREF = "/app?tab=account";
 
-// Rotazione curata di creativi (16:9 finiti). #HOME-CREATIVE-1
-// Sono scelti puntando a quelli che reggono meglio il ritaglio 2-up (soggetto +
-// headline centrati, footer non indispensabile). I restanti creativi su disco
-// (5849/5851/5852/5857/5858) sono tenuti per altri usi.
+// Rotazione curata di creativi finiti di Ole (16:9, /banners/creatives/ole-*).
+// #HOME-CREATIVE-1 · #SITE-BANNERS-OLE. Selezione: solo la palette VERDE on-brand
+// (i purple del set di Ole sono esclusi), copy difendibile ("probability engine,
+// not a bookmaker", "model vs market", "no black box"), varietà calcio/tennis/
+// multi-sport. I vecchi creative-58xx restano su disco ma fuori dalla rotazione.
 const SLIDE_DEFS: SlideDef[] = [
   // 1 · hero BetRedge multi-sport — banner storico "BETR EDGE" tutti-gli-sport.
   //     PRIMA slide (Andrea: "il banner betredge deve essere il primo"), priority.
   { kind: "creative", img: "/banners/hero-allsports.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — La tua edge su ogni sport" },
-  // 2 · creativo "grosso" hero — IT'S AN EDGE / MORE THAN PREDICTIONS (calcio, esultanza)
-  //     con pannelli Leaderboard + Big Wins.
-  { kind: "creative", img: "/banners/creatives/creative-5855.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — It's an edge. More than predictions. Calciatore in esultanza con classifica e vincite" },
-  // 3 · creativo calcio — MORE INSIGHT. MORE PROFITS. (soggetto a destra, layout pulito)
-  { kind: "creative", img: "/banners/creatives/creative-5854.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight. More profits. Calciatore in azione" },
-  // 4 · creativo tennis — PREDICT. BET. WIN BIG. (tennista, layout pulito e leggibile)
-  { kind: "creative", img: "/banners/creatives/creative-5850.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Predict. Bet. Win big. Tennista in azione" },
-  // 5 · creativo basket — SMARTER PICKS. BIGGER WINS. (cestista, buon contrasto)
-  { kind: "creative", img: "/banners/creatives/creative-5853.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Smarter picks. Bigger wins. Cestista in azione" },
-  // 6 · creativo tennis — DATA. STRATEGY. WINNING EDGE. (tennista donna)
-  { kind: "creative", img: "/banners/creatives/creative-5859.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Data. Strategy. Winning edge. Tennista in azione" },
-  // 7 · creativo calcio — SHARP PREDICTIONS. REAL RESULTS. (calciatrice, offerta daily 15-30%)
-  { kind: "creative", img: "/banners/creatives/creative-5860.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Sharp predictions. Real results. Calciatrice in azione con offerta giornaliera 15–30%" },
+  // 2 · Ole calcio — FROM SIGNAL TO YOUR CALL (calciatore; No black box · Model vs market)
+  { kind: "creative", img: "/banners/creatives/ole-football-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Calciatore in azione, probability engine e non un bookmaker" },
+  // 3 · Ole tennis — MORE INSIGHT. MORE PROFITS. (tennista; probabilità, quote ed edge nel tennis)
+  { kind: "creative", img: "/banners/creatives/ole-tennis-insight.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight, more profits. Tennista in azione con probabilità, quote ed edge" },
+  // 4 · Ole multi-sport — SEE THE EDGE BEFORE IT MOVES (basket/football; probabilità calibrate)
+  { kind: "creative", img: "/banners/creatives/ole-multisport-edge.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — See the edge before it moves. Atleti multi-sport, probabilità calibrate e reasoning chiaro" },
+  // 5 · Ole tennis — FROM SIGNAL TO YOUR CALL (tennista; No black box · Model vs market)
+  { kind: "creative", img: "/banners/creatives/ole-tennis-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Tennista in azione, probabilità ed edge nel tennis" },
+  // 6 · Ole multi-sport — ONE MODEL, EVERY SPORT (hockey/baseball/tennis/calcio)
+  { kind: "creative", img: "/banners/creatives/ole-multisport-onemodel.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — One model, every sport. Atleti di più discipline, un unico modello di probabilità" },
+  // 7 · Ole multi-sport — WE MAKE THE BOOK READABLE, EVERY SPORT (probability engine, not a bookmaker)
+  { kind: "creative", img: "/banners/creatives/ole-multisport-readable.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — We make the book readable, every sport. Probability engine, non un bookmaker" },
 ];
 
 type Slide =
