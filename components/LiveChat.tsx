@@ -34,6 +34,13 @@ const TAWK_SRC = TAWK_PROXY_HOST
 // il supporto non è MAI invisibile. Se Tawk carica (onLoad) il fallback resta nascosto.
 const FALLBACK_TIMEOUT_MS = 6000;
 const CONTACT_EMAIL = "info@betredge.com";
+// Fallback "Contattaci" localizzato: leggo la lingua da localStorage["agentic-lang"]
+// (stessa fonte di getT), leggibile da questo client component standalone.
+const CONTACT_LABELS: Record<string, string> = {
+  en: "Contact us", it: "Contattaci", es: "Contáctanos", fr: "Contactez-nous",
+  de: "Kontakt", pt: "Contate-nos", nl: "Contact", pl: "Kontakt",
+  ru: "Связаться", sv: "Kontakta oss",
+};
 
 export function LiveChat() {
   const [showFallback, setShowFallback] = useState(false);
@@ -89,15 +96,17 @@ export function LiveChat() {
   if (!showFallback) return null;
 
   // Widget bloccato → bottone di contatto nostro, sempre raggiungibile.
+  const lang = (typeof window !== "undefined" && localStorage.getItem("agentic-lang")) || "en";
+  const label = CONTACT_LABELS[lang] ?? CONTACT_LABELS.en;
   return (
     <a
       href={`mailto:${CONTACT_EMAIL}`}
-      aria-label="Contattaci via email"
-      title="Contattaci"
+      aria-label={label}
+      title={label}
       style={{
         position: "fixed",
         right: 20,
-        bottom: 20,
+        bottom: 96, // clear the cookie-consent banner (verify px a video)
         zIndex: 2147483000,
         display: "inline-flex",
         alignItems: "center",
@@ -114,7 +123,7 @@ export function LiveChat() {
       }}
     >
       <span aria-hidden="true">✉</span>
-      Contattaci
+      {label}
     </a>
   );
 }
