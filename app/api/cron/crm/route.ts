@@ -72,10 +72,6 @@ export async function GET(req: Request) {
     planned++;
     if (preview.length < 50) preview.push({ to: p.identifier, flow, key: toSend.key });
     if (!live) continue;
-    // segna i precedenti come consumati (no invio) per non rigiocarli in ordine sbagliato
-    for (const t of toSuppress) {
-      try { await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [t.key, p.identifier]); } catch (e) { console.error("[cron/crm] suppress insert failed:", String(e)); }
-    }
     const lang = p.language === "en" ? "en" : "it";
     const mail = renderCrm(toSend.key, lang, p.identifier);
     if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
@@ -102,7 +98,12 @@ export async function GET(req: Request) {
     }
     if (res.sent) {
       sent++;
-      try { await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [toSend.key, p.identifier]); } catch (e) { console.error("[cron/crm] dedup insert failed:", String(e)); }
+      // Consume the sent touchpoint AND suppress the earlier missed ones, only
+      // AFTER a confirmed send — so a render/send failure above never marks a
+      // sequence as consumed without an email actually going out.
+      for (const t of [...toSuppress, toSend]) {
+        try { await dbExecute("INSERT INTO crm_trigger_sends (trigger_key, identifier) VALUES ($1,$2) ON CONFLICT DO NOTHING", [t.key, p.identifier]); } catch (e) { console.error("[cron/crm] dedup insert failed:", String(e)); }
+      }
     } else { failed++; }
   }
 
