@@ -13,6 +13,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { readRefCode, writeRefCode } from "@/lib/referral-code";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
@@ -4093,10 +4094,8 @@ function ClientAuthModal({
           identifier: normalizedEmail, password,
           name: mode === "create" ? name.trim() : undefined,
           language: lang, timezone: tz,
-          // #MB-1: first-touch influencer ref from a Match Builder share link
-          ref: mode === "create"
-            ? (() => { try { return window.localStorage.getItem("am_ref") ?? undefined; } catch { return undefined; } })()
-            : undefined,
+          // #MB-1: first-touch influencer ref (lib/referral-code: normalizza + scadenza)
+          ref: mode === "create" ? (readRefCode() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
         }),
       });
@@ -7910,7 +7909,7 @@ export default function Dashboard() {
       const params = new URLSearchParams(window.location.search);
       const ref = (params.get("ref") ?? "").trim().toUpperCase().slice(0, 20);
       if (/^[A-Z0-9_-]{2,20}$/.test(ref)) {
-        if (!window.localStorage.getItem("am_ref")) window.localStorage.setItem("am_ref", ref);
+        writeRefCode(ref); // first-touch + scadenza 60gg (lib/referral-code)
         // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from the share-link URL params (?ref=/?mb=): runs once, paired with a localStorage write side effect.
         setMbRefCode(ref);
       }
