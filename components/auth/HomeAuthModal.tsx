@@ -23,7 +23,8 @@
 // passa alla tab login (stesso flusso del desk).
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { readRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
 
 export type HomeAuthIntent = "login" | "create";
 
@@ -36,6 +37,7 @@ const COPY: Record<AuthLang, {
   sendReset: string; close: string; age: string; marketing: string; tosPre: string; tosTerms: string; tosMid: string; tosPriv: string; tosPost: string;
   errWrong: string; errNoAcct: string; errExists: string; errPwShort: string; errGeneric: string; footer: string;
   pendingMail: (e: string) => string; resetSent: (e: string) => string; activationReq: string; resend: string; sendMail: string;
+  refLabel: string; refPh: string; invitedBy: (c: string) => string; promoFirst: string;
 }> = {
   it: {
     eyebrow: "ACCESSO BETREDGE", loginTitle: "Bentornato", createTitle: "Crea il tuo profilo",
@@ -54,6 +56,7 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Se esiste un account per ${e}, ti abbiamo inviato un link di reset (controlla lo spam). Scade tra 1 ora.`,
     activationReq: "Questo profilo non è ancora attivo. Conferma l'email dal link che ti abbiamo inviato.",
     resend: "Non l'hai ricevuta? Reinvia l'email di attivazione", sendMail: "…",
+    refLabel: "Codice invito (facoltativo)", refPh: "es. MARIO10", invitedBy: (c) => `Invitato da ${c}`, promoFirst: "−50% sul primo acquisto",
   },
   en: {
     eyebrow: "BETREDGE ACCESS", loginTitle: "Welcome back", createTitle: "Create your profile",
@@ -72,6 +75,7 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `If an account exists for ${e}, we sent a reset link (check spam too). It expires in 1 hour.`,
     activationReq: "This profile isn't activated yet. Confirm your email via the link we sent you.",
     resend: "Didn't get it? Resend the activation email", sendMail: "…",
+    refLabel: "Invite code (optional)", refPh: "e.g. JOHN10", invitedBy: (c) => `Invited by ${c}`, promoFirst: "−50% on your first purchase",
   },
   es: {
     eyebrow: "ACCESO BETREDGE", loginTitle: "Bienvenido de nuevo", createTitle: "Crea tu perfil",
@@ -90,6 +94,7 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Si existe una cuenta para ${e}, enviamos un enlace de reseteo (revisa el spam). Caduca en 1 hora.`,
     activationReq: "Este perfil no está activado. Confirma tu email con el enlace que enviamos.",
     resend: "¿No lo recibiste? Reenviar el email de activación", sendMail: "…",
+    refLabel: "Código de invitación (opcional)", refPh: "ej. MARIO10", invitedBy: (c) => `Invitado por ${c}`, promoFirst: "−50% en tu primera compra",
   },
   fr: {
     eyebrow: "ACCÈS BETREDGE", loginTitle: "Bon retour", createTitle: "Crée ton profil",
@@ -108,6 +113,7 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Si un compte existe pour ${e}, nous avons envoyé un lien de réinitialisation (vérifie les spams). Il expire dans 1 heure.`,
     activationReq: "Ce profil n'est pas encore activé. Confirme ton email via le lien envoyé.",
     resend: "Pas reçu ? Renvoyer l'email d'activation", sendMail: "…",
+    refLabel: "Code d'invitation (facultatif)", refPh: "ex. MARIO10", invitedBy: (c) => `Invité par ${c}`, promoFirst: "−50% sur le premier achat",
   },
   ru: {
     eyebrow: "ВХОД BETREDGE", loginTitle: "С возвращением", createTitle: "Создай профиль",
@@ -126,6 +132,7 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Если аккаунт для ${e} существует, мы отправили ссылку сброса (проверьте спам). Действует 1 час.`,
     activationReq: "Профиль ещё не активирован. Подтвердите email по ссылке, которую мы отправили.",
     resend: "Не пришло? Отправить письмо активации повторно", sendMail: "…",
+    refLabel: "Код приглашения (необязательно)", refPh: "напр. JOHN10", invitedBy: (c) => `Приглашён(а): ${c}`, promoFirst: "−50% на первую покупку",
   },
 };
 
@@ -157,6 +164,19 @@ export function HomeAuthModal({
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  // #REFERRAL-SIGNUP-UX: codice invito — prefill dal link (readRefCode, con
+  // scadenza), editabile a mano (fallback se l'attribuzione s'è persa: cross-device,
+  // incognito, link diretto). effectiveRef = codice valido corrente (o null).
+  const [refInput, setRefInput] = useState("");
+  useEffect(() => {
+    const c = readRefCode();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync del ref da localStorage (one-shot)
+    if (c) setRefInput(c);
+  }, []);
+  const effectiveRef = normalizeRefCode(refInput);
+  // La riga "−50% primo acquisto" appare solo se la promo di lancio è attiva
+  // (stesso flag del banner) → mai una claim di sconto quando la promo è spenta.
+  const promoOn = process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true";
 
   const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome"; } catch { return "Europe/Rome"; } })();
   const normalizedEmail = email.trim().toLowerCase();
@@ -169,6 +189,8 @@ export function HomeAuthModal({
   // Riusa LO STESSO contratto /api/auth del desk. Nessuna modifica al server.
   const submit = async () => {
     if (!canSubmit || busy) return;
+    // First-touch persist del codice inserito/prefillato (no-op se già presente).
+    if (mode === "create" && effectiveRef) writeRefCode(effectiveRef);
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
     try {
       const resp = await fetch("/api/auth", {
@@ -179,9 +201,7 @@ export function HomeAuthModal({
           name: mode === "create" ? name.trim() : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           language: lang, timezone: tz,
-          ref: mode === "create"
-            ? (() => { try { return window.localStorage.getItem("am_ref") ?? undefined; } catch { return undefined; } })()
-            : undefined,
+          ref: mode === "create" ? (effectiveRef ?? undefined) : undefined,
         }),
       });
       const data = await resp.json().catch(() => ({})) as { pending_activation?: boolean; error?: string };
@@ -310,6 +330,19 @@ export function HomeAuthModal({
             </button>
           </div>
         </label>
+        {mode === "create" && (
+          <div>
+            <label>
+              <span>{t.refLabel}</span>
+              <input value={refInput} onChange={(e) => setRefInput(e.target.value)} placeholder={t.refPh} maxLength={20} autoCapitalize="characters" spellCheck={false} />
+            </label>
+            {effectiveRef && (
+              <p style={{ fontSize: 11, lineHeight: 1.4, color: "var(--am-coral)", margin: "4px 0 0" }}>
+                🎁 {t.invitedBy(effectiveRef)}{promoOn ? ` · ${t.promoFirst}` : ""}
+              </p>
+            )}
+          </div>
+        )}
         {mode === "login" && (
           <button type="button" onClick={() => { setForgot(true); setError(""); setInfo(""); }}
             style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline",

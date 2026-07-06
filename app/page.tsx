@@ -17,6 +17,7 @@ import LangDropdown from "@/components/LangDropdown";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
+import { writeRefCode } from "@/lib/referral-code";
 
 type Lang = "it" | "en" | "es" | "fr" | "ru";
 const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
@@ -397,13 +398,8 @@ export default function LandingPage() {
   // localStorage (am_ref) — il register (in-place o dal desk) lo allega al
   // payload → profiles.referred_by. Mai sovrascritto se già presente.
   useEffect(() => {
-    try {
-      const ref = (new URLSearchParams(window.location.search).get("ref") ?? "")
-        .trim().toUpperCase().slice(0, 20);
-      if (/^[A-Z0-9_-]{2,20}$/.test(ref) && !window.localStorage.getItem("am_ref")) {
-        window.localStorage.setItem("am_ref", ref);
-      }
-    } catch { /* storage bloccato: il ref resta solo nell'URL, fail-soft */ }
+    // writeRefCode: normalizza + first-touch + timestamp (scadenza 60gg). Fail-soft.
+    try { writeRefCode(new URLSearchParams(window.location.search).get("ref") ?? ""); } catch { /* no-op */ }
   }, []);
 
   // Auth-aware topnav: chiede a /api/auth (stessa chiamata del desk) e mostra
