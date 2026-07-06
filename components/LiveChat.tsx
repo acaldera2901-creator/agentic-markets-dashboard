@@ -10,16 +10,40 @@
 // frame-src in next.config.ts. Oggi la CSP è Report-Only (non blocca), ma è
 // pronta per l'enforcing.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // embed.tawk.to/<propertyId>/<widgetId> — account Tawk.to BetRedge.
-const TAWK_SRC = "https://embed.tawk.to/6a3ac896707bc21d4a185b17/1jrqpv3j1";
+// #CHAT-PROXY-VPN: le VPN con filtro anti-tracker (NordVPN Threat Protection,
+// Proton NetShield, AdGuard DNS…) bloccano *.tawk.to SUL DISPOSITIVO dell'utente
+// → lo script non carica e il widget non appare (blocco client-side, non nostro).
+// Se `NEXT_PUBLIC_TAWK_PROXY_HOST` è settato (es. chat.betredge.com, Cloudflare
+// Worker), carichiamo lo script — e di riflesso tutte le risorse/XHR/WS del widget,
+// perché il Worker riscrive i riferimenti *.tawk.to — dal NOSTRO dominio, che le VPN
+// non bloccano. Default = embed.tawk.to diretto → comportamento INVARIATO finché
+// l'env NON è settata. Worker: infra/cloudflare/tawk-proxy-worker.js.
+const TAWK_PROPERTY = "6a3ac896707bc21d4a185b17";
+const TAWK_WIDGET = "1jrqpv3j1";
+const TAWK_PROXY_HOST = process.env.NEXT_PUBLIC_TAWK_PROXY_HOST || "";
+const TAWK_SRC = TAWK_PROXY_HOST
+  ? `https://${TAWK_PROXY_HOST}/__tk/embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}`
+  : `https://embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}`;
+
+// #CHAT-PROXY-VPN fallback (GO Andrea): se il widget Tawk NON carica entro il
+// timeout — proxy con una falla, VPN molto aggressiva, Tawk giù — mostriamo un
+// bottone di contatto NOSTRO (dominio betredge.com, mai bloccato dalle VPN) così
+// il supporto non è MAI invisibile. Se Tawk carica (onLoad) il fallback resta nascosto.
+const FALLBACK_TIMEOUT_MS = 6000;
+const CONTACT_EMAIL = "info@betredge.com";
 
 export function LiveChat() {
+  const [showFallback, setShowFallback] = useState(false);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     // Già iniettato (HMR / doppio mount): no-op.
     if (document.getElementById("tawkto-widget")) return;
+
+    let loaded = false;
 
     // Bootstrap ufficiale Tawk.to.
     const w = window as unknown as { Tawk_API?: Record<string, unknown>; Tawk_LoadStart?: Date };
@@ -33,6 +57,11 @@ export function LiveChat() {
         mobile: { position: "br", xOffset: 12, yOffset: 88 },
       },
     };
+    // Callback ufficiale Tawk: se scatta, il widget è vivo → niente fallback.
+    w.Tawk_API.onLoad = () => {
+      loaded = true;
+      setShowFallback(false);
+    };
     w.Tawk_LoadStart = new Date();
 
     const s = document.createElement("script");
@@ -41,11 +70,51 @@ export function LiveChat() {
     s.src = TAWK_SRC;
     s.charset = "UTF-8";
     s.setAttribute("crossorigin", "*");
+    // Script irraggiungibile/bloccato (VPN/DNS) → mostra subito il fallback.
+    s.onerror = () => {
+      if (!loaded) setShowFallback(true);
+    };
     document.body.appendChild(s);
-    // Niente cleanup: Tawk inietta il proprio launcher/iframe; il guard sull'id
-    // basta a evitare doppie iniezioni. Il componente è montato una volta a pagina.
+    // Niente cleanup dello script: Tawk inietta il proprio launcher/iframe; il
+    // guard sull'id basta a evitare doppie iniezioni.
+
+    // Rete di sicurezza: se entro il timeout Tawk non ha fatto onLoad, fallback.
+    const t = window.setTimeout(() => {
+      if (!loaded) setShowFallback(true);
+    }, FALLBACK_TIMEOUT_MS);
+    return () => window.clearTimeout(t);
   }, []);
 
-  // Il widget Tawk porta il proprio launcher: non renderizziamo nulla qui.
-  return null;
+  // Widget vivo → Tawk porta il proprio launcher, non renderizziamo nulla.
+  if (!showFallback) return null;
+
+  // Widget bloccato → bottone di contatto nostro, sempre raggiungibile.
+  return (
+    <a
+      href={`mailto:${CONTACT_EMAIL}`}
+      aria-label="Contattaci via email"
+      title="Contattaci"
+      style={{
+        position: "fixed",
+        right: 20,
+        bottom: 20,
+        zIndex: 2147483000,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "12px 18px",
+        borderRadius: 9999,
+        background: "#23A559",
+        color: "#fff",
+        fontWeight: 600,
+        fontSize: 14,
+        lineHeight: 1,
+        textDecoration: "none",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.28)",
+      }}
+    >
+      <span aria-hidden="true">✉</span>
+      Contattaci
+    </a>
+  );
 }

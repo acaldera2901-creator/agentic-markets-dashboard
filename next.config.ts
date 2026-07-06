@@ -9,16 +9,20 @@ const CSP_REPORT_ONLY = [
   // Next.js injects inline bootstrap + hydration scripts; 'unsafe-eval' kept for
   // dev/runtime. Tighten to nonces when promoting to enforcing.
   // Tawk.to live-chat widget loads its script/styles/fonts/iframe from *.tawk.to.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to",
-  "style-src 'self' 'unsafe-inline' https://*.tawk.to",
+  // #CHAT-PROXY-VPN: quando il widget è servito via Cloudflare Worker su
+  // chat.betredge.com (per non farsi bloccare dalle VPN anti-tracker) le stesse
+  // risorse arrivano dal nostro dominio → chat.betredge.com aggiunto a tutte le
+  // direttive rilevanti. I domini *.tawk.to restano per la modalità di default (inerte).
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com",
+  "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com",
   "img-src 'self' data: https:",
-  "font-src 'self' data: https://*.tawk.to",
+  "font-src 'self' data: https://*.tawk.to https://chat.betredge.com",
   // Browser talks only to our own origin (the server proxies external APIs).
   // Supabase is allowed for any client SDK usage; Tawk.to needs https+wss for the
   // live chat channel; widen here if a real CSP report shows a legitimate origin.
-  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to",
+  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com",
   // Tawk.to renders its chat UI inside an iframe from *.tawk.to.
-  "frame-src 'self' https://*.tawk.to",
+  "frame-src 'self' https://*.tawk.to https://chat.betredge.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",
