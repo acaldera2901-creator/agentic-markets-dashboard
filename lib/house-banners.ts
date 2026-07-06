@@ -444,3 +444,29 @@ export function copyFor(campaign: HouseCampaign, lang: Lang): HouseCopy {
 export function ctaLabelFor(campaign: HouseCampaign, lang: Lang): string {
   return campaign.cta[lang] ?? campaign.cta.en;
 }
+
+// ── Creativi Ole (#HOUSE-OLE) ────────────────────────────────────────────────
+// Decisione Andrea: i banner house in-app mostrano i CREATIVI FINITI di Ole
+// (immagine intera 16:9 + tasto CTA sopra), come il carosello homepage — non
+// più l'overlay foto+testo. La copy i18n è già dentro l'immagine; resta solo il
+// CTA (per-slot, i18n) e il dismiss.
+const OLE_CREATIVES = [
+  "/banners/creatives/ole-football-signal.jpg",
+  "/banners/creatives/ole-multisport-onemodel.jpg",
+  "/banners/creatives/ole-tennis-signal.jpg",
+  "/banners/creatives/ole-multisport-edge.jpg",
+  "/banners/creatives/ole-tennis-insight.jpg",
+  "/banners/creatives/ole-multisport-readable.jpg",
+];
+
+/** Creativo Ole per la campagna: match tematico + rotazione stabile per id
+ *  (così due slot adiacenti non mostrano lo stesso banner). */
+export function creativeFor(campaign: HouseCampaign): string {
+  const id = campaign.id;
+  if (id.includes("creator")) return "/banners/creatives/ole-multisport-onemodel.jpg";
+  if (id.includes("worldcup")) return "/banners/creatives/ole-multisport-edge.jpg";
+  if (id.includes("tennis")) return "/banners/creatives/ole-tennis-signal.jpg";
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return OLE_CREATIVES[h % OLE_CREATIVES.length];
+}
