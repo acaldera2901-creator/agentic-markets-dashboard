@@ -1745,8 +1745,8 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "plans" | "history" | "leaderboard" | "match-builder";
-type AccountSection = "account" | "piani" | "invita";
+type Tab = "bets" | "plans" | "history" | "leaderboard" | "match-builder" | "invita";
+type AccountSection = "account" | "piani";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
@@ -7352,7 +7352,6 @@ function AccountTab({
   const sections: { key: AccountSection; label: string }[] = [
     { key: "account", label: "Account" },
     { key: "piani",   label: pick5(lang, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }) },
-    { key: "invita",  label: pick5(lang, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" }) },
   ];
   return (
     <div className="account-tab">
@@ -7392,7 +7391,6 @@ function AccountTab({
           onActivateFree={onActivateFree}
         />
       )}
-      {section === "invita" && <ReferralPanel />}
     </div>
   );
 }
@@ -7771,7 +7769,7 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "leaderboard", "match-builder"];
+const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "leaderboard", "match-builder", "invita"];
 
 // #UI-ACCOUNT-DROPDOWN-0623: la vecchia tab "account" è ora il dropdown; i deep-link
 // legacy (?tab=account, banner ?tab=account&plans=1) atterrano sulla tab Plans.
@@ -8452,6 +8450,8 @@ export default function Dashboard() {
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
+    // #REFERRAL-PANEL: "Invita" visibile solo da loggati (referral = attribuzione al proprio codice).
+    ...(hasClientProfile ? [{ tab: "invita" as Tab, label: pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" }) }] : []),
     // #UI-ACCOUNT-DROPDOWN-0623: "Account" → "Plans" tab; l'account vive nel dropdown dal pill.
     { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), value: clientProfile ? (profileHasPremium(clientProfile) ? "PRO" : isClientUnlocked ? "BASE" : clientProfile.plan === "free" ? "FREE" : "SETUP") : "LOGIN" },
   ];
@@ -8707,6 +8707,10 @@ export default function Dashboard() {
               onActivateFree={activateFreePlan}
             />
           )}
+          {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
+              sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
+              il pannello referral vive su una tab dedicata, raggiungibile. */}
+          {tab === "invita" && <ReferralPanel />}
           {tab === "history" && (
             <TrackRecordView rows={historyV2} lang={uiLanguage === "it" ? "it" : "en"} />
           )}
