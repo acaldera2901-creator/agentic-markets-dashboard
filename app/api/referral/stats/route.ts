@@ -1,40 +1,51 @@
-// /api/referral/stats — #REFERRAL-PANEL (item 3).
+// /api/referral/stats — #REFERRAL-PANEL (item 3) + #REFERRAL-HARDENING (#4).
 // Read-only conversion counter for the creator referral program decided in
-// #PRICING-CREATORS-0706: a creator's code (free-text, first-touch) is attributed
-// via /r/CODE → profiles.referred_by. This returns the aggregate count for a code
-// so the Account "Invita" panel can show "sign-ups with your code" + how many are
-// paid subscribers. No PII, just two integers. Login required (any plan).
-//
-// NOTE: today codes are self-declared (no official code→profile mapping yet, see
-// council follow-up). Persisting a referral_code on the profile is a gated
-// follow-up; until then any logged-in user can query a code's count.
+// #PRICING-CREATORS-0706. Returns aggregates ONLY for the caller's OWN claimed
+// referral_code (migration 013 + /api/referral/claim): the previous ?code=
+// parameter let any logged-in user enumerate any creator's numbers — closed.
+// No claimed code yet → 403 with an explicit reason so the panel can route the
+// user to the claim step first. No PII, just two integers + the caller's code.
 
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
-import { resolveAccessState } from "@/lib/auth";
+import { getSessionPlan } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const CODE_RE = /^[A-Z0-9_-]{2,20}$/;
-
 export async function GET(req: Request) {
-  const { state } = await resolveAccessState(req);
-  if (state === "anonymous") {
-    return NextResponse.json({ error: "login required" }, { status: 401 });
+  let ctx;
+  try {
+    ctx = await getSessionPlan(req);
+  } catch (e) {
+    console.error("[referral/stats] session lookup failed:", String(e));
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const code = (new URL(req.url).searchParams.get("code") ?? "").trim().toUpperCase();
-  if (!CODE_RE.test(code)) {
-    return NextResponse.json({ error: "invalid code" }, { status: 400 });
+  if (!ctx) return NextResponse.json({ error: "login required" }, { status: 401 });
+
+  const [me] = await dbQuery<{ referral_code: string | null }>(
+    "SELECT referral_code FROM profiles WHERE identifier = $1",
+    [ctx.identifier]
+  );
+  const code = (me?.referral_code ?? "").trim().toUpperCase();
+  if (!code) {
+    // Nessun codice claimato: niente numeri altrui da guardare (anti-enumerazione).
+    return NextResponse.json({ error: "no referral code claimed" }, { status: 403 });
   }
-  // Compare case-insensitively: the /r/ link uppercases, but referred_by may hold
-  // codes captured before that normalization.
+
+  // Case-insensitive: /r/ uppercasa, ma referred_by può contenere codici
+  // catturati prima della normalizzazione.
   const rows = await dbQuery<{ signups: number | string; paid: number | string }>(
     `SELECT COUNT(*)::int AS signups,
             COUNT(*) FILTER (WHERE plan IN ('base','premium'))::int AS paid
      FROM profiles
-     WHERE UPPER(referred_by) = $1`,
-    [code]
+     WHERE UPPER(referred_by) = $1
+       AND identifier <> $2`,
+    [code, ctx.identifier]
   );
   const r = rows[0] ?? { signups: 0, paid: 0 };
-  return NextResponse.json({ signups: Number(r.signups) || 0, paid: Number(r.paid) || 0 });
+  return NextResponse.json({
+    code,
+    signups: Number(r.signups) || 0,
+    paid: Number(r.paid) || 0,
+  });
 }

@@ -11,7 +11,9 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params;
-  const ref = (code ?? "").trim().toUpperCase().slice(0, 20);
+  // audit #4: niente slice pre-regex — un codice >20 char è INVALIDO (redirect
+  // pulito alla home), non troncato in silenzio in un codice diverso.
+  const ref = (code ?? "").trim().toUpperCase();
   const url = new URL("/", req.url);
   if (/^[A-Z0-9_-]{2,20}$/.test(ref)) url.searchParams.set("ref", ref);
   return NextResponse.redirect(url, 302);

@@ -15,11 +15,17 @@ const NOT_ELIGIBLE: PromoEligibility = { firstPaidOrder: false };
 export async function promoEligibility(identifier: string): Promise<PromoEligibility> {
   if (!launchPromoActive()) return NOT_ELIGIBLE;
   try {
+    // audit #3 (race doppio-sconto): oltre agli ordini PAGATI contano anche
+    // gli ordini PENDENTI creati negli ultimi 15 minuti — due checkout aperti
+    // in parallelo (2 tab) non prendono entrambi il -50%. Un checkout
+    // abbandonato blocca lo sconto solo per 15 minuti, poi rientra.
     const [row] = await dbQuery<{ paid_orders: number }>(
       `SELECT ((SELECT COUNT(*) FROM paygate_orders o
-                 WHERE o.identifier = $1 AND o.granted_at IS NOT NULL)
+                 WHERE o.identifier = $1
+                   AND (o.granted_at IS NOT NULL OR o.created_at > NOW() - INTERVAL '15 minutes'))
              + (SELECT COUNT(*) FROM paypal_orders q
-                 WHERE q.identifier = $1 AND q.granted_at IS NOT NULL)) AS paid_orders`,
+                 WHERE q.identifier = $1
+                   AND (q.granted_at IS NOT NULL OR q.created_at > NOW() - INTERVAL '15 minutes'))) AS paid_orders`,
       [identifier]
     );
     return { firstPaidOrder: Number(row?.paid_orders ?? 1) === 0 };

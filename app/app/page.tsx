@@ -7233,50 +7233,91 @@ function AccountMenu({
 // referral_code on the profile is a gated follow-up.
 function ReferralPanel() {
   const lang = useLang();
+  // #REFERRAL-HARDENING: il codice ora si CLAIMA una volta sola sul profilo
+  // (POST /api/referral/claim, migration 013) e le stats rispondono SOLO per
+  // il proprio codice claimato: niente piu' ?code= arbitrario (enumerazione,
+  // audit #1). Stati: loading -> unclaimed (input+claim) -> claimed (link+stats).
+  const [phase, setPhase] = useState<"loading" | "unclaimed" | "claimed">("loading");
   const [code, setCode] = useState("");
+  const [claimedCode, setClaimedCode] = useState<string | null>(null);
   const [stats, setStats] = useState<{ signups: number; paid: number } | null>(null);
   const [statsErr, setStatsErr] = useState(false);
+  const [claimErr, setClaimErr] = useState<"taken" | "invalid" | "generic" | null>(null);
+  const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("am_creator_code");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot restore from localStorage at mount
-    if (saved) setCode(saved);
-  }, []);
+  const loadStats = () => {
+    fetch("/api/referral/stats", { credentials: "same-origin", cache: "no-store" })
+      .then(async (r) => {
+        if (r.ok) {
+          const d = await r.json();
+          setClaimedCode(typeof d?.code === "string" ? d.code : null);
+          setStats({ signups: Number(d?.signups) || 0, paid: Number(d?.paid) || 0 });
+          setPhase("claimed");
+        } else if (r.status === 403) {
+          setPhase("unclaimed"); // nessun codice claimato: mostra il claim
+        } else {
+          setPhase("unclaimed");
+          setStatsErr(true);
+        }
+      })
+      .catch(() => { setPhase("unclaimed"); setStatsErr(true); });
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot mount load
+  useEffect(() => { loadStats(); }, []);
 
   const normalized = code.trim().toUpperCase();
   const valid = /^[A-Z0-9_-]{2,20}$/.test(normalized);
-  const link = valid && typeof window !== "undefined" ? `${window.location.origin}/r/${normalized}` : "";
+  const shownCode = claimedCode ?? "";
+  const link = shownCode && typeof window !== "undefined" ? `${window.location.origin}/r/${shownCode}` : "";
 
-  // Effect only fetches (state set in async callbacks) — resets happen in the
-  // change handler below, keeping this clear of the set-state-in-effect rule.
-  useEffect(() => {
-    if (!valid) return;
-    localStorage.setItem("am_creator_code", normalized);
-    let alive = true;
-    fetch(`/api/referral/stats?code=${encodeURIComponent(normalized)}`, { credentials: "same-origin", cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("stats"))))
-      .then((d) => { if (alive) setStats({ signups: Number(d?.signups) || 0, paid: Number(d?.paid) || 0 }); })
-      .catch(() => { if (alive) setStatsErr(true); });
-    return () => { alive = false; };
-  }, [normalized, valid]);
-
-  const onCodeChange = (v: string) => { setCode(v); setStats(null); setStatsErr(false); };
+  const claim = async () => {
+    if (!valid || busy) return;
+    setBusy(true); setClaimErr(null);
+    try {
+      const r = await fetch("/api/referral/claim", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ code: normalized }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) {
+        setClaimedCode(String(d?.code ?? normalized));
+        setPhase("claimed");
+        loadStats();
+        trackEvent("referral_code_claimed", { meta: { code: normalized } });
+      } else if (r.status === 409 && d?.code) {
+        // Avevi gia' un codice (magari claimato da un altro device): usalo.
+        setClaimedCode(String(d.code));
+        setPhase("claimed");
+        loadStats();
+      } else if (r.status === 409) {
+        setClaimErr("taken");
+      } else if (r.status === 400) {
+        setClaimErr("invalid");
+      } else {
+        setClaimErr("generic");
+      }
+    } catch {
+      setClaimErr("generic");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const copyLink = async () => {
     if (!link) return;
     try { await navigator.clipboard.writeText(link); } catch { /* clipboard denied: link shown below anyway */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    trackEvent("referral_link_copied", { meta: { code: normalized } });
+    trackEvent("referral_link_copied", { meta: { code: shownCode } });
   };
 
   const c = pick5(lang, {
-    it: { title: "Invita", intro: "Condividi il tuo link: chi si iscrive col tuo codice ti viene attribuito. I nuovi iscritti hanno la promo di lancio −50% sul primo acquisto (uguale per tutti).", codeLabel: "Il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paid: "Di cui abbonati", statsErr: "Statistiche non disponibili al momento.", note: "Guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
-    en: { title: "Invite", intro: "Share your link: anyone who signs up with your code is attributed to you. New sign-ups get the −50% launch promo on their first purchase (same for everyone).", codeLabel: "Your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paid: "Subscribers among them", statsErr: "Stats unavailable right now.", note: "You earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
-    es: { title: "Invitar", intro: "Comparte tu link: quien se registre con tu código se te atribuye. Los nuevos registros tienen la promo de lanzamiento −50% en su primera compra (igual para todos).", codeLabel: "Tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paid: "De ellos, suscriptores", statsErr: "Estadísticas no disponibles ahora.", note: "Ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
-    fr: { title: "Inviter", intro: "Partagez votre lien : toute inscription avec votre code vous est attribuée. Les nouveaux inscrits ont la promo de lancement −50% sur leur premier achat (identique pour tous).", codeLabel: "Votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paid: "Dont abonnés", statsErr: "Statistiques indisponibles pour le moment.", note: "Vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
-    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый, кто зарегистрируется по вашему коду, закрепляется за вами. Новые регистрации получают промо запуска −50% на первую покупку (для всех одинаково).", codeLabel: "Ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paid: "Из них подписчиков", statsErr: "Статистика сейчас недоступна.", note: "Вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам, чтобы запросить." },
+    it: { title: "Invita", intro: "Condividi il tuo link: chi si iscrive col tuo codice ti viene attribuito. I nuovi iscritti hanno la promo di lancio −50% sul primo acquisto (uguale per tutti).", codeLabel: "Scegli il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _ · una volta scelto non si cambia", claimBtn: "Riserva il codice", claimBusy: "Riservo…", errTaken: "Codice già preso: scegline un altro.", errInvalid: "Codice non valido (2–20 caratteri: lettere, numeri, - _).", errGeneric: "Errore momentaneo, riprova.", yourCode: "Il tuo codice", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paid: "Di cui abbonati", statsErr: "Statistiche non disponibili al momento.", loading: "Carico…", note: "Guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
+    en: { title: "Invite", intro: "Share your link: anyone who signs up with your code is attributed to you. New sign-ups get the −50% launch promo on their first purchase (same for everyone).", codeLabel: "Choose your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _ · cannot be changed once claimed", claimBtn: "Claim code", claimBusy: "Claiming…", errTaken: "Code already taken — pick another.", errInvalid: "Invalid code (2–20 chars: letters, numbers, - _).", errGeneric: "Temporary error, try again.", yourCode: "Your code", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paid: "Subscribers among them", statsErr: "Stats unavailable right now.", loading: "Loading…", note: "You earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
+    es: { title: "Invitar", intro: "Comparte tu link: quien se registre con tu código se te atribuye. Los nuevos registros tienen la promo de lanzamiento −50% en su primera compra (igual para todos).", codeLabel: "Elige tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _ · no se puede cambiar", claimBtn: "Reservar código", claimBusy: "Reservando…", errTaken: "Código ya ocupado: elige otro.", errInvalid: "Código no válido (2–20 caracteres: letras, números, - _).", errGeneric: "Error momentáneo, reintenta.", yourCode: "Tu código", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paid: "De ellos, suscriptores", statsErr: "Estadísticas no disponibles ahora.", loading: "Cargando…", note: "Ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
+    fr: { title: "Inviter", intro: "Partagez votre lien : toute inscription avec votre code vous est attribuée. Les nouveaux inscrits ont la promo de lancement −50% sur leur premier achat (identique pour tous).", codeLabel: "Choisissez votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _ · définitif une fois réservé", claimBtn: "Réserver le code", claimBusy: "Réservation…", errTaken: "Code déjà pris — choisissez-en un autre.", errInvalid: "Code invalide (2–20 caractères : lettres, chiffres, - _).", errGeneric: "Erreur momentanée, réessayez.", yourCode: "Votre code", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paid: "Dont abonnés", statsErr: "Statistiques indisponibles pour le moment.", loading: "Chargement…", note: "Vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
+    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый, кто зарегистрируется по вашему коду, закрепляется за вами. Новые регистрации получают промо запуска −50% на первую покупку (для всех одинаково).", codeLabel: "Выберите ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _ · нельзя изменить после", claimBtn: "Занять код", claimBusy: "Резервирую…", errTaken: "Код уже занят — выберите другой.", errInvalid: "Неверный код (2–20 символов).", errGeneric: "Временная ошибка, попробуйте ещё раз.", yourCode: "Ваш код", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paid: "Из них подписчиков", statsErr: "Статистика сейчас недоступна.", loading: "Загрузка…", note: "Вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам, чтобы запросить." },
   });
 
   return (
@@ -7286,39 +7327,56 @@ function ReferralPanel() {
           <p className="eyebrow">{c.title}</p>
           <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{c.intro}</p>
         </div>
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.codeLabel}</p>
-          <input
-            type="text"
-            value={code}
-            onChange={(e) => onCodeChange(e.target.value)}
-            placeholder={c.placeholder}
-            className="mb-input"
-            maxLength={20}
-          />
-          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.hint}</p>
-        </div>
-        {valid && (
+        {phase === "loading" && (
+          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.loading}</p>
+        )}
+        {phase === "unclaimed" && (
           <div className="space-y-2">
-            <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.linkLabel}</p>
-            <p className="mb-link">{link}</p>
-            <button onClick={copyLink} className="mb-cta">{copied ? c.copied : c.copy}</button>
+            <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.codeLabel}</p>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => { setCode(e.target.value); setClaimErr(null); }}
+              placeholder={c.placeholder}
+              className="mb-input"
+              maxLength={20}
+            />
+            <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.hint}</p>
+            <button onClick={claim} disabled={!valid || busy} className="mb-cta">
+              {busy ? c.claimBusy : c.claimBtn}
+            </button>
+            {claimErr && (
+              <p className="text-[10px] font-mono" style={{ color: "var(--am-coral)" }}>
+                {claimErr === "taken" ? c.errTaken : claimErr === "invalid" ? c.errInvalid : c.errGeneric}
+              </p>
+            )}
           </div>
         )}
-        {valid && (
-          <div className="flex gap-3">
-            <div className="am-surface p-3 flex-1 text-center">
-              <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.signups : "…"}</div>
-              <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.signups}</div>
+        {phase === "claimed" && (
+          <>
+            <div className="space-y-2">
+              <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.yourCode}</p>
+              <p className="mb-link">{shownCode}</p>
             </div>
-            <div className="am-surface p-3 flex-1 text-center">
-              <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.paid : "…"}</div>
-              <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.paid}</div>
+            <div className="space-y-2">
+              <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.linkLabel}</p>
+              <p className="mb-link">{link}</p>
+              <button onClick={copyLink} className="mb-cta">{copied ? c.copied : c.copy}</button>
             </div>
-          </div>
-        )}
-        {valid && statsErr && (
-          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.statsErr}</p>
+            <div className="flex gap-3">
+              <div className="am-surface p-3 flex-1 text-center">
+                <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.signups : "…"}</div>
+                <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.signups}</div>
+              </div>
+              <div className="am-surface p-3 flex-1 text-center">
+                <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.paid : "…"}</div>
+                <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.paid}</div>
+              </div>
+            </div>
+            {statsErr && (
+              <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.statsErr}</p>
+            )}
+          </>
         )}
         <p className="text-[10px] font-mono text-[var(--am-muted-2)] border-t pt-3" style={{ borderColor: "var(--am-line)" }}>{c.note}</p>
       </div>

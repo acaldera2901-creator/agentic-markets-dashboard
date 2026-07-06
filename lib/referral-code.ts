@@ -11,7 +11,11 @@ const MAX_AGE_MS = 60 * 24 * 60 * 60 * 1000; // 60 giorni
 const RE = /^[A-Z0-9_-]{2,20}$/;
 
 export function normalizeRefCode(raw: string): string | null {
-  const c = (raw || "").trim().toUpperCase().slice(0, 20);
+  // #REFERRAL-HARDENING (audit #4): niente slice PRIMA della regex — un codice
+  // di 21+ caratteri veniva troncato in silenzio a 20 e diventava "valido ma
+  // diverso" → attribuzione persa senza feedback. Ora un codice troppo lungo è
+  // semplicemente invalido (la regex già limita a 20).
+  const c = (raw || "").trim().toUpperCase();
   return RE.test(c) ? c : null;
 }
 
