@@ -5,20 +5,28 @@ import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { bySegment } from "@/lib/track-record-history";
 
-// #TRACKREC-REAL-0626: a row counts in the track record iff the board ACTUALLY
-// showed it as a directional pick. We read the board's own persisted verdict
-// instead of re-deriving the floor (which would drift from what was shown when
-// floors change, and mis-handle legacy rows):
+// #TRACKREC-REAL-0626 + #WC-FLOOR-0707: a row counts in the track record iff the
+// board ACTUALLY showed it as a directional pick. We read the board's own
+// persisted verdict instead of re-deriving the floor (which would drift from
+// what was shown when floors change, and mis-handle legacy rows):
 //   - `pick` null  → no directional pick was shown (e.g. tennis below floor).
-//   - notes.surface.below_floor === true → shown as "no clear favourite", not a pick.
+//   - notes.surface.below_floor === true → shown as "no clear favourite", not a
+//     pick → excluded, EXCEPT World Cup: the WC surfacing floor was lowered
+//     lab-side so WC (knockout) picks are surfaced and must count. Non-WC (club)
+//     below-floor rows stay hidden, exactly as shown on the board.
 // No surface flag (legacy rows) → the board defaults to showing the pick, so we count it.
-function wasShownAsPick(row: { pick?: string | null; notes?: string | null }): boolean {
+function wasShownAsPick(
+  row: { pick?: string | null; notes?: string | null; competition?: string | null }
+): boolean {
   if (!row.pick) return false;
+  let belowFloor = false;
   try {
     const surface = (JSON.parse(row.notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;
-    if (surface?.below_floor === true) return false;
-  } catch { /* unparseable/absent notes → board shows the pick → count it */ }
-  return true;
+    belowFloor = surface?.below_floor === true;
+  } catch { /* unparseable/absent notes → treat as above floor → count it */ }
+  if (!belowFloor) return true;
+  // Below floor: only World Cup rows are surfaced as picks (lowered WC floor).
+  return row.competition === "World Cup";
 }
 
 export const dynamic = "force-dynamic";
