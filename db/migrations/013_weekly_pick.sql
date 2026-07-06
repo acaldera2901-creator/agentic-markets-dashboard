@@ -33,9 +33,29 @@ CREATE TABLE IF NOT EXISTS public.weekly_pick_orders (
   polygon_address_in TEXT,
   ipn_token          TEXT,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  paid_at            TIMESTAMPTZ
+  paid_at            TIMESTAMPTZ,
+  granted_at         TIMESTAMPTZ            -- riconciliazione: paid con NULL = pagato ma non concesso
 );
 CREATE INDEX IF NOT EXISTS idx_weekly_pick_orders_identifier ON public.weekly_pick_orders (identifier);
+
+-- Claim ATOMICO (gemello di claim_paygate_order): un solo callback vince
+-- pending→paid. Ritorna TRUE solo se ha cambiato la riga → il grant parte solo
+-- sul vincitore della race (exec_sql non dà il row-count → RPC dedicata).
+CREATE OR REPLACE FUNCTION public.claim_weekly_pick_order(p_id uuid, p_value numeric, p_txid text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.weekly_pick_orders
+     SET status = 'paid', value_coin = p_value, txid_out = p_txid, paid_at = NOW()
+   WHERE id = p_id AND status = 'pending';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n > 0;
+END;
+$$;
 
 -- Entitlement: chi ha acquistato la weekly pick di una data settimana.
 CREATE TABLE IF NOT EXISTS public.weekly_pick_purchases (
@@ -54,6 +74,7 @@ ALTER TABLE public.weekly_pick_orders   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weekly_pick_purchases ENABLE ROW LEVEL SECURITY;
 
 -- Rollback:
+-- DROP FUNCTION IF EXISTS public.claim_weekly_pick_order(uuid, numeric, text);
 -- DROP TABLE IF EXISTS public.weekly_pick_purchases;
 -- DROP TABLE IF EXISTS public.weekly_pick_orders;
 -- DROP TABLE IF EXISTS public.weekly_pick;
