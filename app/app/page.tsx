@@ -4060,6 +4060,12 @@ function ClientAuthModal({
   // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
   const [ageOk, setAgeOk] = useState(false);
   const [tosOk, setTosOk] = useState(false);
+  // #CRM-CRON-BUGFIX gap#2 (Tommy 06/07): il modal desk NON inviava
+  // marketing_opt_in (solo la HomeAuthModal della landing lo faceva) → chi si
+  // registrava dal desk restava fuori dal flow CRM acquisition per sempre.
+  // Checkbox FACOLTATIVA, non pre-flaggata, separata da ToS/+18 (parità con la
+  // landing); non incide su canSubmit.
+  const [marketingOk, setMarketingOk] = useState(false);
   const t = useT();
   const lang = useLang();
   const it = lang === "it";
@@ -4091,6 +4097,7 @@ function ClientAuthModal({
           ref: mode === "create"
             ? (() => { try { return window.localStorage.getItem("am_ref") ?? undefined; } catch { return undefined; } })()
             : undefined,
+          marketing_opt_in: mode === "create" ? marketingOk : undefined,
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
@@ -4268,6 +4275,12 @@ function ClientAuthModal({
               {/* #UI-TERMS-INSITE-0623: /terms e /privacy sono route interne →
                   navigano nel sito (back funziona). Niente più target="_blank". */}
               <span>{t.auth_tos_pre}<Link href="/terms" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_terms}</Link>{t.auth_tos_mid}<Link href="/privacy" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.auth_tos_privacy}</Link>{t.auth_tos_post}</span>
+            </label>
+            {/* Consenso marketing FACOLTATIVO (stessa copy della HomeAuthModal) —
+                sblocca i flussi CRM acquisition; non incide su canSubmit. */}
+            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
+              <input type="checkbox" checked={marketingOk} onChange={(e) => setMarketingOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
+              <span>{pick5(lang, { it: "Voglio ricevere offerte e novità BetRedge via email (facoltativo).", en: "I want to receive BetRedge offers and news by email (optional).", es: "Quiero recibir ofertas y novedades de BetRedge por email (opcional).", fr: "Je veux recevoir les offres et actus BetRedge par email (facultatif).", ru: "Хочу получать предложения и новости BetRedge по email (необязательно)." })}</span>
             </label>
           </div>
         )}
