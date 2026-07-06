@@ -718,7 +718,7 @@ function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: Liv
                 ) : (
                   <div className="deep-analysis-locked">
                     <span>⚡</span>
-                    <span>Deep analysis available with BetRedge Pro (49.90 USDT/month)</span>
+                    <span>Deep analysis available with BetRedge Pro (29.99 USDT/month)</span>
                   </div>
                 )}
               </div>

@@ -2126,7 +2126,7 @@ function FreePaywall({ count, hitRate, lang, onUpgrade }: {
       )}
       <div className="fp-actions">
         <button type="button" className="fp-cta" onClick={() => onUpgrade?.()}>
-          {pick5(lang, { it: "Passa a Pro — 49.90 USDT/mese", en: "Upgrade to Pro — 49.90 USDT/month", es: "Pasa a Pro — 49.90 USDT/mes", fr: "Passez à Pro — 49.90 USDT/mois", ru: "Перейти на Pro — 49.90 USDT/мес" })}
+          {pick5(lang, { it: "Passa a Pro — 29.99 USDT/mese", en: "Upgrade to Pro — 29.99 USDT/month", es: "Pasa a Pro — 29.99 USDT/mes", fr: "Passez à Pro — 29.99 USDT/mois", ru: "Перейти на Pro — 29.99 USDT/мес" })}
         </button>
         <button type="button" className="fp-link" onClick={() => onUpgrade?.()}>
           {pick5(lang, { it: "Vedi i piani", en: "See plans", es: "Ver los planes", fr: "Voir les offres", ru: "Смотреть тарифы" })}
@@ -3638,6 +3638,53 @@ function PendingPaymentView({
   );
 }
 
+// #PRICING-CREATORS-0706 (Andrea A2+A4): banner -50% primo mese per chi arriva
+// da un link creator (/r/CODICE -> am_ref). DARK finché NEXT_PUBLIC_CREATOR_
+// PROMO_ENABLED non è "true". Il countdown è sulla DEADLINE UNICA di campagna
+// (NEXT_PUBLIC_CREATOR_PROMO_DEADLINE, data reale): mai un timer per-utente che
+// si resetta (dark pattern FTC). Display only: il prezzo scontato vero viene
+// applicato SERVER-SIDE al checkout (lib/creator-promo + discountedAmountFor).
+function CreatorPromoBanner() {
+  const lang = useLang();
+  const enabled = process.env.NEXT_PUBLIC_CREATOR_PROMO_ENABLED === "true";
+  const deadlineIso = process.env.NEXT_PUBLIC_CREATOR_PROMO_DEADLINE || "";
+  const deadline = enabled && deadlineIso ? new Date(deadlineIso).getTime() : NaN;
+  const [now, setNow] = useState(() => Date.now());
+  const [referred, setReferred] = useState(false);
+  useEffect(() => {
+    try { setReferred(!!window.localStorage.getItem("am_ref")); } catch { /* storage bloccato */ }
+  }, []);
+  useEffect(() => {
+    if (!enabled) return;
+    const iv = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(iv);
+  }, [enabled]);
+  if (!enabled || !referred || !Number.isFinite(deadline) || now >= deadline) return null;
+  const left = deadline - now;
+  const dd = Math.floor(left / 86_400_000);
+  const hh = Math.floor((left % 86_400_000) / 3_600_000);
+  const mm = Math.floor((left % 3_600_000) / 60_000);
+  const countdown = dd > 0 ? `${dd}d ${hh}h` : hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
+  return (
+    <section className="plans-hero" style={{ borderColor: "var(--coral, #ff6b5e)" }}>
+      <div>
+        <p className="eyebrow">{pick5(lang, { it: "Invito creator", en: "Creator invite", es: "Invitación creator", fr: "Invitation créateur", ru: "Приглашение от криэйтора" })}</p>
+        <h3>{pick5(lang, { it: "-50% sul primo mese", en: "-50% on your first month", es: "-50% en tu primer mes", fr: "-50% sur votre premier mois", ru: "-50% на первый месяц" })}</h3>
+        <span>
+          {pick5(lang, {
+            it: "Sei arrivato dal link di un creator: lo sconto si applica da solo al checkout (solo primo mese, piani mensili). L'offerta scade tra ",
+            en: "You came from a creator link: the discount applies automatically at checkout (first month only, monthly plans). Offer ends in ",
+            es: "Llegaste desde el enlace de un creator: el descuento se aplica solo al pagar (solo primer mes, planes mensuales). La oferta termina en ",
+            fr: "Vous venez du lien d'un créateur : la remise s'applique automatiquement au paiement (premier mois seulement, offres mensuelles). L'offre expire dans ",
+            ru: "Вы пришли по ссылке криэйтора: скидка применится автоматически при оплате (только первый месяц, месячные тарифы). Предложение истекает через ",
+          })}
+          <strong>{countdown}</strong>.
+        </span>
+      </div>
+    </section>
+  );
+}
+
 function PlansTab({
   profile,
   onOpenDesk,
@@ -3661,6 +3708,8 @@ function PlansTab({
         </div>
         <button onClick={onOpenDesk}>{t.plans_cta}</button>
       </section>
+
+      <CreatorPromoBanner />
 
       <section className="plans-grid plans-grid-3">
         {/* ── FREE ── */}
@@ -5034,7 +5083,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         {isPreview ? (
           <div className="nudge">
             <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
-            <em>{pick5(lang, { it: "Sblocca edge%, ragionamento AI e segnali con Pro (49.90 USDT/mese).", en: "Unlock edge%, AI reasoning and signals with Pro (49.90 USDT/month).", es: "Desbloquea edge%, razonamiento de IA y señales con Pro (49.90 USDT/mes).", fr: "Débloquez edge%, raisonnement IA et signaux avec Pro (49.90 USDT/mois).", ru: "Откройте edge%, ИИ-обоснование и сигналы с Pro (49.90 USDT/мес)." })}</em>
+            <em>{pick5(lang, { it: "Sblocca edge%, ragionamento AI e segnali con Pro (29.99 USDT/mese).", en: "Unlock edge%, AI reasoning and signals with Pro (29.99 USDT/month).", es: "Desbloquea edge%, razonamiento de IA y señales con Pro (29.99 USDT/mes).", fr: "Débloquez edge%, raisonnement IA et signaux avec Pro (29.99 USDT/mois).", ru: "Откройте edge%, ИИ-обоснование и сигналы с Pro (29.99 USDT/мес)." })}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -5197,7 +5246,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita disponibile con BetRedge Pro (49.90 USDT/mese)", en: "Deep analysis available with BetRedge Pro (49.90 USDT/month)", es: "Análisis profundo disponible con BetRedge Pro (49.90 USDT/mes)", fr: "Analyse approfondie disponible avec BetRedge Pro (49.90 USDT/mois)", ru: "Глубокий анализ доступен с BetRedge Pro (49.90 USDT/мес)" })}</span>
+          <span>{pick5(lang, { it: "Analisi approfondita disponibile con BetRedge Pro (29.99 USDT/mese)", en: "Deep analysis available with BetRedge Pro (29.99 USDT/month)", es: "Análisis profundo disponible con BetRedge Pro (29.99 USDT/mes)", fr: "Analyse approfondie disponible avec BetRedge Pro (29.99 USDT/mois)", ru: "Глубокий анализ доступен с BetRedge Pro (29.99 USDT/мес)" })}</span>
         </div>
       )}
         </div>
@@ -5548,7 +5597,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
         {isPreview ? (
           <div className="nudge">
             <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
-            <em>{pick5(lang, { it: "Sblocca edge%, analisi del modello e segnali tennis con Pro (49.90 USDT/mese).", en: "Unlock edge%, model analysis and tennis signals with Pro (49.90 USDT/month).", es: "Desbloquea edge%, análisis del modelo y señales de tenis con Pro (49.90 USDT/mes).", fr: "Débloquez edge%, analyse du modèle et signaux tennis avec Pro (49.90 USDT/mois).", ru: "Откройте edge%, анализ модели и теннисные сигналы с Pro (49.90 USDT/мес)." })}</em>
+            <em>{pick5(lang, { it: "Sblocca edge%, analisi del modello e segnali tennis con Pro (29.99 USDT/mese).", en: "Unlock edge%, model analysis and tennis signals with Pro (29.99 USDT/month).", es: "Desbloquea edge%, análisis del modelo y señales de tenis con Pro (29.99 USDT/mes).", fr: "Débloquez edge%, analyse du modèle et signaux tennis avec Pro (29.99 USDT/mois).", ru: "Откройте edge%, анализ модели и теннисные сигналы с Pro (29.99 USDT/мес)." })}</em>
           </div>
         ) : showWhy && (
         <div className="why-body">
@@ -5616,7 +5665,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
       {!isPremium && (
         <div className="deep-analysis-locked">
           <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con BetRedge Pro (49.90 USDT/mese)", en: "Deep model analysis available with BetRedge Pro (49.90 USDT/month)", es: "Análisis profundo del modelo disponible con BetRedge Pro (49.90 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec BetRedge Pro (49.90 USDT/mois)", ru: "Глубокий анализ модели доступен с BetRedge Pro (49.90 USDT/мес)" })}</span>
+          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con BetRedge Pro (29.99 USDT/mese)", en: "Deep model analysis available with BetRedge Pro (29.99 USDT/month)", es: "Análisis profundo del modelo disponible con BetRedge Pro (29.99 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec BetRedge Pro (29.99 USDT/mois)", ru: "Глубокий анализ модели доступен с BetRedge Pro (29.99 USDT/мес)" })}</span>
         </div>
       )}
         </div>

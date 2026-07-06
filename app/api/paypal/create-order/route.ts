@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
 import { dbExecute } from "@/lib/db";
-import { amountFor, createOrder, type PlanKey, type Period } from "@/lib/paypal";
+import { createOrder, type PlanKey, type Period } from "@/lib/paypal";
+import { discountedAmountFor } from "@/lib/paygate";
+import { promoEligibility } from "@/lib/creator-promo";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,7 +35,10 @@ export async function POST(req: Request) {
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
 
-  const amount = amountFor(plan as PlanKey, period as Period);
+  // #PRICING-CREATORS-0706: stesse condizioni promo del rail PayGate (helper
+  // condiviso) — i due rail non possono divergere sul prezzo. Flag OFF = full.
+  const eligibility = await promoEligibility(ctx.identifier);
+  const { amount } = discountedAmountFor(plan as PlanKey, period as Period, eligibility);
 
   // exec_sql non ritorna RETURNING → id generato qui e inserito esplicitamente.
   const orderId = crypto.randomUUID();

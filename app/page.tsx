@@ -45,7 +45,7 @@ const COPY = {
     spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali",
     cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate alta-confidenza · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
-    cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 19.90 · Pro 49.90 USDT/mese.", cardPlansBtn: "Vedi i piani",
+    cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 14.99 · Pro 29.99 USDT/mese.", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. I risultati passati non garantiscono risultati futuri. 18+.",
     privacy: "Privacy",
     // ── Edge Scanner (value-prop) ──
@@ -95,7 +95,7 @@ const COPY = {
     spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup",
     cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "High-confidence hit-rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
-    cardPlans: "Plans", cardPlansDesc: "Free to try · Base 19.90 · Pro 49.90 USDT/month.", cardPlansBtn: "See plans",
+    cardPlans: "Plans", cardPlansDesc: "Free to try · Base 14.99 · Pro 29.99 USDT/month.", cardPlansBtn: "See plans",
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. Past results do not guarantee future results. 18+.",
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
@@ -144,7 +144,7 @@ const COPY = {
     spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial",
     cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto de alta confianza · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
-    cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 19.90 · Pro 49.90 USDT/mes.", cardPlansBtn: "Ver planes",
+    cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 14.99 · Pro 29.99 USDT/mes.", cardPlansBtn: "Ver planes",
     risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. Los resultados pasados no garantizan resultados futuros. 18+.",
     privacy: "Privacidad",
     // ── What is BetRedge (value-prop) ──
@@ -193,7 +193,7 @@ const COPY = {
     spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde",
     cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite haute-confiance · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
-    cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 19.90 · Pro 49.90 USDT/mois.", cardPlansBtn: "Voir les offres",
+    cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 14.99 · Pro 29.99 USDT/mois.", cardPlansBtn: "Voir les offres",
     risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. Les résultats passés ne garantissent pas les résultats futurs. 18+.",
     privacy: "Confidentialité",
     // ── What is BetRedge (value-prop) ──
@@ -242,7 +242,7 @@ const COPY = {
     spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ",
     cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Высокая точность попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
-    cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 19.90 · Pro 49.90 USDT/мес.", cardPlansBtn: "Тарифы",
+    cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 14.99 · Pro 29.99 USDT/мес.", cardPlansBtn: "Тарифы",
     risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. Прошлые результаты не гарантируют будущих результатов. 18+.",
     privacy: "Конфиденциальность",
     // ── What is BetRedge (value-prop) ──
@@ -390,6 +390,20 @@ export default function LandingPage() {
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // #PRICING-CREATORS-0706: i link invito creator (/r/CODICE) atterrano QUI con
+  // ?ref=. First-touch identico al desk (#MB-1): persistiamo una volta sola in
+  // localStorage (am_ref) — il register (in-place o dal desk) lo allega al
+  // payload → profiles.referred_by. Mai sovrascritto se già presente.
+  useEffect(() => {
+    try {
+      const ref = (new URLSearchParams(window.location.search).get("ref") ?? "")
+        .trim().toUpperCase().slice(0, 20);
+      if (/^[A-Z0-9_-]{2,20}$/.test(ref) && !window.localStorage.getItem("am_ref")) {
+        window.localStorage.setItem("am_ref", ref);
+      }
+    } catch { /* storage bloccato: il ref resta solo nell'URL, fail-soft */ }
   }, []);
 
   // Auth-aware topnav: chiede a /api/auth (stessa chiamata del desk) e mostra

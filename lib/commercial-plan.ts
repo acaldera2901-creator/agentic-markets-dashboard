@@ -11,15 +11,15 @@ export const PUBLIC_PAID_PLANS = {
   // parte nella PlansTab.
   base: {
     key: "base" as const,
-    amountUsdt: 19.9,
+    amountUsdt: 14.99,
     label: { it: "BetRedge Base", en: "BetRedge Base" },
-    priceLabel: { it: "$19.90/mese", en: "$19.90/month" },
+    priceLabel: { it: "$14.99/mese", en: "$14.99/month" },
   },
   premium: {
     key: "premium" as const,
-    amountUsdt: 49.9,
+    amountUsdt: 29.99,
     label: { it: "BetRedge Pro", en: "BetRedge Pro" },
-    priceLabel: { it: "$49.90/mese", en: "$49.90/month" },
+    priceLabel: { it: "$29.99/mese", en: "$29.99/month" },
   },
 } as const;
 

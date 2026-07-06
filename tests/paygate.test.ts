@@ -1,12 +1,14 @@
 // tests/paygate.test.ts
 import assert from "node:assert/strict";
-import { amountFor, periodDays, hashToken, newOrderToken, buildPayUrl, evaluateCallback } from "../lib/paygate";
+import { amountFor, periodDays, hashToken, newOrderToken, buildPayUrl, evaluateCallback, creatorPromoActive, discountedAmountFor } from "../lib/paygate";
 
 // — prezzi server-side —
-assert.equal(amountFor("base", "monthly"), 19.9);
-assert.equal(amountFor("base", "annual"), 169);
-assert.equal(amountFor("premium", "monthly"), 49.9);
-assert.equal(amountFor("premium", "annual"), 419);
+// #PRICING-CREATORS-0706 (decisione Andrea 06/07): mensili 14.99/29.99;
+// annuali 129/255 PROPOSTI (rapporto ~8.5 mesi invariato), conferma al gate.
+assert.equal(amountFor("base", "monthly"), 14.99);
+assert.equal(amountFor("base", "annual"), 129);
+assert.equal(amountFor("premium", "monthly"), 29.99);
+assert.equal(amountFor("premium", "annual"), 255);
 // @ts-expect-error combinazione invalida
 assert.throws(() => amountFor("enterprise", "monthly"), /plan/i);
 
@@ -39,5 +41,46 @@ assert.equal(evaluateCallback({ order: okOrder, valueCoin: 50 }).grant, false); 
 assert.equal(evaluateCallback({ order: okOrder, valueCoin: 169 }).grant, true);                // ok (importo pieno)
 assert.equal(evaluateCallback({ order: okOrder, valueCoin: 166 }).grant, true);                // ok
 assert.equal(evaluateCallback({ order: okOrder, valueCoin: 120 }).grant, true);                // fee fino a -50% accettate (120 > 84.5)
+
+
+// — #PRICING-CREATORS-0706: promo creator (-50% primo mese, server-side) —
+{
+  const FUTURE = "2099-01-01T00:00:00Z";
+  const NOW = new Date("2026-07-06T12:00:00Z");
+  const eligible = { referred: true, firstPaidOrder: true, now: NOW };
+
+  // DARK di default: senza flag il prezzo è SEMPRE pieno.
+  delete process.env.CREATOR_PROMO_ENABLED;
+  delete process.env.CREATOR_PROMO_DEADLINE;
+  assert.equal(creatorPromoActive(NOW), false);
+  assert.deepEqual(discountedAmountFor("base", "monthly", eligible), { amount: 14.99, discounted: false });
+
+  // Flag on ma SENZA deadline reale (A4 FTC): niente promo.
+  process.env.CREATOR_PROMO_ENABLED = "true";
+  assert.equal(creatorPromoActive(NOW), false);
+
+  // Flag + deadline futura: promo attiva, -50% sul mensile arrotondato al cent.
+  process.env.CREATOR_PROMO_DEADLINE = FUTURE;
+  assert.equal(creatorPromoActive(NOW), true);
+  assert.deepEqual(discountedAmountFor("base", "monthly", eligible), { amount: 7.5, discounted: true });
+  assert.deepEqual(discountedAmountFor("premium", "monthly", eligible), { amount: 15, discounted: true });
+
+  // Condizioni A2: SOLO mensile, SOLO referred, SOLO primo ordine pagato.
+  assert.equal(discountedAmountFor("base", "annual", eligible).discounted, false);
+  assert.equal(discountedAmountFor("base", "monthly", { ...eligible, referred: false }).discounted, false);
+  assert.equal(discountedAmountFor("base", "monthly", { ...eligible, firstPaidOrder: false }).discounted, false);
+
+  // Deadline REALE passata: la promo si spegne da sola anche lato server.
+  process.env.CREATOR_PROMO_DEADLINE = "2026-01-01T00:00:00Z";
+  assert.equal(creatorPromoActive(NOW), false);
+  assert.deepEqual(discountedAmountFor("base", "monthly", eligible), { amount: 14.99, discounted: false });
+
+  // Deadline malformata = niente promo (fail-closed sul prezzo pieno).
+  process.env.CREATOR_PROMO_DEADLINE = "not-a-date";
+  assert.equal(creatorPromoActive(NOW), false);
+
+  delete process.env.CREATOR_PROMO_ENABLED;
+  delete process.env.CREATOR_PROMO_DEADLINE;
+}
 
 console.log("paygate ok");

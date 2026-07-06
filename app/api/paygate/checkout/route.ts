@@ -3,7 +3,8 @@ import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
 import { dbExecute } from "@/lib/db";
 import { siteOrigin } from "@/lib/activation";
-import { amountFor, newOrderToken, createReceivingWallet, buildPayUrl, type PlanKey, type Period } from "@/lib/paygate";
+import { discountedAmountFor, newOrderToken, createReceivingWallet, buildPayUrl, type PlanKey, type Period } from "@/lib/paygate";
+import { promoEligibility } from "@/lib/creator-promo";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,7 +34,14 @@ export async function POST(req: Request) {
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
 
-  const amount = amountFor(plan as PlanKey, period as Period);
+  // #PRICING-CREATORS-0706: -50% primo mese per gli utenti arrivati da un link
+  // creator (referred_by), primo ordine pagato su QUALUNQUE rail, campagna
+  // attiva. Col flag spento promoEligibility non tocca il DB e il percorso è
+  // identico a prima. Lo sconto vive nell'amount dell'ordine → il callback
+  // anti-spoof valida già contro amount_usd scontato, nessun secondo punto di
+  // verità.
+  const eligibility = await promoEligibility(ctx.identifier);
+  const { amount } = discountedAmountFor(plan as PlanKey, period as Period, eligibility);
   const { token, tokenHash } = newOrderToken();
 
   // NB: la RPC exec_sql NON restituisce le righe di RETURNING (esegue lo statement

@@ -34,7 +34,7 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     body: { it: "Sei a un passo: accedi e guarda il primo pronostico del modello. È gratis e ti mostra subito come ragiona.", en: "You're one step away: log in and see the model's first pick. It's free and shows how it reasons." } },
   { key: "acq_day7_offer", flow: "acquisition", day: 7,
     subject: { it: "Il tuo primo upgrade BetRedge", en: "Your first BetRedge upgrade" },
-    body: { it: "Nel Free vedi 2 pick a settimana. Con Plus sblocchi l'intero board, edge e spiegazioni. Da 19,90 USD/mese.", en: "Free shows 2 picks/week. Plus unlocks the full board, edge and explanations. From $19.90/mo." } },
+    body: { it: "Nel Free vedi 2 pick a settimana. Con Plus sblocchi l'intero board, edge e spiegazioni. Da 14,99 USD/mese.", en: "Free shows 2 picks/week. Plus unlocks the full board, edge and explanations. From $14.99/mo." } },
   { key: "acq_day14_welcome_offer", flow: "acquisition", day: 14,
     subject: { it: "Offerta benvenuto: −20% per 72h", en: "Welcome offer: −20% for 72h" },
     body: { it: "Solo per te, 72 ore: Plus a −20%. Probabilità calibrate e track record verificabile, tutto sbloccato.", en: "Just for you, 72 hours: Plus at −20%. Calibrated probabilities and verifiable track record, all unlocked." } },

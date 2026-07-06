@@ -27,11 +27,51 @@ const DEFAULT_FEE_TOLERANCE = 0.5;
 export type PlanKey = "base" | "premium";
 export type Period = "monthly" | "annual";
 
-// Prezzi server-side (USD). Mai dal client. Annuali arrotondati (decisione Andrea).
+// Prezzi server-side (USD). Mai dal client.
+// #PRICING-CREATORS-0706 (decisione Andrea, council 06/07): mensili ABBASSATI
+// a 14.99/29.99 (da 19.90/49.90). Annuali PROPOSTI a rapporto invariato
+// (~8.5 mesi: 129/255, prima 169/419) — confermare con Andrea al gate.
 export const PAYGATE_PRICES: Record<PlanKey, Record<Period, number>> = {
-  base: { monthly: 19.9, annual: 169 },
-  premium: { monthly: 49.9, annual: 419 },
+  base: { monthly: 14.99, annual: 129 },
+  premium: { monthly: 29.99, annual: 255 },
 };
+
+// ── #PRICING-CREATORS-0706: promo creator (-50% primo mese, APPROVE Andrea A2) ──
+// Sconto SOLO server-side, mai dal client. DARK finché CREATOR_PROMO_ENABLED
+// non è "true" (attivazione al gate, dopo la conferma T1 di Tommy sugli importi
+// variabili PayGate). La deadline è REALE e unica per la campagna (A4 FTC:
+// niente countdown per-utente che si resetta — dark pattern); scaduta la data,
+// lo sconto si spegne da solo anche lato server.
+export const CREATOR_PROMO_DISCOUNT = 0.5; // -50% sul primo ciclo mensile
+
+export function creatorPromoActive(now: Date = new Date()): boolean {
+  if (process.env.CREATOR_PROMO_ENABLED !== "true") return false;
+  const deadline = process.env.CREATOR_PROMO_DEADLINE;
+  if (!deadline) return false; // niente deadline reale = niente promo (A4)
+  const d = new Date(deadline);
+  return Number.isFinite(d.getTime()) && now < d;
+}
+
+// Importo effettivo al checkout. Lo sconto si applica SOLO se: promo attiva
+// (flag + deadline reale) · utente arrivato da un link creator (referred_by
+// valorizzato) · primo ordine pagato (primo ciclo, A2) · periodo mensile.
+export function discountedAmountFor(
+  plan: PlanKey,
+  period: Period,
+  opts: { referred: boolean; firstPaidOrder: boolean; now?: Date }
+): { amount: number; discounted: boolean } {
+  const full = amountFor(plan, period);
+  if (
+    period !== "monthly" ||
+    !opts.referred ||
+    !opts.firstPaidOrder ||
+    !creatorPromoActive(opts.now)
+  ) {
+    return { amount: full, discounted: false };
+  }
+  const amount = Math.round(full * (1 - CREATOR_PROMO_DISCOUNT) * 100) / 100;
+  return { amount, discounted: true };
+}
 
 export function amountFor(plan: PlanKey, period: Period): number {
   const byPeriod = PAYGATE_PRICES[plan];
