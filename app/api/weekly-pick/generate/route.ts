@@ -98,3 +98,10 @@ export async function POST(req: Request) {
   console.log(`[weekly-pick/generate] week=${week} legs=${multipla.selections.length} p=${multipla.combinedProb.toFixed(4)}`);
   return NextResponse.json({ ok: true, week, legs: multipla.selections.length, combined_prob: multipla.combinedProb });
 }
+
+// Vercel Cron (e il pulsante "Run" del dashboard) invocano in GET e includono
+// automaticamente `Authorization: Bearer ${CRON_SECRET}`. Riuso la stessa logica
+// e la stessa auth della POST — nessun percorso non autenticato aggiunto.
+export async function GET(req: Request) {
+  return POST(req);
+}

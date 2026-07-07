@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/crm?send=1",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/weekly-pick/generate",
+      "schedule": "30 */2 * * *"
     }
   ]
 }
