@@ -219,7 +219,10 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
   // Sostituisce l'overlay foto+testo. L'immagine porta già copy/logo di Ole; qui
   // resta solo il CTA (per-slot, i18n) e il dismiss. width:100%/height:auto →
   // nessun crop e nessuna banda (il contenitore si adatta al 16:9 del banner).
-  const creative = creativeFor(campaign);
+  // Il creativo Ole (16:9) sta bene solo negli slot larghi (billboard/leaderboard/
+  // rectangle). Gli slot RAIL stretti (halfpage, ~118px) lo renderebbero minuscolo
+  // in una colonna alta → li lascio al rendering originale testo-only (on-brand).
+  const creative = campaign.format !== "halfpage" ? creativeFor(campaign) : "";
   if (creative) {
     return (
       <aside
