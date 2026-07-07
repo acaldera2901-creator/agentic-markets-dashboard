@@ -248,6 +248,41 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →", es: "Ir al Mundial →", fr: "Aller à la Coupe du Monde →", ru: "Перейти к ЧМ →" },
     image: { src: "/banners/football-ball.jpg", overlay: "l" },
   },
+  // #BANNERS-IN-GRID mix: due campagne desk-feed in più così ogni sezione
+  // intercala DUE tile di FORMA diversa (landscape 16:9 + quadrato 1:1) senza
+  // ripetere lo stesso creativo. La copy è cosmetica (alt/aria/CTA): il creativo
+  // Ole ha già headline/logo/disclaimer baked. Parità di dichiarazione: idx pari
+  // → pool calcio, idx dispari → pool tennis (vedi split in app/page.tsx).
+  {
+    id: "feed-picks", // calcio · slot #2 (quadrato) — id scelto per servire ole-square-2 (varietà vs quadrato tennis)
+    slot: "desk-feed",
+    format: "rectangle",
+    audiences: ["base", "premium"],
+    glyphs: ["#g-pick", "#g-rank", "#g-trophy"],
+    copy: {
+      it: { eyebrow: "Creator Picks", headline: "Le schedine con track record verificato", sub: "Segui i creator con storico verificato. Paper trading incluso." },
+      en: { eyebrow: "Creator Picks", headline: "Slips with a verified track record", sub: "Follow creators with a verified track record. Paper trading included." },
+      es: { eyebrow: "Creator Picks", headline: "Boletos con historial verificado", sub: "Sigue a creadores con historial verificado. Paper trading incluido." },
+      fr: { eyebrow: "Creator Picks", headline: "Des tickets avec historique vérifié", sub: "Suis les créateurs avec historique vérifié. Paper trading inclus." },
+      ru: { eyebrow: "Creator Picks", headline: "Купоны с проверенной историей", sub: "Следи за креаторами с проверенной историей. Paper trading включён." },
+    },
+    cta: { href: "/community", it: "Scopri i creator →", en: "Discover creators →", es: "Descubre creadores →", fr: "Découvrir les créateurs →", ru: "Открыть креаторов →" },
+  },
+  {
+    id: "feed-tennis-model", // tennis · slot #2 (quadrato)
+    slot: "desk-feed",
+    format: "rectangle",
+    audiences: ["base", "premium"],
+    glyphs: ["#g-racket", "#g-tball", "#g-trophy"],
+    copy: {
+      it: { eyebrow: "BetRedge Pro", headline: "Il tennis letto dal modello, torneo per torneo", sub: "Probabilità calibrate su ogni superficie. Storico completo." },
+      en: { eyebrow: "BetRedge Pro", headline: "Tennis read by the model, tournament by tournament", sub: "Calibrated probabilities on every surface. Full history." },
+      es: { eyebrow: "BetRedge Pro", headline: "El tenis leído por el modelo, torneo a torneo", sub: "Probabilidades calibradas en cada superficie. Historial completo." },
+      fr: { eyebrow: "BetRedge Pro", headline: "Le tennis lu par le modèle, tournoi par tournoi", sub: "Probabilités calibrées sur chaque surface. Historique complet." },
+      ru: { eyebrow: "BetRedge Pro", headline: "Теннис прочитан моделью, турнир за турниром", sub: "Калиброванные вероятности на каждом покрытии. Полная история." },
+    },
+    cta: { href: "/app?tab=account", it: "Esplora il tennis →", en: "Explore tennis →", es: "Explorar el tenis →", fr: "Explorer le tennis →", ru: "Смотреть теннис →" },
+  },
 
   // ── DESK BOTTOM (billboard) ─────────────────────────────────────────────
   {
@@ -478,5 +513,7 @@ export function creativeFor(campaign: HouseCampaign): string {
   if (id.includes("creator")) return "/banners/creatives/ole-multisport-onemodel.jpg";
   if (id.includes("worldcup")) return "/banners/creatives/ole-multisport-edge.jpg";
   if (id.includes("tennis")) return "/banners/creatives/ole-tennis-signal.jpg";
+  // feed-edge (pool calcio): landscape calcistico, non tennis — coerenza col contesto.
+  if (id.includes("edge") || id.includes("football")) return "/banners/creatives/ole-football-signal.jpg";
   return OLE_LANDSCAPE[h % OLE_LANDSCAPE.length];
 }
