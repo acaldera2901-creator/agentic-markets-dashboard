@@ -7476,6 +7476,9 @@ button:disabled {
 }
 .site-footer-row a { color: var(--am-muted-2); text-decoration: underline; }
 .site-footer-row a:hover { color: var(--am-coral); }
+/* #CROSS-REFERRAL-MAVEN: icon + text partner link, inline with the row. */
+.site-footer-partner-link { display: inline-flex; align-items: center; gap: 4px; }
+.site-footer-partner-icon { display: block; }
 .site-footer-sep { opacity: .5; }
 .site-footer-18 {
   border: 1px solid var(--am-line-2); border-radius: 4px; padding: 1px 6px;

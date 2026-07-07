@@ -53,36 +53,41 @@ const SOCIAL_LINKS: { key: string; label: string; href: string | null }[] = [
 type FooterLang = "it" | "en" | "es" | "fr" | "ru";
 
 const COPY: Record<FooterLang, {
-  note: string; pastperf: string; partnerlinks: string; terms: string; privacy: string; social: string;
+  note: string; pastperf: string; partnerlinks: string; partner: string; terms: string; privacy: string; social: string;
 }> = {
   it: {
     note: "BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale.",
     pastperf: "Le performance passate non garantiscono risultati futuri.",
     partnerlinks: "I link partner sono affiliati commerciali.",
+    partner: "Partner",
     terms: "Termini di Servizio", privacy: "Privacy Policy", social: "Seguici",
   },
   en: {
     note: "BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management.",
     pastperf: "Past performance does not guarantee future results.",
     partnerlinks: "Partner links are commercial affiliates.",
+    partner: "Partner",
     terms: "Terms of Service", privacy: "Privacy Policy", social: "Follow us",
   },
   es: {
     note: "BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo.",
     pastperf: "El rendimiento pasado no garantiza resultados futuros.",
     partnerlinks: "Los enlaces de partners son afiliados comerciales.",
+    partner: "Partner",
     terms: "Términos del Servicio", privacy: "Política de Privacidad", social: "Síguenos",
   },
   fr: {
     note: "BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque.",
     pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
     partnerlinks: "Les liens partners sont des affiliés commerciaux.",
+    partner: "Partenaire",
     terms: "Conditions de Service", privacy: "Politique de Confidentialité", social: "Suivez-nous",
   },
   ru: {
     note: "BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками.",
     pastperf: "Прошлые результаты не гарантируют будущих.",
     partnerlinks: "Партнёрские ссылки — коммерческие аффилиаты.",
+    partner: "Партнёр",
     terms: "Условия обслуживания", privacy: "Политика конфиденциальности", social: "Мы в соцсетях",
   },
 };
@@ -105,6 +110,17 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
         <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer">BeGambleAware</a>
         <span className="site-footer-sep">|</span>
         <span>{t.partnerlinks}</span>
+        {/* #CROSS-REFERRAL-MAVEN: unico linkout reciproco designato (Andrea APPROVE
+            07-06), copy neutra "Partner", nessun claim promozionale gambling.
+            Icona partner-slotsbonus-sm.png in arrivo da Tommy → commit successivo. */}
+        <a
+          href="https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral"
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          className="site-footer-partner-link"
+        >
+          {t.partner}
+        </a>
         <span className="site-footer-sep">|</span>
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}
         <Link href="/terms">{t.terms}</Link>
