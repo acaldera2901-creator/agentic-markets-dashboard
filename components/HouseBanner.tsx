@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
-import { hasRichData, copyFor, ctaLabelFor, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
+import { hasRichData, copyFor, ctaLabelFor, creativeFor, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
 
 // Micro-stringhe del componente (non-copy) per le 5 lingue del desk.
 const HB_UI: Record<Lang, {
@@ -214,6 +214,27 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
   const dismissBtn = (
     <button type="button" className="hb-x" onClick={onDismiss} aria-label={HB_UI[L].dismiss}>×</button>
   );
+
+  // ── Creativo Ole (#HOUSE-OLE): banner finito 16:9 INTERO + CTA sopra ──────
+  // Sostituisce l'overlay foto+testo. L'immagine porta già copy/logo di Ole; qui
+  // resta solo il CTA (per-slot, i18n) e il dismiss. width:100%/height:auto →
+  // nessun crop e nessuna banda (il contenitore si adatta al 16:9 del banner).
+  const creative = creativeFor(campaign);
+  if (creative) {
+    return (
+      <aside
+        className="house-banner hb-creative"
+        aria-label={c.eyebrow}
+        style={{ position: "relative", display: "block", height: "auto", minHeight: 0, padding: 0, background: "transparent", overflow: "hidden", borderRadius: 14, width: "100%", maxWidth: 560, marginInline: "auto" }}
+      >
+        <img src={creative} alt={c.headline} style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }} />
+        <Link href={campaign.cta.href} className="hb-cta" onClick={onCtaClick} style={{ position: "absolute", left: 20, bottom: 20, zIndex: 2 }}>
+          {ctaLabel}
+        </Link>
+        {dismissBtn}
+      </aside>
+    );
+  }
 
   // ── Leaderboard (728×90) ──────────────────────────────────────────────
   if (campaign.format === "leaderboard") {
