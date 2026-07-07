@@ -10,7 +10,7 @@ import {
   currentWeekStart,
   weeklyPickEnabled,
   weeklyPickIncludedInPlan,
-  WEEKLY_PICK_PRICE_USD,
+  weeklyPickAmount,
 } from "@/lib/weekly-pick";
 import { hasWeeklyPick } from "@/lib/weekly-pick-server";
 
@@ -37,13 +37,19 @@ export async function GET(req: Request) {
   const purchased = ctx ? await hasWeeklyPick(ctx.identifier, week) : false;
   const unlocked = included || purchased;
 
+  // Prezzo effettivo (sconto -50% se lancio attivo) deciso server-side; il full
+  // serve alla UI per il barrato. price_usd = ciò che l'utente paga davvero.
+  const { amount, fullAmount, discounted } = weeklyPickAmount();
+
   return NextResponse.json({
     enabled: true,
     week,
     available: true,
     unlocked,
     included,
-    price_usd: WEEKLY_PICK_PRICE_USD,
+    price_usd: amount,
+    full_price_usd: fullAmount,
+    discounted,
     combined_prob: unlocked && row.combined_prob != null ? Number(row.combined_prob) : null,
     legs: sels.length,
     // Locked projection: nomi match come teaser, pick/prob nascosti.

@@ -9,9 +9,28 @@
 // WEEKLY_PICK_ENABLED non è "true" (attivazione al gate, dopo allineamento Michele
 // + APPROVE ch_deploy_gate).
 
+import { launchPromoActive, LAUNCH_PROMO_DISCOUNT } from "./paygate";
+
 export const WEEKLY_PICK_PRICE_USD = 12.99;
 // Gambe massime nella multipla della casa (min 2 per essere una multipla).
 export const WEEKLY_PICK_MAX_LEGS = 5;
+
+// Importo effettivo al checkout della weekly pick (USD, one-off flat: nessun
+// piano/periodo). Riusa lo STESSO meccanismo di sconto dei piani — la stessa
+// funzione gate launchPromoActive (flag LAUNCH_PROMO_ENABLED + deadline reale) e
+// la stessa costante LAUNCH_PROMO_DISCOUNT — così NON esiste un secondo punto di
+// verità sullo sconto. A lancio attivo: -50%. Il prezzo lo decide SEMPRE il
+// server (mai dal client). PURA/testabile.
+// NB: a differenza dei piani, la weekly pick NON gatta sull'"primo ordine
+// pagato" (firstPaidOrder): lo sconto vale finché il lancio è attivo, per tutti,
+// come da spec. Per limitarlo al primo acquisto basterebbe intersecare con
+// promoEligibility() (lib/creator-promo) — one-liner nel checkout.
+export function weeklyPickAmount(now?: Date): { amount: number; fullAmount: number; discounted: boolean } {
+  const full = WEEKLY_PICK_PRICE_USD;
+  if (!launchPromoActive(now)) return { amount: full, fullAmount: full, discounted: false };
+  const amount = Math.round(full * (1 - LAUNCH_PROMO_DISCOUNT) * 100) / 100;
+  return { amount, fullAmount: full, discounted: true };
+}
 
 // Feature spenta di default: col flag OFF il prodotto è inerte (nessun checkout,
 // nessuna generazione, nessuna CTA).
