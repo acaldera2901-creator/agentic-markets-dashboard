@@ -1,11 +1,12 @@
 "use client";
-// /weekly-pick — #WEEKLY-PICK-1. Pagina strutturata della MULTIPLA DELLA CASA:
-// hero + spiegazione, la multipla della settimana (stato live delle legs), come
-// funziona, e lo storico delle settimane precedenti. Chi compra a metà settimana
-// vede cosa ha già giocato e cosa manca. FTC-safe: nessuna quota, nessun edge.
+// /weekly-pick — #WEEKLY-PICK-1. La MULTIPLA DELLA CASA, a livello presentazione:
+// hero display, betslip disegnata con stato live delle legs, come funziona,
+// storico. Riusa il design system lp-* della landing + superfici .wp-*.
+// FTC-safe: nessuna quota, nessun edge/vincita promessa.
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 
 type LegStatus = "upcoming" | "won" | "lost" | "void" | null;
 type Sel = { label: string; sport: string; market: string | null; prob: number | null; status?: LegStatus; kickoff?: string | null };
@@ -28,20 +29,34 @@ type HistWeek = { week_start: string; combined_prob: number | null; outcome: "li
 type Hist = { enabled: boolean; weeks?: HistWeek[] };
 
 const COPY = {
-  it: { back: "← Board", title: "Weekly Pick", sub: "La multipla della casa: le migliori pick della settimana combinate. Nessuna quota, nessun edge promesso — solo la schedina più probabile del nostro modello.", loading: "Caricamento…", loadError: "Impossibile caricare la weekly pick.", retry: "Riprova", soon: "La multipla di questa settimana è in arrivo.", combined: "Probabilità combinata (modello)", remaining: (n: number) => `${n} ancora da giocare`, lockedTitle: "Sblocca la Weekly Pick", unlockCta: (p: string) => `Sblocca a ${p}`, unlocking: "Reindirizzamento al pagamento…", checkoutError: "Impossibile avviare il pagamento. Riprova.", includedCta: "…oppure passa a Pro", responsible: "18+ · gioca responsabilmente", howTitle: "Come funziona", how1: "Le pick a più alta probabilità del modello, combinate in una sola schedina.", how2: "Una nuova multipla ogni lunedì; scade a fine settimana.", how3: "Inclusa nel Pro. Per gli altri, sblocco one-off.", histTitle: "Settimane precedenti", histEmpty: "Il primo storico arriva a fine settimana.", outLive: "In corso", outWon: "Passata", outLost: "Non passata", stUp: "Da giocare", stWon: "✓", stLost: "✗", stVoid: "Void", locale: "it-IT" },
-  en: { back: "← Board", title: "Weekly Pick", sub: "The house accumulator: the best picks of the week combined. No odds, no promised edge — just our model's most probable slip.", loading: "Loading…", loadError: "Couldn't load the weekly pick.", retry: "Retry", soon: "This week's slip is on its way.", combined: "Combined probability (model)", remaining: (n: number) => `${n} still to play`, lockedTitle: "Unlock the Weekly Pick", unlockCta: (p: string) => `Unlock for ${p}`, unlocking: "Redirecting to payment…", checkoutError: "Couldn't start the payment. Please try again.", includedCta: "…or go Pro", responsible: "18+ · gamble responsibly", howTitle: "How it works", how1: "The model's highest-probability picks, combined into one slip.", how2: "A new accumulator every Monday; it expires at week's end.", how3: "Included in Pro. For everyone else, a one-off unlock.", histTitle: "Previous weeks", histEmpty: "The first history lands at the end of the week.", outLive: "Live", outWon: "Landed", outLost: "Didn't land", stUp: "To play", stWon: "✓", stLost: "✗", stVoid: "Void", locale: "en-GB" },
-  es: { back: "← Board", title: "Weekly Pick", sub: "La combinada de la casa: las mejores picks de la semana combinadas. Sin cuotas, sin edge prometido — solo la combinada más probable de nuestro modelo.", loading: "Cargando…", loadError: "No se pudo cargar la weekly pick.", retry: "Reintentar", soon: "La combinada de esta semana está en camino.", combined: "Probabilidad combinada (modelo)", remaining: (n: number) => `${n} por jugarse`, lockedTitle: "Desbloquea la Weekly Pick", unlockCta: (p: string) => `Desbloquear por ${p}`, unlocking: "Redirigiendo al pago…", checkoutError: "No se pudo iniciar el pago. Inténtalo de nuevo.", includedCta: "…o hazte Pro", responsible: "18+ · juega con responsabilidad", howTitle: "Cómo funciona", how1: "Las picks de mayor probabilidad del modelo, combinadas en una sola.", how2: "Una nueva combinada cada lunes; caduca al final de la semana.", how3: "Incluida en Pro. Para el resto, desbloqueo único.", histTitle: "Semanas anteriores", histEmpty: "El primer historial llega al final de la semana.", outLive: "En curso", outWon: "Acertada", outLost: "No acertada", stUp: "Por jugar", stWon: "✓", stLost: "✗", stVoid: "Void", locale: "es-ES" },
-  fr: { back: "← Board", title: "Weekly Pick", sub: "Le combiné de la maison : les meilleures prédictions de la semaine combinées. Aucune cote, aucun edge promis — juste le combiné le plus probable de notre modèle.", loading: "Chargement…", loadError: "Impossible de charger la weekly pick.", retry: "Réessayer", soon: "Le combiné de cette semaine arrive bientôt.", combined: "Probabilité combinée (modèle)", remaining: (n: number) => `${n} encore à jouer`, lockedTitle: "Débloquez la Weekly Pick", unlockCta: (p: string) => `Débloquer pour ${p}`, unlocking: "Redirection vers le paiement…", checkoutError: "Impossible de démarrer le paiement. Réessayez.", includedCta: "…ou passez à Pro", responsible: "18+ · jouez de manière responsable", howTitle: "Comment ça marche", how1: "Les prédictions les plus probables du modèle, combinées en un seul combiné.", how2: "Un nouveau combiné chaque lundi ; il expire en fin de semaine.", how3: "Inclus dans Pro. Pour les autres, un déblocage unique.", histTitle: "Semaines précédentes", histEmpty: "Le premier historique arrive en fin de semaine.", outLive: "En cours", outWon: "Gagné", outLost: "Perdu", stUp: "À jouer", stWon: "✓", stLost: "✗", stVoid: "Void", locale: "fr-FR" },
-  ru: { back: "← Board", title: "Weekly Pick", sub: "Экспресс от команды: лучшие пики недели вместе. Без коэффициентов и обещанного edge — только самый вероятный экспресс нашей модели.", loading: "Загрузка…", loadError: "Не удалось загрузить weekly pick.", retry: "Повторить", soon: "Экспресс этой недели уже готовится.", combined: "Совокупная вероятность (модель)", remaining: (n: number) => `${n} ещё сыграют`, lockedTitle: "Откройте Weekly Pick", unlockCta: (p: string) => `Открыть за ${p}`, unlocking: "Переход к оплате…", checkoutError: "Не удалось начать оплату. Попробуйте снова.", includedCta: "…или оформите Pro", responsible: "18+ · играйте ответственно", howTitle: "Как это работает", how1: "Самые вероятные пики модели, собранные в один экспресс.", how2: "Новый экспресс каждый понедельник; истекает в конце недели.", how3: "Входит в Pro. Для остальных — разовая покупка.", histTitle: "Прошлые недели", histEmpty: "Первая история появится в конце недели.", outLive: "В игре", outWon: "Зашёл", outLost: "Не зашёл", stUp: "Сыграет", stWon: "✓", stLost: "✗", stVoid: "Void", locale: "ru-RU" },
+  it: { back: "← Board", tag: "Multipla della casa", eyebrow: "Multipla della casa", h1a: "La schedina più", h1b: "probabile della settimana.", sub: "Le migliori pick del nostro modello, combinate in una sola schedina. Nessuna quota, nessun edge promesso — solo probabilità.", kProb: "prob. combinata", kLegs: "selezioni", kLeft: "ancora da giocare", loading: "Caricamento…", loadError: "Impossibile caricare la weekly pick.", retry: "Riprova", soon: "La multipla di questa settimana è in arrivo.", slip: "Schedina", note: "Probabilità combinata del modello.", unlockTitle: "Sblocca la Weekly Pick", unlockCta: "Sblocca", unlocking: "Attendi…", checkoutError: "Impossibile avviare il pagamento. Riprova.", proCta: "…oppure passa a Pro", responsible: "18+ · gioca responsabilmente", howEyebrow: "Come funziona", howTitle: "Una multipla, ogni settimana.", how1t: "Selezione", how1d: "Le pick a più alta probabilità del modello, combinate in una sola schedina.", how2t: "Ogni lunedì", how2d: "Una nuova multipla ogni lunedì; scade a fine settimana.", how3t: "Sblocco", how3d: "Inclusa nel Pro. Per gli altri, sblocco one-off.", histEyebrow: "Track record", histTitle: "Settimane precedenti.", histEmpty: "Il primo storico arriva a fine settimana.", oLive: "In corso", oWon: "Passata", oLost: "Non passata", locked: "Bloccata", locale: "it-IT" },
+  en: { back: "← Board", tag: "House accumulator", eyebrow: "House accumulator", h1a: "The week's most", h1b: "probable slip.", sub: "Our model's best picks, combined into a single slip. No odds, no promised edge — just probability.", kProb: "combined prob.", kLegs: "selections", kLeft: "still to play", loading: "Loading…", loadError: "Couldn't load the weekly pick.", retry: "Retry", soon: "This week's slip is on its way.", slip: "Slip", note: "Model's combined probability.", unlockTitle: "Unlock the Weekly Pick", unlockCta: "Unlock", unlocking: "Please wait…", checkoutError: "Couldn't start the payment. Please try again.", proCta: "…or go Pro", responsible: "18+ · gamble responsibly", howEyebrow: "How it works", howTitle: "One accumulator, every week.", how1t: "Selection", how1d: "The model's highest-probability picks, combined into one slip.", how2t: "Every Monday", how2d: "A new accumulator every Monday; it expires at week's end.", how3t: "Unlock", how3d: "Included in Pro. For everyone else, a one-off unlock.", histEyebrow: "Track record", histTitle: "Previous weeks.", histEmpty: "The first history lands at the end of the week.", oLive: "Live", oWon: "Landed", oLost: "Didn't land", locked: "Locked", locale: "en-GB" },
+  es: { back: "← Board", tag: "Combinada de la casa", eyebrow: "Combinada de la casa", h1a: "La combinada más", h1b: "probable de la semana.", sub: "Las mejores picks de nuestro modelo, combinadas en una sola. Sin cuotas, sin edge prometido — solo probabilidad.", kProb: "prob. combinada", kLegs: "selecciones", kLeft: "por jugarse", loading: "Cargando…", loadError: "No se pudo cargar la weekly pick.", retry: "Reintentar", soon: "La combinada de esta semana está en camino.", slip: "Combinada", note: "Probabilidad combinada del modelo.", unlockTitle: "Desbloquea la Weekly Pick", unlockCta: "Desbloquear", unlocking: "Espera…", checkoutError: "No se pudo iniciar el pago. Inténtalo de nuevo.", proCta: "…o hazte Pro", responsible: "18+ · juega con responsabilidad", howEyebrow: "Cómo funciona", howTitle: "Una combinada, cada semana.", how1t: "Selección", how1d: "Las picks de mayor probabilidad del modelo, combinadas en una.", how2t: "Cada lunes", how2d: "Una nueva combinada cada lunes; caduca al final de la semana.", how3t: "Desbloqueo", how3d: "Incluida en Pro. Para el resto, desbloqueo único.", histEyebrow: "Track record", histTitle: "Semanas anteriores.", histEmpty: "El primer historial llega al final de la semana.", oLive: "En curso", oWon: "Acertada", oLost: "No acertada", locked: "Bloqueada", locale: "es-ES" },
+  fr: { back: "← Board", tag: "Combiné de la maison", eyebrow: "Combiné de la maison", h1a: "Le combiné le plus", h1b: "probable de la semaine.", sub: "Les meilleures prédictions de notre modèle, combinées en un seul combiné. Aucune cote, aucun edge promis — juste la probabilité.", kProb: "prob. combinée", kLegs: "sélections", kLeft: "encore à jouer", loading: "Chargement…", loadError: "Impossible de charger la weekly pick.", retry: "Réessayer", soon: "Le combiné de cette semaine arrive bientôt.", slip: "Combiné", note: "Probabilité combinée du modèle.", unlockTitle: "Débloquez la Weekly Pick", unlockCta: "Débloquer", unlocking: "Patientez…", checkoutError: "Impossible de démarrer le paiement. Réessayez.", proCta: "…ou passez à Pro", responsible: "18+ · jouez de manière responsable", howEyebrow: "Comment ça marche", howTitle: "Un combiné, chaque semaine.", how1t: "Sélection", how1d: "Les prédictions les plus probables du modèle, combinées en un seul.", how2t: "Chaque lundi", how2d: "Un nouveau combiné chaque lundi ; il expire en fin de semaine.", how3t: "Déblocage", how3d: "Inclus dans Pro. Pour les autres, un déblocage unique.", histEyebrow: "Track record", histTitle: "Semaines précédentes.", histEmpty: "Le premier historique arrive en fin de semaine.", oLive: "En cours", oWon: "Gagné", oLost: "Perdu", locked: "Bloqué", locale: "fr-FR" },
+  ru: { back: "← Board", tag: "Экспресс от команды", eyebrow: "Экспресс от команды", h1a: "Самый вероятный", h1b: "экспресс недели.", sub: "Лучшие пики нашей модели в одном экспрессе. Без коэффициентов и обещанного edge — только вероятность.", kProb: "совокупн. вероятн.", kLegs: "выборы", kLeft: "ещё сыграют", loading: "Загрузка…", loadError: "Не удалось загрузить weekly pick.", retry: "Повторить", soon: "Экспресс этой недели уже готовится.", slip: "Экспресс", note: "Совокупная вероятность модели.", unlockTitle: "Откройте Weekly Pick", unlockCta: "Открыть", unlocking: "Подождите…", checkoutError: "Не удалось начать оплату. Попробуйте снова.", proCta: "…или оформите Pro", responsible: "18+ · играйте ответственно", howEyebrow: "Как это работает", howTitle: "Один экспресс каждую неделю.", how1t: "Отбор", how1d: "Самые вероятные пики модели, собранные в один экспресс.", how2t: "Каждый понедельник", how2d: "Новый экспресс каждый понедельник; истекает в конце недели.", how3t: "Доступ", how3d: "Входит в Pro. Для остальных — разовая покупка.", histEyebrow: "Track record", histTitle: "Прошлые недели.", histEmpty: "Первая история появится в конце недели.", oLive: "В игре", oWon: "Зашёл", oLost: "Не зашёл", locked: "Закрыто", locale: "ru-RU" },
 } as const;
 
 type Lang = keyof typeof COPY;
 
-function statusChip(status: LegStatus, t: (typeof COPY)[Lang]) {
-  if (status === "won") return { txt: t.stWon, color: "var(--am-coral)" };
-  if (status === "lost") return { txt: t.stLost, color: "#ef4444" };
-  if (status === "void") return { txt: t.stVoid, color: "var(--am-muted-2)" };
-  return { txt: t.stUp, color: "var(--am-muted)" };
+// Icone inline (mai emoji).
+const IChk = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7" /></svg>;
+const IX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>;
+const IClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 8v4.4l3 1.8" /></svg>;
+const ILock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
+const IDash = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M6 12h12" /></svg>;
+
+function sportGlyph(sport: string): string {
+  const s = sport?.toLowerCase() ?? "";
+  if (s.includes("tennis")) return "#g-tball";
+  if (s.includes("world") || s === "worldcup") return "#g-trophy";
+  return "#g-ball";
+}
+
+function statusIcon(status: LegStatus) {
+  if (status === "won") return <IChk />;
+  if (status === "lost") return <IX />;
+  if (status === "void") return <IDash />;
+  return <IClock />;
 }
 
 export default function WeeklyPickPage() {
@@ -94,146 +109,190 @@ export default function WeeklyPickPage() {
   const price = data?.price_usd != null ? `$${data.price_usd.toFixed(2)}` : "$12.99";
   const fullPrice = data?.full_price_usd != null ? `$${data.full_price_usd.toFixed(2)}` : null;
   const histWeeks = hist?.enabled ? (hist.weeks ?? []) : [];
+  const available = !error && data && data.available;
+  const unlocked = !!data?.unlocked;
+  const fmtWeek = (iso: string) => { try { return new Date(iso).toLocaleDateString(t.locale, { day: "2-digit", month: "short" }); } catch { return iso; } };
+  const fmtKick = (iso?: string | null) => { if (!iso) return null; try { return new Date(iso).toLocaleTimeString(t.locale, { hour: "2-digit", minute: "2-digit" }); } catch { return null; } };
 
   return (
-    <main className="min-h-screen" style={{ background: "var(--am-bg)", color: "var(--am-text)" }}>
-      <header className="px-6 py-4 border-b" style={{ borderColor: "var(--am-line)" }}>
-        <Link href="/" className="text-xs font-mono" style={{ color: "var(--am-muted)" }}>{t.back}</Link>
-        <h1 className="text-2xl font-black mt-1">{t.title}</h1>
-        <p className="text-xs font-mono max-w-xl" style={{ color: "var(--am-muted)" }}>{t.sub}</p>
+    <main className="wp-page">
+      <SportGlyphSprite />
+      <nav className="wp-nav">
+        <Link href="/" className="wp-back">{t.back}</Link>
+        <span className="wp-nav-tag">{t.tag}</span>
+      </nav>
+
+      {/* ── HERO ── */}
+      <header className="wp-hero">
+        <p className="lp-eyebrow">{t.eyebrow}</p>
+        <h1 className="lp-what-head">{t.h1a} <span className="lp-what-head-2">{t.h1b}</span></h1>
+        <p className="lp-what-body">{t.sub}</p>
+        {available && (
+          <div className="lp-kpis">
+            {unlocked && data?.combined_prob != null && (
+              <div className="lp-kpi">
+                <b className="lp-kpi-val accent">{Math.round(data.combined_prob * 100)}<span className="lp-kpi-unit">%</span></b>
+                <span className="lp-kpi-lab">{t.kProb}</span>
+              </div>
+            )}
+            <div className="lp-kpi">
+              <b className="lp-kpi-val">{data?.legs ?? data?.selections?.length ?? 0}</b>
+              <span className="lp-kpi-lab">{t.kLegs}</span>
+            </div>
+            {data?.legs_remaining != null && (
+              <div className="lp-kpi">
+                <b className="lp-kpi-val">{data.legs_remaining}</b>
+                <span className="lp-kpi-lab">{t.kLeft}</span>
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
-      <section className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-        {/* ── LA MULTIPLA ── */}
-        <div className="space-y-4">
-          {error && (
-            <div className="text-center py-16 space-y-3">
-              <p className="text-sm font-mono" style={{ color: "var(--am-muted)" }}>{t.loadError}</p>
-              <button onClick={retry} className="text-xs font-mono px-4 py-2 rounded border" style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}>{t.retry}</button>
-            </div>
-          )}
-          {!error && data === null && (
-            <p className="text-center text-xs font-mono py-16" style={{ color: "var(--am-muted-2)" }}>{t.loading}</p>
-          )}
-          {!error && data && (data.enabled === false || data.available === false) && (
-            <p className="text-center text-sm font-mono py-16" style={{ color: "var(--am-muted-2)" }}>{t.soon}</p>
-          )}
-          {!error && data && data.available && (
-            <article className="rounded-lg border p-5 space-y-3" style={{ borderColor: "var(--am-coral-b)", background: "var(--am-panel)" }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono" style={{ color: "var(--am-muted)" }}>
-                  {data.legs ?? data.selections?.length ?? 0} · {t.title}
-                  {data.legs_remaining != null && data.legs_remaining > 0 && (
-                    <span style={{ color: "var(--am-muted-2)" }}> · {t.remaining(data.legs_remaining)}</span>
-                  )}
+      {/* ── LA MULTIPLA (betslip) ── */}
+      <section className="wp-wrap">
+        {error && (
+          <div className="wp-msg">
+            <p>{t.loadError}</p>
+            <button onClick={retry} className="wp-retry">{t.retry}</button>
+          </div>
+        )}
+        {!error && data === null && <p className="wp-msg">{t.loading}</p>}
+        {!error && data && (data.enabled === false || data.available === false) && <p className="wp-msg">{t.soon}</p>}
+
+        {available && (
+          <article className="wp-slip">
+            <div className="wp-slip-top">
+              <svg className="wp-slip-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
+              <span className="wp-slip-ttl">{t.slip}</span>
+              {unlocked && data?.outcome && (
+                <span className={`wp-slip-badge ${data.outcome}`}>
+                  {data.outcome === "won" ? <><IChk />{t.oWon}</> : data.outcome === "lost" ? <><IX />{t.oLost}</> : <><IClock />{t.oLive}</>}
                 </span>
-                {data.unlocked && data.combined_prob != null && (
-                  <span className="text-lg font-black font-mono" style={{ color: "var(--am-coral)" }}>{Math.round(data.combined_prob * 100)}%</span>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                {data.selections?.map((s, i) => {
-                  const chip = statusChip(s.status ?? null, t);
-                  return (
-                    <div key={i} className="flex items-center justify-between text-xs font-mono gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate" style={{ color: "var(--am-text)" }}>{s.label}</p>
-                        <p className="text-[10px] truncate" style={{ color: "var(--am-muted-2)" }}>{s.sport}</p>
-                      </div>
-                      <div className="shrink-0 flex items-center gap-2">
-                        {s.market != null ? (
-                          <>
-                            <span style={{ color: "var(--am-muted)" }}>{s.market}{s.prob != null && <span style={{ color: "var(--am-coral)" }}> · {Math.round(s.prob * 100)}%</span>}</span>
-                            <span style={{ color: chip.color }}>{chip.txt}</span>
-                          </>
-                        ) : (
-                          <span style={{ color: "var(--am-muted-2)" }}>🔒</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {data.unlocked ? (
-                <p className="text-[10px] font-mono" style={{ color: "var(--am-muted-2)" }}>{t.combined}</p>
-              ) : (
-                <div className="border-t pt-3 space-y-2" style={{ borderColor: "var(--am-line)" }}>
-                  <p className="text-sm font-bold">{t.lockedTitle}</p>
-                  <div className="flex items-baseline gap-2">
-                    {data.discounted && fullPrice && (
-                      <span className="text-xs font-mono line-through" style={{ color: "var(--am-muted-2)" }}>{fullPrice}</span>
-                    )}
-                    <span className="text-lg font-black font-mono" style={{ color: "var(--am-coral)" }}>{price}</span>
-                  </div>
-                  <button
-                    onClick={buy}
-                    disabled={buying}
-                    className="inline-block text-xs font-mono px-4 py-2 rounded"
-                    style={{ background: "var(--am-coral)", color: "#fff", fontWeight: 700, opacity: buying ? 0.6 : 1, cursor: buying ? "default" : "pointer" }}
-                  >
-                    {buying ? t.unlocking : t.unlockCta(price)}
-                  </button>
-                  {checkoutErr && (
-                    <p className="text-[10px] font-mono" style={{ color: "#ef4444" }}>{t.checkoutError}</p>
-                  )}
-                  <a href="/app?tab=plans" className="block text-[10px] font-mono underline" style={{ color: "var(--am-muted)" }}>{t.includedCta}</a>
-                </div>
               )}
-              <p className="text-[9px] font-mono" style={{ color: "var(--am-muted-2)" }}>{t.responsible}</p>
-            </article>
-          )}
-        </div>
+              {!unlocked && data?.legs_remaining != null && data.legs_remaining > 0 && (
+                <span className="wp-slip-badge live"><IClock />{data.legs_remaining} {t.kLeft}</span>
+              )}
+            </div>
 
-        {/* ── COME FUNZIONA ── */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-black">{t.howTitle}</h2>
-          <ol className="space-y-1.5">
-            {[t.how1, t.how2, t.how3].map((step, i) => (
-              <li key={i} className="flex gap-2 text-xs font-mono" style={{ color: "var(--am-muted)" }}>
-                <span className="font-black" style={{ color: "var(--am-coral)" }}>{i + 1}</span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        {/* ── STORICO ── */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-black">{t.histTitle}</h2>
-          {histWeeks.length === 0 ? (
-            <p className="text-xs font-mono py-4" style={{ color: "var(--am-muted-2)" }}>{t.histEmpty}</p>
-          ) : (
-            <div className="space-y-2">
-              {histWeeks.map((w) => {
-                const label = w.outcome === "won" ? t.outWon : w.outcome === "lost" ? t.outLost : t.outLive;
-                const color = w.outcome === "won" ? "var(--am-coral)" : w.outcome === "lost" ? "#ef4444" : "var(--am-muted)";
+            <ul className="wp-legs">
+              {data?.selections?.map((s, i) => {
+                const kick = fmtKick(s.kickoff);
                 return (
-                  <article key={w.week_start} className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: "var(--am-line)", background: "var(--am-panel)" }}>
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span style={{ color: "var(--am-muted)" }}>{new Date(w.week_start).toLocaleDateString(t.locale, { day: "2-digit", month: "short" })}</span>
-                      <span className="flex items-center gap-2">
-                        {w.combined_prob != null && <span style={{ color: "var(--am-muted-2)" }}>{Math.round(w.combined_prob * 100)}%</span>}
-                        <span className="font-bold" style={{ color }}>{label}</span>
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {w.legs.map((l, i) => {
-                        const chip = statusChip(l.status, t);
-                        return (
-                          <div key={i} className="flex items-center justify-between text-[11px] font-mono gap-3">
-                            <span className="truncate" style={{ color: "var(--am-muted)" }}>{l.label} · {l.market}</span>
-                            <span style={{ color: chip.color }}>{chip.txt}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </article>
+                  <li key={i} className="wp-leg">
+                    <span className="wp-leg-sport"><svg aria-hidden="true"><use href={sportGlyph(s.sport)} /></svg></span>
+                    <span className="wp-leg-main">
+                      <span className="wp-leg-match">{s.label}</span>
+                      {s.market != null ? (
+                        <span className="wp-leg-pick"><b>{s.market}</b></span>
+                      ) : (
+                        <span className="wp-leg-pick locked"><ILock /><span className="dots">••••</span></span>
+                      )}
+                    </span>
+                    <span className="wp-leg-meta">
+                      {s.prob != null && <span className="wp-leg-prob">{Math.round(s.prob * 100)}%</span>}
+                      {unlocked && s.status && (
+                        <span className={`wp-leg-st ${s.status}`}>
+                          {statusIcon(s.status)}
+                          {s.status === "upcoming" && kick ? kick : null}
+                        </span>
+                      )}
+                    </span>
+                  </li>
                 );
               })}
+            </ul>
+
+            <div className="wp-slip-foot">
+              {unlocked ? (
+                <p className="wp-note">{t.note}</p>
+              ) : (
+                <>
+                  <div className="wp-unlock">
+                    <div className="wp-unlock-txt">
+                      <span className="wp-unlock-ttl">{t.unlockTitle}</span>
+                      <span className="wp-price">
+                        {data?.discounted && fullPrice && <span className="wp-price-full">{fullPrice}</span>}
+                        <span className="wp-price-now">{price}</span>
+                      </span>
+                    </div>
+                    <button onClick={buy} disabled={buying} className="wp-cta">
+                      {buying ? t.unlocking : `${t.unlockCta} · ${price}`}
+                    </button>
+                  </div>
+                  {checkoutErr && <p className="wp-err">{t.checkoutError}</p>}
+                </>
+              )}
+              <div className="wp-foot-row">
+                {!unlocked && <a href="/app?tab=plans" className="wp-pro">{t.proCta}</a>}
+                <span className="wp-resp">{t.responsible}</span>
+              </div>
             </div>
-          )}
-        </div>
+          </article>
+        )}
       </section>
+
+      {/* ── COME FUNZIONA ── */}
+      <section className="wp-how">
+        <header className="wp-how-head">
+          <p className="lp-eyebrow">{t.howEyebrow}</p>
+          <h2 className="lp-how-title">{t.howTitle}</h2>
+        </header>
+        <ol className="wp-steps">
+          <li className="lp-step">
+            <div className="lp-step-mark"><span className="lp-step-n">01</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-pick" /></svg></div>
+            <h3 className="lp-step-title">{t.how1t}</h3>
+            <p className="lp-step-desc">{t.how1d}</p>
+          </li>
+          <li className="lp-step">
+            <div className="lp-step-mark"><span className="lp-step-n">02</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-history" /></svg></div>
+            <h3 className="lp-step-title">{t.how2t}</h3>
+            <p className="lp-step-desc">{t.how2d}</p>
+          </li>
+          <li className="lp-step">
+            <div className="lp-step-mark"><span className="lp-step-n">03</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ticket" /></svg></div>
+            <h3 className="lp-step-title">{t.how3t}</h3>
+            <p className="lp-step-desc">{t.how3d}</p>
+          </li>
+        </ol>
+      </section>
+
+      {/* ── STORICO ── */}
+      <section className="wp-hist-sec">
+        <header className="wp-hist-head">
+          <p className="lp-eyebrow">{t.histEyebrow}</p>
+          <h2 className="lp-how-title">{t.histTitle}</h2>
+        </header>
+        {histWeeks.length === 0 ? (
+          <p className="wp-hist-empty">{t.histEmpty}</p>
+        ) : (
+          <div className="wp-hist">
+            {histWeeks.map((w) => (
+              <article key={w.week_start} className="wp-hist-card">
+                <div className="wp-hist-top">
+                  <span className="wp-hist-date">{fmtWeek(w.week_start)}</span>
+                  <span className="wp-hist-top" style={{ margin: 0, gap: 8 }}>
+                    {w.combined_prob != null && <span className="wp-hist-prob">{Math.round(w.combined_prob * 100)}%</span>}
+                    <span className={`wp-hist-out ${w.outcome}`}>
+                      {w.outcome === "won" ? <><IChk />{t.oWon}</> : w.outcome === "lost" ? <><IX />{t.oLost}</> : <><IClock />{t.oLive}</>}
+                    </span>
+                  </span>
+                </div>
+                <div>
+                  {w.legs.map((l, i) => (
+                    <div key={i} className="wp-hist-leg">
+                      <span>{l.label} · <b style={{ color: "var(--am-muted)" }}>{l.market}</b></span>
+                      <span className={`wp-hl-st ${l.status}`}>{statusIcon(l.status)}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <footer className="wp-foot">{t.responsible}</footer>
     </main>
   );
 }
