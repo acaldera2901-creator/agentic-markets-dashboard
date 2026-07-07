@@ -450,7 +450,9 @@ export function ctaLabelFor(campaign: HouseCampaign, lang: Lang): string {
 // (immagine intera 16:9 + tasto CTA sopra), come il carosello homepage — non
 // più l'overlay foto+testo. La copy i18n è già dentro l'immagine; resta solo il
 // CTA (per-slot, i18n) e il dismiss.
-const OLE_CREATIVES = [
+// FORMATO ABBINATO ALLA FORMA DELLO SLOT (decisione Andrea "formato giusto per slot"):
+// slot larghi → 16:9 orizzontale · rectangle → 1:1 quadrato · halfpage/rail → 9:16 verticale.
+const OLE_LANDSCAPE = [
   "/banners/creatives/ole-football-signal.jpg",
   "/banners/creatives/ole-multisport-onemodel.jpg",
   "/banners/creatives/ole-tennis-signal.jpg",
@@ -458,15 +460,20 @@ const OLE_CREATIVES = [
   "/banners/creatives/ole-tennis-insight.jpg",
   "/banners/creatives/ole-multisport-readable.jpg",
 ];
+const OLE_SQUARE = ["/banners/creatives/ole-square-1.jpg", "/banners/creatives/ole-square-2.jpg"];
+const OLE_VERTICAL = ["/banners/creatives/ole-vertical-1.jpg", "/banners/creatives/ole-vertical-2.jpg"];
 
-/** Creativo Ole per la campagna: match tematico + rotazione stabile per id
- *  (così due slot adiacenti non mostrano lo stesso banner). */
+/** Creativo Ole per la campagna, del FORMATO adatto allo slot (aspect coerente →
+ *  niente crop/gap/minuscoli). Match tematico sugli orizzontali + rotazione stabile. */
 export function creativeFor(campaign: HouseCampaign): string {
   const id = campaign.id;
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  if (campaign.format === "halfpage") return OLE_VERTICAL[h % OLE_VERTICAL.length];
+  if (campaign.format === "rectangle") return OLE_SQUARE[h % OLE_SQUARE.length];
+  // slot larghi (billboard / leaderboard): 16:9 tematico
   if (id.includes("creator")) return "/banners/creatives/ole-multisport-onemodel.jpg";
   if (id.includes("worldcup")) return "/banners/creatives/ole-multisport-edge.jpg";
   if (id.includes("tennis")) return "/banners/creatives/ole-tennis-signal.jpg";
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return OLE_CREATIVES[h % OLE_CREATIVES.length];
+  return OLE_LANDSCAPE[h % OLE_LANDSCAPE.length];
 }
