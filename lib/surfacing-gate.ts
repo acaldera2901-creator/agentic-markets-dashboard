@@ -12,9 +12,10 @@
 // directional pick. It never touches p_home/p_draw/p_away or confidence_score.
 
 export const SURFACE_FLOOR_FOOTBALL = 56;
-// International friendlies floor (heavy rotation → noisier). Mirror of
-// config/settings.py SURFACE_FLOOR_FRIENDLY (61).
-export const SURFACE_FLOOR_FRIENDLY = 61;
+// International friendlies floor (heavy rotation → noisier). #MINORS-TIGHTEN
+// 07/07: 61→66 on live evidence (54.5% on 33 settled). Mirror of
+// config/settings.py SURFACE_FLOOR_FRIENDLY (66).
+export const SURFACE_FLOOR_FRIENDLY = 66;
 // Tennis floors are SEGMENT-AWARE (#TENNIS-SEG-FLOOR-1, lab 2026-06-11,
 // 19,790 held-out matches 2023+): at a uniform 62 the high tiers hold
 // 73-77% while lower tiers sit at 69-70% — and the June grass swing

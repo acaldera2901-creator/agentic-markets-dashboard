@@ -172,7 +172,9 @@ class Settings(BaseSettings):
     # are never altered. Floors are on the picked-outcome probability (max-prob,
     # whole percent). Mirrored in lib/surfacing-gate.ts — keep in sync.
     SURFACE_FLOOR_FOOTBALL: int = 56   # competitive club (max-prob >= 56)
-    SURFACE_FLOOR_FRIENDLY: int = 61   # international friendlies (heavy rotation)
+    SURFACE_FLOOR_FRIENDLY: int = 66   # international friendlies (heavy rotation;
+    # #MINORS-TIGHTEN 07/07: 61->66 su evidenza LIVE 54.5% su 33 regolate —
+    # APPROVE Andrea "amichevoli incluse" + GO esplicito Michele)
     # #WC-SURFACE-FLOOR (APPROVE Andrea + decisione Michele 07/07): il WC e'
     # il punto forte del prodotto (68.5% live su 92 regolate) e i knockout
     # equilibrati DEVONO comparire -> floor dedicato BASSO, solo World Cup.

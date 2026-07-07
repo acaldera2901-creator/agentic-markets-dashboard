@@ -8,7 +8,7 @@ it only decides whether a row is surfaced as a directional pick (is_pick) or as 
 
 Boundaries (floors are inclusive — >= floor is a pick):
   * football WC / club:  55 -> below, 56 -> pick
-  * friendlies:          60 -> below, 61 -> pick
+  * friendlies:          65 -> below, 66 -> pick
   * tennis (#TENNIS-SEG-FLOOR-1 2026-06-11, segment-aware by tournament name):
       hi tier (Slam/Masters/1000/Finals/Olympics)  61 -> below, 62 -> pick
       lower tiers                                  63 -> below, 64 -> pick
@@ -36,9 +36,9 @@ def test_club_uses_same_football_floor_55_56():
     assert surface_decision(sport="football", friendly=False, confidence=56) == (True, False)
 
 
-def test_friendly_boundary_60_below_61_pick():
-    assert surface_decision(sport="football", friendly=True, confidence=60) == (False, True)
-    assert surface_decision(sport="football", friendly=True, confidence=61) == (True, False)
+def test_friendly_boundary_65_below_66_pick():
+    assert surface_decision(sport="football", friendly=True, confidence=65) == (False, True)
+    assert surface_decision(sport="football", friendly=True, confidence=66) == (True, False)
 
 
 def test_friendly_floor_is_stricter_than_competitive():
