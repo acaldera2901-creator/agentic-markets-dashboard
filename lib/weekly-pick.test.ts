@@ -4,6 +4,7 @@ import {
   buildHouseMultipla,
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
+  resolveWeeklyPickOutcomes,
   WEEKLY_PICK_MAX_LEGS,
   WEEKLY_PICK_PRICE_USD,
   type WeeklyPickLeg,
@@ -141,5 +142,64 @@ describe("weekly-pick grant gating (evaluateCallback)", () => {
     const d = evaluateCallback({ order: null, valueCoin: 12.0 });
     expect(d.grant).toBe(false);
     expect(d.reason).toBe("order not found");
+  });
+});
+
+describe("resolveWeeklyPickOutcomes", () => {
+  const legs: WeeklyPickLeg[] = [
+    { id: "wp_p1", label: "A vs B", market: "A", sport: "football", prob: 0.7 },
+    { id: "wp_p2", label: "C vs D", market: "C", sport: "tennis", prob: 0.6 },
+    { id: "wp_p3", label: "E vs F", market: "E", sport: "football", prob: 0.55 },
+  ];
+
+  it("tutte upcoming quando non ci sono righe → outcome live, remaining = n", () => {
+    const r = resolveWeeklyPickOutcomes(legs, []);
+    expect(r.outcome).toBe("live");
+    expect(r.remaining).toBe(3);
+    expect(r.legs.every((l) => l.status === "upcoming")).toBe(true);
+  });
+
+  it("≥1 leg persa → outcome lost", () => {
+    const rows = [{ id: "p1", status: "settled", result: "lost", starts_at: "2026-07-06T12:00:00Z" }];
+    const r = resolveWeeklyPickOutcomes(legs, rows);
+    expect(r.outcome).toBe("lost");
+    expect(r.legs.find((l) => l.id === "wp_p1")!.status).toBe("lost");
+  });
+
+  it("mix won + upcoming → live, remaining conta solo le upcoming", () => {
+    const rows = [{ id: "p1", status: "settled", result: "won", starts_at: "2026-07-06T12:00:00Z" }];
+    const r = resolveWeeklyPickOutcomes(legs, rows);
+    expect(r.outcome).toBe("live");
+    expect(r.remaining).toBe(2);
+  });
+
+  it("tutte risolte a won → outcome won, remaining 0", () => {
+    const rows = [
+      { id: "p1", status: "settled", result: "won", starts_at: null },
+      { id: "p2", status: "settled", result: "won", starts_at: null },
+      { id: "p3", status: "settled", result: "won", starts_at: null },
+    ];
+    const r = resolveWeeklyPickOutcomes(legs, rows);
+    expect(r.outcome).toBe("won");
+    expect(r.remaining).toBe(0);
+  });
+
+  it("void non conta come persa: won + void, nessuna upcoming → won", () => {
+    const rows = [
+      { id: "p1", status: "settled", result: "won", starts_at: null },
+      { id: "p2", status: "void", result: "void", starts_at: null },
+      { id: "p3", status: "settled", result: "won", starts_at: null },
+    ];
+    const r = resolveWeeklyPickOutcomes(legs, rows);
+    expect(r.outcome).toBe("won");
+  });
+
+  it("leg senza riga corrispondente resta upcoming (mai lost) e passa il kickoff quando presente", () => {
+    const rows = [{ id: "p1", status: "upcoming", result: null, starts_at: "2026-07-06T12:00:00Z" }];
+    const r = resolveWeeklyPickOutcomes(legs, rows);
+    expect(r.legs.find((l) => l.id === "wp_p1")!.status).toBe("upcoming");
+    expect(r.legs.find((l) => l.id === "wp_p1")!.kickoff).toBe("2026-07-06T12:00:00Z");
+    expect(r.legs.find((l) => l.id === "wp_p2")!.status).toBe("upcoming");
+    expect(r.outcome).toBe("live");
   });
 });

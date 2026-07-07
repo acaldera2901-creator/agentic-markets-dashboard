@@ -79,3 +79,40 @@ export function buildHouseMultipla(
   const combinedProb = selections.reduce((acc, i) => acc * i.prob, 1);
   return { selections, combinedProb };
 }
+
+// Stato di una leg risolto contro il settlement della sua predizione.
+export type LegStatus = "upcoming" | "won" | "lost" | "void";
+// Esito aggregato della multipla nella settimana.
+export type MultiplaOutcome = "live" | "won" | "lost";
+// Riga minima di unified_predictions necessaria alla risoluzione.
+export type PredOutcomeRow = {
+  id: string;
+  status: string | null;
+  result: string | null; // "won" | "lost" | "void" | "pending" | null
+  starts_at: string | null;
+};
+export type ResolvedLeg = WeeklyPickLeg & { status: LegStatus; kickoff: string | null };
+
+// PURA. Mappa ogni leg (id = `wp_<predId>`) allo stato del suo pronostico e deriva
+// l'esito aggregato. Regole: `lost` se ≥1 leg persa; altrimenti `live` se ≥1 leg
+// ancora da giocare; altrimenti `won`. Una leg il cui predId non ha riga resta
+// `upcoming` (mai `lost`): un dato mancante non fa fallire falsamente la multipla.
+export function resolveWeeklyPickOutcomes(
+  legs: WeeklyPickLeg[],
+  predRows: PredOutcomeRow[]
+): { legs: ResolvedLeg[]; outcome: MultiplaOutcome; remaining: number } {
+  const byId = new Map(predRows.map((r) => [r.id, r]));
+  const resolved: ResolvedLeg[] = legs.map((leg) => {
+    const predId = leg.id.startsWith("wp_") ? leg.id.slice(3) : leg.id;
+    const row = byId.get(predId);
+    let status: LegStatus = "upcoming";
+    if (row && (row.result === "won" || row.result === "lost" || row.result === "void")) {
+      status = row.result;
+    }
+    return { ...leg, status, kickoff: row?.starts_at ?? null };
+  });
+  const anyLost = resolved.some((l) => l.status === "lost");
+  const remaining = resolved.filter((l) => l.status === "upcoming").length;
+  const outcome: MultiplaOutcome = anyLost ? "lost" : remaining > 0 ? "live" : "won";
+  return { legs: resolved, outcome, remaining };
+}

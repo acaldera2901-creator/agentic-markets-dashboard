@@ -68,3 +68,39 @@ Dev: Andrea (via Claude Code). Prezzo (€12.99) e go: **deciso da Andrea**.
 1. **Michele** — allineamento (prezzo già deciso da Andrea); flag se confligge col
    pricing appena deployato.
 2. **APPROVE `ch_deploy_gate`** (umano) prima del deploy DB+pagamenti.
+
+---
+
+## AGGIORNAMENTO 2026-07-07 — UI strutturata FATTA, resta il GO-LIVE (gate)
+
+La pagina è stata ridisegnata e resa raggiungibile. **Fatto su branch
+`feat/weekly-pick-page` (frontend/read-only, NON deployato, NON mergiato):**
+- `/weekly-pick` riscritta in 4 sezioni: hero+spiegazione, card multipla con **stato
+  live delle legs** (✓/✗/⏱ — chi compra a metà settimana vede cosa ha già giocato e
+  cosa manca), come funziona, storico settimane precedenti.
+- Endpoint `/api/weekly-pick/history` (read-time, join su `unified_predictions.result`,
+  **nessuna nuova tabella**) + `/api/weekly-pick` arricchito con lo stato per-leg.
+- Funzione pura `resolveWeeklyPickOutcomes` + 6 unit test (verdi).
+- Entry point: link nel **rail "Featured"** (glyph SVG `g-ticket`) + benefit "Weekly
+  Pick inclusa" nella card **Pro** dei Piani.
+- No-leak enforced: utenti lockati vedono solo label + `N ancora da giocare`, mai
+  pick/prob/esito per-leg.
+- Build verde, tsc pulito, visual check locale OK (con flag OFF mostra "in arrivo").
+
+### COSA CAMBIA al GO-LIVE (change-spec, SOLO se approvato — nulla di ciò segue prima)
+1. **Merge/deploy** del branch `feat/weekly-pick-page` su main → prod (Vercel).
+   Reversibile: revert del merge.
+2. **DB**: apply `db/migrations/014_weekly_pick.sql` su prod (crea `weekly_pick`,
+   `weekly_pick_orders`, `weekly_pick_purchases` + RPC `claim_weekly_pick_order`).
+   Reversibile: drop tabelle/RPC.
+3. **Env**: `WEEKLY_PICK_ENABLED=true` su Vercel (prod). Reversibile: `false`.
+4. **Cron**: aggiungere in `vercel.json`
+   `{ "path": "/api/weekly-pick/generate", "schedule": "0 6 * * 1" }` (lun 06:00 UTC).
+   Usa `CRON_SECRET` (già presente).
+5. **Pagamenti**: verificare rail PayGate one-off €12.99 (checkout→callback→grant) in
+   sandbox prima del GO.
+- **Blast radius**: DB + pagamenti + deploy prod. **APPROVE `ch_deploy_gate` (umano) +
+  OK Michele sul prezzo OBBLIGATORI.**
+- **Verifica post-GO**: dopo il primo `generate` (o trigger manuale con `CRON_SECRET`),
+  da loggato su prod la card mostra la multipla con stato live; acquisto one-off
+  sblocca; lo storico popola dalla 2ª settimana.

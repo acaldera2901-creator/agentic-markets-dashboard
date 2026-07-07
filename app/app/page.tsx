@@ -3796,6 +3796,7 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Match Builder e Best Bets +EV", en: "Match Builder and Best Bets +EV", es: "Match Builder y Best Bets +EV", fr: "Match Builder et Best Bets +EV", ru: "Match Builder и Best Bets +EV" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Edge, stake e CLV su tutto", en: "Edge, stake and CLV on everything", es: "Edge, stake y CLV en todo", fr: "Edge, mise et CLV sur tout", ru: "Edge, ставка и CLV по всему" })}</PlanFeature>
+            <PlanFeature><Link href="/weekly-pick" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Pick inclusa (la multipla della casa)", en: "Weekly Pick included (the house accumulator)", es: "Weekly Pick incluida (la combinada de la casa)", fr: "Weekly Pick inclus (le combiné de la maison)", ru: "Weekly Pick включён (экспресс от команды)" })}</Link></PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
         </article>
@@ -8639,6 +8640,11 @@ export default function Dashboard() {
                 <MenuIcon name="creator" size={18} className="rail-ic" />
                 <span className="rail-label">Creator Picks</span>
               </a>
+              {/* #WEEKLY-PICK-1: Weekly Pick — la multipla della casa (route) */}
+              <Link className="rail-item" href="/weekly-pick">
+                <svg className="rail-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
+                <span className="rail-label">Weekly Pick</span>
+              </Link>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
                 ↻ {refreshing ? "..." : tUI.refresh_odds}
                 <span className="sync">live</span>
