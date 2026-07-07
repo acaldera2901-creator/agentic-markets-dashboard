@@ -23,9 +23,6 @@ type Row = {
   home_team: string | null;
   away_team: string | null;
   pick: string | null;
-  p_home: number | null;
-  p_draw: number | null;
-  p_away: number | null;
   notes: string | null;
   starts_at: string;
 };
@@ -37,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   const rows = await dbQuery<Row>(
-    `SELECT id, sport, home_team, away_team, pick, p_home, p_draw, p_away, notes, starts_at::text AS starts_at
+    `SELECT id, sport, home_team, away_team, pick, notes, starts_at::text AS starts_at
        FROM unified_predictions
       WHERE starts_at > NOW()
         AND starts_at < NOW() + ($1 || ' days')::interval
@@ -52,10 +49,11 @@ export async function POST(req: Request) {
   const candidates: WeeklyPickLeg[] = [];
   const seen = new Set<string>();
   for (const r of rows) {
-    // Le friendly/WC tengono la distribuzione 1X2 nei `notes` (colonne p_* null):
-    // stesso coalesce di /api/v2/predictions, così i numeri concordano col board.
-    let pH = r.p_home, pD = r.p_draw, pA = r.p_away;
-    if (pH == null && r.notes) {
+    // La distribuzione 1X2 vive SOLO nel campo `notes` (JSON) — unified_predictions
+    // non ha colonne p_home/p_draw/p_away (stessa fonte di /api/v2/predictions, così
+    // i numeri concordano col board). Righe senza notes (es. tennis, alcune CSL) → skip.
+    let pH: number | null = null, pD: number | null = null, pA: number | null = null;
+    if (r.notes) {
       try {
         const n = JSON.parse(r.notes);
         if (typeof n?.p_home === "number") {
