@@ -5439,7 +5439,12 @@ button:disabled {
    deformata + scroll orizzontale. container-type:inline-size aggancia i breakpoint
    alla colonna che contiene davvero le card. minmax(0,1fr) toglie il floor min-content
    delle tracce (auto) che altrimenti impone un pavimento di larghezza al documento. */
-.am-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; padding: 0 14px 14px; container-type: inline-size; }
+/* grid-auto-flow: dense (#BANNERS-IN-GRID) — le card sono tutte span-4/3 uguali →
+   nessuna riga ha gap, dense NON le riordina. Serve solo quando un banner landscape
+   (span-6, non multiplo dello span-card) non entra nelle colonne rimaste di una riga
+   parziale: senza dense lascerebbe un BUCO lì e scenderebbe; con dense la card
+   successiva riempie quel buco e il banner scende su riga pulita. Ordine card intatto. */
+.am-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; padding: 0 14px 14px; container-type: inline-size; grid-auto-flow: row dense; }
 .am-grid > .card { grid-column: span 4; min-width: 0; }
 .am-grid > .card.tennis { grid-column: span 3; }
 /* House banner inline nel board (#HOUSE-PHOTO-1): usiamo TUTTI i formati, non solo
@@ -5493,27 +5498,37 @@ button:disabled {
 .am-grid > .house-banner.hb-cr-halfpage{ grid-column: span 4; }
 .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
 .am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage{ grid-column: span 3; }
+/* #BANNERS-IN-GRID landscape (16:9): il quadrato può STIRARSI all'altezza di riga
+   con cover (near-square → clip trascurabile). Il landscape NO: ha headline/logo/
+   disclaimer baked su tutta la larghezza → cropparlo lo rovina. E l'altezza delle
+   card è troppo variabile (goals block, deep-analysis, WHY) per farla combaciare a
+   uno span fisso senza buco/stiramento. Soluzione (scelta di Andrea "grid-row
+   dedicato, altezza naturale"): RIGA DEDICATA di DUE landscape affiancati, span 6
+   ciascuno (6+6 = riga piena, ZERO gutter). Ognuno mostra l'immagine INTERA alla sua
+   altezza NATURALE 16:9 (img a flusso, sotto). Sulla riga NON ci sono card → niente
+   stiramento e niente buco, del tutto indipendente dall'altezza variabile delle card
+   (grid-auto-flow: dense completa la riga-card precedente, vedi .am-grid). */
 .am-grid > .house-banner.hb-cr-billboard,
-.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 8; }
-.am-grid:has(> .card.tennis) > .house-banner.hb-cr-billboard,
-.am-grid:has(> .card.tennis) > .house-banner.hb-cr-leaderboard{ grid-column: span 6; }
+.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 6; aspect-ratio: auto; min-height: 0; }
+/* immagine a flusso naturale (non absolute-cover): l'altezza segue il 16:9 reale. */
+.am-grid > .house-banner.hb-cr-billboard .hb-cr-img,
+.am-grid > .house-banner.hb-cr-leaderboard .hb-cr-img{ position: static; inset: auto; width: 100%; height: auto; }
+/* Tablet: il QUADRATO passa a span 6 (2-up); il landscape resta riga dedicata 1/-1. */
 @container (max-width: 1080px) {
   .am-grid > .house-banner.hb-cr-rectangle,
   .am-grid > .house-banner.hb-cr-halfpage,
   .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage,
-  .am-grid > .house-banner.hb-cr-billboard,
-  .am-grid > .house-banner.hb-cr-leaderboard,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-billboard,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-leaderboard{ grid-column: span 6; }
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage{ grid-column: span 6; }
 }
-/* Mobile 1-up: il tile è full-width e da solo nella riga → niente card da cui
-   ereditare l'altezza. Qui l'aspect-ratio gli dà un'altezza intrinseca (strip 16:9). */
+/* Mobile 1-up: il QUADRATO è full-width e da solo sulla riga → niente card da cui
+   ereditare l'altezza; l'aspect-ratio gli dà un'altezza intrinseca (strip 16:9). */
 @container (max-width: 640px) {
-  /* Il secondo selettore eguaglia la specificità della regola tennis :has(...) sopra
-     (0,5,0) e, venendo dopo, vince → il tile è full-width anche nella griglia tennis. */
-  .am-grid > .house-banner.hb-cr-grid,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-grid{ grid-column: 1 / -1; aspect-ratio: 16 / 9; min-height:0; }
+  .am-grid > .house-banner.hb-cr-rectangle,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle{ grid-column: 1 / -1; aspect-ratio: 16 / 9; min-height:0; }
+  /* i due landscape non stanno affiancati su mobile (sarebbero minuscoli): ognuno
+     full-width a flusso naturale 16:9 → si impilano, interi e leggibili. */
+  .am-grid > .house-banner.hb-cr-billboard,
+  .am-grid > .house-banner.hb-cr-leaderboard{ grid-column: 1 / -1; }
 }
 
 /* ---- canonical card ---- */
