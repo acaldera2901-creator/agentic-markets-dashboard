@@ -8549,14 +8549,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Top banner ── (#HOUSE-BANNERS-1: house ad contestuale) */}
-      {(() => {
-        const camp = pickCampaign("desk-top", houseTier);
-        return camp
-          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} onCta={handleBannerCta} /></div>
-          : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
-      })()}
-
       {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
       <header className="am-topbar">
         <div className="am-topbar-in">
@@ -8636,6 +8628,16 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* ── Top banner ── (#HOUSE-BANNERS-1: house ad contestuale)
+          #BANNER-FIX-0707: montato SOTTO l'header (prima era il primo figlio di
+          portal-root → si renderizzava sopra la navbar, pagina "tagliata in alto"). */}
+      {(() => {
+        const camp = pickCampaign("desk-top", houseTier);
+        return camp
+          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} onCta={handleBannerCta} /></div>
+          : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
+      })()}
 
       {/* ── 3-column layout ── */}
       <div className="portal-columns">

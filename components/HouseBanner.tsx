@@ -222,16 +222,25 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
   // maxWidth per formato così ogni banner riempie il suo slot in modo professionale.
   const creative = creativeFor(campaign);
   if (creative) {
-    const creativeMaxW = campaign.format === "halfpage" ? 300 : campaign.format === "rectangle" ? 340 : 560;
+    // #BANNER-FIX-0707: i creativi Ole sono FINITI e autosufficienti (headline +
+    // subcopy + logo già nell'immagine). Prima si sovrapponeva un tasto CTA assoluto
+    // in basso-sx che COLLIDEVA col logo/ultima riga di copy baked → sembrava "tagliato".
+    // Fix: niente pill sovrapposta; l'INTERA immagine è il link (come il carosello home),
+    // così il creativo si vede integro e resta cliccabile (onCta gestisce il cambio tab).
+    // In-content (topbar/interstitial) il creativo è più contenuto per non spingere giù la lista.
+    const creativeMaxW =
+      campaign.format === "halfpage" ? 300
+      : campaign.format === "rectangle" ? 340
+      : campaign.slot === "desk-topbar" || campaign.slot === "desk-interstitial" ? 440
+      : 560;
     return (
       <aside
         className="house-banner hb-creative"
         aria-label={c.eyebrow}
         style={{ position: "relative", display: "block", height: "auto", minHeight: 0, padding: 0, background: "transparent", overflow: "hidden", borderRadius: 14, width: "100%", maxWidth: creativeMaxW, marginInline: "auto", gridColumn: "1 / -1" }}
       >
-        <img src={creative} alt={c.headline} style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }} />
-        <Link href={campaign.cta.href} className="hb-cta" onClick={onCtaClick} style={{ position: "absolute", left: 16, bottom: 16, zIndex: 2 }}>
-          {ctaLabel}
+        <Link href={campaign.cta.href} className="hb-creative-link" onClick={onCtaClick} aria-label={ctaLabel} style={{ display: "block" }}>
+          <img src={creative} alt={c.headline} style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }} />
         </Link>
         {dismissBtn}
       </aside>
