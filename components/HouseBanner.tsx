@@ -170,7 +170,7 @@ function PhotoBg({ src }: { src: string }) {
 // renderizzati DENTRO /app, gli href same-page (/app?tab=…) non risincronizzano
 // il tab dell'host (lo legge solo al mount) → il <Link> alla stessa route è un
 // no-op e il bottone sembrava morto. L'host ritorna true se ha gestito il click.
-export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean }) {
+export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean; inGrid?: boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const viewed = useRef(false);
   const L: Lang = hbLang(lang);
@@ -222,17 +222,22 @@ export function HouseBanner({ campaign, lang, data, onCta }: { campaign: HouseCa
   // maxWidth per formato così ogni banner riempie il suo slot in modo professionale.
   const creative = creativeFor(campaign);
   if (creative) {
-    // #BANNER-FIX-0707: i creativi Ole sono FINITI e autosufficienti (headline +
-    // subcopy + logo già nell'immagine). Prima si sovrapponeva un tasto CTA assoluto
-    // in basso-sx che COLLIDEVA col logo/ultima riga di copy baked → sembrava "tagliato".
-    // Fix: niente pill sovrapposta; l'INTERA immagine è il link (come il carosello home),
-    // così il creativo si vede integro e resta cliccabile (onCta gestisce il cambio tab).
-    // In-content (topbar/interstitial) il creativo è più contenuto per non spingere giù la lista.
-    const creativeMaxW =
-      campaign.format === "halfpage" ? 300
-      : campaign.format === "rectangle" ? 340
-      : campaign.slot === "desk-topbar" || campaign.slot === "desk-interstitial" ? 440
-      : 560;
+    // #BANNERS-IN-GRID: dentro la griglia schede (inGrid) il creativo Ole è un TILE
+    // impacchettato COME UNA CARD — rectangle → 1 cella quadrata (default), billboard/
+    // leaderboard → 2 celle landscape. L'immagine riempie la cella (object-fit:cover in
+    // .hb-cr-grid) → stessa altezza delle card adiacenti, ZERO gutter. Posizionamento e
+    // span guidati da .hb-cr-* in globals.css (niente gridColumn/maxWidth inline).
+    if (inGrid) {
+      return (
+        <aside className={`house-banner hb-creative hb-cr-grid hb-cr-${campaign.format}`} aria-label={c.eyebrow}>
+          <img src={creative} alt={c.headline} className="hb-cr-img" />
+          <Link href={campaign.cta.href} className="hb-cta hb-cr-cta" onClick={onCtaClick}>{ctaLabel}</Link>
+          {dismissBtn}
+        </aside>
+      );
+    }
+    // Fuori dalla griglia (landing): creativo intero centrato, invariato.
+    const creativeMaxW = campaign.format === "halfpage" ? 300 : campaign.format === "rectangle" ? 340 : 560;
     return (
       <aside
         className="house-banner hb-creative"

@@ -231,8 +231,11 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
   },
   {
     id: "feed-worldcup",
+    // #BANNERS-IN-GRID: rectangle → tile QUADRATO 1:1 impacchettato come una card
+    // (default validato da Andrea). Il landscape 2-col cover-croppava il testo baked
+    // del creativo; il quadrato è disegnato per il display near-square → nessun clip.
     slot: "desk-feed",
-    format: "billboard",
+    format: "rectangle",
     audiences: ["base", "premium"],
     glyphs: ["#g-trophy", "#g-ball"],
     copy: {
