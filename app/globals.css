@@ -5468,6 +5468,54 @@ button:disabled {
 @container (max-width: 1080px) { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 6; } }
 @container (max-width: 640px)  { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 12; } }
 
+/* #BANNERS-IN-GRID: creativo Ole impacchettato TRA le schede bet come una card.
+   L'immagine riempie la cella (object-fit:cover) → stessa altezza delle card
+   adiacenti, ZERO gutter. rectangle → 1 cella quadrata (default) · billboard/
+   leaderboard → 2 celle landscape 16:9. aspect-ratio dà l'altezza intrinseca
+   quando il tile è da solo su una riga (es. mobile 1-up); quando la riga è più
+   alta (card vicine) il grid lo stira e object-fit:cover riempie senza buchi. */
+.am-grid > .house-banner.hb-cr-grid{
+  position:relative; display:block; padding:0; overflow:hidden;
+  border-radius:14px; min-width:0; min-height:180px; background:var(--am-inset);
+  border:1px solid var(--am-line); box-shadow:inset 0 1px 0 var(--am-hi);
+}
+/* Nessun aspect-ratio su desktop/tablet: il tile è sempre affiancato a delle card
+   (placement i%8==7 con card seguente garantita) → grid stretch lo porta ESATTAMENTE
+   all'altezza di riga delle card e object-fit:cover riempie → stessa altezza, ZERO
+   gap sotto. min-height è solo un floor di sicurezza (non contrasta lo stretch). */
+.am-grid > .house-banner.hb-cr-grid .hb-cr-img{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+}
+.am-grid > .house-banner.hb-cr-grid .hb-cr-cta{
+  position:absolute; left:14px; bottom:14px; z-index:2;
+}
+.am-grid > .house-banner.hb-cr-rectangle,
+.am-grid > .house-banner.hb-cr-halfpage{ grid-column: span 4; }
+.am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
+.am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage{ grid-column: span 3; }
+.am-grid > .house-banner.hb-cr-billboard,
+.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 8; }
+.am-grid:has(> .card.tennis) > .house-banner.hb-cr-billboard,
+.am-grid:has(> .card.tennis) > .house-banner.hb-cr-leaderboard{ grid-column: span 6; }
+@container (max-width: 1080px) {
+  .am-grid > .house-banner.hb-cr-rectangle,
+  .am-grid > .house-banner.hb-cr-halfpage,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage,
+  .am-grid > .house-banner.hb-cr-billboard,
+  .am-grid > .house-banner.hb-cr-leaderboard,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-billboard,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-leaderboard{ grid-column: span 6; }
+}
+/* Mobile 1-up: il tile è full-width e da solo nella riga → niente card da cui
+   ereditare l'altezza. Qui l'aspect-ratio gli dà un'altezza intrinseca (strip 16:9). */
+@container (max-width: 640px) {
+  /* Il secondo selettore eguaglia la specificità della regola tennis :has(...) sopra
+     (0,5,0) e, venendo dopo, vince → il tile è full-width anche nella griglia tennis. */
+  .am-grid > .house-banner.hb-cr-grid,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-grid{ grid-column: 1 / -1; aspect-ratio: 16 / 9; min-height:0; }
+}
+
 /* ---- canonical card ---- */
 .pred {
   position: relative;
@@ -6156,13 +6204,10 @@ button:disabled {
   .hb-leaderboard .hb-cta{ margin-right:0; }
 }
 
-/* ── Integrazione negli slot predisposti (evita doppia cornice) ── */
-.portal-top-banner .house-banner{ border:0; background:transparent; border-radius:0; width:100%; }
-.portal-bottom-banner .house-banner{ width:100%; max-width:1120px; margin:0 auto; }
-/* #HOUSE-PHOTO-3: Creator Picks sopra la board (al posto del banner partner) — banda full-width, altezza moderata */
-.topbar-house{ margin:18px 0; }
-.topbar-house .house-banner.hb-billboard{ width:100%; max-width:100%; min-height:170px; }
-.portal-bottom-banner:has(.house-banner){ padding-top:18px; padding-bottom:18px; }
+/* #BANNERS-IN-GRID: rimosse le regole di integrazione delle bande house full-width
+   (topbar / portal-top / portal-bottom / interstitial) — quei banner non vengono
+   più renderizzati; i banner house vivono ora come tile dentro .am-grid (vedi
+   .hb-cr-grid sopra). Restano le regole landing (.lp) qui sotto, ancora in uso. */
 /* Landing: billboard a tutta larghezza tra cards e footer */
 .lp-house{ padding:0 24px 8px; }
 .lp .house-banner.hb-billboard{ margin:8px auto 0; max-width:1180px; width:100%; }
@@ -6254,9 +6299,6 @@ button:disabled {
 .hb-mini-nm{ font-size:12px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .hb-mini-e{ font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--am-positive); margin-left:auto; }
 
-/* mount: interstitial board (banda full-width tra le sezioni) */
-.house-interstitial{ margin:18px 14px; }
-.house-interstitial .house-banner{ width:100%; }
 
 @media (max-width:860px){
   .hb-bill-row{ flex-direction:column; align-items:flex-start; }

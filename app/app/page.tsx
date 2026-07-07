@@ -30,7 +30,7 @@ import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
-import { pickCampaign, campaignsFor, audienceFromPlan, buildBannerData, type BannerData, type BannerMatchInput } from "@/lib/house-banners";
+import { campaignsFor } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -2080,20 +2080,6 @@ function isTennisBestBet(m: TennisMatch) {
     && (m.edge ?? 0) >= TENNIS_BEST_EDGE_THRESHOLD;
 }
 
-// #HOUSE-BANNERS-2: dati reali per i banner ricchi (ticker/chip/mini-board).
-// edge è decimale sul board (0.062) → ×100 in punti per il rendering "+6.2%".
-function deskBannerData(
-  predictions: Prediction[],
-  tennisMatches: TennisMatch[],
-  opts: { hitRate?: string | null } = {},
-): BannerData {
-  const matches: BannerMatchInput[] = [
-    ...predictions.map((p) => ({ sport: "football" as const, name: `${p.home_team}–${p.away_team}`, edge: p.edge != null ? p.edge * 100 : null })),
-    ...tennisMatches.map((m) => ({ sport: "tennis" as const, name: `${m.player1}–${m.player2}`, edge: m.edge != null ? m.edge * 100 : null })),
-  ];
-  return buildBannerData(matches, { eventsCount: predictions.length + tennisMatches.length, hitRate: opts.hitRate });
-}
-
 // #FREE-PRED-REVAMP-0626: paywall curato per i Free. Sostituisce i wall gialli +
 // i "🔒" placeholder: l'assaggio (1 pick reale per sport, già sbloccata dal server)
 // resta sopra, questo pannello converte il resto. CTA → tab Piani via onUpgrade.
@@ -2195,8 +2181,6 @@ function SportsbookBoard({
     return !!lm && !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || "");
   };
   const query = searchTerm.trim().toLowerCase();
-  // #HOUSE-BANNERS-2: dati reali per ticker/chip/mini-board del feed e interstitial.
-  const boardData = deskBannerData(predictions, tennisMatches);
   const boardAudience = isPremium ? "premium" : (isFreeClient ? "free" : "anon");
   // #HOUSE-PHOTO-1 dedup: mai 2 banner uguali per pagina. Le campagne desk-feed
   // sono divise in modo DISGIUNTO tra calcio (indici pari) e tennis (dispari),
@@ -2386,7 +2370,7 @@ function SportsbookBoard({
                       );
                       if (placed < footballFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
-                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={camp} lang={lang} onCta={onBannerCta} />];
+                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={camp} lang={lang} onCta={onBannerCta} inGrid />];
                       }
                       return [card];
                     });
@@ -2414,15 +2398,9 @@ function SportsbookBoard({
             </section>
           )}
 
-          {/* #HOUSE-BANNERS-2: interstitial billboard tra calcio e tennis (board pieno) */}
-          {showFootballSection && showTennisSection && !isFreeClient && (() => {
-            const camp = pickCampaign("desk-interstitial", boardAudience);
-            return camp ? (
-              <div className="house-interstitial">
-                <HouseBanner campaign={camp} lang={lang} data={boardData} onCta={onBannerCta} />
-              </div>
-            ) : null;
-          })()}
+          {/* #BANNERS-IN-GRID: rimossa l'interstitial billboard full-width (banda con
+              gutter) tra calcio e tennis — i banner house ora vivono SOLO intercalati
+              tra le schede bet come tile impacchettati (vedi .am-grid sopra). */}
 
           {showTennisSection && (
             <section>
@@ -2446,7 +2424,7 @@ function SportsbookBoard({
                       );
                       if (placed < tennisFeed.length && i % 8 === 7 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
-                        return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={camp} lang={lang} onCta={onBannerCta} />];
+                        return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={camp} lang={lang} onCta={onBannerCta} inGrid />];
                       }
                       return [card];
                     });
@@ -7738,8 +7716,6 @@ function UnifiedBetsTab({
   hitRate?: string | null;
 }) {
   const lang = useLang();
-  // #HOUSE-PHOTO-3: dati reali per la versione RICCA del banner topbar (ticker top-edge + chip Edge medio).
-  const topbarData = deskBannerData(predictions, tennisMatches);
 
   return (
     <>
@@ -7757,11 +7733,9 @@ function UnifiedBetsTab({
           projection already strips the picks server-side; this hides the
           matchups too). Leaderboard and the public Old-bets history stay
           outside the gate. Unlock = active plan (profileHasAccess). */}
-      {/* #HOUSE-PHOTO-3: al posto del banner partner sportsbook, il banner Creator Picks
-          (house, foto) sopra la board — visibile a tutti i pacchetti. */}
-      {/* #HOUSE-PHOTO-3b: versione ricca (ticker edge%) SOLO per chi è sbloccato (base/premium);
-          anon/free vedono la versione sobria — niente edge% esposti sopra il gate. */}
-      {(() => { const c = pickCampaign("desk-topbar", "premium"); return c ? <div className="topbar-house"><HouseBanner campaign={c} lang={lang} data={isPremiumClient ? topbarData : undefined} onCta={onBannerCta} /></div> : null; })()}
+      {/* #BANNERS-IN-GRID: rimossa la banda house full-width sopra la board (topbar,
+          lasciava gutter ai lati). I banner house ora vivono SOLO intercalati tra le
+          schede bet, impacchettati come tile della griglia. */}
       {/* Free (signal-preview) clients pass the whole-board wall so the inner
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
@@ -8463,8 +8437,6 @@ export default function Dashboard() {
   // session, the desk is walled — the auth modal is force-shown and locked.
   const mustAuth = authChecked && !hasSession;
 
-  // Pacchetto utente per i banner house (#HOUSE-PHOTO-1): anon|free|base|premium.
-  const houseTier = audienceFromPlan(clientProfile?.plan);
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
@@ -8484,13 +8456,9 @@ export default function Dashboard() {
     modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) >= MODEL_EDGE_KPI_FLOOR,
   ).length;
   const withEdgeCount = fbWithEdge + tnWithEdge;
-  // #HOUSE-BANNERS-2: dati reali per top/bottom/rail (hit rate dallo storico v2).
   // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di campione.
   const v2RateMeaningful = historyV2Stats != null
     && isRateMeaningful(historyV2Stats.won + historyV2Stats.lost);
-  const houseData = deskBannerData(predictions, tennisMatches, {
-    hitRate: v2RateMeaningful ? historyV2Stats?.win_rate : null,
-  });
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -8548,6 +8516,9 @@ export default function Dashboard() {
           {activationNotice.msg}
         </div>
       )}
+
+      {/* #BANNERS-IN-GRID: rimossa la banda house full-width in cima al portal (top),
+          i banner house vivono ora solo intercalati tra le schede bet. */}
 
       {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
       <header className="am-topbar">
@@ -8629,15 +8600,9 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Top banner ── (#HOUSE-BANNERS-1: house ad contestuale)
-          #BANNER-FIX-0707: montato SOTTO l'header (prima era il primo figlio di
-          portal-root → si renderizzava sopra la navbar, pagina "tagliata in alto"). */}
-      {(() => {
-        const camp = pickCampaign("desk-top", houseTier);
-        return camp
-          ? <div className="portal-top-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} onCta={handleBannerCta} /></div>
-          : <div className="portal-top-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
-      })()}
+      {/* #BANNERS-IN-GRID: rimossa anche la banda house desk-top sotto l'header
+          (supersede #BANNER-FIX-0707): i banner house vivono solo intercalati tra
+          le schede bet, non come bande chrome. */}
 
       {/* ── 3-column layout ── */}
       <div className="portal-columns">
@@ -8799,13 +8764,8 @@ export default function Dashboard() {
 
       </div>{/* end portal-columns */}
 
-      {/* ── Bottom banner ── (#HOUSE-BANNERS-1: house billboard contestuale) */}
-      {(() => {
-        const camp = pickCampaign("desk-bottom", houseTier);
-        return camp
-          ? <div className="portal-bottom-banner"><HouseBanner campaign={camp} lang={uiLanguage} data={houseData} onCta={handleBannerCta} /></div>
-          : <div className="portal-bottom-banner" style={{ visibility: "hidden", height: 0, overflow: "hidden", padding: 0 }} />;
-      })()}
+      {/* #BANNERS-IN-GRID: rimossa la banda house billboard full-width in fondo (bottom),
+          i banner house vivono ora solo intercalati tra le schede bet. */}
 
 
       {/* #UI-FOOTER-UNIFIED-0623: footer condiviso (Terms/Privacy in-site, social
