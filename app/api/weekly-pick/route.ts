@@ -25,6 +25,9 @@ type WpRow = { selections: unknown; combined_prob: string | number | null };
 type RichRow = PredOutcomeRow & {
   league: string | null;
   competition: string | null;
+  world_cup_stage: string | null;
+  neutral_venue: boolean | null;
+  model_version: string | null;
   confidence_score: number | null;
   risk_level: string | null;
   explanation: string | null;
@@ -32,8 +35,19 @@ type RichRow = PredOutcomeRow & {
   enrichment: unknown;
 };
 
-// Costruisce il payload dettaglio di una leg (FTC-safe: probabilità + reasoning +
-// contesto; MAI quote/edge). `explanation` narra già forma/xG/viaggio.
+type FormRec = { last: string[]; w: number; d: number; l: number; gf: number; ga: number };
+function parseForm(v: unknown): FormRec | null {
+  if (!v || typeof v !== "object") return null;
+  const f = v as Record<string, unknown>;
+  const last = Array.isArray(f.last) ? f.last.filter((x): x is string => typeof x === "string").slice(-5) : [];
+  const n = (k: string) => (typeof f[k] === "number" ? (f[k] as number) : 0);
+  if (!last.length && !n("w") && !n("d") && !n("l")) return null;
+  return { last, w: n("w"), d: n("d"), l: n("l"), gf: n("gf"), ga: n("ga") };
+}
+
+// Costruisce il payload dettaglio di una leg (FTC-safe: probabilità + gol attesi +
+// forma + reasoning + contesto; MAI quote/edge). Sfrutta l'enrichment ricco del
+// modello (lambdas = gol attesi, form_*, venue, squad).
 function buildLegDetail(r: RichRow) {
   let probs: { home: number; draw: number | null; away: number | null } | null = null;
   try {
@@ -49,21 +63,35 @@ function buildLegDetail(r: RichRow) {
   const e = (r.enrichment && typeof r.enrichment === "object") ? (r.enrichment as Record<string, unknown>) : {};
   const squad = (e.squad && typeof e.squad === "object") ? (e.squad as Record<string, unknown>) : {};
   const venue = (e.venue && typeof e.venue === "object") ? (e.venue as Record<string, unknown>) : {};
+  const lambdas = (e.lambdas && typeof e.lambdas === "object") ? (e.lambdas as Record<string, unknown>) : {};
+  const matches = (e.matches && typeof e.matches === "object") ? (e.matches as Record<string, unknown>) : {};
   const strArr = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 3) : []);
   const numOrNull = (v: unknown) => (typeof v === "number" ? v : null);
+  const xgH = numOrNull(lambdas.home);
+  const xgA = numOrNull(lambdas.away);
   return {
-    league: r.competition || r.league || null,
+    competition: r.competition || r.league || null,
+    stage: r.world_cup_stage ?? null,
+    neutral: r.neutral_venue === true,
     probs,
     confidence: r.confidence_score ?? null,
     risk: r.risk_level ?? null,
     why: r.explanation ?? null,
+    xg: (xgH != null || xgA != null) ? { home: xgH, away: xgA } : null,
+    form: { home: parseForm(e.form_home), away: parseForm(e.form_away) },
     injuries: { home: strArr(squad.injuries_home), away: strArr(squad.injuries_away) },
+    rotation: { home: squad.rotation_flag_home === true, away: squad.rotation_flag_away === true },
     venue: {
       heat: venue.heat_risk === true,
+      indoor: venue.indoor === true,
       altitude: numOrNull(venue.altitude_m),
       tzHome: numOrNull(venue.tz_shift_home),
       tzAway: numOrNull(venue.tz_shift_away),
+      travelHome: numOrNull(venue.travel_km_home),
+      travelAway: numOrNull(venue.travel_km_away),
     },
+    model: r.model_version ?? null,
+    sample: { home: numOrNull(matches.home), away: numOrNull(matches.away) },
   };
 }
 
@@ -91,7 +119,8 @@ export async function GET(req: Request) {
   const predRows = predIds.length
     ? await dbQuery<RichRow>(
         `SELECT id::text AS id, status, result, starts_at::text AS starts_at,
-                league, competition, confidence_score, risk_level, explanation, notes, enrichment
+                league, competition, world_cup_stage, neutral_venue, model_version,
+                confidence_score, risk_level, explanation, notes, enrichment
            FROM unified_predictions WHERE id::text = ANY($1)`,
         [predIds]
       )

@@ -19,14 +19,22 @@ function sportKind(sport: string): SportKind {
 }
 
 type LegStatus = "upcoming" | "won" | "lost" | "void" | null;
+type FormRec = { last: string[]; w: number; d: number; l: number; gf: number; ga: number };
 type Detail = {
-  league: string | null;
+  competition: string | null;
+  stage: string | null;
+  neutral: boolean;
   probs: { home: number; draw: number | null; away: number | null } | null;
   confidence: number | null;
   risk: string | null;
   why: string | null;
+  xg: { home: number | null; away: number | null } | null;
+  form: { home: FormRec | null; away: FormRec | null };
   injuries: { home: string[]; away: string[] };
-  venue: { heat: boolean; altitude: number | null; tzHome: number | null; tzAway: number | null };
+  rotation: { home: boolean; away: boolean };
+  venue: { heat: boolean; indoor: boolean; altitude: number | null; tzHome: number | null; tzAway: number | null; travelHome: number | null; travelAway: number | null };
+  model: string | null;
+  sample: { home: number | null; away: number | null };
 };
 type Sel = { label: string; sport: string; market: string | null; prob: number | null; status?: LegStatus; kickoff?: string | null; id?: string | null; detail?: Detail | null };
 type Data = {
@@ -59,11 +67,11 @@ type Lang = keyof typeof COPY;
 
 // Copy della scheda-dettaglio (modale "perché").
 const DCOPY = {
-  it: { open: "Apri la scheda", pick: "Il nostro pronostico", prob: "Probabilità del modello", conf: "confidenza", draw: "Pareggio", why: "Perché questa pick", ctx: "Contesto partita", inj: "Assenze", heat: "Caldo", alt: "Altitudine", tz: "Fuso", disclaimer: "Analisi del modello — nessuna garanzia di vincita." },
-  en: { open: "Open the card", pick: "Our pick", prob: "Model probability", conf: "confidence", draw: "Draw", why: "Why this pick", ctx: "Match context", inj: "Absences", heat: "Heat", alt: "Altitude", tz: "Time shift", disclaimer: "Model analysis — no win guaranteed." },
-  es: { open: "Abrir la ficha", pick: "Nuestro pronóstico", prob: "Probabilidad del modelo", conf: "confianza", draw: "Empate", why: "Por qué esta pick", ctx: "Contexto del partido", inj: "Ausencias", heat: "Calor", alt: "Altitud", tz: "Huso", disclaimer: "Análisis del modelo — sin garantía de acierto." },
-  fr: { open: "Ouvrir la fiche", pick: "Notre pronostic", prob: "Probabilité du modèle", conf: "confiance", draw: "Nul", why: "Pourquoi ce choix", ctx: "Contexte du match", inj: "Absences", heat: "Chaleur", alt: "Altitude", tz: "Décalage", disclaimer: "Analyse du modèle — aucun gain garanti." },
-  ru: { open: "Открыть карточку", pick: "Наш прогноз", prob: "Вероятность модели", conf: "уверенность", draw: "Ничья", why: "Почему этот пик", ctx: "Контекст матча", inj: "Отсутствия", heat: "Жара", alt: "Высота", tz: "Сдвиг", disclaimer: "Анализ модели — выигрыш не гарантирован." },
+  it: { open: "Apri la scheda", pick: "Il nostro pronostico", prob: "Probabilità del modello", conf: "confidenza", draw: "Pareggio", xg: "Gol attesi (modello)", form: "Forma recente", why: "Perché questa pick", ctx: "Contesto partita", inj: "Assenze", heat: "Caldo", alt: "Altitudine", tz: "Fuso orario", travel: "Viaggio", indoor: "Al coperto", rot: "Rotazione probabile", neutral: "Campo neutro", model: "Modello", games: "gare", gforga: "GF:GS", disclaimer: "Analisi del modello — nessuna garanzia di vincita." },
+  en: { open: "Open the card", pick: "Our pick", prob: "Model probability", conf: "confidence", draw: "Draw", xg: "Expected goals (model)", form: "Recent form", why: "Why this pick", ctx: "Match context", inj: "Absences", heat: "Heat", alt: "Altitude", tz: "Time shift", travel: "Travel", indoor: "Indoor", rot: "Likely rotation", neutral: "Neutral venue", model: "Model", games: "games", gforga: "GF:GA", disclaimer: "Model analysis — no win guaranteed." },
+  es: { open: "Abrir la ficha", pick: "Nuestro pronóstico", prob: "Probabilidad del modelo", conf: "confianza", draw: "Empate", xg: "Goles esperados (modelo)", form: "Forma reciente", why: "Por qué esta pick", ctx: "Contexto del partido", inj: "Ausencias", heat: "Calor", alt: "Altitud", tz: "Huso horario", travel: "Viaje", indoor: "Cubierto", rot: "Rotación probable", neutral: "Campo neutral", model: "Modelo", games: "partidos", gforga: "GF:GC", disclaimer: "Análisis del modelo — sin garantía de acierto." },
+  fr: { open: "Ouvrir la fiche", pick: "Notre pronostic", prob: "Probabilité du modèle", conf: "confiance", draw: "Nul", xg: "Buts attendus (modèle)", form: "Forme récente", why: "Pourquoi ce choix", ctx: "Contexte du match", inj: "Absences", heat: "Chaleur", alt: "Altitude", tz: "Décalage horaire", travel: "Voyage", indoor: "Couvert", rot: "Rotation probable", neutral: "Terrain neutre", model: "Modèle", games: "matchs", gforga: "BP:BC", disclaimer: "Analyse du modèle — aucun gain garanti." },
+  ru: { open: "Открыть карточку", pick: "Наш прогноз", prob: "Вероятность модели", conf: "уверенность", draw: "Ничья", xg: "Ожидаемые голы (модель)", form: "Форма", why: "Почему этот пик", ctx: "Контекст матча", inj: "Отсутствия", heat: "Жара", alt: "Высота", tz: "Часовой сдвиг", travel: "Перелёт", indoor: "В помещении", rot: "Вероятна ротация", neutral: "Нейтральное поле", model: "Модель", games: "игр", gforga: "ЗГ:ПГ", disclaimer: "Анализ модели — выигрыш не гарантирован." },
 } as const;
 
 // Icone inline (mai emoji).
@@ -80,8 +88,23 @@ function statusIcon(status: LegStatus) {
   return <IClock />;
 }
 
-// Corpo della modale-dettaglio: pronostico + probabilità del modello + il PERCHÉ
-// (explanation) + contesto partita. FTC-safe: mai quote/edge.
+// Riga forma: sequenza W/D/L (ultime 5) + record + gol fatti/subiti.
+function FormLine({ team, f, gforga }: { team: string; f: FormRec; gforga: string }) {
+  return (
+    <div className="wp-d-form">
+      <span className="wp-d-form-team">{team}</span>
+      <span className="wp-d-form-seq">
+        {f.last.map((r, i) => (
+          <span key={i} className={`wp-d-fchip ${r === "W" ? "won" : r === "L" ? "lost" : "draw"}`}>{r}</span>
+        ))}
+      </span>
+      <span className="wp-d-form-rec">{f.w}-{f.d}-{f.l} · {gforga} {f.gf}:{f.ga}</span>
+    </div>
+  );
+}
+
+// Corpo della modale-dettaglio: pronostico + gol attesi + probabilità + forma +
+// il PERCHÉ (explanation) + contesto partita + modello. FTC-safe: mai quote/edge.
 function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
   const d = sel.detail;
   const t = DCOPY[lang];
@@ -91,13 +114,22 @@ function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
   const pct = (v: number | null | undefined) => (v != null ? `${Math.round(v * 100)}%` : "—");
   const chips: string[] = [];
   if (d) {
-    if (d.injuries.home.length) chips.push(`${t.inj} ${home}: ${d.injuries.home.join(", ")}`);
-    if (d.injuries.away.length) chips.push(`${t.inj} ${away}: ${d.injuries.away.join(", ")}`);
+    if (d.neutral) chips.push(t.neutral);
+    if (d.venue.indoor) chips.push(t.indoor);
     if (d.venue.heat) chips.push(t.heat);
     if (d.venue.altitude != null && d.venue.altitude >= 1000) chips.push(`${t.alt} ${d.venue.altitude}m`);
+    const travel = Math.max(d.venue.travelHome ?? 0, d.venue.travelAway ?? 0);
+    if (travel >= 2000) chips.push(`${t.travel} ${(travel / 1000).toFixed(1)}k km`);
     const tz = Math.max(Math.abs(d.venue.tzHome ?? 0), Math.abs(d.venue.tzAway ?? 0));
     if (tz >= 3) chips.push(`${t.tz} ${tz}h`);
+    if (d.rotation.home) chips.push(`${t.rot}: ${home}`);
+    if (d.rotation.away) chips.push(`${t.rot}: ${away}`);
+    if (d.injuries.home.length) chips.push(`${t.inj} ${home}: ${d.injuries.home.join(", ")}`);
+    if (d.injuries.away.length) chips.push(`${t.inj} ${away}: ${d.injuries.away.join(", ")}`);
   }
+  const hasForm = !!(d?.form.home || d?.form.away);
+  const sampleN = d?.sample.home ?? d?.sample.away ?? null;
+
   return (
     <div className="wp-d">
       <div className="wp-d-pick">
@@ -120,6 +152,27 @@ function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
         </div>
       )}
 
+      {d?.xg && (d.xg.home != null || d.xg.away != null) && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.xg}</span>
+          <div className="wp-d-xg">
+            <span className="wp-d-xg-side"><em>{home}</em><b>{d.xg.home != null ? d.xg.home.toFixed(1) : "—"}</b></span>
+            <span className="wp-d-xg-sep">–</span>
+            <span className="wp-d-xg-side"><em>{away}</em><b>{d.xg.away != null ? d.xg.away.toFixed(1) : "—"}</b></span>
+          </div>
+        </div>
+      )}
+
+      {hasForm && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.form}</span>
+          <div className="wp-d-forms">
+            {d?.form.home && <FormLine team={home} f={d.form.home} gforga={t.gforga} />}
+            {d?.form.away && <FormLine team={away} f={d.form.away} gforga={t.gforga} />}
+          </div>
+        </div>
+      )}
+
       {d?.why && (
         <div className="wp-d-block">
           <span className="wp-d-lab">{t.why}</span>
@@ -136,6 +189,11 @@ function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
         </div>
       )}
 
+      {(d?.model || sampleN != null) && (
+        <p className="wp-d-model">
+          {t.model}{d?.model ? `: ${d.model}` : ""}{sampleN != null ? ` · ${sampleN} ${t.games}` : ""}
+        </p>
+      )}
       <p className="wp-d-disc">{t.disclaimer}</p>
     </div>
   );
@@ -277,7 +335,7 @@ export default function WeeklyPickPage() {
                     <span className="wp-leg-main">
                       <span className="wp-leg-match">{s.label}</span>
                       {s.market != null ? (
-                        <span className="wp-leg-pick"><b>{s.market}</b></span>
+                        <span className="wp-leg-pick"><b>{s.market}</b>{s.detail?.competition && <span className="wp-leg-comp">· {s.detail.competition}</span>}</span>
                       ) : (
                         <span className="wp-leg-pick locked"><ILock /><span className="dots">••••</span></span>
                       )}
@@ -326,31 +384,6 @@ export default function WeeklyPickPage() {
         )}
       </section>
 
-      {/* ── COME FUNZIONA ── */}
-      <section className="wp-how">
-        <header className="wp-how-head">
-          <p className="lp-eyebrow">{t.howEyebrow}</p>
-          <h2 className="lp-how-title">{t.howTitle}</h2>
-        </header>
-        <ol className="wp-steps">
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">01</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-pick" /></svg></div>
-            <h3 className="lp-step-title">{t.how1t}</h3>
-            <p className="lp-step-desc">{t.how1d}</p>
-          </li>
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">02</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-history" /></svg></div>
-            <h3 className="lp-step-title">{t.how2t}</h3>
-            <p className="lp-step-desc">{t.how2d}</p>
-          </li>
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">03</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ticket" /></svg></div>
-            <h3 className="lp-step-title">{t.how3t}</h3>
-            <p className="lp-step-desc">{t.how3d}</p>
-          </li>
-        </ol>
-      </section>
-
       {/* ── STORICO ── */}
       <section className="wp-hist-sec">
         <header className="wp-hist-head">
@@ -395,7 +428,7 @@ export default function WeeklyPickPage() {
         titleId="wp-leg-detail"
         lang={lang}
         title={openLeg?.sel.label ?? ""}
-        subtitle={openLeg?.sel.detail?.league ?? undefined}
+        subtitle={[openLeg?.sel.detail?.competition, openLeg?.sel.detail?.stage].filter(Boolean).join(" · ") || undefined}
         hideExtraMarkets
       >
         {openLeg && <LegDetail sel={openLeg.sel} lang={lang} />}
