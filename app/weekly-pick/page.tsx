@@ -7,6 +7,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
+import { SportIcon } from "@/app/components/sport-icon";
+
+type SportKind = "football" | "tennis" | "worldcup";
+function sportKind(sport: string): SportKind {
+  const s = sport?.toLowerCase() ?? "";
+  if (s.includes("tennis")) return "tennis";
+  if (s.includes("world") || s === "wc") return "worldcup";
+  return "football";
+}
 
 type LegStatus = "upcoming" | "won" | "lost" | "void" | null;
 type Sel = { label: string; sport: string; market: string | null; prob: number | null; status?: LegStatus; kickoff?: string | null };
@@ -44,13 +53,6 @@ const IX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const IClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 8v4.4l3 1.8" /></svg>;
 const ILock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
 const IDash = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M6 12h12" /></svg>;
-
-function sportGlyph(sport: string): string {
-  const s = sport?.toLowerCase() ?? "";
-  if (s.includes("tennis")) return "#g-tball";
-  if (s.includes("world") || s === "worldcup") return "#g-trophy";
-  return "#g-ball";
-}
 
 function statusIcon(status: LegStatus) {
   if (status === "won") return <IChk />;
@@ -180,7 +182,7 @@ export default function WeeklyPickPage() {
                 const kick = fmtKick(s.kickoff);
                 return (
                   <li key={i} className="wp-leg">
-                    <span className="wp-leg-sport"><svg aria-hidden="true"><use href={sportGlyph(s.sport)} /></svg></span>
+                    <span className="wp-leg-sport"><SportIcon sport={sportKind(s.sport)} size={20} variant="sm" /></span>
                     <span className="wp-leg-main">
                       <span className="wp-leg-match">{s.label}</span>
                       {s.market != null ? (

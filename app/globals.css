@@ -8018,7 +8018,10 @@ button:disabled {
 /* ══ Weekly Pick page (#WEEKLY-PICK-1) ═════════════════════════════════════════
    Riusa il sistema lp-* (eyebrow, what-head, kpis, step) + superfici dedicate
    .wp-* modellate sul terminale lp-term (superficie-strumento, NON tabella). */
-.wp-page { min-height: 100vh; background: var(--am-bg); color: var(--am-text); display: flex; flex-direction: column; }
+.wp-page { position: relative; min-height: 100vh; background: var(--am-bg); color: var(--am-text); display: flex; flex-direction: column; }
+.wp-page::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 620px; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 900px 420px at 22% -6%, var(--am-coral-dim), transparent 65%); }
+.wp-page > * { position: relative; z-index: 1; }
 .wp-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px clamp(16px, 4vw, 56px); border-bottom: 1px solid var(--am-line); }
 .wp-back { font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; letter-spacing: .04em;
@@ -8040,10 +8043,15 @@ button:disabled {
   background: var(--am-coral-dim); color: var(--am-coral); cursor: pointer; }
 
 /* la schedina */
-.wp-slip { position: relative; overflow: hidden; background: var(--am-panel);
-  border: 1px solid var(--am-line-2); border-radius: 18px; box-shadow: 0 32px 80px -42px rgba(0,0,0,0.6); }
+.wp-slip { position: relative; overflow: hidden; border-radius: 18px;
+  border: 1px solid var(--am-coral-b);
+  background:
+    radial-gradient(ellipse 440px 220px at 84% -10%, var(--am-coral-dim), transparent 70%),
+    var(--am-panel);
+  box-shadow: 0 32px 80px -42px rgba(0,0,0,0.6), 0 0 0 1px var(--am-coral-dim); }
 .wp-slip-top { display: flex; align-items: center; gap: 10px; padding: 14px 18px;
-  border-bottom: 1px solid var(--am-line); background: rgba(127,127,127,0.04); }
+  border-bottom: 1px solid var(--am-coral-b);
+  background: linear-gradient(180deg, var(--am-coral-dim), transparent); }
 .wp-slip-ic { width: 18px; height: 18px; color: var(--am-coral); flex: 0 0 auto; }
 .wp-slip-ttl { font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .13em;
   text-transform: uppercase; color: var(--am-muted-2); font-weight: 600; }
@@ -8056,12 +8064,13 @@ button:disabled {
 .wp-slip-badge.lost { color: #ef4444; background: rgba(239,68,68,0.13); }
 
 .wp-legs { list-style: none; margin: 0; padding: 0; }
-.wp-leg { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center;
+.wp-leg { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center;
   padding: 14px 18px; border-bottom: 1px solid var(--am-line); }
 .wp-leg:last-child { border-bottom: 0; }
-.wp-leg-sport { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px;
-  background: var(--am-panel-3); }
+.wp-leg-sport { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px;
+  background: var(--am-coral-dim); border: 1px solid var(--am-coral-b); }
 .wp-leg-sport svg { width: 17px; height: 17px; color: var(--am-muted); }
+.wp-leg-sport img { width: 20px; height: 20px; }
 .wp-leg-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .wp-leg-match { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--am-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
