@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
+import { PredictionDetailModal } from "@/components/PredictionDetailModal";
 
 type SportKind = "football" | "tennis" | "worldcup";
 function sportKind(sport: string): SportKind {
@@ -18,7 +19,16 @@ function sportKind(sport: string): SportKind {
 }
 
 type LegStatus = "upcoming" | "won" | "lost" | "void" | null;
-type Sel = { label: string; sport: string; market: string | null; prob: number | null; status?: LegStatus; kickoff?: string | null };
+type Detail = {
+  league: string | null;
+  probs: { home: number; draw: number | null; away: number | null } | null;
+  confidence: number | null;
+  risk: string | null;
+  why: string | null;
+  injuries: { home: string[]; away: string[] };
+  venue: { heat: boolean; altitude: number | null; tzHome: number | null; tzAway: number | null };
+};
+type Sel = { label: string; sport: string; market: string | null; prob: number | null; status?: LegStatus; kickoff?: string | null; id?: string | null; detail?: Detail | null };
 type Data = {
   enabled: boolean;
   available?: boolean;
@@ -47,6 +57,15 @@ const COPY = {
 
 type Lang = keyof typeof COPY;
 
+// Copy della scheda-dettaglio (modale "perché").
+const DCOPY = {
+  it: { open: "Apri la scheda", pick: "Il nostro pronostico", prob: "Probabilità del modello", conf: "confidenza", draw: "Pareggio", why: "Perché questa pick", ctx: "Contesto partita", inj: "Assenze", heat: "Caldo", alt: "Altitudine", tz: "Fuso", disclaimer: "Analisi del modello — nessuna garanzia di vincita." },
+  en: { open: "Open the card", pick: "Our pick", prob: "Model probability", conf: "confidence", draw: "Draw", why: "Why this pick", ctx: "Match context", inj: "Absences", heat: "Heat", alt: "Altitude", tz: "Time shift", disclaimer: "Model analysis — no win guaranteed." },
+  es: { open: "Abrir la ficha", pick: "Nuestro pronóstico", prob: "Probabilidad del modelo", conf: "confianza", draw: "Empate", why: "Por qué esta pick", ctx: "Contexto del partido", inj: "Ausencias", heat: "Calor", alt: "Altitud", tz: "Huso", disclaimer: "Análisis del modelo — sin garantía de acierto." },
+  fr: { open: "Ouvrir la fiche", pick: "Notre pronostic", prob: "Probabilité du modèle", conf: "confiance", draw: "Nul", why: "Pourquoi ce choix", ctx: "Contexte du match", inj: "Absences", heat: "Chaleur", alt: "Altitude", tz: "Décalage", disclaimer: "Analyse du modèle — aucun gain garanti." },
+  ru: { open: "Открыть карточку", pick: "Наш прогноз", prob: "Вероятность модели", conf: "уверенность", draw: "Ничья", why: "Почему этот пик", ctx: "Контекст матча", inj: "Отсутствия", heat: "Жара", alt: "Высота", tz: "Сдвиг", disclaimer: "Анализ модели — выигрыш не гарантирован." },
+} as const;
+
 // Icone inline (mai emoji).
 const IChk = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7" /></svg>;
 const IX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>;
@@ -61,6 +80,67 @@ function statusIcon(status: LegStatus) {
   return <IClock />;
 }
 
+// Corpo della modale-dettaglio: pronostico + probabilità del modello + il PERCHÉ
+// (explanation) + contesto partita. FTC-safe: mai quote/edge.
+function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
+  const d = sel.detail;
+  const t = DCOPY[lang];
+  const parts = sel.label.split(/\s+vs\s+/i);
+  const home = parts[0] ?? sel.label;
+  const away = parts[1] ?? "";
+  const pct = (v: number | null | undefined) => (v != null ? `${Math.round(v * 100)}%` : "—");
+  const chips: string[] = [];
+  if (d) {
+    if (d.injuries.home.length) chips.push(`${t.inj} ${home}: ${d.injuries.home.join(", ")}`);
+    if (d.injuries.away.length) chips.push(`${t.inj} ${away}: ${d.injuries.away.join(", ")}`);
+    if (d.venue.heat) chips.push(t.heat);
+    if (d.venue.altitude != null && d.venue.altitude >= 1000) chips.push(`${t.alt} ${d.venue.altitude}m`);
+    const tz = Math.max(Math.abs(d.venue.tzHome ?? 0), Math.abs(d.venue.tzAway ?? 0));
+    if (tz >= 3) chips.push(`${t.tz} ${tz}h`);
+  }
+  return (
+    <div className="wp-d">
+      <div className="wp-d-pick">
+        <span className="wp-d-lab">{t.pick}</span>
+        <span className="wp-d-pick-row">
+          <span className="wp-d-pick-val">{sel.market}</span>
+          {sel.prob != null && <span className="wp-d-pick-prob">{Math.round(sel.prob * 100)}%</span>}
+          {d?.confidence != null && <span className="wp-d-conf">{t.conf} {d.confidence}%</span>}
+        </span>
+      </div>
+
+      {d?.probs && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.prob}</span>
+          <div className="wp-d-probs">
+            <span className="wp-d-prob"><em>{home}</em><b>{pct(d.probs.home)}</b></span>
+            {d.probs.draw != null && d.probs.draw > 0 && <span className="wp-d-prob"><em>{t.draw}</em><b>{pct(d.probs.draw)}</b></span>}
+            {away && <span className="wp-d-prob"><em>{away}</em><b>{pct(d.probs.away)}</b></span>}
+          </div>
+        </div>
+      )}
+
+      {d?.why && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.why}</span>
+          <p className="wp-d-why">{d.why}</p>
+        </div>
+      )}
+
+      {chips.length > 0 && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.ctx}</span>
+          <div className="wp-d-chips">
+            {chips.map((c, i) => <span key={i} className="wp-d-chip">{c}</span>)}
+          </div>
+        </div>
+      )}
+
+      <p className="wp-d-disc">{t.disclaimer}</p>
+    </div>
+  );
+}
+
 export default function WeeklyPickPage() {
   const [data, setData] = useState<Data | null>(null);
   const [hist, setHist] = useState<Hist | null>(null);
@@ -68,6 +148,7 @@ export default function WeeklyPickPage() {
   const [lang, setLang] = useState<Lang>("it");
   const [buying, setBuying] = useState(false);
   const [checkoutErr, setCheckoutErr] = useState(false);
+  const [openLeg, setOpenLeg] = useState<{ sel: Sel; rect: DOMRect } | null>(null);
   const t = COPY[lang];
 
   useEffect(() => {
@@ -180,8 +261,18 @@ export default function WeeklyPickPage() {
             <ul className="wp-legs">
               {data?.selections?.map((s, i) => {
                 const kick = fmtKick(s.kickoff);
+                const openable = !!(unlocked && s.id);
+                const openIt = (el: HTMLElement) => setOpenLeg({ sel: s, rect: el.getBoundingClientRect() });
                 return (
-                  <li key={i} className="wp-leg">
+                  <li
+                    key={i}
+                    className={`wp-leg${openable ? " is-open" : ""}`}
+                    role={openable ? "button" : undefined}
+                    tabIndex={openable ? 0 : undefined}
+                    aria-haspopup={openable ? "dialog" : undefined}
+                    onClick={openable ? (e) => openIt(e.currentTarget) : undefined}
+                    onKeyDown={openable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIt(e.currentTarget); } } : undefined}
+                  >
                     <span className="wp-leg-sport"><SportIcon sport={sportKind(s.sport)} size={20} variant="sm" /></span>
                     <span className="wp-leg-main">
                       <span className="wp-leg-match">{s.label}</span>
@@ -199,6 +290,7 @@ export default function WeeklyPickPage() {
                           {s.status === "upcoming" && kick ? kick : null}
                         </span>
                       )}
+                      {openable && <span className="wp-leg-chev" aria-hidden="true">›</span>}
                     </span>
                   </li>
                 );
@@ -295,6 +387,19 @@ export default function WeeklyPickPage() {
       </section>
 
       <footer className="wp-foot">{t.responsible}</footer>
+
+      <PredictionDetailModal
+        open={!!openLeg}
+        onClose={() => setOpenLeg(null)}
+        anchorRect={openLeg?.rect ?? null}
+        titleId="wp-leg-detail"
+        lang={lang}
+        title={openLeg?.sel.label ?? ""}
+        subtitle={openLeg?.sel.detail?.league ?? undefined}
+        hideExtraMarkets
+      >
+        {openLeg && <LegDetail sel={openLeg.sel} lang={lang} />}
+      </PredictionDetailModal>
     </main>
   );
 }

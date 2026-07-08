@@ -20,6 +20,52 @@ import { hasWeeklyPick } from "@/lib/weekly-pick-server";
 export const dynamic = "force-dynamic";
 
 type WpRow = { selections: unknown; combined_prob: string | number | null };
+// Riga arricchita: PredOutcomeRow (per lo stato live) + i campi dettaglio della
+// predizione (solo per le leg SBLOCCATE → costruiscono la scheda "perché").
+type RichRow = PredOutcomeRow & {
+  league: string | null;
+  competition: string | null;
+  confidence_score: number | null;
+  risk_level: string | null;
+  explanation: string | null;
+  notes: string | null;
+  enrichment: unknown;
+};
+
+// Costruisce il payload dettaglio di una leg (FTC-safe: probabilità + reasoning +
+// contesto; MAI quote/edge). `explanation` narra già forma/xG/viaggio.
+function buildLegDetail(r: RichRow) {
+  let probs: { home: number; draw: number | null; away: number | null } | null = null;
+  try {
+    const n = r.notes ? JSON.parse(r.notes) : null;
+    if (n && typeof n.p_home === "number") {
+      probs = {
+        home: n.p_home,
+        draw: typeof n.p_draw === "number" ? n.p_draw : null,
+        away: typeof n.p_away === "number" ? n.p_away : null,
+      };
+    }
+  } catch { /* notes malformati → probs null */ }
+  const e = (r.enrichment && typeof r.enrichment === "object") ? (r.enrichment as Record<string, unknown>) : {};
+  const squad = (e.squad && typeof e.squad === "object") ? (e.squad as Record<string, unknown>) : {};
+  const venue = (e.venue && typeof e.venue === "object") ? (e.venue as Record<string, unknown>) : {};
+  const strArr = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 3) : []);
+  const numOrNull = (v: unknown) => (typeof v === "number" ? v : null);
+  return {
+    league: r.competition || r.league || null,
+    probs,
+    confidence: r.confidence_score ?? null,
+    risk: r.risk_level ?? null,
+    why: r.explanation ?? null,
+    injuries: { home: strArr(squad.injuries_home), away: strArr(squad.injuries_away) },
+    venue: {
+      heat: venue.heat_risk === true,
+      altitude: numOrNull(venue.altitude_m),
+      tzHome: numOrNull(venue.tz_shift_home),
+      tzAway: numOrNull(venue.tz_shift_away),
+    },
+  };
+}
 
 export async function GET(req: Request) {
   if (!weeklyPickEnabled()) return NextResponse.json({ enabled: false });
@@ -43,12 +89,14 @@ export async function GET(req: Request) {
   // chi compra a metà settimana vede cosa ha già giocato e cosa manca.
   const predIds = sels.map((s) => (s.id.startsWith("wp_") ? s.id.slice(3) : s.id));
   const predRows = predIds.length
-    ? await dbQuery<PredOutcomeRow>(
-        `SELECT id::text AS id, status, result, starts_at::text AS starts_at
+    ? await dbQuery<RichRow>(
+        `SELECT id::text AS id, status, result, starts_at::text AS starts_at,
+                league, competition, confidence_score, risk_level, explanation, notes, enrichment
            FROM unified_predictions WHERE id::text = ANY($1)`,
         [predIds]
       )
     : [];
+  const richById = new Map(predRows.map((r) => [r.id, r]));
   const { legs: resolvedLegs, outcome, remaining } = resolveWeeklyPickOutcomes(sels, predRows);
 
   // Prezzo effettivo (sconto -50% se lancio attivo) deciso server-side; il full
@@ -68,14 +116,21 @@ export async function GET(req: Request) {
     outcome: unlocked ? outcome : null, // live/won/lost solo per chi ha sbloccato
     legs: sels.length,
     legs_remaining: remaining, // aggregato safe per il teaser ("N ancora da giocare")
-    // Locked projection: nomi match come teaser; pick/prob/status/kickoff nascosti (no leak).
-    selections: resolvedLegs.map((s) => ({
-      label: s.label,
-      sport: s.sport,
-      market: unlocked ? s.market : null,
-      prob: unlocked ? s.prob : null,
-      status: unlocked ? s.status : null,
-      kickoff: unlocked ? s.kickoff : null,
-    })),
+    // Locked projection: nomi match come teaser; pick/prob/status/kickoff/detail
+    // nascosti (no leak). Solo le leg SBLOCCATE portano id + detail (scheda "perché").
+    selections: resolvedLegs.map((s) => {
+      const predId = s.id.startsWith("wp_") ? s.id.slice(3) : s.id;
+      const rich = richById.get(predId);
+      return {
+        label: s.label,
+        sport: s.sport,
+        market: unlocked ? s.market : null,
+        prob: unlocked ? s.prob : null,
+        status: unlocked ? s.status : null,
+        kickoff: unlocked ? s.kickoff : null,
+        id: unlocked ? predId : null,
+        detail: unlocked && rich ? buildLegDetail(rich) : null,
+      };
+    }),
   });
 }
