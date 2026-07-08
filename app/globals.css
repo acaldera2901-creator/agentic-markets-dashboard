@@ -5473,62 +5473,75 @@ button:disabled {
 @container (max-width: 1080px) { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 6; } }
 @container (max-width: 640px)  { .am-grid > .card, .am-grid > .card.tennis { grid-column: span 12; } }
 
-/* #BANNERS-IN-GRID: creativo Ole impacchettato TRA le schede bet come una card.
-   L'immagine riempie la cella (object-fit:cover) → stessa altezza delle card
-   adiacenti, ZERO gutter. rectangle → 1 cella quadrata (default) · billboard/
-   leaderboard → 2 celle landscape 16:9. aspect-ratio dà l'altezza intrinseca
-   quando il tile è da solo su una riga (es. mobile 1-up); quando la riga è più
-   alta (card vicine) il grid lo stira e object-fit:cover riempie senza buchi. */
+/* #BANNERS-IN-GRID / #BANNER-FEED-FIX-0708: creativo Ole impacchettato TRA le
+   schede bet come un tile FRAMED. Regola d'oro: l'immagine è mostrata SEMPRE
+   INTERA — niente cover-crop che tagli logo/claim/soggetto baked. Come? il box
+   dell'<img> ha lo STESSO aspect-ratio del creativo (16:9 landscape · 1:1
+   quadrato), quindi object-fit:cover non ha nulla da tagliare. Il tile si estende
+   all'altezza di riga delle card vicine: l'eventuale spazio SOTTO l'immagine è un
+   footer brandizzato (--am-inset) che ospita la CTA → niente gutter vuoto, niente
+   buco, e mai un'immagine stirata o tagliata. */
 .am-grid > .house-banner.hb-cr-grid{
   position:relative; display:block; padding:0; overflow:hidden;
-  border-radius:14px; min-width:0; min-height:180px; background:var(--am-inset);
+  border-radius:14px; min-width:0; background:var(--am-inset);
   border:1px solid var(--am-line); box-shadow:inset 0 1px 0 var(--am-hi);
 }
-/* Nessun aspect-ratio su desktop/tablet: il tile è sempre affiancato a delle card
-   (placement i%8==7 con card seguente garantita) → grid stretch lo porta ESATTAMENTE
-   all'altezza di riga delle card e object-fit:cover riempie → stessa altezza, ZERO
-   gap sotto. min-height è solo un floor di sicurezza (non contrasta lo stretch). */
+/* immagine a flusso in cima al tile; l'aspect-ratio per-formato le dà l'altezza. */
 .am-grid > .house-banner.hb-cr-grid .hb-cr-img{
-  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+  position:static; display:block; width:100%; height:auto;
 }
+/* CTA in basso a DESTRA: i creativi hanno logo (alto-sx) e claim (basso-sx) baked
+   → la destra è la zona sicura. Sta sul footer brandizzato o sull'angolo immagine. */
 .am-grid > .house-banner.hb-cr-grid .hb-cr-cta{
-  position:absolute; left:14px; bottom:14px; z-index:2;
+  position:absolute; right:14px; bottom:14px; z-index:2;
 }
-.am-grid > .house-banner.hb-cr-rectangle,
-.am-grid > .house-banner.hb-cr-halfpage{ grid-column: span 4; }
+
+/* Quadrato 1:1 (feed tennis): un tile come una card tennis (span-3), sempre
+   creativo TENNIS (vedi creativeFor). Immagine 1:1 = creativo → nessun crop. */
+.am-grid > .house-banner.hb-cr-rectangle{ grid-column: span 4; }
 .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
-.am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage{ grid-column: span 3; }
-/* #BANNERS-IN-GRID landscape (16:9): il quadrato può STIRARSI all'altezza di riga
-   con cover (near-square → clip trascurabile). Il landscape NO: ha headline/logo/
-   disclaimer baked su tutta la larghezza → cropparlo lo rovina. E l'altezza delle
-   card è troppo variabile (goals block, deep-analysis, WHY) per farla combaciare a
-   uno span fisso senza buco/stiramento. Soluzione (scelta di Andrea "grid-row
-   dedicato, altezza naturale"): RIGA DEDICATA di DUE landscape affiancati, span 6
-   ciascuno (6+6 = riga piena, ZERO gutter). Ognuno mostra l'immagine INTERA alla sua
-   altezza NATURALE 16:9 (img a flusso, sotto). Sulla riga NON ci sono card → niente
-   stiramento e niente buco, del tutto indipendente dall'altezza variabile delle card
-   (grid-auto-flow: dense completa la riga-card precedente, vedi .am-grid). */
-.am-grid > .house-banner.hb-cr-billboard,
-.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 6; aspect-ratio: auto; min-height: 0; }
-/* immagine a flusso naturale (non absolute-cover): l'altezza segue il 16:9 reale. */
-.am-grid > .house-banner.hb-cr-billboard .hb-cr-img,
-.am-grid > .house-banner.hb-cr-leaderboard .hb-cr-img{ position: static; inset: auto; width: 100%; height: auto; }
-/* Tablet: il QUADRATO passa a span 6 (2-up); il landscape resta riga dedicata 1/-1. */
-@container (max-width: 1080px) {
-  .am-grid > .house-banner.hb-cr-rectangle,
-  .am-grid > .house-banner.hb-cr-halfpage,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-halfpage{ grid-column: span 6; }
+.am-grid > .house-banner.hb-cr-halfpage{ grid-column: span 3; }
+.am-grid > .house-banner.hb-cr-rectangle .hb-cr-img{ aspect-ratio: 1 / 1; object-fit: cover; }
+/* Footer brandizzato sotto la foto quadrata: riempie la banda con copy + CTA
+   (niente spazio morto). Il tile diventa colonna flex: foto in alto (1:1), footer
+   che occupa il resto dell'altezza di riga. */
+.am-grid > .house-banner.hb-cr-hasfoot{ display:flex; flex-direction:column; }
+.am-grid > .house-banner.hb-cr-hasfoot .hb-cr-img{ flex:0 0 auto; }
+.am-grid > .house-banner.hb-cr-hasfoot .hb-cr-foot{
+  flex:1 1 auto; display:flex; flex-direction:column; gap:6px;
+  padding:12px 14px 14px; min-height:0;
 }
-/* Mobile 1-up: il QUADRATO è full-width e da solo sulla riga → niente card da cui
-   ereditare l'altezza; l'aspect-ratio gli dà un'altezza intrinseca (strip 16:9). */
-@container (max-width: 640px) {
-  .am-grid > .house-banner.hb-cr-rectangle,
-  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle{ grid-column: 1 / -1; aspect-ratio: 16 / 9; min-height:0; }
-  /* i due landscape non stanno affiancati su mobile (sarebbero minuscoli): ognuno
-     full-width a flusso naturale 16:9 → si impilano, interi e leggibili. */
+.am-grid > .house-banner.hb-cr-hasfoot .hb-cr-foot-h{
+  font-weight:700; font-size:15px; line-height:1.2; color:var(--am-text);
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+/* nel footer la CTA torna in flusso, ancorata in basso a sinistra della banda. */
+.am-grid > .house-banner.hb-cr-hasfoot .hb-cr-cta{
+  position:static; margin-top:auto; align-self:flex-start;
+}
+
+/* Landscape 16:9 (feed calcio): un SOLO tile COMPATTO span-8 → una card gli sta a
+   fianco (8+4 = riga piena, zero gutter). MAI due affiancati. Immagine 16:9 =
+   creativo → mostrata INTERA, nessun crop del testo/logo baked. */
+.am-grid > .house-banner.hb-cr-billboard,
+.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 8; }
+.am-grid > .house-banner.hb-cr-billboard .hb-cr-img,
+.am-grid > .house-banner.hb-cr-leaderboard .hb-cr-img{ aspect-ratio: 16 / 9; object-fit: cover; }
+
+/* Tablet (≤1080): board 2-up. Landscape → full-width intero; quadrato → span 6. */
+@container (max-width: 1080px) {
   .am-grid > .house-banner.hb-cr-billboard,
   .am-grid > .house-banner.hb-cr-leaderboard{ grid-column: 1 / -1; }
+  .am-grid > .house-banner.hb-cr-rectangle,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
+  .am-grid > .house-banner.hb-cr-halfpage{ grid-column: span 6; }
+}
+/* Mobile (≤640): tutto full-width, immagine intera (16:9 / 1:1) a flusso. */
+@container (max-width: 640px) {
+  .am-grid > .house-banner.hb-cr-billboard,
+  .am-grid > .house-banner.hb-cr-leaderboard,
+  .am-grid > .house-banner.hb-cr-rectangle,
+  .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle{ grid-column: 1 / -1; }
 }
 
 /* ---- canonical card ---- */
