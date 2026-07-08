@@ -5519,19 +5519,27 @@ button:disabled {
 .am-grid > .house-banner.hb-cr-hasfoot .hb-cr-cta{
   position:static; margin-top:auto; align-self:flex-start;
 }
+/* footer solo-CTA (landscape): banda compatta, CTA centrata verticalmente → nessun
+   vuoto sopra quando la riga è più alta (es. card con blocco gol). */
+.am-grid > .house-banner.hb-cr-hasfoot .hb-cr-foot.hb-cr-foot-cta{ justify-content:center; padding:10px 14px; }
+.am-grid > .house-banner.hb-cr-hasfoot .hb-cr-foot.hb-cr-foot-cta .hb-cr-cta{ margin-top:0; }
 
-/* Landscape 16:9 (feed calcio): un SOLO tile COMPATTO span-8 → una card gli sta a
-   fianco (8+4 = riga piena, zero gutter). MAI due affiancati. Immagine 16:9 =
-   creativo → mostrata INTERA, nessun crop del testo/logo baked. */
+/* #BANNER-SMALL-0708: Landscape 16:9 (feed calcio) = tile PICCOLO card-sized (span-4
+   · span-3 tennis), UNO per volta e separato, esattamente come i quadrati. L'immagine
+   16:9 è mostrata INTERA (flex:0 0 auto via .hb-cr-hasfoot → ~219px, nessun crop del
+   testo/logo baked); il footer brandizzato riempie il resto dell'altezza di riga
+   (niente banda vuota). Prima era span-8 → a 16:9 diventava ~447px di altezza = mostro. */
 .am-grid > .house-banner.hb-cr-billboard,
-.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 8; }
+.am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 4; }
+.am-grid:has(> .card.tennis) > .house-banner.hb-cr-billboard,
+.am-grid:has(> .card.tennis) > .house-banner.hb-cr-leaderboard{ grid-column: span 3; }
 .am-grid > .house-banner.hb-cr-billboard .hb-cr-img,
 .am-grid > .house-banner.hb-cr-leaderboard .hb-cr-img{ aspect-ratio: 16 / 9; object-fit: cover; }
 
-/* Tablet (≤1080): board 2-up. Landscape → full-width intero; quadrato → span 6. */
+/* Tablet (≤1080): board 2-up. Landscape e quadrato → span 6 (una card, mai full-width). */
 @container (max-width: 1080px) {
   .am-grid > .house-banner.hb-cr-billboard,
-  .am-grid > .house-banner.hb-cr-leaderboard{ grid-column: 1 / -1; }
+  .am-grid > .house-banner.hb-cr-leaderboard{ grid-column: span 6; }
   .am-grid > .house-banner.hb-cr-rectangle,
   .am-grid:has(> .card.tennis) > .house-banner.hb-cr-rectangle,
   .am-grid > .house-banner.hb-cr-halfpage{ grid-column: span 6; }
