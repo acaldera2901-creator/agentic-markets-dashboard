@@ -30,7 +30,7 @@ import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
-import { campaignsFor } from "@/lib/house-banners";
+import { campaignsFor, campaignSport } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -2182,12 +2182,14 @@ function SportsbookBoard({
   };
   const query = searchTerm.trim().toLowerCase();
   const boardAudience = isPremium ? "premium" : (isFreeClient ? "free" : "anon");
-  // #HOUSE-PHOTO-1 dedup: mai 2 banner uguali per pagina. Le campagne desk-feed
-  // sono divise in modo DISGIUNTO tra calcio (indici pari) e tennis (dispari),
-  // ognuna usata al massimo una volta → nessun banner ripetuto nel feed.
+  // #HOUSE-PHOTO-1 dedup + #BANNER-FEED-FIX-0708: mai 2 banner uguali per pagina.
+  // Le campagne desk-feed sono divise per SPORT (non per parità d'indice, che
+  // mandava una campagna World Cup/calcio nel feed tennis): il feed tennis riceve
+  // SOLO campagne tennis; tutto il resto (calcio + multisport) va nel feed calcio.
+  // Ognuna usata al massimo una volta → nessun banner ripetuto nel feed.
   const feedCampsAll = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
-  const footballFeed = feedCampsAll.filter((_, idx) => idx % 2 === 0);
-  const tennisFeed = feedCampsAll.filter((_, idx) => idx % 2 === 1);
+  const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
+  const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
 
   const labels = {
     allSports: t.bf_allsports,
@@ -2368,16 +2370,13 @@ function SportsbookBoard({
                       const card = (
                         <PredictionCard key={p.match_id} p={p} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
-                      if (placed === 0 && footballFeed.length >= 2 && i % 8 === 7 && i < rows.length - 1) {
-                        // #BANNERS-IN-GRID landscape: i creativi 16:9 vivono come RIGA DEDICATA
-                        // di 2 tile affiancati (span-6 ciascuno = riga piena). Mostrati INTERI
-                        // alla loro altezza naturale 16:9 → niente crop del testo baked; nessuna
-                        // card sulla riga → niente stiramento/buco (grid-auto-flow dense completa
-                        // la riga card precedente). Due creativi DISTINTI (creativeFor per id).
-                        placed = 2;
-                        return [card,
-                          <HouseBanner key={`house-feed-${footballFeed[0].id}`} campaign={{ ...footballFeed[0], format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />,
-                          <HouseBanner key={`house-feed-${footballFeed[1].id}`} campaign={{ ...footballFeed[1], format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />];
+                      // #BANNER-FEED-FIX-0708: un SOLO creativo landscape 16:9 per punto,
+                      // MAI due affiancati. Compatto (span-8, una card gli sta a fianco →
+                      // riga piena, zero gutter) e mostrato INTERO (aspect 16:9 → nessun crop
+                      // del logo/claim baked). Distribuiti ogni 6 card a punti diversi.
+                      if (placed < footballFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
+                        const camp = footballFeed[placed++];
+                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />];
                       }
                       return [card];
                     });
@@ -2429,11 +2428,11 @@ function SportsbookBoard({
                       const card = (
                         <TennisMatchCard key={m.id} m={m} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
-                      if (placed < tennisFeed.length && i % 8 === 7 && i < rows.length - 1) {
-                        // #BANNERS-IN-GRID: nel feed tennis i banner sono tile QUADRATI 1:1
-                        // (span-3 come una card tennis), impacchettati e cover-fit all'altezza
-                        // di riga — pattern già validato da Andrea. Il MIX di forme sulla pagina
-                        // arriva dai landscape 16:9 nel feed calcio. Creativi distinti per id.
+                      // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
+                      // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
+                      // mostrati INTERI (nessun crop del soggetto/testo). Singoli e distribuiti
+                      // ogni 6 card a punti diversi.
+                      if (placed < tennisFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
                         return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={{ ...camp, format: "rectangle" }} lang={lang} onCta={onBannerCta} inGrid />];
                       }

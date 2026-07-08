@@ -485,35 +485,59 @@ export function ctaLabelFor(campaign: HouseCampaign, lang: Lang): string {
 
 // ── Creativi Ole (#HOUSE-OLE) ────────────────────────────────────────────────
 // Decisione Andrea: i banner house in-app mostrano i CREATIVI FINITI di Ole
-// (immagine intera 16:9 + tasto CTA sopra), come il carosello homepage — non
-// più l'overlay foto+testo. La copy i18n è già dentro l'immagine; resta solo il
+// (immagine intera + tasto CTA sopra), come il carosello homepage — non più
+// l'overlay foto+testo. La copy i18n è già dentro l'immagine; resta solo il
 // CTA (per-slot, i18n) e il dismiss.
-// FORMATO ABBINATO ALLA FORMA DELLO SLOT (decisione Andrea "formato giusto per slot"):
-// slot larghi → 16:9 orizzontale · rectangle → 1:1 quadrato · halfpage/rail → 9:16 verticale.
-const OLE_LANDSCAPE = [
-  "/banners/creatives/ole-football-signal.jpg",
-  "/banners/creatives/ole-multisport-onemodel.jpg",
+// FORMATO ABBINATO ALLA FORMA DELLO SLOT: slot larghi → 16:9 orizzontale ·
+// rectangle → 1:1 quadrato · halfpage/rail → 9:16 verticale.
+// #BANNER-FEED-FIX-0708: i creativi sono COERENTI PER SPORT — mai un creativo
+// calcistico nella sezione tennis (e viceversa). La scelta è guidata da
+// campaignSport(), non da un hash cieco sul pool (era la causa del bug: un
+// quadrato calcio/World Cup finiva nel feed tennis).
+const OLE_TENNIS = [
   "/banners/creatives/ole-tennis-signal.jpg",
-  "/banners/creatives/ole-multisport-edge.jpg",
   "/banners/creatives/ole-tennis-insight.jpg",
+];
+const OLE_FOOTBALL = ["/banners/creatives/ole-football-signal.jpg"];
+const OLE_MULTISPORT = [
+  "/banners/creatives/ole-multisport-onemodel.jpg",
+  "/banners/creatives/ole-multisport-edge.jpg",
   "/banners/creatives/ole-multisport-readable.jpg",
 ];
-const OLE_SQUARE = ["/banners/creatives/ole-square-1.jpg", "/banners/creatives/ole-square-2.jpg"];
+const OLE_SQUARE_TENNIS = "/banners/creatives/ole-square-1.jpg";   // WTA — soggetto tennis
+const OLE_SQUARE_FOOTBALL = "/banners/creatives/ole-square-2.jpg"; // World Cup — soggetto calcio
 const OLE_VERTICAL = ["/banners/creatives/ole-vertical-1.jpg", "/banners/creatives/ole-vertical-2.jpg"];
 
+/** Sport di appartenenza di una campagna, per abbinare creativo E sezione feed.
+ *  Deriva da id + glifi: tennis puro → "tennis"; calcio/World Cup → "football";
+ *  multisport/creator (entrambi o nessuno) → "neutral". */
+export function campaignSport(c: HouseCampaign): "football" | "tennis" | "neutral" {
+  const id = c.id;
+  if (id.includes("tennis")) return "tennis";
+  if (id.includes("football") || id.includes("worldcup") || id.includes("edge")) return "football";
+  const g = c.glyphs.join(" ");
+  const hasTennis = /#g-racket|#g-tball|#g-grass|#g-court/.test(g);
+  const hasFootball = /#g-ball|#g-pitch/.test(g); // NB: #g-trophy è multisport (World Cup) → non conta come "solo calcio"
+  if (hasTennis && !hasFootball) return "tennis";
+  if (hasFootball && !hasTennis) return "football";
+  return "neutral";
+}
+
 /** Creativo Ole per la campagna, del FORMATO adatto allo slot (aspect coerente →
- *  niente crop/gap/minuscoli). Match tematico sugli orizzontali + rotazione stabile. */
+ *  niente crop/gap/minuscoli) E coerente per SPORT con la sezione che lo ospita. */
 export function creativeFor(campaign: HouseCampaign): string {
   const id = campaign.id;
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  const sport = campaignSport(campaign);
+  // Quadrato 1:1 (feed): tennis → creativo tennis · resto → creativo calcio.
+  if (campaign.format === "rectangle") return sport === "tennis" ? OLE_SQUARE_TENNIS : OLE_SQUARE_FOOTBALL;
+  // Verticale 9:16 (rail): creativi brand-neutri.
   if (campaign.format === "halfpage") return OLE_VERTICAL[h % OLE_VERTICAL.length];
-  if (campaign.format === "rectangle") return OLE_SQUARE[h % OLE_SQUARE.length];
-  // slot larghi (billboard / leaderboard): 16:9 tematico
-  if (id.includes("creator")) return "/banners/creatives/ole-multisport-onemodel.jpg";
+  // Landscape 16:9 (slot larghi + feed calcio):
+  if (id.includes("creator") || id.includes("picks")) return OLE_MULTISPORT[h % OLE_MULTISPORT.length];
   if (id.includes("worldcup")) return "/banners/creatives/ole-multisport-edge.jpg";
-  if (id.includes("tennis")) return "/banners/creatives/ole-tennis-signal.jpg";
-  // feed-edge (pool calcio): landscape calcistico, non tennis — coerenza col contesto.
-  if (id.includes("edge") || id.includes("football")) return "/banners/creatives/ole-football-signal.jpg";
-  return OLE_LANDSCAPE[h % OLE_LANDSCAPE.length];
+  if (sport === "tennis") return OLE_TENNIS[h % OLE_TENNIS.length];
+  if (sport === "football") return OLE_FOOTBALL[0];
+  return OLE_MULTISPORT[h % OLE_MULTISPORT.length];
 }
