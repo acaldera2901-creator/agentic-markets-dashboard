@@ -5,6 +5,12 @@ import { getSessionPlan } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+// FTC: an aggregate "system hit rate" derived from a handful of settled bets is
+// statistically meaningless and, at N=1, reads as a deceptive "100%". Suppress
+// the system stats entirely until the settled sample is large enough to be
+// honest. The real long-run track record lives in /api/v2/history.
+const MIN_SYSTEM_SETTLED = 30;
+
 export async function POST(req: Request) {
   // Opt-in requires an authenticated session; the identity (email_hash) is
   // derived server-side from the session, never trusted from the body —
@@ -81,7 +87,10 @@ export async function GET() {
   const systemSettled = betsWins + betsLosses > 0
     ? betsWins + betsLosses
     : entries.reduce((sum, e) => sum + (e.bets_total ?? 0), 0);
-  const systemHitRate = systemSettled > 0 ? Math.round((systemWins / systemSettled) * 100) : 0;
+  // Below the minimum sample the whole system-stats strip is suppressed (null),
+  // never rendered as a "100% from 1 pick" claim.
+  const hasEnoughSample = systemSettled >= MIN_SYSTEM_SETTLED;
+  const systemHitRate = hasEnoughSample ? Math.round((systemWins / systemSettled) * 100) : null;
 
   const ranked = entries.map((e, i) => ({
     rank: i + 1,
@@ -96,8 +105,9 @@ export async function GET() {
 
   return NextResponse.json({
     leaderboard: ranked,
-    system_wins: systemWins,
+    system_wins: hasEnoughSample ? systemWins : null,
     system_hit_rate: systemHitRate,
+    system_settled: systemSettled,
     points_per_win: 10,
     updated_at: new Date().toISOString(),
   });

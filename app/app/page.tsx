@@ -4421,16 +4421,6 @@ function LockedGate({
   );
 }
 
-function bestFootballSelection(p: Prediction) {
-  if (!p.best_selection) return null;
-  const map = {
-    HOME: { name: p.home_team, odds: p.odds_home, probability: p.p_home },
-    DRAW: { name: "Draw", odds: p.odds_draw, probability: p.p_draw },
-    AWAY: { name: p.away_team, odds: p.odds_away, probability: p.p_away },
-  } as const;
-  return map[p.best_selection as keyof typeof map] ?? null;
-}
-
 // ─── Prediction "Why" Reasoning ───────────────────────────────────────────────
 
 // ── Human "why" narratives (UI-WHY-PROSE). One readable paragraph in the active
@@ -6379,8 +6369,8 @@ interface LeaderboardEntry {
 function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOptedIn?: boolean }) {
   const lang = useLang();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [systemWins, setSystemWins] = useState(0);
-  const [systemHitRate, setSystemHitRate] = useState(0);
+  const [systemWins, setSystemWins] = useState<number | null>(null);
+  const [systemHitRate, setSystemHitRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -6388,8 +6378,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       .then((r) => r.json())
       .then((d) => {
         setEntries(d.leaderboard ?? []);
-        setSystemWins(d.system_wins ?? 0);
-        setSystemHitRate(d.system_hit_rate ?? 0);
+        setSystemWins(d.system_wins ?? null);
+        setSystemHitRate(d.system_hit_rate ?? null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -6521,23 +6511,27 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
         <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{copy.subtitle}</p>
       </div>
 
-      {/* Stats strip */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="am-surface p-4 text-center">
-          <div className="text-2xl font-black text-[var(--am-positive)] font-mono">{systemWins}</div>
-          <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
-        </div>
-        <div className="am-surface p-4 text-center">
-          <div className="text-2xl font-black text-[var(--am-coral)] font-mono">{systemWins * 10}</div>
-          <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
-        </div>
-        <div className="am-surface p-4 text-center">
-          <div className="text-2xl font-black font-mono text-[var(--am-positive)]">
-            {systemHitRate}%
+      {/* Stats strip — only once the settled sample is statistically honest
+          (server returns null below MIN_SYSTEM_SETTLED to avoid a "100% from
+          1 pick" FTC claim). */}
+      {systemHitRate != null && systemWins != null && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="am-surface p-4 text-center">
+            <div className="text-2xl font-black text-[var(--am-positive)] font-mono">{systemWins}</div>
+            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
           </div>
-          <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemHitRate}</div>
+          <div className="am-surface p-4 text-center">
+            <div className="text-2xl font-black text-[var(--am-coral)] font-mono">{systemWins * 10}</div>
+            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
+          </div>
+          <div className="am-surface p-4 text-center">
+            <div className="text-2xl font-black font-mono text-[var(--am-positive)]">
+              {systemHitRate}%
+            </div>
+            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemHitRate}</div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Hall of Fame */}
       {entries.length > 0 && (
@@ -7567,7 +7561,6 @@ function FeaturedEdge({
 
   if (sport === "football" && topFootball) {
     const p = topFootball;
-    const sel = bestFootballSelection(p);
     fixtureName = (
       <>
         {p.home_team}
@@ -7576,12 +7569,23 @@ function FeaturedEdge({
       </>
     );
     league = p.league_name;
-    probability = selectedFootballProbability(p);
-    pickName = sel?.name ?? p.home_team;
-    // Model edge (margin of the pick over the 2nd-best outcome) — the uniform
-    // metric used on every card; a real market edge stays in the Why prose.
-    const fProbs = [p.p_home, p.p_draw, p.p_away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a);
-    modelEdgePts = fProbs.length >= 2 ? modelEdge(fProbs[0], fProbs[1]) : 0;
+    // Coherence (FTC): pick, probability, model-edge chip and the "why" prose
+    // must all describe the SAME selection. The model-edge margin and
+    // buildFootballWhy both narrate the model's top-probability outcome, so the
+    // pick shown here must be that outcome too — NOT best_selection, which can
+    // be a market value bet on the underdog. That mismatch produced a card that
+    // named a 15% underdog, showed "+46.7pt model edge" (the favourite's
+    // margin) and read "value on the home side" (the opposite team).
+    const fRanked = [
+      { name: p.home_team, v: p.p_home },
+      { name: it ? "Pareggio" : "Draw", v: p.p_draw },
+      { name: p.away_team, v: p.p_away },
+    ].filter((s) => Number.isFinite(s.v)).sort((a, b) => b.v - a.v);
+    pickName = fRanked[0]?.name ?? p.home_team;
+    probability = fRanked[0]?.v ?? p.p_home;
+    // Model edge = margin of the picked (top) outcome over the 2nd-best — the
+    // uniform metric used on every card; a real market edge stays in the prose.
+    modelEdgePts = fRanked.length >= 2 ? modelEdge(fRanked[0].v, fRanked[1].v) : 0;
     why = buildFootballWhy(p, lang);
     const fh = teamFormCounts(p.enrichment?.form_home);
     const fa = teamFormCounts(p.enrichment?.form_away);
@@ -7607,8 +7611,12 @@ function FeaturedEdge({
       ? (m.surface === "CLAY" ? "terra" : m.surface === "GRASS" ? "erba" : "cemento")
       : (m.surface === "CLAY" ? "clay" : m.surface === "GRASS" ? "grass" : "hard");
     league = `${m.tournament} · ${surf} · ${m.round}`;
-    probability = selectedTennisProbability(m);
-    pickName = m.best_selection === "P1" ? m.player1 : m.best_selection === "P2" ? m.player2 : (m.p1 >= m.p2 ? m.player1 : m.player2);
+    // Coherence (FTC): pick, probability, model-edge and buildTennisWhy (which
+    // narrates the higher-probability player as the favourite) must all point
+    // at the same selection — the model's top player, not best_selection.
+    const p1Fav = m.p1 >= m.p2;
+    pickName = p1Fav ? m.player1 : m.player2;
+    probability = Math.max(m.p1, m.p2);
     modelEdgePts = Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
     why = buildTennisWhy(m, lang);
     if (m.elo_p1 != null && m.elo_p2 != null) {
