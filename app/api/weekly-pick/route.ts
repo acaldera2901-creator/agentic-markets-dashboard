@@ -17,7 +17,7 @@ import {
   type WeeklyPickLeg,
 } from "@/lib/weekly-pick";
 import { hasWeeklyPick } from "@/lib/weekly-pick-server";
-import { fetchWcGroups, type WcStandingRow } from "@/lib/world-cup";
+import { fetchWcGroups, canonTeamSlug, type WcStandingRow } from "@/lib/world-cup";
 
 export const dynamic = "force-dynamic";
 
@@ -182,15 +182,18 @@ export async function GET(req: Request) {
     !!r && (r.world_cup_stage != null || r.league === "WC" || /world cup/i.test(r.competition ?? "") || /world cup/i.test(r.league ?? ""));
   const needsWc = unlocked && predRows.some(isWcRow);
   const wcGroups = needsWc ? await fetchWcGroups().catch(() => []) : [];
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
-  const findStanding = (team: string): WcStandingRow | null => {
-    const n = norm(team);
-    if (!n) return null;
+  // Match per UGUAGLIANZA di slug canonico (lib/world-cup canonTeamSlug, fix MEDIUM-7):
+  // risolve sia lo spelling ESPN ("USA"/"Korea Republic"/"IR Iran") sia il nome canonico
+  // ("United States"/"South Korea"/"Iran") allo stesso slug NFD. NIENTE substring (che
+  // dava collisioni tipo "romania"⊃"oman" o "South/North Korea"). Ritorna anche il girone
+  // dalla riga matchata (stessa fonte ESPN della classifica → mai incoerente con enrichment).
+  const findStanding = (team: string): { row: WcStandingRow; group: string } | null => {
+    const slug = canonTeamSlug(team);
+    if (!slug) return null;
     for (const g of wcGroups) {
       for (const row of g.teams) {
-        const rn = norm(row.team);
-        if (!rn || row.played <= 0) continue; // solo gironi avviati
-        if (rn === n || rn.includes(n) || n.includes(rn)) return row;
+        if (row.played <= 0) continue; // solo gironi avviati
+        if (canonTeamSlug(row.team) === slug) return { row, group: g.name };
       }
     }
     return null;
@@ -211,7 +214,14 @@ export async function GET(req: Request) {
     let detailOut: (typeof detail & { standing?: { home: WcStandingRow | null; away: WcStandingRow | null } }) | null = detail;
     if (detail && needsWc && isWcRow(rich)) {
       const { home, away } = splitLabel(s.label);
-      detailOut = { ...detail, standing: { home: findStanding(home), away: findStanding(away) } };
+      const h = findStanding(home);
+      const a = findStanding(away);
+      detailOut = {
+        ...detail,
+        standing: { home: h?.row ?? null, away: a?.row ?? null },
+        // girone dalla riga ESPN matchata (coerente con la classifica); fallback enrichment.
+        group: h?.group ?? a?.group ?? detail.group,
+      };
     }
     return {
       label: s.label,
