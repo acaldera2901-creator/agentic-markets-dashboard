@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isStripeConfigured, resolvePlanFromPriceId, periodEndToIso } from "@/lib/stripe";
 import { activateStripePlan } from "@/lib/plan-grant";
-import { dbQuery, dbExecute } from "@/lib/db";
+import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { receiptEmail, cancellationEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 
@@ -46,22 +46,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
 
-  // Idempotency: record the event id BEFORE handling. Stripe redelivers events
-  // (and a captured signed body can be replayed) — without this, a replayed
-  // invoice.paid re-extends the plan and re-sends the receipt. INSERT ... ON
-  // CONFLICT DO NOTHING RETURNING is atomic: a returned row means we're first.
+  // Idempotency: Stripe redelivers events (and a captured signed body can be
+  // replayed) — without this, a replayed invoice.paid re-extends the plan and
+  // re-sends the receipt. NB: exec_sql does NOT return RETURNING rows — it wraps
+  // every statement in `SELECT ... FROM (<stmt>) t`, which is invalid for a
+  // writing statement, so it falls back to running the bare write and returns [].
+  // Relying on "INSERT ... RETURNING returned a row" therefore treats EVERY event
+  // as a duplicate and the activation never runs. Instead: SELECT first
+  // (fail-loud), then mark the event as processing.
   try {
-    const first = await dbExecute<{ event_id: string }>(
-      `INSERT INTO stripe_events (event_id, event_type)
-       VALUES ($1, $2)
-       ON CONFLICT (event_id) DO NOTHING
-       RETURNING event_id`,
-      [event.id, event.type]
+    const seen = await dbQueryStrict<{ event_id: string }>(
+      `SELECT event_id FROM stripe_events WHERE event_id = $1 LIMIT 1`,
+      [event.id]
     );
-    if (first.length === 0) {
+    if (seen.length > 0) {
       // Already processed — ack 200 so Stripe stops retrying.
       return NextResponse.json({ received: true, duplicate: true });
     }
+    // Mark BEFORE handling. ON CONFLICT DO NOTHING absorbs a near-simultaneous
+    // redelivery; the row is rolled back in the catch below if handling throws,
+    // so a transient failure is reprocessed on Stripe's next retry.
+    await dbExecute(
+      `INSERT INTO stripe_events (event_id, event_type)
+       VALUES ($1, $2)
+       ON CONFLICT (event_id) DO NOTHING`,
+      [event.id, event.type]
+    );
   } catch (e) {
     // Can't confirm idempotency → 500 so Stripe retries (no unguarded processing).
     console.error("[stripe/webhook] idempotency check failed:", String(e));
@@ -155,11 +165,17 @@ export async function POST(req: Request) {
       }
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
+        // exec_sql can't return RETURNING rows → read who we're about to cancel
+        // BEFORE nulling stripe_subscription_id, then run the downgrade.
         const cancelled = await dbQuery<{ identifier: string; language: string | null }>(
+          `SELECT identifier, language FROM profiles
+            WHERE stripe_subscription_id = $1 LIMIT 1`,
+          [String(sub.id)]
+        );
+        await dbExecute(
           `UPDATE profiles
               SET plan = 'free', stripe_subscription_id = NULL, updated_at = NOW()
-            WHERE stripe_subscription_id = $1
-          RETURNING identifier, language`,
+            WHERE stripe_subscription_id = $1`,
           [String(sub.id)]
         );
         // Notify the customer their subscription was cancelled (best-effort + recorded).

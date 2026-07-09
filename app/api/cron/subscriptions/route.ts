@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dbExecute } from "@/lib/db";
+import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
@@ -23,13 +23,21 @@ export async function GET(req: Request) {
   //    reads it to know when the plan lapsed.
   let downgraded = 0;
   try {
-    const rows = await dbExecute<{ identifier: string; language: string | null }>(
+    // exec_sql can't return RETURNING rows → count the rows that will be
+    // downgraded with a SELECT, then run the UPDATE. The count is report-only;
+    // the downgrade UPDATE is the authoritative side effect.
+    const rows = await dbQuery<{ identifier: string }>(
+      `SELECT identifier FROM profiles
+        WHERE plan IN ('base', 'premium')
+          AND plan_expires_at IS NOT NULL
+          AND plan_expires_at < NOW()`
+    );
+    await dbExecute(
       `UPDATE profiles
          SET plan = 'free', updated_at = NOW()
        WHERE plan IN ('base', 'premium')
          AND plan_expires_at IS NOT NULL
-         AND plan_expires_at < NOW()
-       RETURNING identifier, language`
+         AND plan_expires_at < NOW()`
     );
     downgraded = rows.length;
   } catch (e) {
