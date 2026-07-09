@@ -20,6 +20,7 @@ function sportKind(sport: string): SportKind {
 
 type LegStatus = "upcoming" | "won" | "lost" | "void" | null;
 type FormRec = { last: string[]; w: number; d: number; l: number; gf: number; ga: number };
+type WcRow = { team: string; played: number; won: number; drawn: number; lost: number; goals_for: number; goals_against: number; points: number };
 type Detail = {
   competition: string | null;
   stage: string | null;
@@ -35,6 +36,13 @@ type Detail = {
   venue: { heat: boolean; indoor: boolean; altitude: number | null; tzHome: number | null; tzAway: number | null; travelHome: number | null; travelAway: number | null };
   model: string | null;
   sample: { home: number | null; away: number | null };
+  // #WEEKLY-PICK-2
+  restDays?: { home: number | null; away: number | null };
+  hostAdvantage?: string | null;
+  squadStrength?: { home: number | null; away: number | null };
+  lineups?: { home?: string[]; away?: string[] } | null;
+  group?: string | null;
+  standing?: { home: WcRow | null; away: WcRow | null } | null;
 };
 type Sel = { label: string; sport: string; market: string | null; prob: number | null; status?: LegStatus; kickoff?: string | null; id?: string | null; detail?: Detail | null };
 type Data = {
@@ -50,28 +58,30 @@ type Data = {
   legs?: number;
   legs_remaining?: number;
   selections?: Sel[];
+  brief?: { legs: number; competitions: number; combinedProb: number | null; avgConfidence: number | null; strongest: { label: string; market: string; prob: number } | null };
+  sports?: Record<string, number>;
 };
 type HistLeg = { label: string; sport: string; market: string; prob: number; status: Exclude<LegStatus, null> };
 type HistWeek = { week_start: string; combined_prob: number | null; outcome: "live" | "won" | "lost"; legs: HistLeg[] };
 type Hist = { enabled: boolean; weeks?: HistWeek[] };
 
 const COPY = {
-  it: { back: "← Board", tag: "Multipla della casa", eyebrow: "Multipla della casa", h1a: "La schedina più", h1b: "probabile della settimana.", sub: "Le migliori pick del nostro modello, combinate in una sola schedina. Nessuna quota, nessun edge promesso — solo probabilità.", kProb: "prob. combinata", kLegs: "selezioni", kLeft: "ancora da giocare", loading: "Caricamento…", loadError: "Impossibile caricare la weekly pick.", retry: "Riprova", soon: "La multipla di questa settimana è in arrivo.", slip: "Schedina", note: "Probabilità combinata del modello.", unlockTitle: "Sblocca la Weekly Pick", unlockCta: "Sblocca", unlocking: "Attendi…", checkoutError: "Impossibile avviare il pagamento. Riprova.", proCta: "…oppure passa a Pro", responsible: "18+ · gioca responsabilmente", howEyebrow: "Come funziona", howTitle: "Una multipla, ogni settimana.", how1t: "Selezione", how1d: "Le pick a più alta probabilità del modello, combinate in una sola schedina.", how2t: "Ogni lunedì", how2d: "Una nuova multipla ogni lunedì; scade a fine settimana.", how3t: "Sblocco", how3d: "Inclusa nel Pro. Per gli altri, sblocco one-off.", histEyebrow: "Track record", histTitle: "Settimane precedenti.", histEmpty: "Il primo storico arriva a fine settimana.", oLive: "In corso", oWon: "Passata", oLost: "Non passata", locked: "Bloccata", locale: "it-IT" },
-  en: { back: "← Board", tag: "House accumulator", eyebrow: "House accumulator", h1a: "The week's most", h1b: "probable slip.", sub: "Our model's best picks, combined into a single slip. No odds, no promised edge — just probability.", kProb: "combined prob.", kLegs: "selections", kLeft: "still to play", loading: "Loading…", loadError: "Couldn't load the weekly pick.", retry: "Retry", soon: "This week's slip is on its way.", slip: "Slip", note: "Model's combined probability.", unlockTitle: "Unlock the Weekly Pick", unlockCta: "Unlock", unlocking: "Please wait…", checkoutError: "Couldn't start the payment. Please try again.", proCta: "…or go Pro", responsible: "18+ · gamble responsibly", howEyebrow: "How it works", howTitle: "One accumulator, every week.", how1t: "Selection", how1d: "The model's highest-probability picks, combined into one slip.", how2t: "Every Monday", how2d: "A new accumulator every Monday; it expires at week's end.", how3t: "Unlock", how3d: "Included in Pro. For everyone else, a one-off unlock.", histEyebrow: "Track record", histTitle: "Previous weeks.", histEmpty: "The first history lands at the end of the week.", oLive: "Live", oWon: "Landed", oLost: "Didn't land", locked: "Locked", locale: "en-GB" },
-  es: { back: "← Board", tag: "Combinada de la casa", eyebrow: "Combinada de la casa", h1a: "La combinada más", h1b: "probable de la semana.", sub: "Las mejores picks de nuestro modelo, combinadas en una sola. Sin cuotas, sin edge prometido — solo probabilidad.", kProb: "prob. combinada", kLegs: "selecciones", kLeft: "por jugarse", loading: "Cargando…", loadError: "No se pudo cargar la weekly pick.", retry: "Reintentar", soon: "La combinada de esta semana está en camino.", slip: "Combinada", note: "Probabilidad combinada del modelo.", unlockTitle: "Desbloquea la Weekly Pick", unlockCta: "Desbloquear", unlocking: "Espera…", checkoutError: "No se pudo iniciar el pago. Inténtalo de nuevo.", proCta: "…o hazte Pro", responsible: "18+ · juega con responsabilidad", howEyebrow: "Cómo funciona", howTitle: "Una combinada, cada semana.", how1t: "Selección", how1d: "Las picks de mayor probabilidad del modelo, combinadas en una.", how2t: "Cada lunes", how2d: "Una nueva combinada cada lunes; caduca al final de la semana.", how3t: "Desbloqueo", how3d: "Incluida en Pro. Para el resto, desbloqueo único.", histEyebrow: "Track record", histTitle: "Semanas anteriores.", histEmpty: "El primer historial llega al final de la semana.", oLive: "En curso", oWon: "Acertada", oLost: "No acertada", locked: "Bloqueada", locale: "es-ES" },
-  fr: { back: "← Board", tag: "Combiné de la maison", eyebrow: "Combiné de la maison", h1a: "Le combiné le plus", h1b: "probable de la semaine.", sub: "Les meilleures prédictions de notre modèle, combinées en un seul combiné. Aucune cote, aucun edge promis — juste la probabilité.", kProb: "prob. combinée", kLegs: "sélections", kLeft: "encore à jouer", loading: "Chargement…", loadError: "Impossible de charger la weekly pick.", retry: "Réessayer", soon: "Le combiné de cette semaine arrive bientôt.", slip: "Combiné", note: "Probabilité combinée du modèle.", unlockTitle: "Débloquez la Weekly Pick", unlockCta: "Débloquer", unlocking: "Patientez…", checkoutError: "Impossible de démarrer le paiement. Réessayez.", proCta: "…ou passez à Pro", responsible: "18+ · jouez de manière responsable", howEyebrow: "Comment ça marche", howTitle: "Un combiné, chaque semaine.", how1t: "Sélection", how1d: "Les prédictions les plus probables du modèle, combinées en un seul.", how2t: "Chaque lundi", how2d: "Un nouveau combiné chaque lundi ; il expire en fin de semaine.", how3t: "Déblocage", how3d: "Inclus dans Pro. Pour les autres, un déblocage unique.", histEyebrow: "Track record", histTitle: "Semaines précédentes.", histEmpty: "Le premier historique arrive en fin de semaine.", oLive: "En cours", oWon: "Gagné", oLost: "Perdu", locked: "Bloqué", locale: "fr-FR" },
-  ru: { back: "← Board", tag: "Экспресс от команды", eyebrow: "Экспресс от команды", h1a: "Самый вероятный", h1b: "экспресс недели.", sub: "Лучшие пики нашей модели в одном экспрессе. Без коэффициентов и обещанного edge — только вероятность.", kProb: "совокупн. вероятн.", kLegs: "выборы", kLeft: "ещё сыграют", loading: "Загрузка…", loadError: "Не удалось загрузить weekly pick.", retry: "Повторить", soon: "Экспресс этой недели уже готовится.", slip: "Экспресс", note: "Совокупная вероятность модели.", unlockTitle: "Откройте Weekly Pick", unlockCta: "Открыть", unlocking: "Подождите…", checkoutError: "Не удалось начать оплату. Попробуйте снова.", proCta: "…или оформите Pro", responsible: "18+ · играйте ответственно", howEyebrow: "Как это работает", howTitle: "Один экспресс каждую неделю.", how1t: "Отбор", how1d: "Самые вероятные пики модели, собранные в один экспресс.", how2t: "Каждый понедельник", how2d: "Новый экспресс каждый понедельник; истекает в конце недели.", how3t: "Доступ", how3d: "Входит в Pro. Для остальных — разовая покупка.", histEyebrow: "Track record", histTitle: "Прошлые недели.", histEmpty: "Первая история появится в конце недели.", oLive: "В игре", oWon: "Зашёл", oLost: "Не зашёл", locked: "Закрыто", locale: "ru-RU" },
+  it: { back: "← Board", tag: "Multipla della casa", eyebrow: "Multipla della casa", h1a: "La schedina più", h1b: "probabile della settimana.", sub: "Le migliori pick del nostro modello, combinate in una sola schedina. Nessuna quota, nessun edge promesso — solo probabilità.", kProb: "prob. combinata", kLegs: "selezioni", kLeft: "ancora da giocare", loading: "Caricamento…", loadError: "Impossibile caricare la weekly pick.", retry: "Riprova", soon: "La multipla di questa settimana è in arrivo.", slip: "Schedina", note: "Probabilità combinata del modello.", unlockTitle: "Sblocca la Weekly Pick", unlockCta: "Sblocca", unlocking: "Attendi…", checkoutError: "Impossibile avviare il pagamento. Riprova.", proCta: "…oppure passa a Pro", responsible: "18+ · gioca responsabilmente", howEyebrow: "Come funziona", howTitle: "Una multipla, ogni settimana.", how1t: "Selezione", how1d: "Le pick a più alta probabilità del modello, combinate in una sola schedina.", how2t: "Ogni lunedì", how2d: "Una nuova multipla ogni lunedì; scade a fine settimana.", how3t: "Sblocco", how3d: "Inclusa nel Pro. Per gli altri, sblocco one-off.", histEyebrow: "Track record", histTitle: "Settimane precedenti.", histEmpty: "Il primo storico arriva a fine settimana.", oLive: "In corso", oWon: "Passata", oLost: "Non passata", locked: "Bloccata", briefEyebrow: "La settimana", briefLegs: "selezioni", briefComp: "competizioni", briefConf: "confidenza media", briefStrongest: "La più solida", briefFactors: "Ogni partita analizzata su forma, gol attesi, assenze, contesto e formazioni.", unlockPromo: "Cosa sblocchi", unlockList: ["Il nostro pronostico per ogni partita", "Probabilità e confidenza del modello", "Gol attesi (xG) e forma recente", "Assenze, contesto e formazioni", "Stato live della schedina"], anaTitle: "Analisi partita per partita.", locale: "it-IT" },
+  en: { back: "← Board", tag: "House accumulator", eyebrow: "House accumulator", h1a: "The week's most", h1b: "probable slip.", sub: "Our model's best picks, combined into a single slip. No odds, no promised edge — just probability.", kProb: "combined prob.", kLegs: "selections", kLeft: "still to play", loading: "Loading…", loadError: "Couldn't load the weekly pick.", retry: "Retry", soon: "This week's slip is on its way.", slip: "Slip", note: "Model's combined probability.", unlockTitle: "Unlock the Weekly Pick", unlockCta: "Unlock", unlocking: "Please wait…", checkoutError: "Couldn't start the payment. Please try again.", proCta: "…or go Pro", responsible: "18+ · gamble responsibly", howEyebrow: "How it works", howTitle: "One accumulator, every week.", how1t: "Selection", how1d: "The model's highest-probability picks, combined into one slip.", how2t: "Every Monday", how2d: "A new accumulator every Monday; it expires at week's end.", how3t: "Unlock", how3d: "Included in Pro. For everyone else, a one-off unlock.", histEyebrow: "Track record", histTitle: "Previous weeks.", histEmpty: "The first history lands at the end of the week.", oLive: "Live", oWon: "Landed", oLost: "Didn't land", locked: "Locked", briefEyebrow: "This week", briefLegs: "selections", briefComp: "competitions", briefConf: "avg. confidence", briefStrongest: "Most solid", briefFactors: "Every match analysed on form, expected goals, absences, context and line-ups.", unlockPromo: "What you unlock", unlockList: ["Our pick for every match", "Model probability and confidence", "Expected goals (xG) and recent form", "Absences, context and line-ups", "Live status of the slip"], anaTitle: "Match-by-match analysis.", locale: "en-GB" },
+  es: { back: "← Board", tag: "Combinada de la casa", eyebrow: "Combinada de la casa", h1a: "La combinada más", h1b: "probable de la semana.", sub: "Las mejores picks de nuestro modelo, combinadas en una sola. Sin cuotas, sin edge prometido — solo probabilidad.", kProb: "prob. combinada", kLegs: "selecciones", kLeft: "por jugarse", loading: "Cargando…", loadError: "No se pudo cargar la weekly pick.", retry: "Reintentar", soon: "La combinada de esta semana está en camino.", slip: "Combinada", note: "Probabilidad combinada del modelo.", unlockTitle: "Desbloquea la Weekly Pick", unlockCta: "Desbloquear", unlocking: "Espera…", checkoutError: "No se pudo iniciar el pago. Inténtalo de nuevo.", proCta: "…o hazte Pro", responsible: "18+ · juega con responsabilidad", howEyebrow: "Cómo funciona", howTitle: "Una combinada, cada semana.", how1t: "Selección", how1d: "Las picks de mayor probabilidad del modelo, combinadas en una.", how2t: "Cada lunes", how2d: "Una nueva combinada cada lunes; caduca al final de la semana.", how3t: "Desbloqueo", how3d: "Incluida en Pro. Para el resto, desbloqueo único.", histEyebrow: "Track record", histTitle: "Semanas anteriores.", histEmpty: "El primer historial llega al final de la semana.", oLive: "En curso", oWon: "Acertada", oLost: "No acertada", locked: "Bloqueada", briefEyebrow: "La semana", briefLegs: "selecciones", briefComp: "competiciones", briefConf: "confianza media", briefStrongest: "La más sólida", briefFactors: "Cada partido analizado en forma, goles esperados, ausencias, contexto y alineaciones.", unlockPromo: "Qué desbloqueas", unlockList: ["Nuestro pronóstico para cada partido", "Probabilidad y confianza del modelo", "Goles esperados (xG) y forma reciente", "Ausencias, contexto y alineaciones", "Estado en vivo de la combinada"], anaTitle: "Análisis partido por partido.", locale: "es-ES" },
+  fr: { back: "← Board", tag: "Combiné de la maison", eyebrow: "Combiné de la maison", h1a: "Le combiné le plus", h1b: "probable de la semaine.", sub: "Les meilleures prédictions de notre modèle, combinées en un seul combiné. Aucune cote, aucun edge promis — juste la probabilité.", kProb: "prob. combinée", kLegs: "sélections", kLeft: "encore à jouer", loading: "Chargement…", loadError: "Impossible de charger la weekly pick.", retry: "Réessayer", soon: "Le combiné de cette semaine arrive bientôt.", slip: "Combiné", note: "Probabilité combinée du modèle.", unlockTitle: "Débloquez la Weekly Pick", unlockCta: "Débloquer", unlocking: "Patientez…", checkoutError: "Impossible de démarrer le paiement. Réessayez.", proCta: "…ou passez à Pro", responsible: "18+ · jouez de manière responsable", howEyebrow: "Comment ça marche", howTitle: "Un combiné, chaque semaine.", how1t: "Sélection", how1d: "Les prédictions les plus probables du modèle, combinées en un seul.", how2t: "Chaque lundi", how2d: "Un nouveau combiné chaque lundi ; il expire en fin de semaine.", how3t: "Déblocage", how3d: "Inclus dans Pro. Pour les autres, un déblocage unique.", histEyebrow: "Track record", histTitle: "Semaines précédentes.", histEmpty: "Le premier historique arrive en fin de semaine.", oLive: "En cours", oWon: "Gagné", oLost: "Perdu", locked: "Bloqué", briefEyebrow: "La semaine", briefLegs: "sélections", briefComp: "compétitions", briefConf: "confiance moy.", briefStrongest: "La plus solide", briefFactors: "Chaque match analysé sur la forme, les buts attendus, les absences, le contexte et les compositions.", unlockPromo: "Ce que vous débloquez", unlockList: ["Notre pronostic pour chaque match", "Probabilité et confiance du modèle", "Buts attendus (xG) et forme récente", "Absences, contexte et compositions", "Statut en direct du combiné"], anaTitle: "Analyse match par match.", locale: "fr-FR" },
+  ru: { back: "← Board", tag: "Экспресс от команды", eyebrow: "Экспресс от команды", h1a: "Самый вероятный", h1b: "экспресс недели.", sub: "Лучшие пики нашей модели в одном экспрессе. Без коэффициентов и обещанного edge — только вероятность.", kProb: "совокупн. вероятн.", kLegs: "выборы", kLeft: "ещё сыграют", loading: "Загрузка…", loadError: "Не удалось загрузить weekly pick.", retry: "Повторить", soon: "Экспресс этой недели уже готовится.", slip: "Экспресс", note: "Совокупная вероятность модели.", unlockTitle: "Откройте Weekly Pick", unlockCta: "Открыть", unlocking: "Подождите…", checkoutError: "Не удалось начать оплату. Попробуйте снова.", proCta: "…или оформите Pro", responsible: "18+ · играйте ответственно", howEyebrow: "Как это работает", howTitle: "Один экспресс каждую неделю.", how1t: "Отбор", how1d: "Самые вероятные пики модели, собранные в один экспресс.", how2t: "Каждый понедельник", how2d: "Новый экспресс каждый понедельник; истекает в конце недели.", how3t: "Доступ", how3d: "Входит в Pro. Для остальных — разовая покупка.", histEyebrow: "Track record", histTitle: "Прошлые недели.", histEmpty: "Первая история появится в конце недели.", oLive: "В игре", oWon: "Зашёл", oLost: "Не зашёл", locked: "Закрыто", briefEyebrow: "Эта неделя", briefLegs: "выборы", briefComp: "турниры", briefConf: "ср. уверенность", briefStrongest: "Самый надёжный", briefFactors: "Каждый матч разобран по форме, ожидаемым голам, отсутствиям, контексту и составам.", unlockPromo: "Что вы открываете", unlockList: ["Наш прогноз на каждый матч", "Вероятность и уверенность модели", "Ожидаемые голы (xG) и форма", "Отсутствия, контекст и составы", "Статус экспресса в реальном времени"], anaTitle: "Разбор матч за матчем.", locale: "ru-RU" },
 } as const;
 
 type Lang = keyof typeof COPY;
 
 // Copy della scheda-dettaglio (modale "perché").
 const DCOPY = {
-  it: { open: "Apri la scheda", pick: "Il nostro pronostico", prob: "Probabilità del modello", conf: "confidenza", draw: "Pareggio", xg: "Gol attesi (modello)", form: "Forma recente", why: "Perché questa pick", ctx: "Contesto partita", inj: "Assenze", heat: "Caldo", alt: "Altitudine", tz: "Fuso orario", travel: "Viaggio", indoor: "Al coperto", rot: "Rotazione probabile", neutral: "Campo neutro", model: "Modello", games: "gare", gforga: "GF:GS", disclaimer: "Analisi del modello — nessuna garanzia di vincita." },
-  en: { open: "Open the card", pick: "Our pick", prob: "Model probability", conf: "confidence", draw: "Draw", xg: "Expected goals (model)", form: "Recent form", why: "Why this pick", ctx: "Match context", inj: "Absences", heat: "Heat", alt: "Altitude", tz: "Time shift", travel: "Travel", indoor: "Indoor", rot: "Likely rotation", neutral: "Neutral venue", model: "Model", games: "games", gforga: "GF:GA", disclaimer: "Model analysis — no win guaranteed." },
-  es: { open: "Abrir la ficha", pick: "Nuestro pronóstico", prob: "Probabilidad del modelo", conf: "confianza", draw: "Empate", xg: "Goles esperados (modelo)", form: "Forma reciente", why: "Por qué esta pick", ctx: "Contexto del partido", inj: "Ausencias", heat: "Calor", alt: "Altitud", tz: "Huso horario", travel: "Viaje", indoor: "Cubierto", rot: "Rotación probable", neutral: "Campo neutral", model: "Modelo", games: "partidos", gforga: "GF:GC", disclaimer: "Análisis del modelo — sin garantía de acierto." },
-  fr: { open: "Ouvrir la fiche", pick: "Notre pronostic", prob: "Probabilité du modèle", conf: "confiance", draw: "Nul", xg: "Buts attendus (modèle)", form: "Forme récente", why: "Pourquoi ce choix", ctx: "Contexte du match", inj: "Absences", heat: "Chaleur", alt: "Altitude", tz: "Décalage horaire", travel: "Voyage", indoor: "Couvert", rot: "Rotation probable", neutral: "Terrain neutre", model: "Modèle", games: "matchs", gforga: "BP:BC", disclaimer: "Analyse du modèle — aucun gain garanti." },
-  ru: { open: "Открыть карточку", pick: "Наш прогноз", prob: "Вероятность модели", conf: "уверенность", draw: "Ничья", xg: "Ожидаемые голы (модель)", form: "Форма", why: "Почему этот пик", ctx: "Контекст матча", inj: "Отсутствия", heat: "Жара", alt: "Высота", tz: "Часовой сдвиг", travel: "Перелёт", indoor: "В помещении", rot: "Вероятна ротация", neutral: "Нейтральное поле", model: "Модель", games: "игр", gforga: "ЗГ:ПГ", disclaimer: "Анализ модели — выигрыш не гарантирован." },
+  it: { open: "Apri la scheda", pick: "Il nostro pronostico", prob: "Probabilità del modello", conf: "confidenza", draw: "Pareggio", xg: "Gol attesi (modello)", form: "Forma recente", why: "Perché questa pick", ctx: "Contesto partita", inj: "Assenze", heat: "Caldo", alt: "Altitudine", tz: "Fuso orario", travel: "Viaggio", indoor: "Al coperto", rot: "Rotazione probabile", neutral: "Campo neutro", model: "Modello", games: "gare", gforga: "GF:GS", rest: "Riposo", host: "Fattore campo", squadStr: "Forza rosa", xi: "Formazione confermata", standing: "Classifica girone", pos: "pt", disclaimer: "Analisi del modello — nessuna garanzia di vincita." },
+  en: { open: "Open the card", pick: "Our pick", prob: "Model probability", conf: "confidence", draw: "Draw", xg: "Expected goals (model)", form: "Recent form", why: "Why this pick", ctx: "Match context", inj: "Absences", heat: "Heat", alt: "Altitude", tz: "Time shift", travel: "Travel", indoor: "Indoor", rot: "Likely rotation", neutral: "Neutral venue", model: "Model", games: "games", gforga: "GF:GA", rest: "Rest", host: "Home factor", squadStr: "Squad strength", xi: "Confirmed line-up", standing: "Group table", pos: "pts", disclaimer: "Model analysis — no win guaranteed." },
+  es: { open: "Abrir la ficha", pick: "Nuestro pronóstico", prob: "Probabilidad del modelo", conf: "confianza", draw: "Empate", xg: "Goles esperados (modelo)", form: "Forma reciente", why: "Por qué esta pick", ctx: "Contexto del partido", inj: "Ausencias", heat: "Calor", alt: "Altitud", tz: "Huso horario", travel: "Viaje", indoor: "Cubierto", rot: "Rotación probable", neutral: "Campo neutral", model: "Modelo", games: "partidos", gforga: "GF:GC", rest: "Descanso", host: "Factor campo", squadStr: "Fuerza plantilla", xi: "Alineación confirmada", standing: "Clasificación grupo", pos: "pts", disclaimer: "Análisis del modelo — sin garantía de acierto." },
+  fr: { open: "Ouvrir la fiche", pick: "Notre pronostic", prob: "Probabilité du modèle", conf: "confiance", draw: "Nul", xg: "Buts attendus (modèle)", form: "Forme récente", why: "Pourquoi ce choix", ctx: "Contexte du match", inj: "Absences", heat: "Chaleur", alt: "Altitude", tz: "Décalage horaire", travel: "Voyage", indoor: "Couvert", rot: "Rotation probable", neutral: "Terrain neutre", model: "Modèle", games: "matchs", gforga: "BP:BC", rest: "Repos", host: "Facteur domicile", squadStr: "Force effectif", xi: "Composition confirmée", standing: "Classement groupe", pos: "pts", disclaimer: "Analyse du modèle — aucun gain garanti." },
+  ru: { open: "Открыть карточку", pick: "Наш прогноз", prob: "Вероятность модели", conf: "уверенность", draw: "Ничья", xg: "Ожидаемые голы (модель)", form: "Форма", why: "Почему этот пик", ctx: "Контекст матча", inj: "Отсутствия", heat: "Жара", alt: "Высота", tz: "Часовой сдвиг", travel: "Перелёт", indoor: "В помещении", rot: "Вероятна ротация", neutral: "Нейтральное поле", model: "Модель", games: "игр", gforga: "ЗГ:ПГ", rest: "Отдых", host: "Фактор поля", squadStr: "Сила состава", xi: "Подтв. состав", standing: "Таблица группы", pos: "оч.", disclaimer: "Анализ модели — выигрыш не гарантирован." },
 } as const;
 
 // Icone inline (mai emoji).
@@ -126,6 +136,10 @@ function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
     if (d.rotation.away) chips.push(`${t.rot}: ${away}`);
     if (d.injuries.home.length) chips.push(`${t.inj} ${home}: ${d.injuries.home.join(", ")}`);
     if (d.injuries.away.length) chips.push(`${t.inj} ${away}: ${d.injuries.away.join(", ")}`);
+    if (d.restDays && (d.restDays.home != null || d.restDays.away != null)) {
+      chips.push(`${t.rest} ${d.restDays.home ?? "—"}/${d.restDays.away ?? "—"}`);
+    }
+    if (d.hostAdvantage) chips.push(`${t.host}: ${d.hostAdvantage}`);
   }
   const hasForm = !!(d?.form.home || d?.form.away);
   const sampleN = d?.sample.home ?? d?.sample.away ?? null;
@@ -169,6 +183,35 @@ function LegDetail({ sel, lang }: { sel: Sel; lang: Lang }) {
           <div className="wp-d-forms">
             {d?.form.home && <FormLine team={home} f={d.form.home} gforga={t.gforga} />}
             {d?.form.away && <FormLine team={away} f={d.form.away} gforga={t.gforga} />}
+          </div>
+        </div>
+      )}
+
+      {d?.squadStrength && (d.squadStrength.home != null || d.squadStrength.away != null) && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.squadStr}</span>
+          <div className="wp-d-xg">
+            <span className="wp-d-xg-side"><em>{home}</em><b>{d.squadStrength.home != null ? `${Math.round(d.squadStrength.home * 100)}%` : "—"}</b></span>
+            <span className="wp-d-xg-sep">·</span>
+            <span className="wp-d-xg-side"><em>{away}</em><b>{d.squadStrength.away != null ? `${Math.round(d.squadStrength.away * 100)}%` : "—"}</b></span>
+          </div>
+        </div>
+      )}
+
+      {d?.lineups && (!!d.lineups.home?.length || !!d.lineups.away?.length) && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.xi}</span>
+          {d.lineups.home?.length ? <p className="wp-d-xi"><em>{home}:</em> {d.lineups.home.join(", ")}</p> : null}
+          {d.lineups.away?.length ? <p className="wp-d-xi"><em>{away}:</em> {d.lineups.away.join(", ")}</p> : null}
+        </div>
+      )}
+
+      {d?.standing && (d.standing.home || d.standing.away) && (
+        <div className="wp-d-block">
+          <span className="wp-d-lab">{t.standing}{d.group ? ` ${d.group}` : ""}</span>
+          <div className="wp-d-stand">
+            {d.standing.home && <span><em>{home}</em> {d.standing.home.points} {t.pos} · {d.standing.home.won}-{d.standing.home.drawn}-{d.standing.home.lost}</span>}
+            {d.standing.away && <span><em>{away}</em> {d.standing.away.points} {t.pos} · {d.standing.away.won}-{d.standing.away.drawn}-{d.standing.away.lost}</span>}
           </div>
         </div>
       )}
@@ -290,6 +333,29 @@ export default function WeeklyPickPage() {
         )}
       </header>
 
+      {/* ── BRIEF DELLA SETTIMANA ── */}
+      {available && data?.brief && (
+        <section className="wp-brief">
+          <p className="lp-eyebrow">{t.briefEyebrow}</p>
+          <div className="wp-brief-stats">
+            <span className="wp-bstat"><b>{data.brief.legs}</b>{t.briefLegs}</span>
+            <span className="wp-bstat"><b>{data.brief.competitions}</b>{t.briefComp}</span>
+            {unlocked && data.brief.combinedProb != null && (
+              <span className="wp-bstat accent"><b>{Math.round(data.brief.combinedProb * 100)}%</b>{t.kProb}</span>
+            )}
+            {unlocked && data.brief.avgConfidence != null && (
+              <span className="wp-bstat"><b>{data.brief.avgConfidence}%</b>{t.briefConf}</span>
+            )}
+          </div>
+          {unlocked && data.brief.strongest && (
+            <p className="wp-brief-strong">
+              {t.briefStrongest}: <b>{data.brief.strongest.label}</b> — {data.brief.strongest.market} · {Math.round(data.brief.strongest.prob * 100)}%
+            </p>
+          )}
+          <p className="wp-brief-factors">{t.briefFactors}</p>
+        </section>
+      )}
+
       {/* ── LA MULTIPLA (betslip) ── */}
       <section className="wp-wrap">
         {error && (
@@ -360,6 +426,14 @@ export default function WeeklyPickPage() {
                 <p className="wp-note">{t.note}</p>
               ) : (
                 <>
+                  <div className="wp-unlock-list">
+                    <span className="wp-unlock-list-ttl">{t.unlockPromo}</span>
+                    <ul>
+                      {t.unlockList.map((x, i) => (
+                        <li key={i}><IChk />{x}</li>
+                      ))}
+                    </ul>
+                  </div>
                   <div className="wp-unlock">
                     <div className="wp-unlock-txt">
                       <span className="wp-unlock-ttl">{t.unlockTitle}</span>
@@ -383,6 +457,36 @@ export default function WeeklyPickPage() {
           </article>
         )}
       </section>
+
+      {/* ── ANALISI PARTITA PER PARTITA (inline, sbloccata) ── */}
+      {available && unlocked && data?.selections?.some((s) => s.detail) && (
+        <section className="wp-analysis">
+          <header className="wp-hist-head">
+            <p className="lp-eyebrow">{t.briefEyebrow}</p>
+            <h2 className="lp-how-title">{t.anaTitle}</h2>
+          </header>
+          <div className="wp-acards">
+            {data.selections.filter((s) => s.detail).map((s, i) => {
+              const kick = fmtKick(s.kickoff);
+              return (
+                <article key={i} className="wp-acard">
+                  <div className="wp-acard-top">
+                    <span className="wp-leg-sport"><SportIcon sport={sportKind(s.sport)} size={20} variant="sm" /></span>
+                    <span className="wp-acard-match">{s.label}</span>
+                    {s.status && (
+                      <span className={`wp-leg-st ${s.status}`}>
+                        {statusIcon(s.status)}
+                        {s.status === "upcoming" && kick ? kick : null}
+                      </span>
+                    )}
+                  </div>
+                  <LegDetail sel={s} lang={lang} />
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── STORICO ── */}
       <section className="wp-hist-sec">
