@@ -149,13 +149,18 @@ export async function GET(req: Request) {
   // Stato live: risolve ogni leg contro il settlement della sua predizione, così
   // chi compra a metà settimana vede cosa ha già giocato e cosa manca.
   const predIds = sels.map((s) => (s.id.startsWith("wp_") ? s.id.slice(3) : s.id));
+  // NB: `= ANY($1)` con un parametro array NON funziona con l'interpolate di lib/db
+  // (un array diventa una singola stringa comma-joined → 0 righe, errore ingoiato).
+  // Serve un IN con un placeholder per id (ognuno quotato singolarmente). Questo
+  // difetto teneva `detail` sempre nullo dal #WEEKLY-PICK-1.
+  const idPlaceholders = predIds.map((_, i) => `$${i + 1}`).join(", ");
   const predRows = predIds.length
     ? await dbQuery<RichRow>(
         `SELECT id::text AS id, status, result, starts_at::text AS starts_at,
                 league, competition, world_cup_stage, neutral_venue, model_version,
                 confidence_score, risk_level, explanation, notes, enrichment
-           FROM unified_predictions WHERE id::text = ANY($1)`,
-        [predIds]
+           FROM unified_predictions WHERE id::text IN (${idPlaceholders})`,
+        predIds
       )
     : [];
   const richById = new Map(predRows.map((r) => [r.id, r]));
