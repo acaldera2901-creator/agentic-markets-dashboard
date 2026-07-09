@@ -5,7 +5,19 @@
 import crypto from "node:crypto";
 
 function secret(): string {
-  return process.env.SESSION_SECRET || process.env.CRON_SECRET || "";
+  // Fail-closed (#38): an empty HMAC key makes every unsubscribe token forgeable
+  // — HMAC("") over base64url(email) lets anyone mass-unsubscribe without login.
+  // Refuse to issue/verify rather than sign with "". In prod SESSION_SECRET is
+  // always set (login sessions depend on it), so this never trips there.
+  // NB (#37 follow-up, tracked separately): the identifier is base64url-encoded
+  // (reversible) inside the token → a future hardening is an opaque server-mapped id.
+  const s = process.env.SESSION_SECRET || process.env.CRON_SECRET;
+  if (!s) {
+    throw new Error(
+      "[crm-unsub] no signing secret (SESSION_SECRET/CRON_SECRET) — refusing to issue/verify forgeable unsubscribe tokens"
+    );
+  }
+  return s;
 }
 
 export function unsubToken(identifier: string): string {

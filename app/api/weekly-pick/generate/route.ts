@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
+import { verifyBearer } from "@/lib/admin-auth";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import {
   buildHouseMultipla,
@@ -32,7 +33,10 @@ type Row = {
 
 export async function POST(req: Request) {
   if (!weeklyPickEnabled()) return NextResponse.json({ ok: false, reason: "disabled" });
-  if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Constant-time bearer check (#33): the prior `!== \`Bearer ${CRON_SECRET}\``
+  // was a timing-variable string compare (length/prefix leak). Use the shared
+  // fail-closed verifyBearer like every other cron/server-to-server endpoint.
+  if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
