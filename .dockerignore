@@ -1,0 +1,43 @@
+# #PRELAUNCH-AUDIT BLOCKER-3: evita che segreti e cruft finiscano nell'immagine.
+# Prima non esisteva → `COPY . .` cuoceva .env (SERVICE_ROLE_KEY, SESSION_SECRET,
+# DATABASE_URL) e node_modules nell'immagine del daemon Python.
+
+# Segreti / env — MAI nell'immagine (usare fly secrets / env runtime)
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Git / VCS
+.git
+.gitignore
+.gitattributes
+
+# Dipendenze JS (il daemon Python non le usa; enormi)
+node_modules
+.next
+.vercel
+.turbo
+
+# Cache/artefatti Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Log / temporanei / OS
+*.log
+logs/
+.DS_Store
+tmp/
+.cache/
+
+# Sviluppo / test / docs (non servono a runtime)
+.github/
+.vscode/
+coverage/
