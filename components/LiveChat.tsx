@@ -45,12 +45,23 @@ const CONTACT_LABELS: Record<string, string> = {
 export function LiveChat() {
   const [showFallback, setShowFallback] = useState(false);
 
+  // #PRELAUNCH-AUDIT (GDPR/ePrivacy): Tawk.to è terza parte che setta cookie e traccia
+  // → si carica SOLO col consenso preventivo ("gdpr_consent"==="accepted", stessa chiave
+  // del CookieBanner). Prima dell'Accept NON iniettiamo nulla; su Accept carichiamo senza
+  // reload via evento "betredge:gdpr-consent" (emesso dal banner) o storage cross-tab.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Già iniettato (HMR / doppio mount): no-op.
-    if (document.getElementById("tawkto-widget")) return;
+
+    const hasConsent = () => {
+      try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
+    };
 
     let loaded = false;
+    let fallbackTimer = 0;
+
+    const injectTawk = () => {
+      // Già iniettato (HMR / doppio mount / secondo trigger di consenso): no-op.
+      if (document.getElementById("tawkto-widget")) return;
 
     // Bootstrap ufficiale Tawk.to.
     const w = window as unknown as { Tawk_API?: Record<string, unknown>; Tawk_LoadStart?: Date };
@@ -85,11 +96,29 @@ export function LiveChat() {
     // Niente cleanup dello script: Tawk inietta il proprio launcher/iframe; il
     // guard sull'id basta a evitare doppie iniezioni.
 
-    // Rete di sicurezza: se entro il timeout Tawk non ha fatto onLoad, fallback.
-    const t = window.setTimeout(() => {
-      if (!loaded) setShowFallback(true);
-    }, FALLBACK_TIMEOUT_MS);
-    return () => window.clearTimeout(t);
+      // Rete di sicurezza: se entro il timeout Tawk non ha fatto onLoad, fallback.
+      fallbackTimer = window.setTimeout(() => {
+        if (!loaded) setShowFallback(true);
+      }, FALLBACK_TIMEOUT_MS);
+    };
+
+    // Consenso già dato → inietta subito. Altrimenti aspetta l'Accept.
+    if (hasConsent()) {
+      injectTawk();
+      return () => window.clearTimeout(fallbackTimer);
+    }
+
+    // Nessun consenso: NON iniettare. Ascolta l'accettazione (stesso tab via evento
+    // custom del banner; altri tab via storage) e inietta solo quando diventa "accepted".
+    const onConsent = () => { if (hasConsent()) injectTawk(); };
+    const onStorage = (e: StorageEvent) => { if (e.key === "gdpr_consent") onConsent(); };
+    window.addEventListener("betredge:gdpr-consent", onConsent);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("betredge:gdpr-consent", onConsent);
+      window.removeEventListener("storage", onStorage);
+      window.clearTimeout(fallbackTimer);
+    };
   }, []);
 
   // Widget vivo → Tawk porta il proprio launcher, non renderizziamo nulla.

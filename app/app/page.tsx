@@ -7799,6 +7799,9 @@ function CookieBanner() {
   if (!visible) return null;
   const decide = (v: "accepted" | "declined") => {
     try { localStorage.setItem("gdpr_consent", v); } catch { /* */ }
+    // #PRELAUNCH-AUDIT: segnala il consenso ai client che caricano terze parti solo
+    // dopo l'Accept (es. LiveChat/Tawk.to) → si attivano senza reload.
+    try { window.dispatchEvent(new Event("betredge:gdpr-consent")); } catch { /* */ }
     setVisible(false);
   };
   const it = lang === "it";
