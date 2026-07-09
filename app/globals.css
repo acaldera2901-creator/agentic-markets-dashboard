@@ -8228,6 +8228,9 @@ button:disabled {
 .wp-brief-strong { margin: 0 0 8px; font-size: 14px; color: var(--am-muted); }
 .wp-brief-strong b { color: var(--am-text); font-weight: 700; font-family: var(--font-display); }
 .wp-brief-factors { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--am-muted-2); }
+.wp-brief-mix { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 12px; }
+.wp-mix-item { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono), monospace; font-size: 12.5px; color: var(--am-muted); }
+.wp-mix-item svg { width: 15px; height: 15px; color: var(--am-muted); }
 
 .wp-analysis { max-width: 1240px; margin: 0 auto; width: 100%;
   padding: clamp(16px, 4vw, 40px) clamp(16px, 4vw, 56px) clamp(8px, 2vw, 24px); }
