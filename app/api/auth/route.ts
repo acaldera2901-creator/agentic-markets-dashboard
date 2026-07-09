@@ -12,6 +12,11 @@ import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
+// #PRELAUNCH-AUDIT: hash scrypt costante per equalizzare il timing del login quando
+// l'account NON esiste (verifyPassword su questo esegue lo stesso scrypt ~50ms di un
+// account reale → niente oracolo di enumerazione via timing). Calcolato una volta.
+const TIMING_DUMMY_HASH = hashPassword("timing-equalizer-not-a-real-account");
+
 // Issue + persist a fresh activation token and email the activation link.
 // Throws if the email send fails so the caller surfaces a real error.
 async function sendActivation(req: Request, identifier: string, lang: "it" | "en"): Promise<void> {
@@ -323,6 +328,10 @@ export async function POST(req: Request) {
   // MEDIUM-13: don't enumerate accounts — "no account" and "wrong password"
   // return the SAME generic 401 (new users use the register tab).
   if (!existing) {
+    // #PRELAUNCH-AUDIT: equalizza il timing — un account reale esegue scrypt (~50ms)
+    // in verifyPassword; senza questo, il ramo "nessun account" tornava istantaneo e
+    // rivelava (per timing) quali email sono registrate. Dummy verify su hash costante.
+    verifyPassword(password, TIMING_DUMMY_HASH);
     return NextResponse.json({ error: "wrong email or password" }, { status: 401 });
   }
   // No password set, or password set but never activated → cannot log in. This

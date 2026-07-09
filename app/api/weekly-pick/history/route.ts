@@ -47,11 +47,15 @@ export async function GET() {
       parsed.flatMap((p) => p.sels.map((s) => (s.id.startsWith("wp_") ? s.id.slice(3) : s.id)))
     ),
   ];
+  // #PRELAUNCH-AUDIT: `= ANY($array)` NON funziona con l'interpolate di lib/db (l'array
+  // diventa una stringa comma-joined → 0 righe, errore ingoiato → ogni leg storica
+  // restava irrisolta). IN con un placeholder per id, come già fatto in route.ts.
+  const idPlaceholders = predIds.map((_, i) => `$${i + 1}`).join(", ");
   const predRows = predIds.length
     ? await dbQuery<PredOutcomeRow>(
         `SELECT id::text AS id, status, result, starts_at::text AS starts_at
-           FROM unified_predictions WHERE id::text = ANY($1)`,
-        [predIds]
+           FROM unified_predictions WHERE id::text IN (${idPlaceholders})`,
+        predIds
       )
     : [];
 
