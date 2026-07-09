@@ -28,7 +28,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">2. Data We Collect</h2>
           <ul className="text-xs space-y-2 list-disc list-inside">
-            <li><strong className="text-[var(--am-text)]">Profile data:</strong> Email address, plan selection, and preferences stored locally in your browser (localStorage). No server-side account is created for free users.</li>
+            <li><strong className="text-[var(--am-text)]">Profile data:</strong> When you create an account — including free ones — we store your email address, selected plan, name, language, timezone and marketing-consent flag (with timestamps) server-side in our database (Supabase). Interface preferences such as language and theme are also cached locally in your browser (localStorage).</li>
             <li><strong className="text-[var(--am-text)]">Usage events:</strong> Anonymous usage events (tab views, plan upgrades) collected via Supabase to improve the service. No personally identifiable information is included.</li>
             <li><strong className="text-[var(--am-text)]">Deposit requests:</strong> For paying clients, name, email, and payment method are stored securely in Supabase with row-level security.</li>
             <li><strong className="text-[var(--am-text)]">Technical data:</strong> Standard server logs (IP address, browser type, request timestamps) retained for up to 30 days for security purposes.</li>
