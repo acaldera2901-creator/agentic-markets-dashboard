@@ -252,6 +252,23 @@ export async function POST(req: Request) {
     if (existing?.password_hash && existing.activated_at) {
       return NextResponse.json({ error: "account already exists — please log in" }, { status: 409 });
     }
+    // #PRELAUNCH-AUDIT HIGH-5 (account takeover): se una riga ESISTE già per questa
+    // email (legacy passwordless / mai attivata / piano impostato da backoffice), il
+    // register NON deve sovrascrivere la password né aprire una sessione — altrimenti
+    // chiunque conosca l'email potrebbe rivendicare la riga (soprattutto a email-gate
+    // OFF: register auto-sessione, e login gate-off logga con password_hash anche senza
+    // activated_at). Richiediamo la prova del possesso della inbox: mandiamo il link di
+    // attivazione, senza toccare password/piano. Solo un INSERT genuinamente NUOVO (else
+    // sotto) può ottenere sessione immediata / setup password.
+    if (existing) {
+      try {
+        await sendActivation(req, identifier, lang);
+      } catch (e) {
+        console.error("[auth] register(existing-row) activation email failed:", String(e));
+      }
+      // 202 identico al ramo new+gate-on → nessuna enumerazione di account esistenti.
+      return NextResponse.json({ pending_activation: true, identifier }, { status: 202 });
+    }
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
     const language = typeof body.language === "string" ? body.language.slice(0, 16) : null;
     const timezone = typeof body.timezone === "string" ? body.timezone.slice(0, 64) : null;
@@ -269,17 +286,13 @@ export async function POST(req: Request) {
     // (NULL for new/legacy rows; a real activated account never reaches here).
     try {
       await dbExecute(
+        // Solo account NUOVI arrivano qui (le righe esistenti sono già gestite sopra
+        // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
+        // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
+        // una riga esistente (niente takeover via race).
         `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at)
          VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END)
-       ON CONFLICT (identifier) DO UPDATE
-         SET name = COALESCE(EXCLUDED.name, profiles.name),
-             language = COALESCE(EXCLUDED.language, profiles.language),
-             timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
-             password_hash = EXCLUDED.password_hash,
-             referred_by = COALESCE(profiles.referred_by, EXCLUDED.referred_by),
-             marketing_opt_in = EXCLUDED.marketing_opt_in,
-             marketing_opt_in_at = CASE WHEN EXCLUDED.marketing_opt_in THEN NOW() ELSE profiles.marketing_opt_in_at END,
-             updated_at = NOW()`,
+       ON CONFLICT (identifier) DO NOTHING`,
         [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn]
       );
     } catch (e) {
