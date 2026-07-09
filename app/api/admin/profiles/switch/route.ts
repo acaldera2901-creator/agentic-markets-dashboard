@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
-import { normalizeIdentifier } from "@/lib/admin-profile-policy";
+import { normalizeIdentifier, isAdminIdentifier, ADMIN_PROFILE_PLAN } from "@/lib/admin-profile-policy";
 import type { Plan } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +62,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "profile not found", detail: { id: profileId || null, identifier } }, { status: 404 });
   }
   const profile = data as ProfileRow;
+  // #PRELAUNCH-AUDIT: NON emettere mai una sessione per l'identità admin/founder da
+  // questa GET (mirror del guard del POST-impersonate) — altrimenti una compromissione
+  // dell'admin_token (8h) diventerebbe una sessione founder cliente da 30 giorni.
+  if (profile.plan === ADMIN_PROFILE_PLAN || isAdminIdentifier(profile.identifier)) {
+    return NextResponse.json({ error: "cannot switch to the admin profile" }, { status: 403 });
+  }
 
   await writeAdminEvent("admin_profile_switched", profile.plan, { identifier: profile.identifier });
 

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery, dbExecute } from "@/lib/db";
@@ -29,12 +30,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const rows = await dbExecute(
-      `INSERT INTO segments (key, name, description, rule, active)
-       VALUES ($1, $2, $3, $4::jsonb, $5) RETURNING id`,
-      [body.key, body.name, body.description ?? null, JSON.stringify(rule), body.active ?? true]
+    // #PRELAUNCH-AUDIT: exec_sql non restituisce RETURNING → generiamo noi l'id e lo
+    // passiamo nell'INSERT, così la risposta porta l'id reale (prima era sempre null).
+    const id = randomUUID();
+    await dbExecute(
+      `INSERT INTO segments (id, key, name, description, rule, active)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6)`,
+      [id, body.key, body.name, body.description ?? null, JSON.stringify(rule), body.active ?? true]
     );
-    return NextResponse.json({ ok: true, id: (rows?.[0] as { id?: string })?.id ?? null });
+    return NextResponse.json({ ok: true, id });
   } catch (e) {
     console.error("[admin/segments] insert failed:", String(e));
     return NextResponse.json({ error: "insert failed" }, { status: 500 });

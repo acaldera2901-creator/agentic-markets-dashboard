@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
+import { verifyBearer } from "@/lib/admin-auth";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import {
   buildHouseMultipla,
@@ -32,7 +33,9 @@ type Row = {
 
 export async function POST(req: Request) {
   if (!weeklyPickEnabled()) return NextResponse.json({ ok: false, reason: "disabled" });
-  if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  // #PRELAUNCH-AUDIT: confronto timing-safe come gli altri cron (settle/subscriptions/
+  // refresh) invece del !== raw, che era una regressione di hardening.
+  if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
