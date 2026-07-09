@@ -8662,6 +8662,38 @@ export default function Dashboard() {
             </aside>
 
         <section className="book-main">
+          {/* #MOBILE-FEATURED-1: gruppo "In Evidenza" — solo mobile (≤760px, dove il
+              rail sparisce). Rispecchia il FEATURED del rail PC con le nostre icone;
+              tile prominenti che vanno a capo (nessuno scroll → tutto visibile). */}
+          <nav className="am-featured" aria-label={tNav.featured_label}>
+            <span className="am-featured-lab">{tNav.featured_label}</span>
+            <div className="am-featured-grid">
+              <Link className="am-feat-tile" href="/world-cup">
+                <SportIcon sport="worldcup" size={22} className="am-feat-ic" variant="sm" />
+                <span className="am-feat-l">World Cup</span>
+              </Link>
+              <a className="am-feat-tile" href="/community">
+                <MenuIcon name="creator" size={22} className="am-feat-ic" />
+                <span className="am-feat-l">Creator Picks</span>
+              </a>
+              <Link className="am-feat-tile" href="/weekly-pick">
+                <svg className="am-feat-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
+                <span className="am-feat-l">Weekly Pick</span>
+              </Link>
+              {hasClientProfile && (
+                <button className="am-feat-tile" onClick={() => { setTab("match-builder"); trackEvent("tab_click", { meta: { tab: "match-builder", src: "featured-mobile" } }); }}>
+                  <MenuIcon name="builder" size={22} className="am-feat-ic" />
+                  <span className="am-feat-l">Match Builder</span>
+                </button>
+              )}
+              {hasClientProfile && (
+                <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
+                  <svg className="am-feat-ic" aria-hidden="true"><use href="#g-acct" /></svg>
+                  <span className="am-feat-l">{pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}</span>
+                </button>
+              )}
+            </div>
+          </nav>
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
               <h2>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h2>
@@ -8830,7 +8862,10 @@ export default function Dashboard() {
             aria-current={tab === b.tab ? "page" : undefined}
             onClick={() => { setTab(b.tab); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
           >
-            <svg aria-hidden="true"><use href={b.glyph} /></svg>
+            {/* #MOBILE-FEATURED-1: nostre icone illustrate come nel rail PC; glifo di fallback. */}
+            {RAIL_ICONS[b.tab]
+              ? <MenuIcon name={RAIL_ICONS[b.tab]} size={20} />
+              : <svg aria-hidden="true"><use href={b.glyph} /></svg>}
             <span className="bn-l">{b.label}</span>
           </button>
         ))}
