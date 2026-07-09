@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { resolveAccessState, type AccessState } from "@/lib/auth";
 import { isUnlocked } from "@/lib/access-projection";
 import { verifyBearer } from "@/lib/admin-auth";
+// #PRELAUNCH-AUDIT: chiavi premium in lib/enrichment-gate (single source, condivise
+// con /api/data che prima leakava l'enrichment grezzo al tier Base).
+import { PREMIUM_ENRICHMENT_KEYS } from "@/lib/enrichment-gate";
 
 export const dynamic = "force-dynamic";
 import {
@@ -118,24 +121,6 @@ function markModelEstimate(row: PredictionRow): PredictionRow {
 // The public paid plan is `base`, so active paid users see the advanced enrichment.
 
 // Advanced enrichment keys — stripped for anonymous/free/pending users.
-const PREMIUM_ENRICHMENT_KEYS = [
-  "pi_home", "pi_away",
-  "xg_home", "xga_home", "xg_away", "xga_away", "npxg_home", "npxg_away",
-  "ppda_home", "ppda_away",
-  "injuries_home", "injuries_away",
-  "weather",
-  "api_pct_home", "api_pct_draw", "api_pct_away", "api_advice",
-  "research",
-  // World Cup enrichment (unified fallback rows): deep blocks are paid-tier,
-  // mirroring the v2 projection where enrichment is premium-gated.
-  "venue", "squad", "market", "lambdas",
-  // Mercati marcatore (B-serve): blocco Pro-only (scelta Andrea) — l'intero
-  // blocco (P + Edge) viene rimosso per anon/free/base.
-  "goalscorer_markets",
-  // Mercati soft (corner/cartellini/falli) — Pro-only (#SOFT-MARKETS).
-  // soft = valori reali (Pro); soft_locked = flag senza valori (non-Pro).
-  "soft",
-] as const;
 
 type ProjectedPredictionRow = Partial<PredictionRow> & {
   match_id: string;
