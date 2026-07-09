@@ -5,6 +5,7 @@ import {
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
   resolveWeeklyPickOutcomes,
+  weeklyBrief,
   WEEKLY_PICK_MAX_LEGS,
   WEEKLY_PICK_PRICE_USD,
   type WeeklyPickLeg,
@@ -201,5 +202,43 @@ describe("resolveWeeklyPickOutcomes", () => {
     expect(r.legs.find((l) => l.id === "wp_p1")!.kickoff).toBe("2026-07-06T12:00:00Z");
     expect(r.legs.find((l) => l.id === "wp_p2")!.status).toBe("upcoming");
     expect(r.outcome).toBe("live");
+  });
+});
+
+describe("weeklyBrief", () => {
+  it("strongest = prob max, medie e conteggi corretti", () => {
+    const legs = [
+      { label: "A vs B", sport: "football", market: "A", prob: 0.74 },
+      { label: "C vs D", sport: "tennis", market: "C", prob: 0.61 },
+      { label: "E vs F", sport: "football", market: "E", prob: 0.55 },
+    ];
+    const b = weeklyBrief(legs, 0.248, [70, 62, 58]);
+    expect(b.legs).toBe(3);
+    expect(b.competitions).toBe(2);
+    expect(b.combinedProb).toBeCloseTo(0.248);
+    expect(b.avgConfidence).toBe(63); // round((70+62+58)/3)
+    expect(b.strongest).toEqual({ label: "A vs B", market: "A", prob: 0.74 });
+  });
+
+  it("teaser lockato / parziale è null-safe", () => {
+    const legs = [
+      { label: "A vs B", sport: "football", market: null, prob: null },
+      { label: "C vs D", sport: "tennis", market: null, prob: null },
+    ];
+    const b = weeklyBrief(legs, null, []);
+    expect(b.legs).toBe(2);
+    expect(b.competitions).toBe(2);
+    expect(b.combinedProb).toBeNull();
+    expect(b.avgConfidence).toBeNull();
+    expect(b.strongest).toBeNull();
+  });
+
+  it("tie-break stabile per label a pari prob", () => {
+    const legs = [
+      { label: "Zeta vs X", sport: "football", market: "Zeta", prob: 0.6 },
+      { label: "Alfa vs Y", sport: "football", market: "Alfa", prob: 0.6 },
+    ];
+    const b = weeklyBrief(legs, null, []);
+    expect(b.strongest?.label).toBe("Alfa vs Y");
   });
 });

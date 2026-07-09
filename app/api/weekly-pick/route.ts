@@ -12,10 +12,12 @@ import {
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
   resolveWeeklyPickOutcomes,
+  weeklyBrief,
   type PredOutcomeRow,
   type WeeklyPickLeg,
 } from "@/lib/weekly-pick";
 import { hasWeeklyPick } from "@/lib/weekly-pick-server";
+import { fetchWcGroups, type WcStandingRow } from "@/lib/world-cup";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +94,38 @@ function buildLegDetail(r: RichRow) {
     },
     model: r.model_version ?? null,
     sample: { home: numOrNull(matches.home), away: numOrNull(matches.away) },
+    // #WEEKLY-PICK-2: campi enrichment finora raccolti ma mai mostrati. Tutti
+    // fail-soft (assente → null/omesso, mai inventato).
+    restDays: { home: numOrNull(venue.rest_days_home), away: numOrNull(venue.rest_days_away) },
+    hostAdvantage: typeof venue.host_advantage === "string" ? venue.host_advantage : null,
+    squadStrength: { home: numOrNull(squad.xi_value_ratio_home), away: numOrNull(squad.xi_value_ratio_away) },
+    lineups: extractLineups(e.lineups),
+    group: typeof e.group === "string" ? e.group : null,
   };
+}
+
+// Formazioni confermate (ESPN, ~1h pre-match). La forma esatta di enrichment.lineups
+// non è garantita: gestiamo sia { home:{xi:[...]}, away:{...} } sia { home:[...] }.
+// Fail-soft: forma inattesa → null (nessuna riga formazione, niente inventato).
+function extractLineups(v: unknown): { home?: string[]; away?: string[] } | null {
+  if (!v || typeof v !== "object") return null;
+  const lu = v as Record<string, unknown>;
+  const side = (raw: unknown): string[] | undefined => {
+    const arr = Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray((raw as Record<string, unknown>).xi)
+        ? ((raw as Record<string, unknown>).xi as unknown[])
+        : null;
+    if (!arr) return undefined;
+    const names = arr
+      .map((x) => (typeof x === "string" ? x : x && typeof x === "object" ? String((x as Record<string, unknown>).name ?? "") : ""))
+      .filter((s) => s.length > 0)
+      .slice(0, 11);
+    return names.length ? names : undefined;
+  };
+  const home = side(lu.home);
+  const away = side(lu.away);
+  return home || away ? { home, away } : null;
 }
 
 export async function GET(req: Request) {
@@ -132,6 +165,73 @@ export async function GET(req: Request) {
   // serve alla UI per il barrato. price_usd = ciò che l'utente paga davvero.
   const { amount, fullAmount, discounted } = weeklyPickAmount();
 
+  // #WEEKLY-PICK-2: classifica World Cup (fonte ESPN, cache) per posizionare le
+  // nazionali di una leg WC. Fetch UNA volta per request, solo se serve e sbloccato.
+  // Solo gironi avviati (played > 0): pre-torneo la tabella è tutta a zero e direbbe
+  // nulla. Match per nome normalizzato, fail-soft: non trovato → nessuna riga.
+  // NB: le gare del Mondiale hanno sport="football" in unified_predictions, non
+  // "worldcup" → il Mondiale si rileva dal record predizione (stessa regola di
+  // lib/unified-adapter: world_cup_stage valorizzato o competition/league "World Cup"),
+  // MAI dal campo sport.
+  const isWcRow = (r: RichRow | undefined) =>
+    !!r && (r.world_cup_stage != null || r.league === "WC" || /world cup/i.test(r.competition ?? "") || /world cup/i.test(r.league ?? ""));
+  const needsWc = unlocked && predRows.some(isWcRow);
+  const wcGroups = needsWc ? await fetchWcGroups().catch(() => []) : [];
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+  const findStanding = (team: string): WcStandingRow | null => {
+    const n = norm(team);
+    if (!n) return null;
+    for (const g of wcGroups) {
+      for (const row of g.teams) {
+        const rn = norm(row.team);
+        if (!rn || row.played <= 0) continue; // solo gironi avviati
+        if (rn === n || rn.includes(n) || n.includes(rn)) return row;
+      }
+    }
+    return null;
+  };
+  const splitLabel = (label: string) => {
+    const p = label.split(/\s+vs\s+/i);
+    return { home: p[0] ?? label, away: p[1] ?? "" };
+  };
+
+  const confidences: number[] = [];
+  // Locked projection: nomi match come teaser; pick/prob/status/kickoff/detail
+  // nascosti (no leak). Solo le leg SBLOCCATE portano id + detail (scheda "perché").
+  const selectionsOut = resolvedLegs.map((s) => {
+    const predId = s.id.startsWith("wp_") ? s.id.slice(3) : s.id;
+    const rich = richById.get(predId);
+    const detail = unlocked && rich ? buildLegDetail(rich) : null;
+    if (detail?.confidence != null) confidences.push(detail.confidence);
+    let detailOut: (typeof detail & { standing?: { home: WcStandingRow | null; away: WcStandingRow | null } }) | null = detail;
+    if (detail && needsWc && isWcRow(rich)) {
+      const { home, away } = splitLabel(s.label);
+      detailOut = { ...detail, standing: { home: findStanding(home), away: findStanding(away) } };
+    }
+    return {
+      label: s.label,
+      sport: s.sport,
+      market: unlocked ? s.market : null,
+      prob: unlocked ? s.prob : null,
+      status: unlocked ? s.status : null,
+      kickoff: unlocked ? s.kickoff : null,
+      id: unlocked ? predId : null,
+      detail: detailOut,
+    };
+  });
+
+  // Aggregati safe (non rivelano pick/prob) → mostrati anche al teaser lockato.
+  const sports: Record<string, number> = {};
+  for (const s of sels) {
+    const k = String(s.sport ?? "other");
+    sports[k] = (sports[k] ?? 0) + 1;
+  }
+  const brief = weeklyBrief(
+    selectionsOut.map((s) => ({ label: s.label, sport: s.sport, market: s.market, prob: s.prob })),
+    unlocked && row.combined_prob != null ? Number(row.combined_prob) : null,
+    confidences
+  );
+
   return NextResponse.json({
     enabled: true,
     week,
@@ -145,21 +245,8 @@ export async function GET(req: Request) {
     outcome: unlocked ? outcome : null, // live/won/lost solo per chi ha sbloccato
     legs: sels.length,
     legs_remaining: remaining, // aggregato safe per il teaser ("N ancora da giocare")
-    // Locked projection: nomi match come teaser; pick/prob/status/kickoff/detail
-    // nascosti (no leak). Solo le leg SBLOCCATE portano id + detail (scheda "perché").
-    selections: resolvedLegs.map((s) => {
-      const predId = s.id.startsWith("wp_") ? s.id.slice(3) : s.id;
-      const rich = richById.get(predId);
-      return {
-        label: s.label,
-        sport: s.sport,
-        market: unlocked ? s.market : null,
-        prob: unlocked ? s.prob : null,
-        status: unlocked ? s.status : null,
-        kickoff: unlocked ? s.kickoff : null,
-        id: unlocked ? predId : null,
-        detail: unlocked && rich ? buildLegDetail(rich) : null,
-      };
-    }),
+    brief,
+    sports,
+    selections: selectionsOut,
   });
 }

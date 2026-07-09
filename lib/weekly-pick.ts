@@ -116,3 +116,43 @@ export function resolveWeeklyPickOutcomes(
   const outcome: MultiplaOutcome = anyLost ? "lost" : remaining > 0 ? "live" : "won";
   return { legs: resolved, outcome, remaining };
 }
+
+// #WEEKLY-PICK-2. Dati del brief settimanale (aggregati). NON produce testo: la UI
+// compone la frase multilingua dai campi (nessuna frase qui). Null-safe: col teaser
+// lockato prob/market sono null → strongest null; la combinata la passa il chiamante
+// (null quando nascosta). Tie-break stabile per label così, a pari prob, lo strongest
+// è deterministico. PURA/testabile.
+export type WeeklyBrief = {
+  legs: number;
+  competitions: number; // # sport distinti (proxy competizione in Fase 1)
+  combinedProb: number | null;
+  avgConfidence: number | null; // 0..100
+  strongest: { label: string; market: string; prob: number } | null;
+};
+
+export function weeklyBrief(
+  legs: Array<{ label: string; sport: string; market: string | null; prob: number | null }>,
+  combinedProb: number | null,
+  confidences: number[]
+): WeeklyBrief {
+  const competitions = new Set(legs.map((l) => l.sport)).size;
+  const withProb = legs.filter(
+    (l): l is { label: string; sport: string; market: string; prob: number } =>
+      typeof l.prob === "number" && Number.isFinite(l.prob) && typeof l.market === "string"
+  );
+  const strongest = withProb.length
+    ? withProb.reduce((best, l) =>
+        l.prob > best.prob || (l.prob === best.prob && l.label < best.label) ? l : best
+      )
+    : null;
+  const avgConfidence = confidences.length
+    ? Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length)
+    : null;
+  return {
+    legs: legs.length,
+    competitions,
+    combinedProb: combinedProb ?? null,
+    avgConfidence,
+    strongest: strongest ? { label: strongest.label, market: strongest.market, prob: strongest.prob } : null,
+  };
+}
