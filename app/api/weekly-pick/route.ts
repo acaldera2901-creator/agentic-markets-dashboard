@@ -169,8 +169,13 @@ export async function GET(req: Request) {
   // nazionali di una leg WC. Fetch UNA volta per request, solo se serve e sbloccato.
   // Solo gironi avviati (played > 0): pre-torneo la tabella è tutta a zero e direbbe
   // nulla. Match per nome normalizzato, fail-soft: non trovato → nessuna riga.
-  const isWcLeg = (sport: string | null | undefined) => /world|wc/i.test(sport ?? "");
-  const needsWc = unlocked && sels.some((s) => isWcLeg(s.sport));
+  // NB: le gare del Mondiale hanno sport="football" in unified_predictions, non
+  // "worldcup" → il Mondiale si rileva dal record predizione (stessa regola di
+  // lib/unified-adapter: world_cup_stage valorizzato o competition/league "World Cup"),
+  // MAI dal campo sport.
+  const isWcRow = (r: RichRow | undefined) =>
+    !!r && (r.world_cup_stage != null || r.league === "WC" || /world cup/i.test(r.competition ?? "") || /world cup/i.test(r.league ?? ""));
+  const needsWc = unlocked && predRows.some(isWcRow);
   const wcGroups = needsWc ? await fetchWcGroups().catch(() => []) : [];
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
   const findStanding = (team: string): WcStandingRow | null => {
@@ -199,7 +204,7 @@ export async function GET(req: Request) {
     const detail = unlocked && rich ? buildLegDetail(rich) : null;
     if (detail?.confidence != null) confidences.push(detail.confidence);
     let detailOut: (typeof detail & { standing?: { home: WcStandingRow | null; away: WcStandingRow | null } }) | null = detail;
-    if (detail && needsWc && isWcLeg(s.sport)) {
+    if (detail && needsWc && isWcRow(rich)) {
       const { home, away } = splitLabel(s.label);
       detailOut = { ...detail, standing: { home: findStanding(home), away: findStanding(away) } };
     }
