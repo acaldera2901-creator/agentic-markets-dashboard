@@ -49,7 +49,24 @@ async function notifyPlanActivated(row: ActivatedRow, source: ActivationSource):
 // Admin / USDT activation: single atomic UPDATE guarded on pending_payment, plan
 // becomes the user's own requested_plan. Notifies on a returned row (source 'admin').
 export async function activateAdminPlan(identifier: string): Promise<ActivatedRow | null> {
-  const rows = await dbQuery<ActivatedRow>(
+  // exec_sql can't return RETURNING rows → SELECT the pending state first, then
+  // run the guarded UPDATE. The WHERE guard stays on the UPDATE so a stale/racing
+  // call still cannot activate a profile that is no longer pending.
+  const prev = await dbQuery<{ name: string | null; plan: string; requested_plan: string | null }>(
+    `SELECT name, plan, requested_plan FROM profiles WHERE identifier = $1 LIMIT 1`,
+    [identifier]
+  );
+  const before = prev[0];
+  if (
+    !before ||
+    before.plan !== "pending_payment" ||
+    (before.requested_plan !== "base" && before.requested_plan !== "premium")
+  ) {
+    return null;
+  }
+  const newPlan = before.requested_plan as GrantablePlan;
+
+  await dbExecute(
     `UPDATE profiles
         SET plan = requested_plan,
             requested_plan = NULL,
@@ -57,14 +74,11 @@ export async function activateAdminPlan(identifier: string): Promise<ActivatedRo
             updated_at = NOW()
       WHERE identifier = $1
         AND plan = 'pending_payment'
-        AND requested_plan IN ('base','premium')
-      RETURNING identifier, name, plan`,
+        AND requested_plan IN ('base','premium')`,
     [identifier]
   );
 
-  const activated = rows[0];
-  if (!activated) return null;
-
+  const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
   await notifyPlanActivated(activated, "admin");
   return activated;
 }
@@ -79,36 +93,35 @@ export async function activateStripePlan(
   subscriptionId: string | null,
   expiresAtIso: string | null
 ): Promise<ActivatedRow | null> {
-  const rows = await dbQuery<ActivatedRow & { old_plan: string | null }>(
-    `WITH prev AS (
-       SELECT identifier, plan AS old_plan FROM profiles
-        WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
-        LIMIT 1
-     )
-     UPDATE profiles p
+  // exec_sql can't return RETURNING rows → resolve the profile (and its previous
+  // plan, to notify only on a real transition) with a SELECT, then UPDATE the
+  // resolved identifier.
+  const prev = await dbQuery<{ identifier: string; name: string | null; old_plan: string | null }>(
+    `SELECT identifier, name, plan AS old_plan FROM profiles
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+      LIMIT 1`,
+    [identifier]
+  );
+  const before = prev[0];
+  if (!before) return null;
+
+  await dbExecute(
+    `UPDATE profiles p
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = ${expirySqlExpr(expiresAtIso)},
             stripe_subscription_id = COALESCE($3, p.stripe_subscription_id),
             updated_at = NOW()
-       FROM prev
-      WHERE p.identifier = prev.identifier
-      RETURNING p.identifier, p.name, p.plan, prev.old_plan`,
-    [identifier, plan, subscriptionId]
+      WHERE p.identifier = $1`,
+    [before.identifier, plan, subscriptionId]
   );
 
-  const activated = rows[0];
-  if (!activated) return null;
-
   // Expiry is always updated by the UPDATE above; notify ONLY on a real transition.
-  if (activated.old_plan !== activated.plan) {
-    await notifyPlanActivated(
-      { identifier: activated.identifier, name: activated.name, plan: activated.plan },
-      "stripe"
-    );
+  if (before.old_plan !== plan) {
+    await notifyPlanActivated({ identifier: before.identifier, name: before.name, plan }, "stripe");
   }
 
-  return { identifier: activated.identifier, name: activated.name, plan: activated.plan };
+  return { identifier: before.identifier, name: before.name, plan };
 }
 
 // PayGate activation: il callback è già verificato a monte (token monouso +
