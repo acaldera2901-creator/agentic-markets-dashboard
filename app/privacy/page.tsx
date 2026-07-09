@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">4. Cookies</h2>
           <p className="text-xs leading-relaxed">
-            We use only essential technical storage (localStorage for your plan profile). No third-party tracking cookies are set. Partner links to bookmakers and casinos may set their own cookies — please review their privacy policies before clicking.
+            We use essential technical storage (localStorage for your plan profile) and anonymous usage analytics. Our live-chat provider (Tawk.to) is loaded only after you accept cookies via the banner, and then sets its own cookies; if you decline, it is not loaded. Partner links to bookmakers and casinos may set their own cookies — please review their privacy policies before clicking.
           </p>
         </section>
 
@@ -104,7 +104,7 @@ export default function PrivacyPage() {
             <strong className="text-[var(--am-text)]">Email processor &amp; transfers.</strong> Marketing and account emails are delivered through Resend, Inc. (USA), acting as our processor under a Data Processing Agreement (Art. 28 GDPR); US transfers are covered by Standard Contractual Clauses (Art. 46) and/or the EU-US Data Privacy Framework, with supplementary measures.
           </p>
           <p className="text-xs leading-relaxed">
-            <strong className="text-[var(--am-text)]">Retention &amp; your choices.</strong> We keep your email in the marketing list until you withdraw consent or object; consent metadata (timestamp, text, version) is retained as proof of consent. You can withdraw consent or object at any time via the one-click unsubscribe link in every email, or by emailing <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a> — free of charge and without affecting your use of the service.
+            <strong className="text-[var(--am-text)]">Retention &amp; your choices.</strong> We keep your email in the marketing list until you withdraw consent or object; the timestamp of your opt-in is retained as proof of consent. You can withdraw consent or object at any time via the one-click unsubscribe link in every email, or by emailing <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a> — free of charge and without affecting your use of the service.
           </p>
         </section>
 

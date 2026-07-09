@@ -81,7 +81,7 @@ export async function GET(req: Request) {
     // (granted_at resta NULL + log loud), NON più 200 silenzioso.
     const granted = await activatePaygatePlan(order.identifier, order.plan, order.period);
     if (!granted) {
-      console.error(`[paygate/callback] RECONCILE: paid ma piano NON concesso (identifier-not-found) order=${order.id} identifier=${order.identifier}`);
+      console.error(`[paygate/callback] RECONCILE: paid ma piano NON concesso (identifier-not-found) order=${order.id}`);
     } else {
       await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
       console.log(`[paygate/callback] GRANT order=${order.id} plan=${granted.plan} value_coin=${String(serverValue)} amount_usd=${String(order.amount_usd)}`);

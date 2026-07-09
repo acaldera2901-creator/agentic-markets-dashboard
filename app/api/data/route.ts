@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { requireAccess } from "@/lib/auth";
+import { stripPremiumEnrichment } from "@/lib/enrichment-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +14,12 @@ interface StatRow {
 }
 
 export async function GET(req: Request) {
-  const { deny } = await requireAccess(req);
+  const { ctx, deny } = await requireAccess(req);
   if (deny) return deny;
+  // #PRELAUNCH-AUDIT: Deep Analysis (xG/infortuni/venue/lambdas/soft…) è Pro-only.
+  // requireAccess garantisce base+, quindi isPaid=true; strippo i blocchi premium ai
+  // non-Pro come fa /api/predictions (prima /api/data serviva l'enrichment grezzo).
+  const isPro = ctx?.plan === "premium" || ctx?.plan === "admin_full";
   // Product line: calibrated probabilities, not edge/profit. No money metrics
   // (profit_loss/stake/P&L) are ever selected or serialized to the client.
   const [bets, stats, leagueStats] = await Promise.all([
@@ -57,8 +62,18 @@ export async function GET(req: Request) {
   const s = stats[0];
   const total = Number(s?.total ?? 0);
 
+  // Strip dei blocchi Pro-only dall'enrichment di ogni bet per i non-Pro.
+  const betsOut = (bets as Array<Record<string, unknown>>).map((b) => ({
+    ...b,
+    enrichment: stripPremiumEnrichment(
+      (b.enrichment ?? null) as Record<string, unknown> | null,
+      isPro,
+      true // requireAccess garantisce base+ → isPaid
+    ),
+  }));
+
   return NextResponse.json({
-    bets,
+    bets: betsOut,
     summary: {
       total_bets: total,
       won: Number(s?.won ?? 0),
