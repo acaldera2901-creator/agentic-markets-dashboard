@@ -7752,6 +7752,7 @@ button:disabled {
 /* ── Mobile bottom tab bar (#MOBILE-1) — solo ≤760px, desktop invariato ── */
 .am-bottomnav { display: none; }
 .mb-entry { display: none; }
+.am-featured { display: none; } /* #MOBILE-FEATURED-1: solo mobile (rail assente) */
 @media (max-width: 760px) {
   /* il "muro di menu" (sidebar) sparisce: lo sostituisce la bottom bar */
   .sports-rail { display: none !important; }
@@ -7785,6 +7786,28 @@ button:disabled {
     padding: 7px 12px; border-radius: 9px;
     border: 1px solid var(--am-coral-b); color: var(--am-coral); background: var(--am-coral-dim);
   }
+
+  /* #MOBILE-FEATURED-1: gruppo "In Evidenza" prominente (parità col rail PC) */
+  .am-featured { display: block; margin: 2px 0 18px; }
+  .am-featured-lab {
+    display: block; font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--am-muted-2); margin-bottom: 10px;
+  }
+  .am-featured-grid {
+    display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+  }
+  .am-feat-tile {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+    padding: 14px; border-radius: 14px; text-align: left; cursor: pointer;
+    background: var(--am-panel); border: 1px solid var(--am-line); color: var(--am-text);
+    font: inherit; width: 100%;
+  }
+  .am-feat-tile:active { background: var(--am-panel-3); }
+  .am-feat-tile:hover { border-color: var(--am-coral-b); }
+  .am-feat-ic { width: 24px; height: 24px; color: var(--am-coral); flex: 0 0 auto; }
+  .am-feat-l { font-family: var(--font-display); font-weight: 700; font-size: 14px; line-height: 1.2; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
