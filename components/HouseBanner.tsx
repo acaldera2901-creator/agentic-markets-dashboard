@@ -232,15 +232,23 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
       // copy baked → mostrarlo intero lascerebbe una banda vuota sotto (slop). La
       // riempiamo con un footer brandizzato (eyebrow + headline + CTA) → tile promo
       // intenzionale, foto INTERA, zero spazio morto. Il LANDSCAPE ha già il
-      // messaggio baked nell'immagine → solo immagine + CTA (nessun footer testo).
-      const hasFooter = campaign.format === "rectangle";
+      // messaggio baked nell'immagine → footer con SOLA CTA (niente headline: sarebbe
+      // doppia col testo già baked). #BANNER-SMALL-0708: anche il landscape è ora un
+      // tile piccolo card-sized → serve il footer per riempire la riga senza buco.
+      const square = campaign.format === "rectangle";
+      const landscape = campaign.format === "billboard" || campaign.format === "leaderboard";
+      const hasFooter = square || landscape;
       return (
         <aside className={`house-banner hb-creative hb-cr-grid hb-cr-${campaign.format}${hasFooter ? " hb-cr-hasfoot" : ""}`} aria-label={c.eyebrow}>
           <img src={creative} alt={c.headline} className="hb-cr-img" />
-          {hasFooter ? (
+          {square ? (
             <div className="hb-cr-foot">
               <span className="hb-eyebrow">{c.eyebrow}</span>
               <span className="hb-cr-foot-h"><Headline headline={c.headline} accent={c.accent} /></span>
+              <Link href={campaign.cta.href} className="hb-cta hb-cr-cta" onClick={onCtaClick}>{ctaLabel}</Link>
+            </div>
+          ) : landscape ? (
+            <div className="hb-cr-foot hb-cr-foot-cta">
               <Link href={campaign.cta.href} className="hb-cta hb-cr-cta" onClick={onCtaClick}>{ctaLabel}</Link>
             </div>
           ) : (
