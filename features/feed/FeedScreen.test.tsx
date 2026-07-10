@@ -35,4 +35,22 @@ describe("FeedScreen", () => {
     expect(screen.getAllByText("Vince l'Inter").length).toBe(2);
     expect(screen.getByText(/18\+/)).toBeInTheDocument();
   });
+  it("mette il pick del giorno (confidenza più alta) in cima e lo marca", () => {
+    mockUsePicks.mockReturnValue({
+      picks: [
+        vm({ id: "a", confidenceScore: 60, decision: "Vince l'Inter", homeTeam: "Inter", awayTeam: "Verona" }),
+        vm({ id: "b", confidenceScore: 85, decision: "Vince il Napoli", homeTeam: "Napoli", awayTeam: "Roma" }),
+      ],
+      loading: false,
+      error: null,
+    });
+    const { container } = render(<FeedScreen />);
+    // esattamente una card marcata come pick del giorno
+    const heroes = container.querySelectorAll('[data-hero="true"]');
+    expect(heroes).toHaveLength(1);
+    // il pick del giorno (Napoli, conf 85) compare PRIMA dell'altro nel DOM
+    const text = container.textContent ?? "";
+    expect(text.indexOf("Napoli")).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf("Napoli")).toBeLessThan(text.indexOf("Inter"));
+  });
 });

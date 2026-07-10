@@ -17,7 +17,9 @@ export function FeedScreen() {
     body = <p style={{ color: "var(--am-muted)", textAlign: "center", padding: 40 }}>Nessun pick per oggi. Torna più tardi.</p>;
   } else {
     const podId = selectPickOfDay(picks);
-    const ordered = [...picks].sort((a, b) => (a.id === podId ? -1 : b.id === podId ? 1 : 0));
+    const ordered = podId
+      ? [...picks.filter((p) => p.id === podId), ...picks.filter((p) => p.id !== podId)]
+      : picks;
     body = (
       <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "0 4px" }}>
         {ordered.map((p) => <PickCard key={p.id} pick={p} pickOfDay={p.id === podId} />)}
