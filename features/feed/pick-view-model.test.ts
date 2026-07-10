@@ -32,6 +32,17 @@ describe("humanizePick", () => {
   it("mercato sconosciuto → pick grezzo", () => {
     expect(humanizePick({ market: "xyz", pick: "Qualcosa", home_team: null, away_team: null })).toBe("Qualcosa");
   });
+  it("1x2 pick = squadra ospite il cui nome collide con token riservato → vince l'ospite, non pareggio", () => {
+    const result = humanizePick({ market: "1x2", pick: "Verona", home_team: "Inter", away_team: "Verona" });
+    expect(result.startsWith("Vince")).toBe(true);
+    expect(result).toContain("Verona");
+  });
+  it("btts negativo → 'No Gol'", () => {
+    expect(humanizePick({ market: "btts", pick: "No", home_team: null, away_team: null })).toBe("No Gol");
+  });
+  it("over/under con suffisso già presente → nessun doppio 'gol'", () => {
+    expect(humanizePick({ market: "over_under", pick: "Over 2.5 gol", home_team: null, away_team: null })).toBe("Over 2.5 gol");
+  });
 });
 
 describe("toPickCardVM", () => {
@@ -52,5 +63,28 @@ describe("toPickCardVM", () => {
   });
   it("locked riflette il flag di projection", () => {
     expect(toPickCardVM({ ...base, locked: true }).locked).toBe(true);
+  });
+  it("riga locked/projected (market/pick/confidence/edge/odds assenti) non deve lanciare", () => {
+    const row = {
+      id: "9", sport: "football", competition: "Premier", starts_at: "2026-07-10T18:00:00Z", locked: true,
+    } as ProjectedPrediction;
+    expect(() => toPickCardVM(row)).not.toThrow();
+    const vm = toPickCardVM(row);
+    expect(vm.decision).toBe("");
+    expect(vm.hasValue).toBe(false);
+    expect(vm.locked).toBe(true);
+    expect(vm.odds).toBe(null);
+    expect(vm.confidenceScore).toBe(null);
+  });
+  it("fallback player_one/player_two quando home_team/away_team sono null", () => {
+    const vm = toPickCardVM({ ...base, home_team: null, away_team: null, player_one: "Sinner", player_two: "Alcaraz" });
+    expect(vm.homeTeam).toBe("Sinner");
+    expect(vm.awayTeam).toBe("Alcaraz");
+  });
+  it("mappa sport, competition e kickoff", () => {
+    const vm = toPickCardVM(base);
+    expect(vm.sport).toBe(base.sport);
+    expect(vm.competition).toBe(base.competition);
+    expect(vm.kickoff).toBe(base.starts_at);
   });
 });
