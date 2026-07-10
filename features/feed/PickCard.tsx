@@ -21,7 +21,7 @@ export function PickCard({ pick, pickOfDay, onOpen }: {
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}>
           <strong style={{ fontSize: 15 }}>Pronostico Pro</strong>
           <p style={{ margin: 0, fontSize: 12, color: "var(--am-muted)" }}>Sblocca tutti i pick di oggi.</p>
-          <Button variant="primary">Prova Pro →</Button>
+          <Button variant="primary">Prova Pro</Button>
         </div>
       </div>
     );
@@ -30,8 +30,8 @@ export function PickCard({ pick, pickOfDay, onOpen }: {
   return (
     <div data-hero={pickOfDay ? "true" : undefined}
       style={{
-        background: pickOfDay ? "linear-gradient(180deg,var(--am-green-dim),transparent 42%),var(--am-panel)" : "var(--am-panel)",
-        border: `1px solid ${pickOfDay ? "var(--am-green-b)" : "var(--am-line)"}`,
+        background: pickOfDay ? "linear-gradient(180deg,var(--am-coral-dim),transparent 42%),var(--am-panel)" : "var(--am-panel)",
+        border: `1px solid ${pickOfDay ? "var(--am-coral-b)" : "var(--am-line)"}`,
         borderRadius: 16, padding: "16px 16px 14px",
       }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -60,7 +60,7 @@ export function PickCard({ pick, pickOfDay, onOpen }: {
         <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
           <span style={{ fontSize: 21, fontWeight: 800, letterSpacing: "-.02em" }}>{pick.decision}</span>
           {pick.odds != null && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--am-green)", background: "var(--am-green-dim)", padding: "3px 8px", borderRadius: 8, border: "1px solid var(--am-green-b)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--am-coral)", background: "var(--am-coral-dim)", padding: "3px 8px", borderRadius: 8, border: "1px solid var(--am-coral-b)" }}>
               quota {pick.odds.toFixed(2)}
             </span>
           )}

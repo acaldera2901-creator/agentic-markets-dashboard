@@ -38,8 +38,6 @@ describe("humanizePick", () => {
     expect(result).toContain("Verona");
   });
   it("nome squadra che È il token 'X' → vince, non pareggio (ordering)", () => {
-    expect(humanizePick({ market: "1x2", pick: "X", home_team: "Inter", away_team: "X" }))
-      .toBe(humanizePick({ market: "1x2", pick: "X", home_team: "Inter", away_team: "X" }));
     const out = humanizePick({ market: "1x2", pick: "X", home_team: "Inter", away_team: "X" });
     expect(out).not.toBe("Pareggio");
     expect(out).toContain("X");

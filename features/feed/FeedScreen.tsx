@@ -29,12 +29,12 @@ export function FeedScreen() {
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--am-bg)" }}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 12px" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 12px", maxWidth: 480, width: "100%", margin: "0 auto" }}>
         <strong style={{ fontSize: 18, letterSpacing: "-.01em" }}>BetRedge</strong>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--am-muted)" }}>Oggi</span>
       </header>
-      <main style={{ flex: 1 }}>{body}</main>
-      <footer style={{ padding: "12px 16px", textAlign: "center" }}>
+      <main style={{ flex: 1, maxWidth: 480, width: "100%", margin: "0 auto" }}>{body}</main>
+      <footer style={{ padding: "12px 16px", textAlign: "center", maxWidth: 480, width: "100%", margin: "0 auto" }}>
         <p style={{ fontSize: 11, color: "var(--am-muted-2)", margin: 0 }}>
           18+ · Gioco responsabile. Le previsioni sono stime statistiche del modello, non garanzia di vincita.
         </p>
