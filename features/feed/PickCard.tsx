@@ -68,7 +68,7 @@ export function PickCard({ pick, pickOfDay, onOpen }: {
       </div>
 
       <div style={{ marginBottom: 13 }}>
-        <ConfidenceMeter score={pick.confidenceScore} />
+        <ConfidenceMeter score={pick.confidenceScore} showPercent />
       </div>
 
       {pick.why && (

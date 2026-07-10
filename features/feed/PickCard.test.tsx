@@ -14,7 +14,7 @@ describe("PickCard", () => {
   it("mostra la decisione e la sicurezza", () => {
     render(<PickCard pick={vm()} />);
     expect(screen.getByText("Vince l'Inter")).toBeInTheDocument();
-    expect(screen.getByText("Alta")).toBeInTheDocument();
+    expect(screen.getByText(/^Alta/)).toBeInTheDocument();
   });
   it("stato eroe espone data-hero", () => {
     const { container } = render(<PickCard pick={vm()} pickOfDay />);
@@ -29,5 +29,6 @@ describe("PickCard", () => {
   it("stato bloccato: mostra 'Prova Pro' e non la decisione in chiaro", () => {
     render(<PickCard pick={vm({ locked: true })} />);
     expect(screen.getByRole("button", { name: /prova pro/i })).toBeInTheDocument();
+    expect(screen.queryByText("Vince l'Inter")).not.toBeInTheDocument();
   });
 });
