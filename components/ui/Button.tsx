@@ -12,7 +12,7 @@ export function Button({ variant = "ghost", icon, children, style, ...rest }: Bu
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
   } as const;
   const skin = variant === "primary"
-    ? { background: "linear-gradient(145deg,var(--am-green),var(--am-coral-2))", border: "1px solid transparent", color: "#fff" }
+    ? { background: "linear-gradient(145deg,var(--am-coral),var(--am-coral-2))", border: "1px solid transparent", color: "#fff" }
     : { background: "var(--am-panel-2)", border: "1px solid var(--am-line)", color: "var(--am-text)" };
   return (
     <button data-variant={variant} style={{ ...base, ...skin, ...style }} {...rest}>

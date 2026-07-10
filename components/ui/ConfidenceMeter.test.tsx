@@ -21,4 +21,8 @@ describe("ConfidenceMeter", () => {
     const { container } = render(<ConfidenceMeter score={30} />);
     expect(container.querySelectorAll('[data-on="true"]')).toHaveLength(2);
   });
+  it("accende 3 segmenti su confidenza media", () => {
+    const { container } = render(<ConfidenceMeter score={60} />);
+    expect(container.querySelectorAll('[data-on="true"]')).toHaveLength(3);
+  });
 });

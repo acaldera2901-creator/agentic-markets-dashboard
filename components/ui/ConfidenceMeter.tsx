@@ -4,7 +4,7 @@ import { Chip } from "@/components/ui/Chip";
 const SEGMENTS: Record<ConfidenceBucket, number> = { alta: 5, media: 3, bassa: 2 };
 const CHIP: Record<ConfidenceBucket, "high" | "mid" | "low"> = { alta: "high", media: "mid", bassa: "low" };
 const SEGCOLOR: Record<ConfidenceBucket, string> = {
-  alta: "var(--am-green)", media: "var(--am-amber)", bassa: "var(--am-muted-2)",
+  alta: "var(--am-coral)", media: "var(--am-amber)", bassa: "var(--am-muted-2)",
 };
 
 export function ConfidenceMeter({ score, showPercent }: { score: number | null; showPercent?: boolean }) {

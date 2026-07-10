@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 export type ChipVariant = "high" | "mid" | "low" | "pro" | "neutral";
 
 const STYLE: Record<ChipVariant, { color: string; bg: string; border: string }> = {
-  high:    { color: "var(--am-green)",  bg: "var(--am-green-dim)",  border: "var(--am-green-b)" },
-  pro:     { color: "var(--am-green)",  bg: "var(--am-green-dim)",  border: "var(--am-green-b)" },
+  high:    { color: "var(--am-coral)",  bg: "var(--am-coral-dim)",  border: "var(--am-coral-b)" },
+  pro:     { color: "var(--am-coral)",  bg: "var(--am-coral-dim)",  border: "var(--am-coral-b)" },
   mid:     { color: "var(--am-amber)",  bg: "rgba(251,191,36,.14)", border: "rgba(251,191,36,.3)" },
   low:     { color: "var(--am-muted)",  bg: "var(--am-hi)",         border: "var(--am-line)" },
   neutral: { color: "var(--am-muted)",  bg: "var(--am-hi)",         border: "var(--am-line)" },

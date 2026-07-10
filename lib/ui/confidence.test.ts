@@ -12,6 +12,9 @@ describe("confidencePercent", () => {
     expect(confidencePercent(0.61)).toBe(61);
     expect(confidencePercent(1)).toBe(100);
   });
+  it("valore > 1 trattato come scala 0–100, non frazione", () => {
+    expect(confidencePercent(1.5)).toBe(2);
+  });
 });
 
 describe("confidenceBucket", () => {
@@ -20,6 +23,11 @@ describe("confidenceBucket", () => {
     expect(confidenceBucket(61)).toBe("media");
     expect(confidenceBucket(40)).toBe("bassa");
     expect(confidenceBucket(null)).toBe("bassa");
+  });
+  it("boundary esatti: 70, 50, 49", () => {
+    expect(confidenceBucket(70)).toBe("alta");
+    expect(confidenceBucket(50)).toBe("media");
+    expect(confidenceBucket(49)).toBe("bassa");
   });
 });
 
