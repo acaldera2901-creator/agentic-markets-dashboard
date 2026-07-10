@@ -7727,7 +7727,7 @@ function UnifiedBetsTab({
   fpOdds: Record<string, FpOddsEntry>;
   tennisMatches: TennisMatch[];
   onSelect: (s: SlipSelection) => void;
-  onBetNow: () => void;
+  onBetNow?: () => void;
   onSignIn: () => void;
   onRegister: () => void;
   onGate?: () => void;
@@ -8044,6 +8044,16 @@ export default function Dashboard() {
   const [founderOpen, setFounderOpen] = useState(false);
   const founderClickRef = useRef({ count: 0, timer: null as ReturnType<typeof setTimeout> | null });
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
+  // #PRELAUNCH-AUDIT LEGALE-2 layer2 (Decreto Dignità): nasconde i link-book agli
+  // utenti IT. Geo server-side via /api/geo-books; default false (mostra) fino alla
+  // risposta, ma il grosso dell'esposizione è coperto da layer1 (dropdown) + campagne.
+  const [booksBlocked, setBooksBlocked] = useState(false);
+  useEffect(() => {
+    fetch("/api/geo-books", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBooksBlocked(!!d?.blocked))
+      .catch(() => {});
+  }, []);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -8772,7 +8782,9 @@ export default function Dashboard() {
               // BUG-011: an anonymous "Place Bet" used to jump to the Partners
               // (affiliate) tab with no context. Prompt sign-in first; a
               // #PARTNER-REMOVE-0626: Place bet apre direttamente il link invito FortunePlay.
-              onBetNow={() => window.open(FORTUNEPLAY_BET_URL, "_blank", "noopener,noreferrer")}
+              // #PRELAUNCH-AUDIT LEGALE-2: agli utenti IT NON passiamo onBetNow → la .betbtn
+              // (gated su `onBetNow`) sparisce da tutte le card. Niente link-book per l'Italia.
+              onBetNow={booksBlocked ? undefined : () => window.open(FORTUNEPLAY_BET_URL, "_blank", "noopener,noreferrer")}
               onSignIn={() => openAuth("login")}
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
