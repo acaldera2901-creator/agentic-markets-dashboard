@@ -20,4 +20,10 @@ describe("selectPickOfDay", () => {
   it("tutti locked → null", () => {
     expect(selectPickOfDay([vm({ id: "a", locked: true })])).toBeNull();
   });
+  it("a parità di confidenza sceglie il primo in ordine di input", () => {
+    expect(selectPickOfDay([vm({ id: "a", confidenceScore: 80 }), vm({ id: "b", confidenceScore: 80 })])).toBe("a");
+  });
+  it("gestisce confidenceScore null (trattato come 0)", () => {
+    expect(selectPickOfDay([vm({ id: "a", confidenceScore: null }), vm({ id: "b", confidenceScore: 5 })])).toBe("b");
+  });
 });
