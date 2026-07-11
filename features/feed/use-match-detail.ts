@@ -16,6 +16,9 @@ export function useMatchDetail(externalEventId: string | null): MatchDetailResul
     setLoading(true);
     (async () => {
       try {
+        // Shortcut: fetches the full /api/predictions list (≤120 rows) and filters
+        // client-side by match_id. Upgrade path: a dedicated /api/predictions/[id]
+        // endpoint that hydrates+projects a single match.
         const res = await fetch("/api/predictions", { credentials: "include" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = (await res.json()) as { predictions?: RichPrediction[] };
