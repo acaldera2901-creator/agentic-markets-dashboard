@@ -92,4 +92,8 @@ describe("toPickCardVM", () => {
     expect(vm.competition).toBe(base.competition);
     expect(vm.kickoff).toBe(base.starts_at);
   });
+  it("mappa externalEventId da external_event_id", () => {
+    expect(toPickCardVM({ ...base, external_event_id: "EVT-9" }).externalEventId).toBe("EVT-9");
+    expect(toPickCardVM({ ...base, external_event_id: null }).externalEventId).toBeNull();
+  });
 });
