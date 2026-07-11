@@ -38,4 +38,9 @@ describe("PickCardExpanded", () => {
     expect(screen.getByText(/Modello vs Mercato/i)).toBeInTheDocument();
     expect(screen.getByText(/Prova Pro/i)).toBeInTheDocument(); // soft locked
   });
+  it("stato errore", () => {
+    mockDetail.mockReturnValue({ detail: null, loading: false, error: "boom" });
+    render(<PickCardExpanded pick={vm} />);
+    expect(screen.getByText(/qualcosa è andato storto/i)).toBeInTheDocument();
+  });
 });

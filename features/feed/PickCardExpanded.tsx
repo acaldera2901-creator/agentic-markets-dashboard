@@ -4,7 +4,7 @@ import type { PickCardVM } from "./pick-view-model";
 import { useMatchDetail } from "./use-match-detail";
 import { buildAllGroups, buildModelVsMarket, type MarketChip, type MarketGroup } from "./market-groups";
 import { Crest, SportIcon, Chip, ConfidenceMeter, Button, type ChipVariant } from "@/components/ui";
-import { confidenceBucket } from "@/lib/ui/confidence";
+import { confidenceBucket, confidenceLabel } from "@/lib/ui/confidence";
 
 function kickoffLabel(iso: string): string {
   if (!iso) return "";
@@ -28,7 +28,7 @@ function MarketChipRow({ chip }: { chip: MarketChip }) {
       )}
       <span style={{ fontSize: 12, color: "var(--am-muted)", minWidth: 90 }}>{chip.market}</span>
       <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{chip.selection}</span>
-      <Chip variant={variant}>{pct(chip.prob)}</Chip>
+      <Chip variant={variant}>{chip.prob != null ? confidenceLabel(confidenceBucket(chip.prob * 100)) : "—"}</Chip>
       {chip.odds != null && (
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--am-muted)" }}>{chip.odds.toFixed(2)}</span>
       )}
