@@ -22,6 +22,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { useBooksBlocked } from "@/lib/use-books-blocked";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { fpEdge } from "@/lib/fortuneplay-live";
@@ -8044,16 +8045,10 @@ export default function Dashboard() {
   const [founderOpen, setFounderOpen] = useState(false);
   const founderClickRef = useRef({ count: 0, timer: null as ReturnType<typeof setTimeout> | null });
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
-  // #PRELAUNCH-AUDIT LEGALE-2 layer2 (Decreto Dignità): nasconde i link-book agli
-  // utenti IT. Geo server-side via /api/geo-books; default false (mostra) fino alla
-  // risposta, ma il grosso dell'esposizione è coperto da layer1 (dropdown) + campagne.
-  const [booksBlocked, setBooksBlocked] = useState(false);
-  useEffect(() => {
-    fetch("/api/geo-books", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setBooksBlocked(!!d?.blocked))
-      .catch(() => {});
-  }, []);
+  // #PRELAUNCH-AUDIT LEGALE-2 layer2 + #ITALIA-EU-PARERE: link-book visibili SOLO
+  // nelle geo dell'allowlist server-side (/api/geo-books). Default nascosto e
+  // fail-closed (hook condiviso con MatchDetailSheet/WcBoard, fetch unico).
+  const booksBlocked = useBooksBlocked();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);

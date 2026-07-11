@@ -37,7 +37,9 @@ process.env.SPORTSBOOK_STAKE_URLS = JSON.stringify({
   default: "https://stake.com/?c=DEF",
 });
 process.env.SPORTSBOOK_LINKS_ENABLED = "true";
-process.env.SPORTSBOOK_GEO_ALLOWLIST = "*";
+// resolveBaseUrl/buildBetUrl non passano dal geo-gate; lista esplicita per igiene
+// (il wildcard "*" non è più supportato — #ITALIA-EU-PARERE).
+process.env.SPORTSBOOK_GEO_ALLOWLIST = "US,FR";
 
 const book = allSportsbooks().find((b) => b.id === "stake")!;
 

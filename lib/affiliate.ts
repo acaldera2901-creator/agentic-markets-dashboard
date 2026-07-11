@@ -1,3 +1,5 @@
+import { geoAllowed } from "@/lib/sportsbooks";
+
 // Affiliate scaffolding. Real partner links/odds arrive once bookmaker deals are
 // signed (Andrea/Maven). Until then a single placeholder partner is emitted from
 // env so the UI + revenue plumbing exist. NEVER fabricates an "edge".
@@ -16,8 +18,13 @@ export function affiliateOffer(): AffiliateOffer | null {
   return { bookmaker, bonus, url, odds: null };
 }
 
-// Attach the offer to a revealed prediction row (no-op if not configured).
-export function withAffiliate<T extends Record<string, unknown>>(row: T): T {
+// Attach the offer to a revealed prediction row. #ITALIA-EU-PARERE (decisione
+// Andrea 2026-07-10): il bonus-CTA è pubblicità di scommesse come i link-book →
+// stessa allowlist geo (SPORTSBOOK_GEO_ALLOWLIST + hard-block IT/BE/NL). Il
+// country viene dagli header Vercel/Cloudflare della route chiamante; geo non
+// ammessa o sconosciuta → nessun CTA (default nascosto). No-op se non configurato.
+export function withAffiliate<T extends Record<string, unknown>>(row: T, country: string | null | undefined): T {
+  if (!geoAllowed(country)) return row;
   const offer = affiliateOffer();
   return offer ? ({ ...row, affiliate: offer } as T) : row;
 }

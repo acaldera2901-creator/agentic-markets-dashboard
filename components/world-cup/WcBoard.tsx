@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } from "@/lib/why-text";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { useBooksBlocked } from "@/lib/use-books-blocked";
 import { SportIcon } from "@/app/components/sport-icon";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
@@ -372,6 +373,8 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
 
 function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: LiveScore | null }) {
   const [showWhy, setShowWhy] = useState(false);
+  // #ITALIA-EU-PARERE: link-book visibili solo nelle geo dell'allowlist server-side.
+  const booksBlocked = useBooksBlocked();
   const home = canonTeam(p.home_team) || "Home";
   const away = canonTeam(p.away_team) || "Away";
   const probs = parseProbs(p.notes);
@@ -696,15 +699,18 @@ function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: Liv
               <button type="button" className="open" onClick={() => setShowWhy((v) => !v)}>
                 {showWhy ? (lang === "it" ? "Nascondi" : "Hide") : (lang === "it" ? "Mostra" : "Show")} <span className="ar">→</span>
               </button>
-              {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (singolo partner). */}
-              <a
-                className="betbtn"
-                href={FORTUNEPLAY_BET_URL}
-                target="_blank"
-                rel="nofollow sponsored noopener noreferrer"
-              >
-                {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
-              </a>
+              {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (singolo partner).
+                  #ITALIA-EU-PARERE: solo nelle geo dell'allowlist (default nascosto). */}
+              {!booksBlocked && (
+                <a
+                  className="betbtn"
+                  href={FORTUNEPLAY_BET_URL}
+                  target="_blank"
+                  rel="nofollow sponsored noopener noreferrer"
+                >
+                  {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
+                </a>
+              )}
               <span className="model">{model}</span>
               <span className="gate">Pro</span>
             </div>

@@ -12,6 +12,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
+  // #ITALIA-EU-PARERE: geo per il gate allowlist del bonus-CTA affiliato
+  // (withAffiliate). Header Vercel/Cloudflare, server-side.
+  const country = req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry");
 
   const { searchParams } = new URL(req.url);
   const sport       = searchParams.get("sport");
@@ -184,7 +187,7 @@ export async function GET(req: Request) {
   const predictions = served.map((row) => {
     const rank = rankById.get((row as { id: string }).id) ?? Infinity;
     const projected = projectPrediction(row as unknown as Record<string, unknown>, state, rank);
-    return projected.locked ? projected : withAffiliate(projected);
+    return projected.locked ? projected : withAffiliate(projected, country);
   });
 
   // Access bug fix (2026-06-06): this route projects per-session

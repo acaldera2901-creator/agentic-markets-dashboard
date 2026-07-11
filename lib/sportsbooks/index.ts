@@ -8,25 +8,30 @@ export function linksEnabled(): boolean {
   return process.env.SPORTSBOOK_LINKS_ENABLED === "true";
 }
 
-// #PRELAUNCH-AUDIT (Italia · Decreto Dignità, D.L. 87/2018 art.9): i link ai book +
-// revshare = pubblicità INDIRETTA di scommesse, vietata verso l'Italia. Hard-block a
-// livello codice, PRIMA dell'allowlist env: così l'IT non riceve MAI link-book anche
-// se SPORTSBOOK_GEO_ALLOWLIST è "*" o include IT per errore. Presidio non aggirabile
-// via misconfig. Estendere questo set per altre giurisdizioni vietate.
-const GEO_BLOCKED_COUNTRIES = new Set(["IT"]);
+// #PRELAUNCH-AUDIT (Italia · Decreto Dignità, D.L. 87/2018 art.9) + #ITALIA-EU-PARERE
+// (decisione Andrea 2026-07-10): link-book + revshare = pubblicità INDIRETTA di
+// scommesse. IT vietata per legge; BE e NL stessa classe di rischio (ban ads quasi
+// totali, NL valuta ban totale). Hard-block a livello codice, PRIMA dell'allowlist
+// env: queste geo non ricevono MAI link-book nemmeno se incluse nell'allowlist per
+// errore. Presidio non aggirabile via misconfig.
+export const GEO_BLOCKED_COUNTRIES = new Set(["IT", "BE", "NL"]);
 
-// Geo-gate. Lista vuota -> nessuna geo ammessa (default sicuro). "*" -> globale.
+// Geo-gate ALLOWLIST (#ITALIA-EU-PARERE): link-book visibili SOLO nelle geo elencate
+// esplicitamente in SPORTSBOOK_GEO_ALLOWLIST (CSV di country code dove il book è
+// legalmente promuovibile — lista FortunePlay da Tommy). Default nascosto: lista
+// vuota, mancante o wildcard "*" → nessuna geo ammessa. Il wildcard è stato rimosso
+// perché era una blocklist di fatto (tutto visibile tranne l'hard-block): promuovere
+// un book non licenziato in DE/ES/FR/PT/AT ecc. è illegale là.
 export function geoAllowed(country: string | null | undefined): boolean {
   // Blocco duro delle giurisdizioni vietate, indipendente dall'allowlist env.
   if (country && GEO_BLOCKED_COUNTRIES.has(country.trim().toUpperCase())) return false;
   const raw = (process.env.SPORTSBOOK_GEO_ALLOWLIST || "").trim();
-  if (!raw) return false;
-  if (raw === "*") return true;
+  if (!raw || raw === "*") return false;
   if (!country) return false;
   const set = new Set(
     raw.split(",").map((c) => c.trim().toUpperCase()).filter(Boolean),
   );
-  return set.has(country.toUpperCase());
+  return set.has(country.trim().toUpperCase());
 }
 
 // Book ammessi per una geo. [] se master OFF o geo non ammessa.

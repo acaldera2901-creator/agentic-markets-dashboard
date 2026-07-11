@@ -10,27 +10,30 @@ import { resolveBooks, buildBetUrl, geoAllowed, linksEnabled } from "../lib/spor
 
 // default sicuro: master OFF -> nessun book
 delete process.env.SPORTSBOOK_LINKS_ENABLED;
-process.env.SPORTSBOOK_GEO_ALLOWLIST = "*";
+process.env.SPORTSBOOK_GEO_ALLOWLIST = "MT";
 assert.equal(linksEnabled(), false);
-assert.deepEqual(resolveBooks("IT"), []);
+assert.deepEqual(resolveBooks("MT"), []);
 
 // abilitato ma allowlist vuota -> nessun book
 process.env.SPORTSBOOK_LINKS_ENABLED = "true";
 process.env.SPORTSBOOK_GEO_ALLOWLIST = "";
-assert.equal(geoAllowed("IT"), false);
-assert.deepEqual(resolveBooks("IT"), []);
+assert.equal(geoAllowed("MT"), false);
+assert.deepEqual(resolveBooks("MT"), []);
 
-// allowlist specifica: dentro lista (case-insensitive) ok, fuori no
+// allowlist specifica: dentro lista (case-insensitive) ok, fuori no;
+// IT/BE/NL hard-block anche se listate (#ITALIA-EU-PARERE)
 process.env.SPORTSBOOK_GEO_ALLOWLIST = "IT,MT";
-assert.equal(geoAllowed("it"), true);
+assert.equal(geoAllowed("mt"), true);
+assert.equal(geoAllowed("it"), false); // hard-block vince sull'allowlist
 assert.equal(geoAllowed("US"), false);
-assert.equal(resolveBooks("IT").length, 1);
+assert.equal(resolveBooks("MT").length, 1);
+assert.deepEqual(resolveBooks("IT"), []);
 assert.deepEqual(resolveBooks("US"), []);
 
-// globale "*": qualsiasi geo
+// wildcard "*" rimosso: trattato come lista vuota (default nascosto)
 process.env.SPORTSBOOK_GEO_ALLOWLIST = "*";
-assert.equal(geoAllowed("US"), true);
-assert.equal(resolveBooks("US").length, 1);
+assert.equal(geoAllowed("US"), false);
+assert.deepEqual(resolveBooks("US"), []);
 
 // buildBetUrl produce un'opzione valida e non lancia mai
 const book = allSportsbooks()[0];

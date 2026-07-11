@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MarketIcon } from "./MarketIcon";
 import { joinFpWithModel } from "../lib/market-join";
+import { useBooksBlocked } from "../lib/use-books-blocked";
 import type { ExtraMarket } from "../lib/poisson-model";
 
 const MARKET_ICON: Record<string, "result" | "goals" | "scorer" | "soft"> = {
@@ -81,6 +82,10 @@ function Ico({ id }: { id: string }) {
 }
 
 export function MatchDetailSheet({ data }: { data: MdsData }) {
+  // #ITALIA-EU-PARERE: la bet-bar (schedina → "Apri su FortunePlay"/{book}) è un
+  // link-book → visibile solo nelle geo dell'allowlist server-side (default nascosto).
+  // Le predizioni/quote restano: sono contenuto informativo nostro, non promozione.
+  const booksBlocked = useBooksBlocked();
   // #FORTUNEPLAY-LIVE-ODDS-2: tutti i mercati FortunePlay, fetch SOLO all'apertura
   // (per-partita, cache lato server) → sezione "Altri mercati" collassabile.
   const [extraGroups, setExtraGroups] = useState<MdsGroup[]>([]);
@@ -251,7 +256,8 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         </div>
       )}
 
-      {/* STICKY BET BAR */}
+      {/* STICKY BET BAR — solo geo allowlist (#ITALIA-EU-PARERE) */}
+      {!booksBlocked && (
       <div className="mds-betbar">
         {expanded && legs.length > 0 && (
           <div className="mds-legs">
@@ -306,8 +312,9 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         </div>
         <p className="mds-disc">{data.labels.disc}</p>
       </div>
+      )}
 
-      <p className="mds-side">{data.labels.side}</p>
+      {!booksBlocked && <p className="mds-side">{data.labels.side}</p>}
     </div>
   );
 }

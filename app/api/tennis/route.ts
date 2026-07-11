@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 // the public board is populated. Distinct from the football projection on purpose.
 function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null }>(
   matches: T[],
-  state: AccessState
+  state: AccessState,
+  country: string | null
 ): Array<T & { locked: boolean; pick_of_day: boolean }> {
   // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc (fallback confidence)
   // tra le partite tennis. free sblocca rank<1, base rank<5, premium tutto.
@@ -55,7 +56,7 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
           surface_reliability_p1: null, surface_reliability_p2: null, feature_quality: null,
         });
       }
-      return withAffiliate(out) as T & { locked: boolean; pick_of_day: boolean };
+      return withAffiliate(out, country) as T & { locked: boolean; pick_of_day: boolean };
     }
     // locked: keep matchup + surface visible, blank the numbers the card would show
     return {
@@ -299,6 +300,9 @@ function normalizePrediction(p: TennisPredictionInput) {
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
+  // #ITALIA-EU-PARERE: geo per il gate allowlist del bonus-CTA affiliato
+  // (withAffiliate). Header Vercel/Cloudflare, server-side.
+  const country = req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry");
   const now = new Date().toISOString();
 
   const redisData = await getFromRedis();
@@ -307,7 +311,7 @@ export async function GET(req: Request) {
     const matches: TennisPrediction[] = redisData.predictions
       .map(normalizePrediction)
       .filter((m): m is TennisPrediction => m !== null);
-    const projected = projectTennisMatches(matches, state);
+    const projected = projectTennisMatches(matches, state, country);
     const summary = {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
@@ -328,7 +332,7 @@ export async function GET(req: Request) {
     const matches: TennisPrediction[] = dbData.predictions
       .map(normalizePrediction)
       .filter((m): m is TennisPrediction => m !== null);
-    const projected = projectTennisMatches(matches, state);
+    const projected = projectTennisMatches(matches, state, country);
     const summary = {
       total_today: matches.length,
       value_bets: matches.filter((m) => m.edge != null && m.edge > 0.025).length,
