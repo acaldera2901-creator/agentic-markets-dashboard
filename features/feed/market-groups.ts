@@ -68,14 +68,14 @@ export function buildMainGroups(r: RichPrediction): MarketGroup[] {
     }),
   });
 
-  // Gol Over/Under (da extra_markets)
+  // Gol Over/Under (da extra_markets, linea canonica 2.5, match per key non label)
   const em = r.enrichment?.extra_markets ?? [];
-  const over = em.find((x) => x.label.toLowerCase().includes("over"));
-  const under = em.find((x) => x.label.toLowerCase().includes("under"));
+  const over = em.find((x) => x.key === "over_2_5");
+  const under = em.find((x) => x.key === "under_2_5");
   if (over || under) {
     const chips: MarketChip[] = [];
-    if (over) chips.push({ id: "gol-over", market: "Over/Under", selection: over.label, prob: over.p, odds: over.market_odds, hasValue: (over.edge ?? 0) > 0, recommended: (over.p ?? 0) >= (under?.p ?? 0) });
-    if (under) chips.push({ id: "gol-under", market: "Over/Under", selection: under.label, prob: under.p, odds: under.market_odds, hasValue: (under.edge ?? 0) > 0, recommended: (under.p ?? 0) > (over?.p ?? 0) });
+    if (over) chips.push({ id: "gol-over", market: "Over/Under", selection: "Over 2.5", prob: over.p, odds: over.market_odds, hasValue: (over.edge ?? 0) > 0, recommended: (over.p ?? 0) >= (under?.p ?? 0) });
+    if (under) chips.push({ id: "gol-under", market: "Over/Under", selection: "Under 2.5", prob: under.p, odds: under.market_odds, hasValue: (under.edge ?? 0) > 0, recommended: (under.p ?? 0) > (over?.p ?? 0) });
     const eg = r.enrichment?.goals_summary?.expected_goals;
     groups.push({ key: "gol", title: "Gol", chips, note: eg != null ? `Gol attesi dal modello: ~${eg.toFixed(1)}` : undefined });
   }
