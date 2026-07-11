@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildModelVsMarket, buildMainGroups, type RichPrediction } from "./market-groups";
+import { buildModelVsMarket, buildMainGroups, buildPremiumGroups, buildAllGroups, type RichPrediction } from "./market-groups";
 
 const row: RichPrediction = {
   match_id: "1", league: "SA", league_name: "Serie A", home_team: "Inter", away_team: "Verona",
@@ -65,5 +65,42 @@ describe("buildMainGroups", () => {
     };
     expect(buildMainGroups(noGolRow).find((x) => x.key === "gol")).toBeUndefined();
     expect(buildMainGroups({ ...row, enrichment: {} }).find((x) => x.key === "gol")).toBeUndefined();
+  });
+});
+
+describe("buildPremiumGroups", () => {
+  const gsRow = { ...row, enrichment: { ...row.enrichment,
+    goalscorer_markets: [
+      { playerId: "1", name: "Lautaro Martinez", side: "home", pScores: 0.42, marketImplied: null, bestPrice: 2.1, bookmaker: "x", edge: 0.06, confidence: "media" },
+      { playerId: "2", name: "Thuram", side: "home", pScores: 0.31, marketImplied: null, bestPrice: 2.6, bookmaker: "x", edge: null, confidence: "media" },
+    ] } } as const;
+
+  it("gruppo marcatori con chip ordinati per pScores", () => {
+    const g = buildPremiumGroups(gsRow as any).find((x) => x.key === "marcatori")!;
+    expect(g.chips[0].selection).toContain("Lautaro");
+    expect(g.chips[0].recommended).toBe(true); // top pScores con bestPrice
+  });
+  it("soft locked se soft_locked=true → group locked senza chip dati", () => {
+    const g = buildPremiumGroups({ ...row, enrichment: { soft_locked: true } } as any).find((x) => x.key === "soft")!;
+    expect(g.locked).toBe(true);
+  });
+  it("soft con cards/fouls non-generici (corner esclusi)", () => {
+    const g = buildPremiumGroups({ ...row, enrichment: { soft: {
+      cards: { expected: 4.2, main_line: 3.5, p_over: 0.58, is_generic: false },
+      corners: { expected: 10, main_line: 9.5, p_over: 0.6, is_generic: false },
+    } } } as any).find((x) => x.key === "soft")!;
+    expect(g.chips.map((c) => c.market)).toContain("Cartellini");
+    expect(g.chips.map((c) => c.market)).not.toContain("Corner");
+  });
+  it("nessun gruppo marcatori se goalscorer_markets assente", () => {
+    expect(buildPremiumGroups({ ...row, enrichment: {} } as any).find((x) => x.key === "marcatori")).toBeUndefined();
+  });
+});
+
+describe("buildAllGroups", () => {
+  it("compone main + premium", () => {
+    const all = buildAllGroups(row);
+    expect(all.map((x) => x.key)).toContain("esiti");
+    expect(all.map((x) => x.key)).toContain("gol");
   });
 });

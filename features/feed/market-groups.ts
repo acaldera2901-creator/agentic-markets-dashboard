@@ -81,3 +81,45 @@ export function buildMainGroups(r: RichPrediction): MarketGroup[] {
   }
   return groups;
 }
+
+export function buildPremiumGroups(r: RichPrediction): MarketGroup[] {
+  const groups: MarketGroup[] = [];
+  const e = r.enrichment ?? {};
+
+  // Marcatori (Pro): top 4 per pScores, dedup lato|cognome
+  const gs = e.goalscorer_markets ?? [];
+  if (gs.length) {
+    const key = (m: GoalscorerMarket) => {
+      const parts = m.name.trim().toLowerCase().split(/\s+/);
+      return `${m.side}|${parts[parts.length - 1]}|${parts[0]?.[0] ?? ""}`;
+    };
+    const map = new Map<string, GoalscorerMarket>();
+    for (const m of gs) {
+      const prev = map.get(key(m));
+      if (!prev || m.pScores > prev.pScores || (m.pScores === prev.pScores && m.bestPrice != null && prev.bestPrice == null)) map.set(key(m), m);
+    }
+    const top = [...map.values()].sort((a, b) => b.pScores - a.pScores).slice(0, 4);
+    const topP = Math.max(...top.map((m) => m.pScores));
+    groups.push({
+      key: "marcatori", title: "Marcatori",
+      chips: top.map((m, i) => ({ id: `gs-${i}`, market: "Marcatore", selection: m.name, prob: m.pScores, odds: m.bestPrice, hasValue: (m.edge ?? 0) > 0, recommended: m.pScores === topP && m.bestPrice != null })),
+      note: "La nostra probabilità che ogni giocatore segni almeno un gol.",
+    });
+  }
+
+  // Soft (Pro): cards/fouls non-generici; corner esclusi (nessuna skill validata)
+  if (e.soft_locked) {
+    groups.push({ key: "soft", title: "Mercati soft", locked: true, chips: [], note: "Corner, cartellini e falli — riservati a Pro." });
+  } else if (e.soft) {
+    const chips: MarketChip[] = [];
+    const s = e.soft;
+    if (s.cards && !s.cards.is_generic) chips.push({ id: "soft-cards", market: "Cartellini", selection: `Over ${s.cards.main_line} cartellini`, prob: s.cards.p_over, odds: null, hasValue: false, recommended: false });
+    if (s.fouls && !s.fouls.is_generic) chips.push({ id: "soft-fouls", market: "Falli", selection: `Over ${s.fouls.main_line} falli`, prob: s.fouls.p_over, odds: null, hasValue: false, recommended: false });
+    if (chips.length) groups.push({ key: "soft", title: "Mercati soft", chips, note: "Cartellini e falli: probabilità Over dal modello (Pro)." });
+  }
+  return groups;
+}
+
+export function buildAllGroups(r: RichPrediction): MarketGroup[] {
+  return [...buildMainGroups(r), ...buildPremiumGroups(r)];
+}
