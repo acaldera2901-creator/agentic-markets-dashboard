@@ -59,6 +59,6 @@ describe("FeedScreen", () => {
     mockUsePicks.mockReturnValue({ picks: [vm({ id: "a", locked: false })], loading: false, error: null });
     render(<FeedScreen />);
     await userEvent.click(screen.getByRole("button", { name: /perché questa previsione/i }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /Vince l'Inter/ })).toBeInTheDocument();
   });
 });

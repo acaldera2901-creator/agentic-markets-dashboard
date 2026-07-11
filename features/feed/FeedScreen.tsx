@@ -46,7 +46,7 @@ export function FeedScreen() {
       </footer>
       <BottomNav active="oggi" />
       {openPick && (
-        <Sheet open onClose={() => setOpenPickId(null)}>
+        <Sheet open title={`${openPick.homeTeam ?? ""} · ${openPick.decision}`} onClose={() => setOpenPickId(null)}>
           <PickCardExpanded pick={openPick} />
         </Sheet>
       )}

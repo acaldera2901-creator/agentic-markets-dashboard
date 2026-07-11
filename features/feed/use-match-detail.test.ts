@@ -6,8 +6,10 @@ beforeEach(() => vi.restoreAllMocks());
 
 describe("useMatchDetail", () => {
   it("id null → nessun fetch", () => {
-    const fetchSpy = vi.stubGlobal("fetch", vi.fn());
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
     const { result } = renderHook(() => useMatchDetail(null));
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.loading).toBe(false);
     expect(result.current.detail).toBeNull();
   });

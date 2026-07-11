@@ -30,6 +30,12 @@ describe("PickCardExpanded", () => {
     expect(screen.getByText(/Inter in forma/)).toBeInTheDocument();
     expect(screen.queryByText("Esiti principali")).toBeNull();
   });
+  it("detail locked/incompleto → degradato (recap + perché, nessun gruppo)", () => {
+    mockDetail.mockReturnValue({ detail: { match_id: "B", locked: true } as any, loading: false, error: null });
+    render(<PickCardExpanded pick={vm} />);
+    expect(screen.getByText("Vince l'Inter")).toBeInTheDocument();
+    expect(screen.queryByText("Esiti principali")).toBeNull();
+  });
   it("completo: mostra gruppi + Modello vs Mercato + soft Pro-lock", () => {
     mockDetail.mockReturnValue({ detail: richDetail, loading: false, error: null });
     render(<PickCardExpanded pick={vm} />);

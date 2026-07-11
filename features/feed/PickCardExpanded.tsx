@@ -102,7 +102,7 @@ export function PickCardExpanded({ pick }: { pick: PickCardVM }) {
     );
   }
 
-  if (!detail) {
+  if (!detail || detail.locked || detail.p_home == null) {
     return (
       <div style={{ background: "var(--am-panel)", border: "1px solid var(--am-line)", borderRadius: 16, padding: 16 }}>
         {recap}
