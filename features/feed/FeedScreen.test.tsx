@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { PickCardVM } from "./pick-view-model";
 
 const vm = (o: Partial<PickCardVM>): PickCardVM => ({
@@ -10,6 +11,7 @@ const vm = (o: Partial<PickCardVM>): PickCardVM => ({
 
 const mockUsePicks = vi.fn();
 vi.mock("./use-picks", () => ({ usePicks: () => mockUsePicks() }));
+vi.mock("./use-match-detail", () => ({ useMatchDetail: () => ({ detail: null, loading: false, error: null }) }));
 
 import { FeedScreen } from "./FeedScreen";
 
@@ -52,5 +54,11 @@ describe("FeedScreen", () => {
     const text = container.textContent ?? "";
     expect(text.indexOf("Napoli")).toBeGreaterThanOrEqual(0);
     expect(text.indexOf("Napoli")).toBeLessThan(text.indexOf("Inter"));
+  });
+  it("apre la scheda (Sheet) al click su 'Perché questa previsione'", async () => {
+    mockUsePicks.mockReturnValue({ picks: [vm({ id: "a", locked: false })], loading: false, error: null });
+    render(<FeedScreen />);
+    await userEvent.click(screen.getByRole("button", { name: /perché questa previsione/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
