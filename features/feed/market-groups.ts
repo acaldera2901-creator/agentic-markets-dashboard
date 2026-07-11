@@ -109,7 +109,7 @@ export function buildPremiumGroups(r: RichPrediction): MarketGroup[] {
 
   // Soft (Pro): cards/fouls non-generici; corner esclusi (nessuna skill validata)
   if (e.soft_locked) {
-    groups.push({ key: "soft", title: "Mercati soft", locked: true, chips: [], note: "Corner, cartellini e falli — riservati a Pro." });
+    groups.push({ key: "soft", title: "Mercati soft", locked: true, chips: [], note: "Cartellini e falli — riservati a Pro." });
   } else if (e.soft) {
     const chips: MarketChip[] = [];
     const s = e.soft;

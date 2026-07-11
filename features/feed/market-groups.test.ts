@@ -95,12 +95,32 @@ describe("buildPremiumGroups", () => {
   it("nessun gruppo marcatori se goalscorer_markets assente", () => {
     expect(buildPremiumGroups({ ...row, enrichment: {} } as any).find((x) => x.key === "marcatori")).toBeUndefined();
   });
+  it("dedup: due entry stesso lato/cognome/iniziale → tiene pScores più alto", () => {
+    const dup = { ...row, enrichment: { goalscorer_markets: [
+      { playerId: "1", name: "Marcus Thuram", side: "home", pScores: 0.30, marketImplied: null, bestPrice: 2.6, bookmaker: "x", edge: null, confidence: "media" },
+      { playerId: "2", name: "Marcus Thuram", side: "home", pScores: 0.45, marketImplied: null, bestPrice: 2.1, bookmaker: "x", edge: 0.05, confidence: "media" },
+    ] } } as any;
+    const g = buildPremiumGroups(dup).find((x) => x.key === "marcatori")!;
+    expect(g.chips).toHaveLength(1);
+    expect(g.chips[0].prob).toBeCloseTo(0.45, 5);
+  });
+  it("marcatori: >4 entry → top 4 per pScores", () => {
+    const mk = (n: string, p: number) => ({ playerId: n, name: n, side: "home", pScores: p, marketImplied: null, bestPrice: 2, bookmaker: "x", edge: null, confidence: "media" });
+    const many = { ...row, enrichment: { goalscorer_markets: [mk("A", 0.5), mk("B", 0.4), mk("C", 0.3), mk("D", 0.2), mk("E", 0.1)] } } as any;
+    const g = buildPremiumGroups(many).find((x) => x.key === "marcatori")!;
+    expect(g.chips).toHaveLength(4);
+    expect(g.chips.map((c) => c.selection)).toEqual(["A", "B", "C", "D"]);
+  });
 });
 
 describe("buildAllGroups", () => {
   it("compone main + premium", () => {
-    const all = buildAllGroups(row);
-    expect(all.map((x) => x.key)).toContain("esiti");
-    expect(all.map((x) => x.key)).toContain("gol");
+    const full = { ...row, enrichment: { ...row.enrichment,
+      goalscorer_markets: [{ playerId: "1", name: "Lautaro", side: "home", pScores: 0.4, marketImplied: null, bestPrice: 2.1, bookmaker: "x", edge: 0.05, confidence: "media" }],
+      soft: { cards: { expected: 4.2, main_line: 3.5, p_over: 0.58, is_generic: false } } } } as any;
+    const keys = buildAllGroups(full).map((g) => g.key);
+    expect(keys).toContain("esiti");
+    expect(keys).toContain("marcatori");
+    expect(keys).toContain("soft");
   });
 });
