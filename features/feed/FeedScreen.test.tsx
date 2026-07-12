@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import type { PickCardVM } from "./pick-view-model";
 
 const vm = (o: Partial<PickCardVM>): PickCardVM => ({
@@ -13,9 +14,19 @@ const mockUsePicks = vi.fn();
 vi.mock("./use-picks", () => ({ usePicks: () => mockUsePicks() }));
 vi.mock("./use-match-detail", () => ({ useMatchDetail: () => ({ detail: null, loading: false, error: null }) }));
 
+const mockUseAuth = vi.fn();
+vi.mock("../onboarding/AuthProvider", () => ({
+  AuthProvider: ({ children }: { children: ReactNode }) => children,
+  useAuth: () => mockUseAuth(),
+}));
+
 import { FeedScreen } from "./FeedScreen";
 
 describe("FeedScreen", () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ user: null, plan: null, loading: false, refresh: vi.fn() });
+  });
+
   it("stato loading", () => {
     mockUsePicks.mockReturnValue({ picks: [], loading: true, error: null });
     render(<FeedScreen />);
@@ -60,5 +71,26 @@ describe("FeedScreen", () => {
     render(<FeedScreen />);
     await userEvent.click(screen.getByRole("button", { name: /perché questa previsione/i }));
     expect(screen.getByRole("dialog", { name: /Vince l'Inter/ })).toBeInTheDocument();
+  });
+
+  it("anonimo: click su 'Crea account' apre la SignupSheet", async () => {
+    mockUsePicks.mockReturnValue({ picks: [], loading: false, error: null });
+    render(<FeedScreen />);
+    await userEvent.click(screen.getByRole("button", { name: /crea account/i }));
+    expect(screen.getByRole("dialog", { name: /crea account/i })).toBeInTheDocument();
+  });
+
+  it("anonimo: click su 'Accedi' apre la LoginSheet", async () => {
+    mockUsePicks.mockReturnValue({ picks: [], loading: false, error: null });
+    render(<FeedScreen />);
+    await userEvent.click(screen.getByRole("button", { name: /^accedi$/i }));
+    expect(screen.getByRole("dialog", { name: /^accedi$/i })).toBeInTheDocument();
+  });
+
+  it("click su 'Prova Pro' su una card locked apre la UpgradeSheet", async () => {
+    mockUsePicks.mockReturnValue({ picks: [vm({ id: "a", locked: true })], loading: false, error: null });
+    render(<FeedScreen />);
+    await userEvent.click(screen.getByRole("button", { name: /prova pro/i }));
+    expect(screen.getByRole("dialog", { name: /passa a pro/i })).toBeInTheDocument();
   });
 });
