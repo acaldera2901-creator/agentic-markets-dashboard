@@ -83,4 +83,11 @@ describe("TrackRecordView", () => {
     render(<TrackRecordView />);
     expect(screen.getByText(/Nessun risultato ancora/i)).toBeInTheDocument();
   });
+
+  it("stato error mostra messaggio di errore e retry", () => {
+    mock({ loading: false, error: "boom" });
+    render(<TrackRecordView />);
+    expect(screen.getByText(/Qualcosa è andato storto/i)).toBeInTheDocument();
+    expect(screen.getByText(/Riprova/i)).toBeInTheDocument();
+  });
 });

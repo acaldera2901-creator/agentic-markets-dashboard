@@ -84,25 +84,27 @@ export function TrackRecordView() {
         </h1>
       </header>
 
-      <section style={{
-        maxWidth: 480, width: "100%", margin: "0 auto", padding: "8px 16px 18px",
-        display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 4,
-      }}>
-        {stats && stats.winRate ? (
-          <>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 44, fontWeight: 800, letterSpacing: "-.02em", color: "var(--am-coral)" }}>
-              {stats.winRate}
+      {!loading && !error && (
+        <section style={{
+          maxWidth: 480, width: "100%", margin: "0 auto", padding: "8px 16px 18px",
+          display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 4,
+        }}>
+          {stats && stats.winRate ? (
+            <>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 44, fontWeight: 800, letterSpacing: "-.02em", color: "var(--am-coral)" }}>
+                {stats.winRate}
+              </span>
+              <span style={{ fontSize: 13, color: "var(--am-muted)" }}>
+                {stats.total} pick conclusi · {stats.won} corretti
+              </span>
+            </>
+          ) : (
+            <span style={{ fontSize: 14, color: "var(--am-muted)", padding: "8px 0" }}>
+              Ancora pochi risultati per una percentuale affidabile.
             </span>
-            <span style={{ fontSize: 13, color: "var(--am-muted)" }}>
-              {stats.total} pick conclusi · {stats.won} corretti
-            </span>
-          </>
-        ) : (
-          <span style={{ fontSize: 14, color: "var(--am-muted)", padding: "8px 0" }}>
-            Ancora pochi risultati per una percentuale affidabile.
-          </span>
-        )}
-      </section>
+          )}
+        </section>
+      )}
 
       <main style={{ flex: 1, maxWidth: 480, width: "100%", margin: "0 auto" }}>{body}</main>
 
