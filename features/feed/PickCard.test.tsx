@@ -32,4 +32,34 @@ describe("PickCard", () => {
     expect(screen.getByRole("button", { name: /prova pro/i })).toBeInTheDocument();
     expect(screen.queryByText("Vince l'Inter")).not.toBeInTheDocument();
   });
+
+  it("settled won (non-locked): mostra punteggio finale + esito, niente ConfidenceMeter", () => {
+    render(<PickCard pick={vm({ settled: true, result: "won", finalScore: "2-1" })} />);
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto").closest("[data-outcome]")).toHaveAttribute("data-outcome", "won");
+    expect(screen.queryByText("Sicurezza del modello")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Alta/)).not.toBeInTheDocument();
+  });
+
+  it("settled lost (non-locked): mostra 'Non riuscito' con data-outcome lost", () => {
+    render(<PickCard pick={vm({ settled: true, result: "lost", finalScore: "0-2" })} />);
+    expect(screen.getByText("Non riuscito")).toBeInTheDocument();
+    expect(screen.getByText("Non riuscito").closest("[data-outcome]")).toHaveAttribute("data-outcome", "lost");
+  });
+
+  it("settled + locked: mostra punteggio + esito ma non la decisione; 'Prova Pro' presente", () => {
+    render(<PickCard pick={vm({ locked: true, settled: true, result: "won", finalScore: "2-1" })} />);
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto")).toBeInTheDocument();
+    expect(screen.queryByText("Vince l'Inter")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /prova pro/i })).toBeInTheDocument();
+  });
+
+  it("non-settled: comportamento invariato (ConfidenceMeter presente, niente blocco risultato)", () => {
+    render(<PickCard pick={vm()} />);
+    expect(screen.getByText("Sicurezza del modello")).toBeInTheDocument();
+    expect(screen.queryByText(/pronostico corretto/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/non riuscito/i)).not.toBeInTheDocument();
+  });
 });
