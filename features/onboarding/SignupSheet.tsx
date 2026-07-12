@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Sheet, Button } from "@/components/ui";
 import { useAuth } from "./AuthProvider";
@@ -21,10 +21,12 @@ export function SignupSheet({
   open,
   onClose,
   onLogin,
+  language = "it",
 }: {
   open: boolean;
   onClose: () => void;
   onLogin?: () => void;
+  language?: string;
 }) {
   const { refresh } = useAuth();
   const [email, setEmail] = useState("");
@@ -34,6 +36,7 @@ export function SignupSheet({
   const [tosChecked, setTosChecked] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const emailId = useId();
@@ -45,10 +48,11 @@ export function SignupSheet({
 
   const canSubmit = Boolean(email && password && ageChecked && tosChecked) && !busy;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     setError(null);
+    setInfo(null);
     setBusy(true);
     try {
       const res = await fetch("/api/auth", {
@@ -60,7 +64,7 @@ export function SignupSheet({
           identifier: email,
           password,
           name: name || undefined,
-          language: "it",
+          language,
           age_confirmed: true,
           tos_accepted: true,
           marketing_opt_in: marketing,
@@ -69,6 +73,11 @@ export function SignupSheet({
       if (!res.ok) {
         const json = await res.json().catch(() => ({}) as { error?: string });
         setError(errorMessage(res.status, json.error));
+        return;
+      }
+      const json = await res.json().catch(() => ({})) as { pending_activation?: boolean };
+      if (res.status === 202 || json.pending_activation) {
+        setInfo("Ti abbiamo inviato un'email di attivazione. Controlla la posta.");
         return;
       }
       await refresh();
@@ -189,6 +198,10 @@ export function SignupSheet({
 
         {error && (
           <div style={{ fontSize: 13, color: "var(--am-red)" }}>{error}</div>
+        )}
+
+        {info && (
+          <div style={{ fontSize: 13, color: "var(--am-muted)" }}>{info}</div>
         )}
 
         <Button type="submit" variant="primary" disabled={!canSubmit}>

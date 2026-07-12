@@ -110,4 +110,35 @@ describe("SignupSheet", () => {
     await user.click(screen.getByText(/accedi/i));
     expect(onLogin).toHaveBeenCalledOnce();
   });
+
+  it("su risposta 202 pending_activation mostra messaggio inline e non chiama refresh/onClose", async () => {
+    const onClose = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 202,
+      json: async () => ({ pending_activation: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SignupSheet open onClose={onClose} />);
+    const user = await fillRequired();
+    await user.click(screen.getByRole("button", { name: /crea account/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/email di attivazione.*controlla la posta/i)).toBeInTheDocument()
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("con email+password+ToS ma senza age, submit button resta disabilitato", async () => {
+    render(<SignupSheet open onClose={() => {}} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/^email$/i), "a@b.c");
+    await user.type(screen.getByLabelText(/^password$/i), "supersecret1");
+    await user.click(screen.getByLabelText(/termini/i));
+    // age NOT checked
+    const submit = screen.getByRole("button", { name: /crea account/i });
+    expect(submit).toBeDisabled();
+  });
 });
