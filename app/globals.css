@@ -3061,6 +3061,17 @@ button:disabled {
   font-weight: 600;
 }
 .featured .edge svg { width: 13px; height: 13px; }
+/* #QW4: valore cappato al display (odds stantie) — cue neutro, non allarmistico,
+   ma segnala che la cifra è "da leggere con prudenza" invece di ostentare +71 pt. */
+.featured .edge.is-extreme {
+  border-color: var(--am-line-2); background: var(--am-inset); color: var(--am-muted);
+}
+.featured .edge.is-extreme svg { color: var(--am-muted-2); }
+/* #QW4: riga in chiaro sotto il chip edge — traduce il "pt" per il tifoso. */
+.featured .edge-plain {
+  margin: 7px 0 0; align-self: flex-start; max-width: 42ch;
+  font-size: 11.5px; line-height: 1.4; color: var(--am-muted);
+}
 .featured .featured-unlock {
   margin-top: 18px;
   align-self: flex-start;
@@ -4148,6 +4159,15 @@ button:disabled {
   padding: 14px;
   min-height: 0;
 }
+/* #QW1: il widget di chat Tawk è fixed in basso a destra (~80px) e copre l'ultima
+   riga di card su Previsioni, la colonna esito su Storico e le feature del piano
+   Pro su Piani (pagina di conversione). Aggiungo un gutter in fondo al desk così
+   il contenuto scorre sempre sopra il widget. Solo ≥901px: sotto i 900 c'è già la
+   bottom tab bar con il suo padding. NB: Tawk non è caricato in dev → verificare
+   in produzione. */
+@media (min-width: 901px) {
+  .portal-desk { padding-bottom: 96px; }
+}
 
 .portal-bottom-banner {
   min-height: 48px;
@@ -4878,6 +4898,15 @@ button:disabled {
 .da-value {
   color: rgba(255,255,255,0.75);
   flex: 1;
+}
+/* #QW4: value cappato al display (odds stantie) → neutro, non enfatizzato. */
+.da-value.is-extreme { color: var(--am-muted); }
+/* #QW4: riga in chiaro sotto "Modello vs Mercato" — traduce l'edge al tifoso non
+   esperto senza gergo. Allineata sotto la colonna valore (label 80 + gap 8). */
+.da-plain {
+  margin: 3px 0 4px 88px;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px; line-height: 1.45; color: var(--am-muted); max-width: 46ch;
 }
 .da-markets-row {
   flex-wrap: wrap;
@@ -5988,10 +6017,21 @@ button:disabled {
 .pred .v2r-pick { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--am-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pred .v2r-eye { font-size: 9.5px; }
-.pred .v2r-conf { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
-.pred .v2r-conf .d { width: 6px; height: 6px; border-radius: 50%; background: var(--am-line-2); }
+/* #CHI1: "quanto sicuro" in un solo cue dominante. La LABEL (alta/media/bassa)
+   guida — peso + colore per livello; i dots restano come meter secondario (più
+   piccoli), la % vive a destra come dettaglio. Un solo segnale da leggere. */
+.pred .v2r-conf { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+.pred .v2r-conf .d { width: 5px; height: 5px; border-radius: 50%; background: var(--am-line-2); }
 .pred .v2r-conf .d.on { background: var(--am-positive); }
-.pred .v2r-conf-t { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10px; color: var(--am-muted); }
+.pred .v2r-conf-t { font-family: var(--am-mono, ui-monospace, monospace); font-size: 11px;
+  font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--am-muted);
+  margin-right: 1px; }
+.pred .v2r-conf[data-conf="high"] .v2r-conf-t { color: var(--am-positive); }
+.pred .v2r-conf[data-conf="med"]  .v2r-conf-t { color: var(--am-amber); }
+.pred .v2r-conf[data-conf="low"]  .v2r-conf-t { color: var(--am-muted-2); }
+.pred .v2r-conf[data-conf="high"] .d.on { background: var(--am-positive); }
+.pred .v2r-conf[data-conf="med"]  .d.on { background: var(--am-amber); }
+.pred .v2r-conf[data-conf="low"]  .d.on { background: var(--am-muted-2); }
 .pred .v2r-flat { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10.5px; color: var(--am-muted-2); margin-top: 1px; }
 .pred .v2r-q { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; flex: none; text-align: right; }
 .pred .v2r-qlab { font-family: var(--am-mono, ui-monospace, monospace); font-size: 8.5px; letter-spacing: 0.07em;
@@ -6003,6 +6043,9 @@ button:disabled {
   font-weight: 640; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
 .pred .v2r-val { font-size: 9.5px; font-weight: 800; color: var(--am-coral); background: var(--am-coral-dim);
   border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 1px 7px; cursor: help; }
+/* #QW4: value cappato (es. "100+%") → neutro, non coral: non ostentiamo un valore
+   gonfiato da quote stantie. La cifra è cappata solo al display, il dato è intatto. */
+.pred .v2r-val.is-extreme { color: var(--am-muted); background: var(--am-inset); border-color: var(--am-line-2); }
 /* confidence meter */
 .pred .conf { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 11px; color: var(--am-muted); }
 .pred .conf .conf-lab { font-size: 10px; letter-spacing: 0.04em; color: var(--am-muted-2); }
@@ -6658,9 +6701,14 @@ button:disabled {
 /* Layout: list (left) + sticky slip (right). Stacks under 900px. */
 .mb-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  /* #EST1: la colonna lista era 1fr → su desk larghi si allargava a ~900px e ogni
+     riga aveva un vuoto morto tra nome match e probabilità (a destra). Cappata la
+     traccia lista a una misura di lettura: la slip resta accanto, lo spazio libero
+     va a fine riga (fuori dall'area funzionale), non dentro le righe. */
+  grid-template-columns: minmax(0, 640px) minmax(0, 320px);
   gap: 20px;
   align-items: start;
+  justify-content: start;
 }
 @media (max-width: 900px) {
   .mb-layout { grid-template-columns: minmax(0, 1fr); }
@@ -8142,7 +8190,13 @@ button:disabled {
 .am-bottomnav { display: none; }
 .mb-entry { display: none; }
 .am-featured { display: none; } /* #MOBILE-FEATURED-1: solo mobile (rail assente) */
-@media (max-width: 760px) {
+/* #MOB1: alzato 760→900px. Sotto i 900 la sidebar (.sports-rail) diventava una
+   striscia a scorrimento orizzontale (~10 chip) e la bottom bar non c'era ancora:
+   nel range 760–900 le pagine di valore (World Cup / Creator / Weekly / Piani)
+   restavano fuori-schermo a destra. Ora la bottom tab bar persistente copre tutto
+   il range mobile/tablet, come da audit. Verificare su device reale (<1512px non
+   renderizzabile in questo ambiente). */
+@media (max-width: 900px) {
   /* il "muro di menu" (sidebar) sparisce: lo sostituisce la bottom bar */
   .sports-rail { display: none !important; }
   /* contenuto a tutta larghezza + spazio per la barra fissa */
