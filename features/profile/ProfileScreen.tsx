@@ -26,6 +26,10 @@ function planBadge(plan: string): string {
   return plan;
 }
 
+function planBadgeVariant(plan: string): "pro" | "neutral" {
+  return isPaidPlan(plan) ? "pro" : "neutral";
+}
+
 function readStoredLang(): string {
   if (typeof window === "undefined") return "it";
   try {
@@ -74,12 +78,8 @@ export function ProfileScreen() {
             Accedi o crea un account per vedere piano, referral e impostazioni.
           </p>
           {/* shortcut: /app resta il router auth finché SP3 non introduce sheet dedicati */}
-          <a href="/app" style={{ width: "100%" }}>
-            <Button variant="primary" style={{ width: "100%" }}>Accedi</Button>
-          </a>
-          <a href="/app" style={{ width: "100%" }}>
-            <Button variant="ghost" style={{ width: "100%" }}>Crea account</Button>
-          </a>
+          <Button variant="primary" style={{ width: "100%" }} onClick={() => { window.location.href = "/app"; }}>Accedi</Button>
+          <Button variant="ghost" style={{ width: "100%" }} onClick={() => { window.location.href = "/app"; }}>Crea account</Button>
         </div>
       </Shell>
     );
@@ -111,7 +111,7 @@ export function ProfileScreen() {
           <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "var(--am-panel-2)", border: "1px solid var(--am-line)", borderRadius: 12, padding: 14 }}>
             <span style={{ fontSize: 16, fontWeight: 600 }}>{profile.name ?? "—"}</span>
             <span style={{ fontSize: 13, color: "var(--am-muted)" }}>{profile.identifier}</span>
-            <Chip variant="pro">{planBadge(profile.plan)}</Chip>
+            <Chip variant={planBadgeVariant(profile.plan)}>{planBadge(profile.plan)}</Chip>
           </div>
         </section>
 
@@ -121,9 +121,7 @@ export function ProfileScreen() {
             <span style={{ fontSize: 14 }}>{planCopy(profile.plan)}</span>
             {planExpiry && <span style={{ fontSize: 12, color: "var(--am-muted)" }}>Scadenza: {planExpiry}</span>}
             {/* shortcut: /app?tab=plans resta il router piani finché SP3 non introduce lo sheet dedicato */}
-            <a href="/app?tab=plans">
-              <Button variant="ghost">{isPaidPlan(profile.plan) ? "Gestisci piano" : "Vedi piani"}</Button>
-            </a>
+            <Button variant="ghost" onClick={() => { window.location.href = "/app?tab=plans"; }}>{isPaidPlan(profile.plan) ? "Gestisci piano" : "Vedi piani"}</Button>
           </div>
         </section>
 
@@ -132,6 +130,7 @@ export function ProfileScreen() {
         <section>
           <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--am-muted)", margin: "0 0 8px" }}>Lingua</h2>
           <select
+            aria-label="Lingua"
             value={lang}
             onChange={(e) => handleLangChange(e.target.value)}
             style={{

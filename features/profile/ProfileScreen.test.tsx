@@ -25,8 +25,8 @@ describe("ProfileScreen", () => {
   it("anonimo → CTA accedi/crea account, niente dati account", () => {
     mockUseProfile.mockReturnValue({ profile: null, loading: false, error: null, loggedIn: false, logout: logoutMock });
     render(<ProfileScreen />);
-    expect(screen.getByRole("link", { name: /accedi/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /crea account/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /accedi/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /crea account/i })).toBeInTheDocument();
     expect(screen.queryByText("a@b.c")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /profilo/i })).toHaveAttribute("aria-current", "page");
   });
@@ -46,7 +46,7 @@ describe("ProfileScreen", () => {
     expect(screen.getByText("a@b.c")).toBeInTheDocument();
     expect(screen.getByText(/\$29\.99/)).toBeInTheDocument();
     expect(screen.getByText(/scadenza/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /gestisci piano|vedi piani/i })).toHaveAttribute("href", "/app?tab=plans");
+    expect(screen.getByRole("button", { name: /gestisci piano|vedi piani/i })).toBeInTheDocument();
     expect(screen.getByTestId("referral-slot")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /profilo/i })).toHaveAttribute("aria-current", "page");
 
