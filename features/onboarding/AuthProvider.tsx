@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 export type AuthUser = { identifier: string; name: string | null };
 
@@ -23,11 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const reqId = useRef(0);
 
   const refresh = useCallback(async () => {
+    const myId = ++reqId.current;
     setLoading(true);
     try {
       const res = await fetch("/api/auth", { credentials: "include" });
+      if (myId !== reqId.current) return;
       if (!res.ok) {
         // 401 (no session) or any other non-OK status → treat as logged-out.
         setUser(null);
@@ -39,10 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPlan(json.plan);
     } catch {
       // Network error / fetch rejection → logged-out, never crash the tree.
+      if (myId !== reqId.current) return;
       setUser(null);
       setPlan(null);
     } finally {
-      setLoading(false);
+      if (myId === reqId.current) setLoading(false);
     }
   }, []);
 
