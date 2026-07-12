@@ -65,8 +65,8 @@ export function SignupSheet({
           password,
           name: name || undefined,
           language,
-          age_confirmed: true,
-          tos_accepted: true,
+          age_confirmed: ageChecked,
+          tos_accepted: tosChecked,
           marketing_opt_in: marketing,
         }),
       });
