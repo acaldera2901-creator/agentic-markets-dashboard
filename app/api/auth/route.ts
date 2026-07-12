@@ -9,6 +9,8 @@ import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { assertConsent, ConsentError } from "./consent";
+import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +98,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "not authenticated" }, { status: 401 });
   }
   return NextResponse.json(
-    { identifier: ctx.identifier, plan: ctx.plan, name: ctx.name },
+    { identifier: ctx.identifier, plan: ctx.plan, name: ctx.name, plan_expires_at: ctx.plan_expires_at },
     { headers: { "cache-control": "no-store" } }
   );
 }
@@ -253,6 +255,17 @@ export async function POST(req: Request) {
   }
 
   if (action === "register") {
+    // #SP3-2 compliance gate: +18/ToS consent is enforced server-side, not just
+    // in the UI — a direct API call must not be able to skip it. No profile is
+    // created/touched until both flags are confirmed true.
+    try {
+      assertConsent(body);
+    } catch (e) {
+      if (e instanceof ConsentError) {
+        return NextResponse.json({ error: "consent_required" }, { status: 400 });
+      }
+      throw e;
+    }
     // Already a usable (activated) account → tell them to log in.
     if (existing?.password_hash && existing.activated_at) {
       return NextResponse.json({ error: "account already exists — please log in" }, { status: 409 });
@@ -266,6 +279,23 @@ export async function POST(req: Request) {
     // attivazione, senza toccare password/piano. Solo un INSERT genuinamente NUOVO (else
     // sotto) può ottenere sessione immediata / setup password.
     if (existing) {
+      // GDPR A1-B1 (accountability, Art. 7(1)/5(2)): assertConsent() above already
+      // confirmed age_confirmed/tos_accepted === true for THIS request, so consent
+      // was genuinely given — but for a legacy/existing row we must still persist
+      // the proof (timestamp + version), otherwise it's unrecoverable later. COALESCE
+      // never overwrites an earlier consent record; this only fills gaps.
+      try {
+        await dbExecute(
+          `UPDATE profiles SET
+             age_confirmed_at = COALESCE(age_confirmed_at, NOW()),
+             tos_accepted_at = COALESCE(tos_accepted_at, NOW()),
+             consent_version = COALESCE(consent_version, $2)
+           WHERE identifier = $1`,
+          [identifier, CURRENT_CONSENT_VERSION]
+        );
+      } catch (e) {
+        console.error("[auth] register(existing-row) consent persist failed:", String(e));
+      }
       try {
         await sendActivation(req, identifier, lang);
       } catch (e) {
@@ -295,10 +325,10 @@ export async function POST(req: Request) {
         // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
         // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
         // una riga esistente (niente takeover via race).
-        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at)
-         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END)
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version)
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8)
        ON CONFLICT (identifier) DO NOTHING`,
-        [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn]
+        [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn, CURRENT_CONSENT_VERSION]
       );
     } catch (e) {
       console.error("[auth] register failed:", String(e));

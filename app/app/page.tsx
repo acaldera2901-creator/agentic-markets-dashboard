@@ -4086,6 +4086,10 @@ function ClientAuthModal({
           // #MB-1: first-touch influencer ref (lib/referral-code: normalizza + scadenza)
           ref: mode === "create" ? (readRefCode() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
+          // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
+          // sul register — senza, ogni signup falliva con 400 consent_required.
+          age_confirmed: mode === "create" ? ageOk : undefined,
+          tos_accepted: mode === "create" ? tosOk : undefined,
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };

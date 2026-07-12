@@ -7,7 +7,8 @@ import type { PickCardVM } from "./pick-view-model";
 const vm = (o: Partial<PickCardVM> = {}): PickCardVM => ({
   id: "1", sport: "football", competition: "Serie A", kickoff: "2026-07-10T18:45:00Z",
   homeTeam: "Inter", awayTeam: "Verona", decision: "Vince l'Inter", odds: 1.55,
-  confidenceScore: 78, why: "Inter in gran forma.", hasValue: true, locked: false, externalEventId: null, ...o,
+  confidenceScore: 78, why: "Inter in gran forma.", hasValue: true, locked: false, externalEventId: null,
+  result: null, finalScore: null, settled: false, ...o,
 });
 
 describe("PickCard", () => {
@@ -30,5 +31,42 @@ describe("PickCard", () => {
     render(<PickCard pick={vm({ locked: true })} />);
     expect(screen.getByRole("button", { name: /prova pro/i })).toBeInTheDocument();
     expect(screen.queryByText("Vince l'Inter")).not.toBeInTheDocument();
+  });
+
+  it("settled won (non-locked): mostra punteggio finale + esito, niente ConfidenceMeter", () => {
+    render(<PickCard pick={vm({ settled: true, result: "won", finalScore: "2-1" })} />);
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto").closest("[data-outcome]")).toHaveAttribute("data-outcome", "won");
+    expect(screen.queryByText("Sicurezza del modello")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Alta/)).not.toBeInTheDocument();
+  });
+
+  it("settled lost (non-locked): mostra 'Non riuscito' con data-outcome lost", () => {
+    render(<PickCard pick={vm({ settled: true, result: "lost", finalScore: "0-2" })} />);
+    expect(screen.getByText("Non riuscito")).toBeInTheDocument();
+    expect(screen.getByText("Non riuscito").closest("[data-outcome]")).toHaveAttribute("data-outcome", "lost");
+  });
+
+  it("settled void: mostra 'Annullato' con data-outcome void", () => {
+    render(<PickCard pick={vm({ settled: true, result: "void", finalScore: "1-1" })} />);
+    const badge = screen.getByText("Annullato");
+    expect(badge.closest('[data-outcome="void"]')).toBeInTheDocument();
+    expect(screen.getByText("1-1")).toBeInTheDocument();
+  });
+
+  it("settled + locked: mostra punteggio + esito ma non la decisione; 'Prova Pro' presente", () => {
+    render(<PickCard pick={vm({ locked: true, settled: true, result: "won", finalScore: "2-1" })} />);
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto")).toBeInTheDocument();
+    expect(screen.queryByText("Vince l'Inter")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /prova pro/i })).toBeInTheDocument();
+  });
+
+  it("non-settled: comportamento invariato (ConfidenceMeter presente, niente blocco risultato)", () => {
+    render(<PickCard pick={vm()} />);
+    expect(screen.getByText("Sicurezza del modello")).toBeInTheDocument();
+    expect(screen.queryByText(/pronostico corretto/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/non riuscito/i)).not.toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@
 import type { PickCardVM } from "./pick-view-model";
 import { useMatchDetail } from "./use-match-detail";
 import { buildAllGroups, buildModelVsMarket, type MarketChip, type MarketGroup } from "./market-groups";
+import { ResultBlock } from "./PickCard";
 import { Crest, SportIcon, Chip, ConfidenceMeter, Button, type ChipVariant } from "@/components/ui";
 import { confidenceBucket, confidenceLabel } from "@/lib/ui/confidence";
 
@@ -36,7 +37,7 @@ function MarketChipRow({ chip }: { chip: MarketChip }) {
   );
 }
 
-function MarketGroupSection({ group }: { group: MarketGroup }) {
+function MarketGroupSection({ group, onUpgrade }: { group: MarketGroup; onUpgrade?: () => void }) {
   if (group.locked) {
     return (
       <div style={{ position: "relative", overflow: "hidden", borderRadius: 12, border: "1px solid var(--am-line)", padding: "12px 14px", marginBottom: 12 }}>
@@ -47,7 +48,7 @@ function MarketGroupSection({ group }: { group: MarketGroup }) {
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 16 }}>
           <strong style={{ fontSize: 13 }}>{group.title}</strong>
           {group.note && <p style={{ margin: 0, fontSize: 12, color: "var(--am-muted)" }}>{group.note}</p>}
-          <Button variant="primary">Prova Pro</Button>
+          <Button variant="primary" onClick={() => onUpgrade?.()}>Prova Pro</Button>
         </div>
       </div>
     );
@@ -65,7 +66,7 @@ function MarketGroupSection({ group }: { group: MarketGroup }) {
   );
 }
 
-export function PickCardExpanded({ pick }: { pick: PickCardVM }) {
+export function PickCardExpanded({ pick, onUpgrade }: { pick: PickCardVM; onUpgrade?: () => void }) {
   const { detail, loading, error } = useMatchDetail(pick.externalEventId);
 
   const recap = (
@@ -79,9 +80,15 @@ export function PickCardExpanded({ pick }: { pick: PickCardVM }) {
         <Crest team={pick.awayTeam} sport={pick.sport} />
       </div>
       <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 13 }}>{pick.decision}</div>
-      <div style={{ marginBottom: 16 }}>
-        <ConfidenceMeter score={pick.confidenceScore} showPercent />
-      </div>
+      {pick.settled ? (
+        <div style={{ marginBottom: 16 }}>
+          <ResultBlock pick={pick} />
+        </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <ConfidenceMeter score={pick.confidenceScore} showPercent />
+        </div>
+      )}
     </>
   );
 
@@ -145,7 +152,7 @@ export function PickCardExpanded({ pick }: { pick: PickCardVM }) {
       </div>
 
       {groups.map((group) => (
-        <MarketGroupSection key={group.key} group={group} />
+        <MarketGroupSection key={group.key} group={group} onUpgrade={onUpgrade} />
       ))}
     </div>
   );
