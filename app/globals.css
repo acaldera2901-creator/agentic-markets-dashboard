@@ -8534,17 +8534,29 @@ button:disabled {
   padding: clamp(8px, 2vw, 20px) clamp(16px, 4vw, 56px) clamp(24px, 4vw, 48px); }
 
 .wp-msg { text-align: center; padding: 60px 0; font-size: 14px; color: var(--am-muted-2); }
-.wp-retry { margin-top: 14px; font-family: var(--font-mono), monospace; font-size: 12px;
-  padding: 8px 16px; border-radius: 9px; border: 1px solid var(--am-coral-b);
-  background: var(--am-coral-dim); color: var(--am-coral); cursor: pointer; }
+/* LEVEL-UP: retry = pulsante tattico secondario (spigolo vivo, mono uppercase) */
+.wp-retry { margin-top: 14px; display: inline-flex; align-items: center; justify-content: center;
+  height: 38px; padding: 0 18px; border-radius: var(--am-btn-radius);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  border: 1px solid var(--am-coral-b); background: var(--am-panel-2); color: var(--am-coral);
+  cursor: pointer; transition: background .12s ease, border-color .12s ease, box-shadow .12s ease; }
+.wp-retry:hover { background: var(--am-coral-dim); border-color: var(--am-coral); box-shadow: 0 6px 22px -8px var(--am-glow); }
+.wp-retry:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 
 /* la schedina */
-.wp-slip { position: relative; overflow: hidden; border-radius: 18px;
-  border: 1px solid var(--am-coral-b);
+/* LEVEL-UP: firma tattica — chamfer a bordo CHIUSO (accent coral) sull'artefatto
+   schedina. clip-path taglia i due angoli opposti (--ch); l'inset box-shadow fa
+   l'hairline sui 4 lati retti, i due bar-hairline -45° (::before/::after, sotto)
+   chiudono la diagonale. La firma è l'hairline, non l'ombra (coerente con /app:
+   .book-main/.edge-chamfer perdono la drop-shadow squadrata che il clip taglierebbe). */
+.wp-slip { position: relative; overflow: hidden; border: 0; border-radius: 0;
+  --_fe: var(--am-coral-b);
   background:
     radial-gradient(ellipse 440px 220px at 84% -10%, var(--am-coral-dim), transparent 70%),
     var(--am-panel);
-  box-shadow: 0 32px 80px -42px rgba(0,0,0,0.6), 0 0 0 1px var(--am-coral-dim); }
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: inset 0 0 0 1.5px var(--am-coral-b); }
 .wp-slip-top { display: flex; align-items: center; gap: 10px; padding: 14px 18px;
   border-bottom: 1px solid var(--am-coral-b);
   background: linear-gradient(180deg, var(--am-coral-dim), transparent); }
@@ -8595,12 +8607,19 @@ button:disabled {
 .wp-price { display: flex; align-items: baseline; gap: 8px; }
 .wp-price-full { font-family: var(--font-mono), monospace; font-size: 13px; text-decoration: line-through; color: var(--am-muted-2); }
 .wp-price-now { font-family: var(--font-mono), monospace; font-weight: 700; font-size: 22px; color: var(--am-text); letter-spacing: -0.02em; }
-.wp-cta { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-family: var(--font-display);
-  font-weight: 800; font-size: 14px; color: var(--am-coral-ink); text-decoration: none;
-  background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); padding: 11px 22px; border-radius: 11px;
-  border: 0; cursor: pointer; box-shadow: 0 10px 26px var(--am-coral-b); transition: transform .15s, box-shadow .2s; }
-.wp-cta:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 34px var(--am-coral-b); }
-.wp-cta:disabled { opacity: .6; cursor: default; }
+/* LEVEL-UP: unlock = pulsante tattico primario (spigolo vivo, JetBrains mono
+   uppercase, verde pieno, micro-glow su hover) — stessa voce di .btn-primary /app. */
+.wp-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-left: auto;
+  height: 42px; padding: 0 22px; border-radius: var(--am-btn-radius);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-weight: 700; font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--am-coral-ink); text-decoration: none;
+  background: var(--am-coral); border: 1px solid var(--am-coral); cursor: pointer;
+  transition: filter .12s ease, box-shadow .12s ease, transform .06s ease; }
+.wp-cta:hover:not(:disabled) { filter: brightness(1.07); box-shadow: 0 6px 22px -8px var(--am-glow); }
+.wp-cta:active:not(:disabled) { transform: translateY(1px); filter: brightness(.94); }
+.wp-cta:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
+.wp-cta:disabled { opacity: .5; cursor: default; }
 .wp-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .wp-pro { font-size: 12.5px; color: var(--am-muted); text-decoration: underline; }
 .wp-resp { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .06em;
@@ -8612,7 +8631,9 @@ button:disabled {
   padding: clamp(16px, 2.5vw, 32px) clamp(16px, 4vw, 56px) clamp(44px, 5vw, 76px); }
 .wp-hist-head { margin-bottom: clamp(20px, 2.5vw, 32px); }
 .wp-hist { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-.wp-hist-card { background: var(--am-panel); border: 1px solid var(--am-line); border-radius: 14px; padding: 15px 16px; }
+.wp-hist-card { position: relative; background: var(--am-panel); border: 0; border-radius: 0;
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge); padding: 16px; }
 .wp-hist-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
 .wp-hist-date { font-family: var(--font-mono), monospace; font-size: 12px; color: var(--am-muted); }
 .wp-hist-out { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono), monospace;
@@ -8710,7 +8731,9 @@ button:disabled {
 .wp-analysis { max-width: 1240px; margin: 0 auto; width: 100%;
   padding: clamp(16px, 4vw, 40px) clamp(16px, 4vw, 56px) clamp(8px, 2vw, 24px); }
 .wp-acards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; margin-top: 6px; }
-.wp-acard { background: var(--am-panel); border: 1px solid var(--am-line); border-radius: 16px;
+.wp-acard { position: relative; background: var(--am-panel); border: 0; border-radius: 0;
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
   padding: 18px clamp(14px, 2vw, 22px) 20px; }
 .wp-acard-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
   padding-bottom: 12px; border-bottom: 1px solid var(--am-line); }
@@ -8731,3 +8754,37 @@ button:disabled {
 .wp-unlock-list li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--am-text); }
 .wp-unlock-list li svg { width: 15px; height: 15px; flex: 0 0 auto; color: var(--am-coral); }
 @media (max-width: 380px) { .wp-acards { grid-template-columns: 1fr; } }
+
+/* ── LEVEL-UP: bar-hairline che CHIUDONO la diagonale del chamfer ────────────
+   Su schedina (coral) + pannelli analisi/storico (neutral) + KPI row della hero.
+   Stessa geometria di .book-main: centro (ch/2, ch/2), lunghezza ch·√2, rot -45°
+   → gli estremi combaciano coi vertici del taglio; il clip dell'elemento rifila
+   la metà esterna, resta un filo netto sulla diagonale. pointer-events:none e i
+   tagli cadono nel padding → niente z-index sui figli (overflow/contenuto intatti). */
+.wp-slip::before, .wp-slip::after,
+.wp-acard::before, .wp-acard::after,
+.wp-hist-card::before, .wp-hist-card::after,
+.wp-hero .lp-kpis::before, .wp-hero .lp-kpis::after {
+  content: ""; position: absolute; pointer-events: none; z-index: 0;
+  width: calc(var(--ch) * 1.41421); height: 1.6px;
+  background: var(--_fe, var(--am-frame-edge));
+}
+.wp-slip::before, .wp-acard::before, .wp-hist-card::before, .wp-hero .lp-kpis::before {
+  top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.wp-slip::after, .wp-acard::after, .wp-hist-card::after, .wp-hero .lp-kpis::after {
+  bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
+  transform: translate(50%, 50%) rotate(-45deg);
+}
+
+/* KPI row (solo Weekly Pick) → UNA cornice chamfer chiusa esterna (non per-KPI:
+   "cornici esterne, non ogni elementino"). Scoped a .wp-hero così la landing (.lp-kpis
+   editoriale, filo superiore) resta invariata. Il border-top diventa cornice piena. */
+.wp-hero .lp-kpis {
+  position: relative; border: 0; border-top: 0; border-radius: 0;
+  padding: clamp(16px, 2vw, 22px) clamp(18px, 2.6vw, 28px);
+  margin-top: clamp(28px, 3.5vw, 40px);
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
+}

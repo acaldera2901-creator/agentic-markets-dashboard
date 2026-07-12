@@ -6,7 +6,7 @@
 // originale via /app?mb=...&ref=CODICE, quindi il traffico da qui mantiene
 // l'attribution del creator.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 
 type SlipSelection = {
@@ -197,11 +197,7 @@ export default function CommunityPage() {
             resolved only in a useState initializer at mount. A full load applies
             the ?tab= deep-link correctly. */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional hard nav, see comment above */}
-        <a
-          href="/app?tab=match-builder"
-          className="text-xs font-mono px-4 py-2 rounded border transition-colors shrink-0"
-          style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
-        >
+        <a href="/app?tab=match-builder" className="btn-secondary shrink-0">
           {t.create}
         </a>
       </header>
@@ -210,8 +206,8 @@ export default function CommunityPage() {
         {/* #CREATOR-GATE-0626: upsell quando l'accesso non è pieno (Free/anon → none, Base → partial). */}
         {access !== "full" && (
           <div
-            className="rounded-lg border p-4 flex items-center justify-between gap-3"
-            style={{ borderColor: "var(--am-coral-b)", background: "var(--am-coral-dim)" }}
+            className="chamfer p-4 flex items-center justify-between gap-3"
+            style={{ "--surf": "var(--am-coral-dim)", "--bcol": "var(--am-coral-b)" } as CSSProperties}
           >
             <div className="min-w-0">
               <p className="text-sm font-bold" style={{ color: "var(--am-text)" }}>
@@ -222,11 +218,7 @@ export default function CommunityPage() {
               )}
             </div>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so the ?tab= deep-link resolves (see header note) */}
-            <a
-              href="/app?tab=plans"
-              className="text-xs font-mono px-4 py-2 rounded shrink-0"
-              style={{ background: "var(--am-coral)", color: "#fff", fontWeight: 700 }}
-            >
+            <a href="/app?tab=plans" className="btn-primary shrink-0">
               {t.seePlans}
             </a>
           </div>
@@ -234,11 +226,7 @@ export default function CommunityPage() {
         {error && (
           <div className="text-center py-16 space-y-3">
             <p className="text-sm font-mono" style={{ color: "var(--am-muted)" }}>{t.loadError}</p>
-            <button
-              onClick={retry}
-              className="text-xs font-mono px-4 py-2 rounded border transition-colors"
-              style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
-            >
+            <button onClick={retry} className="btn-secondary">
               {t.retry}
             </button>
           </div>
@@ -253,11 +241,7 @@ export default function CommunityPage() {
           </div>
         )}
         {slips?.map((slip) => (
-          <article
-            key={slip.id}
-            className="rounded-lg border p-4 space-y-3"
-            style={{ borderColor: "var(--am-line)", background: "var(--am-panel)" }}
-          >
+          <article key={slip.id} className="chamfer p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span
                 className="text-xs font-mono px-2 py-0.5 rounded border"
@@ -310,7 +294,7 @@ export default function CommunityPage() {
                 /* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so ?tab= resolves */
                 <a
                   href="/app?tab=plans"
-                  className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
+                  className="text-xs font-mono uppercase tracking-wider px-3 py-1.5 border transition-colors"
                   style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
                 >
                   {t.unlock}
@@ -318,7 +302,7 @@ export default function CommunityPage() {
               ) : (
                 <Link
                   href={`/app?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
-                  className="text-xs font-mono px-3 py-1.5 rounded border transition-colors"
+                  className="text-xs font-mono px-3 py-1.5 border transition-colors"
                   style={{ borderColor: "var(--am-line-2)", color: "var(--am-muted)" }}
                 >
                   {t.open}
