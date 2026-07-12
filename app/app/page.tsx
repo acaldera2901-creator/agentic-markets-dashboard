@@ -5284,7 +5284,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         hideHead
         hideExtraMarkets
       >
-        <MatchDetailSheet data={mdsData} />
+        <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
       </PredictionDetailModal>
     </>
   );
@@ -5700,7 +5700,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
         hideHead
         hideExtraMarkets
       >
-        <MatchDetailSheet data={mdsData} />
+        <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
       </PredictionDetailModal>
     </>
   );

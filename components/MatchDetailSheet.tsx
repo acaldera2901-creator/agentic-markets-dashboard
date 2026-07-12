@@ -80,7 +80,13 @@ function Ico({ id }: { id: string }) {
   );
 }
 
-export function MatchDetailSheet({ data }: { data: MdsData }) {
+export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideBookLinks?: boolean }) {
+  // #WC-GEO-GATE (Decreto Dignità, A2-B1/A2-B2): quando il caller (WcBoard, utenti
+  // IT) passa hideBookLinks, la sticky bet-bar (CTA + link "Apri su {book}" +
+  // quota combinata + disclaimer che nomina il book) sparisce del tutto — non
+  // basta azzerare l'URL, perché label/disclaimer citano il nome del book anche
+  // senza un href funzionante. Opzionale/default false: nessun impatto sul board
+  // principale (football), che non passa questo prop.
   // #FORTUNEPLAY-LIVE-ODDS-2: tutti i mercati FortunePlay, fetch SOLO all'apertura
   // (per-partita, cache lato server) → sezione "Altri mercati" collassabile.
   const [extraGroups, setExtraGroups] = useState<MdsGroup[]>([]);
@@ -251,63 +257,68 @@ export function MatchDetailSheet({ data }: { data: MdsData }) {
         </div>
       )}
 
-      {/* STICKY BET BAR */}
-      <div className="mds-betbar">
-        {expanded && legs.length > 0 && (
-          <div className="mds-legs">
-            {legs.map((l) => (
-              <div className="mds-leg" key={l.id}>
-                <div className="mds-ls">
-                  <span className="mds-lsel">{l.sel}</span>
-                  <span className="mds-lmkt">{l.mkt}</span>
-                </div>
-                {l.q && l.q > 1 ? <span className="mds-lq">{l.q.toFixed(2)}</span> : null}
-                <button type="button" className="mds-rm" aria-label="rimuovi" onClick={() => toggle(l.id)}><Ico id="x" /></button>
+      {/* STICKY BET BAR — intera sezione sparisce con hideBookLinks (CTA/nome
+          book/quota combinata/disclaimer citano tutti il bookmaker). */}
+      {!hideBookLinks && (
+        <>
+          <div className="mds-betbar">
+            {expanded && legs.length > 0 && (
+              <div className="mds-legs">
+                {legs.map((l) => (
+                  <div className="mds-leg" key={l.id}>
+                    <div className="mds-ls">
+                      <span className="mds-lsel">{l.sel}</span>
+                      <span className="mds-lmkt">{l.mkt}</span>
+                    </div>
+                    {l.q && l.q > 1 ? <span className="mds-lq">{l.q.toFixed(2)}</span> : null}
+                    <button type="button" className="mds-rm" aria-label="rimuovi" onClick={() => toggle(l.id)}><Ico id="x" /></button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        <div className="mds-bar">
-          <button type="button" className={`mds-info${expanded ? " open" : ""}`} onClick={() => legs.length && setExpanded((e) => !e)}>
-            <span className="mds-k">{legs.length ? countLabel.replace("{n}", String(legs.length)) : data.labels.schedina}</span>
-            <span className="mds-row">
-              <span className="mds-cmb">{priced.length ? combined.toFixed(2) : "—"}</span>
-              <span className="mds-qsuf">{priced.length ? (priced.length > 1 ? data.labels.quotaComb : data.labels.quotaOne) : data.labels.touch}</span>
-              {legs.length > 0 && <span className="mds-chevw"><Ico id="chev" /></span>}
-            </span>
-          </button>
-          {/* #MULTIBOOK-1: una CTA per book se >1 (scelta bookmaker), altrimenti singola */}
-          {data.books && data.books.length > 1 ? (
-            <div className="mds-ctas">
-              {data.books.map((b) => (
+            )}
+            <div className="mds-bar">
+              <button type="button" className={`mds-info${expanded ? " open" : ""}`} onClick={() => legs.length && setExpanded((e) => !e)}>
+                <span className="mds-k">{legs.length ? countLabel.replace("{n}", String(legs.length)) : data.labels.schedina}</span>
+                <span className="mds-row">
+                  <span className="mds-cmb">{priced.length ? combined.toFixed(2) : "—"}</span>
+                  <span className="mds-qsuf">{priced.length ? (priced.length > 1 ? data.labels.quotaComb : data.labels.quotaOne) : data.labels.touch}</span>
+                  {legs.length > 0 && <span className="mds-chevw"><Ico id="chev" /></span>}
+                </span>
+              </button>
+              {/* #MULTIBOOK-1: una CTA per book se >1 (scelta bookmaker), altrimenti singola */}
+              {data.books && data.books.length > 1 ? (
+                <div className="mds-ctas">
+                  {data.books.map((b) => (
+                    <a
+                      key={b.name}
+                      className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
+                      href={legs.length ? b.matchUrl : undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-disabled={legs.length === 0}
+                    >
+                      {(data.labels.openBook ?? "Apri su {book}").replace("{book}", b.name)}<Ico id="arrow" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
                 <a
-                  key={b.name}
                   className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-                  href={legs.length ? b.matchUrl : undefined}
+                  href={legs.length ? data.matchUrl : undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-disabled={legs.length === 0}
                 >
-                  {(data.labels.openBook ?? "Apri su {book}").replace("{book}", b.name)}<Ico id="arrow" />
+                  {ctaLabel}<Ico id="arrow" />
                 </a>
-              ))}
+              )}
             </div>
-          ) : (
-            <a
-              className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-              href={legs.length ? data.matchUrl : undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-disabled={legs.length === 0}
-            >
-              {ctaLabel}<Ico id="arrow" />
-            </a>
-          )}
-        </div>
-        <p className="mds-disc">{data.labels.disc}</p>
-      </div>
+            <p className="mds-disc">{data.labels.disc}</p>
+          </div>
 
-      <p className="mds-side">{data.labels.side}</p>
+          <p className="mds-side">{data.labels.side}</p>
+        </>
+      )}
     </div>
   );
 }
