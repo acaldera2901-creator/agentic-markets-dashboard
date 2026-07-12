@@ -70,11 +70,7 @@ export function LeaderboardView() {
   const showSystemRate = !loading && !error && systemSettled >= MIN_SYSTEM_SETTLED && systemHitRate != null;
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--am-bg)" }}>
-      <header style={{ padding: "16px 16px 8px", maxWidth: 480, width: "100%", margin: "0 auto" }}>
-        <h1 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 4px" }}>Classifica</h1>
-      </header>
-
+    <div>
       {!loading && !error && (
         <section style={{
           maxWidth: 480, width: "100%", margin: "0 auto", padding: "8px 16px 18px",
@@ -95,13 +91,7 @@ export function LeaderboardView() {
         </section>
       )}
 
-      <main style={{ flex: 1, maxWidth: 480, width: "100%", margin: "0 auto" }}>{body}</main>
-
-      <footer style={{ padding: "12px 16px", textAlign: "center", maxWidth: 480, width: "100%", margin: "0 auto" }}>
-        <p style={{ fontSize: 11, color: "var(--am-muted-2)", margin: 0 }}>
-          18+ · Gioco responsabile. Punti e hit-rate sono statistiche di gioco, non guadagni.
-        </p>
-      </footer>
+      <main style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>{body}</main>
     </div>
   );
 }

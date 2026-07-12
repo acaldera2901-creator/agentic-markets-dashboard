@@ -77,13 +77,7 @@ export function TrackRecordView() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--am-bg)" }}>
-      <header style={{ padding: "16px 16px 8px", maxWidth: 480, width: "100%", margin: "0 auto" }}>
-        <h1 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 4px" }}>
-          Come sono andati i nostri pronostici — risultati reali, niente cherry-picking
-        </h1>
-      </header>
-
+    <div>
       {!loading && !error && (
         <section style={{
           maxWidth: 480, width: "100%", margin: "0 auto", padding: "8px 16px 18px",
@@ -106,13 +100,7 @@ export function TrackRecordView() {
         </section>
       )}
 
-      <main style={{ flex: 1, maxWidth: 480, width: "100%", margin: "0 auto" }}>{body}</main>
-
-      <footer style={{ padding: "12px 16px", textAlign: "center", maxWidth: 480, width: "100%", margin: "0 auto" }}>
-        <p style={{ fontSize: 11, color: "var(--am-muted-2)", margin: 0 }}>
-          18+ · Gioco responsabile. Le previsioni sono stime statistiche del modello, non garanzia di vincita.
-        </p>
-      </footer>
+      <main style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>{body}</main>
     </div>
   );
 }

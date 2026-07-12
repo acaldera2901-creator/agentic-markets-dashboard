@@ -26,6 +26,6 @@ describe("ResultsScreen", () => {
     const link = screen.getByRole("link", { name: /risultati/i });
     expect(link).toHaveAttribute("aria-current", "page");
 
-    expect(screen.getAllByText(/18\+/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/18\+/).length).toBe(1);
   });
 });
