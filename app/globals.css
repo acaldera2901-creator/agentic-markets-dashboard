@@ -56,7 +56,9 @@
   --am-indigo:     var(--am-cobalt);
 
   /* Ambient wash + glow color (statico, non animato — fascia verde) */
-  --am-wash:       rgba(255,107,107,0.10);
+  /* LEVEL-UP 1b: --am-wash era rossastro residuo (stesso bug-class di --am-glow);
+     verde brand, alpha invariata. Alimenta il radial ambientale di pagina. */
+  --am-wash:       rgba(35,165,89,0.10);
   /* LEVEL-UP 2026-07-12: --am-glow era rossastro residuo pre-rebrand (bug);
      riportato al verde brand — micro-glow CTA su hover/focus, mai ambient. */
   --am-glow:       rgba(35,165,89,0.22);
@@ -76,7 +78,7 @@
   --accent: var(--am-panel-3);
   --border: var(--am-line);
   --input: var(--am-line);
-  --ring: rgba(255,107,107,0.40);
+  --ring: rgba(35,165,89,0.40);  /* LEVEL-UP 1b: focus ring legacy → verde */
   --radius: 0.5rem;
 
   /* Legacy aliases — keep existing dashboard CSS working, point at --am-* */
@@ -133,7 +135,7 @@
   --am-coral-b:    rgba(21,128,61,0.30);
   --am-coral-ink:  #FFFFFF;   /* testo chiaro leggibile su fill green (light) */
 
-  --am-wash:       rgba(229,72,77,0.07);
+  --am-wash:       rgba(21,128,61,0.07);  /* LEVEL-UP 1b: → verde (light) */
   /* LEVEL-UP 2026-07-12: glow verde anche in light (era rossastro residuo). */
   --am-glow:       rgba(35,165,89,0.16);
 
@@ -142,7 +144,7 @@
   --am-muted-2:    #79818D;
   --am-hi:         rgba(255,255,255,0.9);
 
-  --ring:         rgba(229,72,77,0.38);
+  --ring:         rgba(21,128,61,0.38);  /* LEVEL-UP 1b: focus ring legacy → verde */
 }
 
 * {
@@ -6085,6 +6087,34 @@ button:disabled {
 .chamfer-sm::after { inset: 1px; background: var(--surf, var(--am-panel)); }
 .chamfer > *,
 .chamfer-sm > * { position: relative; z-index: 1; }
+
+/* ── LEVEL-UP: chamfer sulla card "Edge del giorno" — STAGE 1b 2026-07-12 ─────
+   .featured ha già .featured::before (radial glow) + bg/border/radius/overflow
+   propri → .chamfer non si applica direttamente (collisione pseudo). Si wrappa
+   in <div class="edge-chamfer chamfer">: il wrapper porta hairline + superficie
+   chamfer; la .featured interna viene azzerata (bg/border/radius/shadow) e
+   ri-clippata alla STESSA sagoma (var(--ch)=14px) così il radial glow resta
+   DENTRO il taglio (niente sbordo) e il bordo obliquo resta hairline pulito.
+   Il contenuto reale vive entro il padding (.big/.why 26-28px) → mai clippato
+   ai 14px dei due angoli. LIMITE: si perde la drop-shadow della card (firma =
+   hairline, non ombra, come le stat-tile); upgrade path = nessuno necessario. */
+.edge-chamfer {
+  --surf: var(--am-bg-2);
+  --bcol: var(--am-line-2);
+  margin: 14px;
+}
+.edge-chamfer > .featured {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+}
 
 /* ---- TICKER (mockup .ticker) ---- */
 .am-ticker {

@@ -7641,6 +7641,7 @@ function FeaturedEdge({
   // Locked / teaser variant — never expose pick name or probability.
   if (!isPremiumClient) {
     return (
+      <div className="edge-chamfer chamfer">
       <section className="featured featured-locked" aria-label={eyebrow}>
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -7670,10 +7671,12 @@ function FeaturedEdge({
           </p>
         </div>
       </section>
+      </div>
     );
   }
 
   return (
+    <div className="edge-chamfer chamfer">
     <section className="featured" aria-label={eyebrow}>
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -7707,6 +7710,7 @@ function FeaturedEdge({
         <p className="line">{why}</p>
       </div>
     </section>
+    </div>
   );
 }
 
