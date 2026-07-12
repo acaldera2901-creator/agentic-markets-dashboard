@@ -8,8 +8,8 @@ function kickoffLabel(iso: string): string {
   return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function PickCard({ pick, pickOfDay, onOpen }: {
-  pick: PickCardVM; pickOfDay?: boolean; onOpen?: (id: string) => void;
+export function PickCard({ pick, pickOfDay, onOpen, onUpgrade }: {
+  pick: PickCardVM; pickOfDay?: boolean; onOpen?: (id: string) => void; onUpgrade?: () => void;
 }) {
   if (pick.locked) {
     return (
@@ -21,7 +21,7 @@ export function PickCard({ pick, pickOfDay, onOpen }: {
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}>
           <strong style={{ fontSize: 15 }}>Pronostico Pro</strong>
           <p style={{ margin: 0, fontSize: 12, color: "var(--am-muted)" }}>Sblocca tutti i pick di oggi.</p>
-          <Button variant="primary">Prova Pro</Button>
+          <Button variant="primary" onClick={() => onUpgrade?.()}>Prova Pro</Button>
         </div>
       </div>
     );
