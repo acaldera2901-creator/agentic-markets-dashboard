@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useProfile } from "./use-profile";
+import { ReferralSection } from "./ReferralSection";
 import { BottomNav } from "@/features/feed/BottomNav";
 import { Chip, Button } from "@/components/ui";
 import { PUBLIC_PAID_PLANS, planPriceCopy, type PublicPlanKey } from "@/lib/commercial-plan";
@@ -125,7 +126,9 @@ export function ProfileScreen() {
           </div>
         </section>
 
-        <div data-testid="referral-slot" />
+        <div data-testid="referral-slot">
+          <ReferralSection />
+        </div>
 
         <section>
           <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--am-muted)", margin: "0 0 8px" }}>Lingua</h2>

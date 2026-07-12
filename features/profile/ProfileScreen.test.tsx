@@ -5,14 +5,21 @@ import userEvent from "@testing-library/user-event";
 const mockUseProfile = vi.fn();
 vi.mock("./use-profile", () => ({ useProfile: () => mockUseProfile() }));
 
+const mockUseReferral = vi.fn();
+vi.mock("./use-referral", () => ({ useReferral: () => mockUseReferral() }));
+
 import { ProfileScreen } from "./ProfileScreen";
 
 const logoutMock = vi.fn().mockResolvedValue(undefined);
+const claimMock = vi.fn();
 
 beforeEach(() => {
   mockUseProfile.mockReset();
   logoutMock.mockClear();
   localStorage.clear();
+  mockUseReferral.mockReturnValue({
+    code: null, signups: 0, paid: 0, loading: false, error: null, claim: claimMock,
+  });
 });
 
 describe("ProfileScreen", () => {
