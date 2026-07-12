@@ -340,15 +340,30 @@ button:disabled {
   align-items: start;
 }
 
+/* ── LEVEL-UP: firma tattica (chamfer) sulle CORNICI desk/pagina — STAGE 1c ───
+   Angolo obliquo sui due angoli opposti (--ch=14px, cornici grandi). Tecnica:
+   clip-path taglia i due angoli; l'hairline lo disegna un INSET box-shadow, che
+   SEGUE il taglio obliquo (il border verrebbe invece tranciato lungo la diagonale).
+   Scelta glass: --am-panel è OPACO (#131519 dark / #FFFFFF light) → il
+   backdrop-filter blur era di fatto un no-op (niente vetro reale da preservare);
+   tengo la superficie opaca esistente + il blur (innocuo, clippato). Niente
+   pseudo, niente z-index sui figli → sticky/scroll/overflow interni intatti.
+   Solo le cornici ESTERNE prendono il chamfer; rail-item/chip/meter invariati. */
 .sports-rail,
 .book-main,
 .betslip,
 .glass-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  border: 0;
+  border-radius: 0;
   background: var(--panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .glass-card {
@@ -357,7 +372,8 @@ button:disabled {
 }
 
 .glass-card:hover {
-  border-color: var(--line-2);
+  /* border rimosso (chamfer via clip-path) → l'hairline hover vive sull'inset shadow */
+  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 
 .sports-rail,
