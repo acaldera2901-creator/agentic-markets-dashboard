@@ -5526,6 +5526,97 @@ button:disabled {
 .wc-winner-note { margin: 12px 0 0; font-size: 11px; line-height: 1.55; color: var(--am-muted-2); }
 .wc-winner-note strong { color: var(--am-text); }
 
+/* ── LEVEL-UP WORLD CUP: firma tattica sulle pagine /world-cup — STAGE 1f ─────
+   Estende la stessa identità del board /app alle cornici WC. Tre trattamenti,
+   per gerarchia (mai "ogni riga"):
+   1) CORNICI/CARD ESTERNE (rail-context, gruppi, roster, "who wins") → chamfer
+      bordo CHIUSO con la tecnica delle cornici desk (.glass-card): clip-path
+      taglia i due angoli opposti, un inset box-shadow disegna l'hairline sui 4
+      lati retti, due bar ruotati -45° chiudono le due diagonali. Theme-aware via
+      --am-frame-edge (filo chiaro su dark, scuro su light, override in :root).
+   2) TILE PICCOLE-DISPLAY (celle countdown, glyph hero) → chamfer-sm doppio-layer
+      (::before bordo / ::after superficie), --ch-sm=10px — come le stat-tile /app.
+   3) Controlli di navigazione (back pill) → spigolo vivo + focus verde.
+   Restano volutamente NEUTRE: righe fixture/timeline, chip squad, meter/bar,
+   i segmented control (.wc-ref-tabs/.wc-stage-filter, parity con .am-seg che su
+   /app è ancora arrotondato) — altrimenti la firma affolla e perde intenzione. */
+
+/* 1) Cornici/card esterne — chamfer bordo chiuso (--ch = 14px) */
+.wc-aside-card,
+.wc-group-card,
+.wc-roster-card,
+.wc-winner-card {
+  --_fe: var(--am-frame-edge);
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+}
+.wc-aside-card::before,  .wc-aside-card::after,
+.wc-group-card::before,  .wc-group-card::after,
+.wc-roster-card::before, .wc-roster-card::after,
+.wc-winner-card::before, .wc-winner-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  width: calc(var(--ch) * 1.41421);
+  height: 1.6px;
+  background: var(--_fe);
+}
+.wc-aside-card::before, .wc-group-card::before, .wc-roster-card::before, .wc-winner-card::before {
+  top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.wc-aside-card::after, .wc-group-card::after, .wc-roster-card::after, .wc-winner-card::after {
+  bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
+  transform: translate(50%, 50%) rotate(-45deg);
+}
+/* group-card era interattivo via border-color hover (border ora rimosso) →
+   l'hover vive sull'hairline: inset shadow + diagonale seguono --am-frame-edge-hover */
+.wc-group-card:hover {
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge-hover);
+  --_fe: var(--am-frame-edge-hover);
+}
+
+/* 2) Tile piccole-display — chamfer-sm doppio-layer (--ch-sm = 10px).
+   Superficie via ::after (inset 1px), bordo via ::before; il filo usa
+   --am-chamfer-line così legge anche su light. Contenuto sopra (z-index 1). */
+.wc-countdown-cell,
+.wc-hero-glyph {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.wc-countdown-cell::before, .wc-countdown-cell::after,
+.wc-hero-glyph::before,     .wc-hero-glyph::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  clip-path: polygon(
+    var(--ch-sm) 0, 100% 0,
+    100% calc(100% - var(--ch-sm)), calc(100% - var(--ch-sm)) 100%,
+    0 100%, 0 var(--ch-sm)
+  );
+}
+.wc-countdown-cell::before, .wc-hero-glyph::before { inset: 0; background: var(--am-chamfer-line); }
+.wc-countdown-cell::after,  .wc-hero-glyph::after  { inset: 1px; background: var(--am-panel); }
+.wc-countdown-cell > *, .wc-hero-glyph > * { position: relative; z-index: 1; }
+
+/* 3) Back pill → controllo tattico: spigolo vivo + focus verde (parity btn tattici) */
+.wc-topbar-back { border-radius: 0; }
+.wc-topbar-back:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+
 /* ============================================================================
    BETS VIEW REBUILD — canonical prediction card (.pred), sport band & 12-col grid.
    Ported from docs/design-craft/mockups/redesign-direction-v2.html and mapped
