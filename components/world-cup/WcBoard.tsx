@@ -370,7 +370,12 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
   return out.join(" ");
 }
 
-function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: LiveScore | null }) {
+function WcCard({ p, fp: fpRaw, live, booksBlocked }: { p: ProjectedRow; fp?: FpOddsEntry; live?: LiveScore | null; booksBlocked?: boolean }) {
+  // #WC-GEO-GATE (Decreto Dignità, A2-B1/A2-B2): utenti IT → nessuna quota/link
+  // FortunePlay. Trattare `fp` come assente rimuove, per lo stesso invariante già
+  // usato dal resto del componente (gruppi/quote/badge "FortunePlay" esistono SOLO
+  // se `fp` è presente), quote O/U, badge sorgente book e value dal modello.
+  const fp = booksBlocked ? undefined : fpRaw;
   const [showWhy, setShowWhy] = useState(false);
   const home = canonTeam(p.home_team) || "Home";
   const away = canonTeam(p.away_team) || "Away";
@@ -558,7 +563,8 @@ function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: Liv
         value: fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
-      matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
+      // A2-B1/A2-B2: mai il landing FortunePlay (nemmeno il generico) per IT.
+      matchUrl: booksBlocked ? "" : (fp?.matchUrl || FORTUNEPLAY_BET_URL),
       fpMatchId: fp?.id ?? null,
       books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
       moreLabel: L2("Altri mercati FortunePlay", "More FortunePlay markets"),
@@ -697,14 +703,18 @@ function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: Liv
                 {showWhy ? (lang === "it" ? "Nascondi" : "Hide") : (lang === "it" ? "Mostra" : "Show")} <span className="ar">→</span>
               </button>
               {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (singolo partner). */}
-              <a
-                className="betbtn"
-                href={FORTUNEPLAY_BET_URL}
-                target="_blank"
-                rel="nofollow sponsored noopener noreferrer"
-              >
-                {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
-              </a>
+              {/* #WC-GEO-GATE (Decreto Dignità, A2-B1): niente link-book per IT — la
+                  .betbtn (gated su booksBlocked) sparisce, mirror del board principale. */}
+              {!booksBlocked && (
+                <a
+                  className="betbtn"
+                  href={FORTUNEPLAY_BET_URL}
+                  target="_blank"
+                  rel="nofollow sponsored noopener noreferrer"
+                >
+                  {isLive ? (lang === "it" ? "Live — Piazza" : "Live — Place bet") : (lang === "it" ? "Piazza scommessa" : "Place bet")}
+                </a>
+              )}
               <span className="model">{model}</span>
               <span className="gate">Pro</span>
             </div>
@@ -759,7 +769,7 @@ function WcCard({ p, fp, live }: { p: ProjectedRow; fp?: FpOddsEntry; live?: Liv
         hideExtraMarkets
       >
         {/* #WC-UNIFY-0702: stessa scheda del board principale + analisi WC (Perché/Deep) sotto. */}
-        <MatchDetailSheet data={mdsData} />
+        <MatchDetailSheet data={mdsData} hideBookLinks={booksBlocked} />
         <div className="pred">{analysisNode}</div>
       </PredictionDetailModal>
     </>
@@ -775,6 +785,17 @@ export default function WcBoard() {
   const [liveMap, setLiveMap] = useState<Record<string, LiveScore>>({});
   // #WC-UNIFY-0702: quote live FortunePlay (stesso endpoint del board principale).
   const [fpOdds, setFpOdds] = useState<Record<string, FpOddsEntry>>({});
+  // #WC-GEO-GATE (Decreto Dignità, A2-B1/A2-B2): nasconde i link-book agli utenti
+  // IT. Mirror esatto del board principale (app/app/page.tsx) — stesso endpoint
+  // server-side /api/geo-books (geo non falsificabile dal client), default false
+  // (mostra) fino alla risposta.
+  const [booksBlocked, setBooksBlocked] = useState(false);
+  useEffect(() => {
+    fetch("/api/geo-books", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBooksBlocked(!!d?.blocked))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -830,7 +851,7 @@ export default function WcBoard() {
   const grid = (
     <div className="wc-board-grid">
       {rows.map((p) => (
-        <WcCard key={p.id} p={p} fp={fpOdds[fpPairKey("soccer", p.home_team ?? "", p.away_team ?? "", p.starts_at ?? null) ?? ""]} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} />
+        <WcCard key={p.id} p={p} fp={fpOdds[fpPairKey("soccer", p.home_team ?? "", p.away_team ?? "", p.starts_at ?? null) ?? ""]} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} booksBlocked={booksBlocked} />
       ))}
     </div>
   );
