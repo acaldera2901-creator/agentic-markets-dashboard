@@ -15,7 +15,7 @@ const OUTCOME_STYLE: Record<"won" | "lost" | "void", { color: string; bg: string
   void: { color: "var(--am-muted)",    bg: "var(--am-inset)",        border: "var(--am-line)",       glyph: "–" },
 };
 
-function OutcomeBadge({ result }: { result: "won" | "lost" | "void" }) {
+export function OutcomeBadge({ result }: { result: "won" | "lost" | "void" }) {
   const label = pickOutcomeLabel(result);
   if (!label) return null;
   const s = OUTCOME_STYLE[result];
@@ -33,7 +33,7 @@ function OutcomeBadge({ result }: { result: "won" | "lost" | "void" }) {
 
 // Blocco risultato (sostituisce ConfidenceMeter una volta settled): punteggio
 // finale pubblico + badge esito. Usato sia nello stato non-locked che locked.
-function ResultBlock({ pick }: { pick: PickCardVM }) {
+export function ResultBlock({ pick }: { pick: PickCardVM }) {
   if (!pick.result) return null;
   return (
     <div style={{

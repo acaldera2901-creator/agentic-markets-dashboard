@@ -3,6 +3,7 @@
 import type { PickCardVM } from "./pick-view-model";
 import { useMatchDetail } from "./use-match-detail";
 import { buildAllGroups, buildModelVsMarket, type MarketChip, type MarketGroup } from "./market-groups";
+import { ResultBlock } from "./PickCard";
 import { Crest, SportIcon, Chip, ConfidenceMeter, Button, type ChipVariant } from "@/components/ui";
 import { confidenceBucket, confidenceLabel } from "@/lib/ui/confidence";
 
@@ -79,9 +80,15 @@ export function PickCardExpanded({ pick }: { pick: PickCardVM }) {
         <Crest team={pick.awayTeam} sport={pick.sport} />
       </div>
       <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 13 }}>{pick.decision}</div>
-      <div style={{ marginBottom: 16 }}>
-        <ConfidenceMeter score={pick.confidenceScore} showPercent />
-      </div>
+      {pick.settled ? (
+        <div style={{ marginBottom: 16 }}>
+          <ResultBlock pick={pick} />
+        </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <ConfidenceMeter score={pick.confidenceScore} showPercent />
+        </div>
+      )}
     </>
   );
 

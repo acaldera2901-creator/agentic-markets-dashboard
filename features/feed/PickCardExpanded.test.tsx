@@ -50,4 +50,19 @@ describe("PickCardExpanded", () => {
     render(<PickCardExpanded pick={vm} />);
     expect(screen.getByText(/qualcosa è andato storto/i)).toBeInTheDocument();
   });
+  it("settled won + finalScore → recap mostra punteggio + badge esito, niente ConfidenceMeter", () => {
+    mockDetail.mockReturnValue({ detail: null, loading: false, error: null });
+    const settledVm: PickCardVM = { ...vm, result: "won", finalScore: "2-1", settled: true };
+    render(<PickCardExpanded pick={settledVm} />);
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto")).toBeInTheDocument();
+    expect(document.querySelector('[data-outcome="won"]')).toBeInTheDocument();
+    expect(screen.queryByText(/Sicurezza/i)).toBeNull();
+  });
+  it("non-settled → ConfidenceMeter presente come prima", () => {
+    mockDetail.mockReturnValue({ detail: null, loading: false, error: null });
+    render(<PickCardExpanded pick={vm} />);
+    expect(screen.getByText(/Sicurezza/i)).toBeInTheDocument();
+    expect(document.querySelector("[data-outcome]")).toBeNull();
+  });
 });
