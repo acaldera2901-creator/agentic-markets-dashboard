@@ -7,6 +7,7 @@ import { withAffiliate } from "@/lib/affiliate";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { buildSoftLookup } from "@/lib/soft-lookup";
+import { parseFinalScore } from "./final-score";
 
 export const dynamic = "force-dynamic";
 
@@ -184,7 +185,11 @@ export async function GET(req: Request) {
   const predictions = served.map((row) => {
     const rank = rankById.get((row as { id: string }).id) ?? Infinity;
     const projected = projectPrediction(row as unknown as Record<string, unknown>, state, rank);
-    return projected.locked ? projected : withAffiliate(projected);
+    const result = projected.locked ? projected : withAffiliate(projected);
+    // final_score (#021): a real result is a public fact (see /api/v2/history),
+    // so it's attached after projection/gating and visible on locked rows too.
+    const final_score = parseFinalScore((row as { notes?: string | null }).notes ?? null);
+    return { ...result, final_score };
   });
 
   // Access bug fix (2026-06-06): this route projects per-session
