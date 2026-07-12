@@ -48,6 +48,13 @@ describe("PickCard", () => {
     expect(screen.getByText("Non riuscito").closest("[data-outcome]")).toHaveAttribute("data-outcome", "lost");
   });
 
+  it("settled void: mostra 'Annullato' con data-outcome void", () => {
+    render(<PickCard pick={vm({ settled: true, result: "void", finalScore: "1-1" })} />);
+    const badge = screen.getByText("Annullato");
+    expect(badge.closest('[data-outcome="void"]')).toBeInTheDocument();
+    expect(screen.getByText("1-1")).toBeInTheDocument();
+  });
+
   it("settled + locked: mostra punteggio + esito ma non la decisione; 'Prova Pro' presente", () => {
     render(<PickCard pick={vm({ locked: true, settled: true, result: "won", finalScore: "2-1" })} />);
     expect(screen.getByText("2-1")).toBeInTheDocument();
