@@ -22,6 +22,11 @@
   /* Borders — neutral-cool, low chroma for depth */
   --am-line:       #21252C;
   --am-line-2:     #2C313A;
+  /* LEVEL-UP 1c+: hairline delle CORNICI chamfer (rail/book-main/betslip/glass-card).
+     Su dark serve un filo CHIARO (i --line neutri spariscono sul quasi-nero) → white
+     alpha; su light un filo scuro. Fa leggere il taglio obliquo senza fare "gabbia". */
+  --am-frame-edge:       rgba(255,255,255,0.20);
+  --am-frame-edge-hover: rgba(255,255,255,0.34);
 
   /* Brand accents — green primary (rebrand 2026-06-22, da logo BetrEdge verde) */
   --am-coral:      #23A559;   /* primary: CTA, nav attiva, top-pick (brand green) */
@@ -116,6 +121,8 @@
 
   --am-line:       #E3E6EB;
   --am-line-2:     #D2D7DE;
+  --am-frame-edge:       rgba(18,22,28,0.22);   /* LEVEL-UP 1c+: filo scuro su light */
+  --am-frame-edge-hover: rgba(18,22,28,0.36);
 
   --am-coral:      #15803D;   /* primary su light, contrasto AA come testo/bordo (brand green) */
   --am-coral-2:    #1B9148;   /* fill/gradiente */
@@ -363,7 +370,7 @@ button:disabled {
     100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
     0 100%, 0 var(--ch)
   );
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
 }
 
 .glass-card {
@@ -373,7 +380,7 @@ button:disabled {
 
 .glass-card:hover {
   /* border rimosso (chamfer via clip-path) → l'hairline hover vive sull'inset shadow */
-  box-shadow: inset 0 0 0 1px var(--line-2);
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge-hover);
 }
 
 .sports-rail,
