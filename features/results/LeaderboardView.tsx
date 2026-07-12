@@ -10,6 +10,7 @@ function RankBadge({ rank }: { rank: number }) {
   const isTop3 = rank <= 3;
   return (
     <span
+      data-top3={isTop3 ? "true" : undefined}
       style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         width: 26, height: 26, borderRadius: "50%",
@@ -38,7 +39,7 @@ function LeaderboardRowItem({ row }: { row: LbRow }) {
         </div>
         <div style={{ fontSize: 11, color: "var(--am-muted)" }}>
           <span>{row.betsWon}/{row.betsTotal}</span>
-          {row.hitRate != null && <> · <span>{row.hitRate}</span></>}
+          {row.hitRate != null && <> · <span>{typeof row.hitRate === "number" ? `${row.hitRate}%` : row.hitRate}</span></>}
         </div>
       </div>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", color: "var(--am-coral)" }}>
