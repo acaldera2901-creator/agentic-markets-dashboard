@@ -8519,8 +8519,9 @@ button:disabled {
    Riusa il sistema lp-* (eyebrow, what-head, kpis, step) + superfici dedicate
    .wp-* modellate sul terminale lp-term (superficie-strumento, NON tabella). */
 .wp-page { position: relative; min-height: 100vh; background: var(--am-bg); color: var(--am-text); display: flex; flex-direction: column; }
+/* EST2: glow ricentrato (era 22%) → segue la colonna-biglietto ora centrata */
 .wp-page::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 620px; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 900px 420px at 22% -6%, var(--am-coral-dim), transparent 65%); }
+  background: radial-gradient(ellipse 900px 420px at 50% -6%, var(--am-coral-dim), transparent 65%); }
 .wp-page > * { position: relative; z-index: 1; }
 .wp-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px clamp(16px, 4vw, 56px); border-bottom: 1px solid var(--am-line); }
@@ -8530,7 +8531,11 @@ button:disabled {
 .wp-nav-tag { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10.5px; letter-spacing: .14em;
   text-transform: uppercase; color: var(--am-muted-2); }
 
-.wp-hero { max-width: 1240px; margin: 0 auto; width: 100%;
+/* EST2: la hero condivide la MISURA della schedina/brief (720) → hero + "La
+   settimana" + slip formano UNA colonna centrata (il "biglietto") invece della
+   vecchia banda 1240 con testo impaccato a sinistra e metà destra vuota su wide.
+   Le griglie archivio sotto (.wp-analysis / .wp-hist-sec) restano a 1240. */
+.wp-hero { max-width: 720px; margin: 0 auto; width: 100%;
   padding: clamp(40px, 6vw, 88px) clamp(16px, 4vw, 56px) clamp(20px, 3vw, 36px); }
 .wp-hero .lp-what-head { max-width: 19ch; }
 
