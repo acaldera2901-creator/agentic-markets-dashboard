@@ -15,7 +15,7 @@ import { LoginSheet } from "../onboarding/LoginSheet";
 type AuthSheetKind = "signup" | "login" | null;
 
 function FeedScreenInner() {
-  const { user, plan } = useAuth();
+  const { user, plan, loading: authLoading } = useAuth();
   const { openUpgrade } = usePaywall();
   const { picks, loading, error } = usePicks();
   const [openPickId, setOpenPickId] = useState<string | null>(null);
@@ -51,7 +51,7 @@ function FeedScreenInner() {
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--am-muted)" }}>Oggi</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-          {user ? (
+          {authLoading ? null : user ? (
             <span style={{ fontSize: 12, color: "var(--am-muted)" }}>
               {user.name ?? user.identifier}{plan ? ` · ${plan}` : ""}
             </span>

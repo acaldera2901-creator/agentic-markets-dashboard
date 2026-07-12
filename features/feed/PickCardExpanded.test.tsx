@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { PickCardVM } from "./pick-view-model";
 
 const vm: PickCardVM = { id: "1", sport: "football", competition: "Serie A", kickoff: "2026-07-11T18:45:00Z",
@@ -48,5 +49,13 @@ describe("PickCardExpanded", () => {
     mockDetail.mockReturnValue({ detail: null, loading: false, error: "boom" });
     render(<PickCardExpanded pick={vm} />);
     expect(screen.getByText(/qualcosa è andato storto/i)).toBeInTheDocument();
+  });
+  it("soft locked group: Prova Pro chiama onUpgrade", async () => {
+    const onUpgrade = vi.fn();
+    mockDetail.mockReturnValue({ detail: richDetail, loading: false, error: null });
+    render(<PickCardExpanded pick={vm} onUpgrade={onUpgrade} />);
+    const button = screen.getByRole("button", { name: /Prova Pro/i });
+    await userEvent.click(button);
+    expect(onUpgrade).toHaveBeenCalledOnce();
   });
 });
