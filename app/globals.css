@@ -57,7 +57,14 @@
 
   /* Ambient wash + glow color (statico, non animato — fascia verde) */
   --am-wash:       rgba(255,107,107,0.10);
-  --am-glow:       rgba(255,107,107,0.18);
+  /* LEVEL-UP 2026-07-12: --am-glow era rossastro residuo pre-rebrand (bug);
+     riportato al verde brand — micro-glow CTA su hover/focus, mai ambient. */
+  --am-glow:       rgba(35,165,89,0.22);
+
+  /* LEVEL-UP tactical tokens — spigolo vivo (controlli) + chamfer (pannelli) */
+  --am-btn-radius: 0px;   /* pulsanti: taglio tattico, spigolo vivo pieno */
+  --ch:            14px;  /* chamfer pannelli grandi */
+  --ch-sm:         10px;  /* chamfer pannelli piccoli (stat-tile) */
 
   /* Typography */
   --am-text:       #EDEFF2;
@@ -127,7 +134,8 @@
   --am-coral-ink:  #FFFFFF;   /* testo chiaro leggibile su fill green (light) */
 
   --am-wash:       rgba(229,72,77,0.07);
-  --am-glow:       rgba(229,72,77,0.12);
+  /* LEVEL-UP 2026-07-12: glow verde anche in light (era rossastro residuo). */
+  --am-glow:       rgba(35,165,89,0.16);
 
   --am-text:       #14171C;
   --am-muted:      #4A515B;
@@ -4092,44 +4100,91 @@ button:disabled {
   border-radius: 999px;
 }
 
-.btn-primary {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid var(--am-coral-b);
-  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #1A0B05;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 6px 18px -8px var(--am-glow);
-  transition: filter .15s ease, box-shadow .15s ease;
-}
-
-.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 8px 22px -8px var(--am-glow); }
-
-/* Light: usa il token "fill/gradiente" (--am-coral-2 #FF6B6B) come estremo coral
-   del gradiente. Il dark-text #1A0B05 passa AA con margine pieno (orange 6.36,
-   coral 6.92) restando entro 4.5:1 su tutto il gradiente; --am-coral (#E5484D,
-   estremo brick) era AA-borderline (4.90). Estetica invariata, solo light. */
-:root[data-theme="light"] .btn-primary {
-  background: linear-gradient(135deg, var(--am-orange), var(--am-coral-2));
-}
-
-.btn-secondary {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid var(--am-line);
-  background: var(--am-panel-2);
-  color: var(--text);
-  font-size: 13px;
+/* ── LEVEL-UP button system (tattico) — 2026-07-12 ──────────────────────────
+   Spigolo vivo 0px (--am-btn-radius), label JetBrains Mono 700 uppercase
+   letter-spacing .05em, focus-ring verde 2px sempre (tastiera), micro-glow
+   verde solo su hover/focus, active press -1px, disabled opacity .38.
+   Un solo accento (verde); rosso SOLO come outline su .btn-danger (semantica
+   loss/void, mai fill decorativo). */
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--am-btn-radius);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: opacity .15s;
+  transition: filter .12s ease, box-shadow .12s ease, background .12s ease,
+              border-color .12s ease, color .12s ease, transform .06s ease;
+}
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible,
+.btn-danger:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+.btn-primary:active,
+.btn-secondary:active,
+.btn-ghost:active,
+.btn-danger:active { transform: translateY(1px); }
+.btn-primary:disabled, .btn-primary[disabled],
+.btn-secondary:disabled, .btn-secondary[disabled],
+.btn-ghost:disabled, .btn-ghost[disabled],
+.btn-danger:disabled, .btn-danger[disabled] {
+  opacity: .38;
+  box-shadow: none;
+  filter: none;
+  pointer-events: none;
 }
 
-.btn-secondary:hover { opacity: .85; }
+/* Primary — verde pieno. Testo via --am-coral-ink (near-black in dark #06140C,
+   white in light) → contrasto AA su entrambi i temi senza override manuale. */
+.btn-primary {
+  background: var(--am-coral);
+  border-color: var(--am-coral);
+  color: var(--am-coral-ink);
+}
+.btn-primary:hover { filter: brightness(1.07); box-shadow: 0 6px 22px -8px var(--am-glow); }
+.btn-primary:active { filter: brightness(.94); }
+
+/* Secondary — surface-2 + hairline verde, label verde. */
+.btn-secondary {
+  background: var(--am-panel-2);
+  border-color: var(--am-coral-b);
+  color: var(--am-coral);
+}
+.btn-secondary:hover {
+  background: var(--am-coral-dim);
+  border-color: var(--am-coral);
+  box-shadow: 0 6px 22px -8px var(--am-glow);
+}
+
+/* Ghost — terziario trasparente. */
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--am-muted);
+}
+.btn-ghost:hover { background: var(--am-panel-2); color: var(--am-text); }
+
+/* Danger — annulla/void: SOLO outline rosso, mai fill decorativo. */
+.btn-danger {
+  background: transparent;
+  border-color: var(--am-negative-b);
+  color: var(--am-negative);
+}
+.btn-danger:hover { background: var(--am-negative-dim); border-color: var(--am-negative); }
 
 .lang-toggle {
   height: 32px;
@@ -5993,6 +6048,44 @@ button:disabled {
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted-2);
 }
 
+/* ── LEVEL-UP chamfer (firma pannelli) — 2026-07-12 ──────────────────────────
+   Angolo obliquo su angoli opposti (alto-sx + basso-dx). Hairline pulito anche
+   sul taglio via doppio-layer pseudo (clip-path da solo cancella la linea):
+   ::before = colore-bordo (inset 0), ::after = superficie (inset 1px), contenuto
+   sopra a z-index 1. Config via --bcol/--surf (default line/panel).
+   ⚠️ Applicare a WRAPPER se il target ha già ::before/::after (lezione "trappole
+   redesign"): qui il target è .am-kpi (stat-tile), verificato senza pseudo
+   pre-esistenti. Meter/chip/badge restano pill (non chamfer). */
+.chamfer,
+.chamfer-sm {
+  --_ch: var(--ch);
+  position: relative;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none; /* firma = hairline, non ombra (clip-path taglierebbe l'ombra squadrata) */
+}
+.chamfer-sm { --_ch: var(--ch-sm); }
+.chamfer::before,
+.chamfer::after,
+.chamfer-sm::before,
+.chamfer-sm::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  clip-path: polygon(
+    var(--_ch) 0, 100% 0,
+    100% calc(100% - var(--_ch)), calc(100% - var(--_ch)) 100%,
+    0 100%, 0 var(--_ch)
+  );
+}
+.chamfer::before,
+.chamfer-sm::before { inset: 0; background: var(--bcol, var(--am-line)); }
+.chamfer::after,
+.chamfer-sm::after { inset: 1px; background: var(--surf, var(--am-panel)); }
+.chamfer > *,
+.chamfer-sm > * { position: relative; z-index: 1; }
+
 /* ---- TICKER (mockup .ticker) ---- */
 .am-ticker {
   display: flex; align-items: stretch; gap: 0; margin: 8px 14px 0;
@@ -6548,6 +6641,52 @@ button:disabled {
   cursor: pointer; transition: filter 0.15s;
 }
 .mb-cta:hover { filter: brightness(1.08); }
+
+/* ── LEVEL-UP tattico sulle CTA reali frammentate — 2026-07-12 ───────────────
+   Le CTA prominenti vivono su classi diverse (mb-cta/fp-cta/featured-unlock/
+   upgrade-card button/bonus-cta/betbtn). Qui do loro la firma tattica comune —
+   spigolo vivo 0px + focus-ring verde + label mono uppercase + micro-glow verde
+   su hover — senza toccarne il colore semantico. Posizionato dopo le definizioni
+   originali per vincere l'ordine di cascata (stessa specificità).
+   Eccezioni motivate (dove sensato, come da brief):
+   - .featured-unlock e .locked-cta: NIENTE uppercase — sono frasi lunghe
+     (verificato in browser: locked-cta = "Sign in to see predictions, edge and
+     explanations", 49 char → in maiuscolo urlerebbe e perderebbe leggibilità);
+   - .betbtn: NIENTE glow verde (mantiene la soberness "no-green" a riposo).
+   LIMITE: gli ~85 <button> restano frammentati; upgrade path = migrarli sulle
+   4 varianti .btn-* in una passata dedicata (STAGE successivo). */
+.mb-cta,
+.free-paywall .fp-cta,
+.featured .featured-unlock,
+.upgrade-card button,
+.bonus-cta,
+.pred .act .betbtn {
+  border-radius: var(--am-btn-radius);
+}
+.mb-cta:focus-visible,
+.free-paywall .fp-cta:focus-visible,
+.featured .featured-unlock:focus-visible,
+.upgrade-card button:focus-visible,
+.bonus-cta:focus-visible,
+.pred .act .betbtn:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+.mb-cta,
+.free-paywall .fp-cta,
+.upgrade-card button,
+.bonus-cta,
+.pred .act .betbtn {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.mb-cta:hover,
+.free-paywall .fp-cta:hover,
+.featured .featured-unlock:hover,
+.upgrade-card button:hover {
+  box-shadow: 0 6px 22px -8px var(--am-glow);
+}
+
 .mb-link {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 9px; color: var(--am-muted-2); word-break: break-all;

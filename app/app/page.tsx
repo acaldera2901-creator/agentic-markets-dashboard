@@ -6726,9 +6726,9 @@ function HistoryTab({ history, stats, loading }: {
         </div>
         {stats && (
           <div className="hr">
-            <div className="am-kpi"><span className="v">{scopedTotal}</span><span className="l">{t.hist_matches}</span></div>
+            <div className="am-kpi chamfer-sm"><span className="v">{scopedTotal}</span><span className="l">{t.hist_matches}</span></div>
             {scopedWinRate && (
-              <div className="am-kpi"><span className="v sig">{scopedWinRate}</span><span className="l">{t.hist_hit_rate}</span></div>
+              <div className="am-kpi chamfer-sm"><span className="v sig">{scopedWinRate}</span><span className="l">{t.hist_hit_rate}</span></div>
             )}
           </div>
         )}
@@ -8750,17 +8750,17 @@ export default function Dashboard() {
             )}
             {tab !== "plans" && (
             <div className="am-statbar">
-              <div className="am-kpi">
+              <div className="am-kpi chamfer-sm">
                 <span className="v">{predictions.length + tennisMatches.length}</span>
                 <span className="l">{tNav.kpi_events_lbl}</span>
               </div>
-              <div className="am-kpi">
+              <div className="am-kpi chamfer-sm">
                 <span className="v sig">{withEdgeCount}</span>
                 <span className="l">{tNav.kpi_withedge}</span>
               </div>
               {/* #HITRATE-GUARD-1: the rate is a claim — hidden below the sample threshold. */}
               {v2RateMeaningful && historyV2Stats?.win_rate && (
-                <div className="am-kpi">
+                <div className="am-kpi chamfer-sm">
                   <span className="v">{historyV2Stats.win_rate}</span>
                   <span className="l">{tNav.kpi_hit}</span>
                 </div>
