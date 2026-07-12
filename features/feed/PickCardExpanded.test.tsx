@@ -4,7 +4,8 @@ import type { PickCardVM } from "./pick-view-model";
 
 const vm: PickCardVM = { id: "1", sport: "football", competition: "Serie A", kickoff: "2026-07-11T18:45:00Z",
   homeTeam: "Inter", awayTeam: "Verona", decision: "Vince l'Inter", odds: 1.55, confidenceScore: 78,
-  why: "Inter in forma.", hasValue: true, locked: false, externalEventId: "B" };
+  why: "Inter in forma.", hasValue: true, locked: false, externalEventId: "B",
+  result: null, finalScore: null, settled: false };
 
 const mockDetail = vi.fn();
 vi.mock("./use-match-detail", () => ({ useMatchDetail: () => mockDetail() }));

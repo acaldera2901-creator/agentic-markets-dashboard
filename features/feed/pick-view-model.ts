@@ -1,6 +1,10 @@
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
 
-export type ProjectedPrediction = Partial<UnifiedPrediction> & { id: string; locked?: boolean };
+export type ProjectedPrediction = Partial<UnifiedPrediction> & {
+  id: string;
+  locked?: boolean;
+  final_score?: string | null;
+};
 
 export type PickCardVM = {
   id: string;
@@ -16,7 +20,22 @@ export type PickCardVM = {
   hasValue: boolean;
   locked: boolean;
   externalEventId: string | null;
+  result: "won" | "lost" | "void" | null;
+  finalScore: string | null;
+  settled: boolean;
 };
+
+// "unresolved" e qualsiasi altro valore non riconosciuto → null (non ancora settled).
+function normalizeResult(result: string | null | undefined): "won" | "lost" | "void" | null {
+  return result === "won" || result === "lost" || result === "void" ? result : null;
+}
+
+export function pickOutcomeLabel(result: "won" | "lost" | "void" | null): string | null {
+  if (result === "won") return "Pronostico corretto";
+  if (result === "lost") return "Non riuscito";
+  if (result === "void") return "Annullato";
+  return null;
+}
 
 // Elide l'articolo: "Vince l'Inter" vs "Vince il Napoli" è raffinabile; qui
 // una regola minima ("l'" davanti a vocale) copre i casi comuni. Upgrade:
@@ -51,6 +70,7 @@ export function humanizePick(p: {
 }
 
 export function toPickCardVM(p: ProjectedPrediction): PickCardVM {
+  const result = normalizeResult(p.result);
   return {
     id: p.id,
     sport: p.sport ?? "",
@@ -70,5 +90,8 @@ export function toPickCardVM(p: ProjectedPrediction): PickCardVM {
     hasValue: (p.edge_percent ?? 0) > 0,
     locked: p.locked === true,
     externalEventId: p.external_event_id ?? null,
+    result,
+    finalScore: p.final_score ?? null,
+    settled: result !== null,
   };
 }
