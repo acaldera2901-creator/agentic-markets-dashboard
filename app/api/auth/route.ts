@@ -9,6 +9,7 @@ import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { assertConsent, ConsentError } from "./consent";
 
 export const dynamic = "force-dynamic";
 
@@ -253,6 +254,17 @@ export async function POST(req: Request) {
   }
 
   if (action === "register") {
+    // #SP3-2 compliance gate: +18/ToS consent is enforced server-side, not just
+    // in the UI — a direct API call must not be able to skip it. No profile is
+    // created/touched until both flags are confirmed true.
+    try {
+      assertConsent(body);
+    } catch (e) {
+      if (e instanceof ConsentError) {
+        return NextResponse.json({ error: "consent_required" }, { status: 400 });
+      }
+      throw e;
+    }
     // Already a usable (activated) account → tell them to log in.
     if (existing?.password_hash && existing.activated_at) {
       return NextResponse.json({ error: "account already exists — please log in" }, { status: 409 });
@@ -295,8 +307,8 @@ export async function POST(req: Request) {
         // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
         // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
         // una riga esistente (niente takeover via race).
-        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at)
-         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END)
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at)
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW())
        ON CONFLICT (identifier) DO NOTHING`,
         [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn]
       );
