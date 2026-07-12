@@ -14,7 +14,7 @@ export type LbRow = {
 
 export type UseLeaderboardResult = {
   entries: LbRow[];
-  systemHitRate: string | null;
+  systemHitRate: number | null;
   systemSettled: number;
   pointsPerWin: number;
   loading: boolean;
@@ -33,7 +33,7 @@ type LeaderboardApiEntry = {
 
 type LeaderboardApiResponse = {
   leaderboard: LeaderboardApiEntry[];
-  system_hit_rate: string | null;
+  system_hit_rate: number | null;
   system_settled: number;
   points_per_win: number;
 };
@@ -53,7 +53,7 @@ function toLbRow(e: LeaderboardApiEntry): LbRow {
 
 export function useLeaderboard(): UseLeaderboardResult {
   const [entries, setEntries] = useState<LbRow[]>([]);
-  const [systemHitRate, setSystemHitRate] = useState<string | null>(null);
+  const [systemHitRate, setSystemHitRate] = useState<number | null>(null);
   const [systemSettled, setSystemSettled] = useState(0);
   const [pointsPerWin, setPointsPerWin] = useState(0);
   const [loading, setLoading] = useState(true);
