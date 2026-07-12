@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ClaimResult = { ok: boolean; error?: string };
 
@@ -21,11 +21,12 @@ export function useReferral(): UseReferralResult {
   const [paid, setPaid] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const aliveRef = useRef(true);
 
   const fetchStats = useCallback(async (alive: () => boolean) => {
     try {
       const res = await fetch("/api/referral/stats", { credentials: "include" });
-      if (res.status === 403) {
+      if (res.status === 401 || res.status === 403) {
         if (!alive()) return;
         setCode(null);
         setSignups(0);
@@ -52,10 +53,10 @@ export function useReferral(): UseReferralResult {
   }, []);
 
   useEffect(() => {
-    let alive = true;
+    aliveRef.current = true;
     setLoading(true);
-    fetchStats(() => alive);
-    return () => { alive = false; };
+    fetchStats(() => aliveRef.current);
+    return () => { aliveRef.current = false; };
   }, [fetchStats]);
 
   const claim = useCallback(async (claimCode: string): Promise<ClaimResult> => {
@@ -70,7 +71,7 @@ export function useReferral(): UseReferralResult {
         const json = await res.json().catch(() => ({}));
         return { ok: false, error: (json as { error?: string }).error ?? "Errore nella richiesta" };
       }
-      await fetchStats(() => true);
+      await fetchStats(() => aliveRef.current);
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Errore nella richiesta" };

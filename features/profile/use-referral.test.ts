@@ -34,6 +34,20 @@ describe("useReferral", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("401 → nessun codice, non è un errore (anonimo)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: "unauthorized" }),
+    }));
+    const { result } = renderHook(() => useReferral());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.code).toBeNull();
+    expect(result.current.signups).toBe(0);
+    expect(result.current.paid).toBe(0);
+    expect(result.current.error).toBeNull();
+  });
+
   it("errore di rete diverso da 403 → error valorizzato", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }));
     const { result } = renderHook(() => useReferral());
