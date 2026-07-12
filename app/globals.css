@@ -22,6 +22,16 @@
   /* Borders — neutral-cool, low chroma for depth */
   --am-line:       #21252C;
   --am-line-2:     #2C313A;
+  /* LEVEL-UP 1c+: hairline delle CORNICI chamfer (rail/book-main/betslip/glass-card).
+     Su dark serve un filo CHIARO (i --line neutri spariscono sul quasi-nero) → white
+     alpha; su light un filo scuro. Fa leggere il taglio obliquo senza fare "gabbia". */
+  --am-frame-edge:       rgba(255,255,255,0.20);
+  --am-frame-edge-hover: rgba(255,255,255,0.34);
+  /* LEVEL-UP 1e: filo chamfer di schede/tile/Edge. Dark = i --line neutri (leggono
+     su --panel); li aliaso qui così il LIGHT può alzarli senza toccare tutti i
+     bordi dell'app né il dark. */
+  --am-chamfer-line:   var(--am-line);
+  --am-chamfer-line-2: var(--am-line-2);
 
   /* Brand accents — green primary (rebrand 2026-06-22, da logo BetrEdge verde) */
   --am-coral:      #23A559;   /* primary: CTA, nav attiva, top-pick (brand green) */
@@ -56,8 +66,17 @@
   --am-indigo:     var(--am-cobalt);
 
   /* Ambient wash + glow color (statico, non animato — fascia verde) */
-  --am-wash:       rgba(255,107,107,0.10);
-  --am-glow:       rgba(255,107,107,0.18);
+  /* LEVEL-UP 1b: --am-wash era rossastro residuo (stesso bug-class di --am-glow);
+     verde brand, alpha invariata. Alimenta il radial ambientale di pagina. */
+  --am-wash:       rgba(35,165,89,0.10);
+  /* LEVEL-UP 2026-07-12: --am-glow era rossastro residuo pre-rebrand (bug);
+     riportato al verde brand — micro-glow CTA su hover/focus, mai ambient. */
+  --am-glow:       rgba(35,165,89,0.22);
+
+  /* LEVEL-UP tactical tokens — spigolo vivo (controlli) + chamfer (pannelli) */
+  --am-btn-radius: 0px;   /* pulsanti: taglio tattico, spigolo vivo pieno */
+  --ch:            14px;  /* chamfer pannelli grandi */
+  --ch-sm:         10px;  /* chamfer pannelli piccoli (stat-tile) */
 
   /* Typography */
   --am-text:       #EDEFF2;
@@ -69,7 +88,7 @@
   --accent: var(--am-panel-3);
   --border: var(--am-line);
   --input: var(--am-line);
-  --ring: rgba(255,107,107,0.40);
+  --ring: rgba(35,165,89,0.40);  /* LEVEL-UP 1b: focus ring legacy → verde */
   --radius: 0.5rem;
 
   /* Legacy aliases — keep existing dashboard CSS working, point at --am-* */
@@ -107,6 +126,12 @@
 
   --am-line:       #E3E6EB;
   --am-line-2:     #D2D7DE;
+  /* LEVEL-UP 1e: bordi chamfer troppo tenui su bianco → filo più marcato (era
+     frame-edge .22 / chamfer-line #E3E6EB, si perdevano). Solo light. */
+  --am-frame-edge:       rgba(18,22,28,0.34);
+  --am-frame-edge-hover: rgba(18,22,28,0.48);
+  --am-chamfer-line:     #B8BFC9;
+  --am-chamfer-line-2:   #A2AAB6;
 
   --am-coral:      #15803D;   /* primary su light, contrasto AA come testo/bordo (brand green) */
   --am-coral-2:    #1B9148;   /* fill/gradiente */
@@ -126,15 +151,16 @@
   --am-coral-b:    rgba(21,128,61,0.30);
   --am-coral-ink:  #FFFFFF;   /* testo chiaro leggibile su fill green (light) */
 
-  --am-wash:       rgba(229,72,77,0.07);
-  --am-glow:       rgba(229,72,77,0.12);
+  --am-wash:       rgba(21,128,61,0.07);  /* LEVEL-UP 1b: → verde (light) */
+  /* LEVEL-UP 2026-07-12: glow verde anche in light (era rossastro residuo). */
+  --am-glow:       rgba(35,165,89,0.16);
 
   --am-text:       #14171C;
   --am-muted:      #4A515B;
   --am-muted-2:    #79818D;
   --am-hi:         rgba(255,255,255,0.9);
 
-  --ring:         rgba(229,72,77,0.38);
+  --ring:         rgba(21,128,61,0.38);  /* LEVEL-UP 1b: focus ring legacy → verde */
 }
 
 * {
@@ -330,15 +356,60 @@ button:disabled {
   align-items: start;
 }
 
+/* ── LEVEL-UP: firma tattica (chamfer) sulle CORNICI desk/pagina — STAGE 1c ───
+   Angolo obliquo sui due angoli opposti (--ch=14px, cornici grandi). Tecnica:
+   clip-path taglia i due angoli; l'hairline lo disegna un INSET box-shadow, che
+   SEGUE il taglio obliquo (il border verrebbe invece tranciato lungo la diagonale).
+   Scelta glass: --am-panel è OPACO (#131519 dark / #FFFFFF light) → il
+   backdrop-filter blur era di fatto un no-op (niente vetro reale da preservare);
+   tengo la superficie opaca esistente + il blur (innocuo, clippato). Niente
+   pseudo, niente z-index sui figli → sticky/scroll/overflow interni intatti.
+   Solo le cornici ESTERNE prendono il chamfer; rail-item/chip/meter invariati. */
 .sports-rail,
 .book-main,
 .betslip,
 .glass-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  --_fe: var(--am-frame-edge);
+  position: relative;   /* ancora i bar diagonali; .sports-rail resta sticky (regola più sotto vince) */
+  border: 0;
+  border-radius: 0;
   background: var(--panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
+}
+/* LEVEL-UP 1e: CHIUDE la diagonale. L'inset box-shadow segue i 4 lati retti ma il
+   clip taglia via l'angolo → i due tagli obliqui restavano SENZA filo (bordo
+   "aperto"). Due bar-hairline ruotati sui tagli alto-sx (::before) e basso-dx
+   (::after) chiudono il contorno. Geometria: centro (ch/2,ch/2), lunghezza ch·√2,
+   rot -45° → estremi combaciano coi vertici del taglio. Il clip dell'elemento
+   rifila la metà esterna del bar → resta un filo netto interno alla sagoma.
+   pointer-events:none + i tagli cadono nel padding (nessun contenuto lì) → non
+   servono z-index sui figli: sticky/overflow/scroller interni intatti. */
+.sports-rail::before, .sports-rail::after,
+.book-main::before,   .book-main::after,
+.betslip::before,     .betslip::after,
+.glass-card::before,  .glass-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  width: calc(var(--ch) * 1.41421);
+  height: 1.6px;
+  background: var(--_fe);
+}
+.sports-rail::before, .book-main::before, .betslip::before, .glass-card::before {
+  top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.sports-rail::after, .book-main::after, .betslip::after, .glass-card::after {
+  bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
+  transform: translate(50%, 50%) rotate(-45deg);
 }
 
 .glass-card {
@@ -347,7 +418,9 @@ button:disabled {
 }
 
 .glass-card:hover {
-  border-color: var(--line-2);
+  /* border rimosso (chamfer via clip-path) → l'hairline hover vive sull'inset shadow */
+  box-shadow: inset 0 0 0 1.5px var(--am-frame-edge-hover);
+  --_fe: var(--am-frame-edge-hover);   /* diagonale segue l'hover */
 }
 
 .sports-rail,
@@ -4092,44 +4165,91 @@ button:disabled {
   border-radius: 999px;
 }
 
-.btn-primary {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid var(--am-coral-b);
-  background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
-  color: #1A0B05;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 6px 18px -8px var(--am-glow);
-  transition: filter .15s ease, box-shadow .15s ease;
-}
-
-.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 8px 22px -8px var(--am-glow); }
-
-/* Light: usa il token "fill/gradiente" (--am-coral-2 #FF6B6B) come estremo coral
-   del gradiente. Il dark-text #1A0B05 passa AA con margine pieno (orange 6.36,
-   coral 6.92) restando entro 4.5:1 su tutto il gradiente; --am-coral (#E5484D,
-   estremo brick) era AA-borderline (4.90). Estetica invariata, solo light. */
-:root[data-theme="light"] .btn-primary {
-  background: linear-gradient(135deg, var(--am-orange), var(--am-coral-2));
-}
-
-.btn-secondary {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid var(--am-line);
-  background: var(--am-panel-2);
-  color: var(--text);
-  font-size: 13px;
+/* ── LEVEL-UP button system (tattico) — 2026-07-12 ──────────────────────────
+   Spigolo vivo 0px (--am-btn-radius), label JetBrains Mono 700 uppercase
+   letter-spacing .05em, focus-ring verde 2px sempre (tastiera), micro-glow
+   verde solo su hover/focus, active press -1px, disabled opacity .38.
+   Un solo accento (verde); rosso SOLO come outline su .btn-danger (semantica
+   loss/void, mai fill decorativo). */
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--am-btn-radius);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: opacity .15s;
+  transition: filter .12s ease, box-shadow .12s ease, background .12s ease,
+              border-color .12s ease, color .12s ease, transform .06s ease;
+}
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible,
+.btn-danger:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+.btn-primary:active,
+.btn-secondary:active,
+.btn-ghost:active,
+.btn-danger:active { transform: translateY(1px); }
+.btn-primary:disabled, .btn-primary[disabled],
+.btn-secondary:disabled, .btn-secondary[disabled],
+.btn-ghost:disabled, .btn-ghost[disabled],
+.btn-danger:disabled, .btn-danger[disabled] {
+  opacity: .38;
+  box-shadow: none;
+  filter: none;
+  pointer-events: none;
 }
 
-.btn-secondary:hover { opacity: .85; }
+/* Primary — verde pieno. Testo via --am-coral-ink (near-black in dark #06140C,
+   white in light) → contrasto AA su entrambi i temi senza override manuale. */
+.btn-primary {
+  background: var(--am-coral);
+  border-color: var(--am-coral);
+  color: var(--am-coral-ink);
+}
+.btn-primary:hover { filter: brightness(1.07); box-shadow: 0 6px 22px -8px var(--am-glow); }
+.btn-primary:active { filter: brightness(.94); }
+
+/* Secondary — surface-2 + hairline verde, label verde. */
+.btn-secondary {
+  background: var(--am-panel-2);
+  border-color: var(--am-coral-b);
+  color: var(--am-coral);
+}
+.btn-secondary:hover {
+  background: var(--am-coral-dim);
+  border-color: var(--am-coral);
+  box-shadow: 0 6px 22px -8px var(--am-glow);
+}
+
+/* Ghost — terziario trasparente. */
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--am-muted);
+}
+.btn-ghost:hover { background: var(--am-panel-2); color: var(--am-text); }
+
+/* Danger — annulla/void: SOLO outline rosso, mai fill decorativo. */
+.btn-danger {
+  background: transparent;
+  border-color: var(--am-negative-b);
+  color: var(--am-negative);
+}
+.btn-danger:hover { background: var(--am-negative-dim); border-color: var(--am-negative); }
 
 .lang-toggle {
   height: 32px;
@@ -5993,6 +6113,72 @@ button:disabled {
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted-2);
 }
 
+/* ── LEVEL-UP chamfer (firma pannelli) — 2026-07-12 ──────────────────────────
+   Angolo obliquo su angoli opposti (alto-sx + basso-dx). Hairline pulito anche
+   sul taglio via doppio-layer pseudo (clip-path da solo cancella la linea):
+   ::before = colore-bordo (inset 0), ::after = superficie (inset 1px), contenuto
+   sopra a z-index 1. Config via --bcol/--surf (default line/panel).
+   ⚠️ Applicare a WRAPPER se il target ha già ::before/::after (lezione "trappole
+   redesign"): qui il target è .am-kpi (stat-tile), verificato senza pseudo
+   pre-esistenti. Meter/chip/badge restano pill (non chamfer). */
+.chamfer,
+.chamfer-sm {
+  --_ch: var(--ch);
+  position: relative;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none; /* firma = hairline, non ombra (clip-path taglierebbe l'ombra squadrata) */
+}
+.chamfer-sm { --_ch: var(--ch-sm); }
+.chamfer::before,
+.chamfer::after,
+.chamfer-sm::before,
+.chamfer-sm::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  clip-path: polygon(
+    var(--_ch) 0, 100% 0,
+    100% calc(100% - var(--_ch)), calc(100% - var(--_ch)) 100%,
+    0 100%, 0 var(--_ch)
+  );
+}
+.chamfer::before,
+.chamfer-sm::before { inset: 0; background: var(--bcol, var(--am-line)); }
+.chamfer::after,
+.chamfer-sm::after { inset: 1px; background: var(--surf, var(--am-panel)); }
+.chamfer > *,
+.chamfer-sm > * { position: relative; z-index: 1; }
+
+/* ── LEVEL-UP: chamfer sulla card "Edge del giorno" — STAGE 1b 2026-07-12 ─────
+   .featured ha già .featured::before (radial glow) + bg/border/radius/overflow
+   propri → .chamfer non si applica direttamente (collisione pseudo). Si wrappa
+   in <div class="edge-chamfer chamfer">: il wrapper porta hairline + superficie
+   chamfer; la .featured interna viene azzerata (bg/border/radius/shadow) e
+   ri-clippata alla STESSA sagoma (var(--ch)=14px) così il radial glow resta
+   DENTRO il taglio (niente sbordo) e il bordo obliquo resta hairline pulito.
+   Il contenuto reale vive entro il padding (.big/.why 26-28px) → mai clippato
+   ai 14px dei due angoli. LIMITE: si perde la drop-shadow della card (firma =
+   hairline, non ombra, come le stat-tile); upgrade path = nessuno necessario. */
+.edge-chamfer {
+  --surf: var(--am-bg-2);
+  --bcol: var(--am-line-2);
+  margin: 14px;
+}
+.edge-chamfer > .featured {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+}
+
 /* ---- TICKER (mockup .ticker) ---- */
 .am-ticker {
   display: flex; align-items: stretch; gap: 0; margin: 8px 14px 0;
@@ -6548,6 +6734,51 @@ button:disabled {
   cursor: pointer; transition: filter 0.15s;
 }
 .mb-cta:hover { filter: brightness(1.08); }
+
+/* ── LEVEL-UP tattico sulle CTA reali frammentate — 2026-07-12 ───────────────
+   Le CTA prominenti vivono su classi diverse (mb-cta/fp-cta/featured-unlock/
+   upgrade-card button/bonus-cta). Qui do loro la firma tattica comune —
+   spigolo vivo 0px + focus-ring verde + label mono uppercase + micro-glow verde
+   su hover — senza toccarne il colore semantico. Posizionato dopo le definizioni
+   originali per vincere l'ordine di cascata (stessa specificità).
+   Eccezioni motivate (dove sensato, come da brief):
+   - .featured-unlock e .locked-cta: NIENTE uppercase — sono frasi lunghe
+     (verificato in browser: locked-cta = "Sign in to see predictions, edge and
+     explanations", 49 char → in maiuscolo urlerebbe e perderebbe leggibilità).
+   Nota 1d: .pred .act .betbtn RIMOSSO da questi gruppi — Andrea vuole le schede
+   "come online", quindi betbtn torna al suo look originale (radius 7px, mono
+   mixed-case). Il taglio delle schede vive in .card > .pred (blocco 1d in fondo).
+   LIMITE: gli ~85 <button> restano frammentati; upgrade path = migrarli sulle
+   4 varianti .btn-* in una passata dedicata (STAGE successivo). */
+.mb-cta,
+.free-paywall .fp-cta,
+.featured .featured-unlock,
+.upgrade-card button,
+.bonus-cta {
+  border-radius: var(--am-btn-radius);
+}
+.mb-cta:focus-visible,
+.free-paywall .fp-cta:focus-visible,
+.featured .featured-unlock:focus-visible,
+.upgrade-card button:focus-visible,
+.bonus-cta:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+.mb-cta,
+.free-paywall .fp-cta,
+.upgrade-card button,
+.bonus-cta {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.mb-cta:hover,
+.free-paywall .fp-cta:hover,
+.featured .featured-unlock:hover,
+.upgrade-card button:hover {
+  box-shadow: 0 6px 22px -8px var(--am-glow);
+}
+
 .mb-link {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 9px; color: var(--am-muted-2); word-break: break-all;
@@ -7839,6 +8070,73 @@ button:disabled {
   transition: transform 0.18s ease-out;
 }
 .pred.is-clickable:hover .pred-more .pm-chev { transform: translateX(2px); }
+
+/* ── LEVEL-UP 1d: taglio (chamfer) sulle schede prediction/bet ───────────────
+   Feedback Andrea: aggiungere SOLO il taglio; tutto il resto IDENTICO all'online
+   (padding, tipografia, readout .v2r, densità, hover-lift). Tecnica:
+   - clip-path taglia i due angoli opposti (var(--ch)=14px);
+   - clip-path taglierebbe via il box-shadow → la profondità online la ridà
+     filter: drop-shadow (segue la sagoma obliqua) equivalente alle 2 ombre online;
+   - hairline del bordo + ciglio-top chiaro via INSET box-shadow (seguono il taglio),
+     al posto del border 1px che verrebbe tranciato sulla diagonale;
+   - hover: mantiene translateY(-1px) + ombra più profonda (drop-shadow marcato) +
+     hairline --am-line-2 (coral-b sulle card cliccabili, come online).
+   Scope .card > .pred → ESCLUDE il .pdm-grid.pred del modale scheda completa
+   (intoccabile). .pred non ha discendenti sticky/fixed → containing-block di
+   filter innocuo (a differenza di .book-main). Menu Place Bet: il dropdown è
+   absolute e deborda dalla card → se un .place-bet-menu si apre dentro la card,
+   disattivo il clip così non viene troncato (PlaceBetMenu oggi è orphan/non
+   renderizzato nel board live, ma il guard protegge se verrà cablato).
+   PERF: filter su molte card è più caro del box-shadow online; accettabile, da
+   ricontrollare su device di fascia bassa. */
+.card > .pred {
+  --_pe: var(--am-chamfer-line);   /* LEVEL-UP 1e: filo (4 lati + diagonale) — light più marcato via token */
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.32));
+  transition: box-shadow 0.15s, filter 0.15s, transform 0.15s;
+}
+/* LEVEL-UP 1e: CHIUDE la diagonale della scheda (prima l'inset box-shadow lasciava
+   i due tagli obliqui aperti). Stessi due bar-hairline delle cornici, colore = --_pe
+   (segue hover/clickable). Il clip della scheda rifila la metà esterna; la profondità
+   (drop-shadow) e il guard place-bet restano invariati. */
+.card > .pred::before, .card > .pred::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  width: calc(var(--ch) * 1.41421);
+  height: 1.4px;
+  background: var(--_pe);
+}
+.card > .pred::before {
+  top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.card > .pred::after {
+  bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
+  transform: translate(50%, 50%) rotate(-45deg);
+}
+.card > .pred:hover {
+  --_pe: var(--am-chamfer-line-2);
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.55));
+  transform: translateY(-1px);
+}
+.card > .pred.is-clickable:hover {
+  --_pe: var(--am-coral-b);
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);
+}
+/* il dropdown bet deborda: niente clip mentre il menu è aperto (non troncarlo);
+   senza clip la sagoma torna rettangolare → spengo anche i bar diagonali */
+.card > .pred:has(.place-bet-menu.open) { clip-path: none; }
+.card > .pred:has(.place-bet-menu.open)::before,
+.card > .pred:has(.place-bet-menu.open)::after { display: none; }
 
 /* ── backdrop ── */
 .pdm-backdrop {
