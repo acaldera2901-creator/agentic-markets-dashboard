@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { humanizePick, toPickCardVM, type ProjectedPrediction } from "./pick-view-model";
+import { humanizePick, toPickCardVM, pickOutcomeLabel, type ProjectedPrediction } from "./pick-view-model";
 
 const base: ProjectedPrediction = {
   id: "1", external_event_id: null, sport: "football", competition: "Serie A",
@@ -95,5 +95,42 @@ describe("toPickCardVM", () => {
   it("mappa externalEventId da external_event_id", () => {
     expect(toPickCardVM({ ...base, external_event_id: "EVT-9" }).externalEventId).toBe("EVT-9");
     expect(toPickCardVM({ ...base, external_event_id: null }).externalEventId).toBeNull();
+  });
+});
+
+describe("toPickCardVM — settled state", () => {
+  it("result 'won' → settled true, finalScore mappato, label 'Pronostico corretto'", () => {
+    const vm = toPickCardVM({ ...base, result: "won", final_score: "2-1" });
+    expect(vm.result).toBe("won");
+    expect(vm.settled).toBe(true);
+    expect(vm.finalScore).toBe("2-1");
+    expect(pickOutcomeLabel(vm.result)).toBe("Pronostico corretto");
+  });
+  it("result 'lost' → label 'Non riuscito'", () => {
+    const vm = toPickCardVM({ ...base, result: "lost" });
+    expect(vm.result).toBe("lost");
+    expect(vm.settled).toBe(true);
+    expect(pickOutcomeLabel(vm.result)).toBe("Non riuscito");
+  });
+  it("result 'void' → label 'Annullato'", () => {
+    const vm = toPickCardVM({ ...base, result: "void" });
+    expect(vm.result).toBe("void");
+    expect(vm.settled).toBe(true);
+    expect(pickOutcomeLabel(vm.result)).toBe("Annullato");
+  });
+  it("result 'unresolved' → normalizzato a null, settled false", () => {
+    const vm = toPickCardVM({ ...base, result: "unresolved" as ProjectedPrediction["result"] });
+    expect(vm.result).toBeNull();
+    expect(vm.settled).toBe(false);
+    expect(pickOutcomeLabel(vm.result)).toBeNull();
+  });
+  it("nessun result → settled false", () => {
+    const vm = toPickCardVM({ ...base, result: null });
+    expect(vm.result).toBeNull();
+    expect(vm.settled).toBe(false);
+  });
+  it("finalScore mappato da final_score, null se assente", () => {
+    expect(toPickCardVM({ ...base, final_score: "3-0" }).finalScore).toBe("3-0");
+    expect(toPickCardVM({ ...base }).finalScore).toBeNull();
   });
 });

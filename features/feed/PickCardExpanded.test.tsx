@@ -5,7 +5,8 @@ import type { PickCardVM } from "./pick-view-model";
 
 const vm: PickCardVM = { id: "1", sport: "football", competition: "Serie A", kickoff: "2026-07-11T18:45:00Z",
   homeTeam: "Inter", awayTeam: "Verona", decision: "Vince l'Inter", odds: 1.55, confidenceScore: 78,
-  why: "Inter in forma.", hasValue: true, locked: false, externalEventId: "B" };
+  why: "Inter in forma.", hasValue: true, locked: false, externalEventId: "B",
+  result: null, finalScore: null, settled: false };
 
 const mockDetail = vi.fn();
 vi.mock("./use-match-detail", () => ({ useMatchDetail: () => mockDetail() }));
@@ -57,5 +58,20 @@ describe("PickCardExpanded", () => {
     const button = screen.getByRole("button", { name: /Prova Pro/i });
     await userEvent.click(button);
     expect(onUpgrade).toHaveBeenCalledOnce();
+  });
+  it("settled won + finalScore → recap mostra punteggio + badge esito, niente ConfidenceMeter", () => {
+    mockDetail.mockReturnValue({ detail: null, loading: false, error: null });
+    const settledVm: PickCardVM = { ...vm, result: "won", finalScore: "2-1", settled: true };
+    render(<PickCardExpanded pick={settledVm} />);
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+    expect(screen.getByText("Pronostico corretto")).toBeInTheDocument();
+    expect(document.querySelector('[data-outcome="won"]')).toBeInTheDocument();
+    expect(screen.queryByText(/Sicurezza/i)).toBeNull();
+  });
+  it("non-settled → ConfidenceMeter presente come prima", () => {
+    mockDetail.mockReturnValue({ detail: null, loading: false, error: null });
+    render(<PickCardExpanded pick={vm} />);
+    expect(screen.getByText(/Sicurezza/i)).toBeInTheDocument();
+    expect(document.querySelector("[data-outcome]")).toBeNull();
   });
 });
