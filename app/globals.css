@@ -368,7 +368,8 @@ button:disabled {
 .sports-rail,
 .book-main,
 .betslip,
-.glass-card {
+.glass-card,
+.lp-term {
   --_fe: var(--am-frame-edge);
   position: relative;   /* ancora i bar diagonali; .sports-rail resta sticky (regola più sotto vince) */
   border: 0;
@@ -394,7 +395,8 @@ button:disabled {
 .sports-rail::before, .sports-rail::after,
 .book-main::before,   .book-main::after,
 .betslip::before,     .betslip::after,
-.glass-card::before,  .glass-card::after {
+.glass-card::before,  .glass-card::after,
+.lp-term::before,     .lp-term::after {
   content: "";
   position: absolute;
   pointer-events: none;
@@ -403,11 +405,14 @@ button:disabled {
   height: 1.6px;
   background: var(--_fe);
 }
-.sports-rail::before, .book-main::before, .betslip::before, .glass-card::before {
+/* .lp-term ha righe interne a z-index 2 → alzo SOLO qui i due fili diagonali
+   sopra le righe (le altre cornici /app restano a z-index 0, intatte). */
+.lp-term::before, .lp-term::after { z-index: 3; }
+.sports-rail::before, .book-main::before, .betslip::before, .glass-card::before, .lp-term::before {
   top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
   transform: translate(-50%, -50%) rotate(-45deg);
 }
-.sports-rail::after, .book-main::after, .betslip::after, .glass-card::after {
+.sports-rail::after, .book-main::after, .betslip::after, .glass-card::after, .lp-term::after {
   bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
   transform: translate(50%, 50%) rotate(-45deg);
 }
@@ -6970,21 +6975,31 @@ button:disabled {
 .lp-theme button.on { background: var(--am-coral); color: #fff; }
 /* #UI-HOMEAUTH-0623: ora possono essere <button> (aprono la modale in-place) →
    font:inherit + line-height per renderli identici ai vecchi <a>. */
+/* LEVEL-UP HOME — controlli tattici (come /app): spigolo vivo 0px, label mono
+   uppercase tracciata, focus-ring verde 2px, micro-glow verde su hover. Un solo
+   accento (verde brand --am-coral); niente residui rossastri rgba(255,106,94). */
 .lp-nav-link {
-  font-family: inherit; font-size: 13.5px; font-weight: 600; line-height: 1.2;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px; font-weight: 700; line-height: 1.2;
+  letter-spacing: .05em; text-transform: uppercase;
   color: var(--am-text); text-decoration: none; background: none;
-  padding: 8px 14px; border-radius: 9px; border: 1px solid var(--am-line-2);
-  transition: border-color .18s, background .18s;
+  padding: 9px 14px; border-radius: var(--am-btn-radius); border: 1px solid var(--am-line-2);
+  transition: border-color .18s, background .18s, box-shadow .12s, color .18s;
 }
-.lp-nav-link:hover { border-color: var(--am-coral); }
+.lp-nav-link:hover { border-color: var(--am-coral); color: var(--am-coral); box-shadow: 0 6px 22px -8px var(--am-glow); }
+.lp-nav-link:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 .lp-nav-cta {
-  font-family: inherit; font-size: 13.5px; font-weight: 700; line-height: 1.2;
-  color: #fff; text-decoration: none; border: 0;
-  padding: 9px 16px; border-radius: 9px;
-  background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2));
-  box-shadow: 0 6px 18px rgba(255,106,94,0.28); transition: transform .15s, box-shadow .18s;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px; font-weight: 700; line-height: 1.2;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--am-coral-ink); text-decoration: none; border: 1px solid var(--am-coral);
+  padding: 9px 16px; border-radius: var(--am-btn-radius);
+  background: var(--am-coral);
+  transition: filter .12s, box-shadow .12s, transform .06s;
 }
-.lp-nav-cta:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(255,106,94,0.36); }
+.lp-nav-cta:hover { filter: brightness(1.07); box-shadow: 0 6px 22px -8px var(--am-glow); }
+.lp-nav-cta:active { transform: translateY(1px); }
+.lp-nav-cta:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 .lp-lang {
   font: inherit; font-size: 12px; font-weight: 700; color: var(--am-muted);
   background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 8px;
@@ -7400,17 +7415,44 @@ button:disabled {
 .lp-card-quiet { grid-area: plans; }
 .lp-card-app.lp-card-sm { grid-area: app; }
 .lp-card {
+  /* LEVEL-UP HOME — firma tattica: taglio (chamfer) su angolo alto-sx + basso-dx
+     con filo CHIUSO anche sulla diagonale. Le tile sono foto (bg figlio a inset:0)
+     → l'inset box-shadow verrebbe coperto: il filo è un RING clip-path (evenodd)
+     sopra la foto. --_c = misura taglio (gerarchia per tile), --_b = spessore filo.
+     Il clip-path dell'elemento ritaglia anche gli angoli della foto. */
+  --_c: var(--ch);
+  --_b: 1.5px;
   display: flex; flex-direction: column; gap: 14px;
   background: linear-gradient(180deg, var(--am-panel), var(--am-panel-2));
-  border: 1px solid var(--am-line); border-radius: 18px; padding: 18px;
+  border: 0; border-radius: 0; padding: 18px;
   position: relative; overflow: hidden;
-  transition: transform .2s, border-color .2s, box-shadow .25s;
+  clip-path: polygon(
+    var(--_c) 0, 100% 0,
+    100% calc(100% - var(--_c)), calc(100% - var(--_c)) 100%,
+    0 100%, 0 var(--_c)
+  );
+  transition: transform .2s;
 }
+/* ring chamfer (era la barra-accento arcobaleno in cima → ritirata: leggeva come
+   accent-bar generico; il filo tattico è più coerente con /app). evenodd = anello
+   cavo tra sagoma esterna e interna, così il filo segue anche le due diagonali. */
 .lp-card::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
-  background: linear-gradient(90deg, var(--am-coral), var(--am-cobalt)); opacity: .55;
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: var(--am-frame-edge);
+  clip-path: polygon(evenodd,
+    var(--_c) 0, 100% 0, 100% calc(100% - var(--_c)), calc(100% - var(--_c)) 100%, 0 100%, 0 var(--_c),
+    calc(var(--_c) + var(--_b)) var(--_b),
+    calc(100% - var(--_b)) var(--_b),
+    calc(100% - var(--_b)) calc(100% - var(--_c) - var(--_b)),
+    calc(100% - var(--_c) - var(--_b)) calc(100% - var(--_b)),
+    var(--_b) calc(100% - var(--_b)),
+    var(--_b) calc(var(--_c) + var(--_b))
+  );
 }
-.lp-card:hover { transform: translateY(-4px); border-color: var(--am-line-2); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+/* clip-path taglia via l'ombra esterna → la firma è il filo, non l'ombra (come le
+   cornici /app): l'hover resta il sollevamento + il filo che si accende. */
+.lp-card:hover { transform: translateY(-4px); }
+.lp-card:hover::before { background: var(--am-frame-edge-hover); }
 /* #LANDING-PHOTO: card con sfondo foto + overlay coral/cobalt (logica banner) */
 .lp-card-photo { color: #fff; }
 .lp-card-photo .lp-card-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(1.12) contrast(1.08) brightness(.74); transition: transform .45s ease; }
@@ -7442,6 +7484,7 @@ button:disabled {
    HERO (track record): tile dominante, radius più ampio, composizione
    editoriale left-aligned, titolo grande, eyebrow mono + body al piede coral. */
 .lp-card-hero {
+  --_c: 18px;   /* tile dominante → taglio più ampio (gerarchia via chamfer) */
   border-radius: 24px; padding: clamp(22px, 2vw, 30px); gap: 18px;
   min-height: clamp(300px, 26vw, 380px);
 }
@@ -7473,7 +7516,7 @@ button:disabled {
 }
 
 /* SMALL (plans, app): radius più stretto, scala compatta = gerarchia recessiva */
-.lp-card-sm { border-radius: 14px; padding: 16px; }
+.lp-card-sm { --_c: var(--ch-sm); border-radius: 14px; padding: 16px; }
 .lp-card-sm .lp-card-title { font-size: clamp(17px, 1.4vw, 21px); }
 .lp-card-sm .lp-card-head .am-wm { font-size: 13px; }
 /* plans: testo ancorato in basso (coerente con hero/wide), non galleggiante al centro */
@@ -7498,13 +7541,21 @@ button:disabled {
   border: 1px dashed rgba(255,255,255,0.12); animation: lp-spin 14s linear infinite;
 }
 @keyframes lp-spin { to { transform: rotate(360deg); } }
+/* LEVEL-UP HOME — CTA di card tattiche: spigolo vivo, mono uppercase, glow verde. */
 .lp-card-btn {
-  text-align: center; text-decoration: none; font-weight: 800; font-size: 12.5px;
-  letter-spacing: .06em; padding: 11px; border-radius: 10px; transition: transform .15s, box-shadow .2s;
+  text-align: center; text-decoration: none;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700; font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+  padding: 12px; border: 1px solid transparent; border-radius: var(--am-btn-radius);
+  transition: filter .12s, box-shadow .12s, transform .06s, background .12s, border-color .12s, color .12s;
 }
-.lp-card-btn.coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); color: #fff; box-shadow: 0 6px 16px rgba(255,106,94,0.28); }
-.lp-card-btn.cobalt-outline { background: transparent; color: var(--am-cobalt-2); border: 1.5px solid var(--am-cobalt); }
-.lp-card-btn:hover { transform: translateY(-1px); }
+.lp-card-btn.coral { background: var(--am-coral); border-color: var(--am-coral); color: var(--am-coral-ink); }
+.lp-card-btn.coral:hover { filter: brightness(1.07); box-shadow: 0 6px 22px -8px var(--am-glow); }
+/* cobalt-outline = CTA secondaria (piani): resta cobalt per gerarchia, forma tattica */
+.lp-card-btn.cobalt-outline { background: transparent; color: var(--am-cobalt-2); border-color: var(--am-cobalt); }
+.lp-card-btn.cobalt-outline:hover { background: rgba(59,130,246,0.12); border-color: var(--am-cobalt-2); }
+.lp-card-btn:active { transform: translateY(1px); }
+.lp-card-btn:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 
 /* card 4 — phone mockup */
 .lp-card-app { align-items: center; justify-content: center; background: linear-gradient(180deg, var(--am-panel-2), var(--am-bg-2)); }
@@ -7562,17 +7613,23 @@ button:disabled {
 .lp-kpi-lab {
   font-size: 11.5px; letter-spacing: .04em; color: var(--am-muted-2); text-transform: lowercase;
 }
+/* LEVEL-UP HOME — CTA prova (Inizia gratis): primario tattico, spigolo vivo, mono
+   uppercase, glow verde. Mantengo la freccia e la sua micro-animazione (un momento
+   orchestrato, non fade uniforme). */
 .lp-what-cta {
   display: inline-flex; align-items: center; gap: 10px; margin-top: 32px;
-  font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: .01em;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase;
   color: var(--am-coral-ink); text-decoration: none;
-  background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2));
-  padding: 13px 26px; border-radius: 11px;
-  box-shadow: 0 10px 26px var(--am-coral-b); transition: transform .15s, box-shadow .2s;
+  background: var(--am-coral); border: 1px solid var(--am-coral);
+  padding: 13px 26px; border-radius: var(--am-btn-radius);
+  transition: filter .12s, box-shadow .12s, transform .06s;
 }
 .lp-what-cta span { transition: transform .2s; }
-.lp-what-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 34px var(--am-coral-b); }
+.lp-what-cta:hover { filter: brightness(1.07); box-shadow: 0 8px 26px -8px var(--am-glow); }
 .lp-what-cta:hover span { transform: translateX(4px); }
+.lp-what-cta:active { transform: translateY(1px); }
+.lp-what-cta:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 
 /* ══ Edge Scanner (#LANDING-EDGE-SCANNER-1) ════════════════════════════════════
    Split asimmetrico: punto di vista a sx, terminale quant a dx. Il terminale
@@ -7592,10 +7649,13 @@ button:disabled {
 
 /* terminale — superficie da strumento, non da marketing card */
 .lp-term {
+  /* LEVEL-UP HOME: la firma tattica (chamfer + filo chiuso) è governata dalla
+     regola-cornice condivisa (.book-main & co.) a cui .lp-term è agganciato:
+     bordo/raggio/ombra propri azzerati qui perché quella regola vive PRIMA nel
+     file e verrebbe altrimenti sovrascritta (stessa specificità → vince l'ultima).
+     Resta l'overflow per il beam di scansione. */
   position: relative; margin: 0; overflow: hidden;
-  background: var(--am-panel); border: 1px solid var(--am-line-2);
-  border-radius: 18px;
-  box-shadow: 0 32px 80px -36px rgba(0,0,0,0.72);
+  background: var(--am-panel);
 }
 .lp-term-top {
   display: flex; align-items: center; gap: 8px; padding: 13px 16px;
@@ -7879,7 +7939,10 @@ button:disabled {
   .lp-tagword { animation: none !important; opacity: 1 !important; transform: none !important; }
   .lp-card-orb::after { animation: none !important; }
   .lp-streaks path { animation: none !important; }
-  .lp-what-cta, .lp-what-cta span, .lp-card:hover, .lp-sport:hover { transition: none !important; }
+  .lp-what-cta, .lp-what-cta span, .lp-card:hover, .lp-sport:hover,
+  .lp-nav-link, .lp-nav-cta, .lp-card-btn { transition: none !important; }
+  /* niente lift/press animati sui controlli tattici (il glow/focus resta) */
+  .lp-what-cta:active, .lp-nav-cta:active, .lp-card-btn:active { transform: none !important; }
   .lp-sport-dot { animation: none !important; }
   .lp-sport:hover .lp-sport-well, .lp-sport:hover .lp-sport-arr { transform: none !important; }
   /* edge scanner: niente beam né righe animate, niente pulse */
