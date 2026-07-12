@@ -7690,7 +7690,7 @@ button:disabled {
   color: var(--am-muted); max-width: 52ch;
 }
 .lp-kpis {
-  display: flex; gap: clamp(20px, 3vw, 44px); margin: 30px 0 0;
+  display: flex; flex-wrap: wrap; gap: clamp(20px, 3vw, 44px); margin: 30px 0 0;
   padding-top: 26px; border-top: 1px solid var(--am-line);
 }
 .lp-kpi { display: flex; flex-direction: column; gap: 4px; }
@@ -7698,6 +7698,10 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
   font-size: clamp(24px, 2.6vw, 34px); line-height: 1; letter-spacing: -0.02em;
   color: var(--am-text); font-feature-settings: "tnum" 1;
+  /* QW5: readout mono su una sola riga — "Hit-rate"/"CLV" non devono spezzarsi
+     ("Hit-/rate"), così i 3 slot condividono la stessa baseline e la didascalia
+     sotto resta allineata. flex-wrap sul contenitore fa reflow sui viewport minimi. */
+  white-space: nowrap;
 }
 .lp-kpi-val.accent { color: var(--am-coral); }
 .lp-kpi-unit { font-size: 0.5em; font-weight: 600; margin-left: 1px; opacity: .8; }
