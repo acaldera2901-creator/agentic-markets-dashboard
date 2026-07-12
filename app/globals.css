@@ -6697,39 +6697,38 @@ button:disabled {
 
 /* ── LEVEL-UP tattico sulle CTA reali frammentate — 2026-07-12 ───────────────
    Le CTA prominenti vivono su classi diverse (mb-cta/fp-cta/featured-unlock/
-   upgrade-card button/bonus-cta/betbtn). Qui do loro la firma tattica comune —
+   upgrade-card button/bonus-cta). Qui do loro la firma tattica comune —
    spigolo vivo 0px + focus-ring verde + label mono uppercase + micro-glow verde
    su hover — senza toccarne il colore semantico. Posizionato dopo le definizioni
    originali per vincere l'ordine di cascata (stessa specificità).
    Eccezioni motivate (dove sensato, come da brief):
    - .featured-unlock e .locked-cta: NIENTE uppercase — sono frasi lunghe
      (verificato in browser: locked-cta = "Sign in to see predictions, edge and
-     explanations", 49 char → in maiuscolo urlerebbe e perderebbe leggibilità);
-   - .betbtn: NIENTE glow verde (mantiene la soberness "no-green" a riposo).
+     explanations", 49 char → in maiuscolo urlerebbe e perderebbe leggibilità).
+   Nota 1d: .pred .act .betbtn RIMOSSO da questi gruppi — Andrea vuole le schede
+   "come online", quindi betbtn torna al suo look originale (radius 7px, mono
+   mixed-case). Il taglio delle schede vive in .card > .pred (blocco 1d in fondo).
    LIMITE: gli ~85 <button> restano frammentati; upgrade path = migrarli sulle
    4 varianti .btn-* in una passata dedicata (STAGE successivo). */
 .mb-cta,
 .free-paywall .fp-cta,
 .featured .featured-unlock,
 .upgrade-card button,
-.bonus-cta,
-.pred .act .betbtn {
+.bonus-cta {
   border-radius: var(--am-btn-radius);
 }
 .mb-cta:focus-visible,
 .free-paywall .fp-cta:focus-visible,
 .featured .featured-unlock:focus-visible,
 .upgrade-card button:focus-visible,
-.bonus-cta:focus-visible,
-.pred .act .betbtn:focus-visible {
+.bonus-cta:focus-visible {
   outline: 2px solid var(--am-coral);
   outline-offset: 2px;
 }
 .mb-cta,
 .free-paywall .fp-cta,
 .upgrade-card button,
-.bonus-cta,
-.pred .act .betbtn {
+.bonus-cta {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -8031,6 +8030,47 @@ button:disabled {
   transition: transform 0.18s ease-out;
 }
 .pred.is-clickable:hover .pred-more .pm-chev { transform: translateX(2px); }
+
+/* ── LEVEL-UP 1d: taglio (chamfer) sulle schede prediction/bet ───────────────
+   Feedback Andrea: aggiungere SOLO il taglio; tutto il resto IDENTICO all'online
+   (padding, tipografia, readout .v2r, densità, hover-lift). Tecnica:
+   - clip-path taglia i due angoli opposti (var(--ch)=14px);
+   - clip-path taglierebbe via il box-shadow → la profondità online la ridà
+     filter: drop-shadow (segue la sagoma obliqua) equivalente alle 2 ombre online;
+   - hairline del bordo + ciglio-top chiaro via INSET box-shadow (seguono il taglio),
+     al posto del border 1px che verrebbe tranciato sulla diagonale;
+   - hover: mantiene translateY(-1px) + ombra più profonda (drop-shadow marcato) +
+     hairline --am-line-2 (coral-b sulle card cliccabili, come online).
+   Scope .card > .pred → ESCLUDE il .pdm-grid.pred del modale scheda completa
+   (intoccabile). .pred non ha discendenti sticky/fixed → containing-block di
+   filter innocuo (a differenza di .book-main). Menu Place Bet: il dropdown è
+   absolute e deborda dalla card → se un .place-bet-menu si apre dentro la card,
+   disattivo il clip così non viene troncato (PlaceBetMenu oggi è orphan/non
+   renderizzato nel board live, ma il guard protegge se verrà cablato).
+   PERF: filter su molte card è più caro del box-shadow online; accettabile, da
+   ricontrollare su device di fascia bassa. */
+.card > .pred {
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--am-line);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.32));
+  transition: box-shadow 0.15s, filter 0.15s, transform 0.15s;
+}
+.card > .pred:hover {
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--am-line-2);
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.55));
+  transform: translateY(-1px);
+}
+.card > .pred.is-clickable:hover {
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--am-coral-b);
+}
+/* il dropdown bet deborda: niente clip mentre il menu è aperto (non troncarlo) */
+.card > .pred:has(.place-bet-menu.open) { clip-path: none; }
 
 /* ── backdrop ── */
 .pdm-backdrop {
