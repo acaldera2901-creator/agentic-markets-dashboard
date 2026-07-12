@@ -15,6 +15,7 @@ export type PickCardVM = {
   why: string | null;
   hasValue: boolean;
   locked: boolean;
+  externalEventId: string | null;
 };
 
 // Elide l'articolo: "Vince l'Inter" vs "Vince il Napoli" è raffinabile; qui
@@ -68,5 +69,6 @@ export function toPickCardVM(p: ProjectedPrediction): PickCardVM {
     why: p.explanation ?? null,
     hasValue: (p.edge_percent ?? 0) > 0,
     locked: p.locked === true,
+    externalEventId: p.external_event_id ?? null,
   };
 }

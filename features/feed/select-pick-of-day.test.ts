@@ -4,7 +4,7 @@ import type { PickCardVM } from "./pick-view-model";
 
 const vm = (o: Partial<PickCardVM>): PickCardVM => ({
   id: "x", sport: "football", competition: "", kickoff: "", homeTeam: null, awayTeam: null,
-  decision: "", odds: null, confidenceScore: 0, why: null, hasValue: false, locked: false, ...o,
+  decision: "", odds: null, confidenceScore: 0, why: null, hasValue: false, locked: false, externalEventId: null, ...o,
 });
 
 describe("selectPickOfDay", () => {

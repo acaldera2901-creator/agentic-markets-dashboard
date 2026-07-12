@@ -1,12 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { usePicks } from "./use-picks";
 import { selectPickOfDay } from "./select-pick-of-day";
 import { PickCard } from "./PickCard";
+import { PickCardExpanded } from "./PickCardExpanded";
 import { BottomNav } from "./BottomNav";
+import { Sheet } from "@/components/ui";
 
 export function FeedScreen() {
   const { picks, loading, error } = usePicks();
+  const [openPickId, setOpenPickId] = useState<string | null>(null);
+  const openPick = openPickId != null ? picks.find((p) => p.id === openPickId) ?? null : null;
 
   let body: React.ReactNode;
   if (loading) {
@@ -22,7 +27,7 @@ export function FeedScreen() {
       : picks;
     body = (
       <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "0 4px" }}>
-        {ordered.map((p) => <PickCard key={p.id} pick={p} pickOfDay={p.id === podId} />)}
+        {ordered.map((p) => <PickCard key={p.id} pick={p} pickOfDay={p.id === podId} onOpen={setOpenPickId} />)}
       </div>
     );
   }
@@ -40,6 +45,11 @@ export function FeedScreen() {
         </p>
       </footer>
       <BottomNav active="oggi" />
+      {openPick && (
+        <Sheet open title={`${openPick.homeTeam ?? ""} · ${openPick.decision}`} onClose={() => setOpenPickId(null)}>
+          <PickCardExpanded pick={openPick} />
+        </Sheet>
+      )}
     </div>
   );
 }
