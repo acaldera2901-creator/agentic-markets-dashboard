@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { Sheet } from "@/components/ui";
-import { planPriceCopy, planLabel, type PublicPlanKey } from "@/lib/commercial-plan";
-
-const PLAN_ORDER: PublicPlanKey[] = ["base", "premium"];
+import { planPriceCopy, planLabel, PUBLIC_PLAN_KEYS } from "@/lib/commercial-plan";
 
 const ctaLinkStyle = {
   fontFamily: "var(--font-display)",
@@ -49,7 +47,7 @@ export function UpgradeSheet({
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {PLAN_ORDER.map((key) => {
+          {PUBLIC_PLAN_KEYS.map((key) => {
             return (
               <div
                 key={key}
@@ -75,7 +73,7 @@ export function UpgradeSheet({
                 {/* SHORTCUT (marcato): il checkout vive nel monolite (/app, PlansTab/CheckoutModal).
                     Qui instradiamo al flusso legacy — nessun pagamento gestito in questo
                     componente. Upgrade path: portare il checkout in features/ in SP7. */}
-                <Link href="/app" style={ctaLinkStyle}>
+                <Link href="/app?tab=plans" style={ctaLinkStyle}>
                   Passa a {planLabel(key, "it")}
                 </Link>
               </div>

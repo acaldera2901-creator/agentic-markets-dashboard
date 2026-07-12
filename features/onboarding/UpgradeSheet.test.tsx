@@ -22,12 +22,12 @@ describe("UpgradeSheet", () => {
     expect(screen.getByText(premiumPrice)).toBeInTheDocument();
   });
 
-  it("mostra una CTA per piano che punta al checkout esistente /app", () => {
+  it("mostra una CTA per piano che punta al checkout esistente /app?tab=plans", () => {
     render(<UpgradeSheet open onClose={() => {}} />);
     const links = screen.getAllByRole("link", { name: /passa a|scegli|sblocca/i });
     expect(links.length).toBeGreaterThanOrEqual(2);
     for (const link of links) {
-      expect(link).toHaveAttribute("href", "/app");
+      expect(link).toHaveAttribute("href", "/app?tab=plans");
     }
   });
 
