@@ -96,7 +96,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "not authenticated" }, { status: 401 });
   }
   return NextResponse.json(
-    { identifier: ctx.identifier, plan: ctx.plan, name: ctx.name },
+    { identifier: ctx.identifier, plan: ctx.plan, name: ctx.name, plan_expires_at: ctx.plan_expires_at },
     { headers: { "cache-control": "no-store" } }
   );
 }
