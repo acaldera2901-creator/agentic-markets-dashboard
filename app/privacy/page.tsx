@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">1. Controller</h2>
           <p className="text-xs leading-relaxed">
-            BetRedge (&quot;we&quot;, &quot;us&quot;) operates this sports prediction platform. For GDPR purposes, the data controller is BetRedge. Contact: <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>.
+            BetRedge (&quot;we&quot;, &quot;us&quot;) is a sports prediction platform operated by <strong>Maven Agency AG</strong>, Blegistrasse 7, 6340 Baar (ZG), Switzerland — UID CHE&#8209;193.960.193. For GDPR purposes, the data controller is Maven Agency AG. Contact: <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>. Correspondence address: BetRedge, 66 Paul Street, London EC2A 4NA, United Kingdom.
           </p>
         </section>
 

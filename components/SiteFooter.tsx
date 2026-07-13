@@ -166,6 +166,13 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
           )
         )}
       </div>
+      {/* #GOLIVE-BLOCKER-1 (audit go-live legale): impressum — entità che opera la
+          piattaforma (interim "ponte Maven" in attesa della SL ES, decisione Andrea
+          2026-07-13). Dati verificati sul Registro di commercio ZG via Zefix
+          (CHE-193.960.193, stato EXISTIEREND). Testo identico su tutte le lingue. */}
+      <p className="site-footer-imprint">
+        BetRedge · operated by Maven Agency AG · Blegistrasse 7, 6340 Baar (ZG), Switzerland · UID CHE&#8209;193.960.193 · info@betredge.com
+      </p>
     </footer>
   );
 }
