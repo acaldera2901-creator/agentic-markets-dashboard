@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
 import { dbExecute } from "@/lib/db";
 import { createOrder, type PlanKey, type Period } from "@/lib/paypal";
-import { discountedAmountFor } from "@/lib/paygate";
+import { discountedAmountFor, blocksLowerTierPurchase } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +34,12 @@ export async function POST(req: Request) {
   const period = body.period;
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
+
+  // #GOLIVE-HIGH-E tier-guard: chi ha premium ATTIVO non può comprare 'base'
+  // (tier-arbitrage). ctx.plan è già expiry-adjusted (premium scaduto → 'free').
+  if (blocksLowerTierPurchase(ctx.plan, plan)) {
+    return NextResponse.json({ error: "active premium plan — cannot purchase lower tier" }, { status: 409 });
+  }
 
   // #PRICING-CREATORS-0706: stesse condizioni promo del rail PayGate (helper
   // condiviso) — i due rail non possono divergere sul prezzo. Flag OFF = full.
