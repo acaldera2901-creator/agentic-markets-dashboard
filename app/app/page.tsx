@@ -6452,7 +6452,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "La tua posizione",
       notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
       loading: "Caricamento classifica…",
-      noData: "Nessun dato disponibile.",
+      noData: "Ancora nessuna classifica.",
+      emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
       podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
     },
     en: {
@@ -6472,7 +6473,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Your position",
       notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
       loading: "Loading leaderboard…",
-      noData: "No data available.",
+      noData: "No ranking yet.",
+      emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
       podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
     },
     es: {
@@ -6492,7 +6494,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Tu posición",
       notOptedIn: "Activa la leaderboard en Ajustes para aparecer en la clasificación.",
       loading: "Cargando clasificación…",
-      noData: "No hay datos disponibles.",
+      noData: "Aún no hay clasificación.",
+      emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
       podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
     },
     fr: {
@@ -6512,7 +6515,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Votre position",
       notOptedIn: "Activez le leaderboard dans les Paramètres pour apparaître au classement.",
       loading: "Chargement du classement…",
-      noData: "Aucune donnée disponible.",
+      noData: "Pas encore de classement.",
+      emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
       podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
     },
     ru: {
@@ -6532,7 +6536,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Ваша позиция",
       notOptedIn: "Включите leaderboard в Настройках, чтобы попасть в рейтинг.",
       loading: "Загрузка рейтинга…",
-      noData: "Нет доступных данных.",
+      noData: "Рейтинга пока нет.",
+      emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
       podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
     },
   });
@@ -6626,7 +6631,25 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       {loading ? (
         <div className="text-xs font-mono text-[var(--am-muted-2)] animate-pulse py-8 text-center">{copy.loading}</div>
       ) : entries.length === 0 ? (
-        <div className="text-xs font-mono text-[var(--am-muted-2)] py-8 text-center">{copy.noData}</div>
+        // #QW2: empty state progettato — ghost podium (insegna la forma della
+        // classifica) + spiegazione di quando si popola. Il CTA "attiva in
+        // Impostazioni" vive già nel pannello "Your position" sotto.
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
+                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
+                <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
+                <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
+                <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
+              </div>
+            ))}
+          </div>
+          <div className="text-center space-y-1 py-2">
+            <p className="text-sm font-bold text-[var(--am-text)]">{copy.noData}</p>
+            <p className="text-xs font-mono text-[var(--am-muted-2)]" style={{ maxWidth: 360, margin: "0 auto" }}>{copy.emptyHint}</p>
+          </div>
+        </div>
       ) : (
         <>
           {/* Podium */}
