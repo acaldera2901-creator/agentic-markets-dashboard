@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 export const dynamic = "force-dynamic";
 
-// #PRELAUNCH-AUDIT LEGALE-2 layer2 (Italia · Decreto Dignità): dice al client se
-// l'utente è in una giurisdizione dove i link-book vanno nascosti. Geo dall'header
-// Vercel/Cloudflare (server-side, non falsificabile dal client). Stessa policy del
-// hard-block in lib/sportsbooks (allineare i due set se se ne aggiungono altri).
-const GEO_BLOCKED_COUNTRIES = new Set(["IT"]);
+// #GOLIVE-HIGH-D (audit go-live legale): dice al client se l'utente è in una
+// giurisdizione dove i link-book/casino vanno nascosti. Geo dall'header
+// Vercel/Cloudflare (server-side, non falsificabile dal client). La blocklist è la
+// STESSA costante di lib/sportsbooks (fonte unica di verità: nessun set da allineare).
 
 export function GET(req: NextRequest) {
   const country = (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")

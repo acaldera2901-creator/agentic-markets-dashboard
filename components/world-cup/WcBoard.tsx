@@ -785,15 +785,16 @@ export default function WcBoard() {
   const [liveMap, setLiveMap] = useState<Record<string, LiveScore>>({});
   // #WC-UNIFY-0702: quote live FortunePlay (stesso endpoint del board principale).
   const [fpOdds, setFpOdds] = useState<Record<string, FpOddsEntry>>({});
-  // #WC-GEO-GATE (Decreto Dignità, A2-B1/A2-B2): nasconde i link-book agli utenti
-  // IT. Mirror esatto del board principale (app/app/page.tsx) — stesso endpoint
-  // server-side /api/geo-books (geo non falsificabile dal client), default false
-  // (mostra) fino alla risposta.
-  const [booksBlocked, setBooksBlocked] = useState(false);
+  // #GOLIVE-HIGH-D (audit go-live legale, ex #WC-GEO-GATE): nasconde i link-book nelle
+  // geo bloccate. Mirror esatto del board principale (app/app/page.tsx) — stesso
+  // endpoint server-side /api/geo-books (geo non falsificabile dal client). FAIL-CLOSED:
+  // default TRUE (nascosto) finché il server non conferma esplicitamente blocked===false
+  // (niente flash al load, niente fail-open se il fetch fallisce; il .catch NON sblocca).
+  const [booksBlocked, setBooksBlocked] = useState(true);
   useEffect(() => {
     fetch("/api/geo-books", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setBooksBlocked(!!d?.blocked))
+      .then((d) => setBooksBlocked(d?.blocked !== false))
       .catch(() => {});
   }, []);
 
