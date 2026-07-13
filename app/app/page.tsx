@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, type CSSProperties } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
@@ -20,6 +20,7 @@ import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
+import { MenuIcon } from "@/app/components/menu-icon";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
@@ -1477,31 +1478,6 @@ function useT() { return TRANSLATIONS[useLang()]; }
 // Replaces the `lang === "it" ? IT : EN` ternaries so es/fr/ru no longer fall
 // back to English. Pass the value per language; `pick` selects by current lang.
 function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T { return v[lang]; }
-// #PRO-ICONS: glifo SVG dalla sprite (#g-*). Sostituisce le emoji residue (lock,
-// refresh, medaglie, fiamma) con line-art coerente. Default inline (1em, allineato al
-// testo); `inline={false}` per box a dimensione esplicita. La sprite <SportGlyphSprite/>
-// è già montata su questa pagina.
-function Glyph({ id, size = "1em", inline = true, style, className, label }: {
-  id: string; size?: number | string; inline?: boolean;
-  style?: CSSProperties; className?: string; label?: string;
-}) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      aria-hidden={label ? undefined : true}
-      role={label ? "img" : undefined}
-      aria-label={label}
-      style={{
-        width: size, height: size,
-        ...(inline ? { display: "inline-block", verticalAlign: "-0.14em" } : { display: "block" }),
-        ...style,
-      }}
-    >
-      <use href={`#${id}`} />
-    </svg>
-  );
-}
 function languageLabel(code: Lang, t: (typeof TRANSLATIONS)[Lang]) {
   const labels: Record<Lang, string> = {
     it: t.language_it,
@@ -1740,16 +1716,21 @@ const LEAGUE_FLAGS: Record<string, string> = {
 };
 
 // Rail nav glyphs (mockup .rail svg <use>): tab → custom sport-glyph symbol id.
-// #ICON-SVG-COHERENCE: ogni voce del rail passa dai glifi SVG line-art (#g-*),
-// coerenti col resto del sito. Rimpiazzano i vecchi raster 3D "#MENU-ICONS-0626"
-// (orb/clessidra/diamante/card) e il trofeo raster, che leggevano come emoji.
 const RAIL_GLYPHS: Record<string, string> = {
   bets: "#g-desk",
   history: "#g-history",
   leaderboard: "#g-rank",
   "match-builder": "#g-builder",
-  invita: "#g-invite",
-  plans: "#g-plans",
+  account: "#g-acct",
+};
+
+// #MENU-ICONS-0626: voci del rail con la nuova icona illustrata (MenuIcon raster).
+// Le voci non mappate (es. leaderboard, in attesa del podio) restano sui glifi SVG.
+const RAIL_ICONS: Record<string, "prediction" | "history" | "plans" | "creator" | "builder"> = {
+  bets: "prediction",
+  history: "history",
+  "match-builder": "builder",
+  plans: "plans",
 };
 
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
@@ -5068,7 +5049,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><Glyph id="g-lock" /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5076,7 +5057,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock"><Glyph id="g-lock" /></span>
+                <span className="v2r-qn lock">🔒</span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -5620,7 +5601,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><Glyph id="g-lock" /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5628,7 +5609,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock"><Glyph id="g-lock" /></span>
+                <span className="v2r-qn lock">🔒</span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -5883,7 +5864,7 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
       <div className="am-surface p-4">
         <h3 className="text-xs font-mono text-[var(--am-coral)] uppercase tracking-wider mb-3">Pipeline Flow · 16 Agents</h3>
-        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider flex items-center gap-1.5"><SportIcon sport="football" size={12} variant="sm" />Football</div>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider">⚽ Football</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "DataCollector", "→", "ModelAgent", "→", "ContextService", "→",
@@ -5899,7 +5880,7 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
             <span key={i} className={["→", "·"].includes(item) ? "text-[var(--am-muted-2)]" : "text-[var(--am-text)]"}>{item}</span>
           ))}
         </div>
-        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider flex items-center gap-1.5"><SportIcon sport="tennis" size={12} variant="sm" />Tennis</div>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider">🎾 Tennis</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "TennisDataCollector", "→", "TennisModel", "→", "TennisAnalyst", "→",
@@ -6318,7 +6299,7 @@ function MatchBuilderTab({
               {sharedRows.map((row) => (
                 <div key={row.id} className="mb-slip-item">
                   <span className="mb-slip-fixture">{row.label}</span>
-                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]"><Glyph id="g-lock" /></span></span>
+                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
                 </div>
               ))}
             </div>
@@ -6505,7 +6486,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Caricamento classifica…",
       noData: "Ancora nessuna classifica.",
       emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
-      podiumLabel: ["Primo", "Secondo", "Terzo"],
+      podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
     },
     en: {
       eyebrow: "Public leaderboard",
@@ -6526,7 +6507,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Loading leaderboard…",
       noData: "No ranking yet.",
       emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
-      podiumLabel: ["First", "Second", "Third"],
+      podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
     },
     es: {
       eyebrow: "Clasificación pública",
@@ -6547,7 +6528,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Cargando clasificación…",
       noData: "Aún no hay clasificación.",
       emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
-      podiumLabel: ["Primero", "Segundo", "Tercero"],
+      podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
     },
     fr: {
       eyebrow: "Classement public",
@@ -6568,7 +6549,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Chargement du classement…",
       noData: "Pas encore de classement.",
       emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
-      podiumLabel: ["Premier", "Deuxième", "Troisième"],
+      podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
     },
     ru: {
       eyebrow: "Публичный рейтинг",
@@ -6589,7 +6570,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Загрузка рейтинга…",
       noData: "Рейтинга пока нет.",
       emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
-      podiumLabel: ["Первое", "Второе", "Третье"],
+      podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
     },
   });
 
@@ -6645,7 +6626,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-2 gap-3">
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                <Glyph id="g-trophy" /> Top hit rate
+                🏆 Top hit rate
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
@@ -6662,7 +6643,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             </div>
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                <Glyph id="g-flame" /> {pick5(lang, { it: "Più attivo", en: "Most active", es: "Más activo", fr: "Le plus actif", ru: "Самый активный" })}
+                {pick5(lang, { it: "🔥 Più attivo", en: "🔥 Most active", es: "🔥 Más activo", fr: "🔥 Le plus actif", ru: "🔥 Самый активный" })}
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
@@ -6689,7 +6670,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-3 gap-3" aria-hidden="true">
             {[0, 1, 2].map((i) => (
               <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
-                <Glyph id="g-medal" inline={false} size={24} style={{ margin: "0 auto", color: "var(--am-muted-2)" }} />
+                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
                 <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
                 <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
                 <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
@@ -6708,7 +6689,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             <div className="grid grid-cols-3 gap-3">
               {podium.map((e, i) => (
                 <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={i === 0 ? { borderColor: medalBorder[i], background: "var(--am-coral)" } : { borderColor: medalBorder[i] }}>
-                  <Glyph id="g-medal" inline={false} size={24} label={copy.podiumLabel[i]} style={{ margin: "0 auto", color: i === 0 ? "var(--am-coral-ink)" : i === 1 ? "var(--am-rank-silver)" : "var(--am-rank-bronze)" }} />
+                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
                   <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
                   <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
                   <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-90" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
@@ -6789,6 +6770,7 @@ function HistoryTab({ history, stats, loading }: {
   const [resultFilter, setResultFilter] = useState("all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
 
+  const SPORT_ICONS: Record<string, string> = { football: "⚽", tennis: "🎾" };
   const resultOf = (h: V2HistoryRow) => h.result ?? "pending";
 
   // Sport is the first-level filter; competitions are derived from the rows of
@@ -6946,13 +6928,10 @@ function HistoryTab({ history, stats, loading }: {
                 return (
                   <tr key={h.id}>
                     <td className="fx-c">
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, verticalAlign: "middle" }}>
-                        {h.sport === "football" ? <SportIcon sport="football" size={13} variant="sm" /> : h.sport === "tennis" ? <SportIcon sport="tennis" size={13} variant="sm" /> : null}
-                        {eventLabel(h)}
-                      </span>
+                      {SPORT_ICONS[h.sport] ?? ""} {eventLabel(h)}
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
-                    <td className="pk">{h.locked ? <Glyph id="g-lock" label={pick5(lang, { it: "Bloccato", en: "Locked", es: "Bloqueado", fr: "Verrouillé", ru: "Заблокировано" })} /> : (h.pick ?? "—")}</td>
+                    <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
                     <td className="r">
                       <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
                     </td>
@@ -8677,7 +8656,7 @@ export default function Dashboard() {
     // #MOB1: Match Builder è una destinazione primaria (loggati) → entra nella
     // bottom bar invece di restare fuori-schermo nella vecchia striscia laterale.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Builder", glyph: RAIL_GLYPHS["match-builder"] ?? "#g-builder" }] : []),
-    { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["plans"] ?? "#g-desk" },
+    { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
   ];
 
   return (
@@ -8802,7 +8781,9 @@ export default function Dashboard() {
                   className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
                   onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
                 >
-                  <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>
+                  {RAIL_ICONS[item.tab]
+                    ? <MenuIcon name={RAIL_ICONS[item.tab]} size={18} className="rail-ic" />
+                    : <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>}
                   <span className="rail-label">{item.label}</span>
                   {item.value && <strong className="n">{item.value}</strong>}
                 </button>
@@ -8812,12 +8793,12 @@ export default function Dashboard() {
               <span className="rail-lab is-second">{tNav.featured_label}</span>
               {/* Track B: World Cup hub is a route, not a tab */}
               <Link className="rail-item" href="/world-cup">
-                <svg className="rail-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
+                <SportIcon sport="worldcup" size={17} className="rail-ic" variant="sm" />
                 <span className="rail-label">World Cup</span>
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
-                <svg className="rail-ic" aria-hidden="true"><use href="#g-pick" /></svg>
+                <MenuIcon name="creator" size={18} className="rail-ic" />
                 <span className="rail-label">Creator Picks</span>
               </a>
               {/* #WEEKLY-PICK-1: Weekly Pick — la multipla della casa (route) */}
@@ -8826,7 +8807,7 @@ export default function Dashboard() {
                 <span className="rail-label">Weekly Pick</span>
               </Link>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
-                <Glyph id="g-refresh" /> {refreshing ? "..." : tUI.refresh_odds}
+                ↻ {refreshing ? "..." : tUI.refresh_odds}
                 <span className="sync">live</span>
               </button>
             </aside>
@@ -8839,11 +8820,11 @@ export default function Dashboard() {
             <span className="am-featured-lab">{tNav.featured_label}</span>
             <div className="am-featured-grid">
               <Link className="am-feat-tile" href="/world-cup">
-                <svg className="am-feat-ic" aria-hidden="true"><use href="#g-trophy" /></svg>
+                <SportIcon sport="worldcup" size={22} className="am-feat-ic" variant="sm" />
                 <span className="am-feat-l">World Cup</span>
               </Link>
               <a className="am-feat-tile" href="/community">
-                <svg className="am-feat-ic" aria-hidden="true"><use href="#g-pick" /></svg>
+                <MenuIcon name="creator" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Creator Picks</span>
               </a>
               <Link className="am-feat-tile" href="/weekly-pick">
@@ -8854,7 +8835,7 @@ export default function Dashboard() {
                   primaria) → rimosso da "In Evidenza" per non duplicarlo. */}
               {hasClientProfile && (
                 <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
-                  <svg className="am-feat-ic" aria-hidden="true"><use href="#g-invite" /></svg>
+                  <svg className="am-feat-ic" aria-hidden="true"><use href="#g-acct" /></svg>
                   <span className="am-feat-l">{pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}</span>
                 </button>
               )}
@@ -8930,8 +8911,7 @@ export default function Dashboard() {
 
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-              <SportIcon sport="football" size={16} variant="sm" />
-              <span>{tNav.season_pause}</span>
+              <span>⚽ {tNav.season_pause}</span>
             </div>
           )}
           {tab === "bets" && (
@@ -9054,8 +9034,10 @@ export default function Dashboard() {
             aria-current={tab === b.tab ? "page" : undefined}
             onClick={() => { setTab(b.tab); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
           >
-            {/* #ICON-SVG-COHERENCE: glifi SVG line-art (#g-*) coerenti col rail PC. */}
-            <svg aria-hidden="true"><use href={b.glyph} /></svg>
+            {/* #MOBILE-FEATURED-1: nostre icone illustrate come nel rail PC; glifo di fallback. */}
+            {RAIL_ICONS[b.tab]
+              ? <MenuIcon name={RAIL_ICONS[b.tab]} size={20} />
+              : <svg aria-hidden="true"><use href={b.glyph} /></svg>}
             <span className="bn-l">{b.label}</span>
           </button>
         ))}
