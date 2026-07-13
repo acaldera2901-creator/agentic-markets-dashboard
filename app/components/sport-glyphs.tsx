@@ -71,6 +71,10 @@ export function SportGlyphSprite() {
         <symbol id="g-acct" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8.5" r="3.4" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" /></g></symbol>
         <symbol id="g-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.8-4.8" /></g></symbol>
         <symbol id="g-ticket" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h13A1.5 1.5 0 0 1 20 7.5v2a1.6 1.6 0 0 0 0 3v2A1.5 1.5 0 0 1 18.5 18h-13A1.5 1.5 0 0 1 4 16.5v-2a1.6 1.6 0 0 0 0-3Z" /><path d="M9 9.5h6M9 12.5h4" stroke="var(--am-coral)" /></g></symbol>
+        {/* g-invite — referral: persona + coral "+" (Invita/Invite). */}
+        <symbol id="g-invite" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.3" /><path d="M3.5 20c0-3.3 2.6-5.4 5.5-5.4s5.5 2.1 5.5 5.4" /><path d="M18.5 8.5v5M21 11h-5" stroke="var(--am-coral)" /></g></symbol>
+        {/* g-plans — tier/livelli impilati, top coral (Piani/Plans). */}
+        <symbol id="g-plans" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.2 20.5 7.4 12 11.6 3.5 7.4Z" stroke="var(--am-coral)" /><path d="M4 12l8 4 8-4M4 16.4l8 4 8-4" /></g></symbol>
       </defs>
     </svg>
   );

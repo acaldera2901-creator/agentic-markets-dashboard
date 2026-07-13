@@ -328,14 +328,16 @@ function rowFromPrediction(p: PredApiRow): ScanRow | null {
   if (!home || !away) return null;
   return {
     match: `${home}–${away}`,
-    glyph: p.league === "WC" ? "trophy" : "ball",
+    // #ICON-SVG-COHERENCE: icona guida coerente per SPORT (calcio → #g-ball),
+    // non per competizione: il trofeo su una partita di calcio leggeva incoerente.
+    glyph: "ball",
     model, market, edge: edgePt,
   };
 }
 // Righe esempio del terminale — illustrano il FORMATO, marcate "esempio" in UI.
 // Non sono claim sui risultati: matchup neutri, edge plausibili decrescenti.
 const SCAN_EXAMPLE_ROWS: ScanRow[] = [
-  { match: "Brasile–Argentina", glyph: "trophy", model: 49, market: 42, edge: 7.1 },
+  { match: "Brasile–Argentina", glyph: "ball", model: 49, market: 42, edge: 7.1 },
   { match: "Inter–Napoli", glyph: "ball", model: 54, market: 48, edge: 6.2 },
   { match: "Sinner–Zverev", glyph: "tball", model: 66, market: 61, edge: 5.4 },
   { match: "Bayern–Dortmund", glyph: "ball", model: 58, market: 54, edge: 4.1 },
