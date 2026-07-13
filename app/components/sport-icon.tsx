@@ -1,58 +1,74 @@
 // app/components/sport-icon.tsx
-// #PRO-ICONS: SportIcon rende ora il GLIFO SVG sleek-coral (line-art, stroke ~1.5,
-// UNA forma in --am-coral) dalla sprite #g-* — non più i raster 3D di /public/banners.
-// Coerenza piena col resto del branding a glifo (rail, nav, hero): l'icona eredita
-// currentColor dal contesto + l'accent coral razionato, e resta nitida a QUALSIASI
-// dimensione (13–17px card/righe fino ai 40px+ header) senza bitmap né -sm.
+// #SPORT-ICONS-1 / #SPORT-ICONS-2: i NUOVI loghi sport (palla/pallina/trofeo
+// trasparenti con scia coral) vivono come raster in /public/banners. Questo helper
+// li monta sia nei punti PROMINENTI (header di sezione, FeaturedEdge, hub World Cup)
+// sia — dal 2026-06-18 — nei punti PICCOLI (top-card ~15px, righe tabella ~16px,
+// filtri ~14px, ticker ~13px, rail ~17px), dove però usiamo varianti raster
+// OTTIMIZZATE (-sm.png, 64px, alpha ripulita) per restare nitidi a quelle dimensioni
+// invece di scalare il master da 320px (che impastava e pesava 10x sui byte).
 //
-// Mappatura sport → glifo (sprite in app/components/sport-glyphs.tsx):
-//   football / soccer → #g-ball   (pallone: cerchio + pentagono coral)
-//   tennis            → #g-tball  (pallina: cerchio + cuciture coral — parallela al pallone,
-//                                  più pulita del racket a piccole dimensioni)
-//   worldcup          → #g-trophy (trofeo: coppa + gemma coral)
+// Sorgenti:
+//   master  : public/banners/sport-{football,tennis,worldcup}.png       (320px, scia piena)
+//   small   : public/banners/sport-{football,tennis,worldcup}-sm.png    (64px, alpha pulita)
+// 2026-06-18 (override Andrea): il World Cup HA ora la variante -sm (downscale Lanczos
+// dal master + tail-haze ripulita) e usa il NUOVO logo trofeo anche ai piccoli (13–17px)
+// — non più il glifo vettoriale #g-trophy. A queste dimensioni il trofeo gold resta
+// leggibile con la sua scia coral; vedi <SportMark>.
 //
-// La sprite (<SportGlyphSprite/>) è già montata su tutte le pagine che usano SportIcon
-// (landing, /app board, world-cup, weekly-pick). API invariata: i ~24 call-site non cambiano.
-// `variant` è mantenuto per compat di firma ma non incide più (nessuna variante raster).
+// NON usare next/image: replichiamo il pattern <img> già adottato dai tasti landing
+// (.lp-sport-img) per coerenza e zero dipendenze dalla pipeline immagini.
 
 type SportKind = "football" | "tennis" | "worldcup";
 
-const GLYPH: Record<SportKind, string> = {
-  football: "#g-ball",
-  tennis: "#g-tball",
-  worldcup: "#g-trophy",
+const SRC: Record<SportKind, string> = {
+  football: "/banners/sport-football.png",
+  tennis: "/banners/sport-tennis.png",
+  worldcup: "/banners/sport-worldcup.png",
+};
+
+// varianti 64px ottimizzate per i contesti ≤24px (alpha-tail ripulita, downscale Lanczos)
+const SRC_SM: Partial<Record<SportKind, string>> = {
+  football: "/banners/sport-football-sm.png",
+  tennis: "/banners/sport-tennis-sm.png",
+  worldcup: "/banners/sport-worldcup-sm.png",
 };
 
 export function SportIcon({
   sport,
   size = 22,
   className,
-  variant: _variant = "auto",
+  variant = "auto",
 }: {
   sport: SportKind;
-  /** lato del box quadrato in px */
+  /** lato del box quadrato in px; il logo è contain dentro al box */
   size?: number;
   className?: string;
-  /** mantenuto per compat di firma; non incide (i glifi SVG scalano puliti a ogni size) */
+  /** "auto" sceglie il master sopra 24px e la variante -sm sotto; "lg" forza il master */
   variant?: "auto" | "lg" | "sm";
 }) {
-  const href = GLYPH[sport] ?? GLYPH.football;
+  const useSmall =
+    (variant === "sm" || (variant === "auto" && size <= 24)) && SRC_SM[sport] != null;
+  const src = useSmall ? (SRC_SM[sport] as string) : SRC[sport];
   return (
-    <svg
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
       className={className}
-      aria-hidden="true"
-      style={{ width: size, height: size, display: "block", flex: "0 0 auto" }}
-    >
-      <use href={href} />
-    </svg>
+      // contain: i loghi hanno alpha e proporzioni proprie, non vanno croppati.
+      // image-rendering auto: sono foto, il bicubic del browser sul -sm (64→~16px,
+      // downscale ≤4x già ottimizzato) resta più morbido di un nearest.
+      style={{ width: size, height: size, objectFit: "contain", display: "block", flex: "0 0 auto" }}
+    />
   );
 }
 
-// SportMark — contesti PICCOLI: delega a SportIcon (stesso glifo SVG, scala pulita).
-// `className` va all'<svg>, così eredita sizing/box/color del contesto esistente.
+// SportMark — usato nei contesti PICCOLI: football/tennis/worldcup montano tutti il
+// logo raster (variante -sm). Dal 2026-06-18 anche il World Cup usa il nuovo logo
+// trofeo (override Andrea), non più il glifo vettoriale #g-trophy. `className` va
+// all'<img> renderizzato, così eredita il sizing/box del contesto esistente.
 export function SportMark({
   sport,
   size,
@@ -62,5 +78,5 @@ export function SportMark({
   size?: number;
   className?: string;
 }) {
-  return <SportIcon sport={sport} size={size} className={className} />;
+  return <SportIcon sport={sport} size={size} className={className} variant="sm" />;
 }
