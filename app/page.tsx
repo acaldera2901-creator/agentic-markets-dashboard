@@ -328,14 +328,16 @@ function rowFromPrediction(p: PredApiRow): ScanRow | null {
   if (!home || !away) return null;
   return {
     match: `${home}–${away}`,
-    glyph: p.league === "WC" ? "trophy" : "ball",
+    // #ICON-SVG-COHERENCE: icona guida coerente per SPORT (calcio → #g-ball),
+    // non per competizione: il trofeo su una partita di calcio leggeva incoerente.
+    glyph: "ball",
     model, market, edge: edgePt,
   };
 }
 // Righe esempio del terminale — illustrano il FORMATO, marcate "esempio" in UI.
 // Non sono claim sui risultati: matchup neutri, edge plausibili decrescenti.
 const SCAN_EXAMPLE_ROWS: ScanRow[] = [
-  { match: "Brasile–Argentina", glyph: "trophy", model: 49, market: 42, edge: 7.1 },
+  { match: "Brasile–Argentina", glyph: "ball", model: 49, market: 42, edge: 7.1 },
   { match: "Inter–Napoli", glyph: "ball", model: 54, market: 48, edge: 6.2 },
   { match: "Sinner–Zverev", glyph: "tball", model: 66, market: 61, edge: 5.4 },
   { match: "Bayern–Dortmund", glyph: "ball", model: 58, market: 54, edge: 4.1 },
@@ -522,24 +524,24 @@ export default function LandingPage() {
       <LandingCarousel lang={lang} />
       <nav className="lp-hero-sports" aria-label="Sports">
         <a href="/app?tab=bets&sport=all" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-allsports.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-allsports" /></svg></span>
           <b className="lp-sport-lab">{t.spAllSports}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         <a href="/app?tab=bets&sport=football" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ball" /></svg></span>
           <b className="lp-sport-lab">{t.spFootball}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         <a href="/app?tab=bets&sport=tennis" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-tennis.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-tball" /></svg></span>
           <b className="lp-sport-lab">{t.spTennis}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         {/* #WC-HOME-LINK-0702 (Andrea): il chip World Cup porta all'hub /world-cup
             (ora first-class: card con quote + scheda completa). */}
         <Link href="/world-cup" className="lp-sport lp-sport-feat">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-worldcup.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-trophy" /></svg></span>
           <b className="lp-sport-lab">{t.spWorldCup}</b>
           <span className="lp-sport-live"><i className="lp-sport-dot" />LIVE</span>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
