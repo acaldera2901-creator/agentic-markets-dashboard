@@ -1882,6 +1882,21 @@ function planPriceCopy(plan: PlanKey, lang: Lang) {
 }
 const CLIENT_PROFILE_KEY = "agentic-client-profile";
 const CLIENT_PROFILES_KEY = "agentic-client-profiles";
+
+// #PAYGATE-RETURN-SMOOTH: prima di reindirizzare a PayGate salviamo piano+scadenza
+// correnti + timestamp. Al rientro su /app un effetto fa polling di /api/auth e
+// mostra il banner "pagamento ricevuto" appena il grant (callback o reconcile) atterra.
+const PAY_PENDING_KEY = "bpg_pay_pending";
+function markPayPending() {
+  try {
+    const raw = window.localStorage.getItem(CLIENT_PROFILE_KEY);
+    const p = raw ? (JSON.parse(raw) as { plan?: string; planExpiresAt?: string | null }) : null;
+    window.localStorage.setItem(
+      PAY_PENDING_KEY,
+      JSON.stringify({ beforePlan: p?.plan ?? "free", beforeExp: p?.planExpiresAt ?? null, ts: Date.now() }),
+    );
+  } catch { /* localStorage indisponibile: nessun banner, flusso invariato */ }
+}
 const PRIVATE_BALANCE_PLACEHOLDER = "LOCK";
 const EMPTY_SUMMARY: Summary = {
   total_bets: 0,
@@ -3403,7 +3418,7 @@ function CheckoutModal({
       return;
     }
     const { url } = (await res.json()) as { url?: string };
-    if (url) window.location.href = url;
+    if (url) { markPayPending(); window.location.href = url; }
   };
 
   return (
@@ -3744,7 +3759,7 @@ function PlansTab({
                 });
                 if (!res.ok) { console.error("[paygate-test] checkout failed", res.status); return; }
                 const { url } = (await res.json()) as { url?: string };
-                if (url) window.location.href = url;
+                if (url) { markPayPending(); window.location.href = url; }
               } catch (e) { console.error("[paygate-test] error", e); }
             }}
           >
@@ -8111,6 +8126,8 @@ export default function Dashboard() {
   // True once the server-session reconcile has resolved, so we know whether the
   // visitor is anonymous before deciding to surface the sign-in/register prompt.
   const [authChecked, setAuthChecked] = useState(false);
+  // #PAYGATE-RETURN-SMOOTH: stato del banner al rientro da un checkout PayGate.
+  const [payReturn, setPayReturn] = useState<"checking" | "done" | null>(null);
   // #LOGIN-WALL-0626: real server-session signal (cookie), NOT clientProfile —
   // a stale localStorage profile survives an expired cookie (see the 401 branch
   // of the probe), so gating the hard auth wall on the profile would be leaky.
@@ -8292,6 +8309,46 @@ export default function Dashboard() {
       finally { if (!cancelled) setAuthChecked(true); }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  // #PAYGATE-RETURN-SMOOTH: se rientriamo da un checkout PayGate (flag recente),
+  // facciamo polling di /api/auth finché il grant (callback o reconcile self-heal)
+  // atterra, poi mostriamo "pagamento ricevuto — piano attivo". Nessun redirect da
+  // PayGate necessario: intercetta il ritorno dell'utente e riflette il piano.
+  useEffect(() => {
+    let flag: { beforePlan?: string; beforeExp?: string | null; ts?: number } | null = null;
+    try { const raw = window.localStorage.getItem(PAY_PENDING_KEY); flag = raw ? JSON.parse(raw) : null; } catch { /**/ }
+    const clear = () => { try { window.localStorage.removeItem(PAY_PENDING_KEY); } catch { /**/ } };
+    if (!flag?.ts || Date.now() - flag.ts > 15 * 60 * 1000) { if (flag) clear(); return; }
+
+    let stop = false;
+    let tries = 0;
+    setPayReturn("checking");
+    const tick = async () => {
+      if (stop) return;
+      tries++;
+      try {
+        const r = await fetch("/api/auth", { credentials: "same-origin", cache: "no-store" });
+        if (r.ok) {
+          const s = (await r.json()) as { plan?: ClientProfile["plan"]; plan_expires_at?: string | null };
+          const changed =
+            (!!s.plan && s.plan !== flag!.beforePlan) || (s.plan_expires_at ?? null) !== (flag!.beforeExp ?? null);
+          if (changed && s.plan && s.plan !== "free") {
+            setClientProfile((prev) =>
+              prev ? { ...prev, plan: s.plan!, planExpiresAt: s.plan_expires_at ?? prev.planExpiresAt } : prev,
+            );
+            setPayReturn("done");
+            clear();
+            setTimeout(() => { if (!stop) setPayReturn(null); }, 6000);
+            return;
+          }
+        }
+      } catch { /**/ }
+      if (tries >= 18) { setPayReturn(null); clear(); return; } // ~90s poi rinuncia silenziosa (il grant arriva comunque via reconcile)
+      setTimeout(tick, 5000);
+    };
+    void tick();
+    return () => { stop = true; };
   }, []);
 
   // #LOGIN-WALL-0626: the desk is now a hard auth wall — anonymous visitors get a
@@ -8671,6 +8728,19 @@ export default function Dashboard() {
     <main className="portal-root">
       <SportGlyphSprite />
       <CookieBanner />
+      {/* #PAYGATE-RETURN-SMOOTH: feedback al rientro da un checkout PayGate */}
+      {payReturn && (
+        <div role="status"
+          style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 9998,
+            padding: "10px 18px", borderRadius: 10, maxWidth: "92vw", display: "inline-flex", alignItems: "center", gap: 10,
+            fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13, lineHeight: 1.4,
+            background: "var(--am-panel-2)", color: "var(--am-text)",
+            border: `1px solid ${payReturn === "done" ? "var(--am-coral-b)" : "var(--am-line-2)"}` }}>
+          {payReturn === "checking"
+            ? <>Verifica pagamento in corso…</>
+            : <><span style={{ color: "var(--am-coral)", fontWeight: 700 }}>✓</span> Pagamento ricevuto — piano attivo</>}
+        </div>
+      )}
       {activationNotice && (
         <div role="status" onClick={() => setActivationNotice(null)}
           style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 9998,
