@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import {
+  appendWeeklyLegs,
   currentWeekStart,
   buildHouseMultipla,
   weeklyPickIncludedInPlan,
@@ -60,6 +61,87 @@ describe("buildHouseMultipla", () => {
       { id: "a", label: "A", market: "A", sport: "s", prob: 0.5 },
     ];
     expect(buildHouseMultipla(tied, 1)!.selections.map((s) => s.id)).toEqual(["a", "z"]);
+  });
+});
+
+describe("buildHouseMultipla — distribuzione settimanale (#WEEKLY-PICK-4)", () => {
+  const day = (d: string, hh = "12") => `2026-07-${d}T${hh}:00:00Z`;
+  const mk = (id: string, prob: number, startsAt: string | null): WeeklyPickLeg => ({
+    id, label: `${id} vs X`, market: id, sport: "tennis", prob, startsAt,
+  });
+
+  it("max 1 leg per giorno: per ogni giorno vince la prob più alta", () => {
+    const out = buildHouseMultipla(
+      [
+        mk("mon-lo", 0.9, day("13")), // stesso giorno di mon-hi... prob più bassa? no: 0.9
+        mk("mon-hi", 0.95, day("13", "18")),
+        mk("wed", 0.6, day("15")),
+        mk("fri", 0.55, day("17")),
+      ],
+      3
+    )!;
+    const ids = out.selections.map((s) => s.id);
+    expect(ids).toEqual(["mon-hi", "wed", "fri"]); // 1 per giorno, cronologiche
+    expect(ids).not.toContain("mon-lo"); // secondo dello stesso giorno escluso
+  });
+
+  it("riempe dal pool residuo quando i giorni distinti non bastano", () => {
+    const out = buildHouseMultipla(
+      [mk("a", 0.9, day("13")), mk("b", 0.8, day("13")), mk("c", 0.7, day("13"))],
+      3
+    )!;
+    expect(out.selections.length).toBe(3); // 1 day-winner + 2 riserve
+  });
+
+  it("legacy: senza startsAt il comportamento resta top-prob", () => {
+    const out = buildHouseMultipla(
+      [mk("a", 0.5, null), mk("b", 0.9, null), mk("c", 0.7, null)],
+      2
+    )!;
+    expect(out.selections.map((s) => s.id).sort()).toEqual(["b", "c"]);
+  });
+
+  it("selections in ordine cronologico (senza data in coda)", () => {
+    const out = buildHouseMultipla(
+      [mk("late", 0.9, day("18")), mk("early", 0.6, day("14")), mk("nodate", 0.99, null)],
+      3
+    )!;
+    expect(out.selections.map((s) => s.id)).toEqual(["early", "late", "nodate"]);
+  });
+});
+
+describe("appendWeeklyLegs — crescita progressiva (#WEEKLY-PICK-4)", () => {
+  const day = (d: string, hh = "12") => `2026-07-${d}T${hh}:00:00Z`;
+  const mk = (id: string, prob: number, startsAt: string | null): WeeklyPickLeg => ({
+    id, label: `${id} vs X`, market: id, sport: "tennis", prob, startsAt,
+  });
+
+  it("appende solo giorni NUOVI, congela le esistenti, ordina cronologicamente", () => {
+    const existing = [mk("mon", 0.7, day("13"))];
+    const out = appendWeeklyLegs(existing, [
+      mk("mon2", 0.99, day("13")),
+      mk("tue", 0.6, day("14")),
+      mk("wed", 0.65, day("15")),
+    ], 5)!;
+    expect(out.selections.map((s) => s.id)).toEqual(["mon", "tue", "wed"]);
+  });
+
+  it("non supera maxLegs e non duplica id", () => {
+    const existing = [mk("a", 0.7, day("13")), mk("b", 0.6, day("14"))];
+    const out = appendWeeklyLegs(existing, [
+      mk("a", 0.9, day("16")),
+      mk("c", 0.8, day("15")),
+      mk("d", 0.75, day("16")),
+      mk("e", 0.7, day("17")),
+    ], 3)!;
+    expect(out.selections.length).toBe(3);
+    expect(out.selections.map((s) => s.id)).toContain("c");
+  });
+
+  it("ritorna null se nulla da aggiungere o schedina piena", () => {
+    const existing = [mk("a", 0.7, day("13")), mk("b", 0.6, day("14"))];
+    expect(appendWeeklyLegs(existing, [mk("x", 0.9, day("13"))], 5)).toBeNull();
+    expect(appendWeeklyLegs(existing, [mk("y", 0.9, day("15"))], 2)).toBeNull();
   });
 });
 

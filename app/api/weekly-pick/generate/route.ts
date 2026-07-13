@@ -9,6 +9,7 @@ import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import {
+  appendWeeklyLegs,
   buildHouseMultipla,
   currentWeekStart,
   weeklyPickEnabled,
@@ -106,25 +107,86 @@ export async function POST(req: Request) {
       market,
       sport: String(r.sport ?? "other"),
       prob,
+      startsAt: r.starts_at,
     });
   }
 
   const week = currentWeekStart(new Date());
-  const multipla = buildHouseMultipla(candidates);
+  // #WEEKLY-PICK-4: la schedina è DELLA settimana — solo match entro domenica.
+  // (la finestra SQL è NOW()+10g e sconfinerebbe nel lunedì successivo.)
+  const weekEnd = new Date(`${week}T00:00:00Z`);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+  const weekCandidates = candidates.filter(
+    (c) => c.startsAt && new Date(c.startsAt).getTime() < weekEnd.getTime()
+  );
+  const multipla = buildHouseMultipla(weekCandidates);
   if (!multipla) {
-    console.warn(`[weekly-pick/generate] week=${week}: candidate insufficienti (${candidates.length})`);
-    return NextResponse.json({ ok: false, reason: "not enough candidates", week, candidates: candidates.length });
+    console.warn(`[weekly-pick/generate] week=${week}: candidate insufficienti (${weekCandidates.length})`);
+    return NextResponse.json({ ok: false, reason: "not enough candidates", week, candidates: weekCandidates.length });
   }
 
-  await dbExecute(
-    `INSERT INTO weekly_pick (week_start, selections, combined_prob)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (week_start)
-     DO UPDATE SET selections = EXCLUDED.selections, combined_prob = EXCLUDED.combined_prob, created_at = NOW()`,
-    [week, JSON.stringify(multipla.selections), multipla.combinedProb.toFixed(4)]
+  // #WEEKLY-PICK-4 — FREEZE + CRESCITA PROGRESSIVA. Prima l'upsert DO UPDATE
+  // ricostruiva la multipla a ogni giro di cron (le leg giocate sparivano dai
+  // candidati e la schedina mutava sotto i piedi di chi l'aveva comprata).
+  // Ora: le leg esistenti sono CONGELATE; a ogni giro si APPENDONO solo leg di
+  // giorni nuovi (max 1/giorno, fino a WEEKLY_PICK_MAX_LEGS) man mano che la
+  // pipeline (orizzonte ~2 giorni) produce predizioni per i giorni successivi →
+  // la schedina vive e si allunga per tutta la settimana. Rebuild totale SOLO
+  // esplicito con ?force=1 (stessa auth cron).
+  const force = new URL(req.url).searchParams.get("force") === "1";
+  const existingRows = await dbQuery<{ selections: string }>(
+    `SELECT selections::text AS selections FROM weekly_pick WHERE week_start = $1 LIMIT 1`,
+    [week]
   );
-  console.log(`[weekly-pick/generate] week=${week} legs=${multipla.selections.length} p=${multipla.combinedProb.toFixed(4)}`);
-  return NextResponse.json({ ok: true, week, legs: multipla.selections.length, combined_prob: multipla.combinedProb });
+  const existingRaw = existingRows[0]?.selections ?? null;
+
+  if (force || !existingRaw) {
+    await dbExecute(
+      force
+        ? `INSERT INTO weekly_pick (week_start, selections, combined_prob)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (week_start)
+           DO UPDATE SET selections = EXCLUDED.selections, combined_prob = EXCLUDED.combined_prob, created_at = NOW()`
+        : `INSERT INTO weekly_pick (week_start, selections, combined_prob)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (week_start) DO NOTHING`,
+      [week, JSON.stringify(multipla.selections), multipla.combinedProb.toFixed(4)]
+    );
+    console.log(`[weekly-pick/generate] week=${week} legs=${multipla.selections.length} p=${multipla.combinedProb.toFixed(4)} force=${force} mode=create`);
+    return NextResponse.json({ ok: true, week, legs: multipla.selections.length, combined_prob: multipla.combinedProb, force, mode: "create" });
+  }
+
+  // Riga esistente: arricchisci le leg legacy senza startsAt (serve per il
+  // dedup per-giorno) leggendo il kickoff dalla predizione, poi appendi.
+  let existing: WeeklyPickLeg[] = [];
+  try { existing = JSON.parse(existingRaw) as WeeklyPickLeg[]; } catch { existing = []; }
+  const missingIds = existing.filter((l) => !l.startsAt).map((l) => (l.id.startsWith("wp_") ? l.id.slice(3) : l.id));
+  if (missingIds.length > 0) {
+    const kickRows = await dbQuery<{ id: string; starts_at: string }>(
+      `SELECT id::text AS id, starts_at::text AS starts_at FROM unified_predictions WHERE id::text = ANY(string_to_array($1, ','))`,
+      [missingIds.join(",")]
+    );
+    const byId = new Map(kickRows.map((r) => [r.id, r.starts_at]));
+    for (const l of existing) {
+      if (!l.startsAt) {
+        const predId = l.id.startsWith("wp_") ? l.id.slice(3) : l.id;
+        const k = byId.get(predId);
+        if (k) l.startsAt = k;
+      }
+    }
+  }
+
+  const grown = appendWeeklyLegs(existing, weekCandidates);
+  if (!grown) {
+    console.log(`[weekly-pick/generate] week=${week} legs=${existing.length} mode=frozen (niente da aggiungere)`);
+    return NextResponse.json({ ok: true, week, legs: existing.length, mode: "frozen" });
+  }
+  await dbExecute(
+    `UPDATE weekly_pick SET selections = $2, combined_prob = $3 WHERE week_start = $1`,
+    [week, JSON.stringify(grown.selections), grown.combinedProb.toFixed(4)]
+  );
+  console.log(`[weekly-pick/generate] week=${week} legs=${grown.selections.length} p=${grown.combinedProb.toFixed(4)} mode=append (+${grown.selections.length - existing.length})`);
+  return NextResponse.json({ ok: true, week, legs: grown.selections.length, combined_prob: grown.combinedProb, mode: "append" });
 }
 
 // Vercel Cron (e il pulsante "Run" del dashboard) invocano in GET e includono

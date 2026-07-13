@@ -49,6 +49,10 @@ export type WeeklyPickLeg = {
   market: string;
   sport: string;
   prob: number;
+  // #WEEKLY-PICK-4: kickoff ISO della leg — serve alla distribuzione settimanale
+  // (max 1 leg/giorno). Opzionale per retro-compatibilità: selections salvate e
+  // candidate senza data seguono il comportamento legacy (pool top-prob).
+  startsAt?: string | null;
 };
 
 // Lunedì 00:00 UTC della settimana che contiene `now`, come "YYYY-MM-DD". PURA.
@@ -60,9 +64,14 @@ export function currentWeekStart(now: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Costruisce la multipla della casa: prende le pick a probabilità più alta della
-// settimana e le combina (prodotto delle prob). Deterministica (tie-break stabile
-// per id). Ritorna null se non ci sono almeno 2 candidate valide. PURA.
+// Costruisce la multipla della casa. #WEEKLY-PICK-4 ("la schedina dura tutta la
+// settimana", Andrea 2026-07-13): il solo criterio top-prob concentrava le leg sui
+// match IMMINENTI (le prob alte sono quasi sempre a 1-2 giorni) e la schedina
+// moriva in 24h. Ora: MAX 1 LEG PER GIORNO (giorno UTC di startsAt) — per ogni
+// giorno vince la prob più alta, poi si tengono i migliori `maxLegs` giorni; se i
+// giorni distinti non bastano si riempie dal pool residuo (comportamento legacy,
+// che copre anche le candidate senza startsAt). Selections in ordine cronologico.
+// Deterministica (tie-break stabile per id). Null se <2 candidate valide. PURA.
 export function buildHouseMultipla(
   items: WeeklyPickLeg[],
   maxLegs: number = WEEKLY_PICK_MAX_LEGS
@@ -71,11 +80,69 @@ export function buildHouseMultipla(
     (i) => i.id && i.label && i.market && Number.isFinite(i.prob) && i.prob > 0 && i.prob <= 1
   );
   if (valid.length < 2) return null;
-  const sorted = [...valid].sort(
-    (a, b) => b.prob - a.prob || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  const byProb = (a: WeeklyPickLeg, b: WeeklyPickLeg) =>
+    b.prob - a.prob || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+  // 1 vincitore per giorno; il resto (incluse le leg senza data) va in riserva.
+  const dayBest = new Map<string, WeeklyPickLeg>();
+  const reserve: WeeklyPickLeg[] = [];
+  for (const i of [...valid].sort(byProb)) {
+    const day = i.startsAt ? i.startsAt.slice(0, 10) : null;
+    if (day && !dayBest.has(day)) dayBest.set(day, i);
+    else reserve.push(i);
+  }
+  const legs = Math.max(2, Math.min(maxLegs, valid.length));
+  const selections = [...dayBest.values()].sort(byProb).slice(0, legs);
+  for (const r of reserve) {
+    if (selections.length >= legs) break;
+    selections.push(r); // fill: meglio una multipla piena che giorni-only sotto target
+  }
+
+  // Lettura cronologica della settimana (leg senza data in coda).
+  selections.sort((a, b) => {
+    const ka = a.startsAt ?? "9999";
+    const kb = b.startsAt ?? "9999";
+    return ka < kb ? -1 : ka > kb ? 1 : byProb(a, b);
+  });
+  const combinedProb = selections.reduce((acc, i) => acc * i.prob, 1);
+  return { selections, combinedProb };
+}
+
+// #WEEKLY-PICK-4 — SCHEDINA PROGRESSIVA. La pipeline predizioni copre ~2 giorni,
+// quindi il lunedì la multipla non può nascere già spalmata su tutta la settimana.
+// Regola: le leg esistenti sono CONGELATE (mai toccate — qualcuno può averle
+// comprate); a ogni giro si APPENDONO nuove leg (la migliore per ogni giorno non
+// ancora coperto, candidate non già presenti) finché si arriva a maxLegs. Così la
+// schedina vive e cresce lungo la settimana. Ritorna null se non c'è nulla da
+// aggiungere. PURA (le leg esistenti vanno passate già arricchite di startsAt).
+export function appendWeeklyLegs(
+  existing: WeeklyPickLeg[],
+  candidates: WeeklyPickLeg[],
+  maxLegs: number = WEEKLY_PICK_MAX_LEGS
+): { selections: WeeklyPickLeg[]; combinedProb: number } | null {
+  if (existing.length >= maxLegs) return null;
+  const byProb = (a: WeeklyPickLeg, b: WeeklyPickLeg) =>
+    b.prob - a.prob || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  const usedIds = new Set(existing.map((l) => l.id));
+  const usedDays = new Set(
+    existing.map((l) => (l.startsAt ? l.startsAt.slice(0, 10) : null)).filter(Boolean) as string[]
   );
-  const legs = Math.max(2, Math.min(maxLegs, sorted.length));
-  const selections = sorted.slice(0, legs);
+  const added: WeeklyPickLeg[] = [];
+  for (const c of [...candidates].sort(byProb)) {
+    if (existing.length + added.length >= maxLegs) break;
+    if (usedIds.has(c.id)) continue;
+    const day = c.startsAt ? c.startsAt.slice(0, 10) : null;
+    if (!day || usedDays.has(day)) continue; // solo giorni NUOVI: è ciò che allunga la settimana
+    usedDays.add(day);
+    usedIds.add(c.id);
+    added.push(c);
+  }
+  if (added.length === 0) return null;
+  const selections = [...existing, ...added].sort((a, b) => {
+    const ka = a.startsAt ?? "9999";
+    const kb = b.startsAt ?? "9999";
+    return ka < kb ? -1 : ka > kb ? 1 : byProb(a, b);
+  });
   const combinedProb = selections.reduce((acc, i) => acc * i.prob, 1);
   return { selections, combinedProb };
 }

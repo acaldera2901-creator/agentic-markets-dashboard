@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- #WEEKLY-PICK-3 (Andrea 2026-07-13): la weekly pick va assicurata ogni lunedì
+     "appena si accende il computer o al massimo alle 8:00". RunAtLoad copre
+     l'accensione (lo script è silenzioso se la multipla c'è già, quindi girare a
+     ogni login negli altri giorni è innocuo e fa da rete extra); il calendar
+     interval copre il Mac già acceso (launchd coalesca al wake se dorme). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agentic-markets.weeklypick-morning</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/calde/.local/bin/weekly-pick-morning-check.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/weeklypick-morning.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/weeklypick-morning.err</string>
+</dict>
+</plist>
