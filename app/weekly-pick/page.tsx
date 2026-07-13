@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
+import { MenuIcon } from "@/app/components/menu-icon";
 import { PredictionDetailModal } from "@/components/PredictionDetailModal";
 
 type SportKind = "football" | "tennis" | "worldcup";
@@ -379,7 +380,7 @@ export default function WeeklyPickPage() {
         {available && (
           <article className="wp-slip">
             <div className="wp-slip-top">
-              <svg className="wp-slip-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
+              <MenuIcon name="weeklypick" size={18} className="wp-slip-ic" />
               <span className="wp-slip-ttl">{t.slip}</span>
               {unlocked && data?.outcome && (
                 <span className={`wp-slip-badge ${data.outcome}`}>

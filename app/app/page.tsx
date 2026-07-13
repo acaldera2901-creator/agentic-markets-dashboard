@@ -1724,13 +1724,16 @@ const RAIL_GLYPHS: Record<string, string> = {
   account: "#g-acct",
 };
 
-// #MENU-ICONS-0626: voci del rail con la nuova icona illustrata (MenuIcon raster).
-// Le voci non mappate (es. leaderboard, in attesa del podio) restano sui glifi SVG.
-const RAIL_ICONS: Record<string, "prediction" | "history" | "plans" | "creator" | "builder"> = {
+// #MENU-ICONS-0626 / #RAIL-ICONS-V2: voci del rail con la nuova icona illustrata
+// (MenuIcon raster). Le voci non mappate restano sui glifi SVG di fallback.
+const RAIL_ICONS: Record<string, "prediction" | "history" | "plans" | "creator" | "builder" | "leaderboard" | "invite" | "weeklypick" | "account"> = {
   bets: "prediction",
   history: "history",
   "match-builder": "builder",
   plans: "plans",
+  // #RAIL-ICONS-V2: icone custom anche per classifica e invito (copre rail desk + bottom bar mobile).
+  leaderboard: "leaderboard",
+  invita: "invite",
 };
 
 const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: number }> = {
@@ -7254,6 +7257,7 @@ function AccountMenu({
   return (
     <div className="acct-menu-wrap" ref={wrapRef}>
       <button className="am-acct" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <MenuIcon name="account" size={18} />
         {profile.name}
         <span className="plan">{planLabel}</span>
       </button>
@@ -8803,7 +8807,7 @@ export default function Dashboard() {
               </a>
               {/* #WEEKLY-PICK-1: Weekly Pick — la multipla della casa (route) */}
               <Link className="rail-item" href="/weekly-pick">
-                <svg className="rail-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
+                <MenuIcon name="weeklypick" size={18} className="rail-ic" />
                 <span className="rail-label">Weekly Pick</span>
               </Link>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
@@ -8828,14 +8832,14 @@ export default function Dashboard() {
                 <span className="am-feat-l">Creator Picks</span>
               </a>
               <Link className="am-feat-tile" href="/weekly-pick">
-                <svg className="am-feat-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
+                <MenuIcon name="weeklypick" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Weekly Pick</span>
               </Link>
               {/* #MOB1: Match Builder è stato promosso alla bottom tab bar (destinazione
                   primaria) → rimosso da "In Evidenza" per non duplicarlo. */}
               {hasClientProfile && (
                 <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
-                  <svg className="am-feat-ic" aria-hidden="true"><use href="#g-acct" /></svg>
+                  <MenuIcon name="invite" size={22} className="am-feat-ic" />
                   <span className="am-feat-l">{pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}</span>
                 </button>
               )}

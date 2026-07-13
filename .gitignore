@@ -67,3 +67,6 @@ data/backtest_2025_football.json
 data/backtest_2025_tennis.json
 data/player_backfill/
 data/referee_cards_backfill.json
+
+# icone: sorgenti/lavorazione (non asset finali)
+public/icons/_candidates/
