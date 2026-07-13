@@ -7943,6 +7943,8 @@ button:disabled {
   font-size: 11.5px; line-height: 1.5; color: var(--am-muted-2);
 }
 .site-footer-note { margin: 0; max-width: 820px; color: var(--am-muted); }
+/* #GOLIVE-BLOCKER-1: riga impressum (entità legale) in coda al footer */
+.site-footer-imprint { margin: 6px 0 0; font-size: 10px; letter-spacing: .02em; color: var(--am-muted-2); }
 .site-footer-row {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
   font-size: 10.5px;
