@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SportMark } from "@/app/components/sport-icon";
 import { filterConcluded } from "@/lib/track-record-history";
 
 export type LedgerRow = {
@@ -45,7 +46,9 @@ export function PickLedger({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en
               setExpanded(false);
             }}
           >
-            {s === "all" ? (it ? "Tutti" : "All") : s === "football" ? (it ? "⚽ Calcio" : "⚽ Football") : "🎾 Tennis"}
+            {s === "all"
+              ? (it ? "Tutti" : "All")
+              : <><SportMark sport={s} size={14} />{s === "football" ? (it ? "Calcio" : "Football") : "Tennis"}</>}
           </button>
         ))}
       </div>

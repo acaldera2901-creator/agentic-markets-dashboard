@@ -599,7 +599,7 @@ export default function LandingPage() {
           {scanLive ? (
             <div className="lp-term-row is-real" role="row">
               <span className="lp-term-fx">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><use href={scanLive.glyph === "trophy" ? "#g-trophy" : scanLive.glyph === "tball" ? "#g-tball" : "#g-ball"} /></svg>
+                <SportIcon sport={scanLive.glyph === "trophy" ? "worldcup" : scanLive.glyph === "tball" ? "tennis" : "football"} size={16} variant="sm" />
                 <span className="lp-term-name">{scanLive.match}</span>
               </span>
               <span className="lp-term-c">{scanLive.model}%</span>
@@ -610,7 +610,7 @@ export default function LandingPage() {
           {SCAN_EXAMPLE_ROWS.map((r, i) => (
             <div className="lp-term-row" role="row" key={r.match} style={{ ["--d" as string]: `${(i + (scanLive ? 1 : 0)) * 0.09 + 0.05}s` }}>
               <span className="lp-term-fx">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><use href={r.glyph === "trophy" ? "#g-trophy" : r.glyph === "tball" ? "#g-tball" : "#g-ball"} /></svg>
+                <SportIcon sport={r.glyph === "trophy" ? "worldcup" : r.glyph === "tball" ? "tennis" : "football"} size={16} variant="sm" />
                 <span className="lp-term-name">{r.match}</span>
                 <span className="lp-term-tag">{t.waTagExample}</span>
               </span>
