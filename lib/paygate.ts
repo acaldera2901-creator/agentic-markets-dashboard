@@ -109,6 +109,26 @@ export function evaluateCallback(opts: {
   return { grant: true, reason: "ok" };
 }
 
+// Decisione di settlement di un ordine PENDING a partire dall'esito reale PayGate
+// (payment-status.php) — PURA/testabile. È il seam usato dal self-heal del
+// reconciler (#PAYGATE-SELFHEAL): il grant NON deve dipendere dal callback inbound
+// (GET non firmato) mai arrivato; se PayGate conferma 'paid' il piano si concede
+// server-side. Stessa soglia importo di evaluateCallback (fee-tolerant), più il
+// gate esplicito status==='paid'.
+export function shouldSettle(
+  verify: { status: string; valueCoin: number | null } | null,
+  amountUsd: number,
+  feeTolerance?: number
+): { settle: boolean; reason: string } {
+  if (!verify || verify.status !== "paid") return { settle: false, reason: "not paid" };
+  const d = evaluateCallback({
+    order: { status: "pending", amount_usd: amountUsd },
+    valueCoin: verify.valueCoin,
+    feeTolerance,
+  });
+  return { settle: d.grant, reason: d.reason };
+}
+
 export async function createReceivingWallet(
   payoutAddress: string,
   callbackUrl: string
