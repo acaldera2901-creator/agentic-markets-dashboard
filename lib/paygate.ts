@@ -17,12 +17,32 @@ const WHITE_LABEL = CHECKOUT_HOST !== "checkout.paygate.to";
 const WALLET_ENDPOINT = "https://api.paygate.to/control/wallet.php";
 const PAY_ENDPOINT = `https://${CHECKOUT_HOST}/pay.php`;
 const STATUS_ENDPOINT = "https://api.paygate.to/control/payment-status.php";
-// PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto), quindi il
-// `value_coin` del callback è sensibilmente < importo richiesto. L'autenticità
-// vera è il token monouso; l'importo è fisso nel link (l'utente non può pagare
-// meno), perciò qui teniamo solo un FLOOR di sanità generoso (accetta fino a
-// -50%) per scartare callback a zero/malformati senza falsi rifiuti sulle fee.
-const DEFAULT_FEE_TOLERANCE = 0.5;
+// PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto). EVIDENZA REALE
+// (pagamento test $5 di oggi): value_coin = 5.701904 → il netto è >100% dell'amount
+// (le fee dell'on-ramp sono AGGIUNTE sopra, non sottratte), quindi un floor 15% è
+// ampiamente sicuro per il caso legittimo. Il vecchio floor 50% permetteva grant con
+// value_coin ≥ amount×0.5 → auto-sconto fino a ~50% (con promo lancio −50% componeva
+// a ~25% del listino): revenue-leak. Override via env PAYGATE_FEE_TOLERANCE
+// (parse float, clamp 0–0.5) per allargare senza deploy se le fee reali risultassero
+// più alte. L'autenticità vera resta il token monouso + verifica server-side.
+const DEFAULT_FEE_TOLERANCE = 0.15;
+
+// Tolleranza fee effettiva: env override (clamp 0–0.5), fallback DEFAULT_FEE_TOLERANCE.
+export function resolveFeeTolerance(): number {
+  const raw = process.env.PAYGATE_FEE_TOLERANCE;
+  if (raw == null || raw === "") return DEFAULT_FEE_TOLERANCE;
+  const v = Number.parseFloat(raw);
+  if (!Number.isFinite(v)) return DEFAULT_FEE_TOLERANCE;
+  return Math.min(0.5, Math.max(0, v));
+}
+
+// Tier-guard PURO (testabile): blocca l'acquisto di un tier inferiore mentre un
+// tier superiore è ancora ATTIVO. Previene il tier-arbitrage (rinnovare Pro al
+// prezzo base passando dal checkout 'base'). Solo premium-attivo blocca un
+// acquisto 'base'; base→premium (upgrade) resta consentito.
+export function blocksLowerTierPurchase(currentPlan: string, requestedPlan: string): boolean {
+  return currentPlan === "premium" && requestedPlan === "base";
+}
 
 export type PlanKey = "base" | "premium";
 export type Period = "monthly" | "annual";
@@ -101,7 +121,7 @@ export function evaluateCallback(opts: {
   valueCoin: number | null;
   feeTolerance?: number;
 }): { grant: boolean; reason: string } {
-  const tol = opts.feeTolerance ?? DEFAULT_FEE_TOLERANCE;
+  const tol = opts.feeTolerance ?? resolveFeeTolerance();
   if (!opts.order) return { grant: false, reason: "order not found" };
   if (opts.order.status !== "pending") return { grant: false, reason: "order not pending" };
   if (opts.valueCoin == null || !Number.isFinite(opts.valueCoin)) return { grant: false, reason: "missing value_coin" };
