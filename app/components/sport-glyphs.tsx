@@ -75,6 +75,17 @@ export function SportGlyphSprite() {
         <symbol id="g-invite" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.3" /><path d="M3.5 20c0-3.3 2.6-5.4 5.5-5.4s5.5 2.1 5.5 5.4" /><path d="M18.5 8.5v5M21 11h-5" stroke="var(--am-coral)" /></g></symbol>
         {/* g-plans — tier/livelli impilati, top coral (Piani/Plans). */}
         <symbol id="g-plans" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.2 20.5 7.4 12 11.6 3.5 7.4Z" stroke="var(--am-coral)" /><path d="M4 12l8 4 8-4M4 16.4l8 4 8-4" /></g></symbol>
+        {/* #PRO-ICONS: lucchetto — corpo + arco, foro-chiave in coral (unica forma accento) */}
+        <symbol id="g-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.2" /><path d="M7.8 10.4V7.9a4.2 4.2 0 0 1 8.4 0v2.5" /><path d="M12 13.9v2.6" stroke="var(--am-coral)" strokeWidth="1.8" /></g></symbol>
+        {/* #PRO-ICONS: refresh — arco circolare, punta freccia in coral */}
+        <symbol id="g-refresh" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19.3 12a7.3 7.3 0 1 1-2.2-5.2" /><path d="M19.6 4.4v4h-4" stroke="var(--am-coral)" /></g></symbol>
+        {/* #PRO-ICONS: medaglia — disco concentrico + nastri. Interamente currentColor:
+            si TINGE per rango (oro/argento/bronzo) via `color` al call-site (podio). */}
+        <symbol id="g-medal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8.8 3.2 6.4 8.7M15.2 3.2 17.6 8.7" /><circle cx="12" cy="14.9" r="5.3" /><circle cx="12" cy="14.9" r="2.1" /></g></symbol>
+        {/* #PRO-ICONS: all-sports — grappolo di 3 "palle" (uno coral): l'aggregato multi-sport */}
+        <symbol id="g-allsports" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"><circle cx="8.4" cy="9" r="4.3" /><circle cx="15.6" cy="9" r="4.3" /><circle cx="12" cy="15.3" r="4.3" stroke="var(--am-coral)" /></g></symbol>
+        {/* #PRO-ICONS: fiamma — profilo + lingua interna in coral ("più attivo") */}
+        <symbol id="g-flame" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.2c2.4 3 4 4.7 4 8a5.4 5.4 0 0 1-8 4.8" /><path d="M12 3.2c-3 2.6-6 5-6 8.8a6 6 0 0 0 6 6c1.3 0 2.4-.4 3.3-1" /><path d="M12 20a3.3 3.3 0 0 1-3.3-3.3c0-2 1.6-3 2.4-4.5.8 1.5 2.4 2.5 2.4 4.5A3.3 3.3 0 0 1 12 20Z" stroke="var(--am-coral)" /></g></symbol>
       </defs>
     </svg>
   );

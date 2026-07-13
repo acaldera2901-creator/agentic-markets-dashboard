@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, type CSSProperties } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
@@ -1477,6 +1477,31 @@ function useT() { return TRANSLATIONS[useLang()]; }
 // Replaces the `lang === "it" ? IT : EN` ternaries so es/fr/ru no longer fall
 // back to English. Pass the value per language; `pick` selects by current lang.
 function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T { return v[lang]; }
+// #PRO-ICONS: glifo SVG dalla sprite (#g-*). Sostituisce le emoji residue (lock,
+// refresh, medaglie, fiamma) con line-art coerente. Default inline (1em, allineato al
+// testo); `inline={false}` per box a dimensione esplicita. La sprite <SportGlyphSprite/>
+// è già montata su questa pagina.
+function Glyph({ id, size = "1em", inline = true, style, className, label }: {
+  id: string; size?: number | string; inline?: boolean;
+  style?: CSSProperties; className?: string; label?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden={label ? undefined : true}
+      role={label ? "img" : undefined}
+      aria-label={label}
+      style={{
+        width: size, height: size,
+        ...(inline ? { display: "inline-block", verticalAlign: "-0.14em" } : { display: "block" }),
+        ...style,
+      }}
+    >
+      <use href={`#${id}`} />
+    </svg>
+  );
+}
 function languageLabel(code: Lang, t: (typeof TRANSLATIONS)[Lang]) {
   const labels: Record<Lang, string> = {
     it: t.language_it,
@@ -5043,7 +5068,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><Glyph id="g-lock" /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5051,7 +5076,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock">🔒</span>
+                <span className="v2r-qn lock"><Glyph id="g-lock" /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -5595,7 +5620,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><Glyph id="g-lock" /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5603,7 +5628,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock">🔒</span>
+                <span className="v2r-qn lock"><Glyph id="g-lock" /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -6293,7 +6318,7 @@ function MatchBuilderTab({
               {sharedRows.map((row) => (
                 <div key={row.id} className="mb-slip-item">
                   <span className="mb-slip-fixture">{row.label}</span>
-                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
+                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]"><Glyph id="g-lock" /></span></span>
                 </div>
               ))}
             </div>
@@ -6480,7 +6505,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Caricamento classifica…",
       noData: "Ancora nessuna classifica.",
       emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
-      podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+      podiumLabel: ["Primo", "Secondo", "Terzo"],
     },
     en: {
       eyebrow: "Public leaderboard",
@@ -6501,7 +6526,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Loading leaderboard…",
       noData: "No ranking yet.",
       emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
-      podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+      podiumLabel: ["First", "Second", "Third"],
     },
     es: {
       eyebrow: "Clasificación pública",
@@ -6522,7 +6547,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Cargando clasificación…",
       noData: "Aún no hay clasificación.",
       emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
-      podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
+      podiumLabel: ["Primero", "Segundo", "Tercero"],
     },
     fr: {
       eyebrow: "Classement public",
@@ -6543,7 +6568,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Chargement du classement…",
       noData: "Pas encore de classement.",
       emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
-      podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
+      podiumLabel: ["Premier", "Deuxième", "Troisième"],
     },
     ru: {
       eyebrow: "Публичный рейтинг",
@@ -6564,7 +6589,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Загрузка рейтинга…",
       noData: "Рейтинга пока нет.",
       emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
-      podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
+      podiumLabel: ["Первое", "Второе", "Третье"],
     },
   });
 
@@ -6619,9 +6644,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <p className="eyebrow">Hall of Fame</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="am-surface p-4 space-y-1">
-              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 13, height: 13, flexShrink: 0, color: "var(--am-coral)" }}><use href="#g-trophy" /></svg>
-                Top hit rate
+              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
+                <Glyph id="g-trophy" /> Top hit rate
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
@@ -6637,9 +6661,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
               })()}
             </div>
             <div className="am-surface p-4 space-y-1">
-              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 13, height: 13, flexShrink: 0, color: "var(--am-coral)" }}><use href="#g-bolt" /></svg>
-                {pick5(lang, { it: "Più attivo", en: "Most active", es: "Más activo", fr: "Le plus actif", ru: "Самый активный" })}
+              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
+                <Glyph id="g-flame" /> {pick5(lang, { it: "Più attivo", en: "Most active", es: "Más activo", fr: "Le plus actif", ru: "Самый активный" })}
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
@@ -6666,7 +6689,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-3 gap-3" aria-hidden="true">
             {[0, 1, 2].map((i) => (
               <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
-                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
+                <Glyph id="g-medal" inline={false} size={24} style={{ margin: "0 auto", color: "var(--am-muted-2)" }} />
                 <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
                 <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
                 <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
@@ -6685,7 +6708,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             <div className="grid grid-cols-3 gap-3">
               {podium.map((e, i) => (
                 <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={i === 0 ? { borderColor: medalBorder[i], background: "var(--am-coral)" } : { borderColor: medalBorder[i] }}>
-                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
+                  <Glyph id="g-medal" inline={false} size={24} label={copy.podiumLabel[i]} style={{ margin: "0 auto", color: i === 0 ? "var(--am-coral-ink)" : i === 1 ? "var(--am-rank-silver)" : "var(--am-rank-bronze)" }} />
                   <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
                   <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
                   <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-90" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
@@ -6929,7 +6952,7 @@ function HistoryTab({ history, stats, loading }: {
                       </span>
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
-                    <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
+                    <td className="pk">{h.locked ? <Glyph id="g-lock" label={pick5(lang, { it: "Bloccato", en: "Locked", es: "Bloqueado", fr: "Verrouillé", ru: "Заблокировано" })} /> : (h.pick ?? "—")}</td>
                     <td className="r">
                       <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
                     </td>
@@ -8803,7 +8826,7 @@ export default function Dashboard() {
                 <span className="rail-label">Weekly Pick</span>
               </Link>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
-                ↻ {refreshing ? "..." : tUI.refresh_odds}
+                <Glyph id="g-refresh" /> {refreshing ? "..." : tUI.refresh_odds}
                 <span className="sync">live</span>
               </button>
             </aside>

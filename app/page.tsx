@@ -524,24 +524,24 @@ export default function LandingPage() {
       <LandingCarousel lang={lang} />
       <nav className="lp-hero-sports" aria-label="Sports">
         <a href="/app?tab=bets&sport=all" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-allsports.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-allsports" /></svg></span>
           <b className="lp-sport-lab">{t.spAllSports}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         <a href="/app?tab=bets&sport=football" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-ball" /></svg></span>
           <b className="lp-sport-lab">{t.spFootball}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         <a href="/app?tab=bets&sport=tennis" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-tennis.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-tball" /></svg></span>
           <b className="lp-sport-lab">{t.spTennis}</b>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </a>
         {/* #WC-HOME-LINK-0702 (Andrea): il chip World Cup porta all'hub /world-cup
             (ora first-class: card con quote + scheda completa). */}
         <Link href="/world-cup" className="lp-sport lp-sport-feat">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-worldcup.png" alt="" /></span>
+          <span className="lp-sport-well"><svg className="lp-sport-gl" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-trophy" /></svg></span>
           <b className="lp-sport-lab">{t.spWorldCup}</b>
           <span className="lp-sport-live"><i className="lp-sport-dot" />LIVE</span>
           <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
