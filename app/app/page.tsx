@@ -8187,14 +8187,16 @@ export default function Dashboard() {
   const [founderOpen, setFounderOpen] = useState(false);
   const founderClickRef = useRef({ count: 0, timer: null as ReturnType<typeof setTimeout> | null });
   const [slipSelection, setSlipSelection] = useState<SlipSelection | null>(null);
-  // #PRELAUNCH-AUDIT LEGALE-2 layer2 (Decreto Dignità): nasconde i link-book agli
-  // utenti IT. Geo server-side via /api/geo-books; default false (mostra) fino alla
-  // risposta, ma il grosso dell'esposizione è coperto da layer1 (dropdown) + campagne.
-  const [booksBlocked, setBooksBlocked] = useState(false);
+  // #GOLIVE-HIGH-D (audit go-live legale): nasconde i link-book nelle geo bloccate
+  // (Decreto Dignità + UE). Geo server-side via /api/geo-books. FAIL-CLOSED: default
+  // TRUE (nascosto) finché il server non conferma esplicitamente blocked===false — così
+  // niente flash del CTA al load né esposizione permanente se il fetch geo fallisce
+  // (il .catch NON sblocca).
+  const [booksBlocked, setBooksBlocked] = useState(true);
   useEffect(() => {
     fetch("/api/geo-books", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setBooksBlocked(!!d?.blocked))
+      .then((d) => setBooksBlocked(d?.blocked !== false))
       .catch(() => {});
   }, []);
   const [summary, setSummary] = useState<Summary | null>(null);
