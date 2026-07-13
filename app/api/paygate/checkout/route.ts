@@ -29,8 +29,18 @@ export async function POST(req: Request) {
   try { body = (await req.json()) as typeof body; }
   catch { return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
 
-  const plan = body.requested_plan;
+  const rawPlan = body.requested_plan;
   const period = body.period;
+
+  // #PAYGATE-TEST-2USD: piano test NASCOSTO per una prova di pagamento reale da $2.
+  // Attivo SOLO con env PAYGATE_TEST_ENABLED=1 → spegnimento istantaneo senza
+  // redeploy (rimuovendo la env il path torna 400 come qualunque plan sconosciuto).
+  // "test" NON è un plan-key nel DB né in plan-grant: lo mappiamo a un ordine
+  // plan="base" con amount=$2, così checkout→callback anti-spoof→grant girano
+  // ESATTAMENTE come il flusso base reale (grant base 30gg) a prezzo di prova.
+  // Nessun prezzo pubblico (base/premium) toccato.
+  const isTest = rawPlan === "test" && process.env.PAYGATE_TEST_ENABLED === "1";
+  const plan = isTest ? "base" : rawPlan;
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
 
@@ -39,9 +49,11 @@ export async function POST(req: Request) {
   // nessuna condizione referral). Col flag spento promoEligibility non tocca
   // il DB e il percorso è identico a prima. Lo sconto vive nell'amount
   // dell'ordine → il callback anti-spoof valida già contro amount_usd
-  // scontato, nessun secondo punto di verità.
-  const eligibility = await promoEligibility(ctx.identifier);
-  const { amount } = discountedAmountFor(plan as PlanKey, period as Period, eligibility);
+  // scontato, nessun secondo punto di verità. (Il path test bypassa la promo:
+  // amount fisso $2.)
+  const { amount } = isTest
+    ? { amount: 2 }
+    : discountedAmountFor(plan as PlanKey, period as Period, await promoEligibility(ctx.identifier));
   const { token, tokenHash } = newOrderToken();
 
   // NB: la RPC exec_sql NON restituisce le righe di RETURNING (esegue lo statement

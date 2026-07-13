@@ -3718,6 +3718,38 @@ function PlansTab({
 
       <LaunchPromoBanner />
 
+      {/* #PAYGATE-TEST-2USD: sezione NASCOSTA per una prova di pagamento reale da $2.
+          Visibile SOLO con NEXT_PUBLIC_PAYGATE_TEST=1; il charge è gated a sua volta
+          lato server da PAYGATE_TEST_ENABLED. Rimuovere entrambe le env dopo il test.
+          Crea un ordine PayGate reale da $2 (mappa a Base 30gg) → verifica il flusso
+          checkout→callback→grant end-to-end. Nessun prezzo pubblico toccato. */}
+      {process.env.NEXT_PUBLIC_PAYGATE_TEST === "1" && (
+        <section className="plans-hero" style={{ marginBottom: 14 }}>
+          <div>
+            <p className="eyebrow">Test pagamento</p>
+            <h3>Prova checkout · $2</h3>
+            <span>Ordine reale da $2 su PayGate per verificare il flusso end-to-end (attiva Base 30gg). Solo per test.</span>
+          </div>
+          <button
+            className="btn-primary"
+            onClick={async () => {
+              try {
+                const res = await fetch("/api/paygate/checkout", {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ requested_plan: "test", period: "monthly" }),
+                });
+                if (!res.ok) { console.error("[paygate-test] checkout failed", res.status); return; }
+                const { url } = (await res.json()) as { url?: string };
+                if (url) window.location.href = url;
+              } catch (e) { console.error("[paygate-test] error", e); }
+            }}
+          >
+            Paga $2 (test)
+          </button>
+        </section>
+      )}
+
       <section className="plans-grid plans-grid-3">
         {/* ── FREE ── */}
         <article className="plan-card">
