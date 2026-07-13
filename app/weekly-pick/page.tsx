@@ -297,7 +297,9 @@ export default function WeeklyPickPage() {
   const available = !error && data && data.available;
   const unlocked = !!data?.unlocked;
   const fmtWeek = (iso: string) => { try { return new Date(iso).toLocaleDateString(t.locale, { day: "2-digit", month: "short" }); } catch { return iso; } };
-  const fmtKick = (iso?: string | null) => { if (!iso) return null; try { return new Date(iso).toLocaleTimeString(t.locale, { hour: "2-digit", minute: "2-digit" }); } catch { return null; } };
+  // #WEEKLY-PICK-4: le leg ora coprono più giorni della settimana → il solo orario
+  // ("04:00") era ambiguo; mostriamo anche il giorno ("gio 04:00", locale-aware).
+  const fmtKick = (iso?: string | null) => { if (!iso) return null; try { return new Date(iso).toLocaleString(t.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }); } catch { return null; } };
 
   return (
     <main className="wp-page">
