@@ -1907,6 +1907,24 @@ interface TennisBetSummary {
 
 function pct(v: number) { return `${Math.round(v * 100)}%`; }
 
+// #QW4-EDGE-DISPLAY: DISPLAY-ONLY cap/label for edge readouts. Stale or thin
+// market odds can generate implausible values (a "+599%" value, a "+71.4 pt"
+// model margin) that read as "too good to be true" and erode the "honest
+// numbers" positioning for the casual fan. We show a sane ceiling with a "+"
+// suffix and flag the figure as extreme so the UI can mark it "to verify".
+// The underlying prob/odds are NEVER mutated — this only formats the string.
+const EDGE_PT_CAP = 40;    // model margin, percentage points
+const EDGE_VAL_CAP = 100;  // value = (prob·odds − 1), percent
+function fmtEdgePts(pts: number): { text: string; extreme: boolean } {
+  const extreme = pts > EDGE_PT_CAP;
+  return { text: extreme ? `+${EDGE_PT_CAP}+ pt` : `+${pts.toFixed(1)} pt`, extreme };
+}
+function fmtValuePct(v: number): { text: string; extreme: boolean } {
+  const p = v * 100;
+  const extreme = p > EDGE_VAL_CAP;
+  return { text: extreme ? `+${EDGE_VAL_CAP}+%` : `+${p.toFixed(1)}%`, extreme };
+}
+
 function fmtKickoff(utc: string, lang: Lang = "it", tz = "Europe/Rome", confirmed?: boolean) {
   const d = new Date(utc);
   const locale = lang === "en" ? "en-GB" : "it-IT";
@@ -4792,6 +4810,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
+  // #CHI1: livello di fiducia come cue dominante (label+colore); i dots restano
+  // come meter secondario e la % come dettaglio. Un solo segnale da leggere.
+  const confKey = confScore == null ? undefined
+    : confScore >= 70 ? "high" : confScore >= 45 ? "med" : "low";
 
   // #FORTUNEPLAY-LIVE-ODDS-1: quota live FortunePlay allineata al LATO della pick
   // (per nome normalizzato, non per posizione: home/away FP ≠ per forza il nostro)
@@ -4998,7 +5020,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
               <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
-                <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
+                <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
@@ -5008,7 +5030,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
                   <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? <span className="v2r-val" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {(fpValue * 100).toFixed(1)}%</span> : null}</span>
+                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
                 </>
               ) : (
                 <>
@@ -5208,12 +5230,31 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             const od = pk === "HOME" ? p.odds_home : pk === "DRAW" ? p.odds_draw : pk === "AWAY" ? p.odds_away : null;
             const mi = od && od > 0 ? 1 / od : null;
             if (pr == null || mi == null) return null;
-            const ed = p.edge != null ? ` (${p.edge > 0 ? "+" : ""}${(p.edge * 100).toFixed(1)}%)` : "";
+            // #QW4: cap the value multiplier at DISPLAY only (source untouched);
+            // a stale-odds "+599%" reads as too-good-to-be-true for the fan.
+            const edFmt = p.edge == null ? null
+              : p.edge > 0 ? fmtValuePct(p.edge)
+              : { text: `${(p.edge * 100).toFixed(1)}%`, extreme: false };
+            const ed = edFmt ? ` (${edFmt.text})` : "";
             return (
+              <>
               <div className="da-row">
                 <span className="da-label">{pick5(lang, { it: "Modello vs Mercato", en: "Model vs Market", es: "Modelo vs Mercado", fr: "Modèle vs Marché", ru: "Модель vs Рынок" })}</span>
-                <span className="da-value">{Math.round(pr * 100)}% vs {Math.round(mi * 100)}%{ed}</span>
+                <span className={`da-value${edFmt?.extreme ? " is-extreme" : ""}`}>{Math.round(pr * 100)}% vs {Math.round(mi * 100)}%{ed}</span>
               </div>
+              {/* #QW4: riga in chiaro — traduce l'edge per il tifoso non esperto.
+                  Solo quando il modello è davvero sopra l'implicita (edge > 0):
+                  altrimenti la frase non sarebbe onesta. */}
+              {pr > mi && (
+              <p className="da-plain">{pick5(lang, {
+                it: "Il modello stima questo esito più probabile di quanto lasci intendere la quota.",
+                en: "The model rates this outcome more likely than the odds imply.",
+                es: "El modelo estima este resultado más probable de lo que sugiere la cuota.",
+                fr: "Le modèle juge ce résultat plus probable que ne le suggère la cote.",
+                ru: "Модель считает этот исход более вероятным, чем следует из коэффициента.",
+              })}</p>
+              )}
+              </>
             );
           })()}
           {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
@@ -5399,6 +5440,10 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
     : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
     : confScore >= 45 ? pick5(lang, { it: "media", en: "medium", es: "media", fr: "moyenne", ru: "средняя" })
     : pick5(lang, { it: "bassa", en: "low", es: "baja", fr: "faible", ru: "низкая" });
+  // #CHI1: livello di fiducia come cue dominante (label+colore); i dots restano
+  // come meter secondario e la % come dettaglio. Un solo segnale da leggere.
+  const confKey = confScore == null ? undefined
+    : confScore >= 70 ? "high" : confScore >= 45 ? "med" : "low";
 
   // #FORTUNEPLAY-LIVE-ODDS-1: quota live FortunePlay allineata al giocatore della
   // pick (per nome canonico) + value. Tennis = 2 vie, niente draw.
@@ -5527,7 +5572,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
               <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
-                <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}{confLabel && <span className="v2r-conf-t">{confLabel}</span>}</span>
+                <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
@@ -5537,7 +5582,7 @@ function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGa
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
                   <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? <span className="v2r-val" title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {(fpValue * 100).toFixed(1)}%</span> : null}</span>
+                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
                 </>
               ) : (
                 <>
@@ -6407,7 +6452,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "La tua posizione",
       notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
       loading: "Caricamento classifica…",
-      noData: "Nessun dato disponibile.",
+      noData: "Ancora nessuna classifica.",
+      emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
       podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
     },
     en: {
@@ -6427,7 +6473,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Your position",
       notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
       loading: "Loading leaderboard…",
-      noData: "No data available.",
+      noData: "No ranking yet.",
+      emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
       podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
     },
     es: {
@@ -6447,7 +6494,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Tu posición",
       notOptedIn: "Activa la leaderboard en Ajustes para aparecer en la clasificación.",
       loading: "Cargando clasificación…",
-      noData: "No hay datos disponibles.",
+      noData: "Aún no hay clasificación.",
+      emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
       podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
     },
     fr: {
@@ -6467,7 +6515,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Votre position",
       notOptedIn: "Activez le leaderboard dans les Paramètres pour apparaître au classement.",
       loading: "Chargement du classement…",
-      noData: "Aucune donnée disponible.",
+      noData: "Pas encore de classement.",
+      emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
       podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
     },
     ru: {
@@ -6487,7 +6536,8 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       yourRank: "Ваша позиция",
       notOptedIn: "Включите leaderboard в Настройках, чтобы попасть в рейтинг.",
       loading: "Загрузка рейтинга…",
-      noData: "Нет доступных данных.",
+      noData: "Рейтинга пока нет.",
+      emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
       podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
     },
   });
@@ -6581,7 +6631,25 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       {loading ? (
         <div className="text-xs font-mono text-[var(--am-muted-2)] animate-pulse py-8 text-center">{copy.loading}</div>
       ) : entries.length === 0 ? (
-        <div className="text-xs font-mono text-[var(--am-muted-2)] py-8 text-center">{copy.noData}</div>
+        // #QW2: empty state progettato — ghost podium (insegna la forma della
+        // classifica) + spiegazione di quando si popola. Il CTA "attiva in
+        // Impostazioni" vive già nel pannello "Your position" sotto.
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
+                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
+                <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
+                <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
+                <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
+              </div>
+            ))}
+          </div>
+          <div className="text-center space-y-1 py-2">
+            <p className="text-sm font-bold text-[var(--am-text)]">{copy.noData}</p>
+            <p className="text-xs font-mono text-[var(--am-muted-2)]" style={{ maxWidth: 360, margin: "0 auto" }}>{copy.emptyHint}</p>
+          </div>
+        </div>
       ) : (
         <>
           {/* Podium */}
@@ -7692,10 +7760,24 @@ function FeaturedEdge({
             <span className="subl">{it ? "probabilità del modello" : "model probability"}</span>
           </div>
         </div>
-        <span className="edge model">
-          <svg aria-hidden="true"><use href="#g-bolt" /></svg>
-          +{modelEdgePts.toFixed(1)} pt · {it ? "edge modello" : "model edge"}
-        </span>
+        {(() => {
+          const e = fmtEdgePts(modelEdgePts);
+          return (
+            <span className={`edge model${e.extreme ? " is-extreme" : ""}`}>
+              <svg aria-hidden="true"><use href="#g-bolt" /></svg>
+              {e.text} · {it ? "edge modello" : "model edge"}
+            </span>
+          );
+        })()}
+        {/* #QW4: spiegazione in chiaro dell'"edge modello" per il tifoso (il pt
+            è lo scarto pick vs seconda ipotesi — model margin, non vs mercato). */}
+        <span className="edge-plain">{pick5(lang, {
+          it: "Scarto tra la nostra probabilità e la seconda ipotesi del modello.",
+          en: "Gap between our probability and the model's second-best call.",
+          es: "Diferencia entre nuestra probabilidad y la segunda opción del modelo.",
+          fr: "Écart entre notre probabilité et la deuxième hypothèse du modèle.",
+          ru: "Разница между нашей вероятностью и второй версией модели.",
+        })}</span>
       </div>
       <div className="seam" />
       <div className="why">
@@ -8539,6 +8621,9 @@ export default function Dashboard() {
     { tab: "bets",        label: tNav.nav_predictions, glyph: RAIL_GLYPHS["bets"] ?? "#g-desk" },
     { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
     { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
+    // #MOB1: Match Builder è una destinazione primaria (loggati) → entra nella
+    // bottom bar invece di restare fuori-schermo nella vecchia striscia laterale.
+    ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Builder", glyph: RAIL_GLYPHS["match-builder"] ?? "#g-builder" }] : []),
     { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
   ];
 
@@ -8714,12 +8799,8 @@ export default function Dashboard() {
                 <svg className="am-feat-ic" aria-hidden="true"><use href="#g-ticket" /></svg>
                 <span className="am-feat-l">Weekly Pick</span>
               </Link>
-              {hasClientProfile && (
-                <button className="am-feat-tile" onClick={() => { setTab("match-builder"); trackEvent("tab_click", { meta: { tab: "match-builder", src: "featured-mobile" } }); }}>
-                  <MenuIcon name="builder" size={22} className="am-feat-ic" />
-                  <span className="am-feat-l">Match Builder</span>
-                </button>
-              )}
+              {/* #MOB1: Match Builder è stato promosso alla bottom tab bar (destinazione
+                  primaria) → rimosso da "In Evidenza" per non duplicarlo. */}
               {hasClientProfile && (
                 <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
                   <svg className="am-feat-ic" aria-hidden="true"><use href="#g-acct" /></svg>
@@ -8736,7 +8817,27 @@ export default function Dashboard() {
                   uiLanguage === "it"
                     ? <>Scegli il piano giusto per te. Sblocca prediction, edge e Deep Analysis.</>
                     : <>Choose the plan that fits you. Unlock predictions, edge and Deep Analysis.</>
-                ) : uiLanguage === "it" ? (
+                /* #QW3: sottotitolo specifico per pagina — non più la stessa riga
+                   "opinioni da bar" ovunque. Ogni destinazione spiega sé stessa. */
+                ) : tab === "history" ? pick5(uiLanguage, {
+                    it: "Ogni pick chiuso, vinto o perso. Il track record del modello, senza filtri.",
+                    en: "Every settled pick, won or lost. The model's track record, unfiltered.",
+                    es: "Cada pronóstico cerrado, ganado o perdido. El historial del modelo, sin filtros.",
+                    fr: "Chaque pronostic clôturé, gagné ou perdu. Le bilan du modèle, sans filtre.",
+                    ru: "Каждый закрытый прогноз — выигранный или проигранный. История модели без фильтров.",
+                }) : tab === "leaderboard" ? pick5(uiLanguage, {
+                    it: "Come si posizionano i clienti per hit rate. 10 punti per ogni pick vinto.",
+                    en: "How clients rank by hit rate. 10 points for every winning pick.",
+                    es: "Cómo se clasifican los clientes por hit rate. 10 puntos por cada pronóstico ganado.",
+                    fr: "Le classement des clients par hit rate. 10 points par pronostic gagné.",
+                    ru: "Рейтинг клиентов по проценту попаданий. 10 очков за каждый выигранный прогноз.",
+                }) : tab === "match-builder" ? pick5(uiLanguage, {
+                    it: "Costruisci la tua multipla. Il modello calcola la probabilità combinata, selezione per selezione.",
+                    en: "Build your accumulator. The model computes the combined probability, leg by leg.",
+                    es: "Crea tu combinada. El modelo calcula la probabilidad combinada, selección a selección.",
+                    fr: "Composez votre combiné. Le modèle calcule la probabilité combinée, sélection par sélection.",
+                    ru: "Соберите свой экспресс. Модель считает совокупную вероятность по каждому событию.",
+                }) : uiLanguage === "it" ? (
                   <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
                 ) : uiLanguage === "es" ? (
                   <>Probabilidades <b>calibradas por un modelo</b> en fútbol y tenis. El modelo tiene <b>una</b> opinión, no charlas de bar.</>
@@ -8752,7 +8853,10 @@ export default function Dashboard() {
             {tab === "bets" && (
               <button className="mb-entry" onClick={() => setTab("match-builder")}>Match Builder →</button>
             )}
-            {tab !== "plans" && (
+            {/* #QW3: le stat-tile board (eventi/con-edge/hit) informano solo dove
+                c'è un board o un track record — Previsioni e Storico. Su Classifica
+                e Match Builder erano rumore (un "66.1% HIT" su una classifica). */}
+            {(tab === "bets" || tab === "history") && (
             <div className="am-statbar">
               <div className="am-kpi chamfer-sm">
                 <span className="v">{predictions.length + tennisMatches.length}</span>

@@ -14,6 +14,11 @@ const CSS = `
   --mut:var(--am-muted);--mut2:var(--am-muted-2);--hi:var(--am-hi);
   --pos:var(--am-positive);--cobalt:var(--am-cobalt);
   --m:var(--font-mono),ui-monospace,monospace;color:var(--text);
+  /* #EST1: il registro pick si spalmava su tutta la larghezza del desk (~1600px)
+     → la colonna nome-match (1fr) stirava le righe lasciando un vuoto morto tra
+     nome ed esito. Cappato a una misura di lettura, ancorato a sinistra come il
+     titolo di pagina; lo spazio libero esce dalle righe, non le buca. */
+  max-width:1040px;
 }
 .tr-root .tr-eye{font-family:var(--m);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut2);font-weight:600}
 .tr-root .tr-lab{font-family:var(--m);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);margin-top:6px}

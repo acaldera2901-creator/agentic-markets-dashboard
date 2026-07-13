@@ -200,9 +200,10 @@ button:disabled {
   50%       { opacity: 0.55; transform: scale(0.85); }
 }
 
+/* LEVEL-UP sweep: glow era rossastro coral residuo → verde brand */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(255,107,107,0); }
-  50%       { box-shadow: 0 0 20px rgba(255,107,107,0.12); }
+  0%, 100% { box-shadow: 0 0 0 rgba(35,165,89,0); }
+  50%       { box-shadow: 0 0 20px rgba(35,165,89,0.12); }
 }
 
 @keyframes slide-up {
@@ -252,7 +253,7 @@ button:disabled {
   top: -140px;
   width: 420px;
   height: 300px;
-  background: radial-gradient(ellipse, rgba(255,107,107,0.10), transparent 68%);
+  background: radial-gradient(ellipse, rgba(35,165,89,0.10), transparent 68%);
   pointer-events: none;
 }
 
@@ -334,9 +335,9 @@ button:disabled {
 .client-access-button {
   min-height: 30px;
   padding: 0 12px;
-  border: 1px solid rgba(255,107,107,0.32);
+  border: 1px solid rgba(35,165,89,0.32);
   border-radius: 999px;
-  background: rgba(255,107,107,0.10);
+  background: rgba(35,165,89,0.10);
   color: var(--green);
   font-size: 11px;
   font-weight: 850;
@@ -344,7 +345,7 @@ button:disabled {
 }
 
 .client-access-button:hover {
-  background: rgba(255,107,107,0.16);
+  background: rgba(35,165,89,0.16);
 }
 
 /* ── Layout ──────────────────────────────────────────────────── */
@@ -503,8 +504,8 @@ button:disabled {
 }
 
 .rail-item.is-active.green {
-  border-color: rgba(255,107,107,0.30);
-  background: rgba(255,107,107,0.09);
+  border-color: rgba(35,165,89,0.30);
+  background: rgba(35,165,89,0.09);
   color: var(--green);
 }
 
@@ -517,16 +518,16 @@ button:disabled {
 .rail-refresh {
   margin-top: 6px;
   justify-content: center;
-  border-color: rgba(255,107,107,0.28);
+  border-color: rgba(35,165,89,0.28);
   color: var(--green);
-  background: rgba(255,107,107,0.08);
+  background: rgba(35,165,89,0.08);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   text-transform: uppercase;
 }
 
 .rail-refresh:hover {
-  background: rgba(255,107,107,0.13);
+  background: rgba(35,165,89,0.13);
 }
 
 .rail-note {
@@ -623,7 +624,7 @@ button:disabled {
 
 .desk-status-pill.is-online .status-dot {
   background: var(--green);
-  box-shadow: 0 0 12px rgba(255,107,107,0.65);
+  box-shadow: 0 0 12px rgba(35,165,89,0.65);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -727,8 +728,8 @@ button:disabled {
 
 .sports-filter-bar select:focus,
 .sports-search:focus {
-  border-color: rgba(255,107,107,0.42);
-  box-shadow: 0 0 0 2px rgba(255,107,107,0.08);
+  border-color: var(--ring); /* LEVEL-UP sweep: focus ring → token verde */
+  box-shadow: 0 0 0 2px rgba(35,165,89,0.08);
 }
 
 .sports-filter-bar select:disabled {
@@ -813,7 +814,7 @@ button:disabled {
   border-left: 2px solid var(--am-coral);
   /* Hero wash: corallo (warm dominant) → cobalt (cool counterpoint), statico. */
   background:
-    linear-gradient(110deg, rgba(255,107,107,0.10) 0%, transparent 42%),
+    linear-gradient(110deg, rgba(35,165,89,0.10) 0%, transparent 42%),
     linear-gradient(290deg, rgba(59,130,246,0.08) 0%, transparent 46%),
     var(--am-panel);
 }
@@ -839,9 +840,9 @@ button:disabled {
 .portfolio-hero button {
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(255,107,107,0.36);
+  border: 1px solid rgba(35,165,89,0.36);
   border-radius: 8px;
-  background: rgba(255,107,107,0.10);
+  background: rgba(35,165,89,0.10);
   color: var(--green);
   font-weight: 850;
 }
@@ -862,7 +863,7 @@ button:disabled {
   top: -130px;
   width: 360px;
   height: 260px;
-  background: radial-gradient(ellipse, rgba(255,107,107,0.10), transparent 68%);
+  background: radial-gradient(ellipse, rgba(35,165,89,0.10), transparent 68%);
   pointer-events: none;
 }
 
@@ -1520,7 +1521,7 @@ button:disabled {
   min-height: 100vh;
   padding: 22px clamp(16px, 4vw, 54px) 42px;
   background:
-    radial-gradient(ellipse 900px 360px at 50% -12%, rgba(255,107,107,0.14), transparent 68%),
+    radial-gradient(ellipse 900px 360px at 50% -12%, rgba(35,165,89,0.14), transparent 68%),
     radial-gradient(ellipse 720px 320px at 100% 12%, rgba(59,130,246,0.10), transparent 70%),
     linear-gradient(180deg, #070A12 0%, #090B16 45%, #05070D 100%);
   color: var(--text);
@@ -1580,8 +1581,8 @@ button:disabled {
 }
 
 .public-entry-actions button:last-child {
-  border-color: rgba(255,107,107,0.38);
-  background: rgba(255,107,107,0.12);
+  border-color: rgba(35,165,89,0.38);
+  background: rgba(35,165,89,0.12);
   color: var(--green);
 }
 
@@ -1628,7 +1629,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse 500px 260px at 100% 0%, rgba(255,107,107,0.08), transparent 70%),
+    radial-gradient(ellipse 500px 260px at 100% 0%, rgba(35,165,89,0.08), transparent 70%),
     rgba(255,255,255,0.02);
   position: relative;
   overflow: hidden;
@@ -1639,7 +1640,7 @@ button:disabled {
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255,107,107,0.03) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(35,165,89,0.03) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -1694,7 +1695,7 @@ button:disabled {
 }
 
 .preaccess-actions button:first-child {
-  border: 1px solid rgba(255,107,107,0.42);
+  border: 1px solid rgba(35,165,89,0.42);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
@@ -1775,8 +1776,8 @@ button:disabled {
 }
 
 .preaccess-plan-strip button:hover {
-  border-color: rgba(255,107,107,0.35);
-  background: rgba(255,107,107,0.04);
+  border-color: rgba(35,165,89,0.35);
+  background: rgba(35,165,89,0.04);
 }
 
 .preaccess-plan-strip button strong {
@@ -1805,7 +1806,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   background:
-    linear-gradient(90deg, rgba(255,107,107,0.08), rgba(59,130,246,0.04)),
+    linear-gradient(90deg, rgba(35,165,89,0.08), rgba(59,130,246,0.04)),
     rgba(255,255,255,0.02);
   display: flex;
   align-items: center;
@@ -1865,10 +1866,10 @@ button:disabled {
 }
 
 .desk-preview {
-  border: 1px solid rgba(255,107,107,0.22);
+  border: 1px solid rgba(35,165,89,0.22);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse 280px 160px at 100% 0%, rgba(255,107,107,0.12), transparent 70%),
+    radial-gradient(ellipse 280px 160px at 100% 0%, rgba(35,165,89,0.12), transparent 70%),
     rgba(8,13,27,0.72);
   padding: 14px;
   display: grid;
@@ -2023,9 +2024,9 @@ button:disabled {
 .access-level-grid article button,
 .support-hub button {
   height: 38px;
-  border: 1px solid rgba(255,107,107,0.34);
+  border: 1px solid rgba(35,165,89,0.34);
   border-radius: 8px;
-  background: rgba(255,107,107,0.10);
+  background: rgba(35,165,89,0.10);
   color: var(--green);
   font-weight: 900;
   cursor: pointer;
@@ -2184,9 +2185,9 @@ button:disabled {
   display: grid;
   gap: 6px;
   padding: 10px;
-  border: 1px solid rgba(255,107,107,0.28);
+  border: 1px solid rgba(35,165,89,0.28);
   border-radius: 8px;
-  background: rgba(255,107,107,0.07);
+  background: rgba(35,165,89,0.07);
   color: var(--green);
   font-size: 12px;
 }
@@ -2677,8 +2678,8 @@ button:disabled {
 }
 
 .bets-filter-bar select:focus {
-  border-color: rgba(255,107,107,0.42);
-  box-shadow: 0 0 0 2px rgba(255,107,107,0.08);
+  border-color: var(--ring); /* LEVEL-UP sweep: focus ring → token verde */
+  box-shadow: 0 0 0 2px rgba(35,165,89,0.08);
 }
 
 .unified-bet-list {
@@ -3061,6 +3062,17 @@ button:disabled {
   font-weight: 600;
 }
 .featured .edge svg { width: 13px; height: 13px; }
+/* #QW4: valore cappato al display (odds stantie) — cue neutro, non allarmistico,
+   ma segnala che la cifra è "da leggere con prudenza" invece di ostentare +71 pt. */
+.featured .edge.is-extreme {
+  border-color: var(--am-line-2); background: var(--am-inset); color: var(--am-muted);
+}
+.featured .edge.is-extreme svg { color: var(--am-muted-2); }
+/* #QW4: riga in chiaro sotto il chip edge — traduce il "pt" per il tifoso. */
+.featured .edge-plain {
+  margin: 7px 0 0; align-self: flex-start; max-width: 42ch;
+  font-size: 11.5px; line-height: 1.4; color: var(--am-muted);
+}
 .featured .featured-unlock {
   margin-top: 18px;
   align-self: flex-start;
@@ -3209,8 +3221,8 @@ button:disabled {
 }
 
 .odds-button.is-value {
-  border-color: rgba(255,107,107,0.40);
-  background: linear-gradient(180deg, rgba(255,107,107,0.12), rgba(255,107,107,0.055));
+  border-color: rgba(35,165,89,0.40);
+  background: linear-gradient(180deg, rgba(35,165,89,0.12), rgba(35,165,89,0.055));
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
@@ -3333,7 +3345,7 @@ button:disabled {
 .stake-input input {
   width: 100%;
   height: 42px;
-  border: 1px solid rgba(255,107,107,0.28);
+  border: 1px solid var(--input); /* LEVEL-UP sweep: resting neutro (era coral), verde solo su :focus */
   border-radius: 8px;
   background: var(--bg);
   color: var(--text);
@@ -3345,8 +3357,8 @@ button:disabled {
 }
 
 .stake-input input:focus {
-  border-color: rgba(255,107,107,0.55);
-  box-shadow: 0 0 0 3px rgba(255,107,107,0.08);
+  border-color: var(--ring); /* LEVEL-UP sweep: focus ring → token verde */
+  box-shadow: 0 0 0 3px rgba(35,165,89,0.08);
 }
 
 .ticket-summary {
@@ -3367,7 +3379,7 @@ button:disabled {
 
 .place-live {
   min-height: 44px;
-  border: 1px solid rgba(255,107,107,0.45);
+  border: 1px solid rgba(35,165,89,0.45);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
@@ -3379,7 +3391,7 @@ button:disabled {
 
 .place-live:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(255,107,107,0.24);
+  box-shadow: 0 8px 24px rgba(35,165,89,0.24);
 }
 
 .place-live.is-review {
@@ -4148,6 +4160,15 @@ button:disabled {
   padding: 14px;
   min-height: 0;
 }
+/* #QW1: il widget di chat Tawk è fixed in basso a destra (~80px) e copre l'ultima
+   riga di card su Previsioni, la colonna esito su Storico e le feature del piano
+   Pro su Piani (pagina di conversione). Aggiungo un gutter in fondo al desk così
+   il contenuto scorre sempre sopra il widget. Solo ≥901px: sotto i 900 c'è già la
+   bottom tab bar con il suo padding. NB: Tawk non è caricato in dev → verificare
+   in produzione. */
+@media (min-width: 901px) {
+  .portal-desk { padding-bottom: 96px; }
+}
 
 .portal-bottom-banner {
   min-height: 48px;
@@ -4387,14 +4408,14 @@ button:disabled {
 }
 
 .plan-btn.primary {
-  border-color: rgba(255,107,107,.42);
+  border-color: rgba(35,165,89,.42);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
 
 .plan-btn.active {
-  border-color: rgba(255,107,107,.3);
-  background: rgba(255,107,107,.08);
+  border-color: rgba(35,165,89,.3);
+  background: rgba(35,165,89,.08);
   color: var(--green);
   cursor: default;
 }
@@ -4552,7 +4573,8 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 12px;
   margin: 16px;
-  background: linear-gradient(135deg, rgba(255,107,107,.04) 0%, rgba(139,92,246,.04) 100%);
+  /* LEVEL-UP sweep: era coral→viola off-brand → verde→cobalt (accento + colore-dati) */
+  background: linear-gradient(135deg, rgba(35,165,89,.05) 0%, rgba(59,130,246,.04) 100%);
 }
 .bets-auth-gate-icon { font-size: 36px; }
 .bets-auth-gate h3 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
@@ -4825,14 +4847,15 @@ button:disabled {
 .free-paywall .fp-link:hover { color: var(--am-text); }
 
 /* ─── Deep Analysis Panel (Premium) ─────────────────────────────────────────── */
+/* LEVEL-UP sweep: intero pannello era viola off-brand (#8B5CF6/#A78BFA) → verde brand. */
 .deep-analysis-panel {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
   border-radius: 6px;
-  border: 1px solid rgba(139, 92, 246, 0.22);
-  background: rgba(139, 92, 246, 0.04);
+  border: 1px solid rgba(35,165,89, 0.22);
+  background: rgba(35,165,89, 0.04);
   margin-top: 4px;
 }
 .da-header {
@@ -4848,9 +4871,9 @@ button:disabled {
   letter-spacing: 0.06em;
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid rgba(139, 92, 246, 0.45);
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(35,165,89, 0.45);
+  color: var(--am-coral);
+  background: rgba(35,165,89, 0.12);
   text-transform: uppercase;
 }
 .da-title {
@@ -4858,7 +4881,7 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(167, 139, 250, 0.6);
+  color: rgba(35,165,89, 0.6);
 }
 .da-row {
   display: flex;
@@ -4878,6 +4901,15 @@ button:disabled {
 .da-value {
   color: rgba(255,255,255,0.75);
   flex: 1;
+}
+/* #QW4: value cappato al display (odds stantie) → neutro, non enfatizzato. */
+.da-value.is-extreme { color: var(--am-muted); }
+/* #QW4: riga in chiaro sotto "Modello vs Mercato" — traduce l'edge al tifoso non
+   esperto senza gergo. Allineata sotto la colonna valore (label 80 + gap 8). */
+.da-plain {
+  margin: 3px 0 4px 88px;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px; line-height: 1.45; color: var(--am-muted); max-width: 46ch;
 }
 .da-markets-row {
   flex-wrap: wrap;
@@ -4907,7 +4939,7 @@ button:disabled {
   flex-direction: column;
   gap: 4px;
   padding-top: 6px;
-  border-top: 1px solid rgba(139, 92, 246, 0.12);
+  border-top: 1px solid rgba(35,165,89, 0.12);
   margin-top: 2px;
 }
 .da-research-text {
@@ -4956,7 +4988,7 @@ button:disabled {
 .locked-cta {
   font-size: 11px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(167, 139, 250, 0.85);
+  color: rgba(35,165,89, 0.85);
   margin-top: 4px;
   text-align: center;
 }
@@ -5006,11 +5038,11 @@ button:disabled {
   gap: 7px;
   padding: 7px 10px;
   border-radius: 5px;
-  border: 1px dashed rgba(139, 92, 246, 0.18);
-  background: rgba(139, 92, 246, 0.02);
+  border: 1px dashed rgba(35,165,89, 0.18);
+  background: rgba(35,165,89, 0.02);
   font-size: 9px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(167, 139, 250, 0.45);
+  color: rgba(35,165,89, 0.45);
   margin-top: 4px;
   cursor: default;
   user-select: none;
@@ -5988,10 +6020,21 @@ button:disabled {
 .pred .v2r-pick { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--am-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pred .v2r-eye { font-size: 9.5px; }
-.pred .v2r-conf { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
-.pred .v2r-conf .d { width: 6px; height: 6px; border-radius: 50%; background: var(--am-line-2); }
+/* #CHI1: "quanto sicuro" in un solo cue dominante. La LABEL (alta/media/bassa)
+   guida — peso + colore per livello; i dots restano come meter secondario (più
+   piccoli), la % vive a destra come dettaglio. Un solo segnale da leggere. */
+.pred .v2r-conf { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+.pred .v2r-conf .d { width: 5px; height: 5px; border-radius: 50%; background: var(--am-line-2); }
 .pred .v2r-conf .d.on { background: var(--am-positive); }
-.pred .v2r-conf-t { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10px; color: var(--am-muted); }
+.pred .v2r-conf-t { font-family: var(--am-mono, ui-monospace, monospace); font-size: 11px;
+  font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--am-muted);
+  margin-right: 1px; }
+.pred .v2r-conf[data-conf="high"] .v2r-conf-t { color: var(--am-positive); }
+.pred .v2r-conf[data-conf="med"]  .v2r-conf-t { color: var(--am-amber); }
+.pred .v2r-conf[data-conf="low"]  .v2r-conf-t { color: var(--am-muted-2); }
+.pred .v2r-conf[data-conf="high"] .d.on { background: var(--am-positive); }
+.pred .v2r-conf[data-conf="med"]  .d.on { background: var(--am-amber); }
+.pred .v2r-conf[data-conf="low"]  .d.on { background: var(--am-muted-2); }
 .pred .v2r-flat { font-family: var(--am-mono, ui-monospace, monospace); font-size: 10.5px; color: var(--am-muted-2); margin-top: 1px; }
 .pred .v2r-q { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; flex: none; text-align: right; }
 .pred .v2r-qlab { font-family: var(--am-mono, ui-monospace, monospace); font-size: 8.5px; letter-spacing: 0.07em;
@@ -6003,6 +6046,9 @@ button:disabled {
   font-weight: 640; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
 .pred .v2r-val { font-size: 9.5px; font-weight: 800; color: var(--am-coral); background: var(--am-coral-dim);
   border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 1px 7px; cursor: help; }
+/* #QW4: value cappato (es. "100+%") → neutro, non coral: non ostentiamo un valore
+   gonfiato da quote stantie. La cifra è cappata solo al display, il dato è intatto. */
+.pred .v2r-val.is-extreme { color: var(--am-muted); background: var(--am-inset); border-color: var(--am-line-2); }
 /* confidence meter */
 .pred .conf { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 11px; color: var(--am-muted); }
 .pred .conf .conf-lab { font-size: 10px; letter-spacing: 0.04em; color: var(--am-muted-2); }
@@ -6556,9 +6602,9 @@ button:disabled {
 .house-banner.hb-photo .hb-x:hover{ background:rgba(255,255,255,.16); color:#fff; }
 .house-banner.hb-photo .hb-glow{ display:none; }
 /* direzioni overlay coral */
-.hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(255,107,107,.42) 100%); }
-.hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(255,107,107,.30) 100%); }
-.hb-photo.hb-ov-d .hb-photo-ov{ background:linear-gradient(130deg, rgba(7,8,15,.94) 32%, rgba(255,107,107,.42) 100%); }
+.hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(35,165,89,.42) 100%); }
+.hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(35,165,89,.30) 100%); }
+.hb-photo.hb-ov-d .hb-photo-ov{ background:linear-gradient(130deg, rgba(7,8,15,.94) 32%, rgba(35,165,89,.42) 100%); }
 
 /* ──────────────────────────────────────────────────────────────────────────
    #HOUSE-BANNERS-2 — versioni ricche: ticker + stat chip + half-page + mini-board.
@@ -6658,9 +6704,14 @@ button:disabled {
 /* Layout: list (left) + sticky slip (right). Stacks under 900px. */
 .mb-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  /* #EST1: la colonna lista era 1fr → su desk larghi si allargava a ~900px e ogni
+     riga aveva un vuoto morto tra nome match e probabilità (a destra). Cappata la
+     traccia lista a una misura di lettura: la slip resta accanto, lo spazio libero
+     va a fine riga (fuori dall'area funzionale), non dentro le righe. */
+  grid-template-columns: minmax(0, 640px) minmax(0, 320px);
   gap: 20px;
   align-items: start;
+  justify-content: start;
 }
 @media (max-width: 900px) {
   .mb-layout { grid-template-columns: minmax(0, 1fr); }
@@ -7030,7 +7081,7 @@ button:disabled {
 .lp {
   min-height: 100vh;
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(255,106,94,0.10), transparent 55%),
+    radial-gradient(120% 80% at 50% -10%, rgba(35,165,89,0.10), transparent 55%),
     radial-gradient(90% 70% at 100% 0%, rgba(59,130,246,0.10), transparent 50%),
     var(--am-bg);
   color: var(--am-text);
@@ -7068,7 +7119,7 @@ button:disabled {
    font:inherit + line-height per renderli identici ai vecchi <a>. */
 /* LEVEL-UP HOME — controlli tattici (come /app): spigolo vivo 0px, label mono
    uppercase tracciata, focus-ring verde 2px, micro-glow verde su hover. Un solo
-   accento (verde brand --am-coral); niente residui rossastri rgba(255,106,94). */
+   accento (verde brand --am-coral); nessun residuo rossastro (bonificati, LEVEL-UP sweep). */
 .lp-nav-link {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px; font-weight: 700; line-height: 1.2;
@@ -7338,7 +7389,7 @@ button:disabled {
   transform: translateY(-2px); background: rgba(255, 255, 255, .13);
   box-shadow: 0 10px 26px rgba(0, 0, 0, .4);
 }
-.lp-sport:hover .lp-sport-well { background: rgba(255, 106, 94, .2); border-color: rgba(255, 106, 94, .55); transform: scale(1.06); }
+.lp-sport:hover .lp-sport-well { background: rgba(35,165,89, .2); border-color: rgba(35,165,89, .55); transform: scale(1.06); }
 .lp-sport:hover .lp-sport-arr { transform: translateX(3px); color: var(--am-coral); }
 .lp-sport:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 
@@ -7346,14 +7397,14 @@ button:disabled {
 .lp-sport-feat {
   background: linear-gradient(135deg, var(--am-coral) 0%, var(--am-coral-2) 100%);
   border-color: transparent; color: var(--am-coral-ink, #1A0F0D);
-  box-shadow: 0 6px 20px rgba(255, 106, 94, .35);
+  box-shadow: 0 6px 20px rgba(35,165,89, .35);
 }
 .lp-sport-feat .lp-sport-well { background: rgba(0, 0, 0, .16); border-color: rgba(0, 0, 0, .14); }
 .lp-sport-feat .lp-sport-gl { color: var(--am-coral-ink, #1A0F0D); }
 .lp-sport-feat .lp-sport-arr { color: rgba(26, 15, 13, .55); }
 .lp-sport-feat:hover {
   border-color: transparent; background: linear-gradient(135deg, var(--am-coral) 0%, var(--am-coral-2) 100%);
-  box-shadow: 0 10px 28px rgba(255, 106, 94, .5);
+  box-shadow: 0 10px 28px rgba(35,165,89, .5);
 }
 .lp-sport-feat:hover .lp-sport-well { background: rgba(0, 0, 0, .24); border-color: rgba(0, 0, 0, .2); }
 .lp-sport-feat:hover .lp-sport-arr { color: var(--am-coral-ink, #1A0F0D); }
@@ -7478,7 +7529,7 @@ button:disabled {
   padding: 14px 34px; border-radius: 999px; color: #fff;
   transition: transform .15s, box-shadow .2s;
 }
-.lp-btn-coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); box-shadow: 0 10px 26px rgba(255,106,94,0.34); }
+.lp-btn-coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); box-shadow: 0 10px 26px rgba(35,165,89,0.34); }
 .lp-btn-cobalt { background: linear-gradient(180deg, var(--am-cobalt-2), var(--am-cobalt)); box-shadow: 0 10px 26px rgba(59,130,246,0.34); }
 .lp-btn:hover { transform: translateY(-2px); }
 
@@ -7560,7 +7611,7 @@ button:disabled {
   filter: saturate(1.14) contrast(1.06) brightness(.94);
 }
 .lp-card-photo .lp-card-ov { position: absolute; inset: 0; z-index: 0; }
-.lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(255,106,94,.42) 100%); }
+.lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(35,165,89,.42) 100%); }
 .lp-card-photo .lp-card-ov.cobalt { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(59,130,246,.42) 100%); }
 .lp-card-photo > *:not(.lp-card-bg):not(.lp-card-ov) { position: relative; z-index: 1; }
 .lp-card-photo .lp-card-title { color: #fff; }
@@ -7580,7 +7631,7 @@ button:disabled {
   min-height: clamp(300px, 26vw, 380px);
 }
 .lp-card-hero .lp-card-ov.coral {
-  background: linear-gradient(165deg, rgba(7,8,15,.5) 0%, rgba(7,8,15,.78) 48%, rgba(255,106,94,.5) 100%);
+  background: linear-gradient(165deg, rgba(7,8,15,.5) 0%, rgba(7,8,15,.78) 48%, rgba(35,165,89,.5) 100%);
 }
 .lp-card-hero .lp-card-body { align-items: flex-start; text-align: left; padding: 0; gap: 12px; justify-content: flex-end; }
 .lp-card-eyebrow {
@@ -7603,7 +7654,7 @@ button:disabled {
   background:
     linear-gradient(105deg, rgba(7,8,15,.9) 0%, rgba(7,8,15,.62) 34%, rgba(7,8,15,.08) 60%, rgba(7,8,15,0) 78%),
     linear-gradient(0deg, rgba(7,8,15,.78) 0%, rgba(7,8,15,.18) 30%, rgba(7,8,15,0) 55%),
-    linear-gradient(0deg, rgba(255,106,94,.28) 0%, rgba(255,106,94,0) 40%);
+    linear-gradient(0deg, rgba(35,165,89,.28) 0%, rgba(35,165,89,0) 40%);
 }
 
 /* SMALL (plans, app): radius più stretto, scala compatta = gerarchia recessiva */
@@ -7616,7 +7667,7 @@ button:disabled {
 
 /* QUIET (plans): overlay più sobrio (meno coral) → non compete con la hero */
 .lp-card-quiet .lp-card-ov.coral {
-  background: linear-gradient(180deg, rgba(7,8,15,.62) 0%, rgba(7,8,15,.86) 60%, rgba(255,106,94,.22) 100%);
+  background: linear-gradient(180deg, rgba(7,8,15,.62) 0%, rgba(7,8,15,.86) 60%, rgba(35,165,89,.22) 100%);
 }
 
 .lp-card-glyph { width: 34px; height: 34px; color: var(--am-coral); }
@@ -7625,7 +7676,7 @@ button:disabled {
   position: relative; margin: 4px 0 2px;
 }
 .lp-card-orb svg { width: 46px; height: 46px; position: relative; z-index: 1; color: var(--am-text); }
-.lp-card-orb.coral { background: radial-gradient(circle, rgba(255,106,94,0.30), transparent 68%); }
+.lp-card-orb.coral { background: radial-gradient(circle, rgba(35,165,89,0.30), transparent 68%); }
 .lp-card-orb.cobalt { background: radial-gradient(circle, rgba(59,130,246,0.30), transparent 68%); }
 .lp-card-orb::after {
   content: ""; position: absolute; inset: -6px; border-radius: 50%;
@@ -7690,7 +7741,7 @@ button:disabled {
   color: var(--am-muted); max-width: 52ch;
 }
 .lp-kpis {
-  display: flex; gap: clamp(20px, 3vw, 44px); margin: 30px 0 0;
+  display: flex; flex-wrap: wrap; gap: clamp(20px, 3vw, 44px); margin: 30px 0 0;
   padding-top: 26px; border-top: 1px solid var(--am-line);
 }
 .lp-kpi { display: flex; flex-direction: column; gap: 4px; }
@@ -7698,6 +7749,10 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600;
   font-size: clamp(24px, 2.6vw, 34px); line-height: 1; letter-spacing: -0.02em;
   color: var(--am-text); font-feature-settings: "tnum" 1;
+  /* QW5: readout mono su una sola riga — "Hit-rate"/"CLV" non devono spezzarsi
+     ("Hit-/rate"), così i 3 slot condividono la stessa baseline e la didascalia
+     sotto resta allineata. flex-wrap sul contenitore fa reflow sui viewport minimi. */
+  white-space: nowrap;
 }
 .lp-kpi-val.accent { color: var(--am-coral); }
 .lp-kpi-unit { font-size: 0.5em; font-weight: 600; margin-left: 1px; opacity: .8; }
@@ -8138,7 +8193,13 @@ button:disabled {
 .am-bottomnav { display: none; }
 .mb-entry { display: none; }
 .am-featured { display: none; } /* #MOBILE-FEATURED-1: solo mobile (rail assente) */
-@media (max-width: 760px) {
+/* #MOB1: alzato 760→900px. Sotto i 900 la sidebar (.sports-rail) diventava una
+   striscia a scorrimento orizzontale (~10 chip) e la bottom bar non c'era ancora:
+   nel range 760–900 le pagine di valore (World Cup / Creator / Weekly / Piani)
+   restavano fuori-schermo a destra. Ora la bottom tab bar persistente copre tutto
+   il range mobile/tablet, come da audit. Verificare su device reale (<1512px non
+   renderizzabile in questo ambiente). */
+@media (max-width: 900px) {
   /* il "muro di menu" (sidebar) sparisce: lo sostituisce la bottom bar */
   .sports-rail { display: none !important; }
   /* contenuto a tutta larghezza + spazio per la barra fissa */
@@ -8515,8 +8576,9 @@ button:disabled {
    Riusa il sistema lp-* (eyebrow, what-head, kpis, step) + superfici dedicate
    .wp-* modellate sul terminale lp-term (superficie-strumento, NON tabella). */
 .wp-page { position: relative; min-height: 100vh; background: var(--am-bg); color: var(--am-text); display: flex; flex-direction: column; }
+/* EST2: glow ricentrato (era 22%) → segue la colonna-biglietto ora centrata */
 .wp-page::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 620px; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 900px 420px at 22% -6%, var(--am-coral-dim), transparent 65%); }
+  background: radial-gradient(ellipse 900px 420px at 50% -6%, var(--am-coral-dim), transparent 65%); }
 .wp-page > * { position: relative; z-index: 1; }
 .wp-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px clamp(16px, 4vw, 56px); border-bottom: 1px solid var(--am-line); }
@@ -8526,7 +8588,11 @@ button:disabled {
 .wp-nav-tag { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10.5px; letter-spacing: .14em;
   text-transform: uppercase; color: var(--am-muted-2); }
 
-.wp-hero { max-width: 1240px; margin: 0 auto; width: 100%;
+/* EST2: la hero condivide la MISURA della schedina/brief (720) → hero + "La
+   settimana" + slip formano UNA colonna centrata (il "biglietto") invece della
+   vecchia banda 1240 con testo impaccato a sinistra e metà destra vuota su wide.
+   Le griglie archivio sotto (.wp-analysis / .wp-hist-sec) restano a 1240. */
+.wp-hero { max-width: 720px; margin: 0 auto; width: 100%;
   padding: clamp(40px, 6vw, 88px) clamp(16px, 4vw, 56px) clamp(20px, 3vw, 36px); }
 .wp-hero .lp-what-head { max-width: 19ch; }
 
@@ -8787,4 +8853,120 @@ button:disabled {
   margin-top: clamp(28px, 3.5vw, 40px);
   clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
   box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LEVEL-UP COPERTURA — Plans + Match Builder slip + pagine legali (2026-07-13)
+   Estende la firma tattica di /app (.card > .pred, STAGE 1d/1e) alle superfici
+   rimaste rotonde. SOLO presentazione.
+   Bordo CHIUSO = clip-path (angoli alto-sx + basso-dx, var(--ch)) + hairline
+   4-lati/ciglio via inset box-shadow + profondità via drop-shadow (segue la
+   sagoma obliqua) + due bar-hairline ::before/::after che chiudono la diagonale
+   (identica a .card > .pred). Hairline = --am-chamfer-line (theme-aware);
+   accent coral SOLO su Pro (piano consigliato) + slip attiva (≥2 gambe).
+   Nessun target ha ::before/::after pre-esistenti né discendenti sticky/fixed
+   (il .mb-slip-col sticky è il PADRE, non il target) → filter (containing-block)
+   innocuo. I sub-pannelli interni → spigolo vivo (quiet, come i readout /app);
+   i pulsanti → tattici (spigolo vivo, mono uppercase, focus-ring + glow verde).
+   Scope stretto (.plans-grid-3 > .plan-card, .mb-slip-col > .am-surface, classi
+   dedicate .legal-sheet/.reset-card) per non toccare account/modali/altri usi.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* -- pannelli grandi: chamfer bordo chiuso -- */
+.plans-hero,
+.plan-flow,
+.plans-grid-3 > .plan-card,
+.mb-slip-col > .am-surface,
+.legal-sheet,
+.reset-card {
+  --_pe: var(--am-chamfer-line);
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: var(--am-panel);
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.32));
+}
+/* accent coral: Pro (piano consigliato) + slip attiva (inline borderColor presente
+   solo con ≥2 gambe → attributo [style] come hook, niente JSX in più) */
+.plans-grid-3 > .plan-card.is-premium,
+.mb-slip-col > .am-surface[style] { --_pe: var(--am-coral-b); }
+/* hero band di conversione: hairline più marcato (legge come cornice deliberata);
+   il banner promo -50% porta uno style inline (borderColor) → hook [style] per
+   accendere l'accent coral, come faceva il border-left coral originale */
+.plans-hero { --_pe: var(--am-chamfer-line-2); }
+.plans-hero[style] { --_pe: var(--am-coral-b); }
+
+/* bar-hairline che CHIUDONO la diagonale (stessa tecnica di .card > .pred) */
+.plans-hero::before, .plans-hero::after,
+.plan-flow::before, .plan-flow::after,
+.plans-grid-3 > .plan-card::before, .plans-grid-3 > .plan-card::after,
+.mb-slip-col > .am-surface::before, .mb-slip-col > .am-surface::after,
+.legal-sheet::before, .legal-sheet::after,
+.reset-card::before, .reset-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  width: calc(var(--ch) * 1.41421);
+  height: 1.4px;
+  background: var(--_pe);
+}
+.plans-hero::before,
+.plan-flow::before,
+.plans-grid-3 > .plan-card::before,
+.mb-slip-col > .am-surface::before,
+.legal-sheet::before,
+.reset-card::before {
+  top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.plans-hero::after,
+.plan-flow::after,
+.plans-grid-3 > .plan-card::after,
+.mb-slip-col > .am-surface::after,
+.legal-sheet::after,
+.reset-card::after {
+  bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
+  transform: translate(50%, 50%) rotate(-45deg);
+}
+
+/* -- sub-pannelli interni Plans: spigolo vivo (quiet, coerente coi readout /app) -- */
+.plans-grid-3 .plan-core-line,
+.plans-grid-3 .price-line,
+.plans-grid-3 .plan-feature-list li,
+.plans-grid-3 .plan-feature-list li span,
+.plans-grid-3 .crypto-pay-box,
+.plan-flow > div {
+  border-radius: 0;
+}
+
+/* -- pulsanti Plans → tattici (spigolo vivo, mono uppercase, focus-ring + glow) --
+   Non tocco il colore semantico: i :hover di bg/fill originali restano. */
+.plans-hero button,
+.plan-action,
+.plans-grid-3 .crypto-pay-box button {
+  border-radius: var(--am-btn-radius);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.plans-hero button:focus-visible,
+.plan-action:focus-visible,
+.plans-grid-3 .crypto-pay-box button:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+.plans-hero button:active,
+.plan-action:active,
+.plans-grid-3 .crypto-pay-box button:active { transform: translateY(1px); }
+.plans-hero button:hover:not(:disabled),
+.plan-action:hover:not(:disabled),
+.plans-grid-3 .crypto-pay-box button:not(:disabled):hover {
+  box-shadow: 0 6px 22px -8px var(--am-glow);
 }

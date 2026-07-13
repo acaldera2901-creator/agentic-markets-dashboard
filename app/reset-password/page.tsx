@@ -75,8 +75,7 @@ export default function ResetPasswordPage() {
   return (
     <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24,
       background: "var(--am-bg, #0b0f17)", color: "var(--am-text, #e2e8f0)", fontFamily: "system-ui, sans-serif" }}>
-      <form onSubmit={submit} style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", gap: 14,
-        background: "var(--am-surface, #131a26)", border: "1px solid var(--am-border, #243044)", borderRadius: 14, padding: 24 }}>
+      <form onSubmit={submit} className="reset-card" style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", gap: 14, padding: 24 }}>
         <p style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--am-muted, #94a3b8)", margin: 0 }}>BetRedge</p>
         <h1 style={{ fontSize: 20, margin: 0 }}>{it ? "Reimposta la password" : "Reset your password"}</h1>
 
@@ -95,7 +94,7 @@ export default function ResetPasswordPage() {
               <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                 <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password" placeholder={it ? "almeno 8 caratteri" : "at least 8 characters"}
-                  style={{ width: "100%", padding: "10px 52px 10px 12px", borderRadius: 8, border: "1px solid var(--am-border, #243044)",
+                  style={{ width: "100%", padding: "10px 52px 10px 12px", borderRadius: 8, border: "1px solid var(--am-line)",
                     background: "var(--am-bg, #0b0f17)", color: "inherit", fontSize: 14 }} />
                 <button type="button" onClick={() => setShowPw((v) => !v)} aria-pressed={showPw}
                   aria-label={showPw ? (it ? "Nascondi password" : "Hide password") : (it ? "Mostra password" : "Show password")}
@@ -109,16 +108,14 @@ export default function ResetPasswordPage() {
               <span>{it ? "Conferma password" : "Confirm password"}</span>
               <input type={showPw ? "text" : "password"} value={confirm} onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--am-border, #243044)",
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--am-line)",
                   background: "var(--am-bg, #0b0f17)", color: "inherit", fontSize: 14 }} />
             </label>
             {password && confirm && !match && (
               <p style={{ fontSize: 12, color: "var(--am-coral, #ff6b5e)", margin: 0 }}>{it ? "Le password non coincidono." : "Passwords don't match."}</p>
             )}
             {error && <p style={{ fontSize: 13, color: "var(--am-coral, #ff6b5e)", margin: 0 }}>{error}</p>}
-            <button disabled={!canSubmit}
-              style={{ padding: "11px 16px", borderRadius: 8, border: "none", cursor: canSubmit ? "pointer" : "not-allowed",
-                background: canSubmit ? "var(--am-coral, #ff6b5e)" : "var(--am-border, #243044)", color: "#0b0f17", fontWeight: 700, fontSize: 14 }}>
+            <button disabled={!canSubmit} className="btn-primary" style={{ width: "100%" }}>
               {busy ? "…" : (it ? "Imposta nuova password" : "Set new password")}
             </button>
           </>

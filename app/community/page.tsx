@@ -44,6 +44,7 @@ const COPY = {
     retry: "Riprova",
     emptyTitle: "Nessuna schedina pubblicata ancora.",
     emptySub: "Sii il primo: costruiscila col Match Builder e condividila.",
+    emptyExample: "Esempio",
     register: "Registrati per vedere i pick →",
     open: "Apri schedina →",
     unlock: "Sblocca con Pro →",
@@ -64,6 +65,7 @@ const COPY = {
     retry: "Retry",
     emptyTitle: "No slips published yet.",
     emptySub: "Be the first: build one with the Match Builder and share it.",
+    emptyExample: "Example",
     register: "Register to see the picks →",
     open: "Open slip →",
     unlock: "Unlock with Pro →",
@@ -84,6 +86,7 @@ const COPY = {
     retry: "Reintentar",
     emptyTitle: "Aún no hay combinadas publicadas.",
     emptySub: "Sé el primero: constrúyela con el Match Builder y compártela.",
+    emptyExample: "Ejemplo",
     register: "Regístrate para ver los picks →",
     open: "Abrir combinada →",
     unlock: "Desbloquea con Pro →",
@@ -104,6 +107,7 @@ const COPY = {
     retry: "Réessayer",
     emptyTitle: "Aucun combiné publié pour le moment.",
     emptySub: "Soyez le premier : construisez-le avec le Match Builder et partagez-le.",
+    emptyExample: "Exemple",
     register: "Inscrivez-vous pour voir les picks →",
     open: "Ouvrir le combiné →",
     unlock: "Débloquez avec Pro →",
@@ -124,6 +128,7 @@ const COPY = {
     retry: "Повторить",
     emptyTitle: "Пока нет опубликованных экспрессов.",
     emptySub: "Будьте первым: соберите его в Match Builder и поделитесь.",
+    emptyExample: "Пример",
     register: "Зарегистрируйтесь, чтобы увидеть пики →",
     open: "Открыть экспресс →",
     unlock: "Открыть с Pro →",
@@ -234,10 +239,43 @@ export default function CommunityPage() {
         {!error && slips === null && (
           <p className="text-center text-xs font-mono py-16" style={{ color: "var(--am-muted-2)" }}>{t.loading}</p>
         )}
+        {/* QW2 (audit 2026-07-12): l'empty state INSEGNA il next step invece di
+            lasciare un messaggio isolato nel void. Un esempio "ghost" mostra la
+            FORMA di una schedina creator (cosa apparirà), poi messaggio + CTA
+            inline ancorati sotto — non più il "Crea la tua" isolato in alto a dx. */}
         {!error && slips !== null && slips.length === 0 && (
-          <div className="text-center py-16 space-y-3">
-            <p className="text-sm font-mono" style={{ color: "var(--am-muted)" }}>{t.emptyTitle}</p>
-            <p className="text-xs font-mono" style={{ color: "var(--am-muted-2)" }}>{t.emptySub}</p>
+          <div className="py-8 space-y-6">
+            <article aria-hidden className="chamfer p-4 space-y-3" style={{ opacity: 0.5 }}>
+              <div className="flex items-center justify-between">
+                <span
+                  className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border"
+                  style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)" }}
+                >
+                  {t.emptyExample}
+                </span>
+                <span className="block rounded" style={{ width: 40, height: 20, background: "var(--am-coral-dim)" }} />
+              </div>
+              <div className="space-y-3 pt-1">
+                {[68, 84, 56].map((w, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3">
+                    <div className="space-y-1.5" style={{ flex: 1, minWidth: 0 }}>
+                      <span className="block rounded" style={{ height: 9, width: `${w}%`, maxWidth: 260, background: "var(--am-line-2)" }} />
+                      <span className="block rounded" style={{ height: 7, width: `${w - 28}%`, maxWidth: 150, background: "var(--am-line)" }} />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="block rounded" style={{ height: 9, width: 58, background: "var(--am-line-2)" }} />
+                      <span className="block rounded" style={{ height: 9, width: 26, background: "var(--am-coral-dim)" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+            <div className="text-center space-y-3">
+              <p className="text-sm font-bold" style={{ color: "var(--am-text)" }}>{t.emptyTitle}</p>
+              <p className="text-xs font-mono max-w-sm mx-auto" style={{ color: "var(--am-muted)" }}>{t.emptySub}</p>
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so the ?tab= deep-link resolves (see header note) */}
+              <a href="/app?tab=match-builder" className="btn-primary">{t.create}</a>
+            </div>
           </div>
         )}
         {slips?.map((slip) => (

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
-      <div className="max-w-2xl mx-auto px-6 py-12 space-y-8">
+      <div className="legal-sheet max-w-2xl mx-auto my-10 px-7 py-11 space-y-8">
         <div className="space-y-2">
           <Link href="/" className="text-[10px] text-[var(--am-muted-2)] hover:text-[var(--am-coral)] uppercase tracking-wider">
             ← Back to BetRedge
