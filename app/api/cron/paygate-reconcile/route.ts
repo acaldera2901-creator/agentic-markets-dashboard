@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 import { activatePaygatePlan } from "@/lib/plan-grant";
+import { settlePendingOrder } from "@/lib/paygate-settle";
 
 export const dynamic = "force-dynamic";
 
@@ -44,5 +45,42 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, scanned: orders.length, granted, errors });
+  // #PAYGATE-SELFHEAL: seconda passata — ordini ancora 'pending' con ipn_token.
+  // Se il callback di PayGate si è perso/fallito, qui li ri-verifichiamo contro
+  // PayGate e, se realmente pagati, li saldiamo e concediamo il piano. Il claim
+  // atomico dentro settlePendingOrder evita collisioni con un callback in corso.
+  const pending = await dbQuery<{
+    id: string; identifier: string; plan: "base" | "premium"; period: "monthly" | "annual";
+    amount_usd: number; status: string; ipn_token: string | null;
+  }>(
+    `SELECT id::text AS id, identifier, plan, period, amount_usd::float8 AS amount_usd, status, ipn_token
+       FROM paygate_orders
+      WHERE status = 'pending' AND ipn_token IS NOT NULL
+        AND created_at > NOW() - INTERVAL '7 days'
+      ORDER BY created_at ASC
+      LIMIT 100`
+  );
+
+  let settled = 0;
+  for (const o of pending) {
+    try {
+      const r = await settlePendingOrder(o);
+      if (r.granted) {
+        settled++;
+        console.log(`[paygate/reconcile] SELFHEAL grant order=${o.id} plan=${o.plan}`);
+      }
+      // non-paid / abbandonati → nessuna azione, si ritenta al prossimo giro
+    } catch (e) {
+      errors.push(`pending ${o.id}: ${String(e)}`);
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    scanned: orders.length,
+    granted,
+    pendingScanned: pending.length,
+    settled,
+    errors,
+  });
 }
