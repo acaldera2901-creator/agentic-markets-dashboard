@@ -24,9 +24,12 @@ type Row = {
   home_team: string | null;
   away_team: string | null;
   pick: string | null;
-  p_home: number | null;
-  p_draw: number | null;
-  p_away: number | null;
+  // p_home/p_draw/p_away NON esistono come colonne in unified_predictions (le
+  // prob vivono nel JSON `notes`): il coalesce sotto le legge da lì. Restano nel
+  // tipo come opzionali per il ramo colonna, se un giorno verranno materializzate.
+  p_home?: number | null;
+  p_draw?: number | null;
+  p_away?: number | null;
   notes: string | null;
   starts_at: string;
 };
@@ -39,8 +42,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // ⚠️ REGRESSIONE GIÀ ACCADUTA DUE VOLTE (05b08b4 fixò, 0b1f7c5 re-introdusse):
+  // NON aggiungere p_home/p_draw/p_away a questa SELECT — le colonne NON esistono
+  // in unified_predictions e con exec_sql l'intera query fallisce (42703) →
+  // dbQuery ingoia → 0 candidati → "not enough candidates" SILENZIOSO a ogni run
+  // (weekly pick mai generata). Le prob si leggono dal JSON `notes` (coalesce sotto,
+  // identico a /api/v2/predictions che non erra solo perché non lista le colonne).
   const rows = await dbQuery<Row>(
-    `SELECT id, sport, home_team, away_team, pick, p_home, p_draw, p_away, notes, starts_at::text AS starts_at
+    `SELECT id, sport, home_team, away_team, pick, notes, starts_at::text AS starts_at
        FROM unified_predictions
       WHERE starts_at > NOW()
         AND starts_at < NOW() + ($1 || ' days')::interval
@@ -55,12 +64,12 @@ export async function POST(req: Request) {
   const candidates: WeeklyPickLeg[] = [];
   const seen = new Set<string>();
   for (const r of rows) {
-    // La distribuzione vive nelle COLONNE p_home/p_draw/p_away quando valorizzate
-    // (es. tennis: p_home=p1, p_away=p2, p_draw null) e nel campo `notes` JSON per le
-    // righe paper WC/friendly (colonne null). Coalesce colonna→notes IDENTICO a
-    // /api/v2/predictions, così la multipla può MISCHIARE gli sport (calcio+tennis+WC)
-    // scegliendo le pick a probabilità più alta a prescindere dallo sport. Righe senza
-    // né colonne né notes 1X2 → skip (nessun numero inventato).
+    // La distribuzione vive nel JSON `notes` (schema reale: nessuna colonna
+    // p_home/p_draw/p_away in unified_predictions — vedi warning sulla SELECT).
+    // Il ramo "colonna" resta solo come future-proofing se verranno materializzate.
+    // Coalesce identico a /api/v2/predictions, così la multipla può MISCHIARE gli
+    // sport (calcio+tennis+WC) scegliendo le pick a probabilità più alta. Righe
+    // senza notes 1X2 valide → skip (nessun numero inventato).
     let pH: number | null = typeof r.p_home === "number" ? r.p_home : null;
     let pD: number | null = typeof r.p_draw === "number" ? r.p_draw : null;
     let pA: number | null = typeof r.p_away === "number" ? r.p_away : null;
