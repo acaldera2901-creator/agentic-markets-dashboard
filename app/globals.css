@@ -8851,3 +8851,119 @@ button:disabled {
   clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
   box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LEVEL-UP COPERTURA — Plans + Match Builder slip + pagine legali (2026-07-13)
+   Estende la firma tattica di /app (.card > .pred, STAGE 1d/1e) alle superfici
+   rimaste rotonde. SOLO presentazione.
+   Bordo CHIUSO = clip-path (angoli alto-sx + basso-dx, var(--ch)) + hairline
+   4-lati/ciglio via inset box-shadow + profondità via drop-shadow (segue la
+   sagoma obliqua) + due bar-hairline ::before/::after che chiudono la diagonale
+   (identica a .card > .pred). Hairline = --am-chamfer-line (theme-aware);
+   accent coral SOLO su Pro (piano consigliato) + slip attiva (≥2 gambe).
+   Nessun target ha ::before/::after pre-esistenti né discendenti sticky/fixed
+   (il .mb-slip-col sticky è il PADRE, non il target) → filter (containing-block)
+   innocuo. I sub-pannelli interni → spigolo vivo (quiet, come i readout /app);
+   i pulsanti → tattici (spigolo vivo, mono uppercase, focus-ring + glow verde).
+   Scope stretto (.plans-grid-3 > .plan-card, .mb-slip-col > .am-surface, classi
+   dedicate .legal-sheet/.reset-card) per non toccare account/modali/altri usi.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* -- pannelli grandi: chamfer bordo chiuso -- */
+.plans-hero,
+.plan-flow,
+.plans-grid-3 > .plan-card,
+.mb-slip-col > .am-surface,
+.legal-sheet,
+.reset-card {
+  --_pe: var(--am-chamfer-line);
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: var(--am-panel);
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.32));
+}
+/* accent coral: Pro (piano consigliato) + slip attiva (inline borderColor presente
+   solo con ≥2 gambe → attributo [style] come hook, niente JSX in più) */
+.plans-grid-3 > .plan-card.is-premium,
+.mb-slip-col > .am-surface[style] { --_pe: var(--am-coral-b); }
+/* hero band di conversione: hairline più marcato (legge come cornice deliberata);
+   il banner promo -50% porta uno style inline (borderColor) → hook [style] per
+   accendere l'accent coral, come faceva il border-left coral originale */
+.plans-hero { --_pe: var(--am-chamfer-line-2); }
+.plans-hero[style] { --_pe: var(--am-coral-b); }
+
+/* bar-hairline che CHIUDONO la diagonale (stessa tecnica di .card > .pred) */
+.plans-hero::before, .plans-hero::after,
+.plan-flow::before, .plan-flow::after,
+.plans-grid-3 > .plan-card::before, .plans-grid-3 > .plan-card::after,
+.mb-slip-col > .am-surface::before, .mb-slip-col > .am-surface::after,
+.legal-sheet::before, .legal-sheet::after,
+.reset-card::before, .reset-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  width: calc(var(--ch) * 1.41421);
+  height: 1.4px;
+  background: var(--_pe);
+}
+.plans-hero::before,
+.plan-flow::before,
+.plans-grid-3 > .plan-card::before,
+.mb-slip-col > .am-surface::before,
+.legal-sheet::before,
+.reset-card::before {
+  top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.plans-hero::after,
+.plan-flow::after,
+.plans-grid-3 > .plan-card::after,
+.mb-slip-col > .am-surface::after,
+.legal-sheet::after,
+.reset-card::after {
+  bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
+  transform: translate(50%, 50%) rotate(-45deg);
+}
+
+/* -- sub-pannelli interni Plans: spigolo vivo (quiet, coerente coi readout /app) -- */
+.plans-grid-3 .plan-core-line,
+.plans-grid-3 .price-line,
+.plans-grid-3 .plan-feature-list li,
+.plans-grid-3 .plan-feature-list li span,
+.plans-grid-3 .crypto-pay-box,
+.plan-flow > div {
+  border-radius: 0;
+}
+
+/* -- pulsanti Plans → tattici (spigolo vivo, mono uppercase, focus-ring + glow) --
+   Non tocco il colore semantico: i :hover di bg/fill originali restano. */
+.plans-hero button,
+.plan-action,
+.plans-grid-3 .crypto-pay-box button {
+  border-radius: var(--am-btn-radius);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.plans-hero button:focus-visible,
+.plan-action:focus-visible,
+.plans-grid-3 .crypto-pay-box button:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 2px;
+}
+.plans-hero button:active,
+.plan-action:active,
+.plans-grid-3 .crypto-pay-box button:active { transform: translateY(1px); }
+.plans-hero button:hover:not(:disabled),
+.plan-action:hover:not(:disabled),
+.plans-grid-3 .crypto-pay-box button:not(:disabled):hover {
+  box-shadow: 0 6px 22px -8px var(--am-glow);
+}
