@@ -4,6 +4,7 @@ import { SUMMER_LEAGUES, fetchSummerResults } from "@/lib/summer-leagues";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
 import { settlePredictionLog } from "@/lib/prediction-log";
 import { verifyBearer } from "@/lib/admin-auth";
+import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -25,6 +26,9 @@ export const maxDuration = 300;
 //   C. finished matches -> unified_predictions football (public history)
 //   D. tennis_predictions.winner -> unified_predictions tennis (backstop for
 //      the Python sync; no external fetch — winner is already in our DB)
+//   E. staleness watchdog: tennis predictions are produced by a daemon on
+//      Andrea's local Mac; a serverless check on tennis_predictions.computed_at
+//      catches a dead daemon (Mac off) that a local watchdog cannot see.
 
 interface SettleReport {
   scores_updated: number;
@@ -222,5 +226,40 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── E. Tennis pipeline staleness watchdog (serverless) ────────────────────
+  // The tennis model runs as a daemon on Andrea's local Mac; if the Mac is off
+  // the picks (paid content) silently stop being produced and a local watchdog
+  // sharing that hardware can't report it. Here we cheaply read the freshest
+  // computed_at and flag it as an error (→ 500 + ops-alert below) when it is
+  // older than 24h. 24h (not a few hours) is deliberate: it absorbs the
+  // overnight gaps with no scheduled matches without crying wolf, while still
+  // catching a daemon that has been down for a full day. Comparison is done in
+  // SQL against NOW() AT TIME ZONE 'UTC' because computed_at is a naive
+  // timestamp storing UTC values. Empty table → last_computed NULL → skip (no
+  // false alarm on a fresh/seed DB; a truly empty prod table is a separate
+  // signal out of scope here).
+  try {
+    const rows = await dbQuery<{ last_computed: string | null; stale: boolean | null }>(
+      `SELECT MAX(computed_at) AS last_computed,
+              (MAX(computed_at) < (NOW() AT TIME ZONE 'UTC') - INTERVAL '24 hours') AS stale
+         FROM tennis_predictions`
+    );
+    const row = rows[0];
+    if (row?.last_computed && row.stale) {
+      report.errors.push(
+        `tennis pipeline stale: last prediction ${row.last_computed} (>24h) — daemon Mac giù?`
+      );
+    }
+  } catch (e) {
+    report.errors.push(`tennis_staleness:${String(e)}`);
+  }
+
+  // Fail loud: a run that collected any error returns 500 so Vercel marks it
+  // failed (and can notify), and ops-alert fires the detail out-of-band. A
+  // clean run stays 200. Same pattern as app/api/cron/subscriptions.
+  if (report.errors.length > 0) {
+    await opsAlert("cron/settle", report.errors);
+    return NextResponse.json(report, { status: 500 });
+  }
   return NextResponse.json(report);
 }
