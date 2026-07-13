@@ -31,6 +31,7 @@ interface SettleReport {
   log_settled: number;
   unified_football_settled: number;
   unified_tennis_settled: number;
+  voided_stale: number;
   errors: string[];
   ran_at: string;
 }
@@ -80,6 +81,7 @@ export async function GET(req: NextRequest) {
     log_settled: 0,
     unified_football_settled: 0,
     unified_tennis_settled: 0,
+    voided_stale: 0,
     errors: [],
     ran_at: new Date().toISOString(),
   };
@@ -219,6 +221,49 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {
       report.errors.push(`unified_tennis:${String(e)}`);
+    }
+  }
+
+  // ── E. void football stale (#GOLIVE-QW-B) ────────────────────────────────
+  // Step C settles only football rows whose fixture actually FINISHED. A match
+  // that is postponed / abandoned / never returns a score would otherwise keep
+  // result NULL forever: it silently drops off the live board (kickoff long
+  // past) but never enters the public history — an orphan. Past a 48h grace we
+  // flag it 'unresolved' + is_historical = TRUE, the exact value the tennis
+  // backstop uses for "we never fetched a result" (settle_unified_tennis /
+  // #TENNIS-VOID-FIX-1). 'unresolved' is deliberately NOT 'void': /api/v2/history
+  // excludes it ("result IS DISTINCT FROM 'unresolved'"), so a match we never
+  // scored does not fake a refund/void in the track record. Idempotent via
+  // .is("result", null).
+  if (sb) {
+    try {
+      const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: rows, error } = await sb
+        .from("unified_predictions")
+        .select("id")
+        .eq("sport", "football")
+        .eq("is_historical", false)
+        .is("result", null)
+        .lt("starts_at", cutoff)
+        .limit(500);
+      if (error) throw error;
+      for (const row of rows ?? []) {
+        const { error: upErr } = await sb
+          .from("unified_predictions")
+          .update({
+            result: "unresolved",
+            status: "settled",
+            is_historical: true,
+            settled_at: nowIso(),
+            updated_at: nowIso(),
+          })
+          .eq("id", row.id)
+          .is("result", null); // idempotency vs a concurrent settle
+        if (upErr) report.errors.push(`void_stale:${row.id}:${upErr.message}`);
+        else report.voided_stale += 1;
+      }
+    } catch (e) {
+      report.errors.push(`void_stale:${String(e)}`);
     }
   }
 

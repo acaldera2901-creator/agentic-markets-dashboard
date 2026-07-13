@@ -34,6 +34,28 @@ export async function POST(req: Request) {
 
   let event: { event_type?: string; resource?: { custom_id?: string; amount?: { value?: string; currency_code?: string }; id?: string } };
   try { event = JSON.parse(raw); } catch { return NextResponse.json({ ok: true }); }
+
+  // #GOLIVE-QW-B refund/chargeback (rail dormiente, predisposto): un rimborso o
+  // uno storno NON deve passare inosservato. Marchiamo l'ordine 'refunded' e
+  // logghiamo LOUD: la revoca del piano richiede logica pro-rata (giorni residui)
+  // che qui NON inventiamo → resta una REVOCA MANUALE da backoffice, ma almeno
+  // l'evento è tracciato e non silenzioso. Stesso lookup per custom_id del path
+  // COMPLETED (= il nostro paypal_orders.id).
+  if (event.event_type === "PAYMENT.CAPTURE.REFUNDED" || event.event_type === "PAYMENT.CAPTURE.REVERSED") {
+    const refundedOrderId = event.resource?.custom_id ?? "";
+    if (refundedOrderId) {
+      // Idempotente: aggiorna solo se non già 'refunded'.
+      await dbExecute(
+        "UPDATE paypal_orders SET status = 'refunded' WHERE id = $1 AND status <> 'refunded'",
+        [refundedOrderId]
+      );
+    }
+    console.error(
+      `[paypal/webhook] REFUND ricevuto order=${refundedOrderId || "unknown"} type=${event.event_type} — REVOCA MANUALE del piano richiesta (backoffice)`
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   if (event.event_type !== "PAYMENT.CAPTURE.COMPLETED") return NextResponse.json({ ok: true });
 
   const orderId = event.resource?.custom_id ?? ""; // = il nostro paypal_orders.id
