@@ -3,6 +3,7 @@ import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 import { activatePaygatePlan } from "@/lib/plan-grant";
 import { settlePendingOrder } from "@/lib/paygate-settle";
+import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
 
@@ -79,12 +80,21 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({
-    ok: true,
+  const body = {
+    ok: errors.length === 0,
     scanned: orders.length,
     granted,
     pendingScanned: pending.length,
     settled,
     errors,
-  });
+  };
+
+  // Fail loud: any reconcile error → 500 (Vercel marks the run failed) + an
+  // out-of-band ops-alert. A clean run stays 200. Same pattern as
+  // app/api/cron/subscriptions and app/api/cron/settle.
+  if (errors.length > 0) {
+    await opsAlert("cron/paygate-reconcile", errors);
+    return NextResponse.json(body, { status: 500 });
+  }
+  return NextResponse.json(body);
 }

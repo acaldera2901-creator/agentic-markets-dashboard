@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
 import { dbExecute } from "@/lib/db";
 import { siteOrigin } from "@/lib/activation";
-import { discountedAmountFor, newOrderToken, createReceivingWallet, buildPayUrl, type PlanKey, type Period } from "@/lib/paygate";
+import { discountedAmountFor, newOrderToken, createReceivingWallet, buildPayUrl, blocksLowerTierPurchase, type PlanKey, type Period } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +51,15 @@ export async function POST(req: Request) {
   const plan = isTest ? "base" : rawPlan;
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
+
+  // #GOLIVE-HIGH-E tier-guard: chi ha premium ATTIVO non può comprare 'base'
+  // (rinnovo Pro a prezzo base = tier-arbitrage). ctx.plan è il piano effettivo
+  // già risolto fresh dal DB ed expiry-adjusted (effectivePlan degrada premium
+  // scaduto a 'free'), quindi ctx.plan==="premium" ⟺ premium attivo. Il path
+  // test (isTest) resta invariato: bypassa la guard.
+  if (!isTest && blocksLowerTierPurchase(ctx.plan, plan)) {
+    return NextResponse.json({ error: "active premium plan — cannot purchase lower tier" }, { status: 409 });
+  }
 
   // #PRICING-CREATORS-0706 (rev. Michele): PROMO DI LANCIO -50% primo mese,
   // vale per TUTTI (primo ordine pagato su qualunque rail, campagna attiva —

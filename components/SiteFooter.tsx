@@ -14,6 +14,7 @@
 // del sito. Stringhe nelle 5 lingue del desk (it/en/es/fr/ru) con fallback en.
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
@@ -98,6 +99,20 @@ function pick(lang: string): FooterLang {
 
 export function SiteFooter({ lang = "en" }: { lang?: string }) {
   const t = COPY[pick(lang)];
+  // #GOLIVE-HIGH-D (audit go-live legale): il link partner casino (slotsbonus.bet)
+  // deve rispettare la STESSA geo-policy dei link-book. SiteFooter è renderizzato anche
+  // da server component (landing/World Cup): risolviamo la geo server-side via
+  // /api/geo-books (non falsificabile dal client). Fail-closed: il link è montato SOLO
+  // se il server conferma esplicitamente blocked===false; geo ignota / fetch fallito →
+  // link NON mostrato (default false, il .catch non sblocca). Evita il flash + il
+  // fail-open che esporrebbe l'affiliate casino nelle geo bloccate (es. IT).
+  const [partnerAllowed, setPartnerAllowed] = useState(false);
+  useEffect(() => {
+    fetch("/api/geo-books", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setPartnerAllowed(d?.blocked === false))
+      .catch(() => {});
+  }, []);
   return (
     <footer className="site-footer">
       <p className="site-footer-note">{t.note}</p>
@@ -112,15 +127,18 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
         <span>{t.partnerlinks}</span>
         {/* #CROSS-REFERRAL-MAVEN: unico linkout reciproco designato (Andrea APPROVE
             07-06), copy neutra "Partner", nessun claim promozionale gambling.
-            Icona partner-slotsbonus-sm.png in arrivo da Tommy → commit successivo. */}
-        <a
-          href="https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral"
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          className="site-footer-partner-link"
-        >
-          {t.partner}
-        </a>
+            Icona partner-slotsbonus-sm.png in arrivo da Tommy → commit successivo.
+            #GOLIVE-HIGH-D: gatato fail-closed sulla geo-policy (vedi partnerAllowed). */}
+        {partnerAllowed && (
+          <a
+            href="https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="site-footer-partner-link"
+          >
+            {t.partner}
+          </a>
+        )}
         <span className="site-footer-sep">|</span>
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}
         <Link href="/terms">{t.terms}</Link>
