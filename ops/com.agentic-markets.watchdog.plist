@@ -7,18 +7,18 @@
   <string>com.agentic-markets.watchdog</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/venv/bin/python</string>
-    <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/scripts/agent_watchdog.py</string>
+    <string>/Users/calde/Desktop/agentic-markets/venv/bin/python</string>
+    <string>/Users/calde/Desktop/agentic-markets/scripts/agent_watchdog.py</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/calde/Desktop/sistema-andrea/agentic-markets</string>
+  <string>/Users/calde/Desktop/agentic-markets</string>
   <key>RunAtLoad</key>
   <true/>
   <key>StartInterval</key>
   <integer>60</integer>
   <key>StandardOutPath</key>
-  <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/logs/watchdog.out.log</string>
+  <string>/Users/calde/Desktop/agentic-markets/logs/watchdog.out.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/calde/Desktop/sistema-andrea/agentic-markets/logs/watchdog.err.log</string>
+  <string>/Users/calde/Desktop/agentic-markets/logs/watchdog.err.log</string>
 </dict>
 </plist>
