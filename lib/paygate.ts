@@ -159,7 +159,11 @@ export async function checkPaymentStatus(
   if (!ipnToken) return null;
   let resp: Response;
   try {
-    resp = await fetch(`${STATUS_ENDPOINT}?ipn_token=${encodeURIComponent(ipnToken)}`);
+    // #PAYGATE-ENCODE-FIX-STATUS: l'ipn_token di wallet.php è GIÀ url-encoded
+    // (contiene %2B/%2F/%3D) → va concatenato COSÌ COM'È, come l'address_in in
+    // buildPayUrl. encodeURIComponent lo doppio-encodava (%3D→%253D) → PayGate
+    // rispondeva "unpaid" → callback/reconcile non concedevano MAI il piano.
+    resp = await fetch(`${STATUS_ENDPOINT}?ipn_token=${ipnToken}`);
   } catch {
     return null;
   }
