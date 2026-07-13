@@ -59,10 +59,16 @@ function trackEvent(
 ) {
   if (typeof window === "undefined") return;
   const language = extra?.language ?? localStorage.getItem("agentic-lang") ?? undefined;
+  // #GOLIVE-QW-A: no persistent session_id before GDPR consent is granted — the
+  // beacon still fires (anonymous, no id) so we don't tie events to a device
+  // identifier the user hasn't accepted. session_id resumes once consent lands.
+  const consented = (() => {
+    try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
+  })();
   fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event_type, session_id: getSessionId(), language, ...extra }),
+    body: JSON.stringify({ event_type, session_id: consented ? getSessionId() : undefined, language, ...extra }),
   }).catch(() => { /* ignore */ });
 }
 
@@ -119,16 +125,6 @@ const BASE_TRANSLATIONS = {
     plans_base_f5: "Storico e track record",
     plans_base_f6: "Execution automatica reale",
     plans_base_f7: "Nessuna promessa di profitto garantito",
-    plans_premium_desc: "Per il cliente che vuole delegare agli agenti: analisi, decisione, stake e piazzamento live.",
-    plans_premium_core: "Lo faccio per te", plans_premium_sub: "Execution layer con audit completo",
-    plans_premium_f1: "Tutto il piano Base incluso",
-    plans_premium_f2: "Agenti sbloccati per piazzare bet automaticamente",
-    plans_premium_f3: "Stake sizing secondo bankroll e risk profile",
-    plans_premium_f4: "Stop loss, limiti giornalieri e limiti per sport",
-    plans_premium_f5: "Live execution solo con bet ID confermato",
-    plans_premium_f6: "Report automatico dopo ogni operazione",
-    plans_premium_f7: "Ogni cliente collega il proprio conto exchange",
-    plans_premium_f8: "Dashboard modificabile per limiti e risk profile",
     plans_flow1_title: "Signal", plans_flow1_desc: "Gli agenti trovano il value bet.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Il cliente vede quota, edge e perché.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Il cliente decide se entrare: niente execution automatica nel go-live.",
@@ -146,8 +142,8 @@ const BASE_TRANSLATIONS = {
     board_title: "Best available edges", board_eyebrow: "Market board",
     board_football: "Football", board_tennis: "Tennis",
     board_value: "value", board_markets: "markets", board_matches: "matches",
-    board_football_empty: "No football fixtures scheduled. Markets return automatically when the season resumes.",
-    board_tennis_empty: "Tennis markets loading. Fallback data appears when API is ready.",
+    board_football_empty: "Nessun match di calcio in programma. I mercati riaprono in automatico col prossimo turno.",
+    board_tennis_empty: "Caricamento mercati tennis. I dati di riserva compaiono quando l'API è pronta.",
     // Profile panel
     profile_upgrade_eyebrow: "Passa a Pro",
     profile_upgrade_title: "BetRedge Pro",
@@ -286,6 +282,7 @@ const BASE_TRANSLATIONS = {
     checkout_note_prefix: "Dopo la verifica il piano viene attivato manualmente. Non inviare importi diversi da",
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Annulla",
+    checkout_error: "Pagamento non disponibile, riprova.",
     founder_invalid: "Codice non valido.",
     founder_network: "Errore di rete.",
     founder_title: "Accesso fondatore",
@@ -385,16 +382,6 @@ const BASE_TRANSLATIONS = {
     plans_base_f5: "History and track record",
     plans_base_f6: "Real automated execution",
     plans_base_f7: "No guaranteed profit promises",
-    plans_premium_desc: "For the client who wants to delegate to agents: analysis, decision, stake and live placement.",
-    plans_premium_core: "I do it for you", plans_premium_sub: "Execution layer with full audit",
-    plans_premium_f1: "Everything in the Base plan",
-    plans_premium_f2: "Agents unlocked to place bets automatically",
-    plans_premium_f3: "Stake sizing based on bankroll and risk profile",
-    plans_premium_f4: "Stop loss, daily limits and sport limits",
-    plans_premium_f5: "Live execution only with confirmed bet ID",
-    plans_premium_f6: "Automatic report after each operation",
-    plans_premium_f7: "Each client links their own exchange account",
-    plans_premium_f8: "Editable dashboard for limits and risk profile",
     plans_flow1_title: "Signal", plans_flow1_desc: "Agents find the value bet.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Client sees odds, edge and why.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Client decides whether to enter: no automated execution in the go-live.",
@@ -552,6 +539,7 @@ const BASE_TRANSLATIONS = {
     checkout_note_prefix: "After verification, the plan is activated manually. Do not send amounts other than",
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Cancel",
+    checkout_error: "Payment unavailable, please try again.",
     founder_invalid: "Invalid code.",
     founder_network: "Network error.",
     founder_title: "Founder access",
@@ -655,16 +643,6 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f5: "Historial y track record",
     plans_base_f6: "Ejecución automática real",
     plans_base_f7: "Sin promesas de beneficio garantizado",
-    plans_premium_desc: "Para el cliente que quiere delegar en los agentes: análisis, decisión, importe y colocación en vivo.",
-    plans_premium_core: "Lo hago por ti", plans_premium_sub: "Capa de ejecución con auditoría completa",
-    plans_premium_f1: "Todo lo del plan Base",
-    plans_premium_f2: "Agentes desbloqueados para colocar apuestas automáticamente",
-    plans_premium_f3: "Cálculo de importe según bankroll y perfil de riesgo",
-    plans_premium_f4: "Stop loss, límites diarios y límites por deporte",
-    plans_premium_f5: "Ejecución en vivo solo con bet ID confirmado",
-    plans_premium_f6: "Informe automático tras cada operación",
-    plans_premium_f7: "Cada cliente vincula su propia cuenta de exchange",
-    plans_premium_f8: "Panel editable para límites y perfil de riesgo",
     plans_flow1_title: "Señal", plans_flow1_desc: "Los agentes encuentran el value bet.",
     plans_flow2_title: "Explicar", plans_flow2_desc: "El cliente ve cuota, edge y el porqué.",
     plans_flow3_title: "Decidir", plans_flow3_desc: "El cliente decide si entra: sin ejecución automática en el lanzamiento.",
@@ -822,6 +800,7 @@ const EXTRA_TRANSLATIONS = {
     checkout_note_prefix: "Tras la verificación, el plan se activa manualmente. No envíes importes distintos a",
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Cancelar",
+    checkout_error: "Pago no disponible, inténtalo de nuevo.",
     founder_invalid: "Código no válido.",
     founder_network: "Error de red.",
     founder_title: "Acceso de founder",
@@ -921,16 +900,6 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f5: "Historique et track record",
     plans_base_f6: "Exécution automatique réelle",
     plans_base_f7: "Aucune promesse de profit garanti",
-    plans_premium_desc: "Pour le client qui veut déléguer aux agents : analyse, décision, mise et placement en direct.",
-    plans_premium_core: "Je le fais pour toi", plans_premium_sub: "Couche d'exécution avec audit complet",
-    plans_premium_f1: "Tout le plan Base inclus",
-    plans_premium_f2: "Agents débloqués pour placer les paris automatiquement",
-    plans_premium_f3: "Dimensionnement de la mise selon bankroll et profil de risque",
-    plans_premium_f4: "Stop loss, limites journalières et limites par sport",
-    plans_premium_f5: "Exécution en direct seulement avec bet ID confirmé",
-    plans_premium_f6: "Rapport automatique après chaque opération",
-    plans_premium_f7: "Chaque client relie son propre compte exchange",
-    plans_premium_f8: "Dashboard modifiable pour limites et profil de risque",
     plans_flow1_title: "Signal", plans_flow1_desc: "Les agents trouvent le value bet.",
     plans_flow2_title: "Expliquer", plans_flow2_desc: "Le client voit la cote, l'edge et le pourquoi.",
     plans_flow3_title: "Décider", plans_flow3_desc: "Le client décide d'entrer ou non : pas d'exécution automatique au lancement.",
@@ -1088,6 +1057,7 @@ const EXTRA_TRANSLATIONS = {
     checkout_note_prefix: "Après vérification, le plan est activé manuellement. N'envoie pas de montants différents de",
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Annuler",
+    checkout_error: "Paiement indisponible, réessayez.",
     founder_invalid: "Code invalide.",
     founder_network: "Erreur réseau.",
     founder_title: "Accès founder",
@@ -1187,16 +1157,6 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f5: "История и track record",
     plans_base_f6: "Реальное автоматическое исполнение",
     plans_base_f7: "Без обещаний гарантированной прибыли",
-    plans_premium_desc: "Для клиента, который хочет делегировать агентам: анализ, решение, размер ставки и live-размещение.",
-    plans_premium_core: "Я делаю это за тебя", plans_premium_sub: "Слой исполнения с полным аудитом",
-    plans_premium_f1: "Всё из плана Base",
-    plans_premium_f2: "Агенты разблокированы для автоматического размещения ставок",
-    plans_premium_f3: "Расчёт ставки по банкроллу и профилю риска",
-    plans_premium_f4: "Stop loss, дневные лимиты и лимиты по виду спорта",
-    plans_premium_f5: "Live-исполнение только с подтверждённым bet ID",
-    plans_premium_f6: "Автоматический отчёт после каждой операции",
-    plans_premium_f7: "Каждый клиент подключает свой аккаунт exchange",
-    plans_premium_f8: "Редактируемая панель для лимитов и профиля риска",
     plans_flow1_title: "Сигнал", plans_flow1_desc: "Агенты находят value bet.",
     plans_flow2_title: "Объяснить", plans_flow2_desc: "Клиент видит котировку, edge и почему.",
     plans_flow3_title: "Решить", plans_flow3_desc: "Клиент решает, входить ли: без автоисполнения на старте.",
@@ -1354,6 +1314,7 @@ const EXTRA_TRANSLATIONS = {
     checkout_note_prefix: "После проверки план активируется вручную. Не отправляй суммы, отличные от",
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Отмена",
+    checkout_error: "Оплата недоступна, попробуйте снова.",
     founder_invalid: "Неверный код.",
     founder_network: "Ошибка сети.",
     founder_title: "Founder-доступ",
@@ -2422,11 +2383,11 @@ function SportsbookBoard({
                 /* P6: honest empty-state — WC countdown message + hub link */
                 <div className="book-empty wc-empty-state">
                   <div>{pick5(lang, {
-                    it: "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale — kickoff 11 giugno.",
-                    en: "No football signals right now. The first signals arrive when World Cup markets open — kickoff June 11.",
-                    es: "Ninguna señal de fútbol ahora mismo. Las primeras señales llegan con la apertura de los mercados del Mundial — kickoff 11 de junio.",
-                    fr: "Aucun signal football pour le moment. Les premiers signaux arrivent à l'ouverture des marchés de la Coupe du Monde — coup d'envoi le 11 juin.",
-                    ru: "Сейчас нет футбольных сигналов. Первые сигналы появятся с открытием рынков Чемпионата мира — старт 11 июня.",
+                    it: "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale.",
+                    en: "No football signals right now. The first signals arrive when World Cup markets open.",
+                    es: "Ninguna señal de fútbol ahora mismo. Las primeras señales llegan con la apertura de los mercados del Mundial.",
+                    fr: "Aucun signal football pour le moment. Les premiers signaux arrivent à l'ouverture des marchés de la Coupe du Monde.",
+                    ru: "Сейчас нет футбольных сигналов. Первые сигналы появятся с открытием рынков Чемпионата мира.",
                   })}</div>
                   <Link href="/world-cup" className="wc-back-link">{pick5(lang, {
                     it: "Esplora l'hub Mondiali: gironi, calendario, convocazioni →",
@@ -3225,9 +3186,17 @@ function CheckoutModal({
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [period, setPeriod] = useState<"monthly" | "annual">("annual");
+  // #GOLIVE-QW-A: the period toggle is only rendered with PayGate on. With PayGate
+  // off the UI shows the monthly USDT price, so the ordered period must default to
+  // monthly too — otherwise a PayPal order silently went out as annual.
+  const [period, setPeriod] = useState<"monthly" | "annual">(
+    process.env.NEXT_PUBLIC_PAYGATE_ENABLED === "true" ? "annual" : "monthly",
+  );
   const [applePayReady, setApplePayReady] = useState(false);
   const [applePayBusy, setApplePayBusy] = useState(false);
+  // #GOLIVE-QW-A: EU right-of-withdrawal consent — payment CTAs stay disabled until
+  // the user acknowledges immediate performance waives the 14-day withdrawal right.
+  const [withdrawalConsent, setWithdrawalConsent] = useState(false);
   // #PRICING-CREATORS-0706: annuale = 11 mensilita arrotondate (1 mese gratis).
   // Mirror display di PAYGATE_PRICES (lib/paygate.ts) — tenere in sync.
   const ANNUAL_PRICE: Record<string, number> = { base: 164.99, premium: 329.99 };
@@ -3274,6 +3243,7 @@ function CheckoutModal({
               body: JSON.stringify({ paypal_order_id: data.orderID }),
             });
             const d = (await r.json()) as { ok?: boolean; granted?: boolean };
+            markPayPending();
             window.location.assign(d.granted ? "/app?paypal=success" : "/app?paypal=pending");
           },
         }).render("#paypal-button-container");
@@ -3282,7 +3252,9 @@ function CheckoutModal({
     return () => {
       cancelled = true;
     };
-  }, [plan, period]);
+    // withdrawalConsent: the container only mounts once consent is given, so the
+    // button must (re)render when it flips true.
+  }, [plan, period, withdrawalConsent]);
 
   // Apple Pay eligibility: only surface the button on Apple devices/browsers
   // (canMakePayments) AND when the PayPal merchant is Apple Pay eligible
@@ -3381,6 +3353,7 @@ function CheckoutModal({
           });
           const capData = (await capRes.json()) as { ok?: boolean; granted?: boolean };
           session.completePayment(capData.granted ? AppleSession.STATUS_SUCCESS : AppleSession.STATUS_FAILURE);
+          markPayPending();
           window.location.assign(capData.granted ? "/app?paypal=success" : "/app?paypal=pending");
         } catch (err) {
           console.error("[applepay] confirmOrder/capture:", err);
@@ -3407,18 +3380,25 @@ function CheckoutModal({
   };
 
   const payWithCard = async () => {
-    const res = await fetch("/api/paygate/checkout", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ requested_plan: plan, period }),
-    });
-    if (!res.ok) {
-      console.error("paygate checkout failed", res.status);
+    setError("");
+    try {
+      const res = await fetch("/api/paygate/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requested_plan: plan, period }),
+      });
+      if (!res.ok) {
+        console.error("paygate checkout failed", res.status);
+        setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
+        return;
+      }
+      const { url } = (await res.json()) as { url?: string };
+      if (url) { markPayPending(); window.location.href = url; }
+      else setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
+    } catch (e) {
+      console.error("paygate checkout error", e);
       setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
-      return;
     }
-    const { url } = (await res.json()) as { url?: string };
-    if (url) { markPayPending(); window.location.href = url; }
   };
 
   return (
@@ -3443,6 +3423,28 @@ function CheckoutModal({
           </span>
           )}
         </div>
+
+        {/* #GOLIVE-QW-A: EU distance-selling — explicit request for immediate
+            performance + acknowledgement that the 14-day withdrawal right is lost
+            once the service is activated. Gates every payment CTA below. */}
+        <label style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "12px 0 4px", fontSize: 12, lineHeight: 1.5, cursor: "pointer", color: "var(--am-muted)" }}>
+          <input
+            type="checkbox"
+            checked={withdrawalConsent}
+            onChange={(e) => {
+              setWithdrawalConsent(e.target.checked);
+              if (e.target.checked) trackEvent("withdrawal_consent", { meta: { plan, period } });
+            }}
+            style={{ marginTop: 2, flexShrink: 0 }}
+          />
+          <span>{pick5(lang, {
+            it: "Chiedo l'esecuzione immediata del servizio e prendo atto che perdo il diritto di recesso di 14 giorni una volta attivato.",
+            en: "I request immediate performance of the service and acknowledge that I lose the 14-day right of withdrawal once it is activated.",
+            es: "Solicito la ejecución inmediata del servicio y reconozco que pierdo el derecho de desistimiento de 14 días una vez activado.",
+            fr: "Je demande l'exécution immédiate du service et je reconnais perdre le droit de rétractation de 14 jours une fois qu'il est activé.",
+            ru: "Я прошу немедленно предоставить услугу и подтверждаю, что теряю право на 14-дневный отказ после активации.",
+          })}</span>
+        </label>
 
         {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>
         <div className="checkout-wallet-block">
@@ -3480,7 +3482,7 @@ function CheckoutModal({
         </label>
 
         <button
-          disabled={txHash.length < 10 || submitting}
+          disabled={txHash.length < 10 || submitting || !withdrawalConsent}
           onClick={async () => {
             setError("");
             setSubmitting(true);
@@ -3526,14 +3528,14 @@ function CheckoutModal({
                 ? pick5(lang, { it: "Pagamento singolo, sblocca 30 giorni (rinnovo manuale).", en: "One-time payment, unlocks 30 days (manual renewal).", es: "Pago único, desbloquea 30 días (renovación manual).", fr: "Paiement unique, débloque 30 jours (renouvellement manuel).", ru: "Разовый платёж, 30 дней (ручное продление)." })
                 : pick5(lang, { it: "Pagamento singolo, sblocca 12 mesi: paghi 11 mensilità, 1 mese è gratis.", en: "One-time payment, unlocks 12 months: you pay 11 monthly instalments, 1 month is free.", es: "Pago único, desbloquea 12 meses: pagas 11 mensualidades, 1 mes es gratis.", fr: "Paiement unique, débloque 12 mois : vous payez 11 mensualités, 1 mois est offert.", ru: "Разовый платёж, 12 месяцев: вы платите за 11 месяцев, 1 месяц бесплатно." })}
             </p>
-            <button type="button" onClick={payWithCard}
-              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: "pointer" }}>
+            <button type="button" onClick={payWithCard} disabled={!withdrawalConsent}
+              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: withdrawalConsent ? "pointer" : "not-allowed", opacity: withdrawalConsent ? 1 : 0.5 }}>
               {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD
             </button>
           </div>
         )}
 
-        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && (
+        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && withdrawalConsent && (
           <div style={{ marginTop: 12 }}>
             <p style={{ fontSize: 11, opacity: 0.7, textAlign: "center", margin: "0 0 6px" }}>
               {pick5(lang, { it: "oppure paga con PayPal", en: "or pay with PayPal", es: "o paga con PayPal", fr: "ou payez avec PayPal", ru: "или оплатите через PayPal" })}
@@ -3542,7 +3544,7 @@ function CheckoutModal({
           </div>
         )}
 
-        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && applePayReady && (
+        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && applePayReady && withdrawalConsent && (
           <div style={{ marginTop: 8 }}>
             <button
               type="button"
@@ -5915,90 +5917,6 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
   );
 }
 
-function ClientStatusTab({
-  agents,
-  bets,
-  tennisSummary,
-  computedAt,
-  tennisComputedAt,
-}: {
-  agents: AgentStatus[];
-  bets: Bet[];
-  tennisSummary: TennisSummary | null;
-  computedAt: string | null;
-  tennisComputedAt: string | null;
-}) {
-  const footballAgents = agents.filter((a) => !a.name.startsWith("Tennis"));
-  const tennisAgents = agents.filter((a) => a.name.startsWith("Tennis"));
-  const footballAlive = footballAgents.filter((a) => a.status === "alive").length;
-  const tennisAlive = tennisAgents.filter((a) => a.status === "alive").length;
-  const confirmedLive = bets.filter((b) => !b.paper).length;
-  const blocked = bets.filter((b) => FAILED_STATUSES.includes(b.status)).length;
-
-  const rows = [
-    {
-      title: "Football execution",
-      value: footballAgents.length ? `${footballAlive}/${footballAgents.length} online` : "checking",
-      detail: "Live orders are valid only when the exchange confirms a bet ID.",
-      tone: footballAlive === footballAgents.length && footballAgents.length > 0 ? "good" : "warn",
-    },
-    {
-      title: "Tennis signal layer",
-      value: tennisAgents.length ? `${tennisAlive}/${tennisAgents.length} active` : "active signal",
-      detail: `${tennisSummary?.value_bets ?? 0} value signals from ${tennisSummary?.markets_active ?? 0} active markets.`,
-      tone: "good",
-    },
-    {
-      title: "Execution audit",
-      value: `${confirmedLive} confirmed`,
-      detail: blocked ? `${blocked} orders blocked or rejected safely.` : "Every live bet must have a confirmed bet ID.",
-      tone: blocked ? "warn" : "good",
-    },
-    {
-      title: "Data freshness",
-      value: computedAt ? timeAgo(computedAt) : "syncing",
-      detail: tennisComputedAt ? `Tennis updated ${timeAgo(tennisComputedAt)}.` : "Tennis database fallback is enabled.",
-      tone: "neutral",
-    },
-  ];
-
-  return (
-    <div className="client-status">
-      <section className="client-callout">
-        <div>
-          <p className="eyebrow">Client status</p>
-          <h3>Only decision-critical health is shown here.</h3>
-        </div>
-        <p>
-          The desk hides internal agent noise and surfaces four client questions:
-          can we trade, are signals fresh, did the exchange confirm, and what is blocked for safety.
-        </p>
-      </section>
-
-      <section className="client-status-grid">
-        {rows.map((row) => (
-          <article key={row.title} className={`client-status-card ${row.tone}`}>
-            <span>{row.title}</span>
-            <strong>{row.value}</strong>
-            <em>{row.detail}</em>
-          </article>
-        ))}
-      </section>
-
-      <section className="client-system-list">
-        <div>
-          <strong>Client sees</strong>
-          <span>Market board, bet slip, active bets, settled history, execution confirmation.</span>
-        </div>
-        <div>
-          <strong>Client does not need</strong>
-          <span>Python process names, internal pipeline steps, optimizer jargon, raw heartbeat spam.</span>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 // ─── Bets Tab ─────────────────────────────────────────────────────────────────
 
 const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled"];
@@ -7035,12 +6953,27 @@ function ClientAreaTab({
 }) {
   const lang = useLang();
   const t = useT();
+  // #GOLIVE-QW-A: surface billing-portal failures inline instead of returning silently.
+  const [billingError, setBillingError] = useState("");
 
   const openBillingPortal = async () => {
-    const res = await fetch("/api/stripe/portal", { method: "POST" });
-    if (!res.ok) return;
-    const { url } = (await res.json()) as { url?: string };
-    if (url) window.location.href = url;
+    setBillingError("");
+    const portalError = pick5(lang, {
+      it: "Impossibile aprire la gestione abbonamento, riprova.",
+      en: "Couldn't open subscription management, please try again.",
+      es: "No se pudo abrir la gestión de suscripción, inténtalo de nuevo.",
+      fr: "Impossible d'ouvrir la gestion de l'abonnement, réessayez.",
+      ru: "Не удалось открыть управление подпиской, попробуйте снова.",
+    });
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      if (!res.ok) { setBillingError(portalError); return; }
+      const { url } = (await res.json()) as { url?: string };
+      if (url) window.location.href = url;
+      else setBillingError(portalError);
+    } catch {
+      setBillingError(portalError);
+    }
   };
 
   const plan = profile?.plan ?? "unpaid";
@@ -7198,6 +7131,9 @@ function ClientAreaTab({
         <button className="btn-secondary" type="button" onClick={openBillingPortal}>
           {pick5(lang, { it: "Gestisci abbonamento", en: "Manage subscription", es: "Gestionar suscripción", fr: "Gérer l'abonnement", ru: "Управление подпиской" })}
         </button>
+      )}
+      {billingError && (
+        <p style={{ fontSize: 12, color: "var(--am-negative)", margin: "8px 0 0", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{billingError}</p>
       )}
     </section>
   );
@@ -8016,6 +7952,12 @@ export default function Dashboard() {
     localStorage.setItem("agentic-lang", next);
     trackEvent("language_change", { language: next });
   };
+  // #GOLIVE-QW-A: keep <html lang> in sync with the UI language (a11y + SEO).
+  // uiLanguage is the single funnel for every language change (manual, IP detect,
+  // profile), so one effect keyed on it covers all paths.
+  useEffect(() => {
+    try { document.documentElement.lang = uiLanguage; } catch { /* no-op */ }
+  }, [uiLanguage]);
   // Theme toggle (Cobalt & Coral redesign, F1) — presentation only, no logic change.
   // #UI-THEME-HARDEN-0623: il pre-paint setta data-theme, MA su /app l'idratazione
   // può resettare data-theme al valore SSR ("dark"), lasciando il desk scuro
@@ -8319,6 +8261,32 @@ export default function Dashboard() {
     let flag: { beforePlan?: string; beforeExp?: string | null; ts?: number } | null = null;
     try { const raw = window.localStorage.getItem(PAY_PENDING_KEY); flag = raw ? JSON.parse(raw) : null; } catch { /**/ }
     const clear = () => { try { window.localStorage.removeItem(PAY_PENDING_KEY); } catch { /**/ } };
+    // #GOLIVE-QW-A: fallback — if we land back with ?paypal=success|pending but the
+    // pending flag is missing (PayPal/Apple Pay path that skipped markPayPending, or
+    // a cross-tab return), rebuild it from the saved profile so the banner + poll
+    // still fire, then strip the param from the URL.
+    try {
+      const pp = new URLSearchParams(window.location.search).get("paypal");
+      if (pp === "success" || pp === "pending") {
+        if (!flag?.ts) {
+          let beforePlan = "free";
+          let beforeExp: string | null = null;
+          try {
+            const raw = window.localStorage.getItem(CLIENT_PROFILE_KEY);
+            const p = raw ? (JSON.parse(raw) as { plan?: string; planExpiresAt?: string | null }) : null;
+            beforePlan = p?.plan ?? "free";
+            beforeExp = p?.planExpiresAt ?? null;
+          } catch { /**/ }
+          flag = { beforePlan, beforeExp, ts: Date.now() };
+          try { window.localStorage.setItem(PAY_PENDING_KEY, JSON.stringify(flag)); } catch { /**/ }
+        }
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("paypal");
+          window.history.replaceState({}, "", url.pathname + url.search);
+        } catch { /**/ }
+      }
+    } catch { /**/ }
     if (!flag?.ts || Date.now() - flag.ts > 15 * 60 * 1000) { if (flag) clear(); return; }
 
     let stop = false;
@@ -8737,8 +8705,8 @@ export default function Dashboard() {
             background: "var(--am-panel-2)", color: "var(--am-text)",
             border: `1px solid ${payReturn === "done" ? "var(--am-coral-b)" : "var(--am-line-2)"}` }}>
           {payReturn === "checking"
-            ? <>Verifica pagamento in corso…</>
-            : <><span style={{ color: "var(--am-coral)", fontWeight: 700 }}>✓</span> Pagamento ricevuto — piano attivo</>}
+            ? <>{pick5(uiLanguage, { it: "Verifica pagamento in corso…", en: "Verifying payment…", es: "Verificando el pago…", fr: "Vérification du paiement…", ru: "Проверка платежа…" })}</>
+            : <><span style={{ color: "var(--am-coral)", fontWeight: 700 }}>✓</span> {pick5(uiLanguage, { it: "Pagamento ricevuto — piano attivo", en: "Payment received — plan active", es: "Pago recibido — plan activo", fr: "Paiement reçu — offre active", ru: "Платёж получен — план активен" })}</>}
         </div>
       )}
       {activationNotice && (
