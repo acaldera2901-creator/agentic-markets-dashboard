@@ -200,9 +200,10 @@ button:disabled {
   50%       { opacity: 0.55; transform: scale(0.85); }
 }
 
+/* LEVEL-UP sweep: glow era rossastro coral residuo → verde brand */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(255,107,107,0); }
-  50%       { box-shadow: 0 0 20px rgba(255,107,107,0.12); }
+  0%, 100% { box-shadow: 0 0 0 rgba(35,165,89,0); }
+  50%       { box-shadow: 0 0 20px rgba(35,165,89,0.12); }
 }
 
 @keyframes slide-up {
@@ -252,7 +253,7 @@ button:disabled {
   top: -140px;
   width: 420px;
   height: 300px;
-  background: radial-gradient(ellipse, rgba(255,107,107,0.10), transparent 68%);
+  background: radial-gradient(ellipse, rgba(35,165,89,0.10), transparent 68%);
   pointer-events: none;
 }
 
@@ -334,9 +335,9 @@ button:disabled {
 .client-access-button {
   min-height: 30px;
   padding: 0 12px;
-  border: 1px solid rgba(255,107,107,0.32);
+  border: 1px solid rgba(35,165,89,0.32);
   border-radius: 999px;
-  background: rgba(255,107,107,0.10);
+  background: rgba(35,165,89,0.10);
   color: var(--green);
   font-size: 11px;
   font-weight: 850;
@@ -344,7 +345,7 @@ button:disabled {
 }
 
 .client-access-button:hover {
-  background: rgba(255,107,107,0.16);
+  background: rgba(35,165,89,0.16);
 }
 
 /* ── Layout ──────────────────────────────────────────────────── */
@@ -503,8 +504,8 @@ button:disabled {
 }
 
 .rail-item.is-active.green {
-  border-color: rgba(255,107,107,0.30);
-  background: rgba(255,107,107,0.09);
+  border-color: rgba(35,165,89,0.30);
+  background: rgba(35,165,89,0.09);
   color: var(--green);
 }
 
@@ -517,16 +518,16 @@ button:disabled {
 .rail-refresh {
   margin-top: 6px;
   justify-content: center;
-  border-color: rgba(255,107,107,0.28);
+  border-color: rgba(35,165,89,0.28);
   color: var(--green);
-  background: rgba(255,107,107,0.08);
+  background: rgba(35,165,89,0.08);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   text-transform: uppercase;
 }
 
 .rail-refresh:hover {
-  background: rgba(255,107,107,0.13);
+  background: rgba(35,165,89,0.13);
 }
 
 .rail-note {
@@ -623,7 +624,7 @@ button:disabled {
 
 .desk-status-pill.is-online .status-dot {
   background: var(--green);
-  box-shadow: 0 0 12px rgba(255,107,107,0.65);
+  box-shadow: 0 0 12px rgba(35,165,89,0.65);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -727,8 +728,8 @@ button:disabled {
 
 .sports-filter-bar select:focus,
 .sports-search:focus {
-  border-color: rgba(255,107,107,0.42);
-  box-shadow: 0 0 0 2px rgba(255,107,107,0.08);
+  border-color: var(--ring); /* LEVEL-UP sweep: focus ring → token verde */
+  box-shadow: 0 0 0 2px rgba(35,165,89,0.08);
 }
 
 .sports-filter-bar select:disabled {
@@ -813,7 +814,7 @@ button:disabled {
   border-left: 2px solid var(--am-coral);
   /* Hero wash: corallo (warm dominant) → cobalt (cool counterpoint), statico. */
   background:
-    linear-gradient(110deg, rgba(255,107,107,0.10) 0%, transparent 42%),
+    linear-gradient(110deg, rgba(35,165,89,0.10) 0%, transparent 42%),
     linear-gradient(290deg, rgba(59,130,246,0.08) 0%, transparent 46%),
     var(--am-panel);
 }
@@ -839,9 +840,9 @@ button:disabled {
 .portfolio-hero button {
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(255,107,107,0.36);
+  border: 1px solid rgba(35,165,89,0.36);
   border-radius: 8px;
-  background: rgba(255,107,107,0.10);
+  background: rgba(35,165,89,0.10);
   color: var(--green);
   font-weight: 850;
 }
@@ -862,7 +863,7 @@ button:disabled {
   top: -130px;
   width: 360px;
   height: 260px;
-  background: radial-gradient(ellipse, rgba(255,107,107,0.10), transparent 68%);
+  background: radial-gradient(ellipse, rgba(35,165,89,0.10), transparent 68%);
   pointer-events: none;
 }
 
@@ -1520,7 +1521,7 @@ button:disabled {
   min-height: 100vh;
   padding: 22px clamp(16px, 4vw, 54px) 42px;
   background:
-    radial-gradient(ellipse 900px 360px at 50% -12%, rgba(255,107,107,0.14), transparent 68%),
+    radial-gradient(ellipse 900px 360px at 50% -12%, rgba(35,165,89,0.14), transparent 68%),
     radial-gradient(ellipse 720px 320px at 100% 12%, rgba(59,130,246,0.10), transparent 70%),
     linear-gradient(180deg, #070A12 0%, #090B16 45%, #05070D 100%);
   color: var(--text);
@@ -1580,8 +1581,8 @@ button:disabled {
 }
 
 .public-entry-actions button:last-child {
-  border-color: rgba(255,107,107,0.38);
-  background: rgba(255,107,107,0.12);
+  border-color: rgba(35,165,89,0.38);
+  background: rgba(35,165,89,0.12);
   color: var(--green);
 }
 
@@ -1628,7 +1629,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse 500px 260px at 100% 0%, rgba(255,107,107,0.08), transparent 70%),
+    radial-gradient(ellipse 500px 260px at 100% 0%, rgba(35,165,89,0.08), transparent 70%),
     rgba(255,255,255,0.02);
   position: relative;
   overflow: hidden;
@@ -1639,7 +1640,7 @@ button:disabled {
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255,107,107,0.03) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(35,165,89,0.03) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -1694,7 +1695,7 @@ button:disabled {
 }
 
 .preaccess-actions button:first-child {
-  border: 1px solid rgba(255,107,107,0.42);
+  border: 1px solid rgba(35,165,89,0.42);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
@@ -1775,8 +1776,8 @@ button:disabled {
 }
 
 .preaccess-plan-strip button:hover {
-  border-color: rgba(255,107,107,0.35);
-  background: rgba(255,107,107,0.04);
+  border-color: rgba(35,165,89,0.35);
+  background: rgba(35,165,89,0.04);
 }
 
 .preaccess-plan-strip button strong {
@@ -1805,7 +1806,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   background:
-    linear-gradient(90deg, rgba(255,107,107,0.08), rgba(59,130,246,0.04)),
+    linear-gradient(90deg, rgba(35,165,89,0.08), rgba(59,130,246,0.04)),
     rgba(255,255,255,0.02);
   display: flex;
   align-items: center;
@@ -1865,10 +1866,10 @@ button:disabled {
 }
 
 .desk-preview {
-  border: 1px solid rgba(255,107,107,0.22);
+  border: 1px solid rgba(35,165,89,0.22);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse 280px 160px at 100% 0%, rgba(255,107,107,0.12), transparent 70%),
+    radial-gradient(ellipse 280px 160px at 100% 0%, rgba(35,165,89,0.12), transparent 70%),
     rgba(8,13,27,0.72);
   padding: 14px;
   display: grid;
@@ -2023,9 +2024,9 @@ button:disabled {
 .access-level-grid article button,
 .support-hub button {
   height: 38px;
-  border: 1px solid rgba(255,107,107,0.34);
+  border: 1px solid rgba(35,165,89,0.34);
   border-radius: 8px;
-  background: rgba(255,107,107,0.10);
+  background: rgba(35,165,89,0.10);
   color: var(--green);
   font-weight: 900;
   cursor: pointer;
@@ -2184,9 +2185,9 @@ button:disabled {
   display: grid;
   gap: 6px;
   padding: 10px;
-  border: 1px solid rgba(255,107,107,0.28);
+  border: 1px solid rgba(35,165,89,0.28);
   border-radius: 8px;
-  background: rgba(255,107,107,0.07);
+  background: rgba(35,165,89,0.07);
   color: var(--green);
   font-size: 12px;
 }
@@ -2677,8 +2678,8 @@ button:disabled {
 }
 
 .bets-filter-bar select:focus {
-  border-color: rgba(255,107,107,0.42);
-  box-shadow: 0 0 0 2px rgba(255,107,107,0.08);
+  border-color: var(--ring); /* LEVEL-UP sweep: focus ring → token verde */
+  box-shadow: 0 0 0 2px rgba(35,165,89,0.08);
 }
 
 .unified-bet-list {
@@ -3220,8 +3221,8 @@ button:disabled {
 }
 
 .odds-button.is-value {
-  border-color: rgba(255,107,107,0.40);
-  background: linear-gradient(180deg, rgba(255,107,107,0.12), rgba(255,107,107,0.055));
+  border-color: rgba(35,165,89,0.40);
+  background: linear-gradient(180deg, rgba(35,165,89,0.12), rgba(35,165,89,0.055));
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
@@ -3344,7 +3345,7 @@ button:disabled {
 .stake-input input {
   width: 100%;
   height: 42px;
-  border: 1px solid rgba(255,107,107,0.28);
+  border: 1px solid var(--input); /* LEVEL-UP sweep: resting neutro (era coral), verde solo su :focus */
   border-radius: 8px;
   background: var(--bg);
   color: var(--text);
@@ -3356,8 +3357,8 @@ button:disabled {
 }
 
 .stake-input input:focus {
-  border-color: rgba(255,107,107,0.55);
-  box-shadow: 0 0 0 3px rgba(255,107,107,0.08);
+  border-color: var(--ring); /* LEVEL-UP sweep: focus ring → token verde */
+  box-shadow: 0 0 0 3px rgba(35,165,89,0.08);
 }
 
 .ticket-summary {
@@ -3378,7 +3379,7 @@ button:disabled {
 
 .place-live {
   min-height: 44px;
-  border: 1px solid rgba(255,107,107,0.45);
+  border: 1px solid rgba(35,165,89,0.45);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
@@ -3390,7 +3391,7 @@ button:disabled {
 
 .place-live:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(255,107,107,0.24);
+  box-shadow: 0 8px 24px rgba(35,165,89,0.24);
 }
 
 .place-live.is-review {
@@ -4407,14 +4408,14 @@ button:disabled {
 }
 
 .plan-btn.primary {
-  border-color: rgba(255,107,107,.42);
+  border-color: rgba(35,165,89,.42);
   background: linear-gradient(135deg, var(--am-orange), var(--am-coral));
   color: #1A0B05;
 }
 
 .plan-btn.active {
-  border-color: rgba(255,107,107,.3);
-  background: rgba(255,107,107,.08);
+  border-color: rgba(35,165,89,.3);
+  background: rgba(35,165,89,.08);
   color: var(--green);
   cursor: default;
 }
@@ -4572,7 +4573,8 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 12px;
   margin: 16px;
-  background: linear-gradient(135deg, rgba(255,107,107,.04) 0%, rgba(139,92,246,.04) 100%);
+  /* LEVEL-UP sweep: era coral→viola off-brand → verde→cobalt (accento + colore-dati) */
+  background: linear-gradient(135deg, rgba(35,165,89,.05) 0%, rgba(59,130,246,.04) 100%);
 }
 .bets-auth-gate-icon { font-size: 36px; }
 .bets-auth-gate h3 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
@@ -4845,14 +4847,15 @@ button:disabled {
 .free-paywall .fp-link:hover { color: var(--am-text); }
 
 /* ─── Deep Analysis Panel (Premium) ─────────────────────────────────────────── */
+/* LEVEL-UP sweep: intero pannello era viola off-brand (#8B5CF6/#A78BFA) → verde brand. */
 .deep-analysis-panel {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
   border-radius: 6px;
-  border: 1px solid rgba(139, 92, 246, 0.22);
-  background: rgba(139, 92, 246, 0.04);
+  border: 1px solid rgba(35,165,89, 0.22);
+  background: rgba(35,165,89, 0.04);
   margin-top: 4px;
 }
 .da-header {
@@ -4868,9 +4871,9 @@ button:disabled {
   letter-spacing: 0.06em;
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid rgba(139, 92, 246, 0.45);
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(35,165,89, 0.45);
+  color: var(--am-coral);
+  background: rgba(35,165,89, 0.12);
   text-transform: uppercase;
 }
 .da-title {
@@ -4878,7 +4881,7 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(167, 139, 250, 0.6);
+  color: rgba(35,165,89, 0.6);
 }
 .da-row {
   display: flex;
@@ -4936,7 +4939,7 @@ button:disabled {
   flex-direction: column;
   gap: 4px;
   padding-top: 6px;
-  border-top: 1px solid rgba(139, 92, 246, 0.12);
+  border-top: 1px solid rgba(35,165,89, 0.12);
   margin-top: 2px;
 }
 .da-research-text {
@@ -4985,7 +4988,7 @@ button:disabled {
 .locked-cta {
   font-size: 11px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(167, 139, 250, 0.85);
+  color: rgba(35,165,89, 0.85);
   margin-top: 4px;
   text-align: center;
 }
@@ -5035,11 +5038,11 @@ button:disabled {
   gap: 7px;
   padding: 7px 10px;
   border-radius: 5px;
-  border: 1px dashed rgba(139, 92, 246, 0.18);
-  background: rgba(139, 92, 246, 0.02);
+  border: 1px dashed rgba(35,165,89, 0.18);
+  background: rgba(35,165,89, 0.02);
   font-size: 9px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(167, 139, 250, 0.45);
+  color: rgba(35,165,89, 0.45);
   margin-top: 4px;
   cursor: default;
   user-select: none;
@@ -6599,9 +6602,9 @@ button:disabled {
 .house-banner.hb-photo .hb-x:hover{ background:rgba(255,255,255,.16); color:#fff; }
 .house-banner.hb-photo .hb-glow{ display:none; }
 /* direzioni overlay coral */
-.hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(255,107,107,.42) 100%); }
-.hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(255,107,107,.30) 100%); }
-.hb-photo.hb-ov-d .hb-photo-ov{ background:linear-gradient(130deg, rgba(7,8,15,.94) 32%, rgba(255,107,107,.42) 100%); }
+.hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(35,165,89,.42) 100%); }
+.hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(35,165,89,.30) 100%); }
+.hb-photo.hb-ov-d .hb-photo-ov{ background:linear-gradient(130deg, rgba(7,8,15,.94) 32%, rgba(35,165,89,.42) 100%); }
 
 /* ──────────────────────────────────────────────────────────────────────────
    #HOUSE-BANNERS-2 — versioni ricche: ticker + stat chip + half-page + mini-board.
@@ -7078,7 +7081,7 @@ button:disabled {
 .lp {
   min-height: 100vh;
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(255,106,94,0.10), transparent 55%),
+    radial-gradient(120% 80% at 50% -10%, rgba(35,165,89,0.10), transparent 55%),
     radial-gradient(90% 70% at 100% 0%, rgba(59,130,246,0.10), transparent 50%),
     var(--am-bg);
   color: var(--am-text);
@@ -7116,7 +7119,7 @@ button:disabled {
    font:inherit + line-height per renderli identici ai vecchi <a>. */
 /* LEVEL-UP HOME — controlli tattici (come /app): spigolo vivo 0px, label mono
    uppercase tracciata, focus-ring verde 2px, micro-glow verde su hover. Un solo
-   accento (verde brand --am-coral); niente residui rossastri rgba(255,106,94). */
+   accento (verde brand --am-coral); nessun residuo rossastro (bonificati, LEVEL-UP sweep). */
 .lp-nav-link {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px; font-weight: 700; line-height: 1.2;
@@ -7386,7 +7389,7 @@ button:disabled {
   transform: translateY(-2px); background: rgba(255, 255, 255, .13);
   box-shadow: 0 10px 26px rgba(0, 0, 0, .4);
 }
-.lp-sport:hover .lp-sport-well { background: rgba(255, 106, 94, .2); border-color: rgba(255, 106, 94, .55); transform: scale(1.06); }
+.lp-sport:hover .lp-sport-well { background: rgba(35,165,89, .2); border-color: rgba(35,165,89, .55); transform: scale(1.06); }
 .lp-sport:hover .lp-sport-arr { transform: translateX(3px); color: var(--am-coral); }
 .lp-sport:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 
@@ -7394,14 +7397,14 @@ button:disabled {
 .lp-sport-feat {
   background: linear-gradient(135deg, var(--am-coral) 0%, var(--am-coral-2) 100%);
   border-color: transparent; color: var(--am-coral-ink, #1A0F0D);
-  box-shadow: 0 6px 20px rgba(255, 106, 94, .35);
+  box-shadow: 0 6px 20px rgba(35,165,89, .35);
 }
 .lp-sport-feat .lp-sport-well { background: rgba(0, 0, 0, .16); border-color: rgba(0, 0, 0, .14); }
 .lp-sport-feat .lp-sport-gl { color: var(--am-coral-ink, #1A0F0D); }
 .lp-sport-feat .lp-sport-arr { color: rgba(26, 15, 13, .55); }
 .lp-sport-feat:hover {
   border-color: transparent; background: linear-gradient(135deg, var(--am-coral) 0%, var(--am-coral-2) 100%);
-  box-shadow: 0 10px 28px rgba(255, 106, 94, .5);
+  box-shadow: 0 10px 28px rgba(35,165,89, .5);
 }
 .lp-sport-feat:hover .lp-sport-well { background: rgba(0, 0, 0, .24); border-color: rgba(0, 0, 0, .2); }
 .lp-sport-feat:hover .lp-sport-arr { color: var(--am-coral-ink, #1A0F0D); }
@@ -7526,7 +7529,7 @@ button:disabled {
   padding: 14px 34px; border-radius: 999px; color: #fff;
   transition: transform .15s, box-shadow .2s;
 }
-.lp-btn-coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); box-shadow: 0 10px 26px rgba(255,106,94,0.34); }
+.lp-btn-coral { background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); box-shadow: 0 10px 26px rgba(35,165,89,0.34); }
 .lp-btn-cobalt { background: linear-gradient(180deg, var(--am-cobalt-2), var(--am-cobalt)); box-shadow: 0 10px 26px rgba(59,130,246,0.34); }
 .lp-btn:hover { transform: translateY(-2px); }
 
@@ -7608,7 +7611,7 @@ button:disabled {
   filter: saturate(1.14) contrast(1.06) brightness(.94);
 }
 .lp-card-photo .lp-card-ov { position: absolute; inset: 0; z-index: 0; }
-.lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(255,106,94,.42) 100%); }
+.lp-card-photo .lp-card-ov.coral { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(35,165,89,.42) 100%); }
 .lp-card-photo .lp-card-ov.cobalt { background: linear-gradient(180deg, rgba(7,8,15,.6) 0%, rgba(7,8,15,.82) 55%, rgba(59,130,246,.42) 100%); }
 .lp-card-photo > *:not(.lp-card-bg):not(.lp-card-ov) { position: relative; z-index: 1; }
 .lp-card-photo .lp-card-title { color: #fff; }
@@ -7628,7 +7631,7 @@ button:disabled {
   min-height: clamp(300px, 26vw, 380px);
 }
 .lp-card-hero .lp-card-ov.coral {
-  background: linear-gradient(165deg, rgba(7,8,15,.5) 0%, rgba(7,8,15,.78) 48%, rgba(255,106,94,.5) 100%);
+  background: linear-gradient(165deg, rgba(7,8,15,.5) 0%, rgba(7,8,15,.78) 48%, rgba(35,165,89,.5) 100%);
 }
 .lp-card-hero .lp-card-body { align-items: flex-start; text-align: left; padding: 0; gap: 12px; justify-content: flex-end; }
 .lp-card-eyebrow {
@@ -7651,7 +7654,7 @@ button:disabled {
   background:
     linear-gradient(105deg, rgba(7,8,15,.9) 0%, rgba(7,8,15,.62) 34%, rgba(7,8,15,.08) 60%, rgba(7,8,15,0) 78%),
     linear-gradient(0deg, rgba(7,8,15,.78) 0%, rgba(7,8,15,.18) 30%, rgba(7,8,15,0) 55%),
-    linear-gradient(0deg, rgba(255,106,94,.28) 0%, rgba(255,106,94,0) 40%);
+    linear-gradient(0deg, rgba(35,165,89,.28) 0%, rgba(35,165,89,0) 40%);
 }
 
 /* SMALL (plans, app): radius più stretto, scala compatta = gerarchia recessiva */
@@ -7664,7 +7667,7 @@ button:disabled {
 
 /* QUIET (plans): overlay più sobrio (meno coral) → non compete con la hero */
 .lp-card-quiet .lp-card-ov.coral {
-  background: linear-gradient(180deg, rgba(7,8,15,.62) 0%, rgba(7,8,15,.86) 60%, rgba(255,106,94,.22) 100%);
+  background: linear-gradient(180deg, rgba(7,8,15,.62) 0%, rgba(7,8,15,.86) 60%, rgba(35,165,89,.22) 100%);
 }
 
 .lp-card-glyph { width: 34px; height: 34px; color: var(--am-coral); }
@@ -7673,7 +7676,7 @@ button:disabled {
   position: relative; margin: 4px 0 2px;
 }
 .lp-card-orb svg { width: 46px; height: 46px; position: relative; z-index: 1; color: var(--am-text); }
-.lp-card-orb.coral { background: radial-gradient(circle, rgba(255,106,94,0.30), transparent 68%); }
+.lp-card-orb.coral { background: radial-gradient(circle, rgba(35,165,89,0.30), transparent 68%); }
 .lp-card-orb.cobalt { background: radial-gradient(circle, rgba(59,130,246,0.30), transparent 68%); }
 .lp-card-orb::after {
   content: ""; position: absolute; inset: -6px; border-radius: 50%;
