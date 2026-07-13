@@ -32,11 +32,11 @@ export async function POST(req: Request) {
   const rawPlan = body.requested_plan;
   const period = body.period;
 
-  // #PAYGATE-TEST-2USD: piano test NASCOSTO per una prova di pagamento reale da $2.
+  // #PAYGATE-TEST-2USD: piano test NASCOSTO per una prova di pagamento reale da $5.
   // Attivo SOLO con env PAYGATE_TEST_ENABLED=1 → spegnimento istantaneo senza
   // redeploy (rimuovendo la env il path torna 400 come qualunque plan sconosciuto).
   // "test" NON è un plan-key nel DB né in plan-grant: lo mappiamo a un ordine
-  // plan="base" con amount=$2, così checkout→callback anti-spoof→grant girano
+  // plan="base" con amount=$5, così checkout→callback anti-spoof→grant girano
   // ESATTAMENTE come il flusso base reale (grant base 30gg) a prezzo di prova.
   // Nessun prezzo pubblico (base/premium) toccato.
   const isTest = rawPlan === "test" && process.env.PAYGATE_TEST_ENABLED === "1";
@@ -50,9 +50,10 @@ export async function POST(req: Request) {
   // il DB e il percorso è identico a prima. Lo sconto vive nell'amount
   // dell'ordine → il callback anti-spoof valida già contro amount_usd
   // scontato, nessun secondo punto di verità. (Il path test bypassa la promo:
-  // amount fisso $2.)
+  // amount fisso $5 — sopra la soglia-fee (grant richiede ≥50% netto) per un
+  // test affidabile dello sblocco; sotto i minimi on-ramp Ramp/Revolut → Coinbase.)
   const { amount } = isTest
-    ? { amount: 2 }
+    ? { amount: 5 }
     : discountedAmountFor(plan as PlanKey, period as Period, await promoEligibility(ctx.identifier));
   const { token, tokenHash } = newOrderToken();
 
