@@ -30,6 +30,7 @@ type Row = {
   p_home?: number | null;
   p_draw?: number | null;
   p_away?: number | null;
+  confidence_score: number | null;
   notes: string | null;
   starts_at: string;
 };
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
   // (weekly pick mai generata). Le prob si leggono dal JSON `notes` (coalesce sotto,
   // identico a /api/v2/predictions che non erra solo perché non lista le colonne).
   const rows = await dbQuery<Row>(
-    `SELECT id, sport, home_team, away_team, pick, notes, starts_at::text AS starts_at
+    `SELECT id, sport, home_team, away_team, pick, confidence_score, notes, starts_at::text AS starts_at
        FROM unified_predictions
       WHERE starts_at > NOW()
         AND starts_at < NOW() + ($1 || ' days')::interval
@@ -84,9 +85,18 @@ export async function POST(req: Request) {
       } catch { /* notes malformati → salta */ }
     }
     if (!r.home_team || !r.away_team || !r.pick) continue;
-    const prob = r.pick === "HOME" ? pH : r.pick === "AWAY" ? pA : r.pick === "DRAW" ? pD : null;
+    let prob = r.pick === "HOME" ? pH : r.pick === "AWAY" ? pA : r.pick === "DRAW" ? pD : null;
+    let market = r.pick === "HOME" ? r.home_team : r.pick === "AWAY" ? r.away_team : "Draw";
+    // #WEEKLY-PICK-3 tennis: qui pick è il NOME del giocatore (non HOME/AWAY) e la
+    // prob vive in confidence_score (0-100, = prob del pick: 86 ↔ fair_odds 1.17;
+    // vedi lib/tennis-adapter.ts, confidence = round(prob*100)). Le pick sotto floor
+    // hanno già pick=null a monte (surfacedPick) → restano naturalmente fuori.
+    if (prob == null && r.sport === "tennis" && typeof r.confidence_score === "number"
+        && (r.pick === r.home_team || r.pick === r.away_team)) {
+      prob = r.confidence_score / 100;
+      market = r.pick;
+    }
     if (prob == null || !Number.isFinite(prob) || prob <= 0 || prob > 1) continue;
-    const market = r.pick === "HOME" ? r.home_team : r.pick === "AWAY" ? r.away_team : "Draw";
     const key = `${r.sport}|${r.home_team}|${r.away_team}|${r.starts_at.slice(0, 10)}`;
     if (seen.has(key)) continue;
     seen.add(key);
