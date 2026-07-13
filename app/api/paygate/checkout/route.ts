@@ -10,6 +10,14 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  // #GOLIVE-QW-B kill-switch server-side: spegnimento d'emergenza = flag a false
+  // + redeploy. Il client nasconde i bottoni, ma senza questo gate il server
+  // accetterebbe comunque ordini POST diretti. Con il flag != "true" rifiutiamo
+  // qui, prima di creare wallet/ordine. (Stessa env che pilota la UI: unica fonte.)
+  if (process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true") {
+    return NextResponse.json({ error: "paygate disabled" }, { status: 503 });
+  }
+
   const payoutWallet = process.env.PAYGATE_PAYOUT_WALLET;
   if (!payoutWallet) return NextResponse.json({ error: "paygate not configured" }, { status: 503 });
   if (req.headers.get("sec-fetch-site") === "cross-site") {

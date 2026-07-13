@@ -49,6 +49,10 @@ export async function GET(req: Request) {
   // Se il callback di PayGate si è perso/fallito, qui li ri-verifichiamo contro
   // PayGate e, se realmente pagati, li saldiamo e concediamo il piano. Il claim
   // atomico dentro settlePendingOrder evita collisioni con un callback in corso.
+  // #GOLIVE-QW-B finestra 48h (era 7g): un callback perso si recupera in ore, non
+  // in giorni. Con 7g + LIMIT 100 ASC gli ordini abbandonati vecchi saturavano lo
+  // slot e ri-pollavano PayGate ~672 volte ciascuno (spreco), affamando i pending
+  // recenti che meritano davvero il re-check. Oltre 48h l'ordine è abbandonato.
   const pending = await dbQuery<{
     id: string; identifier: string; plan: "base" | "premium"; period: "monthly" | "annual";
     amount_usd: number; status: string; ipn_token: string | null;
@@ -56,7 +60,7 @@ export async function GET(req: Request) {
     `SELECT id::text AS id, identifier, plan, period, amount_usd::float8 AS amount_usd, status, ipn_token
        FROM paygate_orders
       WHERE status = 'pending' AND ipn_token IS NOT NULL
-        AND created_at > NOW() - INTERVAL '7 days'
+        AND created_at > NOW() - INTERVAL '48 hours'
       ORDER BY created_at ASC
       LIMIT 100`
   );

@@ -38,10 +38,16 @@ export async function POST(req: Request) {
   const customerId = existing[0]?.stripe_customer_id ?? undefined;
 
   // Segna pending_payment (UI mostra "in attesa"), come il path USDT.
+  // #GOLIVE-QW-B guard: marca pending_payment SOLO su un piano free/pending —
+  // MAI su un piano già attivo pagato (base/premium). Senza questo WHERE, chiunque
+  // chiami l'endpoint declasserebbe un abbonato attivo prima ancora di pagare. Il
+  // rail Stripe è dormiente e la fonte di verità del piano resta il webhook
+  // invoice.paid: qui segniamo solo l'intento di pagamento.
   await dbQuery(
     `UPDATE profiles
         SET plan = 'pending_payment', requested_plan = $2, updated_at = NOW()
-      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
+      WHERE (identifier = $1 OR LOWER(TRIM(identifier)) = $1)
+        AND plan IN ('free', 'pending_payment')`,
     [ctx.identifier, plan]
   );
 
