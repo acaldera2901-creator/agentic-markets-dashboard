@@ -688,7 +688,13 @@ async def settle_unified_prediction(
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.patch(
                 f"{base}/unified_predictions",
-                params={"id": f"eq.{row_id}"},
+                # #24 idempotency guard: only settle a row that is still unresolved,
+                # mirroring the TS cron's `.is("result", null)`. Without it a
+                # TOCTOU race (Python + TS settling the same row) could overwrite an
+                # already-settled public-history row when providers disagree on the
+                # final score. A no-op PATCH (0 rows) still returns 204 → True, which
+                # is fine: the row is already settled.
+                params={"id": f"eq.{row_id}", "result": "is.null"},
                 json=payload,
                 headers=_service_headers(),
             )

@@ -171,8 +171,30 @@ export async function GET(req: NextRequest) {
           })
           .eq("id", row.id)
           .is("result", null); // idempotency vs the Python agent
-        if (upErr) report.errors.push(`unified_football:${row.id}:${upErr.message}`);
-        else report.unified_football_settled += 1;
+        if (upErr) { report.errors.push(`unified_football:${row.id}:${upErr.message}`); continue; }
+        report.unified_football_settled += 1;
+        // #36 append-only ledger parity with the Python settlement agent
+        // (agents/result_settlement.py): when this TS cron is the one that settles
+        // a football row (Python failover), mirror the pick_settlement row so the
+        // honest track-record ledger stays complete instead of diverging. Keyed
+        // exactly like the Python path (source_table/source_id/model_version).
+        // closing_odds NULL here (no verified joinable close — never fabricated).
+        // Fail-soft: an FK rejection (23503) means no matching pick_ledger row →
+        // expected (we only ledger picks we recorded), not an error.
+        const realized =
+          m.homeGoals === m.awayGoals ? "DRAW" : m.homeGoals > m.awayGoals ? "HOME" : "AWAY";
+        const { error: psErr } = await sb.from("pick_settlement").insert({
+          source_table: "match_predictions",
+          source_id: String(row.external_event_id),
+          model_version: "football-v4-xg-model",
+          result: outcome,
+          outcome: realized,
+          final_score: `${m.homeGoals}-${m.awayGoals}`,
+          closing_odds: null,
+        });
+        if (psErr && psErr.code !== "23503") {
+          report.errors.push(`pick_settlement:${row.id}:${psErr.message}`);
+        }
       }
     } catch (e) {
       report.errors.push(`unified_football:${String(e)}`);
