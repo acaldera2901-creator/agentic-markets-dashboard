@@ -12,7 +12,7 @@ describe("checkPaymentStatus — ipn_token già-encoded non va doppio-encodato",
     const token = "abc-DEF_ghi123%3D"; // come da wallet.php (trailing '=' già encodato)
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ status: "paid", value_coin: "5.70", txid_out: "0xabc" }),
+      text: async () => JSON.stringify({ status: "paid", value_coin: "5.70", txid_out: "0xabc" }),
     });
     vi.stubGlobal("fetch", fetchMock);
 

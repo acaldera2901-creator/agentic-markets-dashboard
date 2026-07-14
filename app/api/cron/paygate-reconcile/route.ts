@@ -73,8 +73,12 @@ export async function GET(req: Request) {
       if (r.granted) {
         settled++;
         console.log(`[paygate/reconcile] SELFHEAL grant order=${o.id} plan=${o.plan}`);
+      } else {
+        // #PAYGATE-VERIFY-OBS: prima i non-grant erano MUTI — un ordine PAGATO
+        // che non si salda (es. verify bloccata dal serverless) era invisibile
+        // nei log. "not paid at paygate" resta il caso normale (abbandonati).
+        console.log(`[paygate/reconcile] pending order=${o.id} non saldato: ${r.reason}`);
       }
-      // non-paid / abbandonati → nessuna azione, si ritenta al prossimo giro
     } catch (e) {
       errors.push(`pending ${o.id}: ${String(e)}`);
     }
