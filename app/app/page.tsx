@@ -2161,7 +2161,7 @@ function SportsbookBoard({
   const [signalFilter, setSignalFilter] = useState<"all" | "value">("all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
   const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
-  const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("edge");
+  const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("time");
   const [searchTerm, setSearchTerm] = useState("");
   const footballValue = predictions
     .filter(isFootballBestBet)
@@ -2326,8 +2326,8 @@ function SportsbookBoard({
         <label className="am-mini-field">
           <span>{labels.sort}</span>
           <select value={sortMode} onChange={(e) => setSortMode(e.target.value as "edge" | "time" | "odds" | "probability")}>
-            <option value="edge">{labels.edge}</option>
             <option value="time">{labels.time}</option>
+            <option value="edge">{labels.edge}</option>
             <option value="odds">{labels.odds}</option>
             <option value="probability">{labels.probability}</option>
           </select>
