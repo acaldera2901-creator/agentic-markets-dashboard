@@ -60,3 +60,48 @@ async def test_exhausted_entry_today_still_blocks():
 def test_known_providers_lists_limited_providers():
     tracker = QuotaTracker(LIMITS, supabase_url=None, supabase_key=None)
     assert set(tracker.known_providers()) == set(LIMITS.keys())
+
+
+# #TENNIS-ODDS-BLACKOUT (2026-07-15): il cap mensile ora è enforced (prima
+# "daily or monthly" lo ignorava → account drenato prima del reset).
+BOTH = {"odds_api": {"daily": 3200, "monthly": 100_000}}
+
+@pytest.mark.asyncio
+async def test_monthly_cap_blocks_even_with_daily_headroom():
+    t = QuotaTracker(BOTH, supabase_url=None, supabase_key=None)
+    today = str(date.today())
+    # daily quasi vuoto, ma mensile al tetto → deve bloccare (era il bug)
+    t._cache["odds_api"] = {"used": 10, "date": today, "month_used": 100_000, "month": today[:7]}
+    assert t.can_call("odds_api") is False
+
+@pytest.mark.asyncio
+async def test_daily_cap_still_blocks_with_monthly_headroom():
+    t = QuotaTracker(BOTH, supabase_url=None, supabase_key=None)
+    today = str(date.today())
+    t._cache["odds_api"] = {"used": 3200, "date": today, "month_used": 5000, "month": today[:7]}
+    assert t.can_call("odds_api") is False
+
+@pytest.mark.asyncio
+async def test_under_both_caps_allows():
+    t = QuotaTracker(BOTH, supabase_url=None, supabase_key=None)
+    today = str(date.today())
+    t._cache["odds_api"] = {"used": 100, "date": today, "month_used": 50_000, "month": today[:7]}
+    assert t.can_call("odds_api") is True
+
+@pytest.mark.asyncio
+async def test_month_rollover_resets_monthly_counter():
+    t = QuotaTracker(BOTH, supabase_url=None, supabase_key=None)
+    today = str(date.today())
+    old_month = "2001-01"  # mese passato con mensile esaurito
+    t._cache["odds_api"] = {"used": 3200, "date": "2001-01-31", "month_used": 100_000, "month": old_month}
+    # nuovo mese → daily e mensile azzerati → riapre
+    assert t.can_call("odds_api") is True
+
+@pytest.mark.asyncio
+async def test_increment_bumps_both_daily_and_monthly():
+    t = QuotaTracker(BOTH, supabase_url=None, supabase_key=None)
+    with patch.object(t, "_persist", new=AsyncMock()):
+        await t.increment("odds_api", 6)
+        await t.increment("odds_api", 4)
+    e = t._cache["odds_api"]
+    assert e["used"] == 10 and e["month_used"] == 10
