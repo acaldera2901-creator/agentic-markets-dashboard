@@ -78,6 +78,17 @@ export async function GET(req: Request) {
         // che non si salda (es. verify bloccata dal serverless) era invisibile
         // nei log. "not paid at paygate" resta il caso normale (abbandonati).
         console.log(`[paygate/reconcile] pending order=${o.id} non saldato: ${r.reason}`);
+        // #PAYGATE-VERIFY-OBS-DB: i log funzione dei cron non sono leggibili né da
+        // `vercel logs` (non streama le invocazioni cron) né dall'API (403 per il
+        // ruolo corrente) → persistiamo il motivo in events per diagnosi via SQL.
+        // Best-effort: non deve mai far fallire il run.
+        try {
+          await dbExecute(
+            `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+             VALUES ('paygate_reconcile_diag', $1, NULL, NULL, NULL, NULL, 0, $2)`,
+            [o.id, JSON.stringify({ reason: r.reason, amount_usd: o.amount_usd, plan: o.plan })]
+          );
+        } catch { /* diagnostica best-effort */ }
       }
     } catch (e) {
       errors.push(`pending ${o.id}: ${String(e)}`);
