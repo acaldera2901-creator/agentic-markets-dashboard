@@ -1994,7 +1994,13 @@ function MatchTypeBadge({ matchType }: { matchType?: string | null }) {
 const FOOTBALL_BEST_EDGE_THRESHOLD = 0.02;
 const TENNIS_BEST_EDGE_THRESHOLD = 0.03;
 const MIN_BEST_BET_ODDS = 1.4;
-const BEST_BETS_CAP = 5;
+// #BESTBET-MODEL-SIGNAL-0715: un best bet è un value bet (mercato+edge) OPPURE un
+// model signal (pick del modello ad alta confidenza, ≥58%) — così "Solo best bets"
+// resta pieno anche senza quote di mercato (es. blackout quote tennis). Mirror di
+// lib/best-bets.ts MIN_MODEL_SIGNAL_PROBABILITY. Il guard `surfaced` (floor
+// segment-aware) resta sopra: sotto-floor non risale mai come best bet.
+const MIN_MODEL_SIGNAL_PROBABILITY = 0.58;
+const BEST_BETS_CAP = 10;
 const TENNIS_TRADING_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 function isFutureMarket(utc: string) {
@@ -2053,12 +2059,11 @@ function isFootballSurfaced(p: Prediction): boolean {
 
 function isFootballBestBet(p: Prediction) {
   const odds = selectedFootballOdds(p);
-  return isFootballSurfaced(p)
-    && isFutureMarket(p.kickoff)
-    && Boolean(p.best_selection)
-    && odds != null
-    && odds >= MIN_BEST_BET_ODDS
-    && (p.edge ?? 0) >= FOOTBALL_BEST_EDGE_THRESHOLD;
+  // Deve essere una pick direzionale sopra il floor e pre-match. #BESTBET-MODEL-SIGNAL-0715.
+  if (!isFootballSurfaced(p) || !isFutureMarket(p.kickoff) || !p.best_selection) return false;
+  const isValue = odds != null && odds >= MIN_BEST_BET_ODDS && (p.edge ?? 0) >= FOOTBALL_BEST_EDGE_THRESHOLD;
+  const isModelSignal = selectedFootballProbability(p) >= MIN_MODEL_SIGNAL_PROBABILITY;
+  return isValue || isModelSignal;
 }
 
 function isTennisBestBet(m: TennisMatch) {
@@ -2069,12 +2074,13 @@ function isTennisBestBet(m: TennisMatch) {
   // segment-aware by tournament name (hi 62 / lo 64 / lo-grass 66).
   const surfaced = m.confidence_score == null
     || m.confidence_score >= surfaceFloorFor("tennis", m.tournament);
-  return surfaced
-    && isTennisMarketVisible(m.scheduled)
-    && Boolean(m.best_selection)
-    && odds != null
-    && odds >= MIN_BEST_BET_ODDS
-    && (m.edge ?? 0) >= TENNIS_BEST_EDGE_THRESHOLD;
+  // #BESTBET-MODEL-SIGNAL-0715: value bet (mercato+edge) OPPURE model signal
+  // (prob pick ≥ 58%). Il floor `surfaced` resta binding (tennis lo-tier 64),
+  // quindi durante il blackout quote le pick modello ad alta confidenza restano.
+  if (!surfaced || !isTennisMarketVisible(m.scheduled) || !m.best_selection) return false;
+  const isValue = odds != null && odds >= MIN_BEST_BET_ODDS && (m.edge ?? 0) >= TENNIS_BEST_EDGE_THRESHOLD;
+  const isModelSignal = selectedTennisProbability(m) >= MIN_MODEL_SIGNAL_PROBABILITY;
+  return isValue || isModelSignal;
 }
 
 // #FREE-PRED-REVAMP-0626: paywall curato per i Free. Sostituisce i wall gialli +
@@ -2221,6 +2227,9 @@ function SportsbookBoard({
     if (sortMode === "time") return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
     if (sortMode === "odds") return (selectedFootballOdds(b) ?? 0) - (selectedFootballOdds(a) ?? 0);
     if (sortMode === "probability") return selectedFootballProbability(b) - selectedFootballProbability(a);
+    // #BESTBET-MODEL-SIGNAL-0715: senza edge (es. blackout quote) i model signal si
+    // ordinano per probabilità, così i primi mostrati sono i più affidabili — non arbitrari.
+    if (a.edge == null && b.edge == null) return selectedFootballProbability(b) - selectedFootballProbability(a);
     return (b.edge ?? -1) - (a.edge ?? -1);
   });
 
@@ -2230,6 +2239,8 @@ function SportsbookBoard({
     if (sortMode === "time") return new Date(a.scheduled).getTime() - new Date(b.scheduled).getTime();
     if (sortMode === "odds") return (selectedTennisOdds(b) ?? 0) - (selectedTennisOdds(a) ?? 0);
     if (sortMode === "probability") return selectedTennisProbability(b) - selectedTennisProbability(a);
+    // #BESTBET-MODEL-SIGNAL-0715: senza edge (blackout quote) ordina per probabilità.
+    if (a.edge == null && b.edge == null) return selectedTennisProbability(b) - selectedTennisProbability(a);
     return (b.edge ?? -1) - (a.edge ?? -1);
   });
 
