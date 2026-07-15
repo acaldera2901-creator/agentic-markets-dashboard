@@ -16,6 +16,24 @@ OUTCOME_P1, OUTCOME_P2 = "121", "122"  # canonical outcomes: "121"=participant1,
 ANCHOR_ORDER = ("pinnacle", "betfair-ex")  # then any book with a sane 2-way (exchange artefacts rejected)
 OVERROUND_MIN, OVERROUND_MAX = 0.90, 1.30  # valid range for a 2-way match-winner market
 _UA = {"User-Agent": "betredge/1.0"}  # urllib default → 403; fix with explicit UA
+# Account-level request cap (429 body code). Distinct from the transient
+# per-endpoint rate limit the /odds retry is built for: when the whole account
+# is capped, retrying is pointless and the exhaustion must be visible.
+PLAN_CAP_CODE = "REQUEST_LIMIT_EXCEEDED"
+
+
+def _plan_cap_reason(resp) -> str | None:
+    """Return the account-cap detail when a 429 is the plan-level request cap,
+    else None (transient per-endpoint 429s and non-429s). Pure/fail-soft."""
+    if getattr(resp, "status_code", None) != 429:
+        return None
+    try:
+        err = (resp.json() or {}).get("error") or {}
+    except Exception:
+        return None
+    if err.get("code") == PLAN_CAP_CODE:
+        return err.get("details") or err.get("message") or PLAN_CAP_CODE
+    return None
 
 
 def _key() -> str | None:
@@ -78,7 +96,14 @@ async def get_oddspapi_fixtures(date_from: str, date_to: str) -> list[dict[str, 
                 params={"apiKey": key, "sportId": SPORT_ID, "from": date_from, "to": date_to, "hasOdds": "true"},
             )
         if resp.status_code != 200:
-            logger.warning("oddspapi fixtures HTTP %s", resp.status_code)
+            cap = _plan_cap_reason(resp)
+            if cap:
+                logger.warning(
+                    "oddspapi plan cap reached — tennis fallback disabled until reset/upgrade: %s",
+                    cap,
+                )
+            else:
+                logger.warning("oddspapi fixtures HTTP %s", resp.status_code)
             return []
         data = resp.json()
         items = data if isinstance(data, list) else data.get("data", [])
@@ -106,8 +131,14 @@ async def get_oddspapi_match_odds(fixture_id: str) -> dict[str, Any] | None:
         async with httpx.AsyncClient(timeout=15.0, headers=_UA) as client:
             resp = await client.get(f"{BASE_URL}/odds", params={"apiKey": key, "fixtureId": fixture_id})
             # /odds is per-endpoint rate limited: a 429 storm under the live cycle
-            # was silently dropping every match-winner price. Back off once.
+            # was silently dropping every match-winner price. Back off once — but
+            # an ACCOUNT-level cap (plan requests exhausted) is not transient, so
+            # skip the pointless retry and surface it instead.
             if resp.status_code == 429:
+                cap = _plan_cap_reason(resp)
+                if cap:
+                    logger.warning("oddspapi plan cap reached on /odds: %s", cap)
+                    return None
                 await asyncio.sleep(settings.ODDSPAPI_ODDS_DELAY_S)
                 resp = await client.get(f"{BASE_URL}/odds", params={"apiKey": key, "fixtureId": fixture_id})
         if resp.status_code != 200:
