@@ -26,7 +26,11 @@ export async function settlePendingOrder(order: PendingOrder): Promise<SettleRes
 
   // 1) verità server-side: PayGate dice paid?
   const verify = await checkPaymentStatus(order.ipn_token);
-  if (!verify || verify.status !== "paid") return { granted: false, reason: "not paid at paygate" };
+  // #PAYGATE-VERIFY-OBS: distinguere "verifica NON riuscita" (null: fetch/HTTP/
+  // parse falliti — es. WAF/rate-limit sull'endpoint status dagli IP serverless)
+  // da "PayGate risponde ma non-paid" (abbandonato). Sono guasti opposti.
+  if (!verify) return { granted: false, reason: "verify unavailable (fetch/HTTP/parse failed)" };
+  if (verify.status !== "paid") return { granted: false, reason: `paygate status=${verify.status || "(empty)"}` };
   const serverValue = verify.valueCoin;
 
   // 2) importo verificato sul valore server (assorbe le fee crypto, floor -50%)
