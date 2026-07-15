@@ -14,9 +14,18 @@ import crypto from "node:crypto";
 const CHECKOUT_HOST = process.env.PAYGATE_CHECKOUT_HOST || "checkout.paygate.to";
 const WHITE_LABEL = CHECKOUT_HOST !== "checkout.paygate.to";
 
-const WALLET_ENDPOINT = "https://api.paygate.to/control/wallet.php";
+// #PAYGATE-RATELIMIT-FIX: payment-status.php è rate-limitato per-IP (HTTP 429 dopo
+// ~2-3 chiamate rapide, "intended client/browser") → dal serverless Vercel il grant
+// batch (reconcile) e a volte il callback fallivano la verifica. Fix ufficiale
+// PayGate: instradare le API di controllo via il Cloudflare worker white-label
+// (ogni chiamata esce dal worker, non dall'IP Vercel). API_HOST configurabile:
+// default api.paygate.to (comportamento invariato); settando PAYGATE_API_HOST al
+// worker (es. api.betredge.com) wallet.php + payment-status.php vi passano.
+// GATED: attivare SOLO dopo conferma da Maven che il worker proxa /control/*.
+const API_HOST = process.env.PAYGATE_API_HOST || "api.paygate.to";
+const WALLET_ENDPOINT = `https://${API_HOST}/control/wallet.php`;
 const PAY_ENDPOINT = `https://${CHECKOUT_HOST}/pay.php`;
-const STATUS_ENDPOINT = "https://api.paygate.to/control/payment-status.php";
+const STATUS_ENDPOINT = `https://${API_HOST}/control/payment-status.php`;
 // PayGate accredita gli USDC AL NETTO delle sue fee (card→crypto). EVIDENZA REALE
 // (pagamento test $5 di oggi): value_coin = 5.701904 → il netto è >100% dell'amount
 // (le fee dell'on-ramp sono AGGIUNTE sopra, non sottratte), quindi un floor 15% è
