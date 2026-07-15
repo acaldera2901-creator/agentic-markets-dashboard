@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dbQuery, dbExecute } from "@/lib/db";
+import { dbQueryStrict, dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
@@ -66,7 +66,10 @@ type ProfileRow = { identifier: string; plan: Plan; name: string | null };
 // LOW-16: deterministic resolution when an identifier could match more than one
 // row — prefer the exact match, then the oldest — instead of an arbitrary LIMIT 1.
 async function loadProfile(identifier: string): Promise<ProfileRow | null> {
-  const rows = await dbQuery<ProfileRow>(
+  // #GOLIVE-AUDIT: read auth-critico → dbQueryStrict (fail-loud). Con dbQuery un
+  // errore DB transitorio tornava [] = "account inesistente" → login errato o,
+  // col gate email off, potenziale takeover (existing=null → ramo nuovo account).
+  const rows = await dbQueryStrict<ProfileRow>(
     "SELECT identifier, plan, name FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
     [identifier]
   );
@@ -76,7 +79,9 @@ async function loadProfile(identifier: string): Promise<ProfileRow | null> {
 type AuthRow = { identifier: string; plan: Plan; name: string | null; password_hash: string | null; activated_at: string | null };
 
 async function loadAuthRow(identifier: string): Promise<AuthRow | null> {
-  const rows = await dbQuery<AuthRow>(
+  // #GOLIVE-AUDIT: fail-loud (vedi loadProfile) — un blip DB non deve sembrare
+  // "nessun account" sul percorso register/login.
+  const rows = await dbQueryStrict<AuthRow>(
     "SELECT identifier, plan, name, password_hash, activated_at FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 ORDER BY (identifier = $1) DESC, created_at ASC LIMIT 1",
     [identifier]
   );

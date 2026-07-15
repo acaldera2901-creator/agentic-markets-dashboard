@@ -53,6 +53,14 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
           elo_p1: null, elo_p2: null, elo_p1_overall: null, elo_p2_overall: null,
           serve_form_p1: null, serve_form_p2: null, return_form_p1: null, return_form_p2: null,
           surface_reliability_p1: null, surface_reliability_p2: null, feature_quality: null,
+          // #GOLIVE-AUDIT: anche questi feature deep non vanno al tier base (lo
+          // spread ...m li passava: elo_raw/h2h/rest/recent-14d/surface_matches
+          // codificano il segnale del modello Pro-only).
+          surface_matches_p1: null, surface_matches_p2: null,
+          p1_rest_days: null, p2_rest_days: null,
+          p1_recent_matches_14d: null, p2_recent_matches_14d: null,
+          h2h_p1_wins: null, h2h_p2_wins: null,
+          elo_raw_p1: null, elo_raw_p2: null,
         });
       }
       return withAffiliate(out) as T & { locked: boolean; pick_of_day: boolean };
@@ -66,6 +74,13 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       elo_p1: null, elo_p2: null, elo_p1_overall: null, elo_p2_overall: null,
       serve_form_p1: null, serve_form_p2: null, return_form_p1: null, return_form_p2: null,
       surface_reliability_p1: null, surface_reliability_p2: null, feature_quality: null,
+      // #GOLIVE-AUDIT: lo spread ...m faceva trapelare questi campi anche sulle
+      // righe locked (anonimo/free), permettendo di inferire la pick gated.
+      surface_matches_p1: null, surface_matches_p2: null,
+      p1_rest_days: null, p2_rest_days: null,
+      p1_recent_matches_14d: null, p2_recent_matches_14d: null,
+      h2h_p1_wins: null, h2h_p2_wins: null,
+      elo_raw_p1: null, elo_raw_p2: null,
     } as unknown as T & { locked: boolean; pick_of_day: boolean };
   });
 }
