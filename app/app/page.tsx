@@ -8657,7 +8657,8 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await fetch("/api/predictions", { method: "POST" });
+      // Il POST /api/predictions è cron-only (bearer CRON_SECRET): dal client
+      // rispondeva sempre 401. Il refresh utente rilegge i dati già serviti.
       await Promise.all([fetchPredictions(), fetchTennis(), fetchHistoryV2()]);
     } finally { setRefreshing(false); }
   };
