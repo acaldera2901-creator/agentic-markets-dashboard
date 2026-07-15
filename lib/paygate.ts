@@ -184,14 +184,24 @@ export async function checkPaymentStatus(
     // buildPayUrl. encodeURIComponent lo doppio-encodava (%3D→%253D) → PayGate
     // rispondeva "unpaid" → callback/reconcile non concedevano MAI il piano.
     resp = await fetch(`${STATUS_ENDPOINT}?ipn_token=${ipnToken}`);
-  } catch {
+  } catch (e) {
+    // #PAYGATE-VERIFY-OBS: i fallimenti qui erano INVISIBILI (null silenzioso →
+    // "not paid" a valle) — se PayGate blocca/limita gli IP del serverless non
+    // lo vedremmo mai. Log loud per diagnosi dai runtime logs.
+    console.error("[paygate/status] fetch failed:", String(e));
     return null;
   }
-  if (!resp.ok) return null;
-  const d = (await resp.json().catch(() => null)) as
-    | { status?: string; value_coin?: string | number; txid_out?: string }
-    | null;
-  if (!d) return null;
+  if (!resp.ok) {
+    console.error(`[paygate/status] HTTP ${resp.status} from payment-status.php`);
+    return null;
+  }
+  const raw = await resp.text().catch(() => "");
+  let d: { status?: string; value_coin?: string | number; txid_out?: string } | null = null;
+  try { d = JSON.parse(raw); } catch { /* body non-JSON (es. challenge HTML) */ }
+  if (!d) {
+    console.error(`[paygate/status] risposta non-JSON (len=${raw.length}): ${raw.slice(0, 120)}`);
+    return null;
+  }
   const v = d.value_coin;
   return {
     status: typeof d.status === "string" ? d.status : "",
