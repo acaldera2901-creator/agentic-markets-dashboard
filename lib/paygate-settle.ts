@@ -25,10 +25,18 @@ export async function settlePendingOrder(order: PendingOrder): Promise<SettleRes
   if (!order.ipn_token) return { granted: false, reason: "no ipn_token" };
 
   // 1) verità server-side: PayGate dice paid?
-  const verify = await checkPaymentStatus(order.ipn_token);
+  let verify = await checkPaymentStatus(order.ipn_token);
+  // #PAYGATE-RATELIMIT-FIX: payment-status.php si rate-limita dopo ~5 chiamate
+  // rapide dallo stesso IP (misurato via diag events 2026-07-15: in un giro di
+  // reconcile i primi 5 ordini verificavano, i successivi fallivano → l'ordine
+  // PAGATO più recente, sempre in coda, non veniva MAI saldato). Un retry dopo
+  // una pausa recupera il singolo transiente; il pacing tra ordini sta nel cron.
+  if (!verify) {
+    await new Promise((r) => setTimeout(r, 2500));
+    verify = await checkPaymentStatus(order.ipn_token);
+  }
   // #PAYGATE-VERIFY-OBS: distinguere "verifica NON riuscita" (null: fetch/HTTP/
-  // parse falliti — es. WAF/rate-limit sull'endpoint status dagli IP serverless)
-  // da "PayGate risponde ma non-paid" (abbandonato). Sono guasti opposti.
+  // parse falliti) da "PayGate risponde ma non-paid" (abbandonato).
   if (!verify) return { granted: false, reason: "verify unavailable (fetch/HTTP/parse failed)" };
   if (verify.status !== "paid") return { granted: false, reason: `paygate status=${verify.status || "(empty)"}` };
   const serverValue = verify.valueCoin;

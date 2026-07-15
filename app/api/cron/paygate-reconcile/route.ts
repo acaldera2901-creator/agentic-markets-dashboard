@@ -62,13 +62,22 @@ export async function GET(req: Request) {
        FROM paygate_orders
       WHERE status = 'pending' AND ipn_token IS NOT NULL
         AND created_at > NOW() - INTERVAL '48 hours'
-      ORDER BY created_at ASC
-      LIMIT 100`
+      ORDER BY created_at DESC
+      LIMIT 25`
   );
+  // #PAYGATE-RATELIMIT-FIX (root cause dell'ordine pagato mai saldato, diag
+  // 2026-07-15): payment-status.php si rate-limita dopo ~5 chiamate rapide dallo
+  // stesso IP. Con ORDER BY ASC i più RECENTI (= callback persi, gli unici che
+  // meritano il re-check urgente) finivano sempre nella coda rate-limitata e non
+  // venivano MAI verificati. Ora: DESC (freschi prima) + LIMIT 25 + pacing 1.2s
+  // tra le chiamate (max ~30s/run, sotto il limite) + retry nel settle.
 
   let settled = 0;
+  let first = true;
   for (const o of pending) {
     try {
+      if (!first) await new Promise((r) => setTimeout(r, 1200));
+      first = false;
       const r = await settlePendingOrder(o);
       if (r.granted) {
         settled++;

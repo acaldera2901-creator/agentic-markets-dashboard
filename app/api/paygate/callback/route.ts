@@ -45,7 +45,14 @@ export async function GET(req: Request) {
 
     // #1 — VERIFICA SERVER-SIDE: l'esito reale lo dice PayGate, non il callback
     // (non firmato/spoofabile). Concediamo solo se PayGate dice status='paid'.
-    const verify = await checkPaymentStatus(order.ipn_token);
+    // #PAYGATE-RATELIMIT-FIX: al pagamento payment-status.php può essere
+    // rate-limitato (stesso burst del checkout) → retry dopo pausa salva il
+    // grant istantaneo; se fallisce ancora, la reconcile chiude ≤15 min.
+    let verify = await checkPaymentStatus(order.ipn_token);
+    if (!verify) {
+      await new Promise((r) => setTimeout(r, 2500));
+      verify = await checkPaymentStatus(order.ipn_token);
+    }
     if (!verify || verify.status !== "paid") {
       console.warn(`[paygate/callback] PayGate status!=paid o verifica fallita (order=${order.id}) → niente grant (resta pending, ritenta)`);
       return NextResponse.json({ ok: true });
