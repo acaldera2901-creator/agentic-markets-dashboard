@@ -1,7 +1,11 @@
 -- 014_weekly_pick.sql — #WEEKLY-PICK-1 (item 2). Additiva + idempotente.
 -- (rinumerata da 013→014: il 013 è stato preso da 013_referral_code.sql #REFERRAL-HARDENING)
--- ⚠️ NON ANCORA APPLICATA a prod: attende allineamento Michele + APPROVE
--- ch_deploy_gate (tocca pagamenti). Applicare con lo stesso processo di 012.
+-- ✅ APPLICATA a prod — verificato 2026-07-16 (audit go-live): tabelle
+-- weekly_pick / _orders / _purchases presenti, RPC claim_weekly_pick_order con
+-- firma (uuid,numeric,text)->boolean SECURITY DEFINER, UNIQUE token_hash e RLS
+-- abilitata (0 policy = solo service-role). L'header precedente ("NON ANCORA
+-- APPLICATA") era stale e ha generato un falso allarme nell'audit: mantenere
+-- questo file idempotente ma NON ri-eseguirlo come se fosse pendente.
 --
 -- La "Weekly Pick" è la MULTIPLA DELLA CASA: le migliori pick della settimana
 -- combinate (schedina più probabile del modello). Venduta ONE-OFF a chi non è

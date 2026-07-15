@@ -361,7 +361,7 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
   const host = e?.venue?.host_advantage ? (it ? `${e.venue.host_advantage} gioca in casa; ` : `${e.venue.host_advantage} plays at home; `) : "";
   let value: string;
   if (p.signal_type === "signal" && typeof p.edge_percent === "number" && p.edge_percent > 0) {
-    value = it ? `c'è valore, il modello batte il mercato di +${p.edge_percent.toFixed(1)}%` : `there's value, the model beats the market by +${p.edge_percent.toFixed(1)}%`;
+    value = it ? `il modello vede valore su questa quota: +${p.edge_percent.toFixed(1)}%` : `the model sees value on this price: +${p.edge_percent.toFixed(1)}%`;
   } else {
     value = it ? `è la nostra prediction dal modello BetRedge` : `it's our BetRedge model prediction`;
   }

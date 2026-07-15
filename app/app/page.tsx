@@ -2049,12 +2049,16 @@ function selectedTennisProbability(m: TennisMatch) {
 
 // A below-floor pick is shown on the board as "no clear favourite" (no
 // directional pick). It must NEVER resurface as a value/best bet — the market
-// edge alone is not enough when the model has no clear favourite. Floor mirrors
-// core/surfacing_gate.py via lib/surfacing-gate.ts (WC/club 56, friendly 61).
-// #BESTBET-FLOOR-1: same gate the card applies (isValueBet = !belowFloor && …).
+// edge alone is not enough when the model has no clear favourite.
+// #GOLIVE-AUDIT: usa il verdetto PERSISTITO dal server (enrichment.surface,
+// calcolato col NOME lega + floor per-lega/WC in /api/predictions), lo stesso che
+// legge la card (riga ~8673) e /api/v2/history. La vecchia derivazione passava a
+// surfaceFloorFor il CODICE lega (p.league = "ALL"/"WC", che non matcha i nomi
+// "allsvenskan"/"world cup") e leggeva confidence_score (non servito per il
+// football → sempre null → floor bypassato): pick sotto-floor risalivano nei Best
+// Bets e le pick WC (floor 26) venivano escluse. #BESTBET-FLOOR-1.
 function isFootballSurfaced(p: Prediction): boolean {
-  return p.confidence_score == null
-    || p.confidence_score >= surfaceFloorFor("football", p.league);
+  return p.enrichment?.surface?.below_floor !== true;
 }
 
 function isFootballBestBet(p: Prediction) {

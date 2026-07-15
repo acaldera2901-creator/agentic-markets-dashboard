@@ -1,4 +1,4 @@
-import { dbQuery, dbExecute } from "./db";
+import { dbQuery, dbQueryStrict, dbExecute } from "./db";
 import { planActivatedEmail } from "./email";
 import { sendTransactional } from "./notify";
 
@@ -70,6 +70,7 @@ export async function activateAdminPlan(identifier: string): Promise<ActivatedRo
     `UPDATE profiles
         SET plan = requested_plan,
             requested_plan = NULL,
+            tx_hash = NULL,
             plan_expires_at = NOW() + INTERVAL '30 days',
             updated_at = NOW()
       WHERE identifier = $1
@@ -96,7 +97,12 @@ export async function activateStripePlan(
   // exec_sql can't return RETURNING rows → resolve the profile (and its previous
   // plan, to notify only on a real transition) with a SELECT, then UPDATE the
   // resolved identifier.
-  const prev = await dbQuery<{ identifier: string; name: string | null; old_plan: string | null }>(
+  // #GOLIVE-AUDIT: dbQueryStrict (fail-loud). Con dbQuery un errore DB transitorio
+  // tornava [] → before undefined → return null in silenzio, ma il webhook Stripe
+  // ha GIÀ deduplicato event.id → la redelivery è scartata come duplicata e il
+  // grant è perso per sempre (nessuna reconcile per Stripe). Il throw fa rispondere
+  // il webhook non-200 → Stripe ritenta correttamente.
+  const prev = await dbQueryStrict<{ identifier: string; name: string | null; old_plan: string | null }>(
     `SELECT identifier, name, plan AS old_plan FROM profiles
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
       LIMIT 1`,
