@@ -3438,8 +3438,9 @@ function CheckoutModal({
         {/* #GOLIVE-QW-A: EU distance-selling — explicit request for immediate
             performance + acknowledgement that the 14-day withdrawal right is lost
             once the service is activated. Gates every payment CTA below. */}
-        <label style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "12px 0 4px", fontSize: 12, lineHeight: 1.5, cursor: "pointer", color: "var(--am-muted)" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "12px 0 4px", fontSize: 12, lineHeight: 1.5, color: "var(--am-muted)" }}>
           <input
+            id="withdrawal-consent"
             type="checkbox"
             checked={withdrawalConsent}
             onChange={(e) => {
@@ -3448,14 +3449,35 @@ function CheckoutModal({
             }}
             style={{ marginTop: 2, flexShrink: 0 }}
           />
-          <span>{pick5(lang, {
-            it: "Chiedo l'esecuzione immediata del servizio e prendo atto che perdo il diritto di recesso di 14 giorni una volta attivato.",
-            en: "I request immediate performance of the service and acknowledge that I lose the 14-day right of withdrawal once it is activated.",
-            es: "Solicito la ejecución inmediata del servicio y reconozco que pierdo el derecho de desistimiento de 14 días una vez activado.",
-            fr: "Je demande l'exécution immédiate du service et je reconnais perdre le droit de rétractation de 14 jours une fois qu'il est activé.",
-            ru: "Я прошу немедленно предоставить услугу и подтверждаю, что теряю право на 14-дневный отказ после активации.",
-          })}</span>
-        </label>
+          <span>
+            {(() => {
+              // Consenso unico: lettura Termini/Privacy + richiesta di esecuzione
+              // immediata (#GOLIVE-QW-A, wording scelto da Andrea 2026-07-15). Link
+              // fuori dai <label htmlFor> così cliccarli apre la pagina senza
+              // spuntare la checkbox.
+              const frags = pick5(lang, {
+                it: ["Ho letto i ", " e la ", " e chiedo l'esecuzione immediata del servizio."],
+                en: ["I have read the ", " and the ", " and I request immediate performance of the service."],
+                es: ["He leído los ", " y la ", " y solicito la ejecución inmediata del servicio."],
+                fr: ["J'ai lu les ", " et la ", " et je demande l'exécution immédiate du service."],
+                ru: ["Я прочитал(а) ", " и ", " и прошу немедленно предоставить услугу."],
+              }) as [string, string, string];
+              const termsLabel = pick5(lang, { it: "Termini", en: "Terms", es: "Términos", fr: "Conditions", ru: "Условия" });
+              const privacyLabel = pick5(lang, { it: "Privacy", en: "Privacy Policy", es: "Privacidad", fr: "Confidentialité", ru: "Политику конфиденциальности" });
+              const linkStyle = { color: "var(--am-coral)", textDecoration: "underline" };
+              const segStyle = { cursor: "pointer", display: "inline" };
+              return (
+                <>
+                  <label htmlFor="withdrawal-consent" style={segStyle}>{frags[0]}</label>
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>{termsLabel}</a>
+                  <label htmlFor="withdrawal-consent" style={segStyle}>{frags[1]}</label>
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>{privacyLabel}</a>
+                  <label htmlFor="withdrawal-consent" style={segStyle}>{frags[2]}</label>
+                </>
+              );
+            })()}
+          </span>
+        </div>
 
         {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>
         <div className="checkout-wallet-block">
