@@ -63,13 +63,19 @@ export async function GET(req: Request) {
   // result (e.g. a tennis pick that aged out of the window). It is settled only
   // to clear the live board — it is NOT a confirmed outcome, so it must stay out
   // of the track record entirely (list + win-rate + void count alike).
-  // #TRACKREC-REAL-0626: paper/shadow picks (signal_type='paper', is_paper=TRUE)
-  // are the model's tracked-but-never-published predictions. They must NEVER enter
-  // the public track record — only real surfaced signals count. Defensive, like is_demo.
+  // #TRACKREC-REAL-0626 → rivisto #TRACKREC-SURFACED-0715: il track record conta
+  // le pick che abbiamo EFFETTIVAMENTE MOSTRATO all'utente. Il gate autorevole di
+  // "mostrata" è wasShownAsPick() (pick != null + sopra il floor di confidenza,
+  // con l'eccezione WC), applicato sotto sul result-set. NON usiamo più is_paper
+  // come pre-filtro: `is_paper` per il tennis significa "senza mercato/quote"
+  // (lib/tennis-adapter.ts:114 `!hasRealMarket`), NON "mai pubblicata" — quindi
+  // durante un blackout quote (#TENNIS-ODDS-BLACKOUT) escludeva pick che ERANO
+  // mostrate sul board, congelando lo storico. Le shadow/below-floor mai mostrate
+  // restano fuori perché wasShownAsPick le respinge (pick null o below_floor).
+  // La metrica è ACCURATEZZA delle pick mostrate (hit-rate), non "edge vs mercato".
   const conditions: string[] = [
     "is_historical = TRUE",
     "is_demo = FALSE",
-    "is_paper = FALSE",
     "result IS DISTINCT FROM 'unresolved'",
   ];
   const values: unknown[] = [];
