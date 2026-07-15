@@ -1444,7 +1444,10 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.auth-modal input {
+/* Text-field styling only: checkbox/radio (es. consenso recesso nel checkout)
+   NON devono ereditare width:100%/height:44px, altrimenti la checkbox diventa
+   un box 414×44 con flex-shrink:0 che spinge il testo fuori dal modale. */
+.auth-modal input:not([type="checkbox"]):not([type="radio"]) {
   width: 100%;
   height: 44px;
   border: 1px solid var(--line);
@@ -1455,7 +1458,7 @@ button:disabled {
   outline: none;
 }
 
-.auth-modal input:focus {
+.auth-modal input:not([type="checkbox"]):not([type="radio"]):focus {
   border-color: var(--am-coral-b);
   box-shadow: 0 0 0 3px var(--am-coral-dim);
 }
