@@ -70,6 +70,7 @@ export async function activateAdminPlan(identifier: string): Promise<ActivatedRo
     `UPDATE profiles
         SET plan = requested_plan,
             requested_plan = NULL,
+            tx_hash = NULL,
             plan_expires_at = NOW() + INTERVAL '30 days',
             updated_at = NOW()
       WHERE identifier = $1

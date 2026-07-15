@@ -6,6 +6,7 @@ import {
   type SyncReport,
 } from "@/lib/publication-gate";
 import { isWorldCupSignalReady } from "@/lib/world-cup-readiness";
+import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -201,6 +202,18 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
   const hasRealMarket = odds != null && row.edge != null;
   const edgePct = hasRealMarket ? Math.round(row.edge! * 10000) / 100 : null;
 
+  // #GOLIVE-AUDIT: gate di surfacing anche sul club football, come tennis-adapter
+  // (lib/tennis-adapter.ts). Il floor è sul FAVORITO per probabilità (max-prob), la
+  // stessa base che usa il board (/api/predictions ~riga 524, surfaceFloorFor col
+  // NOME lega/competition → WC=26, override per-lega). Sotto floor = "nessun chiaro
+  // favorito": la riga unified NON porta pick direzionale (né prosa), così v2/
+  // history/weekly-pick/match-builder concordano col board e wasShownAsPick non
+  // conta pick mai mostrate. Probability-neutral: confidence_score/prob invariati.
+  const favBelowFloor = surfaceDecision(
+    Math.round(Math.max(row.p_home, row.p_draw, row.p_away) * 100),
+    surfaceFloorFor("football", competition)
+  ).belowFloor;
+
   const teamNews =
     (row.enrichment?.injuries_home?.length ?? 0) > 0 ||
     (row.enrichment?.injuries_away?.length ?? 0) > 0
@@ -216,7 +229,7 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     home_team: row.home_team,
     away_team: row.away_team,
     market: "1X2",
-    pick: row.best_selection,
+    pick: favBelowFloor ? null : row.best_selection,
     bookmaker: hasRealMarket ? "market composite" : "no market",
     odds: hasRealMarket && odds != null ? Math.round(odds * 100) / 100 : null,
     fair_odds: fairOdds,
@@ -236,7 +249,7 @@ function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
     published_at: new Date().toISOString(),
     starts_at: row.kickoff,
     expires_at: row.kickoff, // prediction expires when match starts; stale cleanup uses this
-    explanation: generateFootballExplanation(row),
+    explanation: favBelowFloor ? null : generateFootballExplanation(row),
     neutral_venue: neutral,
     team_news_summary: teamNews,
     world_cup_stage: detectWorldCupStage(row.league_name),

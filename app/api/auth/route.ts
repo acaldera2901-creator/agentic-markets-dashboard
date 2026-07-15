@@ -152,8 +152,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
     }
     const txHash = typeof body.tx_hash === "string" ? body.tx_hash.trim() : null;
-    // Fail-loud write: a swallowed UPDATE here would tell the client the checkout
-    // was registered while the DB never changed (silent payment loss).
+    // #GOLIVE-AUDIT: valida il formato del tx_hash (TRC20 = 64 hex, EVM = 0x+64) e
+    // impedisci il riuso cross-profilo — stesso hash = UN pagamento, non N piani.
+    if (txHash != null) {
+      if (!/^(0x)?[a-fA-F0-9]{40,80}$/.test(txHash)) {
+        return NextResponse.json({ error: "invalid transaction hash" }, { status: 400 });
+      }
+      const dup = await dbQueryStrict<{ identifier: string }>(
+        `SELECT identifier FROM profiles
+          WHERE tx_hash = $1 AND NOT (identifier = $2 OR LOWER(TRIM(identifier)) = $2) LIMIT 1`,
+        [txHash, ctx.identifier]
+      );
+      if (dup.length) {
+        return NextResponse.json({ error: "transaction already submitted" }, { status: 409 });
+      }
+    }
+    // #GOLIVE-AUDIT (guard, mirror #GOLIVE-QW-B dello Stripe checkout): marca
+    // pending_payment SOLO su un piano free/pending — MAI declassare un abbonato
+    // pagato attivo (base/premium) prima di aver pagato. Parentesi obbligatorie:
+    // AND lega più di OR, senza si perderebbe il guard sul primo ramo.
+    // Fail-loud write: un UPDATE ingoiato direbbe al client "checkout registrato"
+    // mentre il DB non cambia (perdita silenziosa del pagamento).
     try {
       await dbExecute(
         `UPDATE profiles
@@ -161,8 +180,8 @@ export async function POST(req: Request) {
                requested_plan = $2,
                tx_hash = $3,
                updated_at = NOW()
-         WHERE identifier = $1
-            OR LOWER(TRIM(identifier)) = $1`,
+         WHERE (identifier = $1 OR LOWER(TRIM(identifier)) = $1)
+           AND plan IN ('free', 'pending_payment')`,
         [ctx.identifier, requested, txHash]
       );
     } catch (e) {
@@ -170,8 +189,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "checkout persistence failed" }, { status: 500 });
     }
     const updated = await loadProfile(ctx.identifier);
-    if (!updated || updated.plan !== "pending_payment") {
+    if (!updated) {
       return NextResponse.json({ error: "checkout not persisted" }, { status: 500 });
+    }
+    // Guard ha bloccato l'UPDATE: l'utente ha già un piano pagato attivo → nessun
+    // declassamento. Comunica lo stato senza toccare l'accesso (upgrade = supporto).
+    if (updated.plan !== "pending_payment") {
+      return NextResponse.json(
+        { error: "already_active", plan: updated.plan },
+        { status: 409, headers: { "cache-control": "no-store" } }
+      );
     }
     // GAP4: confirm receipt to the customer (best-effort — never fails checkout).
     if (ctx.identifier.includes("@")) {
