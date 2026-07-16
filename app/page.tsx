@@ -7,6 +7,7 @@
 // Stile: dark energetico sportsbook su token --am-* + font Hanken/JetBrains.
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
@@ -19,6 +20,14 @@ import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
 import { writeRefCode } from "@/lib/referral-code";
 import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan"; // #HOME-V3: prezzi reali (no fabbricazione)
+import type { TennisMatch } from "@/app/app/page"; // #HOME-V3: tipo del componente board reale
+// #HOME-V3 Anatomy: la scheda è il COMPONENTE REALE della board (TennisMatchCard),
+// non una versione marketing. Lazy-load (ssr:false) per non gonfiare il bundle
+// iniziale della landing con il modulo del desk. Reso 1:1 col prodotto.
+const TennisMatchCard = dynamic(
+  () => import("@/app/app/page").then((m) => m.TennisMatchCard),
+  { ssr: false, loading: () => <div className="v-anat-card-skel" aria-hidden="true" /> },
+);
 
 type Lang = "it" | "en" | "es" | "fr" | "ru";
 const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
@@ -350,7 +359,7 @@ type V3Copy = {
   ctaTerminal: string; ctaTrack: string; ctaBrowse: string;
   chipLogged: string; chipClv: string; chipCal: string;
   anEyebrow: string; anHead: string; anSub: string;
-  anTop: string; anPick: string; anTitle: string; anPrice: string; anDeep: string; anExample: string;
+  anCapLive: string; anCapRepr: string;
   anNotes: { lab: string; body: string; strong: string }[];
   prEyebrow: string; prHead: string; prBadge: string;
   prMeta: (n: number) => string; prMetaQual: string; prWall: string; prQuote: string; prQuoteSub: string;
@@ -365,9 +374,9 @@ type V3Copy = {
 const V3_EN: V3Copy = {
   ctaTerminal: "Open the terminal", ctaTrack: "See the track record", ctaBrowse: "Browse the track record",
   chipLogged: "Logged before kick-off", chipClv: "CLV verified", chipCal: "Calibrated, not hyped",
-  anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped.",
-  anTop: "TENNIS · EXAMPLE FORMAT", anPick: "PICK", anTitle: "Sinner to beat Djokovic", anPrice: "illustrative price 1.90 · format only",
-  anDeep: "Deep Analysis — serve 84% · form 4–1 · grass +Elo · H2H 2–1", anExample: "example",
+  anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.",
+  anCapLive: "Live pick — the exact card component from the board.",
+  anCapRepr: "Representative reading — the exact card component from the board.",
   anNotes: [
     { lab: "Pick", strong: "The call, stated plainly.", body: "A single side — or “no clear favourite” when the model is below its floor. We never force one." },
     { lab: "Probability", strong: "Calibrated, not inflated.", body: "71% means the model expects it to land close to 71 times in 100 over the long run." },
@@ -398,9 +407,9 @@ const V3_EN: V3Copy = {
 const V3_IT: V3Copy = {
   ctaTerminal: "Apri il terminale", ctaTrack: "Vedi il track record", ctaBrowse: "Sfoglia il track record",
   chipLogged: "Registrata prima del fischio", chipClv: "CLV verificato", chipCal: "Calibrata, mai gonfiata",
-  anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype.",
-  anTop: "TENNIS · FORMATO ESEMPIO", anPick: "PICK", anTitle: "Sinner batte Djokovic", anPrice: "quota illustrativa 1.90 · solo formato",
-  anDeep: "Deep Analysis — servizio 84% · forma 4–1 · erba +Elo · H2H 2–1", anExample: "esempio",
+  anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype. È la scheda identica a quella sulla board.",
+  anCapLive: "Pick live — il componente scheda identico a quello della board.",
+  anCapRepr: "Lettura rappresentativa — il componente scheda identico a quello della board.",
   anNotes: [
     { lab: "Pick", strong: "La scelta, detta chiara.", body: "Un solo lato — o “nessun favorito chiaro” quando il modello è sotto la soglia. Non la forziamo mai." },
     { lab: "Probabilità", strong: "Calibrata, non gonfiata.", body: "71% significa che il modello se l’aspetta vicino a 71 volte su 100 nel lungo periodo." },
@@ -438,6 +447,30 @@ type HistApiRow = {
   competition?: string | null; sport?: string | null; result?: string | null;
 };
 
+// #HOME-V3 Anatomy: pick REALE rappresentativa, alimenta il componente board vero
+// quando l'API /api/tennis non offre un match sbloccato con edge (es. Preview senza
+// DB). Onesta: è "rappresentativa", non spacciata per live; il LOOK è quello reale.
+function anatomyFallbackMatch(): TennisMatch {
+  return {
+    id: "anatomy-demo",
+    player1: "Jannik Sinner", player2: "Novak Djokovic",
+    tournament: "Wimbledon", surface: "GRASS", round: "SF",
+    scheduled: new Date(Date.now() + 2 * 86400000).toISOString(),
+    p1: 0.71, p2: 0.29, odds_p1: 1.90, odds_p2: 3.10,
+    edge: 0.071, best_selection: "P1", model: "elo+form",
+    elo_p1: 2185, elo_p2: 2140, elo_p1_overall: 2185, elo_p2_overall: 2160,
+    surface_matches_p1: 46, surface_matches_p2: 214,
+    serve_form_p1: 0.84, serve_form_p2: 0.80,
+    return_form_p1: 0.33, return_form_p2: 0.30,
+    surface_reliability_p1: 0.72, surface_reliability_p2: 0.9,
+    feature_quality: 0.86, h2h_p1_wins: 4, h2h_p2_wins: 3,
+    locked: false, pick_of_day: false, pick: "Sinner", confidence_score: 78,
+    explanation:
+      "The model rates Sinner's hold and return pressure on grass above the market's implied 64%: recent serve form and surface Elo tilt the edge to the server.",
+    affiliate: null,
+  };
+}
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -457,6 +490,10 @@ export default function LandingPage() {
   // numero inventato). win_rate è già la stringa "64.0%"|null calcolata server-side.
   const [proof, setProof] = useState<{ winRate: string; settled: number } | null>(null);
   const [proofRows, setProofRows] = useState<ProofRow[]>([]);
+  // #HOME-V3 Anatomy: match REALE per il componente board. Parte dal fallback
+  // rappresentativo; se /api/tennis offre un match sbloccato con edge lo sostituisce.
+  const [anatomyMatch, setAnatomyMatch] = useState<TennisMatch>(anatomyFallbackMatch);
+  const [anatomyIsLive, setAnatomyIsLive] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -585,6 +622,25 @@ export default function LandingPage() {
           setProofRows(settledRows);
         }
       } catch { /* fail-soft: sezione proof qualitativa */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // #HOME-V3 Anatomy: sostituisci il fallback con un match REALE sbloccato con edge
+  // dalla stessa fonte della board (/api/tennis). Fail-soft: resta il rappresentativo.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch("/api/tennis", { credentials: "same-origin", cache: "no-store" });
+        if (!resp.ok || cancelled) return;
+        const data = await resp.json();
+        const matches: TennisMatch[] = Array.isArray(data?.matches) ? data.matches : [];
+        const best = matches
+          .filter((m) => m.locked === false && !!m.best_selection && typeof m.edge === "number" && (m.edge as number) > 0 && m.confidence_score != null)
+          .sort((a, b) => (b.edge as number) - (a.edge as number))[0];
+        if (best && !cancelled) { setAnatomyMatch(best); setAnatomyIsLive(true); }
+      } catch { /* fail-soft: resta la pick rappresentativa */ }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -740,23 +796,19 @@ export default function LandingPage() {
         </div>
       </div></section>
 
-      {/* ── Anatomy of a reading: scheda illustrativa (label "example", coerente col
-           pattern FTC del terminale) + note esplicative. ── */}
+      {/* ── Anatomy of a reading: la scheda è il COMPONENTE BOARD REALE
+           (TennisMatchCard), reso 1:1 col prodotto (unlocked/full: pick, prob, edge,
+           confidenza, "Perché"/Deep Analysis). Alimentato da un match reale di
+           /api/tennis quando disponibile, altrimenti una pick rappresentativa onesta.
+           Le note attorno spiegano le parti della scheda. ── */}
       <section className="v-sec"><div className="v-wrap">
         <div className="v-sec-head"><div className="v-kick q">{v.anEyebrow}</div><h2>{v.anHead}</h2><p>{v.anSub}</p></div>
         <div className="v-anat">
-          <div className="v-pcard">
-            <span className="v-ex-flag">{v.anExample}</span>
-            <div className="top"><span>{v.anTop}</span><span className="pick"><span className="v-pulse" />{v.anPick}</span></div>
-            <h3>{v.anTitle}</h3>
-            <div className="sub">{v.anPrice}</div>
-            <div className="v-probbar"><div className="a" style={{ flex: "0 0 71%" }} /><div style={{ flex: 1 }} /></div>
-            <div className="v-problabels"><span className="l">Sinner 71%</span><span className="r">Djokovic 29%</span></div>
-            <div className="stat"><span className="k">{v.anNotes[1].lab}</span><span className="v">71%</span></div>
-            <div className="stat"><span className="k">{v.anNotes[2].lab}</span><span className="v" style={{ color: "var(--v-muted)" }}>64%</span></div>
-            <div className="stat"><span className="k">{v.anNotes[3].lab}</span><span className="v g">+7.1%</span></div>
-            <div className="stat"><span className="k">Confidence</span><span className="v"><span className="v-pips"><i className="on" /><i className="on" /><i className="on" /><i className="on" /><i /></span></span></div>
-            <div className="deep"><span>{v.anDeep}</span><b>open ▾</b></div>
+          <div className="v-anat-card">
+            <TennisMatchCard m={anatomyMatch} isPremium />
+            <p className="v-anat-cap">
+              {anatomyIsLive ? v.anCapLive : v.anCapRepr}
+            </p>
           </div>
           <div className="v-notes">
             {v.anNotes.map((n) => (

@@ -9092,26 +9092,11 @@ button:disabled {
 .hv3 .v-notes .lab{font-family:var(--v-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--v-coral);font-weight:700}
 .hv3 .v-notes .d{font-size:14.5px;color:var(--v-muted);line-height:1.5} .hv3 .v-notes .d b{color:var(--v-text);font-weight:700}
 @media(max-width:520px){.hv3 .v-notes .row{grid-template-columns:1fr;gap:6px}}
-.hv3 .v-pcard{background:linear-gradient(180deg,var(--v-panel3),var(--v-panel));border:1px solid var(--v-line);padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative}
-.hv3 .v-pcard .top{display:flex;align-items:center;justify-content:space-between;font-family:var(--v-mono);font-size:10.5px;letter-spacing:.12em;color:var(--v-muted2)}
-.hv3 .v-pcard .pick{color:var(--v-coral);display:inline-flex;align-items:center;gap:7px}
-.hv3 .v-pcard h3{font-size:24px;margin:16px 0 3px}
-.hv3 .v-pcard .sub{font-family:var(--v-mono);font-size:11px;color:var(--v-muted);letter-spacing:.03em}
-.hv3 .v-probbar{display:flex;height:8px;overflow:hidden;margin:20px 0 8px;background:#232a36}
-.hv3 .v-probbar .a{background:linear-gradient(90deg,var(--v-coral2),var(--v-coral))}
-.hv3 .v-problabels{display:flex;justify-content:space-between;font-family:var(--v-mono);font-size:11px}
-.hv3 .v-problabels .l{color:var(--v-text);font-weight:700} .hv3 .v-problabels .r{color:var(--v-muted)}
-.hv3 .v-pcard .stat{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--v-line);font-size:13px}
-.hv3 .v-pcard .stat:first-of-type{margin-top:18px}
-.hv3 .v-pcard .stat .k{color:var(--v-muted);font-family:var(--v-mono);font-size:11px;letter-spacing:.04em}
-.hv3 .v-pcard .stat .v{font-family:var(--v-mono);font-weight:700;font-variant-numeric:tabular-nums}
-.hv3 .v-pcard .stat .v.g{color:var(--v-coral)}
-.hv3 .v-pips{display:inline-flex;gap:3px;vertical-align:middle}
-.hv3 .v-pips i{width:7px;height:7px;background:#2a3340;display:inline-block}
-.hv3 .v-pips i.on{background:var(--v-coral)}
-.hv3 .v-pcard .deep{margin-top:16px;padding-top:14px;border-top:1px solid var(--v-line);font-family:var(--v-mono);font-size:11px;color:var(--v-muted);letter-spacing:.03em;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.hv3 .v-pcard .deep b{color:var(--v-coral);font-weight:700;flex:none}
-.hv3 .v-ex-flag{position:absolute;top:12px;right:12px;font-family:var(--v-mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--v-muted2);border:1px solid var(--v-line2);padding:2px 6px}
+/* #HOME-V3 Anatomy: contenitore del COMPONENTE BOARD REALE (TennisMatchCard).
+   La scheda porta i suoi stili globali (.card/.pred/.why); qui solo il wrap. */
+.hv3 .v-anat-card{max-width:420px;width:100%}
+.hv3 .v-anat-card-skel{min-height:360px;max-width:420px;width:100%;border:1px solid var(--v-line);background:var(--v-panel);border-radius:14px}
+.hv3 .v-anat-cap{margin:12px 2px 0;font-family:var(--v-mono);font-size:10.5px;letter-spacing:.05em;color:var(--v-muted2);line-height:1.5}
 
 /* ── Proof (real /api/v2/history) ── */
 .hv3 .v-proof-top{display:grid;grid-template-columns:auto 1fr;gap:clamp(28px,5vw,56px);align-items:center;margin-bottom:clamp(30px,4vw,46px)}
@@ -9189,9 +9174,6 @@ button:disabled {
 }
 /* Elementi con hex letterali (non-token) → override esplicito in light */
 :root[data-theme="light"] .hv3 .v-scan{background:linear-gradient(180deg,#FFFFFF,#FBFCFD);box-shadow:0 20px 50px rgba(15,23,42,.10),inset 0 1px 0 rgba(255,255,255,.6)}
-:root[data-theme="light"] .hv3 .v-pcard{box-shadow:0 18px 44px rgba(15,23,42,.10)}
-:root[data-theme="light"] .hv3 .v-probbar{background:#E3E6EB}
-:root[data-theme="light"] .hv3 .v-pips i{background:#D2D7DE}
 
 /* ── MOBILE refinements (≤640 smartphone · ≤480 stretti) ── */
 .hv3{overflow-x:clip} /* nessuno scroll orizzontale del body */

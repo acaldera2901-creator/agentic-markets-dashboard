@@ -1715,7 +1715,7 @@ type AccountSection = "account" | "piani";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
 
-interface TennisMatch {
+export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy della home
   id: string;
   player1: string;
   player2: string;
@@ -5429,7 +5429,8 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 };
 
 
-function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+// #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
