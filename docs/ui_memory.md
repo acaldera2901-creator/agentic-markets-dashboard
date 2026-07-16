@@ -7,7 +7,11 @@ Aggiornare a fine di ogni sessione UI significativa.
 
 ## Design system (scelte consolidate)
 
-_(vuoto — da popolare alla prima review: palette, typography, spacing, dark mode)_
+- **Home v3 "Live Terminal + Proof Spine"** (#HOME-V3, 2026-07, branch `feat/home-v3-redesign`): redesign editoriale della landing `/` approvato da Andrea (mockup v3). Impianto dark, verde canonico **#23A559** primario/semantico, cobalto **#3b82f6** SOLO azioni secondarie. Font **Hanken Grotesk** (display) + **JetBrains Mono** (dati/label), già via `next/font` in `app/layout.tsx` (self-hosted a build).
+- **Set tasti unificato squadrato**: `.v-btn` (radius **0**, mono, uppercase, ls .05em) in 3 ruoli — `--primary` (verde pieno) · `--secondary` (cobalto outline) · `--utility` (neutro→hover verde). Anche i legacy nav (`.lp-nav-link/.lp-nav-cta`) squadrati via override scoped.
+- **Scoping monolite**: tutto il redesign vive sotto il root `.hv3` in `app/globals.css` (blocco `#HOME-V3`), classi prefissate `v-*`, token locali `--v-*`, keyframes `hv3-*`. Regola anti-collisione: nel monolite (~9k righe globals) MAI riusare nomi generici (`.btn/.hero/.tier/.lp-pill` già esistono) — namespare sempre.
+
+_(resto da popolare alle prossime review: spacing scale, light-mode del v3)_
 
 ## Pattern approvati da Andrea
 

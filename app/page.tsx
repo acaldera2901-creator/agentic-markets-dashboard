@@ -18,6 +18,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
 import { writeRefCode } from "@/lib/referral-code";
+import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan"; // #HOME-V3: prezzi reali (no fabbricazione)
 
 type Lang = "it" | "en" | "es" | "fr" | "ru";
 const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
@@ -341,6 +342,102 @@ const SCAN_EXAMPLE_ROWS: ScanRow[] = [
   { match: "Bayern–Dortmund", glyph: "ball", model: 58, market: 54, edge: 4.1 },
 ];
 
+// ── #HOME-V3 copy ("Live Terminal + Proof Spine") ───────────────────────────
+// Copy NUOVO delle sezioni editoriali v3. Le sezioni hero + how-it-works riusano
+// la COPY esistente (waEyebrow/waHead*/waBody/hw*), già tradotta e FTC-safe.
+// EN + IT completi; es/fr/ru ricadono su EN (localizzazione = follow-up).
+type V3Copy = {
+  ctaTerminal: string; ctaTrack: string; ctaBrowse: string;
+  chipLogged: string; chipClv: string; chipCal: string;
+  anEyebrow: string; anHead: string; anSub: string;
+  anTop: string; anPick: string; anTitle: string; anPrice: string; anDeep: string; anExample: string;
+  anNotes: { lab: string; body: string; strong: string }[];
+  prEyebrow: string; prHead: string; prBadge: string;
+  prMeta: (n: number) => string; prMetaQual: string; prWall: string; prQuote: string; prQuoteSub: string;
+  prColMatch: string; prColRes: string;
+  suEyebrow: string; suHead: string; suSub: string;
+  suItems: { pk: string; pn: string; p: string; ps: string; psB: string }[];
+  pcEyebrow: string; pcHead: string;
+  pcFree: string; pcBase: string; pcPro: string; pcBest: string; pcMo: string;
+  pcFreeList: string[]; pcBaseList: string[]; pcProList: string[];
+  fnHead1: string; fnHeadG: string; fnBody: string;
+};
+const V3_EN: V3Copy = {
+  ctaTerminal: "Open the terminal", ctaTrack: "See the track record", ctaBrowse: "Browse the track record",
+  chipLogged: "Logged before kick-off", chipClv: "CLV verified", chipCal: "Calibrated, not hyped",
+  anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped.",
+  anTop: "TENNIS · EXAMPLE FORMAT", anPick: "PICK", anTitle: "Sinner to beat Djokovic", anPrice: "illustrative price 1.90 · format only",
+  anDeep: "Deep Analysis — serve 84% · form 4–1 · grass +Elo · H2H 2–1", anExample: "example",
+  anNotes: [
+    { lab: "Pick", strong: "The call, stated plainly.", body: "A single side — or “no clear favourite” when the model is below its floor. We never force one." },
+    { lab: "Probability", strong: "Calibrated, not inflated.", body: "71% means the model expects it to land close to 71 times in 100 over the long run." },
+    { lab: "Market", strong: "The price, made comparable.", body: "We convert the book’s odds to an implied probability, so model and market sit side by side." },
+    { lab: "Edge", strong: "The gap, quantified.", body: "Where the model sees more value than the price implies — never a promise of profit." },
+    { lab: "Deep Analysis", strong: "The “why”, in the open.", body: "Form, xG, injuries, Elo, serve/return, H2H, surface — reasoning, not a black box." },
+  ],
+  prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "CLV VERIFIED · LOGGED PRE-KICK-OFF",
+  prMeta: (n) => `${n} settled picks, each time-stamped before the whistle. This is the settled hit-rate — past performance, not a forecast. Nothing edited after the fact.`,
+  prMetaQual: "Every pick is time-stamped before the whistle and settled on the public record — past performance, not a forecast. Nothing edited after the fact.",
+  prWall: "SETTLED PICKS", prColMatch: "MATCH", prColRes: "RESULT",
+  prQuote: "Below our confidence floor we publish “no clear favourite” rather than manufacture a pick.",
+  prQuoteSub: " Calibrated, never hyped — the difference between a probability engine and a tipster.",
+  suEyebrow: "The suite", suHead: "Four ways to read the board.", suSub: "One engine, surfaced the way you actually work — from a single value bet to the whole week.",
+  suItems: [
+    { pk: "Best Bets · +EV", pn: "The value feed", p: "Every fixture where the model sees value versus the price, ranked by edge and confidence. Filter by sport and market.", ps: "refreshed live · ", psB: "+EV only" },
+    { pk: "Weekly Pick", pn: "The house multi", p: "One curated accumulator a week, built by the model and frozen the moment it’s published — you see the same slip we do.", ps: "frozen at publish · ", psB: "fully logged" },
+    { pk: "Match Builder", pn: "Build your own read", p: "Combine markets across a fixture and watch the blended probability and edge recompute as you add legs.", ps: "live probability · ", psB: "per leg" },
+    { pk: "Live · In-play", pn: "The board, moving", p: "Probabilities that update through the match as the state changes — the same reading, in real time.", ps: "in-play · ", psB: "updating" },
+  ],
+  pcEyebrow: "Access", pcHead: "Start free. Read deeper when you’re ready.",
+  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL ACCESS", pcMo: " / mo",
+  pcFreeList: ["One pick per sport, per week", "Public track record", "Preview of the edge scanner"],
+  pcBaseList: ["All Best Bets · +EV feed", "Weekly Pick", "Deep Analysis on every card", "Full settled history"],
+  pcProList: ["Everything in Base", "Live · in-play readings", "Match Builder", "Priority scanner & crypto billing"],
+  fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
+};
+const V3_IT: V3Copy = {
+  ctaTerminal: "Apri il terminale", ctaTrack: "Vedi il track record", ctaBrowse: "Sfoglia il track record",
+  chipLogged: "Registrata prima del fischio", chipClv: "CLV verificato", chipCal: "Calibrata, mai gonfiata",
+  anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype.",
+  anTop: "TENNIS · FORMATO ESEMPIO", anPick: "PICK", anTitle: "Sinner batte Djokovic", anPrice: "quota illustrativa 1.90 · solo formato",
+  anDeep: "Deep Analysis — servizio 84% · forma 4–1 · erba +Elo · H2H 2–1", anExample: "esempio",
+  anNotes: [
+    { lab: "Pick", strong: "La scelta, detta chiara.", body: "Un solo lato — o “nessun favorito chiaro” quando il modello è sotto la soglia. Non la forziamo mai." },
+    { lab: "Probabilità", strong: "Calibrata, non gonfiata.", body: "71% significa che il modello se l’aspetta vicino a 71 volte su 100 nel lungo periodo." },
+    { lab: "Mercato", strong: "La quota, resa comparabile.", body: "Convertiamo la quota del book in probabilità implicita, così modello e mercato stanno affiancati." },
+    { lab: "Edge", strong: "Lo scarto, quantificato.", body: "Dove il modello vede più valore di quanto implichi la quota — mai una promessa di profitto." },
+    { lab: "Deep Analysis", strong: "Il “perché”, in chiaro.", body: "Forma, xG, infortuni, Elo, servizio/risposta, H2H, superficie — ragionamento, non scatola nera." },
+  ],
+  prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "CLV VERIFICATO · REGISTRATA PRIMA DEL FISCHIO",
+  prMeta: (n) => `${n} pick concluse, ciascuna con timestamp prima del fischio. Questo è l’hit-rate concluso — risultati passati, non una previsione. Nulla modificato a posteriori.`,
+  prMetaQual: "Ogni pick ha un timestamp prima del fischio ed è conclusa sul registro pubblico — risultati passati, non una previsione. Nulla modificato a posteriori.",
+  prWall: "PICK CONCLUSE", prColMatch: "MATCH", prColRes: "ESITO",
+  prQuote: "Sotto la soglia di confidenza pubblichiamo “nessun favorito chiaro” invece di fabbricare una pick.",
+  prQuoteSub: " Calibrata, mai gonfiata — la differenza tra un motore di probabilità e un tipster.",
+  suEyebrow: "La suite", suHead: "Quattro modi di leggere il board.", suSub: "Un motore, presentato come lavori davvero — dalla singola value bet all’intera settimana.",
+  suItems: [
+    { pk: "Best Bets · +EV", pn: "Il feed del valore", p: "Ogni partita dove il modello vede valore rispetto alla quota, ordinata per edge e confidenza. Filtra per sport e mercato.", ps: "aggiornato live · ", psB: "solo +EV" },
+    { pk: "Weekly Pick", pn: "La multipla della casa", p: "Una multipla curata a settimana, costruita dal modello e congelata al momento della pubblicazione — vedi la stessa schedina che vediamo noi.", ps: "congelata alla pubblicazione · ", psB: "tutto registrato" },
+    { pk: "Match Builder", pn: "Costruisci la tua lettura", p: "Combina mercati su una partita e guarda probabilità ed edge combinati ricalcolarsi mentre aggiungi selezioni.", ps: "probabilità live · ", psB: "per selezione" },
+    { pk: "Live · In-play", pn: "Il board, in movimento", p: "Probabilità che si aggiornano durante la partita al cambiare dello stato — la stessa lettura, in tempo reale.", ps: "in-play · ", psB: "in aggiornamento" },
+  ],
+  pcEyebrow: "Accesso", pcHead: "Inizia gratis. Leggi più a fondo quando vuoi.",
+  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "ACCESSO COMPLETO", pcMo: " / mese",
+  pcFreeList: ["Una pick per sport, a settimana", "Track record pubblico", "Anteprima dell’edge scanner"],
+  pcBaseList: ["Tutto il feed Best Bets · +EV", "Weekly Pick", "Deep Analysis su ogni scheda", "Storico concluso completo"],
+  pcProList: ["Tutto ciò che c’è in Base", "Letture live · in-play", "Match Builder", "Scanner prioritario & pagamento crypto"],
+  fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
+};
+const V3: Record<Lang, V3Copy> = { en: V3_EN, it: V3_IT, es: V3_EN, fr: V3_EN, ru: V3_EN };
+
+// #HOME-V3 proof: riga reale del track record (fetch /api/v2/history). Mai numeri finti.
+type ProofRow = { name: string; comp: string; result: "won" | "lost" };
+type HistApiRow = {
+  home_team?: string | null; away_team?: string | null; event_name?: string | null;
+  player_one?: string | null; player_two?: string | null;
+  competition?: string | null; sport?: string | null; result?: string | null;
+};
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -355,6 +452,11 @@ export default function LandingPage() {
   // numeri finti spacciati per reali). SSR-safe: parte null, popola al mount.
   const [scanLive, setScanLive] = useState<ScanRow | null>(null);
   const [scanCounts, setScanCounts] = useState<{ events: number; withEdge: number } | null>(null);
+  // #HOME-V3 proof: hit-rate REALE + ultime pick concluse da /api/v2/history.
+  // null finché non popolato/fallito → sezione mostra il testo qualitativo (nessun
+  // numero inventato). win_rate è già la stringa "64.0%"|null calcolata server-side.
+  const [proof, setProof] = useState<{ winRate: string; settled: number } | null>(null);
+  const [proofRows, setProofRows] = useState<ProofRow[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -453,7 +555,42 @@ export default function LandingPage() {
     return () => { cancelled = true; };
   }, []);
 
+  // #HOME-V3 proof: popola bignum + wall con dati REALI del track record. Fail-soft:
+  // errore/off-season/nessuna pick conclusa → proof=null → testo qualitativo, niente
+  // numero. Mostra solo esiti aggregati (won/lost) + nome evento, mai la pick masked.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch("/api/v2/history?limit=12", { credentials: "same-origin", cache: "no-store" });
+        if (!resp.ok || cancelled) return;
+        const data = await resp.json();
+        const stats = data?.stats ?? {};
+        const rows: HistApiRow[] = Array.isArray(data?.history) ? data.history : [];
+        const settledRows: ProofRow[] = rows
+          .filter((r) => r.result === "won" || r.result === "lost")
+          .map((r) => {
+            const name = r.home_team && r.away_team
+              ? `${r.home_team}–${r.away_team}`
+              : (r.event_name || (r.player_one && r.player_two ? `${r.player_one}–${r.player_two}` : "")).trim();
+            return { name, comp: (r.competition || r.sport || "").trim(), result: r.result as "won" | "lost" };
+          })
+          .filter((r) => r.name.length > 0)
+          .slice(0, 6);
+        if (cancelled) return;
+        const won = typeof stats.won === "number" ? stats.won : 0;
+        const lost = typeof stats.lost === "number" ? stats.lost : 0;
+        if (typeof stats.win_rate === "string" && won + lost > 0) {
+          setProof({ winRate: stats.win_rate, settled: won + lost });
+          setProofRows(settledRows);
+        }
+      } catch { /* fail-soft: sezione proof qualitativa */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const t = COPY[lang];
+  const v = V3[lang];
 
   const selectLang = (next: Lang) => {
     setLang(next);
@@ -477,7 +614,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="lp" data-mounted={mounted ? "1" : "0"}>
+    <div className="lp hv3" data-mounted={mounted ? "1" : "0"}>
       <SportGlyphSprite />
 
       {/* ── Topnav ─────────────────────────────────────────────── */}
@@ -520,207 +657,191 @@ export default function LandingPage() {
            col banner. Le vecchie classi .lp-hero/.lp-hero-img/.lp-hero-bg non sono
            più referenziate da qui → orfane (vedi report); lasciate nel CSS. ── */}
       <LandingCarousel lang={lang} />
-      <nav className="lp-hero-sports" aria-label="Sports">
-        <a href="/app?tab=bets&sport=all" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-allsports.png" alt="" /></span>
-          <b className="lp-sport-lab">{t.spAllSports}</b>
-          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </a>
-        <a href="/app?tab=bets&sport=football" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-football.png" alt="" /></span>
-          <b className="lp-sport-lab">{t.spFootball}</b>
-          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </a>
-        <a href="/app?tab=bets&sport=tennis" className="lp-sport">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-tennis.png" alt="" /></span>
-          <b className="lp-sport-lab">{t.spTennis}</b>
-          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </a>
-        {/* #WC-HOME-LINK-0702 (Andrea): il chip World Cup porta all'hub /world-cup
-            (ora first-class: card con quote + scheda completa). */}
-        <Link href="/world-cup" className="lp-sport lp-sport-feat">
-          <span className="lp-sport-well"><img className="lp-sport-img" src="/banners/sport-worldcup.png" alt="" /></span>
-          <b className="lp-sport-lab">{t.spWorldCup}</b>
-          <span className="lp-sport-live"><i className="lp-sport-dot" />LIVE</span>
-          <svg className="lp-sport-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </Link>
-      </nav>
 
+      {/* ═══ HOME REDESIGN v3 (#HOME-V3) — "Live Terminal + Proof Spine" ═══
+           Il carousel banner in cima è TENUTO com'è (lock Andrea). Da qui sotto è
+           il redesign editoriale v3 approvato (mockup v3). Scoped .hv3. Verde #23A559
+           primario, cobalto #3b82f6 solo secondario. Tasti squadrati. Asset reali. */}
 
-      {/* ── Edge Scanner (#LANDING-EDGE-SCANNER-1) — split asimmetrico: a sinistra
-           il punto di vista (motore di probabilità, non bookmaker) + 3 KPI-prova +
-           CTA; a destra un terminale quant che "scansiona" le partite e fa emergere
-           l'edge. Riga 1 = dato REALE del giorno (fetch /api/predictions, match con
-           edge più alto); le altre illustrano il formato (FTC: mai numeri finti
-           spacciati per reali). Fallback off-season → terminale tutto-esempio. ── */}
-      <section className="lp-scan">
-        <div className="lp-scan-copy">
-          <p className="lp-eyebrow">{t.waEyebrow}</p>
-          <h2 className="lp-what-head">
-            {t.waHead1}<br /><span className="lp-what-head-2">{t.waHead2}</span>
-          </h2>
-          <p className="lp-what-body">{t.waBody}</p>
-          <div className="lp-kpis">
-            <div className="lp-kpi">
-              <b className="lp-kpi-val">{t.waKpi1Val}</b>
-              <span className="lp-kpi-lab">{t.waKpi1Lab}</span>
-            </div>
-            <div className="lp-kpi">
-              <b className="lp-kpi-val accent">100<span className="lp-kpi-unit">%</span></b>
-              <span className="lp-kpi-lab">{t.waKpi2Lab}</span>
-            </div>
-            <div className="lp-kpi">
-              <b className="lp-kpi-val">{t.waKpi3Val}</b>
-              <span className="lp-kpi-lab">{t.waKpi3Lab}</span>
-            </div>
+      {/* ── Edge tape (marquee decorativo, aria-hidden) — dati esempio (stesso set
+           FTC-safe del terminale), mai spacciati per claim reali. ── */}
+      <div className="v-tape" aria-hidden="true">
+        <div className="v-tape-track">
+          {[...SCAN_EXAMPLE_ROWS, ...SCAN_EXAMPLE_ROWS].map((r, i) => (
+            <span key={i}><em>{r.match}</em> · model {r.model} · mkt {r.market} · <span className="up">+{r.edge.toFixed(1)}</span></span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Hero: punto di vista + terminale Edge Scanner (riga 1 = dato REALE del
+           giorno da /api/predictions; le altre illustrano il formato, label "example").
+           #LANDING-EDGE-SCANNER-1 preservato — solo restyle in v3. ── */}
+      <section className="v-hero"><div className="v-wrap v-grid">
+        <div>
+          <div className="v-kick">{t.waEyebrow}</div>
+          <h1>{t.waHead1}<br /><span className="g">{t.waHead2}</span></h1>
+          <p className="lede">{t.waBody}</p>
+          <div className="v-actions">
+            <a href="/app?tab=bets" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
+            <a href="/app?tab=history" className="v-btn v-btn--secondary">{v.ctaTrack}</a>
           </div>
-          <div className="lp-scan-cta-row">
-            <a href="/app?tab=account" className="lp-what-cta">{t.waCta}<span aria-hidden="true">→</span></a>
-            <span className="lp-scan-cta-sub">{t.waCtaSub}</span>
+          <div className="v-trust">
+            <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipLogged}</span>
+            <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipClv}</span>
+            <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipCal}</span>
           </div>
         </div>
-
-        {/* terminale edge_scanner: header + beam di scansione + righe + footer */}
-        <figure className="lp-term" aria-label="Edge Scanner">
-          <figcaption className="lp-term-top">
-            <span className="lp-term-dot" aria-hidden="true" />
-            <span className="lp-term-dot" aria-hidden="true" />
-            <span className="lp-term-dot" aria-hidden="true" />
-            <span className="lp-term-ttl">edge_scanner.{scanLive ? t.waScanLive : t.waScanExample}</span>
-            <span className="lp-term-scan">{t.waScanning}</span>
+        <figure className="v-scan" aria-label="Edge Scanner">
+          <figcaption className="v-scan-head">
+            <span className="live"><span className="v-pulse" />EDGE SCANNER</span>
+            <span>· {scanLive ? t.waScanLive.toUpperCase() : t.waScanExample.toUpperCase()}</span>
+            <span className="tag">{scanLive && scanCounts ? `SCANNING ${scanCounts.events} FIXTURES` : t.waScanning.toUpperCase()}</span>
           </figcaption>
-          <span className="lp-term-beam" aria-hidden="true" />
-          <div className="lp-term-head" role="row">
-            <span>{t.waColMatch}</span>
-            <span>{t.waReadModel}</span>
-            <span>{t.waReadMarket}</span>
-            <span>{t.waReadEdge}</span>
-          </div>
+          <div className="v-scan-cols"><span>{t.waColMatch}</span><span>Mdl</span><span>Mkt</span><span>{t.waReadEdge}</span><span /></div>
           {scanLive ? (
-            <div className="lp-term-row is-real" role="row">
-              <span className="lp-term-fx">
+            <div className="v-scan-row">
+              <span className="fx">
                 <SportIcon sport={scanLive.glyph === "trophy" ? "worldcup" : scanLive.glyph === "tball" ? "tennis" : "football"} size={16} variant="sm" />
-                <span className="lp-term-name">{scanLive.match}</span>
+                <span className="nm">{scanLive.match}<small>{scanLive.glyph === "trophy" ? "WORLD CUP" : scanLive.glyph === "tball" ? "TENNIS" : "FOOTBALL"}</small></span>
               </span>
-              <span className="lp-term-c">{scanLive.model}%</span>
-              <span className="lp-term-c">{scanLive.market}%</span>
-              <span className="lp-term-edge">+{scanLive.edge.toFixed(1)}</span>
+              <span className="md">{scanLive.model}</span>
+              <span className="mk">{scanLive.market}</span>
+              <span className="ed">+{scanLive.edge.toFixed(1)}</span>
+              <span className="go">›</span>
             </div>
           ) : null}
-          {SCAN_EXAMPLE_ROWS.map((r, i) => (
-            <div className="lp-term-row" role="row" key={r.match} style={{ ["--d" as string]: `${(i + (scanLive ? 1 : 0)) * 0.09 + 0.05}s` }}>
-              <span className="lp-term-fx">
+          {SCAN_EXAMPLE_ROWS.map((r) => (
+            <div className="v-scan-row" key={r.match}>
+              <span className="fx">
                 <SportIcon sport={r.glyph === "trophy" ? "worldcup" : r.glyph === "tball" ? "tennis" : "football"} size={16} variant="sm" />
-                <span className="lp-term-name">{r.match}</span>
-                <span className="lp-term-tag">{t.waTagExample}</span>
+                <span className="nm">{r.match}<small>{r.glyph === "trophy" ? "WORLD CUP" : r.glyph === "tball" ? "TENNIS" : "FOOTBALL"}</small></span>
+                <span className="tag-ex">{t.waTagExample}</span>
               </span>
-              <span className="lp-term-c">{r.model}%</span>
-              <span className="lp-term-c">{r.market}%</span>
-              <span className="lp-term-edge">+{r.edge.toFixed(1)}</span>
+              <span className="md">{r.model}</span>
+              <span className="mk">{r.market}</span>
+              <span className="ed">+{r.edge.toFixed(1)}</span>
+              <span className="go">›</span>
             </div>
           ))}
-          <div className="lp-term-foot">
-            <span className="lp-term-foot-n">
-              {scanLive && scanCounts ? t.waFootEvents(scanCounts.events, scanCounts.withEdge) : t.waTermAllExample}
-            </span>
-            <span className="lp-term-foot-note">{scanLive ? t.waFootReal : t.waFootExample}</span>
+          <div className="v-scan-foot">
+            <b>{scanLive && scanCounts ? t.waFootEvents(scanCounts.events, scanCounts.withEdge) + " · " : ""}Edge = model probability − market-implied probability. Below our confidence floor we show</b> <span style={{ color: "var(--v-muted)" }}>&ldquo;no clear favourite&rdquo;</span> <b>instead of forcing a pick.</b>
           </div>
         </figure>
-      </section>
+      </div></section>
 
-      {/* ── How it works (#HOME-HOWITWORKS-1) — flusso connesso a 4 step
-           (Signal → Explain → Decide → Track), non 4 card-icona identiche.
-           Step numerati su una riga di connessione, glifi brand reali. ── */}
-      <section className="lp-how">
-        <header className="lp-how-head">
-          <p className="lp-eyebrow">{t.hwEyebrow}</p>
-          <h2 className="lp-how-title">{t.hwHead}</h2>
-        </header>
-        <ol className="lp-steps">
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">01</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-search" /></svg></div>
-            <h3 className="lp-step-title">{t.hwS1}</h3>
-            <p className="lp-step-desc">{t.hwS1Desc}</p>
-          </li>
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">02</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-bolt" /></svg></div>
-            <h3 className="lp-step-title">{t.hwS2}</h3>
-            <p className="lp-step-desc">{t.hwS2Desc}</p>
-          </li>
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">03</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-pick" /></svg></div>
-            <h3 className="lp-step-title">{t.hwS3}</h3>
-            <p className="lp-step-desc">{t.hwS3Desc}</p>
-          </li>
-          <li className="lp-step">
-            <div className="lp-step-mark"><span className="lp-step-n">04</span><svg className="lp-step-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-history" /></svg></div>
-            <h3 className="lp-step-title">{t.hwS4}</h3>
-            <p className="lp-step-desc">{t.hwS4Desc}</p>
-          </li>
-        </ol>
-      </section>
+      {/* ── How it works: banda editoriale a 4 tempi (NON scalette numerate) ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{t.hwEyebrow}</div><h2>{t.hwHead}</h2></div>
+        <div className="v-flow">
+          <div className="fs"><h3>{t.hwS1}</h3><p>{t.hwS1Desc}</p></div>
+          <div className="fs"><h3>{t.hwS2}</h3><p>{t.hwS2Desc}</p></div>
+          <div className="fs"><h3>{t.hwS3}</h3><p>{t.hwS3Desc}</p></div>
+          <div className="fs"><h3>{t.hwS4}</h3><p>{t.hwS4Desc}</p></div>
+        </div>
+      </div></section>
 
-      {/* ── Cards (#LANDING-PHOTO: sfondo foto sport + overlay coral, logica banner) ── */}
-      <section className="lp-cards">
-        {/* 1 — track record (prova reale, FTC) → tile DOMINANTE: è la nostra prova.
-             Span 2 righe a sinistra, titolo più grande, eyebrow + metrica reale. */}
-        <article className="lp-card lp-card-photo lp-card-hero">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-track.jpg)" }} />
-          <div className="lp-card-ov coral" />
-          <div className="lp-card-head"><BrandMark size={26} /><Wordmark /></div>
-          <div className="lp-card-body">
-            <p className="lp-card-eyebrow">{t.cardTrackTag}</p>
-            <p className="lp-card-title">{t.cardTrack}</p>
-            <p className="lp-card-desc">{t.cardTrackDesc}</p>
+      {/* ── Anatomy of a reading: scheda illustrativa (label "example", coerente col
+           pattern FTC del terminale) + note esplicative. ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{v.anEyebrow}</div><h2>{v.anHead}</h2><p>{v.anSub}</p></div>
+        <div className="v-anat">
+          <div className="v-pcard">
+            <span className="v-ex-flag">{v.anExample}</span>
+            <div className="top"><span>{v.anTop}</span><span className="pick"><span className="v-pulse" />{v.anPick}</span></div>
+            <h3>{v.anTitle}</h3>
+            <div className="sub">{v.anPrice}</div>
+            <div className="v-probbar"><div className="a" style={{ flex: "0 0 71%" }} /><div style={{ flex: 1 }} /></div>
+            <div className="v-problabels"><span className="l">Sinner 71%</span><span className="r">Djokovic 29%</span></div>
+            <div className="stat"><span className="k">{v.anNotes[1].lab}</span><span className="v">71%</span></div>
+            <div className="stat"><span className="k">{v.anNotes[2].lab}</span><span className="v" style={{ color: "var(--v-muted)" }}>64%</span></div>
+            <div className="stat"><span className="k">{v.anNotes[3].lab}</span><span className="v g">+7.1%</span></div>
+            <div className="stat"><span className="k">Confidence</span><span className="v"><span className="v-pips"><i className="on" /><i className="on" /><i className="on" /><i className="on" /><i /></span></span></div>
+            <div className="deep"><span>{v.anDeep}</span><b>open ▾</b></div>
           </div>
-          <a href="/app?tab=history" className="lp-card-btn coral">{t.cardTrackBtn}</a>
-        </article>
-
-        {/* 2 — modello vs mercato (tile larga, riga 1) */}
-        <article className="lp-card lp-card-photo lp-card-wide">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-model.jpg)" }} />
-          <div className="lp-card-ov coral" />
-          <div className="lp-card-head"><BrandMark size={22} /><Wordmark /></div>
-          <div className="lp-card-body">
-            <p className="lp-card-title">{t.cardModel}</p>
-            <p className="lp-card-desc">{t.cardModelDesc}</p>
+          <div className="v-notes">
+            {v.anNotes.map((n) => (
+              <div className="row" key={n.lab}><span className="lab">{n.lab}</span><span className="d"><b>{n.strong}</b> {n.body}</span></div>
+            ))}
           </div>
-          <a href="/app?tab=bets" className="lp-card-btn coral">{t.cardModelBtn}</a>
-        </article>
+        </div>
+      </div></section>
 
-        {/* 3 — piani (tile compatta, riga 2 · trattamento più sobrio = gerarchia) */}
-        <article className="lp-card lp-card-photo lp-card-sm lp-card-quiet">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/card-plans.jpg)" }} />
-          <div className="lp-card-ov coral" />
-          <div className="lp-card-head"><BrandMark size={22} /><Wordmark /></div>
-          <div className="lp-card-body">
-            <p className="lp-card-title">{t.cardPlans}</p>
-            <p className="lp-card-desc">{t.cardPlansDesc}</p>
-          </div>
-          <a href="/app?tab=account" className="lp-card-btn cobalt-outline">{t.cardPlansBtn}</a>
-        </article>
-
-        {/* 4 — app (tile compatta, riga 2) */}
-        <article className="lp-card lp-card-app lp-card-photo lp-card-sm">
-          <div className="lp-card-bg" style={{ backgroundImage: "url(/banners/stadium-night.jpg)" }} />
-          <div className="lp-card-ov coral" />
-          <div className="lp-phone">
-            <div className="lp-phone-top"><BrandMark size={18} /><Wordmark /></div>
-            <div className="lp-phone-rows">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="lp-phone-row">
-                  <SportIcon sport={i % 2 ? "tennis" : "football"} size={15} variant="sm" />
-                  <span className="lp-phone-bar" /><b className="lp-phone-odd">{(1.6 + i * 0.4).toFixed(2)}</b>
-                </div>
-              ))}
+      {/* ── Proof: hit-rate + ultime pick concluse da dati REALI (/api/v2/history).
+           Fail-soft: se non disponibili → testo qualitativo, MAI un numero inventato. ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{v.prEyebrow}</div><h2>{v.prHead}</h2></div>
+        {proof ? (
+          <>
+            <div className="v-proof-top">
+              <div className="v-bignum">{proof.winRate}</div>
+              <div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMeta(proof.settled)}</p></div>
             </div>
-            <span className="lp-phone-cta">{t.cardApp}</span>
-          </div>
-          <span className="lp-soon">{t.appSoon}</span>
-        </article>
-      </section>
+            {proofRows.length > 0 ? (
+              <>
+                <div className="v-wall-head"><span>{v.prWall}</span></div>
+                {proofRows.map((r, i) => (
+                  <div className="v-wrow" key={i}>
+                    <span className="fx">{r.name}{r.comp ? <span className="sp">{r.comp}</span> : null}</span>
+                    <span className={`res ${r.result}`}>{r.result === "won" ? "WON" : "LOST"}</span>
+                  </div>
+                ))}
+              </>
+            ) : null}
+          </>
+        ) : (
+          <div className="v-proof-top"><div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMetaQual}</p></div></div>
+        )}
+        <blockquote className="v-quote">{v.prQuote}<span>{v.prQuoteSub}</span></blockquote>
+      </div></section>
 
-      {/* ── House billboard (#HOUSE-BANNERS-1) ─────────────────── */}
+      {/* ── Suite: 4 superfici di prodotto (feature reali, deep-link nel desk) ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{v.suEyebrow}</div><h2>{v.suHead}</h2><p>{v.suSub}</p></div>
+        <div className="v-suite">
+          {v.suItems.map((it, i) => (
+            <a className="v-prow" key={it.pk} href={["/app?tab=bets", "/weekly-pick", "/app?tab=builder", "/app?tab=bets"][i]}>
+              <div><div className="pk">{it.pk}</div><div className="pn">{it.pn}</div></div>
+              <p>{it.p}</p>
+              <div className="ps">{it.ps}<b>{it.psB}</b></div>
+            </a>
+          ))}
+        </div>
+      </div></section>
+
+      {/* ── Pricing: prezzi REALI da lib/commercial-plan.ts (display USD $).
+           ⚠️ Il mockup mostrava 19.90/49.90 — qui i valori LIVE 14.99/29.99 (flag PR). ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{v.pcEyebrow}</div><h2>{v.pcHead}</h2></div>
+        <div className="v-tiers">
+          <div className="v-tier">
+            <div className="name">{v.pcFree}</div><div className="price">$0</div>
+            <ul>{v.pcFreeList.map((li) => <li key={li}>{li}</li>)}</ul>
+            <button type="button" className="v-btn v-btn--utility" style={{ alignSelf: "flex-start" }} onClick={() => setAuthModal("create")}>{t.register}</button>
+          </div>
+          <div className="v-tier">
+            <div className="name">{v.pcBase}</div><div className="price">${PUBLIC_PAID_PLANS.base.amountUsdt}<small>{v.pcMo}</small></div>
+            <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
+            <a href="/app?tab=account" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</a>
+          </div>
+          <div className="v-tier pro">
+            <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${PUBLIC_PAID_PLANS.premium.amountUsdt}<small>{v.pcMo}</small></div>
+            <ul>{v.pcProList.map((li) => <li key={li}>{li}</li>)}</ul>
+            <a href="/app?tab=account" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</a>
+          </div>
+        </div>
+      </div></section>
+
+      {/* ── Final CTA ── */}
+      <section className="v-final"><div className="v-wrap">
+        <h2>{v.fnHead1}<span className="g">{v.fnHeadG}</span></h2>
+        <p>{v.fnBody}</p>
+        <div className="v-actions">
+          <a href="/app?tab=bets" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
+          <a href="/app?tab=history" className="v-btn v-btn--secondary">{v.ctaBrowse}</a>
+        </div>
+      </div></section>
+
+      {/* ── House billboard (#HOUSE-BANNERS-1) — creatività house reali, tenuto ── */}
       {(() => {
         const camp = pickCampaign("landing", "anon");
         return camp ? (
