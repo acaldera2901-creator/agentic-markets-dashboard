@@ -9379,11 +9379,16 @@ button:disabled {
   .hv3{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   .hv3 .v-sportnav-wrap{
     justify-content:flex-start;padding:9px 0 calc(9px + env(safe-area-inset-bottom,0px));
-    /* dock OPACO su mobile: maschera il contenuto sotto (niente sliver del CTA hero
-       che filtra), pattern bottom-bar nativo. Hairline + ombra soft = stacco pulito. */
+    /* dock OPACO su mobile: maschera il contenuto sotto, pattern bottom-bar nativo. */
     background:var(--v-bg);
     border-top:1px solid var(--v-line);
-    box-shadow:0 -8px 22px -6px rgba(0,0,0,.45);
+  }
+  /* scrim sfumato SOPRA il dock: dissolve qualsiasi contenuto appena sopra la barra
+     (es. il CTA verde full-width del hero a scroll≈0) → niente sliver. pointer-events
+     none (non blocca i tap). theme-aware via --v-bg. */
+  .hv3 .v-sportnav-wrap::before{
+    content:"";position:absolute;left:0;right:0;bottom:100%;height:26px;pointer-events:none;
+    background:linear-gradient(180deg,transparent 0%,var(--v-bg) 100%);
   }
   .hv3 .v-sportnav{width:100%;gap:9px;padding:2px 64px 2px 14px} /* pad-dx: clearance chat + spazio scroll */
   .hv3 .v-sportbtn{min-height:50px;padding:0 17px;font-size:12.5px;gap:9px}
