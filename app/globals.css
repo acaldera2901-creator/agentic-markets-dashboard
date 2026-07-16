@@ -9379,10 +9379,11 @@ button:disabled {
   .hv3{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   .hv3 .v-sportnav-wrap{
     justify-content:flex-start;padding:9px 0 calc(9px + env(safe-area-inset-bottom,0px));
-    background:linear-gradient(180deg,transparent 0%,var(--v-bg) 34%);
+    /* dock OPACO su mobile: maschera il contenuto sotto (niente sliver del CTA hero
+       che filtra), pattern bottom-bar nativo. Hairline + ombra soft = stacco pulito. */
+    background:var(--v-bg);
     border-top:1px solid var(--v-line);
-    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent 100%);
-            mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent 100%);
+    box-shadow:0 -8px 22px -6px rgba(0,0,0,.45);
   }
   .hv3 .v-sportnav{width:100%;gap:9px;padding:2px 64px 2px 14px} /* pad-dx: clearance chat + spazio scroll */
   .hv3 .v-sportbtn{min-height:50px;padding:0 17px;font-size:12.5px;gap:9px}
