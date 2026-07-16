@@ -3200,6 +3200,7 @@ function CheckoutModal({
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState("");
   // #GOLIVE-QW-A: the period toggle is only rendered with PayGate on. With PayGate
   // off the UI shows the monthly USDT price, so the ordered period must default to
@@ -3396,6 +3397,10 @@ function CheckoutModal({
 
   const payWithCard = async () => {
     setError("");
+    // #PAYGATE-REDIRECT-UX: il redirect alla pagina hosted PayGate ha una latenza
+    // percepibile → stato "reindirizzamento" così il click non sembra un freeze.
+    // On success la pagina viene sostituita (redirect), quindi lo stato resta true.
+    setRedirecting(true);
     try {
       const res = await fetch("/api/paygate/checkout", {
         method: "POST",
@@ -3405,14 +3410,16 @@ function CheckoutModal({
       if (!res.ok) {
         console.error("paygate checkout failed", res.status);
         setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
+        setRedirecting(false);
         return;
       }
       const { url } = (await res.json()) as { url?: string };
       if (url) { markPayPending(); window.location.href = url; }
-      else setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
+      else { setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova."); setRedirecting(false); }
     } catch (e) {
       console.error("paygate checkout error", e);
       setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
+      setRedirecting(false);
     }
   };
 
@@ -3565,9 +3572,11 @@ function CheckoutModal({
                 ? pick5(lang, { it: "Pagamento singolo, sblocca 30 giorni (rinnovo manuale).", en: "One-time payment, unlocks 30 days (manual renewal).", es: "Pago único, desbloquea 30 días (renovación manual).", fr: "Paiement unique, débloque 30 jours (renouvellement manuel).", ru: "Разовый платёж, 30 дней (ручное продление)." })
                 : pick5(lang, { it: "Pagamento singolo, sblocca 12 mesi: paghi 11 mensilità, 1 mese è gratis.", en: "One-time payment, unlocks 12 months: you pay 11 monthly instalments, 1 month is free.", es: "Pago único, desbloquea 12 meses: pagas 11 mensualidades, 1 mes es gratis.", fr: "Paiement unique, débloque 12 mois : vous payez 11 mensualités, 1 mois est offert.", ru: "Разовый платёж, 12 месяцев: вы платите за 11 месяцев, 1 месяц бесплатно." })}
             </p>
-            <button type="button" onClick={payWithCard} disabled={!withdrawalConsent}
-              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: withdrawalConsent ? "pointer" : "not-allowed", opacity: withdrawalConsent ? 1 : 0.5 }}>
-              {pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD
+            <button type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
+              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
+              {redirecting
+                ? pick5(lang, { it: "Reindirizzamento al pagamento sicuro…", en: "Redirecting to secure payment…", es: "Redirigiendo al pago seguro…", fr: "Redirection vers le paiement sécurisé…", ru: "Перенаправление на безопасную оплату…" })
+                : <>{pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD</>}
             </button>
           </div>
         )}
