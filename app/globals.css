@@ -9327,29 +9327,44 @@ button:disabled {
 /* ── end #SIGNUP-V3 ── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HOME v3 — SPORT QUICK-NAV (#HOME-V3-SPORTNAV · rev #SPORTNAV-SEP)
-   Quick-nav sport (ALL SPORTS · FOOTBALL · TENNIS · WORLD CUP · LIVE) come nella
-   home PRE-v3 (lp-hero-sports): tasti SEPARATI e distanziati (gap), ancorati sotto
-   il banner/carousel — NON più una barra unica con divisori. Ogni tasto è un tile
-   squadrato a sé (radius 0, mono uppercase, border proprio, hover verde). Icone
-   sport RASTER reali (/banners/*-sm.png); LIVE = pulse-dot di stato. Allineati
-   alla larghezza del banner (max 1180 = .lp-carousel-wrap) così "agganciano" il
-   fondo del banner. Su mobile i tile VANNO A CAPO (flex-wrap), mai overflow del
-   body. Token --v-* → auto dark/light. Namespace .v-sportnav* scoped sotto .hv3.
+   HOME v3 — SPORT QUICK-NAV (#HOME-V3-SPORTNAV · rev #SPORTNAV-FIXED)
+   Barra sport ANCORATA AL FONDO della pagina (position:fixed, sempre visibile
+   mentre scorri la home), come la home PRE-redesign, ma coi bottoni nello stile
+   v3: tile SEPARATI squadrati (radius 0, mono uppercase, border proprio, gap),
+   icone RASTER reali (/banners/*-sm.png), LIVE pulse-dot, deep-link invariati.
+   SOLO sulla home: .v-sportnav* è scoped sotto .hv3 (solo `/` monta .hv3) e il
+   JSX vive solo in app/page.tsx. Il wrap è pointer-events:none (le aree vuote non
+   bloccano footer/chat); i tile riattivano i click. Gradiente di fondo theme-aware
+   (--v-bg) per agganciare la barra al bordo pagina. Compensata da padding-bottom
+   su .hv3 → il footer non finisce mai sotto la barra. z-index 40 (< modal av 90;
+   < widget chat). Chat bottom-right: barra centrata su desktop (non arriva
+   nell'angolo dx) e su mobile lascia clearance a destra + scroll → niente collisione.
+   Mobile: riga unica con scroll orizzontale DENTRO la barra (mai overflow del body),
+   tap target ≥42px. Dark+light via --v-*.
    ═══════════════════════════════════════════════════════════════════════════ */
-.hv3 .v-sportnav-wrap{padding:clamp(10px,1.4vw,15px) 0 clamp(8px,1.4vw,14px)}
-.hv3 .v-sportnav{
-  display:flex;flex-wrap:wrap;gap:clamp(8px,1vw,12px);
-  max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,56px);
+.hv3{padding-bottom:clamp(78px,9vw,92px)} /* spazio per la barra fissa: footer mai coperto */
+.hv3 .v-sportnav-wrap{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;pointer-events:none;
+  display:flex;justify-content:center;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,transparent 0%,var(--v-bg) 88%);
 }
+.hv3 .v-sportnav{
+  display:flex;flex-wrap:nowrap;gap:clamp(8px,1vw,12px);
+  width:fit-content;max-width:100%;overflow-x:auto;
+  scrollbar-width:none;-ms-overflow-style:none;
+  pointer-events:auto;padding:2px; /* room per ombra/focus ring */
+}
+.hv3 .v-sportnav::-webkit-scrollbar{display:none}
 .hv3 .v-sportbtn{
-  display:inline-flex;align-items:center;gap:9px;padding:10px 17px;
+  display:inline-flex;align-items:center;gap:9px;flex:none;min-height:42px;padding:0 17px;
   border:1px solid var(--v-line2);background:var(--v-panel);border-radius:0;
   font-family:var(--v-mono);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   color:var(--v-muted);text-decoration:none;white-space:nowrap;cursor:pointer;
+  box-shadow:0 8px 26px -10px rgba(0,0,0,.5);
   transition:color .15s,border-color .15s,background .15s,box-shadow .15s,transform .1s;
 }
-.hv3 .v-sportbtn:hover{color:var(--v-text);border-color:var(--v-coral);background:var(--v-coral-dim);box-shadow:0 8px 24px -12px var(--v-glow)}
+.hv3 .v-sportbtn:hover{color:var(--v-text);border-color:var(--v-coral);background:var(--v-coral-dim);box-shadow:0 12px 32px -10px var(--v-glow)}
 .hv3 .v-sportbtn:active{transform:translateY(1px)}
 .hv3 .v-sportbtn:focus-visible{outline:2px solid var(--v-coral);outline-offset:2px}
 .hv3 .v-sportbtn-ic{width:20px;height:20px;object-fit:contain;flex:none;display:block}
@@ -9358,8 +9373,10 @@ button:disabled {
 .hv3 .v-sportbtn--live .dot{width:7px;height:7px;border-radius:50%;background:var(--v-coral);flex:none;animation:hv3-pulse 2s infinite}
 @media (prefers-reduced-motion:reduce){ .hv3 .v-sportbtn--live .dot{animation:none} }
 @media (max-width:640px){
-  .hv3 .v-sportnav{gap:8px;padding-left:clamp(12px,4vw,16px);padding-right:clamp(12px,4vw,16px)}
-  .hv3 .v-sportbtn{padding:9px 13px;font-size:11px;gap:7px}
+  .hv3{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .hv3 .v-sportnav-wrap{justify-content:flex-start;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+  .hv3 .v-sportnav{width:100%;padding-right:68px} /* clearance per il widget chat bottom-right + scroll */
+  .hv3 .v-sportbtn{padding:0 13px;font-size:11px;gap:7px}
   .hv3 .v-sportbtn-ic{width:18px;height:18px}
 }
 /* ── end #HOME-V3-SPORTNAV ── */
