@@ -8990,7 +8990,7 @@ button:disabled {
 .hv3 {
   --v-bg:#0b0c0e; --v-bg2:#0e1013; --v-panel:#131519; --v-panel2:#181b20; --v-panel3:#1e2229;
   --v-line:#21252c; --v-line2:#2c313a;
-  --v-text:#edeff2; --v-muted:#aeb4be; --v-muted2:#6e7682;
+  --v-text:#edeff2; --v-muted:#aeb4be; --v-muted2:#828a95; /* #V3-LABELS-AA: muted2 bumpato da #6e7682 (~4:1, sotto AA) a #828a95 → ≥4.5:1 su tutte le superfici dark, resta più tenue di --v-muted */
   --v-coral:#23a559; --v-coral2:#1b9148; --v-coral-ink:#fff;
   --v-glow:#23a55938; --v-coral-dim:#23a55921; --v-coral-b:#23a55957;
   --v-cobalt:#3b82f6; --v-cobalt2:#60a5fa; --v-cobalt-soft:#3b82f61f;
@@ -9170,7 +9170,7 @@ button:disabled {
 :root[data-theme="light"] .hv3{
   --v-bg:#F4F5F7; --v-bg2:#EEF0F3; --v-panel:#FFFFFF; --v-panel2:#FBFCFD; --v-panel3:#EEF0F3;
   --v-line:#E3E6EB; --v-line2:#D2D7DE;
-  --v-text:#14171C; --v-muted:#4A515B; --v-muted2:#79818D;
+  --v-text:#14171C; --v-muted:#4A515B; --v-muted2:#666E7B; /* #V3-LABELS-AA: muted2 bumpato da #79818D (~3.5:1, sotto AA) a #666E7B → ≥4.5:1 su tutte le superfici light */
   --v-coral:#15803D; --v-coral2:#1B9148; --v-coral-ink:#FFFFFF;
   --v-glow:rgba(35,165,89,.16); --v-coral-dim:rgba(21,128,61,.08); --v-coral-b:rgba(21,128,61,.30);
   --v-cobalt:#2563EB; --v-cobalt2:#2563EB; --v-cobalt-soft:rgba(37,99,235,.08);
