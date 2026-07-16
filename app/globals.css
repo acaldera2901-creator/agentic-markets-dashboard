@@ -9201,3 +9201,123 @@ button:disabled {
 .hv3 .lp-carousel-dot{position:relative}
 .hv3 .lp-carousel-dot::after{content:"";position:absolute;inset:-14px;border-radius:50%}
 /* ── end #HOME-V3-B ── */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOME v3 — AUTH MODAL (#SIGNUP-V3)
+   Ridisegno on-brand di HomeAuthModal (signup/login). Vive DENTRO .hv3 → eredita
+   i token --v-* (dark + light override). Voce "terminal access": barra di stato
+   mono, tab squadrate, campi radius 0, CTA verde piena squadrata, cobalto SOLO
+   per link/azioni secondarie. Namespace .av-* per NON collidere col .auth-modal
+   globale (che resta al ClientAuthModal del desk, intoccato).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.hv3 .av-backdrop{
+  position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:20px;
+  background:rgba(6,8,10,.72); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  animation:av-fade .12s ease-out;
+}
+.hv3 .av-modal{
+  position:relative; width:min(432px,100%); max-height:calc(100dvh - 40px); overflow-y:auto;
+  display:flex; flex-direction:column; background:var(--v-panel); border:1px solid var(--v-line2);
+  box-shadow:0 30px 90px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+  animation:av-in .16s cubic-bezier(.2,.7,.3,1);
+}
+.hv3 .av-modal::before{ /* scan line verde sul bordo alto — richiama .v-scan */
+  content:""; position:absolute; left:0; right:0; top:0; height:2px; z-index:2;
+  background:linear-gradient(90deg,transparent,var(--v-coral),transparent); opacity:.75;
+}
+.hv3 .av-status{
+  display:flex; align-items:center; gap:8px; padding:12px 16px 12px 18px; border-bottom:1px solid var(--v-line);
+  font-family:var(--v-mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--v-muted2);
+}
+.hv3 .av-status .dot{width:6px;height:6px;border-radius:50%;background:var(--v-coral);flex:none;animation:hv3-pulse 2s infinite}
+.hv3 .av-status .av-secure{margin-left:auto;color:var(--v-muted2)}
+.hv3 .av-close{
+  background:none; border:1px solid transparent; color:var(--v-muted2); font-size:17px; line-height:1;
+  cursor:pointer; width:26px; height:26px; display:grid; place-items:center; transition:.15s; border-radius:0;
+}
+.hv3 .av-close:hover{color:var(--v-text);border-color:var(--v-line2)}
+.hv3 .av-body{padding:18px;display:grid;gap:13px}
+.hv3 .av-head h3{margin:0;font-family:var(--v-sans);font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--v-text);line-height:1.05}
+.hv3 .av-head p{margin:6px 0 0;color:var(--v-muted);font-size:13px;line-height:1.5}
+.hv3 .av-tabs{display:flex;border:1px solid var(--v-line2);background:var(--v-bg2)}
+.hv3 .av-tab{
+  flex:1;padding:10px 8px;background:none;border:0;border-right:1px solid var(--v-line2);
+  font-family:var(--v-mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--v-muted2);cursor:pointer;transition:.15s;
+}
+.hv3 .av-tab:last-child{border-right:0}
+.hv3 .av-tab:hover:not(.is-active){color:var(--v-text)}
+.hv3 .av-tab.is-active{background:var(--v-coral-dim);color:var(--v-coral);box-shadow:inset 0 -2px 0 var(--v-coral)}
+.hv3 .av-field{display:grid;gap:6px}
+.hv3 .av-label{font-family:var(--v-mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--v-muted2)}
+.hv3 .av-input{
+  width:100%;height:42px;padding:0 13px;background:var(--v-bg2);border:1px solid var(--v-line2);color:var(--v-text);
+  font-family:var(--v-sans);font-size:14px;border-radius:0;outline:none;transition:border-color .15s, box-shadow .15s;
+}
+.hv3 .av-input::placeholder{color:var(--v-muted2)}
+.hv3 .av-input:focus{border-color:var(--v-coral);box-shadow:0 0 0 3px var(--v-coral-dim)}
+.hv3 .av-input.is-invalid{border-color:var(--v-red)}
+.hv3 .av-input.is-invalid:focus{box-shadow:0 0 0 3px rgba(232,57,46,.16)}
+.hv3 .av-pw{position:relative;display:flex;align-items:center}
+.hv3 .av-pw .av-input{padding-right:58px}
+.hv3 .av-reveal{
+  position:absolute;right:6px;background:none;border:0;color:var(--v-muted2);font-family:var(--v-mono);font-size:10px;
+  font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:6px 8px;transition:.15s;
+}
+.hv3 .av-reveal:hover{color:var(--v-text)}
+.hv3 .av-hint{font-family:var(--v-mono);font-size:10px;letter-spacing:.03em;color:var(--v-muted2);line-height:1.4}
+.hv3 .av-hint.is-bad{color:var(--v-red)}
+.hv3 .av-hint.is-ok{color:var(--v-coral)}
+.hv3 .av-link{
+  background:none;border:0;padding:0;color:var(--v-cobalt2);font-family:var(--v-sans);font-size:12px;cursor:pointer;
+  text-decoration:none;transition:.15s;align-self:flex-start;
+}
+.hv3 .av-link:hover{color:var(--v-text)}
+.hv3 a.av-inline{color:var(--v-cobalt2);text-decoration:underline;text-underline-offset:2px}
+.hv3 a.av-inline:hover{color:var(--v-text)}
+.hv3 .av-invite-toggle{
+  background:none;border:0;padding:2px 0;color:var(--v-muted);font-family:var(--v-mono);font-size:10.5px;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;align-self:flex-start;transition:.15s;
+}
+.hv3 .av-invite-toggle:hover{color:var(--v-text)}
+.hv3 .av-invite-note{font-size:11px;color:var(--v-coral);font-family:var(--v-mono);letter-spacing:.02em;margin:4px 0 0;line-height:1.4}
+.hv3 .av-consents{display:grid;gap:9px;padding:12px 0 2px;border-top:1px solid var(--v-line)}
+.hv3 .av-check{display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:12px;line-height:1.45;color:var(--v-muted)}
+.hv3 .av-check input{
+  appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:none;margin-top:1px;border:1px solid var(--v-line2);
+  background:var(--v-bg2);border-radius:0;cursor:pointer;position:relative;transition:.15s;
+}
+.hv3 .av-check input:checked{background:var(--v-coral);border-color:var(--v-coral)}
+.hv3 .av-check input:checked::after{
+  content:"";position:absolute;left:5px;top:1px;width:4px;height:9px;border:solid var(--v-coral-ink);border-width:0 2px 2px 0;transform:rotate(45deg);
+}
+.hv3 .av-check input:focus-visible{outline:2px solid var(--v-coral);outline-offset:2px}
+.hv3 .av-check--opt{font-size:11px;color:var(--v-muted2)} /* marketing facoltativo, de-enfatizzato */
+.hv3 .av-cta{
+  width:100%;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:var(--v-mono);
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--v-coral);color:var(--v-coral-ink);
+  border:1px solid var(--v-coral);border-radius:0;cursor:pointer;transition:filter .15s, box-shadow .15s, transform .1s;
+}
+.hv3 .av-cta:hover:not(:disabled){filter:brightness(1.07);box-shadow:0 8px 26px -10px var(--v-glow)}
+.hv3 .av-cta:active:not(:disabled){transform:translateY(1px)}
+.hv3 .av-cta:disabled{opacity:.4;cursor:not-allowed}
+.hv3 .av-spin{width:14px;height:14px;border:2px solid var(--v-coral-ink);border-top-color:transparent;border-radius:50%;animation:av-spin .6s linear infinite}
+.hv3 .av-error{padding:9px 12px;border:1px solid var(--v-red);background:rgba(232,57,46,.1);color:var(--v-red);font-size:12px;line-height:1.45;margin:0}
+.hv3 .av-info{padding:9px 12px;border:1px solid var(--v-coral-b);background:var(--v-coral-dim);color:var(--v-coral);font-size:12px;line-height:1.5;margin:0}
+.hv3 .av-foot{margin:2px 0 0;color:var(--v-muted2);font-family:var(--v-mono);font-size:10px;letter-spacing:.04em;line-height:1.5;display:flex;align-items:center;gap:7px}
+.hv3 .av-foot .dot{width:5px;height:5px;border-radius:50%;background:var(--v-coral);flex:none}
+@keyframes av-fade{from{opacity:0}to{opacity:1}}
+@keyframes av-in{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes av-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .hv3 .av-backdrop,.hv3 .av-modal{animation:none}
+  .hv3 .av-status .dot{animation:none}
+  .hv3 .av-spin{animation-duration:1.4s}
+}
+@media (max-width:480px){
+  .hv3 .av-backdrop{padding:0;place-items:end center}
+  .hv3 .av-modal{width:100%;max-height:92dvh;animation:av-in-sheet .18s cubic-bezier(.2,.7,.3,1)}
+  .hv3 .av-body{padding:16px}
+}
+@keyframes av-in-sheet{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+/* ── end #SIGNUP-V3 ── */

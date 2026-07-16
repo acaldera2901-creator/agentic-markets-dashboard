@@ -16,9 +16,11 @@
 // /api/auth (login + register + forgot + resend), con show-password e link a
 // /terms /privacy. Nessuna modifica al comportamento dell'API di auth.
 //
-// Stile: riusa le classi CSS esistenti (.auth-modal-backdrop / .auth-modal /
-// .auth-modal-head / .auth-mode-switch / .auth-error / .auth-info), così è
-// coerente col desk e segue il tema.
+// Stile (#SIGNUP-V3): ridisegnato on-brand col look "Live Terminal" della home
+// v3. Namespace CSS .av-* scoped sotto .hv3 in globals.css (il modal è montato
+// dentro <div className="lp hv3">) → eredita i token --v-* (dark + light) e resta
+// squadrato/mono come il resto del sito. NON tocca le classi .auth-modal globali,
+// che restano al ClientAuthModal del desk.
 // Su login riuscito: naviga al desk (/app). Su register: email di attivazione →
 // passa alla tab login (stesso flusso del desk).
 
@@ -32,20 +34,20 @@ type AuthLang = "it" | "en" | "es" | "fr" | "ru";
 
 const COPY: Record<AuthLang, {
   eyebrow: string; loginTitle: string; createTitle: string; loginSub: string; createSub: string;
-  login: string; create: string; name: string; namePh: string; pwPhNew: string;
+  login: string; create: string; name: string; namePh: string; userHint: string; pwPhNew: string;
   show: string; hide: string; forgot: string; backLogin: string; recoverTitle: string; recoverSub: string;
-  sendReset: string; close: string; age: string; marketing: string; tosPre: string; tosTerms: string; tosMid: string; tosPriv: string; tosPost: string;
+  sendReset: string; close: string; secure: string; age: string; marketing: string; tosPre: string; tosTerms: string; tosMid: string; tosPriv: string; tosPost: string;
   errWrong: string; errNoAcct: string; errExists: string; errPwShort: string; errGeneric: string; footer: string;
   pendingMail: (e: string) => string; resetSent: (e: string) => string; activationReq: string; resend: string; sendMail: string;
-  refLabel: string; refPh: string; invitedBy: (c: string) => string; promoFirst: string;
+  refLabel: string; refPh: string; addInvite: string; invitedBy: (c: string) => string; promoFirst: string;
 }> = {
   it: {
     eyebrow: "ACCESSO BETREDGE", loginTitle: "Bentornato", createTitle: "Crea il tuo profilo",
     loginSub: "Accedi per entrare nel desk.", createSub: "Gratis per iniziare. Niente carta richiesta.",
-    login: "Login", create: "Registrati", name: "Nome", namePh: "Il tuo nome", pwPhNew: "Min. 8 caratteri",
+    login: "Login", create: "Registrati", name: "Username", namePh: "iltuonome", userHint: "3–20 caratteri · lettere, numeri, underscore", pwPhNew: "Min. 8 caratteri",
     show: "Mostra", hide: "Nascondi", forgot: "Password dimenticata?", backLogin: "Torna all'accesso",
     recoverTitle: "Recupera la password", recoverSub: "Ti inviamo un link per impostare una nuova password.",
-    sendReset: "Invia link di reset", close: "Chiudi",
+    sendReset: "Invia link di reset", close: "Chiudi", secure: "Sicuro",
     age: "Confermo di avere almeno 18 anni.",
     marketing: "Voglio ricevere offerte e novità BetRedge via email (facoltativo).",
     tosPre: "Accetto i ", tosTerms: "Termini", tosMid: " e la ", tosPriv: "Privacy", tosPost: ".",
@@ -56,15 +58,15 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Se esiste un account per ${e}, ti abbiamo inviato un link di reset (controlla lo spam). Scade tra 1 ora.`,
     activationReq: "Questo profilo non è ancora attivo. Conferma l'email dal link che ti abbiamo inviato.",
     resend: "Non l'hai ricevuta? Reinvia l'email di attivazione", sendMail: "…",
-    refLabel: "Codice invito (facoltativo)", refPh: "es. MARIO10", invitedBy: (c) => `Invitato da ${c}`, promoFirst: "−50% sul primo acquisto",
+    refLabel: "Codice invito (facoltativo)", refPh: "es. MARIO10", addInvite: "Ho un codice invito", invitedBy: (c) => `Invitato da ${c}`, promoFirst: "−50% sul primo acquisto",
   },
   en: {
     eyebrow: "BETREDGE ACCESS", loginTitle: "Welcome back", createTitle: "Create your profile",
     loginSub: "Sign in to enter the desk.", createSub: "Free to start. No card required.",
-    login: "Login", create: "Register", name: "Name", namePh: "Your name", pwPhNew: "Min. 8 characters",
+    login: "Login", create: "Register", name: "Username", namePh: "yourname", userHint: "3–20 chars · letters, numbers, underscore", pwPhNew: "Min. 8 characters",
     show: "Show", hide: "Hide", forgot: "Forgot your password?", backLogin: "Back to login",
     recoverTitle: "Recover your password", recoverSub: "We'll email you a link to set a new password.",
-    sendReset: "Send reset link", close: "Close",
+    sendReset: "Send reset link", close: "Close", secure: "Secure",
     age: "I confirm I am at least 18 years old.",
     marketing: "I want to receive BetRedge offers and news by email (optional).",
     tosPre: "I accept the ", tosTerms: "Terms", tosMid: " and ", tosPriv: "Privacy", tosPost: ".",
@@ -75,15 +77,15 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `If an account exists for ${e}, we sent a reset link (check spam too). It expires in 1 hour.`,
     activationReq: "This profile isn't activated yet. Confirm your email via the link we sent you.",
     resend: "Didn't get it? Resend the activation email", sendMail: "…",
-    refLabel: "Invite code (optional)", refPh: "e.g. JOHN10", invitedBy: (c) => `Invited by ${c}`, promoFirst: "−50% on your first purchase",
+    refLabel: "Invite code (optional)", refPh: "e.g. JOHN10", addInvite: "Have an invite code", invitedBy: (c) => `Invited by ${c}`, promoFirst: "−50% on your first purchase",
   },
   es: {
     eyebrow: "ACCESO BETREDGE", loginTitle: "Bienvenido de nuevo", createTitle: "Crea tu perfil",
     loginSub: "Entra para acceder al desk.", createSub: "Gratis para empezar. Sin tarjeta.",
-    login: "Login", create: "Regístrate", name: "Nombre", namePh: "Tu nombre", pwPhNew: "Mín. 8 caracteres",
+    login: "Login", create: "Regístrate", name: "Usuario", namePh: "tunombre", userHint: "3–20 caracteres · letras, números, guion bajo", pwPhNew: "Mín. 8 caracteres",
     show: "Mostrar", hide: "Ocultar", forgot: "¿Olvidaste la contraseña?", backLogin: "Volver al acceso",
     recoverTitle: "Recupera tu contraseña", recoverSub: "Te enviamos un enlace para una nueva contraseña.",
-    sendReset: "Enviar enlace", close: "Cerrar",
+    sendReset: "Enviar enlace", close: "Cerrar", secure: "Seguro",
     age: "Confirmo que tengo al menos 18 años.",
     marketing: "Quiero recibir ofertas y novedades de BetRedge por email (opcional).",
     tosPre: "Acepto los ", tosTerms: "Términos", tosMid: " y la ", tosPriv: "Privacidad", tosPost: ".",
@@ -94,15 +96,15 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Si existe una cuenta para ${e}, enviamos un enlace de reseteo (revisa el spam). Caduca en 1 hora.`,
     activationReq: "Este perfil no está activado. Confirma tu email con el enlace que enviamos.",
     resend: "¿No lo recibiste? Reenviar el email de activación", sendMail: "…",
-    refLabel: "Código de invitación (opcional)", refPh: "ej. MARIO10", invitedBy: (c) => `Invitado por ${c}`, promoFirst: "−50% en tu primera compra",
+    refLabel: "Código de invitación (opcional)", refPh: "ej. MARIO10", addInvite: "Tengo un código de invitación", invitedBy: (c) => `Invitado por ${c}`, promoFirst: "−50% en tu primera compra",
   },
   fr: {
     eyebrow: "ACCÈS BETREDGE", loginTitle: "Bon retour", createTitle: "Crée ton profil",
     loginSub: "Connecte-toi pour accéder au desk.", createSub: "Gratuit pour commencer. Sans carte.",
-    login: "Login", create: "S'inscrire", name: "Nom", namePh: "Ton nom", pwPhNew: "Min. 8 caractères",
+    login: "Login", create: "S'inscrire", name: "Pseudo", namePh: "tonpseudo", userHint: "3–20 caractères · lettres, chiffres, underscore", pwPhNew: "Min. 8 caractères",
     show: "Afficher", hide: "Masquer", forgot: "Mot de passe oublié ?", backLogin: "Retour à la connexion",
     recoverTitle: "Récupère ton mot de passe", recoverSub: "Nous t'envoyons un lien pour un nouveau mot de passe.",
-    sendReset: "Envoyer le lien", close: "Fermer",
+    sendReset: "Envoyer le lien", close: "Fermer", secure: "Sécurisé",
     age: "Je confirme avoir au moins 18 ans.",
     marketing: "Je veux recevoir les offres et actus BetRedge par email (facultatif).",
     tosPre: "J'accepte les ", tosTerms: "Conditions", tosMid: " et la ", tosPriv: "Confidentialité", tosPost: ".",
@@ -113,15 +115,15 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Si un compte existe pour ${e}, nous avons envoyé un lien de réinitialisation (vérifie les spams). Il expire dans 1 heure.`,
     activationReq: "Ce profil n'est pas encore activé. Confirme ton email via le lien envoyé.",
     resend: "Pas reçu ? Renvoyer l'email d'activation", sendMail: "…",
-    refLabel: "Code d'invitation (facultatif)", refPh: "ex. MARIO10", invitedBy: (c) => `Invité par ${c}`, promoFirst: "−50% sur le premier achat",
+    refLabel: "Code d'invitation (facultatif)", refPh: "ex. MARIO10", addInvite: "J'ai un code d'invitation", invitedBy: (c) => `Invité par ${c}`, promoFirst: "−50% sur le premier achat",
   },
   ru: {
     eyebrow: "ВХОД BETREDGE", loginTitle: "С возвращением", createTitle: "Создай профиль",
     loginSub: "Войди, чтобы открыть desk.", createSub: "Бесплатно для старта. Без карты.",
-    login: "Login", create: "Регистрация", name: "Имя", namePh: "Твоё имя", pwPhNew: "Мин. 8 символов",
+    login: "Login", create: "Регистрация", name: "Никнейм", namePh: "nickname", userHint: "3–20 символов · буквы, цифры, подчёркивание", pwPhNew: "Мин. 8 символов",
     show: "Показать", hide: "Скрыть", forgot: "Забыли пароль?", backLogin: "Назад ко входу",
     recoverTitle: "Восстановить пароль", recoverSub: "Пришлём ссылку для нового пароля.",
-    sendReset: "Отправить ссылку", close: "Закрыть",
+    sendReset: "Отправить ссылку", close: "Закрыть", secure: "Защищено",
     age: "Подтверждаю, что мне есть 18 лет.",
     marketing: "Хочу получать предложения и новости BetRedge по email (необязательно).",
     tosPre: "Принимаю ", tosTerms: "Условия", tosMid: " и ", tosPriv: "Политику", tosPost: ".",
@@ -132,7 +134,7 @@ const COPY: Record<AuthLang, {
     resetSent: (e) => `Если аккаунт для ${e} существует, мы отправили ссылку сброса (проверьте спам). Действует 1 час.`,
     activationReq: "Профиль ещё не активирован. Подтвердите email по ссылке, которую мы отправили.",
     resend: "Не пришло? Отправить письмо активации повторно", sendMail: "…",
-    refLabel: "Код приглашения (необязательно)", refPh: "напр. JOHN10", invitedBy: (c) => `Приглашён(а): ${c}`, promoFirst: "−50% на первую покупку",
+    refLabel: "Код приглашения (необязательно)", refPh: "напр. JOHN10", addInvite: "Есть код приглашения", invitedBy: (c) => `Приглашён(а): ${c}`, promoFirst: "−50% на первую покупку",
   },
 };
 
@@ -168,23 +170,46 @@ export function HomeAuthModal({
   // scadenza), editabile a mano (fallback se l'attribuzione s'è persa: cross-device,
   // incognito, link diretto). effectiveRef = codice valido corrente (o null).
   const [refInput, setRefInput] = useState("");
+  // Invite code SECONDARIO: collassato di default, si espande a mano. Se un codice
+  // arriva dal link (readRefCode) lo mostriamo già aperto — non nascondiamo mai
+  // un'attribuzione attiva.
+  const [refOpen, setRefOpen] = useState(false);
   useEffect(() => {
     const c = readRefCode();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync del ref da localStorage (one-shot)
-    if (c) setRefInput(c);
+    if (c) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync del ref da localStorage (one-shot)
+      setRefInput(c);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRefOpen(true);
+    }
   }, []);
   const effectiveRef = normalizeRefCode(refInput);
   // La riga "−50% primo acquisto" appare solo se la promo di lancio è attiva
   // (stesso flag del banner) → mai una claim di sconto quando la promo è spenta.
   const promoOn = process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true";
 
+  // Chiusura facile (Escape) + blocco scroll di sfondo mentre il modal è aperto
+  // → l'uscita è facile quanto l'ingresso, niente jank di scroll del body.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow; };
+  }, [onClose]);
+
   const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome"; } catch { return "Europe/Rome"; } })();
   const normalizedEmail = email.trim().toLowerCase();
   const emailValid = normalizedEmail.includes("@");
   const pwValid = password.length >= 8;
+  // Username (decisione Andrea): 3–20 caratteri, alfanumerico + underscore, no spazi.
+  // Inviato tal quale nel campo `name` della POST /api/auth (nessun cambio backend:
+  // il server fa solo trim + slice(200) su `name`, nessuna validazione di formato).
+  const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+  const usernameValid = USERNAME_RE.test(name.trim());
   const canSubmit = mode === "login"
     ? emailValid && pwValid
-    : name.trim().length > 1 && emailValid && pwValid && ageOk && tosOk;
+    : usernameValid && emailValid && pwValid && ageOk && tosOk;
 
   // Riusa LO STESSO contratto /api/auth del desk. Nessuna modifica al server.
   const submit = async () => {
@@ -253,136 +278,133 @@ export function HomeAuthModal({
     finally { setBusy(false); }
   };
 
-  const closeBtn = (
-    <button type="button" onClick={onClose} aria-label={t.close}
-      style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
-        color: "var(--am-muted-2)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 4 }}>
-      ×
-    </button>
+  // Barra di stato "terminal" — richiama .v-scan-head della home. Il × chiude.
+  const statusBar = (
+    <div className="av-status">
+      <span className="dot" aria-hidden />
+      <span>{t.eyebrow}</span>
+      <span className="av-secure">{t.secure}</span>
+      <button type="button" className="av-close" onClick={onClose} aria-label={t.close}>×</button>
+    </div>
   );
 
   if (forgot) {
     return (
-      <div className="auth-modal-backdrop">
-        <form className="auth-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
-          {closeBtn}
-          <div className="auth-modal-head">
-            <p className="eyebrow">{t.eyebrow}</p>
-            <h3>{t.recoverTitle}</h3>
-            <span>{t.recoverSub}</span>
+      <div className="av-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <form className="av-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }}>
+          {statusBar}
+          <div className="av-body">
+            <div className="av-head">
+              <h3>{t.recoverTitle}</h3>
+              <p>{t.recoverSub}</p>
+            </div>
+            {forgotSent ? (
+              <p className="av-info">{t.resetSent(normalizedEmail)}</p>
+            ) : (
+              <>
+                <label className="av-field">
+                  <span className="av-label">Email</span>
+                  <input className="av-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
+                </label>
+                {error && <p className="av-error">{error}</p>}
+                <button className="av-cta" disabled={!emailValid || busy}>{busy ? <span className="av-spin" aria-hidden /> : t.sendReset}</button>
+              </>
+            )}
+            <button type="button" className="av-link" style={{ alignSelf: "center" }}
+              onClick={() => { setForgot(false); setForgotSent(false); setError(""); }}>
+              {t.backLogin}
+            </button>
           </div>
-          {forgotSent ? (
-            <p className="auth-info" style={{ fontSize: 13, lineHeight: 1.5, color: "var(--am-coral)", margin: "4px 0 0" }}>
-              {t.resetSent(normalizedEmail)}
-            </p>
-          ) : (
-            <>
-              <label>
-                <span>Email</span>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
-              </label>
-              {error && <p className="auth-error">{error}</p>}
-              <button disabled={!emailValid || busy}>{busy ? "…" : t.sendReset}</button>
-            </>
-          )}
-          <button type="button" onClick={() => { setForgot(false); setForgotSent(false); setError(""); }}
-            style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline",
-              cursor: "pointer", fontSize: 12, padding: "6px 0", alignSelf: "center" }}>
-            {t.backLogin}
-          </button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="auth-modal-backdrop">
-      <form className="auth-modal" onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
-        {closeBtn}
-        <div className="auth-modal-head">
-          <p className="eyebrow">{t.eyebrow}</p>
-          <h3>{mode === "login" ? t.loginTitle : t.createTitle}</h3>
-          <span>{mode === "login" ? t.loginSub : t.createSub}</span>
-        </div>
-        <div className="auth-mode-switch">
-          <button type="button" className={mode === "login" ? "is-active" : ""} onClick={() => { setMode("login"); setError(""); }}>{t.login}</button>
-          <button type="button" className={mode === "create" ? "is-active" : ""} onClick={() => { setMode("create"); setError(""); }}>{t.create}</button>
-        </div>
-        {mode === "create" && (
-          <label>
-            <span>{t.name}</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePh} autoComplete="name" />
+    <div className="av-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <form className="av-modal" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+        {statusBar}
+        <div className="av-body">
+          <div className="av-head">
+            <h3>{mode === "login" ? t.loginTitle : t.createTitle}</h3>
+            <p>{mode === "login" ? t.loginSub : t.createSub}</p>
+          </div>
+          <div className="av-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected={mode === "login"} className={`av-tab ${mode === "login" ? "is-active" : ""}`} onClick={() => { setMode("login"); setError(""); }}>{t.login}</button>
+            <button type="button" role="tab" aria-selected={mode === "create"} className={`av-tab ${mode === "create" ? "is-active" : ""}`} onClick={() => { setMode("create"); setError(""); }}>{t.create}</button>
+          </div>
+          {mode === "create" && (
+            <div className="av-field">
+              <label className="av-field">
+                <span className="av-label">{t.name}</span>
+                {/* USERNAME (non nome reale): no spazi in input, max 20; inviato nel campo `name`. */}
+                <input className={`av-input ${name.length > 0 && !usernameValid ? "is-invalid" : ""}`}
+                  value={name} onChange={(e) => setName(e.target.value.replace(/\s/g, ""))}
+                  placeholder={t.namePh} autoComplete="username" maxLength={20} autoCapitalize="none" spellCheck={false} />
+              </label>
+              <span className={`av-hint ${name.length > 0 ? (usernameValid ? "is-ok" : "is-bad") : ""}`}>{t.userHint}</span>
+            </div>
+          )}
+          <label className="av-field">
+            <span className="av-label">Email</span>
+            <input className="av-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
           </label>
-        )}
-        <label>
-          <span>Email</span>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" inputMode="email" autoComplete="email" />
-        </label>
-        <label>
-          <span>Password</span>
-          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-            <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "create" ? t.pwPhNew : "••••••••"}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              style={{ width: "100%", paddingRight: 52 }} />
-            <button type="button" onClick={() => setShowPw((v) => !v)} aria-pressed={showPw}
-              aria-label={showPw ? t.hide : t.show}
-              style={{ position: "absolute", right: 8, background: "none", border: "none",
-                color: "var(--am-muted)", fontSize: 11, fontWeight: 700, letterSpacing: ".04em",
-                textTransform: "uppercase", cursor: "pointer", padding: "4px 6px" }}>
-              {showPw ? t.hide : t.show}
-            </button>
-          </div>
-        </label>
-        {mode === "create" && (
-          <div>
-            <label>
-              <span>{t.refLabel}</span>
-              <input value={refInput} onChange={(e) => setRefInput(e.target.value)} placeholder={t.refPh} maxLength={20} autoCapitalize="characters" spellCheck={false} />
-            </label>
-            {effectiveRef && (
-              <p style={{ fontSize: 11, lineHeight: 1.4, color: "var(--am-coral)", margin: "4px 0 0" }}>
-                🎁 {t.invitedBy(effectiveRef)}{promoOn ? ` · ${t.promoFirst}` : ""}
-              </p>
-            )}
-          </div>
-        )}
-        {mode === "login" && (
-          <button type="button" onClick={() => { setForgot(true); setError(""); setInfo(""); }}
-            style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline",
-              cursor: "pointer", fontSize: 12, padding: "2px 0", alignSelf: "flex-start" }}>
-            {t.forgot}
-          </button>
-        )}
-        {mode === "create" && (
-          <div className="auth-consent" style={{ display: "flex", flexDirection: "column", gap: 8, margin: "4px 0 0" }}>
-            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
-              <input type="checkbox" checked={ageOk} onChange={(e) => setAgeOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
-              <span>{t.age}</span>
-            </label>
-            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
-              <input type="checkbox" checked={tosOk} onChange={(e) => setTosOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
-              {/* link in-site (route interne), niente target="_blank" */}
-              <span>{t.tosPre}<Link href="/terms" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.tosTerms}</Link>{t.tosMid}<Link href="/privacy" style={{ color: "var(--am-coral)", textDecoration: "underline" }}>{t.tosPriv}</Link>{t.tosPost}</span>
-            </label>
-            {/* Consenso marketing FACOLTATIVO (non pre-flaggato, separato da ToS/+18) —
-                sblocca i flussi CRM acquisition. Non incide su canSubmit. */}
-            <label style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.45, cursor: "pointer", textTransform: "none", letterSpacing: 0 }}>
-              <input type="checkbox" checked={marketingOk} onChange={(e) => setMarketingOk(e.target.checked)} style={{ width: "auto", marginTop: 2, flex: "0 0 auto" }} />
-              <span>{t.marketing}</span>
-            </label>
-          </div>
-        )}
-        {error && <p className="auth-error">{error}</p>}
-        {info && <p className="auth-info" style={{ fontSize: 12, lineHeight: 1.5, color: "var(--am-coral)", margin: "4px 0 0" }}>{info}</p>}
-        {showResend && (
-          <button type="button" onClick={resendActivation} disabled={busy || !emailValid}
-            style={{ background: "none", border: "none", color: "var(--am-muted)", textDecoration: "underline", cursor: "pointer", fontSize: 12, padding: "4px 0", alignSelf: "flex-start" }}>
-            {t.resend}
-          </button>
-        )}
-        <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? t.login : t.create)}</button>
-        <p>{t.footer}</p>
+          <label className="av-field">
+            <span className="av-label">Password</span>
+            <div className="av-pw">
+              <input className="av-input" type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === "create" ? t.pwPhNew : "••••••••"}
+                autoComplete={mode === "login" ? "current-password" : "new-password"} />
+              <button type="button" className="av-reveal" onClick={() => setShowPw((v) => !v)} aria-pressed={showPw} aria-label={showPw ? t.hide : t.show}>
+                {showPw ? t.hide : t.show}
+              </button>
+            </div>
+          </label>
+          {mode === "create" && (
+            !refOpen ? (
+              <button type="button" className="av-invite-toggle" onClick={() => setRefOpen(true)}>+ {t.addInvite}</button>
+            ) : (
+              <div className="av-field">
+                <label className="av-field">
+                  <span className="av-label">{t.refLabel}</span>
+                  <input className="av-input" value={refInput} onChange={(e) => setRefInput(e.target.value)} placeholder={t.refPh} maxLength={20} autoCapitalize="characters" spellCheck={false} />
+                </label>
+                {effectiveRef && (
+                  <p className="av-invite-note">🎁 {t.invitedBy(effectiveRef)}{promoOn ? ` · ${t.promoFirst}` : ""}</p>
+                )}
+              </div>
+            )
+          )}
+          {mode === "login" && (
+            <button type="button" className="av-link" onClick={() => { setForgot(true); setError(""); setInfo(""); }}>{t.forgot}</button>
+          )}
+          {mode === "create" && (
+            <div className="av-consents">
+              <label className="av-check">
+                <input type="checkbox" checked={ageOk} onChange={(e) => setAgeOk(e.target.checked)} />
+                <span>{t.age}</span>
+              </label>
+              <label className="av-check">
+                <input type="checkbox" checked={tosOk} onChange={(e) => setTosOk(e.target.checked)} />
+                {/* link in-site (route interne), niente target="_blank" */}
+                <span>{t.tosPre}<Link className="av-inline" href="/terms">{t.tosTerms}</Link>{t.tosMid}<Link className="av-inline" href="/privacy">{t.tosPriv}</Link>{t.tosPost}</span>
+              </label>
+              {/* Consenso marketing FACOLTATIVO (non pre-flaggato, de-enfatizzato) —
+                  sblocca i flussi CRM acquisition. Non incide su canSubmit. */}
+              <label className="av-check av-check--opt">
+                <input type="checkbox" checked={marketingOk} onChange={(e) => setMarketingOk(e.target.checked)} />
+                <span>{t.marketing}</span>
+              </label>
+            </div>
+          )}
+          {error && <p className="av-error">{error}</p>}
+          {info && <p className="av-info">{info}</p>}
+          {showResend && (
+            <button type="button" className="av-link" onClick={resendActivation} disabled={busy || !emailValid}>{t.resend}</button>
+          )}
+          <button className="av-cta" disabled={!canSubmit || busy}>{busy ? <span className="av-spin" aria-hidden /> : (mode === "login" ? t.login : t.create)}</button>
+          <p className="av-foot"><span className="dot" aria-hidden />{t.footer}</p>
+        </div>
       </form>
     </div>
   );
