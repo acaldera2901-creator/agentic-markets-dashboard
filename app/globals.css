@@ -7109,6 +7109,10 @@ button:disabled {
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--am-line);
 }
+/* #HOME-NAV-LIGHT: il bg della nav landing era hardcoded scuro → in tema chiaro
+   restava una barra grigio-scura sopra la pagina bianca. Override solo-light col
+   token barra (light = bianco translucido). Dark invariato. */
+:root[data-theme="light"] .lp-nav { background: var(--am-bar); }
 .lp-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .lp-nav-right { display: flex; align-items: center; gap: clamp(8px, 1.4vw, 16px); }
 .lp-theme { display: inline-flex; background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 999px; padding: 2px; }
