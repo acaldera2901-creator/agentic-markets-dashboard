@@ -714,6 +714,37 @@ export default function LandingPage() {
            più referenziate da qui → orfane (vedi report); lasciate nel CSS. ── */}
       <LandingCarousel lang={lang} />
 
+      {/* ── Sport quick-nav (#HOME-V3-SPORTNAV): ripristina la barra sport della home
+           pre-v3 (rimossa nel redesign) nella FORMA squadrata v3 (toolbar segmentata,
+           mono uppercase, divisori). Icone sport RASTER reali (/banners/*-sm.png).
+           Deep-link identici agli originali: sport→board filtrata, WC→hub /world-cup.
+           LIVE = board live-first (in-play in cima) con pulse-dot di stato. Su mobile
+           scrolla in orizzontale DENTRO la riga, non il body. ── */}
+      <nav className="v-sportnav-wrap" aria-label="Sports">
+        <div className="v-sportnav">
+          <a href="/app?tab=bets&sport=all" className="v-sportbtn">
+            <img className="v-sportbtn-ic" src="/banners/sport-allsports-sm.png" alt="" aria-hidden="true" />
+            {t.spAllSports}
+          </a>
+          <a href="/app?tab=bets&sport=football" className="v-sportbtn">
+            <img className="v-sportbtn-ic" src="/banners/sport-football-sm.png" alt="" aria-hidden="true" />
+            {t.spFootball}
+          </a>
+          <a href="/app?tab=bets&sport=tennis" className="v-sportbtn">
+            <img className="v-sportbtn-ic" src="/banners/sport-tennis-sm.png" alt="" aria-hidden="true" />
+            {t.spTennis}
+          </a>
+          <Link href="/world-cup" className="v-sportbtn v-sportbtn--wc">
+            <img className="v-sportbtn-ic" src="/banners/sport-worldcup-sm.png" alt="" aria-hidden="true" />
+            {t.spWorldCup}
+          </Link>
+          <a href="/app?tab=bets&sport=all" className="v-sportbtn v-sportbtn--live">
+            <span className="dot" aria-hidden="true" />
+            LIVE
+          </a>
+        </div>
+      </nav>
+
       {/* ═══ HOME REDESIGN v3 (#HOME-V3) — "Live Terminal + Proof Spine" ═══
            Il carousel banner in cima è TENUTO com'è (lock Andrea). Da qui sotto è
            il redesign editoriale v3 approvato (mockup v3). Scoped .hv3. Verde #23A559
