@@ -9321,3 +9321,41 @@ button:disabled {
 }
 @keyframes av-in-sheet{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
 /* ── end #SIGNUP-V3 ── */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOME v3 — SPORT QUICK-NAV (#HOME-V3-SPORTNAV)
+   Ri-aggiunge la barra di quick-nav sport (ALL SPORTS · FOOTBALL · TENNIS ·
+   WORLD CUP · LIVE) rimossa nel redesign v3, ma nella FORMA squadrata v3: toolbar
+   segmentata (radius 0, mono uppercase, divisori verticali), icone sport RASTER
+   reali (/banners/*-sm.png), hover verde. LIVE usa un pulse-dot di stato (non un
+   finto sport-icon). Full-width strip sotto il carousel; su mobile scroll
+   orizzontale DENTRO la riga (overflow-x:auto), mai del body. Token --v-* → auto
+   dark/light. Namespace .v-sportnav* scoped sotto .hv3.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.hv3 .v-sportnav-wrap{border-top:1px solid var(--v-line);border-bottom:1px solid var(--v-line);background:var(--v-bg2)}
+.hv3 .v-sportnav{
+  display:flex;max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,48px);
+  overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
+}
+.hv3 .v-sportnav::-webkit-scrollbar{display:none}
+.hv3 .v-sportbtn{
+  display:inline-flex;align-items:center;gap:9px;flex:none;padding:13px 20px;border:0;border-right:1px solid var(--v-line);
+  background:none;font-family:var(--v-mono);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--v-muted);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background .15s, color .15s;
+}
+.hv3 .v-sportbtn:first-child{padding-left:0}
+.hv3 .v-sportbtn:last-child{border-right:0}
+.hv3 .v-sportbtn:hover{color:var(--v-text);background:var(--v-coral-dim)}
+.hv3 .v-sportbtn:first-child:hover{padding-left:12px;margin-left:-12px} /* mantiene l'allineamento a griglia in hover */
+.hv3 .v-sportbtn:focus-visible{outline:2px solid var(--v-coral);outline-offset:-2px}
+.hv3 .v-sportbtn-ic{width:20px;height:20px;object-fit:contain;flex:none;display:block}
+.hv3 .v-sportbtn--wc{color:var(--v-text)} /* World Cup = voce feature, leggermente più marcata */
+.hv3 .v-sportbtn--live{color:var(--v-coral)}
+.hv3 .v-sportbtn--live .dot{width:7px;height:7px;border-radius:50%;background:var(--v-coral);flex:none;animation:hv3-pulse 2s infinite}
+@media (prefers-reduced-motion:reduce){ .hv3 .v-sportbtn--live .dot{animation:none} }
+@media (max-width:640px){
+  .hv3 .v-sportbtn{padding:12px 15px;font-size:11px;gap:7px}
+  .hv3 .v-sportbtn-ic{width:18px;height:18px}
+  .hv3 .v-sportbtn:first-child:hover{padding-left:15px;margin-left:0} /* su mobile lo strip è edge-to-edge, niente compensazione */
+}
+/* ── end #HOME-V3-SPORTNAV ── */
