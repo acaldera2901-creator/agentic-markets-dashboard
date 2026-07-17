@@ -89,14 +89,20 @@ export async function GET(req: Request) {
 
   const status = coreOffline > 0 ? "degraded" : coreStale > 0 ? "warning" : "ok";
 
+  // #LIVE-VERSION-1: short sha of the deployed commit (auto-injected by Vercel).
+  // Lets internal tooling verify the served version without manual deploy
+  // announcements. 7 chars only; null outside Vercel (local dev).
+  const commit = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7) || null;
+
   // SEC #SEC-HEALTH-1: public callers get a bare liveness probe only — no agent
   // names, topology, or counts. Internal monitoring authenticates with RESEARCH_SECRET.
   if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
-    return NextResponse.json({ status, timestamp: new Date().toISOString() });
+    return NextResponse.json({ status, commit, timestamp: new Date().toISOString() });
   }
 
   return NextResponse.json({
     status,
+    commit,
     timestamp: new Date().toISOString(),
     core: {
       total: CORE_AGENTS.length,
