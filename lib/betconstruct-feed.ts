@@ -7,6 +7,12 @@ import { BOOKS, type BookConfig } from "./betconstruct-books";
 
 const PAGE_LIMIT = 50;
 const MAX_PAGES = 20; // cap anti-hammering
+// #TENNIS-FP-COVERAGE-1: il feed è ordinato per bets_count:desc e il tennis
+// main-tour vive nelle ultime pagine (viste p.21-29 su 29 il 2026-07-17) —
+// oltre MAX_PAGES. Invece di alzare il cap globale (hammering su tutti gli
+// sport), una seconda query mirata sport_key=tennis (~2 pagine) copre tutto.
+const TENNIS_SPORT_KEY = "tennis";
+const TENNIS_MAX_PAGES = 4;
 const TTL_MS = 30_000;
 
 function headers(book: BookConfig) {
@@ -19,14 +25,15 @@ function headers(book: BookConfig) {
   };
 }
 
-type Fetcher = (book: BookConfig, page: number) => Promise<unknown>;
-async function defaultFetcher(book: BookConfig, page: number): Promise<unknown> {
+type Fetcher = (book: BookConfig, page: number, sportKey?: string) => Promise<unknown>;
+async function defaultFetcher(book: BookConfig, page: number, sportKey?: string): Promise<unknown> {
   const qs = new URLSearchParams({
     bettable: "true", sport_type: "regular", sort_by: "bets_count:desc",
     limit: String(PAGE_LIMIT), page: String(page),
   });
   qs.append("match_status", "0");
   qs.append("match_status", "1");
+  if (sportKey) qs.set("sport_key", sportKey);
   const resp = await fetch(`${book.base}${book.apiPrefix}/matches?${qs.toString()}`, { headers: headers(book) });
   if (!resp.ok) throw new Error(`${book.key} HTTP ${resp.status}`);
   return resp.json();
@@ -46,6 +53,17 @@ async function _refreshBook(book: BookConfig, now: number): Promise<Map<string, 
       const last = payload?.pagination?.last_page ?? page;
       if (page >= last) break;
     }
+    // #TENNIS-FP-COVERAGE-1: sweep mirata tennis oltre il cap globale.
+    // try interno: se solo il tennis fallisce si degrada alla copertura main,
+    // senza scartare la mappa già raccolta.
+    try {
+      for (let page = 1; page <= TENNIS_MAX_PAGES; page++) {
+        const payload: any = await _fetcher(book, page, TENNIS_SPORT_KEY);
+        for (const fm of parseFortuneplayMatches(payload)) map.set(fm.teamPairKey, fm);
+        const last = payload?.pagination?.last_page ?? page;
+        if (page >= last) break;
+      }
+    } catch { /* best-effort: la board resta servita dalla sweep principale */ }
     _cache.set(book.key, { at: now, map });
     return map;
   } catch {
