@@ -3201,6 +3201,11 @@ function CheckoutModal({
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  // #PAYGATE-DOUBLE-SUBMIT: `disabled={redirecting}` non basta — tra il click e
+  // il re-render che disabilita il bottone un secondo click passa (visto 2026-07-15:
+  // 3 ordini pending in 2.5s dallo stesso utente). Guard SINCRONO via ref, valutato
+  // prima di qualunque await, così i click ravvicinati non creano ordini doppi.
+  const payInFlight = useRef(false);
   const [error, setError] = useState("");
   // #GOLIVE-QW-A: the period toggle is only rendered with PayGate on. With PayGate
   // off the UI shows the monthly USDT price, so the ordered period must default to
@@ -3396,6 +3401,10 @@ function CheckoutModal({
   };
 
   const payWithCard = async () => {
+    // Guard sincrono: blocca i click ravvicinati PRIMA di creare un secondo ordine
+    // (il disabled del bottone si applica solo dopo il re-render).
+    if (payInFlight.current) return;
+    payInFlight.current = true;
     setError("");
     // #PAYGATE-REDIRECT-UX: il redirect alla pagina hosted PayGate ha una latenza
     // percepibile → stato "reindirizzamento" così il click non sembra un freeze.
@@ -3411,15 +3420,17 @@ function CheckoutModal({
         console.error("paygate checkout failed", res.status);
         setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
         setRedirecting(false);
+        payInFlight.current = false;
         return;
       }
       const { url } = (await res.json()) as { url?: string };
       if (url) { markPayPending(); window.location.href = url; }
-      else { setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova."); setRedirecting(false); }
+      else { setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova."); setRedirecting(false); payInFlight.current = false; }
     } catch (e) {
       console.error("paygate checkout error", e);
       setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
       setRedirecting(false);
+      payInFlight.current = false;
     }
   };
 
