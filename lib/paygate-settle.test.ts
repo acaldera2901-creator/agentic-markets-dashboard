@@ -12,7 +12,7 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/plan-grant", () => ({ activatePaygatePlan: vi.fn() }));
 
-import { settlePendingOrder } from "./paygate-settle";
+import { settlePendingOrder, classifyMyOrders, type MineOrder } from "./paygate-settle";
 import { checkPaymentStatus } from "@/lib/paygate";
 import { getSupabaseAdminClient, dbExecute } from "@/lib/db";
 import { activatePaygatePlan } from "@/lib/plan-grant";
@@ -58,5 +58,50 @@ describe("settlePendingOrder — self-heal PayGate", () => {
     const r = await settlePendingOrder({ ...baseOrder });
     expect(r.granted).toBe(false);
     expect(activatePaygatePlan).not.toHaveBeenCalled();
+  });
+});
+
+// #PAYGATE-INSTANT-GRANT: la classificazione decide l'azione del settle on-demand.
+describe("classifyMyOrders — azione sull'ordine più recente", () => {
+  const mk = (o: Partial<MineOrder> & { created_at: string }): MineOrder => ({
+    id: o.id ?? "o", identifier: "u@x.com", plan: "base", period: "monthly", amount_usd: 14.99,
+    status: "pending", ipn_token: "tok%3D", granted_at: null, ...o,
+  });
+
+  it("nessun ordine → none", () => {
+    expect(classifyMyOrders([]).action).toBe("none");
+  });
+
+  it("ultimo pending con ipn_token → settle_pending (e sceglie il più recente)", () => {
+    const r = classifyMyOrders([
+      mk({ id: "old", created_at: "2026-07-20T10:00:00Z" }),
+      mk({ id: "new", created_at: "2026-07-20T11:00:00Z" }),
+    ]);
+    expect(r.action).toBe("settle_pending");
+    expect(r.order?.id).toBe("new");
+  });
+
+  it("ultimo paid + granted_at → granted (nulla da fare)", () => {
+    const r = classifyMyOrders([mk({ status: "paid", granted_at: "2026-07-20T11:45:00Z", created_at: "2026-07-20T11:20:00Z" })]);
+    expect(r.action).toBe("granted");
+  });
+
+  it("ultimo paid ma granted_at NULL → grant_paid (paid-senza-piano)", () => {
+    const r = classifyMyOrders([mk({ status: "paid", granted_at: null, created_at: "2026-07-20T11:20:00Z" })]);
+    expect(r.action).toBe("grant_paid");
+  });
+
+  it("ultimo pending senza ipn_token → none (non azionabile)", () => {
+    const r = classifyMyOrders([mk({ status: "pending", ipn_token: null, created_at: "2026-07-20T11:20:00Z" })]);
+    expect(r.action).toBe("none");
+  });
+
+  it("il paid recente vince sul pending più vecchio (no re-settle di roba vecchia)", () => {
+    const r = classifyMyOrders([
+      mk({ id: "vecchio-pending", status: "pending", created_at: "2026-07-19T09:00:00Z" }),
+      mk({ id: "recente-paid", status: "paid", granted_at: "2026-07-20T11:45:00Z", created_at: "2026-07-20T11:20:00Z" }),
+    ]);
+    expect(r.action).toBe("granted");
+    expect(r.order?.id).toBe("recente-paid");
   });
 });

@@ -20,6 +20,40 @@ export type PendingOrder = {
 
 export type SettleResult = { granted: boolean; reason: string };
 
+// #PAYGATE-INSTANT-GRANT: classificazione PURA (testabile, no DB/rete) dell'ordine
+// più recente dell'utente per il settle on-demand dal ritorno del checkout.
+// Decide l'AZIONE, non la esegue: l'endpoint mappa lo stato sull'operazione.
+// - granted:       ultimo ordine già paid+concesso → niente da fare, riporta successo.
+// - settle_pending: ultimo ordine pending con ipn_token → verifica+salda (settlePendingOrder).
+// - grant_paid:    ultimo ordine paid ma granted_at NULL → grant diretto (caso reconcile pass-1).
+// - none:          nessun ordine azionabile (nessun ordine, pending senza ipn, o abbandonato).
+export type MineOrder = {
+  id: string;
+  identifier: string;
+  plan: "base" | "premium";
+  period: "monthly" | "annual";
+  amount_usd: number;
+  status: string;
+  ipn_token: string | null;
+  granted_at: string | null;
+  created_at: string;
+};
+export type MineAction = "granted" | "settle_pending" | "grant_paid" | "none";
+
+export function classifyMyOrders(orders: MineOrder[]): { action: MineAction; order: MineOrder | null } {
+  if (!orders.length) return { action: "none", order: null };
+  // difensivo: l'ordine più recente decide l'esito del pagamento appena fatto.
+  const sorted = [...orders].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const latest = sorted[0];
+  if (latest.status === "paid") {
+    return latest.granted_at ? { action: "granted", order: latest } : { action: "grant_paid", order: latest };
+  }
+  if (latest.status === "pending" && latest.ipn_token) {
+    return { action: "settle_pending", order: latest };
+  }
+  return { action: "none", order: null };
+}
+
 export async function settlePendingOrder(order: PendingOrder): Promise<SettleResult> {
   if (order.status !== "pending") return { granted: false, reason: "not pending" };
   if (!order.ipn_token) return { granted: false, reason: "no ipn_token" };

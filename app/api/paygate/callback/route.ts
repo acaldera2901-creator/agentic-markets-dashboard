@@ -25,6 +25,21 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const token = url.searchParams.get("token") ?? "";
     const txidQuery = url.searchParams.get("txid_out");
+    const orderQuery = url.searchParams.get("order");
+
+    // #PAYGATE-INSTANT-GRANT diag: PROVA di consegna del callback IPN. I log-funzione
+    // dei serverless non sono leggibili (403 per il ruolo corrente), quindi
+    // persistiamo ogni hit in events per capire via SQL SE e QUANDO PayGate ci chiama
+    // davvero (sospetto storico: il callback non concede mai, tutti i grant vengono
+    // dal reconcile). Best-effort: non deve MAI alterare il flusso del callback.
+    try {
+      await dbExecute(
+        `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+         VALUES ('paygate_callback_hit', $1, NULL, NULL, NULL, NULL, 0, $2)`,
+        [orderQuery, JSON.stringify({ hasToken: !!token, txidQuery })]
+      );
+    } catch { /* diag best-effort */ }
+
     if (!token) return NextResponse.json({ ok: true });
 
     const tokenHash = hashToken(token);
