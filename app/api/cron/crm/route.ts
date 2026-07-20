@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { resolveFlow, dueTriggers, isEligible, flowAllowed, type CrmProfile } from "@/lib/crm";
-import { CRM_TOUCHPOINTS, renderCrm } from "@/lib/crm-content";
+import { CRM_TOUCHPOINTS, renderCrm, resolveCrmLang } from "@/lib/crm-content";
 import { sendTransactional } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
@@ -15,14 +15,14 @@ export async function GET(req: Request) {
   }
   const url = new URL(req.url);
 
-  // QA test-send: ?test=<email>&key=<touchpoint>&lang=it|en invia UN solo
+  // QA test-send: ?test=<email>&key=<touchpoint>&lang=it|en|es|fr|ru invia UN solo
   // touchpoint brandizzato a quell'indirizzo, SENZA scrivere su crm_trigger_sends
   // (nessun effetto sul giro reale). Per verificare il rendering in una casella
   // vera prima del primo invio ai clienti.
   const testTo = url.searchParams.get("test");
   if (testTo) {
     const key = url.searchParams.get("key") || "onb_activate";
-    const lang = url.searchParams.get("lang") === "en" ? "en" : "it";
+    const lang = resolveCrmLang(url.searchParams.get("lang"));
     const mail = renderCrm(key, lang, testTo);
     if (!mail) return NextResponse.json({ error: `unknown touchpoint key '${key}'`, keys: CRM_TOUCHPOINTS.map((t) => t.key) }, { status: 400 });
     const res = await sendTransactional({
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
     planned++;
     if (preview.length < 50) preview.push({ to: p.identifier, flow, key: toSend.key });
     if (!live) continue;
-    const lang = p.language === "en" ? "en" : "it";
+    const lang = resolveCrmLang(p.language);
     const mail = renderCrm(toSend.key, lang, p.identifier);
     if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
     let res: { sent: boolean; error?: string };

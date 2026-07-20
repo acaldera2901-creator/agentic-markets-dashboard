@@ -99,10 +99,11 @@ function defaultFooter(lang: "it" | "en"): string {
 // footer transazionale minimale (le mail account non sono marketing).
 export function brandedShell(
   bodyHtml: string,
-  opts: { hero?: boolean; footerHtml?: string; lang?: "it" | "en" } = {}
+  opts: { hero?: boolean; footerHtml?: string; lang?: "it" | "en" | "es" | "fr" | "ru" } = {}
 ): string {
   const { hero = false, footerHtml, lang = "it" } = opts;
-  const footer = footerHtml ?? defaultFooter(lang);
+  // defaultFooter resta it/en (mail transazionali account); il CRM 5-lingue passa sempre footerHtml.
+  const footer = footerHtml ?? defaultFooter(lang === "en" ? "en" : "it");
   return `<!doctype html>
 <html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"></head>
 <body style="margin:0;padding:0;background:${BRAND.bg};">
