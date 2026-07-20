@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/cron/paygate-reconcile",
-      "schedule": "*/15 * * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }

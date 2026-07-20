@@ -8352,16 +8352,25 @@ export default function Dashboard() {
     let stop = false;
     let tries = 0;
     setPayReturn("checking");
+    // #PAYGATE-INSTANT-GRANT: poll ATTIVO. Invece di aspettare passivamente che il
+    // grant atterri (callback/cron), chiediamo a /api/paygate/settle-mine di saldare
+    // il NOSTRO ordine on-demand → il piano è concesso in pochi secondi dalla conferma
+    // on-chain. La conferma crypto/on-ramp può richiedere qualche minuto: teniamo il
+    // poll attivo fino a ~8 min con la scheda aperta; oltre, il reconcile-cron (ogni
+    // 5 min) resta il backstop. status: granted=fatto · none=nessun ordine · pending=riprova.
     const tick = async () => {
       if (stop) return;
       tries++;
       try {
-        const r = await fetch("/api/auth", { credentials: "same-origin", cache: "no-store" });
+        const r = await fetch("/api/paygate/settle-mine", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { "content-type": "application/json" },
+        });
         if (r.ok) {
-          const s = (await r.json()) as { plan?: ClientProfile["plan"]; plan_expires_at?: string | null };
-          const changed =
-            (!!s.plan && s.plan !== flag!.beforePlan) || (s.plan_expires_at ?? null) !== (flag!.beforeExp ?? null);
-          if (changed && s.plan && s.plan !== "free") {
+          const s = (await r.json()) as { status?: string; plan?: ClientProfile["plan"]; plan_expires_at?: string | null };
+          if (s.status === "granted" && s.plan && s.plan !== "free") {
             setClientProfile((prev) =>
               prev ? { ...prev, plan: s.plan!, planExpiresAt: s.plan_expires_at ?? prev.planExpiresAt } : prev,
             );
@@ -8370,9 +8379,10 @@ export default function Dashboard() {
             setTimeout(() => { if (!stop) setPayReturn(null); }, 6000);
             return;
           }
+          if (s.status === "none") { setPayReturn(null); clear(); return; } // niente ordine recente → stop
         }
       } catch { /**/ }
-      if (tries >= 18) { setPayReturn(null); clear(); return; } // ~90s poi rinuncia silenziosa (il grant arriva comunque via reconcile)
+      if (tries >= 96) { setPayReturn(null); clear(); return; } // ~8 min, poi affida al reconcile-cron
       setTimeout(tick, 5000);
     };
     void tick();
