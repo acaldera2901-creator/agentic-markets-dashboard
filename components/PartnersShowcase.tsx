@@ -16,9 +16,11 @@ function PartnerCard({ p, lang, featured }: { p: Partner; lang: PartnersLang; fe
         {/* loghi statici in /public → <img> semplice, niente next/image */}
         <img src={p.logo} alt={p.name} className="partner-logo" loading="lazy" />
       </span>
-      <span className="partner-name">{p.name}</span>
-      <span className="partner-tagline">{PARTNER_TAGLINES[p.id][lang]}</span>
-      <span className="partner-cta">{t.visit} →</span>
+      <span className="partner-body">
+        <span className="partner-name">{p.name}</span>
+        <span className="partner-tagline">{PARTNER_TAGLINES[p.id][lang]}</span>
+        <span className="partner-cta">{t.visit} →</span>
+      </span>
     </a>
   );
 }

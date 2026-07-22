@@ -9412,15 +9412,33 @@ button:disabled {
 .partners-label { margin: 0 0 14px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--am-muted-2); border-bottom: 1px solid var(--am-line); padding-bottom: 8px; }
 .partners-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .partners-grid-featured { grid-template-columns: 1fr; }
-.partner-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px; border: 1px solid var(--am-line); border-radius: 16px; background: var(--am-panel); color: var(--am-text); text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
-.partner-card:hover { border-color: var(--am-coral-b); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.18); }
-.partner-card-featured { align-items: center; text-align: center; padding: 36px 28px; background: linear-gradient(180deg, var(--am-coral-dim), var(--am-panel)); border-color: var(--am-coral-b); }
-.partner-logo-wrap { display: flex; align-items: center; justify-content: flex-start; height: 40px; }
-.partner-card-featured .partner-logo-wrap { height: 56px; justify-content: center; }
-.partner-logo { max-height: 100%; width: auto; max-width: 180px; display: block; }
-.partner-name { font-size: 15px; font-weight: 700; color: var(--am-text); }
-.partner-tagline { font-size: 13px; line-height: 1.5; color: var(--am-muted); }
-.partner-cta { margin-top: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--am-coral); }
+/* Selettori scoping-ati sotto .partners-page: alzano la specificità sopra la
+   regola legacy `.partner-card span` (globals.css ~L4444), che altrimenti
+   sovrascrive colore/size di name/tagline/cta e appiattisce la gerarchia. */
+.partners-page .partner-card { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 22px; border: 1px solid var(--am-line); border-radius: 16px; background: var(--am-panel); color: var(--am-text); text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.partners-page .partner-card:hover { border-color: var(--am-coral-b); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.18); }
+.partners-page .partner-logo-wrap { display: flex; align-items: center; justify-content: flex-start; height: 30px; }
+/* Normalizzazione per altezza (max-height sul wrap): i loghi hanno rapporti
+   diversi (emblema quadrato vs wordmark) ma condividono la stessa altezza
+   ottica. Richiede che ogni SVG dichiari width/height intrinseci. */
+.partners-page .partner-logo { max-height: 100%; width: auto; max-width: 150px; display: block; }
+.partners-page .partner-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; }
+.partners-page .partner-name { font-size: 15px; font-weight: 700; color: var(--am-text); letter-spacing: -.01em; }
+.partners-page .partner-tagline { font-size: 13px; line-height: 1.5; color: var(--am-muted); }
+.partners-page .partner-cta { margin-top: 2px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--am-coral); }
+/* In evidenza: lockup orizzontale con medaglione — riempie la larghezza,
+   dà un focal point invece del vuoto centrato. */
+.partners-page .partner-card-featured { flex-direction: row; align-items: center; text-align: left; gap: 28px; padding: 28px 32px; background: linear-gradient(105deg, var(--am-coral-dim), var(--am-panel) 62%); border-color: var(--am-coral-b); }
+.partners-page .partner-card-featured .partner-logo-wrap { flex: 0 0 auto; width: 104px; height: 104px; justify-content: center; border-radius: 22px; background: var(--am-bg); border: 1px solid var(--am-coral-b); }
+.partners-page .partner-card-featured .partner-logo { max-height: 60px; max-width: 76px; }
+.partners-page .partner-card-featured .partner-body { gap: 10px; }
+.partners-page .partner-card-featured .partner-name { font-size: 20px; }
+.partners-page .partner-card-featured .partner-tagline { font-size: 14px; max-width: 48ch; }
 .partners-disclosure { margin-top: 40px; text-align: center; font-size: 11px; color: var(--am-muted-2); }
-@media (max-width: 480px) { .partners-title { font-size: 24px; } .partners-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .partners-title { font-size: 24px; }
+  .partners-grid { grid-template-columns: 1fr; }
+  .partners-page .partner-card-featured { flex-direction: column; text-align: center; align-items: center; padding: 28px 24px; gap: 20px; }
+  .partners-page .partner-card-featured .partner-body { align-items: center; text-align: center; }
+}
 /* ── end #PARTNERS-PAGE-1 ── */
