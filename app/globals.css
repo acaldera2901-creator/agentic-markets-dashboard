@@ -8052,6 +8052,11 @@ button:disabled {
 /* Telegram: icona presente ma non cliccabile finché non c'è il canale community. */
 .site-footer-social-icon { opacity: .45; cursor: default; }
 
+/* #PARTNERS-PAGE-1 — riga loghi partner nel footer (geo-gated). */
+.site-footer-partners { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; margin: 4px 0 2px; }
+.site-footer-partner-logo img { height: 18px; width: auto; max-width: 120px; display: block; opacity: .6; transition: opacity .15s; }
+.site-footer-partner-logo:hover img { opacity: 1; }
+
 /* ── Responsive ── */
 @media (max-width: 880px) {
   .lp-athlete { max-width: 240px; }

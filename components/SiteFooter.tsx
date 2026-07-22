@@ -16,6 +16,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { PARTNERS } from "@/lib/partners";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
 // tema). URL reali BetRedge. Telegram = SOLO icona, senza link: il canale/gruppo
@@ -129,21 +130,33 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
             07-06), copy neutra "Partner", nessun claim promozionale gambling.
             Icona partner-slotsbonus-sm.png in arrivo da Tommy → commit successivo.
             #GOLIVE-HIGH-D: gatato fail-closed sulla geo-policy (vedi partnerAllowed). */}
-        {partnerAllowed && (
-          <a
-            href="https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral"
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-            className="site-footer-partner-link"
-          >
-            {t.partner}
-          </a>
-        )}
+        {/* #PARTNERS-PAGE-1: il link "Partner" ora punta alla vetrina interna
+            /partners (route client, gambling gattato fail-closed nella pagina).
+            I loghi dei singoli partner sono nella riga dedicata più sotto. */}
+        <Link href="/partners" className="site-footer-partner-link">{t.partner}</Link>
         <span className="site-footer-sep">|</span>
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}
         <Link href="/terms">{t.terms}</Link>
         <Link href="/privacy">{t.privacy}</Link>
       </div>
+      {/* #PARTNERS-PAGE-1: riga loghi partner, gattata fail-closed sulla geo
+          (stesso partnerAllowed dei link-book). In IT/geo bloccate non compare. */}
+      {partnerAllowed && (
+        <div className="site-footer-partners" aria-label={t.partner}>
+          {PARTNERS.map((p) => (
+            <a
+              key={p.id}
+              href={p.url}
+              target="_blank"
+              rel="nofollow sponsored noopener"
+              className="site-footer-partner-logo"
+              aria-label={p.name}
+            >
+              <img src={p.logo} alt={p.name} loading="lazy" />
+            </a>
+          ))}
+        </div>
+      )}
       <div className="site-footer-social" aria-label={t.social}>
         <span className="site-footer-social-lab">{t.social}</span>
         {SOCIAL_LINKS.map((s) =>
