@@ -9395,3 +9395,27 @@ button:disabled {
   .hv3 .v-sportbtn-ic{width:23px;height:23px}
 }
 /* ── end #HOME-V3-SPORTNAV ── */
+
+/* #PARTNERS-PAGE-1 — vetrina partner (pagina /partners). Token --am-* → segue il tema. */
+.partners-page { max-width: 960px; margin: 0 auto; padding: 40px 20px 64px; }
+.partners-hero { text-align: center; margin-bottom: 36px; }
+.partners-back { display: inline-block; margin-bottom: 18px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--am-muted-2); text-decoration: none; }
+.partners-back:hover { color: var(--am-coral); }
+.partners-title { margin: 0 0 10px; font-size: 30px; font-weight: 800; color: var(--am-text); letter-spacing: -0.01em; }
+.partners-subtitle { margin: 0 auto; max-width: 560px; font-size: 14px; line-height: 1.6; color: var(--am-muted); }
+.partners-section { margin-top: 34px; }
+.partners-label { margin: 0 0 14px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--am-muted-2); border-bottom: 1px solid var(--am-line); padding-bottom: 8px; }
+.partners-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.partners-grid-featured { grid-template-columns: 1fr; }
+.partner-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px; border: 1px solid var(--am-line); border-radius: 16px; background: var(--am-panel); color: var(--am-text); text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.partner-card:hover { border-color: var(--am-coral-b); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.18); }
+.partner-card-featured { align-items: center; text-align: center; padding: 36px 28px; background: linear-gradient(180deg, var(--am-coral-dim), var(--am-panel)); border-color: var(--am-coral-b); }
+.partner-logo-wrap { display: flex; align-items: center; justify-content: flex-start; height: 40px; }
+.partner-card-featured .partner-logo-wrap { height: 56px; justify-content: center; }
+.partner-logo { max-height: 100%; width: auto; max-width: 180px; display: block; }
+.partner-name { font-size: 15px; font-weight: 700; color: var(--am-text); }
+.partner-tagline { font-size: 13px; line-height: 1.5; color: var(--am-muted); }
+.partner-cta { margin-top: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--am-coral); }
+.partners-disclosure { margin-top: 40px; text-align: center; font-size: 11px; color: var(--am-muted-2); }
+@media (max-width: 480px) { .partners-title { font-size: 24px; } .partners-grid { grid-template-columns: 1fr; } }
+/* ── end #PARTNERS-PAGE-1 ── */
