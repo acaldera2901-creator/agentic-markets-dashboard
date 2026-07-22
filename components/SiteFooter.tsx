@@ -16,6 +16,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { PARTNERS } from "@/lib/partners";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
 // tema). URL reali BetRedge. Telegram = SOLO icona, senza link: il canale/gruppo
@@ -125,25 +126,34 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
         <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer">BeGambleAware</a>
         <span className="site-footer-sep">|</span>
         <span>{t.partnerlinks}</span>
-        {/* #CROSS-REFERRAL-MAVEN: unico linkout reciproco designato (Andrea APPROVE
-            07-06), copy neutra "Partner", nessun claim promozionale gambling.
-            Icona partner-slotsbonus-sm.png in arrivo da Tommy → commit successivo.
-            #GOLIVE-HIGH-D: gatato fail-closed sulla geo-policy (vedi partnerAllowed). */}
-        {partnerAllowed && (
-          <a
-            href="https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral"
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-            className="site-footer-partner-link"
-          >
-            {t.partner}
-          </a>
-        )}
+        {/* #CROSS-REFERRAL-MAVEN / #PARTNERS-PAGE-1: copy neutra "Partner" → punta alla
+            vetrina interna /partners (non più il vecchio link inline slotsbonus).
+            I loghi dei singoli partner (lib/partners) vivono nella riga dedicata più
+            sotto, gattata fail-closed sulla geo-policy (partnerAllowed, #GOLIVE-HIGH-D). */}
+        <Link href="/partners" className="site-footer-partner-link">{t.partner}</Link>
         <span className="site-footer-sep">|</span>
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}
         <Link href="/terms">{t.terms}</Link>
         <Link href="/privacy">{t.privacy}</Link>
       </div>
+      {/* #PARTNERS-PAGE-1: riga loghi partner, gattata fail-closed sulla geo
+          (stesso partnerAllowed dei link-book). In IT/geo bloccate non compare. */}
+      {partnerAllowed && (
+        <div className="site-footer-partners" aria-label={t.partner}>
+          {PARTNERS.map((p) => (
+            <a
+              key={p.id}
+              href={p.url}
+              target="_blank"
+              rel="nofollow sponsored noopener"
+              className="site-footer-partner-logo"
+              aria-label={p.name}
+            >
+              <img src={p.logo} alt={p.name} loading="lazy" />
+            </a>
+          ))}
+        </div>
+      )}
       <div className="site-footer-social" aria-label={t.social}>
         <span className="site-footer-social-lab">{t.social}</span>
         {SOCIAL_LINKS.map((s) =>
