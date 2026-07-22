@@ -8053,9 +8053,12 @@ button:disabled {
 .site-footer-social-icon { opacity: .45; cursor: default; }
 
 /* #PARTNERS-PAGE-1 — riga loghi partner nel footer (geo-gated). */
-.site-footer-partners { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; margin: 4px 0 2px; }
-.site-footer-partner-logo img { height: 18px; width: auto; max-width: 120px; display: block; opacity: .6; transition: opacity .15s; }
-.site-footer-partner-logo:hover img { opacity: 1; }
+.site-footer-partners { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 2px; }
+/* Stessa placca scura fissa delle card /partners → loghi a polarità mista
+   leggibili su footer chiaro E scuro senza ricolorare i marchi. */
+.site-footer-partner-logo { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 12px; border-radius: 8px; background: #0e1116; border: 1px solid rgba(255,255,255,.07); opacity: .72; transition: opacity .15s; }
+.site-footer-partner-logo:hover { opacity: 1; }
+.site-footer-partner-logo img { height: 16px; width: auto; max-width: 120px; display: block; }
 
 /* ── Responsive ── */
 @media (max-width: 880px) {
@@ -9417,11 +9420,15 @@ button:disabled {
    sovrascrive colore/size di name/tagline/cta e appiattisce la gerarchia. */
 .partners-page .partner-card { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 22px; border: 1px solid var(--am-line); border-radius: 16px; background: var(--am-panel); color: var(--am-text); text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
 .partners-page .partner-card:hover { border-color: var(--am-coral-b); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.18); }
-.partners-page .partner-logo-wrap { display: flex; align-items: center; justify-content: flex-start; height: 30px; }
-/* Normalizzazione per altezza (max-height sul wrap): i loghi hanno rapporti
-   diversi (emblema quadrato vs wordmark) ma condividono la stessa altezza
-   ottica. Richiede che ogni SVG dichiari width/height intrinseci. */
-.partners-page .partner-logo { max-height: 100%; width: auto; max-width: 150px; display: block; }
+/* Logo-plate: i marchi partner hanno polarità mista (YBets/slotsbonus sono
+   disegnati per fondo scuro, BetScore per fondo chiaro). Invece di ricolorarli,
+   li poso su una PLACCA scura FISSA identica per tutti e due i temi → ogni
+   brand mantiene i suoi colori reali e resta leggibile su chiaro E scuro. */
+.partners-page .partner-logo-wrap { display: flex; align-items: center; justify-content: center; align-self: stretch; height: 72px; padding: 0 22px; border-radius: 12px; background: #0e1116; border: 1px solid rgba(255,255,255,.07); }
+/* Normalizzazione per altezza ottica: i loghi hanno rapporti diversi (emblema
+   quadrato vs wordmark) ma condividono la stessa altezza sulla placca.
+   Richiede che ogni SVG dichiari width/height intrinseci. */
+.partners-page .partner-logo { max-height: 34px; width: auto; max-width: 100%; display: block; }
 .partners-page .partner-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; }
 .partners-page .partner-name { font-size: 15px; font-weight: 700; color: var(--am-text); letter-spacing: -.01em; }
 .partners-page .partner-tagline { font-size: 13px; line-height: 1.5; color: var(--am-muted); }
@@ -9429,8 +9436,8 @@ button:disabled {
 /* In evidenza: lockup orizzontale con medaglione — riempie la larghezza,
    dà un focal point invece del vuoto centrato. */
 .partners-page .partner-card-featured { flex-direction: row; align-items: center; text-align: left; gap: 28px; padding: 28px 32px; background: linear-gradient(105deg, var(--am-coral-dim), var(--am-panel) 62%); border-color: var(--am-coral-b); }
-.partners-page .partner-card-featured .partner-logo-wrap { flex: 0 0 auto; width: 104px; height: 104px; justify-content: center; border-radius: 22px; background: var(--am-bg); border: 1px solid var(--am-coral-b); }
-.partners-page .partner-card-featured .partner-logo { max-height: 60px; max-width: 76px; }
+.partners-page .partner-card-featured .partner-logo-wrap { flex: 0 0 auto; align-self: auto; width: 116px; height: 116px; padding: 0; justify-content: center; border-radius: 22px; background: #0e1116; border: 1px solid var(--am-coral-b); }
+.partners-page .partner-card-featured .partner-logo { max-height: 62px; max-width: 80px; }
 .partners-page .partner-card-featured .partner-body { gap: 10px; }
 .partners-page .partner-card-featured .partner-name { font-size: 20px; }
 .partners-page .partner-card-featured .partner-tagline { font-size: 14px; max-width: 48ch; }

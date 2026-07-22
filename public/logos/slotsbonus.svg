@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="150" height="32" viewBox="0 0 150 32" role="img" aria-label="slotsbonus">
-  <rect x="0" y="4" width="24" height="24" rx="6" fill="#23A559"/>
-  <text x="12" y="21" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#06140C">S</text>
-  <text x="32" y="21" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#6b7280">slotsbonus</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="286" height="40" viewBox="0 0 286 40" role="img" aria-label="SLOTSBONUS">
+  <defs>
+    <!-- split verticale: metà superiore crema, metà inferiore oro (hard stop al 50%) -->
+    <linearGradient id="sb-split" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7efe3"/>
+      <stop offset="0.5" stop-color="#f7efe3"/>
+      <stop offset="0.5" stop-color="#ffc400"/>
+      <stop offset="1" stop-color="#ffc400"/>
+    </linearGradient>
+  </defs>
+  <!-- Boldonse non disponibile → heavy sans di sistema, leggermente condensato (scaleX .94) -->
+  <g transform="translate(3,0) scale(0.94,1)">
+    <text x="0" y="30" font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+          font-weight="900" font-size="32" letter-spacing="-0.6" fill="url(#sb-split)">SLOTSBONUS<tspan fill="#ff5a1f"> //</tspan></text>
+  </g>
 </svg>
