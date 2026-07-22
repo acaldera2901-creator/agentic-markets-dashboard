@@ -85,7 +85,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
     back: "← BetRedge",
     title: "Наши партнёры",
     subtitle: "Операторы, где можно применить аналитику BetRedge. BetRedge не принимает ставки — это независимые сторонние партнёры.",
-    featured: "В центре внимания", sportsbook: "Сбор ставок", casino: "Казино",
+    featured: "В центре внимания", sportsbook: "Букмекеры", casino: "Казино",
     visit: "Перейти", disclosure: "18+ · Партнёрские ссылки — коммерческие аффилиаты · Играйте ответственно",
     unavailableTitle: "Недоступно в вашем регионе",
     unavailableBody: "Этот раздел недоступен из вашего местоположения.",

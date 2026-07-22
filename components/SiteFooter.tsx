@@ -126,13 +126,10 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
         <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer">BeGambleAware</a>
         <span className="site-footer-sep">|</span>
         <span>{t.partnerlinks}</span>
-        {/* #CROSS-REFERRAL-MAVEN: unico linkout reciproco designato (Andrea APPROVE
-            07-06), copy neutra "Partner", nessun claim promozionale gambling.
-            Icona partner-slotsbonus-sm.png in arrivo da Tommy → commit successivo.
-            #GOLIVE-HIGH-D: gatato fail-closed sulla geo-policy (vedi partnerAllowed). */}
-        {/* #PARTNERS-PAGE-1: il link "Partner" ora punta alla vetrina interna
-            /partners (route client, gambling gattato fail-closed nella pagina).
-            I loghi dei singoli partner sono nella riga dedicata più sotto. */}
+        {/* #CROSS-REFERRAL-MAVEN / #PARTNERS-PAGE-1: copy neutra "Partner" → punta alla
+            vetrina interna /partners (non più il vecchio link inline slotsbonus).
+            I loghi dei singoli partner (lib/partners) vivono nella riga dedicata più
+            sotto, gattata fail-closed sulla geo-policy (partnerAllowed, #GOLIVE-HIGH-D). */}
         <Link href="/partners" className="site-footer-partner-link">{t.partner}</Link>
         <span className="site-footer-sep">|</span>
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}

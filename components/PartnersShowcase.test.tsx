@@ -16,6 +16,7 @@ describe("PartnersShowcase", () => {
       expect(rel).toContain("nofollow");
       expect(rel).toContain("sponsored");
       expect(rel).toContain("noopener");
+      expect(a.getAttribute("target")).toBe("_blank");
     }
   });
 
