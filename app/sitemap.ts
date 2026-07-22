@@ -12,6 +12,7 @@ const PUBLIC_ROUTES: { path: string; changeFrequency: "daily" | "monthly"; prior
   { path: "/world-cup", changeFrequency: "daily", priority: 0.8 },
   { path: "/weekly-pick", changeFrequency: "daily", priority: 0.8 },
   { path: "/community", changeFrequency: "daily", priority: 0.6 },
+  { path: "/partners", changeFrequency: "monthly", priority: 0.5 },
   { path: "/terms", changeFrequency: "monthly", priority: 0.3 },
   { path: "/privacy", changeFrequency: "monthly", priority: 0.3 },
 ];
