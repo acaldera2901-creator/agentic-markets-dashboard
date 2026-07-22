@@ -21,7 +21,7 @@ import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
-import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { fpEdge } from "@/lib/fortuneplay-live";
@@ -5045,7 +5045,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
       fpMatchId: fp?.id ?? null,
-      books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
+      books: [
+        ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
+        ...LANDING_PARTNERS.map((p) => ({ name: p.name, matchUrl: p.url })),
+      ],
       moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
@@ -5604,7 +5607,10 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
       fpMatchId: fp?.id ?? null,
-      books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
+      books: [
+        ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
+        ...LANDING_PARTNERS.map((p) => ({ name: p.name, matchUrl: p.url })),
+      ],
       moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),

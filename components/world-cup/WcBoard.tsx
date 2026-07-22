@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } from "@/lib/why-text";
-import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
 import { SportIcon } from "@/app/components/sport-icon";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
@@ -566,7 +566,10 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked }: { p: ProjectedRow; fp?: Fp
       // A2-B1/A2-B2: mai il landing FortunePlay (nemmeno il generico) per IT.
       matchUrl: booksBlocked ? "" : (fp?.matchUrl || FORTUNEPLAY_BET_URL),
       fpMatchId: fp?.id ?? null,
-      books: fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })),
+      books: [
+        ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
+        ...LANDING_PARTNERS.map((p) => ({ name: p.name, matchUrl: p.url })),
+      ],
       moreLabel: L2("Altri mercati FortunePlay", "More FortunePlay markets"),
       labels: {
         schedina: L2("La tua schedina", "Your betslip"),

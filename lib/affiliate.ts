@@ -27,3 +27,11 @@ export function withAffiliate<T extends Record<string, unknown>>(row: T): T {
 // infra in lib/sportsbooks + PlaceBetMenu is kept but unwired).
 // Upgrade path: when more partners return, re-wire PlaceBetMenu via /api/bet-links.
 export const FORTUNEPLAY_BET_URL = "https://mediaroosters.com/aacugmydl8";
+
+// #BETSCORE-CTA-1: partner affiliati "solo landing" (nessun feed quote). Compaiono
+// come CTA di redirect nella scheda-info, accanto ai book BetConstruct (FortunePlay/
+// YBets). Il link è di atterraggio/registrazione (302 → betscore1.com) → nessuna
+// quota/deep-link, solo redirect con attribuzione via ?mid=.
+export const LANDING_PARTNERS = [
+  { name: "BetScore", url: "https://bsr.lynmonkel.com/?mid=381903_2215092" },
+] as const;
