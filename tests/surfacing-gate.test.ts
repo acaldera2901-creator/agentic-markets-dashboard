@@ -122,4 +122,16 @@ assert.equal(SURFACE_FLOOR_WC, 26);
   assert.equal(isSurfacedRow({ sport: "football", competition: "World Cup", confidence_score: 25 }), false);
 }
 
+// ── #SERIE-B-1: coverage-first precautionary floor 65, no Serie A collision ───
+{
+  // Lab (scripts/lab_serie_b.py) does not clear ~70% at 56 and is per-season
+  // unstable → 65, matching the ALL/VEI cluster.
+  assert.equal(surfaceFloorFor("football", "Serie B"), 65);
+  assert.equal(surfaceFloorFor("football", "SERIE B"), 65);
+  // Serie A must keep the club default — "serie a" never contains "serie b".
+  assert.equal(surfaceFloorFor("football", "Serie A"), 56);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Serie B", confidence_score: 64 }), false);
+  assert.equal(isSurfacedRow({ sport: "football", competition: "Serie B", confidence_score: 65 }), true);
+}
+
 console.log("surfacing gate ok");

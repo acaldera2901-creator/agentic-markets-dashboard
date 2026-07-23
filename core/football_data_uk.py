@@ -21,6 +21,7 @@ DIVISION_MAP: dict[str, str] = {
     "PL": "E0",   # Premier League
     "BL1": "D1",  # Bundesliga
     "SA": "I1",   # Serie A
+    "SB": "I2",   # Serie B (#SERIE-B-1) — off-free-tier, served via snapshot path
     "PD": "SP1",  # La Liga
     "FL1": "F1",  # Ligue 1
 }
