@@ -8609,7 +8609,11 @@ export default function Dashboard() {
   const fetchFpOdds = useCallback(async () => {
     try {
       const resp = await fetch("/api/fortuneplay-odds", { credentials: "same-origin" });
-      if (resp.ok) { const d = await resp.json(); setFpOdds(d.odds ?? {}); }
+      // #IT-BOARD-1: per i viewer IT le quote sono geo-azzerate → trattiamo come
+      // "nessuna quota FP" (fpOdds vuoto) così il filtro #ONLY-WITH-ODDS-1 fa
+      // fail-open e il board mostra le PREDIZIONI senza quote/link, invece di
+      // svuotarsi del tutto. Le card cadono sul path model-only già gestito.
+      if (resp.ok) { const d = await resp.json(); setFpOdds(d.geoBlocked ? {} : (d.odds ?? {})); }
     } catch { /* degrada al landing */ }
   }, []);
 

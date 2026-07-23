@@ -1,4 +1,5 @@
 import { isSummerLeague } from "@/lib/summer-leagues";
+import { oddsBudgetOk, observeRemaining } from "@/lib/odds-quota";
 const BASE = "https://api.the-odds-api.com/v4";
 
 const SPORT_KEYS: Record<string, string> = {
@@ -92,17 +93,23 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
   const sportKey = SPORT_KEYS[league];
   if (!apiKey || !sportKey) return [];
 
+  // #ODDS-QUOTA-GUARD: sotto la riserva NON chiamiamo /odds — proteggiamo il
+  // budget condiviso (tennis/Python) dal drain del path football, che prima
+  // girava senza tracker. Il football degrada a stime-modello (odds/edge null),
+  // nessuna quota inventata.
+  if (!oddsBudgetOk()) return [];
+
+  const summer = isSummerLeague(league);
   try {
     const url = new URL(`${BASE}/sports/${sportKey}/odds`);
     url.searchParams.set("apiKey", apiKey);
     url.searchParams.set("oddsFormat", "decimal");
-    // Top leagues stay on the sharp trio (Pinnacle/Bet365/Betfair) for closing-line
-    // quality. Summer leagues (NOR/SWE/FIN/IRL/CHN) are frequently NOT priced by
-    // those three — restricting to them returned 0 h2h for Allsvenskan/Veikkausliiga,
-    // so every summer fixture was dropped (route.ts:462 needs real odds). Widen to
-    // all eu/uk books for summer leagues so the validated blend can be served.
-    url.searchParams.set("regions", "eu,uk");
-    if (!isSummerLeague(league)) {
+    // #ODDS-BURN-CUT: il costo credito è regioni × mercati. Le leghe non-estive
+    // stanno su Pinnacle (regione 'eu'), gold-standard per la closing line → una
+    // sola regione DIMEZZA i crediti (era eu,uk). Le estive restano su eu,uk: i
+    // libri sharp spesso non le prezzano e serve ampiezza (#FIX-SUMMER-ODDS-0625).
+    url.searchParams.set("regions", summer ? "eu,uk" : "eu");
+    if (!summer) {
       url.searchParams.set("bookmakers", "betfair,pinnacle,bet365");
     }
 
@@ -110,11 +117,15 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
     // calendar) → The Odds API returns 422 INVALID_MARKET and the whole league's
     // odds were lost, dropping every fixture. Request the full set, then fall back
     // to the core markets on 422 so odds still attach. (#FIX-SUMMER-ODDS-0625)
-    url.searchParams.set("markets", "h2h,totals,btts,double_chance");
+    // Le estive NON supportano btts/double_chance: chiediamo subito il set core,
+    // evitando il round-trip 422 sprecato (#ODDS-BURN-CUT).
+    url.searchParams.set("markets", summer ? "h2h,totals" : "h2h,totals,btts,double_chance");
     let r = await fetch(url.toString(), { cache: "no-store" });
+    observeRemaining(r.headers.get("x-requests-remaining"));
     if (r.status === 422) {
       url.searchParams.set("markets", "h2h,totals");
       r = await fetch(url.toString(), { cache: "no-store" });
+      observeRemaining(r.headers.get("x-requests-remaining"));
     }
     if (!r.ok) return [];
 

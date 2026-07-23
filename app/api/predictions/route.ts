@@ -30,6 +30,7 @@ import {
 } from "@/lib/summer-leagues";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
+import { seedOddsRemaining, persistOddsRemaining } from "@/lib/odds-quota";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
 import { fetchLeagueXG, matchTeam, leagueXGAverages } from "@/lib/understat";
 import { fetchMatchWeather } from "@/lib/weather";
@@ -318,6 +319,11 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   const summerCodes = codes.filter(isSummerLeague);
   const stored: string[] = [];
   const season = new Date().getFullYear();
+
+  // #ODDS-QUOTA-GUARD: semina il remaining condiviso PRIMA del batch /odds così
+  // il gate in fetchOdds è attivo già dalla prima lega (protegge il budget
+  // tennis/Python dal drain del path football).
+  await seedOddsRemaining();
 
   // ── BATCH 1: historical results (fd.org calls — fd leagues only) ─────────
   const t0 = Date.now();
@@ -669,6 +675,10 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   await dbQuery(
     `DELETE FROM match_predictions WHERE kickoff < NOW() - INTERVAL '24 hours'`
   );
+
+  // #ODDS-QUOTA-GUARD: persiste l'ultimo remaining osservato così il prossimo
+  // cold start (cron +2h) semina il gate senza ripartire da zero.
+  await persistOddsRemaining();
 
   return { stored: stored.length, leagues: [...new Set(stored)] };
 }
