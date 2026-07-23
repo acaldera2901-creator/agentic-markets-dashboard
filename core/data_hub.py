@@ -85,6 +85,11 @@ class DataHub:
             mark_closing_lines,
             snapshot_odds_to_supabase,
         )
+        from core import odds_reserve
+        # #ODDS-BURN-OPT: semina il remaining reale condiviso (fonte: header
+        # x-requests-remaining, scritto anche dal guard TS). Sotto riserva ogni
+        # get_all_bookmaker_odds si auto-salta → non si arriva mai a 0.
+        await odds_reserve.seed_remaining()
         all_rows: list[dict] = []
         for league in leagues:
             try:
@@ -99,6 +104,7 @@ class DataHub:
         if all_rows:
             await snapshot_odds_to_supabase(all_rows)
         await mark_closing_lines()
+        await odds_reserve.persist()  # aggiorna la riga condivisa col remaining osservato
         return all_rows
 
     async def collect_tennis_fixtures(self, days_ahead: int = 7) -> list[dict]:

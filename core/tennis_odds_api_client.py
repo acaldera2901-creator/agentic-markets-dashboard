@@ -187,7 +187,8 @@ async def get_tennis_odds(sport_keys: tuple[str, ...] = TENNIS_SPORT_KEYS) -> li
                 f"{BASE_URL}/sports/{sport_key}/odds",
                 params={
                     "apiKey": settings.ODDS_API_KEY,
-                    "regions": "eu,uk",
+                    # #ODDS-BURN-OPT: eu-only (Pinnacle è in 'eu') → -50% crediti.
+                    "regions": "eu",
                     "markets": "h2h",
                     "oddsFormat": "decimal",
                     "dateFormat": "iso",
