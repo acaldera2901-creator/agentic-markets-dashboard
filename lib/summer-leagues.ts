@@ -38,6 +38,17 @@ export const SUMMER_LEAGUES: Record<string, string> = {
   VEI: "Veikkausliiga",
   LOI: "League of Ireland",
   CSL: "Chinese Super League",
+  // #SERIE-B-1 — Italian Serie B is NOT a summer league; it rides this same
+  // "off-free-tier" machinery (snapshot history + ESPN fixtures + Odds API 1X2)
+  // because it is not on football-data.org's free tier. The walk-forward lab
+  // (scripts/lab_serie_b.py, I2 closing odds 2022-2026) does NOT clear the ~70%
+  // quality bar for default surfacing: 68.2% @floor56 and per-season unstable
+  // (52-58% in 2 of 4 seasons). Wired COVERAGE-first with a precautionary
+  // surfacing floor of 65 (lib/surfacing-gate.ts CLUB_FLOOR_OVERRIDES) — only
+  // the strongest favourites surface as picks; the rest show calibrated
+  // probabilities without a pick. Revisit the floor on live settled data (as the
+  // summer leagues were, #MINORS-TIGHTEN). Off-season until ~late Aug 2026.
+  SB: "Serie B",
 };
 
 export function isSummerLeague(code: string): boolean {
@@ -50,6 +61,7 @@ const ESPN_SLUGS: Record<string, string> = {
   VEI: "fin.1", // empty on ESPN — kept for completeness; fixtures come from odds events
   LOI: "irl.1",
   CSL: "chn.1",
+  SB: "ita.2", // Serie B (#SERIE-B-1) — probed: 20 teams on ESPN 2026-07-23
 };
 
 // #LIVE-LEAGUES-0627: slug ESPN da interrogare anche nel feed LIVE del board
@@ -57,7 +69,7 @@ const ESPN_SLUGS: Record<string, string> = {
 // come la World Cup. fin.1 (VEI) escluso: ESPN lo restituisce vuoto e The Odds
 // API non va chiamata nel polling 60s (quota). Le card estive hanno match_id
 // `espn:<id>` → match diretto col live scoreboard.
-export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1"];
+export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1", "ita.2"];
 
 const ODDS_SPORT_KEYS: Record<string, string> = {
   ELI: "soccer_norway_eliteserien",
@@ -65,6 +77,7 @@ const ODDS_SPORT_KEYS: Record<string, string> = {
   VEI: "soccer_finland_veikkausliiga",
   LOI: "soccer_league_of_ireland",
   CSL: "soccer_china_superleague",
+  SB: "soccer_italy_serie_b", // Serie B (#SERIE-B-1) — verified active on The Odds API
 };
 
 type SnapshotShape = {

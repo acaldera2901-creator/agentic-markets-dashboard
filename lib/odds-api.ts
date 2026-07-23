@@ -19,6 +19,10 @@ const SPORT_KEYS: Record<string, string> = {
   VEI: "soccer_finland_veikkausliiga",
   LOI: "soccer_league_of_ireland",
   CSL: "soccer_china_superleague",
+  // #SERIE-B-1 — verified active on /v4/sports (off-season now, events resume
+  // ~late Aug 2026). Routed through the summer-league odds path (regions eu,uk,
+  // markets h2h,totals): +1 league of quota burn — acceptable and bounded.
+  SB: "soccer_italy_serie_b",
 };
 
 export function normName(name: string): string {

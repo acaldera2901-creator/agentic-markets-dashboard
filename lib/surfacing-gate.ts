@@ -84,6 +84,14 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   ["chinese super league", 70],  // live 14.3% @56 -> nearly closed
   ["veikkausliiga", 65],         // live 40% @56
   ["eliteserien", 60],           // no live sample -> precautionary
+  // #SERIE-B-1 (walk-forward lab scripts/lab_serie_b.py, I2 closing odds
+  // 2022-2026): the served blend does NOT clear the ~70% bar at 56 (68.2%,
+  // 34.5 picks/yr) and is per-season UNSTABLE (52-58% in 2 of 4 seasons; the
+  // 74.6% @60 aggregate is carried almost entirely by 2025/26). Set 65 as a
+  // precautionary coverage-first floor (matches the ALL/VEI cluster): only the
+  // strongest favourites surface as picks, the rest show probabilities without
+  // a pick. Revisit on live settled data. Substring "serie b" ≠ "serie a".
+  ["serie b", 65],
 ];
 
 export type SurfaceDecision = {

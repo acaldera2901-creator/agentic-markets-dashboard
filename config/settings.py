@@ -199,6 +199,11 @@ class Settings(BaseSettings):
         "chinese super league": 70,  # live 14.3% @56 -> quasi-chiuso
         "veikkausliiga": 65,         # live 40% @56
         "eliteserien": 60,           # zero campione live -> precauzionale
+        # #SERIE-B-1 (lab walk-forward scripts/lab_serie_b.py, I2 2022-2026): il
+        # blend servito NON supera la barra ~70% a 56 (68.2%) ed e' instabile per
+        # stagione (52-58% in 2 stagioni su 4). Floor precauzionale 65 (cluster
+        # ALL/VEI): coverage-first, rivedere sui dati live. Mirror in surfacing-gate.ts.
+        "serie b": 65,
     }
     # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
     # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.
