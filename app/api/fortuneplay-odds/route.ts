@@ -57,7 +57,12 @@ export async function GET(req: NextRequest) {
   const payload = blocked
     ? Object.fromEntries(Object.entries(odds).map(([k, v]) => [k, redactEntry(v)]))
     : odds;
-  const res = NextResponse.json({ odds: payload });
+  // #IT-BOARD-1: il flag dice al board che le quote sono azzerate per geo (non
+  // "endpoint giù"). Il client fa fail-open sul filtro #ONLY-WITH-ODDS-1 così i
+  // viewer IT vedono le PREDIZIONI (probabilità/pick, informative) senza quote né
+  // link book, invece di un board calcio completamente vuoto (Decreto Dignità:
+  // niente pubblicità di scommesse, ma le predizioni del modello restano).
+  const res = NextResponse.json({ odds: payload, geoBlocked: blocked });
   res.headers.set("Cache-Control", ODDS_CACHE);
   // La risposta differisce per country → la cache CDN deve variare sullo stesso
   // header usato per risolverla, altrimenti un viewer IT potrebbe ricevere una
