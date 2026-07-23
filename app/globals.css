@@ -8056,7 +8056,9 @@ button:disabled {
 .site-footer-partners { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 2px; }
 /* Stessa placca scura fissa delle card /partners → loghi a polarità mista
    leggibili su footer chiaro E scuro senza ricolorare i marchi. */
-.site-footer-partner-logo { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 12px; border-radius: 8px; background: #0e1116; border: 1px solid rgba(255,255,255,.07); opacity: .72; transition: opacity .15s; }
+/* min-width uniforme = larghezza della tile più larga (slotsbonus): l'emblema
+   quadrato FortunePlay non appare più stretto degli altri → strip regolare. */
+.site-footer-partner-logo { display: inline-flex; align-items: center; justify-content: center; min-width: 104px; height: 34px; padding: 0 12px; border-radius: 8px; background: #0e1116; border: 1px solid rgba(255,255,255,.07); opacity: .72; transition: opacity .15s; }
 .site-footer-partner-logo:hover { opacity: 1; }
 .site-footer-partner-logo img { height: 16px; width: auto; max-width: 120px; display: block; }
 
