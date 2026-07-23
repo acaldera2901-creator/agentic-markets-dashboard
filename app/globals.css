@@ -9445,6 +9445,10 @@ button:disabled {
 @media (max-width: 480px) {
   .partners-title { font-size: 24px; }
   .partners-grid { grid-template-columns: 1fr; }
+  /* A colonna singola la placca è larga quanto la card: riduco il padding
+     orizzontale così il wordmark più largo (slotsbonus, ~243px a 34px d'altezza)
+     entra alla sua altezza ottica piena invece di essere clampato da max-width. */
+  .partners-page .partner-logo-wrap { padding: 0 14px; }
   .partners-page .partner-card-featured { flex-direction: column; text-align: center; align-items: center; padding: 28px 24px; gap: 20px; }
   .partners-page .partner-card-featured .partner-body { align-items: center; text-align: center; }
 }
