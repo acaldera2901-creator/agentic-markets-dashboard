@@ -157,7 +157,8 @@ async def get_odds(league: str) -> List[Dict]:
                 f"{BASE_URL}/sports/{sport_key}/odds",
                 params={
                     "apiKey": settings.ODDS_API_KEY,
-                    "regions": "eu,uk",
+                    # #ODDS-BURN-OPT: eu-only (Pinnacle è in 'eu') → -50% crediti.
+                    "regions": "eu",
                     "markets": "h2h",
                     "oddsFormat": "decimal",
                 },
@@ -297,10 +298,14 @@ def implied_probability(odds: float) -> float:
     return 1.0 / odds if odds > 0 else 0.0
 
 
-# Markets we snapshot per league call. Credit cost = markets × regions, so
-# h2h+spreads+totals × eu,uk = 6 credits per league per cycle (#ODDS-1 budget).
-SNAPSHOT_MARKETS = "h2h,spreads,totals"
-SNAPSHOT_REGIONS = "eu,uk"
+# Markets we snapshot per league call. Credit cost = markets × regions.
+# #ODDS-BURN-OPT: era h2h,spreads,totals × eu,uk = 6 crediti/lega/ciclo → ~90k/mese
+# da SOLO questo consumer (quasi tutto il piano 100k), causa principale del drain.
+# Il blend usa SOLO h2h (core/market_anchor.py, ancora = Pinnacle, presente in 'eu');
+# `spreads` non è letto da nessun path di predizione. Tagliato a h2h,totals × eu
+# = 2 crediti/lega (-67%). `totals` tenuto per il shadow-settlement O/U.
+SNAPSHOT_MARKETS = "h2h,totals"
+SNAPSHOT_REGIONS = "eu"
 SNAPSHOT_CREDITS_PER_CALL = len(SNAPSHOT_MARKETS.split(",")) * len(SNAPSHOT_REGIONS.split(","))
 
 
@@ -308,6 +313,11 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
     """Fetch odds from ALL bookmakers. Returns [{match_id, team_pair_key, commence_time, home_team, away_team, bookmaker, market, ...}]."""
     sport_key = SPORT_KEYS.get(league_code)
     if not sport_key or not settings.ODDS_API_KEY:
+        return []
+    # #ODDS-BURN-OPT: sotto la riserva condivisa NON chiamiamo /odds (protegge il
+    # margine account per gli altri consumer → non si arriva mai a 0).
+    from core import odds_reserve
+    if not odds_reserve.budget_ok():
         return []
     # Quota guard: skip out-of-season keys (markets × regions is expensive).
     active = await get_active_sport_keys()
@@ -325,6 +335,7 @@ async def get_all_bookmaker_odds(league_code: str) -> List[Dict]:
                     "dateFormat": "iso",
                 },
             )
+            odds_reserve.observe(resp.headers)  # aggiorna il remaining reale condiviso
             if resp.status_code != 200:
                 return []
             events = resp.json()
