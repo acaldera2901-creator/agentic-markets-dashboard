@@ -26,6 +26,7 @@ from core.goalscorer_match_resolver import (
     odds_sport_keys_for,
 )
 from core.goalscorer_odds_collector import collect_goalscorer_odds
+from core.quota_tracker import QuotaTracker
 
 
 async def _get(client, base, headers, path, params):
@@ -86,9 +87,16 @@ async def _run(within_hours: int, dry_run: bool) -> dict:
     match_resolver = build_match_resolver(preds)
     player_resolver = build_player_resolver(profiles)
 
+    # #ODDS-QUOTA-GUARD: tracker condiviso (semina da source_quota_log il consumo
+    # del mese) → l'endpoint event-level goalscorer rispetta il cap 'odds_api' e
+    # non può più drenare l'account.
+    quota = QuotaTracker()
+    await quota.load("odds_api")
+
     summary = await collect_goalscorer_odds(
         sport_keys, match_resolver, now_iso=now.isoformat(),
         player_resolver=player_resolver, within_hours=within_hours, dry_run=dry_run,
+        quota=quota,
     )
     summary["sport_keys"] = sport_keys
     summary["predictions_loaded"] = len(preds)
