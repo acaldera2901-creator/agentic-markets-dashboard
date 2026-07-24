@@ -54,19 +54,38 @@ describe("extractOrder", () => {
 });
 
 describe("buildShopifyCheckoutUrl", () => {
-  it("costruisce il permalink cart con email prefill + identifier in attributes", () => {
+  // Decodifica il return_to annidato per asserire sui parametri veri di /cart/add.
+  function addParams(url: string): URLSearchParams {
+    const outer = new URL(url).searchParams.get("return_to")!;
+    return new URLSearchParams(outer.split("?")[1]);
+  }
+
+  it("passa per /cart/clear → /cart/add con identifier e email prefill", () => {
     const url = buildShopifyCheckoutUrl("premium", "User@Test.com")!;
-    expect(url).toContain("https://betredge.myshopify.com/cart/222:1");
-    // email prefill (case-insensitive: identifier normalizzato lowercase come extractOrder)
-    expect(url).toContain("checkout%5Bemail%5D=User%40Test.com");
-    expect(url).toContain("attributes%5Bidentifier%5D=user%40test.com");
+    expect(url).toContain("https://betredge.myshopify.com/cart/clear?");
+    const p = addParams(url);
+    expect(p.get("id")).toBe("222");
+    expect(p.get("quantity")).toBe("1");
+    // identifier normalizzato lowercase come extractOrder; email prefill col case originale
+    expect(p.get("attributes[identifier]")).toBe("user@test.com");
+    expect(p.get("return_to")).toBe("/checkout?checkout%5Bemail%5D=User%40Test.com");
   });
 
-  it("aggiunge selling_plan quando configurato (abbonamento ricorrente)", () => {
+  it("applica il selling_plan sui piani (altrimenti sarebbe un addebito una-tantum)", () => {
     process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
+    const p = addParams(buildShopifyCheckoutUrl("base", "a@b.com")!);
+    expect(p.get("id")).toBe("111");
+    expect(p.get("selling_plan")).toBe("777");
+  });
+
+  it("NON usa il permalink /cart/{variant}:1, che ignora il selling plan", () => {
+    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
+    expect(buildShopifyCheckoutUrl("base", "a@b.com")).not.toContain("/cart/111:1");
+  });
+
+  it("svuota il carrello prima di aggiungere (doppio click = due abbonamenti)", () => {
     const url = buildShopifyCheckoutUrl("base", "a@b.com")!;
-    expect(url).toContain("/cart/111:1");
-    expect(url).toContain("selling_plan=777");
+    expect(new URL(url).pathname).toBe("/cart/clear");
   });
 
   it("ritorna null se lo store non è configurato (fallback al flusso attuale)", () => {

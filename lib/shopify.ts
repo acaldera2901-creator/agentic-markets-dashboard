@@ -60,18 +60,29 @@ export function buildShopifyCheckoutUrl(
   const variant = variantFor(sku);
   if (!domain || !variant) return null;
 
-  const params = new URLSearchParams();
-  params.set("checkout[email]", email); // prefill: mantiene il case originale
-  params.set("attributes[identifier]", email.toLowerCase().trim()); // match con extractOrder
-  // La weekly pick NON porta selling_plan: è un acquisto singolo, non un
-  // abbonamento. Passarne uno la trasformerebbe in un addebito ricorrente.
+  // Il checkout viene raggiunto via return_to, con l'email precompilata.
+  const returnTo = `/checkout?${new URLSearchParams({ "checkout[email]": email })}`;
+
+  const add = new URLSearchParams();
+  add.set("id", variant);
+  add.set("quantity", "1");
+  // La weekly pick NON porta selling_plan: è un acquisto singolo. Passarne uno
+  // la trasformerebbe in un addebito ricorrente.
   if (sku !== "weekly") {
     const sellingPlan =
       sku === "premium" ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM : process.env.SHOPIFY_SELLING_PLAN_BASE;
-    if (sellingPlan) params.set("selling_plan", sellingPlan);
+    if (sellingPlan) add.set("selling_plan", sellingPlan);
   }
+  add.set("attributes[identifier]", email.toLowerCase().trim()); // match con extractOrder
+  add.set("return_to", returnTo);
 
-  return `https://${domain}/cart/${variant}:1?${params.toString()}`;
+  // Due dettagli verificati sullo store reale, non intercambiabili:
+  // 1) il permalink `/cart/{variant}:1?selling_plan=…` NON applica il piano —
+  //    su cart.js la riga esce senza selling_plan_allocation, cioè l'utente
+  //    pagherebbe una-tantum invece di abbonarsi. Solo /cart/add lo applica.
+  // 2) /cart/add SOMMA al carrello esistente: senza /cart/clear a monte un
+  //    doppio click metterebbe due abbonamenti nello stesso ordine.
+  return `https://${domain}/cart/clear?${new URLSearchParams({ return_to: `/cart/add?${add}` })}`;
 }
 
 type OrderShape = {

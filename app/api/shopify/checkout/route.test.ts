@@ -50,14 +50,18 @@ it("400 su requested_plan non valido", async () => {
   expect((await POST(req({ requested_plan: "gold", period: "monthly" }))).status).toBe(400);
 });
 
-it("ritorna il permalink con variant, email e identifier dalla sessione", async () => {
+it("ritorna l'URL con variant, email e identifier dalla sessione", async () => {
   const { POST } = await import("./route");
   const res = await POST(req({ requested_plan: "premium", period: "monthly" }));
   expect(res.status).toBe(200);
   const { url } = (await res.json()) as { url: string };
-  expect(url).toContain("https://gvfgra-sp.myshopify.com/cart/54401929904465:1?");
-  expect(url).toContain("checkout%5Bemail%5D=u%40t.com");
-  expect(url).toContain("attributes%5Bidentifier%5D=u%40t.com");
+  expect(url).toContain("https://gvfgra-sp.myshopify.com/cart/clear?");
+  const inner = new URLSearchParams(
+    new URL(url).searchParams.get("return_to")!.split("?")[1]
+  );
+  expect(inner.get("id")).toBe("54401929904465");
+  expect(inner.get("attributes[identifier]")).toBe("u@t.com");
+  expect(inner.get("return_to")).toContain("checkout%5Bemail%5D=u%40t.com");
 });
 
 it("503 se lo store non è configurato → il client resta su PayGate", async () => {
@@ -121,14 +125,17 @@ it("503 sui piani quando la promo di lancio sconta l'ordine (prezzo Shopify fiss
   expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
 });
 
-it("weekly: permalink one-off senza selling_plan", async () => {
+it("weekly: acquisto one-off, senza selling_plan", async () => {
   process.env.SHOPIFY_SELLING_PLAN_BASE = "999";
   const { POST } = await import("./route");
   const res = await POST(req({ requested_plan: "weekly" }));
   expect(res.status).toBe(200);
   const { url } = (await res.json()) as { url: string };
-  expect(url).toContain("/cart/54404245815633:1?");
-  expect(url).not.toContain("selling_plan");
+  const inner = new URLSearchParams(
+    new URL(url).searchParams.get("return_to")!.split("?")[1]
+  );
+  expect(inner.get("id")).toBe("54404245815633");
+  expect(inner.get("selling_plan")).toBe(null);
 });
 
 it("weekly: 404 col flag WEEKLY_PICK_ENABLED spento", async () => {
