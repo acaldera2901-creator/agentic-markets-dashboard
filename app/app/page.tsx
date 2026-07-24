@@ -3411,6 +3411,24 @@ function CheckoutModal({
     // On success la pagina viene sostituita (redirect), quindi lo stato resta true.
     setRedirecting(true);
     try {
+      // #SHOPIFY-CHECKOUT-1: se lo store Shopify è configurato il rail carta è
+      // Shopify (abbonamento ricorrente + ricevuta). Qualunque altra risposta
+      // (503 non configurato / annuale, 409 grandfather o tier-guard) cade sul
+      // flusso PayGate esistente, che resta invariato. NB: nessun
+      // markPayPending() qui — su Shopify il piano lo concede il webhook.
+      try {
+        const sres = await fetch("/api/shopify/checkout", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ requested_plan: plan, period }),
+        });
+        if (sres.ok) {
+          const { url: shopUrl } = (await sres.json()) as { url?: string };
+          if (shopUrl) { window.location.href = shopUrl; return; }
+        }
+      } catch (e) {
+        console.error("shopify checkout unavailable, fallback paygate", e);
+      }
       const res = await fetch("/api/paygate/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
