@@ -18,7 +18,7 @@
 //   1) DNS: record A  `chat`  ->  IP arbitrario (es. 192.0.2.1)  ·  Proxied (nuvola arancione ON)
 //   2) Workers & Pages: nuovo Worker (es. `tawk-proxy`) con questo codice
 //   3) Worker → Settings → Triggers → Route:  chat.betredge.com/*   (zona betredge.com)
-//   4) Test:  https://chat.betredge.com/__tk/embed.tawk.to/6a3ac896707bc21d4a185b17/1jrqpv3j1
+//   4) Test:  https://chat.betredge.com/__tk/embed.tawk.to/6a6351eb85c9821d4774b92a/1ju9vg0tr
 //             deve restituire lo script embed di Tawk (200, content-type javascript).
 //   5) Vercel (prod, team betredge): env  NEXT_PUBLIC_TAWK_PROXY_HOST=chat.betredge.com  → redeploy.
 //
