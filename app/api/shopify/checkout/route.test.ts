@@ -2,8 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const getSessionPlan = vi.fn();
 const dbQueryStrict = vi.fn();
+const promoEligibility = vi.fn();
+const hasWeeklyPick = vi.fn();
 vi.mock("@/lib/auth", () => ({ getSessionPlan }));
 vi.mock("@/lib/db", () => ({ dbQuery: vi.fn(), dbQueryStrict, dbExecute: vi.fn() }));
+vi.mock("@/lib/creator-promo", () => ({ promoEligibility }));
+vi.mock("@/lib/weekly-pick-server", () => ({ hasWeeklyPick }));
 
 function req(body: unknown, headers: Record<string, string> = {}) {
   return new Request("https://x/api/shopify/checkout", {
@@ -18,8 +22,14 @@ beforeEach(() => {
   process.env.SHOPIFY_SHOP_DOMAIN = "gvfgra-sp.myshopify.com";
   process.env.SHOPIFY_VARIANT_BASE = "54401918337361";
   process.env.SHOPIFY_VARIANT_PREMIUM = "54401929904465";
+  process.env.SHOPIFY_VARIANT_WEEKLY = "54404245815633";
   delete process.env.SHOPIFY_SELLING_PLAN_BASE;
   delete process.env.SHOPIFY_SELLING_PLAN_PREMIUM;
+  delete process.env.LAUNCH_PROMO_ENABLED;
+  delete process.env.LAUNCH_PROMO_DEADLINE;
+  process.env.WEEKLY_PICK_ENABLED = "true";
+  promoEligibility.mockResolvedValue({ firstPaidOrder: false });
+  hasWeeklyPick.mockResolvedValue(false);
   getSessionPlan.mockResolvedValue({
     identifier: "u@t.com",
     plan: "free",
@@ -101,6 +111,60 @@ it("500 fail-closed se la lettura di plan_source fallisce (mai un pagamento orfa
   dbQueryStrict.mockRejectedValue(new Error("db down"));
   const { POST } = await import("./route");
   expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(500);
+});
+
+it("503 sui piani quando la promo di lancio sconta l'ordine (prezzo Shopify fisso)", async () => {
+  process.env.LAUNCH_PROMO_ENABLED = "true";
+  process.env.LAUNCH_PROMO_DEADLINE = new Date(Date.now() + 86400_000).toISOString();
+  promoEligibility.mockResolvedValue({ firstPaidOrder: true });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
+});
+
+it("weekly: permalink one-off senza selling_plan", async () => {
+  process.env.SHOPIFY_SELLING_PLAN_BASE = "999";
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "weekly" }));
+  expect(res.status).toBe(200);
+  const { url } = (await res.json()) as { url: string };
+  expect(url).toContain("/cart/54404245815633:1?");
+  expect(url).not.toContain("selling_plan");
+});
+
+it("weekly: 404 col flag WEEKLY_PICK_ENABLED spento", async () => {
+  process.env.WEEKLY_PICK_ENABLED = "false";
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(404);
+});
+
+it("weekly: 409 se è già inclusa nel piano premium", async () => {
+  getSessionPlan.mockResolvedValue({
+    identifier: "u@t.com",
+    plan: "premium",
+    name: null,
+    plan_expires_at: new Date(Date.now() + 10 * 86400_000).toISOString(),
+  });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(409);
+});
+
+it("weekly: 409 se l'ha già comprata questa settimana", async () => {
+  hasWeeklyPick.mockResolvedValue(true);
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(409);
+});
+
+it("weekly: 500 fail-closed se non riusciamo a sapere se l'ha già comprata", async () => {
+  hasWeeklyPick.mockRejectedValue(new Error("db down"));
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(500);
+});
+
+it("weekly: 503 con promo di lancio attiva (prezzo Shopify fisso a 12.99)", async () => {
+  process.env.LAUNCH_PROMO_ENABLED = "true";
+  process.env.LAUNCH_PROMO_DEADLINE = new Date(Date.now() + 86400_000).toISOString();
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(503);
 });
 
 it("403 su richiesta cross-site", async () => {

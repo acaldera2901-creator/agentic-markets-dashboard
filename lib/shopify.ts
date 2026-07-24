@@ -29,6 +29,23 @@ export function resolvePlanFromVariant(
   return null;
 }
 
+// La Weekly Pick è una SKU one-off, non un piano: l'ordine non concede
+// plan/plan_expires_at ma un entitlement per la settimana corrente. Sta fuori
+// da resolvePlanFromVariant proprio per non poter essere confusa con un piano.
+export function isWeeklyPickVariant(variantId: string | number | null | undefined): boolean {
+  const weekly = process.env.SHOPIFY_VARIANT_WEEKLY;
+  if (!weekly || variantId == null) return false;
+  return String(variantId) === weekly;
+}
+
+export type ShopifySku = "base" | "premium" | "weekly";
+
+function variantFor(sku: ShopifySku): string | undefined {
+  if (sku === "weekly") return process.env.SHOPIFY_VARIANT_WEEKLY;
+  if (sku === "premium") return process.env.SHOPIFY_VARIANT_PREMIUM;
+  return process.env.SHOPIFY_VARIANT_BASE;
+}
+
 // Costruisce il permalink di checkout Shopify per un nuovo abbonato.
 // L'app resta la fonte del piano: passiamo l'email (prefill) e l'identifier
 // come cart attribute → Shopify lo riporta in order.note_attributes, che il
@@ -36,19 +53,23 @@ export function resolvePlanFromVariant(
 // Ritorna null se lo store non è configurato → il chiamante fa fallback al
 // flusso attuale (PayGate), così è safe da deployare "dark".
 export function buildShopifyCheckoutUrl(
-  plan: "base" | "premium",
+  sku: ShopifySku,
   email: string
 ): string | null {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
-  const variant = plan === "premium" ? process.env.SHOPIFY_VARIANT_PREMIUM : process.env.SHOPIFY_VARIANT_BASE;
+  const variant = variantFor(sku);
   if (!domain || !variant) return null;
 
   const params = new URLSearchParams();
   params.set("checkout[email]", email); // prefill: mantiene il case originale
   params.set("attributes[identifier]", email.toLowerCase().trim()); // match con extractOrder
-  const sellingPlan =
-    plan === "premium" ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM : process.env.SHOPIFY_SELLING_PLAN_BASE;
-  if (sellingPlan) params.set("selling_plan", sellingPlan);
+  // La weekly pick NON porta selling_plan: è un acquisto singolo, non un
+  // abbonamento. Passarne uno la trasformerebbe in un addebito ricorrente.
+  if (sku !== "weekly") {
+    const sellingPlan =
+      sku === "premium" ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM : process.env.SHOPIFY_SELLING_PLAN_BASE;
+    if (sellingPlan) params.set("selling_plan", sellingPlan);
+  }
 
   return `https://${domain}/cart/${variant}:1?${params.toString()}`;
 }

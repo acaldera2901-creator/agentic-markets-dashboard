@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
-import { verifyShopifyHmac, extractOrder, resolvePlanFromVariant, isShopifyConfigured } from "@/lib/shopify";
+import {
+  verifyShopifyHmac,
+  extractOrder,
+  resolvePlanFromVariant,
+  isWeeklyPickVariant,
+  isShopifyConfigured,
+} from "@/lib/shopify";
 import { activateShopifyPlan } from "@/lib/plan-grant";
+import { grantWeeklyPick } from "@/lib/weekly-pick-server";
+import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +56,18 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Weekly Pick: SKU one-off → entitlement della settimana corrente, non un
+    // piano. La settimana la decide il SERVER al momento dell'ordine (mai il
+    // payload), e grantWeeklyPick è idempotente sulla UNIQUE identifier+week.
+    if (isWeeklyPickVariant(order.variantId)) {
+      if (!order.identifier) {
+        console.error("[shopify/webhook] weekly pick senza identifier", { order });
+        return NextResponse.json({ received: true, unresolved: true });
+      }
+      await grantWeeklyPick(order.identifier, currentWeekStart(new Date()), null);
+      return NextResponse.json({ received: true, weeklyPick: true });
+    }
+
     const plan = resolvePlanFromVariant(order.variantId);
     if (!order.identifier || !plan) {
       // Non mappabile: NON scartare in silenzio → resta senza grant per la reconcile.
