@@ -72,6 +72,7 @@ export async function activateAdminPlan(identifier: string): Promise<ActivatedRo
             requested_plan = NULL,
             tx_hash = NULL,
             plan_expires_at = NOW() + INTERVAL '30 days',
+            plan_source = 'manual',
             updated_at = NOW()
       WHERE identifier = $1
         AND plan = 'pending_payment'
@@ -117,6 +118,7 @@ export async function activateStripePlan(
             requested_plan = NULL,
             plan_expires_at = ${expirySqlExpr(expiresAtIso)},
             stripe_subscription_id = COALESCE($3, p.stripe_subscription_id),
+            plan_source = 'stripe',
             updated_at = NOW()
       WHERE p.identifier = $1`,
     [before.identifier, plan, subscriptionId]
@@ -190,6 +192,7 @@ export async function activatePaygatePlan(
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = $3::timestamptz,
+            plan_source = 'paygate',
             updated_at = NOW()
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
     [identifier, newPlan, expiryISO]
@@ -234,6 +237,7 @@ export async function activatePaypalPlan(
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = $3::timestamptz,
+            plan_source = 'paypal',
             updated_at = NOW()
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
     [identifier, newPlan, expiryISO]
