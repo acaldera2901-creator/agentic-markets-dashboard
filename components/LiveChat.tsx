@@ -21,8 +21,8 @@ import { useEffect, useState } from "react";
 // perché il Worker riscrive i riferimenti *.tawk.to — dal NOSTRO dominio, che le VPN
 // non bloccano. Default = embed.tawk.to diretto → comportamento INVARIATO finché
 // l'env NON è settata. Worker: infra/cloudflare/tawk-proxy-worker.js.
-const TAWK_PROPERTY = "6a3ac896707bc21d4a185b17";
-const TAWK_WIDGET = "1jrqpv3j1";
+const TAWK_PROPERTY = "6a6351eb85c9821d4774b92a";
+const TAWK_WIDGET = "1ju9vg0tr";
 const TAWK_PROXY_HOST = process.env.NEXT_PUBLIC_TAWK_PROXY_HOST || "";
 const TAWK_SRC = TAWK_PROXY_HOST
   ? `https://${TAWK_PROXY_HOST}/__tk/embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}`
