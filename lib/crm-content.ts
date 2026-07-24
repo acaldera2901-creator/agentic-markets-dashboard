@@ -40,7 +40,11 @@ function footer(identifier: string, lang: CrmLang): string {
   const vat = process.env.COMPANY_VAT || "";
   const contact = process.env.COMPANY_CONTACT_EMAIL || "info@betredge.com";
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
-  const idline = [co, addr, vat ? `P.IVA ${vat}` : ""].filter(Boolean).join(" · ");
+  // COMPANY_VAT porta anche l'etichetta ("UID CHE-…", "P.IVA IT…"): l'entità che
+  // emette è svizzera, quindi un "P.IVA" hardcoded sarebbe un dato legale errato
+  // nel footer del mittente. L'env resta l'unica fonte, senza una seconda env
+  // solo per l'etichetta.
+  const idline = [co, addr, vat].filter(Boolean).join(" · ");
   // Footer legale renderizzato nell'area footer scura del brandedShell.
   return `<p style="font-size:11px;color:#8b98a4;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#8b98a4;text-decoration:underline">${UNSUB_LABEL[lang]}</a><br>${DISCLAIMER[lang]}</p>`;
 }
