@@ -29,6 +29,30 @@ export function resolvePlanFromVariant(
   return null;
 }
 
+// Costruisce il permalink di checkout Shopify per un nuovo abbonato.
+// L'app resta la fonte del piano: passiamo l'email (prefill) e l'identifier
+// come cart attribute → Shopify lo riporta in order.note_attributes, che il
+// webhook legge con extractOrder per mappare il grant all'utente.
+// Ritorna null se lo store non è configurato → il chiamante fa fallback al
+// flusso attuale (PayGate), così è safe da deployare "dark".
+export function buildShopifyCheckoutUrl(
+  plan: "base" | "premium",
+  email: string
+): string | null {
+  const domain = process.env.SHOPIFY_SHOP_DOMAIN;
+  const variant = plan === "premium" ? process.env.SHOPIFY_VARIANT_PREMIUM : process.env.SHOPIFY_VARIANT_BASE;
+  if (!domain || !variant) return null;
+
+  const params = new URLSearchParams();
+  params.set("checkout[email]", email); // prefill: mantiene il case originale
+  params.set("attributes[identifier]", email.toLowerCase().trim()); // match con extractOrder
+  const sellingPlan =
+    plan === "premium" ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM : process.env.SHOPIFY_SELLING_PLAN_BASE;
+  if (sellingPlan) params.set("selling_plan", sellingPlan);
+
+  return `https://${domain}/cart/${variant}:1?${params.toString()}`;
+}
+
 type OrderShape = {
   id?: unknown;
   email?: unknown;
