@@ -16,7 +16,7 @@ export function expirySqlExpr(expiresAtIso: string | null): string {
 }
 
 type ActivatedRow = { identifier: string; name: string | null; plan: GrantablePlan };
-type ActivationSource = "admin" | "stripe" | "paygate" | "paypal";
+type ActivationSource = "admin" | "stripe" | "paygate" | "paypal" | "shopify";
 
 // Shared NOTIFICATION side-effect for both activation modes: audit `events` row +
 // best-effort activation email. The two modes must NOT share the activating SQL
@@ -72,6 +72,7 @@ export async function activateAdminPlan(identifier: string): Promise<ActivatedRo
             requested_plan = NULL,
             tx_hash = NULL,
             plan_expires_at = NOW() + INTERVAL '30 days',
+            plan_source = 'manual',
             updated_at = NOW()
       WHERE identifier = $1
         AND plan = 'pending_payment'
@@ -117,6 +118,7 @@ export async function activateStripePlan(
             requested_plan = NULL,
             plan_expires_at = ${expirySqlExpr(expiresAtIso)},
             stripe_subscription_id = COALESCE($3, p.stripe_subscription_id),
+            plan_source = 'stripe',
             updated_at = NOW()
       WHERE p.identifier = $1`,
     [before.identifier, plan, subscriptionId]
@@ -190,6 +192,7 @@ export async function activatePaygatePlan(
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = $3::timestamptz,
+            plan_source = 'paygate',
             updated_at = NOW()
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
     [identifier, newPlan, expiryISO]
@@ -234,6 +237,7 @@ export async function activatePaypalPlan(
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = $3::timestamptz,
+            plan_source = 'paypal',
             updated_at = NOW()
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
     [identifier, newPlan, expiryISO]
@@ -242,6 +246,73 @@ export async function activatePaypalPlan(
   const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
   if (before.plan !== newPlan) {
     await notifyPlanActivated(activated, "paypal");
+  }
+  return activated;
+}
+
+// Guardia grandfather PURA: durante la transizione crypto→carta, un abbonato
+// PayGate ancora attivo NON va sovrascritto da un grant Shopify (caso raro di
+// doppio pagamento). Permette in ogni altro caso (shopify/manual/free/scaduto).
+export function shopifyGrantAllowed(
+  currentSource: string | null,
+  currentExpiryISO: string | null
+): boolean {
+  if (currentSource !== "paygate") return true;
+  if (!currentExpiryISO) return true;
+  return new Date(currentExpiryISO).getTime() <= Date.now();
+}
+
+// Grant Shopify: stesso modello one-shot di PayGate/PayPal (riusa
+// computePaygateGrant → stack del residuo + anti-downgrade). Ritorna null se
+// l'identifier non esiste (→ riconciliazione) o se bloccato dalla guardia.
+export async function activateShopifyPlan(
+  identifier: string,
+  plan: GrantablePlan,
+  period: "monthly" | "annual"
+): Promise<ActivatedRow | null> {
+  const days = period === "annual" ? 365 : 30;
+
+  const prev = await dbQuery<{
+    plan: string;
+    name: string | null;
+    plan_expires_at: string | null;
+    plan_source: string | null;
+  }>(
+    `SELECT plan, name, plan_expires_at::text AS plan_expires_at, plan_source FROM profiles
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+      LIMIT 1`,
+    [identifier]
+  );
+  const before = prev[0];
+  if (!before) return null; // identifier-not-found → il chiamante logga la riconciliazione
+
+  if (!shopifyGrantAllowed(before.plan_source, before.plan_expires_at)) {
+    console.error("[shopify] grant bloccato: abbonato PayGate attivo", { identifier });
+    return null;
+  }
+
+  const { plan: newPlan, expiryISO } = computePaygateGrant({
+    currentPlan: before.plan,
+    currentExpiryISO: before.plan_expires_at,
+    purchasedPlan: plan,
+    days,
+    nowISO: new Date().toISOString(),
+  });
+
+  await dbExecute(
+    `UPDATE profiles
+        SET plan = $2,
+            requested_plan = NULL,
+            plan_expires_at = $3::timestamptz,
+            plan_source = 'shopify',
+            updated_at = NOW()
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
+    [identifier, newPlan, expiryISO]
+  );
+
+  const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
+  if (before.plan !== newPlan) {
+    await notifyPlanActivated(activated, "shopify");
   }
   return activated;
 }
