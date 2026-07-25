@@ -3151,7 +3151,11 @@ function CryptoPaymentBox({
   return (
     <div className="crypto-pay-box">
       <div>
-        <span>USDT TRC20</span>
+        {/* Il badge diceva "USDT TRC20" ma questo bottone apre il checkout con la
+            CARTA (abbonamento Shopify); il crypto e' l'alternativa. Etichettare
+            il rail sbagliato accanto al prezzo e' la stessa copy falsa del
+            price-line, in un secondo punto. */}
+        <span>{pick5(lang, { it: "Carta o crypto", en: "Card or crypto", es: "Tarjeta o crypto", fr: "Carte ou crypto", ru: "Карта или крипто" })}</span>
         <strong>{planPriceCopy(plan, lang)}</strong>
         {!profile && <em>{t.crypto_profile_required}</em>}
       </div>
