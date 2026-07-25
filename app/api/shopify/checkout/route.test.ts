@@ -23,6 +23,9 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_BASE = "54401918337361";
   process.env.SHOPIFY_VARIANT_PREMIUM = "54401929904465";
   process.env.SHOPIFY_VARIANT_WEEKLY = "54404245815633";
+  delete process.env.SHOPIFY_VARIANT_BASE_ANNUAL;
+  delete process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL;
+  delete process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
   delete process.env.SHOPIFY_SELLING_PLAN_BASE;
   delete process.env.SHOPIFY_SELLING_PLAN_PREMIUM;
   delete process.env.LAUNCH_PROMO_ENABLED;
@@ -70,9 +73,27 @@ it("503 se lo store non è configurato → il client resta su PayGate", async ()
   expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
 });
 
-it("503 sull'annuale: su Shopify esiste solo il selling plan mensile", async () => {
+it("annuale: usa il prodotto annuale, non quello mensile", async () => {
+  process.env.SHOPIFY_VARIANT_BASE_ANNUAL = "99001";
+  process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "99002";
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "annual" }));
+  expect(res.status).toBe(200);
+  const { url } = (await res.json()) as { url: string };
+  const inner = new URLSearchParams(new URL(url).searchParams.get("return_to")!.split("?")[1]);
+  expect(inner.get("id")).toBe("99001");
+  expect(inner.get("selling_plan")).toBe("99002");
+});
+
+it("503 sull'annuale se i prodotti annuali non sono configurati → fallback PayGate", async () => {
+  delete process.env.SHOPIFY_VARIANT_BASE_ANNUAL;
   const { POST } = await import("./route");
   expect((await POST(req({ requested_plan: "base", period: "annual" }))).status).toBe(503);
+});
+
+it("400 su periodo non valido", async () => {
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "weekly" }))).status).toBe(400);
 });
 
 it("409 per l'abbonato PayGate ancora attivo (grandfather)", async () => {

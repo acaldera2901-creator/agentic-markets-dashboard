@@ -1,15 +1,18 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import crypto from "node:crypto";
-import { verifyShopifyHmac, resolvePlanFromVariant, extractOrder, buildShopifyCheckoutUrl } from "./shopify";
+import { verifyShopifyHmac, resolveOrderFromVariant, extractOrder, buildShopifyCheckoutUrl } from "./shopify";
 
 const SECRET = "whsec_test_123";
 beforeEach(() => {
   process.env.SHOPIFY_WEBHOOK_SECRET = SECRET;
   process.env.SHOPIFY_VARIANT_BASE = "111";
   process.env.SHOPIFY_VARIANT_PREMIUM = "222";
+  process.env.SHOPIFY_VARIANT_BASE_ANNUAL = "333";
+  process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "444";
   process.env.SHOPIFY_SHOP_DOMAIN = "betredge.myshopify.com";
   delete process.env.SHOPIFY_SELLING_PLAN_BASE;
   delete process.env.SHOPIFY_SELLING_PLAN_PREMIUM;
+  delete process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
 });
 function sign(body: string) {
   return crypto.createHmac("sha256", SECRET).update(body, "utf8").digest("base64");
@@ -26,11 +29,18 @@ describe("verifyShopifyHmac", () => {
   });
 });
 
-describe("resolvePlanFromVariant", () => {
-  it("mappa i variant id configurati", () => {
-    expect(resolvePlanFromVariant("111")).toBe("base");
-    expect(resolvePlanFromVariant(222)).toBe("premium");
-    expect(resolvePlanFromVariant("999")).toBe(null);
+describe("resolveOrderFromVariant", () => {
+  it("mappa i variant mensili", () => {
+    expect(resolveOrderFromVariant("111")).toEqual({ plan: "base", period: "monthly" });
+    expect(resolveOrderFromVariant(222)).toEqual({ plan: "premium", period: "monthly" });
+  });
+  it("mappa i variant annuali col periodo giusto (365 giorni, non 30)", () => {
+    expect(resolveOrderFromVariant("333")).toEqual({ plan: "base", period: "annual" });
+    expect(resolveOrderFromVariant(444)).toEqual({ plan: "premium", period: "annual" });
+  });
+  it("ritorna null su variant sconosciuto", () => {
+    expect(resolveOrderFromVariant("999")).toBe(null);
+    expect(resolveOrderFromVariant(null)).toBe(null);
   });
 });
 
@@ -86,6 +96,27 @@ describe("buildShopifyCheckoutUrl", () => {
   it("svuota il carrello prima di aggiungere (doppio click = due abbonamenti)", () => {
     const url = buildShopifyCheckoutUrl("base", "a@b.com")!;
     expect(new URL(url).pathname).toBe("/cart/clear");
+  });
+
+  it("annuale: usa il prodotto annuale e il selling plan annuale", () => {
+    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
+    process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "888";
+    const p = addParams(buildShopifyCheckoutUrl("premium", "a@b.com", "annual")!);
+    expect(p.get("id")).toBe("444"); // prodotto premium ANNUALE, non quello mensile
+    expect(p.get("selling_plan")).toBe("888");
+  });
+
+  it("annuale: null se il prodotto annuale non è configurato (fallback PayGate)", () => {
+    delete process.env.SHOPIFY_VARIANT_BASE_ANNUAL;
+    expect(buildShopifyCheckoutUrl("base", "a@b.com", "annual")).toBe(null);
+  });
+
+  it("la weekly pick ignora il periodo e resta senza piano", () => {
+    process.env.SHOPIFY_VARIANT_WEEKLY = "555";
+    process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "888";
+    const p = addParams(buildShopifyCheckoutUrl("weekly", "a@b.com", "annual")!);
+    expect(p.get("id")).toBe("555");
+    expect(p.get("selling_plan")).toBe(null);
   });
 
   it("ritorna null se lo store non è configurato (fallback al flusso attuale)", () => {

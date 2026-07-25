@@ -19,19 +19,26 @@ export function verifyShopifyHmac(rawBody: string, hmacHeader: string | null): b
   return crypto.timingSafeEqual(a, b);
 }
 
-export function resolvePlanFromVariant(
+export type ShopifyPeriod = "monthly" | "annual";
+
+// Risolve piano E periodo dal variant id. Il periodo DEVE venire da qui: mensile
+// e annuale sono prodotti Shopify distinti, e passare "monthly" per un ordine
+// annuale concederebbe 30 giorni a chi ha pagato 12 mesi.
+export function resolveOrderFromVariant(
   variantId: string | number | null | undefined
-): "base" | "premium" | null {
+): { plan: "base" | "premium"; period: ShopifyPeriod } | null {
   if (variantId == null) return null;
   const v = String(variantId);
-  if (v === process.env.SHOPIFY_VARIANT_BASE) return "base";
-  if (v === process.env.SHOPIFY_VARIANT_PREMIUM) return "premium";
+  if (v === process.env.SHOPIFY_VARIANT_BASE) return { plan: "base", period: "monthly" };
+  if (v === process.env.SHOPIFY_VARIANT_PREMIUM) return { plan: "premium", period: "monthly" };
+  if (v === process.env.SHOPIFY_VARIANT_BASE_ANNUAL) return { plan: "base", period: "annual" };
+  if (v === process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL) return { plan: "premium", period: "annual" };
   return null;
 }
 
 // La Weekly Pick è una SKU one-off, non un piano: l'ordine non concede
 // plan/plan_expires_at ma un entitlement per la settimana corrente. Sta fuori
-// da resolvePlanFromVariant proprio per non poter essere confusa con un piano.
+// da resolveOrderFromVariant proprio per non poter essere confusa con un piano.
 export function isWeeklyPickVariant(variantId: string | number | null | undefined): boolean {
   const weekly = process.env.SHOPIFY_VARIANT_WEEKLY;
   if (!weekly || variantId == null) return false;
@@ -40,10 +47,29 @@ export function isWeeklyPickVariant(variantId: string | number | null | undefine
 
 export type ShopifySku = "base" | "premium" | "weekly";
 
-function variantFor(sku: ShopifySku): string | undefined {
+// Mensile e annuale sono PRODOTTI distinti su Shopify (prezzi 14.99/29.99 vs
+// 164.99/329.99), non due varianti dello stesso: così il webhook può dedurre il
+// periodo dal solo variant id, che è l'unico campo su cui possiamo contare nel
+// payload di orders/paid.
+function variantFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
   if (sku === "weekly") return process.env.SHOPIFY_VARIANT_WEEKLY;
-  if (sku === "premium") return process.env.SHOPIFY_VARIANT_PREMIUM;
-  return process.env.SHOPIFY_VARIANT_BASE;
+  if (period === "annual") {
+    return sku === "premium"
+      ? process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL
+      : process.env.SHOPIFY_VARIANT_BASE_ANNUAL;
+  }
+  return sku === "premium" ? process.env.SHOPIFY_VARIANT_PREMIUM : process.env.SHOPIFY_VARIANT_BASE;
+}
+
+// L'annuale usa UN solo selling plan (ogni 12 mesi, nessun aggiustamento di
+// prezzo) condiviso dai due prodotti annuali, perché il prezzo sta già nel
+// prodotto. Il mensile ha un plan per prodotto per motivi storici.
+function sellingPlanFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
+  if (sku === "weekly") return undefined;
+  if (period === "annual") return process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
+  return sku === "premium"
+    ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM
+    : process.env.SHOPIFY_SELLING_PLAN_BASE;
 }
 
 // Costruisce il permalink di checkout Shopify per un nuovo abbonato.
@@ -54,10 +80,11 @@ function variantFor(sku: ShopifySku): string | undefined {
 // flusso attuale (PayGate), così è safe da deployare "dark".
 export function buildShopifyCheckoutUrl(
   sku: ShopifySku,
-  email: string
+  email: string,
+  period: ShopifyPeriod = "monthly"
 ): string | null {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
-  const variant = variantFor(sku);
+  const variant = variantFor(sku, period);
   if (!domain || !variant) return null;
 
   // Il checkout viene raggiunto via return_to, con l'email precompilata.
@@ -68,11 +95,8 @@ export function buildShopifyCheckoutUrl(
   add.set("quantity", "1");
   // La weekly pick NON porta selling_plan: è un acquisto singolo. Passarne uno
   // la trasformerebbe in un addebito ricorrente.
-  if (sku !== "weekly") {
-    const sellingPlan =
-      sku === "premium" ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM : process.env.SHOPIFY_SELLING_PLAN_BASE;
-    if (sellingPlan) add.set("selling_plan", sellingPlan);
-  }
+  const sellingPlan = sellingPlanFor(sku, period);
+  if (sellingPlan) add.set("selling_plan", sellingPlan);
   add.set("attributes[identifier]", email.toLowerCase().trim()); // match con extractOrder
   add.set("return_to", returnTo);
 

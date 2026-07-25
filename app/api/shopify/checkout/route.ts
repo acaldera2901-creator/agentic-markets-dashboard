@@ -22,8 +22,8 @@ export const runtime = "nodejs";
 // piano di un altro account. Env-gated: senza store configurato risponde 503 e il
 // chiamante resta sul flusso PayGate esistente (deploy safe dark).
 //
-// requested_plan: "base" | "premium" (abbonamento mensile) oppure "weekly"
-// (Weekly Pick, acquisto singolo della settimana corrente).
+// requested_plan: "base" | "premium" (abbonamento, period "monthly" | "annual")
+// oppure "weekly" (Weekly Pick, acquisto singolo della settimana corrente).
 export async function POST(req: Request) {
   if (req.headers.get("sec-fetch-site") === "cross-site") {
     return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
@@ -80,11 +80,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: weeklyUrl });
   }
 
-  // ---- Piani base/premium: abbonamento mensile ----
-  // Su Shopify esiste solo il selling plan MENSILE: l'annuale resta su PayGate.
-  // 503 (non 400) perché per il client è lo stesso caso "rail non disponibile".
-  if (body.period !== "monthly") {
-    return NextResponse.json({ error: "period not on shopify" }, { status: 503 });
+  // ---- Piani base/premium: abbonamento mensile o annuale ----
+  const period = body.period;
+  if (period !== "monthly" && period !== "annual") {
+    return NextResponse.json({ error: "invalid period" }, { status: 400 });
   }
 
   // Stessa tier-guard di PayGate: premium attivo non compra 'base' (tier-arbitrage).
@@ -116,7 +115,7 @@ export async function POST(req: Request) {
   // l'utente su PayGate, altrimenti pagherebbe pieno vedendo il prezzo scontato.
   try {
     const promo = await promoEligibility(ctx.identifier);
-    if (discountedAmountFor(sku as PlanKey, "monthly", promo).discounted) {
+    if (discountedAmountFor(sku as PlanKey, period, promo).discounted) {
       return NextResponse.json({ error: "promo not on shopify" }, { status: 503 });
     }
   } catch (e) {
@@ -124,7 +123,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "checkout unavailable" }, { status: 500 });
   }
 
-  const url = buildShopifyCheckoutUrl(sku, ctx.identifier);
+  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period);
   if (!url) return NextResponse.json({ error: "shopify not configured" }, { status: 503 });
   return NextResponse.json({ url });
 }

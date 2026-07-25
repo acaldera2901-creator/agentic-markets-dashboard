@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   verifyShopifyHmac,
   extractOrder,
-  resolvePlanFromVariant,
+  resolveOrderFromVariant,
   isWeeklyPickVariant,
   isShopifyConfigured,
 } from "@/lib/shopify";
@@ -68,13 +68,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true, weeklyPick: true });
     }
 
-    const plan = resolvePlanFromVariant(order.variantId);
-    if (!order.identifier || !plan) {
+    const resolved = resolveOrderFromVariant(order.variantId);
+    if (!order.identifier || !resolved) {
       // Non mappabile: NON scartare in silenzio → resta senza grant per la reconcile.
       console.error("[shopify/webhook] unresolved order", { order });
       return NextResponse.json({ received: true, unresolved: true });
     }
-    const granted = await activateShopifyPlan(order.identifier, plan, "monthly");
+    // Il periodo viene dal variant id, non hardcoded: un ordine annuale deve
+    // valere 365 giorni, non 30.
+    const granted = await activateShopifyPlan(order.identifier, resolved.plan, resolved.period);
     if (!granted) {
       console.error("[shopify/webhook] grant null (utente inesistente o grandfather)", {
         identifier: order.identifier,
