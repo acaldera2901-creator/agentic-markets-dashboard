@@ -116,6 +116,17 @@ type OrderShape = {
   line_items?: Array<{ variant_id?: unknown }>;
 };
 
+// Payload di refunds/create: `id` è il RIMBORSO, `order_id` l'ordine originale.
+// Serve l'order_id perché è la chiave con cui shopify_events sa a chi apparteneva
+// il pagamento (il payload del rimborso non porta l'identifier).
+export function extractRefund(
+  payload: unknown
+): { refundId: string; orderId: string } | null {
+  const r = (payload ?? {}) as { id?: unknown; order_id?: unknown };
+  if (r.id == null || r.order_id == null) return null;
+  return { refundId: String(r.id), orderId: String(r.order_id) };
+}
+
 export function extractOrder(
   payload: unknown
 ): { orderId: string; email: string | null; identifier: string | null; variantId: string | null } | null {

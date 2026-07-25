@@ -5,21 +5,54 @@ const dbQueryStrict = vi.fn();
 const dbExecute = vi.fn();
 const activateShopifyPlan = vi.fn();
 const grantWeeklyPick = vi.fn();
+const revokeShopifyPlan = vi.fn();
 vi.mock("@/lib/db", () => ({ dbQuery: vi.fn(), dbQueryStrict, dbExecute }));
-vi.mock("@/lib/plan-grant", () => ({ activateShopifyPlan }));
+vi.mock("@/lib/plan-grant", () => ({ activateShopifyPlan, revokeShopifyPlan }));
 vi.mock("@/lib/weekly-pick-server", () => ({ grantWeeklyPick }));
 
 const SECRET = "whsec_test_123";
 function sign(body: string) {
   return crypto.createHmac("sha256", SECRET).update(body, "utf8").digest("base64");
 }
-function req(body: string, hmac: string | null) {
-  return new Request("https://x/api/shopify/webhook", {
-    method: "POST",
-    headers: hmac ? { "x-shopify-hmac-sha256": hmac } : {},
-    body,
-  });
+function req(body: string, hmac: string | null, topic?: string) {
+  const headers: Record<string, string> = {};
+  if (hmac) headers["x-shopify-hmac-sha256"] = hmac;
+  if (topic) headers["x-shopify-topic"] = topic;
+  return new Request("https://x/api/shopify/webhook", { method: "POST", headers, body });
 }
+
+// --- refunds/create: revoca l'accesso ---
+
+it("rimborso: revoca l'accesso dell'identifier dell'ordine originale", async () => {
+  // 1a query: idempotenza sul refund (non visto). 2a: lookup identifier dall'ordine.
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com" }]);
+  revokeShopifyPlan.mockResolvedValue(true);
+  const body = JSON.stringify({ id: 7001, order_id: 900 });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "refunds/create"));
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ revoked: true });
+  expect(revokeShopifyPlan).toHaveBeenCalledWith("u@t.com");
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+});
+
+it("rimborso già processato: non revoca due volte", async () => {
+  dbQueryStrict.mockResolvedValueOnce([{ event_id: "refund:7001" }]);
+  const body = JSON.stringify({ id: 7001, order_id: 900 });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "refunds/create"));
+  expect(await res.json()).toMatchObject({ duplicate: true });
+  expect(revokeShopifyPlan).not.toHaveBeenCalled();
+});
+
+it("rimborso su ordine sconosciuto: NON tira a indovinare chi disattivare", async () => {
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([]); // ordine non trovato
+  const body = JSON.stringify({ id: 7002, order_id: 12345 });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "refunds/create"));
+  expect(await res.json()).toMatchObject({ unresolved: true });
+  expect(revokeShopifyPlan).not.toHaveBeenCalled();
+});
 
 beforeEach(() => {
   vi.clearAllMocks();

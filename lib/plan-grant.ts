@@ -316,3 +316,33 @@ export async function activateShopifyPlan(
   }
   return activated;
 }
+
+// Revoca l'accesso dopo un rimborso/chargeback Shopify.
+// Scadenza immediata, NON cancellazione del piano: l'accesso è governato da
+// plan_expires_at (effectivePlan degrada lo scaduto a free), così non
+// distruggiamo lo storico e un riacquisto riparte pulito.
+// Tocca SOLO i piani di provenienza Shopify: un rimborso su Shopify non deve
+// spegnere un abbonato PayGate che nel frattempo ha comprato altrove.
+export async function revokeShopifyPlan(identifier: string): Promise<boolean> {
+  const rows = await dbQuery<{ plan_source: string | null }>(
+    `SELECT plan_source FROM profiles
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
+      LIMIT 1`,
+    [identifier]
+  );
+  if (rows[0]?.plan_source !== "shopify") {
+    console.error("[shopify] revoca ignorata: il piano attivo non è di Shopify", {
+      identifier,
+      plan_source: rows[0]?.plan_source ?? null,
+    });
+    return false;
+  }
+  await dbExecute(
+    `UPDATE profiles
+        SET plan_expires_at = NOW(), updated_at = NOW()
+      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
+    [identifier]
+  );
+  console.log(`[shopify] accesso revocato per rimborso identifier=${identifier}`);
+  return true;
+}
