@@ -3207,12 +3207,14 @@ function CheckoutModal({
   // prima di qualunque await, così i click ravvicinati non creano ordini doppi.
   const payInFlight = useRef(false);
   const [error, setError] = useState("");
-  // #GOLIVE-QW-A: the period toggle is only rendered with PayGate on. With PayGate
-  // off the UI shows the monthly USDT price, so the ordered period must default to
-  // monthly too — otherwise a PayPal order silently went out as annual.
-  const [period, setPeriod] = useState<"monthly" | "annual">(
-    process.env.NEXT_PUBLIC_PAYGATE_ENABLED === "true" ? "annual" : "monthly",
-  );
+  // #SHOPIFY-CHECKOUT-1: default MENSILE sempre. Su Shopify esiste solo il selling
+  // plan mensile, quindi con default "annual" ogni pagamento carta veniva rifiutato
+  // dalla route Shopify (503) e cadeva su PayGate — la cui pagina hosted è
+  // white-label sul NOSTRO dominio, quindi sembrava che il sito non reindirizzasse
+  // affatto a Shopify. Chi vuole l'annuale lo sceglie col toggle e resta su PayGate.
+  // (Vale anche per PayPal one-click, che legge lo stesso `period`: #GOLIVE-QW-A
+  // era nato proprio da un ordine PayPal partito annuale per sbaglio.)
+  const [period, setPeriod] = useState<"monthly" | "annual">("monthly");
   const [applePayReady, setApplePayReady] = useState(false);
   const [applePayBusy, setApplePayBusy] = useState(false);
   // #GOLIVE-QW-A: EU right-of-withdrawal consent — payment CTAs stay disabled until
