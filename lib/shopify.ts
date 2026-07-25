@@ -95,8 +95,15 @@ export function buildShopifyCheckoutUrl(
   add.set("quantity", "1");
   // La weekly pick NON porta selling_plan: è un acquisto singolo. Passarne uno
   // la trasformerebbe in un addebito ricorrente.
-  const sellingPlan = sellingPlanFor(sku, period);
-  if (sellingPlan) add.set("selling_plan", sellingPlan);
+  if (sku !== "weekly") {
+    const sellingPlan = sellingPlanFor(sku, period);
+    // Senza selling plan l'ordine sarebbe un addebito UNICO travestito da
+    // abbonamento: il cliente paga una volta e non rinnova mai, e nessuno se ne
+    // accorge. Meglio non offrire affatto il rail (→ 503 → fallback PayGate)
+    // che vendere un abbonamento che non è un abbonamento.
+    if (!sellingPlan) return null;
+    add.set("selling_plan", sellingPlan);
+  }
   add.set("attributes[identifier]", email.toLowerCase().trim()); // match con extractOrder
   add.set("return_to", returnTo);
 
@@ -112,29 +119,68 @@ export function buildShopifyCheckoutUrl(
 type OrderShape = {
   id?: unknown;
   email?: unknown;
+  total_price?: unknown;
   note_attributes?: Array<{ name?: string; value?: string }>;
   line_items?: Array<{ variant_id?: unknown }>;
 };
+
+// Importo in euro/dollari da una stringa Shopify ("14.99"). Ritorna null su
+// valori assenti o non numerici: il chiamante deve distinguere "zero" da "non lo so".
+function money(v: unknown): number | null {
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v !== "string") return null;
+  const n = Number.parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 // Payload di refunds/create: `id` è il RIMBORSO, `order_id` l'ordine originale.
 // Serve l'order_id perché è la chiave con cui shopify_events sa a chi apparteneva
 // il pagamento (il payload del rimborso non porta l'identifier).
 export function extractRefund(
   payload: unknown
-): { refundId: string; orderId: string } | null {
-  const r = (payload ?? {}) as { id?: unknown; order_id?: unknown };
+): { refundId: string; orderId: string; amount: number | null } | null {
+  const r = (payload ?? {}) as {
+    id?: unknown;
+    order_id?: unknown;
+    transactions?: Array<{ kind?: unknown; status?: unknown; amount?: unknown }>;
+  };
   if (r.id == null || r.order_id == null) return null;
-  return { refundId: String(r.id), orderId: String(r.order_id) };
+  // L'importo RIMBORSATO sta nelle transazioni, non in un campo totale: serve a
+  // distinguere un rimborso PARZIALE (una mensilità su un annuale, un gesto
+  // commerciale) da uno totale. Solo il totale deve spegnere l'accesso.
+  let amount: number | null = null;
+  for (const t of r.transactions ?? []) {
+    if (t?.kind !== "refund") continue;
+    if (t?.status != null && t.status !== "success") continue;
+    const v = money(t.amount);
+    if (v != null) amount = (amount ?? 0) + v;
+  }
+  return { refundId: String(r.id), orderId: String(r.order_id), amount };
 }
 
 export function extractOrder(
   payload: unknown
-): { orderId: string; email: string | null; identifier: string | null; variantId: string | null } | null {
+): {
+  orderId: string;
+  email: string | null;
+  identifier: string | null;
+  variantId: string | null;
+  totalPrice: number | null;
+} | null {
   const o = (payload ?? {}) as OrderShape;
   if (o.id == null) return null;
   const email = typeof o.email === "string" ? o.email : null;
   const attr = (o.note_attributes ?? []).find((a) => a?.name === "identifier");
   const identifier = attr?.value ?? (email ? email.toLowerCase().trim() : null);
   const variantId = o.line_items?.[0]?.variant_id != null ? String(o.line_items[0].variant_id) : null;
-  return { orderId: String(o.id), email, identifier, variantId };
+  return { orderId: String(o.id), email, identifier, variantId, totalPrice: money(o.total_price) };
+}
+
+// Un rimborso spegne l'accesso solo se restituisce (quasi) tutto l'ordine.
+// Se non conosciamo uno dei due importi assumiamo TOTALE: il commerciante ha
+// restituito i soldi, lasciare l'accesso attivo regalerebbe il prodotto.
+// La tolleranza copre i centesimi (arrotondamenti, valute con 2 decimali).
+export function isFullRefund(refunded: number | null, orderTotal: number | null): boolean {
+  if (refunded == null || orderTotal == null || orderTotal <= 0) return true;
+  return refunded + 0.01 >= orderTotal;
 }

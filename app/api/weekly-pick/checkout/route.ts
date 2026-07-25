@@ -16,7 +16,7 @@ import {
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
 } from "@/lib/weekly-pick";
-import { hasWeeklyPick } from "@/lib/weekly-pick-server";
+import { hasWeeklyPickStrict } from "@/lib/weekly-pick-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,8 +48,16 @@ export async function POST(req: Request) {
   if (weeklyPickIncludedInPlan(ctx.plan)) {
     return NextResponse.json({ error: "already included" }, { status: 409 });
   }
-  if (await hasWeeklyPick(ctx.identifier, week)) {
-    return NextResponse.json({ error: "already purchased" }, { status: 409 });
+  // Lettura fail-loud + fail-closed: se non sappiamo se l'ha già comprata non la
+  // vendiamo. Con la lettura tollerante (dbQuery → [] su errore) un errore DB era
+  // indistinguibile da "non comprata" e il cliente pagava due volte la stessa pick.
+  try {
+    if (await hasWeeklyPickStrict(ctx.identifier, week)) {
+      return NextResponse.json({ error: "already purchased" }, { status: 409 });
+    }
+  } catch (e) {
+    console.error("[weekly-pick/checkout] hasWeeklyPickStrict failed:", String(e));
+    return NextResponse.json({ error: "unavailable" }, { status: 500 });
   }
 
   // Prezzo SEMPRE server-side. Sconto -50% se promo di lancio attiva — STESSO

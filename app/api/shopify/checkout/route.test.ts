@@ -7,7 +7,7 @@ const hasWeeklyPick = vi.fn();
 vi.mock("@/lib/auth", () => ({ getSessionPlan }));
 vi.mock("@/lib/db", () => ({ dbQuery: vi.fn(), dbQueryStrict, dbExecute: vi.fn() }));
 vi.mock("@/lib/creator-promo", () => ({ promoEligibility }));
-vi.mock("@/lib/weekly-pick-server", () => ({ hasWeeklyPick }));
+vi.mock("@/lib/weekly-pick-server", () => ({ hasWeeklyPickStrict: hasWeeklyPick }));
 
 function req(body: unknown, headers: Record<string, string> = {}) {
   return new Request("https://x/api/shopify/checkout", {
@@ -20,14 +20,15 @@ function req(body: unknown, headers: Record<string, string> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.SHOPIFY_SHOP_DOMAIN = "gvfgra-sp.myshopify.com";
+  process.env.SHOPIFY_WEBHOOK_SECRET = "whsec_test";
   process.env.SHOPIFY_VARIANT_BASE = "54401918337361";
   process.env.SHOPIFY_VARIANT_PREMIUM = "54401929904465";
   process.env.SHOPIFY_VARIANT_WEEKLY = "54404245815633";
   delete process.env.SHOPIFY_VARIANT_BASE_ANNUAL;
   delete process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL;
   delete process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
-  delete process.env.SHOPIFY_SELLING_PLAN_BASE;
-  delete process.env.SHOPIFY_SELLING_PLAN_PREMIUM;
+  process.env.SHOPIFY_SELLING_PLAN_BASE = "9001";
+  process.env.SHOPIFY_SELLING_PLAN_PREMIUM = "9002";
   delete process.env.LAUNCH_PROMO_ENABLED;
   delete process.env.LAUNCH_PROMO_DEADLINE;
   process.env.WEEKLY_PICK_ENABLED = "true";
@@ -147,7 +148,6 @@ it("503 sui piani quando la promo di lancio sconta l'ordine (prezzo Shopify fiss
 });
 
 it("weekly: acquisto one-off, senza selling_plan", async () => {
-  process.env.SHOPIFY_SELLING_PLAN_BASE = "999";
   const { POST } = await import("./route");
   const res = await POST(req({ requested_plan: "weekly" }));
   expect(res.status).toBe(200);
@@ -201,4 +201,44 @@ it("403 su richiesta cross-site", async () => {
     req({ requested_plan: "base", period: "monthly" }, { "sec-fetch-site": "cross-site" })
   );
   expect(res.status).toBe(403);
+});
+
+// Se il webhook non e' configurato l'ordine arriverebbe e non resterebbe
+// nemmeno la riga in shopify_events: pagamento irrecuperabile.
+it("503 se il webhook secret manca: nessuno viene mandato a pagare", async () => {
+  delete process.env.SHOPIFY_WEBHOOK_SECRET;
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
+});
+
+// Blocker go-live: ogni checkout con selling plan crea un NUOVO subscription
+// contract su Shopify. Chi è già abbonato via Shopify e ricompra si ritrova due
+// addebiti ricorrenti, e noi non possiamo cancellarne uno dal grant.
+it("409 se un abbonamento Shopify è già attivo (secondo contratto = doppio addebito)", async () => {
+  getSessionPlan.mockResolvedValue({
+    identifier: "u@t.com",
+    plan: "base",
+    name: null,
+    plan_expires_at: new Date(Date.now() + 20 * 86400000).toISOString(),
+  });
+  dbQueryStrict.mockResolvedValue([{ plan_source: "shopify" }]);
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "premium", period: "monthly" }));
+  expect(res.status).toBe(409);
+  // Il code impedisce al client di cadere su PayGate, che sarebbe un secondo
+  // addebito su un altro rail invece di un errore.
+  expect(await res.json()).toMatchObject({ code: "shopify_subscription_active" });
+});
+
+it("l'abbonamento Shopify SCADUTO non blocca il riacquisto", async () => {
+  getSessionPlan.mockResolvedValue({
+    identifier: "u@t.com",
+    plan: "base",
+    name: null,
+    plan_expires_at: new Date(Date.now() - 86400000).toISOString(),
+  });
+  dbQueryStrict.mockResolvedValue([{ plan_source: "shopify" }]);
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly" }));
+  expect(res.status).toBe(200);
 });

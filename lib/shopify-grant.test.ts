@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shopifyGrantAllowed } from "./plan-grant";
+import { shopifyGrantAllowed, hasActiveShopifySubscription } from "./plan-grant";
 
 const future = new Date(Date.now() + 5 * 86_400_000).toISOString();
 const past = new Date(Date.now() - 5 * 86_400_000).toISOString();
@@ -31,5 +31,21 @@ describe("shopifyGrantAllowed (grandfather)", () => {
 
   it("PERMETTE a chi è in pending_payment", () => {
     expect(shopifyGrantAllowed("pending_payment", "paygate", future)).toBe(true);
+  });
+});
+
+describe("hasActiveShopifySubscription", () => {
+  const future = new Date(Date.now() + 86400000).toISOString();
+  const past = new Date(Date.now() - 86400000).toISOString();
+
+  it("blocca solo un abbonamento Shopify vivo", () => {
+    expect(hasActiveShopifySubscription("base", "shopify", future)).toBe(true);
+    expect(hasActiveShopifySubscription("premium", "shopify", future)).toBe(true);
+  });
+  it("non blocca lo scaduto, l'altro rail o il free", () => {
+    expect(hasActiveShopifySubscription("base", "shopify", past)).toBe(false);
+    expect(hasActiveShopifySubscription("base", "paygate", future)).toBe(false);
+    expect(hasActiveShopifySubscription("free", "shopify", future)).toBe(false);
+    expect(hasActiveShopifySubscription("base", "shopify", null)).toBe(false);
   });
 });

@@ -283,6 +283,8 @@ const BASE_TRANSLATIONS = {
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Annulla",
     checkout_error: "Pagamento non disponibile, riprova.",
+    checkout_sub_active:
+      "Hai già un abbonamento attivo. Per cambiare piano disdici quello attuale dal tuo account, poi riprova.",
     founder_invalid: "Codice non valido.",
     founder_network: "Errore di rete.",
     founder_title: "Accesso fondatore",
@@ -540,6 +542,8 @@ const BASE_TRANSLATIONS = {
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Cancel",
     checkout_error: "Payment unavailable, please try again.",
+    checkout_sub_active:
+      "You already have an active subscription. To change plan, cancel the current one from your account, then try again.",
     founder_invalid: "Invalid code.",
     founder_network: "Network error.",
     founder_title: "Founder access",
@@ -801,6 +805,8 @@ const EXTRA_TRANSLATIONS = {
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Cancelar",
     checkout_error: "Pago no disponible, inténtalo de nuevo.",
+    checkout_sub_active:
+      "Ya tienes una suscripción activa. Para cambiar de plan, cancela la actual desde tu cuenta y vuelve a intentarlo.",
     founder_invalid: "Código no válido.",
     founder_network: "Error de red.",
     founder_title: "Acceso de founder",
@@ -1058,6 +1064,8 @@ const EXTRA_TRANSLATIONS = {
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Annuler",
     checkout_error: "Paiement indisponible, réessayez.",
+    checkout_sub_active:
+      "Vous avez déjà un abonnement actif. Pour changer de formule, résiliez l\u2019actuel depuis votre compte, puis réessayez.",
     founder_invalid: "Code invalide.",
     founder_network: "Erreur réseau.",
     founder_title: "Accès founder",
@@ -1315,6 +1323,8 @@ const EXTRA_TRANSLATIONS = {
     checkout_note_suffix: "USDT.",
     checkout_cancel: "Отмена",
     checkout_error: "Оплата недоступна, попробуйте снова.",
+    checkout_sub_active:
+      "У вас уже есть активная подписка. Чтобы сменить план, отмените текущую в своём аккаунте и попробуйте снова.",
     founder_invalid: "Неверный код.",
     founder_network: "Ошибка сети.",
     founder_title: "Founder-доступ",
@@ -3427,6 +3437,19 @@ function CheckoutModal({
         if (sres.ok) {
           const { url: shopUrl } = (await sres.json()) as { url?: string };
           if (shopUrl) { window.location.href = shopUrl; return; }
+        } else if (sres.status === 409) {
+          // Abbonamento Shopify già attivo: cadere su PayGate sarebbe un SECONDO
+          // addebito su un altro rail. Qui si ferma e si dice cosa fare.
+          const { code } = (await sres.json().catch(() => ({}))) as { code?: string };
+          if (code === "shopify_subscription_active") {
+            setError(
+              (t as Record<string, string>).checkout_sub_active ||
+                "Hai già un abbonamento attivo. Per cambiare piano disdici quello attuale dal tuo account, poi riprova."
+            );
+            setRedirecting(false);
+            payInFlight.current = false;
+            return;
+          }
         }
       } catch (e) {
         console.error("shopify checkout unavailable, fallback paygate", e);
@@ -3599,9 +3622,12 @@ function CheckoutModal({
               </button>
             </div>
             <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
+              {/* Il rail carta crea un ABBONAMENTO Shopify che si rinnova da sé:
+                  dire "pagamento singolo / rinnovo manuale" sarebbe un addebito
+                  ricorrente non dichiarato al momento dell'acquisto. */}
               {period === "monthly"
-                ? pick5(lang, { it: "Pagamento singolo, sblocca 30 giorni (rinnovo manuale).", en: "One-time payment, unlocks 30 days (manual renewal).", es: "Pago único, desbloquea 30 días (renovación manual).", fr: "Paiement unique, débloque 30 jours (renouvellement manuel).", ru: "Разовый платёж, 30 дней (ручное продление)." })
-                : pick5(lang, { it: "Pagamento singolo, sblocca 12 mesi: paghi 11 mensilità, 1 mese è gratis.", en: "One-time payment, unlocks 12 months: you pay 11 monthly instalments, 1 month is free.", es: "Pago único, desbloquea 12 meses: pagas 11 mensualidades, 1 mes es gratis.", fr: "Paiement unique, débloque 12 mois : vous payez 11 mensualités, 1 mois est offert.", ru: "Разовый платёж, 12 месяцев: вы платите за 11 месяцев, 1 месяц бесплатно." })}
+                ? pick5(lang, { it: "Abbonamento: si rinnova automaticamente ogni mese. Puoi disdire quando vuoi dal tuo account.", en: "Subscription: renews automatically every month. You can cancel anytime from your account.", es: "Suscripción: se renueva automáticamente cada mes. Puedes cancelar cuando quieras desde tu cuenta.", fr: "Abonnement : renouvellement automatique chaque mois. Vous pouvez annuler à tout moment depuis votre compte.", ru: "Подписка: продлевается автоматически каждый месяц. Отменить можно в любой момент в аккаунте." })
+                : pick5(lang, { it: "Abbonamento annuale: paghi 11 mensilità, 1 mese è gratis. Si rinnova automaticamente ogni 12 mesi, disdici quando vuoi dal tuo account.", en: "Annual subscription: you pay 11 monthly instalments, 1 month is free. Renews automatically every 12 months; cancel anytime from your account.", es: "Suscripción anual: pagas 11 mensualidades, 1 mes es gratis. Se renueva automáticamente cada 12 meses; cancela cuando quieras desde tu cuenta.", fr: "Abonnement annuel : vous payez 11 mensualités, 1 mois est offert. Renouvellement automatique tous les 12 mois ; annulez à tout moment depuis votre compte.", ru: "Годовая подписка: вы платите за 11 месяцев, 1 месяц бесплатно. Продлевается автоматически каждые 12 месяцев; отменить можно в аккаунте." })}
             </p>
             <button type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
@@ -3905,7 +3931,9 @@ function PlansTab({
           </p>
           <div className="price-line">
             <strong>{planPriceCopy("base", lang)}</strong>
-            <span>Crypto only · USDT TRC20</span>
+            {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
+                Shopify). Il crypto resta disponibile come alternativa. */}
+            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "5 per sport / settimana", en: "5 per sport / week", es: "5 por deporte / semana", fr: "5 par sport / semaine", ru: "5 на вид спорта / неделя" })}</strong>
@@ -3941,7 +3969,9 @@ function PlansTab({
           </p>
           <div className="price-line">
             <strong>{planPriceCopy("premium", lang)}</strong>
-            <span>Crypto only · USDT TRC20</span>
+            {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
+                Shopify). Il crypto resta disponibile come alternativa. */}
+            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "Illimitato", en: "Unlimited", es: "Ilimitado", fr: "Illimité", ru: "Безлимитно" })}</strong>
@@ -6982,7 +7012,7 @@ function FAQTab() {
       ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
       ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
-      ["Come pago?", "Solo crypto — USDT TRC20. Invia l'importo esatto all'indirizzo USDT indicato nel checkout."],
+      ["Come pago?", "Con carta (Visa, Mastercard, Amex), Shop Pay o Google Pay: l'abbonamento si rinnova automaticamente e lo disdici quando vuoi dal tuo account. In alternativa puoi pagare in crypto (USDT TRC20)."],
       ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
     ],
     en: [
@@ -6990,7 +7020,7 @@ function FAQTab() {
       ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
       ["What does BetRedge Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
-      ["How do I pay?", "Crypto only — USDT TRC20. Send the exact amount to the USDT address shown at checkout."],
+      ["How do I pay?", "By card (Visa, Mastercard, Amex), Shop Pay or Google Pay: the subscription renews automatically and you can cancel anytime from your account. You can also pay in crypto (USDT TRC20)."],
       ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
     ],
     es: [
@@ -6998,7 +7028,7 @@ function FAQTab() {
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma y vista previa de cuenta, sin predicciones operativas."],
       ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
-      ["¿Cómo pago?", "Solo crypto — USDT TRC20. Envía el importe exacto a la dirección USDT indicada en el checkout."],
+      ["¿Cómo pago?", "Con tarjeta (Visa, Mastercard, Amex), Shop Pay o Google Pay: la suscripción se renueva automáticamente y puedes cancelar cuando quieras desde tu cuenta. También puedes pagar en crypto (USDT TRC20)."],
       ["¿Cómo se activa el plan?", "Tras el TX hash, el plan se revisa internamente o se activa según la política operativa configurada."],
     ],
     fr: [
@@ -7006,7 +7036,7 @@ function FAQTab() {
       ["Que débloque le plan Free ?", "Profil, langue et aperçu du compte, sans prédictions opérationnelles."],
       ["Que débloque BetRedge Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
-      ["Comment payer ?", "Crypto uniquement — USDT TRC20. Envoyez le montant exact à l'adresse USDT indiquée au checkout."],
+      ["Comment payer ?", "Par carte (Visa, Mastercard, Amex), Shop Pay ou Google Pay : l'abonnement se renouvelle automatiquement et vous pouvez annuler à tout moment depuis votre compte. Vous pouvez aussi payer en crypto (USDT TRC20)."],
       ["Comment le plan est-il activé ?", "Après le TX hash, le plan est vérifié en interne ou activé selon la politique opérationnelle configurée."],
     ],
     ru: [
@@ -7014,7 +7044,7 @@ function FAQTab() {
       ["Что открывает план Free?", "Профиль, язык и предпросмотр аккаунта, без рабочих прогнозов."],
       ["Что открывает BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
-      ["Как оплатить?", "Только крипто — USDT TRC20. Отправьте точную сумму на адрес USDT, указанный в checkout."],
+      ["Как оплатить?", "Картой (Visa, Mastercard, Amex), Shop Pay или Google Pay: подписка продлевается автоматически, отменить можно в любой момент в аккаунте. Также можно оплатить в крипто (USDT TRC20)."],
       ["Как активируется план?", "После TX hash план проверяется вручную или активируется согласно настроенной операционной политике."],
     ],
   });

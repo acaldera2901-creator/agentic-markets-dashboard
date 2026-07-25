@@ -269,6 +269,22 @@ export function shopifyGrantAllowed(
   return new Date(currentExpiryISO).getTime() <= Date.now();
 }
 
+// Blocker go-live: su Shopify ogni checkout con selling plan crea un NUOVO
+// subscription contract. Chi ha già un abbonamento Shopify attivo e ricompra
+// (upgrade base→premium, o semplicemente ricliccando) si ritrova DUE contratti
+// che si addebitano entrambi ogni mese, e noi non abbiamo modo di cancellarne
+// uno dal grant. Va bloccato a monte: il cambio piano si fa disdicendo prima.
+export function hasActiveShopifySubscription(
+  currentPlan: string,
+  currentSource: string | null,
+  currentExpiryISO: string | null
+): boolean {
+  if (currentPlan !== "base" && currentPlan !== "premium") return false;
+  if (currentSource !== "shopify") return false;
+  if (!currentExpiryISO) return false;
+  return new Date(currentExpiryISO).getTime() > Date.now();
+}
+
 // Grant Shopify: stesso modello one-shot di PayGate/PayPal (riusa
 // computePaygateGrant → stack del residuo + anti-downgrade). Ritorna null se
 // l'identifier non esiste (→ riconciliazione) o se bloccato dalla guardia.
@@ -330,8 +346,12 @@ export async function activateShopifyPlan(
 // distruggiamo lo storico e un riacquisto riparte pulito.
 // Tocca SOLO i piani di provenienza Shopify: un rimborso su Shopify non deve
 // spegnere un abbonato PayGate che nel frattempo ha comprato altrove.
+// Read STRICT: con dbQuery un errore DB tornava [] → plan_source undefined →
+// "non è di Shopify" → revoca silenziosamente saltata, e il webhook rispondeva
+// 200 marcando il rimborso come già gestito. L'utente rimborsato manteneva
+// l'accesso per sempre. Meglio un 500 che fa ritentare Shopify.
 export async function revokeShopifyPlan(identifier: string): Promise<boolean> {
-  const rows = await dbQuery<{ plan_source: string | null }>(
+  const rows = await dbQueryStrict<{ plan_source: string | null }>(
     `SELECT plan_source FROM profiles
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1
       LIMIT 1`,

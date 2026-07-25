@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import crypto from "node:crypto";
-import { verifyShopifyHmac, resolveOrderFromVariant, extractOrder, buildShopifyCheckoutUrl } from "./shopify";
+import {
+  verifyShopifyHmac,
+  resolveOrderFromVariant,
+  extractOrder,
+  extractRefund,
+  isFullRefund,
+  buildShopifyCheckoutUrl,
+} from "./shopify";
 
 const SECRET = "whsec_test_123";
 beforeEach(() => {
@@ -10,9 +17,11 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_BASE_ANNUAL = "333";
   process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "444";
   process.env.SHOPIFY_SHOP_DOMAIN = "betredge.myshopify.com";
-  delete process.env.SHOPIFY_SELLING_PLAN_BASE;
-  delete process.env.SHOPIFY_SELLING_PLAN_PREMIUM;
-  delete process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
+  // I selling plan sono ora OBBLIGATORI per base/premium: senza, un ordine
+  // sarebbe un addebito unico travestito da abbonamento.
+  process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
+  process.env.SHOPIFY_SELLING_PLAN_PREMIUM = "778";
+  process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "888";
 });
 function sign(body: string) {
   return crypto.createHmac("sha256", SECRET).update(body, "utf8").digest("base64");
@@ -82,14 +91,12 @@ describe("buildShopifyCheckoutUrl", () => {
   });
 
   it("applica il selling_plan sui piani (altrimenti sarebbe un addebito una-tantum)", () => {
-    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
     const p = addParams(buildShopifyCheckoutUrl("base", "a@b.com")!);
     expect(p.get("id")).toBe("111");
     expect(p.get("selling_plan")).toBe("777");
   });
 
   it("NON usa il permalink /cart/{variant}:1, che ignora il selling plan", () => {
-    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
     expect(buildShopifyCheckoutUrl("base", "a@b.com")).not.toContain("/cart/111:1");
   });
 
@@ -99,8 +106,6 @@ describe("buildShopifyCheckoutUrl", () => {
   });
 
   it("annuale: usa il prodotto annuale e il selling plan annuale", () => {
-    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
-    process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "888";
     const p = addParams(buildShopifyCheckoutUrl("premium", "a@b.com", "annual")!);
     expect(p.get("id")).toBe("444"); // prodotto premium ANNUALE, non quello mensile
     expect(p.get("selling_plan")).toBe("888");
@@ -113,7 +118,6 @@ describe("buildShopifyCheckoutUrl", () => {
 
   it("la weekly pick ignora il periodo e resta senza piano", () => {
     process.env.SHOPIFY_VARIANT_WEEKLY = "555";
-    process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "888";
     const p = addParams(buildShopifyCheckoutUrl("weekly", "a@b.com", "annual")!);
     expect(p.get("id")).toBe("555");
     expect(p.get("selling_plan")).toBe(null);
@@ -122,5 +126,50 @@ describe("buildShopifyCheckoutUrl", () => {
   it("ritorna null se lo store non è configurato (fallback al flusso attuale)", () => {
     delete process.env.SHOPIFY_SHOP_DOMAIN;
     expect(buildShopifyCheckoutUrl("base", "a@b.com")).toBe(null);
+  });
+
+  // Il difetto: senza selling plan l'ordine passava come addebito UNICO e
+  // nessuno se ne accorgeva. Meglio non offrire il rail.
+  it("null se manca il selling plan del mensile", () => {
+    delete process.env.SHOPIFY_SELLING_PLAN_BASE;
+    expect(buildShopifyCheckoutUrl("base", "a@b.com")).toBe(null);
+  });
+
+  it("null se manca il selling plan annuale", () => {
+    delete process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
+    expect(buildShopifyCheckoutUrl("premium", "a@b.com", "annual")).toBe(null);
+  });
+});
+
+// Un rimborso parziale che passava per totale azzerava un annuale pagato.
+describe("isFullRefund", () => {
+  it("totale → true, parziale → false", () => {
+    expect(isFullRefund(329.99, 329.99)).toBe(true);
+    expect(isFullRefund(29.99, 329.99)).toBe(false);
+  });
+  it("tollera i centesimi di arrotondamento", () => {
+    expect(isFullRefund(14.98, 14.99)).toBe(true);
+  });
+  it("importo ignoto → totale: meglio revocare che regalare il prodotto", () => {
+    expect(isFullRefund(null, 14.99)).toBe(true);
+    expect(isFullRefund(14.99, null)).toBe(true);
+  });
+});
+
+describe("extractRefund", () => {
+  it("somma solo le transazioni di rimborso riuscite", () => {
+    const r = extractRefund({
+      id: 1,
+      order_id: 2,
+      transactions: [
+        { kind: "refund", status: "success", amount: "10.00" },
+        { kind: "refund", status: "failure", amount: "99.00" },
+        { kind: "sale", status: "success", amount: "50.00" },
+      ],
+    });
+    expect(r).toMatchObject({ refundId: "1", orderId: "2", amount: 10 });
+  });
+  it("senza transazioni l'importo resta ignoto (null), non 0", () => {
+    expect(extractRefund({ id: 1, order_id: 2 })?.amount).toBe(null);
   });
 });
