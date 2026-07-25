@@ -3416,9 +3416,12 @@ function CheckoutModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // #SHOPIFY-CRYPTO-2 — un solo flusso per i due rail: cambia `rail` e, per il
-  // crypto, il periodo (esiste solo in SKU one-off da 30 giorni). Qualunque
-  // non-200 da Shopify cade sul rail PayGate diretto, invariato.
+  // #SHOPIFY-CRYPTO-3 — due rail, due destinazioni.
+  // Carta → checkout Shopify (abbonamento ricorrente). Crypto → pagina PayGate
+  // DIRETTA: il checkout Shopify con un metodo manuale non incassa (il bottone
+  // finale dice "Complete order" e il pagamento resta da fare dopo), quindi
+  // mandarci l'utente lo faceva credere di aver pagato. L'ordine Shopify per il
+  // crypto lo creiamo NOI a pagamento confermato (mirror nel callback).
   const startCheckout = async (rail: "card" | "crypto") => {
     // Guard sincrono: blocca i click ravvicinati PRIMA di creare un secondo ordine
     // (il disabled del bottone si applica solo dopo il re-render).
@@ -3435,18 +3438,14 @@ function CheckoutModal({
       // (503 non configurato / annuale, 409 grandfather o tier-guard) cade sul
       // flusso PayGate esistente, che resta invariato. NB: nessun
       // markPayPending() qui — su Shopify il piano lo concede il webhook.
-      try {
+      // Il crypto salta interamente questo blocco: si paga dove si clicca.
+      if (rail === "card") try {
         const sres = await fetch("/api/shopify/checkout", {
           method: "POST",
           headers: { "content-type": "application/json" },
           // `lang` decide la lingua del checkout Shopify: senza, esce sempre
           // nella lingua di default dello store (spagnolo).
-          body: JSON.stringify({
-            requested_plan: plan,
-            period: rail === "crypto" ? "monthly" : period,
-            lang,
-            rail,
-          }),
+          body: JSON.stringify({ requested_plan: plan, period, lang }),
         });
         if (sres.ok) {
           const { url: shopUrl } = (await sres.json()) as { url?: string };

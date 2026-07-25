@@ -1,22 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { findPendingCryptoOrder, markShopifyOrderPaid, isShopifyAdminConfigured } from "./shopify-admin";
-
-const GATEWAY = "Crypto (USDT, BTC, ETH)";
+import { createMirroredPaidOrder, mirrorLineTitle, isShopifyAdminConfigured } from "./shopify-admin";
 
 function gqlOk(data: unknown) {
   return { ok: true, json: async () => ({ data }) } as unknown as Response;
 }
 
-function orderNode(over: Record<string, unknown> = {}) {
-  return {
-    id: "gid://shopify/Order/555",
-    name: "#1001",
-    paymentGatewayNames: [GATEWAY],
-    customAttributes: [{ key: "identifier", value: "u@t.com" }],
-    currentTotalPriceSet: { shopMoney: { amount: "14.99" } },
-    lineItems: { nodes: [{ variant: { id: "gid://shopify/ProductVariant/9111" } }] },
-    ...over,
-  };
+const MIRROR = {
+  identifier: "u@t.com",
+  plan: "base" as const,
+  period: "monthly" as const,
+  amountUsd: 14.99,
+  paygateOrderId: "pg-1",
+  txid: "0xabc",
+};
+
+function created() {
+  return gqlOk({
+    orderCreate: {
+      order: { id: "gid://shopify/Order/777", name: "#1003", displayFinancialStatus: "PAID" },
+      userErrors: [],
+    },
+  });
 }
 
 beforeEach(() => {
@@ -29,92 +33,79 @@ afterEach(() => {
   delete process.env.SHOPIFY_ADMIN_TOKEN;
 });
 
-describe("isShopifyAdminConfigured", () => {
-  it("false senza token: il rail crypto resta inerte invece di rompersi", () => {
+describe("mirrorLineTitle", () => {
+  // Il crypto non si rinnova mai: una riga "Annual subscription" su un pagamento
+  // one-off sarebbe una ricevuta falsa.
+  it("dichiara durata e natura one-time, senza parlare di abbonamento", () => {
+    expect(mirrorLineTitle("base", "monthly")).toBe("BetRedge Base — 30 days (one-time, crypto)");
+    expect(mirrorLineTitle("premium", "annual")).toBe("BetRedge Premium — 365 days (one-time, crypto)");
+  });
+});
+
+describe("createMirroredPaidOrder", () => {
+  it("crea l'ordine già PAGATO con importo, identifier e transazione", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(created());
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await createMirroredPaidOrder(MIRROR)).toBe("gid://shopify/Order/777");
+
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+    const o = body.variables.order;
+    expect(o.financialStatus).toBe("PAID");
+    expect(o.email).toBe("u@t.com");
+    expect(o.lineItems[0]).toMatchObject({
+      title: "BetRedge Base — 30 days (one-time, crypto)",
+      quantity: 1,
+      requiresShipping: false,
+      priceSet: { shopMoney: { amount: "14.99", currencyCode: "USD" } },
+    });
+    // L'identifier è la chiave con cui il webhook dei rimborsi ritrova l'utente.
+    expect(o.customAttributes).toEqual(
+      expect.arrayContaining([{ key: "identifier", value: "u@t.com" }])
+    );
+    // La transazione rende l'incasso visibile in Finanze col suo gateway.
+    expect(o.transactions[0]).toMatchObject({
+      kind: "SALE",
+      status: "SUCCESS",
+      gateway: "PayGate (crypto)",
+      authorizationCode: "0xabc",
+    });
+    // Ricevuta nostra, non di Shopify: due ricevute per un pagamento = reclamo.
+    expect(body.variables.options).toEqual({ sendReceipt: false });
+  });
+
+  // I soldi sono già arrivati e il piano è già concesso: il mirror non deve MAI
+  // propagare un errore nel callback.
+  it("null (mai throw) se Shopify risponde con userErrors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(gqlOk({ orderCreate: { order: null, userErrors: [{ message: "boom" }] } }))
+    );
+    expect(await createMirroredPaidOrder(MIRROR)).toBe(null);
+  });
+
+  it("null (mai throw) se la rete cade", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
+    expect(await createMirroredPaidOrder(MIRROR)).toBe(null);
+  });
+
+  it("null senza token, senza nemmeno chiamare Shopify", async () => {
     delete process.env.SHOPIFY_ADMIN_TOKEN;
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await createMirroredPaidOrder(MIRROR)).toBe(null);
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(isShopifyAdminConfigured()).toBe(false);
   });
-});
 
-describe("findPendingCryptoOrder", () => {
-  it("trova l'ordine dell'utente e ne legge importo e variant", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(gqlOk({ orders: { nodes: [orderNode()] } })));
-    const o = await findPendingCryptoOrder("u@t.com", GATEWAY);
-    expect(o).toEqual({ id: "gid://shopify/Order/555", name: "#1001", amountUsd: 14.99, variantId: "9111" });
-  });
-
-  // Il match è sull'identifier di SESSIONE, non sull'email digitata al checkout:
-  // altrimenti si potrebbe pagare (e sbloccare) l'ordine di un altro account.
-  it("ignora l'ordine di un altro identifier", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        gqlOk({ orders: { nodes: [orderNode({ customAttributes: [{ key: "identifier", value: "altro@t.com" }] })] } })
-      )
+  it("identifier non-email: nessun campo email, ma l'attributo resta", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(created());
+    vi.stubGlobal("fetch", fetchMock);
+    await createMirroredPaidOrder({ ...MIRROR, identifier: "wallet-user-42" });
+    const o = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body).variables.order;
+    expect(o.email).toBeUndefined();
+    expect(o.customAttributes).toEqual(
+      expect.arrayContaining([{ key: "identifier", value: "wallet-user-42" }])
     );
-    expect(await findPendingCryptoOrder("u@t.com", GATEWAY)).toBe(null);
-  });
-
-  // Un pendente pagato con bonifico/COD non è roba nostra: toccarlo vorrebbe
-  // dire incassare crypto per un ordine che aspetta un altro pagamento.
-  it("ignora i pendenti di un altro metodo di pagamento", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(gqlOk({ orders: { nodes: [orderNode({ paymentGatewayNames: ["Bank Deposit"] })] } }))
-    );
-    expect(await findPendingCryptoOrder("u@t.com", GATEWAY)).toBe(null);
-  });
-
-  it("scarta un ordine con totale non leggibile invece di aprire un ordine a 0", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        gqlOk({ orders: { nodes: [orderNode({ currentTotalPriceSet: { shopMoney: { amount: "0.00" } } })] } })
-      )
-    );
-    expect(await findPendingCryptoOrder("u@t.com", GATEWAY)).toBe(null);
-  });
-
-  // Fail-loud: chi chiama deve poter rispondere 502 e NON inventare un ordine.
-  it("propaga l'errore GraphQL invece di degradare a 'non trovato'", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ errors: [{ message: "boom" }] }) } as unknown as Response)
-    );
-    await expect(findPendingCryptoOrder("u@t.com", GATEWAY)).rejects.toThrow(/boom/);
-  });
-});
-
-describe("markShopifyOrderPaid", () => {
-  it("true quando Shopify marca l'ordine", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        gqlOk({ orderMarkAsPaid: { order: { id: "gid://shopify/Order/555", displayFinancialStatus: "PAID" }, userErrors: [] } })
-      )
-    );
-    expect(await markShopifyOrderPaid("gid://shopify/Order/555")).toBe(true);
-  });
-
-  // Un retry del callback non deve sembrare un fallimento: l'ordine è già pagato,
-  // cioè lo stato che volevamo.
-  it("tratta 'già pagato' come successo", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        gqlOk({ orderMarkAsPaid: { order: null, userErrors: [{ message: "Order has already been paid" }] } })
-      )
-    );
-    expect(await markShopifyOrderPaid("gid://shopify/Order/555")).toBe(true);
-  });
-
-  it("false su un errore diverso, così resta nei log come anomalia", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        gqlOk({ orderMarkAsPaid: { order: null, userErrors: [{ message: "Order is cancelled" }] } })
-      )
-    );
-    expect(await markShopifyOrderPaid("gid://shopify/Order/555")).toBe(false);
   });
 });
