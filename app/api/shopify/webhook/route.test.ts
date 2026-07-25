@@ -64,6 +64,8 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_WEEKLY = "333";
   process.env.SHOPIFY_VARIANT_BASE_ANNUAL = "444";
   process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "555";
+  process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
+  process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
   dbQueryStrict.mockResolvedValue([]); // non ancora visto
 });
 
@@ -73,7 +75,7 @@ it("ordine ANNUALE: concede 365 giorni, non 30", async () => {
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body)));
   expect(res.status).toBe(200);
-  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "annual");
+  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "annual", false);
 });
 
 it("weekly pick: concede la settimana corrente, non un piano", async () => {
@@ -110,7 +112,7 @@ it("concede il piano su orders/paid valido", async () => {
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body)));
   expect(res.status).toBe(200);
-  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly");
+  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly", false);
 });
 
 it("è idempotente: evento già visto → no grant", async () => {
@@ -181,4 +183,37 @@ it("l'ordine registra l'importo: senza, un rimborso parziale sarebbe indistingui
   await POST(req(body, sign(body)));
   const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
   expect(insert?.[1]).toEqual(["920", "u@t.com", "111", 14.99]);
+});
+
+// #SHOPIFY-CRYPTO-2 — LA guardia che regge tutto il rail crypto.
+// L'ordine crypto lo marchiamo pagato NOI via Admin API dopo il callback
+// PayGate, quindi orders/paid arriva SEMPRE su un piano già concesso:
+// concederlo di nuovo qui regalerebbe altri 30 giorni per ogni pagamento.
+it("ordine crypto: NON concede il piano (lo ha già fatto il callback PayGate)", async () => {
+  const body = JSON.stringify({
+    id: 930, email: "u@t.com", total_price: "14.99",
+    payment_gateway_names: ["Crypto (USDT, BTC, ETH)"],
+    line_items: [{ variant_id: 9111 }],
+  });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ cryptoPaygate: true });
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+  expect(dbExecute).toHaveBeenCalledWith(expect.stringContaining("SET status = $2"), ["930", "crypto-paygate", null]);
+});
+
+// La stessa SKU one-off è pubblica sullo storefront: se qualcuno la paga con
+// CARTA nessun callback PayGate arriverà, quindi il grant deve avvenire qui.
+it("SKU one-off pagata con carta: concede 30 giorni come one-off", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "base" });
+  const body = JSON.stringify({
+    id: 931, email: "u@t.com", total_price: "14.99",
+    payment_gateway_names: ["shopify_payments"],
+    line_items: [{ variant_id: 9111 }],
+  });
+  const { POST } = await import("./route");
+  await POST(req(body, sign(body)));
+  // 4o argomento true = one-off → plan_source 'shopify_oneoff', nessun contratto
+  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "base", "monthly", true);
 });

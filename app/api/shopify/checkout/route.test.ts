@@ -29,6 +29,9 @@ beforeEach(() => {
   delete process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
   process.env.SHOPIFY_SELLING_PLAN_BASE = "9001";
   process.env.SHOPIFY_SELLING_PLAN_PREMIUM = "9002";
+  process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
+  process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF = "9222";
+  process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
   delete process.env.LAUNCH_PROMO_ENABLED;
   delete process.env.LAUNCH_PROMO_DEADLINE;
   process.env.WEEKLY_PICK_ENABLED = "true";
@@ -258,4 +261,28 @@ it("lingua assente o non pubblicata → inglese, non spagnolo", async () => {
   expect(new URL(noLang.url).pathname).toBe("/en/cart/clear");
   const fr = (await (await POST(req({ requested_plan: "base", period: "monthly", lang: "fr" }))).json()) as { url: string };
   expect(new URL(fr.url).pathname).toBe("/en/cart/clear");
+});
+
+// #SHOPIFY-CRYPTO-2
+it("rail crypto: manda alla SKU one-off, senza selling plan", async () => {
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", rail: "crypto", lang: "it" }));
+  expect(res.status).toBe(200);
+  const { url } = (await res.json()) as { url: string };
+  const add = new URLSearchParams(new URL(url).searchParams.get("return_to")!.split("?")[1]);
+  expect(add.get("id")).toBe("9111");
+  expect(add.get("selling_plan")).toBe(null);
+});
+
+// Senza il nome del gateway non sapremmo riconoscere l'ordine in orders/paid e
+// lo concederemmo due volte: meglio non aprire affatto il rail.
+it("rail crypto: 503 se il gateway non è configurato", async () => {
+  delete process.env.SHOPIFY_CRYPTO_GATEWAY_NAME;
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", rail: "crypto" }))).status).toBe(503);
+});
+
+it("rail crypto: 400 sull'annuale (esiste solo la SKU da 30 giorni)", async () => {
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "annual", rail: "crypto" }))).status).toBe(400);
 });

@@ -291,9 +291,15 @@ export function hasActiveShopifySubscription(
 export async function activateShopifyPlan(
   identifier: string,
   plan: GrantablePlan,
-  period: "monthly" | "annual"
+  period: "monthly" | "annual",
+  oneOff = false
 ): Promise<ActivatedRow | null> {
   const days = period === "annual" ? 365 : 30;
+  // 'shopify' = dietro c'è un subscription contract che si rinnova da solo.
+  // 'shopify_oneoff' = 30 giorni comprati una volta (rail crypto): nessun
+  // contratto, quindi l'utente DEVE poter ricomprare senza incontrare la
+  // guardia anti-doppio-abbonamento.
+  const source = oneOff ? "shopify_oneoff" : "shopify";
 
   const prev = await dbQuery<{
     plan: string;
@@ -327,10 +333,10 @@ export async function activateShopifyPlan(
         SET plan = $2,
             requested_plan = NULL,
             plan_expires_at = $3::timestamptz,
-            plan_source = 'shopify',
+            plan_source = $4,
             updated_at = NOW()
       WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
-    [identifier, newPlan, expiryISO]
+    [identifier, newPlan, expiryISO, source]
   );
 
   const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
@@ -357,7 +363,7 @@ export async function revokeShopifyPlan(identifier: string): Promise<boolean> {
       LIMIT 1`,
     [identifier]
   );
-  if (rows[0]?.plan_source !== "shopify") {
+  if (rows[0]?.plan_source !== "shopify" && rows[0]?.plan_source !== "shopify_oneoff") {
     console.error("[shopify] revoca ignorata: il piano attivo non è di Shopify", {
       identifier,
       plan_source: rows[0]?.plan_source ?? null,
