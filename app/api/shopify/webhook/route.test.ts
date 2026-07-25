@@ -27,7 +27,18 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_BASE = "111";
   process.env.SHOPIFY_VARIANT_PREMIUM = "222";
   process.env.SHOPIFY_VARIANT_WEEKLY = "333";
+  process.env.SHOPIFY_VARIANT_BASE_ANNUAL = "444";
+  process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "555";
   dbQueryStrict.mockResolvedValue([]); // non ancora visto
+});
+
+it("ordine ANNUALE: concede 365 giorni, non 30", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "premium" });
+  const body = JSON.stringify({ id: 903, email: "u@t.com", line_items: [{ variant_id: 555 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(200);
+  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "annual");
 });
 
 it("weekly pick: concede la settimana corrente, non un piano", async () => {
