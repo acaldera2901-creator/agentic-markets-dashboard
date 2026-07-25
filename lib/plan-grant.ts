@@ -254,9 +254,16 @@ export async function activatePaypalPlan(
 // PayGate ancora attivo NON va sovrascritto da un grant Shopify (caso raro di
 // doppio pagamento). Permette in ogni altro caso (shopify/manual/free/scaduto).
 export function shopifyGrantAllowed(
+  currentPlan: string,
   currentSource: string | null,
   currentExpiryISO: string | null
 ): boolean {
+  // Va protetto SOLO un abbonamento PayGate davvero attivo. Senza il controllo
+  // sul piano, un profilo 'free' con plan_source/scadenza RESIDUI (capita: il
+  // piano viene riportato a free ma source ed expiry restano) risultava
+  // grandfathered per sempre → ogni acquisto carta veniva rifiutato con 409 e
+  // cadeva su PayGate. Un free non ha nulla da proteggere.
+  if (currentPlan !== "base" && currentPlan !== "premium") return true;
   if (currentSource !== "paygate") return true;
   if (!currentExpiryISO) return true;
   return new Date(currentExpiryISO).getTime() <= Date.now();
@@ -286,7 +293,7 @@ export async function activateShopifyPlan(
   const before = prev[0];
   if (!before) return null; // identifier-not-found → il chiamante logga la riconciliazione
 
-  if (!shopifyGrantAllowed(before.plan_source, before.plan_expires_at)) {
+  if (!shopifyGrantAllowed(before.plan, before.plan_source, before.plan_expires_at)) {
     console.error("[shopify] grant bloccato: abbonato PayGate attivo", { identifier });
     return null;
   }
