@@ -4,7 +4,6 @@ import {
   verifyShopifyHmac,
   shopifyLocalePrefix,
   isCryptoGatewayOrder,
-  isShopifyCryptoConfigured,
   resolveOrderFromVariant,
   extractOrder,
   extractRefund,
@@ -211,50 +210,27 @@ describe("lingua del checkout", () => {
   });
 });
 
-// #SHOPIFY-CRYPTO-2 — il rail crypto vende SKU one-off perche' su Shopify il
-// crypto non puo' pagare un abbonamento.
-describe("rail crypto", () => {
+// Le SKU one-off restano vendibili con carta dallo storefront: il webhook deve
+// saperle riconoscere e concederle come NON ricorrenti.
+describe("SKU one-off", () => {
   beforeEach(() => {
-    process.env.SHOPIFY_SHOP_DOMAIN = "betredge.myshopify.com";
-    process.env.SHOPIFY_VARIANT_BASE = "111";
-    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
     process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
     process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF = "9222";
     process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
   });
 
-  it("le SKU one-off si risolvono come NON ricorrenti da 30 giorni", () => {
+  it("si risolvono come 30 giorni non ricorrenti", () => {
     expect(resolveOrderFromVariant("9111")).toEqual({ plan: "base", period: "monthly", recurring: false });
     expect(resolveOrderFromVariant("9222")).toEqual({ plan: "premium", period: "monthly", recurring: false });
   });
 
-  // Un selling plan sul carrello nasconde i metodi manuali: il rail crypto
-  // morirebbe silenziosamente al checkout.
-  it("il permalink crypto usa la variant one-off e NON porta selling_plan", () => {
-    const url = buildShopifyCheckoutUrl("base", "a@b.com", "monthly", "en", "crypto")!;
-    const add = new URLSearchParams(new URL(url).searchParams.get("return_to")!.split("?")[1]);
-    expect(add.get("id")).toBe("9111");
-    expect(add.get("selling_plan")).toBe(null);
-  });
-
-  it("null se la variant one-off non e' configurata (niente rail a metà)", () => {
-    delete process.env.SHOPIFY_VARIANT_BASE_ONEOFF;
-    expect(buildShopifyCheckoutUrl("base", "a@b.com", "monthly", "en", "crypto")).toBe(null);
-  });
-
-  // Il riconoscimento del gateway e' l'unica cosa che impedisce il DOPPIO grant
-  // (webhook + callback PayGate) su un ordine crypto.
+  // Rete di sicurezza: resta un ordine crypto pendente (#1001) creato quando il
+  // metodo manuale era attivo. Se venisse mai pagato, il grant è del callback
+  // PayGate e questo webhook non deve concedere nulla.
   it("riconosce il gateway crypto ignorando spazi e maiuscole", () => {
     expect(isCryptoGatewayOrder(["  crypto (usdt, btc, eth) "])).toBe(true);
     expect(isCryptoGatewayOrder(["shopify_payments"])).toBe(false);
-    expect(isCryptoGatewayOrder([])).toBe(false);
     expect(isCryptoGatewayOrder(null)).toBe(false);
-  });
-
-  it("senza il nome del gateway configurato NON riconosce nulla e il rail resta chiuso", () => {
-    delete process.env.SHOPIFY_CRYPTO_GATEWAY_NAME;
-    expect(isCryptoGatewayOrder(["Crypto (USDT, BTC, ETH)"])).toBe(false);
-    expect(isShopifyCryptoConfigured()).toBe(false);
   });
 
   it("extractOrder riporta i gateway da entrambi i campi del payload", () => {

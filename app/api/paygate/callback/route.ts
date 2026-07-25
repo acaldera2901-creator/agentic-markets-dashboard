@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
 import { activatePaygatePlan } from "@/lib/plan-grant";
-import { markShopifyOrderPaid, isShopifyAdminConfigured } from "@/lib/shopify-admin";
+import { createMirroredPaidOrder } from "@/lib/shopify-admin";
 import { receiptEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 
@@ -113,17 +113,24 @@ export async function GET(req: Request) {
       await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
       console.log(`[paygate/callback] GRANT order=${order.id} plan=${granted.plan} value_coin=${String(serverValue)} amount_usd=${String(order.amount_usd)}`);
 
-      // #SHOPIFY-CRYPTO-2 — l'ordine nasce nel checkout Shopify e resta "in
-      // attesa di pagamento" finché la crypto non arriva: ora è arrivata, quindi
-      // chiudiamo il cerchio sui libri di Shopify (ricevuta + report + rimborsi).
-      // Best-effort e DOPO il grant: il piano è già concesso, e un errore qui
-      // non deve mai far fallire il callback (il sweep cron ripassa i pendenti).
-      if (order.shopify_order_id && isShopifyAdminConfigured()) {
-        try {
-          const paid = await markShopifyOrderPaid(order.shopify_order_id);
-          console.log(`[paygate/callback] shopify markAsPaid=${paid} order=${order.shopify_order_id}`);
-        } catch (e) {
-          console.error(`[paygate/callback] shopify markAsPaid failed (${order.shopify_order_id}):`, String(e));
+      // #SHOPIFY-CRYPTO-3 — ogni pagamento crypto riuscito viene SPECCHIATO in
+      // Shopify come ordine già pagato, così ricevute/report/rimborsi stanno in
+      // un unico posto senza chiedere al cliente il doppio passaggio del
+      // checkout Shopify (che con un metodo manuale non incassa).
+      // Best-effort e DOPO il grant: i soldi sono arrivati e il piano è già
+      // concesso, quindi un errore qui non deve toccare il flusso. Se manca,
+      // resta il log e la riga in paygate_orders come fonte di verità.
+      if (!order.shopify_order_id) {
+        const gid = await createMirroredPaidOrder({
+          identifier: order.identifier,
+          plan: order.plan,
+          period: order.period,
+          amountUsd: order.amount_usd,
+          paygateOrderId: order.id,
+          txid: verify.txidOut ?? txidQuery,
+        });
+        if (gid) {
+          await dbExecute("UPDATE paygate_orders SET shopify_order_id = $2 WHERE id = $1", [order.id, gid]);
         }
       }
 

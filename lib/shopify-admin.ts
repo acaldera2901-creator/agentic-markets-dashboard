@@ -1,12 +1,14 @@
-// #SHOPIFY-CRYPTO-2 — client Admin API, usato SOLO dal rail crypto.
-// Il checkout Shopify col metodo manuale "Crypto" crea un ordine NON pagato:
-// serve l'Admin API per (a) ritrovare quell'ordine quando l'utente arriva a
-// pagare, (b) marcarlo pagato quando PayGate conferma on-chain, (c) chiudere i
-// pendenti che nessuno paga, così i libri non si riempiono di ordini fantasma.
+// #SHOPIFY-CRYPTO-3 — client Admin API per il rail crypto.
+// Il checkout Shopify NON può incassare crypto: qualunque forma di pago manuale
+// crea un ordine e rimanda il pagamento a dopo, e il bottone finale dice
+// "Complete order" (misurato sull'ordine #1001). Quindi il crypto si paga dove
+// l'utente clicca — la pagina PayGate — e l'ordine viene SPECCHIATO qui dentro
+// già pagato: ricevuta, report e rimborsi restano in Shopify senza chiedere al
+// cliente un secondo passaggio che sembra facoltativo.
 //
 // Token separato da quello dei webhook: `SHOPIFY_ADMIN_TOKEN` è un token OAuth
-// con scope read_orders,write_orders. Senza di esso tutto il rail crypto è
-// inerte (le funzioni ritornano null/false) → deploy safe dark, come il rail carta.
+// con scope write_orders. Senza di esso il mirror è inerte (ritorna null) e il
+// pagamento crypto funziona comunque: perdiamo la riga in Shopify, non i soldi.
 
 const API_VERSION = "2026-07";
 
@@ -35,134 +37,98 @@ async function adminGql<T>(query: string, variables?: Record<string, unknown>): 
   return json.data;
 }
 
-export type PendingCryptoOrder = {
-  id: string; // GID
-  name: string; // #1001
-  amountUsd: number;
-  variantId: string | null;
-};
-
-const PENDING_QUERY = `
-  query PendingCrypto($q: String!) {
-    orders(first: 25, query: $q, sortKey: CREATED_AT, reverse: true) {
-      nodes {
-        id
-        name
-        paymentGatewayNames
-        customAttributes { key value }
-        currentTotalPriceSet { shopMoney { amount } }
-        lineItems(first: 1) { nodes { variant { id } } }
-      }
-    }
-  }`;
-
-type PendingNode = {
-  id: string;
-  name: string;
-  paymentGatewayNames: string[];
-  customAttributes: Array<{ key: string; value: string | null }>;
-  currentTotalPriceSet: { shopMoney: { amount: string } };
-  lineItems: { nodes: Array<{ variant: { id: string } | null }> };
-};
-
-// Ritrova l'ordine crypto in attesa di pagamento di QUESTO utente.
-// Il match è su `attributes[identifier]` (che mettiamo noi nel permalink e viene
-// dalla SESSIONE), non sull'email digitata al checkout: l'utente può scrivere
-// un'email diversa, e pagare l'ordine di un altro non deve essere possibile.
-export async function findPendingCryptoOrder(
-  identifier: string,
-  gatewayName: string
-): Promise<PendingCryptoOrder | null> {
-  const data = await adminGql<{ orders: { nodes: PendingNode[] } }>(PENDING_QUERY, {
-    q: "financial_status:pending AND status:open",
-  });
-  const want = identifier.trim().toLowerCase();
-  const wantGateway = gatewayName.trim().toLowerCase();
-
-  for (const o of data.orders.nodes) {
-    const attr = (o.customAttributes ?? []).find((a) => a?.key === "identifier");
-    if ((attr?.value ?? "").trim().toLowerCase() !== want) continue;
-    const isCrypto = (o.paymentGatewayNames ?? []).some(
-      (g) => typeof g === "string" && g.trim().toLowerCase() === wantGateway
-    );
-    if (!isCrypto) continue;
-    const amount = Number.parseFloat(o.currentTotalPriceSet?.shopMoney?.amount ?? "");
-    if (!Number.isFinite(amount) || amount <= 0) continue;
-    const gid = o.lineItems?.nodes?.[0]?.variant?.id ?? null;
-    return {
-      id: o.id,
-      name: o.name,
-      amountUsd: amount,
-      variantId: gid ? gid.split("/").pop() ?? null : null,
-    };
-  }
-  return null;
-}
-
-const MARK_PAID = `
-  mutation MarkPaid($input: OrderMarkAsPaidInput!) {
-    orderMarkAsPaid(input: $input) {
-      order { id displayFinancialStatus }
+const ORDER_CREATE = `
+  mutation MirrorPaidOrder($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
+    orderCreate(order: $order, options: $options) {
+      order { id name displayFinancialStatus }
       userErrors { field message }
     }
   }`;
 
-// Marca pagato l'ordine Shopify dopo la conferma on-chain di PayGate.
-// Idempotente lato Shopify: se l'ordine è già pagato la mutation torna un
-// userError, che trattiamo come successo (non è una condizione da ritentare).
-export async function markShopifyOrderPaid(orderGid: string): Promise<boolean> {
-  const data = await adminGql<{
-    orderMarkAsPaid: {
-      order: { id: string; displayFinancialStatus: string } | null;
-      userErrors: Array<{ field?: string[]; message: string }>;
-    };
-  }>(MARK_PAID, { input: { id: orderGid } });
+export type MirrorInput = {
+  identifier: string;
+  plan: "base" | "premium";
+  period: "monthly" | "annual";
+  amountUsd: number;
+  paygateOrderId: string;
+  txid?: string | null;
+};
 
-  const r = data.orderMarkAsPaid;
-  if (r.order) return true;
-  const msg = r.userErrors?.[0]?.message ?? "";
-  if (/already|paid/i.test(msg)) {
-    console.log(`[shopify-admin] ordine ${orderGid} già pagato: ${msg}`);
-    return true;
-  }
-  console.error(`[shopify-admin] markAsPaid fallito su ${orderGid}: ${msg}`);
-  return false;
+// Titolo della riga d'ordine: dice la verità sul prodotto venduto. Il crypto è
+// per forza un acquisto SINGOLO (nessun rail crypto può ri-addebitare), quindi
+// non riusiamo le SKU in abbonamento — una riga "Annual subscription" su un
+// pagamento che non si rinnova sarebbe una ricevuta falsa. Riga custom: nessun
+// accoppiamento con i variant id, e il titolo resta leggibile in fattura.
+export function mirrorLineTitle(plan: "base" | "premium", period: "monthly" | "annual"): string {
+  const tier = plan === "premium" ? "Premium" : "Base";
+  const days = period === "annual" ? "365" : "30";
+  return `BetRedge ${tier} — ${days} days (one-time, crypto)`;
 }
 
-const CLOSE = `
-  mutation Close($input: OrderCloseInput!) {
-    orderClose(input: $input) { order { id } userErrors { message } }
-  }`;
+// Crea in Shopify l'ordine GIÀ PAGATO che corrisponde a un pagamento crypto
+// arrivato via PayGate. Ritorna il GID, o null se non configurato/fallito:
+// il chiamante non deve MAI far dipendere il grant da questo (i soldi sono già
+// arrivati e il piano è già stato concesso).
+export async function createMirroredPaidOrder(input: MirrorInput): Promise<string | null> {
+  if (!isShopifyAdminConfigured()) return null;
+  const amount = input.amountUsd.toFixed(2);
+  const money = { shopMoney: { amount, currencyCode: "USD" } };
 
-// Chiude gli ordini crypto mai pagati. Non li CANCELLA: chiudere archivia e
-// lascia lo storico (un cliente che paga in ritardo si recupera a mano),
-// cancellare butterebbe via la traccia.
-export async function closeStalePendingCryptoOrders(
-  gatewayName: string,
-  olderThanHours: number
-): Promise<{ closed: string[]; errors: string[] }> {
-  const cutoff = new Date(Date.now() - olderThanHours * 3_600_000).toISOString();
-  const data = await adminGql<{ orders: { nodes: PendingNode[] } }>(PENDING_QUERY, {
-    q: `financial_status:pending AND status:open AND created_at:<${cutoff}`,
-  });
-  const wantGateway = gatewayName.trim().toLowerCase();
-  const closed: string[] = [];
-  const errors: string[] = [];
+  try {
+    const data = await adminGql<{
+      orderCreate: {
+        order: { id: string; name: string; displayFinancialStatus: string } | null;
+        userErrors: Array<{ field?: string[]; message: string }>;
+      };
+    }>(ORDER_CREATE, {
+      order: {
+        // L'email fa da chiave cliente in Shopify; l'identifier resta anche come
+        // attributo, che è ciò che il webhook dei rimborsi sa leggere.
+        ...(input.identifier.includes("@") ? { email: input.identifier } : {}),
+        currency: "USD",
+        financialStatus: "PAID",
+        tags: ["crypto", "paygate"],
+        customAttributes: [
+          { key: "identifier", value: input.identifier },
+          { key: "rail", value: "paygate-crypto" },
+          { key: "paygate_order", value: input.paygateOrderId },
+        ],
+        lineItems: [
+          {
+            title: mirrorLineTitle(input.plan, input.period),
+            quantity: 1,
+            requiresShipping: false,
+            taxable: true,
+            vendor: "BetRedge",
+            priceSet: money,
+          },
+        ],
+        // La transazione rende l'incasso visibile in Finanze col suo gateway,
+        // invece di un ordine "pagato" senza traccia di come.
+        transactions: [
+          {
+            kind: "SALE",
+            status: "SUCCESS",
+            gateway: "PayGate (crypto)",
+            amountSet: money,
+            ...(input.txid ? { authorizationCode: input.txid } : {}),
+          },
+        ],
+      },
+      // Nessuna ricevuta da Shopify: la manda già il callback PayGate
+      // (receiptEmail), e due ricevute per un pagamento sono un reclamo.
+      options: { sendReceipt: false },
+    });
 
-  for (const o of data.orders.nodes) {
-    const isCrypto = (o.paymentGatewayNames ?? []).some(
-      (g) => typeof g === "string" && g.trim().toLowerCase() === wantGateway
-    );
-    if (!isCrypto) continue;
-    try {
-      const r = await adminGql<{
-        orderClose: { order: { id: string } | null; userErrors: Array<{ message: string }> };
-      }>(CLOSE, { input: { id: o.id } });
-      if (r.orderClose.order) closed.push(o.name);
-      else errors.push(`${o.name}: ${r.orderClose.userErrors?.[0]?.message ?? "close failed"}`);
-    } catch (e) {
-      errors.push(`${o.name}: ${String(e)}`);
+    const r = data.orderCreate;
+    if (r.order) {
+      console.log(`[shopify-admin] mirror ordine ${r.order.name} (${r.order.displayFinancialStatus}) per paygate=${input.paygateOrderId}`);
+      return r.order.id;
     }
+    console.error(`[shopify-admin] mirror fallito: ${r.userErrors?.[0]?.message ?? "unknown"}`);
+    return null;
+  } catch (e) {
+    console.error("[shopify-admin] mirror error:", String(e));
+    return null;
   }
-  return { closed, errors };
 }

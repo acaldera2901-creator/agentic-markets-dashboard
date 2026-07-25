@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
 import { dbQueryStrict } from "@/lib/db";
-import {
-  buildShopifyCheckoutUrl,
-  isShopifyConfigured,
-  isShopifyCryptoConfigured,
-  type ShopifyRail,
-} from "@/lib/shopify";
+import { buildShopifyCheckoutUrl, isShopifyConfigured } from "@/lib/shopify";
 import { shopifyGrantAllowed, hasActiveShopifySubscription } from "@/lib/plan-grant";
 import { blocksLowerTierPurchase, discountedAmountFor, type PlanKey } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
@@ -67,7 +62,7 @@ export async function POST(req: Request) {
   }
   if (!ctx) return deny(401, "no session");
 
-  let body: { requested_plan?: unknown; period?: unknown; lang?: unknown; rail?: unknown };
+  let body: { requested_plan?: unknown; period?: unknown; lang?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -79,15 +74,6 @@ export async function POST(req: Request) {
   // shopifyLocalePrefix mappa qualunque valore ignoto su "/en" e non interpola
   // mai la stringa ricevuta.
   const lang = typeof body.lang === "string" ? body.lang : null;
-
-  // rail "crypto" = SKU one-off pagata via PayGate dentro il checkout Shopify.
-  const rail: ShopifyRail = body.rail === "crypto" ? "crypto" : "card";
-  // Senza il nome del gateway crypto non sapremmo riconoscere l'ordine in
-  // orders/paid e lo concederemmo DUE volte (qui e dal callback PayGate):
-  // meglio non aprire il rail.
-  if (rail === "crypto" && !isShopifyCryptoConfigured()) {
-    return deny(503, "rail crypto non configurato (gateway o variant one-off mancanti)");
-  }
 
   const sku = body.requested_plan;
   if (sku !== "base" && sku !== "premium" && sku !== "weekly") {
@@ -129,10 +115,6 @@ export async function POST(req: Request) {
   const period = body.period;
   if (period !== "monthly" && period !== "annual") {
     return deny(400, `invalid period=${String(period)}`);
-  }
-  // Non esiste un annuale one-off: chi paga in crypto compra 30 giorni.
-  if (rail === "crypto" && period !== "monthly") {
-    return deny(400, "rail crypto: solo periodo monthly");
   }
 
   // Stessa tier-guard di PayGate: premium attivo non compra 'base' (tier-arbitrage).
@@ -185,8 +167,8 @@ export async function POST(req: Request) {
     return deny(500, "lettura DB fallita (fail-closed)", ctx);
   }
 
-  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period, lang, rail);
-  if (!url) return deny(503, `SHOPIFY_SHOP_DOMAIN o variant mancante per ${sku}/${period}/${rail}`, ctx);
-  console.log(`[shopify/checkout] OK ${sku}/${period} rail=${rail} identifier=${ctx.identifier}`);
+  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period, lang);
+  if (!url) return deny(503, `SHOPIFY_SHOP_DOMAIN o variant mancante per ${sku}/${period}`, ctx);
+  console.log(`[shopify/checkout] OK ${sku}/${period} identifier=${ctx.identifier}`);
   return NextResponse.json({ url });
 }

@@ -51,18 +51,6 @@ export function isCryptoGatewayOrder(gatewayNames: string[] | null | undefined):
   return (gatewayNames ?? []).some((g) => typeof g === "string" && g.trim().toLowerCase() === want);
 }
 
-// Il rail crypto è offribile solo se sappiamo riconoscere i suoi ordini in
-// orders/paid: senza il nome del gateway un ordine crypto verrebbe concesso due
-// volte (qui e dal callback PayGate). Stesso principio del selling plan: non si
-// vende ciò che non si sa processare.
-export function isShopifyCryptoConfigured(): boolean {
-  return Boolean(
-    process.env.SHOPIFY_CRYPTO_GATEWAY_NAME &&
-      process.env.SHOPIFY_VARIANT_BASE_ONEOFF &&
-      process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF
-  );
-}
-
 // La Weekly Pick è una SKU one-off, non un piano: l'ordine non concede
 // plan/plan_expires_at ma un entitlement per la settimana corrente. Sta fuori
 // da resolveOrderFromVariant proprio per non poter essere confusa con un piano.
@@ -74,11 +62,6 @@ export function isWeeklyPickVariant(variantId: string | number | null | undefine
 
 export type ShopifySku = "base" | "premium" | "weekly";
 
-// Il rail decide QUALE prodotto si compra, non solo come si paga: il crypto non
-// puo' essere ricorrente su Shopify (solo i gateway che sanno ri-addebitare un
-// metodo salvato pagano un abbonamento), quindi il rail crypto vende SKU
-// "one-off" da 30 giorni, prodotti distinti senza selling plan.
-export type ShopifyRail = "card" | "crypto";
 
 // Prefisso di lingua del checkout. Lo store pubblica Español (default), English
 // e Italiano: senza prefisso Shopify serve il DEFAULT, quindi un utente inglese
@@ -97,14 +80,8 @@ export function shopifyLocalePrefix(lang: string | null | undefined): string {
 // 164.99/329.99), non due varianti dello stesso: così il webhook può dedurre il
 // periodo dal solo variant id, che è l'unico campo su cui possiamo contare nel
 // payload di orders/paid.
-function variantFor(sku: ShopifySku, period: ShopifyPeriod, rail: ShopifyRail = "card"): string | undefined {
+function variantFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
   if (sku === "weekly") return process.env.SHOPIFY_VARIANT_WEEKLY;
-  if (rail === "crypto") {
-    // Solo mensile: un annuale one-off in crypto non è stato aperto (meno SKU).
-    return sku === "premium"
-      ? process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF
-      : process.env.SHOPIFY_VARIANT_BASE_ONEOFF;
-  }
   if (period === "annual") {
     return sku === "premium"
       ? process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL
@@ -134,11 +111,10 @@ export function buildShopifyCheckoutUrl(
   sku: ShopifySku,
   email: string,
   period: ShopifyPeriod = "monthly",
-  lang?: string | null,
-  rail: ShopifyRail = "card"
+  lang?: string | null
 ): string | null {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
-  const variant = variantFor(sku, period, rail);
+  const variant = variantFor(sku, period);
   if (!domain || !variant) return null;
 
   // Il prefisso va su OGNI hop della catena: /cart/clear e /cart/add sono
@@ -153,9 +129,7 @@ export function buildShopifyCheckoutUrl(
   add.set("quantity", "1");
   // La weekly pick NON porta selling_plan: è un acquisto singolo. Passarne uno
   // la trasformerebbe in un addebito ricorrente.
-  // Il rail crypto compra una SKU one-off: nessun selling plan, altrimenti
-  // Shopify nasconderebbe i metodi manuali (nessuno paga un abbonamento in crypto).
-  if (sku !== "weekly" && rail === "card") {
+  if (sku !== "weekly") {
     const sellingPlan = sellingPlanFor(sku, period);
     // Senza selling plan l'ordine sarebbe un addebito UNICO travestito da
     // abbonamento: il cliente paga una volta e non rinnova mai, e nessuno se ne
