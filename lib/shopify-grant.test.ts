@@ -5,14 +5,31 @@ const future = new Date(Date.now() + 5 * 86_400_000).toISOString();
 const past = new Date(Date.now() - 5 * 86_400_000).toISOString();
 
 describe("shopifyGrantAllowed (grandfather)", () => {
-  it("BLOCCA se un abbonato PayGate è ancora attivo", () => {
-    expect(shopifyGrantAllowed("paygate", future)).toBe(false);
+  it("BLOCCA un abbonato PayGate ancora attivo", () => {
+    expect(shopifyGrantAllowed("base", "paygate", future)).toBe(false);
+    expect(shopifyGrantAllowed("premium", "paygate", future)).toBe(false);
   });
+
   it("PERMETTE se il PayGate è scaduto", () => {
-    expect(shopifyGrantAllowed("paygate", past)).toBe(true);
+    expect(shopifyGrantAllowed("premium", "paygate", past)).toBe(true);
   });
-  it("PERMETTE per sorgente shopify o nulla (free/mai pagante)", () => {
-    expect(shopifyGrantAllowed("shopify", future)).toBe(true);
-    expect(shopifyGrantAllowed(null, null)).toBe(true);
+
+  it("PERMETTE per sorgente shopify o nulla", () => {
+    expect(shopifyGrantAllowed("premium", "shopify", future)).toBe(true);
+    expect(shopifyGrantAllowed("free", null, null)).toBe(true);
+  });
+
+  // Il bug reale: profilo 'free' con plan_source/scadenza RESIDUI restava
+  // grandfathered per sempre e ogni acquisto carta cadeva su PayGate.
+  it("PERMETTE a un free con plan_source e scadenza residui (bug #SHOPIFY-GF-1)", () => {
+    expect(shopifyGrantAllowed("free", "paygate", future)).toBe(true);
+  });
+
+  it("PERMETTE a un admin_full: non è un abbonamento PayGate", () => {
+    expect(shopifyGrantAllowed("admin_full", "paygate", future)).toBe(true);
+  });
+
+  it("PERMETTE a chi è in pending_payment", () => {
+    expect(shopifyGrantAllowed("pending_payment", "paygate", future)).toBe(true);
   });
 });

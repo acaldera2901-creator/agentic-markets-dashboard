@@ -118,7 +118,7 @@ export async function POST(req: Request) {
     console.error("[shopify/checkout] plan_source lookup failed:", String(e));
     return deny(500, "lettura DB fallita (fail-closed)", ctx);
   }
-  if (!shopifyGrantAllowed(source, ctx.plan_expires_at)) {
+  if (!shopifyGrantAllowed(ctx.plan, source, ctx.plan_expires_at)) {
     return deny(409, `grandfather: plan_source=${String(source)} expires=${String(ctx.plan_expires_at)}`, ctx);
   }
 
