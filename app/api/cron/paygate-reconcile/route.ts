@@ -3,6 +3,7 @@ import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 import { activatePaygatePlan } from "@/lib/plan-grant";
 import { settlePendingOrder } from "@/lib/paygate-settle";
+import { settleCryptoOrder, type CryptoOrder } from "@/lib/crypto-settle";
 import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
@@ -61,10 +62,16 @@ export async function GET(req: Request) {
     `SELECT id::text AS id, identifier, plan, period, amount_usd::float8 AS amount_usd, status, ipn_token
        FROM paygate_orders
       WHERE status = 'pending' AND ipn_token IS NOT NULL
+        AND coin IS NULL
         AND created_at > NOW() - INTERVAL '48 hours'
       ORDER BY created_at DESC
       LIMIT 25`
   );
+  // #CRYPTO-DIRECT-1: `coin IS NULL` = solo ordini del rail CARTE. Gli ordini
+  // crypto hanno un ipn_token ma vivono su un'altra API (nessun
+  // payment-status.php): interrogarli qui non darebbe mai "paid" e brucerebbe
+  // gli slot rate-limitati, affamando proprio i pending del rail carte che
+  // meritano il re-check. Hanno la loro passata sotto, senza rate limit.
   // #PAYGATE-RATELIMIT-FIX (root cause dell'ordine pagato mai saldato, diag
   // 2026-07-15): payment-status.php si rate-limita dopo ~5 chiamate rapide dallo
   // stesso IP. Con ORDER BY ASC i più RECENTI (= callback persi, gli unici che
@@ -104,12 +111,45 @@ export async function GET(req: Request) {
     }
   }
 
+  // #CRYPTO-DIRECT-1 terza passata — ordini crypto pendenti. Serve perché il
+  // pagamento arriva quando arriva: l'utente può chiudere la pagina prima delle
+  // conferme, e il callback di PayGate può perdersi. Qui la verifica è on-chain
+  // (nessun rate limit, quindi nessun pacing) e il claim atomico impedisce il
+  // doppio grant se intanto ha saldato il polling della pagina.
+  const cryptoPending = await dbQuery<CryptoOrder>(
+    `SELECT id::text AS id, identifier, plan, period,
+              amount_usd::float8 AS amount_usd, status, coin,
+              expected_value_coin::float8 AS expected_value_coin,
+              crypto_address_in, shopify_order_id
+       FROM paygate_orders
+      WHERE status = 'pending' AND coin IS NOT NULL
+        AND created_at > NOW() - INTERVAL '48 hours'
+      ORDER BY created_at DESC
+      LIMIT 50`
+  );
+  let cryptoSettled = 0;
+  for (const o of cryptoPending) {
+    try {
+      const r = await settleCryptoOrder(o);
+      if (r.granted) {
+        cryptoSettled++;
+        console.log(`[paygate/reconcile] CRYPTO grant order=${o.id} coin=${o.coin}`);
+      } else {
+        console.log(`[paygate/reconcile] crypto order=${o.id} non saldato: ${r.reason}`);
+      }
+    } catch (e) {
+      errors.push(`crypto ${o.id}: ${String(e)}`);
+    }
+  }
+
   const body = {
     ok: errors.length === 0,
     scanned: orders.length,
     granted,
     pendingScanned: pending.length,
     settled,
+    cryptoPending: cryptoPending.length,
+    cryptoSettled,
     errors,
   };
 
