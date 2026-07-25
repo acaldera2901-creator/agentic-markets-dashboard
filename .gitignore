@@ -70,3 +70,6 @@ data/referee_cards_backfill.json
 
 # icone: sorgenti/lavorazione (non asset finali)
 public/icons/_candidates/
+
+# worktree temporanei degli agenti: mai nel repo (i gitlink rompono i cloni)
+.claude/worktrees/
