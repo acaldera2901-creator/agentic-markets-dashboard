@@ -35,6 +35,10 @@
     {
       "path": "/api/cron/shopify-reconcile",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/shopify-crypto-sweep",
+      "schedule": "17 */6 * * *"
     }
   ]
 }

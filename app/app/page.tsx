@@ -3416,7 +3416,10 @@ function CheckoutModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const payWithCard = async () => {
+  // #SHOPIFY-CRYPTO-2 — un solo flusso per i due rail: cambia `rail` e, per il
+  // crypto, il periodo (esiste solo in SKU one-off da 30 giorni). Qualunque
+  // non-200 da Shopify cade sul rail PayGate diretto, invariato.
+  const startCheckout = async (rail: "card" | "crypto") => {
     // Guard sincrono: blocca i click ravvicinati PRIMA di creare un secondo ordine
     // (il disabled del bottone si applica solo dopo il re-render).
     if (payInFlight.current) return;
@@ -3438,7 +3441,12 @@ function CheckoutModal({
           headers: { "content-type": "application/json" },
           // `lang` decide la lingua del checkout Shopify: senza, esce sempre
           // nella lingua di default dello store (spagnolo).
-          body: JSON.stringify({ requested_plan: plan, period, lang }),
+          body: JSON.stringify({
+            requested_plan: plan,
+            period: rail === "crypto" ? "monthly" : period,
+            lang,
+            rail,
+          }),
         });
         if (sres.ok) {
           const { url: shopUrl } = (await sres.json()) as { url?: string };
@@ -3482,6 +3490,9 @@ function CheckoutModal({
       payInFlight.current = false;
     }
   };
+
+  const payWithCard = () => startCheckout("card");
+  const payWithCrypto = () => startCheckout("crypto");
 
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
@@ -3641,6 +3652,28 @@ function CheckoutModal({
                 ? pick5(lang, { it: "Reindirizzamento al pagamento sicuro…", en: "Redirecting to secure payment…", es: "Redirigiendo al pago seguro…", fr: "Redirection vers le paiement sécurisé…", ru: "Перенаправление на безопасную оплату…" })
                 : <>{pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD</>}
             </button>
+
+            {/* #SHOPIFY-CRYPTO-2 — rail crypto. Il crypto NON può essere
+                ricorrente su Shopify (solo i gateway che ri-addebitano un metodo
+                salvato pagano un abbonamento), quindi qui si compra una SKU
+                one-off da 30 giorni e la copy lo dice prima del click. */}
+            {process.env.NEXT_PUBLIC_SHOPIFY_CRYPTO_ENABLED === "true" && (
+              <>
+                <button type="button" onClick={payWithCrypto} disabled={!withdrawalConsent || redirecting}
+                  style={{ width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-line)", color: "var(--am-text)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
+                  {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {price.toFixed(2)} USD
+                </button>
+                <p style={{ fontSize: 11, opacity: 0.7, margin: "6px 0 0" }}>
+                  {pick5(lang, {
+                    it: "Crypto: pagamento singolo da 30 giorni, non si rinnova. Alla scadenza ricompri quando vuoi.",
+                    en: "Crypto: one-time payment for 30 days, no auto-renewal. Buy again whenever you want.",
+                    es: "Crypto: pago único de 30 días, sin renovación automática. Vuelve a comprar cuando quieras.",
+                    fr: "Crypto : paiement unique de 30 jours, sans renouvellement automatique. Rachetez quand vous voulez.",
+                    ru: "Крипто: разовый платёж на 30 дней, без автопродления. Купить снова можно в любой момент.",
+                  })}
+                </p>
+              </>
+            )}
           </div>
         )}
 

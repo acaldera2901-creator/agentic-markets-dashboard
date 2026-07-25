@@ -7,6 +7,7 @@ import {
   isWeeklyPickVariant,
   isShopifyConfigured,
   isFullRefund,
+  isCryptoGatewayOrder,
 } from "@/lib/shopify";
 import { activateShopifyPlan, revokeShopifyPlan } from "@/lib/plan-grant";
 import { grantWeeklyPick } from "@/lib/weekly-pick-server";
@@ -210,9 +211,26 @@ export async function POST(req: Request) {
       await markEvent(order.orderId, "unresolved", "identifier o variant non risolvibili");
       return NextResponse.json({ received: true, unresolved: true });
     }
+    // #SHOPIFY-CRYPTO-2 — chi concede il piano. Un ordine crypto è PAGATO da
+    // PayGate: il grant lo fa il callback PayGate (verifica on-chain + claim
+    // atomico). Questo webhook scatta perché SIAMO NOI a marcare l'ordine
+    // pagato via Admin API, quindi concedere qui significherebbe stackare altri
+    // 30 giorni sopra quelli già dati. Solo bookkeeping.
+    if (isCryptoGatewayOrder(order.gatewayNames)) {
+      console.log(`[shopify/webhook] crypto order=${order.orderId}: grant owned by paygate callback`);
+      await markEvent(order.orderId, "crypto-paygate");
+      return NextResponse.json({ received: true, cryptoPaygate: true });
+    }
     // Il periodo viene dal variant id, non hardcoded: un ordine annuale deve
-    // valere 365 giorni, non 30.
-    const granted = await activateShopifyPlan(order.identifier, resolved.plan, resolved.period);
+    // valere 365 giorni, non 30. `recurring:false` = SKU one-off (30 giorni
+    // comprati una volta): pagata con carta va concessa qui, ma con plan_source
+    // distinto perché non c'è nessun contratto da rinnovare.
+    const granted = await activateShopifyPlan(
+      order.identifier,
+      resolved.plan,
+      resolved.period,
+      !resolved.recurring
+    );
     if (!granted) {
       console.error("[shopify/webhook] grant null (utente inesistente o grandfather)", {
         identifier: order.identifier,

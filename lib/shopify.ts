@@ -26,14 +26,41 @@ export type ShopifyPeriod = "monthly" | "annual";
 // annuale concederebbe 30 giorni a chi ha pagato 12 mesi.
 export function resolveOrderFromVariant(
   variantId: string | number | null | undefined
-): { plan: "base" | "premium"; period: ShopifyPeriod } | null {
+): { plan: "base" | "premium"; period: ShopifyPeriod; recurring: boolean } | null {
   if (variantId == null) return null;
   const v = String(variantId);
-  if (v === process.env.SHOPIFY_VARIANT_BASE) return { plan: "base", period: "monthly" };
-  if (v === process.env.SHOPIFY_VARIANT_PREMIUM) return { plan: "premium", period: "monthly" };
-  if (v === process.env.SHOPIFY_VARIANT_BASE_ANNUAL) return { plan: "base", period: "annual" };
-  if (v === process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL) return { plan: "premium", period: "annual" };
+  if (v === process.env.SHOPIFY_VARIANT_BASE) return { plan: "base", period: "monthly", recurring: true };
+  if (v === process.env.SHOPIFY_VARIANT_PREMIUM) return { plan: "premium", period: "monthly", recurring: true };
+  if (v === process.env.SHOPIFY_VARIANT_BASE_ANNUAL) return { plan: "base", period: "annual", recurring: true };
+  if (v === process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL) return { plan: "premium", period: "annual", recurring: true };
+  // One-off: 30 giorni, nessun contratto di abbonamento dietro.
+  if (v === process.env.SHOPIFY_VARIANT_BASE_ONEOFF) return { plan: "base", period: "monthly", recurring: false };
+  if (v === process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF) return { plan: "premium", period: "monthly", recurring: false };
   return null;
+}
+
+// Il nome del metodo di pagamento manuale "Crypto …" creato nell'admin Shopify.
+// Serve a riconoscere, in orders/paid, gli ordini il cui grant NON è nostro:
+// li ha già concessi il callback PayGate, e concederli di nuovo qui regalerebbe
+// altri 30 giorni. Il confronto è case/space-insensitive perché il nome è testo
+// digitato a mano nell'admin.
+export function isCryptoGatewayOrder(gatewayNames: string[] | null | undefined): boolean {
+  const configured = process.env.SHOPIFY_CRYPTO_GATEWAY_NAME;
+  if (!configured) return false;
+  const want = configured.trim().toLowerCase();
+  return (gatewayNames ?? []).some((g) => typeof g === "string" && g.trim().toLowerCase() === want);
+}
+
+// Il rail crypto è offribile solo se sappiamo riconoscere i suoi ordini in
+// orders/paid: senza il nome del gateway un ordine crypto verrebbe concesso due
+// volte (qui e dal callback PayGate). Stesso principio del selling plan: non si
+// vende ciò che non si sa processare.
+export function isShopifyCryptoConfigured(): boolean {
+  return Boolean(
+    process.env.SHOPIFY_CRYPTO_GATEWAY_NAME &&
+      process.env.SHOPIFY_VARIANT_BASE_ONEOFF &&
+      process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF
+  );
 }
 
 // La Weekly Pick è una SKU one-off, non un piano: l'ordine non concede
@@ -46,6 +73,12 @@ export function isWeeklyPickVariant(variantId: string | number | null | undefine
 }
 
 export type ShopifySku = "base" | "premium" | "weekly";
+
+// Il rail decide QUALE prodotto si compra, non solo come si paga: il crypto non
+// puo' essere ricorrente su Shopify (solo i gateway che sanno ri-addebitare un
+// metodo salvato pagano un abbonamento), quindi il rail crypto vende SKU
+// "one-off" da 30 giorni, prodotti distinti senza selling plan.
+export type ShopifyRail = "card" | "crypto";
 
 // Prefisso di lingua del checkout. Lo store pubblica Español (default), English
 // e Italiano: senza prefisso Shopify serve il DEFAULT, quindi un utente inglese
@@ -64,8 +97,14 @@ export function shopifyLocalePrefix(lang: string | null | undefined): string {
 // 164.99/329.99), non due varianti dello stesso: così il webhook può dedurre il
 // periodo dal solo variant id, che è l'unico campo su cui possiamo contare nel
 // payload di orders/paid.
-function variantFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
+function variantFor(sku: ShopifySku, period: ShopifyPeriod, rail: ShopifyRail = "card"): string | undefined {
   if (sku === "weekly") return process.env.SHOPIFY_VARIANT_WEEKLY;
+  if (rail === "crypto") {
+    // Solo mensile: un annuale one-off in crypto non è stato aperto (meno SKU).
+    return sku === "premium"
+      ? process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF
+      : process.env.SHOPIFY_VARIANT_BASE_ONEOFF;
+  }
   if (period === "annual") {
     return sku === "premium"
       ? process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL
@@ -95,10 +134,11 @@ export function buildShopifyCheckoutUrl(
   sku: ShopifySku,
   email: string,
   period: ShopifyPeriod = "monthly",
-  lang?: string | null
+  lang?: string | null,
+  rail: ShopifyRail = "card"
 ): string | null {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
-  const variant = variantFor(sku, period);
+  const variant = variantFor(sku, period, rail);
   if (!domain || !variant) return null;
 
   // Il prefisso va su OGNI hop della catena: /cart/clear e /cart/add sono
@@ -113,7 +153,9 @@ export function buildShopifyCheckoutUrl(
   add.set("quantity", "1");
   // La weekly pick NON porta selling_plan: è un acquisto singolo. Passarne uno
   // la trasformerebbe in un addebito ricorrente.
-  if (sku !== "weekly") {
+  // Il rail crypto compra una SKU one-off: nessun selling plan, altrimenti
+  // Shopify nasconderebbe i metodi manuali (nessuno paga un abbonamento in crypto).
+  if (sku !== "weekly" && rail === "card") {
     const sellingPlan = sellingPlanFor(sku, period);
     // Senza selling plan l'ordine sarebbe un addebito UNICO travestito da
     // abbonamento: il cliente paga una volta e non rinnova mai, e nessuno se ne
@@ -138,6 +180,8 @@ type OrderShape = {
   id?: unknown;
   email?: unknown;
   total_price?: unknown;
+  payment_gateway_names?: unknown;
+  gateway?: unknown;
   note_attributes?: Array<{ name?: string; value?: string }>;
   line_items?: Array<{ variant_id?: unknown }>;
 };
@@ -184,6 +228,7 @@ export function extractOrder(
   identifier: string | null;
   variantId: string | null;
   totalPrice: number | null;
+  gatewayNames: string[];
 } | null {
   const o = (payload ?? {}) as OrderShape;
   if (o.id == null) return null;
@@ -191,7 +236,20 @@ export function extractOrder(
   const attr = (o.note_attributes ?? []).find((a) => a?.name === "identifier");
   const identifier = attr?.value ?? (email ? email.toLowerCase().trim() : null);
   const variantId = o.line_items?.[0]?.variant_id != null ? String(o.line_items[0].variant_id) : null;
-  return { orderId: String(o.id), email, identifier, variantId, totalPrice: money(o.total_price) };
+  // Shopify manda l'array `payment_gateway_names`; `gateway` è il campo legacy
+  // singolo. Leggiamo entrambi: un ordine crypto non riconosciuto = doppio grant.
+  const gatewayNames = [
+    ...(Array.isArray(o.payment_gateway_names) ? o.payment_gateway_names : []),
+    ...(typeof o.gateway === "string" ? [o.gateway] : []),
+  ].filter((g): g is string => typeof g === "string");
+  return {
+    orderId: String(o.id),
+    email,
+    identifier,
+    variantId,
+    totalPrice: money(o.total_price),
+    gatewayNames,
+  };
 }
 
 // Un rimborso spegne l'accesso solo se restituisce (quasi) tutto l'ordine.

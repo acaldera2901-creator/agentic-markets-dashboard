@@ -3,6 +3,8 @@ import crypto from "node:crypto";
 import {
   verifyShopifyHmac,
   shopifyLocalePrefix,
+  isCryptoGatewayOrder,
+  isShopifyCryptoConfigured,
   resolveOrderFromVariant,
   extractOrder,
   extractRefund,
@@ -41,12 +43,12 @@ describe("verifyShopifyHmac", () => {
 
 describe("resolveOrderFromVariant", () => {
   it("mappa i variant mensili", () => {
-    expect(resolveOrderFromVariant("111")).toEqual({ plan: "base", period: "monthly" });
-    expect(resolveOrderFromVariant(222)).toEqual({ plan: "premium", period: "monthly" });
+    expect(resolveOrderFromVariant("111")).toEqual({ plan: "base", period: "monthly", recurring: true });
+    expect(resolveOrderFromVariant(222)).toEqual({ plan: "premium", period: "monthly", recurring: true });
   });
   it("mappa i variant annuali col periodo giusto (365 giorni, non 30)", () => {
-    expect(resolveOrderFromVariant("333")).toEqual({ plan: "base", period: "annual" });
-    expect(resolveOrderFromVariant(444)).toEqual({ plan: "premium", period: "annual" });
+    expect(resolveOrderFromVariant("333")).toEqual({ plan: "base", period: "annual", recurring: true });
+    expect(resolveOrderFromVariant(444)).toEqual({ plan: "premium", period: "annual", recurring: true });
   });
   it("ritorna null su variant sconosciuto", () => {
     expect(resolveOrderFromVariant("999")).toBe(null);
@@ -206,5 +208,57 @@ describe("lingua del checkout", () => {
   it("spagnolo: nessun prefisso (è il default dello store)", () => {
     const url = buildShopifyCheckoutUrl("base", "a@b.com", "monthly", "es")!;
     expect(new URL(url).pathname).toBe("/cart/clear");
+  });
+});
+
+// #SHOPIFY-CRYPTO-2 — il rail crypto vende SKU one-off perche' su Shopify il
+// crypto non puo' pagare un abbonamento.
+describe("rail crypto", () => {
+  beforeEach(() => {
+    process.env.SHOPIFY_SHOP_DOMAIN = "betredge.myshopify.com";
+    process.env.SHOPIFY_VARIANT_BASE = "111";
+    process.env.SHOPIFY_SELLING_PLAN_BASE = "777";
+    process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
+    process.env.SHOPIFY_VARIANT_PREMIUM_ONEOFF = "9222";
+    process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
+  });
+
+  it("le SKU one-off si risolvono come NON ricorrenti da 30 giorni", () => {
+    expect(resolveOrderFromVariant("9111")).toEqual({ plan: "base", period: "monthly", recurring: false });
+    expect(resolveOrderFromVariant("9222")).toEqual({ plan: "premium", period: "monthly", recurring: false });
+  });
+
+  // Un selling plan sul carrello nasconde i metodi manuali: il rail crypto
+  // morirebbe silenziosamente al checkout.
+  it("il permalink crypto usa la variant one-off e NON porta selling_plan", () => {
+    const url = buildShopifyCheckoutUrl("base", "a@b.com", "monthly", "en", "crypto")!;
+    const add = new URLSearchParams(new URL(url).searchParams.get("return_to")!.split("?")[1]);
+    expect(add.get("id")).toBe("9111");
+    expect(add.get("selling_plan")).toBe(null);
+  });
+
+  it("null se la variant one-off non e' configurata (niente rail a metà)", () => {
+    delete process.env.SHOPIFY_VARIANT_BASE_ONEOFF;
+    expect(buildShopifyCheckoutUrl("base", "a@b.com", "monthly", "en", "crypto")).toBe(null);
+  });
+
+  // Il riconoscimento del gateway e' l'unica cosa che impedisce il DOPPIO grant
+  // (webhook + callback PayGate) su un ordine crypto.
+  it("riconosce il gateway crypto ignorando spazi e maiuscole", () => {
+    expect(isCryptoGatewayOrder(["  crypto (usdt, btc, eth) "])).toBe(true);
+    expect(isCryptoGatewayOrder(["shopify_payments"])).toBe(false);
+    expect(isCryptoGatewayOrder([])).toBe(false);
+    expect(isCryptoGatewayOrder(null)).toBe(false);
+  });
+
+  it("senza il nome del gateway configurato NON riconosce nulla e il rail resta chiuso", () => {
+    delete process.env.SHOPIFY_CRYPTO_GATEWAY_NAME;
+    expect(isCryptoGatewayOrder(["Crypto (USDT, BTC, ETH)"])).toBe(false);
+    expect(isShopifyCryptoConfigured()).toBe(false);
+  });
+
+  it("extractOrder riporta i gateway da entrambi i campi del payload", () => {
+    const o = extractOrder({ id: 1, payment_gateway_names: ["A"], gateway: "B" })!;
+    expect(o.gatewayNames).toEqual(["A", "B"]);
   });
 });

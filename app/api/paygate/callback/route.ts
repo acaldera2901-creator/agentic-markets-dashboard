@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
 import { activatePaygatePlan } from "@/lib/plan-grant";
+import { markShopifyOrderPaid, isShopifyAdminConfigured } from "@/lib/shopify-admin";
 import { receiptEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 
@@ -16,6 +17,7 @@ type OrderRow = {
   amount_usd: number;
   status: string;
   ipn_token: string | null;
+  shopify_order_id: string | null;
 };
 
 // PayGate chiama questo URL (GET, NON firmato) al pagamento. Risponde sempre 200
@@ -44,7 +46,8 @@ export async function GET(req: Request) {
 
     const tokenHash = hashToken(token);
     const orders = await dbQuery<OrderRow>(
-      `SELECT id, identifier, plan, period, amount_usd::float8 AS amount_usd, status, ipn_token
+      `SELECT id, identifier, plan, period, amount_usd::float8 AS amount_usd, status, ipn_token,
+              shopify_order_id
          FROM paygate_orders WHERE token_hash = $1 LIMIT 1`,
       [tokenHash]
     );
@@ -109,6 +112,20 @@ export async function GET(req: Request) {
     } else {
       await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
       console.log(`[paygate/callback] GRANT order=${order.id} plan=${granted.plan} value_coin=${String(serverValue)} amount_usd=${String(order.amount_usd)}`);
+
+      // #SHOPIFY-CRYPTO-2 — l'ordine nasce nel checkout Shopify e resta "in
+      // attesa di pagamento" finché la crypto non arriva: ora è arrivata, quindi
+      // chiudiamo il cerchio sui libri di Shopify (ricevuta + report + rimborsi).
+      // Best-effort e DOPO il grant: il piano è già concesso, e un errore qui
+      // non deve mai far fallire il callback (il sweep cron ripassa i pendenti).
+      if (order.shopify_order_id && isShopifyAdminConfigured()) {
+        try {
+          const paid = await markShopifyOrderPaid(order.shopify_order_id);
+          console.log(`[paygate/callback] shopify markAsPaid=${paid} order=${order.shopify_order_id}`);
+        } catch (e) {
+          console.error(`[paygate/callback] shopify markAsPaid failed (${order.shopify_order_id}):`, String(e));
+        }
+      }
 
       // #GOLIVE-HIGH-E ricevuta: stesso pattern del webhook Stripe (invoice.paid),
       // ma con l'importo reale dell'ordine PayGate (amount_usd → minor units).
