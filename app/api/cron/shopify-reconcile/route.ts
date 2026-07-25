@@ -61,14 +61,53 @@ export async function GET(req: Request) {
     }
   }
 
+  // Blocker go-live: un ordine può restare 'pending' per sempre. Il webhook
+  // scrive la riga di idempotenza PRIMA di concedere il piano; se la function
+  // muore lì in mezzo (timeout, OOM) la riga resta 'pending' e il retry di
+  // Shopify la vede come duplicata e non fa nulla → pagamento incassato, piano
+  // mai concesso, e nessuno se ne accorge perché la scansione qui sopra guarda
+  // solo 'unresolved'.
+  // NON si ri-tenta in automatico: non sappiamo se il grant era già passato, e
+  // activateShopifyPlan STACCA il tempo residuo → un secondo giro regalerebbe
+  // un mese/anno in più. Si segnala una volta e si marca 'stale' (che è anche
+  // ciò che evita di ri-allertare ogni 10 minuti sullo stesso ordine).
+  const stale = await dbQuery<{ event_id: string; identifier: string | null }>(
+    `SELECT event_id, identifier
+       FROM shopify_events
+      WHERE status = 'pending'
+        AND event_type = 'orders/paid'
+        AND processed_at < NOW() - INTERVAL '15 minutes'
+      ORDER BY processed_at ASC
+      LIMIT 50`
+  );
+  for (const ev of stale) {
+    await dbExecute(
+      `UPDATE shopify_events
+          SET status = 'stale',
+              last_error = 'webhook interrotto a metà: verificare a mano se il piano è stato concesso'
+        WHERE event_id = $1 AND status = 'pending'`,
+      [ev.event_id]
+    );
+    console.error(`[shopify/reconcile] STALE order=${ev.event_id} identifier=${ev.identifier ?? "?"}`);
+  }
+
   // Un pagamento che resta senza piano è un problema di soldi: va segnalato, non
   // solo contato. Alert solo se c'è davvero qualcosa di irrisolto.
-  if (stillUnresolved > 0 || errors.length > 0) {
+  if (stillUnresolved > 0 || errors.length > 0 || stale.length > 0) {
     await opsAlert("shopify-reconcile", [
-      `${stillUnresolved} pagamenti Shopify ancora senza piano`,
+      ...(stillUnresolved > 0 ? [`${stillUnresolved} pagamenti Shopify ancora senza piano`] : []),
+      ...stale.map(
+        (ev) => `ordine ${ev.event_id} (${ev.identifier ?? "identifier ignoto"}): webhook interrotto, verificare il piano a mano`
+      ),
       ...errors.slice(0, 5),
     ]);
   }
 
-  return NextResponse.json({ scanned: events.length, granted, stillUnresolved, errors });
+  return NextResponse.json({
+    scanned: events.length,
+    granted,
+    stillUnresolved,
+    stale: stale.length,
+    errors,
+  });
 }

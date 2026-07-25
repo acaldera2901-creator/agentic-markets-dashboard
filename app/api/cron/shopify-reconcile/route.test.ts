@@ -34,7 +34,7 @@ it("401 senza cron secret", async () => {
 });
 
 it("recupera il pagamento rimasto senza piano e lo segna granted", async () => {
-  dbQuery.mockResolvedValue([{ event_id: "900", identifier: "u@t.com", variant_id: "111" }]);
+  dbQuery.mockResolvedValueOnce([{ event_id: "900", identifier: "u@t.com", variant_id: "111" }]);
   activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "base" });
   const { GET } = await import("./route");
   const body = await (await GET(req())).json();
@@ -44,7 +44,7 @@ it("recupera il pagamento rimasto senza piano e lo segna granted", async () => {
 });
 
 it("rispetta il periodo annuale anche in recupero (365 giorni, non 30)", async () => {
-  dbQuery.mockResolvedValue([{ event_id: "901", identifier: "u@t.com", variant_id: "444" }]);
+  dbQuery.mockResolvedValueOnce([{ event_id: "901", identifier: "u@t.com", variant_id: "444" }]);
   activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "premium" });
   const { GET } = await import("./route");
   await GET(req());
@@ -52,7 +52,7 @@ it("rispetta il periodo annuale anche in recupero (365 giorni, non 30)", async (
 });
 
 it("se il profilo ancora non esiste lascia l'evento da ritentare e allerta", async () => {
-  dbQuery.mockResolvedValue([{ event_id: "902", identifier: "nuovo@t.com", variant_id: "111" }]);
+  dbQuery.mockResolvedValueOnce([{ event_id: "902", identifier: "nuovo@t.com", variant_id: "111" }]);
   activateShopifyPlan.mockResolvedValue(null); // profilo inesistente
   const { GET } = await import("./route");
   const body = await (await GET(req())).json();
@@ -63,7 +63,7 @@ it("se il profilo ancora non esiste lascia l'evento da ritentare e allerta", asy
 });
 
 it("non tenta nulla su variant non nostro e non chiama il grant", async () => {
-  dbQuery.mockResolvedValue([{ event_id: "903", identifier: "u@t.com", variant_id: "999" }]);
+  dbQuery.mockResolvedValueOnce([{ event_id: "903", identifier: "u@t.com", variant_id: "999" }]);
   const { GET } = await import("./route");
   const body = await (await GET(req())).json();
   expect(activateShopifyPlan).not.toHaveBeenCalled();
@@ -74,5 +74,29 @@ it("niente da fare → nessun alert", async () => {
   const { GET } = await import("./route");
   const body = await (await GET(req())).json();
   expect(body).toMatchObject({ scanned: 0, granted: 0, stillUnresolved: 0 });
+  expect(opsAlert).not.toHaveBeenCalled();
+});
+
+// Blocker go-live: la riga di idempotenza viene scritta PRIMA del grant. Se la
+// function muore lì in mezzo l'ordine resta 'pending' per sempre e il retry di
+// Shopify lo scarta come duplicato: pagamento incassato, piano mai concesso.
+it("segnala l'ordine 'pending' bloccato a metà senza ri-concedere il piano", async () => {
+  dbQuery
+    .mockResolvedValueOnce([]) // nessun unresolved
+    .mockResolvedValueOnce([{ event_id: "950", identifier: "u@t.com" }]); // stale
+  const { GET } = await import("./route");
+  const body = await (await GET(req())).json();
+  expect(body.stale).toBe(1);
+  // NON si ri-tenta: activateShopifyPlan stacca il residuo → regalerebbe un mese.
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+  expect(dbExecute).toHaveBeenCalledWith(expect.stringContaining("status = 'stale'"), ["950"]);
+  expect(opsAlert).toHaveBeenCalledWith("shopify-reconcile", expect.anything());
+});
+
+it("l'ordine marcato 'stale' non ri-allerta al giro dopo", async () => {
+  // La UPDATE ... WHERE status = 'pending' lo porta fuori dalla scansione.
+  const { GET } = await import("./route");
+  const body = await (await GET(req())).json();
+  expect(body.stale).toBe(0);
   expect(opsAlert).not.toHaveBeenCalled();
 });

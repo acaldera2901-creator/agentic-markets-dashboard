@@ -6,11 +6,13 @@ import {
   resolveOrderFromVariant,
   isWeeklyPickVariant,
   isShopifyConfigured,
+  isFullRefund,
 } from "@/lib/shopify";
 import { activateShopifyPlan, revokeShopifyPlan } from "@/lib/plan-grant";
 import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
+import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,17 +50,29 @@ async function handleRefund(payload: unknown) {
     return NextResponse.json({ error: "idempotency unavailable" }, { status: 500 });
   }
 
-  let identifier: string | null = null;
+  let order: { identifier: string | null; variant_id: string | null; amount: number | null } | null = null;
   try {
-    const rows = await dbQueryStrict<{ identifier: string | null }>(
-      `SELECT identifier FROM shopify_events WHERE event_id = $1 LIMIT 1`,
+    const rows = await dbQueryStrict<{
+      identifier: string | null;
+      variant_id: string | null;
+      amount: string | number | null;
+    }>(
+      `SELECT identifier, variant_id, amount FROM shopify_events WHERE event_id = $1 LIMIT 1`,
       [refund.orderId]
     );
-    identifier = rows[0]?.identifier ?? null;
+    const r = rows[0];
+    order = r
+      ? {
+          identifier: r.identifier ?? null,
+          variant_id: r.variant_id ?? null,
+          amount: r.amount == null ? null : Number(r.amount),
+        }
+      : null;
   } catch (e) {
     console.error("[shopify/webhook] refund lookup failed:", String(e));
     return NextResponse.json({ error: "refund lookup failed" }, { status: 500 });
   }
+  const identifier = order?.identifier ?? null;
 
   if (!identifier) {
     // Ordine sconosciuto (es. precedente a questa colonna): non tiriamo a
@@ -73,7 +87,43 @@ async function handleRefund(payload: unknown) {
     return NextResponse.json({ received: true, unresolved: true });
   }
 
-  const revoked = await revokeShopifyPlan(identifier);
+  // Un rimborso NON è sempre "spegni l'abbonamento". Due casi che la revoca
+  // cieca sbagliava, entrambi a nostro danno o del cliente:
+  // 1) rimborso della Weekly Pick (SKU one-off): spegneva l'ABBONAMENTO di chi
+  //    aveva comprato anche un piano, cioè revocava un piano regolarmente pagato;
+  // 2) rimborso PARZIALE su un annuale (una mensilità, un gesto commerciale):
+  //    azzerava 12 mesi pagati.
+  // In entrambi i casi non indoviniamo: lasciamo l'accesso e chiediamo mani umane.
+  const manual = async (status: string, why: string) => {
+    console.error(`[shopify/webhook] rimborso da gestire a mano: ${why}`, { refund, order });
+    await dbExecute(
+      `INSERT INTO shopify_events (event_id, event_type, identifier, status, last_error)
+       VALUES ($1, 'refunds/create', $2, $3, $4)
+       ON CONFLICT (event_id) DO NOTHING`,
+      [eventKey, identifier, status, why]
+    );
+    await opsAlert("shopify-refund", [`rimborso ${refund.refundId} da gestire a mano: ${why}`]);
+    return NextResponse.json({ received: true, manual: why });
+  };
+
+  if (isWeeklyPickVariant(order?.variant_id)) {
+    return manual("weekly-refund", "rimborso Weekly Pick: entitlement one-off, piano non toccato");
+  }
+  if (!isFullRefund(refund.amount, order?.amount ?? null)) {
+    return manual(
+      "partial-refund",
+      `rimborso parziale ${String(refund.amount)}/${String(order?.amount)}: accesso mantenuto`
+    );
+  }
+
+  let revoked: boolean;
+  try {
+    revoked = await revokeShopifyPlan(identifier);
+  } catch (e) {
+    // Nessuna riga di idempotenza scritta → Shopify ritenta il rimborso.
+    console.error("[shopify/webhook] revoke failed:", String(e));
+    return NextResponse.json({ error: "revoke failed" }, { status: 500 });
+  }
   await dbExecute(
     `INSERT INTO shopify_events (event_id, event_type, identifier, status)
      VALUES ($1, 'refunds/create', $2, $3)
@@ -125,10 +175,10 @@ export async function POST(req: Request) {
     // identifier e variant vengono registrati perché la reconcile possa ri-tentare
     // un ordine rimasto senza grant: senza di essi l'evento è irrecuperabile.
     await dbExecute(
-      `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, status)
-       VALUES ($1, 'orders/paid', $2, $3, 'pending')
+      `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status)
+       VALUES ($1, 'orders/paid', $2, $3, $4, 'pending')
        ON CONFLICT (event_id) DO NOTHING`,
-      [order.orderId, order.identifier, order.variantId]
+      [order.orderId, order.identifier, order.variantId, order.totalPrice]
     );
   } catch (e) {
     console.error("[shopify/webhook] idempotency unavailable:", String(e));

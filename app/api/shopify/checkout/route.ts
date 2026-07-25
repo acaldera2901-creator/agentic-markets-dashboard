@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
 import { dbQueryStrict } from "@/lib/db";
-import { buildShopifyCheckoutUrl } from "@/lib/shopify";
-import { shopifyGrantAllowed } from "@/lib/plan-grant";
+import { buildShopifyCheckoutUrl, isShopifyConfigured } from "@/lib/shopify";
+import { shopifyGrantAllowed, hasActiveShopifySubscription } from "@/lib/plan-grant";
 import { blocksLowerTierPurchase, discountedAmountFor, type PlanKey } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
 import {
@@ -11,7 +11,7 @@ import {
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
 } from "@/lib/weekly-pick";
-import { hasWeeklyPick } from "@/lib/weekly-pick-server";
+import { hasWeeklyPickStrict } from "@/lib/weekly-pick-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -27,17 +27,30 @@ export const runtime = "nodejs";
 // Ogni uscita non-200 passa da qui. Senza questo, i rami 400/409/503 tornavano
 // SENZA lasciare traccia: il client cadeva su PayGate e nei log non c'era nulla
 // che dicesse perché — impossibile diagnosticare "il sito non reindirizza".
-function deny(status: number, reason: string, ctx?: { identifier: string; plan: string }) {
+function deny(
+  status: number,
+  reason: string,
+  ctx?: { identifier: string; plan: string },
+  code?: string
+) {
   console.error(
     `[shopify/checkout] DENY ${status} ${reason}` +
       (ctx ? ` identifier=${ctx.identifier} plan=${ctx.plan}` : "")
   );
-  return NextResponse.json({ error: reason }, { status });
+  return NextResponse.json({ error: reason, ...(code ? { code } : {}) }, { status });
 }
 
 export async function POST(req: Request) {
   if (req.headers.get("sec-fetch-site") === "cross-site") {
     return deny(403, "cross-site request blocked");
+  }
+
+  // Stessa condizione del webhook: se il webhook non è configurato (secret
+  // mancante o ruotato) NON mandiamo nessuno a pagare, perché l'ordine
+  // arriverebbe, il webhook risponderebbe 503/401 e non resterebbe nemmeno la
+  // riga in shopify_events → pagamento irrecuperabile anche per la reconcile.
+  if (!isShopifyConfigured()) {
+    return deny(503, "shopify non configurato (webhook secret o variant mancanti)");
   }
 
   let ctx;
@@ -71,12 +84,12 @@ export async function POST(req: Request) {
     }
     const week = currentWeekStart(new Date());
     try {
-      if (await hasWeeklyPick(ctx.identifier, week)) {
+      if (await hasWeeklyPickStrict(ctx.identifier, week)) {
         return deny(409, "weekly gia comprata questa settimana", ctx);
       }
     } catch (e) {
       // Fail-closed: se non sappiamo se l'ha già comprata, non la vendiamo.
-      console.error("[shopify/checkout] hasWeeklyPick failed:", String(e));
+      console.error("[shopify/checkout] hasWeeklyPickStrict failed:", String(e));
       return deny(500, "lettura DB fallita (fail-closed)", ctx);
     }
     // Il prezzo su Shopify è FISSO ($12.99): con la promo di lancio attiva il
@@ -118,6 +131,19 @@ export async function POST(req: Request) {
     console.error("[shopify/checkout] plan_source lookup failed:", String(e));
     return deny(500, "lettura DB fallita (fail-closed)", ctx);
   }
+  // Abbonamento Shopify già attivo → NON si apre un secondo checkout: Shopify
+  // creerebbe un secondo subscription contract e l'utente pagherebbe due volte.
+  // `code` è il segnale al client di NON cadere su PayGate (che sarebbe un
+  // secondo addebito su un altro rail): qui va mostrato un errore.
+  if (hasActiveShopifySubscription(ctx.plan, source, ctx.plan_expires_at)) {
+    return deny(
+      409,
+      `abbonamento Shopify gia attivo (plan=${ctx.plan} expires=${String(ctx.plan_expires_at)})`,
+      ctx,
+      "shopify_subscription_active"
+    );
+  }
+
   if (!shopifyGrantAllowed(ctx.plan, source, ctx.plan_expires_at)) {
     return deny(409, `grandfather: plan_source=${String(source)} expires=${String(ctx.plan_expires_at)}`, ctx);
   }
