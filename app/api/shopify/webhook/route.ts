@@ -142,6 +142,9 @@ export async function POST(req: Request) {
     if (isWeeklyPickVariant(order.variantId)) {
       if (!order.identifier) {
         console.error("[shopify/webhook] weekly pick senza identifier", { order });
+        // 'unresolved' e non 'pending': così resta visibile invece di sparire
+        // (la weekly pick non la ri-tenta la reconcile, che gestisce solo i piani).
+        await markEvent(order.orderId, "unresolved", "weekly pick senza identifier");
         return NextResponse.json({ received: true, unresolved: true });
       }
       await grantWeeklyPick(order.identifier, currentWeekStart(new Date()), null);
