@@ -59,7 +59,7 @@ it("ritorna l'URL con variant, email e identifier dalla sessione", async () => {
   const res = await POST(req({ requested_plan: "premium", period: "monthly" }));
   expect(res.status).toBe(200);
   const { url } = (await res.json()) as { url: string };
-  expect(url).toContain("https://gvfgra-sp.myshopify.com/cart/clear?");
+  expect(url).toContain("https://gvfgra-sp.myshopify.com/en/cart/clear?");
   const inner = new URLSearchParams(
     new URL(url).searchParams.get("return_to")!.split("?")[1]
   );
@@ -241,4 +241,21 @@ it("l'abbonamento Shopify SCADUTO non blocca il riacquisto", async () => {
   const { POST } = await import("./route");
   const res = await POST(req({ requested_plan: "base", period: "monthly" }));
   expect(res.status).toBe(200);
+});
+
+// La lingua vive in localStorage: il server la riceve dal body. Se non la
+// inoltrasse, il checkout resterebbe in spagnolo per tutti.
+it("inoltra la lingua dell'app al checkout Shopify", async () => {
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", lang: "it" }));
+  const { url } = (await res.json()) as { url: string };
+  expect(new URL(url).pathname).toBe("/it/cart/clear");
+});
+
+it("lingua assente o non pubblicata → inglese, non spagnolo", async () => {
+  const { POST } = await import("./route");
+  const noLang = (await (await POST(req({ requested_plan: "base", period: "monthly" }))).json()) as { url: string };
+  expect(new URL(noLang.url).pathname).toBe("/en/cart/clear");
+  const fr = (await (await POST(req({ requested_plan: "base", period: "monthly", lang: "fr" }))).json()) as { url: string };
+  expect(new URL(fr.url).pathname).toBe("/en/cart/clear");
 });

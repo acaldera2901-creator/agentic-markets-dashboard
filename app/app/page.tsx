@@ -3436,7 +3436,9 @@ function CheckoutModal({
         const sres = await fetch("/api/shopify/checkout", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ requested_plan: plan, period }),
+          // `lang` decide la lingua del checkout Shopify: senza, esce sempre
+          // nella lingua di default dello store (spagnolo).
+          body: JSON.stringify({ requested_plan: plan, period, lang }),
         });
         if (sres.ok) {
           const { url: shopUrl } = (await sres.json()) as { url?: string };
