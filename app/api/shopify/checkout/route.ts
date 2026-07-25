@@ -62,12 +62,18 @@ export async function POST(req: Request) {
   }
   if (!ctx) return deny(401, "no session");
 
-  let body: { requested_plan?: unknown; period?: unknown };
+  let body: { requested_plan?: unknown; period?: unknown; lang?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return deny(400, "invalid json");
   }
+
+  // La lingua dell'app vive in localStorage (`agentic-lang`), non in un cookie:
+  // il server non può leggerla, quindi arriva nel body. Non serve validarla —
+  // shopifyLocalePrefix mappa qualunque valore ignoto su "/en" e non interpola
+  // mai la stringa ricevuta.
+  const lang = typeof body.lang === "string" ? body.lang : null;
 
   const sku = body.requested_plan;
   if (sku !== "base" && sku !== "premium" && sku !== "weekly") {
@@ -99,7 +105,7 @@ export async function POST(req: Request) {
     if (weeklyPickAmount().discounted) {
       return deny(503, "promo di lancio attiva: prezzo Shopify fisso", ctx);
     }
-    const weeklyUrl = buildShopifyCheckoutUrl("weekly", ctx.identifier);
+    const weeklyUrl = buildShopifyCheckoutUrl("weekly", ctx.identifier, "monthly", lang);
     if (!weeklyUrl) return deny(503, "weekly: SHOPIFY_SHOP_DOMAIN o variant mancante", ctx);
     console.log(`[shopify/checkout] OK weekly identifier=${ctx.identifier}`);
     return NextResponse.json({ url: weeklyUrl });
@@ -161,7 +167,7 @@ export async function POST(req: Request) {
     return deny(500, "lettura DB fallita (fail-closed)", ctx);
   }
 
-  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period);
+  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period, lang);
   if (!url) return deny(503, `SHOPIFY_SHOP_DOMAIN o variant mancante per ${sku}/${period}`, ctx);
   console.log(`[shopify/checkout] OK ${sku}/${period} identifier=${ctx.identifier}`);
   return NextResponse.json({ url });

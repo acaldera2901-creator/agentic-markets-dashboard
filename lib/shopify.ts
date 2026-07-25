@@ -47,6 +47,19 @@ export function isWeeklyPickVariant(variantId: string | number | null | undefine
 
 export type ShopifySku = "base" | "premium" | "weekly";
 
+// Prefisso di lingua del checkout. Lo store pubblica Español (default), English
+// e Italiano: senza prefisso Shopify serve il DEFAULT, quindi un utente inglese
+// o italiano si trovava un checkout in spagnolo (misurato: /checkouts/cn/…/es-es).
+// Le lingue che NON pubblichiamo (fr, ru) cadono su inglese, non sullo spagnolo:
+// un francese legge l'inglese, non il castigliano.
+// È di fatto un allowlist: qualunque valore non previsto diventa "/en", quindi il
+// valore che arriva dal client non finisce mai interpolato nell'URL.
+export function shopifyLocalePrefix(lang: string | null | undefined): string {
+  if (lang === "it") return "/it";
+  if (lang === "es") return "";
+  return "/en";
+}
+
 // Mensile e annuale sono PRODOTTI distinti su Shopify (prezzi 14.99/29.99 vs
 // 164.99/329.99), non due varianti dello stesso: così il webhook può dedurre il
 // periodo dal solo variant id, che è l'unico campo su cui possiamo contare nel
@@ -81,14 +94,19 @@ function sellingPlanFor(sku: ShopifySku, period: ShopifyPeriod): string | undefi
 export function buildShopifyCheckoutUrl(
   sku: ShopifySku,
   email: string,
-  period: ShopifyPeriod = "monthly"
+  period: ShopifyPeriod = "monthly",
+  lang?: string | null
 ): string | null {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
   const variant = variantFor(sku, period);
   if (!domain || !variant) return null;
 
+  // Il prefisso va su OGNI hop della catena: /cart/clear e /cart/add sono
+  // redirect, e un hop senza prefisso riporta la sessione al default dello store.
+  const loc = shopifyLocalePrefix(lang);
+
   // Il checkout viene raggiunto via return_to, con l'email precompilata.
-  const returnTo = `/checkout?${new URLSearchParams({ "checkout[email]": email })}`;
+  const returnTo = `${loc}/checkout?${new URLSearchParams({ "checkout[email]": email })}`;
 
   const add = new URLSearchParams();
   add.set("id", variant);
@@ -113,7 +131,7 @@ export function buildShopifyCheckoutUrl(
   //    pagherebbe una-tantum invece di abbonarsi. Solo /cart/add lo applica.
   // 2) /cart/add SOMMA al carrello esistente: senza /cart/clear a monte un
   //    doppio click metterebbe due abbonamenti nello stesso ordine.
-  return `https://${domain}/cart/clear?${new URLSearchParams({ return_to: `/cart/add?${add}` })}`;
+  return `https://${domain}${loc}/cart/clear?${new URLSearchParams({ return_to: `${loc}/cart/add?${add}` })}`;
 }
 
 type OrderShape = {
