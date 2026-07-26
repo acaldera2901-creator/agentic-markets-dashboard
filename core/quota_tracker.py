@@ -15,10 +15,12 @@ logger = logging.getLogger("quota_tracker")
 
 DEFAULT_LIMITS: dict[str, dict[str, int]] = {
     "api_football":        {"daily": 100},
-    # Paid plan: 100K credits/month (verified via x-requests-remaining 2026-06-06).
-    # Daily guard 3200 ≈ 99K/month worst case; the tracker resets per-day, so
-    # "daily" is the enforced limit and "monthly" documents the plan ceiling.
-    "odds_api":            {"daily": 3200, "monthly": 100_000},
+    # #ODDS-PLAN-5M (2026-07-26): piano aggiornato a 5M crediti/mese. Prima era
+    # 100K: dopo l'upgrade il cap mensile 100K bloccava odds_api appena il
+    # consumo del mese lo toccava (≈ 10/07, fine Wimbledon) → tennis senza quote
+    # per settimane pur avendo ~4.9M crediti. Daily alzato in proporzione (resta
+    # guardia anti-burst). Deve combaciare con PLAN_LIMIT in lib/odds-quota.ts.
+    "odds_api":            {"daily": 160_000, "monthly": 5_000_000},
     "football_data_org":   {"daily": 5000},
     "openweathermap":      {"daily": 1000},
     "tennis_rapidapi":     {"daily": 100},
