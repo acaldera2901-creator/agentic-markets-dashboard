@@ -89,7 +89,14 @@ export async function GET(req: Request) {
   {
     const dedup = new Map<string, Record<string, unknown>>();
     for (const r of rows as unknown as Array<Record<string, unknown>>) {
-      if (typeof r.p_home !== "number") continue; // incompleta → nascosta
+      // Completa = probabilità usabile. Football/1X2: p_home numerico (coalescato
+      // dai notes sopra). Tennis/2-vie (market ML): niente p_home ma un pick reale
+      // + confidence_score numerico (win prob del giocatore, da tennis-adapter).
+      // Senza questo ramo il tennis (p_home sempre null) veniva scartato in blocco.
+      const hasProb =
+        typeof r.p_home === "number" ||
+        (typeof r.pick === "string" && (r.pick as string).trim() !== "" && typeof r.confidence_score === "number");
+      if (!hasProb) continue; // incompleta → nascosta
       const key = [
         String(r.sport ?? ""),
         String(r.home_team ?? "").trim().toLowerCase(),
