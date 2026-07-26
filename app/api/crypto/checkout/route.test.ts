@@ -26,6 +26,7 @@ beforeEach(() => {
   process.env.PAYGATE_PAYOUT_WALLET = "0x72e348d948e984c7d57d8ccb93fdd52710e47fa2";
   process.env.CRYPTO_COINS_ENABLED = "polygon-usdc,polygon-usdt";
   delete process.env.LAUNCH_PROMO_ENABLED;
+  delete process.env.PAYGATE_TEST_ENABLED;
   getSessionPlan.mockResolvedValue({ identifier: "u@t.com", plan: "free", name: null, plan_expires_at: null });
   promoEligibility.mockResolvedValue({ firstPaidOrder: false });
   convertUsdToCoin.mockResolvedValue(15.01);
@@ -100,4 +101,37 @@ it("GET elenca solo le monete abilitate", async () => {
   const { GET } = await import("./route");
   const body = await (await GET()).json();
   expect(body.coins).toEqual([{ id: "polygon-usdc", label: "USDC · Polygon" }]);
+});
+
+// Porta di prova: pagamento REALE da $5 per validare la catena senza spendere
+// 15 o 30 dollari. Stessa porta già presente sul rail carte.
+it("piano 'test' con flag ON: ordine da $5 sul percorso reale", async () => {
+  process.env.PAYGATE_TEST_ENABLED = "1";
+  convertUsdToCoin.mockResolvedValue(5.01);
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "test", period: "monthly", coin: "polygon-usdc" }));
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ amount_usd: 5, amount_coin: 5.01 });
+  // in DB resta un ordine 'base' normale: il grant a pagamento avvenuto è quello vero
+  const ins = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO paygate_orders"));
+  expect(ins?.[1]?.[2]).toBe("base");
+  expect(ins?.[1]?.[4]).toBe(5);
+  expect(convertUsdToCoin).toHaveBeenCalledWith(expect.anything(), 5);
+});
+
+// Senza la env il piano di prova non esiste: si spegne togliendo la variabile,
+// senza deploy.
+it("piano 'test' con flag OFF: 400 come qualunque piano sconosciuto", async () => {
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "test", period: "monthly", coin: "polygon-usdc" }))).status).toBe(400);
+  expect(dbExecute).not.toHaveBeenCalled();
+});
+
+// Il test serve a provare la catena, non a vendere: come sul rail carte bypassa
+// la tier-guard, altrimenti da un account premium non si potrebbe provare.
+it("il piano di prova bypassa la tier-guard", async () => {
+  process.env.PAYGATE_TEST_ENABLED = "1";
+  getSessionPlan.mockResolvedValue({ identifier: "u@t.com", plan: "premium", name: null, plan_expires_at: null });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "test", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
 });
