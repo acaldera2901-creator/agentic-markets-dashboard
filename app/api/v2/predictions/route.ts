@@ -95,7 +95,15 @@ export async function GET(req: Request) {
       // Senza questo ramo il tennis (p_home sempre null) veniva scartato in blocco.
       const hasProb =
         typeof r.p_home === "number" ||
-        (typeof r.pick === "string" && (r.pick as string).trim() !== "" && typeof r.confidence_score === "number");
+        (typeof r.pick === "string" && (r.pick as string).trim() !== "" && typeof r.confidence_score === "number") ||
+        // #TENNIS-BELOWFLOOR-1: le righe tennis sotto la soglia di confidence
+        // hanno pick=null di proposito (surfacing gate in tennis-adapter), ma
+        // restano match reali con una win-prob (confidence_score). Il board
+        // legacy /api/tennis le mostra senza direzione ("nessun favorito
+        // netto"); alliniamo v2 così non spariscono dal board (#218 le
+        // scartava tutte). Nessun pick sotto-soglia trapela: pick/odds/edge
+        // restano null, si serve solo il match + la confidence.
+        (r.sport === "tennis" && typeof r.confidence_score === "number");
       if (!hasProb) continue; // incompleta → nascosta
       const key = [
         String(r.sport ?? ""),

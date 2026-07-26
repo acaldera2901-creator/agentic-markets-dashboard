@@ -30,6 +30,13 @@ const STUB = {
   id: "s1", sport: "football", market: "1X2", pick: null, confidence_score: null,
   home_team: "X", away_team: "Y", notes: null, starts_at: start, edge_percent: null,
 };
+// 4) tennis sotto-soglia (#TENNIS-BELOWFLOOR-1): confidence_score presente ma
+// pick=null (nulled dal surfacing gate del tennis-adapter). È un match reale →
+// DEVE passare (prima #218 lo scartava). Pick/odds/edge restano null.
+const TENNIS_BELOW = {
+  id: "tb1", sport: "tennis", market: "ML", pick: null, confidence_score: 58,
+  home_team: "Player C", away_team: "Player D", notes: null, starts_at: start, edge_percent: null,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -37,7 +44,7 @@ beforeEach(() => {
     if (/tennis_predictions/.test(sql)) {
       return Promise.resolve([{ latest_prediction: null, latest_signal: null, predictions: "0", signals: "0" }]);
     }
-    if (/unified_predictions/i.test(sql)) return Promise.resolve([TENNIS, FOOTBALL, STUB]);
+    if (/unified_predictions/i.test(sql)) return Promise.resolve([TENNIS, FOOTBALL, STUB, TENNIS_BELOW]);
     return Promise.resolve([]);
   });
 });
@@ -60,9 +67,15 @@ describe("board v2 — gate di completezza (football + tennis)", () => {
     expect(ids).toContain("f1");
   });
 
+  it("serve il tennis sotto-soglia (confidence_score, pick=null) — #TENNIS-BELOWFLOOR-1", async () => {
+    const ids = await servedIds();
+    expect(ids).toContain("tb1");
+  });
+
   it("nasconde lo stub incompleto (niente p_home né pick/confidence)", async () => {
     const ids = await servedIds();
     expect(ids).not.toContain("s1");
-    expect(ids).toHaveLength(2);
+    // t1 (tennis con pick) + f1 (football) + tb1 (tennis sotto-soglia) = 3; s1 escluso.
+    expect(ids).toHaveLength(3);
   });
 });

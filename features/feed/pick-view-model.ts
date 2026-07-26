@@ -71,6 +71,20 @@ export function humanizePick(p: {
 
 export function toPickCardVM(p: ProjectedPrediction): PickCardVM {
   const result = normalizeResult(p.result);
+  const decision = humanizePick({
+    market: p.market,
+    pick: p.pick ?? null,
+    home_team: p.home_team ?? null,
+    away_team: p.away_team ?? null,
+  });
+  // Tennis sotto-soglia (#TENNIS-BELOWFLOOR-1): pick=null di proposito ("nessun
+  // favorito netto"). La card sblocca comunque il match + la confidence; senza
+  // questa etichetta il blocco "Il nostro pronostico" resterebbe vuoto. Scatta
+  // solo su righe sbloccate (confidence_score presente): le locked usano
+  // l'altra card e non leggono `decision`.
+  const decisionLabel =
+    decision ||
+    (p.sport === "tennis" && p.confidence_score != null ? "Nessun favorito netto" : decision);
   return {
     id: p.id,
     sport: p.sport ?? "",
@@ -78,12 +92,7 @@ export function toPickCardVM(p: ProjectedPrediction): PickCardVM {
     kickoff: p.starts_at ?? "",
     homeTeam: p.home_team ?? p.player_one ?? null,
     awayTeam: p.away_team ?? p.player_two ?? null,
-    decision: humanizePick({
-      market: p.market,
-      pick: p.pick ?? null,
-      home_team: p.home_team ?? null,
-      away_team: p.away_team ?? null,
-    }),
+    decision: decisionLabel,
     odds: p.odds ?? null,
     confidenceScore: p.confidence_score ?? null,
     why: p.explanation ?? null,
