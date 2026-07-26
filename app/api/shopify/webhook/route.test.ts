@@ -16,7 +16,9 @@ const SECRET = "whsec_test_123";
 function sign(body: string) {
   return crypto.createHmac("sha256", SECRET).update(body, "utf8").digest("base64");
 }
-function req(body: string, hmac: string | null, topic?: string) {
+// I webhook orders/paid reali portano SEMPRE l'header x-shopify-topic: il default
+// qui riflette la realtà. Passare topic=null simula un header esplicitamente assente.
+function req(body: string, hmac: string | null, topic: string | null = "orders/paid") {
   const headers: Record<string, string> = {};
   if (hmac) headers["x-shopify-hmac-sha256"] = hmac;
   if (topic) headers["x-shopify-topic"] = topic;
@@ -66,7 +68,10 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "555";
   process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
   process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
-  dbQueryStrict.mockResolvedValue([]); // non ancora visto
+  // Default per il path orders/paid: l'INSERT..RETURNING restituisce 1 riga = ordine
+  // nostro (nessun conflitto) → si procede al grant. I test refund impostano le
+  // proprie sequenze con mockResolvedValueOnce.
+  dbQueryStrict.mockResolvedValue([{ event_id: "won" }]);
 });
 
 it("ordine ANNUALE: concede 365 giorni, non 30", async () => {
@@ -115,12 +120,13 @@ it("concede il piano su orders/paid valido", async () => {
   expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly", false);
 });
 
-it("è idempotente: evento già visto → no grant", async () => {
-  dbQueryStrict.mockResolvedValue([{ event_id: "900" }]);
+it("idempotenza atomica: INSERT in conflitto (0 righe) → duplicate, no grant", async () => {
+  dbQueryStrict.mockResolvedValue([]); // ON CONFLICT DO NOTHING → nessuna riga = già preso
   const body = JSON.stringify({ id: 900, email: "u@t.com", line_items: [{ variant_id: 222 }] });
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body)));
   expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ duplicate: true });
   expect(activateShopifyPlan).not.toHaveBeenCalled();
 });
 
@@ -181,7 +187,8 @@ it("l'ordine registra l'importo: senza, un rimborso parziale sarebbe indistingui
   const body = JSON.stringify({ id: 920, email: "u@t.com", total_price: "14.99", line_items: [{ variant_id: 111 }] });
   const { POST } = await import("./route");
   await POST(req(body, sign(body)));
-  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  // L'INSERT è ora il gate atomico (dbQueryStrict … RETURNING), non più dbExecute.
+  const insert = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
   expect(insert?.[1]).toEqual(["920", "u@t.com", "111", 14.99]);
 });
 
@@ -216,4 +223,41 @@ it("SKU one-off pagata con carta: concede 30 giorni come one-off", async () => {
   await POST(req(body, sign(body)));
   // 4o argomento true = one-off → plan_source 'shopify_oneoff', nessun contratto
   expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "base", "monthly", true);
+});
+
+// --- fix#1: race idempotenza (l'INSERT atomico è il gate) ---
+
+it("race: due delivery concorrenti dello stesso ordine → UN solo grant", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "premium" });
+  // 1a delivery vince l'INSERT (1 riga), la 2a trova il conflitto (0 righe).
+  dbQueryStrict.mockResolvedValueOnce([{ event_id: "940" }]).mockResolvedValueOnce([]);
+  const body = JSON.stringify({ id: 940, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const r1 = await POST(req(body, sign(body)));
+  const r2 = await POST(req(body, sign(body)));
+  expect(r1.status).toBe(200);
+  expect(r2.status).toBe(200);
+  expect(await r2.json()).toMatchObject({ duplicate: true });
+  // il cuore del fix: non due volte i giorni per un solo pagamento.
+  expect(activateShopifyPlan).toHaveBeenCalledTimes(1);
+});
+
+// --- fix#2: whitelist topic (solo orders/paid concede) ---
+
+it("topic non-paid (es. orders/create): ack senza grant", async () => {
+  const body = JSON.stringify({ id: 950, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "orders/create"));
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ ignored: "orders/create" });
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+});
+
+it("header topic assente: NON concede (niente più default a orders/paid)", async () => {
+  const body = JSON.stringify({ id: 951, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), null)); // header topic esplicitamente assente
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ ignored: null });
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
 });

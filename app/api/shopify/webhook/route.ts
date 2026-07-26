@@ -152,12 +152,18 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "bad json" }, { status: 400 });
   }
-  // Il topic decide il ramo. Assente → orders/paid, per non cambiare il
-  // comportamento dei webhook già registrati.
-  const topic = req.headers.get("x-shopify-topic") ?? "orders/paid";
+  // Il topic decide il ramo. NIENTE default a orders/paid: un header assente o
+  // un topic sconosciuto NON deve concedere (whitelist esplicita sotto).
+  const topic = req.headers.get("x-shopify-topic");
 
   if (topic === "refunds/create") {
     return handleRefund(payload);
+  }
+  // Whitelist: solo orders/paid concede. Qualunque altro topic (o header assente,
+  // es. un topic aggiunto in futuro sullo stesso URL) → ack senza grant, così non
+  // si concede mai su un ordine non pagato.
+  if (topic !== "orders/paid") {
+    return NextResponse.json({ received: true, ignored: topic ?? null });
   }
 
   const order = extractOrder(payload);
@@ -165,25 +171,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true, skipped: "no order id" });
   }
 
-  // Idempotenza per order id (pattern stripe_events). SELECT-prima (fail-loud),
-  // poi INSERT ON CONFLICT DO NOTHING; rollback della riga se l'handler throwa.
+  // Idempotenza ATOMICA: l'INSERT È il gate. ON CONFLICT DO NOTHING RETURNING →
+  // 0 righe significa che un'altra delivery ha già preso questo ordine (duplicato):
+  // ack senza grant. Elimina la race SELECT-poi-INSERT — due delivery concorrenti
+  // dello stesso ordine passavano entrambe la SELECT → doppio activateShopifyPlan
+  // → 2x giorni concessi per 1 pagamento.
+  // identifier e variant vengono registrati perché la reconcile possa ri-tentare
+  // un ordine rimasto senza grant: senza di essi l'evento è irrecuperabile.
+  let won: { event_id: string }[];
   try {
-    const seen = await dbQueryStrict<{ event_id: string }>(
-      `SELECT event_id FROM shopify_events WHERE event_id = $1 LIMIT 1`,
-      [order.orderId]
-    );
-    if (seen.length > 0) return NextResponse.json({ received: true, duplicate: true });
-    // identifier e variant vengono registrati perché la reconcile possa ri-tentare
-    // un ordine rimasto senza grant: senza di essi l'evento è irrecuperabile.
-    await dbExecute(
+    won = await dbQueryStrict<{ event_id: string }>(
       `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status)
        VALUES ($1, 'orders/paid', $2, $3, $4, 'pending')
-       ON CONFLICT (event_id) DO NOTHING`,
+       ON CONFLICT (event_id) DO NOTHING
+       RETURNING event_id`,
       [order.orderId, order.identifier, order.variantId, order.totalPrice]
     );
   } catch (e) {
     console.error("[shopify/webhook] idempotency unavailable:", String(e));
     return NextResponse.json({ error: "idempotency unavailable" }, { status: 500 });
+  }
+  if (won.length === 0) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   try {
