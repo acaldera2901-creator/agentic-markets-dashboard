@@ -49,7 +49,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const plan = body.requested_plan;
+  // #PAYGATE-TEST-2USD, stessa porta già esistente sul rail carte: piano NASCOSTO
+  // da $5 per fare una prova di pagamento REALE senza spendere 15 o 30 dollari.
+  // Attivo solo con PAYGATE_TEST_ENABLED=1 → si spegne togliendo la env, senza
+  // deploy (senza flag "test" è un plan sconosciuto → 400 come qualunque altro).
+  // Mappato a base/$5 così checkout → verifica on-chain → grant → mirror girano
+  // ESATTAMENTE come un acquisto vero, solo a prezzo di prova.
+  const rawPlan = body.requested_plan;
+  const isTest = rawPlan === "test" && process.env.PAYGATE_TEST_ENABLED === "1";
+  const plan = isTest ? "base" : rawPlan;
   const period = body.period;
   if (plan !== "base" && plan !== "premium") {
     return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
@@ -61,13 +69,17 @@ export async function POST(req: Request) {
   if (!coin) return NextResponse.json({ error: "coin not available" }, { status: 400 });
 
   // Stessa tier-guard del rail carte: premium attivo non ricompra 'base'.
-  if (blocksLowerTierPurchase(ctx.plan, plan)) {
+  // Il path di test la bypassa come sul rail carte: serve a provare la catena,
+  // non a vendere un piano.
+  if (!isTest && blocksLowerTierPurchase(ctx.plan, plan)) {
     return NextResponse.json({ error: "active premium plan — cannot purchase lower tier" }, { status: 409 });
   }
 
   // Prezzo SEMPRE server-side (promo inclusa): è l'importo che finisce
   // nell'ordine e contro cui si verifica il pagamento.
-  const { amount } = discountedAmountFor(plan as PlanKey, period as Period, await promoEligibility(ctx.identifier));
+  const { amount } = isTest
+    ? { amount: 5 }
+    : discountedAmountFor(plan as PlanKey, period as Period, await promoEligibility(ctx.identifier));
 
   // Quanto deve inviare, e se quella moneta accetta un importo così piccolo.
   // Sotto il minimo di rete PayGate NON inoltra: l'utente pagherebbe e i fondi
@@ -115,7 +127,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "order create failed" }, { status: 500 });
   }
 
-  console.log(`[crypto/checkout] OK order=${orderId} ${coin.id} expected=${expected} amount_usd=${amount}`);
+  console.log(`[crypto/checkout] OK order=${orderId} ${coin.id} expected=${expected} amount_usd=${amount}${isTest ? " (TEST)" : ""}`);
   return NextResponse.json({
     order: orderId,
     coin: coin.id,
