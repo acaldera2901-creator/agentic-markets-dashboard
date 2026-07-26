@@ -92,6 +92,14 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   // strongest favourites surface as picks, the rest show probabilities without
   // a pick. Revisit on live settled data. Substring "serie b" ≠ "serie a".
   ["serie b", 65],
+  // #EURO-MINORS-0726 (walk-forward lab am-lab/lab_euro_minors_0726.py, stessa
+  // ricetta/barra delle estive, 8.489 match 2017-2026): floors dove i numeri
+  // reggono ≥70%, coverage-first precauzionale altrove. Da rivedere su dati
+  // live settled come le estive (#MINORS-TIGHTEN).
+  ["austrian bundesliga", 60],   // lug-ago 80.6% @60; anno 74.3% @65 (n=284)
+  ["swiss super league", 65],    // lug-ago 71.7% @56; anno 71.8% @65 (n=174)
+  ["danish superliga", 70],      // 64.8% @56 e PEGGIORA col floor -> quasi chiusa
+  ["ekstraklasa", 70],           // 61.3% @56, sottile sopra -> quasi chiusa
 ];
 
 export type SurfaceDecision = {

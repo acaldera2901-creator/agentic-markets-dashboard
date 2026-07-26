@@ -49,6 +49,20 @@ export const SUMMER_LEAGUES: Record<string, string> = {
   // probabilities without a pick. Revisit the floor on live settled data (as the
   // summer leagues were, #MINORS-TIGHTEN). Off-season until ~late Aug 2026.
   SB: "Serie B",
+  // #EURO-MINORS-0726 — European autumn-spring leagues IN SEASON from mid/late
+  // July: they fill the club-football gap with leagues close to home. Same
+  // off-free-tier machinery; quality-gated by the walk-forward lab
+  // (am-lab/lab_euro_minors_0726.py, same recipe/bar as the summer five,
+  // 8,489 test matches 2017-2026). Pick-floors per league where numbers hold
+  // >=70% (lib/surfacing-gate.ts), coverage-first elsewhere:
+  //   AUT Jul-Aug 80.6% @60 (74.3% @65 full-year, n=284) -> floor 60
+  //   SWZ Jul-Aug 71.7% @56 (71.8% @65 full-year)        -> floor 65
+  //   DNK 64.8% @56 and DEGRADES with the floor           -> precautionary 70
+  //   POL 61.3% @56, thin above                           -> precautionary 70
+  AUT: "Austrian Bundesliga",
+  DNK: "Danish Superliga",
+  POL: "Ekstraklasa",
+  SWZ: "Swiss Super League",
 };
 
 export function isSummerLeague(code: string): boolean {
@@ -62,6 +76,12 @@ const ESPN_SLUGS: Record<string, string> = {
   LOI: "irl.1",
   CSL: "chn.1",
   SB: "ita.2", // Serie B (#SERIE-B-1) — probed: 20 teams on ESPN 2026-07-23
+  // #EURO-MINORS-0726 — probed 2026-07-26: 12 teams each. POL has NO ESPN
+  // league (payload empty) -> fixtures ride the Odds API /events fallback,
+  // exactly like VEI.
+  AUT: "aut.1",
+  DNK: "den.1",
+  SWZ: "sui.1",
 };
 
 // #LIVE-LEAGUES-0627: slug ESPN da interrogare anche nel feed LIVE del board
@@ -69,7 +89,7 @@ const ESPN_SLUGS: Record<string, string> = {
 // come la World Cup. fin.1 (VEI) escluso: ESPN lo restituisce vuoto e The Odds
 // API non va chiamata nel polling 60s (quota). Le card estive hanno match_id
 // `espn:<id>` → match diretto col live scoreboard.
-export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1", "ita.2"];
+export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1", "ita.2", "aut.1", "den.1", "sui.1"];
 
 const ODDS_SPORT_KEYS: Record<string, string> = {
   ELI: "soccer_norway_eliteserien",
@@ -78,6 +98,11 @@ const ODDS_SPORT_KEYS: Record<string, string> = {
   LOI: "soccer_league_of_ireland",
   CSL: "soccer_china_superleague",
   SB: "soccer_italy_serie_b", // Serie B (#SERIE-B-1) — verified active on The Odds API
+  // #EURO-MINORS-0726 — all four verified active on The Odds API 2026-07-26.
+  AUT: "soccer_austria_bundesliga",
+  DNK: "soccer_denmark_superliga",
+  POL: "soccer_poland_ekstraklasa",
+  SWZ: "soccer_switzerland_superleague",
 };
 
 type SnapshotShape = {
