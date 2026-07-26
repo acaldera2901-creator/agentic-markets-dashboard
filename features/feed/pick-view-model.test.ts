@@ -86,6 +86,18 @@ describe("toPickCardVM", () => {
     expect(vm.homeTeam).toBe("Sinner");
     expect(vm.awayTeam).toBe("Alcaraz");
   });
+  it("tennis sotto-soglia (pick null + confidence) → decision 'Nessun favorito netto' (#TENNIS-BELOWFLOOR-1)", () => {
+    const vm = toPickCardVM({
+      ...base, sport: "tennis", market: "ML", pick: null, confidence_score: 58,
+      home_team: "Player C", away_team: "Player D", odds: null, edge_percent: null,
+    });
+    expect(vm.decision).toBe("Nessun favorito netto");
+    expect(vm.confidenceScore).toBe(58);
+  });
+  it("football senza pick NON riceve l'etichetta tennis (decision resta vuota)", () => {
+    const vm = toPickCardVM({ ...base, sport: "football", pick: null, confidence_score: 58 });
+    expect(vm.decision).toBe("");
+  });
   it("mappa sport, competition e kickoff", () => {
     const vm = toPickCardVM(base);
     expect(vm.sport).toBe(base.sport);

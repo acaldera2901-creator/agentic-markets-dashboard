@@ -21,7 +21,12 @@ import { dbQuery } from "@/lib/db";
 // sotto, salta /odds. ~una manciata di run football ci stanno dentro.
 export const ODDS_RESERVE = 8000;
 
-const PLAN_LIMIT = 100_000;
+// #ODDS-PLAN-5M (2026-07-26): piano The Odds API aggiornato a 5M crediti/mese.
+// Prima era hardcoded a 100_000: dopo l'upgrade il gate calcolava comunque
+// remaining = 100k − used e, appena `used` toccava 100k, si auto-bloccava a
+// secco (deadlock) pur avendo ~4.9M crediti reali → football a 0 e tennis
+// senza quote. Deve combaciare col cap in core/quota_tracker.py (odds_api).
+const PLAN_LIMIT = 5_000_000;
 
 // Riga TS-owned in source_quota_log. NON tocchiamo provider='odds_api' (di
 // proprietà del tracker Python, che fa upsert dell'used cumulativo giornaliero:
@@ -33,9 +38,18 @@ const REMAINING_PROVIDER = "odds_api_remaining";
 // remaining osservato in questo run. null = ancora ignoto → fail-open.
 let remainingSeen: number | null = null;
 
+// #ODDS-DEADLOCK-FIX (2026-07-26): true solo se in QUESTO run abbiamo osservato
+// un header `x-requests-remaining` reale (non il seed dal DB). Serve a NON
+// ri-persistere un valore esausto quando il gate era chiuso e abbiamo saltato
+// /odds: senza questo, persistOddsRemaining rinfrescava ogni cron la riga
+// stantìa, la recovery "stale (>3h) → fail-open" non scattava mai e il gate
+// restava bloccato a secco per sempre (anche dopo una ricarica crediti).
+let observedFromHeader = false;
+
 /** Solo per i test: azzera lo stato di modulo. */
 export function _resetForTest(): void {
   remainingSeen = null;
+  observedFromHeader = false;
 }
 
 /** Solo per i test: ispeziona il remaining corrente. */
@@ -88,6 +102,7 @@ export function observeRemaining(headerValue: string | null): void {
   const n = Number(headerValue);
   if (!Number.isFinite(n)) return;
   remainingSeen = remainingSeen === null ? n : Math.min(remainingSeen, n);
+  observedFromHeader = true; // #ODDS-DEADLOCK-FIX: valore reale, ora si può persistere
 }
 
 /**
@@ -95,7 +110,12 @@ export function observeRemaining(headerValue: string | null): void {
  * semina il gate. Upsert su (provider, date). Non-fatale su errore.
  */
 export async function persistOddsRemaining(): Promise<void> {
-  if (remainingSeen === null) return;
+  // #ODDS-DEADLOCK-FIX: persisti SOLO un remaining osservato davvero dall'header
+  // in questo run. Se il gate era chiuso (skip /odds) `remainingSeen` viene dal
+  // seed: ri-scriverlo rinfrescherebbe la riga stantìa e bloccherebbe per sempre
+  // la recovery. Non osservato → non tocchiamo la riga → invecchia → >3h → il
+  // prossimo run fa fail-open e ri-sonda (recovery reale dopo una ricarica).
+  if (remainingSeen === null || !observedFromHeader) return;
   const used = Math.max(0, PLAN_LIMIT - remainingSeen);
   try {
     await dbQuery(
