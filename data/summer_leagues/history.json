@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-07-26",
+ "generated_at": "2026-07-27",
  "window_days": 365,
  "leagues": {
   "ELI": {
@@ -16669,6 +16669,2160 @@
      "date": "2026-05-17"
     }
    ]
+  },
+  "BEL": {
+   "espn_slug": "bel.1",
+   "matches": [
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 5,
+     "awayGoals": 2,
+     "date": "2025-07-27"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-07-27"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-07-27"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-07-27"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-08-01"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-08-02"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Dender",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-02"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-08-02"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-03"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-08-03"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 5,
+     "awayGoals": 0,
+     "date": "2025-08-03"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-03"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Dender",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-08-08"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-08-09"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-08-09"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2025-08-09"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-08-10"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2025-08-10"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-08-10"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-08-10"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-08-15"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-08-16"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-16"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2025-08-16"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-08-17"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-08-17"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-17"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 4,
+     "awayGoals": 1,
+     "date": "2025-08-17"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2025-08-23"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-08-23"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-08-24"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-08-24"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-08-24"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-29"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2025-08-30"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Antwerp",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-08-30"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Dender",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-08-30"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-08-31"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-08-31"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-08-31"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2025-08-31"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-09-12"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-09-13"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-09-13"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-09-13"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-09-14"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2025-09-14"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-09-14"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2025-09-14"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-09-17"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Dender",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2025-09-19"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-09-20"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-09-20"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Antwerp",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-09-20"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-09-21"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-09-21"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-09-21"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-09-21"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-09-23"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 5,
+     "awayGoals": 5,
+     "date": "2025-09-24"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-09-26"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Antwerp",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-09-27"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-09-27"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-09-27"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-09-28"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 2,
+     "awayGoals": 4,
+     "date": "2025-09-28"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-09-28"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-09-28"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-10-03"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2025-10-04"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-10-04"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-10-04"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-10-05"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Dender",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-10-05"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-10-05"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-10-05"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-10-18"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-10-18"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-10-18"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-10-19"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2025-10-19"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-10-19"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 4,
+     "awayGoals": 1,
+     "date": "2025-10-19"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-10-20"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-10-24"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Dender",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-10-25"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-10-25"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2025-10-25"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-10-26"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-10-26"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-10-26"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-10-26"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-10-31"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2025-11-01"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Dender",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-11-01"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-11-01"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-11-02"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2025-11-02"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-11-02"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-11-02"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-11-07"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-11-08"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-11-08"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-11-08"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-11-09"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-11-09"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-11-09"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-11-09"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-11-21"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-11-22"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-11-22"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-11-22"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-11-23"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Dender",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-11-23"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-11-23"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-11-23"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-11-28"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-11-29"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-11-29"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-11-29"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Antwerp",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-11-30"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-11-30"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-11-30"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-11-30"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Dender",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-12-05"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-12-06"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-12-06"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2025-12-06"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-12-07"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2025-12-07"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2025-12-07"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-12-07"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-12-12"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2025-12-13"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-12-13"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-12-13"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Antwerp",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-12-14"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 5,
+     "date": "2025-12-14"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-12-14"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-12-14"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-12-19"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2025-12-20"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-12-20"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-12-20"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-12-21"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2025-12-21"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2025-12-21"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2025-12-21"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 3,
+     "awayGoals": 5,
+     "date": "2025-12-26"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-12-26"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-12-26"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2025-12-26"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2025-12-27"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2025-12-27"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Dender",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2025-12-27"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2025-12-27"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-01-16"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-01-17"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-01-17"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-01-17"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 4,
+     "awayGoals": 2,
+     "date": "2026-01-18"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-01-18"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-01-18"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-01-18"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 0,
+     "awayGoals": 4,
+     "date": "2026-01-23"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-01-24"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 4,
+     "awayGoals": 3,
+     "date": "2026-01-24"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-01-24"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-01-25"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-01-25"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Dender",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-01-25"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-01-25"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-01-30"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Antwerp",
+     "homeGoals": 0,
+     "awayGoals": 4,
+     "date": "2026-01-31"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-01-31"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-01-31"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-02-01"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-02-01"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-02-01"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-02-01"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 0,
+     "awayGoals": 4,
+     "date": "2026-02-06"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Dender",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-02-07"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 3,
+     "awayGoals": 4,
+     "date": "2026-02-07"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-02-07"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-02-08"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-02-08"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-02-08"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Antwerp",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-02-08"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-02-13"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Dender",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-02-14"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-02-14"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-02-14"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-02-15"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-02-15"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-02-15"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-02-15"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-02-20"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2026-02-21"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-02-21"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Antwerp",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-02-21"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2026-02-22"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-02-22"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 4,
+     "date": "2026-02-22"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-02-22"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-02-27"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-02-28"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-02-28"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 5,
+     "awayGoals": 1,
+     "date": "2026-02-28"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-03-01"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-03-01"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-03-01"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Dender",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-03-01"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Antwerp",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-03-06"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-03-07"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-03-07"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-03-07"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-03-08"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-03-08"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-03-08"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-03-08"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-03-13"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-03-14"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Dender",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-03-14"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-03-14"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-03-15"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-03-15"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-03-15"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-03-15"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 4,
+     "awayGoals": 1,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 5,
+     "awayGoals": 5,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-03-22"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-03"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-04-04"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-04-04"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-04-04"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-04-05"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 4,
+     "awayGoals": 2,
+     "date": "2026-04-06"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Dender",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-04-06"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-04-06"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Antwerp",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-04-10"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-04-11"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-11"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-11"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-04-12"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-04-12"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-04-12"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-12"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-04-18"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-18"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-18"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-18"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-04-19"
+    },
+    {
+     "homeTeam": "Dender",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2026-04-19"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-04-19"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-04-19"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-04-21"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-04-21"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Antwerp",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-04-21"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 6,
+     "awayGoals": 1,
+     "date": "2026-04-22"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-04-22"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-04-23"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Dender",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-04-24"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-04-25"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-04-25"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Antwerp",
+     "homeGoals": 2,
+     "awayGoals": 4,
+     "date": "2026-04-25"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-04-26"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2026-04-26"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-04-26"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "RAAL La Louvière",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-04-26"
+    },
+    {
+     "homeTeam": "Cercle Brugge KSV",
+     "awayTeam": "Zulte-Waregem",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-05-01"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 3,
+     "awayGoals": 3,
+     "date": "2026-05-02"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-05-02"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-05-02"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-05-03"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 0,
+     "awayGoals": 5,
+     "date": "2026-05-03"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-05-03"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-05-08"
+    },
+    {
+     "homeTeam": "RAAL La Louvière",
+     "awayTeam": "Cercle Brugge KSV",
+     "homeGoals": 4,
+     "awayGoals": 1,
+     "date": "2026-05-09"
+    },
+    {
+     "homeTeam": "Zulte-Waregem",
+     "awayTeam": "Dender",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-05-09"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-05-09"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-05-10"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-05-10"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-05-10"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-05-10"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Antwerp",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-05-15"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-05-16"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-05-16"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-05-16"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-05-17"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 5,
+     "awayGoals": 0,
+     "date": "2026-05-17"
+    },
+    {
+     "homeTeam": "Royal Charleroi SC",
+     "awayTeam": "OH Leuven",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-05-19"
+    },
+    {
+     "homeTeam": "Racing Genk",
+     "awayTeam": "Antwerp",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-05-19"
+    },
+    {
+     "homeTeam": "KVC Westerlo",
+     "awayTeam": "Standard Liege",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-05-19"
+    },
+    {
+     "homeTeam": "Anderlecht",
+     "awayTeam": "Sint-Truidense",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-05-21"
+    },
+    {
+     "homeTeam": "KAA Gent",
+     "awayTeam": "Union St.-Gilloise",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-05-21"
+    },
+    {
+     "homeTeam": "KV Mechelen",
+     "awayTeam": "Club Brugge",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-05-21"
+    },
+    {
+     "homeTeam": "Antwerp",
+     "awayTeam": "KVC Westerlo",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-05-23"
+    },
+    {
+     "homeTeam": "OH Leuven",
+     "awayTeam": "Racing Genk",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-05-23"
+    },
+    {
+     "homeTeam": "Standard Liege",
+     "awayTeam": "Royal Charleroi SC",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-05-23"
+    },
+    {
+     "homeTeam": "Club Brugge",
+     "awayTeam": "KAA Gent",
+     "homeGoals": 5,
+     "awayGoals": 0,
+     "date": "2026-05-24"
+    },
+    {
+     "homeTeam": "Sint-Truidense",
+     "awayTeam": "KV Mechelen",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-05-24"
+    },
+    {
+     "homeTeam": "Union St.-Gilloise",
+     "awayTeam": "Anderlecht",
+     "homeGoals": 5,
+     "awayGoals": 1,
+     "date": "2026-05-24"
+    }
+   ]
   }
  },
  "unmatched": {
@@ -16723,6 +18877,9 @@
    "Vejle"
   ],
   "POL": [],
-  "SWZ": []
+  "SWZ": [],
+  "BEL": [
+   "Dender"
+  ]
  }
 }

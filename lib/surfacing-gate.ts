@@ -100,6 +100,11 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   ["swiss super league", 65],    // lug-ago 71.7% @56; anno 71.8% @65 (n=174)
   ["danish superliga", 70],      // 64.8% @56 e PEGGIORA col floor -> quasi chiusa
   ["ekstraklasa", 70],           // 61.3% @56, sottile sopra -> quasi chiusa
+  // #EURO-MINORS batch 2 (am-lab/lab_batch2_0727.py, replica fedele del serving,
+  // 2.013 partite 2019-2026). Sull'anno il Belgio reggerebbe gia' a 60 (72.4%),
+  // ma ad agosto — le prime giornate, quelle che vanno live subito — 60 scende
+  // a 62.5% mentre 65 tiene 70.0%. Si parte stretti e si rivede su dati live.
+  ["belgian pro league", 65],    // anno 80.7% @65; agosto 70.0% @65
 ];
 
 export type SurfaceDecision = {

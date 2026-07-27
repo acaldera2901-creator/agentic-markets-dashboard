@@ -66,6 +66,34 @@ describe("#EURO-MINORS-0726 wiring", () => {
   });
 });
 
+describe("#EURO-MINORS batch 2 — Belgio dentro, 2. Bundesliga fuori", () => {
+  it("il Belgio e' cablato su tutte e quattro le superfici", () => {
+    expect(isSummerLeague("BEL")).toBe(true);
+    expect(SUMMER_LEAGUES.BEL).toBe("Belgian Pro League");
+    expect(SUMMER_LIVE_ESPN_SLUGS).toContain("bel.1");
+    expect(fetchSummerHistory("BEL").length).toBeGreaterThan(200); // ~una stagione
+  });
+
+  it("floor 65: l'anno reggerebbe 60, ma agosto (la ripartenza) no", () => {
+    expect(surfaceFloorFor("football", "Belgian Pro League")).toBe(65);
+    expect(isSurfacedRow({ sport: "football", competition: "Belgian Pro League", confidence_score: 64 })).toBe(false);
+    expect(isSurfacedRow({ sport: "football", competition: "Belgian Pro League", confidence_score: 65 })).toBe(true);
+  });
+
+  it("la 2. Bundesliga resta FUORI (scartata dal lab, non dimenticata)", () => {
+    // 64.3% @56, instabile per stagione, 5 squadre su 18 senza storico alla
+    // ripartenza. Se un giorno rientra, questo test va aggiornato apposta.
+    expect(isSummerLeague("GER2")).toBe(false);
+    expect(fetchSummerHistory("GER2")).toEqual([]);
+  });
+
+  it("«Belgian Pro League» non collide con le altre voci di floor", () => {
+    expect(surfaceFloorFor("football", "Bundesliga")).toBe(56);
+    expect(surfaceFloorFor("football", "Austrian Bundesliga")).toBe(60);
+    expect(surfaceFloorFor("football", "Belgian Pro League")).toBe(65);
+  });
+});
+
 describe("#TEAM-NAME-FOLD-0727 lettere latine non scomponibili da NFKD", () => {
   // Le fixture POL arrivano dalla Odds API con i diacritici polacchi pieni,
   // mentre lo snapshot porta i nomi CSV in ASCII. NFKD scompone ó/ę/ż (base +

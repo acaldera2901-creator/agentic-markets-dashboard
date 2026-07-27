@@ -63,6 +63,22 @@ export const SUMMER_LEAGUES: Record<string, string> = {
   DNK: "Danish Superliga",
   POL: "Ekstraklasa",
   SWZ: "Swiss Super League",
+  // #EURO-MINORS batch 2 — il Belgio riparte il 2026-08-07, quindi entra nella
+  // finestra di pubblicazione (10 giorni) il 28/07. Sta nel formato PRINCIPALE
+  // di football-data.co.uk (B1), non nel "new leagues": lo snapshot lo genera
+  // am-lab/gen_batch2_history.py riusando core/football_data_uk.
+  // Barra superata con margine (am-lab/lab_batch2_0727.py, replica fedele del
+  // serving su 2.013 partite 2019-2026): 80.7% @65 sull'anno, 72.4% @60, e
+  // robusta per stagione (>=69% a floor 60 in 6 stagioni su 7). Ma AGOSTO — le
+  // prime giornate, cioe' quelle che vanno live subito — e' il pezzo debole:
+  // 62.5% @60 contro 70.0% @65. Per questo il floor parte a 65 e non a 60:
+  // si stringe dove i dati sono deboli e si rivede su dati live (#MINORS-TIGHTEN).
+  // NB copertura in rampa: alla 1a giornata 3 squadre su 18 (Kortrijk, Lommel,
+  // Waasland-Beveren) sono neopromosse senza storico in massima serie -> le loro
+  // partite sono SALTATE, non indovinate, finche' lo snapshot non le assorbe.
+  // 2. Bundesliga (D2) sondata nello stesso lab e SCARTATA: 64.3% @56,
+  // instabile per stagione, e 5 squadre su 18 senza storico alla ripartenza.
+  BEL: "Belgian Pro League",
 };
 
 export function isSummerLeague(code: string): boolean {
@@ -82,6 +98,7 @@ const ESPN_SLUGS: Record<string, string> = {
   AUT: "aut.1",
   DNK: "den.1",
   SWZ: "sui.1",
+  BEL: "bel.1", // batch 2 — sondato 2026-07-27: 18 squadre, 1a giornata gia' a calendario
 };
 
 // #LIVE-LEAGUES-0627: slug ESPN da interrogare anche nel feed LIVE del board
@@ -89,7 +106,7 @@ const ESPN_SLUGS: Record<string, string> = {
 // come la World Cup. fin.1 (VEI) escluso: ESPN lo restituisce vuoto e The Odds
 // API non va chiamata nel polling 60s (quota). Le card estive hanno match_id
 // `espn:<id>` → match diretto col live scoreboard.
-export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1", "ita.2", "aut.1", "den.1", "sui.1"];
+export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1", "ita.2", "aut.1", "den.1", "sui.1", "bel.1"];
 
 const ODDS_SPORT_KEYS: Record<string, string> = {
   ELI: "soccer_norway_eliteserien",
@@ -103,6 +120,7 @@ const ODDS_SPORT_KEYS: Record<string, string> = {
   DNK: "soccer_denmark_superliga",
   POL: "soccer_poland_ekstraklasa",
   SWZ: "soccer_switzerland_superleague",
+  BEL: "soccer_belgium_first_div", // batch 2 — verificata attiva 2026-07-27
 };
 
 type SnapshotShape = {
