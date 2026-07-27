@@ -225,18 +225,61 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
 }
 
 // Welcome — sent once the user clicks the activation link and the profile goes live.
+// È il giorno 0 della scala post-registrazione (#CRM-MERGE-0727): resta qui, nel path
+// transazionale, perché un benvenuto è comunicazione di servizio e non richiede il
+// consenso marketing che invece governa i touchpoint acquisition. Il testo viene da
+// Email_1 di Steve, con una correzione: il Free dà 1 pick PER SPORT a settimana
+// (lib/access-projection.ts), non "una pick a settimana".
+type WelcomeLang = "it" | "en" | "es" | "fr" | "ru";
+const WELCOME: Record<WelcomeLang, { subject: string; body1: string; body2: string; plans: string; cta: string }> = {
+  it: {
+    subject: "Il tuo account gratuito è attivo",
+    body1: "Ogni settimana ricevi 1 pick per sport, con lo storico reale delle performance dove disponibile.",
+    body2: "Due passi e hai visto il cuore di BetRedge: apri il desk, poi apri la prima pick per capire come inquadriamo un edge.",
+    plans: "Quando vorrai di più, BetRedge Base sblocca più predizioni di calcio e tennis con edge e stake completi, e BetRedge Pro aggiunge predizioni illimitate, Deep Analysis e la Weekly Pick. Senza fretta: il piano gratuito resta tuo.",
+    cta: "Apri il desk",
+  },
+  en: {
+    subject: "Your free account is live",
+    body1: "Every week you'll get 1 pick per sport, plus real historical performance where available.",
+    body2: "Two steps and you've seen the core of BetRedge: open the desk, then open your first pick to see how we frame an edge.",
+    plans: "When you're ready for more, BetRedge Base unlocks more football and tennis predictions with full edge and stake data, and BetRedge Pro adds unlimited predictions, Deep Analysis and the Weekly Pick. No rush — your free plan isn't going anywhere.",
+    cta: "Open the desk",
+  },
+  es: {
+    subject: "Tu cuenta gratuita está activa",
+    body1: "Cada semana recibes 1 pick por deporte, con el historial real de rendimiento donde esté disponible.",
+    body2: "Dos pasos y ya has visto el núcleo de BetRedge: abre el desk y luego abre tu primer pick para ver cómo planteamos un edge.",
+    plans: "Cuando quieras más, BetRedge Base desbloquea más predicciones de fútbol y tenis con edge y stake completos, y BetRedge Pro añade predicciones ilimitadas, Deep Analysis y la Weekly Pick. Sin prisa: tu plan gratuito sigue siendo tuyo.",
+    cta: "Abrir el desk",
+  },
+  fr: {
+    subject: "Votre compte gratuit est actif",
+    body1: "Chaque semaine, vous recevez 1 pick par sport, avec l'historique réel des performances lorsqu'il est disponible.",
+    body2: "Deux étapes et vous avez vu l'essentiel de BetRedge : ouvrez le desk, puis ouvrez votre premier pick pour voir comment nous cadrons un edge.",
+    plans: "Quand vous voudrez aller plus loin, BetRedge Base débloque davantage de pronostics football et tennis avec edge et mise complets, et BetRedge Pro ajoute les pronostics illimités, la Deep Analysis et la Weekly Pick. Sans précipitation : votre plan gratuit reste le vôtre.",
+    cta: "Ouvrir le desk",
+  },
+  ru: {
+    subject: "Ваш бесплатный аккаунт активен",
+    body1: "Каждую неделю вы получаете 1 пик по каждому виду спорта, а также реальную историю результатов, где она доступна.",
+    body2: "Два шага — и вы увидели суть BetRedge: откройте деск, затем откройте свой первый пик, чтобы понять, как мы находим edge.",
+    plans: "Когда захотите большего, BetRedge Base открывает больше прогнозов по футболу и теннису с полными edge и ставкой, а BetRedge Pro добавляет неограниченные прогнозы, Deep Analysis и Weekly Pick. Без спешки: бесплатный план остаётся вашим.",
+    cta: "Открыть деск",
+  },
+};
+
 export function welcomeEmail(lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const subject = it ? "Benvenuto su BetRedge 👋" : "Welcome to BetRedge 👋";
-  const head = it ? "Il tuo profilo è attivo" : "Your profile is live";
-  const body = it
-    ? "Apri il desk per vedere segnali e probabilità calibrate, con il track record pubblico sempre verificabile."
-    : "Open the desk to see the signals and calibrated probabilities, with our public track record always verifiable.";
-  const cta = it ? "Apri il desk" : "Open the desk";
+  const l: WelcomeLang = lang in WELCOME ? (lang as WelcomeLang) : "it";
+  const t = WELCOME[l];
+  const url = `${siteUrl()}/app`;
   return {
-    subject,
-    html: brandedShell(`${brandHeading(head)}${brandText(body)}${brandCta(cta, `${siteUrl()}/app`)}`, { hero: true, lang: it ? "it" : "en" }),
-    text: `${body}\n\n${cta}: ${siteUrl()}/app`,
+    subject: t.subject,
+    html: brandedShell(
+      `${brandHeading(t.subject)}${brandText(t.body1)}${brandText(t.body2)}${brandCta(t.cta, url)}${brandText(t.plans)}`,
+      { hero: true, lang: l }
+    ),
+    text: `${t.body1}\n\n${t.body2}\n\n${t.cta}: ${url}\n\n${t.plans}`,
   };
 }
 
