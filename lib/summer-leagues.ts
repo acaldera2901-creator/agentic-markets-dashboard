@@ -160,16 +160,39 @@ function tokens(name: string): string[] {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[łøđðþæœßıħŋŧ]/g, (c) => STROKE_FOLD[c])
+    // Punteggiatura interna: "St. Gallen" e "St Gallen" sono la stessa squadra,
+    // ma senza questo il token "st." non è "st" e i due nomi condividono solo
+    // "gallen". Vale anche per "F.C." → "fc", che così finisce nella NOISE list.
+    .replace(/[.'’]/g, "")
     .replace(/[/-]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !NOISE.has(w));
 }
+
+// #TEAM-MATCH-SAFETY-0727 — la soglia di overlap era 0.50, cioè ESATTAMENTE il
+// punteggio di due nomi da due token che ne condividono uno solo. Su una squadra
+// ASSENTE dal modello (tipicamente una neopromossa) il fuzzy non restituiva null
+// ma la squadra sbagliata, e il board serviva una previsione calcolata sul
+// modello di un'altra squadra — cioè l'esatto contrario del contratto
+// fail-closed dichiarato in cima al file ("no match → null, never guessed").
+// Casi reali verificati il 2026-07-27:
+//   "KV Kortrijk"   (neopromossa) → "KV Mechelen"      overlap 0.50
+//   "VfL Osnabruck" (neopromossa) → "VfL Bochum"       overlap 0.50
+//   "Shanghai Port"               → "Shanghai Shenhua" overlap 0.50
+// I prefissi di club che generano la collisione (KV, VfL, SV, Shanghai…) non
+// sono nella NOISE list e non possono starci tutti: si alza la barra invece.
+// 0.60 lascia passare i match informativi (3 token con 2 in comune = 0.67) e
+// taglia il singolo token condiviso su due. In più, se il punteggio migliore è
+// pareggiato da un'altra squadra il nome è AMBIGUO e si torna null: meglio una
+// partita non servita che una servita col modello di un'altra squadra.
+const MIN_OVERLAP = 0.6;
 
 export function matchModelTeam(sourceName: string, modelTeams: Iterable<string>): string | null {
   const src = tokens(sourceName).join(" ");
   if (!src) return null;
   let best: string | null = null;
   let bestScore = 0;
+  let tied = false;
   for (const team of modelTeams) {
     const t = tokens(team).join(" ");
     if (!t) continue;
@@ -183,9 +206,13 @@ export function matchModelTeam(sourceName: string, modelTeams: Iterable<string>)
     if (score > bestScore) {
       bestScore = score;
       best = team;
+      tied = false;
+    } else if (score === bestScore && score > 0 && team !== best) {
+      tied = true;
     }
   }
-  return bestScore >= 0.5 ? best : null;
+  if (tied) return null; // ambiguo → fail-closed
+  return bestScore >= MIN_OVERLAP ? best : null;
 }
 
 // ── 2. Fixtures ──────────────────────────────────────────────────────────────

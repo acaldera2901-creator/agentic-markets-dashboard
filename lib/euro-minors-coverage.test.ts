@@ -97,6 +97,44 @@ describe("#TEAM-NAME-FOLD-0727 lettere latine non scomponibili da NFKD", () => {
   });
 });
 
+describe("#TEAM-MATCH-SAFETY-0727 mai il modello di un'ALTRA squadra", () => {
+  // Una squadra assente dal modello (neopromossa) deve dare null. Con la
+  // vecchia soglia 0.50 un solo token condiviso su due bastava ad agganciarla
+  // alla squadra sbagliata, e il board serviva la previsione di un'altra.
+  it("non aggancia una neopromossa alla compaesana che condivide il prefisso", () => {
+    expect(matchModelTeam("KV Kortrijk", ["KV Mechelen", "Club Brugge", "Anderlecht"])).toBeNull();
+    expect(matchModelTeam("VfL Osnabruck", ["VfL Bochum", "Hertha Berlin"])).toBeNull();
+    expect(matchModelTeam("Shanghai Port", ["Shanghai Shenhua", "Beijing Guoan"])).toBeNull();
+  });
+
+  it("un nome ambiguo (pari punteggio su due squadre) torna null, non la prima", () => {
+    expect(matchModelTeam("Qingdao United FC", ["Qingdao West Coast", "Qingdao Hainiu"])).toBeNull();
+  });
+
+  it("i due aggancî sbagliati trovati sulle fixture reali del 2026-07-27", () => {
+    // Erano SERVITI col modello di un'altra squadra, non saltati.
+    expect(matchModelTeam("Austria Lustenau", ["Austria Vienna", "Rapid Vienna"])).toBeNull();
+    expect(matchModelTeam("Lyngby Boldklub", ["Odense Boldklub", "Randers FC"])).toBeNull();
+  });
+
+  it("la punteggiatura non separa una squadra da se stessa", () => {
+    // Alzare la soglia senza togliere il punto avrebbe fatto sparire St. Gallen:
+    // "st." e "st" non sono lo stesso token, restava solo "gallen" = 0.50.
+    expect(matchModelTeam("FC St Gallen", ["St. Gallen", "FC Basel"])).toBe("St. Gallen");
+    expect(matchModelTeam("St Patricks Athletic", ["St. Patrick's Athletic"])).toBe("St. Patrick's Athletic");
+    // ma due "St." diversi restano due squadre diverse
+    expect(matchModelTeam("St. Pauli", ["St. Gallen"])).toBeNull();
+  });
+
+  it("continua a riconoscere le squadre che il modello HA davvero", () => {
+    const csl = ["Shanghai Port", "Shanghai Shenhua", "Beijing Guoan"];
+    expect(matchModelTeam("Shanghai Port", csl)).toBe("Shanghai Port");        // esatto
+    expect(matchModelTeam("Shanghai Shenhua FC", csl)).toBe("Shanghai Shenhua"); // contenimento
+    // overlap ancora informativo: 2 token su 3 = 0.67
+    expect(matchModelTeam("Sporting Kansas City", ["Sporting Kansas Town"])).toBe("Sporting Kansas Town");
+  });
+});
+
 describe("#EURO-MINORS-0726 per-league floors (lab-derived)", () => {
   it("uses the lab floors, not the club default 56", () => {
     expect(surfaceFloorFor("football", "Austrian Bundesliga")).toBe(60);
