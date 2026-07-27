@@ -53,8 +53,9 @@ describe("#EURO-MINORS-0726 wiring", () => {
     const dnk = ["F.C. København", "AGF", "Brøndby IF", "Sønderjyske Fodbold"];
     expect(matchModelTeam("F.C. København", dnk)).toBe("F.C. København");
     expect(matchModelTeam("AGF", dnk)).toBe("AGF");
-    // If ESPN ever falls back to Odds API names, an unbridgeable name must be
-    // SKIPPED, never guessed (fail-closed — the ø is not NFKD-decomposable).
+    // An unbridgeable name must be SKIPPED, never guessed (fail-closed):
+    // "Copenhagen" is a different WORD from "København", not a diacritic away,
+    // so no amount of normalization may bridge it.
     expect(matchModelTeam("FC Copenhagen", dnk)).toBeNull();
     expect(matchModelTeam("Juventus", dnk)).toBeNull();
     // POL: odds events are the PRIMARY fixtures source and its names extend the
@@ -62,6 +63,37 @@ describe("#EURO-MINORS-0726 wiring", () => {
     const pol = ["Legia", "Rakow", "Pogon Szczecin"];
     expect(matchModelTeam("Legia Warsaw", pol)).toBe("Legia");
     expect(matchModelTeam("Raków Częstochowa", pol)).toBe("Rakow");
+  });
+});
+
+describe("#TEAM-NAME-FOLD-0727 lettere latine non scomponibili da NFKD", () => {
+  // Le fixture POL arrivano dalla Odds API con i diacritici polacchi pieni,
+  // mentre lo snapshot porta i nomi CSV in ASCII. NFKD scompone ó/ę/ż (base +
+  // segno combinante) ma NON ł/ø/đ/æ/ß, che sono glifi a sé: senza la piega
+  // esplicita questi nomi non si incontrano mai e la partita sparisce.
+  const pol = ["Wisla Plock", "Zaglebie", "Widzew Lodz", "Legia", "Rakow"];
+
+  it("piega la ł polacca: nomi persi il 2026-07-27 sulle fixture reali", () => {
+    expect(matchModelTeam("Wisła Płock", pol)).toBe("Wisla Plock");
+    expect(matchModelTeam("Zagłębie Lubin", pol)).toBe("Zaglebie");
+  });
+
+  it("«Widzew Łódź» non dipende più dall'overlap 0.50 al limite", () => {
+    // Prima passava solo perché il token "widzew" da solo faceva esattamente
+    // 0.50 su 2 token: bastava una squadra a nome singolo per perderla.
+    expect(matchModelTeam("Widzew Łódź", pol)).toBe("Widzew Lodz");
+    expect(matchModelTeam("Łódź", ["Lodz"])).toBe("Lodz");
+  });
+
+  it("piega la ø nordica nei due versi (alias danesi non più necessari)", () => {
+    expect(matchModelTeam("Sønderjyske", ["Sonderjyske Fodbold"])).toBe("Sonderjyske Fodbold");
+    expect(matchModelTeam("Sonderjyske", ["Sønderjyske Fodbold"])).toBe("Sønderjyske Fodbold");
+    expect(matchModelTeam("Bodø/Glimt", ["Bodo/Glimt"])).toBe("Bodo/Glimt");
+  });
+
+  it("resta fail-closed: la piega non inventa accostamenti", () => {
+    expect(matchModelTeam("Lech Poznan", pol)).toBeNull();
+    expect(matchModelTeam("Juventus", pol)).toBeNull();
   });
 });
 

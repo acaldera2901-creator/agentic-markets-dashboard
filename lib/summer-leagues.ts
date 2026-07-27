@@ -139,11 +139,27 @@ export function summerSnapshotAgeDays(): number {
 
 const NOISE = new Set(["fc", "if", "ik", "bk", "afc", "sk", "fk", "ff", "aif", "cf", "sc", "club", "cd"]);
 
+// #TEAM-NAME-FOLD-0727 — lettere latine che NFKD NON scompone. NFKD separa
+// base+segno combinante ("é" → "e"+◌́), ma ł/ø/đ/æ/ß sono glifi a sé: restano
+// intatti e il nome non si normalizza mai verso la sua versione ASCII. Effetto
+// sul matcher, che è fail-closed: "Wisła Płock" (Odds API) e "Wisla Plock"
+// (snapshot) contano come due squadre diverse → la fixture viene SALTATA in
+// silenzio. Verificato 2026-07-27 sulle fixture reali: 2 partite POL su 4 perse
+// così, e "Widzew Łódź" passava solo per fortuna (overlap 0.50 esatto sul token
+// "widzew"). È la stessa classe di problema che gli alias danesi manuali
+// (København/Sønderjyske) tamponavano a mano in gen_euro_minors_history.py:
+// piegandola qui, il matcher regge da solo su ogni lega.
+const STROKE_FOLD: Record<string, string> = {
+  "ł": "l", "ø": "o", "đ": "d", "ð": "d", "þ": "th",
+  "æ": "ae", "œ": "oe", "ß": "ss", "ı": "i", "ħ": "h", "ŋ": "n", "ŧ": "t",
+};
+
 function tokens(name: string): string[] {
   return name
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
+    .replace(/[łøđðþæœßıħŋŧ]/g, (c) => STROKE_FOLD[c])
     .replace(/[/-]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !NOISE.has(w));
