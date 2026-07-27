@@ -3,6 +3,7 @@
 import type { Touchpoint } from "./crm";
 import { unsubToken } from "./crm-unsub";
 import { brandedShell, brandCta } from "./email";
+import { impressumLine } from "./legal-entity";
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://betredge.com").replace(/\/$/, "");
 
@@ -35,16 +36,15 @@ const DISCLAIMER: L10n = {
 // (dati Maven via env, [DA COMPILARE] finché non impostati), disclaimer +18 /
 // non-gambling, link di disiscrizione one-click. Niente affiliate bookmaker.
 function footer(identifier: string, lang: CrmLang): string {
-  const co = process.env.COMPANY_LEGAL_NAME || "Maven Agency";
-  const addr = process.env.COMPANY_ADDRESS || "";
-  const vat = process.env.COMPANY_VAT || "";
   const contact = process.env.COMPANY_CONTACT_EMAIL || "info@betredge.com";
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
-  // COMPANY_VAT porta anche l'etichetta ("UID CHE-…", "P.IVA IT…"): l'entità che
-  // emette è svizzera, quindi un "P.IVA" hardcoded sarebbe un dato legale errato
-  // nel footer del mittente. L'env resta l'unica fonte, senza una seconda env
-  // solo per l'etichetta.
-  const idline = [co, addr, vat].filter(Boolean).join(" · ");
+  // L'identità dell'operatore NON viene più dalle env: le COMPANY_LEGAL_NAME/
+  // _ADDRESS/_VAT in prod erano state settate a "Betredge" + l'indirizzo di
+  // corrispondenza di Londra, mentre /terms, /privacy e il footer del sito
+  // dichiarano Maven Agency AG — due entità diverse nello stesso prodotto. Ora la
+  // riga arriva da lib/legal-entity.ts, la stessa fonte del sito. Quelle env
+  // restano in prod ma sono inerti (rimuoverle è sicuro).
+  const idline = impressumLine();
   // Footer legale renderizzato nell'area footer scura del brandedShell.
   return `<p style="font-size:11px;color:#8b98a4;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#8b98a4;text-decoration:underline">${UNSUB_LABEL[lang]}</a><br>${DISCLAIMER[lang]}</p>`;
 }
@@ -68,21 +68,21 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       it: "Il tuo primo upgrade BetRedge", en: "Your first BetRedge upgrade", es: "Tu primer upgrade de BetRedge",
       fr: "Votre premier upgrade BetRedge", ru: "Ваш первый апгрейд BetRedge" },
     body: {
-      it: "Nel Free vedi 2 pick a settimana. Con Plus sblocchi l'intero board, edge e spiegazioni. Da 14,99 USD/mese.",
-      en: "Free shows 2 picks/week. Plus unlocks the full board, edge and explanations. From $14.99/mo.",
-      es: "En Free ves 2 picks por semana. Con Plus desbloqueas todo el board, el edge y las explicaciones. Desde 14,99 USD/mes.",
-      fr: "En Free, vous voyez 2 picks par semaine. Avec Plus, débloquez tout le board, l'edge et les explications. À partir de 14,99 USD/mois.",
-      ru: "В Free вы видите 2 пика в неделю. С Plus открывается весь борд, edge и объяснения. От 14,99 USD в месяц." } },
+      it: "Nel Free vedi 1 pick per sport a settimana. Con BetRedge Base sblocchi l'intero board, edge e spiegazioni. Da 14,99 USD/mese.",
+      en: "Free shows 1 pick per sport each week. BetRedge Base unlocks the full board, edge and explanations. From $14.99/mo.",
+      es: "En Free ves 1 pick por deporte a la semana. Con BetRedge Base desbloqueas todo el board, el edge y las explicaciones. Desde 14,99 USD/mes.",
+      fr: "En Free, vous voyez 1 pick par sport chaque semaine. Avec BetRedge Base, débloquez tout le board, l'edge et les explications. À partir de 14,99 USD/mois.",
+      ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. BetRedge Base открывает весь борд, edge и объяснения. От 14,99 USD в месяц." } },
   { key: "acq_day14_welcome_offer", flow: "acquisition", day: 14,
     subject: {
       it: "Offerta benvenuto: −20% per 72h", en: "Welcome offer: −20% for 72h", es: "Oferta de bienvenida: −20% por 72h",
       fr: "Offre de bienvenue : −20% pendant 72h", ru: "Приветственное предложение: −20% на 72 часа" },
     body: {
-      it: "Solo per te, 72 ore: Plus a −20%. Probabilità calibrate e track record verificabile, tutto sbloccato.",
-      en: "Just for you, 72 hours: Plus at −20%. Calibrated probabilities and verifiable track record, all unlocked.",
-      es: "Solo para ti, 72 horas: Plus con −20%. Probabilidades calibradas y track record verificable, todo desbloqueado.",
-      fr: "Rien que pour vous, 72 heures : Plus à −20%. Probabilités calibrées et track record vérifiable, tout est débloqué.",
-      ru: "Только для вас, 72 часа: Plus со скидкой 20%. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто." } },
+      it: "Solo per te, 72 ore: BetRedge Base a −20%. Probabilità calibrate e track record verificabile, tutto sbloccato.",
+      en: "Just for you, 72 hours: BetRedge Base at −20%. Calibrated probabilities and verifiable track record, all unlocked.",
+      es: "Solo para ti, 72 horas: BetRedge Base con −20%. Probabilidades calibradas y track record verificable, todo desbloqueado.",
+      fr: "Rien que pour vous, 72 heures : BetRedge Base à −20%. Probabilités calibrées et track record vérifiable, tout est débloqué.",
+      ru: "Только для вас, 72 часа: BetRedge Base со скидкой 20%. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто." } },
   { key: "acq_day21_last_chance", flow: "acquisition", day: 21,
     subject: {
       it: "Ultima occasione — angolo nuovo", en: "Last chance — a fresh angle", es: "Última oportunidad — un ángulo nuevo",
@@ -95,14 +95,14 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       ru: "Не обычные прогнозы: одно мнение, откалиброванное и взвешенное. Откройте полный борд со скидкой 30% на 48 часов." } },
   { key: "acq_day28_final", flow: "acquisition", day: 28,
     subject: {
-      it: "Offerta finale + 3 giorni VIP", en: "Final offer + 3-day VIP", es: "Oferta final + 3 días VIP",
-      fr: "Offre finale + 3 jours VIP", ru: "Финальное предложение + 3 дня VIP" },
+      it: "Offerta finale + 3 giorni Pro", en: "Final offer + 3-day Pro", es: "Oferta final + 3 días Pro",
+      fr: "Offre finale + 3 jours Pro", ru: "Финальное предложение + 3 дня Pro" },
     body: {
-      it: "Ultima spinta: Plus a −30% con 3 giorni di prova VIP (analisi più profonda). Poi si torna a prezzo pieno.",
-      en: "Final push: Plus at −30% with a 3-day VIP trial (deeper analysis). Then back to full price.",
-      es: "Último empujón: Plus con −30% y 3 días de prueba VIP (análisis más profundo). Después se vuelve al precio completo.",
-      fr: "Dernier coup de pouce : Plus à −30% avec 3 jours d'essai VIP (analyse plus poussée). Ensuite, retour au plein tarif.",
-      ru: "Последний рывок: Plus со скидкой 30% и 3 дня пробного VIP (более глубокий анализ). Потом снова полная цена." } },
+      it: "Ultima spinta: BetRedge Base a −30% con 3 giorni di prova BetRedge Pro (analisi più profonda). Poi si torna a prezzo pieno.",
+      en: "Final push: BetRedge Base at −30% with a 3-day BetRedge Pro trial (deeper analysis). Then back to full price.",
+      es: "Último empujón: BetRedge Base con −30% y 3 días de prueba de BetRedge Pro (análisis más profundo). Después se vuelve al precio completo.",
+      fr: "Dernier coup de pouce : BetRedge Base à −30% avec 3 jours d'essai BetRedge Pro (analyse plus poussée). Ensuite, retour au plein tarif.",
+      ru: "Последний рывок: BetRedge Base со скидкой 30% и 3 дня пробного BetRedge Pro (более глубокий анализ). Потом снова полная цена." } },
   { key: "ret_7d_before", flow: "retention", day: 7,
     subject: {
       it: "Il tuo accesso scade tra 7 giorni", en: "Your access expires in 7 days", es: "Tu acceso caduca en 7 días",
