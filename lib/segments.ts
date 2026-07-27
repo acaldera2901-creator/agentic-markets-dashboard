@@ -102,10 +102,19 @@ function compileClause(c: SegmentClause, next: number): { sql: string; params: u
   }
 }
 
-// Predicato di eligibility consenso (soft opt-in clienti). Usa $1 = email admin.
+// Predicato di eligibility consenso. Usa $1 = email admin.
+//
+// 2026-07-27: aggiunto il consenso, che mancava. Prima ammetteva "pagante OPPURE
+// free attivato", senza guardare né `marketing_opt_in` né `marketing_opt_out` — il
+// guard viveva solo nel motore CRM (`flowAllowed`), non qui. Conseguenza: dei free
+// senza consenso marketing finivano in un'Audience da cui si compongono Broadcast
+// con offerte, che è esattamente ciò che il verdetto legale-compliance del
+// 2026-06-28 esclude (soft opt-in NON copre gli sconti ai free mai paganti).
+// Ora: paganti (soft opt-in, art. 130 c.4) OPPURE free attivati CON opt-in
+// esplicito; chi ha fatto opt-out è sempre fuori.
 function eligibilitySql(): { sql: string; params: unknown[] } {
   return {
-    sql: "(plan IN ('base','premium') OR (plan = 'free' AND activated_at IS NOT NULL)) AND plan <> 'admin_full' AND lower(identifier) <> $1",
+    sql: "(plan IN ('base','premium') OR (plan = 'free' AND activated_at IS NOT NULL AND marketing_opt_in IS TRUE)) AND COALESCE(marketing_opt_out, false) = false AND plan <> 'admin_full' AND lower(identifier) <> $1",
     params: [ADMIN_ELIGIBILITY_EXCLUDE_EMAIL],
   };
 }
