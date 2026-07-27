@@ -20,11 +20,24 @@ logger = logging.getLogger("odds_reserve")
 
 # Crediti tenuti da parte per gli altri consumer fino al reset del ciclo.
 ODDS_RESERVE = 8000
-PLAN_LIMIT = 100_000
+
+# #ODDS-PLAN-5M (2026-07-26): piano The Odds API a 5M crediti/mese. Deve
+# combaciare con PLAN_LIMIT in lib/odds-quota.ts: restare a 100_000 qui faceva
+# scrivere `used = 100_000 − remaining` sulla riga CONDIVISA col guard TS →
+# used=100_000 (= gate chiuso) anche con ~5M crediti reali.
+PLAN_LIMIT = 5_000_000
 _PROVIDER = "odds_api_remaining"
 
 # Minimo remaining osservato in questo processo. None = ignoto → fail-open.
 _remaining_seen: int | None = None
+
+# #ODDS-DEADLOCK-FIX (mirror di lib/odds-quota.ts): True solo se in QUESTO run
+# abbiamo osservato un header `x-requests-remaining` reale (non il seed dal DB).
+# Senza questo, un run col gate chiuso (che salta /odds e quindi non osserva
+# nulla) ri-persisteva il valore seminato con timestamp fresco: la riga non
+# invecchiava mai oltre le 3h, la recovery "stantìo → fail-open" non scattava
+# e il gate restava chiuso per sempre — anche con crediti pieni.
+_observed_from_header = False
 
 
 def _headers() -> dict[str, str]:
@@ -69,7 +82,7 @@ def budget_ok() -> bool:
 
 def observe(headers) -> None:
     """Aggiorna il minimo remaining dall'header x-requests-remaining di una risposta."""
-    global _remaining_seen
+    global _remaining_seen, _observed_from_header
     try:
         raw = headers.get("x-requests-remaining")
         if raw is None:
@@ -78,14 +91,20 @@ def observe(headers) -> None:
     except (TypeError, ValueError):
         return
     _remaining_seen = n if _remaining_seen is None else min(_remaining_seen, n)
+    _observed_from_header = True  # #ODDS-DEADLOCK-FIX: valore reale, ora si può persistere
     # #ODDS-BURN-OPT alerting: segnala prima di restare a secco (non silenzioso).
     if n <= ODDS_RESERVE:
         logger.warning("The Odds API sotto riserva: remaining=%s (reserve=%s)", n, ODDS_RESERVE)
 
 
 async def persist() -> None:
-    """Persiste l'ultimo remaining osservato sulla riga condivisa (upsert provider+date)."""
-    if _remaining_seen is None:
+    """Persiste l'ultimo remaining osservato sulla riga condivisa (upsert provider+date).
+
+    #ODDS-DEADLOCK-FIX: persiste SOLO un remaining osservato davvero dall'header in
+    questo run. Se il gate era chiuso (skip /odds) `_remaining_seen` viene dal seed:
+    ri-scriverlo rinfrescherebbe la riga stantìa e bloccherebbe per sempre la recovery.
+    """
+    if _remaining_seen is None or not _observed_from_header:
         return
     url = settings.SUPABASE_URL
     if not url or not settings.SUPABASE_SERVICE_ROLE_KEY:
@@ -110,5 +129,6 @@ async def persist() -> None:
 
 
 def _reset_for_test() -> None:
-    global _remaining_seen
+    global _remaining_seen, _observed_from_header
     _remaining_seen = None
+    _observed_from_header = False
