@@ -64,7 +64,9 @@ export async function GET(req: Request) {
   // Welcome email — first email after a successful signup→activation. Best-effort
   // (recorded in `notifications`); never blocks the redirect / session.
   if (row.identifier.includes("@")) {
-    const mail = welcomeEmail(row.language === "en" ? "en" : "it");
+    // Lingua reale del profilo: welcomeEmail copre it/en/es/fr/ru e normalizza da sé
+    // (prima qualsiasi lingua diversa da "en" veniva schiacciata su italiano).
+    const mail = welcomeEmail((row.language ?? "it").slice(0, 2).toLowerCase());
     await sendTransactional({
       type: "welcome",
       to: row.identifier,

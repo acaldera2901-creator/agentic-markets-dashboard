@@ -63,17 +63,34 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Estás a un paso: inicia sesión y mira el primer pronóstico del modelo. Es gratis y te enseña enseguida cómo razona.",
       fr: "Vous y êtes presque : connectez-vous et découvrez le premier pronostic du modèle. C'est gratuit et vous montre tout de suite comment il raisonne.",
       ru: "Остался один шаг: войдите и посмотрите первый прогноз модели. Это бесплатно и сразу показывает, как она рассуждает." } },
-  { key: "acq_day7_offer", flow: "acquisition", day: 7,
+  // Scala acquisition unita (#CRM-MERGE-0727): i tre touchpoint di valore vengono
+  // dai testi di Steve (Resend Templates, EN), tradotti; le tre offerte sono le
+  // nostre. Le chiavi delle offerte NON cambiano nome: chi le ha già ricevute non
+  // le riprende. Il giorno 0 non è qui — è la welcome transazionale su attivazione
+  // (lib/email.ts::welcomeEmail), che è servizio e non richiede consenso marketing.
+  { key: "acq_day2_tested", flow: "acquisition", day: 2,
     subject: {
-      it: "Il tuo primo upgrade BetRedge", en: "Your first BetRedge upgrade", es: "Tu primer upgrade de BetRedge",
-      fr: "Votre premier upgrade BetRedge", ru: "Ваш первый апгрейд BetRedge" },
+      it: "Hai provato il Free. Pronto per più edge?", en: "You've tested Free. Ready for more edges?",
+      es: "Has probado el Free. ¿Listo para más edge?", fr: "Vous avez essayé le Free. Prêt pour plus d'edge ?",
+      ru: "Вы попробовали Free. Готовы к большему?" },
     body: {
-      it: "Nel Free vedi 1 pick per sport a settimana. Con BetRedge Base sblocchi l'intero board, edge e spiegazioni. Da 14,99 USD/mese.",
-      en: "Free shows 1 pick per sport each week. BetRedge Base unlocks the full board, edge and explanations. From $14.99/mo.",
-      es: "En Free ves 1 pick por deporte a la semana. Con BetRedge Base desbloqueas todo el board, el edge y las explicaciones. Desde 14,99 USD/mes.",
-      fr: "En Free, vous voyez 1 pick par sport chaque semaine. Avec BetRedge Base, débloquez tout le board, l'edge et les explications. À partir de 14,99 USD/mois.",
-      ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. BetRedge Base открывает весь борд, edge и объяснения. От 14,99 USD в месяц." } },
-  { key: "acq_day14_welcome_offer", flow: "acquisition", day: 14,
+      it: "Con BetRedge Base ricevi le top 5 di calcio e 5 di tennis ogni settimana, con edge %, stake suggerito e closing line value su ogni pick. Con Pro non c'è tetto settimanale.",
+      en: "BetRedge Base gives you the top 5 football and 5 tennis predictions every week, with edge %, suggested stake and closing line value on every pick. Pro removes the weekly cap.",
+      es: "Con BetRedge Base recibes las 5 mejores predicciones de fútbol y 5 de tenis cada semana, con edge %, stake sugerido y closing line value en cada pick. Pro elimina el límite semanal.",
+      fr: "Avec BetRedge Base, vous recevez les 5 meilleurs pronostics football et 5 tennis chaque semaine, avec edge %, mise suggérée et closing line value sur chaque pick. Pro supprime le plafond hebdomadaire.",
+      ru: "BetRedge Base даёт топ-5 прогнозов по футболу и 5 по теннису каждую неделю, с edge %, рекомендованной ставкой и closing line value по каждому пику. Pro снимает недельный лимит." } },
+  { key: "acq_day5_picture", flow: "acquisition", day: 5,
+    subject: {
+      it: "Vuoi vedere il quadro completo?", en: "Ready to see the full picture?",
+      es: "¿Quieres ver el cuadro completo?", fr: "Envie de voir le tableau complet ?",
+      ru: "Хотите увидеть полную картину?" },
+    body: {
+      it: "Nel Free vedi 1 pick per sport a settimana. Base apre l'intero board con edge, stake e closing line value; Pro aggiunge la Deep Analysis su forma, infortuni e campo, più il Match Builder e la Weekly Pick.",
+      en: "Free shows 1 pick per sport each week. Base opens the full board with edge, stake and closing line value; Pro adds Deep Analysis on form, injuries and venue, plus Match Builder and the Weekly Pick.",
+      es: "En Free ves 1 pick por deporte a la semana. Base abre todo el board con edge, stake y closing line value; Pro añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick.",
+      fr: "En Free, vous voyez 1 pick par sport chaque semaine. Base ouvre tout le board avec edge, mise et closing line value ; Pro ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick.",
+      ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. Base открывает весь борд с edge, ставкой и closing line value; Pro добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick." } },
+  { key: "acq_day14_welcome_offer", flow: "acquisition", day: 10,
     subject: {
       it: "Offerta benvenuto: −20% per 72h", en: "Welcome offer: −20% for 72h", es: "Oferta de bienvenida: −20% por 72h",
       fr: "Offre de bienvenue : −20% pendant 72h", ru: "Приветственное предложение: −20% на 72 часа" },
@@ -83,6 +100,17 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Solo para ti, 72 horas: BetRedge Base con −20%. Probabilidades calibradas y track record verificable, todo desbloqueado.",
       fr: "Rien que pour vous, 72 heures : BetRedge Base à −20%. Probabilités calibrées et track record vérifiable, tout est débloqué.",
       ru: "Только для вас, 72 часа: BetRedge Base со скидкой 20%. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто." } },
+  { key: "acq_day14_reminder", flow: "acquisition", day: 14,
+    subject: {
+      it: "Ultimo promemoria: l'upgrade ti aspetta", en: "Last reminder: your upgrade is waiting",
+      es: "Último recordatorio: tu upgrade te espera", fr: "Dernier rappel : votre upgrade vous attend",
+      ru: "Последнее напоминание: апгрейд ждёт вас" },
+    body: {
+      it: "È l'ultima nota sull'upgrade per ora. Il Free ti ha dato un assaggio del modello: Base e Pro ti danno il quadro intero, ogni settimana.",
+      en: "This is the last note about upgrading for now. Free gave you a glimpse of the model — Base and Pro give you the full picture, every week.",
+      es: "Es la última nota sobre el upgrade por ahora. El Free te dio una muestra del modelo: Base y Pro te dan el cuadro completo, cada semana.",
+      fr: "C'est le dernier message sur l'upgrade pour l'instant. Le Free vous a donné un aperçu du modèle : Base et Pro vous donnent le tableau complet, chaque semaine.",
+      ru: "Это пока последнее письмо об апгрейде. Free дал вам представление о модели — Base и Pro дают полную картину каждую неделю." } },
   { key: "acq_day21_last_chance", flow: "acquisition", day: 21,
     subject: {
       it: "Ultima occasione — angolo nuovo", en: "Last chance — a fresh angle", es: "Última oportunidad — un ángulo nuevo",
@@ -103,6 +131,19 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Último empujón: BetRedge Base con −30% y 3 días de prueba de BetRedge Pro (análisis más profundo). Después se vuelve al precio completo.",
       fr: "Dernier coup de pouce : BetRedge Base à −30% avec 3 jours d'essai BetRedge Pro (analyse plus poussée). Ensuite, retour au plein tarif.",
       ru: "Последний рывок: BetRedge Base со скидкой 30% и 3 дня пробного BetRedge Pro (более глубокий анализ). Потом снова полная цена." } },
+  // Chiude la scala: dice "non ti scriviamo più", quindi deve stare DOPO le offerte.
+  // Nella sequenza originale di Steve era al giorno 14, prima di due sconti.
+  { key: "acq_day35_door_open", flow: "acquisition", day: 35,
+    subject: {
+      it: "Niente più promemoria, la porta resta aperta", en: "No more reminders — the door stays open",
+      es: "No más recordatorios, la puerta sigue abierta", fr: "Plus de rappels — la porte reste ouverte",
+      ru: "Больше никаких напоминаний — дверь открыта" },
+    body: {
+      it: "Non ti scriviamo più sull'upgrade. Il piano gratuito resta tuo: quando vorrai l'accesso completo a predizioni, edge, stake e analisi, Base e Pro sono lì.",
+      en: "We won't write about upgrading again. Your free plan isn't going anywhere — whenever you want full access to predictions, edge, stake and analysis, Base and Pro will be here.",
+      es: "No volveremos a escribirte sobre el upgrade. Tu plan gratuito sigue siendo tuyo: cuando quieras acceso completo a predicciones, edge, stake y análisis, Base y Pro estarán ahí.",
+      fr: "Nous ne reviendrons plus sur l'upgrade. Votre plan gratuit reste le vôtre : quand vous voudrez l'accès complet aux pronostics, à l'edge, aux mises et aux analyses, Base et Pro seront là.",
+      ru: "Мы больше не будем писать об апгрейде. Бесплатный план остаётся вашим: когда захотите полный доступ к прогнозам, edge, ставкам и анализу — Base и Pro на месте." } },
   { key: "ret_7d_before", flow: "retention", day: 7,
     subject: {
       it: "Il tuo accesso scade tra 7 giorni", en: "Your access expires in 7 days", es: "Tu acceso caduca en 7 días",
