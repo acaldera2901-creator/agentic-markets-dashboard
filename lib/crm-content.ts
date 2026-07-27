@@ -3,6 +3,7 @@
 import type { Touchpoint } from "./crm";
 import { unsubToken } from "./crm-unsub";
 import { brandedShell, brandCta } from "./email";
+import { impressumLine } from "./legal-entity";
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://betredge.com").replace(/\/$/, "");
 
@@ -35,16 +36,15 @@ const DISCLAIMER: L10n = {
 // (dati Maven via env, [DA COMPILARE] finché non impostati), disclaimer +18 /
 // non-gambling, link di disiscrizione one-click. Niente affiliate bookmaker.
 function footer(identifier: string, lang: CrmLang): string {
-  const co = process.env.COMPANY_LEGAL_NAME || "Maven Agency";
-  const addr = process.env.COMPANY_ADDRESS || "";
-  const vat = process.env.COMPANY_VAT || "";
   const contact = process.env.COMPANY_CONTACT_EMAIL || "info@betredge.com";
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
-  // COMPANY_VAT porta anche l'etichetta ("UID CHE-…", "P.IVA IT…"): l'entità che
-  // emette è svizzera, quindi un "P.IVA" hardcoded sarebbe un dato legale errato
-  // nel footer del mittente. L'env resta l'unica fonte, senza una seconda env
-  // solo per l'etichetta.
-  const idline = [co, addr, vat].filter(Boolean).join(" · ");
+  // L'identità dell'operatore NON viene più dalle env: le COMPANY_LEGAL_NAME/
+  // _ADDRESS/_VAT in prod erano state settate a "Betredge" + l'indirizzo di
+  // corrispondenza di Londra, mentre /terms, /privacy e il footer del sito
+  // dichiarano Maven Agency AG — due entità diverse nello stesso prodotto. Ora la
+  // riga arriva da lib/legal-entity.ts, la stessa fonte del sito. Quelle env
+  // restano in prod ma sono inerti (rimuoverle è sicuro).
+  const idline = impressumLine();
   // Footer legale renderizzato nell'area footer scura del brandedShell.
   return `<p style="font-size:11px;color:#8b98a4;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#8b98a4;text-decoration:underline">${UNSUB_LABEL[lang]}</a><br>${DISCLAIMER[lang]}</p>`;
 }
