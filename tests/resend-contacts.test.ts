@@ -1,6 +1,6 @@
 // tests/resend-contacts.test.ts
 import assert from "node:assert/strict";
-import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, type SegmentContact } from "../lib/resend-contacts";
+import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, ensureContactProperties, syncSegmentToResend, CONTACT_PROPERTY_KEYS, type SegmentContact } from "../lib/resend-contacts";
 
 const NOW = "2026-06-27T12:00:00.000Z";
 
@@ -79,4 +79,74 @@ async function membershipTests() {
   console.log("resend contacts ok");
 }
 
-membershipTests().catch((e) => { console.error(e); process.exit(1); });
+// ── properties dichiarate prima dei contatti ─────────────────────────────────
+// Riproduce il fallimento del sync del 2026-07-28: `POST /contacts` rispondeva
+// 422 `validation_error: "One or more properties do not exist"` per TUTTI gli 11
+// contatti. In Resend le custom properties sono uno SCHEMA dell'audience: vanno
+// dichiarate (`POST /contact-properties`) prima di poter essere assegnate a un
+// contatto. L'unica dichiarata era `Reminder_Sequence_Completed` (di Steve).
+async function propertyTests() {
+  {
+    // audience come era in prod: manca tutto il nostro schema → va creato
+    const calls: { method: string; path: string; body: unknown }[] = [];
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string; body?: string }) => {
+      const path = String(url).replace("https://api.resend.com", "");
+      const method = init?.method ?? "GET";
+      calls.push({ method, path, body: init?.body ? JSON.parse(init.body) : undefined });
+      if (method === "GET") {
+        return new Response(JSON.stringify({ data: [{ key: "Reminder_Sequence_Completed" }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ object: "contact_property", id: "p1" }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const created = await ensureContactProperties("k");
+    assert.deepEqual(created.sort(), ["cohort_month", "language", "lifecycle_stage", "plan"]);
+    // create con `key` + `type` (non `name`: la doc parla di key, e con name Resend
+    // accetta la chiamata ma la property nasce senza chiave usabile)
+    const posts = calls.filter((c) => c.method === "POST");
+    assert.equal(posts.length, 4);
+    assert.deepEqual(posts[0].body, { key: "plan", type: "string" });
+    assert.equal(posts.every((c) => c.path === "/contact-properties"), true);
+  }
+  {
+    // schema già completo → nessuna scrittura (idempotente: gira a ogni sync)
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string }) => {
+      calls.push(init?.method ?? "GET");
+      return new Response(
+        JSON.stringify({ data: CONTACT_PROPERTY_KEYS.map((key) => ({ key })) }),
+        { status: 200 }
+      );
+    }) as unknown as typeof fetch;
+    const created = await ensureContactProperties("k");
+    assert.deepEqual(created, []);
+    assert.deepEqual(calls, ["GET"]);
+  }
+  {
+    // il motivo del fallimento non deve restare nei soli console.error: senza
+    // questo, in prod si vedeva `failed=11` e nient'altro (6 ore per la diagnosi).
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string }) => {
+      const method = init?.method ?? "GET";
+      if (String(url).endsWith("/contacts") && method === "POST") {
+        return new Response(
+          JSON.stringify({ name: "validation_error", message: "One or more properties do not exist", statusCode: 422 }),
+          { status: 422 }
+        );
+      }
+      return new Response(JSON.stringify({ name: "not_found", statusCode: 404 }), { status: 404 });
+    }) as unknown as typeof fetch;
+
+    const r = await syncSegmentToResend([base], new Map(), new Set());
+    assert.equal(r.ok, 0);
+    assert.equal(r.failed, 1);
+    assert.equal(r.errors.length, 1);
+    assert.match(r.errors[0], /properties do not exist/);
+    assert.match(r.errors[0], /a@b\.com/);
+  }
+  globalThis.fetch = realFetch;
+  console.log("resend properties ok");
+}
+
+membershipTests()
+  .then(propertyTests)
+  .catch((e) => { console.error(e); process.exit(1); });

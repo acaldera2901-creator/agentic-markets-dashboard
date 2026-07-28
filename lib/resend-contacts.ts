@@ -47,6 +47,13 @@ export function lifecycleStage(c: SegmentContact, nowISO: string): "prospect" | 
   return "active";
 }
 
+// Lo SCHEMA delle properties dell'audience. In Resend una custom property non
+// nasce col contatto: va dichiarata prima (`POST /contact-properties`), altrimenti
+// `POST /contacts` risponde 422 "One or more properties do not exist" — è ciò che
+// ha fatto fallire 11/11 contatti il 2026-07-28. Chi aggiunge una property a
+// `buildContactPayload` la aggiunge ANCHE qui, o il sync torna a fallire in blocco.
+export const CONTACT_PROPERTY_KEYS = ["plan", "language", "lifecycle_stage", "cohort_month"] as const;
+
 // Le `properties` portano attributi stabili, riscritti per intero a ogni sync.
 // Sono anche il modo in cui si filtra direttamente dentro un Broadcast, senza
 // bisogno di un segmento: plan / language / lifecycle_stage / cohort_month.
@@ -131,6 +138,37 @@ export async function ensureSegmentId(
   return id;
 }
 
+/**
+ * Dichiara su Resend le properties che il sync assegna ai contatti, creando solo
+ * quelle mancanti. Idempotente: gira a ogni sync e in condizioni normali costa
+ * una sola GET. Non tocca le properties di altri (es. `Reminder_Sequence_Completed`
+ * usata dall'automation di Steve). Ritorna le chiavi create ora.
+ */
+export async function ensureContactProperties(apiKey: string): Promise<string[]> {
+  const list = await call(apiKey, "GET", "/contact-properties?limit=100");
+  if (!list.ok) {
+    throw new Error(`Resend contact-properties list failed: ${list.status} ${JSON.stringify(list.json).slice(0, 160)}`);
+  }
+  const existing = new Set(
+    listOf(list.json)
+      .map((p) => (p as { key?: unknown }).key)
+      .filter((k): k is string => typeof k === "string")
+  );
+
+  const created: string[] = [];
+  for (const key of CONTACT_PROPERTY_KEYS) {
+    if (existing.has(key)) continue;
+    // type "string" per tutte: plan/language/lifecycle_stage/cohort_month sono
+    // etichette, non misure. Nessun fallback_value → property assente ≠ "".
+    const r = await call(apiKey, "POST", "/contact-properties", { key, type: "string" });
+    if (!r.ok) {
+      throw new Error(`Resend contact-property create failed for "${key}": ${r.status} ${JSON.stringify(r.json).slice(0, 160)}`);
+    }
+    created.push(key);
+  }
+  return created;
+}
+
 async function upsertContact(
   audienceId: string,
   apiKey: string,
@@ -148,7 +186,13 @@ async function upsertContact(
     { audience_id: audienceId, first_name: payload.first_name, properties: payload.properties }
   );
   if (!patched.ok) {
-    throw new Error(`Resend contact upsert failed: POST ${created.status} / PATCH ${patched.status} ${JSON.stringify(patched.json).slice(0, 160)}`);
+    // Entrambi i body, POST per primo: è quello che porta la causa. Riportare solo
+    // il PATCH mostrava "not_found" (il contatto non c'è perché il POST è fallito)
+    // e nascondeva il vero errore, "One or more properties do not exist".
+    throw new Error(
+      `Resend contact upsert failed: POST ${created.status} ${JSON.stringify(created.json).slice(0, 160)}` +
+        ` / PATCH ${patched.status} ${JSON.stringify(patched.json).slice(0, 80)}`
+    );
   }
 }
 
@@ -196,7 +240,7 @@ export async function syncSegmentToResend(
   contacts: SegmentContact[],
   wantIdsByContact: Map<string, string[]>,
   managedIds: Set<string>
-): Promise<{ ok: number; failed: number; added: number; removed: number }> {
+): Promise<{ ok: number; failed: number; added: number; removed: number; errors: string[] }> {
   const apiKey = process.env.RESEND_API_KEY;
   const audienceId = process.env.RESEND_AUDIENCE_ID;
   if (!apiKey) throw new Error("RESEND_API_KEY not configured");
@@ -207,6 +251,10 @@ export async function syncSegmentToResend(
   let failed = 0;
   let added = 0;
   let removed = 0;
+  // I motivi dei fallimenti risalgono al chiamante, non solo a console.error: i log
+  // runtime non sono sempre leggibili (403 sul token) e `failed=11` da solo non dice
+  // NIENTE su cosa fare. Cap a 5: serve la causa, non l'elenco completo.
+  const errors: string[] = [];
   for (const c of contacts) {
     try {
       await upsertContact(audienceId, apiKey, buildContactPayload(c, nowISO));
@@ -216,9 +264,11 @@ export async function syncSegmentToResend(
       removed += r.removed;
       ok++;
     } catch (e) {
-      console.error(`[resend-contacts] sync ${c.identifier} failed:`, String(e));
+      const msg = `${c.identifier}: ${String(e)}`;
+      console.error("[resend-contacts] sync failed:", msg);
+      if (errors.length < 5) errors.push(msg);
       failed++;
     }
   }
-  return { ok, failed, added, removed };
+  return { ok, failed, added, removed, errors };
 }
