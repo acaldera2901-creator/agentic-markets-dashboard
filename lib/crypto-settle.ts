@@ -15,8 +15,8 @@
 // un pagamento che l'altra rifiuta.
 
 import { dbExecute, getSupabaseAdminClient } from "@/lib/db";
-import { activatePaygatePlan } from "@/lib/plan-grant";
-import { grantWeeklyPick } from "@/lib/weekly-pick-server";
+import { activatePaygatePlan, sendPlanReceipt } from "@/lib/plan-grant";
+import { grantWeeklyPick, notifyWeeklyPickGranted } from "@/lib/weekly-pick-server";
 import { createMirroredPaidOrder } from "@/lib/shopify-admin";
 import { findCoin } from "@/lib/crypto-coins";
 import { checkIncoming, isPaidEnough } from "@/lib/crypto-verify";
@@ -118,6 +118,17 @@ export async function settleCryptoOrder(order: CryptoOrder): Promise<CryptoSettl
   if (!granted) return { granted: false, reason: "paid but grant failed (identifier not found?)" };
   await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
 
+  // #CRYPTO-RECEIPTS-1 — ricevuta col vero importo, come sul rail hosted. Prima
+  // mancava del tutto: chi pagava in crypto riceveva solo la mail "piano attivo"
+  // (da notifyPlanActivated) e nessun documento dell'importo pagato.
+  await sendPlanReceipt({
+    identifier: order.identifier,
+    plan: order.plan,
+    amountUsd: order.amount_usd,
+    rail: `crypto:${String(order.coin)}`,
+    orderId: order.id,
+  });
+
   // Ordine specchiato in Shopify (ricevuta/report/rimborsi in un posto solo).
   // Best-effort e DOPO il grant: i soldi sono arrivati e il piano è concesso,
   // quindi un errore di Shopify non deve toccare l'esito del pagamento.
@@ -167,6 +178,16 @@ export async function settleWeeklyCryptoOrder(order: WeeklyCryptoOrder): Promise
     return { granted: false, reason: `paid but grant failed: ${String(e)}`, received: v.received };
   }
   await dbExecute("UPDATE weekly_pick_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
+
+  // Ricevuta + traccia di audit. Vedi notifyWeeklyPickGranted: prima di
+  // #CRYPTO-RECEIPTS-1 una Weekly Pick pagata non produceva né email né evento.
+  await notifyWeeklyPickGranted({
+    identifier: order.identifier,
+    weekStart: order.week_start,
+    amountUsd: order.amount_usd,
+    rail: `crypto:${String(order.coin)}`,
+    orderId: order.id,
+  });
 
   if (!order.shopify_order_id) {
     const gid = await createMirroredPaidOrder({

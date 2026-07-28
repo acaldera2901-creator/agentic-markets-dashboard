@@ -208,19 +208,50 @@ export function paymentReceivedEmail(lang = "it"): { subject: string; html: stri
   };
 }
 
-// Plan activated (GAP4).
+// Plan activated (GAP4). #CRYPTO-RECEIPTS-1: portata a 5 lingue — è la conferma che
+// riceve ANCHE chi paga in crypto (la manda notifyPlanActivated in lib/plan-grant,
+// condivisa da tutti i rail) e usciva sempre in italiano.
+const ACTIVATED: Record<MailLang, {
+  subject: string;
+  body: (until: string | null) => string;
+  cta: string;
+}> = {
+  it: {
+    subject: "BetRedge Pro attivato ✅",
+    body: (u) => `Il tuo BetRedge Pro è attivo${u ? ` fino al ${u}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`,
+    cta: "Apri il desk",
+  },
+  en: {
+    subject: "BetRedge Pro activated ✅",
+    body: (u) => `Your BetRedge Pro is active${u ? ` until ${u}` : ""}. You now have full access to the signals and calibrated probabilities.`,
+    cta: "Open the desk",
+  },
+  es: {
+    subject: "BetRedge Pro activado ✅",
+    body: (u) => `Tu BetRedge Pro está activo${u ? ` hasta el ${u}` : ""}. Tienes acceso completo a las señales y a las probabilidades calibradas.`,
+    cta: "Abrir el desk",
+  },
+  fr: {
+    subject: "BetRedge Pro activé ✅",
+    body: (u) => `Votre BetRedge Pro est actif${u ? ` jusqu'au ${u}` : ""}. Vous avez un accès complet aux signaux et aux probabilités calibrées.`,
+    cta: "Ouvrir le desk",
+  },
+  ru: {
+    subject: "BetRedge Pro активирован ✅",
+    body: (u) => `Ваш BetRedge Pro активен${u ? ` до ${u}` : ""}. У вас полный доступ к сигналам и калиброванным вероятностям.`,
+    cta: "Открыть деск",
+  },
+};
+
 export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const until = expiresAtISO ? new Date(expiresAtISO).toLocaleDateString(it ? "it-IT" : "en-GB") : null;
-  const subject = it ? "BetRedge Pro attivato ✅" : "BetRedge Pro activated ✅";
-  const body = it
-    ? `Il tuo BetRedge Pro è attivo${until ? ` fino al ${until}` : ""}. Hai accesso completo a segnali e probabilità calibrate.`
-    : `Your BetRedge Pro is active${until ? ` until ${until}` : ""}. You now have full access to the signals and calibrated probabilities.`;
-  const cta = it ? "Apri il desk" : "Open the desk";
+  const l = resolveMailLang(lang);
+  const t = ACTIVATED[l];
+  const until = expiresAtISO ? new Date(expiresAtISO).toLocaleDateString(MAIL_LOCALE[l]) : null;
+  const body = t.body(until);
   return {
-    subject,
-    html: brandedShell(`${brandText(body)}${brandCta(cta, `${siteUrl()}/app`)}`, { lang: it ? "it" : "en" }),
-    text: `${body}\n\n${cta}: ${siteUrl()}/app`,
+    subject: t.subject,
+    html: brandedShell(`${brandText(body)}${brandCta(t.cta, `${siteUrl()}/app`)}`, { lang: l }),
+    text: `${body}\n\n${t.cta}: ${siteUrl()}/app`,
   };
 }
 
@@ -230,7 +261,21 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
 // consenso marketing che invece governa i touchpoint acquisition. Il testo viene da
 // Email_1 di Steve, con una correzione: il Free dà 1 pick PER SPORT a settimana
 // (lib/access-projection.ts), non "una pick a settimana".
-type WelcomeLang = "it" | "en" | "es" | "fr" | "ru";
+// #CRYPTO-RECEIPTS-1 — lingua delle email: le stesse 5 del sito, risolte come fa
+// `resolveCrmLang` in lib/crm-content.ts (2 caratteri, fallback italiano) così le
+// mail di pagamento e quelle del CRM non possono uscire in lingue diverse per lo
+// stesso cliente. NON importo quella: crm-content importa da QUI e sarebbe un ciclo.
+export type MailLang = "it" | "en" | "es" | "fr" | "ru";
+const MAIL_LANGS: readonly MailLang[] = ["it", "en", "es", "fr", "ru"];
+export function resolveMailLang(raw: string | null | undefined): MailLang {
+  const two = (raw || "").trim().toLowerCase().slice(0, 2);
+  return (MAIL_LANGS as readonly string[]).includes(two) ? (two as MailLang) : "it";
+}
+const MAIL_LOCALE: Record<MailLang, string> = {
+  it: "it-IT", en: "en-GB", es: "es-ES", fr: "fr-FR", ru: "ru-RU",
+};
+
+type WelcomeLang = MailLang;
 const WELCOME: Record<WelcomeLang, { subject: string; body1: string; body2: string; plans: string; cta: string }> = {
   it: {
     subject: "Il tuo account gratuito è attivo",
@@ -285,6 +330,49 @@ export function welcomeEmail(lang = "it"): { subject: string; html: string; text
 
 // Receipt — sent on Stripe invoice.paid with the real amount. Distinct from the
 // plan-activated notice. Guard duplicate sends with Stripe event-id idempotency.
+// #CRYPTO-RECEIPTS-1: 5 lingue (erano it/en, e i chiamanti non passavano `lang` →
+// una ricevuta italiana ai 13 profili `en` su 17). La lingua è quella con cui il
+// cliente si è iscritto (`profiles.language`).
+const RECEIPT: Record<MailLang, {
+  subject: string;
+  recorded: (p: string) => string;
+  amount: (a: string) => string;
+  until: (u: string) => string;
+}> = {
+  it: {
+    subject: "Ricevuta di pagamento BetRedge",
+    recorded: (p) => `Grazie. Abbiamo registrato il tuo pagamento per ${p}.`,
+    amount: (a) => `Importo: ${a}.`,
+    until: (u) => `Rinnovo / scadenza: ${u}.`,
+  },
+  en: {
+    subject: "Your BetRedge payment receipt",
+    recorded: (p) => `Thank you. We've recorded your payment for ${p}.`,
+    amount: (a) => `Amount: ${a}.`,
+    until: (u) => `Renews / expires: ${u}.`,
+  },
+  es: {
+    subject: "Recibo de pago BetRedge",
+    recorded: (p) => `Gracias. Hemos registrado tu pago de ${p}.`,
+    amount: (a) => `Importe: ${a}.`,
+    until: (u) => `Renovación / vencimiento: ${u}.`,
+  },
+  fr: {
+    subject: "Votre reçu de paiement BetRedge",
+    recorded: (p) => `Merci. Nous avons enregistré votre paiement pour ${p}.`,
+    amount: (a) => `Montant : ${a}.`,
+    until: (u) => `Renouvellement / échéance : ${u}.`,
+  },
+  ru: {
+    subject: "Квитанция об оплате BetRedge",
+    recorded: (p) => `Спасибо. Мы зафиксировали ваш платёж за ${p}.`,
+    amount: (a) => `Сумма: ${a}.`,
+    until: (u) => `Продление / окончание: ${u}.`,
+  },
+};
+
+// Receipt — sent on Stripe invoice.paid and on every successful PayGate/crypto
+// payment, with the real amount. Distinct from the plan-activated notice.
 export function receiptEmail(
   amountMinor: number | null,
   currency: string | null,
@@ -292,32 +380,98 @@ export function receiptEmail(
   periodEndISO: string | null,
   lang = "it"
 ): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
+  const l = resolveMailLang(lang);
+  const t = RECEIPT[l];
   const amount =
     amountMinor != null && currency
-      ? new Intl.NumberFormat(it ? "it-IT" : "en-GB", {
+      ? new Intl.NumberFormat(MAIL_LOCALE[l], {
           style: "currency",
           currency: currency.toUpperCase(),
         }).format(amountMinor / 100)
       : null;
-  const until = periodEndISO
-    ? new Date(periodEndISO).toLocaleDateString(it ? "it-IT" : "en-GB")
-    : null;
-  const subject = it ? "Ricevuta di pagamento BetRedge" : "Your BetRedge payment receipt";
+  const until = periodEndISO ? new Date(periodEndISO).toLocaleDateString(MAIL_LOCALE[l]) : null;
   const planLabel = plan === "premium" ? "BetRedge Pro (Premium)" : "BetRedge Pro (Base)";
-  const lines = it
-    ? [
-        `Grazie. Abbiamo registrato il tuo pagamento per ${planLabel}.`,
-        amount ? `Importo: ${amount}.` : null,
-        until ? `Rinnovo / scadenza: ${until}.` : null,
-      ]
-    : [
-        `Thank you. We've recorded your payment for ${planLabel}.`,
-        amount ? `Amount: ${amount}.` : null,
-        until ? `Renews / expires: ${until}.` : null,
-      ];
+  const lines = [
+    t.recorded(planLabel),
+    amount ? t.amount(amount) : null,
+    until ? t.until(until) : null,
+  ];
   const text = lines.filter(Boolean).join(" ");
-  return { subject, html: brandedShell(brandText(text), { lang: it ? "it" : "en" }), text };
+  return { subject: t.subject, html: brandedShell(brandText(text), { lang: l }), text };
+}
+
+// #CRYPTO-RECEIPTS-1 — ricevuta della Weekly Pick. Builder separato da receiptEmail
+// di proposito: quello dice "BetRedge Pro (Base/Premium)" e parla di rinnovo, che su
+// un acquisto singolo di UNA settimana sarebbe una ricevuta falsa. Qui si nomina la
+// settimana comprata e si dichiara che non si rinnova.
+const WP_RECEIPT: Record<MailLang, {
+  subject: string;
+  recorded: (w: string) => string;
+  amount: (a: string) => string;
+  oneOff: string;
+  cta: string;
+}> = {
+  it: {
+    subject: "Ricevuta — Weekly Pick",
+    recorded: (w) => `Grazie. Abbiamo registrato il tuo pagamento per la Weekly Pick della settimana del ${w}.`,
+    amount: (a) => `Importo: ${a}.`,
+    oneOff: "È un acquisto singolo: sblocca la schedina di questa settimana e non si rinnova.",
+    cta: "Apri la Weekly Pick",
+  },
+  en: {
+    subject: "Your Weekly Pick receipt",
+    recorded: (w) => `Thank you. We've recorded your payment for the Weekly Pick of the week of ${w}.`,
+    amount: (a) => `Amount: ${a}.`,
+    oneOff: "This is a one-time purchase: it unlocks this week's slip and does not renew.",
+    cta: "Open the Weekly Pick",
+  },
+  es: {
+    subject: "Recibo — Weekly Pick",
+    recorded: (w) => `Gracias. Hemos registrado tu pago de la Weekly Pick de la semana del ${w}.`,
+    amount: (a) => `Importe: ${a}.`,
+    oneOff: "Es una compra única: desbloquea la combinada de esta semana y no se renueva.",
+    cta: "Abrir la Weekly Pick",
+  },
+  fr: {
+    subject: "Votre reçu — Weekly Pick",
+    recorded: (w) => `Merci. Nous avons enregistré votre paiement pour le Weekly Pick de la semaine du ${w}.`,
+    amount: (a) => `Montant : ${a}.`,
+    oneOff: "Il s'agit d'un achat unique : il débloque le combiné de cette semaine et ne se renouvelle pas.",
+    cta: "Ouvrir le Weekly Pick",
+  },
+  ru: {
+    subject: "Квитанция — Weekly Pick",
+    recorded: (w) => `Спасибо. Мы зафиксировали ваш платёж за Weekly Pick на неделю от ${w}.`,
+    amount: (a) => `Сумма: ${a}.`,
+    oneOff: "Это разовая покупка: она открывает экспресс этой недели и не продлевается.",
+    cta: "Открыть Weekly Pick",
+  },
+};
+
+export function weeklyPickReceiptEmail(
+  amountMinor: number | null,
+  currency: string | null,
+  weekStartISO: string,
+  lang = "it"
+): { subject: string; html: string; text: string } {
+  const l = resolveMailLang(lang);
+  const t = WP_RECEIPT[l];
+  const amount =
+    amountMinor != null && currency
+      ? new Intl.NumberFormat(MAIL_LOCALE[l], {
+          style: "currency",
+          currency: currency.toUpperCase(),
+        }).format(amountMinor / 100)
+      : null;
+  const week = new Date(weekStartISO).toLocaleDateString(MAIL_LOCALE[l]);
+  const url = `${siteUrl()}/weekly-pick`;
+  const lines = [t.recorded(week), amount ? t.amount(amount) : null, t.oneOff];
+  const text = lines.filter(Boolean).join(" ");
+  return {
+    subject: t.subject,
+    html: brandedShell(`${brandText(text)}${brandCta(t.cta, url)}`, { lang: l }),
+    text: `${text}\n\n${t.cta}: ${url}`,
+  };
 }
 
 // Cancellation — sent when a subscription is deleted; the plan drops to free.

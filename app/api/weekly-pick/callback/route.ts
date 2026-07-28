@@ -9,7 +9,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
-import { grantWeeklyPick } from "@/lib/weekly-pick-server";
+import { grantWeeklyPick, notifyWeeklyPickGranted } from "@/lib/weekly-pick-server";
 import { createMirroredPaidOrder } from "@/lib/shopify-admin";
 
 export const dynamic = "force-dynamic";
@@ -98,6 +98,16 @@ export async function GET(req: Request) {
     await grantWeeklyPick(order.identifier, order.week_start, order.token_hash);
     await dbExecute("UPDATE weekly_pick_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
     console.log(`[weekly-pick/callback] GRANT order=${order.id} week=${order.week_start} value_coin=${String(serverValue)} amount_usd=${String(order.amount_usd)}`);
+
+    // #CRYPTO-RECEIPTS-1 — ricevuta + evento di audit, come sul rail crypto: la
+    // weekly deve confermare l'acquisto su QUALUNQUE strada l'abbia incassato.
+    await notifyWeeklyPickGranted({
+      identifier: order.identifier,
+      weekStart: order.week_start,
+      amountUsd: order.amount_usd,
+      rail: "paygate-hosted",
+      orderId: order.id,
+    });
 
     // #WEEKLY-RAILS-1 — ordine specchiato in Shopify, come già fanno i piani
     // (app/api/paygate/callback, lib/crypto-settle). Senza questo la Weekly Pick

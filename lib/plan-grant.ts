@@ -1,5 +1,5 @@
 import { dbQuery, dbQueryStrict, dbExecute } from "./db";
-import { planActivatedEmail } from "./email";
+import { planActivatedEmail, receiptEmail } from "./email";
 import { sendTransactional } from "./notify";
 
 export type GrantablePlan = "base" | "premium";
@@ -30,11 +30,14 @@ async function notifyPlanActivated(row: ActivatedRow, source: ActivationSource):
   );
 
   if (row.identifier.includes("@")) {
-    const exp = await dbQuery<{ plan_expires_at: string | null }>(
-      "SELECT plan_expires_at::text FROM profiles WHERE identifier = $1 LIMIT 1",
+    // #CRYPTO-RECEIPTS-1: `language` è la lingua con cui il cliente si è iscritto.
+    // Senza passarla, planActivatedEmail usciva sempre in italiano — e in DB la
+    // maggioranza dei profili è `en`.
+    const exp = await dbQuery<{ plan_expires_at: string | null; language: string | null }>(
+      "SELECT plan_expires_at::text, language FROM profiles WHERE identifier = $1 LIMIT 1",
       [row.identifier]
     );
-    const mail = planActivatedEmail(exp[0]?.plan_expires_at ?? null);
+    const mail = planActivatedEmail(exp[0]?.plan_expires_at ?? null, exp[0]?.language ?? undefined);
     await sendTransactional({
       type: "plan_activated",
       to: row.identifier,
@@ -43,6 +46,48 @@ async function notifyPlanActivated(row: ActivatedRow, source: ActivationSource):
       text: mail.text,
       meta: { source, plan: row.plan },
     });
+  }
+}
+
+// #CRYPTO-RECEIPTS-1 — ricevuta col vero importo pagato. Vive qui e non dentro i
+// callback perché il rail hosted e quello crypto devono mandare la STESSA ricevuta:
+// erano già divergenti (il crypto non ne mandava nessuna). A differenza di
+// planActivatedEmail — che parte solo sulla transizione a piano attivo — questa parte
+// su OGNI pagamento riuscito, rinnovi inclusi.
+// Fire-and-forget: quando viene chiamata i soldi sono arrivati e il piano è concesso,
+// quindi un errore email non deve tornare al chiamante e diventare un mancato grant.
+// L'invio-una-volta-sola NON è garantito da qui (sendTransactional non deduplica): lo
+// garantisce il chiamante, che ci arriva solo dopo aver vinto il claim atomico.
+export async function sendPlanReceipt(opts: {
+  identifier: string;
+  plan: string;
+  amountUsd: number;
+  rail: string;
+  orderId: string;
+}): Promise<void> {
+  if (!opts.identifier.includes("@")) return;
+  try {
+    const rows = await dbQuery<{ plan_expires_at: string | null; language: string | null }>(
+      "SELECT plan_expires_at::text, language FROM profiles WHERE identifier = $1 LIMIT 1",
+      [opts.identifier]
+    );
+    const mail = receiptEmail(
+      Math.round(opts.amountUsd * 100),
+      "USD",
+      opts.plan,
+      rows[0]?.plan_expires_at ?? null,
+      rows[0]?.language ?? undefined
+    );
+    await sendTransactional({
+      type: "receipt",
+      to: opts.identifier,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+      meta: { order: opts.orderId, plan: opts.plan, rail: opts.rail },
+    });
+  } catch (e) {
+    console.error(`[plan-grant] receipt email failed (order=${opts.orderId}, rail=${opts.rail}):`, String(e));
   }
 }
 

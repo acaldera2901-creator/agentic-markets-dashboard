@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
-import { activatePaygatePlan } from "@/lib/plan-grant";
+import { activatePaygatePlan, sendPlanReceipt } from "@/lib/plan-grant";
 import { createMirroredPaidOrder } from "@/lib/shopify-admin";
-import { receiptEmail } from "@/lib/email";
-import { sendTransactional } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -138,30 +136,16 @@ export async function GET(req: Request) {
       // A differenza di planActivatedEmail (solo su transizione) la ricevuta parte
       // su OGNI pagamento riuscito, rinnovi inclusi. Fire-and-forget: un errore
       // email non deve mai bloccare il callback (l'ordine è già granted+claimed).
-      if (order.identifier.includes("@")) {
-        try {
-          const exp = await dbQuery<{ plan_expires_at: string | null }>(
-            "SELECT plan_expires_at::text FROM profiles WHERE identifier = $1 LIMIT 1",
-            [order.identifier]
-          );
-          const mail = receiptEmail(
-            Math.round(order.amount_usd * 100),
-            "USD",
-            order.plan,
-            exp[0]?.plan_expires_at ?? null
-          );
-          await sendTransactional({
-            type: "receipt",
-            to: order.identifier,
-            subject: mail.subject,
-            html: mail.html,
-            text: mail.text,
-            meta: { order: order.id, plan: order.plan, rail: "paygate" },
-          });
-        } catch (e) {
-          console.error(`[paygate/callback] receipt email failed (order=${order.id}):`, String(e));
-        }
-      }
+      // #CRYPTO-RECEIPTS-1: l'invio sta ora in sendPlanReceipt (lib/plan-grant), così
+      // questo rail e quello crypto mandano la stessa ricevuta, nella lingua con cui
+      // il cliente si è iscritto.
+      await sendPlanReceipt({
+        identifier: order.identifier,
+        plan: order.plan,
+        amountUsd: order.amount_usd,
+        rail: "paygate",
+        orderId: order.id,
+      });
     }
   } catch (e) {
     console.error("[paygate/callback] error:", String(e));
