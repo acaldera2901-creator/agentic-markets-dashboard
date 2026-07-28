@@ -1,6 +1,6 @@
 // tests/resend-contacts.test.ts
 import assert from "node:assert/strict";
-import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, type SegmentContact } from "../lib/resend-contacts";
+import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, tenureBucket, ensureContactProperties, syncSegmentToResend, CONTACT_PROPERTY_KEYS, type SegmentContact } from "../lib/resend-contacts";
 
 const NOW = "2026-06-27T12:00:00.000Z";
 
@@ -28,6 +28,16 @@ assert.equal(payload.properties.plan, "premium");
 assert.equal(payload.properties.language, "it");
 assert.equal(payload.properties.lifecycle_stage, "active");
 assert.equal(payload.properties.cohort_month, "2026-05");
+assert.equal(payload.properties.tenure_bucket, "30d_plus");
+
+// tenure come etichetta: le properties Resend sono stringhe, e un Broadcast non sa
+// confrontare date. Sostituisce i segmenti joined_last_7d / tenure_30d_plus, che il
+// piano (3 segmenti) non consente di tenere come contenitori.
+assert.equal(tenureBucket("2026-06-25T00:00:00.000Z", NOW), "new_7d");    // 2,5 giorni
+assert.equal(tenureBucket("2026-06-21T00:00:00.000Z", NOW), "new_7d");    // 6,5 giorni: dentro la soglia
+assert.equal(tenureBucket("2026-06-20T00:00:00.000Z", NOW), "mid_8_29d"); // 7,5 giorni: appena fuori
+assert.equal(tenureBucket("2026-06-15T00:00:00.000Z", NOW), "mid_8_29d");
+assert.equal(tenureBucket("2026-05-28T00:00:00.000Z", NOW), "30d_plus");  // 30,5 giorni
 // Le properties sono l'unico contenuto del contatto: niente seg_* e — dal 27/07 —
 // nessun array `segments`, perché l'appartenenza NON è un campo del contatto ma si
 // gestisce con POST/DELETE /contacts/{email}/segments/{uuid}.
@@ -79,4 +89,74 @@ async function membershipTests() {
   console.log("resend contacts ok");
 }
 
-membershipTests().catch((e) => { console.error(e); process.exit(1); });
+// ── properties dichiarate prima dei contatti ─────────────────────────────────
+// Riproduce il fallimento del sync del 2026-07-28: `POST /contacts` rispondeva
+// 422 `validation_error: "One or more properties do not exist"` per TUTTI gli 11
+// contatti. In Resend le custom properties sono uno SCHEMA dell'audience: vanno
+// dichiarate (`POST /contact-properties`) prima di poter essere assegnate a un
+// contatto. L'unica dichiarata era `Reminder_Sequence_Completed` (di Steve).
+async function propertyTests() {
+  {
+    // audience come era in prod: manca tutto il nostro schema → va creato
+    const calls: { method: string; path: string; body: unknown }[] = [];
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string; body?: string }) => {
+      const path = String(url).replace("https://api.resend.com", "");
+      const method = init?.method ?? "GET";
+      calls.push({ method, path, body: init?.body ? JSON.parse(init.body) : undefined });
+      if (method === "GET") {
+        return new Response(JSON.stringify({ data: [{ key: "Reminder_Sequence_Completed" }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ object: "contact_property", id: "p1" }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const created = await ensureContactProperties("k");
+    assert.deepEqual(created.sort(), ["cohort_month", "language", "lifecycle_stage", "plan", "tenure_bucket"]);
+    // create con `key` + `type` (non `name`: la doc parla di key, e con name Resend
+    // accetta la chiamata ma la property nasce senza chiave usabile)
+    const posts = calls.filter((c) => c.method === "POST");
+    assert.equal(posts.length, 5);
+    assert.deepEqual(posts[0].body, { key: "plan", type: "string" });
+    assert.equal(posts.every((c) => c.path === "/contact-properties"), true);
+  }
+  {
+    // schema già completo → nessuna scrittura (idempotente: gira a ogni sync)
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string }) => {
+      calls.push(init?.method ?? "GET");
+      return new Response(
+        JSON.stringify({ data: CONTACT_PROPERTY_KEYS.map((key) => ({ key })) }),
+        { status: 200 }
+      );
+    }) as unknown as typeof fetch;
+    const created = await ensureContactProperties("k");
+    assert.deepEqual(created, []);
+    assert.deepEqual(calls, ["GET"]);
+  }
+  {
+    // il motivo del fallimento non deve restare nei soli console.error: senza
+    // questo, in prod si vedeva `failed=11` e nient'altro (6 ore per la diagnosi).
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string }) => {
+      const method = init?.method ?? "GET";
+      if (String(url).endsWith("/contacts") && method === "POST") {
+        return new Response(
+          JSON.stringify({ name: "validation_error", message: "One or more properties do not exist", statusCode: 422 }),
+          { status: 422 }
+        );
+      }
+      return new Response(JSON.stringify({ name: "not_found", statusCode: 404 }), { status: 404 });
+    }) as unknown as typeof fetch;
+
+    const r = await syncSegmentToResend([base], new Map(), new Set());
+    assert.equal(r.ok, 0);
+    assert.equal(r.failed, 1);
+    assert.equal(r.errors.length, 1);
+    assert.match(r.errors[0], /properties do not exist/);
+    assert.match(r.errors[0], /a@b\.com/);
+  }
+  globalThis.fetch = realFetch;
+  console.log("resend properties ok");
+}
+
+membershipTests()
+  .then(propertyTests)
+  .catch((e) => { console.error(e); process.exit(1); });
