@@ -1,6 +1,6 @@
 // tests/resend-contacts.test.ts
 import assert from "node:assert/strict";
-import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, ensureContactProperties, syncSegmentToResend, CONTACT_PROPERTY_KEYS, type SegmentContact } from "../lib/resend-contacts";
+import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, tenureBucket, ensureContactProperties, syncSegmentToResend, CONTACT_PROPERTY_KEYS, type SegmentContact } from "../lib/resend-contacts";
 
 const NOW = "2026-06-27T12:00:00.000Z";
 
@@ -28,6 +28,16 @@ assert.equal(payload.properties.plan, "premium");
 assert.equal(payload.properties.language, "it");
 assert.equal(payload.properties.lifecycle_stage, "active");
 assert.equal(payload.properties.cohort_month, "2026-05");
+assert.equal(payload.properties.tenure_bucket, "30d_plus");
+
+// tenure come etichetta: le properties Resend sono stringhe, e un Broadcast non sa
+// confrontare date. Sostituisce i segmenti joined_last_7d / tenure_30d_plus, che il
+// piano (3 segmenti) non consente di tenere come contenitori.
+assert.equal(tenureBucket("2026-06-25T00:00:00.000Z", NOW), "new_7d");    // 2,5 giorni
+assert.equal(tenureBucket("2026-06-21T00:00:00.000Z", NOW), "new_7d");    // 6,5 giorni: dentro la soglia
+assert.equal(tenureBucket("2026-06-20T00:00:00.000Z", NOW), "mid_8_29d"); // 7,5 giorni: appena fuori
+assert.equal(tenureBucket("2026-06-15T00:00:00.000Z", NOW), "mid_8_29d");
+assert.equal(tenureBucket("2026-05-28T00:00:00.000Z", NOW), "30d_plus");  // 30,5 giorni
 // Le properties sono l'unico contenuto del contatto: niente seg_* e — dal 27/07 —
 // nessun array `segments`, perché l'appartenenza NON è un campo del contatto ma si
 // gestisce con POST/DELETE /contacts/{email}/segments/{uuid}.
@@ -100,11 +110,11 @@ async function propertyTests() {
     }) as unknown as typeof fetch;
 
     const created = await ensureContactProperties("k");
-    assert.deepEqual(created.sort(), ["cohort_month", "language", "lifecycle_stage", "plan"]);
+    assert.deepEqual(created.sort(), ["cohort_month", "language", "lifecycle_stage", "plan", "tenure_bucket"]);
     // create con `key` + `type` (non `name`: la doc parla di key, e con name Resend
     // accetta la chiamata ma la property nasce senza chiave usabile)
     const posts = calls.filter((c) => c.method === "POST");
-    assert.equal(posts.length, 4);
+    assert.equal(posts.length, 5);
     assert.deepEqual(posts[0].body, { key: "plan", type: "string" });
     assert.equal(posts.every((c) => c.path === "/contact-properties"), true);
   }

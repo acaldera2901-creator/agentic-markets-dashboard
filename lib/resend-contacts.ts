@@ -52,7 +52,22 @@ export function lifecycleStage(c: SegmentContact, nowISO: string): "prospect" | 
 // `POST /contacts` risponde 422 "One or more properties do not exist" — è ciò che
 // ha fatto fallire 11/11 contatti il 2026-07-28. Chi aggiunge una property a
 // `buildContactPayload` la aggiunge ANCHE qui, o il sync torna a fallire in blocco.
-export const CONTACT_PROPERTY_KEYS = ["plan", "language", "lifecycle_stage", "cohort_month"] as const;
+export const CONTACT_PROPERTY_KEYS = ["plan", "language", "lifecycle_stage", "cohort_month", "tenure_bucket"] as const;
+
+/**
+ * Anzianità dell'account come etichetta. Serve perché le properties Resend sono
+ * stringhe: "iscritto negli ultimi 7 giorni" non si esprime come confronto su una
+ * data dentro un Broadcast, ma su un'etichetta sì. Sostituisce i due segmenti
+ * `joined_last_7d` e `tenure_30d_plus`, che il piano Resend (3 segmenti) non
+ * permette di tenere come contenitori dedicati.
+ * Le soglie ricalcano quelle delle regole in `segments`: <7gg e >=30gg.
+ */
+export function tenureBucket(createdAtISO: string, nowISO: string): "new_7d" | "mid_8_29d" | "30d_plus" {
+  const days = (new Date(nowISO).getTime() - new Date(createdAtISO).getTime()) / 86400_000;
+  if (days < 7) return "new_7d";
+  if (days < 30) return "mid_8_29d";
+  return "30d_plus";
+}
 
 // Le `properties` portano attributi stabili, riscritti per intero a ogni sync.
 // Sono anche il modo in cui si filtra direttamente dentro un Broadcast, senza
@@ -67,6 +82,7 @@ export function buildContactPayload(
     language: c.language ?? "",
     lifecycle_stage: lifecycleStage(c, nowISO),
     cohort_month: cohortMonth(c.created_at),
+    tenure_bucket: tenureBucket(c.created_at, nowISO),
   };
   const payload: { email: string; first_name?: string; properties: Record<string, string> } = {
     email: c.identifier,
