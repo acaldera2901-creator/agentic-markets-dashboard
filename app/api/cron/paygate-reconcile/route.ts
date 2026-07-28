@@ -3,7 +3,13 @@ import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 import { activatePaygatePlan } from "@/lib/plan-grant";
 import { settlePendingOrder } from "@/lib/paygate-settle";
-import { settleCryptoOrder, type CryptoOrder } from "@/lib/crypto-settle";
+import {
+  settleCryptoOrder,
+  settleWeeklyCryptoOrder,
+  type CryptoOrder,
+  type WeeklyCryptoOrder,
+} from "@/lib/crypto-settle";
+import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
@@ -142,6 +148,62 @@ export async function GET(req: Request) {
     }
   }
 
+  // #WEEKLY-CRYPTO-DIRECT-1 quarta passata — Weekly Pick sul rail crypto. Stessa
+  // ragione della terza: il pagamento arriva quando arriva e il callback può
+  // perdersi. Gli ordini stanno in weekly_pick_orders, non in paygate_orders.
+  const weeklyCryptoPending = await dbQuery<WeeklyCryptoOrder>(
+    `SELECT id::text AS id, identifier, week_start::text AS week_start,
+            amount_usd::float8 AS amount_usd, status, coin, token_hash,
+            expected_value_coin::float8 AS expected_value_coin,
+            crypto_address_in, shopify_order_id
+       FROM weekly_pick_orders
+      WHERE status = 'pending' AND coin IS NOT NULL
+        AND created_at > NOW() - INTERVAL '48 hours'
+      ORDER BY created_at DESC
+      LIMIT 50`
+  );
+  let weeklyCryptoSettled = 0;
+  for (const o of weeklyCryptoPending) {
+    try {
+      const r = await settleWeeklyCryptoOrder(o);
+      if (r.granted) {
+        weeklyCryptoSettled++;
+        console.log(`[paygate/reconcile] WEEKLY-CRYPTO grant order=${o.id} week=${o.week_start} coin=${o.coin}`);
+      } else {
+        console.log(`[paygate/reconcile] weekly-crypto order=${o.id} non saldato: ${r.reason}`);
+      }
+    } catch (e) {
+      errors.push(`weekly-crypto ${o.id}: ${String(e)}`);
+    }
+  }
+
+  // Quinta passata — weekly PAGATE ma non consegnate. Il claim flippa l'ordine a
+  // 'paid' prima del grant: se il grant fallisce (DB giù per un istante) nessuno
+  // ci torna più, perché il settle si ferma su status!='pending' → cliente che ha
+  // pagato e non ha la pick. Si può recuperare qui SOLO perché grantWeeklyPick è
+  // idempotente sulla UNIQUE (identifier, week_start): ri-eseguirlo non regala
+  // nulla. Il rail dei piani non può fare lo stesso (activatePaygatePlan somma
+  // tempo), ed è per questo che la sua prima passata rifà il grant e non il claim.
+  const weeklyUngranted = await dbQuery<{ id: string; identifier: string; week_start: string; token_hash: string }>(
+    `SELECT id::text AS id, identifier, week_start::text AS week_start, token_hash
+       FROM weekly_pick_orders
+      WHERE status = 'paid' AND granted_at IS NULL
+        AND created_at > NOW() - INTERVAL '7 days'
+      ORDER BY created_at ASC
+      LIMIT 50`
+  );
+  let weeklyRegranted = 0;
+  for (const o of weeklyUngranted) {
+    try {
+      await grantWeeklyPick(o.identifier, o.week_start, o.token_hash);
+      await dbExecute("UPDATE weekly_pick_orders SET granted_at = NOW() WHERE id = $1", [o.id]);
+      weeklyRegranted++;
+      console.log(`[paygate/reconcile] WEEKLY regrant order=${o.id} week=${o.week_start}`);
+    } catch (e) {
+      errors.push(`weekly regrant ${o.id}: ${String(e)}`);
+    }
+  }
+
   const body = {
     ok: errors.length === 0,
     scanned: orders.length,
@@ -150,6 +212,10 @@ export async function GET(req: Request) {
     settled,
     cryptoPending: cryptoPending.length,
     cryptoSettled,
+    weeklyCryptoPending: weeklyCryptoPending.length,
+    weeklyCryptoSettled,
+    weeklyUngranted: weeklyUngranted.length,
+    weeklyRegranted,
     errors,
   };
 

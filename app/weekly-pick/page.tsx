@@ -10,6 +10,11 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
 import { PredictionDetailModal } from "@/components/PredictionDetailModal";
+import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
+
+// Stesso interruttore del checkout piani, così i due punti vendita accendono e
+// spengono il rail crypto diretto insieme. NEXT_PUBLIC_* è inlinata al build.
+const CRYPTO_DIRECT = process.env.NEXT_PUBLIC_SHOPIFY_CRYPTO_ENABLED === "true";
 
 type SportKind = "football" | "tennis" | "worldcup";
 function sportKind(sport: string): SportKind {
@@ -249,6 +254,7 @@ export default function WeeklyPickPage() {
   const [error, setError] = useState(false);
   const [lang, setLang] = useState<Lang>("it");
   const [buying, setBuying] = useState<"card" | "crypto" | null>(null);
+  const [cryptoOpen, setCryptoOpen] = useState(false);
   const [checkoutErr, setCheckoutErr] = useState(false);
   const [openLeg, setOpenLeg] = useState<{ sel: Sel; rect: DOMRect } | null>(null);
   const t = COPY[lang];
@@ -495,11 +501,28 @@ export default function WeeklyPickPage() {
                       <button onClick={() => startCheckout("card")} disabled={buying !== null} className="wp-cta">
                         {buying === "card" ? t.unlocking : t.payCard}
                       </button>
-                      <button onClick={() => startCheckout("crypto")} disabled={buying !== null} className="wp-cta wp-cta-2">
-                        {buying === "crypto" ? t.unlocking : t.payCrypto}
-                      </button>
+                      {/* #WEEKLY-CRYPTO-DIRECT-1: col rail diretto attivo il bottone
+                          APRE il selettore moneta (stesso componente del checkout
+                          piani) invece di reindirizzare. Col rail spento resta il
+                          redirect alla pagina hosted: nessun vicolo cieco. */}
+                      {!cryptoOpen && (
+                        <button
+                          onClick={() => (CRYPTO_DIRECT ? setCryptoOpen(true) : startCheckout("crypto"))}
+                          disabled={buying !== null}
+                          className="wp-cta wp-cta-2"
+                        >
+                          {buying === "crypto" ? t.unlocking : t.payCrypto}
+                        </button>
+                      )}
                     </div>
                   </div>
+                  {cryptoOpen && (
+                    <CryptoDirectPanel
+                      lang={lang}
+                      target={{ kind: "weekly" }}
+                      onPaid={() => window.location.reload()}
+                    />
+                  )}
                   {checkoutErr && <p className="wp-err">{t.checkoutError}</p>}
                 </>
               )}
