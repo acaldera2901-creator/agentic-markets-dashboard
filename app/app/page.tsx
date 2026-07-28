@@ -9023,6 +9023,13 @@ export default function Dashboard() {
                 <MenuIcon name="weeklypick" size={18} className="rail-ic" />
                 <span className="rail-label">Weekly Pick</span>
               </Link>
+              {/* #PARTNERS-RAIL-1: vetrina partner raggiungibile dal rail, non solo dal
+                  footer. Link interno neutro (come il "Partner" del footer): il contenuto
+                  gambling della pagina resta geo-gated fail-closed lato /partners. */}
+              <Link className="rail-item" href="/partners">
+                <MenuIcon name="partner" size={18} className="rail-ic" />
+                <span className="rail-label">{pick5(uiLanguage, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}</span>
+              </Link>
               <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
                 ↻ {refreshing ? "..." : tUI.refresh_odds}
                 <span className="sync">live</span>
