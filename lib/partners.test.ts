@@ -9,8 +9,11 @@ describe("partners catalog", () => {
     expect(ids).toEqual(["betscore", "fortuneplay", "slotsbonus", "ybets"]);
   });
 
-  it("marks FortunePlay as the only featured partner", () => {
-    expect(PARTNERS.filter((p) => p.featured).map((p) => p.id)).toEqual(["fortuneplay"]);
+  // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
+  // sportsbook va in evidenza sopra gli altri. Sostituisce l'asserzione
+  // precedente ("FortunePlay è l'unico featured").
+  it("marks no partner as featured", () => {
+    expect(PARTNERS.filter((p) => p.featured).map((p) => p.id)).toEqual([]);
   });
 
   it("every partner has a non-empty https url, an svg logo and a valid category", () => {

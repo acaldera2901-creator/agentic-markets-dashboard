@@ -9442,6 +9442,11 @@ button:disabled {
    quadrato vs wordmark) ma condividono la stessa altezza sulla placca.
    Richiede che ogni SVG dichiari width/height intrinseci. */
 .partners-page .partner-logo { max-height: 34px; width: auto; max-width: 100%; display: block; }
+/* #PARTNERS-NO-FEATURED: senza la card "in evidenza" l'emblema quadrato di
+   FortunePlay finisce accanto ai wordmark, e a 34px rende 1.156px² contro
+   2.856-5.824px² degli altri: l'unico emblema sembrerebbe il partner minore.
+   Cap dedicato a 54px → ~2.916px², pari al wordmark più piccolo (YBets). */
+.partners-page .partner-logo-emblem { max-height: 54px; }
 .partners-page .partner-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; }
 .partners-page .partner-name { font-size: 15px; font-weight: 700; color: var(--am-text); letter-spacing: -.01em; }
 .partners-page .partner-tagline { font-size: 13px; line-height: 1.5; color: var(--am-muted); }

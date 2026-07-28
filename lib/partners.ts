@@ -14,6 +14,10 @@ export type Partner = {
   logo: string; // path in /public/logos
   url: string;  // landing affiliato
   featured?: boolean;
+  // Forma del marchio: un emblema quadrato allo stesso cap d'altezza di un
+  // wordmark orizzontale rende ~3x meno massa ottica → cap dedicato (CSS
+  // .partner-logo-emblem). Serve solo dove la forma NON è un wordmark.
+  logoShape?: "emblem";
 };
 
 const YBETS_URL = BOOKS.find((b) => b.key === "ybets")?.landing ?? "https://ybetspromo.io/dputempxc";
@@ -22,8 +26,12 @@ const BETSCORE_URL = LANDING_PARTNERS.find((p) => p.name === "BetScore")?.url
 const SLOTSBONUS_URL =
   "https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral";
 
+// #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
+// nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
+// nel tipo e la sezione nel componente restano: si riaccende mettendo
+// `featured: true` su una riga, senza rimettere mano al layout.
 export const PARTNERS: Partner[] = [
-  { id: "fortuneplay", name: "FortunePlay", category: "sportsbook", logo: "/logos/fortuneplay.svg", url: FORTUNEPLAY_BET_URL, featured: true },
+  { id: "fortuneplay", name: "FortunePlay", category: "sportsbook", logo: "/logos/fortuneplay.svg", url: FORTUNEPLAY_BET_URL, logoShape: "emblem" },
   { id: "ybets", name: "YBets", category: "sportsbook", logo: "/logos/ybets.svg", url: YBETS_URL },
   { id: "betscore", name: "BetScore", category: "sportsbook", logo: "/logos/betscore.svg", url: BETSCORE_URL },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
