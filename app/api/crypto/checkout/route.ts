@@ -7,6 +7,13 @@ import { newOrderToken, discountedAmountFor, blocksLowerTierPurchase, type PlanK
 import { promoEligibility } from "@/lib/creator-promo";
 import { enabledCoins, findCoin, isCryptoDirectConfigured } from "@/lib/crypto-coins";
 import { convertUsdToCoin, coinMinimum, createCryptoDeposit } from "@/lib/crypto-api";
+import {
+  currentWeekStart,
+  weeklyPickEnabled,
+  weeklyPickIncludedInPlan,
+  weeklyPickAmount,
+} from "@/lib/weekly-pick";
+import { hasWeeklyPickStrict } from "@/lib/weekly-pick-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -55,31 +62,67 @@ export async function POST(req: Request) {
   // deploy (senza flag "test" è un plan sconosciuto → 400 come qualunque altro).
   // Mappato a base/$5 così checkout → verifica on-chain → grant → mirror girano
   // ESATTAMENTE come un acquisto vero, solo a prezzo di prova.
-  const rawPlan = body.requested_plan;
-  const isTest = rawPlan === "test" && process.env.PAYGATE_TEST_ENABLED === "1";
-  const plan = isTest ? "base" : rawPlan;
-  const period = body.period;
-  if (plan !== "base" && plan !== "premium") {
-    return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
-  }
-  if (period !== "monthly" && period !== "annual") {
-    return NextResponse.json({ error: "invalid period" }, { status: 400 });
-  }
   const coin = findCoin(body.coin);
   if (!coin) return NextResponse.json({ error: "coin not available" }, { status: 400 });
 
-  // Stessa tier-guard del rail carte: premium attivo non ricompra 'base'.
-  // Il path di test la bypassa come sul rail carte: serve a provare la catena,
-  // non a vendere un piano.
-  if (!isTest && blocksLowerTierPurchase(ctx.plan, plan)) {
-    return NextResponse.json({ error: "active premium plan — cannot purchase lower tier" }, { status: 409 });
-  }
+  // COSA si sta comprando, con il suo prezzo. Union e non campi opzionali: un piano
+  // ha tier+periodo, la Weekly Pick ha una settimana — così il resto della route non
+  // può leggere un `plan` che per la weekly non esiste, e ogni ramo a valle è
+  // costretto a dire quale dei due sta trattando.
+  // Il prezzo lo decide SEMPRE il server. Sul crypto la promo di lancio NON è un
+  // problema come su Shopify (dove il prezzo è fisso dentro il prodotto): qui
+  // l'importo atteso lo calcoliamo noi, quindi lo sconto è semplicemente il prezzo.
+  type Purchase =
+    | { kind: "weekly"; week: string; amount: number }
+    | { kind: "plan"; plan: PlanKey; period: Period; amount: number };
+  let purchase: Purchase;
 
-  // Prezzo SEMPRE server-side (promo inclusa): è l'importo che finisce
-  // nell'ordine e contro cui si verifica il pagamento.
-  const { amount } = isTest
-    ? { amount: 5 }
-    : discountedAmountFor(plan as PlanKey, period as Period, await promoEligibility(ctx.identifier));
+  if (body.requested_plan === "weekly") {
+    // #WEEKLY-CRYPTO-DIRECT-1 — stesse guardie del rail carta (ramo weekly di
+    // app/api/shopify/checkout): chi la ha inclusa nel Pro o l'ha già comprata
+    // questa settimana non deve poter pagare due volte.
+    if (!weeklyPickEnabled()) return NextResponse.json({ error: "not available" }, { status: 404 });
+    if (weeklyPickIncludedInPlan(ctx.plan)) {
+      return NextResponse.json({ error: "already included" }, { status: 409 });
+    }
+    const week = currentWeekStart(new Date());
+    // Lettura fail-loud + fail-closed: se non sappiamo se l'ha già comprata non la
+    // vendiamo. Con la lettura tollerante un errore DB sarebbe indistinguibile da
+    // "non comprata" e il cliente pagherebbe due volte la stessa pick.
+    try {
+      if (await hasWeeklyPickStrict(ctx.identifier, week)) {
+        return NextResponse.json({ error: "already purchased" }, { status: 409 });
+      }
+    } catch (e) {
+      console.error("[crypto/checkout] hasWeeklyPickStrict failed:", String(e));
+      return NextResponse.json({ error: "unavailable" }, { status: 500 });
+    }
+    purchase = { kind: "weekly", week, amount: weeklyPickAmount().amount };
+  } else {
+    // #PAYGATE-TEST-2USD, stessa porta già esistente sul rail carte: piano NASCOSTO
+    // da $5 per fare una prova di pagamento REALE senza spendere 15 o 30 dollari.
+    // Attivo solo con PAYGATE_TEST_ENABLED=1 → si spegne togliendo la env, senza
+    // deploy (senza flag "test" è un plan sconosciuto → 400 come qualunque altro).
+    const isTest = body.requested_plan === "test" && process.env.PAYGATE_TEST_ENABLED === "1";
+    const plan = isTest ? "base" : body.requested_plan;
+    const period = body.period;
+    if (plan !== "base" && plan !== "premium") {
+      return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
+    }
+    if (period !== "monthly" && period !== "annual") {
+      return NextResponse.json({ error: "invalid period" }, { status: 400 });
+    }
+    // Stessa tier-guard del rail carte: premium attivo non ricompra 'base'.
+    // Il path di test la bypassa: serve a provare la catena, non a vendere un piano.
+    if (!isTest && blocksLowerTierPurchase(ctx.plan, plan)) {
+      return NextResponse.json({ error: "active premium plan — cannot purchase lower tier" }, { status: 409 });
+    }
+    const amount = isTest
+      ? 5
+      : discountedAmountFor(plan, period, await promoEligibility(ctx.identifier)).amount;
+    purchase = { kind: "plan", plan, period, amount };
+  }
+  const amount = purchase.amount;
 
   // Quanto deve inviare, e se quella moneta accetta un importo così piccolo.
   // Sotto il minimo di rete PayGate NON inoltra: l'utente pagherebbe e i fondi
@@ -103,7 +146,11 @@ export async function POST(req: Request) {
   const { token, tokenHash } = newOrderToken();
   const orderId = crypto.randomUUID();
   const origin = siteOrigin(req);
-  const callbackUrl = `${origin}/api/crypto/callback?token=${encodeURIComponent(token)}&order=${orderId}`;
+  // `kind` dice al callback in quale tabella cercare il token. Manometterlo non
+  // apre nulla: il lookup nella tabella sbagliata non trova la riga e non concede.
+  const callbackUrl =
+    `${origin}/api/crypto/callback?token=${encodeURIComponent(token)}&order=${orderId}` +
+    (purchase.kind === "weekly" ? "&kind=weekly" : "");
 
   let deposit;
   try {
@@ -114,22 +161,42 @@ export async function POST(req: Request) {
   }
 
   try {
-    await dbExecute(
-      `INSERT INTO paygate_orders
-         (id, identifier, plan, period, amount_usd, token_hash, ipn_token,
-          coin, expected_value_coin, crypto_address_in)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [orderId, ctx.identifier, plan, period, amount, tokenHash, deposit.ipnToken || null,
-       coin.id, expected, deposit.addressIn]
-    );
+    if (purchase.kind === "weekly") {
+      // Tabella della Weekly Pick, non paygate_orders: là plan/period sono NOT NULL
+      // e un piano finto verrebbe concesso dalla prima passata del reconcile.
+      await dbExecute(
+        `INSERT INTO weekly_pick_orders
+           (id, identifier, week_start, amount_usd, token_hash, ipn_token,
+            coin, expected_value_coin, crypto_address_in)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [orderId, ctx.identifier, purchase.week, amount, tokenHash, deposit.ipnToken || null,
+         coin.id, expected, deposit.addressIn]
+      );
+    } else {
+      await dbExecute(
+        `INSERT INTO paygate_orders
+           (id, identifier, plan, period, amount_usd, token_hash, ipn_token,
+            coin, expected_value_coin, crypto_address_in)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [orderId, ctx.identifier, purchase.plan, purchase.period, amount, tokenHash, deposit.ipnToken || null,
+         coin.id, expected, deposit.addressIn]
+      );
+    }
   } catch (e) {
     console.error("[crypto/checkout] order insert failed:", String(e));
     return NextResponse.json({ error: "order create failed" }, { status: 500 });
   }
 
-  console.log(`[crypto/checkout] OK order=${orderId} ${coin.id} expected=${expected} amount_usd=${amount}${isTest ? " (TEST)" : ""}`);
+  const what =
+    purchase.kind === "weekly"
+      ? `weekly week=${purchase.week}`
+      : `${purchase.plan}/${purchase.period}`;
+  console.log(`[crypto/checkout] OK order=${orderId} ${what} ${coin.id} expected=${expected} amount_usd=${amount}`);
   return NextResponse.json({
     order: orderId,
+    // Il client lo rimanda a /api/crypto/status: senza, il polling cercherebbe
+    // l'ordine nella tabella dei piani e non lo troverebbe mai (404 in loop).
+    kind: purchase.kind,
     coin: coin.id,
     coin_label: coin.label,
     address: deposit.addressIn,

@@ -3,10 +3,11 @@ import { it, expect, vi, beforeEach } from "vitest";
 const getSessionPlan = vi.fn();
 const dbQueryStrict = vi.fn();
 const settleCryptoOrder = vi.fn();
+const settleWeeklyCryptoOrder = vi.fn();
 
 vi.mock("@/lib/auth", () => ({ getSessionPlan }));
 vi.mock("@/lib/db", () => ({ dbQueryStrict, dbQuery: vi.fn(), dbExecute: vi.fn() }));
-vi.mock("@/lib/crypto-settle", () => ({ settleCryptoOrder }));
+vi.mock("@/lib/crypto-settle", () => ({ settleCryptoOrder, settleWeeklyCryptoOrder }));
 
 const ID = "11111111-2222-3333-4444-555555555555";
 function req(id = ID) {
@@ -79,4 +80,35 @@ it("ordine già paid: nessuna nuova verifica", async () => {
   const { GET } = await import("./route");
   expect(await (await GET(req())).json()).toMatchObject({ status: "paid", granted: true });
   expect(settleCryptoOrder).not.toHaveBeenCalled();
+});
+
+// ───────── Weekly Pick sullo stesso rail (#WEEKLY-CRYPTO-DIRECT-1) ─────────
+
+// L'ordine weekly vive in un'altra tabella: interrogare quella dei piani darebbe
+// 404 a ogni giro di polling, e il pagamento non verrebbe mai saldato dalla pagina.
+it("kind=weekly: legge weekly_pick_orders e salda col settle weekly", async () => {
+  dbQueryStrict.mockResolvedValue([
+    { id: ID, identifier: "u@t.com", week_start: "2026-07-27", amount_usd: 12.99,
+      status: "pending", coin: "polygon-usdc", token_hash: "h", expected_value_coin: 13.01,
+      crypto_address_in: "0xdep", shopify_order_id: null, granted_at: null },
+  ]);
+  settleWeeklyCryptoOrder.mockResolvedValue({ granted: true, reason: "ok", received: 13.01 });
+
+  const { GET } = await import("./route");
+  const body = await (await GET(new Request(`https://x/api/crypto/status?order=${ID}&kind=weekly`))).json();
+
+  expect(String(dbQueryStrict.mock.calls[0][0])).toContain("FROM weekly_pick_orders");
+  expect(settleWeeklyCryptoOrder).toHaveBeenCalledTimes(1);
+  // Mai il settle dei piani: concederebbe un abbonamento a chi ha comprato una schedina.
+  expect(settleCryptoOrder).not.toHaveBeenCalled();
+  expect(body).toMatchObject({ status: "paid", granted: true });
+});
+
+// Il filtro sull'identifier resta anche sul ramo weekly: con l'id di un altro non
+// si legge (né si fa saldare) il suo ordine.
+it("kind=weekly: la query resta filtrata sull'identifier della sessione", async () => {
+  const { GET } = await import("./route");
+  await GET(new Request(`https://x/api/crypto/status?order=${ID}&kind=weekly`));
+  expect(String(dbQueryStrict.mock.calls[0][0])).toContain("LOWER(TRIM(identifier))");
+  expect(dbQueryStrict.mock.calls[0][1]).toEqual([ID, "u@t.com"]);
 });
