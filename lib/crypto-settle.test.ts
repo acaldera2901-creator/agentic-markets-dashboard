@@ -3,7 +3,9 @@ import { it, expect, vi, beforeEach } from "vitest";
 const dbExecute = vi.fn();
 const rpc = vi.fn();
 const activatePaygatePlan = vi.fn();
+const sendPlanReceipt = vi.fn();
 const grantWeeklyPick = vi.fn();
+const notifyWeeklyPickGranted = vi.fn();
 const createMirroredPaidOrder = vi.fn();
 const checkIncoming = vi.fn();
 
@@ -13,8 +15,8 @@ vi.mock("@/lib/db", () => ({
   dbQueryStrict: vi.fn(),
   getSupabaseAdminClient: () => ({ rpc }),
 }));
-vi.mock("@/lib/plan-grant", () => ({ activatePaygatePlan }));
-vi.mock("@/lib/weekly-pick-server", () => ({ grantWeeklyPick }));
+vi.mock("@/lib/plan-grant", () => ({ activatePaygatePlan, sendPlanReceipt }));
+vi.mock("@/lib/weekly-pick-server", () => ({ grantWeeklyPick, notifyWeeklyPickGranted }));
 vi.mock("@/lib/shopify-admin", () => ({ createMirroredPaidOrder }));
 vi.mock("@/lib/crypto-verify", async () => {
   const real = await vi.importActual<typeof import("./crypto-verify")>("./crypto-verify");
@@ -54,7 +56,9 @@ beforeEach(() => {
   process.env.CRYPTO_COINS_ENABLED = "polygon-usdc,polygon-usdt";
   rpc.mockResolvedValue({ data: true, error: null });
   activatePaygatePlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "base" });
+  sendPlanReceipt.mockResolvedValue(undefined);
   grantWeeklyPick.mockResolvedValue(undefined);
+  notifyWeeklyPickGranted.mockResolvedValue(undefined);
   createMirroredPaidOrder.mockResolvedValue("gid://shopify/Order/1");
   checkIncoming.mockResolvedValue({ received: 15.01, pending: 0, txHash: "0xtx" });
 });
@@ -187,4 +191,59 @@ it("weekly, mirror Shopify fallito: l'entitlement resta concesso", async () => {
   createMirroredPaidOrder.mockResolvedValue(null);
   const { settleWeeklyCryptoOrder } = await import("./crypto-settle");
   expect((await settleWeeklyCryptoOrder(WEEKLY)).granted).toBe(true);
+});
+
+// ───────── Ricevute (#CRYPTO-RECEIPTS-1) ─────────
+
+// Prima di questo, chi pagava un PIANO in crypto non riceveva nessuna ricevuta:
+// solo la mail "piano attivo", senza l'importo pagato.
+it("piano in crypto: manda la ricevuta con l'importo e il rail della moneta", async () => {
+  const { settleCryptoOrder } = await import("./crypto-settle");
+  await settleCryptoOrder(ORDER);
+  expect(sendPlanReceipt).toHaveBeenCalledTimes(1);
+  expect(sendPlanReceipt).toHaveBeenCalledWith(
+    expect.objectContaining({ identifier: "u@t.com", plan: "base", amountUsd: 14.99, rail: "crypto:polygon-usdc", orderId: "ord-1" })
+  );
+});
+
+// La ricevuta non deve MAI partire senza un pagamento confermato.
+it("piano in crypto non pagato: nessuna ricevuta", async () => {
+  checkIncoming.mockResolvedValue({ received: 1, pending: 0, txHash: null });
+  const { settleCryptoOrder } = await import("./crypto-settle");
+  await settleCryptoOrder(ORDER);
+  expect(sendPlanReceipt).not.toHaveBeenCalled();
+});
+
+// Né se il claim è stato perso: chi ha vinto la race l'ha già mandata.
+it("claim perso: nessuna ricevuta (l'ha già mandata il vincitore)", async () => {
+  rpc.mockResolvedValue({ data: false, error: null });
+  const { settleCryptoOrder } = await import("./crypto-settle");
+  await settleCryptoOrder(ORDER);
+  expect(sendPlanReceipt).not.toHaveBeenCalled();
+});
+
+it("weekly: manda ricevuta + evento con settimana, importo e rail", async () => {
+  checkIncoming.mockResolvedValue({ received: 13.01, pending: 0, txHash: "0xwtx" });
+  const { settleWeeklyCryptoOrder } = await import("./crypto-settle");
+  await settleWeeklyCryptoOrder(WEEKLY);
+  expect(notifyWeeklyPickGranted).toHaveBeenCalledTimes(1);
+  expect(notifyWeeklyPickGranted).toHaveBeenCalledWith(
+    expect.objectContaining({ identifier: "u@t.com", weekStart: "2026-07-27", amountUsd: 12.99, rail: "crypto:polygon-usdc", orderId: "wp-1" })
+  );
+});
+
+it("weekly non pagata: nessuna ricevuta", async () => {
+  checkIncoming.mockResolvedValue({ received: 0, pending: 0, txHash: null });
+  const { settleWeeklyCryptoOrder } = await import("./crypto-settle");
+  await settleWeeklyCryptoOrder(WEEKLY);
+  expect(notifyWeeklyPickGranted).not.toHaveBeenCalled();
+});
+
+// Il grant è il prodotto, la ricevuta è contabilità: se il grant fallisce non si
+// manda una ricevuta di qualcosa che il cliente non ha ricevuto.
+it("weekly, grant fallito: nessuna ricevuta", async () => {
+  grantWeeklyPick.mockRejectedValue(new Error("db down"));
+  const { settleWeeklyCryptoOrder } = await import("./crypto-settle");
+  await settleWeeklyCryptoOrder(WEEKLY);
+  expect(notifyWeeklyPickGranted).not.toHaveBeenCalled();
 });

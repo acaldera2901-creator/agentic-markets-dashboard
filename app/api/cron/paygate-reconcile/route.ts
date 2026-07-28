@@ -9,7 +9,7 @@ import {
   type CryptoOrder,
   type WeeklyCryptoOrder,
 } from "@/lib/crypto-settle";
-import { grantWeeklyPick } from "@/lib/weekly-pick-server";
+import { grantWeeklyPick, notifyWeeklyPickGranted } from "@/lib/weekly-pick-server";
 import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
@@ -184,8 +184,9 @@ export async function GET(req: Request) {
   // idempotente sulla UNIQUE (identifier, week_start): ri-eseguirlo non regala
   // nulla. Il rail dei piani non può fare lo stesso (activatePaygatePlan somma
   // tempo), ed è per questo che la sua prima passata rifà il grant e non il claim.
-  const weeklyUngranted = await dbQuery<{ id: string; identifier: string; week_start: string; token_hash: string }>(
-    `SELECT id::text AS id, identifier, week_start::text AS week_start, token_hash
+  const weeklyUngranted = await dbQuery<{ id: string; identifier: string; week_start: string; token_hash: string; amount_usd: number }>(
+    `SELECT id::text AS id, identifier, week_start::text AS week_start, token_hash,
+            amount_usd::float8 AS amount_usd
        FROM weekly_pick_orders
       WHERE status = 'paid' AND granted_at IS NULL
         AND created_at > NOW() - INTERVAL '7 days'
@@ -199,6 +200,17 @@ export async function GET(req: Request) {
       await dbExecute("UPDATE weekly_pick_orders SET granted_at = NOW() WHERE id = $1", [o.id]);
       weeklyRegranted++;
       console.log(`[paygate/reconcile] WEEKLY regrant order=${o.id} week=${o.week_start}`);
+      // #CRYPTO-RECEIPTS-1: anche il recupero deve mandare la ricevuta — è il caso in
+      // cui il cliente ha pagato e non aveva ricevuto NIENTE. L'invio resta unico
+      // perché questa query seleziona solo `granted_at IS NULL` e la riga precedente
+      // ha già chiuso quella transizione.
+      await notifyWeeklyPickGranted({
+        identifier: o.identifier,
+        weekStart: o.week_start,
+        amountUsd: o.amount_usd,
+        rail: "reconcile",
+        orderId: o.id,
+      });
     } catch (e) {
       errors.push(`weekly regrant ${o.id}: ${String(e)}`);
     }

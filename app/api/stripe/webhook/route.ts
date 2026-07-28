@@ -143,11 +143,19 @@ export async function POST(req: Request) {
           // Receipt with the real amount. The event-id guard above ensures one
           // send per payment event (no duplicates on Stripe redelivery).
           if (identifier.includes("@")) {
+            // #CRYPTO-RECEIPTS-1: lingua = quella con cui il cliente si è iscritto.
+            // Questo rail non è ancora live, ma senza il parametro la ricevuta
+            // uscirebbe in italiano a chiunque, esattamente come faceva PayGate.
+            const prof = await dbQuery<{ language: string | null }>(
+              "SELECT language FROM profiles WHERE identifier = $1 LIMIT 1",
+              [identifier]
+            );
             const mail = receiptEmail(
               inv.amount_paid ?? null,
               inv.currency ?? null,
               plan,
-              periodEndToIso(periodEnd)
+              periodEndToIso(periodEnd),
+              prof[0]?.language ?? undefined
             );
             await sendTransactional({
               type: "receipt",
