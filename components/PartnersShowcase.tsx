@@ -14,7 +14,12 @@ function PartnerCard({ p, lang, featured }: { p: Partner; lang: PartnersLang; fe
     >
       <span className="partner-logo-wrap">
         {/* loghi statici in /public → <img> semplice, niente next/image */}
-        <img src={p.logo} alt={p.name} className="partner-logo" loading="lazy" />
+        <img
+          src={p.logo}
+          alt={p.name}
+          className={p.logoShape === "emblem" ? "partner-logo partner-logo-emblem" : "partner-logo"}
+          loading="lazy"
+        />
       </span>
       <span className="partner-body">
         <span className="partner-name">{p.name}</span>
