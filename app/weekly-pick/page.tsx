@@ -4,7 +4,7 @@
 // storico. Riusa il design system lp-* della landing + superfici .wp-*.
 // FTC-safe: nessuna quota, nessun edge/vincita promessa.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
@@ -67,11 +67,11 @@ type HistWeek = { week_start: string; combined_prob: number | null; outcome: "li
 type Hist = { enabled: boolean; weeks?: HistWeek[] };
 
 const COPY = {
-  it: { back: "← Board", tag: "Multipla della casa", eyebrow: "Multipla della casa", h1a: "La schedina più", h1b: "probabile della settimana.", sub: "Le migliori pick del nostro modello, combinate in una sola schedina. Nessuna quota, nessun edge promesso — solo probabilità.", kProb: "prob. combinata", kLegs: "selezioni", kLeft: "ancora da giocare", loading: "Caricamento…", loadError: "Impossibile caricare la weekly pick.", retry: "Riprova", soon: "La multipla di questa settimana è in arrivo.", slip: "Schedina", note: "Probabilità combinata del modello.", unlockTitle: "Sblocca la Weekly Pick", unlockCta: "Sblocca", unlocking: "Attendi…", checkoutError: "Impossibile avviare il pagamento. Riprova.", proCta: "…oppure passa a Pro", responsible: "18+ · gioca responsabilmente", howEyebrow: "Come funziona", howTitle: "Una multipla, ogni settimana.", how1t: "Selezione", how1d: "Le pick a più alta probabilità del modello, combinate in una sola schedina.", how2t: "Ogni lunedì", how2d: "Una nuova multipla ogni lunedì; scade a fine settimana.", how3t: "Sblocco", how3d: "Inclusa nel Pro. Per gli altri, sblocco one-off.", histEyebrow: "Track record", histTitle: "Settimane precedenti.", histEmpty: "Il primo storico arriva a fine settimana.", oLive: "In corso", oWon: "Passata", oLost: "Non passata", locked: "Bloccata", briefEyebrow: "La settimana", briefComp: "sport", briefConf: "confidenza media", briefStrongest: "La più solida", briefFactors: "Ogni partita analizzata su forma, gol attesi, assenze, contesto e formazioni.", unlockPromo: "Cosa sblocchi", unlockList: ["Il nostro pronostico per ogni partita", "Probabilità e confidenza del modello", "Gol attesi (xG) e forma recente", "Assenze, contesto e formazioni", "Stato live della schedina"], anaTitle: "Analisi partita per partita.", locale: "it-IT" },
-  en: { back: "← Board", tag: "House accumulator", eyebrow: "House accumulator", h1a: "The week's most", h1b: "probable slip.", sub: "Our model's best picks, combined into a single slip. No odds, no promised edge — just probability.", kProb: "combined prob.", kLegs: "selections", kLeft: "still to play", loading: "Loading…", loadError: "Couldn't load the weekly pick.", retry: "Retry", soon: "This week's slip is on its way.", slip: "Slip", note: "Model's combined probability.", unlockTitle: "Unlock the Weekly Pick", unlockCta: "Unlock", unlocking: "Please wait…", checkoutError: "Couldn't start the payment. Please try again.", proCta: "…or go Pro", responsible: "18+ · gamble responsibly", howEyebrow: "How it works", howTitle: "One accumulator, every week.", how1t: "Selection", how1d: "The model's highest-probability picks, combined into one slip.", how2t: "Every Monday", how2d: "A new accumulator every Monday; it expires at week's end.", how3t: "Unlock", how3d: "Included in Pro. For everyone else, a one-off unlock.", histEyebrow: "Track record", histTitle: "Previous weeks.", histEmpty: "The first history lands at the end of the week.", oLive: "Live", oWon: "Landed", oLost: "Didn't land", locked: "Locked", briefEyebrow: "This week", briefComp: "sports", briefConf: "avg. confidence", briefStrongest: "Most solid", briefFactors: "Every match analysed on form, expected goals, absences, context and line-ups.", unlockPromo: "What you unlock", unlockList: ["Our pick for every match", "Model probability and confidence", "Expected goals (xG) and recent form", "Absences, context and line-ups", "Live status of the slip"], anaTitle: "Match-by-match analysis.", locale: "en-GB" },
-  es: { back: "← Board", tag: "Combinada de la casa", eyebrow: "Combinada de la casa", h1a: "La combinada más", h1b: "probable de la semana.", sub: "Las mejores picks de nuestro modelo, combinadas en una sola. Sin cuotas, sin edge prometido — solo probabilidad.", kProb: "prob. combinada", kLegs: "selecciones", kLeft: "por jugarse", loading: "Cargando…", loadError: "No se pudo cargar la weekly pick.", retry: "Reintentar", soon: "La combinada de esta semana está en camino.", slip: "Combinada", note: "Probabilidad combinada del modelo.", unlockTitle: "Desbloquea la Weekly Pick", unlockCta: "Desbloquear", unlocking: "Espera…", checkoutError: "No se pudo iniciar el pago. Inténtalo de nuevo.", proCta: "…o hazte Pro", responsible: "18+ · juega con responsabilidad", howEyebrow: "Cómo funciona", howTitle: "Una combinada, cada semana.", how1t: "Selección", how1d: "Las picks de mayor probabilidad del modelo, combinadas en una.", how2t: "Cada lunes", how2d: "Una nueva combinada cada lunes; caduca al final de la semana.", how3t: "Desbloqueo", how3d: "Incluida en Pro. Para el resto, desbloqueo único.", histEyebrow: "Track record", histTitle: "Semanas anteriores.", histEmpty: "El primer historial llega al final de la semana.", oLive: "En curso", oWon: "Acertada", oLost: "No acertada", locked: "Bloqueada", briefEyebrow: "La semana", briefComp: "deportes", briefConf: "confianza media", briefStrongest: "La más sólida", briefFactors: "Cada partido analizado en forma, goles esperados, ausencias, contexto y alineaciones.", unlockPromo: "Qué desbloqueas", unlockList: ["Nuestro pronóstico para cada partido", "Probabilidad y confianza del modelo", "Goles esperados (xG) y forma reciente", "Ausencias, contexto y alineaciones", "Estado en vivo de la combinada"], anaTitle: "Análisis partido por partido.", locale: "es-ES" },
-  fr: { back: "← Board", tag: "Combiné de la maison", eyebrow: "Combiné de la maison", h1a: "Le combiné le plus", h1b: "probable de la semaine.", sub: "Les meilleures prédictions de notre modèle, combinées en un seul combiné. Aucune cote, aucun edge promis — juste la probabilité.", kProb: "prob. combinée", kLegs: "sélections", kLeft: "encore à jouer", loading: "Chargement…", loadError: "Impossible de charger la weekly pick.", retry: "Réessayer", soon: "Le combiné de cette semaine arrive bientôt.", slip: "Combiné", note: "Probabilité combinée du modèle.", unlockTitle: "Débloquez la Weekly Pick", unlockCta: "Débloquer", unlocking: "Patientez…", checkoutError: "Impossible de démarrer le paiement. Réessayez.", proCta: "…ou passez à Pro", responsible: "18+ · jouez de manière responsable", howEyebrow: "Comment ça marche", howTitle: "Un combiné, chaque semaine.", how1t: "Sélection", how1d: "Les prédictions les plus probables du modèle, combinées en un seul.", how2t: "Chaque lundi", how2d: "Un nouveau combiné chaque lundi ; il expire en fin de semaine.", how3t: "Déblocage", how3d: "Inclus dans Pro. Pour les autres, un déblocage unique.", histEyebrow: "Track record", histTitle: "Semaines précédentes.", histEmpty: "Le premier historique arrive en fin de semaine.", oLive: "En cours", oWon: "Gagné", oLost: "Perdu", locked: "Bloqué", briefEyebrow: "La semaine", briefComp: "sports", briefConf: "confiance moy.", briefStrongest: "La plus solide", briefFactors: "Chaque match analysé sur la forme, les buts attendus, les absences, le contexte et les compositions.", unlockPromo: "Ce que vous débloquez", unlockList: ["Notre pronostic pour chaque match", "Probabilité et confiance du modèle", "Buts attendus (xG) et forme récente", "Absences, contexte et compositions", "Statut en direct du combiné"], anaTitle: "Analyse match par match.", locale: "fr-FR" },
-  ru: { back: "← Board", tag: "Экспресс от команды", eyebrow: "Экспресс от команды", h1a: "Самый вероятный", h1b: "экспресс недели.", sub: "Лучшие пики нашей модели в одном экспрессе. Без коэффициентов и обещанного edge — только вероятность.", kProb: "совокупн. вероятн.", kLegs: "выборы", kLeft: "ещё сыграют", loading: "Загрузка…", loadError: "Не удалось загрузить weekly pick.", retry: "Повторить", soon: "Экспресс этой недели уже готовится.", slip: "Экспресс", note: "Совокупная вероятность модели.", unlockTitle: "Откройте Weekly Pick", unlockCta: "Открыть", unlocking: "Подождите…", checkoutError: "Не удалось начать оплату. Попробуйте снова.", proCta: "…или оформите Pro", responsible: "18+ · играйте ответственно", howEyebrow: "Как это работает", howTitle: "Один экспресс каждую неделю.", how1t: "Отбор", how1d: "Самые вероятные пики модели, собранные в один экспресс.", how2t: "Каждый понедельник", how2d: "Новый экспресс каждый понедельник; истекает в конце недели.", how3t: "Доступ", how3d: "Входит в Pro. Для остальных — разовая покупка.", histEyebrow: "Track record", histTitle: "Прошлые недели.", histEmpty: "Первая история появится в конце недели.", oLive: "В игре", oWon: "Зашёл", oLost: "Не зашёл", locked: "Закрыто", briefEyebrow: "Эта неделя", briefComp: "sport", briefConf: "ср. уверенность", briefStrongest: "Самый надёжный", briefFactors: "Каждый матч разобран по форме, ожидаемым голам, отсутствиям, контексту и составам.", unlockPromo: "Что вы открываете", unlockList: ["Наш прогноз на каждый матч", "Вероятность и уверенность модели", "Ожидаемые голы (xG) и форма", "Отсутствия, контекст и составы", "Статус экспресса в реальном времени"], anaTitle: "Разбор матч за матчем.", locale: "ru-RU" },
+  it: { back: "← Board", tag: "Multipla della casa", eyebrow: "Multipla della casa", h1a: "La schedina più", h1b: "probabile della settimana.", sub: "Le migliori pick del nostro modello, combinate in una sola schedina. Nessuna quota, nessun edge promesso — solo probabilità.", kProb: "prob. combinata", kLegs: "selezioni", kLeft: "ancora da giocare", loading: "Caricamento…", loadError: "Impossibile caricare la weekly pick.", retry: "Riprova", soon: "La multipla di questa settimana è in arrivo.", slip: "Schedina", note: "Probabilità combinata del modello.", unlockTitle: "Sblocca la Weekly Pick", payCard: "Paga con carta", payCrypto: "Paga in crypto", unlocking: "Attendi…", checkoutError: "Impossibile avviare il pagamento. Riprova.", proCta: "…oppure passa a Pro", responsible: "18+ · gioca responsabilmente", howEyebrow: "Come funziona", howTitle: "Una multipla, ogni settimana.", how1t: "Selezione", how1d: "Le pick a più alta probabilità del modello, combinate in una sola schedina.", how2t: "Ogni lunedì", how2d: "Una nuova multipla ogni lunedì; scade a fine settimana.", how3t: "Sblocco", how3d: "Inclusa nel Pro. Per gli altri, sblocco one-off.", histEyebrow: "Track record", histTitle: "Settimane precedenti.", histEmpty: "Il primo storico arriva a fine settimana.", oLive: "In corso", oWon: "Passata", oLost: "Non passata", locked: "Bloccata", briefEyebrow: "La settimana", briefComp: "sport", briefConf: "confidenza media", briefStrongest: "La più solida", briefFactors: "Ogni partita analizzata su forma, gol attesi, assenze, contesto e formazioni.", unlockPromo: "Cosa sblocchi", unlockList: ["Il nostro pronostico per ogni partita", "Probabilità e confidenza del modello", "Gol attesi (xG) e forma recente", "Assenze, contesto e formazioni", "Stato live della schedina"], anaTitle: "Analisi partita per partita.", locale: "it-IT" },
+  en: { back: "← Board", tag: "House accumulator", eyebrow: "House accumulator", h1a: "The week's most", h1b: "probable slip.", sub: "Our model's best picks, combined into a single slip. No odds, no promised edge — just probability.", kProb: "combined prob.", kLegs: "selections", kLeft: "still to play", loading: "Loading…", loadError: "Couldn't load the weekly pick.", retry: "Retry", soon: "This week's slip is on its way.", slip: "Slip", note: "Model's combined probability.", unlockTitle: "Unlock the Weekly Pick", payCard: "Pay by card", payCrypto: "Pay with crypto", unlocking: "Please wait…", checkoutError: "Couldn't start the payment. Please try again.", proCta: "…or go Pro", responsible: "18+ · gamble responsibly", howEyebrow: "How it works", howTitle: "One accumulator, every week.", how1t: "Selection", how1d: "The model's highest-probability picks, combined into one slip.", how2t: "Every Monday", how2d: "A new accumulator every Monday; it expires at week's end.", how3t: "Unlock", how3d: "Included in Pro. For everyone else, a one-off unlock.", histEyebrow: "Track record", histTitle: "Previous weeks.", histEmpty: "The first history lands at the end of the week.", oLive: "Live", oWon: "Landed", oLost: "Didn't land", locked: "Locked", briefEyebrow: "This week", briefComp: "sports", briefConf: "avg. confidence", briefStrongest: "Most solid", briefFactors: "Every match analysed on form, expected goals, absences, context and line-ups.", unlockPromo: "What you unlock", unlockList: ["Our pick for every match", "Model probability and confidence", "Expected goals (xG) and recent form", "Absences, context and line-ups", "Live status of the slip"], anaTitle: "Match-by-match analysis.", locale: "en-GB" },
+  es: { back: "← Board", tag: "Combinada de la casa", eyebrow: "Combinada de la casa", h1a: "La combinada más", h1b: "probable de la semana.", sub: "Las mejores picks de nuestro modelo, combinadas en una sola. Sin cuotas, sin edge prometido — solo probabilidad.", kProb: "prob. combinada", kLegs: "selecciones", kLeft: "por jugarse", loading: "Cargando…", loadError: "No se pudo cargar la weekly pick.", retry: "Reintentar", soon: "La combinada de esta semana está en camino.", slip: "Combinada", note: "Probabilidad combinada del modelo.", unlockTitle: "Desbloquea la Weekly Pick", payCard: "Pagar con tarjeta", payCrypto: "Pagar en crypto", unlocking: "Espera…", checkoutError: "No se pudo iniciar el pago. Inténtalo de nuevo.", proCta: "…o hazte Pro", responsible: "18+ · juega con responsabilidad", howEyebrow: "Cómo funciona", howTitle: "Una combinada, cada semana.", how1t: "Selección", how1d: "Las picks de mayor probabilidad del modelo, combinadas en una.", how2t: "Cada lunes", how2d: "Una nueva combinada cada lunes; caduca al final de la semana.", how3t: "Desbloqueo", how3d: "Incluida en Pro. Para el resto, desbloqueo único.", histEyebrow: "Track record", histTitle: "Semanas anteriores.", histEmpty: "El primer historial llega al final de la semana.", oLive: "En curso", oWon: "Acertada", oLost: "No acertada", locked: "Bloqueada", briefEyebrow: "La semana", briefComp: "deportes", briefConf: "confianza media", briefStrongest: "La más sólida", briefFactors: "Cada partido analizado en forma, goles esperados, ausencias, contexto y alineaciones.", unlockPromo: "Qué desbloqueas", unlockList: ["Nuestro pronóstico para cada partido", "Probabilidad y confianza del modelo", "Goles esperados (xG) y forma reciente", "Ausencias, contexto y alineaciones", "Estado en vivo de la combinada"], anaTitle: "Análisis partido por partido.", locale: "es-ES" },
+  fr: { back: "← Board", tag: "Combiné de la maison", eyebrow: "Combiné de la maison", h1a: "Le combiné le plus", h1b: "probable de la semaine.", sub: "Les meilleures prédictions de notre modèle, combinées en un seul combiné. Aucune cote, aucun edge promis — juste la probabilité.", kProb: "prob. combinée", kLegs: "sélections", kLeft: "encore à jouer", loading: "Chargement…", loadError: "Impossible de charger la weekly pick.", retry: "Réessayer", soon: "Le combiné de cette semaine arrive bientôt.", slip: "Combiné", note: "Probabilité combinée du modèle.", unlockTitle: "Débloquez la Weekly Pick", payCard: "Payer par carte", payCrypto: "Payer en crypto", unlocking: "Patientez…", checkoutError: "Impossible de démarrer le paiement. Réessayez.", proCta: "…ou passez à Pro", responsible: "18+ · jouez de manière responsable", howEyebrow: "Comment ça marche", howTitle: "Un combiné, chaque semaine.", how1t: "Sélection", how1d: "Les prédictions les plus probables du modèle, combinées en un seul.", how2t: "Chaque lundi", how2d: "Un nouveau combiné chaque lundi ; il expire en fin de semaine.", how3t: "Déblocage", how3d: "Inclus dans Pro. Pour les autres, un déblocage unique.", histEyebrow: "Track record", histTitle: "Semaines précédentes.", histEmpty: "Le premier historique arrive en fin de semaine.", oLive: "En cours", oWon: "Gagné", oLost: "Perdu", locked: "Bloqué", briefEyebrow: "La semaine", briefComp: "sports", briefConf: "confiance moy.", briefStrongest: "La plus solide", briefFactors: "Chaque match analysé sur la forme, les buts attendus, les absences, le contexte et les compositions.", unlockPromo: "Ce que vous débloquez", unlockList: ["Notre pronostic pour chaque match", "Probabilité et confiance du modèle", "Buts attendus (xG) et forme récente", "Absences, contexte et compositions", "Statut en direct du combiné"], anaTitle: "Analyse match par match.", locale: "fr-FR" },
+  ru: { back: "← Board", tag: "Экспресс от команды", eyebrow: "Экспресс от команды", h1a: "Самый вероятный", h1b: "экспресс недели.", sub: "Лучшие пики нашей модели в одном экспрессе. Без коэффициентов и обещанного edge — только вероятность.", kProb: "совокупн. вероятн.", kLegs: "выборы", kLeft: "ещё сыграют", loading: "Загрузка…", loadError: "Не удалось загрузить weekly pick.", retry: "Повторить", soon: "Экспресс этой недели уже готовится.", slip: "Экспресс", note: "Совокупная вероятность модели.", unlockTitle: "Откройте Weekly Pick", payCard: "Оплатить картой", payCrypto: "Оплатить криптой", unlocking: "Подождите…", checkoutError: "Не удалось начать оплату. Попробуйте снова.", proCta: "…или оформите Pro", responsible: "18+ · играйте ответственно", howEyebrow: "Как это работает", howTitle: "Один экспресс каждую неделю.", how1t: "Отбор", how1d: "Самые вероятные пики модели, собранные в один экспресс.", how2t: "Каждый понедельник", how2d: "Новый экспресс каждый понедельник; истекает в конце недели.", how3t: "Доступ", how3d: "Входит в Pro. Для остальных — разовая покупка.", histEyebrow: "Track record", histTitle: "Прошлые недели.", histEmpty: "Первая история появится в конце недели.", oLive: "В игре", oWon: "Зашёл", oLost: "Не зашёл", locked: "Закрыто", briefEyebrow: "Эта неделя", briefComp: "sport", briefConf: "ср. уверенность", briefStrongest: "Самый надёжный", briefFactors: "Каждый матч разобран по форме, ожидаемым голам, отсутствиям, контексту и составам.", unlockPromo: "Что вы открываете", unlockList: ["Наш прогноз на каждый матч", "Вероятность и уверенность модели", "Ожидаемые голы (xG) и форма", "Отсутствия, контекст и составы", "Статус экспресса в реальном времени"], anaTitle: "Разбор матч за матчем.", locale: "ru-RU" },
 } as const;
 
 type Lang = keyof typeof COPY;
@@ -248,7 +248,7 @@ export default function WeeklyPickPage() {
   const [hist, setHist] = useState<Hist | null>(null);
   const [error, setError] = useState(false);
   const [lang, setLang] = useState<Lang>("it");
-  const [buying, setBuying] = useState(false);
+  const [buying, setBuying] = useState<"card" | "crypto" | null>(null);
   const [checkoutErr, setCheckoutErr] = useState(false);
   const [openLeg, setOpenLeg] = useState<{ sel: Sel; rect: DOMRect } | null>(null);
   const t = COPY[lang];
@@ -275,21 +275,56 @@ export default function WeeklyPickPage() {
   useEffect(() => fetchData(), [fetchData]);
   const retry = () => { setError(false); setData(null); setHist(null); fetchData(); };
 
-  const buy = useCallback(async () => {
+  // #WEEKLY-RAILS-1 — due rail, due destinazioni, stessa forma di startCheckout
+  // nel modal piani (app/app/page.tsx): carta → checkout Shopify (ordine e
+  // ricevuta dentro Shopify), crypto → pagina PayGate diretta.
+  // Il rail Shopify della Weekly Pick esisteva già lato server
+  // (/api/shopify/checkout accetta requested_plan:"weekly", variant one-off senza
+  // selling plan) ma NESSUN client lo chiamava: questa pagina mandava tutto su
+  // PayGate. Il crypto salta il blocco Shopify di proposito — un metodo di
+  // pagamento manuale su Shopify non incassa, quindi si paga dove si clicca.
+  const payInFlight = useRef(false);
+  const startCheckout = useCallback(async (rail: "card" | "crypto") => {
+    // Guard sincrono: due click ravvicinati non devono creare due ordini (il
+    // `disabled` del bottone si applica solo dopo il re-render).
+    if (payInFlight.current) return;
+    payInFlight.current = true;
     setCheckoutErr(false);
-    setBuying(true);
+    setBuying(rail);
+    const fail = () => { setCheckoutErr(true); setBuying(null); payInFlight.current = false; };
     try {
+      if (rail === "card") {
+        try {
+          const sres = await fetch("/api/shopify/checkout", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            // `lang` decide la lingua del checkout Shopify: senza, esce nella
+            // lingua di default dello store (spagnolo) per tutti.
+            body: JSON.stringify({ requested_plan: "weekly", lang }),
+          });
+          if (sres.status === 401) { window.location.href = "/app?tab=account"; return; }
+          if (sres.ok) {
+            const { url } = (await sres.json().catch(() => ({}))) as { url?: string };
+            if (url) { window.location.href = url; return; }
+          }
+          // Ogni altra risposta (404 flag off · 409 inclusa nel Pro o già
+          // comprata · 503 promo di lancio attiva o store non configurato) cade
+          // sul rail PayGate, che applica le STESSE guardie e in più porta lo
+          // sconto dentro l'ordine. Il motivo sta nel body e nei log della route.
+        } catch (e) {
+          console.error("shopify weekly checkout unavailable, fallback paygate", e);
+        }
+      }
       const r = await fetch("/api/weekly-pick/checkout", { method: "POST", credentials: "same-origin" });
       if (r.status === 401) { window.location.href = "/app?tab=account"; return; }
       const j = (await r.json().catch(() => null)) as { url?: string } | null;
       if (r.ok && j?.url) { window.location.href = j.url; return; }
-      setCheckoutErr(true);
-      setBuying(false);
+      fail();
     } catch {
-      setCheckoutErr(true);
-      setBuying(false);
+      fail();
     }
-  }, []);
+  }, [lang]);
 
   const price = data?.price_usd != null ? `$${data.price_usd.toFixed(2)}` : "$12.99";
   const fullPrice = data?.full_price_usd != null ? `$${data.full_price_usd.toFixed(2)}` : null;
@@ -454,9 +489,16 @@ export default function WeeklyPickPage() {
                         <span className="wp-price-now">{price}</span>
                       </span>
                     </div>
-                    <button onClick={buy} disabled={buying} className="wp-cta">
-                      {buying ? t.unlocking : `${t.unlockCta} · ${price}`}
-                    </button>
+                    {/* #WEEKLY-RAILS-1: il prezzo sta già accanto (.wp-price-now),
+                        quindi i bottoni dicono solo COME si paga. */}
+                    <div className="wp-ctas">
+                      <button onClick={() => startCheckout("card")} disabled={buying !== null} className="wp-cta">
+                        {buying === "card" ? t.unlocking : t.payCard}
+                      </button>
+                      <button onClick={() => startCheckout("crypto")} disabled={buying !== null} className="wp-cta wp-cta-2">
+                        {buying === "crypto" ? t.unlocking : t.payCrypto}
+                      </button>
+                    </div>
                   </div>
                   {checkoutErr && <p className="wp-err">{t.checkoutError}</p>}
                 </>

@@ -7,11 +7,18 @@ function gqlOk(data: unknown) {
 
 const MIRROR = {
   identifier: "u@t.com",
-  plan: "base" as const,
-  period: "monthly" as const,
+  line: { kind: "plan", plan: "base", period: "monthly" } as const,
   amountUsd: 14.99,
   paygateOrderId: "pg-1",
   txid: "0xabc",
+};
+
+const MIRROR_WEEKLY = {
+  identifier: "u@t.com",
+  line: { kind: "weekly", weekStart: "2026-07-27" } as const,
+  amountUsd: 12.99,
+  paygateOrderId: "wp-1",
+  txid: "0xdef",
 };
 
 function created() {
@@ -37,8 +44,18 @@ describe("mirrorLineTitle", () => {
   // Il crypto non si rinnova mai: una riga "Annual subscription" su un pagamento
   // one-off sarebbe una ricevuta falsa.
   it("dichiara durata e natura one-time, senza parlare di abbonamento", () => {
-    expect(mirrorLineTitle("base", "monthly")).toBe("BetRedge Base — 30 days (one-time, crypto)");
-    expect(mirrorLineTitle("premium", "annual")).toBe("BetRedge Premium — 365 days (one-time, crypto)");
+    expect(mirrorLineTitle({ kind: "plan", plan: "base", period: "monthly" }))
+      .toBe("BetRedge Base — 30 days (one-time, crypto)");
+    expect(mirrorLineTitle({ kind: "plan", plan: "premium", period: "annual" }))
+      .toBe("BetRedge Premium — 365 days (one-time, crypto)");
+  });
+
+  // La Weekly Pick non è un accesso a giorni: senza la settimana nel titolo, dalla
+  // ricevuta non si capisce QUALE pick è stata comprata.
+  it("weekly: nomina la settimana e non parla né di giorni né di piano", () => {
+    const title = mirrorLineTitle({ kind: "weekly", weekStart: "2026-07-27" });
+    expect(title).toBe("BetRedge Weekly Pick — week of 2026-07-27 (one-time, crypto)");
+    expect(title).not.toMatch(/days|Base|Premium/);
   });
 });
 
@@ -96,6 +113,41 @@ describe("createMirroredPaidOrder", () => {
     expect(await createMirroredPaidOrder(MIRROR)).toBe(null);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(isShopifyAdminConfigured()).toBe(false);
+  });
+
+  // #WEEKLY-RAILS-1: l'ordine specchiato della Weekly Pick deve essere
+  // distinguibile dall'abbonamento — hanno rimborsi diversi — e portare la
+  // settimana comprata.
+  it("weekly: importo, tag weekly-pick e attributo week_start", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(created());
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await createMirroredPaidOrder(MIRROR_WEEKLY)).toBe("gid://shopify/Order/777");
+
+    const o = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body).variables.order;
+    expect(o.financialStatus).toBe("PAID");
+    expect(o.tags).toEqual(["crypto", "paygate", "weekly-pick"]);
+    expect(o.lineItems[0]).toMatchObject({
+      title: "BetRedge Weekly Pick — week of 2026-07-27 (one-time, crypto)",
+      priceSet: { shopMoney: { amount: "12.99", currencyCode: "USD" } },
+    });
+    expect(o.customAttributes).toEqual(
+      expect.arrayContaining([
+        { key: "identifier", value: "u@t.com" },
+        { key: "week_start", value: "2026-07-27" },
+      ])
+    );
+  });
+
+  // L'ordine di un piano NON deve portare il tag/attributo della weekly, o i
+  // filtri d'ordine in Shopify mescolerebbero i due prodotti.
+  it("piano: nessun tag weekly-pick, nessun week_start", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(created());
+    vi.stubGlobal("fetch", fetchMock);
+    await createMirroredPaidOrder(MIRROR);
+    const o = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body).variables.order;
+    expect(o.tags).toEqual(["crypto", "paygate"]);
+    expect(JSON.stringify(o.customAttributes)).not.toContain("week_start");
   });
 
   it("identifier non-email: nessun campo email, ma l'attributo resta", async () => {
