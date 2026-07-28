@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
 import { grantWeeklyPick } from "@/lib/weekly-pick-server";
+import { createMirroredPaidOrder } from "@/lib/shopify-admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,6 +23,7 @@ type OrderRow = {
   status: string;
   token_hash: string;
   ipn_token: string | null;
+  shopify_order_id: string | null;
 };
 
 export async function GET(req: Request) {
@@ -34,7 +36,7 @@ export async function GET(req: Request) {
     const tokenHash = hashToken(token);
     const orders = await dbQuery<OrderRow>(
       `SELECT id, identifier, week_start::text AS week_start, amount_usd::float8 AS amount_usd,
-              status, token_hash, ipn_token
+              status, token_hash, ipn_token, shopify_order_id
          FROM weekly_pick_orders WHERE token_hash = $1 LIMIT 1`,
       [tokenHash]
     );
@@ -96,6 +98,28 @@ export async function GET(req: Request) {
     await grantWeeklyPick(order.identifier, order.week_start, order.token_hash);
     await dbExecute("UPDATE weekly_pick_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
     console.log(`[weekly-pick/callback] GRANT order=${order.id} week=${order.week_start} value_coin=${String(serverValue)} amount_usd=${String(order.amount_usd)}`);
+
+    // #WEEKLY-RAILS-1 — ordine specchiato in Shopify, come già fanno i piani
+    // (app/api/paygate/callback, lib/crypto-settle). Senza questo la Weekly Pick
+    // pagata in crypto non lasciava NESSUNA traccia contabile: né ordine, né
+    // ricevuta, né riga in Finanze — solo la riga in weekly_pick_orders.
+    // Best-effort e DOPO il grant: i soldi sono arrivati e l'entitlement è
+    // concesso, quindi un errore di Shopify non deve toccare l'esito del
+    // pagamento (createMirroredPaidOrder ritorna null, non throwa mai).
+    // La guardia su shopify_order_id evita il doppio ordine se in futuro si
+    // arrivasse qui da un'altra strada (replay, reconcile).
+    if (!order.shopify_order_id) {
+      const gid = await createMirroredPaidOrder({
+        identifier: order.identifier,
+        line: { kind: "weekly", weekStart: order.week_start },
+        amountUsd: order.amount_usd,
+        paygateOrderId: order.id,
+        txid: verify.txidOut ?? txidQuery,
+      });
+      if (gid) {
+        await dbExecute("UPDATE weekly_pick_orders SET shopify_order_id = $2 WHERE id = $1", [order.id, gid]);
+      }
+    }
   } catch (e) {
     console.error("[weekly-pick/callback] error:", String(e));
   }

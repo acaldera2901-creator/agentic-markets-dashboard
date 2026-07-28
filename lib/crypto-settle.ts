@@ -82,8 +82,7 @@ export async function settleCryptoOrder(order: CryptoOrder): Promise<CryptoSettl
   if (!order.shopify_order_id) {
     const gid = await createMirroredPaidOrder({
       identifier: order.identifier,
-      plan: order.plan,
-      period: order.period,
+      line: { kind: "plan", plan: order.plan, period: order.period },
       amountUsd: order.amount_usd,
       paygateOrderId: order.id,
       txid: chain.txHash,

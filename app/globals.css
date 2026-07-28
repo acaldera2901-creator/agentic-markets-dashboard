@@ -8694,6 +8694,10 @@ button:disabled {
 .wp-price-now { font-family: var(--font-mono), monospace; font-weight: 700; font-size: 22px; color: var(--am-text); letter-spacing: -0.02em; }
 /* LEVEL-UP: unlock = pulsante tattico primario (spigolo vivo, JetBrains mono
    uppercase, verde pieno, micro-glow su hover) — stessa voce di .btn-primary /app. */
+/* #WEEKLY-RAILS-1: due rail (carta = Shopify, crypto = PayGate) → due bottoni.
+   Il gruppo prende il margin-left:auto che prima stava sul singolo .wp-cta. */
+.wp-ctas { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.wp-ctas .wp-cta { margin-left: 0; }
 .wp-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-left: auto;
   height: 42px; padding: 0 22px; border-radius: var(--am-btn-radius);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
@@ -8705,6 +8709,11 @@ button:disabled {
 .wp-cta:active:not(:disabled) { transform: translateY(1px); filter: brightness(.94); }
 .wp-cta:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
 .wp-cta:disabled { opacity: .5; cursor: default; }
+/* Secondario (crypto): stessa forma e stessa altezza, peso visivo minore — il
+   rail consigliato è la carta, ma il crypto non è un ripensamento.
+   DEVE stare DOPO .wp-cta: pari specificità, vince l'ordine di sorgente. */
+.wp-cta-2 { background: none; color: var(--am-text); border-color: var(--am-line); }
+.wp-cta-2:hover:not(:disabled) { border-color: var(--am-coral); color: var(--am-coral); box-shadow: none; }
 .wp-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .wp-pro { font-size: 12.5px; color: var(--am-muted); text-decoration: underline; }
 .wp-resp { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .06em;
@@ -8745,6 +8754,8 @@ button:disabled {
   .wp-leg { grid-template-columns: 28px 1fr auto; gap: 10px; padding: 12px 14px; }
   .wp-leg-meta { gap: 8px; }
   .wp-cta { margin-left: 0; }
+  .wp-ctas { margin-left: 0; width: 100%; }
+  .wp-ctas .wp-cta { flex: 1 1 auto; }
   .wp-unlock { gap: 12px; }
 }
 

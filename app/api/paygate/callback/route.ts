@@ -123,8 +123,7 @@ export async function GET(req: Request) {
       if (!order.shopify_order_id) {
         const gid = await createMirroredPaidOrder({
           identifier: order.identifier,
-          plan: order.plan,
-          period: order.period,
+          line: { kind: "plan", plan: order.plan, period: order.period },
           amountUsd: order.amount_usd,
           paygateOrderId: order.id,
           txid: verify.txidOut ?? txidQuery,

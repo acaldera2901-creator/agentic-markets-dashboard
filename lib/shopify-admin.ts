@@ -45,10 +45,17 @@ const ORDER_CREATE = `
     }
   }`;
 
+// COSA è stato venduto. Union e non due campi opzionali: un piano ha tier+periodo,
+// la Weekly Pick ha una settimana e nient'altro. Tenerli separati rende
+// impossibile lo stato assurdo ("weekly annuale") che una ricevuta non deve
+// nemmeno poter esprimere.
+export type MirrorLine =
+  | { kind: "plan"; plan: "base" | "premium"; period: "monthly" | "annual" }
+  | { kind: "weekly"; weekStart: string };
+
 export type MirrorInput = {
   identifier: string;
-  plan: "base" | "premium";
-  period: "monthly" | "annual";
+  line: MirrorLine;
   amountUsd: number;
   paygateOrderId: string;
   txid?: string | null;
@@ -59,9 +66,15 @@ export type MirrorInput = {
 // non riusiamo le SKU in abbonamento — una riga "Annual subscription" su un
 // pagamento che non si rinnova sarebbe una ricevuta falsa. Riga custom: nessun
 // accoppiamento con i variant id, e il titolo resta leggibile in fattura.
-export function mirrorLineTitle(plan: "base" | "premium", period: "monthly" | "annual"): string {
-  const tier = plan === "premium" ? "Premium" : "Base";
-  const days = period === "annual" ? "365" : "30";
+export function mirrorLineTitle(line: MirrorLine): string {
+  // La Weekly Pick non è un accesso a giorni: è l'entitlement di UNA settimana.
+  // La settimana sta nel titolo perché è l'unico modo, guardando la ricevuta, di
+  // sapere quale pick è stata comprata.
+  if (line.kind === "weekly") {
+    return `BetRedge Weekly Pick — week of ${line.weekStart} (one-time, crypto)`;
+  }
+  const tier = line.plan === "premium" ? "Premium" : "Base";
+  const days = line.period === "annual" ? "365" : "30";
   return `BetRedge ${tier} — ${days} days (one-time, crypto)`;
 }
 
@@ -87,15 +100,18 @@ export async function createMirroredPaidOrder(input: MirrorInput): Promise<strin
         ...(input.identifier.includes("@") ? { email: input.identifier } : {}),
         currency: "USD",
         financialStatus: "PAID",
-        tags: ["crypto", "paygate"],
+        // Il tag distingue a colpo d'occhio (e nei filtri d'ordine) l'entitlement
+        // one-off dall'abbonamento: sono due prodotti con rimborsi diversi.
+        tags: input.line.kind === "weekly" ? ["crypto", "paygate", "weekly-pick"] : ["crypto", "paygate"],
         customAttributes: [
           { key: "identifier", value: input.identifier },
           { key: "rail", value: "paygate-crypto" },
           { key: "paygate_order", value: input.paygateOrderId },
+          ...(input.line.kind === "weekly" ? [{ key: "week_start", value: input.line.weekStart }] : []),
         ],
         lineItems: [
           {
-            title: mirrorLineTitle(input.plan, input.period),
+            title: mirrorLineTitle(input.line),
             quantity: 1,
             requiresShipping: false,
             taxable: true,
