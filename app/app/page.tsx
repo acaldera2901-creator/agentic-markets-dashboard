@@ -9063,6 +9063,12 @@ export default function Dashboard() {
                   <span className="am-feat-l">{pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}</span>
                 </button>
               )}
+              {/* #PARTNERS-RAIL-1 (mobile): specchia la voce Partner del rail — su mobile
+                  il rail sparisce, quindi senza questa tile la vetrina resta solo nel footer. */}
+              <Link className="am-feat-tile" href="/partners">
+                <MenuIcon name="partner" size={22} className="am-feat-ic" />
+                <span className="am-feat-l">{pick5(uiLanguage, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}</span>
+              </Link>
             </div>
           </nav>
           <div className="book-main-head am-deskhead">
