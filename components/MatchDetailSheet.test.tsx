@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MatchDetailSheet, type MdsData } from "@/components/MatchDetailSheet";
 
@@ -135,5 +135,66 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
     render(<MatchDetailSheet data={makeData()} hideBookLinks />);
     expect(screen.queryByRole("button", { name: /Piazza la scommessa/ })).toBeNull();
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+});
+
+// #PARTNER-CLICK-TRACK-1: senza questo evento non sappiamo quale partner rende.
+describe("MatchDetailSheet — tracking del partner scelto", () => {
+  let calls: Array<{ url: string; body: Record<string, unknown> }>;
+
+  beforeEach(() => {
+    calls = [];
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), body: JSON.parse(String(init?.body ?? "{}")) });
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) } as Response);
+    }));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const clickPartner = (name: string) => {
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    fireEvent.click(screen.getByText(name));
+  };
+
+  it("registra quale partner è stato scelto", () => {
+    clickPartner("FeliceBet");
+    const ev = calls.filter((c) => c.url === "/api/track");
+    expect(ev).toHaveLength(1);
+    expect(ev[0].body.event_type).toBe("partner_click");
+    expect(ev[0].body.partner_id).toBe("FeliceBet");
+    expect((ev[0].body.meta as Record<string, unknown>).surface).toBe("match_sheet");
+  });
+
+  it("distingue i partner fra loro", () => {
+    clickPartner("YBets");
+    expect(calls.at(-1)?.body.partner_id).toBe("YBets");
+  });
+
+  it("senza consenso GDPR non manda nessun session_id", () => {
+    clickPartner("BetScore");
+    const ev = calls.filter((c) => c.url === "/api/track");
+    expect(ev).toHaveLength(1); // l'evento parte comunque, anonimo
+    expect(ev[0].body.session_id).toBeUndefined();
+    expect(sessionStorage.getItem("am_sid")).toBeNull(); // nessun id creato di nascosto
+  });
+
+  it("col consenso allega il session_id", () => {
+    localStorage.setItem("gdpr_consent", "accepted");
+    clickPartner("BetScore");
+    const ev = calls.filter((c) => c.url === "/api/track");
+    expect(ev).toHaveLength(1);
+    expect(typeof ev[0].body.session_id).toBe("string");
+  });
+
+  it("il link resta navigabile anche se il beacon fallisce", () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const link = screen.getByText("FortunePlay").closest("a") as HTMLAnchorElement;
+    expect(() => fireEvent.click(link)).not.toThrow();
+    expect(link.getAttribute("href")).toBe(BOOKS[0].matchUrl);
   });
 });

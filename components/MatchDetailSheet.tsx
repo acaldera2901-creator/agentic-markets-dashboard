@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MarketIcon } from "./MarketIcon";
 import { partnerLogoByName } from "../lib/partners";
+import { trackEvent } from "../lib/track-event";
 import { joinFpWithModel } from "../lib/market-join";
 import type { ExtraMarket } from "../lib/poisson-model";
 
@@ -339,7 +340,19 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                             href={b.matchUrl}
                             target="_blank"
                             rel="nofollow sponsored noopener noreferrer"
-                            onClick={() => setBooksMenu(false)}
+                            onClick={() => {
+                              // #PARTNER-CLICK-TRACK-1: quale partner viene scelto.
+                              // Fire-and-forget: non attende la risposta e non
+                              // blocca mai l'apertura del link (il .catch è
+                              // dentro trackEvent). Nessun dato personale: solo
+                              // il nome del partner + quante selezioni aveva la
+                              // schedina; il session_id parte solo col consenso.
+                              trackEvent("partner_click", {
+                                partner_id: b.name,
+                                meta: { surface: "match_sheet", legs: legs.length },
+                              });
+                              setBooksMenu(false);
+                            }}
                           >
                             {logo && <img src={logo} alt="" className="mds-blogo" loading="lazy" />}
                             <span className="mds-bname">{b.name}</span>
