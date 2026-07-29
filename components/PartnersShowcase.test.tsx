@@ -8,9 +8,10 @@ describe("PartnersShowcase", () => {
     expect(screen.getByText("FortunePlay")).toBeTruthy();
     expect(screen.getByText("YBets")).toBeTruthy();
     expect(screen.getByText("BetScore")).toBeTruthy();
+    expect(screen.getByText("FeliceBet")).toBeTruthy();
     const links = screen.getAllByRole("link").filter((a) =>
       (a as HTMLAnchorElement).href.startsWith("https://"));
-    expect(links.length).toBeGreaterThanOrEqual(4);
+    expect(links.length).toBeGreaterThanOrEqual(5);
     for (const a of links) {
       const rel = (a as HTMLAnchorElement).getAttribute("rel") || "";
       expect(rel).toContain("nofollow");
@@ -25,7 +26,7 @@ describe("PartnersShowcase", () => {
     const { container } = render(<PartnersShowcase lang="en" />);
     expect(container.querySelectorAll(".partner-card-featured").length).toBe(0);
     expect(screen.queryByText("Featured")).toBeNull();
-    // i 3 sportsbook stanno nella stessa griglia, FortunePlay incluso
+    // gli sportsbook stanno tutti nella stessa griglia, FortunePlay incluso
     expect(container.querySelectorAll(".partners-grid").length).toBe(2);
   });
 
