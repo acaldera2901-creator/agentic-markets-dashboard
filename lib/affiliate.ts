@@ -34,4 +34,8 @@ export const FORTUNEPLAY_BET_URL = "https://mediaroosters.com/aacugmydl8";
 // quota/deep-link, solo redirect con attribuzione via ?mid=.
 export const LANDING_PARTNERS = [
   { name: "BetScore", url: "https://bsr.lynmonkel.com/?mid=381903_2215092" },
+  // #PARTNER-FELICEBET: rete Bluewin Partners (bta=2961065). Come BetScore è solo
+  // landing/registrazione (302 → felicebet<geo>.com col btag) → nessun deep-link
+  // per partita. Fonte unica dell'URL: lib/partners.ts lo rilegge da qui.
+  { name: "FeliceBet", url: "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732" },
 ] as const;

@@ -28,7 +28,9 @@ const SLOTSBONUS_URL =
 // #PARTNER-FELICEBET (2026-07-29): affiliato della rete Bluewin Partners
 // (bta=2961065). Solo landing di registrazione — 302 → felicebet<geo>.com col
 // btag di attribuzione, nessun feed quote e nessun deep-link per evento.
-const FELICEBET_URL = "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732";
+// L'URL vive in LANDING_PARTNERS (come BetScore): qui si rilegge, non si duplica.
+const FELICEBET_URL = LANDING_PARTNERS.find((p) => p.name === "FeliceBet")?.url
+  ?? "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -42,6 +44,15 @@ export const PARTNERS: Partner[] = [
   { id: "felicebet", name: "FeliceBet", category: "sportsbook", logo: "/logos/felicebet.png", url: FELICEBET_URL, logoShape: "emblem" },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
 ];
+
+// #BET-DROPDOWN-1: il menu "Piazza la scommessa" nella scheda partita riceve i
+// book per NOME (da lib/affiliate + lib/betconstruct-books, che non conoscono i
+// loghi). Qui li risolviamo sul catalogo. Nome sconosciuto → null: la voce resta
+// valida, senza logo, invece di rompersi o mostrare un'icona sbagliata.
+export function partnerLogoByName(name: string): string | null {
+  const key = name.trim().toLowerCase();
+  return PARTNERS.find((p) => p.name.toLowerCase() === key)?.logo ?? null;
+}
 
 export type PartnersLang = "it" | "en" | "es" | "fr" | "ru";
 
