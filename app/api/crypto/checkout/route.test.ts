@@ -2,6 +2,10 @@ import { it, expect, vi, beforeEach } from "vitest";
 
 const getSessionPlan = vi.fn();
 const dbExecute = vi.fn();
+// #CRYPTO-ADDR-REGISTRY-0729 — non più `vi.fn()` anonimo dentro la factory: il
+// gate sull'indirizzo di deposito legge il risultato di questa query, quindi il
+// mock deve poter rispondere caso per caso.
+const dbQueryStrict = vi.fn();
 const promoEligibility = vi.fn();
 const convertUsdToCoin = vi.fn();
 const coinMinimum = vi.fn();
@@ -9,7 +13,7 @@ const createCryptoDeposit = vi.fn();
 const hasWeeklyPickStrict = vi.fn();
 
 vi.mock("@/lib/auth", () => ({ getSessionPlan }));
-vi.mock("@/lib/db", () => ({ dbExecute, dbQuery: vi.fn(), dbQueryStrict: vi.fn() }));
+vi.mock("@/lib/db", () => ({ dbExecute, dbQuery: vi.fn(), dbQueryStrict }));
 vi.mock("@/lib/creator-promo", () => ({ promoEligibility }));
 vi.mock("@/lib/crypto-api", () => ({ convertUsdToCoin, coinMinimum, createCryptoDeposit }));
 vi.mock("@/lib/activation", () => ({ siteOrigin: () => "https://www.betredge.com" }));
@@ -36,6 +40,9 @@ beforeEach(() => {
   coinMinimum.mockResolvedValue(0.665);
   createCryptoDeposit.mockResolvedValue({ addressIn: "0xdeposit", ipnToken: "ipn" });
   hasWeeklyPickStrict.mockResolvedValue(false);
+  // Caso normale: l'indirizzo è nuovo, il registro lo accetta e restituisce la
+  // riga inserita. I casi di conflitto lo ri-mockano a [].
+  dbQueryStrict.mockResolvedValue([{ address: "0xdeposit" }]);
 });
 
 it("crea l'ordine con moneta, importo atteso e indirizzo di deposito", async () => {
@@ -199,4 +206,63 @@ it("weekly: 500 fail-closed se la lettura DB fallisce", async () => {
   const { POST } = await import("./route");
   expect((await POST(req({ requested_plan: "weekly", coin: "polygon-usdc" }))).status).toBe(500);
   expect(createCryptoDeposit).not.toHaveBeenCalled();
+});
+
+// ───────── Registro indirizzi di deposito (#CRYPTO-ADDR-REGISTRY-0729) ─────────
+//
+// `checkIncoming` somma TUTTI i trasferimenti confermati verso un indirizzo e
+// nessuna transazione è legata a un ordine: un indirizzo riusato è un pagamento
+// che ne salda due. Il registro è l'unico punto in cui l'unicità vale anche fra
+// `paygate_orders` e `weekly_pick_orders`, che hanno claim atomici separati.
+
+it("registra l'indirizzo PRIMA di creare l'ordine, con la chiave in minuscolo", async () => {
+  createCryptoDeposit.mockResolvedValue({ addressIn: "0xAbCdEf", ipnToken: "ipn" });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
+
+  const reg = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("crypto_deposit_addresses"));
+  expect(reg, "il checkout deve passare dal registro").toBeTruthy();
+  // Gli explorer EVM restituiscono lo stesso indirizzo in checksum-case o tutto
+  // minuscolo: senza normalizzare, due grafie dello stesso posto passerebbero
+  // entrambe il vincolo.
+  expect(reg?.[1]?.[0]).toBe("0xabcdef");
+  expect(reg?.[1]?.[2]).toBe("plan");
+  // ON CONFLICT DO NOTHING + RETURNING = gate atomico, non SELECT-poi-INSERT.
+  expect(String(reg?.[0])).toMatch(/ON CONFLICT \(address\) DO NOTHING/);
+  expect(String(reg?.[0])).toMatch(/RETURNING address/);
+});
+
+it("weekly: il registro riceve order_kind 'weekly' — è l'altra metà del vincolo", async () => {
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly", coin: "polygon-usdc" }))).status).toBe(200);
+  const reg = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("crypto_deposit_addresses"));
+  expect(reg?.[1]?.[2]).toBe("weekly");
+});
+
+// Il caso che la UNIQUE parziale "solo pending" NON copre: l'indirizzo è già
+// stato usato (anche da un ordine ormai pagato e chiuso). Senza gate, il nuovo
+// ordine nascerebbe saldato dalla transazione vecchia.
+it("409 e NESSUN ordine creato se l'indirizzo è già registrato", async () => {
+  dbQueryStrict.mockResolvedValue([]); // ON CONFLICT ha scartato l'INSERT
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  expect(res.status).toBe(409);
+  expect(await res.json()).toMatchObject({ error: "deposit address unavailable" });
+  expect(dbExecute).not.toHaveBeenCalled();
+});
+
+it("409 anche sul rail weekly: nessun ordine su un indirizzo già preso", async () => {
+  dbQueryStrict.mockResolvedValue([]);
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly", coin: "polygon-usdc" }))).status).toBe(409);
+  expect(dbExecute).not.toHaveBeenCalled();
+});
+
+// Fail-closed: se il registro non risponde non sappiamo se l'indirizzo è libero.
+// Fallire una vendita è recuperabile, concedere due volte lo stesso pagamento no.
+it("500 fail-closed se il registro non è raggiungibile, senza creare l'ordine", async () => {
+  dbQueryStrict.mockRejectedValue(new Error("db down"));
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
+  expect(dbExecute).not.toHaveBeenCalled();
 });
