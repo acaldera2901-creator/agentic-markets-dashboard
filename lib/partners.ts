@@ -25,6 +25,10 @@ const BETSCORE_URL = LANDING_PARTNERS.find((p) => p.name === "BetScore")?.url
   ?? "https://bsr.lynmonkel.com/?mid=381903_2215092";
 const SLOTSBONUS_URL =
   "https://slotsbonus.bet/?utm_source=betredge&utm_medium=partner&utm_campaign=cross-referral";
+// #PARTNER-FELICEBET (2026-07-29): affiliato della rete Bluewin Partners
+// (bta=2961065). Solo landing di registrazione — 302 → felicebet<geo>.com col
+// btag di attribuzione, nessun feed quote e nessun deep-link per evento.
+const FELICEBET_URL = "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -34,6 +38,8 @@ export const PARTNERS: Partner[] = [
   { id: "fortuneplay", name: "FortunePlay", category: "sportsbook", logo: "/logos/fortuneplay.svg", url: FORTUNEPLAY_BET_URL, logoShape: "emblem" },
   { id: "ybets", name: "YBets", category: "sportsbook", logo: "/logos/ybets.svg", url: YBETS_URL },
   { id: "betscore", name: "BetScore", category: "sportsbook", logo: "/logos/betscore.svg", url: BETSCORE_URL },
+  // logo raster fornito dal partner (164x88 transparent): stemma quasi quadrato → stesso cap emblema di FortunePlay
+  { id: "felicebet", name: "FeliceBet", category: "sportsbook", logo: "/logos/felicebet.png", url: FELICEBET_URL, logoShape: "emblem" },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
 ];
 
@@ -122,6 +128,13 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook partner con registro rápido.",
     fr: "Sportsbook partenaire avec inscription rapide.",
     ru: "Партнёрский букмекер с быстрой регистрацией.",
+  },
+  felicebet: {
+    it: "Sportsbook partner, registrazione diretta dalla vetrina.",
+    en: "Partner sportsbook, sign up straight from the showcase.",
+    es: "Sportsbook partner, registro directo desde la vitrina.",
+    fr: "Sportsbook partenaire, inscription directe depuis la vitrine.",
+    ru: "Партнёрский букмекер — регистрация прямо из витрины.",
   },
   slotsbonus: {
     it: "Portale di bonus e offerte casino.",

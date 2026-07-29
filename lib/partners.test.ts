@@ -6,7 +6,7 @@ const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["betscore", "fortuneplay", "slotsbonus", "ybets"]);
+    expect(ids).toEqual(["betscore", "felicebet", "fortuneplay", "slotsbonus", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
@@ -16,10 +16,12 @@ describe("partners catalog", () => {
     expect(PARTNERS.filter((p) => p.featured).map((p) => p.id)).toEqual([]);
   });
 
-  it("every partner has a non-empty https url, an svg logo and a valid category", () => {
+  // #PARTNER-FELICEBET: il logo può essere raster se è così che lo fornisce il
+  // partner (felicebet.png) — l'invariante è che punti dentro /logos, non il formato.
+  it("every partner has a non-empty https url, a logo in /logos and a valid category", () => {
     for (const p of PARTNERS) {
       expect(p.url).toMatch(/^https:\/\//);
-      expect(p.logo).toMatch(/^\/logos\/.+\.svg$/);
+      expect(p.logo).toMatch(/^\/logos\/.+\.(svg|png)$/);
       expect(["sportsbook", "casino"]).toContain(p.category);
     }
   });
