@@ -49,7 +49,26 @@ function footer(identifier: string, lang: CrmLang): string {
   return `<p style="font-size:11px;color:#8b98a4;line-height:1.5;margin:0">${idline}<br>${contact} · <a href="${unsub}" style="color:#8b98a4;text-decoration:underline">${UNSUB_LABEL[lang]}</a><br>${DISCLAIMER[lang]}</p>`;
 }
 
-type CrmTouchpoint = Touchpoint & { subject: L10n; body: L10n };
+// #CRM-WEEKLY-PICK-0729 — etichetta del bottone quando il touchpoint porta alla
+// Weekly Pick invece che ai piani. "Weekly Pick" resta invariato in tutte e 5 le
+// lingue perché è il nome proprio del prodotto: è così che lo scrive la pagina
+// (`unlockTitle` in app/weekly-pick/page.tsx) in it/en/es/fr/ru. Il nome
+// descrittivo, invece, è tradotto ovunque — multipla della casa / house
+// accumulator / combinada de la casa / combiné de la maison / экспресс — e nei
+// body qui sotto si usa quello, così l'email parla la stessa lingua della pagina
+// su cui atterra.
+const WEEKLY_PICK_CTA: L10n = {
+  it: "Vedi la Weekly Pick", en: "See the Weekly Pick", es: "Ver la Weekly Pick",
+  fr: "Voir la Weekly Pick", ru: "Открыть Weekly Pick",
+};
+
+// `cta` è OPZIONALE: senza, il touchpoint si comporta esattamente come prima
+// (bottone "Apri BetRedge" → /app?tab=plans). Serve perché un'email che parla
+// della Weekly Pick non può mandare alla pagina dei piani: il prodotto si compra
+// dalla sua pagina, e chiedere all'utente di ritrovarsela da solo è il modo più
+// semplice di perdere l'acquisto.
+type CrmCta = { path: string; label: L10n };
+type CrmTouchpoint = Touchpoint & { subject: L10n; body: L10n; cta?: CrmCta };
 
 // day: per onboarding/acquisition/winback = giorni dall'ancora; per retention = giorni ALLA scadenza.
 export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
@@ -85,11 +104,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "¿Quieres ver el cuadro completo?", fr: "Envie de voir le tableau complet ?",
       ru: "Хотите увидеть полную картину?" },
     body: {
-      it: "Nel Free vedi 1 pick per sport a settimana. Base apre l'intero board con edge, stake e closing line value; Pro aggiunge la Deep Analysis su forma, infortuni e campo, più il Match Builder e la Weekly Pick.",
-      en: "Free shows 1 pick per sport each week. Base opens the full board with edge, stake and closing line value; Pro adds Deep Analysis on form, injuries and venue, plus Match Builder and the Weekly Pick.",
-      es: "En Free ves 1 pick por deporte a la semana. Base abre todo el board con edge, stake y closing line value; Pro añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick.",
-      fr: "En Free, vous voyez 1 pick par sport chaque semaine. Base ouvre tout le board avec edge, mise et closing line value ; Pro ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick.",
-      ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. Base открывает весь борд с edge, ставкой и closing line value; Pro добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick." } },
+      it: "Nel Free vedi 1 pick per sport a settimana. Base apre l'intero board con edge, stake e closing line value; Pro aggiunge la Deep Analysis su forma, infortuni e campo, più il Match Builder e la Weekly Pick. La Weekly Pick — la multipla della casa, una a settimana — puoi anche sbloccarla da sola, una tantum, senza abbonarti.",
+      en: "Free shows 1 pick per sport each week. Base opens the full board with edge, stake and closing line value; Pro adds Deep Analysis on form, injuries and venue, plus Match Builder and the Weekly Pick. You can also unlock the Weekly Pick on its own — the house accumulator, one a week — as a one-off, without subscribing.",
+      es: "En Free ves 1 pick por deporte a la semana. Base abre todo el board con edge, stake y closing line value; Pro añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
+      fr: "En Free, vous voyez 1 pick par sport chaque semaine. Base ouvre tout le board avec edge, mise et closing line value ; Pro ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
+      ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. Base открывает весь борд с edge, ставкой и closing line value; Pro добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
   { key: "acq_day14_welcome_offer", flow: "acquisition", day: 10,
     subject: {
       it: "Offerta benvenuto: −20% per 72h", en: "Welcome offer: −20% for 72h", es: "Oferta de bienvenida: −20% por 72h",
@@ -189,11 +208,15 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       it: "Riprendi da dove eri", en: "Continue from where you stopped", es: "Retoma donde lo dejaste",
       fr: "Reprenez là où vous en étiez", ru: "Вернитесь туда, где остановились" },
     body: {
-      it: "Il board continua a girare. Rientra quando vuoi: i tuoi dati ti aspettano.",
-      en: "The board keeps running. Come back anytime: your data is waiting.",
-      es: "El board sigue girando. Vuelve cuando quieras: tus datos te esperan.",
-      fr: "Le board continue de tourner. Revenez quand vous voulez : vos données vous attendent.",
-      ru: "Борд продолжает работать. Возвращайтесь в любой момент: ваши данные вас ждут." } },
+      it: "Il board continua a girare. Rientra quando vuoi: i tuoi dati ti aspettano. Se preferisci ripartire in leggerezza, la Weekly Pick si sblocca da sola: la multipla della casa di questa settimana, senza abbonamento.",
+      en: "The board keeps running. Come back anytime: your data is waiting. If you'd rather start light, the Weekly Pick unlocks on its own: this week's house accumulator, no subscription.",
+      es: "El board sigue girando. Vuelve cuando quieras: tus datos te esperan. Si prefieres empezar ligero, la Weekly Pick se desbloquea por separado: la combinada de la casa de esta semana, sin suscripción.",
+      fr: "Le board continue de tourner. Revenez quand vous voulez : vos données vous attendent. Si vous préférez reprendre en douceur, la Weekly Pick se débloque seule : le combiné de la maison de cette semaine, sans abonnement.",
+      ru: "Борд продолжает работать. Возвращайтесь в любой момент: ваши данные вас ждут. Если хотите вернуться налегке, Weekly Pick открывается отдельно: экспресс от команды на эту неделю, без подписки." },
+    // Questo è l'unico touchpoint che porta ALLA Weekly Pick invece che ai piani:
+    // per un ex-pagante lo sblocco singolo è il rientro più leggero che esista, e
+    // mandarlo alla pagina dei piani sarebbe chiedergli di nuovo un abbonamento.
+    cta: { path: "/weekly-pick", label: WEEKLY_PICK_CTA } },
   { key: "wb_day14_offer", flow: "winback", day: 14,
     subject: {
       it: "Offerta di riattivazione privata", en: "Private reactivation offer", es: "Oferta privada de reactivación",
@@ -219,8 +242,15 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
 export function renderCrm(key: string, lang: CrmLang, identifier: string): { subject: string; html: string; text: string; unsubUrl: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
-  const href = `${SITE}/app?tab=plans&crm=${encodeURIComponent(t.key)}`;
-  const label = OPEN_LABEL[lang];
+  // Destinazione: i piani per default, la pagina del prodotto se il touchpoint ne
+  // dichiara una. Il parametro `crm=<key>` resta su ENTRAMBE le strade — è quello
+  // che permette di attribuire una conversione all'email che l'ha generata, e
+  // perderlo sul percorso nuovo renderebbe la Weekly Pick l'unica cosa non
+  // misurabile del CRM.
+  const path = t.cta?.path ?? "/app?tab=plans";
+  const sep = path.includes("?") ? "&" : "?";
+  const href = `${SITE}${path}${sep}crm=${encodeURIComponent(t.key)}`;
+  const label = t.cta?.label[lang] ?? OPEN_LABEL[lang];
   const body = t.body[lang];
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
   const unl = UNSUB_LABEL[lang];
