@@ -5,8 +5,9 @@
 // dipende dagli helper interni di app/page.tsx. Icone SVG su misura (no emoji).
 // La schedina è componibile lato client: le chip PICK (rec) sono pre-inserite;
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MarketIcon } from "./MarketIcon";
+import { partnerLogoByName } from "../lib/partners";
 import { joinFpWithModel } from "../lib/market-join";
 import type { ExtraMarket } from "../lib/poisson-model";
 
@@ -55,7 +56,8 @@ export type MdsData = {
   extraMarkets?: ExtraMarket[];
   moreLabel?: string;
   // #MULTIBOOK-1: book disponibili per questa partita (deep-link per-book con stag).
-  // Se >1 la bet-bar mostra una CTA per book ("Apri su {book}"); scelta del bookmaker.
+  // #BET-DROPDOWN-1: se >1 la bet-bar mostra UNA CTA che apre il menu dei partner
+  // (prima era una CTA per book, impilate: con 4 partner la scheda si allungava).
   books?: { name: string; matchUrl: string }[];
   labels: {
     schedina: string;
@@ -64,7 +66,8 @@ export type MdsData = {
     touch: string;
     apri: string;
     apriMulti: string;
-    openBook?: string; // "Apri su {book}" (multi-book)
+    openBook?: string; // "Apri su {book}" (fallback single-book)
+    placeBet?: string; // #BET-DROPDOWN-1: "Piazza la scommessa" (CTA del menu)
     disc: string;
     side: string;
     selOne: string;
@@ -160,6 +163,29 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
 
   const ctaLabel = priced.length > 1 ? data.labels.apriMulti : data.labels.apri;
   const countLabel = legs.length === 1 ? data.labels.selOne : data.labels.selMany;
+
+  // #BET-DROPDOWN-1: menu dei partner. Si apre verso l'alto perché la bet-bar è
+  // sticky in fondo alla scheda. Chiusura: click fuori, Escape, scelta di una voce.
+  const [booksMenu, setBooksMenu] = useState(false);
+  // derivato, non sincronizzato: se la schedina si svuota il menu è chiuso per
+  // costruzione — niente effetto che insegue lo stato.
+  const booksOpen = booksMenu && legs.length > 0;
+  const booksRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!booksOpen) return;
+    function onPointer(e: MouseEvent) {
+      if (booksRef.current && !booksRef.current.contains(e.target as Node)) setBooksMenu(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setBooksMenu(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [booksOpen]);
 
   const renderGroup = (g: MdsGroup) => {
     // Solo nostre predizioni: niente chip "stima" (soft grezzo).
@@ -285,21 +311,44 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                   {legs.length > 0 && <span className="mds-chevw"><Ico id="chev" /></span>}
                 </span>
               </button>
-              {/* #MULTIBOOK-1: una CTA per book se >1 (scelta bookmaker), altrimenti singola */}
+              {/* #BET-DROPDOWN-1: con >1 partner una sola CTA che apre il menu.
+                  Con ≤1 resta il link diretto di sempre (nessuna regressione se
+                  la lista si riduce). */}
               {data.books && data.books.length > 1 ? (
-                <div className="mds-ctas">
-                  {data.books.map((b) => (
-                    <a
-                      key={b.name}
-                      className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-                      href={legs.length ? b.matchUrl : undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-disabled={legs.length === 0}
-                    >
-                      {(data.labels.openBook ?? "Apri su {book}").replace("{book}", b.name)}<Ico id="arrow" />
-                    </a>
-                  ))}
+                <div className={booksOpen ? "mds-books open" : "mds-books"} ref={booksRef}>
+                  <button
+                    type="button"
+                    className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
+                    onClick={() => legs.length && setBooksMenu((o) => !o)}
+                    disabled={legs.length === 0}
+                    aria-expanded={booksOpen}
+                    aria-haspopup="menu"
+                  >
+                    {data.labels.placeBet ?? ctaLabel}
+                    <span className={booksOpen ? "mds-bchev open" : "mds-bchev"}><Ico id="chev" /></span>
+                  </button>
+                  {booksOpen && (
+                    <div className="mds-bmenu" role="menu">
+                      {data.books.map((b) => {
+                        const logo = partnerLogoByName(b.name);
+                        return (
+                          <a
+                            key={b.name}
+                            role="menuitem"
+                            className="mds-bopt"
+                            href={b.matchUrl}
+                            target="_blank"
+                            rel="nofollow sponsored noopener noreferrer"
+                            onClick={() => setBooksMenu(false)}
+                          >
+                            {logo && <img src={logo} alt="" className="mds-blogo" loading="lazy" />}
+                            <span className="mds-bname">{b.name}</span>
+                            <Ico id="arrow" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <a

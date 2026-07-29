@@ -8523,11 +8523,22 @@ button:disabled {
 .mds-chevw { width: 11px; height: 11px; color: var(--am-muted-2); }
 .mds-info.open .mds-chevw { transform: rotate(180deg); }
 .mds-cta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 680; font-size: 13px; color: #04140A; background: var(--am-coral); border-radius: 11px; padding: 11px 15px; text-decoration: none; transition: filter .15s; }
-/* #MULTIBOOK-1: una CTA per book (scelta bookmaker) — impilate, compatte */
-.mds-ctas { flex: none; display: flex; flex-direction: column; gap: 6px; }
-.mds-ctas .mds-cta { font-size: 12px; padding: 8px 13px; justify-content: center; }
-.mds-ctas .mds-cta:nth-child(2) { background: transparent; color: var(--am-coral); border: 1px solid var(--am-coral-b); }
-[data-theme="light"] .mds-ctas .mds-cta:nth-child(2) { color: var(--am-coral); }
+/* #BET-DROPDOWN-1: una sola CTA + menu dei partner (sostituisce .mds-ctas, che
+   impilava una CTA per book). Il menu si apre verso l'ALTO: la bet-bar è sticky
+   in fondo alla scheda, verso il basso finirebbe fuori dal contenitore. */
+.mds-books { flex: none; position: relative; }
+.mds-books .mds-cta { border: none; cursor: pointer; font-family: inherit; }
+.mds-books .mds-cta:disabled { opacity: .4; cursor: default; }
+.mds-bchev { display: inline-flex; transition: transform .15s; }
+.mds-bchev.open { transform: rotate(180deg); }
+.mds-bmenu { position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 30; min-width: 194px; display: flex; flex-direction: column; padding: 5px; border-radius: 12px; background: var(--am-panel); border: 1px solid var(--am-coral-b); box-shadow: 0 12px 32px rgba(0,0,0,.38); }
+.mds-bopt { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--am-text); text-decoration: none; transition: background .12s; }
+.mds-bopt:hover { background: var(--am-coral-dim); }
+.mds-bname { flex: 1 1 auto; }
+.mds-bopt .mds-ico { width: 13px; height: 13px; color: var(--am-coral); }
+/* placca scura fissa sotto i loghi: i marchi hanno polarità mista e devono
+   restare leggibili su tema chiaro E scuro (stessa scelta di /partners). */
+.mds-blogo { width: 26px; height: 18px; object-fit: contain; flex: none; border-radius: 4px; background: #0e1116; padding: 2px; }
 .mds-cta:hover { filter: brightness(1.08); }
 .mds-cta.disabled { opacity: .4; pointer-events: none; }
 .mds-cta .mds-ico { width: 14px; height: 14px; }

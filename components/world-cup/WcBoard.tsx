@@ -579,8 +579,10 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked }: { p: ProjectedRow; fp?: Fp
         apri: L2("Apri su FortunePlay", "Open on FortunePlay"),
         apriMulti: L2("Apri la multipla su FortunePlay", "Open the accumulator on FortunePlay"),
         openBook: L2("Apri su {book}", "Open on {book}"),
+        // #BET-DROPDOWN-1: CTA unica che apre il menu dei partner (prima: una CTA per book).
+        placeBet: L2("Piazza la scommessa", "Place your bet"),
         disc: L2("Value indicativo del modello vs quota FortunePlay — non è garanzia di vincita. +18 · gioca responsabilmente.", "Indicative model value vs FortunePlay odds — not a guarantee of winning. 18+ · play responsibly."),
-        side: L2("Schedina composta lato BetRedge → il bottone apre la partita su FortunePlay.", "Betslip composed on BetRedge → the button opens the match on FortunePlay."),
+        side: L2("Schedina composta lato BetRedge → scegli il partner dove aprirla.", "Betslip composed on BetRedge → pick the partner to open it with."),
         selOne: L2("1 selezione", "1 selection"),
         selMany: L2("{n} selezioni", "{n} selections"),
       },
