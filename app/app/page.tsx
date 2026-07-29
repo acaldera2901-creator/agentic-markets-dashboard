@@ -23,6 +23,8 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
 import { FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
+// #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
+import { getSessionId, trackEvent } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { fpEdge } from "@/lib/fortuneplay-live";
@@ -42,36 +44,6 @@ const MatchDetailSheet = dynamic(() => import("@/components/MatchDetailSheet").t
 const TrackRecordView = dynamic(() => import("@/components/track-record/TrackRecordView").then((m) => m.TrackRecordView));
 const LiveChat = dynamic(() => import("@/components/LiveChat").then((m) => m.LiveChat), { ssr: false });
 
-// ─── Analytics (fire-and-forget, never blocks UI) ─────────────────────────────
-
-function getSessionId(): string {
-  if (typeof window === "undefined") return "ssr";
-  let sid = sessionStorage.getItem("am_sid");
-  if (!sid) {
-    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    sessionStorage.setItem("am_sid", sid);
-  }
-  return sid;
-}
-
-function trackEvent(
-  event_type: string,
-  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown> }
-) {
-  if (typeof window === "undefined") return;
-  const language = extra?.language ?? localStorage.getItem("agentic-lang") ?? undefined;
-  // #GOLIVE-QW-A: no persistent session_id before GDPR consent is granted — the
-  // beacon still fires (anonymous, no id) so we don't tie events to a device
-  // identifier the user hasn't accepted. session_id resumes once consent lands.
-  const consented = (() => {
-    try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
-  })();
-  fetch("/api/track", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event_type, session_id: consented ? getSessionId() : undefined, language, ...extra }),
-  }).catch(() => { /* ignore */ });
-}
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 
