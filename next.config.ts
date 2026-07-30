@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
 
 // Security headers (#SEC-HARDENING michele-side, pending Andrea review/deploy).
-// Applied to every response. CSP ships in Report-Only first so it can NEVER
-// break the live site: it only logs violations. Promote to enforcing
-// `Content-Security-Policy` after observing zero legitimate violations in prod.
-const CSP_REPORT_ONLY = [
+// Applied to every response. CSP shipped in Report-Only from #SEC-HARDENING
+// to 2026-07-30, then promoted to enforcing once the allowlist was completed
+// from a full census of the client code (#CSP-ENFORCE-0730).
+const CSP_POLICY = [
   "default-src 'self'",
   // Next.js injects inline bootstrap + hydration scripts; 'unsafe-eval' kept for
-  // dev/runtime. Tighten to nonces when promoting to enforcing.
+  // dev/runtime. Tightening to nonces stays a future hardening step.
   // Tawk.to live-chat widget loads its script/styles/fonts/iframe from *.tawk.to.
   // #CHAT-PROXY-VPN: quando il widget è servito via Cloudflare Worker su
   // chat.betredge.com (per non farsi bloccare dalle VPN anti-tracker) le stesse
@@ -53,7 +53,12 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Drop powerful APIs we never use.
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-  { key: "Content-Security-Policy-Report-Only", value: CSP_REPORT_ONLY },
+  // #CSP-ENFORCE-0730: promoted from Report-Only after completing the
+  // allowlist (ipapi.co + PayPal). 'unsafe-inline'/'unsafe-eval' are still
+  // allowed (Next.js inline bootstrap), so enforcement cannot break first-party
+  // rendering: it only blocks origins outside the allowlist. report-uri kept —
+  // anything blocked keeps showing up in /api/csp-report.
+  { key: "Content-Security-Policy", value: CSP_POLICY },
 ];
 
 const nextConfig: NextConfig = {
