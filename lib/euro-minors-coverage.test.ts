@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   SUMMER_LEAGUES,
   SUMMER_LIVE_ESPN_SLUGS,
+  ODDS_SPORT_KEYS,
   isSummerLeague,
   fetchSummerHistory,
   matchModelTeam,
 } from "./summer-leagues";
+import { SPORT_KEYS as ODDS_API_SPORT_KEYS } from "./odds-api";
 import { surfaceFloorFor, isSurfacedRow } from "./surfacing-gate";
 
 // #EURO-MINORS-0726 — AUT/DNK/POL/SWZ ride the off-free-tier machinery with
@@ -63,6 +65,40 @@ describe("#EURO-MINORS-0726 wiring", () => {
     const pol = ["Legia", "Rakow", "Pogon Szczecin"];
     expect(matchModelTeam("Legia Warsaw", pol)).toBe("Legia");
     expect(matchModelTeam("Raków Częstochowa", pol)).toBe("Rakow");
+  });
+});
+
+describe("#ODDS-KEYS-PARITY-0730 fetchOdds conosce OGNI lega estiva", () => {
+  // Il 29/07 le 4 leghe nuove sono andate live con la sport key SOLO in
+  // summer-leagues.ts: fetchOdds (lib/odds-api.ts) aveva una mappa gemella mai
+  // estesa, tornava [] e il gate quality-first (estiva senza quote reali → non
+  // servita) scartava OGNI fixture. Board vuoto per 24h+ con history e fixture
+  // sane. Questi test rendono il drift impossibile da reintrodurre.
+  it("ogni lega estiva ha una sport key nella mappa di fetchOdds", () => {
+    for (const code of Object.keys(SUMMER_LEAGUES)) {
+      expect(ODDS_API_SPORT_KEYS[code], `sport key mancante per ${code}`).toBeTruthy();
+    }
+  });
+
+  it("le due mappe coincidono dove si sovrappongono (derivazione, non copia)", () => {
+    for (const [code, key] of Object.entries(ODDS_SPORT_KEYS)) {
+      expect(ODDS_API_SPORT_KEYS[code]).toBe(key);
+    }
+  });
+
+  it("regressione 0729: AUT/DNK/POL/SWZ/BEL risolvono la key verificata attiva", () => {
+    expect(ODDS_API_SPORT_KEYS.AUT).toBe("soccer_austria_bundesliga");
+    expect(ODDS_API_SPORT_KEYS.DNK).toBe("soccer_denmark_superliga");
+    expect(ODDS_API_SPORT_KEYS.POL).toBe("soccer_poland_ekstraklasa");
+    expect(ODDS_API_SPORT_KEYS.SWZ).toBe("soccer_switzerland_superleague");
+    expect(ODDS_API_SPORT_KEYS.BEL).toBe("soccer_belgium_first_div");
+  });
+
+  it("le leghe fd.org non-estive restano intatte nella mappa derivata", () => {
+    expect(ODDS_API_SPORT_KEYS.PL).toBe("soccer_epl");
+    expect(ODDS_API_SPORT_KEYS.WC).toBe("soccer_fifa_world_cup");
+    expect(ODDS_API_SPORT_KEYS.ELI).toBe("soccer_norway_eliteserien");
+    expect(ODDS_API_SPORT_KEYS.SB).toBe("soccer_italy_serie_b");
   });
 });
 

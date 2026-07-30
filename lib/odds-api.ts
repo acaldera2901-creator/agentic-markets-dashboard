@@ -1,8 +1,9 @@
-import { isSummerLeague } from "@/lib/summer-leagues";
+import { isSummerLeague, ODDS_SPORT_KEYS as SUMMER_SPORT_KEYS } from "@/lib/summer-leagues";
 import { oddsBudgetOk, observeRemaining } from "@/lib/odds-quota";
 const BASE = "https://api.the-odds-api.com/v4";
 
-const SPORT_KEYS: Record<string, string> = {
+// Exported for the parity test in lib/euro-minors-coverage.test.ts.
+export const SPORT_KEYS: Record<string, string> = {
   PL: "soccer_epl",
   SA: "soccer_italy_serie_a",
   PD: "soccer_spain_la_liga",
@@ -11,18 +12,13 @@ const SPORT_KEYS: Record<string, string> = {
   CL: "soccer_uefa_champs_league",
   EL: "soccer_uefa_europa_league",
   WC: "soccer_fifa_world_cup", // parity with core/odds_api_client.py (#018)
-  // Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
-  // Keys verified active on /v4/sports 2026-06-12. Parity with
-  // core/odds_api_client.py SPORT_KEYS — keep in sync.
-  ELI: "soccer_norway_eliteserien",
-  ALL: "soccer_sweden_allsvenskan",
-  VEI: "soccer_finland_veikkausliiga",
-  LOI: "soccer_league_of_ireland",
-  CSL: "soccer_china_superleague",
-  // #SERIE-B-1 — verified active on /v4/sports (off-season now, events resume
-  // ~late Aug 2026). Routed through the summer-league odds path (regions eu,uk,
-  // markets h2h,totals): +1 league of quota burn — acceptable and bounded.
-  SB: "soccer_italy_serie_b",
+  // Summer-calendar leagues: DERIVED from lib/summer-leagues.ts, never listed
+  // by hand here. #ODDS-KEYS-PARITY-0730: this map used to duplicate those
+  // entries and drifted — the euro-minors batch (AUT/DNK/POL/SWZ, then BEL)
+  // landed only in summer-leagues.ts, fetchOdds() had no sport key, returned
+  // [] and the quality-first gate dropped every fixture of the new leagues:
+  // the board never showed them despite history+fixtures being fine.
+  ...SUMMER_SPORT_KEYS,
 };
 
 export function normName(name: string): string {

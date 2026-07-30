@@ -108,7 +108,13 @@ const ESPN_SLUGS: Record<string, string> = {
 // `espn:<id>` → match diretto col live scoreboard.
 export const SUMMER_LIVE_ESPN_SLUGS: string[] = ["nor.1", "swe.1", "irl.1", "chn.1", "ita.2", "aut.1", "den.1", "sui.1", "bel.1"];
 
-const ODDS_SPORT_KEYS: Record<string, string> = {
+// #ODDS-KEYS-PARITY-0730: exported because lib/odds-api.ts derives its own
+// SPORT_KEYS from this map. The two used to be maintained by hand and drifted:
+// the euro-minors batch added AUT/DNK/POL/SWZ/BEL here but not in odds-api.ts,
+// so fetchOdds() returned [] for them and the quality-first gate (summer league
+// without real odds -> not served) silently dropped EVERY fixture of the new
+// leagues. Single source of truth from now on.
+export const ODDS_SPORT_KEYS: Record<string, string> = {
   ELI: "soccer_norway_eliteserien",
   ALL: "soccer_sweden_allsvenskan",
   VEI: "soccer_finland_veikkausliiga",
