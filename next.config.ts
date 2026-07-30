@@ -13,16 +13,26 @@ const CSP_REPORT_ONLY = [
   // chat.betredge.com (per non farsi bloccare dalle VPN anti-tracker) le stesse
   // risorse arrivano dal nostro dominio → chat.betredge.com aggiunto a tutte le
   // direttive rilevanti. I domini *.tawk.to restano per la modalità di default (inerte).
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com",
+  // #CSP-ALLOWLIST-0730: PayPal Buttons/Apple Pay SDK is injected client-side
+  // (app/app/page.tsx loads https://www.paypal.com/sdk/js). Without these
+  // origins an ENFORCING policy would kill the card/Apple Pay rail: the SDK
+  // script, its checkout iframes and its XHR all cross to paypal.com.
+  // *.paypal.com also covers www.sandbox.paypal.com (CSP host wildcards match
+  // nested subdomains); paypalobjects/cdn-apple serve SDK assets.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com",
   "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://*.tawk.to https://chat.betredge.com",
   // Browser talks only to our own origin (the server proxies external APIs).
   // Supabase is allowed for any client SDK usage; Tawk.to needs https+wss for the
   // live chat channel; widen here if a real CSP report shows a legitimate origin.
-  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com",
-  // Tawk.to renders its chat UI inside an iframe from *.tawk.to.
-  "frame-src 'self' https://*.tawk.to https://chat.betredge.com",
+  // #CSP-ALLOWLIST-0730: ipapi.co is fetched from the browser for language
+  // auto-detect (app/app/page.tsx) — it was the known Report-Only violation
+  // since 2026-06-08 and was never allowlisted; PayPal SDK XHRs cross-origin.
+  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com",
+  // Tawk.to renders its chat UI inside an iframe from *.tawk.to; the PayPal SDK
+  // renders the button/checkout flow inside paypal.com iframes.
+  "frame-src 'self' https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",
