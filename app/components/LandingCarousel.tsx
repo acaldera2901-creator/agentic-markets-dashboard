@@ -61,22 +61,25 @@ const ACCOUNT_HREF = "/app?tab=account";
 // (i purple del set di Ole sono esclusi), copy difendibile ("probability engine,
 // not a bookmaker", "model vs market", "no black box"), varietà calcio/tennis/
 // multi-sport. I vecchi creative-58xx restano su disco ma fuori dalla rotazione.
+// #LANDING-I18N-0731: gli imgAlt sono in INGLESE per tutte le lingue — i creativi
+// hanno il testo baked in inglese e l'alt è visibile nel banner finché l'immagine
+// non è caricata (oltre a screen reader/SEO): in italiano sembrava copy sbagliata.
 const SLIDE_DEFS: SlideDef[] = [
   // 1 · hero BetRedge multi-sport — banner storico "BETR EDGE" tutti-gli-sport.
   //     PRIMA slide (Andrea: "il banner betredge deve essere il primo"), priority.
-  { kind: "creative", img: "/banners/hero-allsports.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — La tua edge su ogni sport" },
+  { kind: "creative", img: "/banners/hero-allsports.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Your edge on every sport" },
   // 2 · Ole calcio — FROM SIGNAL TO YOUR CALL (calciatore; No black box · Model vs market)
-  { kind: "creative", img: "/banners/creatives/ole-football-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Calciatore in azione, probability engine e non un bookmaker" },
+  { kind: "creative", img: "/banners/creatives/ole-football-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Footballer in action, probability engine not a bookmaker" },
   // 3 · Ole tennis — MORE INSIGHT. MORE PROFITS. (tennista; probabilità, quote ed edge nel tennis)
-  { kind: "creative", img: "/banners/creatives/ole-tennis-insight.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight, more profits. Tennista in azione con probabilità, quote ed edge" },
+  { kind: "creative", img: "/banners/creatives/ole-tennis-insight.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight, more profits. Tennis player in action with probability, odds and edge" },
   // 4 · Ole multi-sport — SEE THE EDGE BEFORE IT MOVES (basket/football; probabilità calibrate)
-  { kind: "creative", img: "/banners/creatives/ole-multisport-edge.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — See the edge before it moves. Atleti multi-sport, probabilità calibrate e reasoning chiaro" },
+  { kind: "creative", img: "/banners/creatives/ole-multisport-edge.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — See the edge before it moves. Multi-sport athletes, calibrated probabilities and clear reasoning" },
   // 5 · Ole tennis — FROM SIGNAL TO YOUR CALL (tennista; No black box · Model vs market)
-  { kind: "creative", img: "/banners/creatives/ole-tennis-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Tennista in azione, probabilità ed edge nel tennis" },
+  { kind: "creative", img: "/banners/creatives/ole-tennis-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Tennis player in action, probability and edge in tennis" },
   // 6 · Ole multi-sport — ONE MODEL, EVERY SPORT (hockey/baseball/tennis/calcio)
-  { kind: "creative", img: "/banners/creatives/ole-multisport-onemodel.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — One model, every sport. Atleti di più discipline, un unico modello di probabilità" },
+  { kind: "creative", img: "/banners/creatives/ole-multisport-onemodel.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — One model, every sport. Athletes across disciplines, one probability model" },
   // 7 · Ole multi-sport — WE MAKE THE BOOK READABLE, EVERY SPORT (probability engine, not a bookmaker)
-  { kind: "creative", img: "/banners/creatives/ole-multisport-readable.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — We make the book readable, every sport. Probability engine, non un bookmaker" },
+  { kind: "creative", img: "/banners/creatives/ole-multisport-readable.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — We make the book readable, every sport. Probability engine, not a bookmaker" },
 ];
 
 type Slide =
