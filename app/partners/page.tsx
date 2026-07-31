@@ -15,6 +15,9 @@ type GeoState = "loading" | "allowed" | "blocked";
 export default function PartnersPage() {
   const [lang, setLang] = useState<PartnersLang>("en");
   const [geo, setGeo] = useState<GeoState>("loading");
+  // #PARTNERS-VELOBET-CASEA: paese ISO-2 dallo stesso endpoint del gate. Serve ai
+  // partner con un link per paese (Casea: solo NO/CH/FI). "" → non compaiono.
+  const [country, setCountry] = useState("");
 
   useEffect(() => {
     try {
@@ -26,7 +29,10 @@ export default function PartnersPage() {
   useEffect(() => {
     fetch("/api/geo-books", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setGeo(d?.blocked === false ? "allowed" : "blocked")) // fail-closed
+      .then((d) => {
+        setCountry(typeof d?.country === "string" ? d.country : "");
+        setGeo(d?.blocked === false ? "allowed" : "blocked"); // fail-closed
+      })
       .catch(() => setGeo("blocked"));
   }, []);
 
@@ -35,7 +41,7 @@ export default function PartnersPage() {
   return (
     <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
       {geo === "allowed" ? (
-        <PartnersShowcase lang={lang} />
+        <PartnersShowcase lang={lang} country={country} />
       ) : geo === "blocked" ? (
         <div className="partners-page" style={{ textAlign: "center" }}>
           <h1 className="partners-title">{t.unavailableTitle}</h1>

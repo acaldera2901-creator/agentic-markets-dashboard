@@ -22,7 +22,7 @@ import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
-import { FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
+import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
@@ -1368,6 +1368,14 @@ function useLang() { return useContext(LanguageCtx); }
 
 const TzCtx = createContext("Europe/Rome");
 const useTz = () => useContext(TzCtx);
+
+// #PARTNERS-VELOBET-CASEA: paese ISO-2 risolto server-side (/api/geo-books, stesso
+// fetch di booksBlocked). Serve alle card per i partner che hanno un link DIVERSO
+// per paese e nessun neutro (Casea: solo NO/CH/FI). Via context e non per props:
+// le card stanno sotto SportsbookBoard/BestBetsBoard e non è un dato di dominio
+// loro. Default "" → fail-closed, i partner geo-ristretti non compaiono.
+const GeoCountryCtx = createContext("");
+const useGeoCountry = () => useContext(GeoCountryCtx);
 
 interface LiveScore { home_score: number | null; away_score: number | null; match_status: string; minute: number | null; home_team?: string; away_team?: string; }
 const LiveCtx = createContext<Record<string, LiveScore>>({});
@@ -4900,6 +4908,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   const t = useT();
   const lang = useLang();
   const tz = useTz();
+  const geoCountry = useGeoCountry();
   const liveMap = useLive();
   const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
   const isLive = live?.match_status === "IN_PLAY";
@@ -5113,7 +5122,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       fpMatchId: fp?.id ?? null,
       books: [
         ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
-        ...LANDING_PARTNERS.map((p) => ({ name: p.name, matchUrl: p.url })),
+        // #PARTNERS-VELOBET-CASEA: i partner solo-landing dipendono dalla geo
+        // (Casea ha un link per paese e nessun neutro) → risolti sul country.
+        ...landingPartnersFor(geoCountry).map((lp) => ({ name: lp.name, matchUrl: lp.url })),
       ],
       moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
@@ -5528,6 +5539,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   const t = useT();
   const lang = useLang();
   const tz = useTz();
+  const geoCountry = useGeoCountry();
   const surface = SURFACE_META[m.surface] ?? { label: m.surface, color: "text-gray-400 border-gray-400/40 bg-gray-400/10" };
 
   const handleWhyClick = async () => {
@@ -5677,7 +5689,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       fpMatchId: fp?.id ?? null,
       books: [
         ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
-        ...LANDING_PARTNERS.map((p) => ({ name: p.name, matchUrl: p.url })),
+        // #PARTNERS-VELOBET-CASEA: i partner solo-landing dipendono dalla geo
+        // (Casea ha un link per paese e nessun neutro) → risolti sul country.
+        ...landingPartnersFor(geoCountry).map((lp) => ({ name: lp.name, matchUrl: lp.url })),
       ],
       moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
       labels: {
@@ -8269,10 +8283,16 @@ export default function Dashboard() {
   // niente flash del CTA al load né esposizione permanente se il fetch geo fallisce
   // (il .catch NON sblocca).
   const [booksBlocked, setBooksBlocked] = useState(true);
+  // #PARTNERS-VELOBET-CASEA: paese dalla STESSA risposta (nessun fetch in più) →
+  // GeoCountryCtx. "" finché il server non risponde: fail-closed anche qui.
+  const [geoCountry, setGeoCountry] = useState("");
   useEffect(() => {
     fetch("/api/geo-books", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setBooksBlocked(d?.blocked !== false))
+      .then((d) => {
+        setGeoCountry(typeof d?.country === "string" ? d.country : "");
+        setBooksBlocked(d?.blocked !== false);
+      })
       .catch(() => {});
   }, []);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -8844,6 +8864,7 @@ export default function Dashboard() {
     <TzCtx.Provider value={userTz}>
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
+    <GeoCountryCtx.Provider value={geoCountry}>
     <main className="portal-root">
       <SportGlyphSprite />
       <CookieBanner />
@@ -9249,6 +9270,7 @@ export default function Dashboard() {
         ))}
       </nav>
     </main>
+    </GeoCountryCtx.Provider>
     </LiveTennisCtx.Provider>
     </LiveCtx.Provider>
     </TzCtx.Provider>

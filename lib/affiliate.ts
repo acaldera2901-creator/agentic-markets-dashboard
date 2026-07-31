@@ -38,4 +38,32 @@ export const LANDING_PARTNERS = [
   // landing/registrazione (302 → felicebet<geo>.com col btag) → nessun deep-link
   // per partita. Fonte unica dell'URL: lib/partners.ts lo rilegge da qui.
   { name: "FeliceBet", url: "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732" },
+  // #PARTNERS-VELOBET-CASEA: rete Velobet Partners (bta=42786). Link unico per
+  // tutte le geo — verificato: 302 → 24velobet.com/sportsbook/prematch col cxd di
+  // attribuzione. Casinò + sportsbook, ma il link atterra sul prematch.
+  { name: "VeloBet", url: "https://track.velobetpartners.com/visit/?bta=42786&nci=6119" },
 ] as const;
+
+export type LandingPartner = { name: string; url: string };
+
+// #PARTNERS-VELOBET-CASEA — Casea (stessa rete di BetScore: lynmonkel, mid=383451_*)
+// ci ha dato un link PER PAESE e **nessun link neutro**: ogni mid è una campagna
+// SEO di quel paese. Verificati con curl: NO → ca…com/no/registration, FI →
+// /fi/registration, CH → /registration (landing di default).
+// Decisione Andrea (31/07): **nessun fallback** su un mid di un'altra geo → il
+// partner esiste SOLO in questi paesi. Aggiungerne uno = una riga qui.
+export const CASEA_GEO_URLS: Record<string, string> = {
+  NO: "https://csa.lynmonkel.com/?mid=383451_2222324",
+  CH: "https://csa.lynmonkel.com/?mid=383451_2222327",
+  FI: "https://csa.lynmonkel.com/?mid=383451_2222329",
+};
+
+// Partner solo-landing da mostrare in una geo: le voci fisse (link unico) più
+// quelle geo-ristrette, col link del paese. `country` viene SEMPRE da
+// /api/geo-books (header server-side, non falsificabile dal client).
+// FAIL-CLOSED come il resto del gate: paese ignoto o senza link → la voce non c'è.
+export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
+  const cc = (country ?? "").trim().toUpperCase();
+  const casea = cc ? CASEA_GEO_URLS[cc] : undefined;
+  return [...LANDING_PARTNERS, ...(casea ? [{ name: "Casea", url: casea }] : [])];
+}

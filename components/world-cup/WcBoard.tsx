@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } from "@/lib/why-text";
-import { FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
+import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 import { SportIcon } from "@/app/components/sport-icon";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
@@ -370,7 +370,10 @@ function buildWcWhy(p: ProjectedRow, probs: WcProbs | null, home: string, away: 
   return out.join(" ");
 }
 
-function WcCard({ p, fp: fpRaw, live, booksBlocked }: { p: ProjectedRow; fp?: FpOddsEntry; live?: LiveScore | null; booksBlocked?: boolean }) {
+// `geoCountry`: paese ISO-2 dalla stessa risposta di /api/geo-books che dà
+// booksBlocked (#PARTNERS-VELOBET-CASEA). Serve ai partner solo-landing con un
+// link per paese e nessun neutro (Casea: NO/CH/FI). "" → non compaiono.
+function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: ProjectedRow; fp?: FpOddsEntry; live?: LiveScore | null; booksBlocked?: boolean; geoCountry?: string }) {
   // #WC-GEO-GATE (Decreto Dignità, A2-B1/A2-B2): utenti IT → nessuna quota/link
   // FortunePlay. Trattare `fp` come assente rimuove, per lo stesso invariante già
   // usato dal resto del componente (gruppi/quote/badge "FortunePlay" esistono SOLO
@@ -568,7 +571,7 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked }: { p: ProjectedRow; fp?: Fp
       fpMatchId: fp?.id ?? null,
       books: [
         ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
-        ...LANDING_PARTNERS.map((p) => ({ name: p.name, matchUrl: p.url })),
+        ...landingPartnersFor(geoCountry).map((lp) => ({ name: lp.name, matchUrl: lp.url })),
       ],
       moreLabel: L2("Altri mercati FortunePlay", "More FortunePlay markets"),
       labels: {
@@ -796,10 +799,15 @@ export default function WcBoard() {
   // default TRUE (nascosto) finché il server non conferma esplicitamente blocked===false
   // (niente flash al load, niente fail-open se il fetch fallisce; il .catch NON sblocca).
   const [booksBlocked, setBooksBlocked] = useState(true);
+  // #PARTNERS-VELOBET-CASEA: paese dalla STESSA risposta (nessun fetch in più).
+  const [geoCountry, setGeoCountry] = useState("");
   useEffect(() => {
     fetch("/api/geo-books", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setBooksBlocked(d?.blocked !== false))
+      .then((d) => {
+        setGeoCountry(typeof d?.country === "string" ? d.country : "");
+        setBooksBlocked(d?.blocked !== false);
+      })
       .catch(() => {});
   }, []);
 
@@ -857,7 +865,7 @@ export default function WcBoard() {
   const grid = (
     <div className="wc-board-grid">
       {rows.map((p) => (
-        <WcCard key={p.id} p={p} fp={fpOdds[fpPairKey("soccer", p.home_team ?? "", p.away_team ?? "", p.starts_at ?? null) ?? ""]} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} booksBlocked={booksBlocked} />
+        <WcCard key={p.id} p={p} fp={fpOdds[fpPairKey("soccer", p.home_team ?? "", p.away_team ?? "", p.starts_at ?? null) ?? ""]} live={liveMap[teamPairKey(p.home_team, p.away_team)] ?? null} booksBlocked={booksBlocked} geoCountry={geoCountry} />
       ))}
     </div>
   );
