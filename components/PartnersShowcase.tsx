@@ -1,9 +1,11 @@
-// Presentazionale puro: riceve solo `lang` e consuma il catalogo da lib/partners.
-// Nessuna logica geo qui — il gate fail-closed è nel page che lo monta.
+// Presentazionale puro: riceve `lang` + il `country` già risolto e consuma il
+// catalogo da lib/partners. Nessuna logica geo qui — il gate fail-closed
+// (blocked) è nel page che lo monta; il `country` serve solo a risolvere i
+// partner con un link diverso per paese (#PARTNERS-VELOBET-CASEA).
 import Link from "next/link";
-import { PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, type PartnersLang, type Partner } from "@/lib/partners";
+import { partnersFor, PARTNERS_COPY, PARTNER_TAGLINES, type PartnersLang, type ResolvedPartner } from "@/lib/partners";
 
-function PartnerCard({ p, lang, featured }: { p: Partner; lang: PartnersLang; featured?: boolean }) {
+function PartnerCard({ p, lang, featured }: { p: ResolvedPartner; lang: PartnersLang; featured?: boolean }) {
   const t = PARTNERS_COPY[lang];
   return (
     <a
@@ -30,11 +32,12 @@ function PartnerCard({ p, lang, featured }: { p: Partner; lang: PartnersLang; fe
   );
 }
 
-export function PartnersShowcase({ lang }: { lang: PartnersLang }) {
+export function PartnersShowcase({ lang, country }: { lang: PartnersLang; country?: string }) {
   const t = PARTNERS_COPY[lang];
-  const featured = PARTNERS.filter((p) => p.featured);
-  const sportsbooks = PARTNERS.filter((p) => p.category === "sportsbook" && !p.featured);
-  const casinos = PARTNERS.filter((p) => p.category === "casino");
+  const partners = partnersFor(country);
+  const featured = partners.filter((p) => p.featured);
+  const sportsbooks = partners.filter((p) => p.category === "sportsbook" && !p.featured);
+  const casinos = partners.filter((p) => p.category === "casino");
   return (
     <div className="partners-page">
       <header className="partners-hero">

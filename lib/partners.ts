@@ -3,7 +3,7 @@
 // sono importati dalle costanti già esistenti (niente duplicazione); slotsbonus
 // è l'unica URL centralizzata qui (spostata dal footer). Tutti i partner sono
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
-import { FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
+import { CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
 
 export type PartnerCategory = "sportsbook" | "casino";
@@ -12,13 +12,21 @@ export type Partner = {
   name: string;
   category: PartnerCategory;
   logo: string; // path in /public/logos
-  url: string;  // landing affiliato
+  url?: string; // landing affiliato unico (assente se il partner è geo-ristretto)
+  // #PARTNERS-VELOBET-CASEA: partner con un link DIVERSO per paese e nessun link
+  // neutro (Casea: solo NO/CH/FI) → compare SOLO in quei paesi, col suo link.
+  // Chi renderizza usa `partnersFor(country)`, non `PARTNERS` grezzo.
+  geoUrls?: Record<string, string>;
   featured?: boolean;
   // Forma del marchio: un emblema quadrato allo stesso cap d'altezza di un
   // wordmark orizzontale rende ~3x meno massa ottica → cap dedicato (CSS
   // .partner-logo-emblem). Serve solo dove la forma NON è un wordmark.
   logoShape?: "emblem";
 };
+
+// Partner già risolto per una geo: `url` c'è sempre → i componenti non devono
+// gestire il caso "partner senza link".
+export type ResolvedPartner = Partner & { url: string };
 
 const YBETS_URL = BOOKS.find((b) => b.key === "ybets")?.landing ?? "https://ybetspromo.io/dputempxc";
 const BETSCORE_URL = LANDING_PARTNERS.find((p) => p.name === "BetScore")?.url
@@ -31,6 +39,11 @@ const SLOTSBONUS_URL =
 // L'URL vive in LANDING_PARTNERS (come BetScore): qui si rilegge, non si duplica.
 const FELICEBET_URL = LANDING_PARTNERS.find((p) => p.name === "FeliceBet")?.url
   ?? "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732";
+// #PARTNERS-VELOBET-CASEA (2026-07-31): VeloBet ha un link unico (vive in
+// LANDING_PARTNERS come gli altri solo-landing); Casea ha un link per paese e
+// nessun neutro → qui si riusa la mappa CASEA_GEO_URLS, niente duplicazione.
+const VELOBET_URL = LANDING_PARTNERS.find((p) => p.name === "VeloBet")?.url
+  ?? "https://track.velobetpartners.com/visit/?bta=42786&nci=6119";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -43,7 +56,27 @@ export const PARTNERS: Partner[] = [
   // logo raster fornito dal partner (164x88 transparent): stemma quasi quadrato → stesso cap emblema di FortunePlay
   { id: "felicebet", name: "FeliceBet", category: "sportsbook", logo: "/logos/felicebet.png", url: FELICEBET_URL, logoShape: "emblem" },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
+  // #PARTNERS-VELOBET-CASEA (2026-07-31). Categoria "casino" per entrambi (scelta
+  // Andrea): VeloBet è casinò + sportsbook (il suo JSON-LD si chiama "Velobet
+  // Casino") anche se il link affiliato atterra sul prematch sportsbook.
+  // Loghi = wordmark ufficiali dai siti dei partner, ridimensionati (nessun
+  // logoShape: 5.6:1 e 2.8:1 sono wordmark, non emblemi).
+  { id: "velobet", name: "VeloBet", category: "casino", logo: "/logos/velobet.png", url: VELOBET_URL },
+  // Nessun `url`: Casea vive solo dove il partner ci ha dato un link (NO/CH/FI).
+  { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.png", geoUrls: CASEA_GEO_URLS },
 ];
+
+// #PARTNERS-VELOBET-CASEA — UNICO modo di renderizzare la vetrina (pagina + footer):
+// risolve il link per paese e SCARTA i partner che in quella geo non ce l'hanno.
+// `country` arriva da /api/geo-books (server-side). FAIL-CLOSED: geo ignota ("")
+// → i partner geo-ristretti non compaiono; gli altri restano invariati.
+export function partnersFor(country: string | null | undefined): ResolvedPartner[] {
+  const cc = (country ?? "").trim().toUpperCase();
+  return PARTNERS.flatMap((p) => {
+    const url = p.geoUrls ? (cc ? p.geoUrls[cc] : undefined) : p.url;
+    return url ? [{ ...p, url }] : [];
+  });
+}
 
 // #BET-DROPDOWN-1: il menu "Piazza la scommessa" nella scheda partita riceve i
 // book per NOME (da lib/affiliate + lib/betconstruct-books, che non conoscono i
@@ -146,6 +179,22 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook partner, registro directo desde la vitrina.",
     fr: "Sportsbook partenaire, inscription directe depuis la vitrine.",
     ru: "Партнёрский букмекер — регистрация прямо из витрины.",
+  },
+  // #PARTNERS-VELOBET-CASEA: copy FTC-safe, nessun claim su bonus (i loro siti li
+  // pubblicizzano, noi non li abbiamo verificati → non li dichiariamo).
+  velobet: {
+    it: "Casino e sportsbook: slot, tavoli live e prematch.",
+    en: "Casino and sportsbook: slots, live tables and prematch.",
+    es: "Casino y sportsbook: slots, mesas en vivo y prematch.",
+    fr: "Casino et sportsbook : machines, tables live et prématch.",
+    ru: "Казино и букмекер: слоты, live-столы и прематч.",
+  },
+  casea: {
+    it: "Casino online, registrazione localizzata sul tuo paese.",
+    en: "Online casino with a sign-up localised to your country.",
+    es: "Casino online con registro localizado en tu país.",
+    fr: "Casino en ligne, inscription localisée pour votre pays.",
+    ru: "Онлайн-казино с регистрацией на языке вашей страны.",
   },
   slotsbonus: {
     it: "Portale di bonus e offerte casino.",

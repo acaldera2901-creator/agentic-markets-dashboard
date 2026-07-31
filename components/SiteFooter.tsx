@@ -16,7 +16,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { PARTNERS } from "@/lib/partners";
+import { partnersFor } from "@/lib/partners";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
 // tema). URL reali BetRedge. Telegram = SOLO icona, senza link: il canale/gruppo
@@ -108,10 +108,16 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
   // link NON mostrato (default false, il .catch non sblocca). Evita il flash + il
   // fail-open che esporrebbe l'affiliate casino nelle geo bloccate (es. IT).
   const [partnerAllowed, setPartnerAllowed] = useState(false);
+  // #PARTNERS-VELOBET-CASEA: paese ISO-2 dalla STESSA risposta (nessun fetch in più).
+  // Serve solo ai partner con un link per paese (Casea: NO/CH/FI); "" → non compaiono.
+  const [country, setCountry] = useState("");
   useEffect(() => {
     fetch("/api/geo-books", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setPartnerAllowed(d?.blocked === false))
+      .then((d) => {
+        setCountry(typeof d?.country === "string" ? d.country : "");
+        setPartnerAllowed(d?.blocked === false);
+      })
       .catch(() => {});
   }, []);
   return (
@@ -140,7 +146,7 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
           (stesso partnerAllowed dei link-book). In IT/geo bloccate non compare. */}
       {partnerAllowed && (
         <div className="site-footer-partners" aria-label={t.partner}>
-          {PARTNERS.map((p) => (
+          {partnersFor(country).map((p) => (
             <a
               key={p.id}
               href={p.url}
