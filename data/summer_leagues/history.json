@@ -1,354 +1,11 @@
 {
- "generated_at": "2026-07-27",
+ "generated_at": "2026-08-01",
  "window_days": 365,
  "leagues": {
   "ELI": {
    "espn_slug": "nor.1",
    "matches": [
     {
-     "homeTeam": "Bodo/Glimt",
-     "awayTeam": "SK Brann",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-21"
-    },
-    {
-     "homeTeam": "Vålerenga",
-     "awayTeam": "Molde",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "HamKam",
-     "awayTeam": "Tromso",
-     "homeGoals": 1,
-     "awayGoals": 3,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "KFUM Oslo",
-     "awayTeam": "Stromsgodset",
-     "homeGoals": 5,
-     "awayGoals": 0,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "Kristiansund BK",
-     "awayTeam": "Rosenborg",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "Sandefjord",
-     "awayTeam": "Haugesund",
-     "homeGoals": 4,
-     "awayGoals": 0,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "Sarpsborg FK",
-     "awayTeam": "Bryne",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "Viking FK",
-     "awayTeam": "Fredrikstad",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-22"
-    },
-    {
-     "homeTeam": "Rosenborg",
-     "awayTeam": "Viking FK",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "Haugesund",
-     "awayTeam": "Kristiansund BK",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Bodo/Glimt",
-     "awayTeam": "Sarpsborg FK",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Bryne",
-     "awayTeam": "HamKam",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Fredrikstad",
-     "awayTeam": "Tromso",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Molde",
-     "awayTeam": "KFUM Oslo",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Stromsgodset",
-     "awayTeam": "Vålerenga",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "SK Brann",
-     "awayTeam": "Sandefjord",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "HamKam",
-     "awayTeam": "SK Brann",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Viking FK",
-     "awayTeam": "Stromsgodset",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Vålerenga",
-     "awayTeam": "Fredrikstad",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Kristiansund BK",
-     "awayTeam": "Bodo/Glimt",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Tromso",
-     "awayTeam": "Molde",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "KFUM Oslo",
-     "awayTeam": "Bryne",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Sandefjord",
-     "awayTeam": "Rosenborg",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Sarpsborg FK",
-     "awayTeam": "Haugesund",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Bodo/Glimt",
-     "awayTeam": "Sandefjord",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-12"
-    },
-    {
-     "homeTeam": "Fredrikstad",
-     "awayTeam": "Molde",
-     "homeGoals": 4,
-     "awayGoals": 2,
-     "date": "2025-07-12"
-    },
-    {
-     "homeTeam": "Bryne",
-     "awayTeam": "Vålerenga",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Haugesund",
-     "awayTeam": "KFUM Oslo",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Kristiansund BK",
-     "awayTeam": "Sarpsborg FK",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Rosenborg",
-     "awayTeam": "HamKam",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Stromsgodset",
-     "awayTeam": "Tromso",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "SK Brann",
-     "awayTeam": "Viking FK",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Fredrikstad",
-     "awayTeam": "Bodo/Glimt",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-16"
-    },
-    {
-     "homeTeam": "Sarpsborg FK",
-     "awayTeam": "Rosenborg",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-18"
-    },
-    {
-     "homeTeam": "KFUM Oslo",
-     "awayTeam": "SK Brann",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Molde",
-     "awayTeam": "Stromsgodset",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Viking FK",
-     "awayTeam": "Bodo/Glimt",
-     "homeGoals": 2,
-     "awayGoals": 4,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Vålerenga",
-     "awayTeam": "Haugesund",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Sandefjord",
-     "awayTeam": "Kristiansund BK",
-     "homeGoals": 6,
-     "awayGoals": 0,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Tromso",
-     "awayTeam": "Bryne",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "HamKam",
-     "awayTeam": "Fredrikstad",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Fredrikstad",
-     "awayTeam": "Stromsgodset",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-25"
-    },
-    {
-     "homeTeam": "Haugesund",
-     "awayTeam": "HamKam",
-     "homeGoals": 0,
-     "awayGoals": 3,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Kristiansund BK",
-     "awayTeam": "KFUM Oslo",
-     "homeGoals": 0,
-     "awayGoals": 5,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Sandefjord",
-     "awayTeam": "Sarpsborg FK",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Bodo/Glimt",
-     "awayTeam": "Vålerenga",
-     "homeGoals": 7,
-     "awayGoals": 2,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Bryne",
-     "awayTeam": "Viking FK",
-     "homeGoals": 1,
-     "awayGoals": 3,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Rosenborg",
-     "awayTeam": "Tromso",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Bodo/Glimt",
-     "awayTeam": "Stromsgodset",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-30"
-    },
-    {
      "homeTeam": "Tromso",
      "awayTeam": "Fredrikstad",
      "homeGoals": 0,
@@ -363,7 +20,7 @@
      "date": "2025-08-02"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Bodo/Glimt",
      "homeGoals": 1,
      "awayGoals": 3,
@@ -399,7 +56,7 @@
     },
     {
      "homeTeam": "Molde",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-08-09"
@@ -447,7 +104,7 @@
      "date": "2025-08-17"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Bryne",
      "homeGoals": 1,
      "awayGoals": 0,
@@ -476,7 +133,7 @@
     },
     {
      "homeTeam": "KFUM Oslo",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 2,
      "awayGoals": 2,
      "date": "2025-08-22"
@@ -531,7 +188,7 @@
      "date": "2025-08-31"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Sarpsborg FK",
      "homeGoals": 1,
      "awayGoals": 3,
@@ -594,7 +251,7 @@
      "date": "2025-09-14"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Stromsgodset",
      "homeGoals": 1,
      "awayGoals": 2,
@@ -665,7 +322,7 @@
     },
     {
      "homeTeam": "Tromso",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-09-21"
@@ -699,7 +356,7 @@
      "date": "2025-09-28"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Rosenborg",
      "homeGoals": 4,
      "awayGoals": 0,
@@ -770,7 +427,7 @@
     },
     {
      "homeTeam": "Fredrikstad",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-10-05"
@@ -818,7 +475,7 @@
      "date": "2025-10-19"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Vålerenga",
      "homeGoals": 2,
      "awayGoals": 1,
@@ -882,7 +539,7 @@
     },
     {
      "homeTeam": "Kristiansund BK",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 1,
      "awayGoals": 3,
      "date": "2025-10-26"
@@ -951,7 +608,7 @@
      "date": "2025-11-02"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Sandefjord",
      "homeGoals": 3,
      "awayGoals": 1,
@@ -980,7 +637,7 @@
     },
     {
      "homeTeam": "Viking FK",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 3,
      "awayGoals": 0,
      "date": "2025-11-08"
@@ -1070,7 +727,7 @@
      "date": "2025-11-23"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Haugesund",
      "homeGoals": 5,
      "awayGoals": 0,
@@ -1092,7 +749,7 @@
     },
     {
      "homeTeam": "SK Brann",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 3,
      "awayGoals": 1,
      "date": "2025-11-30"
@@ -1140,7 +797,7 @@
      "date": "2025-11-30"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Viking FK",
      "homeGoals": 2,
      "awayGoals": 1,
@@ -1238,7 +895,7 @@
      "date": "2026-04-06"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "SK Brann",
      "homeGoals": 1,
      "awayGoals": 5,
@@ -1330,7 +987,7 @@
     },
     {
      "homeTeam": "Molde",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 4,
      "awayGoals": 1,
      "date": "2026-04-12"
@@ -1385,7 +1042,7 @@
      "date": "2026-04-19"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "KFUM Oslo",
      "homeGoals": 4,
      "awayGoals": 0,
@@ -1441,7 +1098,7 @@
      "date": "2026-04-26"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "IK Start",
      "homeGoals": 2,
      "awayGoals": 1,
@@ -1505,7 +1162,7 @@
     },
     {
      "homeTeam": "Kristiansund BK",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-05-03"
@@ -1539,7 +1196,7 @@
      "date": "2026-05-04"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Vålerenga",
      "homeGoals": 1,
      "awayGoals": 0,
@@ -1589,7 +1246,7 @@
     },
     {
      "homeTeam": "Fredrikstad",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-05-16"
@@ -1679,7 +1336,7 @@
      "date": "2026-05-25"
     },
     {
-     "homeTeam": "HamKam",
+     "homeTeam": "Hamarkameratene",
      "awayTeam": "Lillestrom",
      "homeGoals": 2,
      "awayGoals": 0,
@@ -1715,7 +1372,7 @@
     },
     {
      "homeTeam": "Aalesund",
-     "awayTeam": "HamKam",
+     "awayTeam": "Hamarkameratene",
      "homeGoals": 2,
      "awayGoals": 2,
      "date": "2026-05-29"
@@ -1761,292 +1418,187 @@
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-05-30"
+    },
+    {
+     "homeTeam": "Fredrikstad",
+     "awayTeam": "Lillestrom",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Aalesund",
+     "awayTeam": "Molde",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Tromso",
+     "awayTeam": "Vålerenga",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "KFUM Oslo",
+     "awayTeam": "Bodo/Glimt",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "SK Brann",
+     "awayTeam": "IK Start",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Rosenborg",
+     "awayTeam": "Kristiansund BK",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Sandefjord",
+     "awayTeam": "Hamarkameratene",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Sarpsborg FK",
+     "awayTeam": "Viking FK",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Vålerenga",
+     "awayTeam": "Aalesund",
+     "homeGoals": 6,
+     "awayGoals": 1,
+     "date": "2026-07-16"
+    },
+    {
+     "homeTeam": "Bodo/Glimt",
+     "awayTeam": "Fredrikstad",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "Hamarkameratene",
+     "awayTeam": "Tromso",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Kristiansund BK",
+     "awayTeam": "Sarpsborg FK",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Lillestrom",
+     "awayTeam": "KFUM Oslo",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "IK Start",
+     "awayTeam": "Rosenborg",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Molde",
+     "awayTeam": "SK Brann",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Viking FK",
+     "awayTeam": "Sandefjord",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Bodo/Glimt",
+     "awayTeam": "Hamarkameratene",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-22"
+    },
+    {
+     "homeTeam": "Lillestrom",
+     "awayTeam": "Viking FK",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-22"
+    },
+    {
+     "homeTeam": "Kristiansund BK",
+     "awayTeam": "IK Start",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "SK Brann",
+     "awayTeam": "Vålerenga",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "KFUM Oslo",
+     "awayTeam": "Molde",
+     "homeGoals": 2,
+     "awayGoals": 4,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Sandefjord",
+     "awayTeam": "Bodo/Glimt",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Sarpsborg FK",
+     "awayTeam": "Hamarkameratene",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Aalesund",
+     "awayTeam": "Viking FK",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Rosenborg",
+     "awayTeam": "Fredrikstad",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-07-27"
     }
    ]
   },
   "ALL": {
    "espn_slug": "swe.1",
    "matches": [
-    {
-     "homeTeam": "Hammarby IF",
-     "awayTeam": "Halmstads BK",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "Oster",
-     "awayTeam": "IK Sirius",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "AIK",
-     "awayTeam": "IFK Göteborg",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Degerfors IF",
-     "awayTeam": "IF Brommapojkarna",
-     "homeGoals": 0,
-     "awayGoals": 3,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "BK Häcken",
-     "awayTeam": "GAIS",
-     "homeGoals": 1,
-     "awayGoals": 3,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Varnamo",
-     "awayTeam": "IF Elfsborg",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Djurgården",
-     "awayTeam": "Norrkoping",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "Mjällby AIF",
-     "awayTeam": "Malmö FF",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "GAIS",
-     "awayTeam": "Malmö FF",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Oster",
-     "awayTeam": "Mjällby AIF",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Hammarby IF",
-     "awayTeam": "Varnamo",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "IFK Göteborg",
-     "awayTeam": "IK Sirius",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Halmstads BK",
-     "awayTeam": "AIK",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Djurgården",
-     "awayTeam": "Degerfors IF",
-     "homeGoals": 5,
-     "awayGoals": 1,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "IF Elfsborg",
-     "awayTeam": "BK Häcken",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Norrkoping",
-     "awayTeam": "IF Brommapojkarna",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-07"
-    },
-    {
-     "homeTeam": "IFK Göteborg",
-     "awayTeam": "IF Elfsborg",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-07-12"
-    },
-    {
-     "homeTeam": "Malmö FF",
-     "awayTeam": "Norrkoping",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-12"
-    },
-    {
-     "homeTeam": "IF Brommapojkarna",
-     "awayTeam": "Oster",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "GAIS",
-     "awayTeam": "Hammarby IF",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "AIK",
-     "awayTeam": "Degerfors IF",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Varnamo",
-     "awayTeam": "Djurgården",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "BK Häcken",
-     "awayTeam": "Halmstads BK",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "IK Sirius",
-     "awayTeam": "Mjällby AIF",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-07-14"
-    },
-    {
-     "homeTeam": "Djurgården",
-     "awayTeam": "IF Elfsborg",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Oster",
-     "awayTeam": "Malmö FF",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Degerfors IF",
-     "awayTeam": "GAIS",
-     "homeGoals": 0,
-     "awayGoals": 3,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Mjällby AIF",
-     "awayTeam": "AIK",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "IK Sirius",
-     "awayTeam": "IFK Göteborg",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Halmstads BK",
-     "awayTeam": "BK Häcken",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Hammarby IF",
-     "awayTeam": "IF Brommapojkarna",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Norrkoping",
-     "awayTeam": "Varnamo",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-21"
-    },
-    {
-     "homeTeam": "IF Brommapojkarna",
-     "awayTeam": "Malmö FF",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "GAIS",
-     "awayTeam": "Halmstads BK",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Degerfors IF",
-     "awayTeam": "Norrkoping",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "AIK",
-     "awayTeam": "Oster",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "BK Häcken",
-     "awayTeam": "Djurgården",
-     "homeGoals": 1,
-     "awayGoals": 6,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Mjällby AIF",
-     "awayTeam": "IK Sirius",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Varnamo",
-     "awayTeam": "Hammarby IF",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "IF Elfsborg",
-     "awayTeam": "IFK Göteborg",
-     "homeGoals": 4,
-     "awayGoals": 3,
-     "date": "2025-07-28"
-    },
     {
      "homeTeam": "IF Brommapojkarna",
      "awayTeam": "Norrkoping",
@@ -3327,320 +2879,236 @@
      "homeGoals": 4,
      "awayGoals": 5,
      "date": "2026-05-31"
+    },
+    {
+     "homeTeam": "IK Sirius",
+     "awayTeam": "Mjällby AIF",
+     "homeGoals": 4,
+     "awayGoals": 4,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "Degerfors IF",
+     "awayTeam": "Malmö FF",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Halmstads BK",
+     "awayTeam": "Västerås SK",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "IFK Göteborg",
+     "awayTeam": "AIK",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-05"
+    },
+    {
+     "homeTeam": "Kalmar FF",
+     "awayTeam": "Örgryte IS",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-05"
+    },
+    {
+     "homeTeam": "IF Elfsborg",
+     "awayTeam": "Hammarby IF",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-05"
+    },
+    {
+     "homeTeam": "IF Brommapojkarna",
+     "awayTeam": "GAIS",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-06"
+    },
+    {
+     "homeTeam": "BK Häcken",
+     "awayTeam": "Djurgården",
+     "homeGoals": 2,
+     "awayGoals": 4,
+     "date": "2026-07-06"
+    },
+    {
+     "homeTeam": "Mjällby AIF",
+     "awayTeam": "AIK",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Örgryte IS",
+     "awayTeam": "BK Häcken",
+     "homeGoals": 4,
+     "awayGoals": 3,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Hammarby IF",
+     "awayTeam": "Kalmar FF",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Malmö FF",
+     "awayTeam": "IFK Göteborg",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Västerås SK",
+     "awayTeam": "Degerfors IF",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "IF Brommapojkarna",
+     "awayTeam": "IK Sirius",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "GAIS",
+     "awayTeam": "IF Elfsborg",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-12"
+    },
+    {
+     "homeTeam": "Djurgården",
+     "awayTeam": "Halmstads BK",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-13"
+    },
+    {
+     "homeTeam": "IFK Göteborg",
+     "awayTeam": "IF Brommapojkarna",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "Mjällby AIF",
+     "awayTeam": "Västerås SK",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "AIK",
+     "awayTeam": "GAIS",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "IF Elfsborg",
+     "awayTeam": "IK Sirius",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-07-19"
+    },
+    {
+     "homeTeam": "Halmstads BK",
+     "awayTeam": "BK Häcken",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-19"
+    },
+    {
+     "homeTeam": "Hammarby IF",
+     "awayTeam": "Degerfors IF",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-07-19"
+    },
+    {
+     "homeTeam": "Kalmar FF",
+     "awayTeam": "Malmö FF",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-20"
+    },
+    {
+     "homeTeam": "Örgryte IS",
+     "awayTeam": "Djurgården",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-20"
+    },
+    {
+     "homeTeam": "Västerås SK",
+     "awayTeam": "Örgryte IS",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-24"
+    },
+    {
+     "homeTeam": "Degerfors IF",
+     "awayTeam": "Djurgården",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Kalmar FF",
+     "awayTeam": "Mjällby AIF",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "IF Brommapojkarna",
+     "awayTeam": "Hammarby IF",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "IK Sirius",
+     "awayTeam": "IFK Göteborg",
+     "homeGoals": 4,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "GAIS",
+     "awayTeam": "Halmstads BK",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Malmö FF",
+     "awayTeam": "IF Elfsborg",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "BK Häcken",
+     "awayTeam": "AIK",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-27"
     }
    ]
   },
   "VEI": {
    "espn_slug": "fin.1",
    "matches": [
-    {
-     "homeTeam": "Inter Turku",
-     "awayTeam": "Haka",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "AC Oulu",
-     "awayTeam": "HJK",
-     "homeGoals": 0,
-     "awayGoals": 4,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Gnistan",
-     "awayTeam": "KTP",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "KuPS",
-     "awayTeam": "Ilves",
-     "homeGoals": 0,
-     "awayGoals": 3,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Mariehamn",
-     "awayTeam": "VPS",
-     "homeGoals": 1,
-     "awayGoals": 5,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "SJK",
-     "awayTeam": "Jaro",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Ilves",
-     "awayTeam": "SJK",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "Mariehamn",
-     "awayTeam": "KuPS",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "HJK",
-     "awayTeam": "Haka",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "Jaro",
-     "awayTeam": "AC Oulu",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "VPS",
-     "awayTeam": "Gnistan",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "Inter Turku",
-     "awayTeam": "KTP",
-     "homeGoals": 5,
-     "awayGoals": 0,
-     "date": "2025-06-19"
-    },
-    {
-     "homeTeam": "Gnistan",
-     "awayTeam": "Inter Turku",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "KuPS",
-     "awayTeam": "HJK",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "SJK",
-     "awayTeam": "Mariehamn",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "Haka",
-     "awayTeam": "Ilves",
-     "homeGoals": 0,
-     "awayGoals": 4,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "KTP",
-     "awayTeam": "Jaro",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "AC Oulu",
-     "awayTeam": "VPS",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-28"
-    },
-    {
-     "homeTeam": "KuPS",
-     "awayTeam": "Gnistan",
-     "homeGoals": 6,
-     "awayGoals": 2,
-     "date": "2025-07-01"
-    },
-    {
-     "homeTeam": "HJK",
-     "awayTeam": "Jaro",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-02"
-    },
-    {
-     "homeTeam": "Ilves",
-     "awayTeam": "KTP",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-07-02"
-    },
-    {
-     "homeTeam": "Inter Turku",
-     "awayTeam": "Mariehamn",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-02"
-    },
-    {
-     "homeTeam": "VPS",
-     "awayTeam": "Haka",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-07-02"
-    },
-    {
-     "homeTeam": "AC Oulu",
-     "awayTeam": "KuPS",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-04"
-    },
-    {
-     "homeTeam": "SJK",
-     "awayTeam": "Ilves",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "VPS",
-     "awayTeam": "HJK",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Jaro",
-     "awayTeam": "Mariehamn",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "Haka",
-     "awayTeam": "Inter Turku",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-06"
-    },
-    {
-     "homeTeam": "KTP",
-     "awayTeam": "Gnistan",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-07"
-    },
-    {
-     "homeTeam": "Inter Turku",
-     "awayTeam": "Jaro",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-12"
-    },
-    {
-     "homeTeam": "Gnistan",
-     "awayTeam": "Haka",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "AC Oulu",
-     "awayTeam": "KTP",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-13"
-    },
-    {
-     "homeTeam": "Ilves",
-     "awayTeam": "VPS",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-14"
-    },
-    {
-     "homeTeam": "KTP",
-     "awayTeam": "Inter Turku",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-18"
-    },
-    {
-     "homeTeam": "VPS",
-     "awayTeam": "KuPS",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "SJK",
-     "awayTeam": "Gnistan",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "HJK",
-     "awayTeam": "AC Oulu",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Jaro",
-     "awayTeam": "Ilves",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-20"
-    },
-    {
-     "homeTeam": "Mariehamn",
-     "awayTeam": "Haka",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-21"
-    },
-    {
-     "homeTeam": "Jaro",
-     "awayTeam": "VPS",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-25"
-    },
-    {
-     "homeTeam": "Haka",
-     "awayTeam": "KTP",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Mariehamn",
-     "awayTeam": "AC Oulu",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Inter Turku",
-     "awayTeam": "SJK",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Gnistan",
-     "awayTeam": "HJK",
-     "homeGoals": 2,
-     "awayGoals": 4,
-     "date": "2025-07-28"
-    },
     {
      "homeTeam": "VPS",
      "awayTeam": "Mariehamn",
@@ -4571,6 +4039,314 @@
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-05-31"
+    },
+    {
+     "homeTeam": "Ilves",
+     "awayTeam": "TPS",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-06-13"
+    },
+    {
+     "homeTeam": "Inter Turku",
+     "awayTeam": "AC Oulu",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-06-13"
+    },
+    {
+     "homeTeam": "Jaro",
+     "awayTeam": "HJK",
+     "homeGoals": 2,
+     "awayGoals": 5,
+     "date": "2026-06-13"
+    },
+    {
+     "homeTeam": "VPS",
+     "awayTeam": "KuPS",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-06-13"
+    },
+    {
+     "homeTeam": "Lahti",
+     "awayTeam": "SJK",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-06-13"
+    },
+    {
+     "homeTeam": "Mariehamn",
+     "awayTeam": "Gnistan",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2026-06-13"
+    },
+    {
+     "homeTeam": "HJK",
+     "awayTeam": "Inter Turku",
+     "homeGoals": 3,
+     "awayGoals": 3,
+     "date": "2026-06-17"
+    },
+    {
+     "homeTeam": "Ilves",
+     "awayTeam": "Jaro",
+     "homeGoals": 5,
+     "awayGoals": 0,
+     "date": "2026-06-17"
+    },
+    {
+     "homeTeam": "TPS",
+     "awayTeam": "KuPS",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-06-17"
+    },
+    {
+     "homeTeam": "Gnistan",
+     "awayTeam": "Lahti",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-06-17"
+    },
+    {
+     "homeTeam": "SJK",
+     "awayTeam": "VPS",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-06-17"
+    },
+    {
+     "homeTeam": "AC Oulu",
+     "awayTeam": "Mariehamn",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-06-18"
+    },
+    {
+     "homeTeam": "KuPS",
+     "awayTeam": "Ilves",
+     "homeGoals": 4,
+     "awayGoals": 3,
+     "date": "2026-06-23"
+    },
+    {
+     "homeTeam": "Lahti",
+     "awayTeam": "TPS",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-06-23"
+    },
+    {
+     "homeTeam": "VPS",
+     "awayTeam": "AC Oulu",
+     "homeGoals": 5,
+     "awayGoals": 1,
+     "date": "2026-06-23"
+    },
+    {
+     "homeTeam": "Inter Turku",
+     "awayTeam": "SJK",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-06-23"
+    },
+    {
+     "homeTeam": "Jaro",
+     "awayTeam": "Gnistan",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-06-23"
+    },
+    {
+     "homeTeam": "Mariehamn",
+     "awayTeam": "HJK",
+     "homeGoals": 0,
+     "awayGoals": 4,
+     "date": "2026-06-23"
+    },
+    {
+     "homeTeam": "Ilves",
+     "awayTeam": "SJK",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "HJK",
+     "awayTeam": "KuPS",
+     "homeGoals": 0,
+     "awayGoals": 4,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Mariehamn",
+     "awayTeam": "Inter Turku",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Gnistan",
+     "awayTeam": "VPS",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "TPS",
+     "awayTeam": "Jaro",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "AC Oulu",
+     "awayTeam": "Lahti",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Lahti",
+     "awayTeam": "Gnistan",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Jaro",
+     "awayTeam": "Ilves",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "SJK",
+     "awayTeam": "TPS",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "VPS",
+     "awayTeam": "Mariehamn",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "VPS",
+     "awayTeam": "SJK",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-10"
+    },
+    {
+     "homeTeam": "Lahti",
+     "awayTeam": "HJK",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Gnistan",
+     "awayTeam": "Mariehamn",
+     "homeGoals": 4,
+     "awayGoals": 2,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "TPS",
+     "awayTeam": "AC Oulu",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "HJK",
+     "awayTeam": "VPS",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "AC Oulu",
+     "awayTeam": "Gnistan",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "SJK",
+     "awayTeam": "KuPS",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Jaro",
+     "awayTeam": "Inter Turku",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-19"
+    },
+    {
+     "homeTeam": "TPS",
+     "awayTeam": "Ilves",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-07-20"
+    },
+    {
+     "homeTeam": "Mariehamn",
+     "awayTeam": "Lahti",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-20"
+    },
+    {
+     "homeTeam": "Jaro",
+     "awayTeam": "SJK",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-24"
+    },
+    {
+     "homeTeam": "Mariehamn",
+     "awayTeam": "AC Oulu",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "KuPS",
+     "awayTeam": "VPS",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Ilves",
+     "awayTeam": "Lahti",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Inter Turku",
+     "awayTeam": "Gnistan",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "HJK",
+     "awayTeam": "TPS",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-26"
     }
    ]
   },
@@ -4578,246 +4354,15 @@
    "espn_slug": "irl.1",
    "matches": [
     {
-     "homeTeam": "Cork City",
-     "awayTeam": "Bohemians",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-06-13"
-    },
-    {
-     "homeTeam": "Derry City",
-     "awayTeam": "Galway United FC",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-13"
-    },
-    {
-     "homeTeam": "Shelbourne",
-     "awayTeam": "Shamrock Rovers",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-13"
-    },
-    {
-     "homeTeam": "St. Patricks",
-     "awayTeam": "Drogheda United",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-06-13"
-    },
-    {
-     "homeTeam": "Sligo Rovers",
-     "awayTeam": "Waterford",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Drogheda United",
-     "awayTeam": "Shamrock Rovers",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-16"
-    },
-    {
-     "homeTeam": "St. Patricks",
-     "awayTeam": "Shelbourne",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-06-16"
-    },
-    {
-     "homeTeam": "Drogheda United",
-     "awayTeam": "Sligo Rovers",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-20"
-    },
-    {
-     "homeTeam": "Galway United FC",
-     "awayTeam": "St. Patricks",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-06-20"
-    },
-    {
-     "homeTeam": "Shamrock Rovers",
-     "awayTeam": "Cork City",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-06-20"
-    },
-    {
-     "homeTeam": "Shelbourne",
-     "awayTeam": "Derry City",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-06-20"
-    },
-    {
-     "homeTeam": "Waterford",
-     "awayTeam": "Bohemians",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-20"
-    },
-    {
      "homeTeam": "Bohemians",
-     "awayTeam": "Shamrock Rovers",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-06-23"
-    },
-    {
-     "homeTeam": "Cork City",
-     "awayTeam": "Drogheda United",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-23"
-    },
-    {
-     "homeTeam": "Sligo Rovers",
-     "awayTeam": "Galway United FC",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-23"
-    },
-    {
-     "homeTeam": "St. Patricks",
-     "awayTeam": "Derry City",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-06-23"
-    },
-    {
-     "homeTeam": "Waterford",
-     "awayTeam": "Shelbourne",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-06-23"
-    },
-    {
-     "homeTeam": "Bohemians",
-     "awayTeam": "Sligo Rovers",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "Cork City",
-     "awayTeam": "St. Patricks",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "Derry City",
-     "awayTeam": "Drogheda United",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "Galway United FC",
-     "awayTeam": "Shelbourne",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "Shamrock Rovers",
-     "awayTeam": "Waterford",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-27"
-    },
-    {
-     "homeTeam": "Derry City",
-     "awayTeam": "Waterford",
-     "homeGoals": 7,
-     "awayGoals": 2,
-     "date": "2025-07-04"
-    },
-    {
-     "homeTeam": "Drogheda United",
-     "awayTeam": "Galway United FC",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-07-04"
-    },
-    {
-     "homeTeam": "Shelbourne",
-     "awayTeam": "Cork City",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-04"
-    },
-    {
-     "homeTeam": "St. Patricks",
-     "awayTeam": "Bohemians",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-07-04"
-    },
-    {
-     "homeTeam": "Sligo Rovers",
-     "awayTeam": "Shamrock Rovers",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-05"
-    },
-    {
-     "homeTeam": "Bohemians",
-     "awayTeam": "Galway United FC",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-07-11"
-    },
-    {
-     "homeTeam": "Waterford",
-     "awayTeam": "Cork City",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-11"
-    },
-    {
-     "homeTeam": "Sligo Rovers",
-     "awayTeam": "Derry City",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-12"
-    },
-    {
-     "homeTeam": "Cork City",
-     "awayTeam": "Sligo Rovers",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-25"
-    },
-    {
-     "homeTeam": "Derry City",
-     "awayTeam": "Bohemians",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-25"
-    },
-    {
-     "homeTeam": "Galway United FC",
-     "awayTeam": "Waterford",
-     "homeGoals": 2,
-     "awayGoals": 4,
-     "date": "2025-07-25"
-    },
-    {
-     "homeTeam": "Bohemians",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 0,
      "awayGoals": 1,
      "date": "2025-08-01"
     },
     {
      "homeTeam": "Cork City",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-08-01"
@@ -4851,7 +4396,7 @@
      "date": "2025-08-08"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Waterford",
      "homeGoals": 0,
      "awayGoals": 0,
@@ -4865,7 +4410,7 @@
      "date": "2025-08-09"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Shamrock Rovers",
      "homeGoals": 0,
      "awayGoals": 0,
@@ -4886,14 +4431,14 @@
      "date": "2025-08-22"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "St. Patricks",
      "homeGoals": 0,
      "awayGoals": 1,
      "date": "2025-08-22"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Derry City",
      "homeGoals": 1,
      "awayGoals": 2,
@@ -4929,14 +4474,14 @@
     },
     {
      "homeTeam": "Shamrock Rovers",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2025-08-31"
     },
     {
      "homeTeam": "Shelbourne",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-09-07"
@@ -4971,27 +4516,27 @@
     },
     {
      "homeTeam": "Sligo Rovers",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-09-19"
     },
     {
      "homeTeam": "St. Patricks",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-09-19"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Shelbourne",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2025-09-22"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Sligo Rovers",
      "homeGoals": 0,
      "awayGoals": 1,
@@ -5012,14 +4557,14 @@
      "date": "2025-09-22"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Derry City",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-09-26"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Cork City",
      "homeGoals": 2,
      "awayGoals": 1,
@@ -5055,7 +4600,7 @@
     },
     {
      "homeTeam": "Waterford",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 2,
      "awayGoals": 0,
      "date": "2025-10-05"
@@ -5075,14 +4620,14 @@
      "date": "2025-10-13"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Cork City",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-10-17"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Bohemians",
      "homeGoals": 2,
      "awayGoals": 0,
@@ -5117,8 +4662,8 @@
      "date": "2025-10-20"
     },
     {
-     "homeTeam": "Galway United FC",
-     "awayTeam": "Drogheda United",
+     "homeTeam": "Galway",
+     "awayTeam": "Drogheda",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-10-24"
@@ -5153,7 +4698,7 @@
     },
     {
      "homeTeam": "Shamrock Rovers",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-10-28"
@@ -5166,7 +4711,7 @@
      "date": "2025-11-01"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Bohemians",
      "homeGoals": 1,
      "awayGoals": 4,
@@ -5188,14 +4733,14 @@
     },
     {
      "homeTeam": "Waterford",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-11-01"
     },
     {
-     "homeTeam": "Galway United FC",
-     "awayTeam": "Drogheda United",
+     "homeTeam": "Galway",
+     "awayTeam": "Drogheda",
      "homeGoals": 0,
      "awayGoals": 1,
      "date": "2026-02-06"
@@ -5229,7 +4774,7 @@
      "date": "2026-02-13"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Waterford",
      "homeGoals": 2,
      "awayGoals": 0,
@@ -5251,7 +4796,7 @@
     },
     {
      "homeTeam": "Shelbourne",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-02-20"
@@ -5265,7 +4810,7 @@
     },
     {
      "homeTeam": "Dundalk",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-02-20"
@@ -5292,14 +4837,14 @@
      "date": "2026-02-27"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Shelbourne",
      "homeGoals": 1,
      "awayGoals": 2,
      "date": "2026-02-27"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Sligo Rovers",
      "homeGoals": 1,
      "awayGoals": 0,
@@ -5321,13 +4866,13 @@
     },
     {
      "homeTeam": "St. Patricks",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2026-03-02"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Dundalk",
      "homeGoals": 2,
      "awayGoals": 2,
@@ -5356,7 +4901,7 @@
     },
     {
      "homeTeam": "Sligo Rovers",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-03-07"
@@ -5370,7 +4915,7 @@
     },
     {
      "homeTeam": "Bohemians",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2026-03-13"
@@ -5391,7 +4936,7 @@
     },
     {
      "homeTeam": "St. Patricks",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 4,
      "awayGoals": 1,
      "date": "2026-03-13"
@@ -5404,7 +4949,7 @@
      "date": "2026-03-13"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Shamrock Rovers",
      "homeGoals": 0,
      "awayGoals": 0,
@@ -5432,7 +4977,7 @@
      "date": "2026-03-16"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Waterford",
      "homeGoals": 4,
      "awayGoals": 3,
@@ -5440,7 +4985,7 @@
     },
     {
      "homeTeam": "Derry City",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 2,
      "awayGoals": 2,
      "date": "2026-03-20"
@@ -5461,7 +5006,7 @@
     },
     {
      "homeTeam": "Shamrock Rovers",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 2,
      "awayGoals": 0,
      "date": "2026-03-20"
@@ -5474,7 +5019,7 @@
      "date": "2026-03-21"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Bohemians",
      "homeGoals": 0,
      "awayGoals": 0,
@@ -5502,7 +5047,7 @@
      "date": "2026-04-03"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Derry City",
      "homeGoals": 2,
      "awayGoals": 1,
@@ -5516,8 +5061,8 @@
      "date": "2026-04-06"
     },
     {
-     "homeTeam": "Drogheda United",
-     "awayTeam": "Galway United FC",
+     "homeTeam": "Drogheda",
+     "awayTeam": "Galway",
      "homeGoals": 2,
      "awayGoals": 3,
      "date": "2026-04-06"
@@ -5565,7 +5110,7 @@
      "date": "2026-04-10"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "St. Patricks",
      "homeGoals": 1,
      "awayGoals": 3,
@@ -5573,7 +5118,7 @@
     },
     {
      "homeTeam": "Dundalk",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-04-17"
@@ -5601,7 +5146,7 @@
     },
     {
      "homeTeam": "Shelbourne",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 3,
      "awayGoals": 4,
      "date": "2026-04-24"
@@ -5615,7 +5160,7 @@
     },
     {
      "homeTeam": "Waterford",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-04-24"
@@ -5635,7 +5180,7 @@
      "date": "2026-04-25"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Sligo Rovers",
      "homeGoals": 1,
      "awayGoals": 0,
@@ -5649,7 +5194,7 @@
      "date": "2026-05-01"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "St. Patricks",
      "homeGoals": 2,
      "awayGoals": 2,
@@ -5678,14 +5223,14 @@
     },
     {
      "homeTeam": "Derry City",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-05-04"
     },
     {
      "homeTeam": "Shamrock Rovers",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 4,
      "awayGoals": 1,
      "date": "2026-05-04"
@@ -5705,7 +5250,7 @@
      "date": "2026-05-04"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Derry City",
      "homeGoals": 1,
      "awayGoals": 0,
@@ -5719,7 +5264,7 @@
      "date": "2026-05-08"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Shamrock Rovers",
      "homeGoals": 1,
      "awayGoals": 3,
@@ -5741,7 +5286,7 @@
     },
     {
      "homeTeam": "Bohemians",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-05-15"
@@ -5769,14 +5314,14 @@
     },
     {
      "homeTeam": "Sligo Rovers",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 4,
      "date": "2026-05-16"
     },
     {
      "homeTeam": "Waterford",
-     "awayTeam": "Drogheda United",
+     "awayTeam": "Drogheda",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-05-18"
@@ -5789,7 +5334,7 @@
      "date": "2026-05-22"
     },
     {
-     "homeTeam": "Galway United FC",
+     "homeTeam": "Galway",
      "awayTeam": "Bohemians",
      "homeGoals": 2,
      "awayGoals": 4,
@@ -5803,7 +5348,7 @@
      "date": "2026-05-22"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Dundalk",
      "homeGoals": 1,
      "awayGoals": 1,
@@ -5831,7 +5376,7 @@
      "date": "2026-05-25"
     },
     {
-     "homeTeam": "Drogheda United",
+     "homeTeam": "Drogheda",
      "awayTeam": "Waterford",
      "homeGoals": 3,
      "awayGoals": 3,
@@ -5846,7 +5391,7 @@
     },
     {
      "homeTeam": "Shelbourne",
-     "awayTeam": "Galway United FC",
+     "awayTeam": "Galway",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-05-29"
@@ -5864,6 +5409,202 @@
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2026-05-29"
+    },
+    {
+     "homeTeam": "Derry City",
+     "awayTeam": "Bohemians",
+     "homeGoals": 4,
+     "awayGoals": 1,
+     "date": "2026-06-12"
+    },
+    {
+     "homeTeam": "Galway",
+     "awayTeam": "Dundalk",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-06-12"
+    },
+    {
+     "homeTeam": "St. Patricks",
+     "awayTeam": "Drogheda",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-06-12"
+    },
+    {
+     "homeTeam": "Waterford",
+     "awayTeam": "Sligo Rovers",
+     "homeGoals": 4,
+     "awayGoals": 0,
+     "date": "2026-06-12"
+    },
+    {
+     "homeTeam": "Shelbourne",
+     "awayTeam": "Shamrock Rovers",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-06-12"
+    },
+    {
+     "homeTeam": "Drogheda",
+     "awayTeam": "Shelbourne",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-06-19"
+    },
+    {
+     "homeTeam": "Galway",
+     "awayTeam": "Derry City",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-06-19"
+    },
+    {
+     "homeTeam": "St. Patricks",
+     "awayTeam": "Sligo Rovers",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-06-19"
+    },
+    {
+     "homeTeam": "Waterford",
+     "awayTeam": "Shamrock Rovers",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-06-19"
+    },
+    {
+     "homeTeam": "Bohemians",
+     "awayTeam": "Dundalk",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-06-19"
+    },
+    {
+     "homeTeam": "Shelbourne",
+     "awayTeam": "Bohemians",
+     "homeGoals": 0,
+     "awayGoals": 3,
+     "date": "2026-06-22"
+    },
+    {
+     "homeTeam": "Shamrock Rovers",
+     "awayTeam": "Derry City",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-06-22"
+    },
+    {
+     "homeTeam": "Shamrock Rovers",
+     "awayTeam": "Galway",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-06-26"
+    },
+    {
+     "homeTeam": "Derry City",
+     "awayTeam": "Drogheda",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-06-26"
+    },
+    {
+     "homeTeam": "Dundalk",
+     "awayTeam": "Waterford",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-06-26"
+    },
+    {
+     "homeTeam": "Bohemians",
+     "awayTeam": "St. Patricks",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-06-26"
+    },
+    {
+     "homeTeam": "Sligo Rovers",
+     "awayTeam": "Shelbourne",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Derry City",
+     "awayTeam": "Waterford",
+     "homeGoals": 2,
+     "awayGoals": 4,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "Drogheda",
+     "awayTeam": "Bohemians",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "Sligo Rovers",
+     "awayTeam": "Shamrock Rovers",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "St. Patricks",
+     "awayTeam": "Galway",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "Shelbourne",
+     "awayTeam": "Dundalk",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "Dundalk",
+     "awayTeam": "Drogheda",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-10"
+    },
+    {
+     "homeTeam": "Waterford",
+     "awayTeam": "St. Patricks",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-10"
+    },
+    {
+     "homeTeam": "Galway",
+     "awayTeam": "Sligo Rovers",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "St. Patricks",
+     "awayTeam": "Dundalk",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-24"
+    },
+    {
+     "homeTeam": "Galway",
+     "awayTeam": "Waterford",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Sligo Rovers",
+     "awayTeam": "Drogheda",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-25"
     }
    ]
   },
@@ -5871,307 +5612,6 @@
    "espn_slug": "chn.1",
    "matches": [
     {
-     "homeTeam": "Dalian Yingbo",
-     "awayTeam": "Meizhou Hakka",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-13"
-    },
-    {
-     "homeTeam": "Wuhan Three Towns",
-     "awayTeam": "Qingdao Hainiu",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-06-13"
-    },
-    {
-     "homeTeam": "Zhejiang Professional FC",
-     "awayTeam": "Shanghai Port",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Beijing Guoan",
-     "awayTeam": "Changchun Yatai",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Qingdao West Coast",
-     "awayTeam": "Yunnan Yukun",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Henan Songshan Longmen",
-     "awayTeam": "Chengdu Rongcheng",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Shenzhen Xinpengcheng",
-     "awayTeam": "Shanghai Shenhua",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Tianjin Jinmen Tiger",
-     "awayTeam": "Shandong Taishan",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-14"
-    },
-    {
-     "homeTeam": "Beijing Guoan",
-     "awayTeam": "Qingdao West Coast",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-17"
-    },
-    {
-     "homeTeam": "Henan Songshan Longmen",
-     "awayTeam": "Shanghai Port",
-     "homeGoals": 1,
-     "awayGoals": 3,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "Shenzhen Xinpengcheng",
-     "awayTeam": "Wuhan Three Towns",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-18"
-    },
-    {
-     "homeTeam": "Qingdao Hainiu",
-     "awayTeam": "Zhejiang Professional FC",
-     "homeGoals": 0,
-     "awayGoals": 3,
-     "date": "2025-06-25"
-    },
-    {
-     "homeTeam": "Shanghai Shenhua",
-     "awayTeam": "Tianjin Jinmen Tiger",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-25"
-    },
-    {
-     "homeTeam": "Changchun Yatai",
-     "awayTeam": "Qingdao West Coast",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-25"
-    },
-    {
-     "homeTeam": "Meizhou Hakka",
-     "awayTeam": "Beijing Guoan",
-     "homeGoals": 0,
-     "awayGoals": 4,
-     "date": "2025-06-25"
-    },
-    {
-     "homeTeam": "Shandong Taishan",
-     "awayTeam": "Wuhan Three Towns",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-06-25"
-    },
-    {
-     "homeTeam": "Chengdu Rongcheng",
-     "awayTeam": "Shenzhen Xinpengcheng",
-     "homeGoals": 5,
-     "awayGoals": 0,
-     "date": "2025-06-25"
-    },
-    {
-     "homeTeam": "Shanghai Port",
-     "awayTeam": "Dalian Yingbo",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-06-26"
-    },
-    {
-     "homeTeam": "Yunnan Yukun",
-     "awayTeam": "Henan Songshan Longmen",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-26"
-    },
-    {
-     "homeTeam": "Changchun Yatai",
-     "awayTeam": "Shanghai Shenhua",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Qingdao West Coast",
-     "awayTeam": "Qingdao Hainiu",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Meizhou Hakka",
-     "awayTeam": "Tianjin Jinmen Tiger",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Wuhan Three Towns",
-     "awayTeam": "Chengdu Rongcheng",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-06-29"
-    },
-    {
-     "homeTeam": "Henan Songshan Longmen",
-     "awayTeam": "Shandong Taishan",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "Beijing Guoan",
-     "awayTeam": "Yunnan Yukun",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "Dalian Yingbo",
-     "awayTeam": "Zhejiang Professional FC",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "Shenzhen Xinpengcheng",
-     "awayTeam": "Shanghai Port",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-06-30"
-    },
-    {
-     "homeTeam": "Changchun Yatai",
-     "awayTeam": "Shanghai Port",
-     "homeGoals": 1,
-     "awayGoals": 3,
-     "date": "2025-07-18"
-    },
-    {
-     "homeTeam": "Wuhan Three Towns",
-     "awayTeam": "Qingdao West Coast",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-18"
-    },
-    {
-     "homeTeam": "Tianjin Jinmen Tiger",
-     "awayTeam": "Chengdu Rongcheng",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-07-18"
-    },
-    {
-     "homeTeam": "Zhejiang Professional FC",
-     "awayTeam": "Yunnan Yukun",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-18"
-    },
-    {
-     "homeTeam": "Dalian Yingbo",
-     "awayTeam": "Shandong Taishan",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Beijing Guoan",
-     "awayTeam": "Shanghai Shenhua",
-     "homeGoals": 1,
-     "awayGoals": 3,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Shenzhen Xinpengcheng",
-     "awayTeam": "Qingdao Hainiu",
-     "homeGoals": 4,
-     "awayGoals": 0,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Henan Songshan Longmen",
-     "awayTeam": "Meizhou Hakka",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-07-19"
-    },
-    {
-     "homeTeam": "Shanghai Port",
-     "awayTeam": "Qingdao West Coast",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Chengdu Rongcheng",
-     "awayTeam": "Beijing Guoan",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Yunnan Yukun",
-     "awayTeam": "Shenzhen Xinpengcheng",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Changchun Yatai",
-     "awayTeam": "Dalian Yingbo",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Qingdao Hainiu",
-     "awayTeam": "Tianjin Jinmen Tiger",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Shanghai Shenhua",
-     "awayTeam": "Henan Songshan Longmen",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Zhejiang Professional FC",
-     "awayTeam": "Wuhan Three Towns",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Shandong Taishan",
-     "awayTeam": "Meizhou Hakka",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-07-27"
-    },
-    {
      "homeTeam": "Yunnan Yukun",
      "awayTeam": "Shanghai Shenhua",
      "homeGoals": 4,
@@ -6187,7 +5627,7 @@
     },
     {
      "homeTeam": "Qingdao West Coast",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2025-08-02"
@@ -6235,7 +5675,7 @@
      "date": "2025-08-08"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Shenzhen Xinpengcheng",
      "homeGoals": 4,
      "awayGoals": 1,
@@ -6285,7 +5725,7 @@
     },
     {
      "homeTeam": "Shanghai Port",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 4,
      "awayGoals": 1,
      "date": "2025-08-15"
@@ -6382,7 +5822,7 @@
      "date": "2025-08-24"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Dalian Yingbo",
      "homeGoals": 4,
      "awayGoals": 0,
@@ -6404,7 +5844,7 @@
     },
     {
      "homeTeam": "Qingdao Hainiu",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2025-08-29"
@@ -6459,7 +5899,7 @@
      "date": "2025-09-12"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Beijing Guoan",
      "homeGoals": 2,
      "awayGoals": 0,
@@ -6495,7 +5935,7 @@
     },
     {
      "homeTeam": "Wuhan Three Towns",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 2,
      "awayGoals": 5,
      "date": "2025-09-19"
@@ -6586,7 +6026,7 @@
     },
     {
      "homeTeam": "Tianjin Jinmen Tiger",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2025-09-28"
@@ -6669,7 +6109,7 @@
      "date": "2025-10-19"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Changchun Yatai",
      "homeGoals": 2,
      "awayGoals": 0,
@@ -6697,7 +6137,7 @@
      "date": "2025-10-25"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Zhejiang Professional FC",
      "homeGoals": 2,
      "awayGoals": 2,
@@ -6740,7 +6180,7 @@
     },
     {
      "homeTeam": "Chengdu Rongcheng",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 2,
      "date": "2025-10-31"
@@ -6802,7 +6242,7 @@
      "date": "2025-11-22"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Yunnan Yukun",
      "homeGoals": 1,
      "awayGoals": 1,
@@ -6873,7 +6313,7 @@
     },
     {
      "homeTeam": "Shanghai Port",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 2,
      "date": "2026-03-07"
@@ -6935,7 +6375,7 @@
      "date": "2026-03-14"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Yunnan Yukun",
      "homeGoals": 2,
      "awayGoals": 1,
@@ -6984,7 +6424,7 @@
      "date": "2026-03-21"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Wuhan Three Towns",
      "homeGoals": 1,
      "awayGoals": 1,
@@ -7027,7 +6467,7 @@
     },
     {
      "homeTeam": "Qingdao Hainiu",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 0,
      "date": "2026-04-04"
@@ -7089,7 +6529,7 @@
      "date": "2026-04-11"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Shandong Taishan",
      "homeGoals": 0,
      "awayGoals": 1,
@@ -7167,7 +6607,7 @@
     },
     {
      "homeTeam": "Dalian Yingbo",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-04-18"
@@ -7223,7 +6663,7 @@
     },
     {
      "homeTeam": "Qingdao West Coast",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 0,
      "awayGoals": 0,
      "date": "2026-04-22"
@@ -7285,7 +6725,7 @@
      "date": "2026-04-26"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Shanghai Shenhua",
      "homeGoals": 0,
      "awayGoals": 3,
@@ -7299,7 +6739,7 @@
      "date": "2026-05-01"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Liaoning Tieren",
      "homeGoals": 4,
      "awayGoals": 0,
@@ -7370,7 +6810,7 @@
     },
     {
      "homeTeam": "Chongqing Tonglianglong",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-05-05"
@@ -7412,7 +6852,7 @@
     },
     {
      "homeTeam": "Chengdu Rongcheng",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 3,
      "awayGoals": 0,
      "date": "2026-05-09"
@@ -7460,7 +6900,7 @@
      "date": "2026-05-10"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Shenzhen Xinpengcheng",
      "homeGoals": 1,
      "awayGoals": 0,
@@ -7524,7 +6964,7 @@
     },
     {
      "homeTeam": "Tianjin Jinmen Tiger",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 2,
      "date": "2026-05-19"
@@ -7580,7 +7020,7 @@
     },
     {
      "homeTeam": "Beijing Guoan",
-     "awayTeam": "Henan Songshan Longmen",
+     "awayTeam": "Henan",
      "homeGoals": 1,
      "awayGoals": 2,
      "date": "2026-05-23"
@@ -7642,7 +7082,7 @@
      "date": "2026-05-30"
     },
     {
-     "homeTeam": "Henan Songshan Longmen",
+     "homeTeam": "Henan",
      "awayTeam": "Zhejiang Professional FC",
      "homeGoals": 0,
      "awayGoals": 2,
@@ -7682,6 +7122,258 @@
      "homeGoals": 1,
      "awayGoals": 1,
      "date": "2026-05-31"
+    },
+    {
+     "homeTeam": "Qingdao Hainiu",
+     "awayTeam": "Yunnan Yukun",
+     "homeGoals": 4,
+     "awayGoals": 2,
+     "date": "2026-06-26"
+    },
+    {
+     "homeTeam": "Liaoning Tieren",
+     "awayTeam": "Shandong Taishan",
+     "homeGoals": 1,
+     "awayGoals": 5,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Henan",
+     "awayTeam": "Shanghai Port",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Shenzhen Xinpengcheng",
+     "awayTeam": "Chengdu Rongcheng",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Beijing Guoan",
+     "awayTeam": "Wuhan Three Towns",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Chongqing Tonglianglong",
+     "awayTeam": "Tianjin Jinmen Tiger",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-06-27"
+    },
+    {
+     "homeTeam": "Qingdao West Coast",
+     "awayTeam": "Zhejiang Professional FC",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-06-28"
+    },
+    {
+     "homeTeam": "Dalian Yingbo",
+     "awayTeam": "Shanghai Shenhua",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2026-06-28"
+    },
+    {
+     "homeTeam": "Yunnan Yukun",
+     "awayTeam": "Henan",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-03"
+    },
+    {
+     "homeTeam": "Liaoning Tieren",
+     "awayTeam": "Chongqing Tonglianglong",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Qingdao West Coast",
+     "awayTeam": "Shanghai Port",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Beijing Guoan",
+     "awayTeam": "Shandong Taishan",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Dalian Yingbo",
+     "awayTeam": "Wuhan Three Towns",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Tianjin Jinmen Tiger",
+     "awayTeam": "Shenzhen Xinpengcheng",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-04"
+    },
+    {
+     "homeTeam": "Qingdao Hainiu",
+     "awayTeam": "Chengdu Rongcheng",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-05"
+    },
+    {
+     "homeTeam": "Shanghai Shenhua",
+     "awayTeam": "Zhejiang Professional FC",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-07-05"
+    },
+    {
+     "homeTeam": "Shandong Taishan",
+     "awayTeam": "Yunnan Yukun",
+     "homeGoals": 4,
+     "awayGoals": 3,
+     "date": "2026-07-10"
+    },
+    {
+     "homeTeam": "Shenzhen Xinpengcheng",
+     "awayTeam": "Qingdao West Coast",
+     "homeGoals": 3,
+     "awayGoals": 0,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Chengdu Rongcheng",
+     "awayTeam": "Chongqing Tonglianglong",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-11"
+    },
+    {
+     "homeTeam": "Zhejiang Professional FC",
+     "awayTeam": "Qingdao Hainiu",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-07-14"
+    },
+    {
+     "homeTeam": "Qingdao West Coast",
+     "awayTeam": "Chengdu Rongcheng",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "Beijing Guoan",
+     "awayTeam": "Liaoning Tieren",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "Henan",
+     "awayTeam": "Qingdao Hainiu",
+     "homeGoals": 5,
+     "awayGoals": 1,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "Yunnan Yukun",
+     "awayTeam": "Shanghai Port",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-17"
+    },
+    {
+     "homeTeam": "Chongqing Tonglianglong",
+     "awayTeam": "Zhejiang Professional FC",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Dalian Yingbo",
+     "awayTeam": "Shandong Taishan",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Shanghai Shenhua",
+     "awayTeam": "Tianjin Jinmen Tiger",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Wuhan Three Towns",
+     "awayTeam": "Shenzhen Xinpengcheng",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-18"
+    },
+    {
+     "homeTeam": "Qingdao Hainiu",
+     "awayTeam": "Tianjin Jinmen Tiger",
+     "homeGoals": 0,
+     "awayGoals": 2,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Liaoning Tieren",
+     "awayTeam": "Qingdao West Coast",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Shanghai Port",
+     "awayTeam": "Shanghai Shenhua",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Wuhan Three Towns",
+     "awayTeam": "Chongqing Tonglianglong",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Yunnan Yukun",
+     "awayTeam": "Shenzhen Xinpengcheng",
+     "homeGoals": 4,
+     "awayGoals": 3,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Chengdu Rongcheng",
+     "awayTeam": "Beijing Guoan",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Shandong Taishan",
+     "awayTeam": "Henan",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Zhejiang Professional FC",
+     "awayTeam": "Dalian Yingbo",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-07-26"
     }
    ]
   },
@@ -11703,41 +11395,6 @@
    "espn_slug": "den.1",
    "matches": [
     {
-     "homeTeam": "F.C. København",
-     "awayTeam": "Vejle",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Odense Boldklub",
-     "awayTeam": "Viborg FF",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Silkeborg IF",
-     "awayTeam": "Fredericia",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "FC Nordsjælland",
-     "awayTeam": "Brøndby IF",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "FC Midtjylland",
-     "awayTeam": "Sønderjyske Fodbold",
-     "homeGoals": 6,
-     "awayGoals": 2,
-     "date": "2025-07-28"
-    },
-    {
      "homeTeam": "Fredericia",
      "awayTeam": "F.C. København",
      "homeGoals": 0,
@@ -12996,61 +12653,54 @@
      "homeGoals": 1,
      "awayGoals": 4,
      "date": "2026-05-17"
+    },
+    {
+     "homeTeam": "Viborg FF",
+     "awayTeam": "Odense Boldklub",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-24"
+    },
+    {
+     "homeTeam": "AGF",
+     "awayTeam": "Brøndby IF",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Sønderjyske Fodbold",
+     "awayTeam": "FC Midtjylland",
+     "homeGoals": 2,
+     "awayGoals": 3,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "F.C. København",
+     "awayTeam": "Lyngby Boldklub",
+     "homeGoals": 3,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "AC Horsens",
+     "awayTeam": "FC Nordsjælland",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Randers FC",
+     "awayTeam": "Silkeborg IF",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-27"
     }
    ]
   },
   "POL": {
    "espn_slug": "",
    "matches": [
-    {
-     "homeTeam": "Piast Gliwice",
-     "awayTeam": "Gornik Zabrze",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Pogon Szczecin",
-     "awayTeam": "Motor Lublin",
-     "homeGoals": 4,
-     "awayGoals": 1,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Lechia Gdansk",
-     "awayTeam": "Lech Poznan",
-     "homeGoals": 3,
-     "awayGoals": 4,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Rakow",
-     "awayTeam": "Wisla Plock",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Jagiellonia",
-     "awayTeam": "Widzew Lodz",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Korona Kielce",
-     "awayTeam": "Legia",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "GKS Katowice",
-     "awayTeam": "Zaglebie",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-28"
-    },
     {
      "homeTeam": "Zaglebie",
      "awayTeam": "Korona Kielce",
@@ -15073,47 +14723,75 @@
      "homeGoals": 2,
      "awayGoals": 1,
      "date": "2026-05-23"
+    },
+    {
+     "homeTeam": "Radomiak Radom",
+     "awayTeam": "Wieczysta Krakow",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-24"
+    },
+    {
+     "homeTeam": "Pogon Szczecin",
+     "awayTeam": "Legia",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-07-24"
+    },
+    {
+     "homeTeam": "Jagiellonia",
+     "awayTeam": "Korona Kielce",
+     "homeGoals": 1,
+     "awayGoals": 0,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Gornik Zabrze",
+     "awayTeam": "Slask Wroclaw",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Lech Poznan",
+     "awayTeam": "Cracovia",
+     "homeGoals": 0,
+     "awayGoals": 0,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Rakow",
+     "awayTeam": "Wisla Plock",
+     "homeGoals": 1,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Widzew Lodz",
+     "awayTeam": "Motor Lublin",
+     "homeGoals": 2,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Wisla",
+     "awayTeam": "GKS Katowice",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "Zaglebie",
+     "awayTeam": "Piast Gliwice",
+     "homeGoals": 2,
+     "awayGoals": 0,
+     "date": "2026-07-27"
     }
    ]
   },
   "SWZ": {
    "espn_slug": "sui.1",
    "matches": [
-    {
-     "homeTeam": "Grasshoppers",
-     "awayTeam": "FC Luzern",
-     "homeGoals": 2,
-     "awayGoals": 3,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "St. Gallen",
-     "awayTeam": "FC Basel",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Young Boys",
-     "awayTeam": "Servette",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-26"
-    },
-    {
-     "homeTeam": "Lausanne Sports",
-     "awayTeam": "Winterthur",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "FC Lugano",
-     "awayTeam": "FC Thun",
-     "homeGoals": 1,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
     {
      "homeTeam": "Servette",
      "awayTeam": "St. Gallen",
@@ -15787,6 +15465,20 @@
      "date": "2025-12-14"
     },
     {
+     "homeTeam": "St. Gallen",
+     "awayTeam": "FC Sion",
+     "homeGoals": 3,
+     "awayGoals": 1,
+     "date": "2025-12-16"
+    },
+    {
+     "homeTeam": "Winterthur",
+     "awayTeam": "FC Thun",
+     "homeGoals": 1,
+     "awayGoals": 4,
+     "date": "2025-12-16"
+    },
+    {
      "homeTeam": "FC Luzern",
      "awayTeam": "FC Basel",
      "homeGoals": 1,
@@ -15806,20 +15498,6 @@
      "homeGoals": 0,
      "awayGoals": 1,
      "date": "2025-12-17"
-    },
-    {
-     "homeTeam": "St. Gallen",
-     "awayTeam": "FC Sion",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-12-16"
-    },
-    {
-     "homeTeam": "Winterthur",
-     "awayTeam": "FC Thun",
-     "homeGoals": 1,
-     "awayGoals": 4,
-     "date": "2025-12-16"
     },
     {
      "homeTeam": "FC Thun",
@@ -16667,40 +16345,54 @@
      "homeGoals": 3,
      "awayGoals": 3,
      "date": "2026-05-17"
+    },
+    {
+     "homeTeam": "Lausanne Sports",
+     "awayTeam": "Grasshoppers",
+     "homeGoals": 1,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Servette",
+     "awayTeam": "FC Basel",
+     "homeGoals": 0,
+     "awayGoals": 1,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "FC Luzern",
+     "awayTeam": "FC Thun",
+     "homeGoals": 1,
+     "awayGoals": 3,
+     "date": "2026-07-25"
+    },
+    {
+     "homeTeam": "Young Boys",
+     "awayTeam": "FC Sion",
+     "homeGoals": 4,
+     "awayGoals": 2,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "FC Lugano",
+     "awayTeam": "Vaduz",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-26"
+    },
+    {
+     "homeTeam": "St. Gallen",
+     "awayTeam": "FC Zürich",
+     "homeGoals": 2,
+     "awayGoals": 1,
+     "date": "2026-07-26"
     }
    ]
   },
   "BEL": {
    "espn_slug": "bel.1",
    "matches": [
-    {
-     "homeTeam": "Anderlecht",
-     "awayTeam": "KVC Westerlo",
-     "homeGoals": 5,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "OH Leuven",
-     "awayTeam": "Royal Charleroi SC",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Club Brugge",
-     "awayTeam": "Racing Genk",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
-    {
-     "homeTeam": "Sint-Truidense",
-     "awayTeam": "KAA Gent",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-07-27"
-    },
     {
      "homeTeam": "KV Mechelen",
      "awayTeam": "Club Brugge",
@@ -18828,7 +18520,6 @@
  "unmatched": {
   "ELI": [
    "Bryne",
-   "HamKam",
    "Haugesund",
    "Stromsgodset"
   ],
@@ -18837,25 +18528,10 @@
    "Oster",
    "Varnamo"
   ],
-  "VEI": [
-   "AC Oulu",
-   "Gnistan",
-   "HJK",
-   "Haka",
-   "Ilves",
-   "Inter Turku",
-   "Jaro",
-   "KTP",
-   "KuPS",
-   "Lahti",
-   "Mariehamn",
-   "SJK",
-   "TPS",
-   "VPS"
-  ],
+  "VEI": [],
   "LOI": [
-   "Cork City",
-   "St. Patricks"
+   "Drogheda",
+   "Galway"
   ],
   "CSL": [
    "Changchun Yatai",
@@ -18877,7 +18553,9 @@
    "Vejle"
   ],
   "POL": [],
-  "SWZ": [],
+  "SWZ": [
+   "Vaduz"
+  ],
   "BEL": [
    "Dender"
   ]
