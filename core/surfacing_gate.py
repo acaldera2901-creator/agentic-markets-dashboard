@@ -84,10 +84,23 @@ def surface_decision(
     ``tournament`` matters only for tennis (segment-aware floor); omitted, the
     row resolves to the lower tier = the stricter floor (fail-closed).
     """
-    if sport.lower() == "tennis":
+    s = sport.lower()
+    if s == "tennis":
         # 10y lab 2026-06-08: tennis confidence IS monotone (the prior "no floor"
         # was a 60-match artifact). Segment-aware floors #TENNIS-SEG-FLOOR-1.
         is_pick = confidence >= tennis_floor_for(tournament)
+        return is_pick, not is_pick
+
+    # #NEWSPORTS — rami ESPLICITI per sport: uno sport nuovo non deve poter cadere
+    # in silenzio sul floor del calcio (56 su una moneyline a due vie pubblica
+    # quasi tutto). Specchio di lib/surfacing-gate.ts, valori in settings.
+    # I floor MLB sono quelli della v2.2 (65/72), NON i 62/65 del Gate 1: il loop
+    # premium ha misurato la banda 62-65 al 63,4% e il salto a 72.
+    if s in ("baseball", "mlb"):
+        is_pick = confidence >= settings.SURFACE_FLOOR_BASEBALL
+        return is_pick, not is_pick
+    if s in ("mma", "ufc"):
+        is_pick = confidence >= settings.SURFACE_FLOOR_MMA
         return is_pick, not is_pick
 
     # #WC-SURFACE-FLOOR: floor dedicato SOLO World Cup (knockout equilibrati

@@ -20,6 +20,7 @@ from agents.tennis_settlement import TennisSettlementAgent
 from agents.tennis_research_agent import TennisResearchAgent
 from agents.sportsbook_scraper import SportsbookScraperAgent
 from agents.shadow_eval_agent import ShadowEvalAgent
+from config.settings import settings
 from core.db import init_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
@@ -89,6 +90,15 @@ async def main():
         # Stake/Roobet shadow-eval (forward-only A/B → sportsbook_shadow_eval; never serves)
         ShadowEvalAgent(),
     ]
+    # #NEWSPORTS ingestion (DARK by default — docs/NEWSPORTS-INTEGRATION.md):
+    # imported lazily and registered only behind their flags, so the default
+    # roster is byte-identical with the flags off.
+    if settings.NEWSPORT_BASEBALL_AGENT_ENABLED:
+        from agents.baseball_model_agent import BaseballModelAgent
+        agents.append(BaseballModelAgent())
+    if settings.NEWSPORT_MMA_AGENT_ENABLED:
+        from agents.mma_model_agent import MmaModelAgent
+        agents.append(MmaModelAgent())
     log.info("Starting %d agents", len(agents))
     await asyncio.gather(*[agent.run() for agent in agents])
 

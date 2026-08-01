@@ -1,22 +1,23 @@
 // lib/fortuneplay-live.ts
 // Sorgente quote live FortunePlay/BetConstruct (#FORTUNEPLAY-LIVE-ODDS-1).
 // Parse PER POSIZIONE (il `name` è localizzato). Odds = intero ÷ 1000.
-import { teamPairKey } from "./team-pair-key";
+import { teamPairKey, type PairSport } from "./team-pair-key";
 import { normName } from "./odds-api";
 import { canonicalPlayerKey } from "./tennis-names";
 
-// Chiave normalizzata di un singolo lato, coerente con teamPairKey (calcio→normName,
-// tennis→canonicalPlayerKey). Serve al FE per mappare la pick sulla quota del lato
-// giusto: home/away di FortunePlay non coincidono per forza con home/away nostro.
-function sideKey(sport: "soccer" | "tennis", name: string): string {
-  return sport === "tennis" ? canonicalPlayerKey(name) : normName(name);
+// Chiave normalizzata di un singolo lato, coerente con teamPairKey (sport a
+// squadre→normName, sport a persone: tennis/mma→canonicalPlayerKey). Serve al
+// FE per mappare la pick sulla quota del lato giusto: home/away di FortunePlay
+// non coincidono per forza con home/away nostro.
+function sideKey(sport: PairSport, name: string): string {
+  return sport === "tennis" || sport === "mma" ? canonicalPlayerKey(name) : normName(name);
 }
 
 export type FpMatch = {
   teamPairKey: string;
   homeKey: string;
   awayKey: string;
-  sport: "soccer" | "tennis";
+  sport: PairSport;
   slug: string;
   id: number;
   urnId: string;
@@ -28,7 +29,11 @@ export type FpMatch = {
   totalUnder: number | null;
 };
 
-const SPORTS = new Set(["soccer", "tennis"]);
+// #NEWSPORTS: baseball/mma inclusi dopo la verifica live di Andrea (2026-07-05,
+// feed FortunePlay: MLB 35 match/81 mercati, UFC 32 match) — il vecchio set era
+// un filtro nostro, non un limite del book. Coverage-agnostic a valle: i match
+// extra restano nella cache e vengono consumati solo da chi li cerca per chiave.
+const SPORTS = new Set(["soccer", "tennis", "baseball", "mma"]);
 
 function odds(raw: unknown): number | null {
   const v = Number(raw) / 1000;
@@ -69,10 +74,10 @@ export function parseFortuneplayMatches(payload: unknown): FpMatch[] {
     if (!home || !away) continue;
     const [oh, od, oa] = parseMatchResult(m?.main_market);
     if (oh === null && oa === null) continue;
-    const key = teamPairKey(sport as "soccer" | "tennis", home, away, m?.start_time ?? null);
+    const key = teamPairKey(sport as PairSport, home, away, m?.start_time ?? null);
     if (!key) continue;
     const [line, over, under] = parseTotals(m?.secondary_market);
-    const sp = sport as "soccer" | "tennis";
+    const sp = sport as PairSport;
     out.push({
       teamPairKey: key,
       homeKey: sideKey(sp, home),

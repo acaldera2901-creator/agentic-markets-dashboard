@@ -219,6 +219,48 @@ class Settings(BaseSettings):
     SURFACE_FLOOR_TENNIS_LO: int = 64        # lower tiers (250/500/WTA minors)
     SURFACE_FLOOR_TENNIS_LO_GRASS: int = 66  # lower tiers on grass (June swing)
 
+    # New-sports floors (lab am-lab/nuovi-sport). In entrambi la probabilita'
+    # servita e' il MERCATO devigato: il modello alimenta il why e il gate di
+    # tier, mai la probabilita'. Mirror di lib/surfacing-gate.ts — tenere in sync.
+    #
+    # MLB — v2.2 (loop premium 14/07: cicli diagnostici sul TRAIN 2011-17 + UNA
+    # run sul TEST 2018-21 con config congelata, cap-serie sempre attivo):
+    #   standard 65 -> 68.3% su n=641 · premium 72 -> 76.8% su n=95
+    #   consistenza TRAIN->TEST quasi perfetta (premium 77.0 -> 76.8): nessun
+    #   overfit. Il bound sulla quota di APERTURA e' 73.2%, per questo il tier va
+    #   finalizzato a ridosso del match e non all'open.
+    # ⚠️ NON sono i 62/65 del Gate 1 (#NEWSPORTS-FLOORS-0801): il loop ha misurato
+    # la banda 62-65 al 63.4% (zavorra) e il salto di win-rate a 72. Il branch
+    # #NEWSPORTS originale portava ancora i valori vecchi.
+    SURFACE_FLOOR_BASEBALL: int = 65   # MLB moneyline (max-prob >= 65)
+    NEWSPORT_BASEBALL_PREMIUM: int = 72
+    # UFC — Gate 1 (TEST 2021-23, 1.061 fight): standard 70 -> 81.4% su n=296,
+    # premium 75 -> 86.5% su n=170. Floor piu' alto che in MLB perche' il
+    # favourite-longshot bias e' persistente (i grandi favoriti rendono PIU'
+    # dell'implied) mentre i favoriti medi 0.55-0.60 deludono.
+    # Riserva dichiarata nell'audit del Gate 1: le quote archiviate del dataset
+    # sono probabilmente early/soft -> dal vivo e' attesa una compressione di
+    # qualche punto. L'arbitro e' lo shadow su quote vere, non il backtest.
+    SURFACE_FLOOR_MMA: int = 70        # UFC moneyline (max-prob >= 70)
+    NEWSPORT_MMA_PREMIUM: int = 75
+    # Cap anti-correlazione MLB (v2.1, dall'autopsia dello shadow del 14/07): una
+    # pick sulla stessa COPPIA di squadre blocca la serie per N giorni. Serviva:
+    # 8 delle 9 premium del primo shadow erano lo stesso bet ripetuto per tutto
+    # l'homestand dei Dodgers -> campione correlato, statistica fragile, e il
+    # 3/9 che ne e' uscito non misurava il modello. Sui 10 anni il cap alza il
+    # premium da 77.4% a 78.6% togliendo i duplicati.
+    NEWSPORT_BASEBALL_SERIES_CAP_DAYS: int = 5
+    # Finestra di pubblicazione MLB: il tier si assegna solo entro N ore dal primo
+    # lancio, cioe' sulla quota "quasi-close" su cui la v2.2 e' stata validata
+    # (76.8% alla close contro 73.2% all'open). Prima della finestra la partita
+    # non viene servita: e' lo stesso principio della finestra 2-30h dell'UFC.
+    NEWSPORT_BASEBALL_LATE_WINDOW_HOURS: int = 8
+    # #NEWSPORTS ingestion agents — DARK by default: without these flags the
+    # agents are not even registered in run.py (and their loops self-guard).
+    # Flip only via deploy-gate at activation (docs/NEWSPORTS-INTEGRATION.md).
+    NEWSPORT_BASEBALL_AGENT_ENABLED: bool = False
+    NEWSPORT_MMA_AGENT_ENABLED: bool = False
+
     # Why-v2 lead tiers (whole percent on the picked outcome). At/above the
     # surface floor the copy says "favoured but open"; at/above this stronger
     # bar it says "strong pick". Below the floor it says "no clear favourite".

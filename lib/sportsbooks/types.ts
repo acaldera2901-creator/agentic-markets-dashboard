@@ -1,6 +1,9 @@
 export type SportsbookId = "stake" | "roobet" | "fortuneplay";
 
-export type BetSport = "football" | "tennis" | "worldcup";
+// #NEWSPORTS: baseball/mma added after Andrea's live-feed check (2026-07-05,
+// MLB 35 matches/81 markets, UFC 32 matches on FortunePlay) — coverage-agnostic
+// downstream: the CTA renders only when the match is actually in the feed.
+export type BetSport = "football" | "tennis" | "worldcup" | "baseball" | "mma";
 
 export type BetSelection = {
   sport: BetSport;

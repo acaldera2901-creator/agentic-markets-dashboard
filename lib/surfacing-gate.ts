@@ -26,6 +26,28 @@ export const SURFACE_FLOOR_FRIENDLY = 66;
 export const SURFACE_FLOOR_TENNIS = 62; // hi tier: Slam / Masters / 1000 / Finals / Olympics
 export const SURFACE_FLOOR_TENNIS_LO = 64; // lower tiers (250/500/WTA minors)
 export const SURFACE_FLOOR_TENNIS_LO_GRASS = 66; // lower tiers on grass (June swing)
+
+// ── Sport nuovi (#NEWSPORTS, lab am-lab/nuovi-sport) ────────────────────────
+// In entrambi la probabilità servita è il MERCATO devigato: il modello alimenta
+// il why e il gate di tier, non la probabilità. L'edge è selettività, come per
+// il calcio — nessuno di questi due batte la linea, e non lo diciamo.
+//
+// MLB — floor allineati alla v2.2 (loop premium 14/07, TRAIN 2011-17 + una sola
+// run sul TEST 2018-21 con config congelata): standard 65 → 68,3% su n=641,
+// premium 72 → 76,8% su n=95, consistenza TRAIN→TEST quasi perfetta (77,0→76,8).
+// ⚠️ NON sono i 62/65 del Gate 1: il loop ha misurato che la banda 62-65 vale
+// 63,4%, cioè zavorra, e che a 72 il win-rate salta. Il branch #NEWSPORTS
+// originale portava ancora i valori vecchi (#NEWSPORTS-FLOORS-0801).
+export const SURFACE_FLOOR_BASEBALL = 65;
+export const SURFACE_FLOOR_BASEBALL_PREMIUM = 72;
+// UFC — Gate 1 (TEST 2021-23, 1.061 fight): standard 70 → 81,4% su n=296,
+// premium 75 → 86,5% su n=170. Il favourite-longshot bias è persistente (i
+// grandi favoriti rendono PIÙ dell'implied), per questo il floor è più alto che
+// in MLB. Riserva dichiarata nell'audit: le quote archiviate del dataset sono
+// probabilmente early/soft, quindi dal vivo è attesa una compressione di qualche
+// punto — è lo shadow su quote vere l'arbitro, non il backtest.
+export const SURFACE_FLOOR_MMA = 70;
+export const SURFACE_FLOOR_MMA_PREMIUM = 75;
 // #WC-SURFACE-FLOOR (APPROVE Andrea + Michele 07/07): dedicated LOW floor for
 // the World Cup ONLY (68.5% live on 92 settled — the product's strong suit;
 // balanced knockouts must surface). Club stays at 56. Mirror of settings.py.
@@ -121,7 +143,14 @@ export function surfaceFloorFor(
   sport: string | null | undefined,
   competition: string | null | undefined
 ): number {
-  if ((sport ?? "").toLowerCase() === "tennis") return tennisFloorFor(competition);
+  const s = (sport ?? "").toLowerCase();
+  if (s === "tennis") return tennisFloorFor(competition);
+  // #NEWSPORTS: rami ESPLICITI per sport, così uno sport nuovo non può cadere in
+  // silenzio sul floor del calcio — 56 su una moneyline a due vie sarebbe
+  // pubblicare quasi tutto. Sport sconosciuto continua a cadere su football:
+  // è il caso "non lo conosciamo", non "lo trattiamo come baseball".
+  if (s === "baseball" || s === "mlb") return SURFACE_FLOOR_BASEBALL;
+  if (s === "mma" || s === "ufc") return SURFACE_FLOOR_MMA;
   const name = (competition ?? "").toLowerCase();
   // #WC-SURFACE-FLOOR: World Cup only — before the friendly/club resolution.
   if (name.includes("world cup")) return SURFACE_FLOOR_WC;

@@ -640,6 +640,51 @@ async def fetch_unsettled_unified_predictions(
         return []
 
 
+async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict]:
+    """
+    Coppie squadra-squadra già pubblicate per uno sport negli ultimi `days`
+    giorni, con la data di pubblicazione. Serve al cap anti-correlazione dei
+    nuovi sport (#NEWSPORTS): una pick già presa su una serie blocca la serie.
+
+    Perché esiste (autopsia shadow MLB 14/07): 8 delle 9 premium del primo
+    shadow erano LO STESSO bet ripetuto per tutto l'homestand dei Dodgers. Nove
+    righe, un solo esito indipendente: il 3/9 che ne è uscito non misurava il
+    modello, misurava una settimana. Il cap è l'unica difesa, e va letta dal DB
+    perché è lì che vive lo storico delle pick pubblicate.
+
+    Fail-soft: se la lettura non riesce torna [] e il chiamante NON pubblica
+    (fail-closed a monte) — meglio una pick in meno che una serie duplicata.
+    """
+    base = _rest_base()
+    if not base:
+        return []
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    params = {
+        "select": "home_team,away_team,published_at",
+        "sport": f"eq.{sport}",
+        "published_at": f"gte.{since}",
+        "order": "published_at.desc",
+        "limit": "500",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/unified_predictions", params=params, headers=_service_headers()
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "recent pairs fetch failed (%s): %s %s",
+                    sport,
+                    resp.status_code,
+                    resp.text[:200],
+                )
+                return []
+            return resp.json() or []
+    except Exception as exc:
+        logger.warning("recent pairs fetch error (%s): %s", sport, exc)
+        return []
+
+
 async def settle_unified_prediction(
     row_id: str,
     result: str,

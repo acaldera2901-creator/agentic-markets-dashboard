@@ -1,0 +1,191 @@
+# NEWSPORTS — MLB / UFC integration package (DARK)
+
+> Branch `michele/newsports-integration` · lab thread #NEWSPORTS-INTEGRATION-0705
+> Status: **DARK** — everything behind flags, nothing served. Gate 1 passed
+> (sealed backtests); Gate 2 live shadow running in `am-lab/nuovi-sport/`.
+> Floors in this package are **PROVISIONAL** until the shadow confirms them.
+
+## What ships in this branch
+
+| Piece | Files | Status |
+|---|---|---|
+| Surfacing floors per sport | `config/settings.py` (`SURFACE_FLOOR_BASEBALL`=**65**, `SURFACE_FLOOR_MMA`=70) | ✅ done |
+| Gate branches (Py + TS mirror) | `core/surfacing_gate.py`, `lib/surfacing-gate.ts` | ✅ done |
+| Tests (boundaries, aliases, settings-driven) | `tests/test_surfacing_gate.py`, `tests/surfacing-gate.test.ts` | ✅ done |
+| Enrichment/ingestion contract | this document | ✅ done |
+| Serving route (dark, `NEWSPORT_SERVE_ENABLED`) | `app/api/newsports/route.ts` | ✅ done |
+| Why builders + board UI (5 languages) | `app/app/page.tsx`, `lib/why-text.ts` | ⏳ next tranche — see worklist below |
+| Ingestion module (Andrea's answer 2026-07-05: Python agents) | `agents/baseball_model_agent.py`, `agents/mma_model_agent.py`, `core/mlb_stats_client.py`, `core/odds_api_client.py` (`get_h2h_events`/`market_consensus` + MLB/UFC SPORT_KEYS), `run.py` (flag-gated registration) | ✅ done — DARK (`NEWSPORT_*_AGENT_ENABLED=false`); exact port of the validated lab harnesses (mlb_v2/ufc_v2) incl. every audit rule; 41 unit tests |
+| Settlement | rides the existing unified settlement via the new MLB/UFC `SPORT_KEYS` entries (odds-api scores); `core/mlb_stats_client.get_final_result` available as MLB-native source | ⏳ verify at activation (needs live rows) |
+| Sportsbook bet-link plumbing (`BetSport`+`PairSport` unions, feed `SPORTS` set) | `lib/sportsbooks/types.ts`, `lib/team-pair-key.ts`, `lib/fortuneplay-live.ts` | ✅ done — coverage CONFIRMED by Andrea 2026-07-05 (feed live: MLB 35 matches/81 markets, UFC 32 matches). Coverage-agnostic: CTA only when the match is in the feed. Residual: Tommy's affiliate deep-link OK for baseball/mma |
+| Settlement | `agents/result_settlement.py` | ⏳ with ingestion module |
+
+## Sport naming (canonical)
+
+Following the existing generic-sport convention (`football`, `tennis`):
+
+- MLB → `sport = "baseball"`, `league = "MLB"`, `competition = "MLB Regular Season <year>"`
+- UFC → `sport = "mma"`, `league = "UFC"`, `competition = "<event name>"` (e.g. `"UFC 305"`)
+
+The gate also accepts the aliases `mlb`/`ufc` defensively, but ingestion MUST
+write the canonical values above.
+
+## Serving formula (Gate 1, both sports)
+
+`probability served = market devig (Pinnacle preferred, median fallback) + floor`.
+The model NEVER overrides the market probability — it feeds the why/warning only.
+This is the same architecture as football/tennis (probability-neutral gate).
+
+- MLB: floor **65** (premium **72**) — v2.2, loop premium 14/07, TEST 2018-21 sigillato: **68,3% su n=641 / 76,8% su n=95**, consistenza TRAIN→TEST 77,0→76,8.
+  ⚠️ **Aggiornato da #NEWSPORTS-V22-0801**: i valori del Gate 1 erano 62 (premium 65) e sono
+  superati — il loop ha misurato la banda 62-65 al **63,4%** (zavorra che abbassava lo standard)
+  e il salto di win-rate a 72. Il bound sulla quota di APERTURA è 73,2% contro 76,8% alla close:
+  per questo il tier si finalizza a ridosso del match (`NEWSPORT_BASEBALL_LATE_WINDOW_HOURS`).
+- UFC: floor 70 (premium 75) — Gate 1, TEST 2021-23 sigillato: 81,4% su n=296 / 86,5% su n=170.
+  Riserva dichiarata nell'audit: le quote archiviate del dataset sono probabilmente early/soft →
+  dal vivo è attesa una compressione di qualche punto. L'arbitro è lo shadow su quote vere.
+- Confidence = picked-outcome market probability, whole percent (max-prob),
+  identical semantics to football/tennis.
+
+## unified_predictions row contract
+
+No migration needed. Both sports are 2-outcome (no draw).
+
+### Baseball (MLB)
+
+```jsonc
+{
+  "sport": "baseball",
+  "source_table": "mlb_model",          // dedup namespace
+  "source_id": "<gamePk>",              // MLB Stats API gamePk (stable)
+  "league": "MLB",
+  "competition": "MLB Regular Season 2026",
+  "home_team": "Los Angeles Dodgers",
+  "away_team": "San Diego Padres",
+  "starts_at": "2026-07-05T22:10:00Z",
+  "pick": "HOME" | "AWAY",              // null if below floor
+  "signal_type": "signal" | "paper",
+  "edge_percent": null,                  // market-anchored: no edge claim
+  "notes": "{\"p_home\":0.657,\"p_away\":0.343,\"odds_home\":1.52,\"odds_away\":2.63,\"mkt_source\":\"pinnacle\",\"n_books\":30}",
+  "enrichment": { /* see below */ }
+}
+```
+
+Ingestion MUST also set the visibility guards the serving layer filters on
+(same as the football unified path): `published_at` (NOT NULL when servable),
+`expires_at` (event start + duration), `is_historical = false`, `is_demo = false`.
+
+`enrichment` (all fields produced today by the shadow harness `mlb_v2.mjs`):
+
+```jsonc
+{
+  "sp_home": "Emmet Sheehan",           // starting pitchers
+  "sp_away": "JP Sears",
+  "sp_home_fip_adj": 4.54,              // FIP-adjusted duel numbers (why signal 1)
+  "sp_away_fip_adj": 5.10,
+  "run_form_home": 1.84,                // run differential per game (why signal 2)
+  "run_form_away": -0.51,
+  "record_home": "59-31",               // season record (why signal 3)
+  "record_away": "43-45",
+  "p_model": 0.709,                     // standalone model prob (why/sanity only)
+  "model_agrees": true,                 // false at low floors → serve warning, no tier upgrade
+  "tier": "standard" | "premium",       // floor 65 vs 72 (v2.2)
+  "flags": [],                          // e.g. ["doubleheader"] — informational
+  "warm_up": false                      // first 20 games of season → do not serve
+}
+```
+
+### MMA (UFC)
+
+**Prod convention check (2026-07-05, read-only):** even tennis rows in
+`unified_predictions` carry the sides in `home_team`/`away_team` (the
+`player_one/two` columns exist but are null in practice). MMA follows the same
+convention: fighter A in the `home_team` slot, fighter B in `away_team`, and
+`notes` keys stay `p_home/p_away/odds_home/odds_away` for both sports — one
+uniform shape, one serving parser.
+
+```jsonc
+{
+  "sport": "mma",
+  "source_table": "ufc_model",
+  "source_id": "<odds-api event id>",
+  "league": "UFC",
+  "competition": "UFC 318",
+  "home_team": "Fighter A",
+  "away_team": "Fighter B",
+  "starts_at": "2026-07-11T02:00:00Z",
+  "pick": "HOME" | "AWAY",
+  "signal_type": "signal" | "paper",
+  "edge_percent": null,
+  "notes": "{\"p_home\":0.74,\"p_away\":0.26,\"odds_home\":1.35,\"odds_away\":3.20,\"mkt_source\":\"median\",\"n_books\":6}",
+  "enrichment": {
+    "tier": "standard" | "premium",     // floor 70 vs 75 (Gate 1)
+    "org_verified": true,               // TheSportsDB fail-closed UFC-only filter
+    "n_books": 6,                       // min 3 required (audit C1)
+    "window_ok": true,                  // 2-30h post weigh-in (subs/missed-weight guard)
+    "flags": []
+  }
+}
+```
+
+## Product rules (from Gate 1 reports, non-negotiable at serve time)
+
+1. **MLB warm-up**: no picks in the first 20 games of the season per team.
+2. **MLB regular season only** (no spring training, no postseason until tested).
+3. **MLB model disagreement** at floor-adjacent confidence → serve with warning
+3b. **Cap serie MLB** (`NEWSPORT_BASEBALL_SERIES_CAP_DAYS`, default 5): una pick sulla stessa
+   coppia di squadre blocca la serie. Nasce dall'autopsia del primo shadow — 8 delle 9 premium
+   erano lo stesso bet ripetuto per tutto l'homestand dei Dodgers, cioè nove righe e un solo
+   esito indipendente. Sui 10 anni il cap alza il premium da 77,4% a 78,6%.
+3c. **Flag opener MLB**: un rilievo listato come partente probabile (>=5 presenze, <=1 partenza)
+   rende falso il duello fra i partenti raccontato dal why. È un flag, non un blocco.
+   in the why, never upgrade tier.
+4. **UFC window**: candidates only enter 2–30h before the fight (post weigh-in);
+   protects against late substitutions and missed weight.
+5. **UFC org filter**: fail-closed — if the event can't be verified as UFC via
+   TheSportsDB, skip. Min 3 books on the fight.
+6. Quality>volume (product principle): niente pick sotto floor, mai.
+
+## Feature flags
+
+- `NEXT_PUBLIC_NEWSPORT_BASEBALL_ENABLED` — client: board tab + cards MLB
+- `NEXT_PUBLIC_NEWSPORT_MMA_ENABLED` — client: board tab + cards UFC
+- `NEWSPORT_SERVE_ENABLED` — server: include baseball/mma in the unified serving path
+- (ingestion-side flag named by whichever runtime is chosen, e.g. `MLB_AGENT_ENABLED`)
+
+All default **absent/false** = current behavior, byte-identical.
+
+## UI tranche worklist (next — best done with Andrea's groupBuilder-registry direction)
+
+The card layer is deeply integrated in `app/app/page.tsx` (inline `pick5` i18n,
+`MdsData` sheet payloads, FortunePlay odds, slip selection — helpers are
+module-private). Andrea's answer #2 (2026-07-04): at the 2nd sport, refactor the
+per-sport payload builders into a `groupBuilder` registry instead of copying the
+tennis function. Worklist, all behind `NEXT_PUBLIC_NEWSPORT_*_ENABLED`:
+
+1. `NewsportMatchCard` next to `TennisMatchCard` (2-outcome readout Market/Model/
+   Confidence, no edge claim — market-anchored) consuming `/api/newsports`.
+2. Board sections + sport filter tabs in the two board components
+   (`sportFilter` unions at page.tsx ~2164 and ~2489) + `SPORT_ICONS`/`SportIcon`
+   entries (⚾ baseball, 🥊 mma).
+3. `buildBaseballWhy` / `buildMmaWhy` beside `buildTennisWhy` (IT/EN like the
+   existing ones — the es/fr/ru frame-phrase debt is pre-existing and tracked
+   separately) reading the enrichment contract fields (sp FIP duel, run form,
+   record / org_verified, window, tier).
+4. i18n board labels (`board_baseball`, `board_mma`, empty-states) in the TR
+   dictionaries ×5 languages.
+5. `MdsGroup` icon union: reuse `"result"` for v1 (2-outcome winner market only);
+   sport-specific groups (pitcher props, method-of-victory) are post-activation.
+6. QA loggata multi-lingua + visual check (product pipeline).
+
+## Activation checklist (deploy-gate, in order)
+
+1. Shadow 2–4 weeks coherent with Gate 1 → final floors written to
+   `settings.py` + `surfacing-gate.ts` (one commit, both files).
+2. Andrea+Maven joint GO (product decision — committed 2026-07-04).
+3. Ingestion runtime decision executed + deployed (Andrea's lane).
+4. `THE_ODDS_API_KEY` in prod env (~2-3 credits/day).
+5. ~~BetConstruct coverage verdict~~ ✅ RESOLVED 2026-07-05 (Andrea: MLB+UFC in
+   the feed; unions/set widened in this branch). Residual: Tommy confirms the
+   affiliate deep-link/betslip works for baseball/mma.
+6. Flags ON via deploy-gate APPROVE.

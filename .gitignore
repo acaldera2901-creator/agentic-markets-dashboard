@@ -13,6 +13,10 @@ data/transfermarkt/
 data/wc2026_fixtures_cache.json
 .venv/
 venv/
+# #NEWSPORTS-V22-0801: qualunque virtualenv, non solo quello chiamato .venv. In
+# questo worktree ne esisteva uno (.venv-tennis-lab) creato dal lab, e un
+# `git add -A` distratto avrebbe committato ~15.000 file di site-packages.
+.venv*/
 __pycache__/
 *.pyc
 *.pyo

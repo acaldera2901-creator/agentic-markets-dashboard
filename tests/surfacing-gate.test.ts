@@ -6,6 +6,10 @@ import {
   SURFACE_FLOOR_TENNIS_LO,
   SURFACE_FLOOR_TENNIS_LO_GRASS,
   SURFACE_FLOOR_WC,
+  SURFACE_FLOOR_BASEBALL,
+  SURFACE_FLOOR_BASEBALL_PREMIUM,
+  SURFACE_FLOOR_MMA,
+  SURFACE_FLOOR_MMA_PREMIUM,
   surfaceDecision,
   surfaceFloorFor,
   tennisFloorFor,
@@ -132,6 +136,40 @@ assert.equal(SURFACE_FLOOR_WC, 26);
   assert.equal(surfaceFloorFor("football", "Serie A"), 56);
   assert.equal(isSurfacedRow({ sport: "football", competition: "Serie B", confidence_score: 64 }), false);
   assert.equal(isSurfacedRow({ sport: "football", competition: "Serie B", confidence_score: 65 }), true);
+}
+
+// ── Sport nuovi (#NEWSPORTS) — floor v2.2 per MLB, Gate 1 per UFC ───────────
+{
+  // ⚠️ 65/72, NON i 62/65 del Gate 1: il loop premium del 14/07 ha misurato la
+  // banda 62-65 al 63,4% (zavorra) e il salto di win-rate a 72. Se questi numeri
+  // cambiano, devono cambiare ANCHE in config/settings.py — sono uno specchio.
+  assert.equal(SURFACE_FLOOR_BASEBALL, 65);
+  assert.equal(SURFACE_FLOOR_BASEBALL_PREMIUM, 72);
+  assert.equal(SURFACE_FLOOR_MMA, 70);
+  assert.equal(SURFACE_FLOOR_MMA_PREMIUM, 75);
+
+  // Rami espliciti per sport, con gli alias usati dalle due sorgenti.
+  assert.equal(surfaceFloorFor("baseball", "MLB Regular Season 2026"), 65);
+  assert.equal(surfaceFloorFor("mlb", null), 65);
+  assert.equal(surfaceFloorFor("mma", "UFC Fight Night 283"), 70);
+  assert.equal(surfaceFloorFor("ufc", null), 70);
+  // Case-insensitive come gli altri sport.
+  assert.equal(surfaceFloorFor("Baseball", "MLB"), 65);
+  assert.equal(surfaceFloorFor("MMA", "UFC 300"), 70);
+
+  // Confini inclusivi, stesso contratto di calcio e tennis.
+  assert.equal(isSurfacedRow({ sport: "baseball", competition: "MLB", confidence_score: 64 }), false);
+  assert.equal(isSurfacedRow({ sport: "baseball", competition: "MLB", confidence_score: 65 }), true);
+  assert.equal(isSurfacedRow({ sport: "mma", competition: "UFC 300", confidence_score: 69 }), false);
+  assert.equal(isSurfacedRow({ sport: "mma", competition: "UFC 300", confidence_score: 70 }), true);
+
+  // Il nome della competizione NON deve poter dirottare il floor di uno sport
+  // nuovo su un override del calcio: "MLB ... Serie B" resta baseball.
+  assert.equal(surfaceFloorFor("baseball", "Serie B"), 65);
+
+  // Uno sport DAVVERO sconosciuto continua a cadere sul floor del calcio: e' il
+  // caso "non lo conosciamo", non "lo trattiamo come baseball".
+  assert.equal(surfaceFloorFor("cricket", null), SURFACE_FLOOR_FOOTBALL);
 }
 
 console.log("surfacing gate ok");
