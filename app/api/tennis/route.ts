@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { resolveAccessState } from "@/lib/auth";
-import { isUnlocked } from "@/lib/access-projection";
+import { isUnlocked, showcaseRanking } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
 import { surfaceDecision, tennisFloorFor } from "@/lib/surfacing-gate";
@@ -16,13 +16,27 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
   matches: T[],
   state: AccessState
 ): Array<T & { locked: boolean; pick_of_day: boolean }> {
-  // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc (fallback confidence)
-  // tra le partite tennis. free sblocca rank<1, base rank<5, premium tutto.
-  const rankById = new Map<string, number>();
-  [...matches]
-    .map((m) => ({ id: m.id, edge: typeof m.edge === "number" ? m.edge : -Infinity, conf: Math.max(m.p1, m.p2) }))
-    .sort((a, b) => b.edge - a.edge || b.conf - a.conf)
-    .forEach((r, i) => rankById.set(r.id, i));
+  // Vetrina settimanale (#PLANS-3TIER-1): free sblocca rank<1, base rank<5,
+  // premium tutto. L'ORDINE è showcaseRanking — pick sopra floor prima, poi
+  // confidenza, poi edge (#SHOWCASE-EDGE-0801: l'ordine per edge desc sbloccava
+  // righe senza pick e lasciava bloccati i pick; il tennis aveva la stessa riga
+  // del football, quindi lo stesso difetto).
+  //
+  // Qui il floor è quello segment-aware del torneo, la stessa risoluzione usata
+  // sotto per decidere se mostrare la direzione: si calcola una volta e la si
+  // riusa, così ordine e contenuto della card non possono divergere.
+  const rankById = showcaseRanking(
+    matches.map((m) => {
+      const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
+      const floor = tennisFloorFor((m as { tournament?: string }).tournament);
+      return {
+        id: m.id,
+        surfaced: surfaceDecision(confidence, floor).isPick,
+        conf: Math.max(m.p1, m.p2),
+        edge: typeof m.edge === "number" ? m.edge : null,
+      };
+    })
+  );
   return matches.map((m) => {
     const rank = rankById.get(m.id) ?? Infinity;
     const isPotD = rank === 0;

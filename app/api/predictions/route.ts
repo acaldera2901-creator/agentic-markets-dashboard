@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAccessState, type AccessState } from "@/lib/auth";
-import { isUnlocked } from "@/lib/access-projection";
+import { isUnlocked, showcaseRanking } from "@/lib/access-projection";
 import { verifyBearer } from "@/lib/admin-auth";
 // #PRELAUNCH-AUDIT: chiavi premium in lib/enrichment-gate (single source, condivise
 // con /api/data che prima leakava l'enrichment grezzo al tier Base).
@@ -921,18 +921,25 @@ export async function GET(req: Request) {
     return hydrated;
   });
 
-  // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc (fallback confidence)
-  // tra le righe football di questo endpoint. free sblocca rank<1, base rank<5,
-  // premium tutto (vedi showcaseAllowance/isUnlocked).
-  const rankById = new Map<string, number>();
-  [...hydratedRows]
-    .map((p) => ({
+  // Vetrina settimanale (#PLANS-3TIER-1): free sblocca rank<1, base rank<5,
+  // premium tutto (vedi showcaseAllowance/isUnlocked). L'ORDINE è
+  // showcaseRanking — pick sopra floor prima, poi confidenza, poi edge
+  // (#SHOWCASE-EDGE-0801: il vecchio ordine per edge desc sbloccava righe senza
+  // pick e lasciava bloccati i pick, motivazione completa in access-projection).
+  //
+  // `surfaced` si legge dal flag che il gate ha già scritto qui sopra:
+  // enrichment.surface esiste SOLO quando la riga è sotto floor, quindi la sua
+  // assenza significa "pick direzionale" — è la stessa lettura che fa il
+  // frontend, e non ri-deriva la soglia in un secondo posto.
+  const rankById = showcaseRanking(
+    hydratedRows.map((p) => ({
       id: p.match_id,
-      edge: typeof p.edge === "number" ? p.edge : -Infinity,
+      surfaced:
+        (p.enrichment as EnrichmentPayload | undefined)?.surface?.below_floor !== true,
       conf: Math.max(p.p_home, p.p_draw, p.p_away),
+      edge: typeof p.edge === "number" ? p.edge : null,
     }))
-    .sort((a, b) => b.edge - a.edge || b.conf - a.conf)
-    .forEach((r, i) => rankById.set(r.id, i));
+  );
 
   const predictions = hydratedRows.map((p) =>
     projectPredictionRow(p, state, rankById.get(p.match_id) ?? Infinity)

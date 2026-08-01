@@ -43,10 +43,60 @@ export function showcaseAllowance(state: AccessState): number {
   return 0;                          // anonymous, pending_payment, unpaid
 }
 
-// Una riga è sbloccata se il suo rank (0-based, per edge desc dentro lo sport)
-// rientra nella quota della vetrina del piano.
+// Una riga è sbloccata se il suo rank (0-based, dentro lo sport) rientra nella
+// quota della vetrina del piano.
 export function isUnlocked(state: AccessState, rankInSport: number): boolean {
   return rankInSport < showcaseAllowance(state);
+}
+
+// ── Ordine della vetrina (#SHOWCASE-EDGE-0801) ───────────────────────────────
+// QUESTA è la funzione che decide quali righe un abbonato vede sbloccate, e per
+// questo l'ordine deve essere quello di ciò che il prodotto vende.
+//
+// Prima ordinava per EDGE decrescente, in football e in tennis, con la
+// confidenza come solo spareggio. Era coerente col prodotto di allora, che
+// ragionava per edge. Poi il lab dell'08/06 ha stabilito la verità #1 — non
+// battiamo la linea di chiusura in nessun segmento — e da lì il blend (α=0.3)
+// tira le probabilità servite verso il mercato PER COSTRUZIONE: l'edge sulle
+// righe servite è ≈ 0 per progetto. Ordinare per edge, oggi, è ordinare per
+// rumore: i primi cinque non sono i cinque migliori, sono i cinque in cui il
+// residuo numerico è capitato più alto.
+//
+// L'effetto misurato sul board del 2026-08-01 (49 partite football servite, 4
+// con un pick sopra floor): con l'ordine per edge un abbonato `base` sbloccava
+// 5 righe di cui UNA sola conteneva un pick, e tre dei quattro pick finivano ai
+// rank 22, 24 e 42. Il caso peggiore era il pick con la confidenza più alta di
+// tutto il board (71%), che avendo edge NEGATIVO stava al rank 42 su 49.
+//
+// L'ordine corretto mette davanti ciò che il floor ha promosso a pick, poi la
+// confidenza (che è l'asset misurato dal lab: calibrazione + selettività), e
+// solo come ultimo spareggio l'edge. `id` chiude come tiebreak deterministico:
+// senza, due righe identiche cambierebbero posto a ogni ciclo e con loro
+// cambierebbe cosa l'utente trova sbloccato.
+export type ShowcaseCandidate = {
+  id: string;
+  /** true = il gate di surfacing ha promosso la riga a pick direzionale. */
+  surfaced: boolean;
+  /** probabilità dell'esito di punta, 0-1. */
+  conf: number;
+  /** edge servito; null/NaN quando non calcolabile (nessuna quota reale). */
+  edge: number | null;
+};
+
+export function compareShowcase(a: ShowcaseCandidate, b: ShowcaseCandidate): number {
+  if (a.surfaced !== b.surfaced) return a.surfaced ? -1 : 1;
+  if (b.conf !== a.conf) return b.conf - a.conf;
+  const ea = typeof a.edge === "number" && Number.isFinite(a.edge) ? a.edge : -Infinity;
+  const eb = typeof b.edge === "number" && Number.isFinite(b.edge) ? b.edge : -Infinity;
+  if (eb !== ea) return eb - ea;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/** Rank 0-based per id. Non muta l'input. */
+export function showcaseRanking(rows: readonly ShowcaseCandidate[]): Map<string, number> {
+  const rank = new Map<string, number>();
+  [...rows].sort(compareShowcase).forEach((r, i) => rank.set(r.id, i));
+  return rank;
 }
 
 export function projectPrediction(
