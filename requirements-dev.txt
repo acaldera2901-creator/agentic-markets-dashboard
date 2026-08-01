@@ -1,0 +1,17 @@
+# #CI-PYTHON-DEPS-0801 — dipendenze che servono SOLO per eseguire i test, tenute
+# fuori da requirements.txt per non appesantire il runtime degli agenti.
+#
+# In CI si installano entrambi i file (vedi .github/workflows/ci.yml).
+-r requirements.txt
+
+# tests/test_api_context.py gira su un DB in memoria `sqlite+aiosqlite:///:memory:`.
+# Non compare in nessun `import`: e' SQLAlchemy che lo carica dal nome del dialect,
+# quindi una scansione degli import non lo trova — lo ha trovato la CI, fallendo
+# in fase di COLLECTION con ModuleNotFoundError.
+aiosqlite>=0.20.0
+
+# OPZIONALE, volutamente non incluso: psycopg2-binary. I test di vincolo DB in
+# tests/test_track_record_proof.py importano psycopg2 DENTRO le funzioni e sono
+# dietro uno skip che scatta quando PICK_LEDGER_TEST_DSN non e' valorizzato —
+# quindi in CI non servono. Aggiungerlo solo se si decide di far girare quei test
+# contro un Postgres usa-e-getta (mai contro produzione: sta scritto nel file).

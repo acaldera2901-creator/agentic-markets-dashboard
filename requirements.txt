@@ -21,3 +21,12 @@ google-auth-oauthlib>=1.2.0
 pyyaml>=6.0
 pandas>=2.0.0
 shap>=0.45.0
+
+# #CI-PYTHON-DEPS-0801 — dipendenze di RUNTIME che il codice importa da sempre e
+# che non erano dichiarate. Scoperte dal primo giro del job Python in CI: in
+# locale c'erano nella venv (installate a mano tempo addietro), quindi la suite
+# passava e nessuno se ne accorgeva. Un `pip install -r requirements.txt` pulito
+# non riusciva a importare il modello xG ne' il client Matchbook.
+scikit-learn>=1.5.0   # models/calibration.py, models/xg_model.py
+requests>=2.32.0      # core/matchbook_client.py
+
