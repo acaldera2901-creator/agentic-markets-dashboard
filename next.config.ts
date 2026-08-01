@@ -19,7 +19,13 @@ const CSP_POLICY = [
   // script, its checkout iframes and its XHR all cross to paypal.com.
   // *.paypal.com also covers www.sandbox.paypal.com (CSP host wildcards match
   // nested subdomains); paypalobjects/cdn-apple serve SDK assets.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com",
+  // #CSP-ENFORCE-0801: aggiunto https://vercel.live (decisione Andrea). E' il
+  // feedback del toolbar Vercel, iniettato SOLO se il cookie del toolbar e'
+  // presente — quindi lo carica il team quando naviga la produzione, mai un
+  // cliente (verificato: non compare in nessuna delle 8 pagine pubbliche). In
+  // enforce senza questa voce l'unica cosa che si romperebbe sarebbe la toolbar
+  // per noi.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live",
   "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://*.tawk.to https://chat.betredge.com",
