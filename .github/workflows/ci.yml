@@ -7,10 +7,13 @@
 # test sono rimasti rossi per settimane senza che nessuno lo sapesse (dettagli nel
 # commit di #TESTS-CI-0801).
 #
-# Cosa gira qui: i tre step verificati verdi sul commit che introduce questo file.
-# pytest NON è ancora qui di proposito: gli agenti Python hanno bisogno di env e
-# di verifica su runner Linux prima di essere messi a gate, e una CI che nasce
-# rossa non la guarda nessuno. È il passo successivo, dichiarato e non dimenticato.
+# Cosa gira qui: gli step verificati verdi sul commit che li introduce.
+#
+# #MIGRATION-REPLAY-0801: aggiunto il job Python, che era dichiarato come "passo
+# successivo" e ora è possibile — la suite era 1140 verdi e 1 rosso, e quel rosso
+# non era flaky ma un difetto vero (il log di audit sovrascriveva una voce quando
+# due audit cadevano nello stesso tick dell'orologio). Chiuso quello, pytest passa
+# 1105/1105 e può stare a gate.
 name: CI
 
 on:
@@ -46,3 +49,25 @@ jobs:
         env:
           CRM_UNSUB_SECRET: ${{ secrets.CRM_UNSUB_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      # Gli agenti Python: modello, gate di surfacing, settlement, client dati.
+      - name: Pytest
+        run: python -m pytest -q
+
+      # Le migration devono restare RI-ESEGUIBILI: il registro remoto e i file
+      # locali hanno divergito una volta (#MIGRATION-DRIFT-0801) e la via di
+      # riconciliazione passa dal ri-applicarle. Questo gate impedisce che una
+      # migration nuova reintroduca uno statement che alla seconda esecuzione
+      # erra o — peggio, perché silenzioso — riscrive dati di produzione.
+      - name: Migration replay-safety
+        run: python scripts/check_migrations_replayable.py

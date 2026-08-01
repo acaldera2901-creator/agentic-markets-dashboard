@@ -12,9 +12,21 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activation_token_expires ti
 -- marcati come attivati, altrimenti il nuovo login li bloccherebbe fuori.
 -- L'unico profilo senza password (legacy, mai reclamato) resta NON attivo e
 -- dovrà registrarsi + attivare via email.
+-- #MIGRATION-REPLAY-0801 — la clausola `created_at < '2026-06-10'` è una GUARDIA
+-- DI REPLAY, non un cambio di comportamento. Senza di essa questo backfill, se
+-- ri-eseguito oggi, attiverebbe OGNI account che ha impostato una password ma non
+-- ha ancora cliccato il link di attivazione — cioè scavalcherebbe esattamente il
+-- gate che questa migration ha introdotto per chiudere #AUDIT HIGH-3. Misurato il
+-- 2026-08-01: cinque profili sarebbero in quella condizione, fra cui un premium e
+-- un admin_full.
+-- Perché non altera la storia: i profili creati DOPO il 2026-06-10 non esistevano
+-- quando la migration è stata applicata la prima volta, quindi la popolazione che
+-- toccava allora è identica. Cambia solo il futuro: da ora un replay è un no-op.
 UPDATE public.profiles
    SET activated_at = COALESCE(updated_at, created_at, NOW())
- WHERE password_hash IS NOT NULL AND activated_at IS NULL;
+ WHERE password_hash IS NOT NULL
+   AND activated_at IS NULL
+   AND created_at < '2026-06-10';
 
 -- Rollback:
 -- ALTER TABLE public.profiles DROP COLUMN IF EXISTS activated_at;

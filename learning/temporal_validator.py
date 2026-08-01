@@ -150,8 +150,21 @@ class TemporalLeakageValidator:
     # ── Persistence ───────────────────────────────────────────────────────────
 
     def _save_report(self, report: AuditReport) -> None:
+        # #MIGRATION-REPLAY-0801 — il nome conteneva i microsecondi e sembrava
+        # unico, ma l'orologio di sistema NON ha quella risoluzione: misurato su
+        # Windows, 200 letture consecutive di utcnow() rendono UN SOLO valore
+        # (granularita' ~2 ms). Due audit consecutivi finivano quindi nello stesso
+        # file e il secondo SOVRASCRIVEVA il primo: un log di audit che perde una
+        # voce senza dirlo. Su Linux la granularita' e' al microsecondo e il caso
+        # non si vedeva, ed e' per questo che il test che lo copre
+        # (tests/test_temporal_validator.py) risultava "flaky" invece che rotto.
+        # Suffisso incrementale finche' il nome e' libero: nessuna voce si perde.
         ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
         path = self.audit_log_dir / f"temporal_audit_{ts}.json"
+        seq = 1
+        while path.exists():
+            path = self.audit_log_dir / f"temporal_audit_{ts}_{seq}.json"
+            seq += 1
         payload = {
             "leakage_count": report.leakage_count,
             "leakage_pct": report.leakage_pct,
