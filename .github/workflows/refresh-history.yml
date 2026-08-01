@@ -1,0 +1,71 @@
+# #HISTORY-REFRESH-JOB-0801 — rigenera lo snapshot storico e apre una PR.
+#
+# Autorizzato da Andrea in #REQ-DEC-260801-01: "Andrea sceglie il job automatico
+# che lancia lo script e apre la PR da solo (meglio di un promemoria umano il
+# lunedì) — ora che è path-agnostico ed eseguibile fuori dalla tua macchina.
+# Predisponilo pure; il merge della PR settimanale resta gated come sempre."
+#
+# PERCHÉ ESISTE. `data/summer_leagues/history.json` è la metà storica del modello
+# Poisson delle 11 leghe off-free-tier. Il 2026-08-01 si è scoperto che era fermo
+# all'8-31 maggio: giugno e luglio mancavano per TUTTE le leghe, comprese le
+# cinque estive che in quei mesi sono in pieno campionato, e cinque squadre della
+# stagione nuova non esistevano nel roster — le loro partite venivano scartate
+# dal gate fail-closed. Non per un bug: perché il refresh era una procedura
+# manuale su quattro script con i path scritti a mano su una singola macchina, e
+# una procedura che nessun altro può eseguire non viene eseguita.
+#
+# IL JOB APRE UNA PR, NON PUSHA SU MAIN. Il diff dello snapshot va guardato: lo
+# script stampa nel log quali squadre entrano ed escono, ed è quella la review.
+# Il merge resta gated come ogni altra modifica.
+name: Refresh history snapshot
+
+on:
+  schedule:
+    # Lunedì 05:00 UTC — prima del cron delle previsioni delle 06:00, così il
+    # primo ciclo della settimana gira già sul modello aggiornato.
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      # Lo script è fail-closed sulle sorgenti: se football-data non risponde per
+      # una lega, quel blocco NON viene sovrascritto (si tiene il precedente) e lo
+      # dichiara nel log. Quindi una giornata storta non svuota il board.
+      - name: Rigenera lo snapshot
+        id: refresh
+        run: |
+          python scripts/refresh_history_snapshot.py | tee refresh.log
+          echo "changed=$(git diff --quiet -- data/summer_leagues/history.json && echo no || echo yes)" >> "$GITHUB_OUTPUT"
+
+      # Il gate di replay-safety gira anche qui: se il refresh introducesse uno
+      # stato che rompe le migration, si ferma prima della PR.
+      - name: Migration replay-safety
+        if: steps.refresh.outputs.changed == 'yes'
+        run: python scripts/check_migrations_replayable.py
+
+      - name: Apri la PR
+        if: steps.refresh.outputs.changed == 'yes'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: auto/history-refresh
+          # Un solo branch riusato: se la PR della settimana scorsa non è stata
+          # mergiata, questa la aggiorna invece di aprirne una seconda. Meglio una
+          # PR sempre fresca che una coda di PR stantìe che nessuno guarda.
+          title: "chore(leagues): refresh settimanale dello snapshot storico"
+          body-path: refresh.log
+          commit-message: "chore(leagues): refresh settimanale dello snapshot storico (#HISTORY-REFRESH-JOB-0801)"
+          labels: automated
+          delete-branch: false

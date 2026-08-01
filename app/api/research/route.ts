@@ -2,8 +2,28 @@ import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 
-/** GET — returns all recent research summaries (match_id → summary) */
-export async function GET() {
+/** GET — recent research summaries (match_id → summary). Stesso gate del POST.
+ *
+ * #RESEARCH-GET-GATE-0801 — era l'unico verbo aperto di questa route: il POST è
+ * default-deny da sempre (`verifyBearer` + secret mancante = chiuso), il GET no.
+ * L'asimmetria era stata trovata dall'audit pre-lancio dell'08/06 e il fix era
+ * pronto sul branch `michele/prelaunch-fixes`, che non è mai stato deciso — così
+ * è rimasta aperta per due mesi.
+ *
+ * Cosa esponeva: `match_id`, `summary` e `created_at` di ogni ricerca delle
+ * ultime 48 ore, cioè il testo generato dall'agente Research, a chiunque
+ * conoscesse l'URL. Verificato stasera: oggi risponde `{"research":[]}` perché
+ * non ci sono righe recenti — quindi non ha perso nulla finora, ma è una porta
+ * che si apre da sola appena l'agente scrive.
+ *
+ * Nessun consumer client (verificato con grep su app/, components/, lib/): il
+ * board legge le ricerche server-side dentro /api/predictions, non da qui.
+ * Chiudere il GET non toglie niente a nessuna pagina.
+ */
+export async function GET(req: Request) {
+  if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const rows = await dbQuery<{ match_id: string; summary: string; created_at: string }>(
     `SELECT match_id, summary, created_at FROM match_research
      WHERE created_at > NOW() - INTERVAL '48 hours'
