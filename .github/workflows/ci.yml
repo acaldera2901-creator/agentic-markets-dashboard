@@ -1,0 +1,48 @@
+# #TESTS-CI-0801 — la prima CI che esegue i test di questo repo.
+#
+# Prima di questo file .github/workflows/ conteneva SOLO supabase-migrations.yml,
+# e vercel.json esegue `npm run build`: quindi 542 test vitest, 36 test standalone
+# in tests/ e la suite pytest non venivano lanciati da niente in automatico. Una
+# regressione passava se `next build` compilava — ed è esattamente così che tre
+# test sono rimasti rossi per settimane senza che nessuno lo sapesse (dettagli nel
+# commit di #TESTS-CI-0801).
+#
+# Cosa gira qui: i tre step verificati verdi sul commit che introduce questo file.
+# pytest NON è ancora qui di proposito: gli agenti Python hanno bisogno di env e
+# di verifica su runner Linux prima di essere messi a gate, e una CI che nasce
+# rossa non la guarda nessuno. È il passo successivo, dichiarato e non dimenticato.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # Le suite vitest: {app,lib,components,features}/**/*.test.{ts,tsx}
+      - name: Vitest
+        run: npm test
+
+      # I test di tests/ NON sono suite vitest (nessuno importa da vitest): sono
+      # script node:assert / node:test autonomi. Vanno eseguiti con un runner TS,
+      # non aggiunti all'include di vitest — vedi scripts/run-standalone-tests.mjs.
+      # I due che richiedono segreti vengono SALTATI con messaggio se le variabili
+      # non ci sono: passa i secret qui sotto quando volete anche quelli a gate.
+      - name: Test standalone (tests/)
+        run: node scripts/run-standalone-tests.mjs
+        env:
+          CRM_UNSUB_SECRET: ${{ secrets.CRM_UNSUB_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
