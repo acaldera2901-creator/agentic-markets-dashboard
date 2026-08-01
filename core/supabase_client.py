@@ -748,8 +748,21 @@ async def record_pick_settlement(
     }
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            # #SETTLEMENT-DEDUP-0801 — ON CONFLICT DO NOTHING sulla chiave del
+            # pick. Questo writer e il cron TS di failover possono regolare lo
+            # stesso pick: senza questo, il secondo scriveva una riga in conflitto
+            # (sono le 11 coppie `won+void` trovate il 01/08) e con la UNIQUE
+            # appena aggiunta scriverebbe un ERRORE a ogni run. Vince la PRIMA
+            # scrittura, che è anche la regola che il runner ora implementa.
+            headers = {
+                **_service_headers(),
+                "Prefer": "resolution=ignore-duplicates,return=minimal",
+            }
             resp = await client.post(
-                f"{base}/pick_settlement", json=payload, headers=_service_headers()
+                f"{base}/pick_settlement"
+                "?on_conflict=source_table,source_id,model_version",
+                json=payload,
+                headers=headers,
             )
             if resp.status_code in (200, 201, 204):
                 return True

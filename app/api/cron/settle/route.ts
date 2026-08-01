@@ -183,15 +183,25 @@ export async function GET(req: NextRequest) {
         // expected (we only ledger picks we recorded), not an error.
         const realized =
           m.homeGoals === m.awayGoals ? "DRAW" : m.homeGoals > m.awayGoals ? "HOME" : "AWAY";
-        const { error: psErr } = await sb.from("pick_settlement").insert({
-          source_table: "match_predictions",
-          source_id: String(row.external_event_id),
-          model_version: "football-v4-xg-model",
-          result: outcome,
-          outcome: realized,
-          final_score: `${m.homeGoals}-${m.awayGoals}`,
-          closing_odds: null,
-        });
+        // #SETTLEMENT-DEDUP-0801: upsert con ignoreDuplicates, non insert nudo.
+        // Questo cron è il failover del path Python: entrambi possono regolare
+        // lo stesso pick, e prima il secondo scriveva una riga in CONFLITTO con
+        // la prima (le 11 coppie `won+void` del 01/08). Con la UNIQUE su
+        // (source_table, source_id, model_version) un insert nudo darebbe errore
+        // a ogni run: qui la seconda scrittura viene ignorata in silenzio, che è
+        // il comportamento voluto — vince chi ha regolato per primo.
+        const { error: psErr } = await sb.from("pick_settlement").upsert(
+          {
+            source_table: "match_predictions",
+            source_id: String(row.external_event_id),
+            model_version: "football-v4-xg-model",
+            result: outcome,
+            outcome: realized,
+            final_score: `${m.homeGoals}-${m.awayGoals}`,
+            closing_odds: null,
+          },
+          { onConflict: "source_table,source_id,model_version", ignoreDuplicates: true }
+        );
         if (psErr && psErr.code !== "23503") {
           report.errors.push(`pick_settlement:${row.id}:${psErr.message}`);
         }

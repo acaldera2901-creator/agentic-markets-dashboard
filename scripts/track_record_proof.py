@@ -7,9 +7,11 @@ on the picks that were ACTUALLY served — joined on (source_table, source_id,
 model_version). The point is reproducibility: anyone can re-run this against an
 export of the ledger and get the identical numbers the product publishes.
 
-Determinism: fixed seed, no randomness, no network, no DB writes. Settlements
-are append-only — when more than one settlement row exists for a pick the LATEST
-by settled_at wins (in-place edits are impossible by migration design, so a
+Determinism: fixed seed, no randomness, no network, no DB writes. Dal
+2026-08-01 (#SETTLEMENT-DEDUP-0801) una UNIQUE su (source_table, source_id,
+model_version) garantisce UNA sola riga di settlement per pick e i due scrittori
+usano ON CONFLICT DO NOTHING: vince la PRIMA. Prima vinceva l'ultima per
+settled_at (in-place edits are impossible by migration design, so a
 correction is a new row).
 
 Run:
@@ -88,21 +90,46 @@ def load_ledger(path: Path) -> dict[tuple[str, str, str], LedgerPick]:
 
 
 def load_settlements(path: Path) -> dict[tuple[str, str, str], Settlement]:
-    """Latest settlement per key wins (append-only corrections)."""
-    latest: dict[tuple[str, str, str], Settlement] = {}
+    """Un solo settlement per pick: vince il PRIMO (#SETTLEMENT-DEDUP-0801).
+
+    Prima qui vinceva l'ULTIMO per settled_at, perché il design prevedeva le
+    correzioni come nuova riga. Dal 2026-08-01 c'e' una UNIQUE su
+    (source_table, source_id, model_version) e i due scrittori inseriscono con
+    ON CONFLICT DO NOTHING: una seconda riga non puo' piu' nascere, e se un
+    export vecchio ne contiene una vince quella arrivata per prima — la stessa
+    regola che il database applica adesso.
+
+    Il cambio non e' cosmetico: con "l'ultimo vince", le 11 righe `void` scritte
+    per errore DOPO un `won`/`lost` reale (bug dei due scrittori, trovato il
+    01/08) avrebbero fatto leggere quei pick come void, cioe' esclusi dal
+    conteggio. Allineare il lettore al vincolo toglie quella possibilita'.
+
+    Il conteggio dei duplicati incontrati viene restituito al chiamante tramite
+    `load_settlements.duplicates`: su un libro mastro un doppione va detto, non
+    scartato in silenzio.
+    """
+    first: dict[tuple[str, str, str], Settlement] = {}
+    duplicates = 0
     with path.open(newline="") as f:
         for r in csv.DictReader(f):
             key = (r["source_table"], r["source_id"], r["model_version"])
-            s = Settlement(
+            if key in first:
+                duplicates += 1
+                continue
+            first[key] = Settlement(
                 result=r["result"],
                 outcome=(r.get("outcome") or None),
                 closing_odds=_f(r.get("closing_odds")),
                 settled_at=r.get("settled_at", ""),
             )
-            prev = latest.get(key)
-            if prev is None or s.settled_at >= prev.settled_at:
-                latest[key] = s
-    return latest
+    load_settlements.duplicates = duplicates  # type: ignore[attr-defined]
+    if duplicates:
+        print(
+            f"ATTENZIONE: {duplicates} righe di settlement duplicate nell'export "
+            f"(ignorate, vince la prima). Con la UNIQUE attiva non dovrebbero esistere: "
+            f"se l'export e' recente, va indagato."
+        )
+    return first
 
 
 # ─── metrics ────────────────────────────────────────────────────────────────

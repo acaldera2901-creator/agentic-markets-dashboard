@@ -139,19 +139,46 @@ def test_xg_and_dc_predictions_for_same_match_coexist(ledger_csv):
     )
 
 
-def test_latest_settlement_wins(tmp_path):
+def test_first_settlement_wins(tmp_path):
+    """#SETTLEMENT-DEDUP-0801 — la regola e' cambiata: vince la PRIMA riga.
+
+    Prima vinceva l'ultima per settled_at, perche' il design prevedeva le
+    correzioni come nuova riga. Dal 01/08 c'e' una UNIQUE su
+    (source_table, source_id, model_version) e i due scrittori inseriscono con
+    ON CONFLICT DO NOTHING: una seconda riga non nasce piu', e il lettore deve
+    dire la stessa cosa del database.
+
+    Il caso qui sotto e' quello reale che ha motivato il cambio: un `void`
+    scritto DOPO un `lost` reale dal secondo scrittore. Con "l'ultimo vince"
+    quel pick veniva letto come void, cioe' spariva dal conteggio.
+    """
     rows = [
         dict(source_table="t", source_id="x", model_version="v",
              result="lost", outcome="HOME", closing_odds="2.0",
              settled_at="2026-06-10T20:00:00Z"),
         dict(source_table="t", source_id="x", model_version="v",
-             result="won", outcome="AWAY", closing_odds="2.0",
-             settled_at="2026-06-11T09:00:00Z"),  # correction, later
+             result="void", outcome="HOME", closing_odds="2.0",
+             settled_at="2026-06-11T09:00:00Z"),  # il void spurio del 2o scrittore
     ]
     p = tmp_path / "s.csv"
     _write_csv(p, rows)
     s = load_settlements(p)
-    assert s[("t", "x", "v")].result == "won"
+    assert s[("t", "x", "v")].result == "lost"
+    # il doppione va CONTATO, non ignorato in silenzio: su un libro mastro
+    # l'esistenza di una riga in piu' e' essa stessa un'informazione.
+    assert getattr(load_settlements, "duplicates", 0) == 1
+
+
+def test_no_duplicates_no_warning(tmp_path):
+    rows = [
+        dict(source_table="t", source_id="x", model_version="v",
+             result="won", outcome="AWAY", closing_odds="2.0",
+             settled_at="2026-06-10T20:00:00Z"),
+    ]
+    p = tmp_path / "s.csv"
+    _write_csv(p, rows)
+    load_settlements(p)
+    assert getattr(load_settlements, "duplicates", 0) == 0
 
 
 # ─── (1) look-ahead CHECK — DB ───────────────────────────────────────────────────
