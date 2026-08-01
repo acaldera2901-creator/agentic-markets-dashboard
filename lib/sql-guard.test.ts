@@ -13,7 +13,7 @@
 // template-interpolated call site (verified 2026-07-13).
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
@@ -68,7 +68,14 @@ function scan(): Violation[] {
   const violations: Violation[] = [];
   for (const file of files) {
     const src = readFileSync(file, "utf8");
-    const rel = relative(REPO_ROOT, file);
+    // #TESTS-CI-0801 — separatori normalizzati a "/" SEMPRE. Su Windows
+    // relative() rende "lib\plan-grant.ts" mentre le chiavi dell'ALLOWLIST sono
+    // scritte con "/": nessuna chiave combaciava, il guard riportava 7
+    // violazioni finte e restava rosso in permanenza. Un test sempre rosso è un
+    // test spento — e questo è il guard che impedisce di interpolare dati utente
+    // dentro una query. Su Linux passava per caso, perché lì il separatore è già
+    // quello giusto.
+    const rel = relative(REPO_ROOT, file).split(sep).join("/");
     DB_INTERP_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = DB_INTERP_RE.exec(src)) !== null) {

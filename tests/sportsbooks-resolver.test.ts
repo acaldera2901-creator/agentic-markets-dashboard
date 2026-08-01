@@ -20,17 +20,33 @@ process.env.SPORTSBOOK_GEO_ALLOWLIST = "";
 assert.equal(geoAllowed("IT"), false);
 assert.deepEqual(resolveBooks("IT"), []);
 
-// allowlist specifica: dentro lista (case-insensitive) ok, fuori no
-process.env.SPORTSBOOK_GEO_ALLOWLIST = "IT,MT";
-assert.equal(geoAllowed("it"), true);
-assert.equal(geoAllowed("US"), false);
-assert.equal(resolveBooks("IT").length, 1);
-assert.deepEqual(resolveBooks("US"), []);
+// allowlist specifica: dentro lista (case-insensitive) ok, fuori no.
+// #TESTS-CI-0801 — questo blocco usava "IT" come esempio di paese ammesso, ma
+// nel frattempo l'Italia è entrata in GEO_BLOCKED_COUNTRIES (IT/DE/FR/NL/ES/BE):
+// è un hard-block LEGALE che vince su qualunque allowlist, quindi un paese
+// bloccato non è più un buon esempio di "dentro lista". Esempio spostato su MT,
+// e il blocco verificato per quello che è: una barriera che l'env non può aprire.
+process.env.SPORTSBOOK_GEO_ALLOWLIST = "MT,US";
+assert.equal(geoAllowed("mt"), true);
+assert.equal(geoAllowed("MT"), true);
+assert.equal(geoAllowed("GB"), false);
+assert.equal(resolveBooks("MT").length, 1);
+assert.deepEqual(resolveBooks("GB"), []);
 
-// globale "*": qualsiasi geo
+// Hard-block legale: nemmeno un'allowlist che li nomina esplicitamente li apre.
+process.env.SPORTSBOOK_GEO_ALLOWLIST = "IT,DE,FR,NL,ES,BE";
+for (const blocked of ["IT", "DE", "FR", "NL", "ES", "BE", "it", "be"]) {
+  assert.equal(geoAllowed(blocked), false, `geo bloccato: ${blocked}`);
+  assert.deepEqual(resolveBooks(blocked), [], `nessun book per ${blocked}`);
+}
+
+// globale "*": qualsiasi geo NON bloccato
 process.env.SPORTSBOOK_GEO_ALLOWLIST = "*";
 assert.equal(geoAllowed("US"), true);
 assert.equal(resolveBooks("US").length, 1);
+// ...ma "*" non scavalca l'hard-block.
+assert.equal(geoAllowed("IT"), false);
+assert.deepEqual(resolveBooks("IT"), []);
 
 // buildBetUrl produce un'opzione valida e non lancia mai
 const book = allSportsbooks()[0];

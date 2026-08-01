@@ -72,8 +72,16 @@ test("favoured-but-open tier between floor and strong bar", () => {
 test("coin-flip below floor is called honestly", () => {
   const t = buildTennisExplanation({ ...STRONG, confidence: 52 });
   assert.ok(t.toLowerCase().includes("coin-flip"), t);
-  assert.ok(t.toLowerCase().includes("no clear favourite"), t);
   assert.ok(t.includes("52%"), t);
+  // #TESTS-CI-0801 — qui c'era anche assert su "no clear favourite", e non è mai
+  // stato il contratto di questo modulo: la frase vive nella UI del board. Sul
+  // percorso servito il caso è più forte di così — lib/tennis-adapter.ts calcola
+  // belowFloor col floor segment-aware del torneo (#TENNIS-SEG-FLOOR-1: 62 hi /
+  // 64 lo / 66 lo-grass) e sotto floor passa `explanation = null`, quindi per una
+  // riga sotto soglia NON esiste prosa direzionale da leggere, non una prosa
+  // diversa. Questa chiamata diretta resta utile come contratto del modulo preso
+  // da solo (il ramo coin-flip non è raggiungibile dall'adapter di oggi).
+  assert.ok(!t.toLowerCase().includes("no clear favourite"), t);
   _clean(t);
 });
 

@@ -10,10 +10,22 @@
 // every input. Missing inputs degrade to silence (fail-soft), never fabrication.
 //
 // SINGLE SOURCE OF TRUTH for the lead tiers: config/settings.py
-// WHY_STRONG_PICK_CONFIDENCE (65) and SURFACE_FLOOR_FOOTBALL (56). Tennis has no
-// surfacing floor of its own (lab finding 2026-06-08), so the football floor is
-// reused purely as the copy boundary between "favoured but open" and "no clear
-// favourite". Keep these in sync with settings.
+// WHY_STRONG_PICK_CONFIDENCE (65) and SURFACE_FLOOR_FOOTBALL (56).
+//
+// ⚠️ #TESTS-CI-0801: la riga che stava qui diceva "tennis has no surfacing floor
+// of its own (lab finding 2026-06-08)". Era vero quel giorno e NON lo è più dal
+// 2026-06-11 (#TENNIS-SEG-FLOOR-1, live dal 18/06): il tennis ha floor
+// segment-aware 62 hi / 64 lo / 66 lo-grass, in lib/surfacing-gate.ts
+// (tennisFloorFor). Il commento vecchio invitava a trattare 56 come "la" soglia
+// del tennis: non lo è.
+//
+// Cosa significa per questo modulo: chi decide se una riga tennis ha un pick è
+// lib/tennis-adapter.ts, e sotto il floor del torneo passa `explanation = null`
+// — nessuna prosa direzionale, non una prosa più prudente. Quindi le due soglie
+// qui sotto sono SOLO confini di copy fra le fasce di lead, e i rami sotto 62
+// non sono raggiungibili dall'unico chiamante di oggi. Se in futuro un chiamante
+// vorrà prosa anche sotto floor, il confine giusto da passargli è
+// tennisFloorFor(torneo), non 56.
 
 export const WHY_STRONG_PICK_CONFIDENCE = 65;
 export const TENNIS_FAVOURED_FLOOR = 56;
