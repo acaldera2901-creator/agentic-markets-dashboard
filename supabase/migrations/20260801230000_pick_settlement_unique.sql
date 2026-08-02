@@ -36,5 +36,14 @@
 -- produrrebbe un ERRORE a ogni run. I due writer sono modificati nello stesso
 -- commit.
 
+-- NB: esisteva gia' `pick_settlement_key_idx`, un indice NON unique sulle stesse
+-- tre colonne (verificato su produzione: `CREATE INDEX pick_settlement_key_idx
+-- ON public.pick_settlement USING btree (source_table, source_id,
+-- model_version)`). Un secondo indice unique sulle identiche colonne sarebbe
+-- solo peso morto su una tabella che cresce a ogni settlement: quello unique
+-- serve entrambi gli scopi — il lookup che l'indice vecchio copriva e il
+-- vincolo. Quindi si sostituisce, non si affianca.
+DROP INDEX IF EXISTS public.pick_settlement_key_idx;
+
 CREATE UNIQUE INDEX IF NOT EXISTS pick_settlement_pick_key
   ON public.pick_settlement (source_table, source_id, model_version);
