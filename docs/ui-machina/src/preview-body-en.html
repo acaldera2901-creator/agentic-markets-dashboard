@@ -10,6 +10,7 @@
   <span class="acct">profa finale <span class="pro">Pro</span> · EN</span>
 </div></header>
 
+<div class="bgfix im-stadium" id="bgscene" aria-hidden="true"></div>
 <main id="app"></main>
 <nav class="botnav" id="botnav" aria-label="Sections"></nav>
 
@@ -41,21 +42,10 @@
   </div>
 </footer>
 
-<script type="module">
+<script>
+// Ogni immagine ripetuta vive una volta sola nel CSS: qui solo la classe.
 const IMG = {
-  night:"data:image/jpeg;base64,{{S_STADIUM}}", court:"data:image/jpeg;base64,{{S_COURT}}",
-  clay:"data:image/jpeg;base64,{{S_CLAY}}", crowd:"data:image/jpeg;base64,{{STADIUM_CROWD}}",
-  pitch:"data:image/jpeg;base64,{{FOOTBALL_PITCH}}", tennis:"data:image/jpeg;base64,{{S_COURT}}",
-  oFoot:"data:image/webp;base64,{{O_FOOTBALLER}}", oTen:"data:image/webp;base64,{{O_TENNIS}}",
-  oBoot:"data:image/webp;base64,{{O_BOOT}}",
-  ban:["data:image/jpeg;base64,{{BAN1}}","data:image/jpeg;base64,{{BAN2}}","data:image/jpeg;base64,{{BAN3}}"],
-  icF:"data:image/png;base64,{{IC_FOOTBALL}}", icT:"data:image/png;base64,{{IC_TENNIS}}",
-  mPrediction:"data:image/png;base64,{{M_PREDICTION}}", mHistory:"data:image/png;base64,{{M_HISTORY}}",
-  mLeaderboard:"data:image/png;base64,{{M_LEADERBOARD}}", mBuilder:"data:image/png;base64,{{M_BUILDER}}",
-  mInvite:"data:image/png;base64,{{M_INVITE}}", mPlans:"data:image/png;base64,{{M_PLANS}}",
-  mCreator:"data:image/png;base64,{{M_CREATOR}}", mWeekly:"data:image/png;base64,{{M_WEEKLY}}",
-  mPartner:"data:image/png;base64,{{M_PARTNER}}",
-};
+  ban:["im-ban1","im-ban2","im-ban3"],"night": "im-stadium", "court": "im-court", "clay": "im-clay", "crowd": "im-crowd", "pitch": "im-pitch", "tennis": "im-court", "oFoot": "im-of", "oTen": "im-ot", "oBoot": "im-ob", "icF": "im-icf", "icT": "im-ict", "mPrediction": "im-mprediction", "mHistory": "im-mhistory", "mLeaderboard": "im-mleaderboard", "mBuilder": "im-mbuilder", "mInvite": "im-minvite", "mPlans": "im-mplans", "mCreator": "im-mcreator", "mWeekly": "im-mweekly", "mPartner": "im-mpartner"};
 // Partner reali dal catalogo del prodotto (lib/partners.ts), coi loghi forniti.
 const PARTNERS = [
   { n:"FortunePlay", c:"Sportsbook", l:"data:image/svg+xml;base64,{{P_FORTUNEPLAY}}", em:true },
@@ -85,9 +75,9 @@ function card(c, i) {
   const h = m ? m[1] : (c.teams || ""), a = m ? m[2] : "";
   const sub = (c.sub || "").replace(c.val || " ", "").trim();
   return `<article class="pred" style="--accent:var(${tennis ? "--d-tennis" : "--d-football"})">
-    <img class="card-bg" src="${bg}" alt=""><div class="card-veil"></div>
+    <div class="card-bg ${bg}"></div><div class="card-veil"></div>
     <div class="top">
-      <span class="comp"><img class="sgi" src="${ic}" alt=""><span class="league">${esc(c.league)}</span></span>
+      <span class="comp"><span class="sgi ${ic}"></span><span class="league">${esc(c.league)}</span></span>
       <span class="when${live ? " live" : ""}">${live ? '<span class="pulse"></span>' : ""}${esc(c.when)}</span>
     </div>
     <div class="fx">
@@ -119,7 +109,7 @@ function card(c, i) {
 
 function houseBanner(img, cta) {
   return `<article class="hb"><button class="hb-x" aria-label="Dismiss">×</button>
-    <a href="#" data-go="previsioni"><img src="${img}" alt="BetRedge campaign"></a>
+    <a href="#" data-go="previsioni"><span class="slide ${img}" role="img" aria-label="BetRedge campaign"></span></a>
     <div class="hb-f"><button class="btn" data-go="previsioni">${cta}</button><span class="hb-lab">Sponsored</span></div>
   </article>`;
 }
@@ -133,9 +123,9 @@ const RAIL2 = [["worldcup","World Cup",IMG.icF],["community","Creator Picks",IMG
   ["weekly","Weekly Pick",IMG.mWeekly],["partner","Partners",IMG.mPartner]];
 const rail = (on) => `<aside class="rail">
   <div class="rail-g"><div class="rail-t">Desk</div>${RAIL.map(([k,l,i,n,p])=>
-    `<a data-go="${k}" href="#" class="${on===k?"on":""}"><img src="${i}" alt="">${l}${n?`<span class="n">${n}</span>`:""}${p?`<span class="pro">${p}</span>`:""}</a>`).join("")}</div>
+    `<a data-go="${k}" href="#" class="${on===k?"on":""}"><span class="ic ${i}"></span>${l}${n?`<span class="n">${n}</span>`:""}${p?`<span class="pro">${p}</span>`:""}</a>`).join("")}</div>
   <div class="rail-g"><div class="rail-t">Featured</div>${RAIL2.map(([k,l,i])=>
-    `<a data-go="${k}" href="#" class="${on===k?"on":""}"><img src="${i}" alt="">${l}</a>`).join("")}</div>
+    `<a data-go="${k}" href="#" class="${on===k?"on":""}"><span class="ic ${i}"></span>${l}</a>`).join("")}</div>
   <div class="rail-live"><span class="dot"></span>Refresh odds · live</div></aside>`;
 
 const kpis = `<div class="kpis">
@@ -149,7 +139,7 @@ const P = {};
 P.home = () => `
 <div class="caro" id="caro">
   <div class="caro-vp"><div class="caro-run" id="caro-run">
-    ${IMG.ban.concat(IMG.ban).map((b,i)=>`<div class="caro-s"><a href="#" data-go="previsioni"><img src="${b}" alt="BetRedge campaign ${i%3+1}"></a></div>`).join("")}
+    ${IMG.ban.concat(IMG.ban).map((b,i)=>`<div class="caro-s"><a href="#" data-go="previsioni"><span class="slide ${b}" role="img" aria-label="BetRedge campaign ${i%3+1}"></span></a></div>`).join("")}
   </div></div>
   <button class="caro-nav caro-prev" id="caro-p" aria-label="Previous">‹</button>
   <button class="caro-nav caro-next" id="caro-n" aria-label="Next">›</button>
@@ -160,8 +150,8 @@ P.home = () => `
    "Sinner–Zverev · model 66 · mkt 61 · <b>+5.4</b>","Bayern–Dortmund · model 58 · mkt 54 · <b>+4.1</b>"]
   .map(t=>`<i>${t}</i>`).join("")).join("")}</div></div>
 
-<section class="scene"><img src="${IMG.night}" alt=""><div class="veil"></div>
-  <img class="cover-obj" src="${IMG.oFoot}" alt="">
+<section class="scene"><span class="scene-img im-stadium"></span><div class="veil"></div>
+  <span class="cover-obj ${IMG.oFoot}"></span>
   <div class="wrap cover">
   <span class="eyebrow">Probability engine · not a bookmaker</span>
   <h1 class="t-h1">We don't beat the book.<br>We make it readable.</h1>
@@ -188,7 +178,7 @@ P.home = () => `
     <div class="col-h"><h3 class="t-h3">Explain</h3><p class="t-body">See probability, odds and edge — and the why, in plain terms. No black box.</p></div>
     <div class="col-h"><h3 class="t-h3">Decide</h3><p class="t-body">You decide. BetRedge places nothing for you: no automatic execution.</p></div>
     <div class="col-h"><h3 class="t-h3">Track</h3><p class="t-body">Every pick is logged before the event → it becomes a verifiable track record.</p></div>
-  </div><img class="obj-side" src="${IMG.oBoot}" alt=""></div>
+  </div><span class="obj-side ${IMG.oBoot}"></span></div>
 </div></div>
 
 <div class="wrap sec">
@@ -207,7 +197,7 @@ P.home = () => `
       <div class="col-h"><h3 class="t-h3">Deep Analysis — the “why”, in plain terms.</h3><p class="t-body">Form, xG, injuries, Elo, serve/return, H2H, surface: reasoning, not a black box.</p></div>
     </div></div></div>
 
-<section class="scene" style="padding-block:clamp(2rem,4vw,3rem)"><img src="${IMG.crowd}" alt=""><div class="veil"></div>
+<section class="scene" style="padding-block:clamp(2rem,4vw,3rem)"><span class="scene-img im-crowd"></span><div class="veil"></div>
   <div class="wrap" style="display:grid;gap:1rem">
     <span class="eyebrow">The proof</span><h2 class="t-h2">The receipts come first.</h2>
     <p class="t-mega">60.9%</p>
@@ -258,7 +248,7 @@ P.previsioni = () => {
     <button class="fchip">All predictions</button><button class="fchip">Best bets only<span class="c">${D.cards.filter(c=>c.val).length}</span></button>
     <button class="fchip">Competition ▾</button><button class="fchip">Surface ▾</button><button class="fchip">Sort · time ▾</button>
   </div>
-  <div class="feat"><img src="${IMG.court}" alt=""><div class="veil"></div><div class="feat-in">
+  <div class="feat"><span class="scene-img im-court"></span><div class="veil"></div><div class="feat-in">
     <div><span class="eyebrow" style="color:#fb7a45">Edge of the day · model vs market</span>
       <h2 class="t-h2" style="margin-top:.6rem">Jack Draper <span style="color:#8d939b;font-weight:400">v</span> Terence Atmane</h2>
       <div class="note" style="margin-top:.35rem">National Bank Open presented by Rogers · hard</div>
@@ -269,14 +259,14 @@ P.previsioni = () => {
         <div><span class="t-key">Matches on surface</span><b>114 · 36</b></div></div>
       <p class="t-body">The model makes Draper a clear favourite on hard court, with a clear edge on this surface (114 matches to 36). Solid read: the model rates it likelier than the price does.</p></div>
   </div></div>
-  <section><div class="sband"><img src="${IMG.night}" alt=""><div class="veil"></div>
-    <img class="obj-band" src="${IMG.oFoot}" alt=""><div class="sband-in">
-      <span class="sband-l"><img class="ic" src="${IMG.icF}" alt=""><span><span class="eyebrow" style="color:#a78bfa">Football</span><div class="sband-n">${f.length} markets</div></span></span>
+  <section><div class="sband"><span class="scene-img im-stadium"></span><div class="veil"></div>
+    <span class="obj-band ${IMG.oFoot}"></span><div class="sband-in">
+      <span class="sband-l"><span class="ic ${IMG.icF}"></span><span><span class="eyebrow" style="color:#a78bfa">Football</span><div class="sband-n">${f.length} markets</div></span></span>
       <span class="sband-n"><b>${f.filter(c=>c.val).length} value</b> right now</span></div></div>
     <div class="board">${f.map(card).map((h,k)=>k===5?houseBanner(IMG.ban[0],"Explore the picks →")+h:h).join("")}</div></section>
-  <section><div class="sband"><img src="${IMG.clay}" alt=""><div class="veil"></div>
-    <img class="obj-band" src="${IMG.oTen}" alt=""><div class="sband-in">
-      <span class="sband-l"><img class="ic" src="${IMG.icT}" alt=""><span><span class="eyebrow" style="color:#fb7a45">Tennis</span><div class="sband-n">${t.length} markets</div></span></span>
+  <section><div class="sband"><span class="scene-img im-clay"></span><div class="veil"></div>
+    <span class="obj-band ${IMG.oTen}"></span><div class="sband-in">
+      <span class="sband-l"><span class="ic ${IMG.icT}"></span><span><span class="eyebrow" style="color:#fb7a45">Tennis</span><div class="sband-n">${t.length} markets</div></span></span>
       <span class="sband-n"><b>${t.filter(c=>c.val).length} value</b> right now</span></div></div>
     <div class="board">${t.map(card).map((h,k)=>k===5?houseBanner(IMG.ban[1],"See the tennis →")+h:(k===29?houseBanner(IMG.ban[2],"Compare the plans →")+h:h)).join("")}</div></section>
 </div></div>`;
@@ -307,8 +297,10 @@ P.storico = () => {
     <div class="subnav"><button class="on">All</button><button>Football</button><button>Tennis</button></div>
     <div class="scroll"><table class="tbl"><thead><tr><th>Date</th><th>Match · pick and competition</th><th style="text-align:right">Model</th><th style="text-align:right">Result</th></tr></thead>
       <tbody>${D.registro.slice(0,20).map(row).join("")}</tbody>
-      <tbody id="reg-rest" class="hid">${D.registro.slice(20).map(row).join("")}</tbody></table></div>
-    <div><button class="btn btn-o" id="reg-more">Show all ${D.registro.length}</button></div>
+      </table></div>
+    <details class="more"><summary>Show all ${D.registro.length}</summary>
+      <div class="scroll"><table class="tbl"><tbody>${D.registro.slice(20).map(row).join("")}</tbody></table></div>
+    </details>
   </div>
   <hr class="rule-strong">
   <div class="sec" style="gap:.7rem"><span class="eyebrow">By segment</span>
@@ -340,7 +332,7 @@ P.builder = () => `<div class="wrap desk">${rail("builder")}<div>
     <div class="stick"><div class="slip">
       <div style="padding:.9rem 1rem;border-bottom:1px solid var(--rule)"><span class="eyebrow">Your slip</span></div>
       <div class="empty" style="border:0;padding:1.4rem 1rem">
-        <img class="obj-empty" style="width:120px" src="${IMG.oBoot}" alt=""><span class="t-key">No selections</span>
+        <span class="obj-empty ${IMG.oBoot}" style="width:120px;height:110px"></span><span class="t-key">No selections</span>
         <p class="t-body" style="max-width:30ch">Add 2 to 5 predictions: the blended probability appears here.</p></div>
       <div style="padding:1rem;border-top:1px solid var(--rule)">
         <button class="btn" style="width:100%;justify-content:center" disabled>Create and share</button>
@@ -357,7 +349,7 @@ P.classifica = () => `<div class="wrap desk">${rail("classifica")}<div>
     <div class="pod"><span class="t-key">First</span><b>—</b><span class="note">pts</span></div>
     <div class="pod"><span class="t-key">Second</span><b>—</b><span class="note">pts</span></div>
     <div class="pod"><span class="t-key">Third</span><b>—</b><span class="note">pts</span></div></div>
-    <div class="empty"><img class="obj-empty" src="${IMG.oBoot}" alt=""><span class="t-key">No ranking yet</span>
+    <div class="empty"><span class="obj-empty ${IMG.oBoot}"></span><span class="t-key">No ranking yet</span>
       <p class="t-body" style="max-width:46ch">The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.</p>
       <button class="btn">Enable the leaderboard</button></div>
     <hr class="rule-t"><span class="eyebrow">Your position</span>
@@ -375,7 +367,7 @@ P.invita = () => `<div class="wrap desk">${rail("invita")}<div>
       <p class="note" style="text-transform:none;letter-spacing:0">2–20 chars: letters, numbers, <b>-</b> <b>_</b> · cannot be changed once claimed.</p>
       <div><button class="btn">Claim code</button></div><hr class="rule-t">
       <p class="t-body">You earn on your sign-ups' subscriptions <b>only if we enable revenue on your code</b> — reach out to request it.</p>
-    </div><img class="obj-side" src="${IMG.oTen}" alt=""></div>
+    </div><span class="obj-side ${IMG.oTen}"></span></div>
 </div></div>`;
 
 /* ══ PLANS ══ */
@@ -425,7 +417,7 @@ const WK = [
   ["Anastasia Potapova vs Venus Williams","Anastasia Potapova","Mubadala DC Open","81%","—",
    "Potapova is favoured on recent form and hard-court output. Model analysis — no guarantee of a win."],
 ];
-P.weekly = () => `<section class="scene" style="padding-block:clamp(2rem,5vw,3.6rem)"><img src="${IMG.court}" alt=""><div class="veil"></div>
+P.weekly = () => `<section class="scene" style="padding-block:clamp(2rem,5vw,3.6rem)"><span class="scene-img im-court"></span><div class="veil"></div>
   <div class="wrap cover"><span class="eyebrow">House accumulator</span>
     <h1 class="t-h1">The most probable slip of the week.</h1>
     <p class="t-lead">Our model's best picks, combined into a single slip. No odds, no promised edge — probability only.</p>
@@ -457,7 +449,7 @@ P.community = () => `<div class="wrap desk">${rail("community")}<div>
   <div class="phead"><div class="phead-l"><span class="eyebrow">Community</span><h1 class="t-h1">Creator Picks</h1>
     <p class="t-body" style="max-width:58ch">Accumulators built by the community with the Match Builder, based on our model's probabilities. No odds, no promised edge — only model predictions curated by creators.</p>
   </div><div class="acts"><button class="btn" data-go="builder">Build yours</button></div></div>
-  <div class="sec"><div class="empty"><img class="obj-empty" src="${IMG.oTen}" alt="">
+  <div class="sec"><div class="empty"><span class="obj-empty ${IMG.oTen}"></span>
     <span class="t-key">Example · no accumulators published yet</span>
     <p class="t-body" style="max-width:46ch">Be the first: build it with the Match Builder and share it.</p>
     <button class="btn" data-go="builder">Build yours</button></div></div>
@@ -480,7 +472,7 @@ P.partner = () => `<div class="wrap desk">${rail("partner")}<div>
 </div></div>`;
 
 /* ══ WORLD CUP ══ */
-P.worldcup = () => `<section class="scene"><img src="${IMG.crowd}" alt=""><div class="veil"></div><div class="wrap cover">
+P.worldcup = () => `<section class="scene"><span class="scene-img im-crowd"></span><div class="veil"></div><div class="wrap cover">
   <span class="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</span>
   <h1 class="t-h1">World Cup Intelligence Hub</h1>
   <p class="t-lead">First World Cup signals publish when markets open — kick-off June 11.</p>
@@ -507,7 +499,7 @@ P.worldcup = () => `<section class="scene"><img src="${IMG.crowd}" alt=""><div c
 document.getElementById("botnav").innerHTML = [
   ["previsioni","Board",IMG.mPrediction],["storico","History",IMG.mHistory],
   ["builder","Builder",IMG.mBuilder],["weekly","Weekly",IMG.mWeekly],["piani","Plans",IMG.mPlans],
-].map(([k,l,i])=>`<button data-go="${k}"><img src="${i}" alt="">${l}</button>`).join("");
+].map(([k,l,i])=>`<button data-go="${k}"><span class="ic ${i}"></span>${l}</button>`).join("");
 
 function initCaro() {
   const run = document.getElementById("caro-run"); if (!run) return;
@@ -538,12 +530,10 @@ const app = document.getElementById("app");
 function go(name) {
   if (!P[name]) return;
   app.innerHTML = P[name]();
-  const SCENE = { previsioni: IMG.night, weekly: IMG.court, worldcup: IMG.crowd,
-                  builder: IMG.clay, storico: IMG.night, partner: IMG.crowd };
-  document.documentElement.style.setProperty("--bgscene", `url(${SCENE[name] || IMG.night})`);
+  const SCENE = { previsioni:IMG.night, weekly:IMG.court, worldcup:IMG.crowd,
+                  builder:IMG.clay, storico:IMG.night, partner:IMG.crowd };
+  document.getElementById("bgscene").className = "bgfix " + (SCENE[name] || IMG.night);
   for (const b of document.querySelectorAll(".tnav button, .botnav button")) b.classList.toggle("on", b.dataset.go === name);
-  const more = document.getElementById("reg-more");
-  if (more) more.addEventListener("click", () => { document.getElementById("reg-rest").classList.remove("hid"); more.remove(); });
   initCaro();
   window.scrollTo(0, 0);
 }
