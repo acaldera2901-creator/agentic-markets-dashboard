@@ -1,0 +1,549 @@
+/* ══════════════════════════════════════════════════════════════
+   BetRedge — bozza di app/machina.css  ·  #UI-MACHINA-0802
+   Estratta dalla preview del 2026-08-02, con i valori MISURATI:
+   contrasto peggiore per elemento verificato sulla resa vera
+   (margine minimo +32% sulla soglia). Vedi la spec accanto.
+   Non ancora importata da nessuna pagina: è il punto di partenza
+   dell'implementazione, non codice vivo.
+   ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   BetRedge — preview del sistema #UI-MACHINA-0802
+   Bozza di quello che diventerà app/machina.css.
+   Tema unico volutamente: questa è la resa del prodotto, che è a
+   carta chiara. Girarla col tema del lettore mostrerebbe qualcosa
+   che il sito non sarà mai.
+   ══════════════════════════════════════════════════════════════ */
+
+@font-face {
+  font-family: "Hanken Grotesk";
+  src: url(data:font/woff2;base64,{{HANKEN}}) format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url(data:font/woff2;base64,{{JBMONO}}) format("woff2");
+  font-weight: 100 800;
+  font-display: block;
+}
+
+:root {
+  --paper: #e9ebee;
+  --card: #ffffff;
+  --ink: #0c0e11;
+  --ink2: #4c525a;
+  --ink3: #8d939b;
+  --rule: #c6cbd1;
+
+  --night: #0c0e11;
+  --night2: #15181c;
+  --night3: #2a2f36;
+
+  /* i due gradini dello stesso verde: la carta e il buio hanno bisogno
+     di valori diversi, misurati — 6,15:1 col bianco sopra / 5,59:1 sul buio */
+  --verde-carta: #15703b;
+  --verde-buio: #23a559;
+
+  --d-football: #6d28d9;
+  --d-tennis: #c2410c;
+
+  --font-d: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-m: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+/* la preview commetta al proprio mondo anche se il lettore è in dark */
+:root, :root[data-theme="dark"], :root[data-theme="light"] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-d);
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+
+/* ── tipografia ───────────────────────────────────────────── */
+
+.t-mega {
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.82;
+  font-size: clamp(3rem, 8.5vw, 7rem);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.t-h1 {
+  font-weight: 800;
+  letter-spacing: -0.034em;
+  line-height: 1.03;
+  font-size: clamp(1.7rem, 4vw, 2.9rem);
+  text-wrap: balance;
+  margin: 0;
+}
+.t-h2 {
+  font-weight: 800;
+  letter-spacing: -0.028em;
+  line-height: 1.08;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  text-wrap: balance;
+  margin: 0;
+}
+.t-lead {
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1.5;
+  color: var(--ink2);
+  margin: 0;
+  max-width: 58ch;
+}
+.t-key {
+  font-family: var(--font-m);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.t-num { font-family: var(--font-m); font-variant-numeric: tabular-nums; }
+
+/* l'occhiello col filetto: la firma della casa. Il filetto prende
+   il colore dello sport della sezione. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent, var(--verde-carta));
+}
+.eyebrow::before {
+  content: "";
+  width: 1.6rem;
+  height: 3px;
+  background: currentColor;
+  flex: none;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1360px;
+  margin-inline: auto;
+  padding-inline: clamp(1.1rem, 5vw, 5rem);
+}
+
+/* ── nota di preview (non fa parte del prodotto) ──────────── */
+
+.pnote {
+  background: var(--night);
+  color: #8d939b;
+  font-family: var(--font-m);
+  font-size: 0.66rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--night3);
+}
+.pnote .wrap { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: space-between; }
+.pnote b { color: var(--verde-buio); font-weight: 600; }
+
+/* ── copertina scura ──────────────────────────────────────── */
+
+.scene {
+  position: relative;
+  isolation: isolate;
+  background: var(--night);
+  color: #fff;
+  overflow: hidden;
+  padding-block: clamp(2.5rem, 7vw, 5rem);
+}
+.scene > .scene-img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.06);
+}
+/* una velatura sola: due sovrapposte spengono l'immagine */
+.scene > .scene-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    rgba(12, 14, 17, 0.95) 0%,
+    rgba(12, 14, 17, 0.78) 44%,
+    rgba(12, 14, 17, 0.34) 100%
+  );
+}
+.scene .t-lead { color: #b9c0c9; }
+.cover-grid { display: grid; gap: 1.1rem; }
+.cover-count { color: var(--verde-buio); }
+.cover-when {
+  font-family: var(--font-m);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8d939b;
+}
+.cover-acts { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.4rem; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-m);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.4rem;
+  border: 1px solid var(--verde-buio);
+  background: var(--verde-buio);
+  color: #06140c;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn:hover { background: #2dc06a; border-color: #2dc06a; }
+.btn-ghost { background: transparent; color: #fff; border-color: var(--night3); }
+.btn-ghost:hover { background: #fff; color: var(--ink); border-color: #fff; }
+
+:focus-visible { outline: 2px solid var(--verde-buio); outline-offset: 2px; }
+
+/* ── fascia di sezione ────────────────────────────────────── */
+
+.band {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--night);
+  color: #fff;
+  padding-block: 1.5rem;
+  margin-top: clamp(2rem, 5vw, 3.5rem);
+}
+.band > img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.06);
+}
+.band > .band-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(12, 14, 17, 0.96) 0%, rgba(12, 14, 17, 0.72) 100%);
+}
+.band .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.band-l { display: flex; align-items: center; gap: 0.85rem; }
+.band-ic { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.band-n { font-family: var(--font-m); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: #8d939b; }
+.band-n b { color: var(--verde-buio); font-weight: 600; }
+
+/* ── la griglia ───────────────────────────────────────────── */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 1.1rem;
+  padding-block: 1.6rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LA SCHEDA
+   Struttura invariata: .top / .fx+.scorebar / .v2r / .pred-more.
+   La foto vive nella fascia alta; i numeri stanno su superfici
+   incassate piene, mai direttamente sull'immagine.
+   ══════════════════════════════════════════════════════════════ */
+
+.pred {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--night2);
+  border: 1px solid var(--night3);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.pred::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  z-index: 3;
+  background: var(--accent);
+}
+.pred:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--accent) 65%, transparent); }
+
+.card-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+  filter: grayscale(1) contrast(1.06);
+}
+/* densa dal basso dov'è il testo, aperta in alto dove l'immagine respira */
+.card-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(18, 21, 25, 0.95) 44%,
+    rgba(18, 21, 25, 0.70) 74%,
+    rgba(18, 21, 25, 0.16) 100%
+  );
+}
+.pred > *:not(.card-bg):not(.card-veil) { position: relative; z-index: 2; }
+
+/* La riga di testata porta il PROPRIO fondo invece di appoggiarsi alla velatura.
+   Misurato: lega e orario sono testo piccolo grigio, e sul punto chiaro della
+   foto scendevano a 1,03:1 — invisibili. La velatura resta una sola: questo è
+   il fondo della riga, non un secondo strato sull'immagine. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem 0.6rem;
+  background: linear-gradient(to bottom, rgba(10, 12, 15, 0.88) 0%, rgba(10, 12, 15, 0.68) 62%, rgba(10, 12, 15, 0.20) 100%);
+}
+.comp { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.sgi { width: 19px; height: 19px; object-fit: contain; flex: none; }
+.league {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #dfe3e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.when {
+  font-family: var(--font-m);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c3c9d1;
+  white-space: nowrap;
+}
+.when.live { color: #fff; display: inline-flex; align-items: center; gap: 0.4rem; }
+.pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--verde-buio);
+  box-shadow: 0 0 0 0 rgba(35, 165, 89, 0.7);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  70% { box-shadow: 0 0 0 7px rgba(35, 165, 89, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(35, 165, 89, 0); }
+}
+
+.fx { padding: 0 1rem 0.9rem; display: grid; gap: 0.7rem; }
+.teams {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 1.2rem;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+/* la "v" è un separatore, non una lettera da leggere */
+.vs {
+  display: inline-block;
+  margin-inline: 0.5rem;
+  font-family: var(--font-m);
+  font-size: 0.66rem;
+  font-weight: 400;
+  color: #aeb5bd;
+  vertical-align: 0.14em;
+  text-transform: lowercase;
+}
+
+/* superficie incassata: piena, sopra la foto — i numeri non stanno sull'immagine */
+.scorebar,
+.v2r {
+  background: #101317;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.scorebar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border: 0;
+  border-radius: 0;
+}
+.stt {
+  font-family: var(--font-m);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7e858e;
+  flex: none;
+}
+.stt.live { color: var(--verde-buio); }
+.sc { font-family: var(--font-m); font-variant-numeric: tabular-nums; font-size: 1.05rem; font-weight: 700; }
+.sc .x { color: #6e757e; margin-inline: 0.35rem; font-weight: 400; }
+.sc.sched { font-size: 0.78rem; font-weight: 400; color: #c3c9d1; letter-spacing: 0.02em; }
+.grow { flex: 1; }
+.verd { font-family: var(--font-m); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.verd.wrong { color: #9aa2ac; }
+.verd.correct { color: var(--verde-buio); }
+
+.v2r {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem 0.95rem;
+}
+.v2r-l { display: grid; gap: 0.3rem; min-width: 0; }
+/* non più verde: il verde in questa scheda ce l'ha solo il value */
+.v2r-eye {
+  font-family: var(--font-m);
+  font-size: 0.57rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7e858e;
+}
+.v2r-pick { font-weight: 700; font-size: 1.02rem; letter-spacing: -0.015em; line-height: 1.15; }
+.v2r-conf { display: inline-flex; align-items: center; gap: 0.4rem; }
+.v2r-conf-t {
+  font-family: var(--font-m);
+  font-size: 0.57rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9aa2ac;
+}
+.d { width: 6px; height: 6px; border-radius: 50%; background: #343a42; display: inline-block; }
+.d.on { background: #c3c9d1; }
+
+.v2r-q { text-align: right; display: grid; gap: 0.15rem; flex: none; }
+.v2r-qlab {
+  font-family: var(--font-m);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7e858e;
+}
+.v2r-qn {
+  font-family: var(--font-m);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.v2r-sub {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: #9aa2ac;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+/* l'unico verde della scheda */
+.v2r-val {
+  font-weight: 700;
+  color: #06140c;
+  background: var(--verde-buio);
+  padding: 0.16rem 0.4rem;
+  letter-spacing: 0.06em;
+}
+
+.pred-more {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--night3);
+  background: var(--night2);
+}
+.pm-lab { font-family: var(--font-m); font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: #8d939b; }
+.pm-chev { width: 0; height: 0; border-left: 5px solid #8d939b; border-block: 4px solid transparent; }
+.pred:hover .pm-lab, .pred:hover .pm-chev { color: #fff; border-left-color: #fff; }
+
+/* scheda bloccata */
+.lock-overlay {
+  margin-top: auto;
+  background: #101317;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.05rem 1rem;
+  display: grid;
+  gap: 0.45rem;
+  justify-items: start;
+}
+.blurred {
+  font-family: var(--font-m);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  color: #3c434c;
+  user-select: none;
+}
+.locked-cta {
+  margin-top: 0.35rem;
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #06140c;
+  background: var(--verde-buio);
+  padding: 0.55rem 0.85rem;
+}
+
+/* ── sotto il board, sulla carta ──────────────────────────── */
+
+.after { padding-block: clamp(2.2rem, 5vw, 3.4rem); display: grid; gap: 1.6rem; }
+.after-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2rem 2.4rem; }
+.after-h { font-weight: 700; font-size: 1.02rem; letter-spacing: -0.015em; margin: 0 0 0.4rem; }
+.after-p { color: var(--ink2); line-height: 1.55; margin: 0; font-size: 0.95rem; }
+.rule-strong { border: 0; border-top: 2px solid var(--ink); margin: 0; }
+
+.legal {
+  background: var(--night);
+  color: #8d939b;
+  padding-block: 1.2rem;
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Su telefono la scheda è alta e stretta: il gradiente pensato per una scheda
+   larga lascia scoperta la fascia centrale, e lì il testo bianco sparisce se
+   la foto è chiara. Sotto i 640px la velatura diventa piatta e densa. */
+@media (max-width: 640px) {
+  .card-bg { opacity: 0.66; }
+  .card-veil {
+    background: linear-gradient(to top, rgba(18, 21, 25, 0.95) 45%, rgba(18, 21, 25, 0.84) 100%);
+  }
+  .board { grid-template-columns: 1fr; }
+  .v2r-qn { font-size: 1.6rem; }
+}
