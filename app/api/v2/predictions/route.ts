@@ -96,14 +96,24 @@ export async function GET(req: Request) {
       const hasProb =
         typeof r.p_home === "number" ||
         (typeof r.pick === "string" && (r.pick as string).trim() !== "" && typeof r.confidence_score === "number") ||
-        // #TENNIS-BELOWFLOOR-1: le righe tennis sotto la soglia di confidence
-        // hanno pick=null di proposito (surfacing gate in tennis-adapter), ma
-        // restano match reali con una win-prob (confidence_score). Il board
-        // legacy /api/tennis le mostra senza direzione ("nessun favorito
-        // netto"); alliniamo v2 così non spariscono dal board (#218 le
-        // scartava tutte). Nessun pick sotto-soglia trapela: pick/odds/edge
-        // restano null, si serve solo il match + la confidence.
-        (r.sport === "tennis" && typeof r.confidence_score === "number");
+        // #TENNIS-BELOWFLOOR-1, esteso a OGNI sport da #V2-FOOTBALL-COVERAGE-0802:
+        // le righe sotto la soglia di confidence hanno pick=null di proposito (è
+        // il gate di surfacing), ma restano match reali con una probabilità
+        // (confidence_score). Il board legacy le mostra senza direzione ("nessun
+        // favorito netto"): v2 deve dire la stessa cosa, altrimenti due endpoint
+        // sullo stesso dato mostrano board diversi.
+        //
+        // La condizione era limitata al tennis, e per il football non scattava mai
+        // nessuna delle altre due: `p_home` esiste solo se coalescato dai notes, e
+        // MISURATO il 2026-08-02 le righe football club hanno `notes: null` — zero
+        // su 49. Risultato: v2 serviva **2 partite di football su 49** mentre il
+        // board ne serviva 49. Non era un dettaglio di coverage: era un board
+        // praticamente vuoto sull'endpoint candidato a diventare l'API venduta.
+        //
+        // Nessun pick sotto-soglia trapela: pick/odds/edge restano null esattamente
+        // come prima, si serve il match più la confidence. La proiezione per piano
+        // (locked/unlocked) resta quella di sempre, a valle di questo filtro.
+        typeof r.confidence_score === "number";
       if (!hasProb) continue; // incompleta → nascosta
       const key = [
         String(r.sport ?? ""),
