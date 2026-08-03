@@ -1,24 +1,10 @@
 {
- "generated_at": "2026-08-01",
+ "generated_at": "2026-08-03",
  "window_days": 365,
  "leagues": {
   "ELI": {
    "espn_slug": "nor.1",
    "matches": [
-    {
-     "homeTeam": "Tromso",
-     "awayTeam": "Fredrikstad",
-     "homeGoals": 0,
-     "awayGoals": 0,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Sarpsborg FK",
-     "awayTeam": "SK Brann",
-     "homeGoals": 1,
-     "awayGoals": 4,
-     "date": "2025-08-02"
-    },
     {
      "homeTeam": "Hamarkameratene",
      "awayTeam": "Bodo/Glimt",
@@ -1600,20 +1586,6 @@
    "espn_slug": "swe.1",
    "matches": [
     {
-     "homeTeam": "IF Brommapojkarna",
-     "awayTeam": "Norrkoping",
-     "homeGoals": 6,
-     "awayGoals": 4,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Varnamo",
-     "awayTeam": "GAIS",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-08-02"
-    },
-    {
      "homeTeam": "Djurgården",
      "awayTeam": "Halmstads BK",
      "homeGoals": 1,
@@ -3110,27 +3082,6 @@
    "espn_slug": "fin.1",
    "matches": [
     {
-     "homeTeam": "VPS",
-     "awayTeam": "Mariehamn",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "KuPS",
-     "awayTeam": "Haka",
-     "homeGoals": 3,
-     "awayGoals": 2,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "AC Oulu",
-     "awayTeam": "Jaro",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
      "homeTeam": "SJK",
      "awayTeam": "KTP",
      "homeGoals": 3,
@@ -4353,27 +4304,6 @@
   "LOI": {
    "espn_slug": "irl.1",
    "matches": [
-    {
-     "homeTeam": "Bohemians",
-     "awayTeam": "Drogheda",
-     "homeGoals": 0,
-     "awayGoals": 1,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "Cork City",
-     "awayTeam": "Galway",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "Sligo Rovers",
-     "awayTeam": "Shelbourne",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-08-02"
-    },
     {
      "homeTeam": "Waterford",
      "awayTeam": "St. Patricks",
@@ -5611,34 +5541,6 @@
   "CSL": {
    "espn_slug": "chn.1",
    "matches": [
-    {
-     "homeTeam": "Yunnan Yukun",
-     "awayTeam": "Shanghai Shenhua",
-     "homeGoals": 4,
-     "awayGoals": 4,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Chengdu Rongcheng",
-     "awayTeam": "Shandong Taishan",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Qingdao West Coast",
-     "awayTeam": "Henan",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Meizhou Hakka",
-     "awayTeam": "Shanghai Port",
-     "homeGoals": 2,
-     "awayGoals": 4,
-     "date": "2025-08-02"
-    },
     {
      "homeTeam": "Dalian Yingbo",
      "awayTeam": "Qingdao Hainiu",
@@ -10046,34 +9948,6 @@
    "espn_slug": "aut.1",
    "matches": [
     {
-     "homeTeam": "LASK Linz",
-     "awayTeam": "SK Sturm Graz",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "WSG Swarovski Tirol",
-     "awayTeam": "TSV Hartberg",
-     "homeGoals": 4,
-     "awayGoals": 2,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Wolfsberger",
-     "awayTeam": "SC Rheindorf Altach",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "SV Josko Ried",
-     "awayTeam": "RB Salzburg",
-     "homeGoals": 2,
-     "awayGoals": 2,
-     "date": "2025-08-02"
-    },
-    {
      "homeTeam": "Grazer AK",
      "awayTeam": "Austria Vienna",
      "homeGoals": 2,
@@ -11395,20 +11269,6 @@
    "espn_slug": "den.1",
    "matches": [
     {
-     "homeTeam": "Fredericia",
-     "awayTeam": "F.C. København",
-     "homeGoals": 0,
-     "awayGoals": 2,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "Vejle",
-     "awayTeam": "Odense Boldklub",
-     "homeGoals": 4,
-     "awayGoals": 0,
-     "date": "2025-08-01"
-    },
-    {
      "homeTeam": "Randers FC",
      "awayTeam": "Silkeborg IF",
      "homeGoals": 1,
@@ -12701,41 +12561,6 @@
   "POL": {
    "espn_slug": "",
    "matches": [
-    {
-     "homeTeam": "Zaglebie",
-     "awayTeam": "Korona Kielce",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "Wisla Plock",
-     "awayTeam": "Piast Gliwice",
-     "homeGoals": 2,
-     "awayGoals": 0,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "Termalica B-B.",
-     "awayTeam": "Pogon Szczecin",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Widzew Lodz",
-     "awayTeam": "GKS Katowice",
-     "homeGoals": 3,
-     "awayGoals": 0,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Lech Poznan",
-     "awayTeam": "Gornik Zabrze",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
     {
      "homeTeam": "Cracovia",
      "awayTeam": "Lechia Gdansk",
@@ -14793,27 +14618,6 @@
    "espn_slug": "sui.1",
    "matches": [
     {
-     "homeTeam": "Servette",
-     "awayTeam": "St. Gallen",
-     "homeGoals": 1,
-     "awayGoals": 4,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Winterthur",
-     "awayTeam": "Young Boys",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "FC Basel",
-     "awayTeam": "Grasshoppers",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
      "homeTeam": "FC Thun",
      "awayTeam": "Lausanne Sports",
      "homeGoals": 2,
@@ -16393,34 +16197,6 @@
   "BEL": {
    "espn_slug": "bel.1",
    "matches": [
-    {
-     "homeTeam": "KV Mechelen",
-     "awayTeam": "Club Brugge",
-     "homeGoals": 2,
-     "awayGoals": 1,
-     "date": "2025-08-01"
-    },
-    {
-     "homeTeam": "KVC Westerlo",
-     "awayTeam": "Zulte-Waregem",
-     "homeGoals": 3,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "Standard Liege",
-     "awayTeam": "Dender",
-     "homeGoals": 1,
-     "awayGoals": 1,
-     "date": "2025-08-02"
-    },
-    {
-     "homeTeam": "KAA Gent",
-     "awayTeam": "RAAL La Louvière",
-     "homeGoals": 1,
-     "awayGoals": 0,
-     "date": "2025-08-02"
-    },
     {
      "homeTeam": "Racing Genk",
      "awayTeam": "Antwerp",
@@ -18529,10 +18305,7 @@
    "Varnamo"
   ],
   "VEI": [],
-  "LOI": [
-   "Drogheda",
-   "Galway"
-  ],
+  "LOI": [],
   "CSL": [
    "Changchun Yatai",
    "Meizhou Hakka"

@@ -1,0 +1,28 @@
+snapshot precedente: generated_at=2026-08-01 · leghe=11
+finestra: dal 2025-08-03 a oggi
+
+ELI: 225 match (-2) · 2025-08-03 → 2026-07-27 (prima finiva 2026-07-27) · squadre 19
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Bryne', 'Haugesund', 'Stromsgodset']
+ALL: 213 match (-2) · 2025-08-03 → 2026-07-27 (prima finiva 2026-07-27) · squadre 19
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Norrkoping', 'Oster', 'Varnamo']
+     ! VEI: ESPN fin.1 ha reso 0 squadre (<8) → modo degradato: solo match esatti sui 14 nomi dello snapshot precedente
+VEI: 174 match (-3) · 2025-08-03 → 2026-07-26 (prima finiva 2026-07-26) · squadre 14
+     ! LOI: ESPN irl.1 ha reso 0 squadre (<8) → modo degradato: solo match esatti sui 11 nomi dello snapshot precedente
+LOI: 176 match (-3) · 2025-08-03 → 2026-07-25 (prima finiva 2026-07-25) · squadre 11
+CSL: 248 match (-4) · 2025-08-03 → 2026-07-26 (prima finiva 2026-07-26) · squadre 18
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Changchun Yatai', 'Meizhou Hakka']
+AUT: 188 match (-4) · 2025-08-03 → 2026-05-17 (prima finiva 2026-05-17) · squadre 12
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['BW Linz']
+DNK: 184 match (-2) · 2025-08-03 → 2026-07-27 (prima finiva 2026-07-27) · squadre 14
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Fredericia', 'Vejle']
+POL: 293 match (-5) · 2025-08-03 → 2026-07-27 (prima finiva 2026-07-27) · squadre 21
+SWZ: 225 match (-3) · 2025-08-03 → 2026-07-26 (prima finiva 2026-07-26) · squadre 13
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Vaduz']
+  · SB stagione 2026/2027 non disponibile (HTTPError) — normale prima del via
+SB: 380 match (+0) · 2025-08-22 → 2026-05-08 (prima finiva 2026-05-08) · squadre 19
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Bari', 'Frosinone', 'Pescara', 'Reggiana', 'Spezia', 'Venezia']
+  · BEL stagione 2026/2027 non disponibile (HTTPError) — normale prima del via
+BEL: 299 match (-4) · 2025-08-03 → 2026-05-24 (prima finiva 2026-05-24) · squadre 16
+     ! nomi non mappati su ESPN (tenuti come da sorgente): ['Dender']
+
+scritto /home/runner/work/agentic-markets-dashboard/agentic-markets-dashboard/data/summer_leagues/history.json (367 KB, leghe: ['ALL', 'AUT', 'BEL', 'CSL', 'DNK', 'ELI', 'LOI', 'POL', 'SB', 'SWZ', 'VEI'])
