@@ -4,7 +4,7 @@ import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { withAffiliate } from "@/lib/affiliate";
-import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
+import { PREDICTION_WINDOW_DAYS, V2_MAX_ROWS, isRowCapReached } from "@/lib/prediction-window";
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { buildSoftLookup } from "@/lib/soft-lookup";
 import { parseFinalScore } from "./final-score";
@@ -48,15 +48,29 @@ export async function GET(req: Request) {
     conditions.push(`status = $${values.length}`);
   }
 
+  // #V2-ROW-CAP-0803: il tetto è una costante dichiarata (lib/prediction-window),
+  // non un 100 sepolto nella query, e passa come parametro come tutto il resto.
+  values.push(V2_MAX_ROWS);
   const rows = await dbQuery<UnifiedPrediction>(
     `SELECT * FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      ORDER BY
        competition = 'World Cup' DESC,
        starts_at ASC
-     LIMIT 100`,
+     LIMIT $${values.length}`,
     values
   );
+
+  // Il troncamento non deve essere muto. L'ORDER BY è `starts_at ASC`, quindi al
+  // tetto cadono sempre le partite più lontane: senza questo warn un board che
+  // perde il fondo del calendario è indistinguibile da un calendario corto.
+  // È esattamente come il `LIMIT 100` è passato inosservato per settimane.
+  if (isRowCapReached(rows.length)) {
+    console.warn(
+      `[v2/predictions] TETTO RAGGIUNTO: ${rows.length} righe lette = V2_MAX_ROWS (${V2_MAX_ROWS}). ` +
+      `Le partite più lontane nella finestra di ${PREDICTION_WINDOW_DAYS} giorni sono troncate — alzare V2_MAX_ROWS.`
+    );
+  }
 
   // Friendly / WC paper rows store the 1X2 distribution in `notes` (JSON), not
   // in the p_home/p_draw/p_away columns (which stay null). Without this coalesce
