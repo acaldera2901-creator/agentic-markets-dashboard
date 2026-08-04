@@ -1748,6 +1748,10 @@ export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy de
   pick_of_day?: boolean;
   pick?: string | null;
   confidence_score?: number | null;
+  // #TENNIS-MARKET-GATE-0805: server verdict — no market price on the picked
+  // side, so no directional pick. Kept separate from the floor verdict on
+  // purpose (different reason, different copy). Legacy payloads omit it.
+  no_market?: boolean | null;
   explanation?: string | null;
   affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
@@ -2067,8 +2071,13 @@ function isTennisBestBet(m: TennisMatch) {
   // keeps best_selection on the row → guard here too so a sub-floor coin-flip
   // never resurfaces as a value bet. #TENNIS-SEG-FLOOR-1: the floor is
   // segment-aware by tournament name (hi 62 / lo 64 / lo-grass 66).
-  const surfaced = m.confidence_score == null
-    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament);
+  // #TENNIS-MARKET-GATE-0805: `no_market` is the SERVER verdict (same lesson as
+  // #BESTBET-FLOOR-1 — re-deriving the rule client-side is how sub-floor picks
+  // resurfaced here last time). Absent on legacy payloads → treated as market
+  // present, so an old cached response cannot blank the whole board.
+  const surfaced = (m.confidence_score == null
+    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
+    && m.no_market !== true;
   // #BESTBET-MODEL-SIGNAL-0715: value bet (mercato+edge) OPPURE model signal
   // (prob pick ≥ 58%). Il floor `surfaced` resta binding (tennis lo-tier 64),
   // quindi durante il blackout quote le pick modello ad alta confidenza restano.
@@ -2524,8 +2533,10 @@ function BestBetsBoard({
     edge: m.edge,
     // #BESTBET-FLOOR-1: below the tennis floor → no directional pick.
     // #TENNIS-SEG-FLOOR-1: segment-aware floor resolved from the tournament.
-    belowFloor: m.confidence_score != null
-      && m.confidence_score < surfaceFloorFor("tennis", m.tournament),
+    // #TENNIS-MARKET-GATE-0805: no market price → same outcome (server verdict).
+    belowFloor: (m.confidence_score != null
+      && m.confidence_score < surfaceFloorFor("tennis", m.tournament))
+      || m.no_market === true,
   }));
   const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
     sportFilter,

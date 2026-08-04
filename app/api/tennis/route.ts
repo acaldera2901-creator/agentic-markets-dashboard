@@ -4,7 +4,7 @@ import { resolveAccessState } from "@/lib/auth";
 import { isUnlocked, showcaseRanking } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
-import { surfaceDecision, tennisFloorFor } from "@/lib/surfacing-gate";
+import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,19 @@ export const dynamic = "force-dynamic";
 // (player1/player2/surface/p1/p2/...). When locked, the sensitive numbers are
 // nulled (frontend blurs on `locked`); the matchup + tournament stay visible so
 // the public board is populated. Distinct from the football projection on purpose.
-function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null }>(
+// The price on the side this route would show as the pick (same p1>=p2 rule used
+// below), so the market gate and the displayed pick can never look at different
+// sides of the market. #TENNIS-MARKET-GATE-0805.
+function pickedTennisOdds(m: {
+  p1: number;
+  p2: number;
+  odds_p1?: number | null;
+  odds_p2?: number | null;
+}): number | null {
+  return (m.p1 >= m.p2 ? m.odds_p1 : m.odds_p2) ?? null;
+}
+
+function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null; odds_p1?: number | null; odds_p2?: number | null }>(
   matches: T[],
   state: AccessState
 ): Array<T & { locked: boolean; pick_of_day: boolean }> {
@@ -28,10 +40,16 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
   const rankById = showcaseRanking(
     matches.map((m) => {
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
-      const floor = tennisFloorFor((m as { tournament?: string }).tournament);
       return {
         id: m.id,
-        surfaced: surfaceDecision(confidence, floor).isPick,
+        // #TENNIS-MARKET-GATE-0805: the showcase order must rank by the SAME
+        // notion of "surfaced" the card uses, market gate included — otherwise a
+        // no-market row would be unlocked ahead of a real pick.
+        surfaced: tennisSurfaceDecision(
+          confidence,
+          (m as { tournament?: string }).tournament,
+          pickedTennisOdds(m)
+        ).isPick,
         conf: Math.max(m.p1, m.p2),
         edge: typeof m.edge === "number" ? m.edge : null,
       };
@@ -47,8 +65,15 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       // no clear favourite — drop the directional pick (the card shows none).
       // Probability-neutral: p1/p2/confidence are unchanged.
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
-      const floor = tennisFloorFor((m as { tournament?: string }).tournament);
-      const { isPick, belowFloor } = surfaceDecision(confidence, floor);
+      // #TENNIS-MARKET-GATE-0805: no price on the picked side → no directional
+      // pick. `no_market` stays distinct from `below_floor`: below floor means
+      // the model has no clear favourite, no-market means we have one but no
+      // price to check it against — the copy must not conflate the two.
+      const { isPick, belowFloor, noMarket } = tennisSurfaceDecision(
+        confidence,
+        (m as { tournament?: string }).tournament,
+        pickedTennisOdds(m)
+      );
       const isPro = state === "premium" || state === "admin_full";
       const out: Record<string, unknown> = {
         ...m,
@@ -56,6 +81,7 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
         pick_of_day: isPotD,
         confidence_score: confidence,
         below_floor: belowFloor,
+        no_market: noMarket,
         pick: isPick
           ? (m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2)
           : null,

@@ -6,7 +6,7 @@ import {
   type SyncReport,
 } from "@/lib/publication-gate";
 import { buildTennisExplanation } from "@/lib/tennis-explanation";
-import { surfaceDecision, tennisFloorFor } from "@/lib/surfacing-gate";
+import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -67,13 +67,23 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   // sub-floor picks leaking onto v2 / Match Builder / Creator Picks. The floor
   // is keyed on the tournament NAME (not the surface column) so this sync, the
   // board route and isSurfacedRow (history, no surface column) always agree.
-  const { belowFloor } = surfaceDecision(confidence ?? 0, tennisFloorFor(row.tournament));
-  const surfacedPick = belowFloor ? null : pick;
+  // #TENNIS-MARKET-GATE-0805: the floor is no longer the only condition — a
+  // tennis row with no market price on the picked side carries no directional
+  // pick either (lab 05/08: 58.9% actual against 72.1% claimed, n=270). Same
+  // probability-neutral contract as the floor.
+  const { belowFloor, noMarket } = tennisSurfaceDecision(
+    confidence ?? 0,
+    row.tournament,
+    odds
+  );
+  const surfacedPick = belowFloor || noMarket ? null : pick;
   const surface = row.surface ? row.surface[0].toUpperCase() + row.surface.slice(1) : "n/a";
   // Why-v2: human prose, no internal jargon. The picked side's serve/return form
   // is the one paired with `pick` (P1/P2), so the comparison reads in the
   // favourite's direction. TEXT ONLY — probabilities/pick/confidence untouched.
-  const explanation = belowFloor
+  // No pick → no directional prose (the why names a favourite). Covers both
+  // reasons: below floor and #TENNIS-MARKET-GATE-0805 no-market.
+  const explanation = belowFloor || noMarket
     ? null
     : buildTennisExplanation({
         pick,
@@ -177,6 +187,12 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
       )
       ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL DO UPDATE SET
         pick              = EXCLUDED.pick,
+        -- #TENNIS-BOOKMAKER-STALE-0805: bookmaker was missing from this list,
+        -- so a row first written without a price kept "no market" FOREVER even
+        -- after odds/edge/signal_type were refreshed. Measured on the live board
+        -- 04/08: 23 rows labelled "no market" while carrying a real price — the
+        -- exact field a human would eyeball to check this gate.
+        bookmaker         = EXCLUDED.bookmaker,
         odds              = EXCLUDED.odds,
         fair_odds         = EXCLUDED.fair_odds,
         edge_percent      = EXCLUDED.edge_percent,
