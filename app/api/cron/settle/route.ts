@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchAllTodayMatches } from "@/lib/football-data";
 import { SUMMER_LEAGUES, fetchSummerResults } from "@/lib/summer-leagues";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
-import { settlePredictionLog } from "@/lib/prediction-log";
+import { settlePredictionLog, settlePredictionLogWinner } from "@/lib/prediction-log";
+import { gradeTennisPick, tennisWinnerSide } from "@/lib/tennis-settlement";
 import { verifyBearer } from "@/lib/admin-auth";
 import { opsAlert } from "@/lib/ops-alert";
 
@@ -217,7 +218,11 @@ export async function GET(req: NextRequest) {
       const cutoff = new Date(Date.now() - 115 * 60 * 1000).toISOString();
       const { data: trows, error } = await sb
         .from("unified_predictions")
-        .select("id, source_id, pick")
+        // home_team/away_team = player1/player2 (#TENNIS-SHADOW-SETTLE-0805):
+        // needed to turn the winner's NAME into the home/away the prediction_log
+        // shadow speaks. BOTH are required — matching only player1 would leave
+        // every player2 win unsettled, i.e. the A/B would still be half-blind.
+        .select("id, source_id, pick, home_team, away_team")
         .eq("sport", "tennis")
         .eq("source_table", "tennis_predictions")
         .eq("is_historical", false)
@@ -239,7 +244,18 @@ export async function GET(req: NextRequest) {
         for (const row of trows ?? []) {
           const winner = winnerByMatch.get(String(row.source_id));
           if (!winner) continue; // not settled upstream yet — next run
-          const outcome = winner === String(row.pick) ? "won" : "lost";
+          // #TENNIS-SHADOW-SETTLE-0805: settle the market-blend A/B in
+          // prediction_log from the same winner. Fail-soft and independent of
+          // the unified update below — the shadow is analytics, it must never be
+          // able to hold up a customer-facing settlement. Only when the winner
+          // matches a known side: no guessing.
+          const side = tennisWinnerSide(winner, row.home_team, row.away_team);
+          if (side) {
+            await settlePredictionLogWinner(String(row.source_id), side === "home");
+          }
+          // #TENNIS-VOID-NOT-LOST-0805 — see lib/tennis-settlement.ts.
+          const outcome = gradeTennisPick(row.pick, winner);
+          if (!outcome) continue;
           const { error: upErr } = await sb
             .from("unified_predictions")
             .update({

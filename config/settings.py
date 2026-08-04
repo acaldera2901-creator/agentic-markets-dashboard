@@ -281,12 +281,21 @@ class Settings(BaseSettings):
     TENNIS_MAX_BET_PCT: float = 0.20       # 20% cap → 2€ on 10€ bankroll (Betfair minimum)
     TENNIS_DRAWDOWN_LIMIT: float = 0.12    # 12% monthly drawdown block
     TENNIS_KELLY_FRACTION: float = 0.25
-    # Tennis market-blend SHADOW (10y lab 2026-06-08: blending closing odds ~doubles
-    # publishable volume at 72% hit). Shadow-only: logs to prediction_log, served
-    # model unchanged. Promotion to served = human APPROVE in deploy-gate.
+    # Tennis market blend (10y lab 2026-06-08: blending closing odds ~doubles
+    # publishable volume at 72% hit). #TENNIS-BLEND-PROMOTE-0805: PROMOTED to the
+    # served model on live evidence — 223 matches with a pre-match market snapshot
+    # and an independent settlement truth: raw elo 71.4% on 91 picks, blend 77.6%
+    # on 125, Brier 0.2259 -> 0.1981. More accurate AND more picks, both halves of
+    # the window, and on the 50 matches where the blend flips the side it is right
+    # 32 times (z=1.98). Fail-closed: no usable 2-way price -> identity, the match
+    # is served exactly as before.
+    #
+    # ⚠️ The tennis model runs as a DAEMON on Andrea's Mac: merging this branch
+    # does nothing until that daemon is restarted. Rollback is this flag back to
+    # False + restart — not a revert.
     TENNIS_SHADOW_VERSION: str = "tennis-market-blend-shadow"
-    TENNIS_SHADOW_ENABLED: bool = True      # compute + log the shadow A/B
-    TENNIS_SHADOW_SERVE_ENABLED: bool = False  # flip ONLY after gate-green + APPROVE
+    TENNIS_SHADOW_ENABLED: bool = True      # compute + log the A/B (now: raw as counterfactual)
+    TENNIS_SHADOW_SERVE_ENABLED: bool = True   # serve the blend
 
     # Stake/Roobet shadow-eval (#SPORTSBOOK-SHADOW-1). Forward-only A/B: log each
     # served prediction with per-book SHADOW probs (served model re-blended with
