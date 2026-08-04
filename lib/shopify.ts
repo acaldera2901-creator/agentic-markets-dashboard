@@ -157,7 +157,7 @@ type OrderShape = {
   payment_gateway_names?: unknown;
   gateway?: unknown;
   note_attributes?: Array<{ name?: string; value?: string }>;
-  line_items?: Array<{ variant_id?: unknown }>;
+  line_items?: Array<{ variant_id?: unknown; quantity?: unknown }>;
 };
 
 // Importo in euro/dollari da una stringa Shopify ("14.99"). Ritorna null su
@@ -194,6 +194,30 @@ export function extractRefund(
   return { refundId: String(r.id), orderId: String(r.order_id), amount };
 }
 
+export type ShopifyLineItem = { variantId: string; quantity: number };
+
+// #SHOPIFY-MULTILINE-0804 — un ordine può avere PIÙ righe.
+//
+// Il nostro checkout ne produce sempre una sola (`/cart/clear` poi `/cart/add`),
+// ma lo storefront è pubblico: chi ci arriva da lì mette nel carrello quello che
+// vuole, es. un piano E la Weekly Pick. Finché leggevamo solo `line_items[0]`
+// quell'ordine concedeva UNA sola delle due cose e l'altra spariva senza traccia
+// — pagata e mai consegnata, con `status` che diceva comunque "granted"/"weekly"
+// e la reconcile che quindi non la ri-tentava mai.
+//
+// La quantità serve al chiamante per accorgersi di un ordine che chiede due volte
+// la stessa cosa (due piani, due settimane): non si "stacka" a indovinare, si
+// segnala. Righe senza variant vengono scartate qui: non sono mappabili a nulla.
+function extractLineItems(o: OrderShape): ShopifyLineItem[] {
+  const out: ShopifyLineItem[] = [];
+  for (const li of o.line_items ?? []) {
+    if (li?.variant_id == null) continue;
+    const q = typeof li.quantity === "number" && Number.isFinite(li.quantity) ? li.quantity : 1;
+    out.push({ variantId: String(li.variant_id), quantity: q > 0 ? Math.floor(q) : 1 });
+  }
+  return out;
+}
+
 export function extractOrder(
   payload: unknown
 ): {
@@ -201,6 +225,7 @@ export function extractOrder(
   email: string | null;
   identifier: string | null;
   variantId: string | null;
+  lineItems: ShopifyLineItem[];
   totalPrice: number | null;
   gatewayNames: string[];
 } | null {
@@ -209,7 +234,15 @@ export function extractOrder(
   const email = typeof o.email === "string" ? o.email : null;
   const attr = (o.note_attributes ?? []).find((a) => a?.name === "identifier");
   const identifier = attr?.value ?? (email ? email.toLowerCase().trim() : null);
-  const variantId = o.line_items?.[0]?.variant_id != null ? String(o.line_items[0].variant_id) : null;
+  const lineItems = extractLineItems(o);
+  // `variantId` resta un campo SINGOLO perché è quello che finisce nella colonna
+  // `shopify_events.variant_id`, da cui la reconcile ri-tenta i piani rimasti
+  // senza grant. Su un ordine misto deve quindi essere il variant del PIANO, non
+  // il primo in ordine di carrello: se ci finisse la Weekly Pick, la reconcile non
+  // saprebbe più quale piano concedere. Nessun cambio di schema, solo la scelta
+  // giusta della riga da registrare.
+  const planItem = lineItems.find((li) => resolveOrderFromVariant(li.variantId) != null);
+  const variantId = planItem?.variantId ?? lineItems[0]?.variantId ?? null;
   // Shopify manda l'array `payment_gateway_names`; `gateway` è il campo legacy
   // singolo. Leggiamo entrambi: un ordine crypto non riconosciuto = doppio grant.
   const gatewayNames = [
@@ -221,6 +254,7 @@ export function extractOrder(
     email,
     identifier,
     variantId,
+    lineItems,
     totalPrice: money(o.total_price),
     gatewayNames,
   };

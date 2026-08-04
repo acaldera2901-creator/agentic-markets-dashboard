@@ -196,10 +196,51 @@ export async function POST(req: Request) {
   }
 
   try {
+    // #SHOPIFY-MULTILINE-0804 — l'ordine si legge per RIGHE, non solo la prima.
+    // Il nostro checkout ne manda sempre una, ma lo storefront è pubblico e un
+    // carrello con piano + Weekly Pick concedeva una cosa sola: l'altra era
+    // pagata e persa in silenzio, con status "granted"/"weekly" a coprire tutto.
+    // `lineItems` vuoto = payload senza righe → si ricade sul singolo variantId
+    // così il comportamento su ordini legacy/monoriga resta identico.
+    const items = order.lineItems.length > 0
+      ? order.lineItems
+      : order.variantId
+        ? [{ variantId: order.variantId, quantity: 1 }]
+        : [];
+    const weeklyItems = items.filter((li) => isWeeklyPickVariant(li.variantId));
+    const planItems = items.filter((li) => resolveOrderFromVariant(li.variantId) != null);
+    const unknownItems = items.filter(
+      (li) => !isWeeklyPickVariant(li.variantId) && resolveOrderFromVariant(li.variantId) == null
+    );
+
+    // Due piani nello stesso ordine, o due settimane: non si indovina come si
+    // sommano (stackare 2 abbonamenti? raddoppiare i giorni?). Si lascia tutto
+    // fermo e si chiama una persona — è denaro incassato, non un caso di test.
+    const doubled =
+      planItems.length > 1 ||
+      weeklyItems.length > 1 ||
+      planItems.some((li) => li.quantity > 1) ||
+      weeklyItems.some((li) => li.quantity > 1);
+    if (doubled) {
+      const why = `ordine con quantità multiple (piani=${planItems.length} weekly=${weeklyItems.length}): grant manuale`;
+      console.error(`[shopify/webhook] ${why}`, { order });
+      await markEvent(order.orderId, "unresolved", why);
+      await opsAlert("shopify-multiline", [`ordine ${order.orderId}: ${why}`]);
+      return NextResponse.json({ received: true, unresolved: true });
+    }
+
+    // Righe che non sappiamo mappare (SKU nuova, merch, add-on): NON bloccano il
+    // resto dell'ordine, ma non spariscono nemmeno — l'incasso c'è stato.
+    if (unknownItems.length > 0) {
+      const why = `righe non mappabili: ${unknownItems.map((li) => li.variantId).join(",")}`;
+      console.error(`[shopify/webhook] ${why}`, { order });
+      await opsAlert("shopify-multiline", [`ordine ${order.orderId}: ${why}`]);
+    }
+
     // Weekly Pick: SKU one-off → entitlement della settimana corrente, non un
     // piano. La settimana la decide il SERVER al momento dell'ordine (mai il
     // payload), e grantWeeklyPick è idempotente sulla UNIQUE identifier+week.
-    if (isWeeklyPickVariant(order.variantId)) {
+    if (weeklyItems.length > 0 && planItems.length === 0) {
       if (!order.identifier) {
         console.error("[shopify/webhook] weekly pick senza identifier", { order });
         // 'unresolved' e non 'pending': così resta visibile invece di sparire
@@ -208,7 +249,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true, unresolved: true });
       }
       await grantWeeklyPick(order.identifier, currentWeekStart(new Date()), null);
-      await markEvent(order.orderId, "weekly");
+      await markEvent(order.orderId, unknownItems.length > 0 ? "weekly-partial" : "weekly");
       return NextResponse.json({ received: true, weeklyPick: true });
     }
 
@@ -246,7 +287,21 @@ export async function POST(req: Request) {
       });
       await markEvent(order.orderId, "unresolved", "grant null: profilo inesistente o grandfather");
     } else {
-      await markEvent(order.orderId, "granted");
+      // #SHOPIFY-MULTILINE-0804 — carrello misto piano + Weekly Pick: vanno
+      // concesse ENTRAMBE, sono due prodotti pagati. Il piano non include la
+      // settimana per i tier che non la hanno, e grantWeeklyPick è idempotente
+      // sulla UNIQUE identifier+week, quindi concederla a un Pro che la ha già
+      // inclusa non produce un doppio entitlement.
+      let weeklyToo = false;
+      if (weeklyItems.length > 0) {
+        await grantWeeklyPick(order.identifier, currentWeekStart(new Date()), null);
+        weeklyToo = true;
+      }
+      await markEvent(
+        order.orderId,
+        weeklyToo ? "granted+weekly" : unknownItems.length > 0 ? "granted-partial" : "granted"
+      );
+      if (weeklyToo) return NextResponse.json({ received: true, weeklyPick: true });
     }
   } catch (e) {
     console.error("[shopify/webhook] handler error:", String(e));
