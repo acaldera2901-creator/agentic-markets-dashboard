@@ -42,8 +42,31 @@ describe("registry", () => {
 describe("dizionari registrati", () => {
   const locales = Object.keys(TOOLS_COPY) as (keyof typeof TOOLS_COPY)[];
 
-  it("contengono almeno l'inglese", () => {
-    expect(locales).toContain("en");
+  it("esistono per TUTTE le lingue dichiarate, senza fallback silenzioso all'inglese", () => {
+    // getToolsCopy ripiega su en per un locale ignoto: comodo a runtime, ma se
+    // una lingua dichiarata non ha il suo dizionario la pagina esce in inglese
+    // sotto una URL /de/ — e nessuno se ne accorge. Questo lo impedisce.
+    for (const locale of TOOL_LOCALES) {
+      expect(locales, `dizionario mancante: ${locale}`).toContain(locale);
+    }
+  });
+
+  it("non riusano l'oggetto inglese per un'altra lingua", () => {
+    for (const locale of TOOL_LOCALES) {
+      if (locale === "en") continue;
+      expect(TOOLS_COPY[locale], locale).not.toBe(TOOLS_COPY.en);
+      expect(TOOLS_COPY[locale]!.tools["kelly-criterion"].h1, locale).not.toBe(
+        TOOLS_COPY.en.tools["kelly-criterion"].h1
+      );
+    }
+  });
+
+  it("non contengono caratteri fuori posto (residui di scrittura)", () => {
+    for (const locale of TOOL_LOCALES) {
+      const text = JSON.stringify(TOOLS_COPY[locale]);
+      // CJK in un dizionario europeo = carattere finito lì per sbaglio.
+      expect(text, `${locale}: carattere CJK`).not.toMatch(/[぀-ヿ一-鿿]/);
+    }
   });
 
   for (const locale of Object.keys(TOOLS_COPY) as (keyof typeof TOOLS_COPY)[]) {

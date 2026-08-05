@@ -6,11 +6,31 @@
 import type { ToolLocale } from "./registry";
 import type { ToolsCopy } from "./copy/types";
 import en from "./copy/en";
+import it from "./copy/it";
+import es from "./copy/es";
+import fr from "./copy/fr";
+import de from "./copy/de";
+import pt from "./copy/pt";
+import nl from "./copy/nl";
+import pl from "./copy/pl";
+import tr from "./copy/tr";
+import sv from "./copy/sv";
+import ru from "./copy/ru";
 
 export type { ToolsCopy, ToolCopy } from "./copy/types";
 
 export const TOOLS_COPY: Partial<Record<ToolLocale, ToolsCopy>> & { en: ToolsCopy } = {
   en,
+  it,
+  es,
+  fr,
+  de,
+  pt,
+  nl,
+  pl,
+  tr,
+  sv,
+  ru,
 };
 
 export function getToolsCopy(locale: ToolLocale): ToolsCopy {
