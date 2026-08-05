@@ -43,6 +43,9 @@ const ALLOWLIST = new Set<string>([
   "app/api/weekly-pick/history/route.ts::idPlaceholders",
   "lib/goalscorer-fetch.ts::teamPh",
   "lib/goalscorer-fetch.ts::matchPh",
+  // Static dedup key (COALESCE/split_part on tp.match_id) shared by the primary
+  // and the #TENNIS-NEVER-EMPTY fallback query — a const with no user data.
+  "app/api/tennis/route.ts::DEDUP",
   // expirySqlExpr returns a constant SQL expr; the ISO timestamp it embeds is
   // quote-stripped (defensive) and comes from Stripe, not the user. Upgrade path:
   // pass the expiry as a bound $N param instead of interpolating (lib/plan-grant.ts).
