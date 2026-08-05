@@ -1,0 +1,184 @@
+// components/tools/calculators.test.tsx (#TOOLS-HUB-0805)
+// La matematica è già coperta da lib/betting-math.test.ts. Qui si verifica che i
+// calcolatori la CHIAMINO bene: che l'input arrivi al posto giusto, che il
+// risultato compaia, e che un campo vuoto o spazzatura non produca "NaN".
+
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { ToolCalculator } from "./ToolCalculator";
+import { TOOL_SLUGS } from "@/lib/tools/registry";
+import { getToolsCopy } from "@/lib/tools/copy";
+
+const copy = getToolsCopy("en");
+
+function mount(slug: (typeof TOOL_SLUGS)[number]) {
+  return render(<ToolCalculator slug={slug} copy={copy.tools[slug]} dash={copy.common.invalid} />);
+}
+
+describe("tutti i calcolatori", () => {
+  for (const slug of TOOL_SLUGS) {
+    it(`${slug}: monta e non scrive mai NaN`, () => {
+      const { container } = mount(slug);
+      expect(container.textContent).not.toContain("NaN");
+      expect(container.textContent).not.toContain("Infinity");
+      expect(container.querySelector(".tl-calc")).toBeTruthy();
+    });
+  }
+});
+
+describe("odds converter", () => {
+  it("2.50 diventa +150, 3/2 e 40%", async () => {
+    const user = userEvent.setup();
+    mount("odds-converter");
+    const input = screen.getByLabelText("Odds");
+    await user.clear(input);
+    await user.type(input, "2.50");
+    expect(screen.getByTestId("out-american").textContent).toBe("+150");
+    expect(screen.getByTestId("out-fractional").textContent).toBe("3/2");
+    expect(screen.getByTestId("out-implied").textContent).toBe("40.00%");
+  });
+
+  it("un input senza senso non produce numeri finti", async () => {
+    const user = userEvent.setup();
+    mount("odds-converter");
+    const input = screen.getByLabelText("Odds");
+    await user.clear(input);
+    await user.type(input, "banana");
+    expect(screen.getByTestId("out-american").textContent).toBe("—");
+    expect(screen.getByTestId("out-implied").textContent).toBe("—");
+  });
+});
+
+describe("margin calculator", () => {
+  it("1.90/1.90 dà 5.26% di margine e quote eque 2.00", async () => {
+    const user = userEvent.setup();
+    mount("margin-calculator");
+    const first = screen.getByLabelText("Outcome 1");
+    const second = screen.getByLabelText("Outcome 2");
+    await user.clear(first);
+    await user.type(first, "1.90");
+    await user.clear(second);
+    await user.type(second, "1.90");
+    expect(screen.getByTestId("out-margin").textContent).toBe("5.26%");
+    expect(screen.getByTestId("out-payout").textContent).toBe("95.00%");
+    expect(screen.getByTestId("out-fair-1").textContent).toBe("2.00");
+  });
+
+  it("aggiunge un terzo esito", async () => {
+    const user = userEvent.setup();
+    mount("margin-calculator");
+    await user.click(screen.getByRole("button", { name: "Add outcome" }));
+    expect(screen.getByLabelText("Outcome 3")).toBeTruthy();
+  });
+});
+
+describe("ev calculator", () => {
+  it("p=55% su quota 2.00 con stake 100 vale +10.00", async () => {
+    const user = userEvent.setup();
+    mount("ev-calculator");
+    const odds = screen.getByLabelText("Your price");
+    const prob = screen.getByLabelText("Your probability (%)");
+    const stake = screen.getByLabelText("Stake");
+    await user.clear(odds);
+    await user.type(odds, "2.00");
+    await user.clear(prob);
+    await user.type(prob, "55");
+    await user.clear(stake);
+    await user.type(stake, "100");
+    expect(screen.getByTestId("out-ev").textContent).toBe("+10.00");
+    expect(screen.getByTestId("out-edge").textContent).toBe("+10.00%");
+  });
+
+  it("in modalità sharp deduce la probabilità togliendo il margine", async () => {
+    const user = userEvent.setup();
+    mount("ev-calculator");
+    await user.click(screen.getByRole("button", { name: "From a sharp book" }));
+    const a = screen.getByLabelText("Sharp price, your side");
+    const b = screen.getByLabelText("Sharp price, other side");
+    await user.clear(a);
+    await user.type(a, "1.90");
+    await user.clear(b);
+    await user.type(b, "1.90");
+    // 1.90/1.90 → probabilità equa 50%
+    expect(screen.getByTestId("out-derived").textContent).toBe("50.00%");
+  });
+});
+
+describe("kelly calculator", () => {
+  it("p=55% su 2.00 con bankroll 1000 chiede 100", async () => {
+    const user = userEvent.setup();
+    mount("kelly-criterion");
+    await user.clear(screen.getByLabelText("Price"));
+    await user.type(screen.getByLabelText("Price"), "2.00");
+    await user.clear(screen.getByLabelText("Your probability (%)"));
+    await user.type(screen.getByLabelText("Your probability (%)"), "55");
+    await user.clear(screen.getByLabelText("Bankroll"));
+    await user.type(screen.getByLabelText("Bankroll"), "1000");
+    expect(screen.getByTestId("out-stake").textContent).toBe("100.00");
+    expect(screen.getByTestId("out-stake-pct").textContent).toBe("10.00%");
+  });
+
+  it("il mezzo Kelly dimezza lo stake", async () => {
+    const user = userEvent.setup();
+    mount("kelly-criterion");
+    await user.clear(screen.getByLabelText("Price"));
+    await user.type(screen.getByLabelText("Price"), "2.00");
+    await user.clear(screen.getByLabelText("Your probability (%)"));
+    await user.type(screen.getByLabelText("Your probability (%)"), "55");
+    await user.clear(screen.getByLabelText("Bankroll"));
+    await user.type(screen.getByLabelText("Bankroll"), "1000");
+    await user.click(screen.getByRole("button", { name: "Half" }));
+    expect(screen.getByTestId("out-stake").textContent).toBe("50.00");
+  });
+
+  it("senza edge dice zero, non un numero negativo", async () => {
+    const user = userEvent.setup();
+    mount("kelly-criterion");
+    await user.clear(screen.getByLabelText("Price"));
+    await user.type(screen.getByLabelText("Price"), "2.00");
+    await user.clear(screen.getByLabelText("Your probability (%)"));
+    await user.type(screen.getByLabelText("Your probability (%)"), "40");
+    await user.clear(screen.getByLabelText("Bankroll"));
+    await user.type(screen.getByLabelText("Bankroll"), "1000");
+    expect(screen.getByTestId("out-stake").textContent).toBe("0.00");
+    expect(screen.getByText("No edge at this price — the optimal stake is zero.")).toBeTruthy();
+  });
+});
+
+describe("probability calculator", () => {
+  it("40% diventa una quota equa di 2.50", async () => {
+    const user = userEvent.setup();
+    mount("probability-calculator");
+    const prob = screen.getByLabelText("Probability (%)");
+    await user.clear(prob);
+    await user.type(prob, "40");
+    expect(screen.getByTestId("out-fair-odds").textContent).toBe("2.50");
+  });
+
+  it("una quota di 1.75 chiede il 57.14%", async () => {
+    const user = userEvent.setup();
+    mount("probability-calculator");
+    await user.click(screen.getByRole("button", { name: "A price" }));
+    const odds = screen.getByLabelText("Decimal odds");
+    await user.clear(odds);
+    await user.type(odds, "1.75");
+    expect(screen.getByTestId("out-breakeven").textContent).toBe("57.14%");
+  });
+
+  it("tre gambe da 2.00 fanno 8.00 e 12.50%", async () => {
+    const user = userEvent.setup();
+    mount("probability-calculator");
+    for (const n of [1, 2]) {
+      const leg = screen.getByLabelText(`Leg ${n}`);
+      await user.clear(leg);
+      await user.type(leg, "2.00");
+    }
+    await user.click(screen.getByRole("button", { name: "Add leg" }));
+    const third = screen.getByLabelText("Leg 3");
+    await user.clear(third);
+    await user.type(third, "2.00");
+    expect(screen.getByTestId("out-parlay-odds").textContent).toBe("8.00");
+    expect(screen.getByTestId("out-parlay-prob").textContent).toBe("12.50%");
+  });
+});
