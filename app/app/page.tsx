@@ -8727,7 +8727,10 @@ export default function Dashboard() {
         const data = await resp.json();
         const liveMatches: TennisMatch[] = data.matches ?? [];
         setTennisMatches(liveMatches);
-        setTennisIsPlaceholder(false);
+        // #TENNIS-NEVER-EMPTY: se il board è in modalità "ultimi match recenti"
+        // di riserva (nessun live/upcoming), mostra le card bypassando la
+        // finestra di trading, così non resta mai vuoto.
+        setTennisIsPlaceholder(data.is_placeholder ?? false);
         setTennisSummary(data.summary ?? null);
         setTennisComputedAt(data.computed_at ?? null);
       } else if (resp.status === 401 || resp.status === 403) {
