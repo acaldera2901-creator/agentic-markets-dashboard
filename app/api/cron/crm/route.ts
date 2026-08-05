@@ -103,7 +103,9 @@ export async function GET(req: Request) {
     let res: { sent: boolean; error?: string };
     try {
       res = await sendTransactional({
-        type: "winback",
+        // #MAIL-I18N-5LANG-0805: il flusso VERO, non "winback" per tutti — così
+        // `notifications` si può contare per flusso.
+        type: flow,
         to: p.identifier,
         subject: mail.subject,
         html: mail.html,

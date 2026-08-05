@@ -128,22 +128,60 @@ export function brandedShell(
 
 // Account activation (HIGH-3): the link the user must click to activate their
 // profile and set a usable session. Sent from the account contact mailbox.
-export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): {
+// #MAIL-I18N-5LANG-0805 — le mail di ACCOUNT parlavano solo it/en, e la rotta auth
+// collassava la lingua (`body.language === "en" ? "en" : "it"`): chi si registrava
+// in spagnolo, francese o russo riceveva l'attivazione IN ITALIANO — la prima email
+// che un cliente riceve, sul percorso senza il quale non può nemmeno entrare. Il
+// resto del prodotto (sito, CRM, ricevute) parla 5 lingue da settimane.
+// Peggio: i fallback non erano nemmeno coerenti fra loro — activation/reset/
+// payment cadevano su italiano, l'OTP su inglese, quindi lo stesso utente spagnolo
+// poteva ricevere l'attivazione in italiano e il codice di accesso in inglese.
+const ACTIVATION: Record<MailLang, { subject: string; intro: string; cta: string; ignore: (m: string) => string }> = {
+  it: {
+    subject: "Attiva il tuo profilo BetRedge",
+    intro: "Per completare la registrazione e proteggere il tuo account, conferma il tuo indirizzo email. Il link scade tra 1 ora.",
+    cta: "Attiva il profilo",
+    ignore: (m) => `Se non hai creato un account, ignora questa email o scrivici a ${m}.`,
+  },
+  en: {
+    subject: "Activate your BetRedge profile",
+    intro: "To finish signing up and secure your account, confirm your email address. The link expires in 1 hour.",
+    cta: "Activate profile",
+    ignore: (m) => `If you didn't create an account, ignore this email or write to us at ${m}.`,
+  },
+  es: {
+    subject: "Activa tu perfil de BetRedge",
+    intro: "Para completar el registro y proteger tu cuenta, confirma tu dirección de correo. El enlace caduca en 1 hora.",
+    cta: "Activar el perfil",
+    ignore: (m) => `Si no has creado ninguna cuenta, ignora este correo o escríbenos a ${m}.`,
+  },
+  fr: {
+    subject: "Activez votre profil BetRedge",
+    intro: "Pour terminer votre inscription et sécuriser votre compte, confirmez votre adresse e-mail. Le lien expire dans 1 heure.",
+    cta: "Activer le profil",
+    ignore: (m) => `Si vous n'avez pas créé de compte, ignorez cet e-mail ou écrivez-nous à ${m}.`,
+  },
+  ru: {
+    subject: "Активируйте профиль BetRedge",
+    intro: "Чтобы завершить регистрацию и защитить аккаунт, подтвердите адрес электронной почты. Ссылка действует 1 час.",
+    cta: "Активировать профиль",
+    ignore: (m) => `Если вы не создавали аккаунт, просто проигнорируйте это письмо или напишите нам на ${m}.`,
+  },
+};
+
+export function activationEmail(activateUrl: string, lang: string = "it"): {
   subject: string; html: string; text: string; from: string; replyTo: string;
 } {
-  const it = lang === "it";
-  const subject = it ? "Attiva il tuo profilo BetRedge" : "Activate your BetRedge profile";
-  const intro = it
-    ? "Per completare la registrazione e proteggere il tuo account, conferma il tuo indirizzo email. Il link scade tra 1 ora."
-    : "To finish signing up and secure your account, confirm your email address. The link expires in 1 hour.";
-  const cta = it ? "Attiva il profilo" : "Activate profile";
-  const ignore = it
-    ? `Se non hai creato un account, ignora questa email o scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
-    : `If you didn't create an account, ignore this email or write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
+  const l = resolveMailLang(lang);
+  const t = ACTIVATION[l];
+  const subject = t.subject;
+  const intro = t.intro;
+  const cta = t.cta;
+  const ignore = t.ignore(ACCOUNT_CONTACT_EMAIL);
   const body = `${brandText(intro)}${brandCta(cta, activateUrl)}
   <p style="font-size:12px;color:${BRAND.muted};margin:18px 0 0;word-break:break-all;font-family:${FONT}">${activateUrl}</p>
   <p style="font-size:12px;color:${BRAND.muted};margin:12px 0 0;font-family:${FONT}">${ignore}</p>`;
-  const html = brandedShell(body, { hero: true, lang });
+  const html = brandedShell(body, { hero: true, lang: l });
   const text = `${intro}\n\n${cta}: ${activateUrl}\n\n${ignore}`;
   return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
 }
@@ -151,60 +189,135 @@ export function activationEmail(activateUrl: string, lang: "it" | "en" = "it"): 
 // Password reset: the link the user clicks to set a new password. Like
 // activation, sent from the account contact mailbox; the link carries a one-time
 // token (only its hash is stored) and expires in 1 hour.
-export function passwordResetEmail(resetUrl: string, lang: "it" | "en" = "it"): {
+const PWRESET: Record<MailLang, { subject: string; intro: string; cta: string; ignore: (m: string) => string }> = {
+  it: {
+    subject: "Reimposta la tua password BetRedge",
+    intro: "Hai chiesto di reimpostare la password. Clicca qui sotto per sceglierne una nuova. Il link scade tra 1 ora.",
+    cta: "Reimposta la password",
+    ignore: (m) => `Se non hai richiesto tu il reset, ignora questa email: la password resta invariata. Per dubbi scrivici a ${m}.`,
+  },
+  en: {
+    subject: "Reset your BetRedge password",
+    intro: "You asked to reset your password. Click below to choose a new one. The link expires in 1 hour.",
+    cta: "Reset password",
+    ignore: (m) => `If you didn't request this, ignore this email — your password stays unchanged. Questions? Write to us at ${m}.`,
+  },
+  es: {
+    subject: "Restablece tu contraseña de BetRedge",
+    intro: "Has pedido restablecer tu contraseña. Pulsa abajo para elegir una nueva. El enlace caduca en 1 hora.",
+    cta: "Restablecer la contraseña",
+    ignore: (m) => `Si no has sido tú, ignora este correo: tu contraseña no cambia. Si tienes dudas, escríbenos a ${m}.`,
+  },
+  fr: {
+    subject: "Réinitialisez votre mot de passe BetRedge",
+    intro: "Vous avez demandé à réinitialiser votre mot de passe. Cliquez ci-dessous pour en choisir un nouveau. Le lien expire dans 1 heure.",
+    cta: "Réinitialiser le mot de passe",
+    ignore: (m) => `Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé. Une question ? Écrivez-nous à ${m}.`,
+  },
+  ru: {
+    subject: "Сброс пароля BetRedge",
+    intro: "Вы запросили сброс пароля. Нажмите кнопку ниже, чтобы задать новый. Ссылка действует 1 час.",
+    cta: "Сбросить пароль",
+    ignore: (m) => `Если запрос отправляли не вы, просто проигнорируйте письмо — пароль останется прежним. Вопросы: ${m}.`,
+  },
+};
+
+export function passwordResetEmail(resetUrl: string, lang: string = "it"): {
   subject: string; html: string; text: string; from: string; replyTo: string;
 } {
-  const it = lang === "it";
-  const subject = it ? "Reimposta la tua password BetRedge" : "Reset your BetRedge password";
-  const intro = it
-    ? "Hai chiesto di reimpostare la password. Clicca qui sotto per sceglierne una nuova. Il link scade tra 1 ora."
-    : "You asked to reset your password. Click below to choose a new one. The link expires in 1 hour.";
-  const cta = it ? "Reimposta la password" : "Reset password";
-  const ignore = it
-    ? `Se non hai richiesto tu il reset, ignora questa email: la password resta invariata. Per dubbi scrivici a ${ACCOUNT_CONTACT_EMAIL}.`
-    : `If you didn't request this, ignore this email — your password stays unchanged. Questions? Write to us at ${ACCOUNT_CONTACT_EMAIL}.`;
+  const l = resolveMailLang(lang);
+  const t = PWRESET[l];
+  const subject = t.subject;
+  const intro = t.intro;
+  const cta = t.cta;
+  const ignore = t.ignore(ACCOUNT_CONTACT_EMAIL);
   const body = `${brandText(intro)}${brandCta(cta, resetUrl)}
   <p style="font-size:12px;color:${BRAND.muted};margin:18px 0 0;word-break:break-all;font-family:${FONT}">${resetUrl}</p>
   <p style="font-size:12px;color:${BRAND.muted};margin:12px 0 0;font-family:${FONT}">${ignore}</p>`;
-  const html = brandedShell(body, { lang });
+  const html = brandedShell(body, { lang: l });
   const text = `${intro}\n\n${cta}: ${resetUrl}\n\n${ignore}`;
   return { subject, html, text, from: activationFromAddress(), replyTo: ACCOUNT_CONTACT_EMAIL };
 }
 
-export function otpEmail(code: string, lang: "it" | "en" = "it"): { subject: string; html: string; text: string } {
-  const it = lang === "it";
-  const subject = it
-    ? `${code} — il tuo codice di accesso BetRedge`
-    : `${code} — your BetRedge login code`;
-  const intro = it
-    ? "Usa questo codice per accedere al tuo BetRedge. Scade tra 10 minuti."
-    : "Use this code to sign in to your BetRedge. It expires in 10 minutes.";
-  const ignore = it
-    ? "Se non hai richiesto questo codice, ignora questa email."
-    : "If you didn't request this code, you can ignore this email.";
+const OTP: Record<MailLang, { subject: (c: string) => string; intro: string; ignore: string }> = {
+  it: {
+    subject: (c) => `${c} — il tuo codice di accesso BetRedge`,
+    intro: "Usa questo codice per accedere al tuo BetRedge. Scade tra 10 minuti.",
+    ignore: "Se non hai richiesto questo codice, ignora questa email.",
+  },
+  en: {
+    subject: (c) => `${c} — your BetRedge login code`,
+    intro: "Use this code to sign in to your BetRedge. It expires in 10 minutes.",
+    ignore: "If you didn't request this code, you can ignore this email.",
+  },
+  es: {
+    subject: (c) => `${c} — tu código de acceso a BetRedge`,
+    intro: "Usa este código para entrar en tu BetRedge. Caduca en 10 minutos.",
+    ignore: "Si no has pedido este código, ignora este correo.",
+  },
+  fr: {
+    subject: (c) => `${c} — votre code de connexion BetRedge`,
+    intro: "Utilisez ce code pour vous connecter à votre BetRedge. Il expire dans 10 minutes.",
+    ignore: "Si vous n'avez pas demandé ce code, ignorez cet e-mail.",
+  },
+  ru: {
+    subject: (c) => `${c} — код для входа в BetRedge`,
+    intro: "Используйте этот код, чтобы войти в BetRedge. Он действует 10 минут.",
+    ignore: "Если вы не запрашивали код, просто проигнорируйте это письмо.",
+  },
+};
+
+export function otpEmail(code: string, lang: string = "it"): { subject: string; html: string; text: string } {
+  const l = resolveMailLang(lang);
+  const t = OTP[l];
+  const subject = t.subject(code);
+  const intro = t.intro;
+  const ignore = t.ignore;
   const body = `${brandText(intro)}
   <div style="font-size:32px;font-weight:800;letter-spacing:.3em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#0a0f12;border:1px solid rgba(35,165,89,.35);border-radius:10px;padding:18px;text-align:center;color:#ffffff">${code}</div>
   <p style="font-size:12px;color:${BRAND.muted};margin:16px 0 0;font-family:${FONT}">${ignore}</p>`;
-  const html = brandedShell(body, { lang });
+  const html = brandedShell(body, { lang: l });
   const text = `${code}\n\n${intro}\n\n${ignore}`;
   return { subject, html, text };
 }
 
 // ── Lifecycle / account emails ───────────────────────────────────────────────
-// All bilingual (it default / en), share brandedShell(), and are sent via
-// sendTransactional() (lib/notify.ts) so each send is recorded in `notifications`.
+// #MAIL-I18N-5LANG-0805: tutte a 5 lingue, come sito, CRM e ricevute. Prima
+// `lang !== "en"` significava che spagnolo, francese e russo ricevevano l'ITALIANO.
+// Condividono brandedShell() e passano da sendTransactional() (lib/notify.ts), che
+// registra ogni invio in `notifications`.
 
 // Payment received → plan in review (GAP4).
+const PAYMENT_RECEIVED: Record<MailLang, { subject: string; body: string }> = {
+  it: {
+    subject: "Pagamento ricevuto — in verifica",
+    body: "Abbiamo ricevuto la tua richiesta di BetRedge Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo.",
+  },
+  en: {
+    subject: "Payment received — under review",
+    body: "We received your BetRedge Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.",
+  },
+  es: {
+    subject: "Pago recibido — en verificación",
+    body: "Hemos recibido tu solicitud de BetRedge Pro. Estamos verificando la transacción on-chain y activaremos el plan en un plazo de 12 horas. Te avisamos en cuanto esté activo.",
+  },
+  fr: {
+    subject: "Paiement reçu — en vérification",
+    body: "Nous avons bien reçu votre demande BetRedge Pro. Nous vérifions la transaction on-chain et activerons le plan sous 12 heures. Nous vous écrivons dès qu'il est actif.",
+  },
+  ru: {
+    subject: "Платёж получен — на проверке",
+    body: "Мы получили ваш запрос на BetRedge Pro. Проверяем транзакцию в блокчейне и активируем план в течение 12 часов. Сообщим, как только всё будет готово.",
+  },
+};
+
 export function paymentReceivedEmail(lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const subject = it ? "Pagamento ricevuto — in verifica" : "Payment received — under review";
-  const body = it
-    ? "Abbiamo ricevuto la tua richiesta di BetRedge Pro. Verifichiamo la transazione on-chain e attiviamo il piano entro 12 ore. Ti avvisiamo appena è attivo."
-    : "We received your BetRedge Pro request. We're verifying the on-chain transaction and will activate your plan within 12 hours. We'll email you when it's live.";
+  const l = resolveMailLang(lang);
+  const t = PAYMENT_RECEIVED[l];
   return {
-    subject,
-    html: brandedShell(brandText(body), { lang: it ? "it" : "en" }),
-    text: body,
+    subject: t.subject,
+    html: brandedShell(brandText(t.body), { lang: l }),
+    text: t.body,
   };
 }
 
@@ -475,31 +588,79 @@ export function weeklyPickReceiptEmail(
 }
 
 // Cancellation — sent when a subscription is deleted; the plan drops to free.
+const CANCELLATION: Record<MailLang, { subject: string; body: string; cta: string }> = {
+  it: {
+    subject: "Abbonamento annullato",
+    body: "Il tuo BetRedge Pro è stato annullato e il profilo è tornato al piano gratuito. Puoi riattivarlo quando vuoi dal desk — nessun dato perso.",
+    cta: "Riattiva",
+  },
+  en: {
+    subject: "Subscription cancelled",
+    body: "Your BetRedge Pro has been cancelled and your profile is back on the free plan. You can reactivate any time from the desk — nothing is lost.",
+    cta: "Reactivate",
+  },
+  es: {
+    subject: "Suscripción cancelada",
+    body: "Tu BetRedge Pro se ha cancelado y tu perfil ha vuelto al plan gratuito. Puedes reactivarlo cuando quieras desde el desk — no se pierde nada.",
+    cta: "Reactivar",
+  },
+  fr: {
+    subject: "Abonnement annulé",
+    body: "Votre BetRedge Pro a été annulé et votre profil est revenu au plan gratuit. Vous pouvez le réactiver quand vous voulez depuis le desk — rien n'est perdu.",
+    cta: "Réactiver",
+  },
+  ru: {
+    subject: "Подписка отменена",
+    body: "Ваш BetRedge Pro отменён, профиль вернулся на бесплатный план. Вы можете возобновить его в любой момент из деска — ничего не потеряно.",
+    cta: "Возобновить",
+  },
+};
+
 export function cancellationEmail(lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const subject = it ? "Abbonamento annullato" : "Subscription cancelled";
-  const body = it
-    ? "Il tuo BetRedge Pro è stato annullato e il profilo è tornato al piano gratuito. Puoi riattivarlo quando vuoi dal desk — nessun dato perso."
-    : "Your BetRedge Pro has been cancelled and your profile is back on the free plan. You can reactivate any time from the desk — nothing is lost.";
-  const cta = it ? "Riattiva" : "Reactivate";
+  const l = resolveMailLang(lang);
+  const t = CANCELLATION[l];
   return {
-    subject,
-    html: brandedShell(`${brandText(body)}${brandCta(cta, `${siteUrl()}/app?tab=account`)}`, { lang: it ? "it" : "en" }),
-    text: `${body}\n\n${cta}: ${siteUrl()}/app?tab=account`,
+    subject: t.subject,
+    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/app?tab=account`)}`, { lang: l }),
+    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/app?tab=account`,
   };
 }
 
 // Win-back — sent (cron) to users whose plan has expired, to invite them back.
+const WINBACK: Record<MailLang, { subject: string; body: string; cta: string }> = {
+  it: {
+    subject: "Ti riapriamo il desk?",
+    body: "Il tuo BetRedge Pro è scaduto. Le probabilità calibrate e il track record verificabile sono sempre lì — riattiva per tornare a vederli in pieno.",
+    cta: "Riattiva il desk",
+  },
+  en: {
+    subject: "Want your desk back?",
+    body: "Your BetRedge Pro has expired. The calibrated probabilities and verifiable track record are still here — reactivate to get full access again.",
+    cta: "Reactivate the desk",
+  },
+  es: {
+    subject: "¿Te reabrimos el desk?",
+    body: "Tu BetRedge Pro ha caducado. Las probabilidades calibradas y el track record verificable siguen ahí — reactiva para volver a verlos por completo.",
+    cta: "Reactivar el desk",
+  },
+  fr: {
+    subject: "On vous rouvre le desk ?",
+    body: "Votre BetRedge Pro a expiré. Les probabilités calibrées et le track record vérifiable sont toujours là — réactivez pour les retrouver en entier.",
+    cta: "Réactiver le desk",
+  },
+  ru: {
+    subject: "Вернуть вам доступ к деску?",
+    body: "Срок действия BetRedge Pro истёк. Откалиброванные вероятности и проверяемый трек-рекорд на месте — возобновите доступ, чтобы снова видеть всё полностью.",
+    cta: "Открыть деск снова",
+  },
+};
+
 export function winBackEmail(lang = "it"): { subject: string; html: string; text: string } {
-  const it = lang !== "en";
-  const subject = it ? "Ti riapriamo il desk?" : "Want your desk back?";
-  const body = it
-    ? "Il tuo BetRedge Pro è scaduto. Le probabilità calibrate e il track record verificabile sono sempre lì — riattiva per tornare a vederli in pieno."
-    : "Your BetRedge Pro has expired. The calibrated probabilities and verifiable track record are still here — reactivate to get full access again.";
-  const cta = it ? "Riattiva il desk" : "Reactivate the desk";
+  const l = resolveMailLang(lang);
+  const t = WINBACK[l];
   return {
-    subject,
-    html: brandedShell(`${brandText(body)}${brandCta(cta, `${siteUrl()}/app?tab=account`)}`, { lang: it ? "it" : "en" }),
-    text: `${body}\n\n${cta}: ${siteUrl()}/app?tab=account`,
+    subject: t.subject,
+    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/app?tab=account`)}`, { lang: l }),
+    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/app?tab=account`,
   };
 }

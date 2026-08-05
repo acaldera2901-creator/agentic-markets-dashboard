@@ -189,7 +189,8 @@ export async function POST(req: Request) {
         // Notify the customer their subscription was cancelled (best-effort + recorded).
         const c = cancelled[0];
         if (c?.identifier?.includes("@")) {
-          const mail = cancellationEmail(c.language === "en" ? "en" : "it");
+          // #MAIL-I18N-5LANG-0805: la lingua salvata nel profilo, non collassata.
+          const mail = cancellationEmail(c.language ?? "it");
           await sendTransactional({
             type: "cancellation",
             to: c.identifier,

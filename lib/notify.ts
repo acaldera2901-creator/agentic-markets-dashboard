@@ -20,7 +20,15 @@ export type TxEmailType =
   | "receipt"
   | "cancellation"
   | "renewal_reminder"
-  | "winback";
+  | "winback"
+  // #MAIL-I18N-5LANG-0805: il cron CRM marcava OGNI email come "winback", anche
+  // le acquisition e le retention. Nella tabella `notifications` — l'unico registro
+  // di cosa abbiamo spedito — non si poteva contare per flusso: è così che 8
+  // offerte inesistenti sono uscite senza che nessuno le notasse in un conteggio.
+  // Il flusso vero era già in `meta.flow`, quindi lo storico resta leggibile.
+  | "acquisition"
+  | "retention"
+  | "onboarding";
 
 export async function sendTransactional(opts: {
   type: TxEmailType;

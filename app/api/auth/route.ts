@@ -4,7 +4,7 @@ import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/sessi
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
-import { paymentReceivedEmail, activationEmail, passwordResetEmail } from "@/lib/email";
+import { paymentReceivedEmail, activationEmail, passwordResetEmail, resolveMailLang, type MailLang } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
@@ -21,7 +21,7 @@ const TIMING_DUMMY_HASH = hashPassword("timing-equalizer-not-a-real-account");
 
 // Issue + persist a fresh activation token and email the activation link.
 // Throws if the email send fails so the caller surfaces a real error.
-async function sendActivation(req: Request, identifier: string, lang: "it" | "en"): Promise<void> {
+async function sendActivation(req: Request, identifier: string, lang: MailLang): Promise<void> {
   const { token, hash, expiresIso } = newActivationToken();
   await dbExecute(
     "UPDATE profiles SET activation_token_hash = $2, activation_token_expires = $3, updated_at = NOW() WHERE identifier = $1",
@@ -202,7 +202,8 @@ export async function POST(req: Request) {
     }
     // GAP4: confirm receipt to the customer (best-effort — never fails checkout).
     if (ctx.identifier.includes("@")) {
-      const lang = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+      // #MAIL-I18N-5LANG-0805: la lingua vera, non collassata a it|en.
+      const lang = resolveMailLang(typeof body.language === "string" ? body.language : null);
       const mail = paymentReceivedEmail(lang);
       await sendTransactional({
         type: "payment_received",
@@ -230,7 +231,7 @@ export async function POST(req: Request) {
   // admin) actually receives a link.
   if (action === "forgot_password") {
     const id = normalizeIdentifier(body.identifier ?? body.email);
-    const resetLang: "it" | "en" = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+    const resetLang = resolveMailLang(typeof body.language === "string" ? body.language : null);
     if (id && id.includes("@")) {
       const row = await loadAuthRow(id);
       if (row && row.password_hash && row.plan !== "admin_full") {
@@ -273,7 +274,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "this profile requires founder access" }, { status: 403 });
   }
 
-  const lang: "it" | "en" = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+  // #MAIL-I18N-5LANG-0805 — era `body.language === "en" ? "en" : "it"`, quindi chi
+  // si registrava in spagnolo, francese o russo riceveva l'attivazione IN ITALIANO:
+  // la prima email del prodotto, sul percorso senza il quale non si entra. La lingua
+  // vera veniva già salvata nel profilo (piu' sotto), quindi CRM e ricevute la
+  // rispettavano e le mail di account no.
+  const lang = resolveMailLang(typeof body.language === "string" ? body.language : null);
 
   // "resend_activation": re-send the activation email for a not-yet-activated
   // account. Never reveals whether the email exists (always 200).
