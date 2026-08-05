@@ -161,20 +161,20 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
   {
-    id: "top-worldcup",
+    id: "top-tools",
     slot: "desk-top",
     format: "leaderboard",
     audiences: ["premium"],
-    glyphs: ["#g-trophy"],
+    glyphs: ["#g-desk"],
     copy: {
-      it: { eyebrow: "In evidenza", headline: "World Cup è", accent: "aperta", sub: "Le probabilità del modello su tutto il tabellone, aggiornate live." },
-      en: { eyebrow: "Featured", headline: "World Cup is", accent: "live", sub: "Model probabilities across the whole bracket, updated live." },
-      es: { eyebrow: "Destacados", headline: "El Mundial está", accent: "en directo", sub: "Las probabilidades del modelo en todo el cuadro, actualizadas en directo." },
-      fr: { eyebrow: "À la une", headline: "La Coupe du Monde est", accent: "en direct", sub: "Les probabilités du modèle sur tout le tableau, mises à jour en direct." },
-      ru: { eyebrow: "Избранное", headline: "Чемпионат мира", accent: "в прямом эфире", sub: "Вероятности модели по всей сетке, обновляются в реальном времени." },
+      it: { eyebrow: "In evidenza", headline: "Cinque calcolatori,", accent: "gratuiti", sub: "Quote, margine, EV e Kelly: i conti che fai prima di puntare, in una pagina." },
+      en: { eyebrow: "Featured", headline: "Five calculators,", accent: "free", sub: "Odds, margin, EV and Kelly: the maths you run before a bet, on one page." },
+      es: { eyebrow: "Featured", headline: "Cinco calculadoras,", accent: "gratis", sub: "Cuotas, margen, EV y Kelly: las cuentas previas a la apuesta, en una página." },
+      fr: { eyebrow: "Featured", headline: "Cinq calculateurs,", accent: "gratuits", sub: "Cotes, marge, EV et Kelly : les calculs d'avant-pari, sur une page." },
+      ru: { eyebrow: "Featured", headline: "Пять калькуляторов,", accent: "бесплатно", sub: "Коэффициенты, маржа, EV и Келли: расчёты до ставки на одной странице." },
     },
-    cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →", es: "Ir al Mundial →", fr: "Aller à la Coupe du Monde →", ru: "Перейти к ЧМ →" },
-    image: { src: "/banners/stadium-night.jpg", overlay: "l" },
+    cta: { href: "/tools", it: "Apri gli strumenti →", en: "Open the tools →", es: "Abrir las herramientas →", fr: "Ouvrir les outils →", ru: "Открыть инструменты →" },
+    image: { src: "/banners/card-model.jpg", overlay: "l" },
   },
 
   {
@@ -230,23 +230,23 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     image: { src: "/banners/football-action.jpg", overlay: "b" },
   },
   {
-    id: "feed-worldcup",
+    id: "feed-tools",
     // #BANNERS-IN-GRID: rectangle → tile QUADRATO 1:1 impacchettato come una card
     // (default validato da Andrea). Il landscape 2-col cover-croppava il testo baked
     // del creativo; il quadrato è disegnato per il display near-square → nessun clip.
     slot: "desk-feed",
     format: "rectangle",
     audiences: ["base", "premium"],
-    glyphs: ["#g-trophy", "#g-ball"],
+    glyphs: ["#g-desk"],
     copy: {
-      it: { eyebrow: "In evidenza · World Cup", headline: "World Cup,", accent: "match per match", sub: "Ogni partita del Mondiale letta dal modello, aggiornata live." },
-      en: { eyebrow: "Featured · World Cup", headline: "World Cup,", accent: "match by match", sub: "Every World Cup game read by the model, updated live." },
-      es: { eyebrow: "Destacados · Mundial", headline: "Mundial,", accent: "partido a partido", sub: "Cada partido del Mundial leído por el modelo, actualizado en directo." },
-      fr: { eyebrow: "À la une · Coupe du Monde", headline: "Coupe du Monde,", accent: "match par match", sub: "Chaque match du Mondial lu par le modèle, mis à jour en direct." },
-      ru: { eyebrow: "Избранное · ЧМ", headline: "Чемпионат мира,", accent: "матч за матчем", sub: "Каждый матч ЧМ прочитан моделью, обновляется в реальном времени." },
+      it: { eyebrow: "In evidenza · Strumenti", headline: "Toglie il margine", accent: "del book", sub: "Metti le quote di un mercato e leggi la linea equa che ci sta sotto." },
+      en: { eyebrow: "Featured · Tools", headline: "Strip the book's", accent: "margin", sub: "Enter a market's prices and read the fair line hiding underneath." },
+      es: { eyebrow: "Featured · Tools", headline: "Quita el margen", accent: "de la casa", sub: "Introduce las cuotas de un mercado y lee la línea justa que hay debajo." },
+      fr: { eyebrow: "Featured · Tools", headline: "Retire la marge", accent: "du bookmaker", sub: "Saisis les cotes d'un marché et lis la ligne juste qui se cache dessous." },
+      ru: { eyebrow: "Featured · Tools", headline: "Снимите маржу", accent: "букмекера", sub: "Введите цены рынка и прочитайте честную линию под ними." },
     },
-    cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →", es: "Ir al Mundial →", fr: "Aller à la Coupe du Monde →", ru: "Перейти к ЧМ →" },
-    image: { src: "/banners/football-ball.jpg", overlay: "l" },
+    cta: { href: "/tools", it: "Apri gli strumenti →", en: "Open the tools →", es: "Abrir las herramientas →", fr: "Ouvrir les outils →", ru: "Открыть инструменты →" },
+    image: { src: "/banners/card-track.jpg", overlay: "l" },
   },
   // #BANNERS-IN-GRID mix: due campagne desk-feed in più così ogni sezione
   // intercala DUE tile di FORMA diversa (landscape 16:9 + quadrato 1:1) senza
@@ -318,20 +318,20 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
   {
-    id: "bottom-worldcup",
+    id: "bottom-tools",
     slot: "desk-bottom",
     format: "billboard",
     audiences: ["premium"],
     glyphs: ["#g-trophy", "#g-ball", "#g-pick"],
     copy: {
-      it: { eyebrow: "In evidenza · World Cup", headline: "Il tabellone completo, letto dal", accent: "modello", sub: "Probabilità su ogni match della World Cup, più i Creator Picks della community." },
-      en: { eyebrow: "Featured · World Cup", headline: "The full bracket, read by the", accent: "model", sub: "Probabilities on every World Cup match, plus community Creator Picks." },
-      es: { eyebrow: "Destacados · Mundial", headline: "El cuadro completo, leído por el", accent: "modelo", sub: "Probabilidades en cada partido del Mundial, más los Creator Picks de la comunidad." },
-      fr: { eyebrow: "À la une · Coupe du Monde", headline: "Le tableau complet, lu par le", accent: "modèle", sub: "Probabilités sur chaque match du Mondial, plus les Creator Picks de la communauté." },
-      ru: { eyebrow: "Избранное · ЧМ", headline: "Полная сетка, прочитанная", accent: "моделью", sub: "Вероятности по каждому матчу ЧМ, плюс Creator Picks от сообщества." },
+      it: { eyebrow: "Strumenti", headline: "Quanto puntare,", accent: "non solo cosa", sub: "Il criterio di Kelly dimensiona la puntata sul tuo bankroll e sul vantaggio reale." },
+      en: { eyebrow: "Tools", headline: "How much to stake,", accent: "not just what", sub: "The Kelly criterion sizes the bet on your bankroll and your real edge." },
+      es: { eyebrow: "Tools", headline: "Cuánto apostar,", accent: "no solo qué", sub: "El criterio de Kelly dimensiona la apuesta según tu bankroll y tu ventaja real." },
+      fr: { eyebrow: "Tools", headline: "Combien miser,", accent: "pas seulement quoi", sub: "Le critère de Kelly dimensionne la mise sur ta bankroll et ton avantage réel." },
+      ru: { eyebrow: "Tools", headline: "Сколько ставить,", accent: "а не только на что", sub: "Критерий Келли подбирает размер ставки под ваш банк и реальное преимущество." },
     },
-    cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →", es: "Ir al Mundial →", fr: "Aller à la Coupe du Monde →", ru: "Перейти к ЧМ →" },
-    image: { src: "/banners/football-pitch.jpg", overlay: "l" },
+    cta: { href: "/tools", it: "Apri gli strumenti →", en: "Open the tools →", es: "Abrir las herramientas →", fr: "Ouvrir les outils →", ru: "Открыть инструменты →" },
+    image: { src: "/banners/card-plans.jpg", overlay: "l" },
   },
 
   {
@@ -386,19 +386,19 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     cta: { href: "/app?tab=account&plans=1", it: "Sblocca le pick →", en: "Unlock picks →", es: "Desbloquear picks →", fr: "Débloquer les picks →", ru: "Открыть пики →" },
   },
   {
-    id: "rail-worldcup",
+    id: "rail-tools",
     slot: "desk-rail",
     format: "halfpage",
     audiences: ["base", "premium"],
     glyphs: ["#g-trophy", "#g-pick", "#g-ball"],
     copy: {
-      it: { eyebrow: "In evidenza", headline: "World Cup,", accent: "letta dal modello.", sub: "Probabilità live su tutto il tabellone." },
-      en: { eyebrow: "Featured", headline: "World Cup,", accent: "read by the model.", sub: "Live probabilities across the whole bracket." },
-      es: { eyebrow: "Destacados", headline: "Mundial,", accent: "leído por el modelo.", sub: "Probabilidades en directo en todo el cuadro." },
-      fr: { eyebrow: "À la une", headline: "Coupe du Monde,", accent: "lue par le modèle.", sub: "Probabilités en direct sur tout le tableau." },
-      ru: { eyebrow: "Избранное", headline: "Чемпионат мира,", accent: "прочитан моделью.", sub: "Вероятности в реальном времени по всей сетке." },
+      it: { eyebrow: "Gratis", headline: "Convertitore", accent: "di quote", sub: "Decimali, frazionarie, americane e probabilità implicita." },
+      en: { eyebrow: "Free", headline: "Odds", accent: "converter", sub: "Decimal, fractional, American and implied probability." },
+      es: { eyebrow: "Free", headline: "Conversor", accent: "de cuotas", sub: "Decimales, fraccionarias, americanas y probabilidad implícita." },
+      fr: { eyebrow: "Free", headline: "Convertisseur", accent: "de cotes", sub: "Décimales, fractionnaires, américaines et probabilité implicite." },
+      ru: { eyebrow: "Free", headline: "Конвертер", accent: "коэффициентов", sub: "Десятичные, дробные, американские и подразумеваемая вероятность." },
     },
-    cta: { href: "/world-cup", it: "Vai alla World Cup →", en: "Go to World Cup →", es: "Ir al Mundial →", fr: "Aller à la Coupe du Monde →", ru: "Перейти к ЧМ →" },
+    cta: { href: "/tools", it: "Apri gli strumenti →", en: "Open the tools →", es: "Abrir las herramientas →", fr: "Ouvrir les outils →", ru: "Открыть инструменты →" },
   },
 
   // ── DESK FEED TENNIS (rectangle) ────────────────────────────────────────
@@ -514,10 +514,10 @@ const OLE_VERTICAL = ["/banners/creatives/ole-vertical-1.jpg", "/banners/creativ
 export function campaignSport(c: HouseCampaign): "football" | "tennis" | "neutral" {
   const id = c.id;
   if (id.includes("tennis")) return "tennis";
-  if (id.includes("football") || id.includes("worldcup") || id.includes("edge")) return "football";
+  if (id.includes("football") || id.includes("edge")) return "football";
   const g = c.glyphs.join(" ");
   const hasTennis = /#g-racket|#g-tball|#g-grass|#g-court/.test(g);
-  const hasFootball = /#g-ball|#g-pitch/.test(g); // NB: #g-trophy è multisport (World Cup) → non conta come "solo calcio"
+  const hasFootball = /#g-ball|#g-pitch/.test(g); // NB: #g-trophy è multisport → non conta come "solo calcio"
   if (hasTennis && !hasFootball) return "tennis";
   if (hasFootball && !hasTennis) return "football";
   return "neutral";
@@ -536,7 +536,6 @@ export function creativeFor(campaign: HouseCampaign): string {
   if (campaign.format === "halfpage") return OLE_VERTICAL[h % OLE_VERTICAL.length];
   // Landscape 16:9 (slot larghi + feed calcio):
   if (id.includes("creator") || id.includes("picks")) return OLE_MULTISPORT[h % OLE_MULTISPORT.length];
-  if (id.includes("worldcup")) return "/banners/creatives/ole-multisport-edge.jpg";
   if (sport === "tennis") return OLE_TENNIS[h % OLE_TENNIS.length];
   if (sport === "football") return OLE_FOOTBALL[0];
   return OLE_MULTISPORT[h % OLE_MULTISPORT.length];
