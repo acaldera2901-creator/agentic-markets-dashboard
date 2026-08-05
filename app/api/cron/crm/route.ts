@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { resolveFlow, dueTriggers, isEligible, flowAllowed, type CrmProfile } from "@/lib/crm";
-import { CRM_TOUCHPOINTS, renderCrm, resolveCrmLang } from "@/lib/crm-content";
+import { CRM_TOUCHPOINTS, renderCrm, resolveCrmLang, promoGatedKeys } from "@/lib/crm-content";
 import { sendTransactional } from "@/lib/notify";
+import { launchPromoActive } from "@/lib/paygate";
+import { promoEligibility } from "@/lib/creator-promo";
+
+// Le chiavi che parlano di sconto, risolte una volta sola (#CRM-FAKE-OFFERS-0805).
+const promoGated = promoGatedKeys();
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +70,27 @@ export async function GET(req: Request) {
     if (flow === "none") continue;
     // Consenso per-flow (legale): acquisition (sconti a free) solo con opt-in esplicito.
     if (!flowAllowed(flow, p)) continue;
-    const due = dueTriggers(flow, dayInFlow, CRM_TOUCHPOINTS, sentByUser.get(p.identifier) ?? new Set());
+    let due = dueTriggers(flow, dayInFlow, CRM_TOUCHPOINTS, sentByUser.get(p.identifier) ?? new Set());
+    // #CRM-FAKE-OFFERS-0805 — un touchpoint che PARLA di sconto non parte se lo
+    // sconto non esiste per chi lo riceve. Prima tre email di acquisition
+    // promettevano −20%/72h, −30%/48h e −30% + 3 giorni di prova Pro: nessuno dei
+    // tre sconti e nessun trial sono mai esistiti nel codice, e ne sono uscite 8
+    // copie a 4 persone reali. Il filtro sta QUI e non nel copy perché la
+    // condizione è dinamica: promo attiva E primo acquisto di QUEL cliente.
+    if (due.some((t) => promoGated.has(t.key))) {
+      let promoOk = launchPromoActive();
+      if (promoOk) {
+        try {
+          promoOk = (await promoEligibility(p.identifier)).firstPaidOrder;
+        } catch (e) {
+          // Fail-closed: se non sappiamo se ha diritto allo sconto, non glielo
+          // promettiamo. Stessa regola del checkout, che in dubbio fa prezzo pieno.
+          console.error("[cron/crm] promo eligibility failed:", p.identifier, String(e));
+          promoOk = false;
+        }
+      }
+      if (!promoOk) due = due.filter((t) => !promoGated.has(t.key));
+    }
     if (due.length === 0) continue;
     const toSend = due[due.length - 1];           // il più recente dovuto
     const toSuppress = due.slice(0, -1);          // dovuti precedenti mancati → consuma senza inviare

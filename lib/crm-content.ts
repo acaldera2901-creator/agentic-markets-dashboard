@@ -68,7 +68,24 @@ const WEEKLY_PICK_CTA: L10n = {
 // dalla sua pagina, e chiedere all'utente di ritrovarsela da solo è il modo più
 // semplice di perdere l'acquisto.
 type CrmCta = { path: string; label: L10n };
-type CrmTouchpoint = Touchpoint & { subject: L10n; body: L10n; cta?: CrmCta };
+// #CRM-FAKE-OFFERS-0805: `requiresLaunchPromo` marca i touchpoint che PARLANO di
+// uno sconto. Il cron non li invia se la promo di lancio non è attiva o se quell
+// utente non ne ha diritto (ha già pagato) → un'email non può più promettere un
+// prezzo che il checkout rifiuterebbe. Il corpo può usare il token {deadline},
+// sostituito con la data REALE di fine campagna: mai un countdown per-utente,
+// che è il dark pattern che il resto del prodotto evita di proposito.
+type CrmTouchpoint = Touchpoint & {
+  subject: L10n;
+  body: L10n;
+  cta?: CrmCta;
+  requiresLaunchPromo?: true;
+};
+
+// Locale per la data di scadenza in email. In email un countdown NON ha senso
+// (si legge dopo): va una data.
+const DATE_LOCALE: Record<CrmLang, string> = {
+  it: "it-IT", en: "en-GB", es: "es-ES", fr: "fr-FR", ru: "ru-RU",
+};
 
 // day: per onboarding/acquisition/winback = giorni dall'ancora; per retention = giorni ALLA scadenza.
 export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
@@ -109,16 +126,23 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "En Free ves 1 pick por deporte a la semana. Base abre todo el board con edge, stake y closing line value; Pro añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
       fr: "En Free, vous voyez 1 pick par sport chaque semaine. Base ouvre tout le board avec edge, mise et closing line value ; Pro ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
       ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. Base открывает весь борд с edge, ставкой и closing line value; Pro добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
-  { key: "acq_day14_welcome_offer", flow: "acquisition", day: 10,
+  // #CRM-FAKE-OFFERS-0805 — questo touchpoint prometteva "−20% per 72h" a un
+  // countdown per-utente. Nel codice il −20% NON È MAI ESISTITO (l'unico sconto è
+  // LAUNCH_PROMO_DISCOUNT = 50%, solo primo acquisto), quindi era una promessa che
+  // il checkout avrebbe rifiutato — ed era già uscita a clienti reali. Ora dice
+  // l'offerta VERA, con la data reale di fine campagna, e non parte affatto se la
+  // promo è spenta o se chi la riceve non ne ha diritto.
+  { key: "acq_day14_welcome_offer", flow: "acquisition", day: 10, requiresLaunchPromo: true,
     subject: {
-      it: "Offerta benvenuto: −20% per 72h", en: "Welcome offer: −20% for 72h", es: "Oferta de bienvenida: −20% por 72h",
-      fr: "Offre de bienvenue : −20% pendant 72h", ru: "Приветственное предложение: −20% на 72 часа" },
+      it: "Offerta di lancio: −50% sul primo acquisto", en: "Launch offer: −50% on your first purchase",
+      es: "Oferta de lanzamiento: −50% en tu primera compra",
+      fr: "Offre de lancement : −50% sur votre premier achat", ru: "Стартовое предложение: −50% на первую покупку" },
     body: {
-      it: "Solo per te, 72 ore: BetRedge Base a −20%. Probabilità calibrate e track record verificabile, tutto sbloccato.",
-      en: "Just for you, 72 hours: BetRedge Base at −20%. Calibrated probabilities and verifiable track record, all unlocked.",
-      es: "Solo para ti, 72 horas: BetRedge Base con −20%. Probabilidades calibradas y track record verificable, todo desbloqueado.",
-      fr: "Rien que pour vous, 72 heures : BetRedge Base à −20%. Probabilités calibrées et track record vérifiable, tout est débloqué.",
-      ru: "Только для вас, 72 часа: BetRedge Base со скидкой 20%. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто." } },
+      it: "Per il lancio, il primo acquisto è a metà prezzo — mensile o annuale, lo sconto si applica da solo al checkout. Probabilità calibrate e track record verificabile, tutto sbloccato. L'offerta vale fino al {deadline}.",
+      en: "For launch, your first purchase is half price — monthly or annual, and the discount applies automatically at checkout. Calibrated probabilities and a verifiable track record, all unlocked. The offer runs until {deadline}.",
+      es: "Por el lanzamiento, tu primera compra está a mitad de precio — mensual o anual, y el descuento se aplica solo al pagar. Probabilidades calibradas y track record verificable, todo desbloqueado. La oferta es válida hasta el {deadline}.",
+      fr: "Pour le lancement, votre premier achat est à moitié prix — mensuel ou annuel, et la remise s'applique automatiquement au paiement. Probabilités calibrées et track record vérifiable, tout est débloqué. L'offre est valable jusqu'au {deadline}.",
+      ru: "В честь запуска первая покупка — за полцены: месячная или годовая, скидка применяется автоматически при оплате. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто. Предложение действует до {deadline}." } },
   { key: "acq_day14_reminder", flow: "acquisition", day: 14,
     subject: {
       it: "Ultimo promemoria: l'upgrade ti aspetta", en: "Last reminder: your upgrade is waiting",
@@ -130,26 +154,31 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Es la última nota sobre el upgrade por ahora. El Free te dio una muestra del modelo: Base y Pro te dan el cuadro completo, cada semana.",
       fr: "C'est le dernier message sur l'upgrade pour l'instant. Le Free vous a donné un aperçu du modèle : Base et Pro vous donnent le tableau complet, chaque semaine.",
       ru: "Это пока последнее письмо об апгрейде. Free дал вам представление о модели — Base и Pro дают полную картину каждую неделю." } },
-  { key: "acq_day21_last_chance", flow: "acquisition", day: 21,
+  // #CRM-FAKE-OFFERS-0805: prometteva "−30% per 48h", sconto mai esistito.
+  { key: "acq_day21_last_chance", flow: "acquisition", day: 21, requiresLaunchPromo: true,
     subject: {
       it: "Ultima occasione — angolo nuovo", en: "Last chance — a fresh angle", es: "Última oportunidad — un ángulo nuevo",
       fr: "Dernière chance — un angle nouveau", ru: "Последний шанс — новый взгляд" },
     body: {
-      it: "Non i soliti pronostici: una opinione sola, calibrata, misurata. Sblocca il board completo a −30% per 48h.",
-      en: "Not the usual tips: one calibrated, measured opinion. Unlock the full board at −30% for 48h.",
-      es: "No los pronósticos de siempre: una sola opinión, calibrada y medida. Desbloquea el board completo con −30% por 48h.",
-      fr: "Pas les pronostics habituels : une seule opinion, calibrée et mesurée. Débloquez le board complet à −30% pendant 48h.",
-      ru: "Не обычные прогнозы: одно мнение, откалиброванное и взвешенное. Откройте полный борд со скидкой 30% на 48 часов." } },
-  { key: "acq_day28_final", flow: "acquisition", day: 28,
+      it: "Non i soliti pronostici: una opinione sola, calibrata, misurata. Il board completo, e il primo acquisto è a metà prezzo fino al {deadline}.",
+      en: "Not the usual tips: one calibrated, measured opinion. The full board — and your first purchase is half price until {deadline}.",
+      es: "No los pronósticos de siempre: una sola opinión, calibrada y medida. El board completo, y tu primera compra a mitad de precio hasta el {deadline}.",
+      fr: "Pas les pronostics habituels : une seule opinion, calibrée et mesurée. Le board complet, et votre premier achat à moitié prix jusqu'au {deadline}.",
+      ru: "Не обычные прогнозы: одно мнение, откалиброванное и взвешенное. Полный борд — и первая покупка за полцены до {deadline}." } },
+  // #CRM-FAKE-OFFERS-0805: prometteva "−30% + 3 giorni di prova Pro". Nel prodotto
+  // NON esiste né il −30% né alcun meccanismo di trial (verificato: l'unico
+  // "trialing" è lo stato di una subscription Stripe, che leggiamo, non concediamo).
+  // Erano due promesse impossibili nella stessa email, e ne sono uscite 2 copie.
+  { key: "acq_day28_final", flow: "acquisition", day: 28, requiresLaunchPromo: true,
     subject: {
-      it: "Offerta finale + 3 giorni Pro", en: "Final offer + 3-day Pro", es: "Oferta final + 3 días Pro",
-      fr: "Offre finale + 3 jours Pro", ru: "Финальное предложение + 3 дня Pro" },
+      it: "Offerta di lancio: ultima chiamata", en: "Launch offer: final call", es: "Oferta de lanzamiento: última llamada",
+      fr: "Offre de lancement : dernier appel", ru: "Стартовое предложение: последний шанс" },
     body: {
-      it: "Ultima spinta: BetRedge Base a −30% con 3 giorni di prova BetRedge Pro (analisi più profonda). Poi si torna a prezzo pieno.",
-      en: "Final push: BetRedge Base at −30% with a 3-day BetRedge Pro trial (deeper analysis). Then back to full price.",
-      es: "Último empujón: BetRedge Base con −30% y 3 días de prueba de BetRedge Pro (análisis más profundo). Después se vuelve al precio completo.",
-      fr: "Dernier coup de pouce : BetRedge Base à −30% avec 3 jours d'essai BetRedge Pro (analyse plus poussée). Ensuite, retour au plein tarif.",
-      ru: "Последний рывок: BetRedge Base со скидкой 30% и 3 дня пробного BetRedge Pro (более глубокий анализ). Потом снова полная цена." } },
+      it: "Ultima spinta: il primo acquisto è a metà prezzo fino al {deadline} — poi si torna a prezzo pieno. Se preferisci provare senza abbonarti, la Weekly Pick si sblocca da sola.",
+      en: "Final push: your first purchase is half price until {deadline} — then it's back to full price. If you'd rather try without subscribing, the Weekly Pick unlocks on its own.",
+      es: "Último empujón: tu primera compra está a mitad de precio hasta el {deadline} — después se vuelve al precio completo. Si prefieres probar sin suscribirte, la Weekly Pick se desbloquea por separado.",
+      fr: "Dernier coup de pouce : votre premier achat est à moitié prix jusqu'au {deadline} — ensuite, retour au plein tarif. Si vous préférez essayer sans abonnement, la Weekly Pick se débloque seule.",
+      ru: "Последний рывок: первая покупка за полцены до {deadline} — потом снова полная цена. Если хотите попробовать без подписки, Weekly Pick открывается отдельно." } },
   // Chiude la scala: dice "non ti scriviamo più", quindi deve stare DOPO le offerte.
   // Nella sequenza originale di Steve era al giorno 14, prima di due sconti.
   { key: "acq_day35_door_open", flow: "acquisition", day: 35,
@@ -239,7 +268,40 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       ru: "Последний сигнал перед возвратом на тариф Free. Активируйте снова, чтобы не потерять историю." } },
 ];
 
-export function renderCrm(key: string, lang: CrmLang, identifier: string): { subject: string; html: string; text: string; unsubUrl: string } | null {
+// Le chiavi dei touchpoint che parlano di sconto. Derivata dai dati, non scritta
+// a mano: aggiungere un'offerta senza gatarla diventa impossibile per distrazione.
+export function promoGatedKeys(): Set<string> {
+  return new Set(CRM_TOUCHPOINTS.filter((t) => t.requiresLaunchPromo).map((t) => t.key));
+}
+
+// #CRM-FAKE-OFFERS-0805 — la data di fine campagna, localizzata. Legge la stessa
+// env che governa lo sconto server-side, così l'email non può annunciare una
+// scadenza diversa da quella che il checkout applica.
+export function launchDeadlineLabel(lang: CrmLang, iso?: string | null): string | null {
+  const raw = iso ?? process.env.LAUNCH_PROMO_DEADLINE;
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return null;
+  try {
+    // timeZone UTC NON è un dettaglio: launchPromoActive() confronta `now < deadline`
+    // in UTC, mentre toLocaleDateString userebbe il fuso del server. Con una
+    // deadline a 23:59Z e un server in Europa l'email avrebbe annunciato il GIORNO
+    // DOPO la scadenza reale — cioè un'altra promessa che il checkout rifiuta.
+    // Meglio la data che il server applica davvero.
+    return d.toLocaleDateString(DATE_LOCALE[lang], {
+      day: "numeric", month: "long", timeZone: "UTC",
+    });
+  } catch {
+    return d.toISOString().slice(0, 10); // fallback: mai un token grezzo in un'email
+  }
+}
+
+export function renderCrm(
+  key: string,
+  lang: CrmLang,
+  identifier: string,
+  opts?: { launchDeadline?: string | null }
+): { subject: string; html: string; text: string; unsubUrl: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
   // Destinazione: i piani per default, la pagina del prodotto se il touchpoint ne
@@ -251,7 +313,15 @@ export function renderCrm(key: string, lang: CrmLang, identifier: string): { sub
   const sep = path.includes("?") ? "&" : "?";
   const href = `${SITE}${path}${sep}crm=${encodeURIComponent(t.key)}`;
   const label = t.cta?.label[lang] ?? OPEN_LABEL[lang];
-  const body = t.body[lang];
+  let body = t.body[lang];
+  // Un token non sostituito finirebbe letteralmente nell'inbox ("fino al
+  // {deadline}"), quindi senza una data VERA non si renderizza affatto: chi
+  // chiama tratta il null come "niente da inviare". Fail-closed, come lo sconto.
+  if (body.includes("{deadline}")) {
+    const deadline = launchDeadlineLabel(lang, opts?.launchDeadline);
+    if (!deadline) return null;
+    body = body.replaceAll("{deadline}", deadline);
+  }
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
   const unl = UNSUB_LABEL[lang];
   const inner = `<p style="font-size:14px;line-height:1.6;margin:0;color:#cdd6dd;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">${body}</p>${brandCta(label, href)}`;

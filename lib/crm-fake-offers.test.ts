@@ -1,0 +1,179 @@
+// #CRM-FAKE-OFFERS-0805 — il CRM prometteva sconti che non esistono.
+//
+// Trovato il 05/08 cercando dove mettere la promo di lancio nel CRM. Tre email di
+// acquisition, tutte LIVE e tutte con una promessa non mantenibile:
+//
+//   acq_day14_welcome_offer (day 10)  "−20% per 72h"
+//   acq_day21_last_chance   (day 21)  "−30% per 48h"
+//   acq_day28_final         (day 28)  "−30% + 3 giorni di prova Pro"
+//
+// Nel codice l'unico sconto è LAUNCH_PROMO_DISCOUNT = 0.5 (−50%, solo primo
+// acquisto) e di trial non esiste NESSUN meccanismo. Erano già uscite **8 copie a
+// 4 persone reali** (l'ultima la mattina del 05/08). E il countdown era
+// per-utente — 72h/48h — cioè il dark pattern che il resto del prodotto evita di
+// proposito («mai un timer per-utente che si resetta»).
+//
+// Questi test non difendono il copy: difendono la REGOLA. Il primo è quello che
+// conta — impedisce che un'altra percentuale inventata rientri per distrazione.
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  CRM_TOUCHPOINTS,
+  promoGatedKeys,
+  renderCrm,
+  launchDeadlineLabel,
+} from "./crm-content";
+import { LAUNCH_PROMO_DISCOUNT } from "./paygate";
+
+const LANGS = ["it", "en", "es", "fr", "ru"] as const;
+const ENV = { ...process.env };
+
+beforeEach(() => {
+  process.env.LAUNCH_PROMO_DEADLINE = "2026-09-05T23:59:00Z";
+  // renderCrm firma il link di disiscrizione: senza segreto è fail-closed e
+  // solleva (giusto in produzione, rumore qui).
+  process.env.CRM_UNSUB_SECRET = "test-secret";
+});
+afterEach(() => {
+  process.env = { ...ENV };
+});
+
+describe("nessuna percentuale inventata può rientrare", () => {
+  const REAL = `${Math.round(LAUNCH_PROMO_DISCOUNT * 100)}`; // "50"
+
+  it("ogni percentuale citata nel copy è quella VERA", () => {
+    const offenders: string[] = [];
+    for (const t of CRM_TOUCHPOINTS) {
+      for (const lang of LANGS) {
+        for (const field of ["subject", "body"] as const) {
+          const text = t[field][lang];
+          for (const m of text.matchAll(/(\d+)\s?%/g)) {
+            if (m[1] !== REAL) offenders.push(`${t.key}.${field}.${lang}: ${m[0]}`);
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("chi cita una percentuale è gatato sulla promo", () => {
+    const gated = promoGatedKeys();
+    const ungatedWithPercent = CRM_TOUCHPOINTS.filter(
+      (t) =>
+        !gated.has(t.key) &&
+        LANGS.some((l) => /\d+\s?%/.test(t.subject[l]) || /\d+\s?%/.test(t.body[l]))
+    ).map((t) => t.key);
+    expect(ungatedWithPercent).toEqual([]);
+  });
+
+  it("nessuna email promette un trial: nel prodotto non esiste", () => {
+    // "provare"/"tested" sono legittimi; quello che non deve esistere è la
+    // promessa di N giorni di prova di un piano.
+    const TRIAL = /(\d+\s?(giorni|days?|días|jours|дн\w*)\s+(di\s+)?(prova|trial|prueba|essai|пробн))|(prova|trial|prueba|essai)\s+(gratuita|gratis|free|de\s+\d)/i;
+    const offenders = CRM_TOUCHPOINTS.filter((t) =>
+      LANGS.some((l) => TRIAL.test(t.subject[l]) || TRIAL.test(t.body[l]))
+    ).map((t) => t.key);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("i touchpoint con offerta sono gatati e datati", () => {
+  it("promoGatedKeys è derivata dai dati, non scritta a mano", () => {
+    const gated = promoGatedKeys();
+    expect(gated).toEqual(
+      new Set(CRM_TOUCHPOINTS.filter((t) => t.requiresLaunchPromo).map((t) => t.key))
+    );
+    // le tre offerte di acquisition
+    expect(gated.has("acq_day14_welcome_offer")).toBe(true);
+    expect(gated.has("acq_day21_last_chance")).toBe(true);
+    expect(gated.has("acq_day28_final")).toBe(true);
+  });
+
+  it("ogni touchpoint gatato porta {deadline} in TUTTE le 5 lingue", () => {
+    // Se una lingua non lo avesse, quel cliente riceverebbe un'offerta senza
+    // scadenza — che è il claim che la guardia FTC vuole evitare.
+    for (const t of CRM_TOUCHPOINTS.filter((x) => x.requiresLaunchPromo)) {
+      for (const lang of LANGS) {
+        expect(t.body[lang], `${t.key}/${lang}`).toContain("{deadline}");
+      }
+    }
+  });
+
+  it("NESSUN touchpoint non-gatato parla di scadenza promo", () => {
+    for (const t of CRM_TOUCHPOINTS.filter((x) => !x.requiresLaunchPromo)) {
+      for (const lang of LANGS) {
+        expect(t.body[lang]).not.toContain("{deadline}");
+      }
+    }
+  });
+
+  it("winback e retention non sono gatati: chi ha già pagato NON è idoneo", () => {
+    // Prometterebbero uno sconto che il checkout rifiuta (firstPaidOrder=false).
+    // Il copy di Steve era già coerente: il winback dice "never better than
+    // joining offers", il retention "loyalty bonus, not discounts".
+    const gated = promoGatedKeys();
+    const wrongFlow = CRM_TOUCHPOINTS.filter(
+      (t) => gated.has(t.key) && t.flow !== "acquisition"
+    ).map((t) => t.key);
+    expect(wrongFlow).toEqual([]);
+  });
+});
+
+describe("render: mai un token grezzo, mai una data inventata", () => {
+  it("sostituisce {deadline} con la data reale, localizzata", () => {
+    const it = renderCrm("acq_day14_welcome_offer", "it", "a@b.com");
+    expect(it).not.toBeNull();
+    expect(it!.text).not.toContain("{deadline}");
+    expect(it!.html).not.toContain("{deadline}");
+    expect(it!.text).toContain("5 settembre");
+
+    const en = renderCrm("acq_day14_welcome_offer", "en", "a@b.com");
+    expect(en!.text).toMatch(/5 September/);
+  });
+
+  it("senza deadline NON renderizza — il chiamante non ha niente da inviare", () => {
+    delete process.env.LAUNCH_PROMO_DEADLINE;
+    for (const key of ["acq_day14_welcome_offer", "acq_day21_last_chance", "acq_day28_final"]) {
+      for (const lang of LANGS) {
+        expect(renderCrm(key, lang, "a@b.com"), `${key}/${lang}`).toBeNull();
+      }
+    }
+  });
+
+  it("una deadline invalida non passa per buona", () => {
+    process.env.LAUNCH_PROMO_DEADLINE = "non-una-data";
+    expect(renderCrm("acq_day28_final", "it", "a@b.com")).toBeNull();
+    expect(launchDeadlineLabel("it", "spazzatura")).toBeNull();
+    expect(launchDeadlineLabel("it", null)).toBeNull();
+  });
+
+  it("i touchpoint SENZA offerta si renderizzano come prima, promo o non promo", () => {
+    delete process.env.LAUNCH_PROMO_DEADLINE;
+    const m = renderCrm("onb_activate", "it", "a@b.com");
+    expect(m).not.toBeNull();
+    expect(m!.subject).toBeTruthy();
+  });
+
+  it("la deadline esplicita vince sull'env", () => {
+    const m = renderCrm("acq_day21_last_chance", "en", "a@b.com", {
+      launchDeadline: "2026-10-01T00:00:00Z",
+    });
+    expect(m!.text).toContain("1 October");
+  });
+});
+
+describe("la data annunciata è quella che il server applica", () => {
+  it("formatta in UTC, non nel fuso del server", () => {
+    // launchPromoActive() confronta now < deadline in UTC. Con 23:59Z e un server
+    // in Europa, il fuso locale avrebbe reso "6 settembre" per una promo che
+    // muore il 5: un giorno di sconto promesso e non erogato.
+    process.env.LAUNCH_PROMO_DEADLINE = "2026-09-05T23:59:00Z";
+    expect(launchDeadlineLabel("it")).toBe("5 settembre");
+    expect(launchDeadlineLabel("en")).toBe("5 September");
+    expect(launchDeadlineLabel("fr")).toBe("5 septembre");
+  });
+
+  it("regge una deadline a mezzanotte esatta", () => {
+    process.env.LAUNCH_PROMO_DEADLINE = "2026-09-01T00:00:00Z";
+    expect(launchDeadlineLabel("en")).toBe("1 September");
+  });
+});
