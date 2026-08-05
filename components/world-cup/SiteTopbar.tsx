@@ -37,7 +37,15 @@ function readLang(): SiteLang {
   return s === "en" || s === "es" || s === "fr" || s === "ru" ? s : "it";
 }
 
-export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
+export default function SiteTopbar({
+  backHref = "/",
+  backLabel = "Board",
+  hideLang = false,
+}: {
+  backHref?: string;
+  backLabel?: string;
+  hideLang?: boolean;
+}) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
   const router = useRouter();
   const pathname = usePathname();
@@ -211,7 +219,12 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
 
-          <LangDropdown value={lang} onSelect={selectLang} />
+          {/* #TOOLS-HUB-0805: le pagine /tools hanno la lingua NELL'URL e il loro
+              selettore che ci naviga. Questo dropdown scrive solo localStorage:
+              su quelle pagine sarebbero due controlli lingua, uno dei quali non
+              cambierebbe niente di visibile. Le altre pagine non passano il prop
+              e continuano ad averlo. */}
+          {hideLang ? null : <LangDropdown value={lang} onSelect={selectLang} />}
         </div>
       </div>
     </header>

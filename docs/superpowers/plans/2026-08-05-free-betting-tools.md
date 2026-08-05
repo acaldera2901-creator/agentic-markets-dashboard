@@ -4,7 +4,7 @@
 
 **Goal:** cinque calcolatori di betting gratuiti su `/tools`, indicizzabili in 11 lingue, che prendono il posto di `/world-cup` nelle vie d'ingresso del sito.
 
-**Architecture:** un modulo di matematica pura testato (`lib/betting-math.ts`), un dizionario di copy per lingua (`lib/tools/copy/*.ts`), cinque client component isolati che consumano solo il modulo, e quattro `page.tsx` server-side che generano staticamente 55 pagine (5 tool × 11 lingue) da quella stessa implementazione.
+**Architecture:** un modulo di matematica pura testato (`lib/betting-math.ts`), un dizionario di copy per lingua (`lib/tools/copy/*.ts`), cinque client component isolati che consumano solo il modulo, e quattro `page.tsx` server-side che generano staticamente 66 pagine (5 tool × 11 lingue + 11 hub) da quella stessa implementazione.
 
 **Tech Stack:** Next 16.2.7 App Router (server component + `force-static`), React 19, TypeScript, vitest, CSS in `app/globals.css`.
 
@@ -147,7 +147,7 @@ export function toolJsonLd(slug: ToolSlug, locale: ToolLocale): object[];      /
 - [ ] **Step 3: implementa `seo.ts`**, poi `ToolShell` (H1, lede, calcolatore, formula, explainer, FAQ, link agli altri tool, CTA, `LangPicker`, `SiteTopbar backHref="/" `, `SiteFooter lang`), `ToolsHub` (griglia 5 card + intro + CTA), e le quattro `page.tsx`.
   Ogni page: `export const dynamic = "force-static"`, `export const dynamicParams = false`, `generateStaticParams`, `generateMetadata`, JSON-LD via `<script type="application/ld+json">`.
   `app/[lang]/...`: `generateStaticParams` restituisce i 10 locali **non-en** (l'inglese vive su `/tools`, altrimenti due URL per lo stesso contenuto).
-- [ ] **Step 4: esegui i test** → PASS. **`npm run build`** → verifica nell'output che siano generate `/tools`, 5 `/tools/*`, 10 `/[lang]/tools` e 50 `/[lang]/tools/*`.
+- [ ] **Step 4: esegui i test** → PASS. **`npm run build`** → verifica nell'output che siano generate `/tools`, 5 `/tools/*`, 10 `/[lang]/tools` e 50 `/[lang]/tools/*` (66 file HTML in `.next/server/app`).
 - [ ] **Step 5: commit** `feat(tools): rotte statiche 5×11 con canonical, hreflang e JSON-LD (#TOOLS-HUB-0805)`
 
 ---
@@ -160,7 +160,7 @@ export function toolJsonLd(slug: ToolSlug, locale: ToolLocale): object[];      /
 
 - [ ] **Step 1: scrivi i 10 dizionari.** Traduzione reale, non stringhe inglesi copiate: title/description pensati sulla keyword locale (es. IT "convertitore quote", ES "calculadora de valor esperado"), explainer 250–350 parole, 3–4 FAQ. Termini di prodotto invariati (BetRedge, +EV, Kelly, no-vig).
 - [ ] **Step 2: `npx vitest run lib/tools/copy.test.ts`** → PASS su tutti e 11 i locali (il test del Task 2 li copre da solo).
-- [ ] **Step 3: `npm run build`** → 55 pagine generate.
+- [ ] **Step 3: `npm run build`** → 66 pagine generate.
 - [ ] **Step 4: commit** `feat(tools): copy dei tool nelle 10 lingue non-inglesi (#TOOLS-HUB-0805)`
 
 ---
@@ -173,7 +173,7 @@ export function toolJsonLd(slug: ToolSlug, locale: ToolLocale): object[];      /
 - Test: `app/sitemap.test.ts`
 
 - [ ] **Step 1: genera l'icona** con gptimg seguendo il protocollo noto (`pkill -f "codex exec"` prima della chiamata, prompt corto, una immagine alla volta): oggetto 3D su trasparente, stile identico alle altre `menu-*.png`, scia coral. Ridimensiona a 320 e 64px.
-- [ ] **Step 2: `app/sitemap.test.ts`** — la sitemap contiene le 55 URL dei tool, `/world-cup` è presente con `changeFrequency: "monthly"`, nessuna URL duplicata.
+- [ ] **Step 2: `app/sitemap.test.ts`** — la sitemap contiene le 66 URL dei tool (55 pagine-tool + 11 hub), `/world-cup` è presente con `changeFrequency: "monthly"`, nessuna URL duplicata.
 - [ ] **Step 3: esegui** → FAIL.
 - [ ] **Step 4: applica le modifiche di nav + sitemap + banner.** `/world-cup` **non** si cancella e **non** si redirige: resta 200. Il `wc-back-link` dentro la dashboard resta.
 - [ ] **Step 5: `npx vitest run`** → PASS. `npm run build` verde.

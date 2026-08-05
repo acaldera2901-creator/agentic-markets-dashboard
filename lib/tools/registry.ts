@@ -50,6 +50,22 @@ export function toolPath(slug: ToolSlug, locale: ToolLocale): string {
   return `${hubPath(locale)}/${slug}`;
 }
 
+/** Nome della lingua NELLA lingua: un selettore che scrive "Italian" a un
+ *  italiano è un selettore fatto per chi lo ha programmato, non per chi lo usa. */
+export const LOCALE_NAMES: Record<ToolLocale, string> = {
+  en: "English",
+  it: "Italiano",
+  es: "Español",
+  fr: "Français",
+  de: "Deutsch",
+  pt: "Português",
+  nl: "Nederlands",
+  pl: "Polski",
+  tr: "Türkçe",
+  sv: "Svenska",
+  ru: "Русский",
+};
+
 /** Dominio pubblico, usato per canonical e hreflang assoluti. */
 export const SITE_ORIGIN = "https://www.betredge.com";
 

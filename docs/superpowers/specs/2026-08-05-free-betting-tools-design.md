@@ -26,7 +26,7 @@ Non è un prodotto nuovo: è acquisizione organica.
 
 ## 1. Architettura delle rotte
 
-Una sola implementazione, 55 pagine statiche generate da essa (5 tool × 11 lingue).
+Una sola implementazione, 66 pagine statiche generate da essa (5 tool × 11 lingue + gli 11 hub).
 
 ```
 app/tools/page.tsx                 → /tools                      hub EN (canonical)
@@ -85,7 +85,9 @@ kelly(args: { probability: number; decimal: number; bankroll: number; fraction: 
   { edge: number; fullKelly: number; stakeFraction: number; stake: number; growthRate: number }
 
 // probabilità
-breakEvenProbability(decimal: number): number
+// breakEvenProbability RIMOSSA in implementazione (2026-08-05): era 1/quota,
+// la stessa formula di impliedProbability sotto un secondo nome. Il Probability
+// Calculator usa impliedProbability con l'etichetta "break-even".
 parlayProbability(probabilities: number[]): number
 parlayOdds(decimals: number[]): number
 ```
@@ -108,10 +110,10 @@ parlayOdds(decimals: number[]): number
 |---|---|
 | `2.50` in tutti i formati | `+150` · `3/2` · `1.50` HK · `40%` |
 | `-110` americana | `1.909090…` decimale · `52.38%` implicita |
-| `11/4` frazionaria | `4.75` decimale |
-| margine su `[1.90, 1.90]` | `5.26%` · payout `94.99%` |
+| `11/4` frazionaria | `3.75` decimale (1 + 2.75) |
+| margine su `[1.90, 1.90]` | `5.26%` · payout `95.00%` |
 | no-vig su `[1.90, 1.90]` | `[0.50, 0.50]` → quote eque `[2.00, 2.00]` |
-| no-vig 3 esiti `[2.10, 3.40, 3.80]` | somma probabilità = 1 esatta |
+| margine 3 esiti `[2.10, 3.40, 3.80]` | `3.3466%`; no-vig: somma probabilità = 1 esatta |
 | EV: `p=0.55`, `2.00`, stake `100` | `+10.00` · `+10%` · quota equa `1.8182` |
 | EV: `p=0.45`, `2.00`, stake `100` | `−10.00` (il negativo si mostra, non si nasconde) |
 | Kelly: `p=0.55`, `2.00`, bankroll `1000`, `f=1` | edge `0.10` · Kelly pieno `10%` · stake `100` |
@@ -161,7 +163,7 @@ Hub `/tools`: griglia delle 5 card + due paragrafi di introduzione + CTA.
 - `alternates.canonical` + `alternates.languages` con **hreflang reciproci** su tutte
   le 11 varianti + `x-default` → EN
 - JSON-LD `WebApplication` per il tool + `FAQPage` per le FAQ
-- 55 voci in `app/sitemap.ts` (`weekly`, priorità 0.7 per i tool, 0.8 per gli hub)
+- 66 voci in `app/sitemap.ts` (`weekly`, priorità 0.7 per i tool, 0.8 per gli hub)
 
 **Lingua**: selettore esplicito che **naviga alla URL locale**. Nessun redirect
 automatico da `localStorage("agentic-lang")`: romperebbe il crawl e infastidisce chi
@@ -193,10 +195,10 @@ chi è già dentro l'hub.
 ## 6. Criteri di successo (verificabili)
 
 1. `npm test` verde, inclusa la suite `betting-math` con i casi calcolati a mano
-2. `npm run build` genera le 55 pagine statiche, zero errori TS/ESLint
+2. `npm run build` genera le 66 pagine statiche, zero errori TS/ESLint
 3. Ogni tool restituisce i valori della tabella dei casi di test, verificato in browser
 4. `curl` sull'HTML del preview: canonical + hreflang reciproci + JSON-LD presenti
-5. `/sitemap.xml` contiene le 55 URL
+5. `/sitemap.xml` contiene le 66 URL
 6. Nessun link interno rotto; `/world-cup` risponde ancora 200
 7. Visual check desktop **e** mobile 390px su hub + 2 tool
 8. `qa-andrea` sui 5 tool con input di bordo (vuoto, 0, negativi, testo)
