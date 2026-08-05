@@ -4,6 +4,7 @@ import { dbQueryStrict } from "@/lib/db";
 import { buildShopifyCheckoutUrl, isShopifyConfigured } from "@/lib/shopify";
 import { shopifyGrantAllowed, hasActiveShopifySubscription } from "@/lib/plan-grant";
 import { blocksLowerTierPurchase, discountedAmountFor, type PlanKey } from "@/lib/paygate";
+import { shopifyCanCarryLaunchDiscount } from "@/lib/shopify";
 import { promoEligibility } from "@/lib/creator-promo";
 import {
   currentWeekStart,
@@ -98,14 +99,15 @@ export async function POST(req: Request) {
       console.error("[shopify/checkout] hasWeeklyPickStrict failed:", String(e));
       return deny(500, "lettura DB fallita (fail-closed)", ctx);
     }
-    // Il prezzo su Shopify è FISSO ($12.99): con la promo di lancio attiva il
-    // server sconta -50% e mostrerebbe un importo diverso da quello addebitato.
-    // In quel caso il rail Shopify non è utilizzabile → fallback a PayGate, che
-    // porta lo sconto dentro l'ordine.
-    if (weeklyPickAmount().discounted) {
-      return deny(503, "promo di lancio attiva: prezzo Shopify fisso", ctx);
+    // #LAUNCH-PROMO-CARD-0805 — la Weekly Pick è un one-off: lo sconto di lancio
+    // può viaggiare solo su una VARIANTE a metà prezzo. Se c'è, il rail carta
+    // regge la promo; se non c'è si tiene il 503 di prima e si cade su PayGate.
+    // Mai la terza via (mostrare 6,49 e addebitare 12,99).
+    const weeklyDiscounted = weeklyPickAmount().discounted;
+    if (weeklyDiscounted && !shopifyCanCarryLaunchDiscount("weekly")) {
+      return deny(503, "promo di lancio attiva: variante weekly di lancio non configurata", ctx);
     }
-    const weeklyUrl = buildShopifyCheckoutUrl("weekly", ctx.identifier, "monthly", lang);
+    const weeklyUrl = buildShopifyCheckoutUrl("weekly", ctx.identifier, "monthly", lang, weeklyDiscounted);
     if (!weeklyUrl) return deny(503, "weekly: SHOPIFY_SHOP_DOMAIN o variant mancante", ctx);
     console.log(`[shopify/checkout] OK weekly identifier=${ctx.identifier}`);
     return NextResponse.json({ url: weeklyUrl });
@@ -154,20 +156,26 @@ export async function POST(req: Request) {
     return deny(409, `grandfather: plan_source=${String(source)} expires=${String(ctx.plan_expires_at)}`, ctx);
   }
 
-  // Promo di lancio -50% sul primo ordine: il prezzo del selling plan Shopify è
-  // fisso, quindi non può rifletterla. Se questo acquisto è scontato mandiamo
-  // l'utente su PayGate, altrimenti pagherebbe pieno vedendo il prezzo scontato.
+  // #LAUNCH-PROMO-CARD-0805 — promo -50% sul primo ordine. Prima il rail carta
+  // si spegneva del tutto (503 → PayGate), quindi per tutto il mese di lancio
+  // chi aveva diritto allo sconto poteva pagare SOLO in crypto: la promo
+  // disattivava il metodo di pagamento dei clienti che voleva conquistare.
+  // Ora lo sconto viaggia su un selling plan di lancio (-50% sul PRIMO ciclo,
+  // rinnovo pieno). Senza gli id configurati resta il 503 di prima: fail-safe,
+  // mai un prezzo mostrato diverso da quello addebitato.
+  let planDiscounted = false;
   try {
     const promo = await promoEligibility(ctx.identifier);
-    if (discountedAmountFor(sku as PlanKey, period, promo).discounted) {
-      return deny(503, "promo di lancio attiva: prezzo Shopify fisso", ctx);
-    }
+    planDiscounted = discountedAmountFor(sku as PlanKey, period, promo).discounted;
   } catch (e) {
     console.error("[shopify/checkout] promo lookup failed:", String(e));
     return deny(500, "lettura DB fallita (fail-closed)", ctx);
   }
+  if (planDiscounted && !shopifyCanCarryLaunchDiscount(sku as PlanKey, period)) {
+    return deny(503, `promo di lancio attiva: selling plan di lancio non configurato per ${sku}/${period}`, ctx);
+  }
 
-  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period, lang);
+  const url = buildShopifyCheckoutUrl(sku, ctx.identifier, period, lang, planDiscounted);
   if (!url) return deny(503, `SHOPIFY_SHOP_DOMAIN o variant mancante per ${sku}/${period}`, ctx);
   console.log(`[shopify/checkout] OK ${sku}/${period} identifier=${ctx.identifier}`);
   return NextResponse.json({ url });

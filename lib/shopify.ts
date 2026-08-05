@@ -55,9 +55,16 @@ export function isCryptoGatewayOrder(gatewayNames: string[] | null | undefined):
 // plan/plan_expires_at ma un entitlement per la settimana corrente. Sta fuori
 // da resolveOrderFromVariant proprio per non poter essere confusa con un piano.
 export function isWeeklyPickVariant(variantId: string | number | null | undefined): boolean {
+  if (variantId == null) return false;
+  const v = String(variantId);
+  // #LAUNCH-PROMO-CARD-0805: la variante di lancio a metà prezzo è una SKU
+  // DIVERSA, e deve essere riconosciuta anche qui. Se non lo fosse, il webhook
+  // classificherebbe la riga come sconosciuta → `unresolved` + alert e
+  // NESSUN entitlement: il cliente paga la Weekly Pick scontata e non riceve
+  // niente. È il modo più veloce di trasformare uno sconto in un rimborso.
   const weekly = process.env.SHOPIFY_VARIANT_WEEKLY;
-  if (!weekly || variantId == null) return false;
-  return String(variantId) === weekly;
+  const weeklyLaunch = process.env.SHOPIFY_VARIANT_WEEKLY_LAUNCH;
+  return (Boolean(weekly) && v === weekly) || (Boolean(weeklyLaunch) && v === weeklyLaunch);
 }
 
 export type ShopifySku = "base" | "premium" | "weekly";
@@ -80,8 +87,18 @@ export function shopifyLocalePrefix(lang: string | null | undefined): string {
 // 164.99/329.99), non due varianti dello stesso: così il webhook può dedurre il
 // periodo dal solo variant id, che è l'unico campo su cui possiamo contare nel
 // payload di orders/paid.
-function variantFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
-  if (sku === "weekly") return process.env.SHOPIFY_VARIANT_WEEKLY;
+function variantFor(sku: ShopifySku, period: ShopifyPeriod, discounted = false): string | undefined {
+  if (sku === "weekly") {
+    // #LAUNCH-PROMO-CARD-0805: la Weekly Pick è un one-off, quindi NON ha un
+    // selling plan su cui appendere lo sconto — l'unica strada su Shopify è una
+    // seconda variante a metà prezzo. Se non è configurata si torna a quella
+    // piena e il chiamante NON deve offrire il rail (vedi
+    // shopifyCanCarryLaunchDiscount): meglio nessuna carta che mostrare 6,49 e
+    // addebitare 12,99.
+    const launch = process.env.SHOPIFY_VARIANT_WEEKLY_LAUNCH;
+    if (discounted && launch) return launch;
+    return process.env.SHOPIFY_VARIANT_WEEKLY;
+  }
   if (period === "annual") {
     return sku === "premium"
       ? process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL
@@ -93,12 +110,60 @@ function variantFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined 
 // L'annuale usa UN solo selling plan (ogni 12 mesi, nessun aggiustamento di
 // prezzo) condiviso dai due prodotti annuali, perché il prezzo sta già nel
 // prodotto. Il mensile ha un plan per prodotto per motivi storici.
-function sellingPlanFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
+// Il selling plan "lancio" (-50% sul primo ciclo) per questa SKU/periodo, se
+// esiste. Un solo punto di lettura per le tre variabili, così la guardia e la
+// risoluzione non possono divergere.
+function launchSellingPlanFor(sku: ShopifySku, period: ShopifyPeriod): string | undefined {
+  if (sku === "weekly") return undefined; // one-off: lo sconto passa dalla variante
+  if (period === "annual") return process.env.SHOPIFY_SELLING_PLAN_ANNUAL_LAUNCH;
+  return sku === "premium"
+    ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM_LAUNCH
+    : process.env.SHOPIFY_SELLING_PLAN_BASE_LAUNCH;
+}
+
+function sellingPlanFor(sku: ShopifySku, period: ShopifyPeriod, discounted = false): string | undefined {
   if (sku === "weekly") return undefined;
+  // #LAUNCH-PROMO-CARD-0805 — la promo di lancio viaggia su un SECONDO selling
+  // plan, non su un codice sconto. Shopify sa scontare il solo PRIMO ciclo
+  // combinando due pricing policy sullo stesso plan: `fixed` (vale sul ciclo 1)
+  // + `recurring` con `afterCycle: 1` (dal 2° addebito prezzo pieno). È il
+  // primitivo nativo, quindi il rinnovo resta pieno senza logica nostra.
+  //
+  // Perché NON un `discount=CODE` in URL: il nostro checkout passa da
+  // /cart/clear → /cart/add → /checkout e il parametro dovrebbe sopravvivere a
+  // due redirect. È la stessa fragilità già misurata sullo store reale per il
+  // selling_plan (vedi la nota in buildShopifyCheckoutUrl): il permalink NON lo
+  // applica, solo /cart/add lo fa.
+  //
+  // La variante NON cambia: un piano di lancio è un altro selling plan sullo
+  // STESSO prodotto, quindi resolveOrderFromVariant e il webhook continuano a
+  // dedurre piano+periodo come prima. È il motivo per cui questa patch non
+  // tocca la catena del grant.
+  if (discounted) {
+    const launch = launchSellingPlanFor(sku, period);
+    if (launch) return launch;
+    // Non configurato → si CADE sul plan pieno, e il chiamante non deve
+    // offrire il rail: shopifyCanCarryLaunchDiscount() è la guardia.
+  }
   if (period === "annual") return process.env.SHOPIFY_SELLING_PLAN_ANNUAL;
   return sku === "premium"
     ? process.env.SHOPIFY_SELLING_PLAN_PREMIUM
     : process.env.SHOPIFY_SELLING_PLAN_BASE;
+}
+
+// Lo store è in grado di incassare il -50% per questa SKU/periodo?
+// È la guardia che rende questa patch INERTE finché Andrea/Tommy non creano i
+// piani di lancio e non ci passano gli id: se manca l'id, il chiamante tiene il
+// 503 di oggi e il cliente cade su PayGate — cioè esattamente il comportamento
+// attuale, nessuna regressione. Il difetto da evitare è mostrare metà prezzo e
+// addebitarne il doppio, e questa funzione esiste solo per rendere quel caso
+// impossibile.
+export function shopifyCanCarryLaunchDiscount(
+  sku: ShopifySku,
+  period: ShopifyPeriod = "monthly"
+): boolean {
+  if (sku === "weekly") return Boolean(process.env.SHOPIFY_VARIANT_WEEKLY_LAUNCH);
+  return Boolean(launchSellingPlanFor(sku, period));
 }
 
 // Costruisce il permalink di checkout Shopify per un nuovo abbonato.
@@ -111,11 +176,18 @@ export function buildShopifyCheckoutUrl(
   sku: ShopifySku,
   email: string,
   period: ShopifyPeriod = "monthly",
-  lang?: string | null
+  lang?: string | null,
+  // #LAUNCH-PROMO-CARD-0805: `discounted` sceglie il selling plan di lancio (piani)
+  // o la variante a metà prezzo (weekly). Non applica nessuno sconto da sé: il
+  // prezzo lo fa Shopify: qui si scegli COSA metti nel carrello.
+  discounted = false
 ): string | null {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
-  const variant = variantFor(sku, period);
+  const variant = variantFor(sku, period, discounted);
   if (!domain || !variant) return null;
+  // Non costruire MAI un checkout scontato che lo store non sa incassare: senza
+  // gli id di lancio il cliente vedrebbe metà prezzo e pagherebbe il pieno.
+  if (discounted && !shopifyCanCarryLaunchDiscount(sku, period)) return null;
 
   // Il prefisso va su OGNI hop della catena: /cart/clear e /cart/add sono
   // redirect, e un hop senza prefisso riporta la sessione al default dello store.
@@ -130,7 +202,7 @@ export function buildShopifyCheckoutUrl(
   // La weekly pick NON porta selling_plan: è un acquisto singolo. Passarne uno
   // la trasformerebbe in un addebito ricorrente.
   if (sku !== "weekly") {
-    const sellingPlan = sellingPlanFor(sku, period);
+    const sellingPlan = sellingPlanFor(sku, period, discounted);
     // Senza selling plan l'ordine sarebbe un addebito UNICO travestito da
     // abbonamento: il cliente paga una volta e non rinnova mai, e nessuno se ne
     // accorge. Meglio non offrire affatto il rail (→ 503 → fallback PayGate)

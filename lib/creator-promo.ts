@@ -25,7 +25,22 @@ export async function promoEligibility(identifier: string): Promise<PromoEligibi
                    AND (o.granted_at IS NOT NULL OR o.created_at > NOW() - INTERVAL '15 minutes'))
              + (SELECT COUNT(*) FROM paypal_orders q
                  WHERE q.identifier = $1
-                   AND (q.granted_at IS NOT NULL OR q.created_at > NOW() - INTERVAL '15 minutes'))) AS paid_orders`,
+                   AND (q.granted_at IS NOT NULL OR q.created_at > NOW() - INTERVAL '15 minutes'))
+             -- #LAUNCH-PROMO-CARD-0805: il rail CARTA mancava da questo conto.
+             -- Chi aveva pagato solo con Shopify risultava ancora "primo ordine"
+             -- e riprendeva il -50%: un auto-sconto ripetibile. Finché la promo
+             -- spegneva la carta il caso era quasi irraggiungibile; da quando
+             -- carta e promo convivono diventa la strada normale.
+             -- Nessuna finestra di 15 minuti qui: una riga orders/paid nasce solo
+             -- DOPO il pagamento (il webhook la inserisce a valle di HMAC +
+             -- financial_status), quindi esiste solo se si e' pagato davvero.
+             -- Lo stato finale non conta: 'unresolved' vuol dire che ha pagato e
+             -- il grant e' da recuperare, non che non ha pagato.
+             -- LOWER/TRIM perche' l'identifier arriva dai note_attributes del
+             -- carrello, mentre gli altri due rail lo scrivono gia' normalizzato.
+             + (SELECT COUNT(*) FROM shopify_events s
+                 WHERE LOWER(TRIM(s.identifier)) = LOWER(TRIM($1))
+                   AND s.event_type = 'orders/paid')) AS paid_orders`,
       [identifier]
     );
     return { firstPaidOrder: Number(row?.paid_orders ?? 1) === 0 };
