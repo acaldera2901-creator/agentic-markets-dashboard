@@ -306,6 +306,19 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
   };
 }
 
+// #TENNIS-TZ-FIX: `tennis_predictions.scheduled_at` è `timestamp without time
+// zone` (UTC ma naïve), quindi arriva senza designatore di fuso. Il frontend fa
+// `new Date("2026-08-05T19:35:00")`, che senza offset viene interpretato come ORA
+// LOCALE del browser → l'orario mostrato è sfasato dell'offset locale. Il calcio è
+// corretto perché serve `kickoff` con `+00:00`. Marchiamo la stringa come UTC: da
+// lì la stessa `fmtKickoff`/`useTz` la riproietta nel fuso geolocato dell'utente,
+// identica al calcio. Se una stringa ha già offset/Z (es. path Redis) resta com'è.
+function ensureUtc(s: string): string {
+  if (!s) return s;
+  if (/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) return s;
+  return s + "Z";
+}
+
 // Fail-closed (#020 audit): rows without real model probabilities return null
 // and are dropped by the callers — the old `?? 0.5` default would have shown a
 // fabricated-looking 50/50 to the customer.
@@ -320,7 +333,7 @@ function normalizePrediction(p: TennisPredictionInput) {
     // the real tournament name); absent stays visibly absent.
     surface: (p.surface || "").toUpperCase(),
     round: p.round || "",
-    scheduled: p.scheduled_at || p.scheduled || "",
+    scheduled: ensureUtc(p.scheduled_at || p.scheduled || ""),
     p1: p.p1,
     p2: p.p2,
     odds_p1: p.odds_p1 ?? null,
