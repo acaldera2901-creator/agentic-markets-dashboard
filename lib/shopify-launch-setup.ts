@@ -122,7 +122,7 @@ const GROUPS_QUERY = `
   }`;
 
 const GROUP_CREATE = `
-  mutation LaunchGroupCreate($input: SellingPlanGroupInput!, $resources: SellingPlanGroupResourcesInput) {
+  mutation LaunchGroupCreate($input: SellingPlanGroupInput!, $resources: SellingPlanGroupResourceInput) {
     sellingPlanGroupCreate(input: $input, resources: $resources) {
       sellingPlanGroup {
         id
