@@ -9699,9 +9699,9 @@ button:disabled {
 /* marcatore: tacca verticale + etichetta mono sotto, ancorata alla posizione */
 .tl-meter-mark { position: absolute; top: -3px; bottom: -3px; width: 1px;
   background: var(--am-text); opacity: .65; }
-.tl-meter-mark em { position: absolute; top: 12px; left: 0; transform: translateX(-50%);
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; font-style: normal;
-  letter-spacing: .04em; color: var(--am-muted-2); white-space: nowrap; }
+.tl-meter-mark em { position: absolute; top: 11px; left: 0; transform: translateX(-50%);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-style: normal;
+  font-weight: 700; letter-spacing: .04em; color: var(--am-muted); white-space: nowrap; }
 .tl-meter-wrap:has(.tl-meter-mark) { padding-bottom: 18px; }
 .tl-meter-cap { margin: 16px 0 0; font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; color: var(--am-muted); overflow-x: auto; white-space: nowrap;
