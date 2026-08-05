@@ -9493,6 +9493,12 @@ button:disabled {
    micro-etichette mono uppercase, verde --am-coral come accento primario).
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* .portal-root è una GRID e i suoi item nascono con min-width:auto: la riga di
+   formula in <code white-space:pre> (che non va a capo) allargava il DOCUMENTO
+   invece di scorrere dentro il suo box — misurati 456px di pagina su un viewport
+   da 390. min-width:0 restituisce all'overflow-x di .tl-formula il suo lavoro.
+   Verificato con Playwright a 390px: 456 → 390. */
+.tl-root, .tl-page { min-width: 0; }
 .tl-page { max-width: 1080px; margin: 0 auto; width: 100%;
   padding: clamp(24px, 4vw, 56px) clamp(16px, 4vw, 40px) clamp(40px, 6vw, 88px); }
 

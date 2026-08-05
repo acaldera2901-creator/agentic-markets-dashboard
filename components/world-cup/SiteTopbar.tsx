@@ -41,10 +41,17 @@ export default function SiteTopbar({
   backHref = "/",
   backLabel = "Board",
   hideLang = false,
+  lang: langOverride,
 }: {
   backHref?: string;
   backLabel?: string;
   hideLang?: boolean;
+  /** #TOOLS-HUB-0805: pagine che hanno la lingua NELL'URL (le /tools) la passano
+   *  qui. Senza, la topbar leggeva solo localStorage (default "it") e mostrava
+   *  "Accedi/Registrati" a un visitatore arrivato su una pagina inglese — con il
+   *  dropdown nascosto non poteva nemmeno correggerlo. Le altre pagine non
+   *  passano il prop e continuano a seguire localStorage. */
+  lang?: SiteLang;
 }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
   const router = useRouter();
@@ -152,7 +159,8 @@ export default function SiteTopbar({
   // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
   // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
   // here dispatches `agentic-lang-change` so the board updates live in step.
-  const [lang, setLang] = useState<SiteLang>("it");
+  const [storedLang, setLang] = useState<SiteLang>("it");
+  const lang: SiteLang = langOverride ?? storedLang;
   useEffect(() => {
     const sync = () => setLang(readLang());
     sync();

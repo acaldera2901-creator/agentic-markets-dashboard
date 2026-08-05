@@ -69,6 +69,12 @@ export const LOCALE_NAMES: Record<ToolLocale, string> = {
 /** Dominio pubblico, usato per canonical e hreflang assoluti. */
 export const SITE_ORIGIN = "https://www.betredge.com";
 
+/** La chrome del sito (topbar/footer) parla 5 lingue, i tool 11: le altre sei
+ *  ricadono sull'inglese invece di mostrare italiano a caso. */
+export function chromeLang(locale: ToolLocale): "it" | "en" | "es" | "fr" | "ru" {
+  return locale === "it" || locale === "es" || locale === "fr" || locale === "ru" ? locale : "en";
+}
+
 /** Codice hreflang: coincide col locale, ma passa da qui per non spargere magia. */
 export function hreflangFor(locale: ToolLocale): string {
   return locale;

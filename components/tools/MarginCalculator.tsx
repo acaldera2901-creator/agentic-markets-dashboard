@@ -17,7 +17,9 @@ import { Field, Readout, num, pct } from "./parts";
 
 export function MarginCalculator({ copy, dash }: { copy: ToolCopy; dash: string }) {
   const L = copy.labels;
-  const [rows, setRows] = useState<string[]>(["1.91", "1.91"]);
+  // Default 1.90/1.90: è l'esempio lavorato nel testo della pagina (margine
+  // 5.26%, payout 95%) — chi arriva vede subito i numeri che poi legge spiegati.
+  const [rows, setRows] = useState<string[]>(["1.90", "1.90"]);
 
   const decimals = useMemo(
     () => rows.map((r) => parseOdds(r, "decimal")),
@@ -44,7 +46,7 @@ export function MarginCalculator({ copy, dash }: { copy: ToolCopy; dash: string 
               label={`${L.outcome} ${i + 1}`}
               value={r}
               onChange={(v) => setRow(i, v)}
-              placeholder="1.91"
+              placeholder="1.90"
             />
             {rows.length > 2 && (
               <button

@@ -61,6 +61,34 @@ describe("dizionari registrati", () => {
     }
   });
 
+  it("l'esempio del margine è aritmeticamente giusto in ogni lingua", () => {
+    // Trovato in verifica visiva il 2026-08-05: il testo diceva "1.91 e 1.91 →
+    // 52.38% ciascuna → 104.76% → 4.76 punti", che sono i numeri della −110
+    // ESATTA (1.909090…), mentre il calcolatore sulla stessa pagina mostrava
+    // 4.71%. Ora l'esempio è 1.90/1.90 → 52.63% → 105.26% → 5.26 punti, e i
+    // default del calcolatore sono gli stessi. Se qualcuno rimette i vecchi
+    // numeri, la pagina torna a contraddirsi: questo test lo blocca.
+    for (const locale of TOOL_LOCALES) {
+      const text = TOOLS_COPY[locale]!.tools["margin-calculator"].explainer.join(" ");
+      expect(text, `${locale}: manca l'esempio 1.90`).toContain("1.90");
+      expect(text, `${locale}: manca il margine 5.26/5,26`).toMatch(/5[.,]26/);
+      expect(text, `${locale}: 4.76 non corrisponde a 1.90/1.90`).not.toMatch(/4[.,]76/);
+      expect(text, `${locale}: 52.38 non corrisponde a 1.90`).not.toMatch(/52[.,]38/);
+    }
+  });
+
+  it("il 52,38% resta attribuito alla −110, non a 1.91", () => {
+    // 1/1.91 = 52.36%. Il 52.38% è di 1.9091 (la −110 esatta): scriverlo accanto
+    // a "1.91" fa sbagliare chiunque verifichi col nostro stesso convertitore.
+    for (const locale of TOOL_LOCALES) {
+      for (const par of TOOLS_COPY[locale]!.tools["odds-converter"].explainer) {
+        if (/52[.,]38/.test(par)) {
+          expect(par, `${locale}: 52,38% attribuito a 1.91`).not.toMatch(/1\.91[^0-9]/);
+        }
+      }
+    }
+  });
+
   it("non contengono caratteri fuori posto (residui di scrittura)", () => {
     for (const locale of TOOL_LOCALES) {
       const text = JSON.stringify(TOOLS_COPY[locale]);

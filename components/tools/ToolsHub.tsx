@@ -7,7 +7,7 @@ import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getToolsCopy } from "@/lib/tools/copy";
-import { TOOL_SLUGS, toolPath, type ToolLocale } from "@/lib/tools/registry";
+import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale } from "@/lib/tools/registry";
 import { hubJsonLd } from "@/lib/tools/seo";
 import { LocalePicker } from "./LocalePicker";
 
@@ -16,7 +16,7 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
 
   return (
     <div className="portal-root tl-root">
-      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang />
+      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
       <main className="tl-page">
         <header className="tl-head">
           <div className="tl-eyebrow">
@@ -54,7 +54,7 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
           </Link>
         </aside>
       </main>
-      <SiteFooter lang={locale} />
+      <SiteFooter lang={chromeLang(locale)} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(hubJsonLd(locale)) }}
