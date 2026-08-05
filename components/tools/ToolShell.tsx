@@ -1,7 +1,10 @@
 // components/tools/ToolShell.tsx (#TOOLS-HUB-0805)
-// Impaginazione di una pagina-tool: calcolatore sopra la piega, poi formula,
-// spiegazione, FAQ, gli altri tool e UN blocco CTA. Server component — solo il
-// calcolatore ha bisogno del browser.
+// Impaginazione di una pagina-tool: calcolatore sopra la piega, la frase chiave,
+// la spiegazione, l'esempio numerico, le FAQ, gli altri tool e UN blocco CTA.
+// Server component — solo il calcolatore ha bisogno del browser.
+//
+// I blocchi formula sono stati rimossi da tutte le pagine (Andrea, 2026-08-05):
+// una riga di simboli non la legge nessuno, un esempio con numeri veri sì.
 
 import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
@@ -11,6 +14,7 @@ import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale, type ToolSlug } from
 import { toolJsonLd } from "@/lib/tools/seo";
 import { ToolCalculator } from "./ToolCalculator";
 import { LocalePicker } from "./LocalePicker";
+import { Prose } from "./Prose";
 import { ToolIcon } from "./ToolIcon";
 
 export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale }) {
@@ -39,40 +43,31 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
 
         <ToolCalculator slug={slug} copy={t} dash={copy.common.invalid} />
 
-        {/* Formula: presente su quattro tool. La pagina Kelly non ce l'ha — al suo
-            posto, nello stesso slot, l'esempio numerico lavorato. */}
-        {t.formula?.length && t.formulaTitle ? (
-          <section className="tl-section">
-            <h2>{t.formulaTitle}</h2>
-            <div className="tl-formula">
-              <code>{t.formula.join("\n")}</code>
-            </div>
-          </section>
-        ) : null}
+        {/* La frase chiave subito sotto il calcolatore: chi non scorre oltre ha
+            comunque capito a cosa serve la pagina. */}
+        <p className="tl-takeaway">{t.takeaway}</p>
 
         <section className="tl-section tl-prose">
           <h2>{t.explainerTitle}</h2>
-          {t.explainer.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+          <Prose paragraphs={t.explainer} />
         </section>
 
-        {t.example ? (
-          <section className="tl-section">
-            <h2>{t.example.title}</h2>
-            <div className="tl-example">
-              <dl className="tl-example-rows">
-                {t.example.rows.map((r, i) => (
-                  <div className="tl-example-row" key={i}>
-                    <dt>{r.label}</dt>
-                    <dd>{r.value}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="tl-example-note">{t.example.note}</p>
-            </div>
-          </section>
-        ) : null}
+        {/* L'esempio chiude la spiegazione: prima il perché, poi i numeri veri.
+            Ha preso il posto del blocco formula su tutte le pagine. */}
+        <section className="tl-section">
+          <h2>{t.example.title}</h2>
+          <div className="tl-example">
+            <dl className="tl-example-rows">
+              {t.example.rows.map((r, i) => (
+                <div className="tl-example-row" key={i}>
+                  <dt>{r.label}</dt>
+                  <dd>{r.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="tl-example-note">{t.example.note}</p>
+          </div>
+        </section>
 
         <section className="tl-section">
           <h2>{copy.common.faqTitle}</h2>

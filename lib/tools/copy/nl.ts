@@ -54,18 +54,24 @@ const nl: ToolsCopy = {
         impliedProbability: "Impliciete kans",
         hint: "Decimaal accepteert ook een komma: 2,50 werkt als 2.50.",
       },
-      formulaTitle: "Hoe de omrekening werkt",
-      formula: [
-        "decimaal = 1 + (Amerikaans / 100)         als Amerikaans positief is",
-        "decimaal = 1 + (100 / |Amerikaans|)       als Amerikaans negatief is",
-        "decimaal = 1 + (teller / noemer)          voor breukodds",
-        "impliciete kans = 1 / decimaal",
-      ],
+      takeaway:
+        "Elke odd is een vermomde kans. Reken eerst om, discussieer daarna: 2.50 betekent dat de bookmaker je 40% vertelt.",
+      example: {
+        title: "Eén prijs, elk formaat",
+        rows: [
+          { label: "Jij typt", value: "2.50" },
+          { label: "Amerikaans", value: "+150" },
+          { label: "Breuk", value: "3/2" },
+          { label: "Hongkong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Impliciete kans", value: "40,00%" },
+        ],
+        note:
+          "Verander er één en de rest volgt. Let op de afronding: de bekende −110 is decimaal 1.9091 en impliceert 52,38%, terwijl een weergegeven 1.91 52,36% impliceert — een verschil dat niets lijkt en meetelt, want voordeel zit in tienden van procenten.",
+      },
       explainerTitle: "Een prijs in elk formaat lezen",
       explainer: [
-        "Een odd is een kans in andere kleren. De decimale odd — de Europese standaard — geeft de totale uitbetaling per ingezette eenheid: 2.50 keert 2.50 uit voor elke geriskeerde 1, inzet inbegrepen. De breukodd, nog gebruikelijk in de Britse rensport, geeft de winst in plaats van de uitbetaling: 3/2 betekent drie eenheden winst per twee geriskeerde, dus dezelfde 2.50 decimaal. De Amerikaanse odd zegt hoeveel je wint op 100 (+150) of hoeveel je moet riskeren om 100 te winnen (−110). Hongkong, Malay en Indonesian zijn de formaten van de Aziatische markten, en die tellen omdat daar vaak de scherpste prijzen staan.",
-        "Het getal dat het lezen waard is, is het laatste: de impliciete kans, simpelweg 1 gedeeld door de decimale odd. Een prijs van 2.50 impliceert 40%. Een prijs van 1.9091 — de bekende −110 — impliceert 52,38%. Dat is de kans die de bookmaker uitspreekt, en het is het enige getal dat je direct met je eigen schatting kunt vergelijken. Twee odds in verschillende formaten zijn niet makkelijker te vergelijken dan twee kansen: eerst omrekenen, dan discussiëren.",
-        "Eén beperking die deze converter niet voor je kan wegnemen: de impliciete kans bevat nog de marge van de bookmaker. Tel de impliciete kansen van alle uitkomsten in een markt op en je komt boven 100% — dat overschot is de marge, en die blaast elk van die kansen op. Wil je de eerlijke mening van de markt in plaats van de beprijsde mening, haal de markt dan door de margecalculator en gebruik de eerlijke kansen die eruit komen.",
+        "**Een odd is een kans in andere kleren.** De decimale odd — de Europese standaard — geeft de totale uitbetaling per ingezette eenheid: 2.50 keert 2.50 uit voor elke geriskeerde 1, inzet inbegrepen. De breukodd geeft de winst: 3/2 is drie eenheden winst per twee geriskeerde, dezelfde 2.50. De Amerikaanse odd zegt hoeveel je wint op 100 (+150) of hoeveel je moet riskeren om 100 te winnen (−110). Hongkong, Malay en Indonesian zijn de Aziatische formaten, en die tellen omdat daar vaak de scherpste prijzen staan.",
+        "Het getal dat het lezen waard is, is het laatste. **De impliciete kans is 1 gedeeld door de decimale odd**, en het is het enige cijfer dat je direct met je eigen schatting kunt vergelijken: twee odds in verschillende notaties vergelijken niet makkelijker dan twee kansen. Eén beperking die deze tool niet kan wegnemen: **de impliciete kans bevat nog de marge van de bookmaker**, dus tel alle uitkomsten van een markt op en je komt boven 100%. Wil je de eerlijke mening van de markt in plaats van de beprijsde, haal de markt dan door de margecalculator.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const nl: ToolsCopy = {
         impliedProbability: "Impliciete kans",
         hint: "Voeg een uitkomst toe voor driewegmarkten, of meer voor winnaarsmarkten.",
       },
-      formulaTitle: "Hoe de marge wordt berekend",
-      formula: [
-        "overround = Σ (1 / oddᵢ)",
-        "marge = overround − 1",
-        "uitbetaling = 1 / overround",
-        "eerlijke kansᵢ = (1 / oddᵢ) / overround",
-        "eerlijke oddᵢ = 1 / eerlijke kansᵢ",
-      ],
+      takeaway:
+        "De marge is wat je betaalt voor het recht een mening te hebben. Twee bookmakers, dezelfde wedstrijd, en het verschil is geld.",
+      example: {
+        title: "Dezelfde wedstrijd bij twee bookmakers",
+        rows: [
+          { label: "Recreatieve bookmaker", value: "1.90 / 1.90 · marge 5,26%" },
+          { label: "Scherpe bookmaker", value: "1.98 / 1.98 · marge 1,01%" },
+          { label: "Eerlijke lijn, beide", value: "2.00 / 2.00 · elk 50%" },
+          { label: "Jouw EV op een echte 50%", value: "−5% tegen −1% per wed" },
+        ],
+        note:
+          "Zelfde mening, zelfde wedstrijd. 100 inzetten tweehonderd keer kost 1.000 bij de eerste bookmaker en 200 bij de tweede: de acht cent prijsverschil is 800 over een seizoen. Het is het goedkoopste voordeel in wedden, en het vraagt geen enkel model.",
+      },
       explainerTitle: "De marge is de prijs van de wed",
       explainer: [
-        "Een eerlijke tweewegmarkt prijst beide kanten op 2.00: de impliciete kansen zijn 50% en 50%, ze tellen op tot precies 100%, en geen van beide kanten heeft voordeel. Echte markten staan op 1.90 en 1.90. Die impliciete kansen zijn elk 52,63%, tellen op tot 105,26%, en de 5,26 procentpunten overschot zijn de marge van de bookmaker — de overround. Welke kant je ook speelt, je betaalt hem.",
-        "De marge is het nuttigste getal om te bepalen waar je wedt. Dezelfde wedstrijd met 5% marge en met 2% marge is niet dezelfde wed: de scherpere bookmaker laat je bij identieke meningen ongeveer drie procentpunten verwachte waarde. Marges lopen sterk uiteen per markt: hoofdlijnen bij scherpe bookmakers kunnen onder 2% liggen, terwijl winnaarsmarkten, spelersmarkten en specials routinematig 8% of meer dragen, omdat bookmakers weten dat hun prijzen daar het minst getoetst worden.",
-        "De marge verwijderen geeft de eerlijke lijn, de zogenoemde no-vig lijn. Deze calculator doet dat proportioneel: elke impliciete kans wordt gedeeld door hun som, zodat ze weer precies 100% vormen, en de eerlijke odds zijn de omgekeerden. Die lijn komt het dichtst bij de eerlijke schatting van de markt, en is het referentiepunt voor de EV-calculator: een wed heeft alleen positieve verwachte waarde als jouw kans boven de eerlijke kans ligt, niet enkel boven de beprijsde.",
-        "Een openlijke beperking: proportioneel verwijderen verdeelt de marge gelijkmatig over de uitkomsten, en echte bookmakers doen dat niet. Zij leggen meer marge op onwaarschijnlijke uitkomsten, want daar zit het recreatieve geld. In een markt met een duidelijke favoriet en een verre outsider onderschat deze methode de echte kans van de favoriet iets. Op hoofdlijnen is de vertekening klein; bij loterijachtige winnaarsmarkten is de eerlijke lijn een schatting, geen meting.",
+        "**Een eerlijke tweewegmarkt prijst beide kanten op 2.00.** De impliciete kansen zijn 50% en 50%, ze tellen op tot precies 100%, en geen kant heeft voordeel. Echte markten staan op 1.90 en 1.90: die impliciete kansen zijn elk 52,63%, tellen op tot 105,26%, en **de overtollige 5,26 procentpunten zijn de marge van de bookmaker** — de overround. Welke kant je ook speelt, je betaalt hem. Marges verschillen sterk: hoofdlijnen bij scherpe bookmakers duiken onder 2%, terwijl winnaarsmarkten en spelersmarkten routinematig 8% of meer dragen, want daar weten bookmakers hun prijzen het minst getoetst.",
+        "De marge verwijderen geeft de eerlijke lijn, de no-vig lijn. Deze calculator doet dat proportioneel — elke impliciete kans gedeeld door hun som, zodat ze weer precies 100% vormen — en **die eerlijke lijn is het referentiepunt van elke +EV-beslissing**: een wed heeft alleen positieve verwachte waarde als jouw kans de eerlijke verslaat, niet enkel de beprijsde. Een openlijke beperking: echte bookmakers leggen meer marge op onwaarschijnlijke uitkomsten, dus bij een duidelijke favoriet onderschat deze methode hem iets. Op evenwichtige lijnen is de vertekening klein; bij loterijachtige winnaarsmarkten is de eerlijke lijn een schatting.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const nl: ToolsCopy = {
         neutral: "Break-even: de prijs komt precies overeen met de kans.",
         hint: "Percentages als getal invoeren: 55 betekent 55%.",
       },
-      formulaTitle: "Hoe de verwachte waarde wordt berekend",
-      formula: [
-        "EV = p × (odd − 1) × inzet − (1 − p) × inzet",
-        "   = (p × odd − 1) × inzet",
-        "voordeel = p × odd − 1",
-        "break-evenprijs = 1 / p",
-      ],
+      takeaway:
+        "Je hoeft de markt niet te overtreffen — alleen een bookmaker te vinden die langzamer is dan de scherpste.",
+      example: {
+        title: "De kans lenen van een scherpe bookmaker",
+        rows: [
+          { label: "Scherpe bookmaker, beide kanten", value: "1.95 / 1.95" },
+          { label: "Eerlijke kans, marge weg", value: "50,00%" },
+          { label: "Break-evenprijs", value: "2.00" },
+          { label: "Jouw bookmaker biedt", value: "2.10" },
+          { label: "EV op 100 inzet", value: "+5,00 (+5%)" },
+        ],
+        note:
+          "Er was geen mening nodig: de scherpe lijn leverde de kans, en jouw bookmaker prijsde dezelfde uitkomst op 2.10 waar 2.00 eerlijk was. Zet de scherpe prijzen op 1.90/1.90 en de eerlijke kans blijft 50% — dat is precies het punt van marge verwijderen: het antwoord beweegt niet mee met de vig.",
+      },
       explainerTitle: "Wat verwachte waarde echt zegt",
       explainer: [
-        "Verwachte waarde is het gemiddelde resultaat van een wed als je hem onbeperkt vaak zou kunnen spelen. Er zijn twee invoerwaarden en geen meningen: de prijs die je krijgt en de kans die je de uitkomst geeft. Denk je dat een ploeg 55% van de tijd wint en biedt iemand 2.00, dan is de rekensom direct: 55% van de tijd win je een eenheid, 45% verlies je hem, dus gemiddeld verdien je 0,10 eenheid per ingezette eenheid. Dat is 10% voordeel, en dat is wat +EV betekent.",
-        "Het getal dat alles bepaalt is de kans, en daar verliezen de meeste wedders stil. Een fout van 5 punten in de schatting is genoeg om 4% voordeel in 1% verlies te veranderen, en schattingen op het oog zitten er routinematig veel meer dan 5 punten naast. Daarom bestaat de tweede modus van deze calculator: vertrouw niet op je gevoel, maar neem de prijs van beide kanten bij een scherpe bookmaker, haal de marge eruit en gebruik de eerlijke kans die eruit komt. De vraag is dan niet meer of jij slimmer bent dan de markt, maar of de bookmaker waar je speelt langzamer is dan de scherpste.",
-        "Lees EV als een percentage, niet als een belofte. Een wed met 4% verwachte waarde levert bij één gelegenheid helemaal niets op: hij wint of verliest. Die 4% verschijnt pas over honderden onafhankelijke weds, en alleen als de kans klopte. Op korte termijn is de variantie veel groter dan het voordeel, en precies daarom telt de inzetgrootte even zwaar als het voordeel zelf — daarvoor is het Kelly-criterium.",
+        "**Verwachte waarde is het gemiddelde resultaat van een wed die je eindeloos zou kunnen herhalen.** Twee invoerwaarden, geen meningen: de geboden prijs en de kans die je de uitkomst geeft. Denk je dat een ploeg 55% van de tijd wint en biedt iemand 2.00, dan is de rekensom direct — 55% van de tijd win je een eenheid, 45% verlies je hem, dus 0,10 eenheid per ingezette eenheid. Dat is 10% voordeel, en meer betekent +EV niet.",
+        "**De kans is waar bijna iedereen stil verliest.** Een fout van 5 punten maakt van 4% voordeel 1% verlies, en schattingen op het oog zitten er veel verder naast. Vandaar de tweede modus van deze calculator: vertrouw niet op je gevoel, maar neem beide kanten bij een scherpe bookmaker, haal de marge eruit en gebruik de eerlijke kans die eruit komt. Lees het resultaat als een percentage, niet als een belofte — 4% voordeel levert bij één wed niets op, het verschijnt pas over honderden, en alleen als de kans klopte. Daarom telt de inzetgrootte even zwaar als het voordeel.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const nl: ToolsCopy = {
         noEdge: "Geen voordeel bij deze prijs — de optimale inzet is nul.",
         hint: "Percentages als getal invoeren: 55 betekent 55%.",
       },
+      takeaway:
+        "Kelly bepaalt de inzet op het voordeel, niet op je overtuiging — en bijna iedereen zou bewust minder moeten inzetten dan hij zegt.",
       example: {
         title: "Wat dat betekent met 1.000 bankroll",
         rows: [
@@ -234,8 +251,8 @@ const nl: ToolsCopy = {
       },
       explainerTitle: "De inzet zo kiezen dat de slechte reeks hem niet beëindigt",
       explainer: [
-        "Het Kelly-criterium antwoordt op wat verwachte waarde overslaat: hoeveel moet je met een gegeven voordeel echt riskeren? Zet te weinig in en een echt voordeel groeit te langzaam om iets te betekenen. Zet te veel in en de rekenkunde keert zich tegen je: een bankroll die halveert heeft +100% nodig om terug te komen, dus te grote inzetten vernietigen de groei zelfs als elke afzonderlijke wed gunstig is. De optimale fractie is het voordeel gedeeld door de netto-odd, en die schaalt met het voordeel, niet met overtuiging: 10% voordeel bij 2.00 vraagt 10% van de bankroll, hetzelfde voordeel bij 5.00 maar 2,5%.",
-        "Bijna niemand zou volledige Kelly moeten spelen, want de formule gaat ervan uit dat je kans exact klopt en dat doet hij nooit. Geef hem een overschat voordeel en hij beveelt vrolijk een inzet aan die te groot is voor het voordeel dat je werkelijk hebt: de snelste manier om een bankroll te verliezen terwijl je gemiddeld gelijk hebt. Halve Kelly geeft een kwart van de theoretische groei op en halveert de volatiliteit ongeveer; kwart Kelly is wat veel professionals met echte modellen gebruiken. En biedt de prijs geen voordeel, dan is de juiste inzet nul: een negatieve Kelly-fractie betekent dat de wed aan de andere kant hoort, nooit dat je hier minder moet inzetten.",
+        "Het Kelly-criterium antwoordt op wat verwachte waarde overslaat: hoeveel moet je met een gegeven voordeel echt riskeren? Zet te weinig in en een echt voordeel groeit te langzaam om iets te betekenen. Zet te veel in en de rekenkunde keert zich tegen je: een bankroll die halveert heeft +100% nodig om terug te komen, dus te grote inzetten vernietigen de groei zelfs als elke afzonderlijke wed gunstig is. De optimale fractie is het voordeel gedeeld door de netto-odd, en **die schaalt met het voordeel, niet met overtuiging**: 10% voordeel bij 2.00 vraagt 10% van de bankroll, hetzelfde voordeel bij 5.00 maar 2,5%.",
+        "**Bijna niemand zou volledige Kelly moeten spelen**, want de formule gaat ervan uit dat je kans exact klopt en dat doet hij nooit. Geef hem een overschat voordeel en hij beveelt vrolijk een inzet aan die te groot is voor het voordeel dat je werkelijk hebt: de snelste manier om een bankroll te verliezen terwijl je gemiddeld gelijk hebt. Halve Kelly geeft een kwart van de theoretische groei op en halveert de volatiliteit ongeveer; kwart Kelly is wat veel professionals met echte modellen gebruiken. En biedt de prijs geen voordeel, dan is de juiste inzet nul: een negatieve Kelly-fractie betekent dat de wed aan de andere kant hoort, nooit dat je hier minder moet inzetten.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const nl: ToolsCopy = {
         resultTitle: "Resultaten",
         hint: "Een prijs en zijn break-evenkans zijn hetzelfde getal, van twee kanten gelezen.",
       },
-      formulaTitle: "Hoe de kansen worden berekend",
-      formula: [
-        "odd = 1 / kans",
-        "kans = 1 / odd",
-        "break-evenkans = 1 / odd",
-        "kans van de combinatie = p₁ × p₂ × … × pₙ",
-        "odd van de combinatie = odd₁ × odd₂ × … × oddₙ",
-      ],
+      takeaway:
+        "Onderdelen worden vermenigvuldigd, en de marge van de bookmaker met ze mee. Een viervoudige op 1.80 vraagt een gebeurtenis van 9,5%.",
+      example: {
+        title: "Wat een viervoudige combinatie echt kost",
+        rows: [
+          { label: "Vier onderdelen op", value: "elk 1.80 · 55,56%" },
+          { label: "Gecombineerde odd", value: "10.50" },
+          { label: "Gecombineerde kans", value: "9,53%" },
+          { label: "Marge per onderdeel", value: "5%" },
+          { label: "Marge op de combinatie", value: "21,6%" },
+        ],
+        note:
+          "De odd lijkt royaal tot je ziet wat hij eist: een gebeurtenis van 9,5%. En de marge van de bookmaker is vier keer samengesteld — 1,05⁴ − 1 = 21,6% — dus dezelfde vier selecties kosten je vier keer de marge van één wed. Gecorreleerde onderdelen uit één wedstrijd zijn een ander verhaal: vermenigvuldigen onderschat ze, en juist daarom prijzen bookmakers combinaties binnen één wedstrijd apart.",
+      },
       explainerTitle: "Eerst de kans, dan de prijs",
       explainer: [
-        "Elke prijs is een uitspraak over een kans, en de omrekening is één deling: een kans van 40% is een prijs van 2.50, en een prijs van 2.50 is een kans van 40%. Die omrekening vóór het wedden maken verandert de vraag van «vind ik deze wed leuk?» naar «denk ik dat deze uitkomst in meer dan 40% van de gevallen gebeurt?» — een vraag waarin je je kunt vergissen, en dus een vraag die het stellen waard is.",
-        "Hetzelfde getal, van de prijskant gelezen, is de break-evenkans: de minimale kans die een uitkomst nodig heeft om de wed neutraal te maken. Een prijs van 1.75 eist 57,1%. Een prijs van 1.50 eist 66,7%. Lange prijzen eisen heel weinig — 15.00 vraagt maar 6,7% — en daarom voelen ze goedkoop en daarom leggen bookmakers daar hun marge. De break-evenkans is de eerlijke test van een wed: kun je niet beargumenteren dat de uitkomst erboven ligt, dan is de prijs niet royaal, maar correct.",
-        "Bij combinaties wordt kans tegenintuïtief. Onafhankelijke onderdelen worden vermenigvuldigd: drie weds die je elk op 50% inschat komen samen op 12,5%, niet op iets rustgevend dicht bij de helft. Vier onderdelen op 60% geven 12,96%. De gecombineerde odd vermenigvuldigt net zo, en daar zit de valstrik: een combinatie op 15.00 lijkt een koopje tot je merkt dat hij een gebeurtenis van 6,7% eist, en dat de marge van de bookmaker op elk onderdeel is gelegd en vervolgens is samengesteld. Vier onderdelen met elk 5% marge dragen samen bijna 21% marge.",
-        "Eén aanname om te onthouden: deze calculator vermenigvuldigt en gaat dus uit van onafhankelijke onderdelen. Twee uitkomsten uit dezelfde wedstrijd — een ploeg die wint en zijn spits die scoort — zijn gecorreleerd, en de kansen vermenigvuldigen onderschat de echte kans dat beide gebeuren. Combinaties binnen één wedstrijd worden juist daarom apart beprijsd door bookmakers: die correlatie is moeilijk te berekenen. Behandel het getal hier als een ondergrens, niet als een antwoord.",
+        "**Elke prijs is een uitspraak over een kans**, en de omrekening is één deling: 40% is een prijs van 2.50, en 2.50 is een kans van 40%. Die omrekening vóór het wedden verandert de vraag van «vind ik deze wed leuk?» naar «gebeurt dit in meer dan 40% van de gevallen?» — een vraag waarin je je kunt vergissen. Van de prijskant gelezen is hetzelfde getal de **break-evenkans**: de minimale kans die een uitkomst nodig heeft om de wed neutraal te maken. 1.75 eist 57,1%; 1.50 eist 66,7%; 15.00 vraagt maar 6,7%, en daarom voelen lange prijzen goedkoop en leggen bookmakers daar hun marge.",
+        "**Bij combinaties wordt kans tegenintuïtief.** Onafhankelijke onderdelen worden vermenigvuldigd: drie weds die je elk op 50% inschat komen samen op 12,5%, niet op iets rustgevend dicht bij de helft. Vier onderdelen op 60% geven 12,96%. De gecombineerde odd vermenigvuldigt net zo, en daar zit de valstrik — het getal wordt groot terwijl de kans klein wordt, en de marge groeit mee. Hou de aanname vast: hier wordt vermenigvuldigd, dus onafhankelijkheid aangenomen. Twee uitkomsten uit dezelfde wedstrijd zijn gecorreleerd, en daar is de echte kans anders, meestal hoger dan het product.",
       ],
       faq: [
         {

@@ -150,12 +150,18 @@ Struttura di ogni pagina tool, nell'ordine:
 1. H1 + una riga su cosa fa
 2. **il calcolatore sopra la piega** — input a sinistra, readout a destra, calcolo live
    mentre si digita, nessun bottone "calcola"
-3. come si calcola, con la formula esplicita — **eccetto la pagina Kelly**
-   (richiesta Andrea, 2026-08-05): lì il blocco formula è stato rimosso e nello
-   stesso slot c'è un **esempio numerico lavorato** (bankroll 1.000, quota 2.00,
-   p 55% → Kelly pieno 100 / mezzo 50; cinque sconfitte di fila lasciano 590 col
-   pieno, che poi chiede +69%, contro 774 col mezzo, che chiede +29%). La
-   spiegazione della stessa pagina è stata riassunta da quattro paragrafi a due.
+3. **frase chiave** in evidenza (filetto verde), poi la spiegazione riassunta a
+   due paragrafi col primo reso più grande e le frasi chiave in grassetto, poi un
+   **esempio numerico lavorato**. I blocchi formula sono stati RIMOSSI da tutte e
+   cinque le pagine (richiesta Andrea, 2026-08-05: «così non lo leggerà nessuno»)
+   — una riga di simboli non la legge nessuno, numeri veri sì. Gli esempi:
+   converter 2.50 in ogni formato · margine stesso match a 1.90 e 1.98 (5,26% vs
+   1,01%, −5% vs −1% di EV, 800 di differenza in stagione) · EV probabilità presa
+   in prestito da un book sharp 1.95/1.95 → equa 50%, offerta 2.10, EV +5,00 ·
+   Kelly bankroll 1.000 (pieno 100 / mezzo 50; cinque sconfitte lasciano 590 col
+   pieno che chiede +69%, contro 774 col mezzo che chiede +29%) · multipla quattro
+   gambe a 1.80 → 10.50 di quota per un evento al 9,53%, con 21,6% di margine
+   composto.
 4. testo esplicativo di 300–500 parole reali (è questo che classifica, non il widget)
 5. 3–4 FAQ
 6. link agli altri quattro tool

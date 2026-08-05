@@ -54,18 +54,24 @@ const tr: ToolsCopy = {
         impliedProbability: "Zımni olasılık",
         hint: "Ondalık virgülü de kabul eder: 2,50 ile 2.50 aynıdır.",
       },
-      formulaTitle: "Çevirme nasıl işler",
-      formula: [
-        "ondalık = 1 + (Amerikan / 100)          Amerikan pozitifse",
-        "ondalık = 1 + (100 / |Amerikan|)        Amerikan negatifse",
-        "ondalık = 1 + (pay / payda)             kesirli oranlar için",
-        "zımni olasılık = 1 / ondalık",
-      ],
+      takeaway:
+        "Her oran, kılık değiştirmiş bir olasılıktır. Önce çevir, sonra tartış: 2.50, bahis şirketinin sana %40 dediği anlamına gelir.",
+      example: {
+        title: "Tek fiyat, her format",
+        rows: [
+          { label: "Sen yazarsın", value: "2.50" },
+          { label: "Amerikan", value: "+150" },
+          { label: "Kesirli", value: "3/2" },
+          { label: "Hong Kong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Zımni olasılık", value: "%40,00" },
+        ],
+        note:
+          "Birini değiştir, diğerleri onu izler. Yuvarlamaya dikkat: bilinen −110 ondalıkta 1.9091'dir ve %52,38 ima eder, ekranda görünen 1.91 ise %52,36 — hiçbir şey gibi görünüp önemli olan bir fark, çünkü avantaj puanın onda birlerinde oynanır.",
+      },
       explainerTitle: "Bir fiyatı her formatta okumak",
       explainer: [
-        "Oran, başka kılıkta bir olasılıktır. Ondalık oran — Avrupa standardı — yatırılan birim başına toplam dönüşü verir: 2.50, riske edilen her 1 için bahis dahil 2.50 döner. Kesirli oran, İngiliz at yarışlarında hâlâ yaygın, dönüş yerine kârı bildirir: 3/2, riske edilen iki birime karşılık üç birim kâr demektir, yani aynı 2.50 ondalık. Amerikan oranı 100 yatırınca ne kazandığını (+150) ya da 100 kazanmak için ne riske etmen gerektiğini (−110) söyler. Hong Kong, Malay ve Indonesian ise Asya piyasalarının formatlarıdır ve önemlidirler, çünkü en keskin fiyatlar sıklıkla oradadır.",
-        "Okumaya değer sayı son sıradaki: zımni olasılık, yani 1 bölü ondalık oran. 2.50 fiyatı %40 ima eder. 1.9091 fiyatı — bilinen −110 — %52,38 ima eder. Bu, bahis şirketinin beyan ettiği şanstır ve kendi tahmininle doğrudan karşılaştırabileceğin tek sayıdır. Farklı formatlardaki iki oranı karşılaştırmak, iki olasılığı karşılaştırmaktan kolay değildir: önce çevir, sonra tartış.",
-        "Bu çeviricinin senin için kaldıramayacağı bir sınır var: zımni olasılık hâlâ bahis şirketinin marjını içerir. Bir piyasadaki tüm sonuçların zımni olasılıklarını topla, %100'ü aşarsın — bu fazlalık marjdır ve o olasılıkların her birini şişirir. Piyasanın fiyatlanmış görüşü yerine dürüst görüşünü istiyorsan, piyasayı marj hesaplayıcısından geçir ve döndürdüğü adil olasılıkları kullan.",
+        "**Oran, başka kılıkta bir olasılıktır.** Ondalık oran — Avrupa standardı — yatırılan birim başına toplam dönüşü verir: 2.50, riske edilen her 1 için bahis dahil 2.50 öder. Kesirli oran kârı bildirir: 3/2, riske edilen iki birime karşılık üç birim kâr, yani aynı 2.50. Amerikan oranı 100 yatırınca ne kazandığını (+150) ya da 100 kazanmak için ne riske etmen gerektiğini (−110) söyler. Hong Kong, Malay ve Indonesian Asya formatlarıdır ve önemlidirler, çünkü en keskin fiyatlar sıklıkla oradadır.",
+        "Okumaya değer sayı son sıradaki. **Zımni olasılık, 1 bölü ondalık orandır** ve kendi tahmininle doğrudan karşılaştırabileceğin tek sayıdır: farklı gösterimlerdeki iki oranı karşılaştırmak, iki olasılığı karşılaştırmaktan kolay değildir. Bu aracın senin için kaldıramayacağı bir sınır: **zımni olasılık hâlâ bahis şirketinin marjını içerir**, yani bir piyasadaki tüm sonuçları topla ve %100'ü geçersin. Piyasanın fiyatlanmış görüşü yerine dürüst görüşünü istiyorsan marj hesaplayıcısından geçir.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const tr: ToolsCopy = {
         impliedProbability: "Zımni olasılık",
         hint: "Üç sonuçlu piyasalar için bir sonuç ekle, şampiyonluk piyasaları için daha fazla.",
       },
-      formulaTitle: "Marj nasıl hesaplanır",
-      formula: [
-        "overround = Σ (1 / oranᵢ)",
-        "marj = overround − 1",
-        "ödeme oranı = 1 / overround",
-        "adil olasılıkᵢ = (1 / oranᵢ) / overround",
-        "adil oranᵢ = 1 / adil olasılıkᵢ",
-      ],
+      takeaway:
+        "Marj, bir görüşe sahip olma hakkı için ödediğin bedeldir. İki şirket, aynı maç — ve fark, paradır.",
+      example: {
+        title: "Aynı maç, iki şirket",
+        rows: [
+          { label: "Eğlence odaklı şirket", value: "1.90 / 1.90 · marj %5,26" },
+          { label: "Keskin şirket", value: "1.98 / 1.98 · marj %1,01" },
+          { label: "Adil çizgi, ikisi de", value: "2.00 / 2.00 · her biri %50" },
+          { label: "Gerçek %50'de EV'in", value: "bahis başına −%5'e karşı −%1" },
+        ],
+        note:
+          "Aynı görüş, aynı maç. 100'ü iki yüz kez yatırmak ilk şirkette 1.000, ikincisinde 200 maliyet çıkarır: sekiz kuruşluk fiyat farkı bir sezonda 800 eder. Bahsin en ucuz avantajıdır ve hiçbir model gerektirmez.",
+      },
       explainerTitle: "Marj, bahsin fiyatıdır",
       explainer: [
-        "Adil bir iki sonuçlu piyasa her iki tarafı 2.00 fiyatlar: zımni olasılıklar %50 ve %50, toplamı tam %100 ve hiçbir tarafın avantajı yok. Gerçek piyasalar 1.90 ve 1.90 fiyatlanır. Bu zımni olasılıklar her biri %52,63, toplamı %105,26 ve fazladan 5,26 puan bahis şirketinin marjıdır — overround. Hangi tarafı oynarsan oyna onu ödüyorsun.",
-        "Marj, nerede bahis yapılacağına karar vermek için en yararlı sayıdır. Aynı maçın %5 marjla ve %2 marjla fiyatlanması aynı bahis değildir: daha sıkı şirket, birebir aynı görüşle sana yaklaşık üç puan beklenen değer bırakır. Marjlar piyasaya göre büyük ölçüde değişir: keskin şirketlerin ana çizgileri %2'nin altına inebilir, buna karşılık şampiyonluk, oyuncu ve özel bahisler rutin olarak %8 ve üzerini taşır — çünkü şirketler fiyatlarının orada en az sınandığını bilir.",
-        "Marjı çıkarmak adil çizgiyi, yani no-vig çizgisini verir. Bu hesaplayıcı bunu oranlı yapar: her zımni olasılık toplamlarına bölünür, böylece yeniden tam %100 olurlar ve adil oranlar bunların tersidir. Bu çizgi, piyasanın dürüst tahminine en yakın şeydir ve EV hesaplayıcısının referans noktasıdır: bir bahsin beklenen değeri ancak senin olasılığın adil olasılığı aşarsa pozitiftir; yalnızca fiyatlanmış olanı aşması yetmez.",
-        "Açıkça belirtilen bir sınır: oranlı çıkarma marjı sonuçlara eşit dağıtır, gerçek şirketler bunu yapmaz. Marjın fazlasını düşük olasılıklı sonuçlara yükler, çünkü eğlence amaçlı para orada toplanır. Belirgin bir favori ile uzak bir sürprizin olduğu piyasada bu yöntem favorinin gerçek şansını biraz düşük gösterir. Ana çizgilerde sapma küçüktür; piyango tarzı şampiyonluk bahislerinde adil çizgiyi bir ölçüm değil, tahmin olarak gör.",
+        "**Adil bir iki sonuçlu piyasa her iki tarafı 2.00 fiyatlar.** Zımni olasılıklar %50 ve %50, toplamı tam %100 ve hiçbir tarafın avantajı yok. Gerçek piyasalar 1.90 ve 1.90 fiyatlanır: bu zımni olasılıklar her biri %52,63, toplamı %105,26 ve **fazladan 5,26 puan bahis şirketinin marjıdır** — overround. Hangi tarafı oynarsan oyna onu ödüyorsun. Marjlar piyasaya göre çok değişir: keskin şirketlerin ana çizgileri %2'nin altına iner, buna karşılık şampiyonluk ve oyuncu piyasaları rutin olarak %8 ve üzerini taşır, çünkü şirketler fiyatlarının orada en az sınandığını bilir.",
+        "Marjı çıkarmak adil çizgiyi, no-vig çizgisini verir. Bu hesaplayıcı bunu oranlı yapar — her zımni olasılık toplamlarına bölünür, böylece yeniden tam %100 olurlar — ve **o adil çizgi her +EV kararının referansıdır**: bir bahsin beklenen değeri ancak senin olasılığın adil olanı geçerse pozitiftir, sadece fiyatlananı geçmesi yetmez. Açık bir sınır: gerçek şirketler düşük olasılıklı sonuçlara daha fazla marj yükler, dolayısıyla belirgin favorili bir piyasada bu yöntem favoriyi biraz düşük gösterir. Dengeli ana çizgilerde sapma küçüktür; piyango tarzı şampiyonluk bahislerinde adil çizgi bir tahmindir.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const tr: ToolsCopy = {
         neutral: "Başabaş: fiyat olasılıkla tam olarak örtüşüyor.",
         hint: "Yüzdeleri sayı olarak yaz: 55, %55 demektir.",
       },
-      formulaTitle: "Beklenen değer nasıl hesaplanır",
-      formula: [
-        "EV = p × (oran − 1) × miktar − (1 − p) × miktar",
-        "   = (p × oran − 1) × miktar",
-        "avantaj = p × oran − 1",
-        "başabaş fiyatı = 1 / p",
-      ],
+      takeaway:
+        "Piyasadan daha iyi tahmin etmen gerekmiyor: yalnızca en keskin şirketten daha yavaş bir şirket bulman gerekiyor.",
+      example: {
+        title: "Olasılığı keskin bir şirketten ödünç almak",
+        rows: [
+          { label: "Keskin şirket, iki taraf", value: "1.95 / 1.95" },
+          { label: "Adil olasılık, marj çıkarılmış", value: "%50,00" },
+          { label: "Başabaş fiyatı", value: "2.00" },
+          { label: "Senin şirketin verdiği", value: "2.10" },
+          { label: "100 bahiste EV", value: "+5,00 (+%5)" },
+        ],
+        note:
+          "Hiçbir görüş gerekmedi: keskin çizgi olasılığı verdi, senin şirketin ise adil değeri 2.00 olan sonucu 2.10 fiyatladı. Keskin fiyatları 1.90/1.90 yap, adil olasılık yine %50 kalır — marjı çıkarmanın anlamı tam budur: cevap, komisyonla birlikte kaymaz.",
+      },
       explainerTitle: "Beklenen değer gerçekte ne söyler",
       explainer: [
-        "Beklenen değer, bir bahsi sınırsız sayıda tekrarlayabilseydin elde edeceğin ortalama sonuçtur. İki girdisi var, görüşü yok: sana sunulan fiyat ve sonuca verdiğin olasılık. Bir takımın zamanın %55'inde kazandığını düşünüyorsan ve biri 2.00 veriyorsa hesap hemen çıkar: %55 bir birim kazanır, %45 kaybedersin, yani yatırılan birim başına ortalama 0,10 birim kazanırsın. Bu %10 avantajdır ve +EV tam olarak bunu ifade eder.",
-        "Her şeyi belirleyen sayı olasılıktır ve çoğu bahisçi sessizce tam orada kaybeder. Tahminde 5 puanlık bir hata, %4 avantajı %1 kayba çevirmeye yeter; göz kararı yapılan tahminler ise rutin olarak 5 puandan fazla sapar. Bu hesaplayıcının ikinci modu bu yüzden var: içgüdüne güvenmek yerine keskin bir şirkette her iki tarafın fiyatını al, marjı çıkar ve çıkan adil olasılığı kullan. Artık piyasadan daha zeki olup olmadığını değil, oynadığın şirketin en keskin şirketten daha yavaş olup olmadığını soruyorsun.",
-        "EV'yi bir oran gibi oku, bir vaat gibi değil. %4 beklenen değerli bir bahis tek seferde hiçbir şey getirmez: kazanır ya da kaybeder. O %4 ancak yüzlerce bağımsız bahis boyunca ve olasılık doğruysa ortaya çıkar. Kısa vadede varyans avantajdan çok daha büyüktür; tam bu yüzden bahis miktarı avantajın kendisi kadar önemlidir — Kelly kriterinin işi budur.",
+        "**Beklenen değer, sonsuz kez tekrarlayabileceğin bir bahsin ortalama sonucudur.** İki girdi, hiç görüş yok: sunulan fiyat ve sonuca verdiğin olasılık. Bir takımın zamanın %55'inde kazandığını düşünüyorsan ve biri 2.00 veriyorsa hesap hemen çıkar — %55 bir birim kazanır, %45 kaybedersin, yani yatırılan birim başına 0,10 birim. Bu %10 avantajdır ve +EV bundan fazlasını ifade etmez.",
+        "**Olasılık, neredeyse herkesin sessizce kaybettiği yerdir.** 5 puanlık bir hata %4 avantajı %1 kayba çevirir ve göz kararı tahminler bundan çok daha fazla sapar. Bu yüzden bu hesaplayıcının ikinci modu var: içgüdüne güvenmek yerine keskin bir şirkette iki tarafı al, marjı çıkar ve çıkan adil olasılığı kullan. Sonucu bir oran gibi oku, vaat gibi değil — %4 avantaj tek bahiste hiçbir şey getirmez, ancak yüzlerce bahiste ve olasılık doğruysa görünür. İşte bu yüzden bahis miktarı avantaj kadar önemlidir.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const tr: ToolsCopy = {
         noEdge: "Bu fiyatta avantaj yok — en uygun miktar sıfır.",
         hint: "Yüzdeleri sayı olarak yaz: 55, %55 demektir.",
       },
+      takeaway:
+        "Kelly, bahsi avantaja göre ölçekler, inancına göre değil — ve neredeyse herkes onun söylediğinden bilinçli olarak daha az oynamalı.",
       example: {
         title: "1.000 kasa ile bunun anlamı",
         rows: [
@@ -234,8 +251,8 @@ const tr: ToolsCopy = {
       },
       explainerTitle: "Kötü serinin bitiremeyeceği bir miktar seçmek",
       explainer: [
-        "Kelly kriteri, beklenen değerin atladığı soruyu yanıtlar: elinde avantaj varken gerçekte ne kadar riske etmeli? Az oynarsan gerçek bir avantaj anlam taşıyacak kadar hızlı bileşiklenmez. Çok oynarsan matematik aleyhine döner: yarıya inen bir kasa geri dönmek için %100 artış ister, yani fazla büyük miktarlar her tek bahis lehte olsa bile büyümeyi yok eder. En uygun oran, avantajın net orana bölümüdür ve inançla değil avantajla ölçeklenir: 2.00 fiyatta %10 avantaj kasanın %10'unu, aynı avantaj 5.00 fiyatta yalnızca %2,5'ini ister.",
-        "Tam Kelly'yi neredeyse kimse oynamamalı, çünkü formül olasılığının tam doğru olduğunu varsayar ve hiçbir zaman doğru değildir. Ona olduğundan büyük bir avantaj ver, gerçekte sahip olduğun avantaj için fazla büyük bir miktarı gönülle önerir: ortalamada haklıyken bir kasayı kaybetmenin en hızlı yolu. Yarım Kelly teorik büyümenin dörtte birinden vazgeçer ve oynaklığı yaklaşık yarıya indirir; gerçek modellere sahip birçok profesyonel çeyrek Kelly kullanır. Fiyat avantaj sunmuyorsa doğru miktar sıfırdır: negatif Kelly oranı bahsin diğer tarafta olduğunu gösterir, bu tarafta daha az oynamak anlamına gelmez.",
+        "Kelly kriteri, beklenen değerin atladığı soruyu yanıtlar: elinde avantaj varken gerçekte ne kadar riske etmeli? Az oynarsan gerçek bir avantaj anlam taşıyacak kadar hızlı bileşiklenmez. Çok oynarsan matematik aleyhine döner: yarıya inen bir kasa geri dönmek için %100 artış ister, yani fazla büyük miktarlar her tek bahis lehte olsa bile büyümeyi yok eder. En uygun oran, avantajın net orana bölümüdür ve **inançla değil avantajla ölçeklenir**: 2.00 fiyatta %10 avantaj kasanın %10'unu, aynı avantaj 5.00 fiyatta yalnızca %2,5'ini ister.",
+        "**Tam Kelly'yi neredeyse kimse oynamamalı**, çünkü formül olasılığının tam doğru olduğunu varsayar ve hiçbir zaman doğru değildir. Ona olduğundan büyük bir avantaj ver, gerçekte sahip olduğun avantaj için fazla büyük bir miktarı gönülle önerir: ortalamada haklıyken bir kasayı kaybetmenin en hızlı yolu. Yarım Kelly teorik büyümenin dörtte birinden vazgeçer ve oynaklığı yaklaşık yarıya indirir; gerçek modellere sahip birçok profesyonel çeyrek Kelly kullanır. Fiyat avantaj sunmuyorsa doğru miktar sıfırdır: negatif Kelly oranı bahsin diğer tarafta olduğunu gösterir, bu tarafta daha az oynamak anlamına gelmez.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const tr: ToolsCopy = {
         resultTitle: "Sonuçlar",
         hint: "Bir fiyat ve onun başabaş olasılığı, iki taraftan okunan aynı sayıdır.",
       },
-      formulaTitle: "Olasılıklar nasıl hesaplanır",
-      formula: [
-        "oran = 1 / olasılık",
-        "olasılık = 1 / oran",
-        "başabaş olasılığı = 1 / oran",
-        "kombine olasılığı = p₁ × p₂ × … × pₙ",
-        "kombine oranı = oran₁ × oran₂ × … × oranₙ",
-      ],
+      takeaway:
+        "Ayaklar çarpılır, bahis şirketinin payı da onlarla birlikte. 1.80'lik dörtlü kombine, %9,5'lik bir olay ister.",
+      example: {
+        title: "Dörtlü kombine gerçekte neye mal olur",
+        rows: [
+          { label: "Dört ayak", value: "her biri 1.80 · %55,56" },
+          { label: "Birleşik oran", value: "10.50" },
+          { label: "Birleşik olasılık", value: "%9,53" },
+          { label: "Ayak başına marj", value: "%5" },
+          { label: "Kombinede marj", value: "%21,6" },
+        ],
+        note:
+          "Oran, ne istediğini görene kadar cömert görünür: %9,5'lik bir olay. Ve şirketin payı dört kez bileşiklendi — 1,05⁴ − 1 = %21,6 — yani aynı dört seçim sana tek bahsin marjının dört katına mal olur. Aynı maçtan ilişkili ayaklar başka bir konudur: çarpmak onları düşük gösterir ve şirketler aynı maç kombinelerini tam bu yüzden ayrı fiyatlar.",
+      },
       explainerTitle: "Önce olasılık, sonra fiyat",
       explainer: [
-        "Her fiyat olasılık hakkında bir iddiadır ve ikisi arasındaki çevrim tek bir bölmedir: %40 olasılık 2.50 fiyat, 2.50 fiyat ise %40 olasılıktır. Bu çevrimi bahisten önce yapmak soruyu «bu bahsi sevdim mi?» olmaktan çıkarıp «bu sonucun zamanın %40'ından fazlasında gerçekleştiğini düşünüyor muyum?» hâline getirir — hakkında yanılabileceğin, dolayısıyla sorulmaya değer bir soru.",
-        "Aynı sayı, fiyat tarafından okunduğunda başabaş olasılığıdır: bahsin nötr olması için bir sonucun taşıması gereken en düşük şans. 1.75 fiyatı %57,1 ister. 1.50 fiyatı %66,7 ister. Uzun fiyatlar çok az ister — 15.00 yalnızca %6,7 — bu yüzden ucuz görünürler ve bu yüzden şirketler marjı oraya yüklerler. Başabaş olasılığı bir bahsin dürüst testidir: sonucun bunu aştığını savunamıyorsan fiyat cömert değil, doğrudur.",
-        "Kombinelerde olasılık sezgiye ters düşer. Bağımsız ayaklar çarpılır: her birini %50 gördüğün üç bahis birlikte %12,5 eder, yarıya yakın rahatlatıcı bir şey etmez. %60'lık dört ayak %12,96 verir. Birleşik oran da aynı şekilde çarpılır ve tuzak buradadır: 15.00'lık bir kombine, %6,7'lik bir olay istediğini ve şirket marjının her ayağa uygulanıp sonra bileşiklendiğini fark edene kadar fırsat gibi görünür. Her ayağı %5 marjlı dört ayaklı bir kombine neredeyse %21 toplam marj taşır.",
-        "Akılda tutulacak bir varsayım: bu hesaplayıcı çarpar, yani ayakların bağımsız olduğunu kabul eder. Aynı maçtan iki sonuç — bir takımın kazanması ve forvetinin gol atması — ilişkilidir ve olasılıklarını çarpmak ikisinin birlikte gelme şansını düşük gösterir. Aynı maç kombinelerini şirketler tam bu yüzden ayrı fiyatlar: o ilişkiyi hesaplamak zordur. Buradaki sayıyı bir yanıt değil, alt sınır olarak gör.",
+        "**Her fiyat, olasılık hakkında bir iddiadır** ve çevrim tek bir bölmedir: %40, 2.50 fiyatıdır; 2.50 ise %40 olasılıktır. Bu çevrimi bahisten önce yapmak soruyu «bu bahsi sevdim mi?» olmaktan çıkarıp «bu, zamanın %40'ından fazlasında oluyor mu?» hâline getirir — yanılabileceğin bir soru. Fiyat tarafından okunduğunda aynı sayı **başabaş olasılığıdır**: bahsin nötr olması için bir sonucun taşıması gereken en düşük şans. 1.75 %57,1 ister; 1.50 %66,7 ister; 15.00 yalnızca %6,7 — uzun oranların ucuz görünmesinin ve şirketlerin marjı oraya yüklemesinin nedeni bu.",
+        "**Kombinelerde olasılık sezgiye ters düşer.** Bağımsız ayaklar çarpılır: her birini %50 gördüğün üç bahis birlikte %12,5 eder, yarıya yakın rahatlatıcı bir şey değil. %60'lık dört ayak %12,96 verir. Birleşik oran da aynı şekilde çarpılır ve tuzak buradadır — sayı büyürken şans küçülür, marj da onunla bileşiklenir. Alttaki varsayımı unutma: burada çarpılıyor, yani bağımsızlık kabul ediliyor. Aynı maçtan iki sonuç ilişkilidir ve orada gerçek olasılık farklıdır, genellikle çarpımdan yüksek.",
       ],
       faq: [
         {

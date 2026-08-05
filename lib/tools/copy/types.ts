@@ -16,20 +16,21 @@ export type ToolCopy = {
   lede: string;
   /** Etichette di input e output del calcolatore. Le chiavi sono le stesse in ogni lingua. */
   labels: Record<string, string>;
-  /** Blocco formula. OPZIONALE: la pagina Kelly non lo ha (scelta di Andrea,
-   *  2026-08-05) — al suo posto c'è `example`, che dice la stessa cosa con numeri
-   *  veri invece che con simboli. */
-  formulaTitle?: string;
-  formula?: string[];
-  /** Esempio numerico lavorato, nello slot che altrove ospita la formula. I
-   *  numeri sono identici in ogni lingua: si traducono solo le etichette. */
-  example?: {
+  /** La frase da portarsi a casa: sta in evidenza sotto il calcolatore, prima del
+   *  testo lungo. Chi legge solo questa ha già capito la pagina. */
+  takeaway: string;
+  /** Esempio numerico lavorato — ha preso il posto del blocco formula su TUTTE
+   *  le pagine (richiesta Andrea, 2026-08-05: i simboli non li legge nessuno).
+   *  I numeri sono identici in ogni lingua, si traducono solo le etichette. */
+  example: {
     title: string;
     rows: { label: string; value: string }[];
     note: string;
   };
   explainerTitle: string;
-  /** Paragrafi di spiegazione: è il contenuto che si classifica. */
+  /** Paragrafi di spiegazione. Il PRIMO è reso più grande (attacco editoriale) e
+   *  `**doppio asterisco**` marca le frasi chiave: senza appigli visivi un muro
+   *  di testo grigio non lo legge nessuno. */
   explainer: string[];
   faq: { q: string; a: string }[];
   /** Solo Kelly: varianza e rischio di rovina. */

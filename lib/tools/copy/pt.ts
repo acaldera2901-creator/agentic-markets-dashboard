@@ -54,18 +54,24 @@ const pt: ToolsCopy = {
         impliedProbability: "Probabilidade implícita",
         hint: "O decimal também aceita vírgula: 2,50 vale como 2.50.",
       },
-      formulaTitle: "Como funciona a conversão",
-      formula: [
-        "decimal = 1 + (americana / 100)            se a americana for positiva",
-        "decimal = 1 + (100 / |americana|)          se a americana for negativa",
-        "decimal = 1 + (numerador / denominador)    para as fracionárias",
-        "probabilidade implícita = 1 / decimal",
-      ],
+      takeaway:
+        "Toda odd é uma probabilidade disfarçada. Primeiro converte, depois discute: 2.50 significa que a casa te está a dizer 40%.",
+      example: {
+        title: "Uma odd, todos os formatos",
+        rows: [
+          { label: "Escreves", value: "2.50" },
+          { label: "Americana", value: "+150" },
+          { label: "Fracionária", value: "3/2" },
+          { label: "Hong Kong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Probabilidade implícita", value: "40,00%" },
+        ],
+        note:
+          "Muda uma e as outras seguem. Atenção ao arredondamento: a conhecida −110 em decimal é 1.9091 e implica 52,38%, enquanto um 1.91 mostrado no ecrã implica 52,36% — uma diferença que parece nada e conta, porque a vantagem joga-se em décimas de ponto.",
+      },
       explainerTitle: "Ler um preço em qualquer formato",
       explainer: [
-        "Uma odd é uma probabilidade vestida de outra forma. A decimal — padrão europeu — indica o retorno total por unidade apostada: 2.50 devolve 2.50 por cada 1 arriscado, aposta incluída. A fracionária, ainda comum nas corridas britânicas, indica o lucro e não o retorno: 3/2 significa três unidades de lucro por cada duas arriscadas, ou seja a mesma 2.50 decimal. A americana diz quanto ganhas apostando 100 (+150) ou quanto tens de arriscar para ganhar 100 (−110). Hong Kong, Malay e Indonesian são os formatos dos mercados asiáticos, e contam porque é muitas vezes lá que estão os preços mais afiados.",
-        "O número que vale a pena ler é o último: a probabilidade implícita, que é simplesmente 1 dividido pela odd decimal. Um preço de 2.50 implica 40%. Um de 1.9091 — a conhecida −110 — implica 52,38%. É a probabilidade que a casa declara, e é o único número que podes comparar diretamente com a tua própria estimativa. Duas odds em formatos diferentes não são mais fáceis de comparar do que duas probabilidades: primeiro converte, depois discute.",
-        "Um limite que este conversor não consegue remover: a probabilidade implícita ainda contém a margem da casa. Soma as probabilidades implícitas de todos os resultados de um mercado e vais passar dos 100% — esse excesso é a margem, e inflaciona cada uma dessas probabilidades. Se queres a opinião honesta do mercado em vez da opinião com acréscimo, passa o mercado pela calculadora de margem e usa as probabilidades justas que devolve.",
+        "**Uma odd é uma probabilidade vestida de outra forma.** A decimal — padrão europeu — dá o retorno total por unidade apostada: 2.50 devolve 2.50 por cada 1 arriscado, aposta incluída. A fracionária indica o lucro: 3/2 são três unidades de lucro por cada duas arriscadas, a mesma 2.50. A americana diz quanto ganhas ao apostar 100 (+150) ou quanto tens de arriscar para ganhar 100 (−110). Hong Kong, Malay e Indonesian são os formatos asiáticos, e contam porque é lá que estão muitas vezes os preços mais afiados.",
+        "O número que vale a pena ler é o último. **A probabilidade implícita é 1 dividido pela odd decimal**, e é a única que podes comparar diretamente com a tua estimativa: duas odds em notações diferentes não são mais fáceis de comparar do que duas probabilidades. Um limite que esta ferramenta não remove: **a probabilidade implícita ainda contém a margem da casa**, portanto soma todos os resultados de um mercado e passarás dos 100%. Para a opinião honesta do mercado em vez da opinião com acréscimo, passa-a pela calculadora de margem.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const pt: ToolsCopy = {
         impliedProbability: "Probabilidade implícita",
         hint: "Adiciona um resultado para mercados de três vias, ou mais para mercados de vencedor.",
       },
-      formulaTitle: "Como se calcula a margem",
-      formula: [
-        "overround = Σ (1 / oddᵢ)",
-        "margem = overround − 1",
-        "payout = 1 / overround",
-        "probabilidade justaᵢ = (1 / oddᵢ) / overround",
-        "odd justaᵢ = 1 / probabilidade justaᵢ",
-      ],
+      takeaway:
+        "A margem é o que pagas pelo direito de ter uma opinião. Duas casas, o mesmo jogo, e a diferença é dinheiro.",
+      example: {
+        title: "O mesmo jogo em duas casas",
+        rows: [
+          { label: "Casa generalista", value: "1.90 / 1.90 · margem 5,26%" },
+          { label: "Casa sharp", value: "1.98 / 1.98 · margem 1,01%" },
+          { label: "Linha justa, ambas", value: "2.00 / 2.00 · 50% cada" },
+          { label: "O teu EV num 50% real", value: "−5% contra −1% por aposta" },
+        ],
+        note:
+          "Opinião idêntica, jogo idêntico. Apostar 100 duzentas vezes custa 1.000 na primeira casa e 200 na segunda: os oito cêntimos de diferença de odd são 800 ao longo de uma temporada. É a vantagem mais barata que existe nas apostas e não exige modelo nenhum.",
+      },
       explainerTitle: "A margem é o preço da aposta",
       explainer: [
-        "Um mercado de duas vias justo cota ambos os lados a 2.00: as probabilidades implícitas são 50% e 50%, somam exatamente 100% e nenhum lado tem vantagem. Os mercados reais são cotados a 1.90 e 1.90. Essas probabilidades implícitas valem 52,63% cada, somam 105,26%, e os 5,26 pontos percentuais em excesso são a margem da casa — o overround. Qualquer que seja o lado que jogues, estás a pagá-la.",
-        "A margem é o número mais útil para decidir onde apostar. O mesmo jogo com 5% de margem e com 2% de margem não é a mesma aposta: a casa mais apertada está a deixar-te cerca de três pontos percentuais de valor esperado com opiniões idênticas. As margens variam muito por mercado: as linhas principais das casas sharp podem ficar abaixo de 2%, enquanto vencedores, mercados de jogadores e apostas especiais chegam habitualmente a 8% ou mais, porque é aí que as casas sabem que os seus preços são menos testados.",
-        "Remover a margem dá a linha justa, a chamada no-vig. Esta calculadora fá-lo proporcionalmente: cada probabilidade implícita é dividida pela sua soma, voltando a somar exatamente 100%, e as odds justas são os recíprocos. Essa linha é o mais próximo da estimativa honesta do mercado, e é a referência da calculadora de EV: uma aposta só tem valor esperado positivo se a tua probabilidade superar a justa, não simplesmente a cotada.",
-        "Um limite declarado: a remoção proporcional distribui a margem de forma uniforme pelos resultados, e as casas reais não fazem isso. Carregam mais margem nos resultados improváveis, porque é aí que se concentra o dinheiro recreativo. Num mercado com um favorito claro e um azarão distante, este método subestima um pouco a probabilidade real do favorito. Nas linhas principais a distorção é pequena; nos vencedores tipo lotaria, trata a linha justa como estimativa, não como medição.",
+        "**Um mercado de duas vias justo cota ambos os lados a 2.00.** As probabilidades implícitas são 50% e 50%, somam exatamente 100%, e nenhum lado tem vantagem. Os mercados reais são cotados a 1.90 e 1.90: essas implícitas valem 52,63% cada, somam 105,26%, e **os 5,26 pontos em excesso são a margem da casa** — o overround. Qualquer lado que jogues, estás a pagá-la. As margens variam muito: as linhas principais das casas sharp ficam abaixo de 2%, enquanto vencedores e mercados de jogadores chegam habitualmente a 8% ou mais, porque é aí que as casas sabem que os seus preços são menos testados.",
+        "Remover a margem dá a linha justa, a no-vig. Esta calculadora fá-lo em proporção — cada implícita dividida pela sua soma, voltando a somar exatamente 100% — e **essa linha justa é a referência de toda decisão +EV**: uma aposta só tem valor esperado positivo se a tua probabilidade superar a justa, não simplesmente a cotada. Um limite declarado: as casas reais carregam mais margem nos resultados improváveis, logo num mercado com favorito claro este método subestima-o um pouco. Em linhas equilibradas a distorção é pequena; em vencedores tipo lotaria, trata a linha justa como estimativa.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const pt: ToolsCopy = {
         neutral: "Equilíbrio: o preço corresponde exatamente à probabilidade.",
         hint: "As percentagens escrevem-se como números: 55 significa 55%.",
       },
-      formulaTitle: "Como se calcula o valor esperado",
-      formula: [
-        "EV = p × (odd − 1) × stake − (1 − p) × stake",
-        "   = (p × odd − 1) × stake",
-        "vantagem = p × odd − 1",
-        "preço de equilíbrio = 1 / p",
-      ],
+      takeaway:
+        "Não precisas de adivinhar melhor que o mercado: só de encontrar uma casa mais lenta do que a mais sharp.",
+      example: {
+        title: "Emprestar a probabilidade de uma casa sharp",
+        rows: [
+          { label: "Casa sharp, ambos os lados", value: "1.95 / 1.95" },
+          { label: "Probabilidade justa, sem margem", value: "50,00%" },
+          { label: "Preço de equilíbrio", value: "2.00" },
+          { label: "A tua casa oferece", value: "2.10" },
+          { label: "EV sobre 100 apostados", value: "+5,00 (+5%)" },
+        ],
+        note:
+          "Não foi precisa opinião nenhuma: a linha sharp deu a probabilidade, e a tua casa cotou o mesmo resultado a 2.10 onde o justo era 2.00. Muda as odds sharp para 1.90/1.90 e a probabilidade justa continua 50% — é esse o sentido de remover a margem: a resposta não se move com o acréscimo.",
+      },
       explainerTitle: "O que o valor esperado diz de facto",
       explainer: [
-        "O valor esperado é o resultado médio de uma aposta se a pudesses repetir um número ilimitado de vezes. Tem duas entradas e nenhuma opinião: o preço que te oferecem e a probabilidade que atribuis ao resultado. Se achas que uma equipa ganha 55% das vezes e alguém te oferece 2.00, a conta é imediata: 55% das vezes ganhas uma unidade, 45% perdes, portanto em média ganhas 0,10 unidades por unidade apostada. É uma vantagem de 10%, e é isso que significa +EV.",
-        "O número que decide tudo é a probabilidade, e é aí que a maioria perde em silêncio. Um erro de 5 pontos na estimativa basta para transformar uma vantagem de 4% numa perda de 1%, e as estimativas feitas a olho erram habitualmente muito mais do que 5 pontos. É por isso que existe o segundo modo desta calculadora: em vez de confiar no instinto, toma o preço dos dois lados numa casa sharp, remove a margem e usa a probabilidade justa resultante. Já não estás a perguntar se és mais esperto que o mercado, mas se a casa onde jogas é mais lenta que a casa mais sharp.",
-        "Lê o EV como uma taxa, não como uma promessa. Uma aposta com 4% de valor esperado não devolve nada numa ocasião concreta: ganha ou perde. Esses 4% aparecem apenas ao longo de centenas de apostas independentes, e só se a probabilidade estivesse certa. No curto prazo a variância é muito maior do que a vantagem, e é precisamente por isso que o tamanho do stake conta tanto como a vantagem: é a função do critério de Kelly.",
+        "**O valor esperado é o resultado médio de uma aposta que pudesses repetir para sempre.** Duas entradas, nenhuma opinião: o preço oferecido e a probabilidade que dás ao resultado. Achas que uma equipa ganha 55% das vezes e alguém oferece 2.00, e a conta é imediata — 55% das vezes ganhas uma unidade, 45% perdes, portanto 0,10 unidades por unidade apostada. É uma vantagem de 10%, e é só isso que significa +EV.",
+        "**A probabilidade é onde quase todos perdem em silêncio.** Um erro de 5 pontos transforma uma vantagem de 4% numa perda de 1%, e as estimativas a olho erram muito mais. Daí o segundo modo desta calculadora: em vez de confiar no instinto, toma ambos os lados numa casa sharp, remove a margem e usa a probabilidade justa resultante. Lê o resultado como uma taxa, não uma promessa — uma vantagem de 4% não devolve nada numa aposta isolada, aparece só ao longo de centenas, e só se a probabilidade estivesse certa. Por isso o tamanho do stake conta tanto como a vantagem.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const pt: ToolsCopy = {
         noEdge: "Sem vantagem a este preço: o stake ótimo é zero.",
         hint: "As percentagens escrevem-se como números: 55 significa 55%.",
       },
+      takeaway:
+        "Kelly dimensiona a aposta pela vantagem, não pela tua convicção — e quase todos deveriam apostar deliberadamente menos do que ele diz.",
       example: {
         title: "O que isso significa com 1.000 de banca",
         rows: [
@@ -234,8 +251,8 @@ const pt: ToolsCopy = {
       },
       explainerTitle: "Dimensionar a aposta para a má série não a encerrar",
       explainer: [
-        "O critério de Kelly responde ao que o valor esperado ignora: dada uma vantagem, quanto arriscar de facto? Aposta pouco demais e uma vantagem real capitaliza-se demasiado devagar para contar. Aposta demasiado e a matemática vira-se contra ti: uma banca que reduz a metade precisa de +100% para recuperar, portanto stakes excessivos destroem o crescimento mesmo quando cada aposta é favorável. A fração ótima é a vantagem dividida pela odd líquida, e escala com a vantagem, não com a convicção: 10% de vantagem a 2.00 pede 10% da banca, a mesma vantagem a 5.00 pede apenas 2,5%.",
-        "Quase ninguém deveria jogar Kelly completo, porque a fórmula assume que a tua probabilidade é exata e nunca é. Dá-lhe uma vantagem sobrestimada e recomendará com entusiasmo um stake demasiado grande para a vantagem que tens de verdade: a forma mais rápida de perder uma banca tendo razão em média. O meio Kelly abdica de um quarto do crescimento teórico e reduz a volatilidade quase a metade; um quarto de Kelly é o que usam muitos profissionais com modelos reais. E quando o preço não oferece vantagem, o stake correto é zero: uma fração de Kelly negativa significa que a aposta é do outro lado, nunca que deves apostar menos nesta.",
+        "O critério de Kelly responde ao que o valor esperado ignora: dada uma vantagem, quanto arriscar de facto? Aposta pouco demais e uma vantagem real capitaliza-se demasiado devagar para contar. Aposta demasiado e a matemática vira-se contra ti: uma banca que reduz a metade precisa de +100% para recuperar, portanto stakes excessivos destroem o crescimento mesmo quando cada aposta é favorável. A fração ótima é a vantagem dividida pela odd líquida, e **escala com a vantagem, não com a convicção**: 10% de vantagem a 2.00 pede 10% da banca, a mesma vantagem a 5.00 pede apenas 2,5%.",
+        "**Quase ninguém deveria jogar Kelly completo**, porque a fórmula assume que a tua probabilidade é exata e nunca é. Dá-lhe uma vantagem sobrestimada e recomendará com entusiasmo um stake demasiado grande para a vantagem que tens de verdade: a forma mais rápida de perder uma banca tendo razão em média. O meio Kelly abdica de um quarto do crescimento teórico e reduz a volatilidade quase a metade; um quarto de Kelly é o que usam muitos profissionais com modelos reais. E quando o preço não oferece vantagem, o stake correto é zero: uma fração de Kelly negativa significa que a aposta é do outro lado, nunca que deves apostar menos nesta.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const pt: ToolsCopy = {
         resultTitle: "Resultados",
         hint: "Um preço e a sua probabilidade de equilíbrio são o mesmo número lido dos dois lados.",
       },
-      formulaTitle: "Como se calculam as probabilidades",
-      formula: [
-        "odd = 1 / probabilidade",
-        "probabilidade = 1 / odd",
-        "probabilidade de equilíbrio = 1 / odd",
-        "probabilidade da múltipla = p₁ × p₂ × … × pₙ",
-        "odd da múltipla = odd₁ × odd₂ × … × oddₙ",
-      ],
+      takeaway:
+        "As pernas multiplicam-se, e com elas o acréscimo da casa. Uma quádrupla a 1.80 exige um evento de 9,5%.",
+      example: {
+        title: "Quanto custa realmente uma quádrupla",
+        rows: [
+          { label: "Quatro pernas a", value: "1.80 cada · 55,56%" },
+          { label: "Odd combinada", value: "10.50" },
+          { label: "Probabilidade combinada", value: "9,53%" },
+          { label: "Margem por perna", value: "5%" },
+          { label: "Margem na múltipla", value: "21,6%" },
+        ],
+        note:
+          "A odd parece generosa até vermos o que exige: um evento de 9,5%. E o acréscimo da casa compôs-se quatro vezes — 1,05⁴ − 1 = 21,6% — logo as mesmas quatro seleções custam quatro vezes a margem de uma simples. Pernas correlacionadas do mesmo jogo são outra coisa: multiplicar subestima-as, e é por isso que as casas cotam à parte as múltiplas do mesmo jogo.",
+      },
       explainerTitle: "Primeiro a probabilidade, depois o preço",
       explainer: [
-        "Todo preço é uma afirmação sobre probabilidade, e a conversão entre os dois é uma divisão: uma probabilidade de 40% é um preço de 2.50, e um preço de 2.50 é uma probabilidade de 40%. Fazer essa conversão antes de apostar muda a pergunta de «gosto desta aposta?» para «acho que este resultado acontece mais de 40% das vezes?», que é uma pergunta em que se pode estar errado e, por isso, uma pergunta que vale a pena fazer.",
-        "O mesmo número, lido do lado do preço, é a probabilidade de equilíbrio: a possibilidade mínima que um resultado precisa para a aposta ser neutra. Um preço de 1.75 exige 57,1%. Um de 1.50 exige 66,7%. Os preços longos exigem muito pouco — 15.00 pede apenas 6,7% — e é por isso que parecem baratos e por isso que as casas carregam ali a margem. A probabilidade de equilíbrio é o teste honesto de uma aposta: se não consegues argumentar que o resultado a supera, o preço não é generoso, é correto.",
-        "As múltiplas são onde a probabilidade se torna contraintuitiva. Pernas independentes multiplicam-se: três apostas que avalias a 50% cada combinam a 12,5%, não a algo tranquilizadoramente próximo de metade. Quatro pernas a 60% dão 12,96%. A odd combinada multiplica-se do mesmo modo, e aí está a armadilha: uma múltipla a 15.00 parece uma pechincha até notares que exige um evento de 6,7%, e que a margem da casa foi aplicada a cada perna e depois composta. Uma múltipla de quatro pernas com 5% de margem cada arrasta quase 21% de margem total.",
-        "Uma suposição a ter presente: esta calculadora multiplica, portanto assume pernas independentes. Dois resultados do mesmo jogo — a vitória de uma equipa e o gol do seu atacante — são correlacionados, e multiplicar as suas probabilidades subestima a probabilidade real de ambos acontecerem. As múltiplas do mesmo jogo são cotadas à parte pelas casas precisamente porque essa correlação é difícil de calcular: trata o número aqui como um mínimo, não como uma resposta.",
+        "**Todo preço é uma afirmação sobre probabilidade**, e a conversão é uma divisão: 40% é um preço de 2.50, e 2.50 é uma probabilidade de 40%. Fazer essa conversão antes de apostar muda a pergunta de «gosto desta aposta?» para «isto acontece mais de 40% das vezes?» — uma pergunta na qual se pode estar errado. Lido do lado do preço, o mesmo número é a **probabilidade de equilíbrio**: a possibilidade mínima que um resultado precisa para a aposta ser neutra. 1.75 exige 57,1%; 1.50 exige 66,7%; 15.00 pede apenas 6,7%, e é por isso que as odds longas parecem baratas e que as casas carregam ali a margem.",
+        "**As múltiplas são onde a probabilidade se torna contraintuitiva.** Pernas independentes multiplicam-se: três apostas que avalias a 50% combinam a 12,5%, não a algo tranquilizadoramente próximo de metade. Quatro pernas a 60% dão 12,96%. A odd combinada multiplica-se do mesmo modo, e aí está a armadilha — o número fica grande enquanto a possibilidade fica pequena, e a margem compõe-se com ela. Guarda a suposição de base: aqui multiplica-se, logo assume-se independência. Dois resultados do mesmo jogo são correlacionados, e aí a probabilidade real é diferente, normalmente maior que o produto.",
       ],
       faq: [
         {

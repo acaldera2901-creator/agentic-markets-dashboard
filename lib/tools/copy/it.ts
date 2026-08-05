@@ -55,18 +55,24 @@ const it: ToolsCopy = {
         impliedProbability: "Probabilità implicita",
         hint: "Il decimale accetta anche la virgola: 2,50 vale come 2.50.",
       },
-      formulaTitle: "Come funziona la conversione",
-      formula: [
-        "decimale = 1 + (americana / 100)          se l'americana è positiva",
-        "decimale = 1 + (100 / |americana|)        se l'americana è negativa",
-        "decimale = 1 + (numeratore / denominatore) per le frazionarie",
-        "probabilità implicita = 1 / decimale",
-      ],
+      takeaway:
+        "Ogni quota è una probabilità travestita. Prima converti, poi discuti: 2.50 significa che il book ti sta dicendo 40%.",
+      example: {
+        title: "Una quota, tutti i formati",
+        rows: [
+          { label: "Tu scrivi", value: "2.50" },
+          { label: "Americana", value: "+150" },
+          { label: "Frazionaria", value: "3/2" },
+          { label: "Hong Kong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Probabilità implicita", value: "40.00%" },
+        ],
+        note:
+          "Cambiane una e le altre seguono. Attenzione all'arrotondamento: la familiare −110 in decimale è 1.9091 e implica il 52,38%, mentre una 1.91 mostrata a schermo implica il 52,36% — uno scarto che sembra niente e conta, perché il vantaggio si gioca nei decimi di punto.",
+      },
       explainerTitle: "Leggere una quota in qualsiasi formato",
       explainer: [
-        "Una quota è una probabilità vestita in modo diverso. La decimale — lo standard europeo — dice quanto torna in tutto per ogni unità puntata: 2.50 restituisce 2.50 per ogni 1 rischiato, puntata compresa. La frazionaria, ancora usata nelle corse britanniche, indica il profitto e non il ritorno: 3/2 significa tre unità di profitto ogni due rischiate, cioè la stessa 2.50 decimale. L'americana dice quanto vinci puntando 100 (+150) o quanto devi rischiare per vincerne 100 (−110). Hong Kong, Malay e Indonesian sono i formati dei mercati asiatici, e contano perché è spesso lì che stanno le quote più affilate.",
-        "Il numero che vale la pena leggere è l'ultimo: la probabilità implicita, cioè 1 diviso la quota decimale. Una quota di 2.50 implica il 40%. Una di 1.9091 — la familiare −110 — implica il 52,38%. È la probabilità che il bookmaker dichiara, ed è l'unico numero che puoi confrontare direttamente con la tua stima. Due quote in formati diversi non sono più facili da confrontare di due probabilità: prima converti, poi discuti.",
-        "Un limite che questo convertitore non può togliere: la probabilità implicita contiene ancora il margine del bookmaker. Somma le probabilità implicite di tutti gli esiti di un mercato e otterrai più del 100% — quell'eccesso è il margine, e gonfia ognuna di quelle probabilità. Se vuoi l'opinione onesta del mercato invece di quella con il ricarico, passa il mercato dal calcolatore di margine e usa le probabilità eque che restituisce.",
+        "**Una quota è una probabilità vestita in modo diverso.** La decimale — lo standard europeo — dà il ritorno totale per unità puntata: 2.50 restituisce 2.50 per ogni 1 rischiato, puntata compresa. La frazionaria indica invece il profitto: 3/2 sono tre unità di profitto ogni due rischiate, cioè la stessa 2.50. L'americana dice quanto vinci puntando 100 (+150) o quanto devi rischiare per vincerne 100 (−110). Hong Kong, Malay e Indonesian sono i formati dei mercati asiatici, e contano perché è spesso lì che stanno le quote più affilate.",
+        "Il numero che vale la pena leggere è l'ultimo. **La probabilità implicita è 1 diviso la quota decimale**, ed è l'unica cifra che puoi confrontare direttamente con la tua stima: due quote in notazioni diverse non sono più facili da confrontare di due probabilità. Un limite che questo strumento non può togliere per te: **la probabilità implicita contiene ancora il margine del bookmaker**, quindi somma tutti gli esiti di un mercato e supererai il 100%. Per avere l'opinione onesta del mercato invece di quella con il ricarico, passala dal calcolatore di margine.",
       ],
       faq: [
         {
@@ -105,20 +111,23 @@ const it: ToolsCopy = {
         impliedProbability: "Probabilità implicita",
         hint: "Aggiungi un esito per i mercati a tre vie, o più per gli antepost.",
       },
-      formulaTitle: "Come si calcola il margine",
-      formula: [
-        "overround = Σ (1 / quotaᵢ)",
-        "margine = overround − 1",
-        "payout = 1 / overround",
-        "probabilità equaᵢ = (1 / quotaᵢ) / overround",
-        "quota equaᵢ = 1 / probabilità equaᵢ",
-      ],
+      takeaway:
+        "Il margine è quello che paghi per il diritto di avere un'opinione. Due book, la stessa partita, e la differenza sono soldi.",
+      example: {
+        title: "La stessa partita su due book",
+        rows: [
+          { label: "Book generalista", value: "1.90 / 1.90 · margine 5,26%" },
+          { label: "Book sharp", value: "1.98 / 1.98 · margine 1,01%" },
+          { label: "Linea equa, entrambi", value: "2.00 / 2.00 · 50% ciascuno" },
+          { label: "Il tuo EV su un vero 50%", value: "−5% contro −1% per scommessa" },
+        ],
+        note:
+          "Opinione identica, partita identica. Puntare 100 duecento volte costa 1.000 sul primo book e 200 sul secondo: gli otto centesimi di differenza di quota diventano 800 in una stagione. È il vantaggio più economico che esista nelle scommesse, e non richiede nessun modello.",
+      },
       explainerTitle: "Il margine è il prezzo della scommessa",
       explainer: [
-        "Un mercato a due vie equo prezza entrambi i lati a 2.00: le probabilità implicite sono 50% e 50%, sommano esattamente a 100% e nessuno dei due lati ha un vantaggio. I mercati reali sono prezzati 1.90 e 1.90. Quelle probabilità implicite valgono 52,63% ciascuna, sommano a 105,26%, e i 5,26 punti percentuali in eccesso sono il margine del bookmaker — l'overround. Qualunque lato giochi, lo stai pagando.",
-        "Il margine è il numero più utile per decidere dove puntare. La stessa partita a margine 5% e a margine 2% non è la stessa scommessa: il book più stretto ti sta lasciando circa tre punti percentuali di valore atteso a parità di opinioni. I margini variano molto per mercato: le linee principali dei book sharp possono stare sotto il 2%, mentre antepost, mercati sui giocatori e scommesse speciali arrivano abitualmente all'8% e oltre, perché è lì che i book sanno di essere meno controllati.",
-        "Togliere il margine dà la linea equa, la cosiddetta no-vig. Questo calcolatore lo fa in modo proporzionale: ogni probabilità implicita viene divisa per la loro somma, così tornano a sommare esattamente 100%, e le quote eque sono i reciproci. Quella linea è la cosa più vicina alla stima onesta del mercato, ed è il riferimento per il calcolatore di EV: una scommessa ha valore atteso positivo solo se la tua probabilità supera quella equa, non semplicemente quella prezzata.",
-        "Un limite dichiarato: la rimozione proporzionale distribuisce il margine in modo uniforme su tutti gli esiti, e i book reali non lo fanno. Caricano più margine sugli esiti improbabili, perché è lì che si concentra il gioco occasionale. In un mercato con un favorito netto e un outsider lontano, questo metodo sottostima un po' la probabilità vera del favorito. Sulle linee principali la distorsione è piccola; sugli antepost da lotteria, tratta la linea equa come una stima, non come una misura.",
+        "**Un mercato a due vie equo prezza entrambi i lati a 2.00.** Le probabilità implicite sono 50% e 50%, sommano esattamente a 100%, e nessuno dei due lati ha un vantaggio. I mercati reali sono prezzati 1.90 e 1.90: quelle implicite valgono 52,63% ciascuna, sommano a 105,26%, e **i 5,26 punti in eccesso sono il margine del bookmaker** — l'overround. Qualunque lato giochi, lo stai pagando. I margini cambiano molto per mercato: le linee principali dei book sharp stanno sotto il 2%, mentre antepost e mercati sui giocatori arrivano abitualmente all'8% e oltre, perché è lì che i book sanno di essere meno controllati.",
+        "Togliere il margine dà la linea equa, la no-vig. Questo calcolatore lo fa in proporzione — ogni probabilità implicita divisa per la loro somma, così tornano a sommare esattamente 100% — e **quella linea equa è il riferimento di ogni decisione +EV**: una scommessa ha valore atteso positivo solo se la tua probabilità batte quella equa, non semplicemente quella prezzata. Un limite dichiarato: i book reali caricano più margine sugli esiti improbabili, quindi in un mercato con un favorito netto questo metodo lo sottostima un po'. Sulle linee equilibrate la distorsione è piccola; sugli antepost da lotteria, tratta la linea equa come una stima.",
       ],
       faq: [
         {
@@ -167,18 +176,24 @@ const it: ToolsCopy = {
         neutral: "Pareggio: la quota corrisponde esattamente alla probabilità.",
         hint: "Le percentuali vanno scritte come numeri: 55 significa 55%.",
       },
-      formulaTitle: "Come si calcola il valore atteso",
-      formula: [
-        "EV = p × (quota − 1) × puntata − (1 − p) × puntata",
-        "   = (p × quota − 1) × puntata",
-        "vantaggio = p × quota − 1",
-        "quota di pareggio = 1 / p",
-      ],
+      takeaway:
+        "Non devi indovinare meglio del mercato: devi solo trovare un book più lento del più sharp.",
+      example: {
+        title: "Prendere in prestito la probabilità da un book sharp",
+        rows: [
+          { label: "Book sharp, entrambi i lati", value: "1.95 / 1.95" },
+          { label: "Probabilità equa, margine tolto", value: "50,00%" },
+          { label: "Quota di pareggio", value: "2.00" },
+          { label: "Il tuo book offre", value: "2.10" },
+          { label: "EV su 100 puntati", value: "+5,00 (+5%)" },
+        ],
+        note:
+          "Nessuna opinione richiesta: la linea sharp ha fornito la probabilità, e il tuo book ha prezzato lo stesso esito a 2.10 dove l'equa era 2.00. Sposta le quote sharp a 1.90/1.90 e la probabilità equa resta il 50% — è proprio questo il senso di togliere il margine: la risposta non si muove col ricarico.",
+      },
       explainerTitle: "Cosa dice davvero il valore atteso",
       explainer: [
-        "Il valore atteso è il risultato medio di una scommessa se potessi ripeterla un numero illimitato di volte. Ha due ingressi e nessuna opinione: la quota che ti viene offerta e la probabilità che attribuisci all'esito. Se pensi che una squadra vinca il 55% delle volte e qualcuno ti offre 2.00, il conto è immediato: il 55% delle volte guadagni un'unità, il 45% la perdi, quindi in media guadagni 0,10 unità per unità puntata. È un vantaggio del 10%, ed è quello che significa +EV.",
-        "Il numero che decide tutto è la probabilità, ed è lì che la maggior parte dei giocatori perde in silenzio. Un errore di 5 punti nella stima è sufficiente a trasformare un vantaggio del 4% in una perdita dell'1%, e le stime fatte a occhio sbagliano abitualmente di molto più di 5 punti. Per questo esiste la seconda modalità di questo calcolatore: invece di fidarti dell'istinto, prendi la quota di entrambi i lati presso un book sharp, togli il margine e usa la probabilità equa che ne esce. Non ti stai più chiedendo se sei più bravo del mercato, ma se il book su cui giochi è più lento del book più sharp.",
-        "Leggi l'EV come un tasso, non come una promessa. Una scommessa con il 4% di valore atteso non rende nulla nella singola occasione: vince o perde. Quel 4% compare solo su centinaia di scommesse indipendenti, e solo se la probabilità era giusta. Nel breve periodo la varianza è molto più grande del vantaggio, ed è esattamente per questo che la dimensione della puntata conta quanto il vantaggio stesso: è il compito del criterio di Kelly.",
+        "**Il valore atteso è il risultato medio di una scommessa che potresti ripetere all'infinito.** Due ingressi, nessuna opinione: la quota offerta e la probabilità che dai all'esito. Pensi che una squadra vinca il 55% delle volte e qualcuno ti offre 2.00, e il conto è immediato — il 55% delle volte guadagni un'unità, il 45% la perdi, quindi guadagni 0,10 unità per unità puntata. È un vantaggio del 10%, e questo è tutto ciò che significa +EV.",
+        "**La probabilità è il punto in cui quasi tutti perdono in silenzio.** Un errore di 5 punti trasforma un vantaggio del 4% in una perdita dell'1%, e le stime fatte a occhio sbagliano di molto più di 5 punti. Da qui la seconda modalità di questo calcolatore: invece di fidarti dell'istinto, prendi entrambi i lati presso un book sharp, togli il margine e usa la probabilità equa che ne esce. Leggi il risultato come un tasso, non come una promessa — un vantaggio del 4% non rende nulla sulla singola scommessa, compare solo su centinaia di esse, e solo se la probabilità era giusta. Per questo la dimensione della puntata conta quanto il vantaggio.",
       ],
       faq: [
         {
@@ -221,6 +236,8 @@ const it: ToolsCopy = {
         noEdge: "Nessun vantaggio a questa quota: la puntata ottimale è zero.",
         hint: "Le percentuali vanno scritte come numeri: 55 significa 55%.",
       },
+      takeaway:
+        "Kelly dimensiona la puntata sul vantaggio, non sulla tua convinzione — e quasi tutti dovrebbero puntare deliberatamente meno di quanto dice.",
       example: {
         title: "Cosa significa con 1.000 di bankroll",
         rows: [
@@ -235,8 +252,8 @@ const it: ToolsCopy = {
       },
       explainerTitle: "Dimensionare la puntata perché la serie negativa non la chiuda",
       explainer: [
-        "Il criterio di Kelly risponde a ciò che il valore atteso ignora: dato un vantaggio, quanto rischiare davvero? Punta troppo poco e un vantaggio reale si capitalizza troppo lentamente per contare. Punta troppo e la matematica si gira contro: un bankroll che si dimezza ha bisogno di un +100% per tornare al punto di partenza, quindi le puntate troppo grandi distruggono la crescita anche quando ogni singola scommessa è favorevole. La frazione ottimale è il vantaggio diviso la quota netta, e scala col vantaggio, non con la convinzione: un vantaggio del 10% a quota 2.00 chiede il 10% del bankroll, lo stesso vantaggio a 5.00 ne chiede solo il 2,5%.",
-        "Quasi nessuno dovrebbe giocare Kelly pieno, perché la formula assume che la tua probabilità sia esatta e non lo è mai. Dalle un vantaggio sovrastimato e ti consiglierà con entusiasmo una puntata troppo grande per il vantaggio che hai davvero: il modo più rapido di perdere un bankroll pur avendo ragione in media. Il mezzo Kelly rinuncia a un quarto della crescita teorica e dimezza circa la volatilità; il quarto di Kelly è quello che usano molti professionisti con modelli veri. E quando la quota non offre vantaggio, la puntata corretta è zero: una frazione di Kelly negativa significa che la scommessa va presa sull'altro lato, non che su questa devi puntare meno.",
+        "Il criterio di Kelly risponde a ciò che il valore atteso ignora: dato un vantaggio, quanto rischiare davvero? Punta troppo poco e un vantaggio reale si capitalizza troppo lentamente per contare. Punta troppo e la matematica si gira contro: un bankroll che si dimezza ha bisogno di un +100% per tornare al punto di partenza, quindi le puntate troppo grandi distruggono la crescita anche quando ogni singola scommessa è favorevole. La frazione ottimale è il vantaggio diviso la quota netta, e **scala col vantaggio, non con la convinzione**: un vantaggio del 10% a quota 2.00 chiede il 10% del bankroll, lo stesso vantaggio a 5.00 ne chiede solo il 2,5%.",
+        "**Quasi nessuno dovrebbe giocare Kelly pieno**, perché la formula assume che la tua probabilità sia esatta e non lo è mai. Dalle un vantaggio sovrastimato e ti consiglierà con entusiasmo una puntata troppo grande per il vantaggio che hai davvero: il modo più rapido di perdere un bankroll pur avendo ragione in media. Il mezzo Kelly rinuncia a un quarto della crescita teorica e dimezza circa la volatilità; il quarto di Kelly è quello che usano molti professionisti con modelli veri. E quando la quota non offre vantaggio, la puntata corretta è zero: una frazione di Kelly negativa significa che la scommessa va presa sull'altro lato, non che su questa devi puntare meno.",
       ],
       faq: [
         {
@@ -285,20 +302,24 @@ const it: ToolsCopy = {
         resultTitle: "Risultati",
         hint: "Una quota e la sua probabilità di pareggio sono lo stesso numero letto dai due lati.",
       },
-      formulaTitle: "Come si calcolano le probabilità",
-      formula: [
-        "quota = 1 / probabilità",
-        "probabilità = 1 / quota",
-        "probabilità di pareggio = 1 / quota",
-        "probabilità della multipla = p₁ × p₂ × … × pₙ",
-        "quota della multipla = quota₁ × quota₂ × … × quotaₙ",
-      ],
+      takeaway:
+        "Le gambe si moltiplicano, e con loro il ricarico del book. Una quadrupla a 1.80 chiede un evento al 9,5%.",
+      example: {
+        title: "Quanto costa davvero una quadrupla",
+        rows: [
+          { label: "Quattro gambe a", value: "1.80 ciascuna · 55,56%" },
+          { label: "Quota combinata", value: "10.50" },
+          { label: "Probabilità combinata", value: "9,53%" },
+          { label: "Margine per gamba", value: "5%" },
+          { label: "Margine sulla multipla", value: "21,6%" },
+        ],
+        note:
+          "La quota sembra generosa finché non guardi cosa pretende: un evento al 9,5%. E il ricarico del book si è composto quattro volte — 1,05⁴ − 1 = 21,6% — quindi le stesse quattro selezioni ti costano quattro volte il margine di una singola. Le gambe correlate della stessa partita sono un'altra bestia: moltiplicare le sottostima, ed è esattamente per questo che i book prezzano a parte le multiple sullo stesso match.",
+      },
       explainerTitle: "Prima la probabilità, poi la quota",
       explainer: [
-        "Ogni quota è un'affermazione sulla probabilità, e la conversione fra le due è una divisione: una probabilità del 40% è una quota di 2.50, e una quota di 2.50 è una probabilità del 40%. Fare quella conversione prima di puntare cambia la domanda da «mi piace questa scommessa?» a «penso che questo esito succeda più del 40% delle volte?», che è una domanda su cui si può sbagliare davvero, e quindi una domanda che vale la pena porsi.",
-        "Lo stesso numero, letto dal lato della quota, è la probabilità di pareggio: la possibilità minima che un esito deve avere perché la scommessa sia neutra. Una quota di 1.75 pretende il 57,1%. Una di 1.50 pretende il 66,7%. Le quote lunghe pretendono pochissimo — 15.00 chiede solo il 6,7% — ed è per questo che sembrano convenienti e per questo che i book ci caricano il margine. La probabilità di pareggio è il test onesto di una scommessa: se non riesci ad argomentare che l'esito la supera, la quota non è generosa, è corretta.",
-        "Le multiple sono il punto in cui la probabilità diventa controintuitiva. Le gambe indipendenti si moltiplicano: tre scommesse che valuti al 50% ciascuna combinano al 12,5%, non a qualcosa di rassicurante vicino a metà. Quattro gambe al 60% fanno 12,96%. La quota combinata si moltiplica allo stesso modo, e qui sta la trappola: un'accumulata a 15.00 sembra un affare finché non noti che pretende un evento al 6,7%, e che il margine del bookmaker è stato applicato a ogni singola gamba e poi composto. Una multipla di quattro gambe al 5% di margine ciascuna porta quasi il 21% di margine totale.",
-        "Un'assunzione da tenere presente: questo calcolatore moltiplica, quindi assume che le gambe siano indipendenti. Due esiti della stessa partita — la vittoria di una squadra e il gol del suo attaccante — sono correlati, e moltiplicare le loro probabilità sottostima la probabilità vera che escano entrambi. Le multiple sulla stessa partita sono prezzate a parte dai book proprio perché quella correlazione è difficile da calcolare: tratta il numero che vedi qui come un minimo, non come una risposta.",
+        "**Ogni quota è un'affermazione sulla probabilità**, e la conversione è una divisione: il 40% è una quota di 2.50, e 2.50 è una probabilità del 40%. Fare quella conversione prima di puntare cambia la domanda da «mi piace questa scommessa?» a «questo esito succede più del 40% delle volte?» — una domanda su cui si può sbagliare davvero. Letto dal lato della quota, lo stesso numero è la **probabilità di pareggio**: la possibilità minima che serve perché la scommessa sia neutra. 1.75 pretende il 57,1%; 1.50 pretende il 66,7%; 15.00 chiede solo il 6,7%, ed è per questo che le quote lunghe sembrano convenienti e per questo che i book ci caricano il margine.",
+        "**Le multiple sono il punto in cui la probabilità diventa controintuitiva.** Le gambe indipendenti si moltiplicano: tre scommesse che valuti al 50% combinano al 12,5%, non a qualcosa di rassicurante vicino a metà. Quattro gambe al 60% fanno 12,96%. La quota combinata si moltiplica allo stesso modo, e qui sta la trappola — il numero diventa grande mentre la possibilità diventa piccola, e il margine si compone con lei. Tieni presente l'assunzione di fondo: qui si moltiplica, quindi si assume che le gambe siano indipendenti. Due esiti della stessa partita sono correlati, e lì la probabilità reale è diversa, di solito più alta del prodotto.",
       ],
       faq: [
         {

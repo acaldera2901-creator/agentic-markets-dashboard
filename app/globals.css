@@ -9661,6 +9661,17 @@ button:disabled {
   .tl-out.is-strong .tl-out-val { font-size: 19px; }
 }
 
+/* frase chiave: sta fra il calcolatore e il testo lungo, con un filetto verde a
+   sinistra. Tipografia, non un box: il box-su-box è il tell #1 di AI-slop. */
+.tl-takeaway { margin: clamp(20px, 3vw, 30px) 0 0; padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--am-coral); font-size: clamp(16px, 1.9vw, 19px);
+  line-height: 1.5; font-weight: 600; color: var(--am-text); max-width: 62ch; }
+
+/* attacco della spiegazione più grande, come lo standfirst di un articolo */
+.tl-prose .tl-prose-lead { font-size: clamp(15.5px, 1.7vw, 17px); line-height: 1.65;
+  color: var(--am-text); }
+.tl-prose strong { color: var(--am-text); font-weight: 700; }
+
 /* esempio numerico lavorato: sta nello slot che gli altri tool danno alla
    formula (la pagina Kelly non ne ha una). Righe etichetta→valore con i valori
    in mono tabellare, e la nota sotto come riga di chiusura: nessun box nuovo. */

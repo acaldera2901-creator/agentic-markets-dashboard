@@ -54,18 +54,24 @@ const sv: ToolsCopy = {
         impliedProbability: "Implicit sannolikhet",
         hint: "Decimal godtar även komma: 2,50 fungerar som 2.50.",
       },
-      formulaTitle: "Så fungerar omvandlingen",
-      formula: [
-        "decimal = 1 + (amerikanskt / 100)          om amerikanskt är positivt",
-        "decimal = 1 + (100 / |amerikanskt|)        om amerikanskt är negativt",
-        "decimal = 1 + (täljare / nämnare)          för bråkodds",
-        "implicit sannolikhet = 1 / decimal",
-      ],
+      takeaway:
+        "Varje odds är en sannolikhet i förklädnad. Omvandla först, diskutera sedan: 2.50 betyder att spelbolaget säger 40 % till dig.",
+      example: {
+        title: "Ett pris, alla format",
+        rows: [
+          { label: "Du skriver", value: "2.50" },
+          { label: "Amerikanskt", value: "+150" },
+          { label: "Bråk", value: "3/2" },
+          { label: "Hongkong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Implicit sannolikhet", value: "40,00 %" },
+        ],
+        note:
+          "Ändra ett och resten följer. Se upp med avrundningen: den välkända −110 är 1.9091 i decimalform och innebär 52,38 %, medan ett visat 1.91 innebär 52,36 % — en skillnad som ser ut som ingenting och spelar roll, eftersom fördelar avgörs i tiondelar av en procent.",
+      },
       explainerTitle: "Att läsa ett pris i vilket format som helst",
       explainer: [
-        "Odds är en sannolikhet i andra kläder. Decimalodds — europeisk standard — anger den totala återbetalningen per satsad enhet: 2.50 ger tillbaka 2.50 för varje riskerad 1, insatsen inräknad. Bråkodds, fortfarande standard inom brittisk galopp, anger vinsten istället för återbetalningen: 3/2 betyder tre enheter vinst per två riskerade, alltså samma 2.50 decimal. Amerikanska odds anger hur mycket du vinner på 100 (+150) eller hur mycket du måste riskera för att vinna 100 (−110). Hongkong, Malay och Indonesian är de asiatiska marknadernas format, och de spelar roll eftersom de skarpaste priserna ofta finns där.",
-        "Talet som är värt att läsa är det sista: den implicita sannolikheten, alltså 1 delat med decimaloddset. Ett pris på 2.50 innebär 40 %. Ett pris på 1.9091 — den välkända −110 — innebär 52,38 %. Det är den chans spelbolaget uttalar, och det är det enda talet du kan jämföra direkt med din egen uppskattning. Två odds i olika format är inte lättare att jämföra än två sannolikheter: omvandla först, diskutera sedan.",
-        "En begränsning den här omvandlaren inte kan ta bort: den implicita sannolikheten innehåller fortfarande spelbolagets marginal. Summera de implicita sannolikheterna för alla utfall i en marknad och du kommer över 100 % — överskottet är marginalen, och den blåser upp varenda en av de sannolikheterna. Vill du marknadens ärliga bedömning istället för dess prissatta, kör marknaden genom marginalkalkylatorn och använd de rättvisa sannolikheter den ger.",
+        "**Odds är en sannolikhet i andra kläder.** Decimalodds — europeisk standard — ger den totala återbetalningen per satsad enhet: 2.50 ger tillbaka 2.50 för varje riskerad 1, insatsen inräknad. Bråkodds anger vinsten: 3/2 är tre enheter vinst per två riskerade, samma 2.50. Amerikanska odds säger hur mycket du vinner på 100 (+150) eller hur mycket du måste riskera för att vinna 100 (−110). Hongkong, Malay och Indonesian är de asiatiska formaten, och de spelar roll eftersom de skarpaste priserna ofta finns där.",
+        "Talet som är värt att läsa är det sista. **Den implicita sannolikheten är 1 delat med decimaloddset**, och det är den enda siffran du kan jämföra direkt med din egen uppskattning: två odds i olika notationer är inte lättare att jämföra än två sannolikheter. En gräns det här verktyget inte kan ta bort: **den implicita sannolikheten innehåller fortfarande spelbolagets marginal**, så summera alla utfall i en marknad och du passerar 100 %. Vill du marknadens ärliga bedömning istället för dess prissatta, kör den genom marginalkalkylatorn.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const sv: ToolsCopy = {
         impliedProbability: "Implicit sannolikhet",
         hint: "Lägg till ett utfall för trevägsmarknader, eller fler för vinnarmarknader.",
       },
-      formulaTitle: "Så beräknas marginalen",
-      formula: [
-        "overround = Σ (1 / oddsᵢ)",
-        "marginal = overround − 1",
-        "återbetalning = 1 / overround",
-        "rättvis sannolikhetᵢ = (1 / oddsᵢ) / overround",
-        "rättvist oddsᵢ = 1 / rättvis sannolikhetᵢ",
-      ],
+      takeaway:
+        "Marginalen är vad du betalar för rätten att ha en åsikt. Två spelbolag, samma match — och skillnaden är pengar.",
+      example: {
+        title: "Samma match hos två spelbolag",
+        rows: [
+          { label: "Nöjesinriktat bolag", value: "1.90 / 1.90 · marginal 5,26 %" },
+          { label: "Skarpt bolag", value: "1.98 / 1.98 · marginal 1,01 %" },
+          { label: "Rättvis linje, båda", value: "2.00 / 2.00 · 50 % var" },
+          { label: "Ditt EV på en sann 50 %", value: "−5 % mot −1 % per spel" },
+        ],
+        note:
+          "Samma åsikt, samma match. Att satsa 100 tvåhundra gånger kostar 1 000 hos det första bolaget och 200 hos det andra: de åtta örena i prisskillnad blir 800 över en säsong. Det är den billigaste fördelen i spel, och den kräver ingen modell alls.",
+      },
       explainerTitle: "Marginalen är priset på spelet",
       explainer: [
-        "En rättvis tvåvägsmarknad prissätter båda sidor till 2.00: de implicita sannolikheterna är 50 % och 50 %, de summerar till exakt 100 %, och ingen sida har någon fördel. Verkliga marknader prissätts till 1.90 och 1.90. De implicita sannolikheterna blir 52,63 % var, summerar till 105,26 %, och de överskjutande 5,26 procentenheterna är spelbolagets marginal — overrounden. Vilken sida du än spelar betalar du den.",
-        "Marginalen är det mest användbara talet när du väljer var du spelar. Samma match med 5 % marginal och med 2 % marginal är inte samma spel: det snävare bolaget lämnar dig runt tre procentenheter väntat värde vid identiska åsikter. Marginalerna varierar kraftigt mellan marknader: huvudlinjer hos skarpa bolag kan ligga under 2 %, medan vinnarmarknader, spelarmarknader och specialspel rutinmässigt bär 8 % eller mer — där vet bolagen att deras priser prövas minst.",
-        "Att ta bort marginalen ger den rättvisa linjen, den så kallade no-vig-linjen. Den här kalkylatorn gör det proportionellt: varje implicit sannolikhet divideras med deras summa, så att de åter summerar till exakt 100 %, och de rättvisa oddsen är inverserna. Den linjen är det närmaste marknadens ärliga uppskattning du kommer, och den är referenspunkten för EV-kalkylatorn: ett spel har positivt väntat värde bara om din sannolikhet överstiger den rättvisa, inte enbart den prissatta.",
-        "En uttalad begränsning: proportionell borttagning fördelar marginalen jämnt över utfallen, och verkliga bolag gör inte så. De lägger mer marginal på osannolika utfall, eftersom det är där nöjesspelandet samlas. I en marknad med tydlig favorit och avlägsen outsider underskattar metoden favoritens verkliga chans något. På huvudlinjer är snedvridningen liten; på lotteriliknande vinnarmarknader är den rättvisa linjen en uppskattning, inte en mätning.",
+        "**En rättvis tvåvägsmarknad prissätter båda sidor till 2.00.** De implicita sannolikheterna är 50 % och 50 %, de summerar till exakt 100 %, och ingen sida har någon fördel. Verkliga marknader prissätts till 1.90 och 1.90: de implicita blir 52,63 % var, summerar till 105,26 %, och **de överskjutande 5,26 procentenheterna är spelbolagets marginal** — overrounden. Vilken sida du än spelar betalar du den. Marginalerna varierar kraftigt: huvudlinjer hos skarpa bolag går under 2 %, medan vinnarmarknader och spelarmarknader rutinmässigt bär 8 % eller mer, eftersom bolagen vet att deras priser prövas minst där.",
+        "Att ta bort marginalen ger den rättvisa linjen, no-vig-linjen. Den här kalkylatorn gör det proportionellt — varje implicit sannolikhet delad med deras summa, så att de åter blir exakt 100 % — och **den rättvisa linjen är referenspunkten för varje +EV-beslut**: ett spel har positivt väntat värde bara om din sannolikhet slår den rättvisa, inte bara den prissatta. En uttalad gräns: verkliga bolag lägger mer marginal på osannolika utfall, så i en marknad med tydlig favorit underskattar metoden favoriten något. På balanserade linjer är snedvridningen liten; på lotteriliknande vinnarmarknader är den rättvisa linjen en uppskattning.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const sv: ToolsCopy = {
         neutral: "Break-even: priset motsvarar sannolikheten exakt.",
         hint: "Procent skrivs som tal: 55 betyder 55 %.",
       },
-      formulaTitle: "Så beräknas väntat värde",
-      formula: [
-        "EV = p × (odds − 1) × insats − (1 − p) × insats",
-        "   = (p × odds − 1) × insats",
-        "fördel = p × odds − 1",
-        "break-even-pris = 1 / p",
-      ],
+      takeaway:
+        "Du behöver inte gissa bättre än marknaden — bara hitta ett bolag som är långsammare än det skarpaste.",
+      example: {
+        title: "Att låna sannolikheten från ett skarpt bolag",
+        rows: [
+          { label: "Skarpt bolag, båda sidor", value: "1.95 / 1.95" },
+          { label: "Rättvis sannolikhet, marginal borttagen", value: "50,00 %" },
+          { label: "Break-even-pris", value: "2.00" },
+          { label: "Ditt bolag erbjuder", value: "2.10" },
+          { label: "EV på 100 satsade", value: "+5,00 (+5 %)" },
+        ],
+        note:
+          "Ingen åsikt behövdes: den skarpa linjen gav sannolikheten, och ditt bolag prissatte samma utfall till 2.10 där 2.00 var rättvist. Flytta de skarpa priserna till 1.90/1.90 och den rättvisa sannolikheten är fortfarande 50 % — det är hela poängen med att ta bort marginalen: svaret rör sig inte med vigen.",
+      },
       explainerTitle: "Vad väntat värde faktiskt säger",
       explainer: [
-        "Väntat värde är det genomsnittliga utfallet av ett spel om du kunde upprepa det obegränsat många gånger. Det har två ingångar och inga åsikter: priset du erbjuds och sannolikheten du ger utfallet. Om du tror att ett lag vinner 55 % av gångerna och någon erbjuder 2.00 är räkningen omedelbar: 55 % av gångerna vinner du en enhet, 45 % förlorar du den, alltså tjänar du i genomsnitt 0,10 enheter per satsad enhet. Det är 10 % fördel, och det är vad +EV betyder.",
-        "Talet som avgör allt är sannolikheten, och där förlorar de flesta spelare tyst. Ett fel på 5 punkter i uppskattningen räcker för att göra 4 % fördel till 1 % förlust, och uppskattningar gjorda på ögonmått avviker rutinmässigt med betydligt mer än 5 punkter. Därför finns kalkylatorns andra läge: istället för att lita på magkänslan, ta priset på båda sidor hos ett skarpt bolag, ta bort marginalen och använd den rättvisa sannolikhet som blir kvar. Frågan är inte längre om du är smartare än marknaden, utan om bolaget du spelar hos är långsammare än det skarpaste.",
-        "Läs EV som en takt, inte som ett löfte. Ett spel med 4 % väntat värde ger ingenting vid ett enskilt tillfälle: det vinner eller förlorar. De 4 % framträder först över hundratals oberoende spel, och bara om sannolikheten stämde. På kort sikt är variansen betydligt större än fördelen, och just därför betyder insatsens storlek lika mycket som fördelen — det är Kelly-kriteriets uppgift.",
+        "**Väntat värde är det genomsnittliga utfallet av ett spel du skulle kunna upprepa i all evighet.** Två ingångar, inga åsikter: priset du erbjuds och sannolikheten du ger utfallet. Tror du att ett lag vinner 55 % av gångerna och någon erbjuder 2.00 är räkningen omedelbar — 55 % av gångerna vinner du en enhet, 45 % förlorar du den, alltså 0,10 enheter per satsad enhet. Det är 10 % fördel, och mer betyder inte +EV.",
+        "**Sannolikheten är där nästan alla förlorar tyst.** Ett fel på 5 punkter gör 4 % fördel till 1 % förlust, och uppskattningar på ögonmått missar med betydligt mer. Därav kalkylatorns andra läge: istället för att lita på magkänslan, ta båda sidor hos ett skarpt bolag, ta bort marginalen och använd den rättvisa sannolikheten som blir kvar. Läs resultatet som en takt, inte ett löfte — 4 % fördel ger ingenting på ett enskilt spel, den framträder först över hundratals, och bara om sannolikheten stämde. Därför betyder insatsens storlek lika mycket som fördelen.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const sv: ToolsCopy = {
         noEdge: "Ingen fördel vid det här priset — optimal insats är noll.",
         hint: "Procent skrivs som tal: 55 betyder 55 %.",
       },
+      takeaway:
+        "Kelly anpassar insatsen till fördelen, inte till din övertygelse — och nästan alla borde medvetet satsa mindre än den säger.",
       example: {
         title: "Vad det betyder med 1 000 i kassan",
         rows: [
@@ -234,8 +251,8 @@ const sv: ToolsCopy = {
       },
       explainerTitle: "Att sätta insatsen så att förlustsviten inte avslutar den",
       explainer: [
-        "Kelly-kriteriet besvarar det väntat värde hoppar över: hur mycket ska man faktiskt riskera givet en fördel? Satsa för lite och en verklig fördel växer för långsamt för att betyda något. Satsa för mycket och matematiken vänder sig mot dig: en kassa som halveras behöver +100 % för att komma tillbaka, så för stora insatser förstör tillväxten även när varje enskilt spel är gynnsamt. Den optimala andelen är fördelen delad med nettooddset, och den skalar med fördelen, inte med övertygelsen: 10 % fördel vid 2.00 kräver 10 % av kassan, samma fördel vid 5.00 bara 2,5 %.",
-        "Nästan ingen bör spela hel Kelly, för formeln antar att din sannolikhet är exakt och det är den aldrig. Ge den en överskattad fördel och den rekommenderar villigt en insats som är för stor för den fördel du faktiskt har: det snabbaste sättet att förlora en kassa medan man har rätt i genomsnitt. Halv Kelly ger upp en fjärdedel av den teoretiska tillväxten och halverar ungefär volatiliteten; kvarts Kelly är vad många professionella med verkliga modeller använder. Och när priset inte ger någon fördel är rätt insats noll: en negativ Kelly-andel betyder att spelet hör till andra sidan, aldrig att man ska satsa mindre på den här.",
+        "Kelly-kriteriet besvarar det väntat värde hoppar över: hur mycket ska man faktiskt riskera givet en fördel? Satsa för lite och en verklig fördel växer för långsamt för att betyda något. Satsa för mycket och matematiken vänder sig mot dig: en kassa som halveras behöver +100 % för att komma tillbaka, så för stora insatser förstör tillväxten även när varje enskilt spel är gynnsamt. Den optimala andelen är fördelen delad med nettooddset, och **den skalar med fördelen, inte med övertygelsen**: 10 % fördel vid 2.00 kräver 10 % av kassan, samma fördel vid 5.00 bara 2,5 %.",
+        "**Nästan ingen bör spela hel Kelly**, för formeln antar att din sannolikhet är exakt och det är den aldrig. Ge den en överskattad fördel och den rekommenderar villigt en insats som är för stor för den fördel du faktiskt har: det snabbaste sättet att förlora en kassa medan man har rätt i genomsnitt. Halv Kelly ger upp en fjärdedel av den teoretiska tillväxten och halverar ungefär volatiliteten; kvarts Kelly är vad många professionella med verkliga modeller använder. Och när priset inte ger någon fördel är rätt insats noll: en negativ Kelly-andel betyder att spelet hör till andra sidan, aldrig att man ska satsa mindre på den här.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const sv: ToolsCopy = {
         resultTitle: "Resultat",
         hint: "Ett pris och dess break-even-sannolikhet är samma tal läst från två sidor.",
       },
-      formulaTitle: "Så beräknas sannolikheterna",
-      formula: [
-        "odds = 1 / sannolikhet",
-        "sannolikhet = 1 / odds",
-        "break-even-sannolikhet = 1 / odds",
-        "kombinationens sannolikhet = p₁ × p₂ × … × pₙ",
-        "kombinationens odds = odds₁ × odds₂ × … × oddsₙ",
-      ],
+      takeaway:
+        "Delspel multipliceras, och spelbolagets snitt med dem. En fyrspelare på 1.80 kräver en händelse på 9,5 %.",
+      example: {
+        title: "Vad en fyrspelare egentligen kostar",
+        rows: [
+          { label: "Fyra delspel på", value: "1.80 vardera · 55,56 %" },
+          { label: "Kombinerat odds", value: "10.50" },
+          { label: "Kombinerad sannolikhet", value: "9,53 %" },
+          { label: "Marginal per delspel", value: "5 %" },
+          { label: "Marginal på kombinationen", value: "21,6 %" },
+        ],
+        note:
+          "Oddset ser generöst ut tills man ser vad det kräver: en händelse på 9,5 %. Och bolagets snitt har sammansatts fyra gånger — 1,05⁴ − 1 = 21,6 % — så samma fyra val kostar dig fyra gånger marginalen för ett enskilt spel. Korrelerade delspel från samma match är något annat: multiplikation underskattar dem, och just därför prissätter bolagen kombinationer inom en match separat.",
+      },
       explainerTitle: "Sannolikheten först, priset sedan",
       explainer: [
-        "Varje pris är ett påstående om en sannolikhet, och omvandlingen mellan dem är en division: en sannolikhet på 40 % är ett pris på 2.50, och ett pris på 2.50 är en sannolikhet på 40 %. Att göra omvandlingen före spelet ändrar frågan från «gillar jag det här spelet?» till «tror jag att utfallet inträffar i mer än 40 % av fallen?» — en fråga man faktiskt kan ha fel om, och därför en fråga värd att ställa.",
-        "Samma tal, läst från prissidan, är break-even-sannolikheten: den minsta chans ett utfall behöver för att spelet ska vara neutralt. Ett pris på 1.75 kräver 57,1 %. Ett pris på 1.50 kräver 66,7 %. Långa priser kräver mycket lite — 15.00 begär bara 6,7 % — därför känns de billiga och därför lägger bolagen sin marginal där. Break-even-sannolikheten är spelets ärliga test: kan du inte argumentera för att utfallet överstiger den är priset inte generöst, det är korrekt.",
-        "I kombinationsspel blir sannolikhet kontraintuitiv. Oberoende delspel multipliceras: tre spel du bedömer till 50 % vardera blir tillsammans 12,5 %, inte något betryggande nära hälften. Fyra delspel på 60 % ger 12,96 %. Det kombinerade oddset multipliceras likadant, och där ligger fällan: en kombination på 15.00 ser ut som ett fynd tills man märker att den kräver en händelse på 6,7 %, och att bolagets marginal har lagts på varje delspel och sedan sammansatts. Fyra delspel med 5 % marginal vardera bär nästan 21 % total marginal.",
-        "Ett antagande att hålla i minnet: kalkylatorn multiplicerar och antar därmed oberoende delspel. Två utfall från samma match — att ett lag vinner och att dess forward gör mål — är korrelerade, och att multiplicera deras sannolikheter underskattar den verkliga chansen att båda inträffar. Kombinationer inom en match prissätts separat av bolagen just eftersom korrelationen är svår att beräkna: behandla talet här som en undre gräns, inte som ett svar.",
+        "**Varje pris är ett påstående om en sannolikhet**, och omvandlingen är en division: 40 % är ett pris på 2.50, och 2.50 är en sannolikhet på 40 %. Att göra omvandlingen före spelet ändrar frågan från «gillar jag det här spelet?» till «händer det här i mer än 40 % av fallen?» — en fråga man faktiskt kan ha fel om. Läst från prissidan är samma tal **break-even-sannolikheten**: den minsta chans ett utfall behöver för att spelet ska vara neutralt. 1.75 kräver 57,1 %; 1.50 kräver 66,7 %; 15.00 begär bara 6,7 %, och därför känns långa odds billiga och därför lägger bolagen sin marginal där.",
+        "**I kombinationsspel blir sannolikhet kontraintuitiv.** Oberoende delspel multipliceras: tre spel du bedömer till 50 % vardera blir tillsammans 12,5 %, inte något betryggande nära hälften. Fyra delspel på 60 % ger 12,96 %. Det kombinerade oddset multipliceras likadant, och där ligger fällan — talet blir stort medan chansen blir liten, och marginalen sammansätts med den. Håll fast vid antagandet: här multipliceras det, alltså antas oberoende. Två utfall från samma match är korrelerade, och där är den verkliga sannolikheten en annan, oftast högre än produkten.",
       ],
       faq: [
         {

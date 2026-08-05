@@ -54,18 +54,24 @@ const fr: ToolsCopy = {
         impliedProbability: "Probabilité implicite",
         hint: "Le décimal accepte aussi la virgule : 2,50 équivaut à 2.50.",
       },
-      formulaTitle: "Comment fonctionne la conversion",
-      formula: [
-        "décimale = 1 + (américaine / 100)             si l'américaine est positive",
-        "décimale = 1 + (100 / |américaine|)           si l'américaine est négative",
-        "décimale = 1 + (numérateur / dénominateur)    pour les fractionnaires",
-        "probabilité implicite = 1 / décimale",
-      ],
+      takeaway:
+        "Toute cote est une probabilité déguisée. Convertissez d'abord, discutez ensuite : 2.50 signifie que le bookmaker vous annonce 40 %.",
+      example: {
+        title: "Une cote, tous les formats",
+        rows: [
+          { label: "Vous saisissez", value: "2.50" },
+          { label: "Américaine", value: "+150" },
+          { label: "Fractionnaire", value: "3/2" },
+          { label: "Hong Kong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Probabilité implicite", value: "40,00 %" },
+        ],
+        note:
+          "Changez-en une et les autres suivent. Attention à l'arrondi : la fameuse −110 vaut 1.9091 en décimal et implique 52,38 %, tandis qu'un 1.91 affiché implique 52,36 % — un écart qui semble nul et qui compte, parce que l'avantage se joue au dixième de point.",
+      },
       explainerTitle: "Lire un prix dans n'importe quel format",
       explainer: [
-        "Une cote est une probabilité habillée autrement. La décimale — le standard européen — indique le retour total par unité misée : 2.50 rend 2.50 pour chaque 1 risqué, mise comprise. La fractionnaire, encore courante dans les courses britanniques, indique le bénéfice et non le retour : 3/2 signifie trois unités de bénéfice pour deux risquées, soit la même 2.50 décimale. L'américaine dit combien vous gagnez en misant 100 (+150) ou combien vous devez risquer pour gagner 100 (−110). Hong Kong, Malay et Indonesian sont les formats des marchés asiatiques, et ils comptent car c'est souvent là que se trouvent les prix les plus affûtés.",
-        "Le nombre qui mérite d'être lu est le dernier : la probabilité implicite, c'est-à-dire 1 divisé par la cote décimale. Un prix de 2.50 implique 40 %. Un prix de 1.9091 — la fameuse −110 — implique 52,38 %. C'est la probabilité annoncée par le bookmaker, et c'est le seul nombre que vous pouvez comparer directement à votre propre estimation. Deux cotes dans des formats différents ne sont pas plus faciles à comparer que deux probabilités : convertissez d'abord, discutez ensuite.",
-        "Une limite que ce convertisseur ne peut pas retirer pour vous : la probabilité implicite contient encore la marge du bookmaker. Additionnez les probabilités implicites de tous les résultats d'un marché et vous dépasserez 100 % — cet excédent est la marge, et il gonfle chacune de ces probabilités. Si vous voulez l'avis honnête du marché plutôt que son avis tarifé, passez le marché par le calculateur de marge et utilisez les probabilités justes qu'il renvoie.",
+        "**Une cote est une probabilité habillée autrement.** La décimale — standard européen — donne le retour total par unité misée : 2.50 rend 2.50 pour chaque 1 risqué, mise comprise. La fractionnaire indique le bénéfice : 3/2, c'est trois unités de bénéfice pour deux risquées, soit la même 2.50. L'américaine dit combien vous gagnez en misant 100 (+150) ou combien risquer pour gagner 100 (−110). Hong Kong, Malay et Indonesian sont les formats asiatiques, et ils comptent car les prix les plus affûtés s'y trouvent souvent.",
+        "Le nombre qui mérite lecture est le dernier. **La probabilité implicite est 1 divisé par la cote décimale**, et c'est le seul chiffre comparable directement à votre estimation : deux cotes en notations différentes ne se comparent pas plus facilement que deux probabilités. Une limite que cet outil ne peut pas lever : **la probabilité implicite contient encore la marge du bookmaker**, donc additionnez tous les résultats d'un marché et vous dépasserez 100 %. Pour l'avis honnête du marché plutôt que son avis tarifé, passez-le au calculateur de marge.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const fr: ToolsCopy = {
         impliedProbability: "Probabilité implicite",
         hint: "Ajoutez un résultat pour les marchés à trois issues, ou plus pour les vainqueurs.",
       },
-      formulaTitle: "Comment la marge est calculée",
-      formula: [
-        "overround = Σ (1 / coteᵢ)",
-        "marge = overround − 1",
-        "taux de retour = 1 / overround",
-        "probabilité justeᵢ = (1 / coteᵢ) / overround",
-        "cote justeᵢ = 1 / probabilité justeᵢ",
-      ],
+      takeaway:
+        "La marge, c'est ce que vous payez pour le droit d'avoir une opinion. Deux bookmakers, le même match, et la différence est de l'argent.",
+      example: {
+        title: "Le même match chez deux bookmakers",
+        rows: [
+          { label: "Bookmaker généraliste", value: "1.90 / 1.90 · marge 5,26 %" },
+          { label: "Bookmaker sharp", value: "1.98 / 1.98 · marge 1,01 %" },
+          { label: "Ligne juste, les deux", value: "2.00 / 2.00 · 50 % chacun" },
+          { label: "Votre EV sur un vrai 50 %", value: "−5 % contre −1 % par pari" },
+        ],
+        note:
+          "Opinion identique, match identique. Miser 100 deux cents fois coûte 1 000 chez le premier et 200 chez le second : les huit centimes d'écart de cote font 800 sur une saison. C'est l'avantage le moins cher des paris, et il ne demande aucun modèle.",
+      },
       explainerTitle: "La marge est le prix du pari",
       explainer: [
-        "Un marché à deux issues équitable cote les deux côtés à 2.00 : les probabilités implicites sont de 50 % et 50 %, elles totalisent exactement 100 %, et aucun côté n'a d'avantage. Les marchés réels sont cotés 1.90 et 1.90. Ces probabilités implicites valent 52,63 % chacune, totalisent 105,26 %, et les 5,26 points de pourcentage en excès sont la marge du bookmaker — l'overround. Quel que soit le côté joué, vous la payez.",
-        "La marge est le nombre le plus utile pour décider où parier. Le même match à 5 % de marge et à 2 % de marge n'est pas le même pari : le bookmaker le plus serré vous laisse environ trois points de valeur espérée à opinions identiques. Les marges varient énormément selon le marché : les lignes principales des bookmakers sharp peuvent descendre sous 2 %, tandis que les paris vainqueur, les marchés joueurs et les paris spéciaux atteignent couramment 8 % ou plus, car c'est là que les bookmakers savent leurs prix les moins contrôlés.",
-        "Retirer la marge donne la ligne juste, dite no-vig. Ce calculateur le fait proportionnellement : chaque probabilité implicite est divisée par leur somme, elles totalisent donc à nouveau exactement 100 %, et les cotes justes en sont les inverses. Cette ligne est ce qui se rapproche le plus de l'estimation honnête du marché, et c'est la référence du calculateur d'EV : un pari n'a une valeur espérée positive que si votre probabilité dépasse la probabilité juste, pas simplement celle affichée.",
-        "Une limite assumée : le retrait proportionnel répartit la marge uniformément entre les résultats, ce que les bookmakers réels ne font pas. Ils chargent davantage les résultats improbables, car c'est là que se concentre l'argent récréatif. Sur un marché avec un grand favori et un outsider lointain, cette méthode sous-estime un peu la vraie chance du favori. Sur les lignes principales la distorsion est faible ; sur les vainqueurs à long terme, traitez la ligne juste comme une estimation, pas comme une mesure.",
+        "**Un marché à deux issues équitable cote les deux côtés à 2.00.** Les probabilités implicites valent 50 % et 50 %, totalisent exactement 100 %, et aucun côté n'a d'avantage. Les marchés réels sont cotés 1.90 et 1.90 : ces implicites valent 52,63 % chacune, totalisent 105,26 %, et **les 5,26 points en excès sont la marge du bookmaker** — l'overround. Quel que soit le côté joué, vous la payez. Les marges varient beaucoup : les lignes principales des bookmakers sharp descendent sous 2 %, tandis que les paris vainqueur et les marchés joueurs atteignent couramment 8 % ou plus, là où les bookmakers savent leurs prix les moins contrôlés.",
+        "Retirer la marge donne la ligne juste, la no-vig. Ce calculateur le fait proportionnellement — chaque implicite divisée par leur somme, elles totalisent donc à nouveau 100 % — et **cette ligne juste est la référence de toute décision +EV** : un pari n'a une valeur espérée positive que si votre probabilité dépasse la juste, pas simplement celle affichée. Une limite assumée : les bookmakers réels chargent davantage les issues improbables, donc sur un marché avec un grand favori cette méthode le sous-estime un peu. Sur des lignes équilibrées la distorsion est faible ; sur les vainqueurs à long terme, traitez la ligne juste comme une estimation.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const fr: ToolsCopy = {
         neutral: "Équilibre : le prix correspond exactement à la probabilité.",
         hint: "Les pourcentages s'écrivent en nombres : 55 signifie 55 %.",
       },
-      formulaTitle: "Comment la valeur espérée est calculée",
-      formula: [
-        "EV = p × (cote − 1) × mise − (1 − p) × mise",
-        "   = (p × cote − 1) × mise",
-        "avantage = p × cote − 1",
-        "prix d'équilibre = 1 / p",
-      ],
+      takeaway:
+        "Vous n'avez pas besoin de deviner mieux que le marché : seulement de trouver un bookmaker plus lent que le plus sharp.",
+      example: {
+        title: "Emprunter la probabilité à un bookmaker sharp",
+        rows: [
+          { label: "Bookmaker sharp, deux côtés", value: "1.95 / 1.95" },
+          { label: "Probabilité juste, marge retirée", value: "50,00 %" },
+          { label: "Prix d'équilibre", value: "2.00" },
+          { label: "Votre bookmaker propose", value: "2.10" },
+          { label: "EV sur 100 misés", value: "+5,00 (+5 %)" },
+        ],
+        note:
+          "Aucune opinion nécessaire : la ligne sharp a fourni la probabilité, et votre bookmaker a coté le même résultat à 2.10 là où 2.00 était juste. Passez les cotes sharp à 1.90/1.90 et la probabilité juste reste 50 % — c'est tout l'intérêt de retirer la marge : la réponse ne bouge pas avec le vig.",
+      },
       explainerTitle: "Ce que dit vraiment la valeur espérée",
       explainer: [
-        "La valeur espérée est le résultat moyen d'un pari si vous pouviez le répéter un nombre illimité de fois. Elle a deux entrées et aucune opinion : le prix qu'on vous propose et la probabilité que vous accordez au résultat. Si vous pensez qu'une équipe gagne 55 % du temps et qu'on vous propose 2.00, le calcul est immédiat : 55 % du temps vous gagnez une unité, 45 % vous la perdez, donc en moyenne vous gagnez 0,10 unité par unité misée. C'est un avantage de 10 %, et c'est ce que signifie +EV.",
-        "Le nombre qui décide de tout est la probabilité, et c'est là que la plupart des parieurs perdent en silence. Une erreur de 5 points dans l'estimation suffit à transformer un avantage de 4 % en une perte de 1 %, et les estimations faites à l'œil se trompent couramment de bien plus de 5 points. D'où le second mode de ce calculateur : au lieu de vous fier à votre instinct, prenez le prix des deux côtés chez un bookmaker sharp, retirez la marge et utilisez la probabilité juste obtenue. Vous ne demandez plus si vous êtes plus fin que le marché, mais si le bookmaker où vous jouez est plus lent que le plus sharp.",
-        "Lisez l'EV comme un taux, pas comme une promesse. Un pari à 4 % de valeur espérée ne rend rien sur une occasion isolée : il gagne ou il perd. Ces 4 % n'apparaissent qu'au fil de centaines de paris indépendants, et seulement si la probabilité était juste. À court terme la variance dépasse largement l'avantage, et c'est précisément pourquoi la taille de la mise compte autant que l'avantage : c'est le rôle du critère de Kelly.",
+        "**La valeur espérée est le résultat moyen d'un pari que vous pourriez répéter à l'infini.** Deux entrées, aucune opinion : le prix proposé et la probabilité que vous donnez au résultat. Vous pensez qu'une équipe gagne 55 % du temps et on vous offre 2.00, le calcul est immédiat — 55 % du temps vous gagnez une unité, 45 % vous la perdez, donc 0,10 unité par unité misée. C'est un avantage de 10 %, et c'est tout ce que veut dire +EV.",
+        "**La probabilité est l'endroit où presque tout le monde perd en silence.** Une erreur de 5 points transforme un avantage de 4 % en perte de 1 %, et les estimations à l'œil se trompent de bien plus. D'où le second mode de ce calculateur : au lieu de vous fier à votre instinct, prenez les deux côtés chez un bookmaker sharp, retirez la marge et utilisez la probabilité juste obtenue. Lisez le résultat comme un taux, pas une promesse — un avantage de 4 % ne rend rien sur un pari isolé, il n'apparaît qu'au fil de centaines, et seulement si la probabilité était juste. C'est pourquoi la taille de la mise compte autant que l'avantage.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const fr: ToolsCopy = {
         noEdge: "Aucun avantage à ce prix : la mise optimale est zéro.",
         hint: "Les pourcentages s'écrivent en nombres : 55 signifie 55 %.",
       },
+      takeaway:
+        "Kelly dimensionne la mise sur l'avantage, pas sur votre conviction — et presque tout le monde devrait miser délibérément moins que ce qu'il indique.",
       example: {
         title: "Ce que cela donne avec 1 000 de bankroll",
         rows: [
@@ -234,8 +251,8 @@ const fr: ToolsCopy = {
       },
       explainerTitle: "Dimensionner la mise pour que la mauvaise série ne l'achève pas",
       explainer: [
-        "Le critère de Kelly répond à ce que la valeur espérée ignore : avec un avantage donné, combien risquer réellement ? Misez trop peu et un avantage réel se capitalise trop lentement pour compter. Misez trop et les mathématiques se retournent contre vous : une bankroll divisée par deux a besoin de +100 % pour revenir à son point de départ, donc des mises trop grandes détruisent la croissance même quand chaque pari est favorable. La fraction optimale est l'avantage divisé par la cote nette, et elle suit l'avantage, pas la conviction : 10 % d'avantage à 2.00 demande 10 % de la bankroll, le même avantage à 5.00 n'en demande que 2,5 %.",
-        "Presque personne ne devrait jouer Kelly complet, car la formule suppose votre probabilité exacte et elle ne l'est jamais. Donnez-lui un avantage surestimé et elle recommandera volontiers une mise trop grande pour l'avantage réel : le moyen le plus rapide de perdre une bankroll tout en ayant raison en moyenne. Le demi-Kelly abandonne un quart de la croissance théorique et réduit la volatilité de près de moitié ; le quart de Kelly est ce qu'utilisent beaucoup de professionnels avec de vrais modèles. Et quand le prix n'offre aucun avantage, la mise correcte est zéro : une fraction de Kelly négative signifie que le pari est de l'autre côté, jamais qu'il faut miser moins sur celui-ci.",
+        "Le critère de Kelly répond à ce que la valeur espérée ignore : avec un avantage donné, combien risquer réellement ? Misez trop peu et un avantage réel se capitalise trop lentement pour compter. Misez trop et les mathématiques se retournent contre vous : une bankroll divisée par deux a besoin de +100 % pour revenir à son point de départ, donc des mises trop grandes détruisent la croissance même quand chaque pari est favorable. La fraction optimale est l'avantage divisé par la cote nette, et **elle suit l'avantage, pas la conviction** : 10 % d'avantage à 2.00 demande 10 % de la bankroll, le même avantage à 5.00 n'en demande que 2,5 %.",
+        "**Presque personne ne devrait jouer Kelly complet**, car la formule suppose votre probabilité exacte et elle ne l'est jamais. Donnez-lui un avantage surestimé et elle recommandera volontiers une mise trop grande pour l'avantage réel : le moyen le plus rapide de perdre une bankroll tout en ayant raison en moyenne. Le demi-Kelly abandonne un quart de la croissance théorique et réduit la volatilité de près de moitié ; le quart de Kelly est ce qu'utilisent beaucoup de professionnels avec de vrais modèles. Et quand le prix n'offre aucun avantage, la mise correcte est zéro : une fraction de Kelly négative signifie que le pari est de l'autre côté, jamais qu'il faut miser moins sur celui-ci.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const fr: ToolsCopy = {
         resultTitle: "Résultats",
         hint: "Un prix et sa probabilité d'équilibre sont le même nombre lu des deux côtés.",
       },
-      formulaTitle: "Comment les probabilités sont calculées",
-      formula: [
-        "cote = 1 / probabilité",
-        "probabilité = 1 / cote",
-        "probabilité d'équilibre = 1 / cote",
-        "probabilité du combiné = p₁ × p₂ × … × pₙ",
-        "cote du combiné = cote₁ × cote₂ × … × coteₙ",
-      ],
+      takeaway:
+        "Les sélections se multiplient, et la marge du bookmaker avec elles. Un quadruple à 1.80 exige un événement à 9,5 %.",
+      example: {
+        title: "Ce que coûte vraiment un quadruple",
+        rows: [
+          { label: "Quatre sélections à", value: "1.80 chacune · 55,56 %" },
+          { label: "Cote combinée", value: "10.50" },
+          { label: "Probabilité combinée", value: "9,53 %" },
+          { label: "Marge par sélection", value: "5 %" },
+          { label: "Marge sur le combiné", value: "21,6 %" },
+        ],
+        note:
+          "Le prix paraît généreux jusqu'à ce qu'on voie ce qu'il exige : un événement à 9,5 %. Et la marge du bookmaker s'est composée quatre fois — 1,05⁴ − 1 = 21,6 % — donc les mêmes quatre sélections vous coûtent quatre fois la marge d'un pari simple. Les sélections corrélées d'un même match sont autre chose : multiplier les sous-estime, et c'est précisément pourquoi les bookmakers cotent à part les combinés d'un même match.",
+      },
       explainerTitle: "La probabilité d'abord, le prix ensuite",
       explainer: [
-        "Tout prix est une affirmation sur la probabilité, et la conversion entre les deux est une division : une probabilité de 40 % est un prix de 2.50, et un prix de 2.50 est une probabilité de 40 %. Faire cette conversion avant de miser change la question de « est-ce que j'aime ce pari ? » à « est-ce que je pense que ce résultat arrive plus de 40 % du temps ? », question sur laquelle on peut réellement se tromper, et donc question qui mérite d'être posée.",
-        "Le même nombre, lu du côté du prix, est la probabilité d'équilibre : la chance minimale qu'un résultat doit avoir pour que le pari soit neutre. Un prix de 1.75 exige 57,1 %. Un prix de 1.50 exige 66,7 %. Les prix longs exigent très peu — 15.00 ne demande que 6,7 % — et c'est pourquoi ils semblent bon marché et pourquoi les bookmakers y chargent leur marge. La probabilité d'équilibre est le test honnête d'un pari : si vous ne pouvez pas argumenter que le résultat la dépasse, le prix n'est pas généreux, il est correct.",
-        "Les combinés sont l'endroit où la probabilité devient contre-intuitive. Les sélections indépendantes se multiplient : trois paris que vous estimez à 50 % chacun se combinent à 12,5 %, et non à quelque chose de rassurant proche de la moitié. Quatre sélections à 60 % donnent 12,96 %. La cote combinée se multiplie de la même façon, et c'est là le piège : un combiné à 15.00 ressemble à une aubaine jusqu'à ce qu'on remarque qu'il exige un événement à 6,7 %, et que la marge du bookmaker a été appliquée à chaque sélection puis composée. Un combiné de quatre sélections à 5 % de marge chacune porte près de 21 % de marge totale.",
-        "Une hypothèse à garder en tête : ce calculateur multiplie, il suppose donc les sélections indépendantes. Deux résultats du même match — la victoire d'une équipe et le but de son attaquant — sont corrélés, et multiplier leurs probabilités sous-estime la vraie chance que les deux se produisent. Les combinés d'un même match sont cotés à part par les bookmakers précisément parce que cette corrélation est difficile à calculer : traitez le nombre affiché ici comme un minimum, pas comme une réponse.",
+        "**Tout prix est une affirmation sur la probabilité**, et la conversion est une division : 40 % est un prix de 2.50, et 2.50 est une probabilité de 40 %. Faire cette conversion avant de miser change la question de « est-ce que j'aime ce pari ? » à « est-ce que cela arrive plus de 40 % du temps ? » — une question sur laquelle on peut se tromper. Lu du côté du prix, le même nombre est la **probabilité d'équilibre** : la chance minimale qu'un résultat doit avoir pour que le pari soit neutre. 1.75 exige 57,1 % ; 1.50 exige 66,7 % ; 15.00 ne demande que 6,7 %, et voilà pourquoi les longues cotes semblent bon marché et pourquoi les bookmakers y chargent leur marge.",
+        "**Les combinés sont l'endroit où la probabilité devient contre-intuitive.** Les sélections indépendantes se multiplient : trois paris estimés à 50 % chacun donnent 12,5 %, et non quelque chose de rassurant près de la moitié. Quatre sélections à 60 % donnent 12,96 %. La cote combinée se multiplie pareil, et c'est le piège — le nombre grossit tandis que la chance rétrécit, et la marge se compose avec elle. Gardez l'hypothèse en tête : ici on multiplie, donc on suppose les sélections indépendantes. Deux résultats d'un même match sont corrélés, et là la probabilité réelle diffère, généralement supérieure au produit.",
       ],
       faq: [
         {

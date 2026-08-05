@@ -54,18 +54,24 @@ const es: ToolsCopy = {
         impliedProbability: "Probabilidad implícita",
         hint: "El decimal acepta también la coma: 2,50 vale igual que 2.50.",
       },
-      formulaTitle: "Cómo funciona la conversión",
-      formula: [
-        "decimal = 1 + (americana / 100)            si la americana es positiva",
-        "decimal = 1 + (100 / |americana|)          si la americana es negativa",
-        "decimal = 1 + (numerador / denominador)    para las fraccionarias",
-        "probabilidad implícita = 1 / decimal",
-      ],
+      takeaway:
+        "Toda cuota es una probabilidad disfrazada. Primero convierte, después discute: 2.50 significa que la casa te está diciendo 40%.",
+      example: {
+        title: "Una cuota, todos los formatos",
+        rows: [
+          { label: "Tú escribes", value: "2.50" },
+          { label: "Americana", value: "+150" },
+          { label: "Fraccionaria", value: "3/2" },
+          { label: "Hong Kong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Probabilidad implícita", value: "40.00%" },
+        ],
+        note:
+          "Cambia una y las demás siguen. Ojo con el redondeo: la conocida −110 en decimal es 1.9091 e implica el 52,38%, mientras que un 1.91 mostrado en pantalla implica el 52,36% — una diferencia que parece nada y cuenta, porque la ventaja se juega en décimas de punto.",
+      },
       explainerTitle: "Leer un precio en cualquier formato",
       explainer: [
-        "Una cuota es una probabilidad vestida de otra manera. La decimal — el estándar europeo — indica el retorno total por unidad apostada: 2.50 devuelve 2.50 por cada 1 arriesgado, apuesta incluida. La fraccionaria, aún habitual en las carreras británicas, indica el beneficio y no el retorno: 3/2 significa tres unidades de beneficio por cada dos arriesgadas, es decir la misma 2.50 decimal. La americana dice cuánto ganas apostando 100 (+150) o cuánto debes arriesgar para ganar 100 (−110). Hong Kong, Malay e Indonesian son los formatos de los mercados asiáticos, y cuentan porque suele ser ahí donde están los precios más afilados.",
-        "El número que merece la pena leer es el último: la probabilidad implícita, que es simplemente 1 dividido por la cuota decimal. Un precio de 2.50 implica el 40%. Uno de 1.9091 — la conocida −110 — implica el 52,38%. Es la probabilidad que declara la casa, y es el único número que puedes comparar directamente con tu propia estimación. Dos cuotas en formatos distintos no son más fáciles de comparar que dos probabilidades: primero convierte, después discute.",
-        "Un límite que este conversor no puede quitarte: la probabilidad implícita todavía contiene el margen de la casa. Suma las probabilidades implícitas de todos los resultados de un mercado y obtendrás más del 100% — ese exceso es el margen, e infla cada una de esas probabilidades. Si quieres la opinión honesta del mercado en lugar de la opinión con recargo, pasa el mercado por la calculadora de margen y usa las probabilidades justas que devuelve.",
+        "**Una cuota es una probabilidad vestida de otra manera.** La decimal — el estándar europeo — da el retorno total por unidad apostada: 2.50 devuelve 2.50 por cada 1 arriesgado, apuesta incluida. La fraccionaria indica el beneficio: 3/2 son tres unidades de beneficio por cada dos arriesgadas, la misma 2.50. La americana dice cuánto ganas apostando 100 (+150) o cuánto debes arriesgar para ganar 100 (−110). Hong Kong, Malay e Indonesian son los formatos asiáticos, y cuentan porque ahí suelen estar los precios más afilados.",
+        "El número que merece la pena leer es el último. **La probabilidad implícita es 1 dividido por la cuota decimal**, y es la única cifra que puedes comparar directamente con tu estimación: dos cuotas en notaciones distintas no son más fáciles de comparar que dos probabilidades. Un límite que esta herramienta no puede quitarte: **la probabilidad implícita todavía contiene el margen de la casa**, así que suma todos los resultados de un mercado y pasarás del 100%. Para la opinión honesta del mercado en vez de la opinión con recargo, pásala por la calculadora de margen.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const es: ToolsCopy = {
         impliedProbability: "Probabilidad implícita",
         hint: "Añade un resultado para mercados de tres vías, o más para los mercados a ganador.",
       },
-      formulaTitle: "Cómo se calcula el margen",
-      formula: [
-        "overround = Σ (1 / cuotaᵢ)",
-        "margen = overround − 1",
-        "payout = 1 / overround",
-        "probabilidad justaᵢ = (1 / cuotaᵢ) / overround",
-        "cuota justaᵢ = 1 / probabilidad justaᵢ",
-      ],
+      takeaway:
+        "El margen es lo que pagas por el derecho a tener una opinión. Dos casas, el mismo partido, y la diferencia es dinero.",
+      example: {
+        title: "El mismo partido en dos casas",
+        rows: [
+          { label: "Casa generalista", value: "1.90 / 1.90 · margen 5,26%" },
+          { label: "Casa sharp", value: "1.98 / 1.98 · margen 1,01%" },
+          { label: "Línea justa, ambas", value: "2.00 / 2.00 · 50% cada uno" },
+          { label: "Tu EV en un 50% real", value: "−5% frente a −1% por apuesta" },
+        ],
+        note:
+          "Opinión idéntica, partido idéntico. Apostar 100 doscientas veces cuesta 1.000 en la primera casa y 200 en la segunda: los ocho céntimos de diferencia de cuota son 800 a lo largo de una temporada. Es la ventaja más barata que existe en las apuestas y no requiere ningún modelo.",
+      },
       explainerTitle: "El margen es el precio de la apuesta",
       explainer: [
-        "Un mercado de dos vías justo cotiza ambos lados a 2.00: las probabilidades implícitas son 50% y 50%, suman exactamente 100% y ningún lado tiene ventaja. Los mercados reales se cotizan a 1.90 y 1.90. Esas probabilidades implícitas valen 52,63% cada una, suman 105,26%, y los 5,26 puntos porcentuales de exceso son el margen de la casa — el overround. Juegues el lado que juegues, lo estás pagando.",
-        "El margen es el número más útil para decidir dónde apostar. El mismo partido con un margen del 5% y con un margen del 2% no es la misma apuesta: la casa más ajustada te está dejando unos tres puntos porcentuales de valor esperado con idénticas opiniones. Los márgenes varían mucho según el mercado: las líneas principales de las casas sharp pueden estar por debajo del 2%, mientras que los mercados a ganador, los de jugadores y las apuestas especiales llegan habitualmente al 8% o más, porque ahí las casas saben que sus precios se comprueban menos.",
-        "Quitar el margen da la línea justa, la llamada no-vig. Esta calculadora lo hace de forma proporcional: cada probabilidad implícita se divide por su suma, así vuelven a sumar exactamente 100%, y las cuotas justas son sus recíprocos. Esa línea es lo más cercano a la estimación honesta del mercado, y es la referencia de la calculadora de EV: una apuesta solo tiene valor esperado positivo si tu probabilidad supera la justa, no simplemente la cotizada.",
-        "Un límite declarado: el reparto proporcional distribuye el margen de forma uniforme entre los resultados, y las casas reales no lo hacen. Cargan más margen en los resultados improbables, porque ahí se concentra el dinero recreativo. En un mercado con un favorito claro y un outsider lejano, este método subestima algo la probabilidad real del favorito. En las líneas principales la distorsión es pequeña; en los mercados a ganador tipo lotería, trata la línea justa como una estimación, no como una medición.",
+        "**Un mercado de dos vías justo cotiza ambos lados a 2.00.** Las probabilidades implícitas son 50% y 50%, suman exactamente 100%, y ningún lado tiene ventaja. Los mercados reales se cotizan a 1.90 y 1.90: esas implícitas valen 52,63% cada una, suman 105,26%, y **los 5,26 puntos de exceso son el margen de la casa** — el overround. Juegues el lado que juegues, lo estás pagando. Los márgenes varían mucho por mercado: las líneas principales de las casas sharp bajan del 2%, mientras que los mercados a ganador y de jugadores llegan habitualmente al 8% o más, porque ahí las casas saben que sus precios se comprueban menos.",
+        "Quitar el margen da la línea justa, la no-vig. Esta calculadora lo hace en proporción — cada implícita dividida por su suma, así vuelven a sumar exactamente 100% — y **esa línea justa es la referencia de toda decisión +EV**: una apuesta solo tiene valor esperado positivo si tu probabilidad supera la justa, no simplemente la cotizada. Un límite declarado: las casas reales cargan más margen en los resultados improbables, así que en un mercado con un favorito claro este método lo subestima algo. En líneas equilibradas la distorsión es pequeña; en mercados a ganador tipo lotería, trata la línea justa como una estimación.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const es: ToolsCopy = {
         neutral: "Equilibrio: el precio coincide exactamente con la probabilidad.",
         hint: "Los porcentajes se escriben como números: 55 significa 55%.",
       },
-      formulaTitle: "Cómo se calcula el valor esperado",
-      formula: [
-        "EV = p × (cuota − 1) × stake − (1 − p) × stake",
-        "   = (p × cuota − 1) × stake",
-        "ventaja = p × cuota − 1",
-        "precio de equilibrio = 1 / p",
-      ],
+      takeaway:
+        "No necesitas adivinar mejor que el mercado: solo encontrar una casa más lenta que la más sharp.",
+      example: {
+        title: "Tomar prestada la probabilidad de una casa sharp",
+        rows: [
+          { label: "Casa sharp, ambos lados", value: "1.95 / 1.95" },
+          { label: "Probabilidad justa, sin margen", value: "50,00%" },
+          { label: "Precio de equilibrio", value: "2.00" },
+          { label: "Tu casa ofrece", value: "2.10" },
+          { label: "EV sobre 100 apostados", value: "+5,00 (+5%)" },
+        ],
+        note:
+          "No hizo falta ninguna opinión: la línea sharp aportó la probabilidad, y tu casa cotizó el mismo resultado a 2.10 donde lo justo era 2.00. Mueve las cuotas sharp a 1.90/1.90 y la probabilidad justa sigue siendo el 50% — ese es el sentido de quitar el margen: la respuesta no se mueve con el recargo.",
+      },
       explainerTitle: "Qué dice realmente el valor esperado",
       explainer: [
-        "El valor esperado es el resultado medio de una apuesta si pudieras repetirla un número ilimitado de veces. Tiene dos entradas y ninguna opinión: el precio que te ofrecen y la probabilidad que le das al resultado. Si crees que un equipo gana el 55% de las veces y alguien te ofrece 2.00, la cuenta es inmediata: el 55% de las veces ganas una unidad, el 45% la pierdes, así que de media ganas 0,10 unidades por unidad apostada. Es una ventaja del 10%, y eso es lo que significa +EV.",
-        "El número que decide todo es la probabilidad, y ahí es donde la mayoría pierde en silencio. Un error de 5 puntos en la estimación basta para convertir una ventaja del 4% en una pérdida del 1%, y las estimaciones hechas a ojo fallan habitualmente mucho más de 5 puntos. Por eso existe el segundo modo de esta calculadora: en lugar de fiarte del instinto, toma el precio de los dos lados en una casa sharp, quita el margen y usa la probabilidad justa resultante. Ya no te preguntas si eres más listo que el mercado, sino si la casa donde juegas es más lenta que la casa más sharp.",
-        "Lee el EV como una tasa, no como una promesa. Una apuesta con un 4% de valor esperado no devuelve nada en una ocasión concreta: gana o pierde. Ese 4% aparece solo a lo largo de cientos de apuestas independientes, y solo si la probabilidad era correcta. A corto plazo la varianza es mucho mayor que la ventaja, y precisamente por eso el tamaño del stake importa tanto como la ventaja: de eso se ocupa el criterio de Kelly.",
+        "**El valor esperado es el resultado medio de una apuesta que pudieras repetir para siempre.** Dos entradas, ninguna opinión: el precio ofrecido y la probabilidad que das al resultado. Crees que un equipo gana el 55% de las veces y alguien ofrece 2.00, y la cuenta es inmediata — el 55% de las veces ganas una unidad, el 45% la pierdes, así que ganas 0,10 unidades por unidad apostada. Es una ventaja del 10%, y eso es todo lo que significa +EV.",
+        "**La probabilidad es donde casi todos pierden en silencio.** Un error de 5 puntos convierte una ventaja del 4% en una pérdida del 1%, y las estimaciones a ojo fallan mucho más de 5 puntos. De ahí el segundo modo de esta calculadora: en vez de fiarte del instinto, toma los dos lados en una casa sharp, quita el margen y usa la probabilidad justa resultante. Lee el resultado como una tasa, no como una promesa — una ventaja del 4% no devuelve nada en una apuesta concreta, aparece solo a lo largo de cientos, y solo si la probabilidad era correcta. Por eso el tamaño del stake importa tanto como la ventaja.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const es: ToolsCopy = {
         noEdge: "No hay ventaja a este precio: el stake óptimo es cero.",
         hint: "Los porcentajes se escriben como números: 55 significa 55%.",
       },
+      takeaway:
+        "Kelly dimensiona la apuesta según la ventaja, no según tu confianza — y casi todos deberían apostar deliberadamente menos de lo que dice.",
       example: {
         title: "Qué significa con 1.000 de bankroll",
         rows: [
@@ -234,8 +251,8 @@ const es: ToolsCopy = {
       },
       explainerTitle: "Dimensionar la apuesta para que la mala racha no la termine",
       explainer: [
-        "El criterio de Kelly responde a lo que el valor esperado ignora: dada una ventaja, ¿cuánto arriesgar realmente? Apuesta demasiado poco y una ventaja real se capitaliza demasiado despacio para importar. Apuesta demasiado y las matemáticas se giran en contra: un bankroll que se reduce a la mitad necesita un +100% para recuperarse, así que los stakes excesivos destruyen el crecimiento incluso cuando cada apuesta es favorable. La fracción óptima es la ventaja dividida por la cuota neta, y escala con la ventaja, no con la confianza: un 10% de ventaja a 2.00 pide el 10% del bankroll, la misma ventaja a 5.00 pide solo el 2,5%.",
-        "Casi nadie debería apostar Kelly completo, porque la fórmula asume que tu probabilidad es exacta y nunca lo es. Dale una ventaja sobrestimada y recomendará con entusiasmo un stake demasiado grande para la ventaja que tienes de verdad: la forma más rápida de perder un bankroll teniendo razón de media. El medio Kelly renuncia a una cuarta parte del crecimiento teórico y reduce la volatilidad casi a la mitad; el cuarto de Kelly es lo que usan muchos profesionales con modelos reales. Y cuando el precio no ofrece ventaja, el stake correcto es cero: una fracción de Kelly negativa significa que la apuesta va en el otro lado, no que debas apostar menos en esta.",
+        "El criterio de Kelly responde a lo que el valor esperado ignora: dada una ventaja, ¿cuánto arriesgar realmente? Apuesta demasiado poco y una ventaja real se capitaliza demasiado despacio para importar. Apuesta demasiado y las matemáticas se giran en contra: un bankroll que se reduce a la mitad necesita un +100% para recuperarse, así que los stakes excesivos destruyen el crecimiento incluso cuando cada apuesta es favorable. La fracción óptima es la ventaja dividida por la cuota neta, y **escala con la ventaja, no con la confianza**: un 10% de ventaja a 2.00 pide el 10% del bankroll, la misma ventaja a 5.00 pide solo el 2,5%.",
+        "**Casi nadie debería apostar Kelly completo**, porque la fórmula asume que tu probabilidad es exacta y nunca lo es. Dale una ventaja sobrestimada y recomendará con entusiasmo un stake demasiado grande para la ventaja que tienes de verdad: la forma más rápida de perder un bankroll teniendo razón de media. El medio Kelly renuncia a una cuarta parte del crecimiento teórico y reduce la volatilidad casi a la mitad; el cuarto de Kelly es lo que usan muchos profesionales con modelos reales. Y cuando el precio no ofrece ventaja, el stake correcto es cero: una fracción de Kelly negativa significa que la apuesta va en el otro lado, no que debas apostar menos en esta.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const es: ToolsCopy = {
         resultTitle: "Resultados",
         hint: "Un precio y su probabilidad de equilibrio son el mismo número leído desde lados opuestos.",
       },
-      formulaTitle: "Cómo se calculan las probabilidades",
-      formula: [
-        "cuota = 1 / probabilidad",
-        "probabilidad = 1 / cuota",
-        "probabilidad de equilibrio = 1 / cuota",
-        "probabilidad de la combinada = p₁ × p₂ × … × pₙ",
-        "precio de la combinada = cuota₁ × cuota₂ × … × cuotaₙ",
-      ],
+      takeaway:
+        "Las patas se multiplican, y con ellas el recargo de la casa. Una combinada de cuatro a 1.80 exige un evento del 9,5%.",
+      example: {
+        title: "Lo que cuesta de verdad una combinada de cuatro",
+        rows: [
+          { label: "Cuatro patas a", value: "1.80 cada una · 55,56%" },
+          { label: "Precio combinado", value: "10.50" },
+          { label: "Probabilidad combinada", value: "9,53%" },
+          { label: "Margen por pata", value: "5%" },
+          { label: "Margen en la combinada", value: "21,6%" },
+        ],
+        note:
+          "El precio parece generoso hasta que ves lo que exige: un evento del 9,5%. Y el recargo de la casa se compuso cuatro veces — 1,05⁴ − 1 = 21,6% — así que las mismas cuatro selecciones te cuestan cuatro veces el margen de una sola. Las patas correlacionadas del mismo partido son otra cosa: multiplicar las subestima, y por eso las casas cotizan aparte las combinadas del mismo partido.",
+      },
       explainerTitle: "Primero la probabilidad, después el precio",
       explainer: [
-        "Todo precio es una afirmación sobre la probabilidad, y la conversión entre ambos es una división: una probabilidad del 40% es un precio de 2.50, y un precio de 2.50 es una probabilidad del 40%. Hacer esa conversión antes de apostar cambia la pregunta de «¿me gusta esta apuesta?» a «¿creo que este resultado ocurre más del 40% de las veces?», que es una pregunta en la que se puede estar equivocado y por tanto una pregunta que merece hacerse.",
-        "El mismo número, leído desde el lado del precio, es la probabilidad de equilibrio: la posibilidad mínima que necesita un resultado para que la apuesta sea neutra. Un precio de 1.75 exige el 57,1%. Uno de 1.50 exige el 66,7%. Los precios largos exigen muy poco — 15.00 pide solo el 6,7% — y por eso parecen baratos y por eso las casas cargan ahí su margen. La probabilidad de equilibrio es la prueba honesta de una apuesta: si no puedes argumentar que el resultado la supera, el precio no es generoso, es correcto.",
-        "Las combinadas son donde la probabilidad se vuelve contraintuitiva. Las patas independientes se multiplican: tres apuestas que valoras al 50% cada una combinan al 12,5%, no a algo tranquilizadoramente cercano a la mitad. Cuatro patas al 60% dan 12,96%. El precio combinado se multiplica igual, y ahí está la trampa: una combinada a 15.00 parece una ganga hasta que notas que exige un evento del 6,7%, y que el margen de la casa se ha aplicado a cada pata y luego se ha compuesto. Una combinada de cuatro patas al 5% de margen cada una arrastra casi un 21% de margen total.",
-        "Una suposición que hay que tener presente: esta calculadora multiplica, así que asume patas independientes. Dos resultados del mismo partido — que gane un equipo y que marque su delantero — están correlacionados, y multiplicar sus probabilidades subestima la probabilidad real de que ocurran ambos. Las combinadas del mismo partido las cotizan las casas por separado precisamente porque esa correlación es difícil de calcular: trata el número de aquí como un mínimo, no como una respuesta.",
+        "**Todo precio es una afirmación sobre la probabilidad**, y la conversión es una división: el 40% es un precio de 2.50, y 2.50 es una probabilidad del 40%. Hacer esa conversión antes de apostar cambia la pregunta de «¿me gusta esta apuesta?» a «¿ocurre esto más del 40% de las veces?» — una pregunta en la que puedes estar equivocado. Leído desde el precio, el mismo número es la **probabilidad de equilibrio**: la posibilidad mínima que necesita un resultado para que la apuesta sea neutra. 1.75 exige el 57,1%; 1.50 exige el 66,7%; 15.00 pide solo el 6,7%, y por eso los precios largos parecen baratos y por eso las casas cargan ahí su margen.",
+        "**Las combinadas son donde la probabilidad se vuelve contraintuitiva.** Las patas independientes se multiplican: tres apuestas que valoras al 50% combinan al 12,5%, no a algo tranquilizadoramente cercano a la mitad. Cuatro patas al 60% dan 12,96%. El precio combinado se multiplica igual, y ahí está la trampa — el número se hace grande mientras la posibilidad se hace pequeña, y el margen se compone con ella. Ten presente la suposición de fondo: aquí se multiplica, así que se asumen patas independientes. Dos resultados del mismo partido están correlacionados, y ahí la probabilidad real es distinta, normalmente mayor que el producto.",
       ],
       faq: [
         {

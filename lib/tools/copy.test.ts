@@ -89,6 +89,30 @@ describe("dizionari registrati", () => {
     }
   });
 
+  it("gli esempi di ogni tool hanno numeri, non promesse", () => {
+    // Ogni esempio deve contenere almeno una cifra: un \"esempio\" senza numeri
+    // sarebbe solo un altro paragrafo travestito.
+    for (const locale of TOOL_LOCALES) {
+      for (const slug of TOOL_SLUGS) {
+        const ex = TOOLS_COPY[locale]!.tools[slug].example;
+        const text = [...ex.rows.map((r) => r.value), ex.note].join(" ");
+        expect(text, `${locale}/${slug}: esempio senza numeri`).toMatch(/\d/);
+      }
+    }
+  });
+
+  it("il grassetto editoriale è chiuso, non lasciato a metà", () => {
+    // `**` spaiati finirebbero a schermo come asterischi.
+    for (const locale of TOOL_LOCALES) {
+      for (const slug of TOOL_SLUGS) {
+        for (const par of TOOLS_COPY[locale]!.tools[slug].explainer) {
+          const marks = (par.match(/\*\*/g) ?? []).length;
+          expect(marks % 2, `${locale}/${slug}: ** spaiato`).toBe(0);
+        }
+      }
+    }
+  });
+
   it("non contengono caratteri fuori posto (residui di scrittura)", () => {
     for (const locale of TOOL_LOCALES) {
       const text = JSON.stringify(TOOLS_COPY[locale]);
@@ -140,17 +164,22 @@ describe("dizionari registrati", () => {
             }
           });
 
-          it("ha spiegazione vera e FAQ, e formula O esempio", () => {
+          it("ha frase chiave, esempio numerico, spiegazione vera e FAQ", () => {
             const t = dict.tools[slug];
-            // Kelly non ha la formula (scelta di Andrea, 2026-08-05): al suo posto
-            // un esempio numerico lavorato. Ogni tool deve avere UNO dei due —
-            // lo slot non può restare vuoto.
-            const hasFormula = (t.formula?.length ?? 0) >= 1 && !!t.formulaTitle;
-            const hasExample = (t.example?.rows.length ?? 0) >= 3 && !!t.example?.note;
-            expect(hasFormula || hasExample, "né formula né esempio").toBe(true);
+            // I blocchi formula sono stati rimossi da tutte le pagine (Andrea,
+            // 2026-08-05): al loro posto un esempio numerico lavorato, che ogni
+            // tool DEVE avere — quello slot non può restare vuoto.
+            expect(t.example.rows.length, "righe dell'esempio").toBeGreaterThanOrEqual(4);
+            expect(t.example.title.length).toBeGreaterThan(8);
+            expect(t.example.note.length).toBeGreaterThan(80);
+            expect(t.takeaway.length, "frase chiave").toBeGreaterThan(40);
             expect(t.explainer.length).toBeGreaterThanOrEqual(2);
-            const words = t.explainer.join(" ").split(/\s+/).length;
-            expect(words, "parole nell'explainer").toBeGreaterThan(150);
+            // Misurato in CARATTERI e non in parole: polacco e turco dicono la
+            // stessa cosa dell'inglese con ~40 parole in meno (misurato: 143 e
+            // 137 parole contro 177, ma 968 e 888 caratteri contro 953). Una
+            // soglia a parole boccia una traduzione densa, non una tirata via.
+            const chars = t.explainer.join(" ").length;
+            expect(chars, "caratteri nell'explainer").toBeGreaterThan(800);
             expect(t.faq.length).toBeGreaterThanOrEqual(3);
             for (const f of t.faq) {
               expect(f.q.length).toBeGreaterThan(8);
@@ -160,12 +189,9 @@ describe("dizionari registrati", () => {
         });
       }
 
-      it("la pagina Kelly non ha la formula ma ha l'esempio, coi numeri esatti", () => {
+      it("l'esempio di Kelly porta i numeri esatti", () => {
         const k = dict.tools["kelly-criterion"];
-        expect(k.formula, "la formula era stata rimossa su richiesta").toBeUndefined();
-        expect(k.example, "manca l'esempio numerico").toBeTruthy();
-        expect(k.example!.rows.length).toBeGreaterThanOrEqual(4);
-        const numbers = [...k.example!.rows.map((r) => r.value), k.example!.note].join(" ");
+        const numbers = [...k.example.rows.map((r) => r.value), k.example.note].join(" ");
         // bankroll 1.000 · quota 2.00 · p 55% → edge 10% → pieno 100, mezzo 50;
         // cinque sconfitte: 1000·0.9^5 = 590 (serve +69%) · 1000·0.95^5 = 774 (+29%)
         for (const n of ["2.00", "55%", "10%", "100", "50", "590", "69", "774", "29"]) {

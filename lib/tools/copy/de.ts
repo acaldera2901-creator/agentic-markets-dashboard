@@ -54,18 +54,24 @@ const de: ToolsCopy = {
         impliedProbability: "Implizite Wahrscheinlichkeit",
         hint: "Dezimal akzeptiert auch das Komma: 2,50 gilt wie 2.50.",
       },
-      formulaTitle: "So funktioniert die Umrechnung",
-      formula: [
-        "dezimal = 1 + (amerikanisch / 100)        wenn amerikanisch positiv ist",
-        "dezimal = 1 + (100 / |amerikanisch|)      wenn amerikanisch negativ ist",
-        "dezimal = 1 + (Zähler / Nenner)           für Bruchquoten",
-        "implizite Wahrscheinlichkeit = 1 / dezimal",
-      ],
+      takeaway:
+        "Jede Quote ist eine verkleidete Wahrscheinlichkeit. Erst umrechnen, dann diskutieren: 2.50 heißt, der Buchmacher sagt dir 40 %.",
+      example: {
+        title: "Eine Quote, jedes Format",
+        rows: [
+          { label: "Du gibst ein", value: "2.50" },
+          { label: "Amerikanisch", value: "+150" },
+          { label: "Bruch", value: "3/2" },
+          { label: "Hongkong · Malay · Indonesian", value: "1.50 · −0.67 · +1.50" },
+          { label: "Implizite Wahrscheinlichkeit", value: "40,00 %" },
+        ],
+        note:
+          "Ändere eine, und die anderen folgen. Achtung bei der Rundung: die bekannte −110 ist dezimal 1.9091 und impliziert 52,38 %, während eine angezeigte 1.91 nur 52,36 % impliziert — ein Unterschied, der wie nichts aussieht und zählt, denn der Vorteil entscheidet sich in Zehntelpunkten.",
+      },
       explainerTitle: "Einen Preis in jedem Format lesen",
       explainer: [
-        "Eine Quote ist eine Wahrscheinlichkeit in anderer Kleidung. Die Dezimalquote — europäischer Standard — nennt die Gesamtrückzahlung pro Einheit Einsatz: 2.50 zahlt 2.50 für jede riskierte 1, Einsatz inklusive. Die Bruchquote, im britischen Rennsport weiter üblich, nennt den Gewinn statt der Rückzahlung: 3/2 bedeutet drei Einheiten Gewinn auf zwei riskierte, also dieselbe 2.50 dezimal. Die amerikanische Quote sagt, wie viel du auf 100 gewinnst (+150) oder wie viel du riskieren musst, um 100 zu gewinnen (−110). Hongkong, Malay und Indonesian sind die Formate der asiatischen Märkte, und sie zählen, weil dort häufig die schärfsten Preise stehen.",
-        "Die Zahl, die zu lesen lohnt, ist die letzte: die implizite Wahrscheinlichkeit, also 1 geteilt durch die Dezimalquote. Ein Preis von 2.50 impliziert 40 %. Ein Preis von 1.9091 — die bekannte −110 — impliziert 52,38 %. Das ist die vom Buchmacher genannte Chance, und es ist die einzige Zahl, die du direkt mit deiner eigenen Schätzung vergleichen kannst. Zwei Quoten in verschiedenen Formaten sind nicht leichter zu vergleichen als zwei Wahrscheinlichkeiten: erst umrechnen, dann diskutieren.",
-        "Eine Grenze, die dieser Rechner nicht beseitigen kann: die implizite Wahrscheinlichkeit enthält weiterhin die Marge des Buchmachers. Addiere die impliziten Wahrscheinlichkeiten aller Ergebnisse eines Marktes und du liegst über 100 % — dieser Überschuss ist die Marge, und er bläht jede einzelne dieser Wahrscheinlichkeiten auf. Wer die ehrliche Markteinschätzung statt der bepreisten will, schickt den Markt durch den Margen-Rechner und nutzt die dort ausgegebenen fairen Wahrscheinlichkeiten.",
+        "**Eine Quote ist eine Wahrscheinlichkeit in anderer Kleidung.** Die Dezimalquote — europäischer Standard — nennt die Gesamtrückzahlung pro Einheit Einsatz: 2.50 zahlt 2.50 für jede riskierte 1, Einsatz inklusive. Die Bruchquote nennt den Gewinn: 3/2 sind drei Einheiten Gewinn auf zwei riskierte, dieselbe 2.50. Die amerikanische Quote sagt, wie viel du auf 100 gewinnst (+150) oder wie viel du riskieren musst, um 100 zu gewinnen (−110). Hongkong, Malay und Indonesian sind die asiatischen Formate, und sie zählen, weil dort oft die schärfsten Preise stehen.",
+        "Die Zahl, die zu lesen lohnt, ist die letzte. **Die implizite Wahrscheinlichkeit ist 1 geteilt durch die Dezimalquote**, und sie ist die einzige Größe, die du direkt mit deiner eigenen Schätzung vergleichen kannst: zwei Quoten in verschiedenen Schreibweisen vergleichen sich nicht leichter als zwei Wahrscheinlichkeiten. Eine Grenze, die dieses Werkzeug nicht aufheben kann: **die implizite Wahrscheinlichkeit enthält weiter die Marge des Buchmachers**, addiere also alle Ergebnisse eines Marktes und du liegst über 100 %. Für die ehrliche Markteinschätzung statt der bepreisten schicke den Markt durch den Margen-Rechner.",
       ],
       faq: [
         {
@@ -104,20 +110,23 @@ const de: ToolsCopy = {
         impliedProbability: "Implizite Wahrscheinlichkeit",
         hint: "Für Drei-Wege-Märkte ein Ergebnis hinzufügen, für Siegwetten entsprechend mehr.",
       },
-      formulaTitle: "So wird die Marge berechnet",
-      formula: [
-        "Overround = Σ (1 / Quoteᵢ)",
-        "Marge = Overround − 1",
-        "Auszahlungsquote = 1 / Overround",
-        "faire Wahrscheinlichkeitᵢ = (1 / Quoteᵢ) / Overround",
-        "faire Quoteᵢ = 1 / faire Wahrscheinlichkeitᵢ",
-      ],
+      takeaway:
+        "Die Marge ist der Preis für das Recht, eine Meinung zu haben. Zwei Buchmacher, dasselbe Spiel — und der Unterschied ist Geld.",
+      example: {
+        title: "Dasselbe Spiel bei zwei Buchmachern",
+        rows: [
+          { label: "Freizeit-Buchmacher", value: "1.90 / 1.90 · Marge 5,26 %" },
+          { label: "Scharfer Buchmacher", value: "1.98 / 1.98 · Marge 1,01 %" },
+          { label: "Faire Linie, beide", value: "2.00 / 2.00 · je 50 %" },
+          { label: "Dein EV bei echten 50 %", value: "−5 % gegen −1 % pro Wette" },
+        ],
+        note:
+          "Gleiche Meinung, gleiches Spiel. 100 zweihundertmal gesetzt kostet beim ersten Buchmacher 1.000 und beim zweiten 200: die acht Cent Quotenunterschied sind 800 über eine Saison. Das ist der billigste Vorteil im Wetten, und er braucht kein Modell.",
+      },
       explainerTitle: "Die Marge ist der Preis der Wette",
       explainer: [
-        "Ein fairer Zwei-Wege-Markt bepreist beide Seiten mit 2.00: die impliziten Wahrscheinlichkeiten liegen bei 50 % und 50 %, summieren sich auf genau 100 %, und keine Seite hat einen Vorteil. Reale Märkte stehen bei 1.90 und 1.90. Diese impliziten Wahrscheinlichkeiten betragen je 52,63 %, summieren sich auf 105,26 %, und die überschüssigen 5,26 Prozentpunkte sind die Marge des Buchmachers — der Overround. Welche Seite du auch spielst, du zahlst sie.",
-        "Die Marge ist die nützlichste Zahl für die Frage, wo man wettet. Dasselbe Spiel mit 5 % Marge und mit 2 % Marge ist nicht dieselbe Wette: der engere Buchmacher überlässt dir bei identischer Meinung rund drei Prozentpunkte Erwartungswert. Margen schwanken stark je Markt: Hauptlinien scharfer Buchmacher liegen teils unter 2 %, während Siegwetten, Spielermärkte und Spezialwetten regelmäßig 8 % und mehr tragen — dort wissen die Buchmacher ihre Preise am wenigsten geprüft.",
-        "Das Entfernen der Marge ergibt die faire Linie, die sogenannte No-Vig-Linie. Dieser Rechner macht das proportional: jede implizite Wahrscheinlichkeit wird durch ihre Summe geteilt, dadurch summieren sie sich wieder auf genau 100 %, und die fairen Quoten sind deren Kehrwerte. Diese Linie kommt der ehrlichen Markteinschätzung am nächsten und ist der Bezugspunkt für den EV-Rechner: eine Wette hat nur dann positiven Erwartungswert, wenn deine Wahrscheinlichkeit die faire übersteigt — nicht bloß die bepreiste.",
-        "Eine offen genannte Grenze: die proportionale Entfernung verteilt die Marge gleichmäßig über alle Ergebnisse, reale Buchmacher tun das nicht. Sie legen mehr Marge auf unwahrscheinliche Ergebnisse, weil sich dort das Freizeitgeld sammelt. In einem Markt mit klarem Favoriten und fernem Außenseiter unterschätzt diese Methode die echte Chance des Favoriten leicht. Bei Hauptlinien ist die Verzerrung klein; bei Lotterie-Siegwetten ist die faire Linie eine Schätzung, keine Messung.",
+        "**Ein fairer Zwei-Wege-Markt bepreist beide Seiten mit 2.00.** Die impliziten Wahrscheinlichkeiten liegen bei 50 % und 50 %, summieren sich auf genau 100 %, und keine Seite hat einen Vorteil. Reale Märkte stehen bei 1.90 und 1.90: diese Impliziten betragen je 52,63 %, summieren sich auf 105,26 %, und **die überschüssigen 5,26 Punkte sind die Marge des Buchmachers** — der Overround. Welche Seite du auch spielst, du zahlst sie. Margen schwanken stark: Hauptlinien scharfer Buchmacher liegen unter 2 %, während Siegwetten und Spielermärkte regelmäßig 8 % und mehr tragen — dort wissen die Buchmacher ihre Preise am wenigsten geprüft.",
+        "Das Entfernen der Marge ergibt die faire Linie, die No-Vig-Linie. Dieser Rechner macht das proportional — jede Implizite geteilt durch ihre Summe, sodass sie wieder genau 100 % ergeben — und **diese faire Linie ist der Bezugspunkt jeder +EV-Entscheidung**: eine Wette hat nur positiven Erwartungswert, wenn deine Wahrscheinlichkeit die faire übertrifft, nicht bloß die bepreiste. Eine offene Grenze: reale Buchmacher legen mehr Marge auf unwahrscheinliche Ergebnisse, in einem Markt mit klarem Favoriten unterschätzt diese Methode ihn also leicht. Bei ausgewogenen Linien ist die Verzerrung klein; bei Lotterie-Siegwetten ist die faire Linie eine Schätzung.",
       ],
       faq: [
         {
@@ -166,18 +175,24 @@ const de: ToolsCopy = {
         neutral: "Break-even: der Preis entspricht genau der Wahrscheinlichkeit.",
         hint: "Prozentwerte als Zahl eingeben: 55 bedeutet 55 %.",
       },
-      formulaTitle: "So wird der Erwartungswert berechnet",
-      formula: [
-        "EV = p × (Quote − 1) × Einsatz − (1 − p) × Einsatz",
-        "   = (p × Quote − 1) × Einsatz",
-        "Vorteil = p × Quote − 1",
-        "Break-even-Preis = 1 / p",
-      ],
+      takeaway:
+        "Du musst den Markt nicht überlisten — nur einen Buchmacher finden, der langsamer ist als der schärfste.",
+      example: {
+        title: "Die Wahrscheinlichkeit von einem scharfen Buchmacher leihen",
+        rows: [
+          { label: "Scharfer Buchmacher, beide Seiten", value: "1.95 / 1.95" },
+          { label: "Faire Wahrscheinlichkeit, Marge entfernt", value: "50,00 %" },
+          { label: "Break-even-Preis", value: "2.00" },
+          { label: "Dein Buchmacher bietet", value: "2.10" },
+          { label: "EV auf 100 Einsatz", value: "+5,00 (+5 %)" },
+        ],
+        note:
+          "Es war keine Meinung nötig: die scharfe Linie lieferte die Wahrscheinlichkeit, und dein Buchmacher bepreiste dasselbe Ergebnis mit 2.10, wo 2.00 fair war. Setze die scharfen Preise auf 1.90/1.90 und die faire Wahrscheinlichkeit bleibt 50 % — genau darum geht es beim Entfernen der Marge: die Antwort wandert nicht mit dem Vig.",
+      },
       explainerTitle: "Was der Erwartungswert wirklich sagt",
       explainer: [
-        "Der Erwartungswert ist das durchschnittliche Ergebnis einer Wette, wenn man sie unbegrenzt oft spielen könnte. Er hat zwei Eingaben und keine Meinung: den angebotenen Preis und die Wahrscheinlichkeit, die du dem Ergebnis gibst. Wenn du glaubst, ein Team gewinnt in 55 % der Fälle, und jemand bietet 2.00, ist die Rechnung sofort da: in 55 % der Fälle gewinnst du eine Einheit, in 45 % verlierst du sie, im Durchschnitt also 0,10 Einheiten pro Einheit Einsatz. Das sind 10 % Vorteil, und genau das bedeutet +EV.",
-        "Die Zahl, die alles entscheidet, ist die Wahrscheinlichkeit — und dort verlieren die meisten still. Ein Fehler von 5 Punkten in der Schätzung genügt, um aus 4 % Vorteil 1 % Verlust zu machen, und nach Gefühl gebildete Schätzungen liegen regelmäßig deutlich mehr als 5 Punkte daneben. Deshalb hat dieser Rechner einen zweiten Modus: statt dem Bauchgefühl zu trauen, nimm den Preis beider Seiten bei einem scharfen Buchmacher, entferne die Marge und nutze die resultierende faire Wahrscheinlichkeit. Die Frage ist dann nicht mehr, ob du klüger bist als der Markt, sondern ob dein Buchmacher langsamer ist als der schärfste.",
-        "Lies den EV als Rate, nicht als Versprechen. Eine Wette mit 4 % Erwartungswert liefert im Einzelfall gar nichts: sie gewinnt oder verliert. Die 4 % zeigen sich erst über hunderte unabhängige Wetten, und nur wenn die Wahrscheinlichkeit stimmte. Kurzfristig ist die Varianz weit größer als der Vorteil, und genau darum zählt die Einsatzhöhe so viel wie der Vorteil selbst — dafür ist die Kelly-Formel da.",
+        "**Der Erwartungswert ist das durchschnittliche Ergebnis einer Wette, die du unbegrenzt wiederholen könntest.** Zwei Eingaben, keine Meinung: der angebotene Preis und die Wahrscheinlichkeit, die du dem Ergebnis gibst. Du glaubst, ein Team gewinnt in 55 % der Fälle, und jemand bietet 2.00 — die Rechnung ist sofort da: in 55 % gewinnst du eine Einheit, in 45 % verlierst du sie, also 0,10 Einheiten pro Einheit Einsatz. Das sind 10 % Vorteil, und mehr bedeutet +EV nicht.",
+        "**Die Wahrscheinlichkeit ist die Stelle, an der fast alle still verlieren.** Ein Fehler von 5 Punkten macht aus 4 % Vorteil 1 % Verlust, und nach Gefühl gebildete Schätzungen liegen weit mehr daneben. Daher der zweite Modus dieses Rechners: statt dem Bauchgefühl zu trauen, nimm beide Seiten bei einem scharfen Buchmacher, entferne die Marge und nutze die faire Wahrscheinlichkeit, die dabei herauskommt. Lies das Ergebnis als Rate, nicht als Versprechen — 4 % Vorteil liefern bei einer einzelnen Wette nichts, sie zeigen sich erst über hunderte, und nur wenn die Wahrscheinlichkeit stimmte. Darum zählt die Einsatzhöhe so viel wie der Vorteil.",
       ],
       faq: [
         {
@@ -220,6 +235,8 @@ const de: ToolsCopy = {
         noEdge: "Kein Vorteil zu diesem Preis — der optimale Einsatz ist null.",
         hint: "Prozentwerte als Zahl eingeben: 55 bedeutet 55 %.",
       },
+      takeaway:
+        "Kelly bemisst den Einsatz am Vorteil, nicht an deiner Überzeugung — und fast alle sollten bewusst weniger setzen, als er sagt.",
       example: {
         title: "Was das mit 1.000 Bankroll bedeutet",
         rows: [
@@ -234,8 +251,8 @@ const de: ToolsCopy = {
       },
       explainerTitle: "Den Einsatz so wählen, dass die Verlustserie ihn nicht beendet",
       explainer: [
-        "Die Kelly-Formel beantwortet, was der Erwartungswert offenlässt: Wie viel soll man bei gegebenem Vorteil tatsächlich riskieren? Setzt man zu wenig, verzinst sich ein echter Vorteil zu langsam, um zu zählen. Setzt man zu viel, dreht sich die Mathematik gegen einen: eine halbierte Bankroll braucht +100 %, um zurückzukommen, große Einsätze zerstören also das Wachstum selbst dann, wenn jede einzelne Wette günstig ist. Der optimale Anteil ist der Vorteil geteilt durch die Nettoquote, und er skaliert mit dem Vorteil, nicht mit der Überzeugung: 10 % Vorteil bei 2.00 verlangen 10 % der Bankroll, derselbe Vorteil bei 5.00 nur 2,5 %.",
-        "Voll Kelly sollte fast niemand spielen, denn die Formel setzt voraus, dass deine Wahrscheinlichkeit genau stimmt — und das tut sie nie. Gib ihr einen überschätzten Vorteil, und sie empfiehlt bereitwillig einen Einsatz, der für den tatsächlichen Vorteil zu groß ist: der schnellste Weg, eine Bankroll zu verlieren, obwohl man im Mittel richtig liegt. Halb Kelly verzichtet auf ein Viertel des theoretischen Wachstums und halbiert die Schwankung ungefähr; viertel Kelly nutzen viele Profis mit echten Modellen. Und bietet der Preis keinen Vorteil, ist der richtige Einsatz null: ein negativer Kelly-Anteil heißt, die Wette gehört auf die andere Seite — nie, dass man hier weniger setzen soll.",
+        "Die Kelly-Formel beantwortet, was der Erwartungswert offenlässt: Wie viel soll man bei gegebenem Vorteil tatsächlich riskieren? Setzt man zu wenig, verzinst sich ein echter Vorteil zu langsam, um zu zählen. Setzt man zu viel, dreht sich die Mathematik gegen einen: eine halbierte Bankroll braucht +100 %, um zurückzukommen, große Einsätze zerstören also das Wachstum selbst dann, wenn jede einzelne Wette günstig ist. Der optimale Anteil ist der Vorteil geteilt durch die Nettoquote, und **er skaliert mit dem Vorteil, nicht mit der Überzeugung**: 10 % Vorteil bei 2.00 verlangen 10 % der Bankroll, derselbe Vorteil bei 5.00 nur 2,5 %.",
+        "**Voll Kelly sollte fast niemand spielen**, denn die Formel setzt voraus, dass deine Wahrscheinlichkeit genau stimmt — und das tut sie nie. Gib ihr einen überschätzten Vorteil, und sie empfiehlt bereitwillig einen Einsatz, der für den tatsächlichen Vorteil zu groß ist: der schnellste Weg, eine Bankroll zu verlieren, obwohl man im Mittel richtig liegt. Halb Kelly verzichtet auf ein Viertel des theoretischen Wachstums und halbiert die Schwankung ungefähr; viertel Kelly nutzen viele Profis mit echten Modellen. Und bietet der Preis keinen Vorteil, ist der richtige Einsatz null: ein negativer Kelly-Anteil heißt, die Wette gehört auf die andere Seite — nie, dass man hier weniger setzen soll.",
       ],
       faq: [
         {
@@ -284,20 +301,24 @@ const de: ToolsCopy = {
         resultTitle: "Ergebnisse",
         hint: "Ein Preis und seine Break-even-Wahrscheinlichkeit sind dieselbe Zahl von zwei Seiten gelesen.",
       },
-      formulaTitle: "So werden die Wahrscheinlichkeiten berechnet",
-      formula: [
-        "Quote = 1 / Wahrscheinlichkeit",
-        "Wahrscheinlichkeit = 1 / Quote",
-        "Break-even-Wahrscheinlichkeit = 1 / Quote",
-        "Wahrscheinlichkeit der Kombi = p₁ × p₂ × … × pₙ",
-        "Quote der Kombi = Quote₁ × Quote₂ × … × Quoteₙ",
-      ],
+      takeaway:
+        "Positionen multiplizieren sich — und die Marge des Buchmachers mit ihnen. Eine Vierfach-Kombi zu 1.80 verlangt ein Ereignis mit 9,5 %.",
+      example: {
+        title: "Was eine Vierfach-Kombi wirklich kostet",
+        rows: [
+          { label: "Vier Positionen zu", value: "je 1.80 · 55,56 %" },
+          { label: "Kombinierte Quote", value: "10.50" },
+          { label: "Kombinierte Wahrscheinlichkeit", value: "9,53 %" },
+          { label: "Marge pro Position", value: "5 %" },
+          { label: "Marge auf der Kombi", value: "21,6 %" },
+        ],
+        note:
+          "Die Quote sieht großzügig aus, bis man merkt, was sie verlangt: ein Ereignis mit 9,5 %. Und die Marge des Buchmachers hat sich viermal verzinst — 1,05⁴ − 1 = 21,6 % — dieselben vier Positionen kosten dich also die vierfache Marge einer Einzelwette. Korrelierte Positionen aus einem Spiel sind etwas anderes: Multiplizieren unterschätzt sie, und genau deshalb bepreisen Buchmacher Kombis innerhalb eines Spiels separat.",
+      },
       explainerTitle: "Zuerst die Wahrscheinlichkeit, dann der Preis",
       explainer: [
-        "Jeder Preis ist eine Behauptung über eine Wahrscheinlichkeit, und die Umrechnung ist eine Division: 40 % Wahrscheinlichkeit sind ein Preis von 2.50, und ein Preis von 2.50 sind 40 %. Diese Umrechnung vor der Wette zu machen verändert die Frage von „gefällt mir diese Wette?“ zu „glaube ich, dass dieses Ergebnis in mehr als 40 % der Fälle eintritt?“ — eine Frage, bei der man sich irren kann, und deshalb eine Frage, die sich lohnt.",
-        "Dieselbe Zahl, von der Preisseite gelesen, ist die Break-even-Wahrscheinlichkeit: die Mindestchance, die ein Ergebnis braucht, damit die Wette neutral ist. Ein Preis von 1.75 verlangt 57,1 %. Ein Preis von 1.50 verlangt 66,7 %. Lange Preise verlangen sehr wenig — 15.00 nur 6,7 % — deshalb wirken sie günstig, und deshalb legen Buchmacher dort ihre Marge auf. Die Break-even-Wahrscheinlichkeit ist der ehrliche Test einer Wette: kannst du nicht begründen, dass das Ergebnis sie übertrifft, ist der Preis nicht großzügig, sondern korrekt.",
-        "Bei Kombiwetten wird Wahrscheinlichkeit unintuitiv. Unabhängige Positionen multiplizieren sich: drei Wetten, die du je bei 50 % siehst, ergeben zusammen 12,5 % — nicht etwas beruhigend Halbes. Vier Positionen bei 60 % ergeben 12,96 %. Die kombinierte Quote multipliziert sich genauso, und darin liegt die Falle: eine Kombi zu 15.00 sieht nach einem Schnäppchen aus, bis man merkt, dass sie ein Ereignis mit 6,7 % verlangt und dass die Marge des Buchmachers auf jede Position gelegt und dann verzinst wurde. Vier Positionen mit je 5 % Marge tragen knapp 21 % Gesamtmarge.",
-        "Eine Annahme, die man im Kopf behalten muss: dieser Rechner multipliziert, also setzt er Unabhängigkeit voraus. Zwei Ergebnisse desselben Spiels — Sieg eines Teams und Treffer seines Stürmers — sind korreliert, und das Multiplizieren unterschätzt die echte Chance, dass beide eintreten. Kombis innerhalb eines Spiels bepreisen Buchmacher gerade deshalb separat, weil diese Korrelation schwer zu berechnen ist: nimm die Zahl hier als Untergrenze, nicht als Antwort.",
+        "**Jeder Preis ist eine Behauptung über eine Wahrscheinlichkeit**, und die Umrechnung ist eine Division: 40 % sind ein Preis von 2.50, und 2.50 sind 40 %. Diese Umrechnung vor der Wette verändert die Frage von „gefällt mir diese Wette?“ zu „passiert das in mehr als 40 % der Fälle?“ — eine Frage, bei der man sich irren kann. Von der Preisseite gelesen ist dieselbe Zahl die **Break-even-Wahrscheinlichkeit**: die Mindestchance, die ein Ergebnis braucht, damit die Wette neutral ist. 1.75 verlangt 57,1 %; 1.50 verlangt 66,7 %; 15.00 nur 6,7 % — deshalb wirken lange Quoten billig und deshalb legen Buchmacher dort ihre Marge auf.",
+        "**Bei Kombiwetten wird Wahrscheinlichkeit unintuitiv.** Unabhängige Positionen multiplizieren sich: drei Wetten, die du je bei 50 % siehst, ergeben zusammen 12,5 % — nicht etwas beruhigend Halbes. Vier Positionen bei 60 % ergeben 12,96 %. Die kombinierte Quote multipliziert sich genauso, und darin liegt die Falle: die Zahl wird groß, während die Chance klein wird, und die Marge verzinst sich mit. Behalte die Annahme im Kopf: hier wird multipliziert, also Unabhängigkeit vorausgesetzt. Zwei Ergebnisse desselben Spiels sind korreliert, und dort ist die echte Wahrscheinlichkeit anders, meist höher als das Produkt.",
       ],
       faq: [
         {
