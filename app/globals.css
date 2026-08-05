@@ -9661,6 +9661,21 @@ button:disabled {
   .tl-out.is-strong .tl-out-val { font-size: 19px; }
 }
 
+/* esempio numerico lavorato: sta nello slot che gli altri tool danno alla
+   formula (la pagina Kelly non ne ha una). Righe etichetta→valore con i valori
+   in mono tabellare, e la nota sotto come riga di chiusura: nessun box nuovo. */
+.tl-example { border: 1px solid var(--am-line); background: var(--am-inset); padding: 4px 16px 14px; }
+.tl-example-rows { margin: 0; }
+.tl-example-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 10px 0; border-bottom: 1px dashed var(--am-line); }
+.tl-example-row:last-child { border-bottom: 0; }
+.tl-example-row dt { font-size: 13.5px; color: var(--am-muted); margin: 0; }
+.tl-example-row dd { margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 15px; font-weight: 700; color: var(--am-text); font-variant-numeric: tabular-nums;
+  text-align: right; }
+.tl-example-note { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--am-line);
+  font-size: 14px; line-height: 1.6; color: var(--am-muted); max-width: 72ch; }
+
 /* ── #TOOLS-HUB-0805-ART: icone illustrate + meter ─────────────────────────
    Due aggiunte, nessun box in più (il box-su-box è il tell #1 di AI-slop):
    l'icona vive DENTRO l'header e la card esistenti, e il meter è una riga

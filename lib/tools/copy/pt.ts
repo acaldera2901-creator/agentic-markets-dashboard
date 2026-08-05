@@ -220,19 +220,22 @@ const pt: ToolsCopy = {
         noEdge: "Sem vantagem a este preço: o stake ótimo é zero.",
         hint: "As percentagens escrevem-se como números: 55 significa 55%.",
       },
-      formulaTitle: "Como se calcula o stake de Kelly",
-      formula: [
-        "b = odd − 1",
-        "f* = (p × b − (1 − p)) / b = (p × odd − 1) / b",
-        "stake = banca × f* × fração",
-        "crescimento esperado = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "O que isso significa com 1.000 de banca",
+        rows: [
+          { label: "Banca", value: "1.000" },
+          { label: "Odd · a tua probabilidade", value: "2.00 · 55%" },
+          { label: "Vantagem", value: "+10%" },
+          { label: "Kelly completo", value: "10% → 100 por aposta" },
+          { label: "Meio Kelly", value: "5% → 50 por aposta" },
+        ],
+        note:
+          "Cinco derrotas seguidas — uma sequência em cada 54 a esta odd — deixam 590 com Kelly completo, e será preciso +69% para voltar a 1.000. A mesma série a meio Kelly deixa 774, bastando +29%. Mesma vantagem, mesmas apostas, metade do buraco.",
+      },
       explainerTitle: "Dimensionar a aposta para a má série não a encerrar",
       explainer: [
-        "O critério de Kelly responde a uma pergunta que o valor esperado ignora: dada uma vantagem, quanto arriscar de facto? Aposta pouco demais e uma vantagem real capitaliza-se demasiado devagar para contar. Aposta demasiado e a matemática vira-se contra ti: uma banca que reduz a metade precisa de +100% para recuperar, portanto stakes grandes destroem o crescimento mesmo quando cada aposta individual é favorável. Kelly encontra a fração que maximiza a taxa de crescimento no longo prazo, e resulta ser a vantagem dividida pela odd líquida.",
-        "O resultado escala com a vantagem, não com a convicção. Uma vantagem de 10% à odd 2.00 pede 10% da banca; a mesma vantagem a 5.00 pede apenas 2,5%, porque um preço mais longo significa séries negativas mais longas e um percurso mais acidentado. É por isso que a fórmula é útil mesmo para quem nunca a segue à letra: diz que preço e vantagem juntos decidem o stake, e que uma sensação forte não é uma entrada.",
-        "Quase ninguém deveria jogar Kelly completo. A fórmula assume que a tua probabilidade é exata, e nunca é. Dá-lhe uma vantagem sobrestimada e recomendará com entusiasmo um stake demasiado grande para a vantagem que tens de verdade: a forma mais rápida de perder uma banca tendo razão em média. O meio Kelly abdica de um quarto do crescimento teórico e reduz a volatilidade quase a metade; um quarto de Kelly é o que muitos profissionais com modelos reais usam de facto. Se as tuas probabilidades vêm do julgamento e não dos dados, um quarto de Kelly não é prudência: é realismo.",
-        "Quando o preço não oferece vantagem, o stake correto é zero, e esta calculadora di-lo em vez de devolver um número negativo disfarçado de conselho. Uma fração de Kelly negativa significa que a aposta valeria do outro lado, se a encontrares a esse preço: nunca significa apostar menos neste.",
+        "O critério de Kelly responde ao que o valor esperado ignora: dada uma vantagem, quanto arriscar de facto? Aposta pouco demais e uma vantagem real capitaliza-se demasiado devagar para contar. Aposta demasiado e a matemática vira-se contra ti: uma banca que reduz a metade precisa de +100% para recuperar, portanto stakes excessivos destroem o crescimento mesmo quando cada aposta é favorável. A fração ótima é a vantagem dividida pela odd líquida, e escala com a vantagem, não com a convicção: 10% de vantagem a 2.00 pede 10% da banca, a mesma vantagem a 5.00 pede apenas 2,5%.",
+        "Quase ninguém deveria jogar Kelly completo, porque a fórmula assume que a tua probabilidade é exata e nunca é. Dá-lhe uma vantagem sobrestimada e recomendará com entusiasmo um stake demasiado grande para a vantagem que tens de verdade: a forma mais rápida de perder uma banca tendo razão em média. O meio Kelly abdica de um quarto do crescimento teórico e reduz a volatilidade quase a metade; um quarto de Kelly é o que usam muitos profissionais com modelos reais. E quando o preço não oferece vantagem, o stake correto é zero: uma fração de Kelly negativa significa que a aposta é do outro lado, nunca que deves apostar menos nesta.",
       ],
       faq: [
         {

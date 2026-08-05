@@ -220,19 +220,22 @@ const sv: ToolsCopy = {
         noEdge: "Ingen fördel vid det här priset — optimal insats är noll.",
         hint: "Procent skrivs som tal: 55 betyder 55 %.",
       },
-      formulaTitle: "Så beräknas Kelly-insatsen",
-      formula: [
-        "b = odds − 1",
-        "f* = (p × b − (1 − p)) / b = (p × odds − 1) / b",
-        "insats = kassa × f* × andel",
-        "väntad tillväxt = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Vad det betyder med 1 000 i kassan",
+        rows: [
+          { label: "Kassa", value: "1 000" },
+          { label: "Odds · din sannolikhet", value: "2.00 · 55%" },
+          { label: "Fördel", value: "+10%" },
+          { label: "Hel Kelly", value: "10% → 100 per spel" },
+          { label: "Halv Kelly", value: "5% → 50 per spel" },
+        ],
+        note:
+          "Fem förluster i rad — en serie av 54 vid det här oddset — lämnar 590 vid hel Kelly, och då krävs +69% för att komma tillbaka till 1 000. Samma svit vid halv Kelly lämnar 774, där +29% räcker. Samma fördel, samma spel, hälften så djup grop.",
+      },
       explainerTitle: "Att sätta insatsen så att förlustsviten inte avslutar den",
       explainer: [
-        "Kelly-kriteriet besvarar en fråga som väntat värde hoppar över: hur mycket ska man faktiskt riskera givet en fördel? Satsa för lite och en verklig fördel växer för långsamt för att betyda något. Satsa för mycket och matematiken vänder sig mot dig: en kassa som halveras behöver +100 % för att komma tillbaka, så stora insatser förstör tillväxten även när varje enskilt spel är gynnsamt. Kelly hittar den andel som maximerar tillväxttakten på lång sikt, och den visar sig vara fördelen delad med nettooddset.",
-        "Resultatet skalar med fördelen, inte med övertygelsen. 10 % fördel vid oddset 2.00 kräver 10 % av kassan; samma fördel vid 5.00 kräver bara 2,5 %, eftersom ett längre pris innebär längre förlustsviter och en gropigare väg. Därför är formeln användbar även för den som aldrig följer den exakt: den säger att pris och fördel tillsammans avgör insatsen, och att en stark känsla inte är en ingång.",
-        "Nästan ingen bör spela hel Kelly. Formeln antar att din sannolikhet är exakt, och det är den aldrig. Ge den en överskattad fördel och den rekommenderar villigt en insats som är för stor för den fördel du faktiskt har — det snabbaste sättet att förlora en kassa medan man har rätt i genomsnitt. Halv Kelly ger upp en fjärdedel av den teoretiska tillväxten och halverar ungefär volatiliteten; kvarts Kelly är vad många professionella med verkliga modeller faktiskt använder. Kommer dina sannolikheter från bedömning istället för data är kvarts Kelly inte försiktighet, utan realism.",
-        "När priset inte ger någon fördel är rätt insats noll, och den här kalkylatorn säger det istället för att returnera ett negativt tal utklätt till råd. En negativ Kelly-andel betyder att spelet vore värt på andra sidan, om du hittar det till det priset: den betyder aldrig att satsa mindre på den här.",
+        "Kelly-kriteriet besvarar det väntat värde hoppar över: hur mycket ska man faktiskt riskera givet en fördel? Satsa för lite och en verklig fördel växer för långsamt för att betyda något. Satsa för mycket och matematiken vänder sig mot dig: en kassa som halveras behöver +100 % för att komma tillbaka, så för stora insatser förstör tillväxten även när varje enskilt spel är gynnsamt. Den optimala andelen är fördelen delad med nettooddset, och den skalar med fördelen, inte med övertygelsen: 10 % fördel vid 2.00 kräver 10 % av kassan, samma fördel vid 5.00 bara 2,5 %.",
+        "Nästan ingen bör spela hel Kelly, för formeln antar att din sannolikhet är exakt och det är den aldrig. Ge den en överskattad fördel och den rekommenderar villigt en insats som är för stor för den fördel du faktiskt har: det snabbaste sättet att förlora en kassa medan man har rätt i genomsnitt. Halv Kelly ger upp en fjärdedel av den teoretiska tillväxten och halverar ungefär volatiliteten; kvarts Kelly är vad många professionella med verkliga modeller använder. Och när priset inte ger någon fördel är rätt insats noll: en negativ Kelly-andel betyder att spelet hör till andra sidan, aldrig att man ska satsa mindre på den här.",
       ],
       faq: [
         {

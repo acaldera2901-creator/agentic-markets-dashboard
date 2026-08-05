@@ -220,19 +220,22 @@ const tr: ToolsCopy = {
         noEdge: "Bu fiyatta avantaj yok — en uygun miktar sıfır.",
         hint: "Yüzdeleri sayı olarak yaz: 55, %55 demektir.",
       },
-      formulaTitle: "Kelly miktarı nasıl hesaplanır",
-      formula: [
-        "b = oran − 1",
-        "f* = (p × b − (1 − p)) / b = (p × oran − 1) / b",
-        "miktar = kasa × f* × oran",
-        "beklenen büyüme = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "1.000 kasa ile bunun anlamı",
+        rows: [
+          { label: "Kasa", value: "1.000" },
+          { label: "Fiyat · olasılığın", value: "2.00 · 55%" },
+          { label: "Avantaj", value: "+10%" },
+          { label: "Tam Kelly", value: "10% → bahis başına 100" },
+          { label: "Yarım Kelly", value: "5% → bahis başına 50" },
+        ],
+        note:
+          "Üst üste beş kayıp — bu fiyatta 54 dizide bir — tam Kelly'de 590 bırakır ve 1.000'e dönmek için +%69 gerekir. Aynı seri yarım Kelly'de 774 bırakır, +%29 yeter. Aynı avantaj, aynı bahisler, yarısı kadar çukur.",
+      },
       explainerTitle: "Kötü serinin bitiremeyeceği bir miktar seçmek",
       explainer: [
-        "Kelly kriteri, beklenen değerin atladığı bir soruyu yanıtlar: elinde avantaj varken gerçekte ne kadar riske etmeli? Az oynarsan gerçek bir avantaj anlam taşıyacak kadar hızlı bileşiklenmez. Çok oynarsan matematik aleyhine döner: yarıya inen bir kasa geri dönmek için %100 artış ister, yani büyük miktarlar her tek bahis lehte olsa bile büyümeyi yok eder. Kelly, uzun vadeli büyüme hızını en yükseğe çıkaran oranı bulur ve bu oran avantajın net orana bölümüdür.",
-        "Sonuç avantajla ölçeklenir, inançla değil. 2.00 fiyatta %10 avantaj kasanın %10'unu ister; aynı avantaj 5.00 fiyatta yalnızca %2,5 ister, çünkü daha uzun fiyat daha uzun kayıp serileri ve daha engebeli bir yol demektir. Formül, harfi harfine izlenmese bile bu yüzden yararlıdır: fiyat ile avantajın birlikte miktarı belirlediğini, güçlü bir hissin ise girdi olmadığını söyler.",
-        "Tam Kelly'yi neredeyse kimse oynamamalı. Formül olasılığının tam doğru olduğunu varsayar, hiçbir zaman değildir. Ona olduğundan büyük bir avantaj ver, gerçekte sahip olduğun avantaj için fazla büyük bir miktarı gönülle önerir: ortalamada haklıyken bir kasayı kaybetmenin en hızlı yolu. Yarım Kelly teorik büyümenin dörtte birinden vazgeçer ve oynaklığı yaklaşık yarıya indirir; gerçek modellere sahip birçok profesyonel fiilen çeyrek Kelly kullanır. Olasılıkların veriden değil sezgiden geliyorsa çeyrek Kelly ihtiyat değil, gerçekçiliktir.",
-        "Fiyat avantaj sunmuyorsa doğru miktar sıfırdır ve bu hesaplayıcı bunu söyler; tavsiye kılığında negatif bir sayı döndürmez. Negatif Kelly oranı, o fiyattan bulabilirsen bahsin diğer tarafının oynanabilir olduğunu gösterir: bu tarafta daha az oynamak anlamına asla gelmez.",
+        "Kelly kriteri, beklenen değerin atladığı soruyu yanıtlar: elinde avantaj varken gerçekte ne kadar riske etmeli? Az oynarsan gerçek bir avantaj anlam taşıyacak kadar hızlı bileşiklenmez. Çok oynarsan matematik aleyhine döner: yarıya inen bir kasa geri dönmek için %100 artış ister, yani fazla büyük miktarlar her tek bahis lehte olsa bile büyümeyi yok eder. En uygun oran, avantajın net orana bölümüdür ve inançla değil avantajla ölçeklenir: 2.00 fiyatta %10 avantaj kasanın %10'unu, aynı avantaj 5.00 fiyatta yalnızca %2,5'ini ister.",
+        "Tam Kelly'yi neredeyse kimse oynamamalı, çünkü formül olasılığının tam doğru olduğunu varsayar ve hiçbir zaman doğru değildir. Ona olduğundan büyük bir avantaj ver, gerçekte sahip olduğun avantaj için fazla büyük bir miktarı gönülle önerir: ortalamada haklıyken bir kasayı kaybetmenin en hızlı yolu. Yarım Kelly teorik büyümenin dörtte birinden vazgeçer ve oynaklığı yaklaşık yarıya indirir; gerçek modellere sahip birçok profesyonel çeyrek Kelly kullanır. Fiyat avantaj sunmuyorsa doğru miktar sıfırdır: negatif Kelly oranı bahsin diğer tarafta olduğunu gösterir, bu tarafta daha az oynamak anlamına gelmez.",
       ],
       faq: [
         {

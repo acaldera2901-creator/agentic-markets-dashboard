@@ -220,19 +220,22 @@ const pl: ToolsCopy = {
         noEdge: "Brak przewagi przy tej cenie — optymalna stawka to zero.",
         hint: "Procenty wpisuj jako liczby: 55 oznacza 55%.",
       },
-      formulaTitle: "Jak liczy się stawkę Kelly'ego",
-      formula: [
-        "b = kurs − 1",
-        "f* = (p × b − (1 − p)) / b = (p × kurs − 1) / b",
-        "stawka = bankroll × f* × frakcja",
-        "oczekiwany wzrost = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Co to znaczy przy bankrollu 1000",
+        rows: [
+          { label: "Bankroll", value: "1000" },
+          { label: "Kurs · twoje prawdopodobieństwo", value: "2.00 · 55%" },
+          { label: "Przewaga", value: "+10%" },
+          { label: "Pełny Kelly", value: "10% → 100 na zakład" },
+          { label: "Połowa Kelly", value: "5% → 50 na zakład" },
+        ],
+        note:
+          "Pięć przegranych z rzędu — przy tym kursie jedna seria na 54 — zostawia 590 przy pełnym Kellym, a powrót do 1000 wymaga +69%. Ta sama seria przy połowie Kelly'ego zostawia 774, gdzie wystarcza +29%. Ta sama przewaga, te same zakłady, o połowę mniejszy dołek.",
+      },
       explainerTitle: "Dobrać stawkę tak, by zła seria jej nie zakończyła",
       explainer: [
-        "Kryterium Kelly'ego odpowiada na pytanie, które wartość oczekiwana pomija: mając przewagę, ile faktycznie ryzykować? Obstawiaj za mało i prawdziwa przewaga kapitalizuje się zbyt wolno, by mieć znaczenie. Obstawiaj za dużo i matematyka obraca się przeciw tobie: bankroll zmniejszony o połowę potrzebuje +100%, żeby wrócić do punktu wyjścia, więc duże stawki niszczą wzrost nawet wtedy, gdy każdy pojedynczy zakład jest korzystny. Kelly znajduje frakcję maksymalizującą tempo wzrostu w długim okresie i okazuje się nią przewaga podzielona przez kurs netto.",
-        "Wynik skaluje się z przewagą, nie z pewnością. Przewaga 10% przy kursie 2.00 wymaga 10% bankrolla; ta sama przewaga przy 5.00 wymaga tylko 2,5%, bo dłuższa cena oznacza dłuższe serie przegranych i bardziej wyboistą drogę. Dlatego formuła jest użyteczna nawet dla kogoś, kto nigdy nie stosuje jej dosłownie: mówi, że cena i przewaga razem decydują o stawce, a silne przeczucie nie jest daną wejściową.",
-        "Prawie nikt nie powinien grać pełnym Kellym. Formuła zakłada, że twoje prawdopodobieństwo jest dokładne, a nigdy nie jest. Podaj jej zawyżoną przewagę i ochoczo zaleci stawkę zbyt dużą wobec przewagi, którą naprawdę masz — najszybszy sposób utraty bankrolla przy jednoczesnym byciu przeciętnie w porządku. Połowa Kelly'ego rezygnuje z jednej czwartej teoretycznego wzrostu i mniej więcej o połowę obniża zmienność; ćwierć Kelly'ego stosuje wielu profesjonalistów z prawdziwymi modelami. Jeśli twoje prawdopodobieństwa pochodzą z wyczucia, a nie z danych, ćwierć Kelly'ego to nie ostrożność, a realizm.",
-        "Gdy cena nie daje przewagi, właściwa stawka to zero, i ten kalkulator to mówi, zamiast zwracać liczbę ujemną przebraną za poradę. Ujemna frakcja Kelly'ego oznacza, że zakład wart byłby zagrania po drugiej stronie, jeśli znajdziesz go po tej cenie: nigdy nie oznacza obstawiania mniej po tej stronie.",
+        "Kryterium Kelly'ego odpowiada na to, co wartość oczekiwana pomija: mając przewagę, ile faktycznie ryzykować? Obstawiaj za mało i prawdziwa przewaga kapitalizuje się zbyt wolno, by mieć znaczenie. Obstawiaj za dużo i matematyka obraca się przeciw tobie: bankroll zmniejszony o połowę potrzebuje +100%, żeby wrócić do punktu wyjścia, więc zbyt duże stawki niszczą wzrost nawet wtedy, gdy każdy zakład jest korzystny. Optymalna frakcja to przewaga podzielona przez kurs netto i skaluje się z przewagą, nie z pewnością: przewaga 10% przy 2.00 wymaga 10% bankrolla, ta sama przewaga przy 5.00 tylko 2,5%.",
+        "Prawie nikt nie powinien grać pełnym Kellym, bo formuła zakłada, że twoje prawdopodobieństwo jest dokładne, a nigdy nie jest. Podaj jej zawyżoną przewagę i ochoczo zaleci stawkę zbyt dużą wobec przewagi, którą naprawdę masz: najszybszy sposób utraty bankrolla przy jednoczesnym byciu przeciętnie w porządku. Połowa Kelly'ego rezygnuje z jednej czwartej teoretycznego wzrostu i mniej więcej o połowę obniża zmienność; ćwierć Kelly'ego stosuje wielu profesjonalistów z prawdziwymi modelami. A gdy cena nie daje przewagi, właściwa stawka to zero: ujemna frakcja Kelly'ego oznacza, że zakład jest po drugiej stronie, a nie że masz obstawić mniej po tej.",
       ],
       faq: [
         {

@@ -220,19 +220,22 @@ const nl: ToolsCopy = {
         noEdge: "Geen voordeel bij deze prijs — de optimale inzet is nul.",
         hint: "Percentages als getal invoeren: 55 betekent 55%.",
       },
-      formulaTitle: "Hoe de Kelly-inzet wordt berekend",
-      formula: [
-        "b = odd − 1",
-        "f* = (p × b − (1 − p)) / b = (p × odd − 1) / b",
-        "inzet = bankroll × f* × fractie",
-        "verwachte groei = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Wat dat betekent met 1.000 bankroll",
+        rows: [
+          { label: "Bankroll", value: "1.000" },
+          { label: "Prijs · jouw kans", value: "2.00 · 55%" },
+          { label: "Voordeel", value: "+10%" },
+          { label: "Volledige Kelly", value: "10% → 100 per wed" },
+          { label: "Halve Kelly", value: "5% → 50 per wed" },
+        ],
+        note:
+          "Vijf verliezen op rij — bij deze prijs één reeks op 54 — laten bij volledige Kelly 590 over, en dan is +69% nodig om terug op 1.000 te komen. Dezelfde reeks bij halve Kelly laat 774 over, waarvoor +29% genoeg is. Zelfde voordeel, zelfde weds, half zo diep gat.",
+      },
       explainerTitle: "De inzet zo kiezen dat de slechte reeks hem niet beëindigt",
       explainer: [
-        "Het Kelly-criterium antwoordt op een vraag die verwachte waarde overslaat: hoeveel moet je met een gegeven voordeel echt riskeren? Zet te weinig in en een echt voordeel groeit te langzaam om iets te betekenen. Zet te veel in en de rekenkunde keert zich tegen je: een bankroll die halveert heeft +100% nodig om terug te komen, dus grote inzetten vernietigen de groei zelfs als elke afzonderlijke wed gunstig is. Kelly vindt de fractie die het groeitempo op lange termijn maximaliseert, en dat blijkt het voordeel gedeeld door de netto-odd te zijn.",
-        "Het resultaat schaalt met het voordeel, niet met overtuiging. 10% voordeel bij odd 2.00 vraagt 10% van de bankroll; hetzelfde voordeel bij 5.00 vraagt maar 2,5%, omdat een langere prijs langere verliesreeksen en een hobbeliger pad betekent. Daarom is de formule nuttig, ook als je hem nooit letterlijk volgt: hij zegt dat prijs en voordeel samen de inzet bepalen, en dat een sterk gevoel geen invoerwaarde is.",
-        "Bijna niemand zou volledige Kelly moeten spelen. De formule gaat ervan uit dat je kans exact klopt, en dat doet hij nooit. Geef hem een overschat voordeel en hij beveelt vrolijk een inzet aan die te groot is voor het voordeel dat je werkelijk hebt: de snelste manier om een bankroll te verliezen terwijl je gemiddeld gelijk hebt. Halve Kelly geeft een kwart van de theoretische groei op en halveert de volatiliteit ongeveer; kwart Kelly is wat veel professionals met echte modellen daadwerkelijk gebruiken. Komen je kansen uit inschatting en niet uit data, dan is kwart Kelly geen voorzichtigheid maar realisme.",
-        "Biedt de prijs geen voordeel, dan is de juiste inzet nul, en deze calculator zegt dat in plaats van een negatief getal als advies te vermommen. Een negatieve Kelly-fractie betekent dat de wed aan de andere kant het waard zou zijn, als je hem tegen die prijs vindt: nooit dat je hier minder moet inzetten.",
+        "Het Kelly-criterium antwoordt op wat verwachte waarde overslaat: hoeveel moet je met een gegeven voordeel echt riskeren? Zet te weinig in en een echt voordeel groeit te langzaam om iets te betekenen. Zet te veel in en de rekenkunde keert zich tegen je: een bankroll die halveert heeft +100% nodig om terug te komen, dus te grote inzetten vernietigen de groei zelfs als elke afzonderlijke wed gunstig is. De optimale fractie is het voordeel gedeeld door de netto-odd, en die schaalt met het voordeel, niet met overtuiging: 10% voordeel bij 2.00 vraagt 10% van de bankroll, hetzelfde voordeel bij 5.00 maar 2,5%.",
+        "Bijna niemand zou volledige Kelly moeten spelen, want de formule gaat ervan uit dat je kans exact klopt en dat doet hij nooit. Geef hem een overschat voordeel en hij beveelt vrolijk een inzet aan die te groot is voor het voordeel dat je werkelijk hebt: de snelste manier om een bankroll te verliezen terwijl je gemiddeld gelijk hebt. Halve Kelly geeft een kwart van de theoretische groei op en halveert de volatiliteit ongeveer; kwart Kelly is wat veel professionals met echte modellen gebruiken. En biedt de prijs geen voordeel, dan is de juiste inzet nul: een negatieve Kelly-fractie betekent dat de wed aan de andere kant hoort, nooit dat je hier minder moet inzetten.",
       ],
       faq: [
         {

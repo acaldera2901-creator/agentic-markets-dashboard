@@ -39,12 +39,16 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
 
         <ToolCalculator slug={slug} copy={t} dash={copy.common.invalid} />
 
-        <section className="tl-section">
-          <h2>{t.formulaTitle}</h2>
-          <div className="tl-formula">
-            <code>{t.formula.join("\n")}</code>
-          </div>
-        </section>
+        {/* Formula: presente su quattro tool. La pagina Kelly non ce l'ha — al suo
+            posto, nello stesso slot, l'esempio numerico lavorato. */}
+        {t.formula?.length && t.formulaTitle ? (
+          <section className="tl-section">
+            <h2>{t.formulaTitle}</h2>
+            <div className="tl-formula">
+              <code>{t.formula.join("\n")}</code>
+            </div>
+          </section>
+        ) : null}
 
         <section className="tl-section tl-prose">
           <h2>{t.explainerTitle}</h2>
@@ -52,6 +56,23 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
             <p key={i}>{p}</p>
           ))}
         </section>
+
+        {t.example ? (
+          <section className="tl-section">
+            <h2>{t.example.title}</h2>
+            <div className="tl-example">
+              <dl className="tl-example-rows">
+                {t.example.rows.map((r, i) => (
+                  <div className="tl-example-row" key={i}>
+                    <dt>{r.label}</dt>
+                    <dd>{r.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="tl-example-note">{t.example.note}</p>
+            </div>
+          </section>
+        ) : null}
 
         <section className="tl-section">
           <h2>{copy.common.faqTitle}</h2>

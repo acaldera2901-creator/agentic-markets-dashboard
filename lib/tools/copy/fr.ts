@@ -220,19 +220,22 @@ const fr: ToolsCopy = {
         noEdge: "Aucun avantage à ce prix : la mise optimale est zéro.",
         hint: "Les pourcentages s'écrivent en nombres : 55 signifie 55 %.",
       },
-      formulaTitle: "Comment la mise de Kelly est calculée",
-      formula: [
-        "b = cote − 1",
-        "f* = (p × b − (1 − p)) / b = (p × cote − 1) / b",
-        "mise = bankroll × f* × fraction",
-        "croissance espérée = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Ce que cela donne avec 1 000 de bankroll",
+        rows: [
+          { label: "Bankroll", value: "1 000" },
+          { label: "Cote · votre probabilité", value: "2.00 · 55%" },
+          { label: "Avantage", value: "+10%" },
+          { label: "Kelly complet", value: "10% → 100 par pari" },
+          { label: "Demi-Kelly", value: "5% → 50 par pari" },
+        ],
+        note:
+          "Cinq défaites d'affilée — une séquence sur 54 à cette cote — laissent 590 en Kelly complet, et il faudra +69% pour revenir à 1 000. La même série en demi-Kelly laisse 774, et +29% suffisent. Même avantage, mêmes paris, moitié du trou.",
+      },
       explainerTitle: "Dimensionner la mise pour que la mauvaise série ne l'achève pas",
       explainer: [
-        "Le critère de Kelly répond à une question que la valeur espérée ignore : avec un avantage donné, combien risquer réellement ? Misez trop peu et un avantage réel se capitalise trop lentement pour compter. Misez trop et les mathématiques se retournent contre vous : une bankroll divisée par deux a besoin de +100 % pour revenir à son point de départ, donc les grosses mises détruisent la croissance même quand chaque pari est favorable. Kelly trouve la fraction qui maximise le taux de croissance à long terme, et il s'avère que c'est l'avantage divisé par la cote nette.",
-        "Le résultat suit l'avantage, pas la conviction. Un avantage de 10 % à la cote 2.00 demande 10 % de la bankroll ; le même avantage à 5.00 n'en demande que 2,5 %, car un prix plus long signifie des séries perdantes plus longues et un chemin plus accidenté. C'est pourquoi la formule reste utile même si vous ne la suivez jamais à la lettre : elle dit que prix et avantage décident ensemble de la mise, et qu'une forte intuition n'est pas une donnée d'entrée.",
-        "Presque personne ne devrait jouer Kelly complet. La formule suppose votre probabilité exacte, et elle ne l'est jamais. Donnez-lui un avantage surestimé et elle recommandera volontiers une mise trop grande pour l'avantage réel : le moyen le plus rapide de perdre une bankroll tout en ayant raison en moyenne. Le demi-Kelly abandonne un quart de la croissance théorique et réduit la volatilité de près de moitié ; le quart de Kelly est ce que beaucoup de professionnels avec de vrais modèles utilisent réellement. Si vos probabilités viennent du jugement et non des données, le quart de Kelly n'est pas de la prudence : c'est du réalisme.",
-        "Quand le prix n'offre aucun avantage, la mise correcte est zéro, et ce calculateur le dit au lieu de renvoyer un nombre négatif déguisé en conseil. Une fraction de Kelly négative signifie que le pari vaudrait de l'autre côté, si vous le trouvez à ce prix : jamais qu'il faut miser moins sur celui-ci.",
+        "Le critère de Kelly répond à ce que la valeur espérée ignore : avec un avantage donné, combien risquer réellement ? Misez trop peu et un avantage réel se capitalise trop lentement pour compter. Misez trop et les mathématiques se retournent contre vous : une bankroll divisée par deux a besoin de +100 % pour revenir à son point de départ, donc des mises trop grandes détruisent la croissance même quand chaque pari est favorable. La fraction optimale est l'avantage divisé par la cote nette, et elle suit l'avantage, pas la conviction : 10 % d'avantage à 2.00 demande 10 % de la bankroll, le même avantage à 5.00 n'en demande que 2,5 %.",
+        "Presque personne ne devrait jouer Kelly complet, car la formule suppose votre probabilité exacte et elle ne l'est jamais. Donnez-lui un avantage surestimé et elle recommandera volontiers une mise trop grande pour l'avantage réel : le moyen le plus rapide de perdre une bankroll tout en ayant raison en moyenne. Le demi-Kelly abandonne un quart de la croissance théorique et réduit la volatilité de près de moitié ; le quart de Kelly est ce qu'utilisent beaucoup de professionnels avec de vrais modèles. Et quand le prix n'offre aucun avantage, la mise correcte est zéro : une fraction de Kelly négative signifie que le pari est de l'autre côté, jamais qu'il faut miser moins sur celui-ci.",
       ],
       faq: [
         {

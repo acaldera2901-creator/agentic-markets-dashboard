@@ -233,19 +233,22 @@ const en: ToolsCopy = {
         noEdge: "No edge at this price — the optimal stake is zero.",
         hint: "Percentages go in as numbers: 55 means 55%.",
       },
-      formulaTitle: "How the Kelly stake is calculated",
-      formula: [
-        "b = odds − 1",
-        "f* = (p × b − (1 − p)) / b = (p × odds − 1) / b",
-        "stake = bankroll × f* × fraction",
-        "expected growth = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "What that means with 1,000 in the bank",
+        rows: [
+          { label: "Bankroll", value: "1,000" },
+          { label: "Price · your probability", value: "2.00 · 55%" },
+          { label: "Edge", value: "+10%" },
+          { label: "Full Kelly", value: "10% → 100 per bet" },
+          { label: "Half Kelly", value: "5% → 50 per bet" },
+        ],
+        note:
+          "Five losses in a row — one sequence in 54 at this price — leave 590 at full Kelly, which then needs +69% to get back to 1,000. The same run at half Kelly leaves 774, needing +29%. Same edge, same bets, half the hole.",
+      },
       explainerTitle: "Sizing a bet so the bad run does not end it",
       explainer: [
-        "The Kelly criterion answers a question that expected value ignores: given an edge, how much should you actually risk? Bet too little and a real edge compounds too slowly to matter. Bet too much and the mathematics turns against you — a bankroll that halves needs a 100% gain to recover, so large stakes destroy growth even when every individual bet is favourable. Kelly finds the fraction that maximises the long-run growth rate, and it turns out to be the edge divided by the net odds.",
-        "The result scales with edge, not with confidence. A 10% edge at even money calls for 10% of the bankroll; the same 10% edge at 5.00 calls for only 2.5%, because the longer price means longer losing streaks and a bumpier path. This is why the formula is useful even if you never follow it exactly: it tells you that price and edge together decide the stake, and that a 'strong feeling' is not an input.",
-        "Almost nobody should bet full Kelly. The formula assumes your probability is exactly right, and it never is. Feed it an overestimated edge and it will happily recommend a stake that is too large for the edge you actually have, which is the fastest way to lose a bankroll while being right on average. Half Kelly gives up a quarter of the theoretical growth rate and roughly halves the volatility; quarter Kelly is what many professionals with genuine models actually use. If your probabilities come from judgement rather than data, quarter Kelly is not conservative — it is realistic.",
-        "When the price offers no edge, the correct stake is zero, and this calculator says so rather than returning a negative number dressed up as advice. A negative Kelly fraction means the bet is worth taking on the other side, if you can get it at that price — it never means bet less on this one.",
+        "The Kelly criterion answers what expected value ignores: given an edge, how much should you actually risk? Bet too little and a real edge compounds too slowly to matter. Bet too much and the maths turns against you — a bankroll that halves needs a 100% gain to recover, so oversized stakes destroy growth even when every single bet is favourable. The optimal fraction is the edge divided by the net odds, and it scales with the edge, not with your confidence: a 10% edge at 2.00 asks for 10% of the bankroll, the same edge at 5.00 asks for only 2.5%.",
+        "Almost nobody should bet full Kelly, because the formula assumes your probability is exactly right and it never is. Feed it an overestimated edge and it will happily recommend a stake too large for the edge you actually have — the fastest way to lose a bankroll while being right on average. Half Kelly gives up a quarter of the theoretical growth and roughly halves the volatility; quarter Kelly is what many professionals with real models use. And when the price offers no edge, the correct stake is zero: a negative Kelly fraction means the bet belongs on the other side, never that you should bet less on this one.",
       ],
       faq: [
         {

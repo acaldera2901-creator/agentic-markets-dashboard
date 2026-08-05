@@ -150,7 +150,12 @@ Struttura di ogni pagina tool, nell'ordine:
 1. H1 + una riga su cosa fa
 2. **il calcolatore sopra la piega** — input a sinistra, readout a destra, calcolo live
    mentre si digita, nessun bottone "calcola"
-3. come si calcola, con la formula esplicita
+3. come si calcola, con la formula esplicita — **eccetto la pagina Kelly**
+   (richiesta Andrea, 2026-08-05): lì il blocco formula è stato rimosso e nello
+   stesso slot c'è un **esempio numerico lavorato** (bankroll 1.000, quota 2.00,
+   p 55% → Kelly pieno 100 / mezzo 50; cinque sconfitte di fila lasciano 590 col
+   pieno, che poi chiede +69%, contro 774 col mezzo, che chiede +29%). La
+   spiegazione della stessa pagina è stata riassunta da quattro paragrafi a due.
 4. testo esplicativo di 300–500 parole reali (è questo che classifica, non il widget)
 5. 3–4 FAQ
 6. link agli altri quattro tool

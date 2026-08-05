@@ -221,19 +221,22 @@ const it: ToolsCopy = {
         noEdge: "Nessun vantaggio a questa quota: la puntata ottimale è zero.",
         hint: "Le percentuali vanno scritte come numeri: 55 significa 55%.",
       },
-      formulaTitle: "Come si calcola la puntata di Kelly",
-      formula: [
-        "b = quota − 1",
-        "f* = (p × b − (1 − p)) / b = (p × quota − 1) / b",
-        "puntata = bankroll × f* × frazione",
-        "crescita attesa = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Cosa significa con 1.000 di bankroll",
+        rows: [
+          { label: "Bankroll", value: "1.000" },
+          { label: "Quota · tua probabilità", value: "2.00 · 55%" },
+          { label: "Vantaggio", value: "+10%" },
+          { label: "Kelly pieno", value: "10% → 100 per scommessa" },
+          { label: "Mezzo Kelly", value: "5% → 50 per scommessa" },
+        ],
+        note:
+          "Cinque sconfitte di fila — una sequenza su 54 a questa quota — lasciano 590 con Kelly pieno, e servirà un +69% per tornare a 1.000. La stessa serie a mezzo Kelly lascia 774, e serve un +29%. Stesso vantaggio, stesse scommesse, metà della buca.",
+      },
       explainerTitle: "Dimensionare la puntata perché la serie negativa non la chiuda",
       explainer: [
-        "Il criterio di Kelly risponde a una domanda che il valore atteso ignora: dato un vantaggio, quanto rischiare davvero? Punta troppo poco e un vantaggio reale si capitalizza troppo lentamente per contare. Punta troppo e la matematica si gira contro: un bankroll che si dimezza ha bisogno di un +100% per tornare al punto di partenza, quindi le puntate grandi distruggono la crescita anche quando ogni singola scommessa è favorevole. Kelly trova la frazione che massimizza il tasso di crescita nel lungo periodo, e risulta essere il vantaggio diviso la quota netta.",
-        "Il risultato scala col vantaggio, non con la convinzione. Un vantaggio del 10% a quota 2.00 chiede il 10% del bankroll; lo stesso 10% a quota 5.00 chiede solo il 2,5%, perché la quota più lunga significa serie negative più lunghe e un percorso più accidentato. È per questo che la formula è utile anche a chi non la segue mai alla lettera: dice che quota e vantaggio insieme decidono la puntata, e che una sensazione forte non è un ingresso.",
-        "Quasi nessuno dovrebbe giocare Kelly pieno. La formula assume che la tua probabilità sia esatta, e non lo è mai. Dalle un vantaggio sovrastimato e ti consiglierà con entusiasmo una puntata troppo grande per il vantaggio che hai davvero: il modo più rapido di perdere un bankroll pur avendo ragione in media. Il mezzo Kelly rinuncia a un quarto della crescita teorica e dimezza circa la volatilità; il quarto di Kelly è quello che molti professionisti con modelli veri usano davvero. Se le tue probabilità vengono dal giudizio e non dai dati, il quarto di Kelly non è prudenza: è realismo.",
-        "Quando la quota non offre vantaggio, la puntata corretta è zero, e questo calcolatore lo dice invece di restituire un numero negativo travestito da consiglio. Una frazione di Kelly negativa significa che la scommessa andrebbe presa sull'altro lato, se la trovi a quella quota: non significa mai puntare meno su questa.",
+        "Il criterio di Kelly risponde a ciò che il valore atteso ignora: dato un vantaggio, quanto rischiare davvero? Punta troppo poco e un vantaggio reale si capitalizza troppo lentamente per contare. Punta troppo e la matematica si gira contro: un bankroll che si dimezza ha bisogno di un +100% per tornare al punto di partenza, quindi le puntate troppo grandi distruggono la crescita anche quando ogni singola scommessa è favorevole. La frazione ottimale è il vantaggio diviso la quota netta, e scala col vantaggio, non con la convinzione: un vantaggio del 10% a quota 2.00 chiede il 10% del bankroll, lo stesso vantaggio a 5.00 ne chiede solo il 2,5%.",
+        "Quasi nessuno dovrebbe giocare Kelly pieno, perché la formula assume che la tua probabilità sia esatta e non lo è mai. Dalle un vantaggio sovrastimato e ti consiglierà con entusiasmo una puntata troppo grande per il vantaggio che hai davvero: il modo più rapido di perdere un bankroll pur avendo ragione in media. Il mezzo Kelly rinuncia a un quarto della crescita teorica e dimezza circa la volatilità; il quarto di Kelly è quello che usano molti professionisti con modelli veri. E quando la quota non offre vantaggio, la puntata corretta è zero: una frazione di Kelly negativa significa che la scommessa va presa sull'altro lato, non che su questa devi puntare meno.",
       ],
       faq: [
         {

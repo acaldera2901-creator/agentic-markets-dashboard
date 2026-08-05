@@ -220,19 +220,22 @@ const de: ToolsCopy = {
         noEdge: "Kein Vorteil zu diesem Preis — der optimale Einsatz ist null.",
         hint: "Prozentwerte als Zahl eingeben: 55 bedeutet 55 %.",
       },
-      formulaTitle: "So wird der Kelly-Einsatz berechnet",
-      formula: [
-        "b = Quote − 1",
-        "f* = (p × b − (1 − p)) / b = (p × Quote − 1) / b",
-        "Einsatz = Bankroll × f* × Anteil",
-        "erwartetes Wachstum = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Was das mit 1.000 Bankroll bedeutet",
+        rows: [
+          { label: "Bankroll", value: "1.000" },
+          { label: "Quote · deine Wahrscheinlichkeit", value: "2.00 · 55%" },
+          { label: "Vorteil", value: "+10%" },
+          { label: "Voller Kelly", value: "10% → 100 pro Wette" },
+          { label: "Halber Kelly", value: "5% → 50 pro Wette" },
+        ],
+        note:
+          "Fünf Niederlagen in Folge — bei dieser Quote eine Serie von 54 — lassen bei vollem Kelly 590 übrig, und es braucht +69%, um wieder auf 1.000 zu kommen. Dieselbe Serie bei halbem Kelly lässt 774, dafür genügen +29%. Gleicher Vorteil, gleiche Wetten, halbes Loch.",
+      },
       explainerTitle: "Den Einsatz so wählen, dass die Verlustserie ihn nicht beendet",
       explainer: [
-        "Die Kelly-Formel beantwortet eine Frage, die der Erwartungswert offenlässt: Wie viel soll man bei gegebenem Vorteil tatsächlich riskieren? Setzt man zu wenig, verzinst sich ein echter Vorteil zu langsam, um zu zählen. Setzt man zu viel, dreht sich die Mathematik gegen einen: eine halbierte Bankroll braucht +100 %, um zurückzukommen, große Einsätze zerstören also das Wachstum, selbst wenn jede einzelne Wette günstig ist. Kelly findet den Anteil, der die langfristige Wachstumsrate maximiert — es ist der Vorteil geteilt durch die Nettoquote.",
-        "Das Ergebnis skaliert mit dem Vorteil, nicht mit der Überzeugung. 10 % Vorteil bei Quote 2.00 verlangen 10 % der Bankroll; derselbe Vorteil bei 5.00 nur 2,5 %, denn der längere Preis bedeutet längere Verlustserien und einen holprigeren Weg. Darum ist die Formel selbst dann nützlich, wenn man ihr nie genau folgt: sie sagt, dass Preis und Vorteil gemeinsam den Einsatz bestimmen — und dass ein starkes Gefühl keine Eingabe ist.",
-        "Voll Kelly sollte fast niemand spielen. Die Formel setzt voraus, dass deine Wahrscheinlichkeit genau stimmt, und das tut sie nie. Gib ihr einen überschätzten Vorteil, und sie empfiehlt bereitwillig einen Einsatz, der für den tatsächlichen Vorteil zu groß ist — der schnellste Weg, eine Bankroll zu verlieren, obwohl man im Mittel richtig liegt. Halb Kelly verzichtet auf ein Viertel des theoretischen Wachstums und halbiert die Schwankung ungefähr; viertel Kelly nutzen viele Profis mit echten Modellen. Kommen deine Wahrscheinlichkeiten aus dem Urteil statt aus Daten, ist viertel Kelly keine Vorsicht, sondern Realismus.",
-        "Bietet der Preis keinen Vorteil, ist der richtige Einsatz null — und dieser Rechner sagt das, statt eine negative Zahl als Ratschlag zu verkleiden. Ein negativer Kelly-Anteil heißt, die Wette wäre auf der anderen Seite zu spielen, falls du sie zu diesem Preis findest: er heißt nie, auf dieser Seite weniger zu setzen.",
+        "Die Kelly-Formel beantwortet, was der Erwartungswert offenlässt: Wie viel soll man bei gegebenem Vorteil tatsächlich riskieren? Setzt man zu wenig, verzinst sich ein echter Vorteil zu langsam, um zu zählen. Setzt man zu viel, dreht sich die Mathematik gegen einen: eine halbierte Bankroll braucht +100 %, um zurückzukommen, große Einsätze zerstören also das Wachstum selbst dann, wenn jede einzelne Wette günstig ist. Der optimale Anteil ist der Vorteil geteilt durch die Nettoquote, und er skaliert mit dem Vorteil, nicht mit der Überzeugung: 10 % Vorteil bei 2.00 verlangen 10 % der Bankroll, derselbe Vorteil bei 5.00 nur 2,5 %.",
+        "Voll Kelly sollte fast niemand spielen, denn die Formel setzt voraus, dass deine Wahrscheinlichkeit genau stimmt — und das tut sie nie. Gib ihr einen überschätzten Vorteil, und sie empfiehlt bereitwillig einen Einsatz, der für den tatsächlichen Vorteil zu groß ist: der schnellste Weg, eine Bankroll zu verlieren, obwohl man im Mittel richtig liegt. Halb Kelly verzichtet auf ein Viertel des theoretischen Wachstums und halbiert die Schwankung ungefähr; viertel Kelly nutzen viele Profis mit echten Modellen. Und bietet der Preis keinen Vorteil, ist der richtige Einsatz null: ein negativer Kelly-Anteil heißt, die Wette gehört auf die andere Seite — nie, dass man hier weniger setzen soll.",
       ],
       faq: [
         {

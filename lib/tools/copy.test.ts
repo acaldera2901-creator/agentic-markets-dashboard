@@ -140,9 +140,14 @@ describe("dizionari registrati", () => {
             }
           });
 
-          it("ha formula, spiegazione vera e FAQ", () => {
+          it("ha spiegazione vera e FAQ, e formula O esempio", () => {
             const t = dict.tools[slug];
-            expect(t.formula.length).toBeGreaterThanOrEqual(1);
+            // Kelly non ha la formula (scelta di Andrea, 2026-08-05): al suo posto
+            // un esempio numerico lavorato. Ogni tool deve avere UNO dei due —
+            // lo slot non può restare vuoto.
+            const hasFormula = (t.formula?.length ?? 0) >= 1 && !!t.formulaTitle;
+            const hasExample = (t.example?.rows.length ?? 0) >= 3 && !!t.example?.note;
+            expect(hasFormula || hasExample, "né formula né esempio").toBe(true);
             expect(t.explainer.length).toBeGreaterThanOrEqual(2);
             const words = t.explainer.join(" ").split(/\s+/).length;
             expect(words, "parole nell'explainer").toBeGreaterThan(150);
@@ -154,6 +159,19 @@ describe("dizionari registrati", () => {
           });
         });
       }
+
+      it("la pagina Kelly non ha la formula ma ha l'esempio, coi numeri esatti", () => {
+        const k = dict.tools["kelly-criterion"];
+        expect(k.formula, "la formula era stata rimossa su richiesta").toBeUndefined();
+        expect(k.example, "manca l'esempio numerico").toBeTruthy();
+        expect(k.example!.rows.length).toBeGreaterThanOrEqual(4);
+        const numbers = [...k.example!.rows.map((r) => r.value), k.example!.note].join(" ");
+        // bankroll 1.000 · quota 2.00 · p 55% → edge 10% → pieno 100, mezzo 50;
+        // cinque sconfitte: 1000·0.9^5 = 590 (serve +69%) · 1000·0.95^5 = 774 (+29%)
+        for (const n of ["2.00", "55%", "10%", "100", "50", "590", "69", "774", "29"]) {
+          expect(numbers, `numero mancante nell'esempio: ${n}`).toContain(n);
+        }
+      });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {
         expect(dict.tools["kelly-criterion"].caveat!.length).toBeGreaterThan(60);

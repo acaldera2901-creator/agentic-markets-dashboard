@@ -220,19 +220,22 @@ const es: ToolsCopy = {
         noEdge: "No hay ventaja a este precio: el stake óptimo es cero.",
         hint: "Los porcentajes se escriben como números: 55 significa 55%.",
       },
-      formulaTitle: "Cómo se calcula el stake de Kelly",
-      formula: [
-        "b = cuota − 1",
-        "f* = (p × b − (1 − p)) / b = (p × cuota − 1) / b",
-        "stake = bankroll × f* × fracción",
-        "crecimiento esperado = p × ln(1 + f × b) + (1 − p) × ln(1 − f)",
-      ],
+      example: {
+        title: "Qué significa con 1.000 de bankroll",
+        rows: [
+          { label: "Bankroll", value: "1.000" },
+          { label: "Cuota · tu probabilidad", value: "2.00 · 55%" },
+          { label: "Ventaja", value: "+10%" },
+          { label: "Kelly completo", value: "10% → 100 por apuesta" },
+          { label: "Medio Kelly", value: "5% → 50 por apuesta" },
+        ],
+        note:
+          "Cinco derrotas seguidas — una secuencia de cada 54 a esta cuota — dejan 590 con Kelly completo, y hará falta un +69% para volver a 1.000. La misma racha a medio Kelly deja 774, y basta un +29%. Misma ventaja, mismas apuestas, la mitad del agujero.",
+      },
       explainerTitle: "Dimensionar la apuesta para que la mala racha no la termine",
       explainer: [
-        "El criterio de Kelly responde a una pregunta que el valor esperado ignora: dada una ventaja, ¿cuánto arriesgar realmente? Apuesta demasiado poco y una ventaja real se capitaliza demasiado despacio para importar. Apuesta demasiado y las matemáticas se giran en contra: un bankroll que se reduce a la mitad necesita un +100% para recuperarse, así que los stakes grandes destruyen el crecimiento incluso cuando cada apuesta individual es favorable. Kelly encuentra la fracción que maximiza la tasa de crecimiento a largo plazo, y resulta ser la ventaja dividida por la cuota neta.",
-        "El resultado escala con la ventaja, no con la confianza. Una ventaja del 10% a cuota 2.00 pide el 10% del bankroll; la misma ventaja a 5.00 pide solo el 2,5%, porque un precio más largo significa rachas negativas más largas y un camino más accidentado. Por eso la fórmula es útil incluso si nunca la sigues al pie de la letra: dice que precio y ventaja juntos deciden el stake, y que una fuerte sensación no es una entrada.",
-        "Casi nadie debería apostar Kelly completo. La fórmula asume que tu probabilidad es exacta, y nunca lo es. Dale una ventaja sobrestimada y recomendará con entusiasmo un stake demasiado grande para la ventaja que tienes de verdad: la forma más rápida de perder un bankroll teniendo razón de media. El medio Kelly renuncia a una cuarta parte del crecimiento teórico y reduce la volatilidad casi a la mitad; el cuarto de Kelly es lo que muchos profesionales con modelos reales usan de hecho. Si tus probabilidades vienen del criterio y no de los datos, el cuarto de Kelly no es prudencia: es realismo.",
-        "Cuando el precio no ofrece ventaja, el stake correcto es cero, y esta calculadora lo dice en lugar de devolver un número negativo disfrazado de consejo. Una fracción de Kelly negativa significa que la apuesta valdría en el otro lado, si la encuentras a ese precio: nunca significa apostar menos en este.",
+        "El criterio de Kelly responde a lo que el valor esperado ignora: dada una ventaja, ¿cuánto arriesgar realmente? Apuesta demasiado poco y una ventaja real se capitaliza demasiado despacio para importar. Apuesta demasiado y las matemáticas se giran en contra: un bankroll que se reduce a la mitad necesita un +100% para recuperarse, así que los stakes excesivos destruyen el crecimiento incluso cuando cada apuesta es favorable. La fracción óptima es la ventaja dividida por la cuota neta, y escala con la ventaja, no con la confianza: un 10% de ventaja a 2.00 pide el 10% del bankroll, la misma ventaja a 5.00 pide solo el 2,5%.",
+        "Casi nadie debería apostar Kelly completo, porque la fórmula asume que tu probabilidad es exacta y nunca lo es. Dale una ventaja sobrestimada y recomendará con entusiasmo un stake demasiado grande para la ventaja que tienes de verdad: la forma más rápida de perder un bankroll teniendo razón de media. El medio Kelly renuncia a una cuarta parte del crecimiento teórico y reduce la volatilidad casi a la mitad; el cuarto de Kelly es lo que usan muchos profesionales con modelos reales. Y cuando el precio no ofrece ventaja, el stake correcto es cero: una fracción de Kelly negativa significa que la apuesta va en el otro lado, no que debas apostar menos en esta.",
       ],
       faq: [
         {
