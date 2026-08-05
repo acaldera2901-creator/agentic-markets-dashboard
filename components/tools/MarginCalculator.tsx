@@ -14,6 +14,7 @@ import {
 } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, num, pct } from "./parts";
+import { Meter } from "./Meter";
 
 export function MarginCalculator({ copy, dash }: { copy: ToolCopy; dash: string }) {
   const L = copy.labels;
@@ -32,6 +33,17 @@ export function MarginCalculator({ copy, dash }: { copy: ToolCopy; dash: string 
   const payout = valid ? payoutPercent(valid) : null;
   const fairProbs = valid ? noVigProbabilities(valid) : null;
   const fairOdds = valid ? noVigOdds(valid) : null;
+
+  // Traccia = la SOMMA delle probabilità implicite (es. 105.26%). Il marcatore
+  // al 100% divide la linea equa dal ricarico: tutto quello che sta a destra è
+  // ciò che trattiene il book. È il concetto della pagina, reso in una riga.
+  const overround = valid ? valid.reduce((a, d) => a + 1 / d, 0) : null;
+  const meterSegments = valid && overround
+    ? [
+        ...valid.map((d) => ({ value: 1 / d / overround, tone: "fair" as const })),
+        { value: (overround - 1) / overround, tone: "margin" as const },
+      ]
+    : [];
 
   const setRow = (i: number, v: string) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? v : r)));
@@ -69,6 +81,9 @@ export function MarginCalculator({ copy, dash }: { copy: ToolCopy; dash: string 
         <h3 className="tl-panel-title">{L.resultTitle}</h3>
         <Readout label={L.margin} testId="out-margin" value={pct(margin, dash)} strong />
         <Readout label={L.payout} testId="out-payout" value={pct(payout, dash)} />
+        {overround ? (
+          <Meter segments={meterSegments} markers={[{ at: 1 / overround, label: "100%" }]} />
+        ) : null}
 
         <h3 className="tl-panel-title tl-panel-title--sub">{L.fairOddsTitle}</h3>
         <div className="tl-table" role="table">

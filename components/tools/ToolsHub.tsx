@@ -10,6 +10,8 @@ import { getToolsCopy } from "@/lib/tools/copy";
 import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale } from "@/lib/tools/registry";
 import { hubJsonLd } from "@/lib/tools/seo";
 import { LocalePicker } from "./LocalePicker";
+import { ToolIcon } from "./ToolIcon";
+import { MenuIcon } from "@/app/components/menu-icon";
 
 export function ToolsHub({ locale }: { locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
@@ -18,20 +20,28 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
     <div className="portal-root tl-root">
       <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
       <main className="tl-page">
-        <header className="tl-head">
-          <div className="tl-eyebrow">
-            <span className="tl-free">{copy.common.free}</span>
-            <span>BetRedge</span>
+        <header className="tl-head tl-head--tool">
+          {/* Stessa calcolatrice della voce "Strumenti" nel rail: l'hub si
+              riconosce come la destinazione di quel menu. */}
+          <MenuIcon name="tools" size={72} className="tl-head-ic" />
+          <div className="tl-head-txt">
+            <div className="tl-eyebrow">
+              <span className="tl-free">{copy.common.free}</span>
+              <span>BetRedge</span>
+            </div>
+            <h1>{copy.hub.h1}</h1>
+            <p className="tl-lede">{copy.hub.lede}</p>
+            <LocalePicker locale={locale} label={copy.common.langLabel} />
           </div>
-          <h1>{copy.hub.h1}</h1>
-          <p className="tl-lede">{copy.hub.lede}</p>
-          <LocalePicker locale={locale} label={copy.common.langLabel} />
         </header>
 
         <div className="tl-grid">
           {TOOL_SLUGS.map((slug) => (
             <Link key={slug} href={toolPath(slug, locale)} className="tl-card">
-              <h2>{copy.tools[slug].h1}</h2>
+              <span className="tl-card-head">
+                <ToolIcon slug={slug} size={44} className="tl-card-ic" />
+                <h2>{copy.tools[slug].h1}</h2>
+              </span>
               <p>{copy.tools[slug].lede}</p>
               <span className="tl-card-cta">{copy.hub.cardCta} →</span>
             </Link>

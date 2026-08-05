@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { expectedValue, noVigProbabilities, parseOdds } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, Segmented, num, parseAmount, parsePercent, pct, signed, signedPct, toneOf } from "./parts";
+import { Meter } from "./Meter";
 
 type Mode = "manual" | "sharp";
 
@@ -37,6 +38,24 @@ export function EvCalculator({ copy, dash }: { copy: ToolCopy; dash: string }) {
     if (decimal === null || probability === null || stakeValue === null) return null;
     return expectedValue({ probability, decimal, stake: stakeValue });
   }, [decimal, probability, stakeValue]);
+
+  // La barra mostra la sola cosa che decide l'EV: da che parte del break-even
+  // cade la tua probabilità. Il tratto colorato fra i due È il vantaggio.
+  const breakEven = decimal !== null && decimal > 1 ? 1 / decimal : null;
+  const meter = (() => {
+    if (probability === null || breakEven === null) return null;
+    const lo = Math.min(probability, breakEven);
+    const gap = Math.abs(probability - breakEven);
+    const rest = Math.max(0, 1 - lo - gap);
+    return {
+      segments: [
+        { value: lo, tone: "fair" as const },
+        { value: gap, tone: probability > breakEven ? ("edge" as const) : ("loss" as const) },
+        { value: rest, tone: "muted" as const },
+      ],
+      markers: [{ at: breakEven, label: pct(breakEven, dash) }],
+    };
+  })();
 
   const verdict =
     !result ? null : result.edge > 0 ? L.positive : result.edge < 0 ? L.negative : L.neutral;
@@ -88,6 +107,7 @@ export function EvCalculator({ copy, dash }: { copy: ToolCopy; dash: string }) {
           tone={toneOf(result?.edge)}
         />
         <Readout label={L.fairOdds} testId="out-fair" value={num(result?.fairDecimal, dash)} />
+        {meter ? <Meter segments={meter.segments} markers={meter.markers} /> : null}
         {verdict ? <p className="tl-verdict">{verdict}</p> : null}
       </div>
     </div>

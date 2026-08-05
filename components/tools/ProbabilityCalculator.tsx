@@ -14,6 +14,7 @@ import {
 } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, Segmented, num, parsePercent, pct } from "./parts";
+import { Meter } from "./Meter";
 
 type Mode = "probability" | "odds";
 
@@ -42,6 +43,17 @@ export function ProbabilityCalculator({ copy, dash }: { copy: ToolCopy; dash: st
     const probability = parlayProbability(list.map((d) => impliedProbability(d) as number));
     return price === null || probability === null ? null : { price, probability };
   }, [legs]);
+
+  // La catena scritta per esteso ("52.63% × 47.62% = 25.06%") è l'elemento che
+  // spiega la multipla meglio di qualsiasi barra: si vede che ogni gamba
+  // MOLTIPLICA, e quanto resta alla fine.
+  const chain = useMemo(() => {
+    const decimals = legs.map((l) => parseOdds(l, "decimal"));
+    if (!decimals.length || decimals.some((d) => d === null)) return null;
+    const probs = (decimals as number[]).map((d) => impliedProbability(d) as number);
+    const combined = probs.reduce((a, b) => a * b, 1);
+    return `${probs.map((x) => pct(x, dash)).join(" × ")} = ${pct(combined, dash)}`;
+  }, [legs, dash]);
 
   const setLeg = (i: number, v: string) =>
     setLegs((prev) => prev.map((l, idx) => (idx === i ? v : l)));
@@ -111,6 +123,15 @@ export function ProbabilityCalculator({ copy, dash }: { copy: ToolCopy; dash: st
           testId="out-parlay-prob"
           value={pct(parlay?.probability, dash)}
         />
+        {parlay && chain ? (
+          <Meter
+            segments={[
+              { value: parlay.probability, tone: "fair" },
+              { value: 1 - parlay.probability, tone: "muted" },
+            ]}
+            caption={chain}
+          />
+        ) : null}
       </div>
     </div>
   );

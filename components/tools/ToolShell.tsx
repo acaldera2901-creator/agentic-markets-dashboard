@@ -11,6 +11,7 @@ import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale, type ToolSlug } from
 import { toolJsonLd } from "@/lib/tools/seo";
 import { ToolCalculator } from "./ToolCalculator";
 import { LocalePicker } from "./LocalePicker";
+import { ToolIcon } from "./ToolIcon";
 
 export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
@@ -21,14 +22,19 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
     <div className="portal-root tl-root">
       <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
       <main className="tl-page">
-        <header className="tl-head">
-          <div className="tl-eyebrow">
-            <span className="tl-free">{copy.common.free}</span>
-            <span>BetRedge</span>
+        <header className="tl-head tl-head--tool">
+          {/* L'icona identifica il tool a colpo d'occhio e lega la pagina al rail
+              e alla card dell'hub: stesso oggetto, tre posti. */}
+          <ToolIcon slug={slug} size={72} className="tl-head-ic" />
+          <div className="tl-head-txt">
+            <div className="tl-eyebrow">
+              <span className="tl-free">{copy.common.free}</span>
+              <span>BetRedge</span>
+            </div>
+            <h1>{t.h1}</h1>
+            <p className="tl-lede">{t.lede}</p>
+            <LocalePicker slug={slug} locale={locale} label={copy.common.langLabel} />
           </div>
-          <h1>{t.h1}</h1>
-          <p className="tl-lede">{t.lede}</p>
-          <LocalePicker slug={slug} locale={locale} label={copy.common.langLabel} />
         </header>
 
         <ToolCalculator slug={slug} copy={t} dash={copy.common.invalid} />
@@ -64,6 +70,7 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
           <div className="tl-others">
             {others.map((s) => (
               <Link key={s} href={toolPath(s, locale)}>
+                <ToolIcon slug={s} size={22} />
                 {copy.tools[s].h1}
               </Link>
             ))}

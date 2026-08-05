@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { kelly, parseOdds } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, Segmented, num, parseAmount, parsePercent, pct, signedPct, toneOf } from "./parts";
+import { Meter } from "./Meter";
 
 const FRACTIONS: Record<string, number> = { full: 1, half: 0.5, quarter: 0.25 };
 
@@ -26,6 +27,9 @@ export function KellyCalculator({ copy, dash }: { copy: ToolCopy; dash: string }
   }, [odds, prob, bankroll, fractionId]);
 
   const noEdge = result !== null && result.stake === 0;
+  // Traccia = Kelly PIENO. Le tacche a ¼ e ½ rendono visibile il messaggio della
+  // pagina: quasi nessuno dovrebbe stare in fondo alla barra.
+  const share = result && result.fullKelly > 0 ? result.stakeFraction / result.fullKelly : null;
 
   return (
     <div className="tl-calc tl-calc--kelly">
@@ -67,6 +71,18 @@ export function KellyCalculator({ copy, dash }: { copy: ToolCopy; dash: string }
           testId="out-growth"
           value={num(result?.growthRate, dash, 4)}
         />
+        {share !== null ? (
+          <Meter
+            segments={[
+              { value: share, tone: "edge" },
+              { value: 1 - share, tone: "muted" },
+            ]}
+            markers={[
+              { at: 0.25, label: "¼" },
+              { at: 0.5, label: "½" },
+            ]}
+          />
+        ) : null}
         {noEdge ? <p className="tl-verdict is-warn">{L.noEdge}</p> : null}
         {copy.caveat ? <p className="tl-caveat">{copy.caveat}</p> : null}
       </div>

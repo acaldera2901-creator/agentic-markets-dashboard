@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { ODDS_FORMATS, formatOdds, impliedProbability, parseOdds, type OddsFormat } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, Segmented, pct } from "./parts";
+import { Meter } from "./Meter";
 
 export function OddsConverter({ copy, dash }: { copy: ToolCopy; dash: string }) {
   const L = copy.labels;
@@ -47,6 +48,14 @@ export function OddsConverter({ copy, dash }: { copy: ToolCopy; dash: string }) 
           value={pct(implied, dash)}
           strong
         />
+        {/* La probabilità implicita come lunghezza, col riferimento a metà: si
+            vede subito se il book dà la partita per favorita o no. */}
+        {implied !== null && (
+          <Meter
+            segments={[{ value: implied, tone: "fair" }, { value: 1 - implied, tone: "muted" }]}
+            markers={[{ at: 0.5, label: "50%" }]}
+          />
+        )}
       </div>
     </div>
   );
