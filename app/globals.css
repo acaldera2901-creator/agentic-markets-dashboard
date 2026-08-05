@@ -9400,7 +9400,10 @@ button:disabled {
 .hv3 .v-sportbtn:active{transform:translateY(1px)}
 .hv3 .v-sportbtn:focus-visible{outline:2px solid var(--v-coral);outline-offset:2px}
 .hv3 .v-sportbtn-ic{width:26px;height:26px;object-fit:contain;flex:none;display:block}
-.hv3 .v-sportbtn--wc{color:var(--v-text)} /* World Cup = voce feature, leggermente più marcata */
+/* #TOOLS-HUB-0805: lo slot feature della barra sport è passato dalla World Cup
+   ai tool gratuiti — stesso trattamento (voce marcata). La regola --wc è stata
+   rimossa qui perché quella classe non è più referenziata da nessun TSX. */
+.hv3 .v-sportbtn--tools{color:var(--v-text)}
 .hv3 .v-sportbtn--live{color:var(--v-coral)}
 .hv3 .v-sportbtn--live .dot{width:8px;height:8px;border-radius:50%;background:var(--v-coral);flex:none;animation:hv3-pulse 2s infinite}
 @media (prefers-reduced-motion:reduce){ .hv3 .v-sportbtn--live .dot{animation:none} }

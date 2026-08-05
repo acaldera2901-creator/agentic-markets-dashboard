@@ -9016,10 +9016,12 @@ export default function Dashboard() {
               {/* ── IN EVIDENZA group ── */}
               <span className="rail-sep" />
               <span className="rail-lab is-second">{tNav.featured_label}</span>
-              {/* Track B: World Cup hub is a route, not a tab */}
-              <Link className="rail-item" href="/world-cup">
-                <SportIcon sport="worldcup" size={17} className="rail-ic" variant="sm" />
-                <span className="rail-label">World Cup</span>
+              {/* #TOOLS-HUB-0805: al posto della World Cup (torneo finito, hub
+                  archiviato ma ancora online) ci sono i calcolatori gratuiti.
+                  Rotta, non tab, come era per l'hub WC. */}
+              <Link className="rail-item" href="/tools">
+                <MenuIcon name="tools" size={18} className="rail-ic" />
+                <span className="rail-label">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
@@ -9051,9 +9053,12 @@ export default function Dashboard() {
           <nav className="am-featured" aria-label={tNav.featured_label}>
             <span className="am-featured-lab">{tNav.featured_label}</span>
             <div className="am-featured-grid">
-              <Link className="am-feat-tile" href="/world-cup">
-                <SportIcon sport="worldcup" size={22} className="am-feat-ic" variant="sm" />
-                <span className="am-feat-l">World Cup</span>
+              {/* #TOOLS-HUB-0805: specchia la voce Strumenti del rail (su mobile
+                  il rail sparisce, senza questa tile l'hub /tools resterebbe
+                  raggiungibile solo dal footer). */}
+              <Link className="am-feat-tile" href="/tools">
+                <MenuIcon name="tools" size={22} className="am-feat-ic" />
+                <span className="am-feat-l">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
               <a className="am-feat-tile" href="/community">
                 <MenuIcon name="creator" size={22} className="am-feat-ic" />

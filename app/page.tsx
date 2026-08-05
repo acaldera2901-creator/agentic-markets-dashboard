@@ -53,7 +53,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Il desk in tasca. In arrivo su iOS e Android.",
     appSoon: "IN ARRIVO",
-    spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali",
+    spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali", spTools: "Strumenti",
     cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 14.99 · Pro 29.99 USDT/mese.", cardPlansBtn: "Vedi i piani",
@@ -103,7 +103,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "The desk in your pocket. Coming soon to iOS and Android.",
     appSoon: "COMING SOON",
-    spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup",
+    spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup", spTools: "Free tools",
     cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "Hit rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
     cardPlans: "Plans", cardPlansDesc: "Free to try · Base 14.99 · Pro 29.99 USDT/month.", cardPlansBtn: "See plans",
@@ -152,7 +152,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
     appSoon: "PRÓXIMAMENTE",
-    spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial",
+    spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial", spTools: "Herramientas",
     cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
     cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 14.99 · Pro 29.99 USDT/mes.", cardPlansBtn: "Ver planes",
@@ -201,7 +201,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
     appSoon: "BIENTÔT",
-    spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde",
+    spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde", spTools: "Outils",
     cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
     cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 14.99 · Pro 29.99 USDT/mois.", cardPlansBtn: "Voir les offres",
@@ -250,7 +250,7 @@ const COPY = {
     cardApp: "BETREDGE APP",
     cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
     appSoon: "СКОРО",
-    spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ",
+    spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ", spTools: "Инструменты",
     cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Точность попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
     cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 14.99 · Pro 29.99 USDT/мес.", cardPlansBtn: "Тарифы",
@@ -734,9 +734,12 @@ export default function LandingPage() {
             <img className="v-sportbtn-ic" src="/banners/sport-tennis-sm.png" alt="" aria-hidden="true" />
             {t.spTennis}
           </a>
-          <Link href="/world-cup" className="v-sportbtn v-sportbtn--wc">
-            <img className="v-sportbtn-ic" src="/banners/sport-worldcup-sm.png" alt="" aria-hidden="true" />
-            {t.spWorldCup}
+          {/* #TOOLS-HUB-0805: lo slot che era della World Cup (torneo finito) porta
+              ai calcolatori gratuiti — pagina pubblica, senza login, pensata per
+              il traffico organico. L'hub WC resta online, fuori dalla nav. */}
+          <Link href="/tools" className="v-sportbtn v-sportbtn--tools">
+            <img className="v-sportbtn-ic" src="/icons/menu-tools-sm.png" alt="" aria-hidden="true" />
+            {t.spTools}
           </Link>
           <a href="/app?tab=bets&sport=all" className="v-sportbtn v-sportbtn--live">
             <span className="dot" aria-hidden="true" />
