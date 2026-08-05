@@ -225,6 +225,115 @@ async def get_fixtures() -> list[dict]:
     return results
 
 
+def _header_event_to_fixture(ev: dict, now: datetime) -> dict | None:
+    """Map one HEADER-feed event (which is one match) to a fixture dict.
+
+    Produces the SAME shape and the SAME match_id as _competition_to_fixture:
+    the header's `competitionId` is the very id the day-scoreboard exposes as
+    `competitions[].id`, so fixtures collected here dedupe, merge odds and settle
+    exactly like the ones from the other endpoint. Fail-closed on anything
+    incomplete, same as the scoreboard path.
+    """
+    if ev.get("status") not in ("pre", "in"):
+        return None  # "post" = completed: never emit a past match as a fixture
+
+    comp_type = ((ev.get("competitionType") or {}).get("text")) or ""
+    if "Singles" not in comp_type:
+        return None  # doubles have no single athlete per side
+
+    scheduled = _parse_iso_date(ev.get("date") or "")
+    if scheduled is None:
+        return None
+    if scheduled < now - _PAST_GRACE or scheduled > now + _FUTURE_HORIZON:
+        return None
+
+    competitors = ev.get("competitors") or []
+    if len(competitors) != 2:
+        return None
+    names = []
+    for side in competitors:
+        # Header events carry the athlete inline (no nested "athlete" object).
+        name = clean_player_name(side.get("displayName") or side.get("name") or "")
+        if not name:
+            return None
+        names.append(name)
+
+    p1, p2 = names
+    if canonical_player_key(p1) > canonical_player_key(p2):
+        p1, p2 = p2, p1
+
+    comp_id = str(ev.get("competitionId") or "")
+    if not comp_id:
+        return None
+    match_key = f"{canonical_player_key(p1)}:{canonical_player_key(p2)}".replace(" ", "-")
+
+    round_info = ev.get("round")
+    round_name = f"Round {round_info}" if round_info else ""
+    tournament = ev.get("name") or ev.get("shortName") or "Unknown"
+
+    return {
+        "match_id": f"tennis:espn:{comp_id}:{match_key}",
+        "player1": p1,
+        "player2": p2,
+        "tournament": tournament,
+        "surface": infer_surface(tournament),
+        "round": round_name,
+        "scheduled_at": scheduled.isoformat(),
+        "provider": "espn",
+    }
+
+
+class EspnFeedUnavailable(RuntimeError):
+    """The feed refused or could not be reached — NOT "there is no tennis today".
+
+    #TENNIS-FEED-DOWN-0805: the collector used to report `no_active_tournaments`
+    for both cases, which is the reassuring one, so an empty board looked like an
+    empty calendar. Raised so the caller can tell a blocked feed from a quiet day.
+    """
+
+
+async def get_fixtures_from_header() -> list[dict]:
+    """Forward-looking fixtures from the HEADER feed (#TENNIS-FEED-DOWN-0805).
+
+    Second source for fixtures, on the endpoint this module already uses for
+    settlement (get_completed_results) — i.e. the one demonstrably still
+    answering when the per-day scoreboard does not. Measured 2026-08-05: the
+    day-scoreboard returned 403 while this endpoint returned 51 non-completed
+    singles matches (Toronto Masters + Warsaw), and the board was empty.
+
+    Raises EspnFeedUnavailable if the feed itself is unusable, so "blocked" can
+    never again be reported as "no tournaments".
+    """
+    now = datetime.now(timezone.utc)
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(_URL, headers=_HEADERS)
+    except Exception as exc:
+        raise EspnFeedUnavailable(f"header feed unreachable: {exc}") from exc
+    if resp.status_code != 200:
+        raise EspnFeedUnavailable(f"header feed http {resp.status_code}")
+    try:
+        data = resp.json()
+    except Exception as exc:
+        raise EspnFeedUnavailable(f"header feed not json: {exc}") from exc
+
+    sports = data.get("sports") or []
+    if not sports:
+        raise EspnFeedUnavailable("header feed carried no sports block")
+
+    seen: set[str] = set()
+    out: list[dict] = []
+    for league in sports[0].get("leagues", []):
+        for ev in league.get("events", []):
+            fixture = _header_event_to_fixture(ev, now)
+            if fixture and fixture["match_id"] not in seen:
+                seen.add(fixture["match_id"])
+                out.append(fixture)
+
+    logger.info("ESPN tennis header: found %d singles fixtures", len(out))
+    return out
+
+
 async def get_completed_results() -> list[dict]:
     """
     Completed singles results from the same scoreboard feed.
