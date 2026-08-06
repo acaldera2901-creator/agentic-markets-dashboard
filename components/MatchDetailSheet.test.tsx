@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MatchDetailSheet, type MdsData } from "@/components/MatchDetailSheet";
+import { sortBooksForMenu } from "@/lib/partners";
 
 // #BET-DROPDOWN-1: la bet-bar non impila più una CTA per book — una sola CTA
 // apre il menu dei partner. Qui si verifica il comportamento del menu, non il
@@ -71,19 +72,42 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
     expect(screen.getByRole("menu")).toBeTruthy();
   });
 
-  it("aperto, elenca tutti i partner con link affiliato sicuro", () => {
+  // #BET-MENU-ORDER: l'ordine NON è più quello d'arrivo (era `BOOKS.map(name)`) ma
+  // quello deciso da Andrea in lib/partners → il menu non dipende più da come le
+  // due fonti (BetConstruct + solo-landing) impilano i book.
+  it("aperto, elenca tutti i partner con link affiliato sicuro, nell'ordine deciso", () => {
     render(<MatchDetailSheet data={makeData()} />);
     openMenu();
     const items = screen.getAllByRole("menuitem") as HTMLAnchorElement[];
-    expect(items.map((a) => a.textContent?.trim())).toEqual(BOOKS.map((b) => b.name));
+    const atteso = sortBooksForMenu(BOOKS);
+    expect(items.map((a) => a.textContent?.trim())).toEqual(atteso.map((b) => b.name));
+    // ...e ogni voce porta il link del SUO partner, non quello del vicino
     for (const [i, a] of items.entries()) {
-      expect(a.getAttribute("href")).toBe(BOOKS[i].matchUrl);
+      expect(a.getAttribute("href")).toBe(atteso[i].matchUrl);
       expect(a.getAttribute("target")).toBe("_blank");
       const rel = a.getAttribute("rel") || "";
       for (const token of ["nofollow", "sponsored", "noopener", "noreferrer"]) {
         expect(rel).toContain(token);
       }
     }
+  });
+
+  // Il caso che conta davvero: i 6 partner veri, consegnati nell'ordine in cui li
+  // impilano le fonti, più Casea che non è nell'ordine e deve finire in coda.
+  it("coi 6 partner reali esce l'ordine di Andrea, Casea (geo-ristretta) in coda", () => {
+    const arrivo = [
+      { name: "FortunePlay", matchUrl: "https://fp.example/x" },
+      { name: "YBets", matchUrl: "https://ybetspromo.io/dputempxc" },
+      { name: "BetScore", matchUrl: "https://bsr.lynmonkel.com/?mid=381903_2215092" },
+      { name: "FeliceBet", matchUrl: "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732" },
+      { name: "VeloBet", matchUrl: "https://track.velobetpartners.com/visit/?bta=42786&nci=6119" },
+      { name: "GG.BET", matchUrl: "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?sub_id=betredge" },
+      { name: "Casea", matchUrl: "https://csa.lynmonkel.com/?mid=383451_2222324" },
+    ];
+    render(<MatchDetailSheet data={makeData({ books: arrivo })} />);
+    openMenu();
+    expect((screen.getAllByRole("menuitem") as HTMLAnchorElement[]).map((a) => a.textContent?.trim()))
+      .toEqual(["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets", "Casea"]);
   });
 
   it("Escape chiude il menu", () => {

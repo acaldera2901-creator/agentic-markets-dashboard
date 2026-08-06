@@ -7,7 +7,7 @@
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MarketIcon } from "./MarketIcon";
-import { partnerLogoByName } from "../lib/partners";
+import { partnerLogoByName, sortBooksForMenu } from "../lib/partners";
 import { trackEvent } from "../lib/track-event";
 import { joinFpWithModel } from "../lib/market-join";
 import type { ExtraMarket } from "../lib/poisson-model";
@@ -330,7 +330,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                   </button>
                   {booksOpen && (
                     <div className="mds-bmenu" role="menu">
-                      {data.books.map((b) => {
+                      {sortBooksForMenu(data.books).map((b) => {
                         const logo = partnerLogoByName(b.name);
                         return (
                           <a

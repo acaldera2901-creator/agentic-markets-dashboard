@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnersFor, pickPartnersLang } from "@/lib/partners";
+import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu } from "@/lib/partners";
 import { CASEA_GEO_URLS } from "@/lib/affiliate";
 
 const LANGS = ["it", "en", "es", "fr", "ru"] as const;
@@ -68,6 +68,45 @@ describe("partners catalog", () => {
 
     it("ogni partner risolto ha un url https (niente stringhe vuote in uscita)", () => {
       for (const p of partnersFor("NO")) expect(p.url).toMatch(/^https:\/\//);
+    });
+  });
+
+  // #BET-MENU-ORDER (2026-08-06, Andrea): ordine deciso da lui per il menu della
+  // scheda prediction. I book arrivano da due fonti diverse e in ordine arbitrario
+  // → l'ordine è una scelta di presentazione, applicata al render.
+  describe("sortBooksForMenu — ordine del menu 'Piazza la scommessa'", () => {
+    const names = (bs: { name: string }[]) => sortBooksForMenu(bs).map((b) => b.name);
+
+    it("mette i partner nell'ordine deciso da Andrea, qualunque sia quello d'arrivo", () => {
+      const arrivo = ["YBets", "GG.BET", "FortunePlay", "FeliceBet", "BetScore", "VeloBet"].map((name) => ({ name }));
+      expect(names(arrivo)).toEqual(["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets"]);
+    });
+
+    it("chi non è nell'ordine (Casea, geo-ristretta) va in coda senza sparire", () => {
+      const bs = [{ name: "Casea" }, { name: "YBets" }, { name: "FortunePlay" }].map((b) => b);
+      expect(names(bs)).toEqual(["FortunePlay", "YBets", "Casea"]);
+    });
+
+    it("più sconosciuti restano nell'ordine d'arrivo (sort stabile), tutti in coda", () => {
+      const bs = [{ name: "Zeta" }, { name: "GG.BET" }, { name: "Alfa" }];
+      expect(names(bs)).toEqual(["GG.BET", "Zeta", "Alfa"]);
+    });
+
+    it("non perde né duplica voci e non muta l'array in ingresso", () => {
+      const bs = [{ name: "YBets" }, { name: "FortunePlay" }, { name: "Casea" }];
+      const copia = [...bs];
+      const out = sortBooksForMenu(bs);
+      expect(out).toHaveLength(bs.length);
+      expect(new Set(out.map((b) => b.name)).size).toBe(bs.length);
+      expect(bs).toEqual(copia);
+    });
+
+    it("il match sul nome è case/space-insensitive (i nomi arrivano da fonti diverse)", () => {
+      expect(names([{ name: "ybets" }, { name: " fortuneplay " }])).toEqual([" fortuneplay ", "ybets"]);
+    });
+
+    it("ogni partner del menu è nel catalogo loghi (l'ordine non inventa nomi)", () => {
+      for (const n of BET_MENU_ORDER) expect(partnerLogoByName(n), `nessun logo per ${n}`).toMatch(/^\/logos\//);
     });
   });
 
