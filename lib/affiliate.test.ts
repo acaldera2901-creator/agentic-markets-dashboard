@@ -10,7 +10,17 @@ describe("landingPartnersFor(country)", () => {
 
   it("le voci a link unico ci sono in ogni geo", () => {
     for (const cc of ["NO", "CH", "FI", "AT", "CA", ""]) {
-      expect(namesIn(cc)).toEqual(expect.arrayContaining(["BetScore", "FeliceBet", "VeloBet"]));
+      expect(namesIn(cc)).toEqual(expect.arrayContaining(["BetScore", "FeliceBet", "VeloBet", "GG.BET"]));
+    }
+  });
+
+  // #PARTNER-GGBET — le reti affiliate consegnano i link con dei macro da sostituire
+  // (`sub_id={sub_id_1}`, `click_id={clickid}`). Verificato con curl che il sub_id
+  // finisce dentro il tag di attribuzione: incollato con le graffe, il partner
+  // riceverebbe "{sub_id_1}" come sorgente. Nessun link deve contenerne.
+  it("nessun link contiene macro della rete non risolti", () => {
+    for (const p of landingPartnersFor("NO")) {
+      expect(p.url, `${p.name} ha un macro non risolto`).not.toMatch(/[{}]|%7B|%7D/i);
     }
   });
 

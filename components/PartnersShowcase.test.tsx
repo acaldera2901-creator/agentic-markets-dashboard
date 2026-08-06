@@ -10,9 +10,10 @@ describe("PartnersShowcase", () => {
     expect(screen.getByText("BetScore")).toBeTruthy();
     expect(screen.getByText("FeliceBet")).toBeTruthy();
     expect(screen.getByText("VeloBet")).toBeTruthy();
+    expect(screen.getByText("GG.BET")).toBeTruthy();
     const links = screen.getAllByRole("link").filter((a) =>
       (a as HTMLAnchorElement).href.startsWith("https://"));
-    expect(links.length).toBeGreaterThanOrEqual(6);
+    expect(links.length).toBeGreaterThanOrEqual(7);
     for (const a of links) {
       const rel = (a as HTMLAnchorElement).getAttribute("rel") || "";
       expect(rel).toContain("nofollow");

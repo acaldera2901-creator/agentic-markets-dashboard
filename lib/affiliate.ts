@@ -42,6 +42,14 @@ export const LANDING_PARTNERS = [
   // tutte le geo — verificato: 302 → 24velobet.com/sportsbook/prematch col cxd di
   // attribuzione. Casinò + sportsbook, ma il link atterra sul prematch.
   { name: "VeloBet", url: "https://track.velobetpartners.com/visit/?bta=42786&nci=6119" },
+  // #PARTNER-GGBET: sportsbook esports-first. Il link della rete arriva con i macro
+  // `sub_id={sub_id_1}` e `click_id={clickid}` NON risolti: verificato con curl che
+  // il sub_id finisce dentro il tag di attribuzione (302 → ggbetconnect.com?…&
+  // ref=gg_w267914c385808l8364p210_<sub_id>) → lasciare le graffe letterali ci
+  // sporcherebbe il ref. Valorizzato `sub_id=betredge` (identifica la sorgente) e
+  // rimosso `click_id` (macro della rete, noi non ne abbiamo uno). Solo landing di
+  // registrazione (`encoded_url` = sports#!/auth/register), nessun deep-link evento.
+  { name: "GG.BET", url: "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?utm_source=Aff&utm_medium=267914&utm_campaign=seo&utm_content=bet&sub_id=betredge" },
 ] as const;
 
 export type LandingPartner = { name: string; url: string };
