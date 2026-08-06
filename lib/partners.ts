@@ -96,6 +96,24 @@ export function partnerLogoByName(name: string): string | null {
   return PARTNERS.find((p) => p.name.toLowerCase() === key)?.logo ?? null;
 }
 
+// #BET-MENU-ORDER (2026-08-06, Andrea) — ordine dei partner nel menu "Piazza la
+// scommessa" della scheda prediction. È una scelta di presentazione, non dei dati:
+// i book arrivano da fonti diverse (BetConstruct via `fp.books` + i solo-landing
+// via landingPartnersFor) e nessuna delle due controlla l'ordine finale. Ordinare
+// qui, al render, vale per tutte e 3 le superfici (football/tennis desk + World Cup)
+// senza toccarne i call-site. Non tocca la vetrina /partners, che ha il suo ordine.
+export const BET_MENU_ORDER = ["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets"] as const;
+
+// Chi non è nell'ordine (es. Casea, geo-ristretta) finisce in coda mantenendo
+// l'ordine d'arrivo: un partner nuovo compare comunque, non sparisce.
+export function sortBooksForMenu<T extends { name: string }>(books: T[]): T[] {
+  const rank = (name: string) => {
+    const i = BET_MENU_ORDER.findIndex((n) => n.toLowerCase() === name.trim().toLowerCase());
+    return i === -1 ? BET_MENU_ORDER.length : i;
+  };
+  return [...books].sort((a, b) => rank(a.name) - rank(b.name));
+}
+
 export type PartnersLang = "it" | "en" | "es" | "fr" | "ru";
 
 export function pickPartnersLang(lang: string): PartnersLang {
