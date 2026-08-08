@@ -282,7 +282,15 @@ Ogni tool porta un esempio numerico coi conti fatti, come i cinque esistenti.
 | **Parlay** | quota combinata `= Π quotaᵢ`; probabilità implicita `= 1/combinata`; margine composto `= (1+m)ⁿ − 1` | 4 gambe a 1.80 → 1.80⁴ = **10.4976**; implicita **9.53%**; margine composto **21.55%** con `m = 5%` per gamba |
 
 ROI e Yield sono deliberatamente distinti (capitale vs turnover): la differenza tra i
-due è essa stessa contenuto che qualcuno cerca, e le due pagine si linkano a vicenda.
+due è essa stessa contenuto che qualcuno cerca, e ogni explainer cita l'altro con i
+numeri del caso identico (stesso profitto 400 → ROI 40% sulla cassa, yield 4% sul
+giocato).
+
+**La citazione è per nome, non un `<a>`**: `Prose.tsx` rende solo `**grassetto**`, non i
+link markdown, ed è fra i componenti condivisi da non toccare. Il percorso navigabile fra
+i tool esiste già — il blocco «Other free tools» di `ToolShell` elenca tutti gli altri su
+ogni pagina — quindi il crawl path c'è e il guadagno di un link contestuale in più è
+modesto rispetto al toccare un renderer usato da 121 pagine. **Deferito, non dimenticato.**
 
 **Nessuna assunzione nascosta in una costante.** Il margine composto del parlay ha
 imposto la regola: il «21,6%» che questa spec riportava non discendeva dalle gambe a
