@@ -2,8 +2,17 @@
 // directional pick.
 //
 // Why this file lives in lib/ and not tests/: vitest only picks up
-// {app,lib,components,features}/**/*.test.ts — the ~36 files under tests/ have
-// never run in CI (#TESTS-CI-0801). A test that does not run is not a test.
+// {app,lib,components,features}/**/*.test.ts, so a file under tests/ is invisible
+// to `npm test`.
+//
+// ⚠️ CORRECTION (2026-08-08): the original note here said the ~36 files under
+// tests/ "have never run in CI". That stopped being true on 2026-08-01, when
+// #TESTS-CI-0801 added `node scripts/run-standalone-tests.mjs` to the workflow.
+// Trusting the stale note cost us: this gate (2026-08-05) broke
+// `tests/tennis-adapter-floor.test.ts` — whose fixtures carry no odds — and the
+// red went unnoticed for three days because nobody expected tests/ to run.
+// Before landing a change to the surfacing rules, run BOTH:
+//   npm test  &&  node scripts/run-standalone-tests.mjs
 //
 // Evidence behind the rule (am-lab/REPORT-tennis-noodds-2026-08-05.md, LIVE
 // settled rows 01/06 → 05/08, gate applied as served):
