@@ -578,6 +578,66 @@ const fr: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Calculateur de mise — la mise pour un profit visé | BetRedge",
+      metaDescription:
+        "Calculateur de mise gratuit : entrez la cote et le profit visé pour voir la mise nécessaire, le retour total et la part de bankroll que ce seul pari engage.",
+      h1: "Calculateur de mise",
+      lede:
+        "La mise qu'un profit visé exige à une cote donnée — et la part de bankroll qu'elle engage sans le dire.",
+      labels: {
+        inputTitle: "Cote et objectif",
+        odds: "Cote",
+        targetProfit: "Profit visé",
+        bankroll: "Bankroll",
+        resultTitle: "Ce que coûte cet objectif",
+        stakeNeeded: "Mise nécessaire",
+        totalReturn: "Retour total",
+        bankrollShare: "Part de la bankroll",
+        hint: "La bankroll est ce qui transforme la mise en pourcentage : sans elle, la mise est un nombre sans rien à côté. La cote s'écrit en décimal — 2.50, pas +150.",
+        verdictModest:
+          "Cette mise engage moins de 5 % de la bankroll déclarée, et une série de dix défaites n'y mettrait pas fin. Lisez-la à côté de la cote, pas seule : le même objectif à une cote plus courte demande un pari bien plus gros.",
+        verdictHeavy:
+          "Cette mise engage plus de 5 % de la bankroll déclarée sur un seul résultat. À cette taille, une série de dix défaites — ordinaire autour de 2.00 — en emporte plus de la moitié : vérifiez le chiffre sur le calculateur de bankroll avant de parier.",
+      },
+      takeaway:
+        "Partir du profit que vous voulez est le moyen le plus rapide de miser trop : la bonne question n'est pas combien je veux gagner, mais combien je peux me permettre de perdre.",
+      example: {
+        title: "Vouloir 100 de profit à 2.50",
+        rows: [
+          { label: "Cote", value: "2.50" },
+          { label: "Profit visé", value: "100" },
+          { label: "Mise nécessaire", value: "66,67" },
+          { label: "Retour total", value: "166,67" },
+          { label: "Part d'une bankroll de 1 000", value: "6,67 %" },
+        ],
+        note:
+          "Ce même 100 coûte 25,00 à 5.00 et 400,00 à 1.25 — l'objectif n'a pas bougé, la cote si. Et 66,67 sur une bankroll de 1 000, c'est exactement le Kelly complet de celui qui croit que le résultat tombe 44 % du temps, alors que 2.50 est à l'équilibre à 40 %. Le souhait contient déjà une estimation de probabilité valant un avantage de +10 %, simplement non déclarée.",
+      },
+      explainerTitle: "Raisonner à l'envers depuis un nombre que vous avez choisi",
+      explainer: [
+        "L'arithmétique est la moitié facile. Un pari rend la mise plus mise × (cote − 1), donc **la mise qu'exige un objectif est l'objectif divisé par la cote moins un** — 100 à 2.50 demande 66,67, et le ticket revient à 166,67. Ce qui rend cette page utile, c'est le second effet : **plus la cote est courte, plus le même souhait exige un gros pari**. Ce 100 coûte 25,00 à 5.00, 66,67 à 2.50, 100,00 à 2.00 et 400,00 à 1.25. Entre ces quatre lignes votre opinion n'a pas bougé d'un pouce, et l'argent en risque a été multiplié par seize. C'est pourquoi le calculateur demande une bankroll dont il n'a pas strictement besoin : 66,67 n'est ni gros ni petit avant de savoir que c'est 6,67 % de tout ce que vous avez mis de côté.",
+        "**Raisonner depuis le profit que vous voulez est la route la plus rapide vers une mise trop grande**, et l'échec suit un schéma précis. Perdez le premier pari et l'objectif grossit en silence pour le couvrir : vouloir encore 100 après avoir laissé 66,67 revient à demander 166,67, ce qui exige à 2.00 une mise de 166,67, et si elle tombe aussi la demande suivante est 476,19 à 1.70. Trois paris plus tard, 709,52 d'une bankroll de 1 000 ont été exposés pour gagner les 100 du départ, et la cote s'est raccourcie chaque fois parce que les cotes courtes rassurent. **Le pari grossit exactement quand la raison de le prendre s'affaiblit.** La version honnête de ce calcul va dans l'autre sens, de ce que vous pouvez perdre à ce que vous pouvez miser, et c'est le calculateur du critère de Kelly : là, la taille vient d'un avantage mesuré, pas d'un chiffre choisi. Notre nombre n'est pas un hasard non plus — 66,67 sur 1 000 est exactement ce que le Kelly complet recommande à 2.50 à qui croit à 44 %, contre les 40 % que la cote implique. Si vous ne défendriez pas ce 44 %, la mise ne portait pas sur le pari.",
+      ],
+      faq: [
+        {
+          q: "Comment calcule-t-on la mise pour un profit visé ?",
+          a: "Divisez le profit voulu par la cote moins un. À 2.50 le retour net par unité misée est 1,50, donc 100 de profit demandent 100 / 1,50 = 66,67 de mise et rapportent 166,67 au total. À 2.00 le retour net vaut 1,00, et c'est pourquoi la mise et l'objectif y sont le même nombre.",
+        },
+        {
+          q: "Pourquoi le calculateur demande-t-il ma bankroll ?",
+          a: "Parce que la mise seule ne dit rien. 66,67 est une erreur d'arrondi pour l'un et un tiers du compte pour l'autre, et le chiffre qui tranche est la part de bankroll — ici 6,67 %. Laissez le champ vide et la mise fonctionne toujours ; le pourcentage devient un tiret, ce qui est honnête, car cette hypothèse vous appartient et non à nous.",
+        },
+        {
+          q: "Celui-ci ou le critère de Kelly ?",
+          a: "Celui-ci pour donner un prix à un souhait, Kelly pour dimensionner un pari. Cette page part d'un nombre que vous avez choisi et calcule son coût ; le calculateur du critère de Kelly part d'un avantage mesuré et calcule ce que la bankroll peut porter. Quand les deux divergent, celui à écarter est celui qui n'a pas consulté votre estimation de probabilité.",
+        },
+        {
+          q: "Poursuivre une perte avec une mise plus grosse, est-ce parfois juste ?",
+          a: "Pas avec cette arithmétique. Chaque demande de récupération dépasse la précédente, et elle est souvent placée à une cote plus courte parce que les cotes courtes rassurent : la mise grossit pendant que l'avantage se réduit. Les règles de bankroll servent à rendre la prochaine mise indépendante du dernier résultat : fixez l'unité en pourcentage de la bankroll et la série ne peut plus s'emballer.",
+        },
+      ],
+    },
   },
 };
 

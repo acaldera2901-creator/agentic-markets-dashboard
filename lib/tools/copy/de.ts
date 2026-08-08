@@ -578,6 +578,66 @@ const de: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Einsatz-Rechner — der Einsatz für einen Zielgewinn | BetRedge",
+      metaDescription:
+        "Kostenloser Einsatz-Rechner: Quote und Zielgewinn eingeben und den nötigen Einsatz, den Gesamtrückfluss und den Anteil der Bankroll sehen, den diese Wette bindet.",
+      h1: "Einsatz-Rechner",
+      lede:
+        "Der Einsatz, den ein Zielgewinn zu einer bestimmten Quote verlangt — und der Anteil der Bankroll, den er stillschweigend bindet.",
+      labels: {
+        inputTitle: "Quote und Ziel",
+        odds: "Quote",
+        targetProfit: "Zielgewinn",
+        bankroll: "Bankroll",
+        resultTitle: "Was dieses Ziel kostet",
+        stakeNeeded: "Nötiger Einsatz",
+        totalReturn: "Gesamtrückfluss",
+        bankrollShare: "Anteil der Bankroll",
+        hint: "Die Bankroll macht aus dem Einsatz erst einen Prozentwert: ohne sie ist der Einsatz eine Zahl ohne Bezug. Die Quote dezimal eingeben — 2.50, nicht +150.",
+        verdictModest:
+          "Dieser Einsatz bindet weniger als 5 % der angegebenen Bankroll, und eine Serie von zehn Niederlagen würde sie nicht beenden. Lies ihn neben der Quote, nicht allein: dasselbe Ziel zu einer kürzeren Quote verlangt eine viel größere Wette.",
+        verdictHeavy:
+          "Dieser Einsatz bindet mehr als 5 % der angegebenen Bankroll auf ein einziges Ergebnis. In dieser Größe nimmt eine Serie von zehn Niederlagen — bei Quoten um 2.00 völlig normal — mehr als die Hälfte davon, also prüfe die Zahl im Bankroll-Rechner, bevor du setzt.",
+      },
+      takeaway:
+        "Vom gewünschten Gewinn auszugehen ist der schnellste Weg, zu viel zu setzen: Die nützliche Frage ist nicht, wie viel ich gewinnen will, sondern wie viel ich verlieren kann.",
+      example: {
+        title: "100 Gewinn wollen zu 2.50",
+        rows: [
+          { label: "Quote", value: "2.50" },
+          { label: "Zielgewinn", value: "100" },
+          { label: "Nötiger Einsatz", value: "66,67" },
+          { label: "Gesamtrückfluss", value: "166,67" },
+          { label: "Anteil einer Bankroll von 1.000", value: "6,67 %" },
+        ],
+        note:
+          "Dieselben 100 kosten 25,00 zu 5.00 und 400,00 zu 1.25 — das Ziel hat sich nicht bewegt, nur die Quote. Und 66,67 auf einer Bankroll von 1.000 ist genau der volle Kelly für jemanden, der das Ergebnis mit 44 % ansetzt, während 2.50 bei 40 % break-even liegt. Der Wunsch enthält also längst eine Wahrscheinlichkeitsschätzung mit einem Vorteil von +10 %, nur eine unausgesprochene.",
+      },
+      explainerTitle: "Rückwärts rechnen von einer Zahl, die du gewählt hast",
+      explainer: [
+        "Die Arithmetik ist die leichte Hälfte. Eine Wette zahlt den Einsatz plus Einsatz × (Quote − 1) zurück, also ist **der Einsatz, den ein Ziel verlangt, das Ziel geteilt durch die Quote minus eins** — 100 zu 2.50 braucht 66,67, und der Schein kommt mit 166,67 zurück. Lesenswert macht diese Seite der zweite Effekt: **je kürzer die Quote, desto größer die Wette, die derselbe Wunsch verlangt**. Diese 100 kosten 25,00 zu 5.00, 66,67 zu 2.50, 100,00 zu 2.00 und 400,00 zu 1.25. Zwischen diesen vier Zeilen hat sich an deiner Meinung nichts geändert, und das Risikogeld hat sich um den Faktor sechzehn bewegt. Deshalb fragt der Rechner nach einer Bankroll, die er streng genommen nicht braucht: 66,67 ist weder groß noch klein, solange du nicht weißt, dass es 6,67 % von allem ist, was du zurückgelegt hast.",
+        "**Vom gewünschten Gewinn her zu denken ist der kürzeste Weg zu einem zu großen Einsatz**, und es scheitert auf eine bestimmte Weise. Verliere die erste Wette, und das Ziel wächst still mit, um sie zu deckeln: nach 66,67 Verlust wieder 100 zu wollen heißt, 166,67 zu verlangen, was zu 2.00 einen Einsatz von 166,67 braucht — und fällt auch der, lautet die nächste Forderung 476,19 zu 1.70. Drei Wetten später sind 709,52 einer Bankroll von 1.000 im Feuer, um die ursprünglichen 100 zu gewinnen, und die Quoten wurden jedes Mal kürzer, weil kurze Quoten sicherer wirken. **Die Wette wird genau dann größer, wenn der Grund für sie schwächer wird.** Die ehrliche Fassung dieser Rechnung läuft umgekehrt, von dem, was du verlieren kannst, zu dem, was du setzen kannst, und das ist der Rechner zum Kelly-Kriterium: dort kommt die Größe aus einem gemessenen Vorteil, nicht aus einer selbst gewählten Zahl. Unsere Zahl ist auch kein Zufall — 66,67 auf 1.000 ist genau das, was der volle Kelly zu 2.50 jemandem empfiehlt, der an 44 % glaubt, gegen die 40 %, die die Quote impliziert. Wenn du diese 44 % nicht verteidigen würdest, ging es beim Einsatz nie um die Wette.",
+      ],
+      faq: [
+        {
+          q: "Wie berechnet man den Einsatz für einen Zielgewinn?",
+          a: "Teile den gewünschten Gewinn durch die Quote minus eins. Zu 2.50 beträgt der Nettorückfluss pro Einsatzeinheit 1,50, also brauchen 100 Gewinn 100 / 1,50 = 66,67 Einsatz und zahlen 166,67 gesamt. Zu 2.00 ist der Nettorückfluss 1,00 — deshalb sind Einsatz und Ziel dort dieselbe Zahl.",
+        },
+        {
+          q: "Warum fragt der Rechner nach meiner Bankroll?",
+          a: "Weil der Einsatz allein nichts sagt. 66,67 ist für einen Rundungsfehler und für den anderen ein Drittel des Kontos, und was das entscheidet, ist der Anteil der Bankroll — hier 6,67 %. Lässt du das Feld leer, funktioniert der Einsatz weiter; der Anteil wird zum Gedankenstrich, und das ist ehrlich, denn diese Annahme gehört dir und nicht uns.",
+        },
+        {
+          q: "Dieser Rechner oder das Kelly-Kriterium?",
+          a: "Dieser, um einen Wunsch zu bepreisen, Kelly, um eine Wette zu dimensionieren. Diese Seite startet bei einer Zahl, die du gewählt hast, und rechnet die Kosten aus; der Rechner zum Kelly-Kriterium startet bei einem gemessenen Vorteil und rechnet aus, was die Bankroll tragen kann. Widersprechen sich beide, fällt der weg, der deine Wahrscheinlichkeitsschätzung nie gefragt hat.",
+        },
+        {
+          q: "Ist es je richtig, einem Verlust mit höherem Einsatz nachzujagen?",
+          a: "Nach dieser Arithmetik nicht. Jede Aufholforderung ist größer als die vorige und wird meist zu einer kürzeren Quote gesetzt, weil kurze Quoten sicherer wirken: der Einsatz wächst, während der Vorteil schrumpft. Bankroll-Regeln gibt es genau dafür, den nächsten Einsatz vom letzten Ergebnis zu entkoppeln — fixiere die Einheit als Anteil der Bankroll, und die Serie kann nicht davonlaufen.",
+        },
+      ],
+    },
   },
 };
 

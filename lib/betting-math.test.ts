@@ -20,6 +20,7 @@ import {
   roi,
   yieldPercent,
   parseSignedAmount,
+  stakeForTarget,
 } from "./betting-math";
 
 const near = (v: number | null | undefined, expected: number, digits = 6) => {
@@ -403,5 +404,52 @@ describe("parseSignedAmount", () => {
     expect(parseSignedAmount("banana")).toBeNull();
     expect(parseSignedAmount("--3")).toBeNull();
     expect(parseSignedAmount("4-0-0")).toBeNull();
+  });
+});
+
+// ─────────────────── dimensionamento: desiderio, cassa, edge ───────────────
+// Tre modi di scegliere lo stake, e questo file ne copre due: stakeForTarget
+// parte da quanto vuoi vincere, bankrollPlan da una regola di cassa. Il terzo
+// è `kelly`, già più sopra, e parte da un edge misurato. I test qui sotto
+// tengono il triangolo agganciato con numeri verificati a mano.
+
+describe("stakeForTarget", () => {
+  it("100 di profitto a quota 2.50 chiede 66.67 di stake", () => {
+    // 100 / (2.50 − 1) = 100 / 1.5 = 66.666…
+    near(stakeForTarget({ targetProfit: 100, decimal: 2.5 }), 66.666667);
+  });
+
+  it("a quota 2.00 lo stake è pari al profitto", () => {
+    expect(stakeForTarget({ targetProfit: 100, decimal: 2 })).toBeCloseTo(100, 9);
+  });
+
+  it("più corta è la quota, più grande è lo stake per lo stesso profitto", () => {
+    // 1.50 → 200, 1.25 → 400: quattro volte lo stake per lo stesso 100 di 2.00.
+    expect(stakeForTarget({ targetProfit: 100, decimal: 1.5 })).toBeCloseTo(200, 9);
+    expect(stakeForTarget({ targetProfit: 100, decimal: 1.25 })).toBeCloseTo(400, 9);
+    expect(stakeForTarget({ targetProfit: 100, decimal: 5 })).toBeCloseTo(25, 9);
+  });
+
+  it("lo stake di un obiettivo a 2.50 è il full Kelly di una probabilità del 44%", () => {
+    // È il ponte fra questa pagina e Kelly: 66.67 su 1.000 è il 6,667% della
+    // cassa, e a 2.50 il full Kelly vale 6,667% solo se credi al 44% (break-even
+    // 40% ⇒ un edge del +10%). Lo stake nato da un desiderio è già una scommessa
+    // su una probabilità: qui la si legge.
+    const stake = stakeForTarget({ targetProfit: 100, decimal: 2.5 })!;
+    const k = kelly({ decimal: 2.5, probability: 0.44, bankroll: 1000, fraction: 1 })!;
+    expect(stake / 1000).toBeCloseTo(k.stakeFraction, 6);
+    expect(k.edge).toBeCloseTo(0.1, 9);
+    expect(k.stake).toBeCloseTo(stake, 6);
+  });
+
+  it("quota 1.00 o minore è null (nessun profitto possibile), non Infinity", () => {
+    expect(stakeForTarget({ targetProfit: 100, decimal: 1 })).toBeNull();
+    expect(stakeForTarget({ targetProfit: 100, decimal: 0.5 })).toBeNull();
+    expect(stakeForTarget({ targetProfit: 100, decimal: Number.NaN })).toBeNull();
+  });
+
+  it("un obiettivo nullo o negativo è null: non è uno stake, è un'altra domanda", () => {
+    expect(stakeForTarget({ targetProfit: 0, decimal: 2.5 })).toBeNull();
+    expect(stakeForTarget({ targetProfit: -100, decimal: 2.5 })).toBeNull();
   });
 });

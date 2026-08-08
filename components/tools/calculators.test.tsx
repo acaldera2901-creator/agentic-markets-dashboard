@@ -389,3 +389,61 @@ describe("yield calculator", () => {
     expect(screen.getByTestId("out-yield").textContent).toBe("—");
   });
 });
+
+describe("stake calculator", () => {
+  it("100 di profitto a 2.50 chiede 66.67 e impegna il 6.67% di una cassa da 1000", () => {
+    // I default SONO l'esempio lavorato della pagina: nessuna digitazione.
+    mount("stake-calculator");
+    expect(screen.getByTestId("out-stake-needed").textContent).toBe("66.67");
+    expect(screen.getByTestId("out-total-return").textContent).toBe("166.67");
+    expect(screen.getByTestId("out-bankroll-share").textContent).toBe("6.67%");
+  });
+
+  it("a 2.00 la puntata è pari al profitto, a 1.25 è quattro volte quella di 2.00", async () => {
+    const user = userEvent.setup();
+    mount("stake-calculator");
+    const odds = screen.getByLabelText("Odds");
+    await user.clear(odds);
+    await user.type(odds, "2.00");
+    expect(screen.getByTestId("out-stake-needed").textContent).toBe("100.00");
+    expect(screen.getByTestId("out-total-return").textContent).toBe("200.00");
+    await user.clear(odds);
+    await user.type(odds, "1.25");
+    expect(screen.getByTestId("out-stake-needed").textContent).toBe("400.00");
+    expect(screen.getByTestId("out-bankroll-share").textContent).toBe("40.00%");
+  });
+
+  it("senza cassa lo stake resta, la fetta diventa il trattino", async () => {
+    const user = userEvent.setup();
+    mount("stake-calculator");
+    await user.clear(screen.getByLabelText("Bankroll"));
+    expect(screen.getByTestId("out-stake-needed").textContent).toBe("66.67");
+    expect(screen.getByTestId("out-bankroll-share").textContent).toBe("—");
+  });
+
+  it("sopra il 5% della cassa il verdetto avverte", async () => {
+    const user = userEvent.setup();
+    const { container } = mount("stake-calculator");
+    // 6.67% di default: la pagina si apre già sul caso da leggere due volte.
+    expect(container.querySelector(".tl-verdict")!.className).toContain("is-warn");
+    const bankroll = screen.getByLabelText("Bankroll");
+    await user.clear(bankroll);
+    await user.type(bankroll, "5000");
+    expect(screen.getByTestId("out-bankroll-share").textContent).toBe("1.33%");
+    expect(container.querySelector(".tl-verdict")!.className).not.toContain("is-warn");
+  });
+
+  it("quota 1.00 o spazzatura non produce Infinity né NaN", async () => {
+    const user = userEvent.setup();
+    mount("stake-calculator");
+    const odds = screen.getByLabelText("Odds");
+    await user.clear(odds);
+    await user.type(odds, "1.00");
+    expect(screen.getByTestId("out-stake-needed").textContent).toBe("—");
+    expect(screen.getByTestId("out-total-return").textContent).toBe("—");
+    await user.clear(odds);
+    await user.type(odds, "banana");
+    expect(screen.getByTestId("out-stake-needed").textContent).toBe("—");
+    expect(screen.getByTestId("out-bankroll-share").textContent).toBe("—");
+  });
+});

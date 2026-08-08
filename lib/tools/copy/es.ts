@@ -578,6 +578,66 @@ const es: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Calculadora de stake — la apuesta para un beneficio objetivo | BetRedge",
+      metaDescription:
+        "Calculadora de stake gratuita: introduce el precio y el beneficio que quieres y verás el stake necesario, el retorno total y qué parte del bankroll compromete esa apuesta.",
+      h1: "Calculadora de stake",
+      lede:
+        "El stake que exige un beneficio objetivo a un precio dado — y la parte del bankroll que compromete sin decírtelo.",
+      labels: {
+        inputTitle: "Precio y objetivo",
+        odds: "Precio",
+        targetProfit: "Beneficio objetivo",
+        bankroll: "Bankroll",
+        resultTitle: "Lo que cuesta ese objetivo",
+        stakeNeeded: "Stake necesario",
+        totalReturn: "Retorno total",
+        bankrollShare: "Parte del bankroll",
+        hint: "El bankroll es lo que convierte el stake en un porcentaje: sin él, el stake es un número sin nada al lado. El precio va en decimal — 2.50, no +150.",
+        verdictModest:
+          "Este stake compromete menos del 5% del bankroll declarado, y una racha de diez derrotas no acabaría con él. Léelo junto al precio, no solo: el mismo objetivo a un precio más corto pide una apuesta mucho mayor.",
+        verdictHeavy:
+          "Este stake compromete más del 5% del bankroll declarado en un solo resultado. A ese tamaño una racha de diez derrotas — normal a precios cercanos a 2.00 — se lleva más de la mitad, así que comprueba el número en la calculadora de bankroll antes de apostar.",
+      },
+      takeaway:
+        "Partir del beneficio que quieres es la vía más rápida para apostar demasiado: la pregunta útil no es cuánto quiero ganar, sino cuánto puedo permitirme perder.",
+      example: {
+        title: "Querer 100 de beneficio a 2.50",
+        rows: [
+          { label: "Precio", value: "2.50" },
+          { label: "Beneficio objetivo", value: "100" },
+          { label: "Stake necesario", value: "66,67" },
+          { label: "Retorno total", value: "166,67" },
+          { label: "Parte de un bankroll de 1.000", value: "6,67%" },
+        ],
+        note:
+          "Ese mismo 100 cuesta 25,00 a 5.00 y 400,00 a 1.25 — el objetivo no se movió, se movió el precio. Y 66,67 sobre un bankroll de 1.000 es exactamente el Kelly completo de quien cree que el resultado ocurre el 44% de las veces, cuando 2.50 empata al 40%. El deseo ya contiene una estimación de probabilidad con una ventaja del +10%, solo que sin declarar.",
+      },
+      explainerTitle: "Razonar hacia atrás desde un número que elegiste tú",
+      explainer: [
+        "La aritmética es la mitad fácil. Una apuesta devuelve el stake más stake × (precio − 1), así que **el stake que exige un objetivo es el objetivo dividido por el precio menos uno** — 100 a 2.50 pide 66,67, y el boleto vuelve como 166,67. Lo que hace útil esta página es el segundo efecto: **cuanto más corto el precio, mayor la apuesta que exige el mismo deseo**. Ese 100 cuesta 25,00 a 5.00, 66,67 a 2.50, 100,00 a 2.00 y 400,00 a 1.25. Entre esas cuatro líneas tu opinión no cambió nada, y el dinero en riesgo se movió dieciséis veces. Por eso la calculadora pide un bankroll que en rigor no necesita: 66,67 no es grande ni pequeño hasta que sabes que es el 6,67% de todo lo que has apartado.",
+        "**Razonar desde el beneficio que quieres es el camino más rápido a un stake demasiado grande**, y falla de una forma concreta. Pierdes la primera y el objetivo crece en silencio para cubrirla: querer otros 100 después de dejar 66,67 significa pedir 166,67, que a 2.00 exige un stake de 166,67, y si también cae, la petición siguiente es 476,19 a 1.70. Tres apuestas después, 709,52 de un bankroll de 1.000 han quedado expuestos para ganar los 100 iniciales, y el precio se acortó cada vez porque los precios cortos parecen más seguros. **La apuesta crece justo cuando el motivo para hacerla se debilita.** La versión honesta de este cálculo va al revés, de lo que puedes perder a lo que puedes apostar, y es la calculadora del criterio de Kelly: allí el tamaño nace de una ventaja medida, no de una cifra que elegiste. Y nuestro número tampoco es casualidad — 66,67 sobre 1.000 es exactamente lo que el Kelly completo recomienda a 2.50 a quien cree en el 44%, frente al 40% que implica el precio. Si no defenderías ese 44%, el stake nunca fue sobre la apuesta.",
+      ],
+      faq: [
+        {
+          q: "¿Cómo se calcula el stake para un beneficio objetivo?",
+          a: "Divide el beneficio que quieres por el precio menos uno. A 2.50 el retorno neto por unidad apostada es 1,50, así que 100 de beneficio piden 100 / 1,50 = 66,67 de stake y pagan 166,67 en total. A 2.00 el retorno neto es 1,00, y por eso allí el stake y el objetivo son el mismo número.",
+        },
+        {
+          q: "¿Por qué la calculadora pide mi bankroll?",
+          a: "Porque el stake por sí solo no dice nada. 66,67 es un error de redondeo para un apostante y un tercio de la cuenta para otro, y la cifra que decide cuál de los dos es la parte del bankroll — aquí el 6,67%. Deja el campo vacío y el stake sigue funcionando; el porcentaje pasa a ser un guion, que es honesto, porque esa suposición es tuya y no nuestra.",
+        },
+        {
+          q: "¿Uso esta o el criterio de Kelly?",
+          a: "Usa esta para ponerle precio a un deseo y Kelly para dimensionar una apuesta. Esta página parte de un número que elegiste y calcula lo que cuesta; la calculadora del criterio de Kelly parte de una ventaja que has medido y calcula lo que el bankroll puede soportar. Cuando las dos no coinciden, la que hay que descartar es la que no consultó tu estimación de probabilidad.",
+        },
+        {
+          q: "¿Perseguir una pérdida con un stake mayor tiene sentido alguna vez?",
+          a: "No con esta aritmética. Cada petición de recuperación es mayor que la anterior, y suele colocarse a un precio más corto porque los precios cortos parecen más seguros, así que el stake crece mientras la ventaja se encoge. Las reglas de bankroll existen para que el próximo stake sea independiente del último resultado: fija la unidad como porcentaje del bankroll y la secuencia no puede desbocarse.",
+        },
+      ],
+    },
   },
 };
 

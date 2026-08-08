@@ -336,3 +336,32 @@ export function yieldPercent(args: { profit: number; turnover: number }): number
   if (!Number.isFinite(profit) || !Number.isFinite(turnover) || turnover <= 0) return null;
   return profit / turnover;
 }
+
+// ─────────── dimensionamento dello stake: desiderio, cassa, edge ──────────
+// Tre punti di partenza per la stessa domanda «quanto punto?», e le tre pagine
+// dei tool si rimandano l'una all'altra invece di finger di essere alternative:
+//  · `stakeForTarget` parte da quanto vuoi VINCERE — il più intuitivo e il più
+//    pericoloso, perché non guarda né la cassa né la probabilità;
+//  · `bankrollPlan` parte da una REGOLA DI CASSA — non sa niente dell'edge, ma
+//    sa dirti quanto lunga può essere la serie negativa che sopravvivi;
+//  · `kelly` (più sopra) parte da un EDGE MISURATO, ed è l'unico che risponde
+//    alla domanda giusta. Gli altri due ci portano.
+// Il ponte è verificato nel test: 100 di obiettivo a 2.50 chiede 66,67, che su
+// una cassa da 1.000 è il 6,667% — esattamente il full Kelly di chi crede al
+// 44% a quella quota (break-even 40%, edge +10%). Uno stake nato da un
+// desiderio è già una scommessa su una probabilità, solo non dichiarata.
+
+/** Lo stake che produce un profitto obiettivo a una data quota.
+ *  Il profitto netto è stake × (quota − 1) ⇒ stake = obiettivo / (quota − 1).
+ *  Un obiettivo ≤ 0 è `null`: «quanto punto per non guadagnare niente» non è
+ *  la domanda di questa pagina, e 0 sarebbe una risposta finta. */
+export function stakeForTarget(args: {
+  targetProfit: number;
+  decimal: number;
+}): number | null {
+  const { targetProfit, decimal } = args;
+  if (!Number.isFinite(targetProfit) || targetProfit <= 0) return null;
+  // isOdds garantisce quota > 1 e finita: il denominatore non può essere 0.
+  if (!isOdds(decimal)) return null;
+  return targetProfit / (decimal - 1);
+}

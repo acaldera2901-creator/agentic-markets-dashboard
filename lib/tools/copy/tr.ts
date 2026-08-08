@@ -578,6 +578,66 @@ const tr: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Bahis miktarı hesaplayıcı — hedef kâr için gereken miktar | BetRedge",
+      metaDescription:
+        "Ücretsiz bahis miktarı hesaplayıcı: oranı ve istediğin kârı gir, gereken miktarı, toplam dönüşü ve bu tek bahsin kasanın ne kadarını bağladığını gör.",
+      h1: "Bahis miktarı hesaplayıcı",
+      lede:
+        "Bir hedef kârın belirli bir oranda istediği miktar — ve kasanın sessizce bağladığı payı.",
+      labels: {
+        inputTitle: "Oran ve hedef",
+        odds: "Oran",
+        targetProfit: "Hedef kâr",
+        bankroll: "Kasa",
+        resultTitle: "Bu hedefin maliyeti",
+        stakeNeeded: "Gereken miktar",
+        totalReturn: "Toplam dönüş",
+        bankrollShare: "Kasanın payı",
+        hint: "Miktarı yüzdeye çeviren şey kasadır: kasa olmadan miktar, yanında hiçbir şey olmayan bir sayıdır. Oranı ondalık yaz — 2.50, +150 değil.",
+        verdictModest:
+          "Bu miktar, bildirilen kasanın %5'inden azını bağlıyor; on maçlık bir kayıp serisi onu bitirmez. Oranla birlikte oku, tek başına değil: aynı hedef daha kısa bir oranda çok daha büyük bir bahis ister.",
+        verdictHeavy:
+          "Bu miktar, bildirilen kasanın %5'inden fazlasını tek bir sonuca bağlıyor. Bu ölçekte on maçlık bir kayıp serisi — 2.00 civarı oranlarda olağandır — kasanın yarısından fazlasını alır; bahsi yazmadan önce sayıyı kasa hesaplayıcısında kontrol et.",
+      },
+      takeaway:
+        "İstediğin kârdan yola çıkmak, fazla oynamanın en hızlı yoludur: işe yarar soru ne kadar kazanmak istediğim değil, ne kadar kaybetmeyi kaldırabileceğimdir.",
+      example: {
+        title: "2.50 oranda 100 kâr istemek",
+        rows: [
+          { label: "Oran", value: "2.50" },
+          { label: "Hedef kâr", value: "100" },
+          { label: "Gereken miktar", value: "66,67" },
+          { label: "Toplam dönüş", value: "166,67" },
+          { label: "1.000 kasanın payı", value: "%6,67" },
+        ],
+        note:
+          "Aynı 100, 5.00 oranda 25,00 ve 1.25 oranda 400,00 tutuyor — hedef yerinde durdu, oran değişti. Ve 1.000 kasada 66,67, sonucu %44 olasılıkla gören birinin tam Kelly miktarıdır; 2.50 ise %40'ta başa baş gelir. Yani istek, içinde +%10 avantaj değerinde bir olasılık tahmini taşıyor, sadece söylenmemiş.",
+      },
+      explainerTitle: "Kendi seçtiğin bir sayıdan geriye doğru hesaplamak",
+      explainer: [
+        "Aritmetik kolay olan yarısı. Bir bahis, miktarı artı miktar × (oran − 1) döndürür, dolayısıyla **bir hedefin istediği miktar, hedefin orana eksi bire bölümüdür** — 2.50 oranda 100 için 66,67 gerekir ve kupon 166,67 olarak döner. Bu sayfayı okumaya değer kılan ikinci etki: **oran kısaldıkça aynı istek daha büyük bir bahis ister**. O 100, 5.00 oranda 25,00, 2.50 oranda 66,67, 2.00 oranda 100,00 ve 1.25 oranda 400,00 tutar. Bu dört satır arasında fikrin hiç değişmedi, riske attığın para on altı kat oynadı. Hesaplayıcının aslında ihtiyaç duymadığı kasayı sormasının nedeni bu: 66,67 sayısı, ayırdığın her şeyin %6,67'si olduğunu bilene kadar ne büyüktür ne küçüktür.",
+        "**İstediğin kârdan yola çıkmak, fazla büyük bir miktara giden en kısa yoldur** ve belirli bir biçimde bozulur. İlk bahsi kaybet, hedef onu kapatmak için sessizce büyür: 66,67 gittikten sonra yine 100 istemek, 166,67 istemek demektir; bu da 2.00 oranda 166,67 miktar gerektirir ve o da giderse sıradaki istek 1.70 oranda 476,19 olur. Üç bahis sonra, ilk 100'ü kazanmak için 1.000 kasanın 709,52'si riske girmiştir ve oran her seferinde kısalmıştır, çünkü kısa oranlar daha güvenli görünür. **Bahis, tam da onu oynama gerekçesi zayıflarken büyür.** Bu hesabın dürüst sürümü ters yönde çalışır: ne kaybedebileceğinden ne oynayabileceğine — yani Kelly kriteri hesaplayıcısı. Orada ölçü, seçtiğin bir sayıdan değil, ölçülmüş bir avantajdan gelir. Bizim sayımız da rastlantı değil: 1.000 üzerinden 66,67, 2.50 oranda %44'e inanan birine tam Kelly'nin önerdiği miktardır, oranın ima ettiği %40'a karşı. O %44'ü savunmayacaksan, miktar hiçbir zaman bahisle ilgili değildi.",
+      ],
+      faq: [
+        {
+          q: "Hedef kâr için miktar nasıl hesaplanır?",
+          a: "İstediğin kârı orana eksi bire böl. 2.50 oranda oynanan birim başına net dönüş 1,50'dir, yani 100 kâr için 100 / 1,50 = 66,67 miktar gerekir ve toplam 166,67 öder. 2.00 oranda net dönüş 1,00 olduğu için orada miktar ile hedef aynı sayıdır.",
+        },
+        {
+          q: "Hesaplayıcı neden kasamı soruyor?",
+          a: "Çünkü miktar tek başına hiçbir şey söylemez. 66,67 bir bahisçi için yuvarlama hatası, bir başkası için hesabın üçte biridir; hangisi olduğuna karar veren şey kasanın payıdır — burada %6,67. Alanı boş bırak, miktar yine çalışır; yüzde bir çizgiye döner, bu da dürüsttür, çünkü o varsayım bizim değil senin.",
+        },
+        {
+          q: "Bunu mu, Kelly kriterini mi kullanmalıyım?",
+          a: "Bunu bir isteği fiyatlamak, Kelly'yi bir bahsi boyutlandırmak için kullan. Bu sayfa senin seçtiğin bir sayıdan başlar ve maliyetini bulur; Kelly kriteri hesaplayıcısı ölçtüğün bir avantajdan başlar ve kasanın ne taşıyabileceğini bulur. İkisi çeliştiğinde, olasılık tahminine hiç bakmamış olanı bırak.",
+        },
+        {
+          q: "Kaybı daha büyük miktarla kovalamak hiç doğru mudur?",
+          a: "Bu aritmetikle değil. Her telafi isteği bir öncekinden büyüktür ve genellikle daha kısa bir orana yazılır, çünkü kısa oranlar güvenli görünür; böylece miktar büyürken avantaj küçülür. Kasa kuralları tam bu yüzden var: sıradaki miktarı son sonuçtan bağımsız kılmak. Birimi kasanın yüzdesi olarak sabitle, dizi kaçamaz.",
+        },
+      ],
+    },
   },
 };
 

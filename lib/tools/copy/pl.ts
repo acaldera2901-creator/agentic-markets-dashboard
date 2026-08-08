@@ -578,6 +578,66 @@ const pl: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Kalkulator stawki — stawka na docelowy zysk | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator stawki: podaj kurs i zysk, jaki chcesz, a zobaczysz potrzebną stawkę, całkowity zwrot i jaką część bankrolla angażuje ten jeden zakład.",
+      h1: "Kalkulator stawki",
+      lede:
+        "Stawka, jakiej docelowy zysk wymaga przy danym kursie — i część bankrolla, którą po cichu angażuje.",
+      labels: {
+        inputTitle: "Kurs i cel",
+        odds: "Kurs",
+        targetProfit: "Docelowy zysk",
+        bankroll: "Bankroll",
+        resultTitle: "Ile kosztuje ten cel",
+        stakeNeeded: "Potrzebna stawka",
+        totalReturn: "Całkowity zwrot",
+        bankrollShare: "Część bankrolla",
+        hint: "Bankroll zamienia stawkę w procent: bez niego stawka jest liczbą bez odniesienia. Kurs wpisuj dziesiętnie — 2.50, nie +150.",
+        verdictModest:
+          "Ta stawka angażuje mniej niż 5% podanego bankrolla, a seria dziesięciu przegranych go nie zakończy. Czytaj ją razem z kursem, nie osobno: ten sam cel przy krótszym kursie wymaga znacznie większego zakładu.",
+        verdictHeavy:
+          "Ta stawka angażuje ponad 5% podanego bankrolla na jeden wynik. Przy tej wielkości seria dziesięciu przegranych — zwyczajna przy kursach około 2.00 — zabiera z niego ponad połowę, więc sprawdź tę liczbę w kalkulatorze bankrolla, zanim zagrasz.",
+      },
+      takeaway:
+        "Wychodzenie od zysku, jakiego chcesz, to najszybsza droga do zbyt dużej stawki: użyteczne pytanie nie brzmi ile chcę wygrać, ale ile mogę stracić.",
+      example: {
+        title: "Chcieć 100 zysku przy kursie 2.50",
+        rows: [
+          { label: "Kurs", value: "2.50" },
+          { label: "Docelowy zysk", value: "100" },
+          { label: "Potrzebna stawka", value: "66,67" },
+          { label: "Całkowity zwrot", value: "166,67" },
+          { label: "Część bankrolla 1000", value: "6,67%" },
+        ],
+        note:
+          "Te same 100 kosztują 25,00 przy 5.00 i 400,00 przy 1.25 — cel się nie zmienił, zmienił się kurs. A 66,67 przy bankrollu 1000 to dokładnie pełny Kelly dla kogoś, kto wycenia ten wynik na 44%, gdy 2.50 wychodzi na zero przy 40%. Życzenie zawiera więc już oszacowanie prawdopodobieństwa warte przewagę +10%, tylko niewypowiedziane.",
+      },
+      explainerTitle: "Liczenie od tyłu, od liczby, którą sam wybrałeś",
+      explainer: [
+        "Arytmetyka to łatwiejsza połowa. Zakład zwraca stawkę plus stawka × (kurs − 1), więc **stawka, jakiej wymaga cel, to cel podzielony przez kurs minus jeden** — 100 przy 2.50 wymaga 66,67, a kupon wraca jako 166,67. Wartość tej strony leży w drugim efekcie: **im krótszy kurs, tym większy zakład wymusza to samo życzenie**. Te 100 kosztują 25,00 przy 5.00, 66,67 przy 2.50, 100,00 przy 2.00 i 400,00 przy 1.25. Między tymi czterema wierszami twoja opinia nie drgnęła, a pieniądze w ryzyku zmieniły się szesnastokrotnie. Dlatego kalkulator pyta o bankroll, którego formalnie nie potrzebuje: 66,67 nie jest ani duże, ani małe, dopóki nie wiesz, że to 6,67% wszystkiego, co odłożyłeś.",
+        "**Wychodzenie od zysku, jakiego chcesz, to najkrótsza droga do zbyt dużej stawki**, i zawodzi w konkretny sposób. Przegraj pierwszy zakład i cel po cichu rośnie, żeby go pokryć: chcieć znów 100 po stracie 66,67 znaczy żądać 166,67, co przy 2.00 wymaga stawki 166,67, a jeśli i ta padnie, następne żądanie to 476,19 przy 1.70. Trzy zakłady później 709,52 z bankrolla 1000 jest wystawione na ryzyko, żeby wygrać pierwotne 100, a kurs za każdym razem był krótszy, bo krótkie kursy wydają się bezpieczniejsze. **Zakład rośnie dokładnie wtedy, gdy powód do jego zagrania słabnie.** Uczciwa wersja tego rachunku biegnie odwrotnie, od tego, ile możesz stracić, do tego, ile możesz postawić, i jest to kalkulator kryterium Kelly'ego: tam wielkość bierze się ze zmierzonej przewagi, a nie z liczby, którą wybrałeś. Nasza liczba też nie jest przypadkiem — 66,67 z 1000 to dokładnie tyle, ile pełny Kelly zaleca przy 2.50 komuś, kto wierzy w 44%, wobec 40% wynikających z kursu. Jeśli nie obroniłbyś tych 44%, stawka nigdy nie dotyczyła zakładu.",
+      ],
+      faq: [
+        {
+          q: "Jak obliczyć stawkę na docelowy zysk?",
+          a: "Podziel oczekiwany zysk przez kurs minus jeden. Przy 2.50 zwrot netto na jednostkę stawki wynosi 1,50, więc 100 zysku wymaga 100 / 1,50 = 66,67 stawki i płaci 166,67 razem. Przy 2.00 zwrot netto to 1,00 — dlatego tam stawka i cel są tą samą liczbą.",
+        },
+        {
+          q: "Dlaczego kalkulator pyta o bankroll?",
+          a: "Bo sama stawka nic nie mówi. 66,67 dla jednego gracza to błąd zaokrąglenia, a dla drugiego trzecia część konta, i rozstrzyga o tym część bankrolla — tutaj 6,67%. Zostaw pole puste i stawka nadal działa; procent zamienia się w kreskę, co jest uczciwe, bo to założenie należy do ciebie, a nie do nas.",
+        },
+        {
+          q: "Ten kalkulator czy kryterium Kelly'ego?",
+          a: "Ten do wycenienia życzenia, Kelly do wymiarowania zakładu. Ta strona startuje od liczby, którą wybrałeś, i liczy jej koszt; kalkulator kryterium Kelly'ego startuje od zmierzonej przewagi i liczy, ile bankroll zniesie. Gdy oba się rozchodzą, odrzuć ten, który nigdy nie zapytał o twoje oszacowanie prawdopodobieństwa.",
+        },
+        {
+          q: "Czy gonienie straty większą stawką kiedykolwiek ma sens?",
+          a: "Nie przy tej arytmetyce. Każde żądanie odrobienia jest większe od poprzedniego i zwykle stawiane przy krótszym kursie, bo krótkie kursy wydają się bezpieczniejsze, więc stawka rośnie, gdy przewaga maleje. Zasady bankrolla istnieją po to, by następna stawka nie zależała od ostatniego wyniku: ustal jednostkę jako procent bankrolla i ciąg nie ucieknie.",
+        },
+      ],
+    },
   },
 };
 

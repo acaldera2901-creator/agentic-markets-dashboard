@@ -590,6 +590,66 @@ const en: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Stake Calculator — The Stake Needed for a Target Profit | BetRedge",
+      metaDescription:
+        "Free stake calculator: enter the price and the profit you want to see the stake it takes, the total return, and how much of your bankroll that single bet commits.",
+      h1: "Stake calculator",
+      lede:
+        "The stake a target profit demands at a given price — and the share of your bankroll it quietly commits.",
+      labels: {
+        inputTitle: "Price and target",
+        odds: "Odds",
+        targetProfit: "Target profit",
+        bankroll: "Bankroll",
+        resultTitle: "What that target costs",
+        stakeNeeded: "Stake needed",
+        totalReturn: "Total return",
+        bankrollShare: "Share of bankroll",
+        hint: "The bankroll is what turns the stake into a share: without it the stake is a number with nothing to compare it to. Odds go in decimal — 2.50, not +150.",
+        verdictModest:
+          "This stake commits under 5% of the declared bankroll, which a run of ten losses would not end. Read it next to the price, not on its own: the same target at a shorter price asks for a much larger bet.",
+        verdictHeavy:
+          "This stake commits more than 5% of the declared bankroll on one result. At that size a run of ten losses — ordinary at prices around 2.00 — takes more than half of it, so check the number against the bankroll calculator before placing it.",
+      },
+      takeaway:
+        "Starting from the profit you want is the fastest way to bet too much: the useful question is not how much you want to win, it is how much you can afford to lose.",
+      example: {
+        title: "Wanting 100 of profit at 2.50",
+        rows: [
+          { label: "Odds", value: "2.50" },
+          { label: "Target profit", value: "100" },
+          { label: "Stake needed", value: "66.67" },
+          { label: "Total return", value: "166.67" },
+          { label: "Share of a 1,000 bankroll", value: "6.67%" },
+        ],
+        note:
+          "The same 100 costs 25.00 at 5.00 and 400.00 at 1.25 — the target never moved, only the price did. And 66.67 on a 1,000 bankroll is exactly full Kelly for someone who thinks the outcome lands 44% of the time, when 2.50 breaks even at 40%. So the wish already contains a probability estimate of a +10% edge, just an undeclared one.",
+      },
+      explainerTitle: "Working backwards from a number you picked",
+      explainer: [
+        "The arithmetic is the easy half. A bet returns its stake plus stake × (price − 1), so **the stake a target demands is the target divided by the price minus one** — 100 at 2.50 needs 66.67, and the ticket comes back as 166.67. What makes this page worth reading is the second effect: **the shorter the price, the bigger the bet the same wish requires**. That 100 costs 25.00 at 5.00, 66.67 at 2.50, 100.00 at 2.00 and 400.00 at 1.25. Nothing about your opinion changed between those four lines, and the money at risk moved by a factor of sixteen. This is why the calculator asks for a bankroll it does not strictly need: 66.67 is neither large nor small until you know it is 6.67% of everything you have set aside.",
+        "**Reasoning from the profit you want is the quickest route to a stake that is too large**, and it fails in a specific way. Lose the first bet and the target silently grows to cover it: wanting 100 again after dropping 66.67 means asking for 166.67, which at 2.00 takes a 166.67 stake, and if that goes too the next ask is 476.19 at 1.70. Three bets in, 709.52 of a 1,000 bankroll has been exposed to win the original 100, and the prices got shorter each time because short prices feel safer. **The bet gets bigger exactly as the reason for it gets weaker.** The honest version of this calculation runs the other way round, from what you can lose to what you can stake, and that is the Kelly criterion calculator: there the size comes from a measured edge, not from a figure you chose. Ours is not a coincidence either — 66.67 on 1,000 is precisely what full Kelly recommends at 2.50 to someone who believes 44%, against the 40% the price implies. If you would not defend that 44%, the stake was never about the bet.",
+      ],
+      faq: [
+        {
+          q: "How is the stake for a target profit worked out?",
+          a: "Divide the profit you want by the price minus one. At 2.50 the net return per unit staked is 1.50, so 100 of profit needs 100 / 1.50 = 66.67 of stake and pays 166.67 in total. At 2.00 the net return is 1.00, which is why the stake and the target are the same number there.",
+        },
+        {
+          q: "Why does the calculator ask for my bankroll?",
+          a: "Because the stake on its own tells you nothing. 66.67 is a rounding error to one bettor and a third of the account to another, and the figure that decides which is the share of the bankroll — 6.67% here. Leave the field empty and the stake still works; the share becomes a dash, which is honest, because that assumption is yours to make and not ours to invent.",
+        },
+        {
+          q: "Should I use this or the Kelly criterion?",
+          a: "Use this one to price a wish and Kelly to size a bet. This page starts from a number you picked and works out what it costs; the Kelly criterion calculator starts from an edge you have measured and works out what the bankroll can carry. When the two disagree, the one that did not consult your probability estimate is the one to drop.",
+        },
+        {
+          q: "Is chasing a loss with a bigger stake ever right?",
+          a: "Not on this arithmetic. Each recovery ask is larger than the last, and it is usually placed at a shorter price because short prices feel safer, so the stake grows while the edge shrinks. Bankroll rules exist to make the next stake independent of the last result: fix the unit as a share of the bankroll and the sequence cannot run away.",
+        },
+      ],
+    },
   },
 };
 

@@ -90,11 +90,11 @@ describe("JSON-LD", () => {
     expect(app.name).toBe(getToolsCopy("it").tools["ev-calculator"].h1);
   });
 
-  it("l'hub elenca i nove tool in ordine", () => {
+  it("l'hub elenca i dieci tool in ordine", () => {
     const ld = hubJsonLd("en") as Record<string, unknown>;
     expect(ld["@type"]).toBe("ItemList");
     const items = ld.itemListElement as Record<string, unknown>[];
-    expect(items).toHaveLength(9);
+    expect(items).toHaveLength(10);
     expect(items[0].position).toBe(1);
     expect(items[0].url).toBe("https://www.betredge.com/tools/odds-converter");
   });

@@ -578,6 +578,66 @@ const pt: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Calculadora de stake — a aposta para um lucro alvo | BetRedge",
+      metaDescription:
+        "Calculadora de stake gratuita: introduz a odd e o lucro que queres e vê o stake necessário, o retorno total e que parte da banca essa aposta compromete.",
+      h1: "Calculadora de stake",
+      lede:
+        "O stake que um lucro alvo exige a um determinado preço — e a parte da banca que compromete sem o dizer.",
+      labels: {
+        inputTitle: "Preço e objetivo",
+        odds: "Preço",
+        targetProfit: "Lucro alvo",
+        bankroll: "Banca",
+        resultTitle: "Quanto custa esse objetivo",
+        stakeNeeded: "Stake necessário",
+        totalReturn: "Retorno total",
+        bankrollShare: "Parte da banca",
+        hint: "A banca é o que transforma o stake numa percentagem: sem ela, o stake é um número sem nada ao lado. O preço vai em decimal — 2.50, não +150.",
+        verdictModest:
+          "Este stake compromete menos de 5% da banca declarada, e uma série de dez derrotas não a acabaria. Lê-o ao lado do preço, não isolado: o mesmo objetivo a um preço mais curto pede uma aposta bem maior.",
+        verdictHeavy:
+          "Este stake compromete mais de 5% da banca declarada num único resultado. Nesse tamanho, uma série de dez derrotas — comum em preços perto de 2.00 — leva mais de metade dela, por isso confirma o número na calculadora de banca antes de apostar.",
+      },
+      takeaway:
+        "Partir do lucro que queres é a forma mais rápida de apostar demasiado: a pergunta útil não é quanto quero ganhar, é quanto posso perder.",
+      example: {
+        title: "Querer 100 de lucro a 2.50",
+        rows: [
+          { label: "Preço", value: "2.50" },
+          { label: "Lucro alvo", value: "100" },
+          { label: "Stake necessário", value: "66,67" },
+          { label: "Retorno total", value: "166,67" },
+          { label: "Parte de uma banca de 1.000", value: "6,67%" },
+        ],
+        note:
+          "Os mesmos 100 custam 25,00 a 5.00 e 400,00 a 1.25 — o objetivo não se moveu, moveu-se o preço. E 66,67 numa banca de 1.000 é exatamente o Kelly completo de quem acredita que o resultado sai 44% das vezes, quando 2.50 fica em zero a 40%. O desejo já contém uma estimativa de probabilidade com uma vantagem de +10%, apenas não declarada.",
+      },
+      explainerTitle: "Raciocinar ao contrário a partir de um número que escolheste",
+      explainer: [
+        "A aritmética é a metade fácil. Uma aposta devolve o stake mais stake × (preço − 1), portanto **o stake que um objetivo exige é o objetivo dividido pelo preço menos um** — 100 a 2.50 pede 66,67, e o boletim volta como 166,67. O que torna esta página útil é o segundo efeito: **quanto mais curto o preço, maior a aposta que o mesmo desejo exige**. Esses 100 custam 25,00 a 5.00, 66,67 a 2.50, 100,00 a 2.00 e 400,00 a 1.25. Entre essas quatro linhas a tua opinião não mudou nada, e o dinheiro em risco variou dezesseis vezes. É por isso que a calculadora pede uma banca de que não precisa: 66,67 não é grande nem pequeno até saberes que é 6,67% de tudo o que separaste.",
+        "**Raciocinar a partir do lucro que queres é o caminho mais rápido para um stake demasiado grande**, e falha de uma maneira específica. Perde a primeira e o objetivo cresce em silêncio para a cobrir: querer outros 100 depois de deixar 66,67 é pedir 166,67, que a 2.00 exige um stake de 166,67, e se essa também cair o pedido seguinte é 476,19 a 1.70. Três apostas depois, 709,52 de uma banca de 1.000 ficaram expostos para ganhar os 100 iniciais, e o preço encurtou de cada vez porque preços curtos parecem mais seguros. **A aposta cresce exatamente quando a razão para a fazer enfraquece.** A versão honesta deste cálculo corre ao contrário, do que podes perder para o que podes apostar, e é a calculadora do critério de Kelly: ali o tamanho nasce de uma vantagem medida, não de um número que escolheste. E o nosso número também não é coincidência — 66,67 sobre 1.000 é precisamente o que o Kelly completo recomenda a 2.50 a quem acredita em 44%, contra os 40% que o preço implica. Se não defendesses esses 44%, o stake nunca foi sobre a aposta.",
+      ],
+      faq: [
+        {
+          q: "Como se calcula o stake para um lucro alvo?",
+          a: "Divide o lucro que queres pelo preço menos um. A 2.50 o retorno líquido por unidade apostada é 1,50, por isso 100 de lucro pedem 100 / 1,50 = 66,67 de stake e pagam 166,67 no total. A 2.00 o retorno líquido é 1,00, e é por isso que ali o stake e o objetivo são o mesmo número.",
+        },
+        {
+          q: "Porque é que a calculadora pede a minha banca?",
+          a: "Porque o stake por si só não diz nada. 66,67 é um erro de arredondamento para um apostador e um terço da conta para outro, e o que decide qual dos dois é a parte da banca — aqui 6,67%. Deixa o campo vazio e o stake continua a funcionar; a percentagem passa a um travessão, o que é honesto, porque essa suposição é tua e não nossa.",
+        },
+        {
+          q: "Devo usar esta ou o critério de Kelly?",
+          a: "Usa esta para pôr preço num desejo e Kelly para dimensionar uma aposta. Esta página parte de um número que escolheste e calcula quanto custa; a calculadora do critério de Kelly parte de uma vantagem que mediste e calcula o que a banca aguenta. Quando as duas discordam, a que deves descartar é a que não consultou a tua estimativa de probabilidade.",
+        },
+        {
+          q: "Perseguir uma perda com um stake maior alguma vez faz sentido?",
+          a: "Não com esta aritmética. Cada pedido de recuperação é maior que o anterior, e costuma ser colocado a um preço mais curto porque preços curtos parecem mais seguros, logo o stake cresce enquanto a vantagem encolhe. As regras de banca existem para tornar o próximo stake independente do último resultado: fixa a unidade como percentagem da banca e a sequência não pode descontrolar-se.",
+        },
+      ],
+    },
   },
 };
 

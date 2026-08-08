@@ -578,6 +578,66 @@ const nl: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Inzet-calculator — de inzet voor een doelwinst | BetRedge",
+      metaDescription:
+        "Gratis inzet-calculator: vul de odd en de winst die je wil in en zie de benodigde inzet, de totale uitbetaling en welk deel van je bankroll die ene wed vastlegt.",
+      h1: "Inzet-calculator",
+      lede:
+        "De inzet die een doelwinst bij een bepaalde prijs vraagt — en het deel van je bankroll dat hij stil vastlegt.",
+      labels: {
+        inputTitle: "Prijs en doel",
+        odds: "Prijs",
+        targetProfit: "Doelwinst",
+        bankroll: "Bankroll",
+        resultTitle: "Wat dat doel kost",
+        stakeNeeded: "Benodigde inzet",
+        totalReturn: "Totale uitbetaling",
+        bankrollShare: "Deel van de bankroll",
+        hint: "De bankroll maakt van de inzet pas een percentage: zonder hem is de inzet een getal zonder iets ernaast. De prijs gaat in decimaal — 2.50, niet +150.",
+        verdictModest:
+          "Deze inzet legt minder dan 5% van de opgegeven bankroll vast, en een reeks van tien verliezen zou hem niet beëindigen. Lees hem naast de prijs, niet alleen: hetzelfde doel bij een kortere prijs vraagt een veel grotere wed.",
+        verdictHeavy:
+          "Deze inzet legt meer dan 5% van de opgegeven bankroll vast op één uitkomst. Op die maat neemt een reeks van tien verliezen — gewoon bij prijzen rond 2.00 — er meer dan de helft van, dus toets het getal in de bankroll-calculator voordat je inzet.",
+      },
+      takeaway:
+        "Beginnen bij de winst die je wil is de snelste manier om te veel in te zetten: de nuttige vraag is niet hoeveel ik wil winnen, maar hoeveel ik me kan veroorloven te verliezen.",
+      example: {
+        title: "100 winst willen bij 2.50",
+        rows: [
+          { label: "Prijs", value: "2.50" },
+          { label: "Doelwinst", value: "100" },
+          { label: "Benodigde inzet", value: "66,67" },
+          { label: "Totale uitbetaling", value: "166,67" },
+          { label: "Deel van een bankroll van 1.000", value: "6,67%" },
+        ],
+        note:
+          "Dezelfde 100 kost 25,00 bij 5.00 en 400,00 bij 1.25 — het doel bewoog niet, de prijs wel. En 66,67 op een bankroll van 1.000 is precies de volledige Kelly voor iemand die de uitkomst op 44% zet, terwijl 2.50 quitte speelt bij 40%. De wens bevat dus al een kansschatting met een voordeel van +10%, alleen niet uitgesproken.",
+      },
+      explainerTitle: "Terugrekenen vanaf een getal dat je zelf koos",
+      explainer: [
+        "De rekensom is de makkelijke helft. Een wed geeft de inzet terug plus inzet × (prijs − 1), dus **de inzet die een doel vraagt is het doel gedeeld door de prijs min één** — 100 bij 2.50 vraagt 66,67, en het bonnetje komt terug als 166,67. Wat deze pagina waard maakt is het tweede effect: **hoe korter de prijs, hoe groter de wed die dezelfde wens vereist**. Die 100 kost 25,00 bij 5.00, 66,67 bij 2.50, 100,00 bij 2.00 en 400,00 bij 1.25. Tussen die vier regels veranderde je mening niets, en het geld in risico bewoog met een factor zestien. Daarom vraagt de calculator om een bankroll die hij strikt niet nodig heeft: 66,67 is niet groot of klein tot je weet dat het 6,67% is van alles wat je hebt weggezet.",
+        "**Denken vanuit de winst die je wil is de kortste route naar een te grote inzet**, en het gaat op een specifieke manier mis. Verlies de eerste en het doel groeit stil mee om hem te dekken: opnieuw 100 willen nadat je 66,67 hebt laten liggen betekent 166,67 vragen, wat bij 2.00 een inzet van 166,67 kost, en valt die ook dan is de volgende vraag 476,19 bij 1.70. Drie wedden later staat 709,52 van een bankroll van 1.000 op het spel om de oorspronkelijke 100 te winnen, en de prijs werd elke keer korter omdat korte prijzen veiliger voelen. **De wed wordt groter precies wanneer de reden ervoor zwakker wordt.** De eerlijke versie van deze rekensom loopt de andere kant op, van wat je kan verliezen naar wat je kan inzetten, en dat is de Kelly-criterium calculator: daar komt de maat uit een gemeten voordeel, niet uit een getal dat je koos. Ons getal is ook geen toeval — 66,67 op 1.000 is exact wat de volledige Kelly bij 2.50 aanraadt aan iemand die 44% gelooft, tegen de 40% die de prijs impliceert. Zou je die 44% niet verdedigen, dan ging de inzet nooit over de wed.",
+      ],
+      faq: [
+        {
+          q: "Hoe bereken je de inzet voor een doelwinst?",
+          a: "Deel de gewenste winst door de prijs min één. Bij 2.50 is de netto opbrengst per ingezette eenheid 1,50, dus 100 winst vraagt 100 / 1,50 = 66,67 inzet en betaalt 166,67 in totaal. Bij 2.00 is de netto opbrengst 1,00, en daarom zijn inzet en doel daar hetzelfde getal.",
+        },
+        {
+          q: "Waarom vraagt de calculator mijn bankroll?",
+          a: "Omdat de inzet alleen niets zegt. 66,67 is voor de een een afrondingsfout en voor de ander een derde van de rekening, en wat dat beslist is het deel van de bankroll — hier 6,67%. Laat het veld leeg en de inzet werkt nog steeds; het percentage wordt een streepje, en dat is eerlijk, want die aanname is de jouwe en niet de onze.",
+        },
+        {
+          q: "Deze of het Kelly-criterium?",
+          a: "Deze om een wens een prijs te geven, Kelly om een wed te dimensioneren. Deze pagina begint bij een getal dat je koos en rekent uit wat het kost; de Kelly-criterium calculator begint bij een gemeten voordeel en rekent uit wat de bankroll kan dragen. Spreken ze elkaar tegen, laat dan degene vallen die je kansschatting nooit heeft gevraagd.",
+        },
+        {
+          q: "Is een verlies najagen met een grotere inzet ooit juist?",
+          a: "Niet met deze rekensom. Elke herstelvraag is groter dan de vorige, en ze wordt meestal bij een kortere prijs geplaatst omdat korte prijzen veiliger voelen, dus de inzet groeit terwijl het voordeel krimpt. Bankroll-regels bestaan om de volgende inzet los te koppelen van het laatste resultaat: zet de eenheid vast als percentage van de bankroll en de reeks kan niet ontsporen.",
+        },
+      ],
+    },
   },
 };
 

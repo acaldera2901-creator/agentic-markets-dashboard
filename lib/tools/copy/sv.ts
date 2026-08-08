@@ -578,6 +578,66 @@ const sv: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Insatskalkylator — insatsen för en målvinst | BetRedge",
+      metaDescription:
+        "Gratis insatskalkylator: fyll i oddset och vinsten du vill ha och se insatsen som krävs, den totala utbetalningen och hur stor del av kassan spelet binder.",
+      h1: "Insatskalkylator",
+      lede:
+        "Insatsen som en målvinst kräver vid ett givet pris — och andelen av kassan den binder utan att säga det.",
+      labels: {
+        inputTitle: "Pris och mål",
+        odds: "Odds",
+        targetProfit: "Målvinst",
+        bankroll: "Kassa",
+        resultTitle: "Vad målet kostar",
+        stakeNeeded: "Insats som krävs",
+        totalReturn: "Total utbetalning",
+        bankrollShare: "Andel av kassan",
+        hint: "Kassan är det som gör insatsen till ett procenttal: utan den är insatsen ett tal utan något vid sidan. Oddset skrivs decimalt — 2.50, inte +150.",
+        verdictModest:
+          "Den här insatsen binder under 5 % av den angivna kassan, och en svit på tio förluster skulle inte avsluta den. Läs den vid sidan av priset, inte ensam: samma mål vid ett kortare pris kräver ett mycket större spel.",
+        verdictHeavy:
+          "Den här insatsen binder mer än 5 % av den angivna kassan på ett enda utfall. I den storleken tar en svit på tio förluster — helt vanlig kring odds 2.00 — mer än hälften av den, så kontrollera talet i kassakalkylatorn innan du spelar.",
+      },
+      takeaway:
+        "Att utgå från vinsten du vill ha är snabbaste vägen till att satsa för mycket: den användbara frågan är inte hur mycket jag vill vinna, utan hur mycket jag kan förlora.",
+      example: {
+        title: "Att vilja ha 100 i vinst vid 2.50",
+        rows: [
+          { label: "Odds", value: "2.50" },
+          { label: "Målvinst", value: "100" },
+          { label: "Insats som krävs", value: "66,67" },
+          { label: "Total utbetalning", value: "166,67" },
+          { label: "Andel av en kassa på 1 000", value: "6,67 %" },
+        ],
+        note:
+          "Samma 100 kostar 25,00 vid 5.00 och 400,00 vid 1.25 — målet flyttade sig inte, priset gjorde det. Och 66,67 på en kassa om 1 000 är exakt hel Kelly för någon som sätter utfallet till 44 %, medan 2.50 går jämnt upp vid 40 %. Önskan bär alltså redan på en sannolikhetsbedömning värd en fördel på +10 %, bara oredovisad.",
+      },
+      explainerTitle: "Att räkna baklänges från ett tal du själv valde",
+      explainer: [
+        "Räkningen är den lätta halvan. Ett spel ger tillbaka insatsen plus insats × (pris − 1), så **insatsen ett mål kräver är målet delat med priset minus ett** — 100 vid 2.50 kräver 66,67, och kupongen kommer tillbaka som 166,67. Det som gör sidan värd att läsa är den andra effekten: **desto kortare pris, desto större spel kräver samma önskan**. De där 100 kostar 25,00 vid 5.00, 66,67 vid 2.50, 100,00 vid 2.00 och 400,00 vid 1.25. Mellan de fyra raderna ändrades ingenting i din åsikt, och pengarna i risk rörde sig med en faktor sexton. Därför frågar kalkylatorn efter en kassa den strikt inte behöver: 66,67 är varken stort eller litet förrän du vet att det är 6,67 % av allt du lagt undan.",
+        "**Att resonera från vinsten du vill ha är den kortaste vägen till en insats som är för stor**, och det havererar på ett bestämt sätt. Förlora det första spelet och målet växer tyst för att täcka det: att vilja ha 100 igen efter att ha tappat 66,67 betyder att begära 166,67, vilket vid 2.00 kräver en insats på 166,67, och faller även den blir nästa begäran 476,19 vid 1.70. Tre spel senare har 709,52 av en kassa om 1 000 exponerats för att vinna de ursprungliga 100, och priset kortades varje gång eftersom korta priser känns tryggare. **Spelet blir större precis när skälet till det blir svagare.** Den ärliga versionen av kalkylen går åt andra hållet, från vad du kan förlora till vad du kan satsa, och det är kalkylatorn för Kelly-kriteriet: där kommer storleken från en uppmätt fördel, inte från ett tal du valde. Vårt tal är inte heller en tillfällighet — 66,67 på 1 000 är exakt vad hel Kelly rekommenderar vid 2.50 till någon som tror på 44 %, mot de 40 % priset innebär. Om du inte skulle försvara de 44 % handlade insatsen aldrig om spelet.",
+      ],
+      faq: [
+        {
+          q: "Hur räknar man ut insatsen för en målvinst?",
+          a: "Dela vinsten du vill ha med priset minus ett. Vid 2.50 är nettoavkastningen per satsad enhet 1,50, så 100 i vinst kräver 100 / 1,50 = 66,67 i insats och betalar 166,67 totalt. Vid 2.00 är nettoavkastningen 1,00, och därför är insatsen och målet samma tal där.",
+        },
+        {
+          q: "Varför frågar kalkylatorn efter min kassa?",
+          a: "Eftersom insatsen i sig inte säger något. 66,67 är ett avrundningsfel för en spelare och en tredjedel av kontot för en annan, och det som avgör vilket är andelen av kassan — här 6,67 %. Lämna fältet tomt och insatsen fungerar ändå; andelen blir ett streck, vilket är hederligt, för det antagandet är ditt och inte vårt att hitta på.",
+        },
+        {
+          q: "Ska jag använda den här eller Kelly-kriteriet?",
+          a: "Använd den här för att prissätta en önskan och Kelly för att dimensionera ett spel. Den här sidan startar i ett tal du valde och räknar ut vad det kostar; kalkylatorn för Kelly-kriteriet startar i en uppmätt fördel och räknar ut vad kassan kan bära. När de säger olika saker är det den som aldrig frågade efter din sannolikhetsbedömning som ska bort.",
+        },
+        {
+          q: "Kan det någon gång vara rätt att jaga en förlust med större insats?",
+          a: "Inte med den här räkningen. Varje återhämtningsbegäran är större än den förra och läggs oftast på ett kortare pris eftersom korta priser känns tryggare, så insatsen växer medan fördelen krymper. Kassaregler finns för att göra nästa insats oberoende av senaste resultatet: lås enheten som en andel av kassan och serien kan inte skena.",
+        },
+      ],
+    },
   },
 };
 

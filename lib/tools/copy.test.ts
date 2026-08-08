@@ -18,8 +18,8 @@ describe("registry", () => {
   // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
   // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
   // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
-  it("ha nove tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(9);
+  it("ha dieci tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(10);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -255,6 +255,26 @@ describe("dizionari registrati", () => {
         // Onestà obbligatoria: il tetto del ~5% e il campione che serve.
         expect(t.explainer.join(" "), "manca il riferimento al 5% sostenuto").toMatch(/5\s*%|%\s*5/);
         expect(t.explainer.join(" "), "manca il campione da 2.500 giocate").toMatch(/2[ .,]?500/);
+      });
+
+      it("l'esempio dello stake porta la puntata, il ritorno e la fetta di cassa", () => {
+        // 100 di obiettivo a 2.50 ⇒ 100 / 1.5 = 66,67 di puntata, 166,67 di
+        // ritorno, e su una cassa da 1.000 il 6,67%. Sono i default del
+        // calcolatore: se l'esempio si sposta, la pagina si contraddice.
+        const t = dict.tools["stake-calculator"];
+        const numbers = [...t.example.rows.map((r) => r.value), t.example.note].join(" ");
+        expect(numbers, "manca la quota 2.50").toMatch(/2[.,]50/);
+        expect(numbers, "manca la puntata 66,67").toMatch(/66[.,]67/);
+        expect(numbers, "manca il ritorno totale 166,67").toMatch(/166[.,]67/);
+        expect(numbers, "manca la fetta di cassa 6,67%").toMatch(/6[.,]67/);
+        // Il readout mostra due decimali: 66,7 e 6,7 non sono ciò che si legge.
+        expect(numbers, "66,7 non è quello che mostra il readout").not.toMatch(/166?[.,]7(?!\d)/);
+        expect(numbers, "6,7 non è quello che mostra il readout").not.toMatch(/(?<!\d)6[.,]7(?!\d)/);
+        // Il rimando a Kelly è il punto della pagina, e passa dal 44% implicito:
+        // 66,67 su 1.000 è il full Kelly di chi crede al 44% a 2.50 (edge +10%).
+        const prose = t.explainer.join(" ");
+        expect(prose, "l'explainer stake non cita Kelly").toMatch(/kelly|келли/i);
+        expect(prose, "manca il 44% implicito nello stake da desiderio").toMatch(/44/);
       });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {

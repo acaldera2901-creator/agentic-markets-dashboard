@@ -579,6 +579,66 @@ const it: ToolsCopy = {
         },
       ],
     },
+    "stake-calculator": {
+      metaTitle: "Calcolatore stake — la puntata per un profitto obiettivo | BetRedge",
+      metaDescription:
+        "Calcolatore di stake gratuito: inserisci quota e profitto che vuoi e leggi la puntata necessaria, il ritorno totale e quanta parte del bankroll impegna quella scommessa.",
+      h1: "Calcolatore stake",
+      lede:
+        "La puntata che un profitto obiettivo richiede a una data quota — e la fetta di bankroll che impegna senza dirtelo.",
+      labels: {
+        inputTitle: "Quota e obiettivo",
+        odds: "Quota",
+        targetProfit: "Profitto obiettivo",
+        bankroll: "Bankroll",
+        resultTitle: "Quanto costa quell'obiettivo",
+        stakeNeeded: "Puntata necessaria",
+        totalReturn: "Ritorno totale",
+        bankrollShare: "Quota del bankroll",
+        hint: "Il bankroll è ciò che trasforma la puntata in una percentuale: senza, la puntata è un numero senza niente accanto. La quota va in decimale — 2.50, non +150.",
+        verdictModest:
+          "Questa puntata impegna meno del 5% del bankroll dichiarato, e una serie di dieci sconfitte non la chiuderebbe. Leggila accanto alla quota, non da sola: lo stesso obiettivo a una quota più corta chiede una puntata molto più grande.",
+        verdictHeavy:
+          "Questa puntata impegna più del 5% del bankroll dichiarato su un solo esito. A quella misura una serie di dieci sconfitte — ordinaria a quote intorno a 2.00 — se ne porta via più della metà, quindi controlla il numero sul calcolatore bankroll prima di piazzarla.",
+      },
+      takeaway:
+        "Partire dal profitto che vuoi è il modo più rapido di puntare troppo: la domanda utile non è quanto voglio vincere, è quanto posso permettermi di perdere.",
+      example: {
+        title: "Volere 100 di profitto a quota 2.50",
+        rows: [
+          { label: "Quota", value: "2.50" },
+          { label: "Profitto obiettivo", value: "100" },
+          { label: "Puntata necessaria", value: "66,67" },
+          { label: "Ritorno totale", value: "166,67" },
+          { label: "Quota di un bankroll da 1.000", value: "6,67%" },
+        ],
+        note:
+          "Lo stesso 100 costa 25,00 a quota 5.00 e 400,00 a quota 1.25 — l'obiettivo non si è mosso, si è mossa la quota. E 66,67 su un bankroll da 1.000 è esattamente il Kelly pieno di chi crede che l'esito capiti il 44% delle volte, quando 2.50 va in pari al 40%. Il desiderio contiene già una stima di probabilità con un vantaggio del +10%, solo non dichiarata.",
+      },
+      explainerTitle: "Ragionare al contrario da un numero che hai scelto tu",
+      explainer: [
+        "L'aritmetica è la metà facile. Una scommessa restituisce la puntata più puntata × (quota − 1), quindi **la puntata che un obiettivo richiede è l'obiettivo diviso la quota meno uno** — 100 a 2.50 chiede 66,67, e la giocata torna a 166,67. Ciò che rende utile questa pagina è il secondo effetto: **più corta è la quota, più grande è la puntata che lo stesso desiderio pretende**. Quel 100 costa 25,00 a 5.00, 66,67 a 2.50, 100,00 a 2.00 e 400,00 a 1.25. Fra quelle quattro righe la tua opinione non è cambiata di una virgola, e i soldi a rischio si sono mossi di sedici volte. È il motivo per cui il calcolatore chiede un bankroll di cui non avrebbe bisogno: 66,67 non è grande né piccolo finché non sai che è il 6,67% di tutto quello che hai messo da parte.",
+        "**Ragionare dal profitto che vuoi è la strada più rapida verso una puntata troppo grande**, e sbaglia in un modo preciso. Perdi la prima e l'obiettivo cresce in silenzio per coprirla: volere ancora 100 dopo aver lasciato 66,67 significa chiederne 166,67, che a quota 2.00 richiede una puntata di 166,67, e se va male anche quella la richiesta successiva è 476,19 a 1.70. Tre scommesse dopo, 709,52 di un bankroll da 1.000 sono stati esposti per vincere i 100 iniziali, e la quota si è accorciata ogni volta perché le quote corte sembrano più sicure. **La puntata diventa più grande esattamente mentre il motivo per farla diventa più debole.** La versione onesta di questo calcolo va nel verso opposto, da quanto puoi perdere a quanto puoi puntare, ed è il calcolatore del criterio di Kelly: là la misura nasce da un vantaggio misurato, non da una cifra che hai scelto. E il nostro numero non è un caso — 66,67 su 1.000 è esattamente ciò che il Kelly pieno consiglia a 2.50 a chi crede al 44%, contro il 40% che la quota implica. Se quel 44% non lo difenderesti, la puntata non riguardava la scommessa.",
+      ],
+      faq: [
+        {
+          q: "Come si calcola la puntata per un profitto obiettivo?",
+          a: "Dividi il profitto che vuoi per la quota meno uno. A 2.50 il ritorno netto per unità puntata è 1,50, quindi 100 di profitto chiedono 100 / 1,50 = 66,67 di puntata e pagano 166,67 in totale. A 2.00 il ritorno netto è 1,00, ed è il motivo per cui lì la puntata e l'obiettivo sono lo stesso numero.",
+        },
+        {
+          q: "Perché il calcolatore chiede il bankroll?",
+          a: "Perché la puntata da sola non dice niente. 66,67 è un errore di arrotondamento per uno e un terzo del conto per un altro, e la cifra che decide quale dei due è la quota del bankroll — qui il 6,67%. Lascia il campo vuoto e la puntata funziona comunque; la percentuale diventa un trattino, che è onesto, perché quell'assunzione è tua e non nostra da inventare.",
+        },
+        {
+          q: "Meglio questo o il criterio di Kelly?",
+          a: "Usa questo per dare un prezzo a un desiderio e Kelly per dimensionare una scommessa. Questa pagina parte da un numero che hai scelto e calcola quanto costa; il calcolatore del criterio di Kelly parte da un vantaggio che hai misurato e calcola quanto il bankroll può portare. Quando i due non concordano, quello da scartare è quello che non ha consultato la tua stima di probabilità.",
+        },
+        {
+          q: "Inseguire una perdita con una puntata più grande ha mai senso?",
+          a: "Non con questa aritmetica. Ogni richiesta di recupero è più grande della precedente, e di solito viene piazzata a una quota più corta perché le quote corte sembrano più sicure, quindi la puntata cresce mentre il vantaggio si riduce. Le regole di bankroll esistono per rendere la prossima puntata indipendente dall'ultimo risultato: fissa l'unità come percentuale del bankroll e la sequenza non può scappare.",
+        },
+      ],
+    },
   },
 };
 

@@ -13,6 +13,7 @@ export const TOOL_SLUGS = [
   "parlay-calculator",
   "roi-calculator",
   "yield-calculator",
+  "stake-calculator",
 ] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];
