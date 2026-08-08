@@ -402,6 +402,66 @@ const de: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Kombiwetten-Rechner — kombinierte Quote, echte Wahrscheinlichkeit, zusammengesetzte Marge | BetRedge",
+      metaDescription:
+        "Kostenloser Kombiwetten-Rechner: jede Position eingeben und die kombinierte Quote, die tatsächlich nötige Wahrscheinlichkeit und die pro Position wachsende Marge sehen.",
+      h1: "Kombiwetten-Rechner",
+      lede:
+        "Jede zusätzliche Position multipliziert die Quote — und multipliziert den Anteil des Buchmachers mit. Hier stehen beide Zahlen, bevor die Wette steht.",
+      labels: {
+        inputTitle: "Die Positionen",
+        leg: "Position",
+        addLeg: "Position hinzufügen",
+        removeLeg: "Entfernen",
+        marginPerLeg: "Marge des Buchmachers pro Position (%)",
+        resultTitle: "Was die Kombi wert ist",
+        combinedOdds: "Kombinierte Quote",
+        impliedProb: "Wahrscheinlichkeit, dass sie durchgeht",
+        compoundMargin: "Zusammengesetzte Marge",
+        verdict:
+          "Multiplizieren setzt unabhängige Positionen voraus. Zwei Tipps aus demselben Spiel sind es nicht: ihre echte Wahrscheinlichkeit liegt meist über dem Produkt, und deshalb bepreisen Buchmacher Kombis innerhalb eines Spiels mit einem eigenen Modell.",
+        hint: "Eine Dezimalquote pro Position, bis zu acht. Die Marge pro Position kommt als Zahl hinein: 5 bedeutet 5 %, etwa so viel wie ein enger Zwei-Wege-Markt hält.",
+      },
+      takeaway:
+        "Der Anteil des Buchmachers addiert sich nicht über die Positionen, er verzinst sich — vier Positionen zu 1.80 sehen wie vier fast ausgeglichene Wetten aus und sind ein einziges Ereignis mit 9,53 %.",
+      example: {
+        title: "Vier Positionen zu 1.80, eine Wette mit 9,53 %",
+        rows: [
+          { label: "Positionen", value: "4 × 1.80" },
+          { label: "Kombinierte Quote", value: "10.50" },
+          { label: "Wahrscheinlichkeit, dass sie durchgeht", value: "9,53 %" },
+          { label: "Marge pro Position", value: "5 %" },
+          { label: "Zusammengesetzte Marge", value: "21,55 %" },
+        ],
+        note:
+          "Für sich genommen ist jede Position die Wette, über die niemand nachdenkt: 55,56 % implizit, 1.80 im Gewinnfall. Verkettet verlangen die vier ein Ereignis mit 9,53 % — und die 5 %, die der Buchmacher je Position hält, werden zu 1,05⁴ − 1 = 21,55 % auf der Kombi. Der Wette wurde nichts hinzugefügt außer weiteren Wegen, sie zu verlieren: die Quote stieg, weil die Chance fiel.",
+      },
+      explainerTitle: "Warum die Quote schneller wächst als die Chance",
+      explainer: [
+        "**Eine Kombi ist eine Wette mit mehreren Wegen zu verlieren, nicht mehrere Wetten.** Die kombinierte Quote ist das Produkt der Positionen — 1.80 viermal genommen ergibt 10.4976 — und die Wahrscheinlichkeit ist das Produkt der Wahrscheinlichkeiten. Genau dort hört die Arithmetik auf, freundlich zu sein: vier Tipps, die du einzeln fast ausgeglichen nennen würdest, ergeben 9,53 %. Die Marge verhält sich gleich, und das ist der Teil, den fast niemand einrechnet. Sie addiert sich nicht Position für Position, sie **verzinst sich**: ein Buchmacher, der bei jeder von vier Positionen 5 % hält, hält 1,05⁴ − 1 = 21,55 % auf der Kombi, und bei acht Positionen sind aus denselben 5 % je Position 47,75 % geworden. Die Auszahlung sieht großzügig aus, weil die Chance eingebrochen ist, nicht weil jemand mehr für dasselbe Risiko zahlt.",
+        "**Kombiwetten sind das am stärksten bewerbene Produkt der Wettbranche und das für den Kunden ungünstigste**, und das ist ein und derselbe Sachverhalt von zwei Seiten: je größer die zusammengesetzte Marge, desto mehr kann sich ein Buchmacher Quotenboosts, Absicherungen und Werbung für diesen Schein leisten. Ein dünner Vorteil auf einer Position übersteht die Multiplikation mit drei weiteren Positionen Marge nicht — dieselben Tipps als Einzelwetten zahlen die Marge je einmal, die Vierfachkombi zahlt sie vierfach. Bleibt, was das Multiplizieren voraussetzt: **dass die Positionen unabhängig sind**. Zwei Tipps aus demselben Spiel sind korreliert, Multiplizieren ist dort also die falsche Rechnung: Heimsieg und Treffer des eigenen Stürmers treten oft gemeinsam auf, das Paar ist damit wahrscheinlicher als das Produkt sagt, während Positionen, die kaum zusammen bestehen können, deutlich weniger wert sind. Deshalb bauen Buchmacher Kombis innerhalb eines Spiels mit einem eigenen Modell, statt dich sie aus den Einzelwetten zusammensetzen zu lassen — und deshalb ist dieser Rechner bei Positionen aus verschiedenen Spielen ehrlich.",
+      ],
+      faq: [
+        {
+          q: "Gilt das auch für Kombis innerhalb eines Spiels?",
+          a: "Nicht genau. Hier wird multipliziert, und Multiplizieren setzt unabhängige Positionen voraus. Ergebnisse innerhalb eines Spiels bewegen sich gemeinsam, die echte Wahrscheinlichkeit des Paares ist also anders — oft höher als das Produkt. Genau deshalb bepreisen Buchmacher diese Märkte mit einem eigenen Modell und nicht aus den Einzelwetten.",
+        },
+        {
+          q: "Warum ist die kombinierte Wahrscheinlichkeit so niedrig?",
+          a: "Weil Wahrscheinlichkeiten multipliziert und nicht gemittelt werden. Vier Positionen mit 55,56 % ergeben 9,53 %: jede zusätzliche Position macht die ganze Wette unwahrscheinlicher, und eine Kette plausibler Tipps wird schnell zu einer unwahrscheinlichen Wette. Die Quote steigt entsprechend, und mit ihr die angesammelte Marge.",
+        },
+        {
+          q: "Was ist die zusammengesetzte Marge genau?",
+          a: "Der Anteil des Buchmachers, nachdem ihn jede Position multipliziert hat. Gib ein, was eine Position kostet — rund 5 % bei einem engen Zwei-Wege-Markt — und der Rechner verzinst sie: eins plus Marge, hoch Anzahl der Positionen, minus eins. Vier Positionen zu 5 % kosten 21,55 %, acht Positionen 47,75 %.",
+        },
+        {
+          q: "Sind vier Einzelwetten besser als eine Vierfachkombi?",
+          a: "Für jeden, der auf einen Vorteil wettet, ja: dieselben vier Tipps als Einzelwetten zahlen die Marge je einmal statt sie zu multiplizieren, und eine falsche Position kostet eine Wette statt den ganzen Schein. Die Kombi kauft Varianz — eine kleine Chance auf einen großen Betrag — und der Preis dieser Varianz ist die zusammengesetzte Marge.",
+        },
+      ],
+    },
   },
 };
 

@@ -402,6 +402,66 @@ const pt: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Calculadora de múltiplas — odd combinada, probabilidade real e margem composta | BetRedge",
+      metaDescription:
+        "Calculadora de múltiplas gratuita: insere cada perna e vê a odd combinada, a probabilidade que o boletim exige de facto e como a margem da casa se compõe perna a perna.",
+      h1: "Calculadora de múltiplas",
+      lede:
+        "Cada perna que acrescentas multiplica a odd — e multiplica com ela a parte que fica para a casa. Aqui estão os dois números antes de apostar.",
+      labels: {
+        inputTitle: "As pernas",
+        leg: "Perna",
+        addLeg: "Adicionar perna",
+        removeLeg: "Remover",
+        marginPerLeg: "Margem da casa por perna (%)",
+        resultTitle: "Quanto vale a múltipla",
+        combinedOdds: "Odd combinada",
+        impliedProb: "Probabilidade de entrar",
+        compoundMargin: "Margem composta",
+        verdict:
+          "Multiplicar assume pernas independentes. Duas seleções do mesmo jogo não o são: a probabilidade real delas é normalmente maior do que o produto, e é por isso que as casas cotam múltiplas do mesmo jogo com um modelo próprio.",
+        hint: "Uma odd decimal por perna, até oito. A margem por perna escreve-se como número: 5 significa 5%, aproximadamente o que retém um mercado de duas saídas apertado.",
+      },
+      takeaway:
+        "A parte que a casa retém não se soma entre as pernas, compõe-se — quatro pernas a 1.80 parecem quatro apostas quase equilibradas e são um único evento de 9,53%.",
+      example: {
+        title: "Quatro pernas a 1.80, uma aposta de 9,53%",
+        rows: [
+          { label: "Pernas", value: "4 × 1.80" },
+          { label: "Odd combinada", value: "10.50" },
+          { label: "Probabilidade de entrar", value: "9,53%" },
+          { label: "Margem por perna", value: "5%" },
+          { label: "Margem composta", value: "21,55%" },
+        ],
+        note:
+          "Isolada, cada perna é a aposta em que ninguém pensa duas vezes: 55,56% implícito, 1.80 a ganhar. Em cadeia, as quatro exigem um evento de 9,53% — e os 5% que a casa retém em cada perna tornam-se 1,05⁴ − 1 = 21,55% na múltipla. Nada foi acrescentado à aposta a não ser mais formas de a perder: a odd subiu porque a probabilidade desceu.",
+      },
+      explainerTitle: "Porque a odd cresce mais depressa do que a probabilidade",
+      explainer: [
+        "**Uma múltipla é uma aposta só com várias formas de perder, não várias apostas.** A odd combinada é o produto das pernas — 1.80 quatro vezes dá 10.4976 — e a probabilidade é o produto das probabilidades, e é aí que a aritmética deixa de ser simpática: quatro seleções que chamarias quase equilibradas dão 9,53%. A margem comporta-se da mesma maneira, e essa é a parte que quase ninguém conta. Não se soma perna a perna, **compõe-se**: uma casa que retém 5% em cada uma de quatro pernas retém 1,05⁴ − 1 = 21,55% na múltipla, e com oito pernas esses mesmos 5% por perna já são 47,75%. O prémio parece generoso porque a probabilidade caiu, não porque alguém pague mais pelo mesmo risco.",
+        "**As múltiplas são o produto mais promovido das apostas e o menos favorável ao cliente**, e são o mesmo facto visto dos dois lados: quanto maior a margem composta, mais uma casa pode dar-se ao luxo de aumentar, segurar e publicitar aquele boletim. Uma vantagem fina numa perna não sobrevive a ser multiplicada por mais três pernas de margem — as mesmas seleções em simples pagam a margem uma vez cada, a quádrupla paga-a quatro vezes. Falta o que a multiplicação assume: **que as pernas são independentes**. Duas seleções do mesmo jogo estão correlacionadas, por isso multiplicar é a conta errada: a vitória em casa e o gol do seu ponta de lança tendem a chegar juntos, logo o par é mais provável do que o produto diz, enquanto pernas que dificilmente coexistem valem muito menos. É por isso que as casas constroem as múltiplas do mesmo jogo com um modelo próprio em vez de te deixarem montá-las a partir das simples — e é por isso que esta calculadora é honesta com pernas de jogos diferentes.",
+      ],
+      faq: [
+        {
+          q: "Serve para múltiplas do mesmo jogo?",
+          a: "Não exatamente. Aqui multiplica-se, e multiplicar assume pernas independentes. Os resultados dentro do mesmo jogo movem-se juntos, portanto a probabilidade real do par é diferente — muitas vezes maior do que o produto — e é por isso que as casas cotam esses mercados com um modelo próprio e não a partir das simples.",
+        },
+        {
+          q: "Porque é que a probabilidade combinada é tão baixa?",
+          a: "Porque as probabilidades multiplicam-se em vez de fazerem média. Quatro pernas a 55,56% dão 9,53%: cada perna que acrescentas torna o boletim inteiro menos provável, logo uma cadeia de seleções plausíveis vira depressa uma aposta improvável. A odd sobe para compensar, e com ela sobe a margem acumulada.",
+        },
+        {
+          q: "O que é exatamente a margem composta?",
+          a: "A parte da casa depois de cada perna a ter multiplicado. Insere quanto te custa uma perna — cerca de 5% num mercado de duas saídas apertado — e a calculadora compõe-na: um mais a margem, elevado ao número de pernas, menos um. Quatro pernas a 5% custam 21,55%, oito pernas 47,75%.",
+        },
+        {
+          q: "Quatro simples são melhores do que uma quádrupla?",
+          a: "Para quem aposta com vantagem, sim: as mesmas quatro seleções em simples pagam a margem uma vez cada em vez de a multiplicarem, e uma perna errada custa uma aposta e não o boletim todo. A múltipla compra variância — uma pequena probabilidade de um retorno grande — e o preço dessa variância é a margem composta.",
+        },
+      ],
+    },
   },
 };
 

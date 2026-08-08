@@ -403,6 +403,66 @@ const it: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Calcolatore multiple — quota combinata, probabilità reale e margine composto | BetRedge",
+      metaDescription:
+        "Calcolatore di multiple gratuito: inserisci ogni gamba e ottieni la quota combinata, la probabilità che serve davvero e come il margine del book si compone gamba per gamba.",
+      h1: "Calcolatore multiple",
+      lede:
+        "Ogni gamba che aggiungi moltiplica la quota — e insieme moltiplica la parte che si tiene il book. Qui ci sono entrambi i numeri, prima di giocare.",
+      labels: {
+        inputTitle: "Le gambe",
+        leg: "Gamba",
+        addLeg: "Aggiungi gamba",
+        removeLeg: "Togli",
+        marginPerLeg: "Margine del book per gamba (%)",
+        resultTitle: "Quanto vale la multipla",
+        combinedOdds: "Quota combinata",
+        impliedProb: "Probabilità che esca",
+        compoundMargin: "Margine composto",
+        verdict:
+          "Moltiplicare assume gambe indipendenti. Due selezioni della stessa partita non lo sono: la loro probabilità reale è di solito più alta del prodotto, ed è per questo che i book prezzano le multiple sullo stesso match con un modello loro.",
+        hint: "Una quota decimale per gamba, fino a otto. Il margine per gamba si scrive come numero: 5 significa 5%, più o meno quello di un mercato a due esiti stretto.",
+      },
+      takeaway:
+        "La parte che si tiene il book non si somma sulle gambe, si compone — quattro gambe a 1.80 sembrano quattro scommesse quasi in equilibrio e sono un unico evento al 9,53%.",
+      example: {
+        title: "Quattro gambe a 1.80, una scommessa al 9,53%",
+        rows: [
+          { label: "Gambe", value: "4 × 1.80" },
+          { label: "Quota combinata", value: "10.50" },
+          { label: "Probabilità che esca", value: "9,53%" },
+          { label: "Margine per gamba", value: "5%" },
+          { label: "Margine composto", value: "21,55%" },
+        ],
+        note:
+          "Presa da sola, ogni gamba è la scommessa su cui nessuno si ferma a pensare: 55,56% implicito, 1.80 per vincere. In catena, tutte e quattro chiedono un evento al 9,53% — e il 5% che il book si tiene su ogni gamba diventa 1,05⁴ − 1 = 21,55% sulla multipla. Alla scommessa non è stato aggiunto niente tranne altri modi di perderla: la quota è salita perché la probabilità è scesa.",
+      },
+      explainerTitle: "Perché la quota cresce più in fretta della probabilità",
+      explainer: [
+        "**Una multipla è una scommessa sola con più modi di perdere, non più scommesse.** La quota combinata è il prodotto delle gambe — 1.80 preso quattro volte fa 10.4976 — e la probabilità è il prodotto delle probabilità, ed è lì che l'aritmetica smette di essere amichevole: quattro selezioni che chiameresti quasi in equilibrio fanno 9,53%. Il margine si comporta allo stesso modo, e questa è la parte che quasi nessuno mette nel conto. Non si somma gamba per gamba, si **compone**: un book che si tiene il 5% su ognuna di quattro gambe si tiene 1,05⁴ − 1 = 21,55% sulla multipla, e a otto gambe quello stesso 5% per gamba è diventato 47,75%. La vincita sembra generosa perché la probabilità è crollata, non perché qualcuno ti stia pagando di più per lo stesso rischio.",
+        "**Le multiple sono il prodotto più spinto della scommessa e il meno favorevole a chi gioca**, e sono lo stesso fatto visto da due lati: più grande è il margine composto, più un book può permettersi di maggiorare, assicurare e pubblicizzare quella giocata. Un vantaggio sottile su una gamba non sopravvive alla moltiplicazione per altre tre gambe di margine — le stesse selezioni giocate singole pagano il margine una volta ciascuna, la quadrupla lo paga quattro volte. Poi c'è l'assunzione dietro la moltiplicazione: **che le gambe siano indipendenti**. Due selezioni della stessa partita sono correlate, quindi moltiplicare è il conto sbagliato: la vittoria in casa e il gol del suo attaccante tendono ad arrivare insieme, quindi la coppia è più probabile di quanto dica il prodotto, mentre gambe che a stento convivono valgono molto meno. È per questo che i book costruiscono le multiple sullo stesso match con un modello loro invece di lasciartele comporre dalle singole — e per questo questo calcolatore è onesto su gambe di partite diverse.",
+      ],
+      faq: [
+        {
+          q: "Vale anche per le multiple sulla stessa partita?",
+          a: "Non esattamente. Qui si moltiplica, e moltiplicare assume gambe indipendenti. Gli esiti dentro una stessa partita si muovono insieme, quindi la probabilità vera della coppia è diversa — spesso più alta del prodotto — ed è per questo che i book prezzano quei mercati con un modello loro e non partendo dalle singole.",
+        },
+        {
+          q: "Perché la probabilità combinata è così bassa?",
+          a: "Perché le probabilità si moltiplicano, non si mediano. Quattro gambe al 55,56% fanno 9,53%: ogni gamba in più rende l'intera giocata meno probabile, quindi una catena di selezioni plausibili diventa in fretta una scommessa improbabile. La quota sale per compensare, e con la quota sale il margine accumulato.",
+        },
+        {
+          q: "Cos'è esattamente il margine composto?",
+          a: "La parte che si tiene il book dopo che ogni gamba l'ha moltiplicata. Inserisci quanto ti costa una gamba — intorno al 5% su un mercato a due esiti stretto — e il calcolatore la compone: uno più il margine, elevato al numero delle gambe, meno uno. Quattro gambe al 5% costano 21,55%, otto gambe 47,75%.",
+        },
+        {
+          q: "Meglio quattro singole o una quadrupla?",
+          a: "Per chi gioca su un vantaggio, quattro singole: le stesse selezioni pagano il margine una volta ciascuna invece di moltiplicarlo, e una gamba sbagliata costa una scommessa e non tutto il biglietto. La multipla compra varianza — una piccola probabilità di un ritorno grande — e il prezzo di quella varianza è il margine composto.",
+        },
+      ],
+    },
   },
 };
 

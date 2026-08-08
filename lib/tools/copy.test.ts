@@ -18,8 +18,8 @@ describe("registry", () => {
   // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
   // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
   // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
-  it("ha sei tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(6);
+  it("ha sette tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(7);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -200,6 +200,22 @@ describe("dizionari registrati", () => {
         for (const n of ["2.00", "55%", "10%", "100", "50", "590", "69", "774", "29"]) {
           expect(numbers, `numero mancante nell'esempio: ${n}`).toContain(n);
         }
+      });
+
+      it("l'esempio della multipla combacia con quello che mostra il calcolatore", () => {
+        // Il default del ParlayCalculator è 4 × 1.80 col 5% di margine per gamba,
+        // e mostra 10.50 · 9,53% · 21,55%. Il margine composto è l'unico numero
+        // della pagina che nasce da un'ASSUNZIONE (il 5%): se l'esempio scrivesse
+        // un valore diverso da 1,05⁴ − 1 nessuno saprebbe da dove viene.
+        const p = dict.tools["parlay-calculator"];
+        const numbers = [...p.example.rows.map((r) => r.value), p.example.note].join(" ");
+        expect(numbers, "manca la quota 1.80").toContain("1.80");
+        expect(numbers, "manca la quota combinata 10.50").toContain("10.50");
+        expect(numbers, "manca la probabilità 9,53%").toMatch(/9[.,]53/);
+        expect(numbers, "manca il margine composto 21,55%").toMatch(/21[.,]55/);
+        // 21,6% è l'arrotondamento della vecchia pagina: qui il calcolatore
+        // mostra due decimali, e l'esempio deve dire quello che si legge.
+        expect(numbers, "21,6 non è quello che mostra il readout").not.toMatch(/21[.,]6[^0-9]/);
       });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {

@@ -252,3 +252,48 @@ describe("arbitrage calculator", () => {
     expect(screen.getByTestId("out-arb-return").textContent).toBe("—");
   });
 });
+
+describe("parlay calculator", () => {
+  it("quattro gambe a 1.80 danno 10.50, 9.53% e un margine composto del 21.55%", () => {
+    // I default SONO l'esempio lavorato della pagina: chi arriva vede subito i
+    // numeri che poi legge spiegati sotto (1.80⁴ = 10.4976 → 10.50).
+    mount("parlay-calculator");
+    expect(screen.getByTestId("out-parlay-total").textContent).toBe("10.50");
+    expect(screen.getByTestId("out-parlay-implied").textContent).toBe("9.53%");
+    // 1.05⁴ − 1 = 21.55%: il margine si compone, non si somma (non è 20%).
+    expect(screen.getByTestId("out-parlay-margin").textContent).toBe("21.55%");
+  });
+
+  it("una gamba vuota mostra il trattino, e il bottone togli la fa tornare al numero", async () => {
+    const user = userEvent.setup();
+    mount("parlay-calculator");
+    await user.click(screen.getByRole("button", { name: "Add leg" }));
+    expect(screen.getByLabelText("Leg 5")).toBeTruthy();
+    expect(screen.getByTestId("out-parlay-total").textContent).toBe("—");
+    // Senza il "togli", una gamba vuota aggiunta per errore bloccherebbe il
+    // calcolatore sul trattino per sempre.
+    await user.click(screen.getAllByRole("button", { name: "Remove" })[4]);
+    expect(screen.queryByLabelText("Leg 5")).toBeNull();
+    expect(screen.getByTestId("out-parlay-total").textContent).toBe("10.50");
+  });
+
+  it("togliendo una gamba il margine composto scende in modo moltiplicativo", async () => {
+    const user = userEvent.setup();
+    mount("parlay-calculator");
+    await user.click(screen.getAllByRole("button", { name: "Remove" })[3]);
+    // Tre gambe al 5%: 1.05³ − 1 = 15.76%, non 15.00%.
+    expect(screen.getByTestId("out-parlay-total").textContent).toBe("5.83");
+    expect(screen.getByTestId("out-parlay-margin").textContent).toBe("15.76%");
+  });
+
+  it("spazzatura in una gamba non produce NaN", async () => {
+    const user = userEvent.setup();
+    mount("parlay-calculator");
+    const leg = screen.getByLabelText("Leg 1");
+    await user.clear(leg);
+    await user.type(leg, "banana");
+    expect(screen.getByTestId("out-parlay-total").textContent).toBe("—");
+    expect(screen.getByTestId("out-parlay-implied").textContent).toBe("—");
+    expect(screen.getByTestId("out-parlay-margin").textContent).toBe("—");
+  });
+});

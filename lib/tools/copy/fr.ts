@@ -402,6 +402,66 @@ const fr: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Calculateur de paris combinés — cote combinée, probabilité réelle et marge composée | BetRedge",
+      metaDescription:
+        "Calculateur de combinés gratuit : saisissez chaque sélection pour obtenir la cote combinée, la probabilité que le pari exige vraiment et la marge du bookmaker composée.",
+      h1: "Calculateur de paris combinés",
+      lede:
+        "Chaque sélection ajoutée multiplie la cote — et multiplie avec elle la part que garde le bookmaker. Voici les deux nombres avant de miser.",
+      labels: {
+        inputTitle: "Les sélections",
+        leg: "Sélection",
+        addLeg: "Ajouter une sélection",
+        removeLeg: "Retirer",
+        marginPerLeg: "Marge du bookmaker par sélection (%)",
+        resultTitle: "Ce que vaut le combiné",
+        combinedOdds: "Cote combinée",
+        impliedProb: "Probabilité que ça passe",
+        compoundMargin: "Marge composée",
+        verdict:
+          "Multiplier suppose des sélections indépendantes. Deux choix du même match ne le sont pas : leur probabilité réelle est en général plus élevée que le produit, et c'est pourquoi les bookmakers cotent les combinés d'un même match avec leur propre modèle.",
+        hint: "Une cote décimale par sélection, jusqu'à huit. La marge par sélection s'écrit en nombre : 5 signifie 5 %, à peu près ce que garde un marché à deux issues serré.",
+      },
+      takeaway:
+        "La part du bookmaker ne s'additionne pas d'une sélection à l'autre, elle se compose — quatre sélections à 1.80 ressemblent à quatre paris presque équilibrés et forment un seul événement à 9,53 %.",
+      example: {
+        title: "Quatre sélections à 1.80, un pari à 9,53 %",
+        rows: [
+          { label: "Sélections", value: "4 × 1.80" },
+          { label: "Cote combinée", value: "10.50" },
+          { label: "Probabilité que ça passe", value: "9,53 %" },
+          { label: "Marge par sélection", value: "5 %" },
+          { label: "Marge composée", value: "21,55 %" },
+        ],
+        note:
+          "Prise seule, chaque sélection est le pari sur lequel personne ne s'arrête : 55,56 % implicite, 1.80 à gagner. Enchaînées, les quatre exigent un événement à 9,53 % — et les 5 % que le bookmaker garde sur chaque sélection deviennent 1,05⁴ − 1 = 21,55 % sur le combiné. Rien n'a été ajouté au pari, sinon des façons de le perdre : la cote a monté parce que la chance a baissé.",
+      },
+      explainerTitle: "Pourquoi la cote monte plus vite que la chance",
+      explainer: [
+        "**Un combiné est un seul pari avec plusieurs façons de perdre, pas plusieurs paris.** La cote combinée est le produit des sélections — 1.80 pris quatre fois donne 10.4976 — et la probabilité est le produit des probabilités : c'est là que l'arithmétique cesse d'être aimable, puisque quatre choix que vous jugeriez presque équilibrés donnent 9,53 %. La marge se comporte pareil, et c'est la partie que presque personne ne compte. Elle ne s'additionne pas sélection par sélection, elle se **compose** : un bookmaker qui garde 5 % sur chacune de quatre sélections garde 1,05⁴ − 1 = 21,55 % sur le combiné, et à huit sélections ces mêmes 5 % sont devenus 47,75 %. Le gain paraît généreux parce que la chance s'est effondrée, pas parce qu'on vous paie davantage pour le même risque.",
+        "**Le combiné est le produit le plus poussé du pari sportif et le moins favorable au client**, et ce sont deux faces du même fait : plus la marge composée est grande, plus un bookmaker peut se permettre de booster, d'assurer et de faire la publicité de ce ticket. Un avantage mince sur une sélection ne survit pas à la multiplication par trois autres sélections de marge — les mêmes choix joués en simple paient la marge une fois chacun, le quadruple la paie quatre fois. Reste ce que la multiplication suppose : **que les sélections sont indépendantes**. Deux choix du même match sont corrélés, donc multiplier est le mauvais calcul : une victoire à domicile et le but de son attaquant arrivent souvent ensemble, la paire est donc plus probable que ne le dit le produit, tandis que des sélections qui coexistent mal valent bien moins. C'est pourquoi les bookmakers construisent les combinés d'un même match avec leur propre modèle au lieu de vous laisser les assembler depuis les simples — et pourquoi ce calculateur est honnête sur des sélections de matchs différents.",
+      ],
+      faq: [
+        {
+          q: "Est-ce valable pour les combinés d'un même match ?",
+          a: "Pas exactement. Ici on multiplie, et multiplier suppose des sélections indépendantes. Les issues d'un même match bougent ensemble, donc la probabilité réelle de la paire est différente — souvent plus élevée que le produit — et c'est pourquoi les bookmakers cotent ces marchés avec leur propre modèle plutôt qu'à partir des simples.",
+        },
+        {
+          q: "Pourquoi la probabilité combinée est-elle si faible ?",
+          a: "Parce que les probabilités se multiplient au lieu de faire une moyenne. Quatre sélections à 55,56 % donnent 9,53 % : chaque sélection ajoutée rend le pari entier moins probable, si bien qu'une chaîne de choix plausibles devient vite un pari improbable. La cote monte pour compenser, et la marge accumulée monte avec elle.",
+        },
+        {
+          q: "Qu'est-ce que la marge composée exactement ?",
+          a: "La part du bookmaker après que chaque sélection l'a multipliée. Saisissez ce que coûte une sélection — environ 5 % sur un marché à deux issues serré — et le calculateur la compose : un plus la marge, élevé au nombre de sélections, moins un. Quatre sélections à 5 % coûtent 21,55 %, huit sélections 47,75 %.",
+        },
+        {
+          q: "Vaut-il mieux quatre simples qu'un quadruple ?",
+          a: "Pour qui parie sur un avantage, oui : les mêmes quatre choix en simple paient la marge une fois chacun au lieu de la multiplier, et une sélection ratée coûte un pari et non tout le ticket. Le combiné achète de la variance — une petite chance de gros gain — et le prix de cette variance est la marge composée.",
+        },
+      ],
+    },
   },
 };
 

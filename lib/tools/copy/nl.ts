@@ -402,6 +402,66 @@ const nl: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Combinatiewedden-calculator — gecombineerde odd, echte kans en samengestelde marge | BetRedge",
+      metaDescription:
+        "Gratis combi-calculator: vul elk onderdeel in en zie de gecombineerde odd, de kans die de combinatie werkelijk vraagt en hoe de marge van de bookmaker zich opbouwt.",
+      h1: "Combinatiewedden-calculator",
+      lede:
+        "Elk onderdeel dat je toevoegt vermenigvuldigt de odd — en vermenigvuldigt het deel dat de bookmaker houdt mee. Hier staan beide getallen, voor je inzet.",
+      labels: {
+        inputTitle: "De onderdelen",
+        leg: "Onderdeel",
+        addLeg: "Onderdeel toevoegen",
+        removeLeg: "Verwijderen",
+        marginPerLeg: "Marge van de bookmaker per onderdeel (%)",
+        resultTitle: "Wat de combinatie waard is",
+        combinedOdds: "Gecombineerde odd",
+        impliedProb: "Kans dat hij binnenkomt",
+        compoundMargin: "Samengestelde marge",
+        verdict:
+          "Vermenigvuldigen veronderstelt onafhankelijke onderdelen. Twee selecties uit dezelfde wedstrijd zijn dat niet: hun echte kans is meestal hoger dan het product, en daarom prijzen bookmakers combinaties binnen één wedstrijd met een eigen model.",
+        hint: "Eén decimale odd per onderdeel, tot acht. De marge per onderdeel vul je als getal in: 5 betekent 5%, ongeveer wat een scherpe tweewegmarkt houdt.",
+      },
+      takeaway:
+        "Het deel dat de bookmaker houdt telt niet op over de onderdelen, het stapelt zich — vier onderdelen op 1.80 lijken vier bijna gelijke weddenschappen en zijn één gebeurtenis van 9,53%.",
+      example: {
+        title: "Vier onderdelen op 1.80, één wed van 9,53%",
+        rows: [
+          { label: "Onderdelen", value: "4 × 1.80" },
+          { label: "Gecombineerde odd", value: "10.50" },
+          { label: "Kans dat hij binnenkomt", value: "9,53%" },
+          { label: "Marge per onderdeel", value: "5%" },
+          { label: "Samengestelde marge", value: "21,55%" },
+        ],
+        note:
+          "Los bekeken is elk onderdeel de wed waar niemand bij stilstaat: 55,56% impliciet, 1.80 bij winst. Aan elkaar geregen vragen de vier een gebeurtenis van 9,53% — en de 5% die de bookmaker per onderdeel houdt wordt 1,05⁴ − 1 = 21,55% op de combinatie. Er is niets aan de wed toegevoegd behalve meer manieren om hem te verliezen: de odd ging omhoog omdat de kans omlaag ging.",
+      },
+      explainerTitle: "Waarom de odd sneller groeit dan de kans",
+      explainer: [
+        "**Een combinatie is één wed met meerdere manieren om te verliezen, niet meerdere weddenschappen.** De gecombineerde odd is het product van de onderdelen — 1.80 vier keer genomen is 10.4976 — en de kans is het product van de kansen, en daar houdt de rekenkunde op vriendelijk te zijn: vier selecties die je elk bijna gelijk zou noemen komen samen op 9,53%. De marge doet precies hetzelfde, en dat is het deel dat bijna niemand meerekent. Hij telt niet op per onderdeel, hij **stapelt zich**: een bookmaker die op elk van vier onderdelen 5% houdt, houdt 1,05⁴ − 1 = 21,55% op de combinatie, en bij acht onderdelen is diezelfde 5% per onderdeel 47,75% geworden. De uitbetaling lijkt royaal omdat de kans instortte, niet omdat iemand meer betaalt voor hetzelfde risico.",
+        "**Combinaties zijn het meest gepromote product in wedden en het minst gunstige voor de klant**, en dat is hetzelfde feit van twee kanten: hoe groter de samengestelde marge, hoe meer een bookmaker zich kan permitteren om die bon te boosten, te verzekeren en te adverteren. Een dun voordeel op één onderdeel overleeft de vermenigvuldiging met drie extra onderdelen marge niet — dezelfde selecties als enkelvoudige weddenschappen betalen de marge elk één keer, de viervoudige betaalt hem vier keer. Dan is er nog wat het vermenigvuldigen veronderstelt: **dat de onderdelen onafhankelijk zijn**. Twee selecties uit dezelfde wedstrijd zijn gecorreleerd, dus vermenigvuldigen is daar de verkeerde som: een thuiszege en een doelpunt van diezelfde spits komen vaak samen, waardoor het paar waarschijnlijker is dan het product zegt, terwijl onderdelen die elkaar bijna uitsluiten veel minder waard zijn. Daarom bouwen bookmakers combinaties binnen één wedstrijd met een eigen model in plaats van je ze uit de enkelvoudige odds te laten samenstellen — en daarom is deze calculator eerlijk bij onderdelen uit verschillende wedstrijden.",
+      ],
+      faq: [
+        {
+          q: "Werkt dit ook voor combinaties binnen één wedstrijd?",
+          a: "Niet precies. Hier wordt vermenigvuldigd, en vermenigvuldigen veronderstelt onafhankelijke onderdelen. Uitkomsten binnen één wedstrijd bewegen samen, dus de echte kans van het paar is anders — vaak hoger dan het product — en juist daarom prijzen bookmakers die markten met een eigen model en niet vanuit de enkelvoudige odds.",
+        },
+        {
+          q: "Waarom is de gecombineerde kans zo laag?",
+          a: "Omdat kansen vermenigvuldigen in plaats van gemiddeld worden. Vier onderdelen op 55,56% komen op 9,53%: elk onderdeel dat je toevoegt maakt de hele wed onwaarschijnlijker, dus een reeks plausibele selecties wordt snel een onwaarschijnlijke wed. De odd stijgt mee, en met de odd stijgt de opgebouwde marge.",
+        },
+        {
+          q: "Wat is de samengestelde marge precies?",
+          a: "Het deel van de bookmaker nadat elk onderdeel het vermenigvuldigd heeft. Vul in wat één onderdeel je kost — rond 5% op een scherpe tweewegmarkt — en de calculator stapelt het: één plus de marge, tot de macht van het aantal onderdelen, min één. Vier onderdelen op 5% kosten 21,55%, acht onderdelen 47,75%.",
+        },
+        {
+          q: "Zijn vier enkelvoudige weddenschappen beter dan een viervoudige?",
+          a: "Voor wie op een voordeel wedt wel: dezelfde vier selecties los betalen de marge elk één keer in plaats van hem te vermenigvuldigen, en één fout onderdeel kost één wed in plaats van de hele bon. Een combinatie koopt variantie — een kleine kans op een grote uitbetaling — en de prijs daarvan is de samengestelde marge.",
+        },
+      ],
+    },
   },
 };
 

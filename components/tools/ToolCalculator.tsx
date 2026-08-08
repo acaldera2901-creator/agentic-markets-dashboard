@@ -11,6 +11,7 @@ import { EvCalculator } from "./EvCalculator";
 import { KellyCalculator } from "./KellyCalculator";
 import { ProbabilityCalculator } from "./ProbabilityCalculator";
 import { ArbitrageCalculator } from "./ArbitrageCalculator";
+import { ParlayCalculator } from "./ParlayCalculator";
 
 export function ToolCalculator({
   slug,
@@ -34,5 +35,7 @@ export function ToolCalculator({
       return <ProbabilityCalculator copy={copy} dash={dash} />;
     case "arbitrage-calculator":
       return <ArbitrageCalculator copy={copy} dash={dash} />;
+    case "parlay-calculator":
+      return <ParlayCalculator copy={copy} dash={dash} />;
   }
 }

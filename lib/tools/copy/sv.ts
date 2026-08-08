@@ -402,6 +402,66 @@ const sv: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Kombinationskalkylator — kombinerat odds, verklig sannolikhet och sammansatt marginal | BetRedge",
+      metaDescription:
+        "Gratis kombinationskalkylator: fyll i varje delspel och se det kombinerade oddset, sannolikheten kupongen faktiskt kräver och hur bolagets marginal sammansätts.",
+      h1: "Kombinationskalkylator",
+      lede:
+        "Varje delspel du lägger till multiplicerar oddset — och multiplicerar bolagets snitt med det. Här är båda talen, innan spelet läggs.",
+      labels: {
+        inputTitle: "Delspelen",
+        leg: "Delspel",
+        addLeg: "Lägg till delspel",
+        removeLeg: "Ta bort",
+        marginPerLeg: "Bolagets marginal per delspel (%)",
+        resultTitle: "Vad kombinationen är värd",
+        combinedOdds: "Kombinerat odds",
+        impliedProb: "Sannolikhet att den går in",
+        compoundMargin: "Sammansatt marginal",
+        verdict:
+          "Multiplikation förutsätter oberoende delspel. Två val från samma match är inte oberoende: deras verkliga chans är oftast högre än produkten, och därför prissätter bolagen kombinationer inom en match med en egen modell.",
+        hint: "Ett decimalodds per delspel, upp till åtta. Marginalen per delspel skrivs som ett tal: 5 betyder 5 %, ungefär vad en snäv tvåvägsmarknad håller.",
+      },
+      takeaway:
+        "Bolagets snitt adderas inte över delspelen, det sammansätts — fyra delspel på 1.80 ser ut som fyra nästan jämna spel och är en enda händelse på 9,53 %.",
+      example: {
+        title: "Fyra delspel på 1.80, ett spel på 9,53 %",
+        rows: [
+          { label: "Delspel", value: "4 × 1.80" },
+          { label: "Kombinerat odds", value: "10.50" },
+          { label: "Sannolikhet att den går in", value: "9,53 %" },
+          { label: "Marginal per delspel", value: "5 %" },
+          { label: "Sammansatt marginal", value: "21,55 %" },
+        ],
+        note:
+          "För sig är varje delspel det spel ingen stannar upp vid: 55,56 % implicit, 1.80 vid vinst. Kedjade kräver de fyra en händelse på 9,53 % — och de 5 % bolaget håller på varje delspel blir 1,05⁴ − 1 = 21,55 % på kombinationen. Inget lades till spelet utom fler sätt att förlora det: oddset steg för att chansen sjönk.",
+      },
+      explainerTitle: "Varför oddset växer snabbare än chansen",
+      explainer: [
+        "**En kombination är ett spel med flera sätt att förlora, inte flera spel.** Det kombinerade oddset är produkten av delspelen — 1.80 taget fyra gånger är 10.4976 — och sannolikheten är produkten av sannolikheterna, och där slutar aritmetiken vara vänlig: fyra val som du var för sig skulle kalla nästan jämna blir tillsammans 9,53 %. Marginalen beter sig likadant, och det är den delen nästan ingen räknar med. Den adderas inte delspel för delspel, den **sammansätts**: ett bolag som håller 5 % på varje av fyra delspel håller 1,05⁴ − 1 = 21,55 % på kombinationen, och vid åtta delspel har samma 5 % per delspel blivit 47,75 %. Utbetalningen ser generös ut därför att chansen kollapsade, inte därför att någon betalar mer för samma risk.",
+        "**Kombinationer är den mest marknadsförda produkten inom spel och den minst gynnsamma för kunden**, och det är samma sak sedd från två sidor: desto större den sammansatta marginalen är, desto mer kan ett bolag lägga på oddsboostar, försäkringar och reklam för just den kupongen. Ett tunt övertag på ett delspel överlever inte att multipliceras med tre delspel marginal till — samma val som enkelspel betalar marginalen en gång var, fyrkombinationen betalar den fyra gånger om. Sedan finns det multiplikationen förutsätter: **att delspelen är oberoende**. Två val från samma match är korrelerade, så där är multiplikation fel räknesätt: en hemmavinst och ett mål av lagets forward brukar komma tillsammans, alltså är paret mer sannolikt än produkten säger, medan delspel som knappt kan samexistera är värda betydligt mindre. Därför bygger bolagen kombinationer inom en match med en egen modell i stället för att låta dig sätta ihop dem av enkelspelen — och därför är den här kalkylatorn ärlig för delspel från olika matcher.",
+      ],
+      faq: [
+        {
+          q: "Fungerar det för kombinationer inom samma match?",
+          a: "Inte exakt. Här multipliceras det, och multiplikation förutsätter oberoende delspel. Utfall inom en match rör sig tillsammans, så parets verkliga sannolikhet är annorlunda — ofta högre än produkten — och just därför prissätter bolagen de marknaderna med en egen modell i stället för utifrån enkelspelen.",
+        },
+        {
+          q: "Varför är den kombinerade sannolikheten så låg?",
+          a: "Därför att sannolikheter multipliceras i stället för att snittas. Fyra delspel på 55,56 % blir 9,53 %: varje delspel du lägger till gör hela spelet mindre sannolikt, så en kedja av rimliga val blir snabbt ett osannolikt spel. Oddset stiger i motsvarande grad, och med oddset stiger den ackumulerade marginalen.",
+        },
+        {
+          q: "Vad är den sammansatta marginalen exakt?",
+          a: "Bolagets snitt efter att varje delspel har multiplicerat det. Fyll i vad ett delspel kostar dig — omkring 5 % på en snäv tvåvägsmarknad — och kalkylatorn sammansätter det: ett plus marginalen, upphöjt till antalet delspel, minus ett. Fyra delspel på 5 % kostar 21,55 %, åtta delspel 47,75 %.",
+        },
+        {
+          q: "Är fyra enkelspel bättre än en fyrkombination?",
+          a: "För den som spelar på ett övertag, ja: samma fyra val som enkelspel betalar marginalen en gång var i stället för att multiplicera den, och ett felaktigt delspel kostar ett spel i stället för hela kupongen. En kombination köper varians — en liten chans till en stor utbetalning — och priset för variansen är den sammansatta marginalen.",
+        },
+      ],
+    },
   },
 };
 

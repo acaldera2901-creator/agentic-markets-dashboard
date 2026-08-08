@@ -402,6 +402,66 @@ const pl: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Kalkulator kuponów AKO — kurs łączny, realne prawdopodobieństwo i marża złożona | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator kuponów wielokrotnych: wpisz każde zdarzenie i zobacz kurs łączny, prawdopodobieństwo, którego kupon naprawdę wymaga, oraz składanie się marży.",
+      h1: "Kalkulator kuponów AKO",
+      lede:
+        "Każde dodane zdarzenie mnoży kurs — i mnoży razem z nim część, którą zatrzymuje bukmacher. Oto oba te liczby, jeszcze przed postawieniem kuponu.",
+      labels: {
+        inputTitle: "Zdarzenia",
+        leg: "Zdarzenie",
+        addLeg: "Dodaj zdarzenie",
+        removeLeg: "Usuń",
+        marginPerLeg: "Marża bukmachera na zdarzenie (%)",
+        resultTitle: "Ile wart jest kupon",
+        combinedOdds: "Kurs łączny",
+        impliedProb: "Prawdopodobieństwo wejścia",
+        compoundMargin: "Marża złożona",
+        verdict:
+          "Mnożenie zakłada, że zdarzenia są niezależne. Dwa typy z tego samego meczu nie są: ich realne prawdopodobieństwo jest zwykle wyższe niż iloczyn, i właśnie dlatego bukmacherzy wyceniają kupony z jednego meczu własnym modelem.",
+        hint: "Jeden kurs dziesiętny na zdarzenie, maksymalnie osiem. Marżę na zdarzenie wpisuje się jako liczbę: 5 oznacza 5%, tyle mniej więcej trzyma wąski rynek dwudrożny.",
+      },
+      takeaway:
+        "Część, którą zatrzymuje bukmacher, nie dodaje się między zdarzeniami — składa się. Cztery zdarzenia po 1.80 wyglądają jak cztery niemal wyrównane zakłady, a są jednym zdarzeniem o prawdopodobieństwie 9,53%.",
+      example: {
+        title: "Cztery zdarzenia po 1.80, jeden zakład o 9,53%",
+        rows: [
+          { label: "Zdarzenia", value: "4 × 1.80" },
+          { label: "Kurs łączny", value: "10.50" },
+          { label: "Prawdopodobieństwo wejścia", value: "9,53%" },
+          { label: "Marża na zdarzenie", value: "5%" },
+          { label: "Marża złożona", value: "21,55%" },
+        ],
+        note:
+          "Osobno każde zdarzenie jest zakładem, nad którym nikt się nie zastanawia: 55,56% implikowane, 1.80 do wygrania. W łańcuchu cztery z nich wymagają zdarzenia o 9,53% — a 5%, które bukmacher trzyma na każdym z nich, staje się 1,05⁴ − 1 = 21,55% na całym kuponie. Do zakładu nie dodano nic poza kolejnymi sposobami jego przegrania: kurs wzrósł, bo spadło prawdopodobieństwo.",
+      },
+      explainerTitle: "Dlaczego kurs rośnie szybciej niż szansa",
+      explainer: [
+        "**Kupon wielokrotny to jeden zakład z kilkoma sposobami przegrania, a nie kilka zakładów.** Kurs łączny jest iloczynem zdarzeń — 1.80 wzięte cztery razy daje 10.4976 — a prawdopodobieństwo jest iloczynem prawdopodobieństw, i tu arytmetyka przestaje być życzliwa: cztery typy, z których każdy nazwałbyś niemal wyrównanym, dają razem 9,53%. Marża działa identycznie, i to jest część, której prawie nikt nie liczy. Nie dodaje się zdarzenie po zdarzeniu, ona się **składa**: bukmacher trzymający 5% na każdym z czterech zdarzeń trzyma 1,05⁴ − 1 = 21,55% na kuponie, a przy ośmiu zdarzeniach te same 5% na zdarzenie to już 47,75%. Wypłata wygląda hojnie, bo szansa się załamała, a nie bo ktoś płaci więcej za to samo ryzyko.",
+        "**Kupony wielokrotne są najmocniej promowanym produktem w bukmacherce i najmniej korzystnym dla klienta**, a to jest ten sam fakt widziany z dwóch stron: im większa marża złożona, tym więcej bukmacher może wydać na podbicia kursu, ubezpieczenia i reklamę tego kuponu. Cienka przewaga na jednym zdarzeniu nie przeżyje pomnożenia przez trzy kolejne zdarzenia marży — te same typy jako pojedyncze płacą marżę raz każdy, czwórka płaci ją czterokrotnie. Zostaje jeszcze to, co mnożenie zakłada: **że zdarzenia są niezależne**. Dwa typy z tego samego meczu są skorelowane, więc mnożenie jest tam złym rachunkiem: zwycięstwo gospodarzy i gol ich napastnika przychodzą zwykle razem, więc para jest bardziej prawdopodobna niż mówi iloczyn, a zdarzenia, które z trudem współistnieją, są warte znacznie mniej. Dlatego bukmacherzy budują kupony z jednego meczu własnym modelem, zamiast pozwalać składać je z pojedynczych kursów — i dlatego ten kalkulator jest uczciwy przy zdarzeniach z różnych meczów.",
+      ],
+      faq: [
+        {
+          q: "Czy to działa dla kuponów z jednego meczu?",
+          a: "Nie do końca. Tutaj mnożymy, a mnożenie zakłada niezależne zdarzenia. Wyniki w obrębie jednego meczu poruszają się razem, więc realne prawdopodobieństwo pary jest inne — często wyższe niż iloczyn — i właśnie dlatego bukmacherzy wyceniają te rynki własnym modelem, a nie z pojedynczych kursów.",
+        },
+        {
+          q: "Dlaczego łączne prawdopodobieństwo jest tak niskie?",
+          a: "Bo prawdopodobieństwa się mnożą, a nie uśredniają. Cztery zdarzenia po 55,56% dają 9,53%: każde dodane zdarzenie czyni cały kupon mniej prawdopodobnym, więc łańcuch sensownych typów szybko staje się nieprawdopodobnym zakładem. Kurs rośnie w odpowiedzi, a razem z kursem rośnie nazbierana marża.",
+        },
+        {
+          q: "Czym dokładnie jest marża złożona?",
+          a: "Częścią bukmachera po tym, jak każde zdarzenie ją pomnożyło. Wpisz, ile kosztuje jedno zdarzenie — około 5% na wąskim rynku dwudrożnym — a kalkulator ją złoży: jeden plus marża, podniesione do liczby zdarzeń, minus jeden. Cztery zdarzenia po 5% kosztują 21,55%, osiem zdarzeń 47,75%.",
+        },
+        {
+          q: "Cztery pojedyncze czy jedna czwórka?",
+          a: "Dla kogoś, kto gra z przewagą, cztery pojedyncze: te same typy płacą marżę raz każdy, zamiast ją mnożyć, a jedno pudło kosztuje jeden zakład, nie cały kupon. Kupon wielokrotny kupuje wariancję — małą szansę na dużą wypłatę — a ceną tej wariancji jest marża złożona.",
+        },
+      ],
+    },
   },
 };
 

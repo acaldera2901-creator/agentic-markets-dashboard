@@ -402,6 +402,66 @@ const tr: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Kombine Kupon Hesaplayıcı — birleşik oran, gerçek olasılık ve bileşik marj | BetRedge",
+      metaDescription:
+        "Ücretsiz kombine hesaplayıcı: her ayağı gir, birleşik oranı, kuponun gerçekte istediği olasılığı ve şirketin marjının ayak ayak nasıl bileşiklendiğini gör.",
+      h1: "Kombine kupon hesaplayıcı",
+      lede:
+        "Eklediğin her ayak oranı çarpar — ve onunla birlikte şirketin aldığı payı da çarpar. Kupon yatmadan önce iki sayı da burada.",
+      labels: {
+        inputTitle: "Ayaklar",
+        leg: "Ayak",
+        addLeg: "Ayak ekle",
+        removeLeg: "Çıkar",
+        marginPerLeg: "Ayak başına şirket marjı (%)",
+        resultTitle: "Kombine ne değerde",
+        combinedOdds: "Birleşik oran",
+        impliedProb: "Tutma olasılığı",
+        compoundMargin: "Bileşik marj",
+        verdict:
+          "Çarpmak, ayakların bağımsız olduğunu varsayar. Aynı maçtan iki seçim bağımsız değildir: gerçek olasılıkları genelde çarpımdan yüksektir, şirketler de bu yüzden aynı maç kombinelerini kendi modelleriyle fiyatlar.",
+        hint: "Ayak başına bir ondalık oran, en fazla sekiz. Ayak marjı sayı olarak girilir: 5, %5 demektir — dar bir iki yönlü pazarın tuttuğu paya yakın.",
+      },
+      takeaway:
+        "Şirketin aldığı pay ayaklar boyunca toplanmaz, bileşiklenir — 1.80 oranlı dört ayak neredeyse başa baş dört bahis gibi görünür ve %9,53 olasılıklı tek bir olaydır.",
+      example: {
+        title: "1.80 oranlı dört ayak, %9,53 olasılıklı tek bahis",
+        rows: [
+          { label: "Ayaklar", value: "4 × 1.80" },
+          { label: "Birleşik oran", value: "10.50" },
+          { label: "Tutma olasılığı", value: "%9,53" },
+          { label: "Ayak başına marj", value: "%5" },
+          { label: "Bileşik marj", value: "%21,55" },
+        ],
+        note:
+          "Tek başına her ayak, kimsenin üzerinde durmadığı bahistir: %55,56 örtük olasılık, kazanınca 1.80. Zincirlendiğinde dördü birlikte %9,53 olasılıklı bir olay ister — ve şirketin her ayakta tuttuğu %5, kuponda 1,05⁴ − 1 = %21,55 olur. Bahse kaybetmenin yeni yollarından başka bir şey eklenmedi: oran yükseldi çünkü olasılık düştü.",
+      },
+      explainerTitle: "Oran neden olasılıktan hızlı büyür",
+      explainer: [
+        "**Kombine, birkaç bahis değil, kaybetmenin birkaç yolu olan tek bir bahistir.** Birleşik oran ayakların çarpımıdır — 1.80 dört kez alındığında 10.4976 eder — olasılık ise olasılıkların çarpımıdır ve aritmetiğin dostluğu tam orada biter: tek tek neredeyse başa baş diyeceğin dört seçim birlikte %9,53 verir. Marj da aynı şekilde davranır ve bu, neredeyse kimsenin hesaba katmadığı kısımdır. Ayak ayak toplanmaz, **bileşiklenir**: dört ayağın her birinde %5 tutan bir şirket kuponda 1,05⁴ − 1 = %21,55 tutar; sekiz ayakta aynı ayak başına %5 artık %47,75 olmuştur. Ödeme cömert görünür çünkü olasılık çöktü, kimse aynı riske daha fazla ödediği için değil.",
+        "**Kombineler bahsin en çok tanıtılan ürünü ve müşteri için en elverişsiz olanıdır**; bu iki cümle aynı olgunun iki yüzüdür: bileşik marj ne kadar büyükse, şirket o kupona oran artışı, iade sigortası ve reklam için o kadar çok harcayabilir. Bir ayaktaki ince avantaj, üç ayak daha marjla çarpılmaya dayanmaz — aynı seçimler tekli oynandığında marjı birer kez öder, dörtlü kombine onu dört kez öder. Bir de çarpmanın varsaydığı şey kalır: **ayakların bağımsızlığı**. Aynı maçtan iki seçim ilişkilidir, dolayısıyla orada çarpmak yanlış hesaptır: ev sahibinin kazanması ile onun santrforunun gol atması genelde birlikte gelir, yani ikilinin olasılığı çarpımın söylediğinden yüksektir; birbirini neredeyse dışlayan ayaklar ise çok daha az değerlidir. Şirketler bu yüzden aynı maç kombinelerini teklilerden kurmana izin vermek yerine kendi modelleriyle kurar — ve bu hesaplayıcı da bu yüzden farklı maçlardan ayaklarda dürüsttür.",
+      ],
+      faq: [
+        {
+          q: "Aynı maç kombineleri için geçerli mi?",
+          a: "Tam olarak değil. Burada çarpma yapılır ve çarpmak ayakların bağımsız olduğunu varsayar. Aynı maçın sonuçları birlikte hareket eder, yani ikilinin gerçek olasılığı farklıdır — sıklıkla çarpımdan yüksek. Şirketler bu pazarları tam bu yüzden teklilerden değil, kendi modelleriyle fiyatlar.",
+        },
+        {
+          q: "Birleşik olasılık neden bu kadar düşük?",
+          a: "Çünkü olasılıklar ortalanmaz, çarpılır. %55,56 oranındaki dört ayak %9,53 verir: eklediğin her ayak tüm kuponu daha olanaksız kılar, makul seçimlerden oluşan bir zincir hızla olanaksız bir bahse döner. Oran buna göre yükselir ve oranla birlikte birikmiş marj da yükselir.",
+        },
+        {
+          q: "Bileşik marj tam olarak nedir?",
+          a: "Her ayak onu çarptıktan sonra şirkete kalan pay. Tek bir ayağın sana kaça geldiğini gir — dar bir iki yönlü pazarda yaklaşık %5 — hesaplayıcı onu bileşikler: bir artı marj, ayak sayısı kuvvetine, eksi bir. %5 ile dört ayak %21,55, sekiz ayak %47,75 eder.",
+        },
+        {
+          q: "Dört tekli mi, bir dörtlü kombine mi?",
+          a: "Avantajla oynayan için dört tekli: aynı dört seçim marjı çarpmak yerine birer kez öder ve yanlış bir ayak tüm kupon yerine tek bir bahse mal olur. Kombine varyans satın alır — büyük bir ödemenin küçük şansı — ve bu varyansın fiyatı bileşik marjdır.",
+        },
+      ],
+    },
   },
 };
 

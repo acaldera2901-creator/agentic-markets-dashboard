@@ -414,6 +414,66 @@ const en: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Parlay Calculator — Combined Odds, Real Probability, Compound Margin | BetRedge",
+      metaDescription:
+        "Free parlay calculator: enter each leg to get the combined price, the probability the accumulator actually needs, and how the bookmaker margin compounds leg by leg.",
+      h1: "Parlay calculator",
+      lede:
+        "Every leg you add multiplies the price — and multiplies the bookmaker's cut along with it. Here are both numbers before the bet is placed.",
+      labels: {
+        inputTitle: "The legs",
+        leg: "Leg",
+        addLeg: "Add leg",
+        removeLeg: "Remove",
+        marginPerLeg: "Bookmaker margin per leg (%)",
+        resultTitle: "What the accumulator is worth",
+        combinedOdds: "Combined price",
+        impliedProb: "Probability it lands",
+        compoundMargin: "Compound margin",
+        verdict:
+          "Multiplying assumes the legs are independent. Two selections from the same match are not: their real chance is usually higher than the product, which is why books price same-game multiples with a model of their own.",
+        hint: "One decimal price per leg, up to eight. The margin per leg goes in as a number: 5 means 5%, roughly what a tight two-way market holds.",
+      },
+      takeaway:
+        "The bookmaker's cut does not add up across the legs, it compounds — four legs at 1.80 look like four near-even bets and are a single 9.53% event.",
+      example: {
+        title: "Four legs at 1.80, one bet at 9.53%",
+        rows: [
+          { label: "Legs", value: "4 × 1.80" },
+          { label: "Combined price", value: "10.50" },
+          { label: "Probability it lands", value: "9.53%" },
+          { label: "Margin per leg", value: "5%" },
+          { label: "Compound margin", value: "21.55%" },
+        ],
+        note:
+          "On its own each leg is the kind of bet nobody thinks twice about: 55.56% implied, 1.80 to win. Chained, the four of them need a 9.53% event — and the 5% the book holds on each leg becomes 1.05⁴ − 1 = 21.55% on the accumulator. Nothing was added to the bet except more ways to lose it: the price went up because the chance went down.",
+      },
+      explainerTitle: "Why the price grows faster than the chance",
+      explainer: [
+        "**A parlay is one bet with several ways to lose, not several bets.** The combined price is the product of the legs — 1.80 taken four times is 10.4976 — and the probability is the product of the probabilities, which is where the arithmetic stops being friendly: four selections you would each call close to a coin flip come to 9.53%. The margin behaves the same way, and that is the part almost nobody prices in. It does not add up leg by leg, it **compounds**: a book holding 5% on each of four legs holds 1.05⁴ − 1 = 21.55% on the accumulator, and by eight legs that same 5% per leg has become 47.75%. The payout looks generous because the chance collapsed, not because anyone is paying you more for the same risk.",
+        "**Accumulators are the most heavily promoted product in betting and the least favourable one to the customer**, and those are the same fact seen from two sides: the larger the compounded margin, the more a bookmaker can afford to boost, insure and advertise the bet. A thin edge on one leg does not survive being multiplied by three more legs of margin — the same selections as singles pay the margin once each, the four-fold pays it four times over. Then there is what the multiplication assumes: **that the legs are independent**. Two selections from the same match are correlated, so multiplying is the wrong sum for them: a home win and its striker scoring tend to arrive together, so the pair is likelier than the product says, while legs that can barely coexist are worth far less. That is why books build same-game multiples with their own model instead of letting you assemble them out of the singles — and why this calculator is honest for legs from different matches.",
+      ],
+      faq: [
+        {
+          q: "Does this work for same-game parlays?",
+          a: "Not exactly. It multiplies, and multiplying assumes the legs are independent. Outcomes inside one match usually move together, so the true chance of the pair is different — often higher than the product — which is why bookmakers price those markets with their own model rather than from the singles.",
+        },
+        {
+          q: "Why is the combined probability so low?",
+          a: "Because probabilities multiply instead of averaging. Four legs at 55.56% come to 9.53%: every leg you add makes the whole bet less likely, so a chain of plausible selections quickly becomes an unlikely bet. The price rises to match it, and the accumulated margin rises with the price.",
+        },
+        {
+          q: "What exactly is the compound margin?",
+          a: "The bookmaker's cut after every leg has multiplied it. Enter what one leg costs you — around 5% on a tight two-way market — and the calculator compounds it: one plus the margin, raised to the number of legs, minus one. Four legs at 5% cost 21.55%, eight legs cost 47.75%.",
+        },
+        {
+          q: "Are four singles better than a four-fold?",
+          a: "For anyone betting on an edge, yes: the same four selections as singles pay the margin once each instead of multiplying it, and one wrong leg costs one bet rather than the whole ticket. A parlay buys variance — a small chance of a large return — and the price of that variance is the compounded margin.",
+        },
+      ],
+    },
   },
 };
 

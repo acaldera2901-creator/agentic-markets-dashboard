@@ -402,6 +402,66 @@ const es: ToolsCopy = {
         },
       ],
     },
+
+    "parlay-calculator": {
+      metaTitle: "Calculadora de combinadas — cuota combinada, probabilidad real y margen compuesto | BetRedge",
+      metaDescription:
+        "Calculadora de combinadas gratis: introduce cada pata y obtén la cuota combinada, la probabilidad que el boleto necesita de verdad y cómo se compone el margen de la casa.",
+      h1: "Calculadora de combinadas",
+      lede:
+        "Cada pata que añades multiplica la cuota — y multiplica con ella la parte que se queda la casa. Aquí están los dos números antes de apostar.",
+      labels: {
+        inputTitle: "Las patas",
+        leg: "Pata",
+        addLeg: "Añadir pata",
+        removeLeg: "Quitar",
+        marginPerLeg: "Margen de la casa por pata (%)",
+        resultTitle: "Lo que vale la combinada",
+        combinedOdds: "Cuota combinada",
+        impliedProb: "Probabilidad de que entre",
+        compoundMargin: "Margen compuesto",
+        verdict:
+          "Multiplicar asume que las patas son independientes. Dos selecciones del mismo partido no lo son: su probabilidad real suele ser mayor que el producto, y por eso las casas cotizan las combinadas del mismo partido con un modelo propio.",
+        hint: "Una cuota decimal por pata, hasta ocho. El margen por pata se escribe como número: 5 significa 5%, más o menos lo que retiene un mercado a dos salidas ajustado.",
+      },
+      takeaway:
+        "La parte que retiene la casa no se suma entre las patas, se compone — cuatro patas a 1.80 parecen cuatro apuestas casi igualadas y son un único evento del 9,53%.",
+      example: {
+        title: "Cuatro patas a 1.80, una apuesta del 9,53%",
+        rows: [
+          { label: "Patas", value: "4 × 1.80" },
+          { label: "Cuota combinada", value: "10.50" },
+          { label: "Probabilidad de que entre", value: "9,53%" },
+          { label: "Margen por pata", value: "5%" },
+          { label: "Margen compuesto", value: "21,55%" },
+        ],
+        note:
+          "Por separado, cada pata es la apuesta que nadie se para a pensar: 55,56% implícito, 1.80 de premio. Encadenadas, las cuatro exigen un evento del 9,53% — y el 5% que la casa retiene en cada pata se convierte en 1,05⁴ − 1 = 21,55% sobre la combinada. A la apuesta no se le añadió nada salvo más formas de perderla: la cuota subió porque la probabilidad bajó.",
+      },
+      explainerTitle: "Por qué la cuota crece más rápido que la probabilidad",
+      explainer: [
+        "**Una combinada es una sola apuesta con varias formas de perder, no varias apuestas.** La cuota combinada es el producto de las patas — 1.80 cuatro veces da 10.4976 — y la probabilidad es el producto de las probabilidades, y ahí la aritmética deja de ser amable: cuatro selecciones que llamarías casi igualadas suman 9,53%. El margen se comporta igual, y esa es la parte que casi nadie cuenta. No se suma pata por pata, se **compone**: una casa que retiene el 5% en cada una de cuatro patas retiene 1,05⁴ − 1 = 21,55% sobre la combinada, y con ocho patas ese mismo 5% por pata ya es 47,75%. El premio parece generoso porque la probabilidad se hundió, no porque alguien pague más por el mismo riesgo.",
+        "**Las combinadas son el producto más promocionado de las apuestas y el menos favorable para el cliente**, y son el mismo hecho visto por los dos lados: cuanto mayor es el margen compuesto, más puede permitirse una casa mejorar, asegurar y anunciar ese boleto. Una ventaja fina en una pata no sobrevive a ser multiplicada por tres patas más de margen — las mismas selecciones como simples pagan el margen una vez cada una, la cuádruple lo paga cuatro veces. Y queda lo que la multiplicación asume: **que las patas son independientes**. Dos selecciones del mismo partido están correlacionadas, así que multiplicar es la cuenta equivocada: la victoria local y el gol de su delantero tienden a llegar juntas, de modo que la pareja es más probable de lo que dice el producto, mientras que patas que apenas conviven valen mucho menos. Por eso las casas construyen las combinadas del mismo partido con su propio modelo en lugar de dejar que las montes desde las simples — y por eso esta calculadora es honesta con patas de partidos distintos.",
+      ],
+      faq: [
+        {
+          q: "¿Sirve para combinadas del mismo partido?",
+          a: "No exactamente. Aquí se multiplica, y multiplicar asume patas independientes. Los resultados dentro de un mismo partido se mueven juntos, así que la probabilidad real de la pareja es distinta — a menudo mayor que el producto — y por eso las casas cotizan esos mercados con su propio modelo y no desde las simples.",
+        },
+        {
+          q: "¿Por qué la probabilidad combinada es tan baja?",
+          a: "Porque las probabilidades se multiplican, no se promedian. Cuatro patas al 55,56% dan 9,53%: cada pata que añades hace menos probable el boleto entero, así que una cadena de selecciones plausibles se convierte rápido en una apuesta improbable. La cuota sube para compensar, y con la cuota sube el margen acumulado.",
+        },
+        {
+          q: "¿Qué es exactamente el margen compuesto?",
+          a: "La parte que retiene la casa después de que cada pata la haya multiplicado. Introduce lo que te cuesta una pata — alrededor del 5% en un mercado a dos salidas ajustado — y la calculadora la compone: uno más el margen, elevado al número de patas, menos uno. Cuatro patas al 5% cuestan 21,55%, ocho patas 47,75%.",
+        },
+        {
+          q: "¿Son mejores cuatro simples que una cuádruple?",
+          a: "Para quien apuesta con ventaja, sí: las mismas cuatro selecciones como simples pagan el margen una vez cada una en lugar de multiplicarlo, y una pata fallada cuesta una apuesta y no el boleto entero. La combinada compra varianza — poca probabilidad de un premio grande — y el precio de esa varianza es el margen compuesto.",
+        },
+      ],
+    },
   },
 };
 
