@@ -462,6 +462,62 @@ const sv: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "ROI-kalkylator för betting — avkastning på kassan | BetRedge",
+      metaDescription:
+        "Gratis ROI-kalkylator för betting: fyll i kapital och vinst för att se avkastningen på kassan, slutkapitalet och varför samma vinst blir 4 % i yield.",
+      h1: "ROI-kalkylator",
+      lede:
+        "Vad kassan gav under en period — och varför samma vinst på 400 är 40 % ROI här och 4 % yield på den andra sidan.",
+      labels: {
+        inputTitle: "Kapital och resultat",
+        capital: "Kapital",
+        profit: "Vinst",
+        resultTitle: "Avkastning på det kapitalet",
+        roi: "ROI",
+        endingCapital: "Kapital efteråt",
+        hint: "Vinsten fylls i netto och får vara negativ: -250 är en förlustperiod. Kapitalet är kassan du satte på spel, inte den totala omsättningen.",
+        verdict:
+          "ROI beror helt på nämnaren, så deklarera den: 400 på en kassa om 1 000 är 40 %, samma 400 mot 10 000 i omsättning är 4 % i yield. Ingen av siffrorna säger särskilt mycket utan perioden och antalet spel bakom den.",
+      },
+      takeaway:
+        "ROI säger vad kassan gav. Den säger inte om strategin är bra, för samma 40 % kan komma från 200 spel eller från en enda tursam lördag.",
+      example: {
+        title: "400 i vinst på en kassa om 1 000",
+        rows: [
+          { label: "Kapital", value: "1 000" },
+          { label: "Vinst under perioden", value: "+400" },
+          { label: "ROI", value: "+40,00 %" },
+          { label: "Kapital efteråt", value: "1 400" },
+          { label: "Samma 400 mot 10 000 i omsättning", value: "yield +4,00 %" },
+        ],
+        note:
+          "Båda procentsatserna beskriver ett och samma resultat. Att nå +40,00 % på kassan krävde 200 spel om 50 — 10 000 i omsättning, tio gånger kapitalet — och 4,00 % av den omsättningen är samma 400. Vänd kassan två gånger i stället för tio och yielden bakom 40 % ROI måste vara 20 %, vilket nästan ingen håller uppe.",
+      },
+      explainerTitle: "Vinst mätt mot pengarna som stod på spel",
+      explainer: [
+        "**ROI är vinsten delad med pengarna du satte på spel**, och hela svårigheten sitter i andra halvan av den meningen. En kassa om 1 000 som avslutar en säsong 400 upp har gett 40,00 %, och den siffran går att jämföra hederligt med allt annat du kunde ha gjort med samma 1 000. Vad den inte kan beskriva är spelandet. En avkastning på 40 % säger ingenting om hur många spel det krävde, över hur lång tid, eller hur nära noll saldot kom på vägen — och det är de tre sakerna som avgör om det händer igen. Så **deklarera nämnaren innan du citerar siffran**: startkassa, medelsaldo och totala insättningar ger tre olika procentsatser ur en identisk uppsättning spel, och den mest smickrande är alltid den minsta.",
+        "**Samma 400 i vinst är 40 % ROI och 4 % yield på samma gång**, och att veta vilken av dem du håller i handen är nästan hela värdet av de två sidorna. ROI mäter mot kapitalet, yield mot omsättningen — summan av varje lagd insats. Vårt exempel kom dit med 200 spel om 50, så 10 000 gick genom kassan: tio gånger kapitalet, och 4,00 % av det är precis de 400. **Den multiplikatorn är hela bryggan mellan de två talen**, och det är därför ROI ensam smickrar den som spelar mycket. Den som vänder en kassa om 1 000 tio gånger med 4 % yield och den som vänder den två gånger med 20 % yield rapporterar båda 40 %, och bara ett av dem går att upprepa. Kvaliteten per spel mäter du i yield-kalkylatorn; behåll ROI för det den verkligen är bra på: att jämföra vad pengarna gav mot alternativen.",
+      ],
+      faq: [
+        {
+          q: "Vad är skillnaden mellan ROI och yield?",
+          a: "ROI delar vinsten med kapitalet, yield delar den med omsättningen — summan av alla insatser. Samma 400 i vinst är 40,00 % av en kassa om 1 000 och 4,00 % av 10 000 i omsättning. ROI säger vad pengarna gav, yield säger hur bra spelen var, och förhållandet mellan dem är hur många gånger du vände kassan.",
+        },
+        {
+          q: "Vilket kapital ska stå i nämnaren?",
+          a: "Det du kan deklarera och sedan hålla fast — vanligtvis startkassan. Toppsaldo, medelsaldo och totala insättningar ger olika procentsatser ur samma spel, så siffran betyder något bara vid sidan av sin definition. Att fylla på kontot mitt i perioden utan att deklarera nämnaren igen är det vanligaste sättet att blåsa upp en ROI.",
+        },
+        {
+          q: "Är 40 % ROI bra?",
+          a: "Det beror på perioden och antalet spel. Över en säsong och 200 spel är det ett starkt men rimligt resultat. Samma 40 % över tjugo spel ligger väl inom det intervall slumpen skapar på egen hand, och 40 % på en vecka betyder oftast att insatserna var stora i förhållande till kassan, inte att kanten var stor.",
+        },
+        {
+          q: "Kan ROI vara negativ?",
+          a: "Ja, och kalkylatorn visar det i stället för att dölja det: en förlust på 250 av en kassa om 1 000 är -25,00 %. Återhämtningen är inte symmetrisk — efter -25 % behövs +33,33 % på det som är kvar för att komma tillbaka till noll — och därför förtjänar nedgången lika mycket uppmärksamhet som avkastningen.",
+        },
+      ],
+    },
   },
 };
 

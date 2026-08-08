@@ -462,6 +462,62 @@ const es: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "Calculadora de ROI para apuestas — retorno sobre el capital | BetRedge",
+      metaDescription:
+        "Calculadora de ROI gratuita para apuestas: introduce capital y beneficio para ver el retorno del bankroll, el capital final y por qué el mismo beneficio es un yield del 4%.",
+      h1: "Calculadora de ROI",
+      lede:
+        "Lo que rindió el bankroll en un periodo — y por qué el mismo beneficio de 400 aquí es un ROI del 40% y en la otra página un yield del 4%.",
+      labels: {
+        inputTitle: "Capital y resultado",
+        capital: "Capital",
+        profit: "Beneficio",
+        resultTitle: "Retorno sobre ese capital",
+        roi: "ROI",
+        endingCapital: "Capital final",
+        hint: "El beneficio va neto y puede ser negativo: -250 es un periodo en pérdidas. El capital es el bankroll que pusiste en riesgo, no el total apostado.",
+        verdict:
+          "El ROI depende por completo del denominador, así que decláralo: 400 sobre un bankroll de 1.000 es el 40%, ese mismo 400 sobre 10.000 apostados es un yield del 4%. Ninguna de las dos cifras dice mucho sin el periodo y el número de apuestas que hay detrás.",
+      },
+      takeaway:
+        "El ROI dice lo que rindió el bankroll. No dice si la estrategia es buena, porque el mismo 40% puede venir de 200 apuestas o de un sábado afortunado.",
+      example: {
+        title: "400 de beneficio sobre un bankroll de 1.000",
+        rows: [
+          { label: "Capital", value: "1.000" },
+          { label: "Beneficio del periodo", value: "+400" },
+          { label: "ROI", value: "+40,00%" },
+          { label: "Capital final", value: "1.400" },
+          { label: "El mismo 400 sobre 10.000 apostados", value: "yield +4,00%" },
+        ],
+        note:
+          "Los dos porcentajes describen un único resultado idéntico. Llegar al +40,00% del bankroll costó 200 apuestas de 50 — 10.000 de volumen apostado, diez veces el capital — y el 4,00% de ese volumen es ese mismo 400. Gira el bankroll dos veces en lugar de diez y el yield detrás de un ROI del 40% tendría que ser del 20%, algo que casi nadie sostiene.",
+      },
+      explainerTitle: "El beneficio medido sobre el dinero en riesgo",
+      explainer: [
+        "**El ROI es el beneficio dividido por el dinero que pusiste en riesgo**, y toda la dificultad está en la segunda mitad de la frase. Un bankroll de 1.000 que termina la temporada 400 arriba rindió el 40,00%, y esa cifra se puede comparar honestamente con cualquier otra cosa que hubieras hecho con esos 1.000. Lo que no puede describir son las apuestas. Un retorno del 40% no dice cuántas apuestas hicieron falta, en cuánto tiempo, ni cuánto se acercó el saldo a cero por el camino — y esas son las tres cosas que deciden si vuelve a pasar. Así que **declara el denominador antes de citar el número**: bankroll inicial, saldo medio y total depositado dan tres porcentajes distintos con el mismo conjunto de apuestas, y el que queda mejor siempre es el más pequeño.",
+        "**El mismo 400 de beneficio es un ROI del 40% y un yield del 4% a la vez**, y saber cuál tienes en la mano es casi todo el valor de las dos páginas. El ROI mide contra el capital, el yield contra el volumen apostado — la suma de cada stake colocado. Nuestro ejemplo llegó ahí con 200 apuestas de 50, así que pasaron 10.000 por el bankroll: diez veces el capital, y el 4,00% de esa cifra es ese 400. **Ese multiplicador es todo el puente entre los dos números**, y explica por qué el ROI solo favorece a quien apuesta mucho. Quien gira un bankroll de 1.000 diez veces con un yield del 4% y quien lo gira dos veces con un yield del 20% declaran los dos un 40%, y solo uno de los dos es repetible. La calidad por apuesta se mide en la calculadora de yield; el ROI guárdalo para lo que sirve de verdad: comparar lo que rindió ese dinero frente a las alternativas.",
+      ],
+      faq: [
+        {
+          q: "¿Qué diferencia hay entre ROI y yield?",
+          a: "El ROI divide el beneficio por el capital, el yield lo divide por el volumen apostado — la suma de todos los stakes. El mismo 400 de beneficio es el 40,00% de un bankroll de 1.000 y el 4,00% de 10.000 apostados. El ROI dice lo que rindió el dinero, el yield lo buenas que eran las apuestas, y la razón entre ambos es cuántas veces giraste el bankroll.",
+        },
+        {
+          q: "¿Qué capital debo usar como denominador?",
+          a: "El que puedas declarar y luego mantener fijo: normalmente el bankroll inicial. Saldo máximo, saldo medio y total depositado producen porcentajes distintos con las mismas apuestas, así que la cifra solo significa algo junto a su definición. Recargar la cuenta a mitad del periodo sin volver a declarar el denominador es la forma más común de inflar un ROI.",
+        },
+        {
+          q: "¿Un ROI del 40% es bueno?",
+          a: "Depende del periodo y del número de apuestas. Con una temporada y 200 apuestas es un resultado fuerte pero plausible. Ese mismo 40% en veinte apuestas cae de lleno en el rango que produce el azar por sí solo, y un 40% en una semana suele significar que los stakes eran grandes respecto al bankroll, no que la ventaja lo fuera.",
+        },
+        {
+          q: "¿El ROI puede ser negativo?",
+          a: "Sí, y la calculadora lo muestra en lugar de esconderlo: una pérdida de 250 sobre un bankroll de 1.000 es -25,00%. La recuperación no es simétrica — tras un -25% necesitas un +33,33% sobre lo que queda para volver al punto de partida — y por eso el drawdown merece tanta atención como el retorno.",
+        },
+      ],
+    },
   },
 };
 

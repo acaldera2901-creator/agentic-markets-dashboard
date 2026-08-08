@@ -462,6 +462,62 @@ const nl: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "ROI-calculator voor wedden — rendement op je bankroll | BetRedge",
+      metaDescription:
+        "Gratis ROI-calculator voor wedden: vul kapitaal en winst in en zie het rendement op je bankroll, het eindkapitaal en waarom dezelfde winst een yield van 4% is.",
+      h1: "ROI-calculator",
+      lede:
+        "Wat de bankroll over een periode opbracht — en waarom dezelfde 400 winst hier 40% ROI is en op de andere pagina 4% yield.",
+      labels: {
+        inputTitle: "Kapitaal en resultaat",
+        capital: "Kapitaal",
+        profit: "Winst",
+        resultTitle: "Rendement op dat kapitaal",
+        roi: "ROI",
+        endingCapital: "Kapitaal daarna",
+        hint: "De winst gaat er netto in en mag negatief zijn: -250 is een verliesperiode. Kapitaal is de bankroll die je in risico zette, niet het totaal dat je inzette.",
+        verdict:
+          "De ROI hangt volledig van de noemer af, dus benoem hem: 400 op een bankroll van 1.000 is 40%, dezelfde 400 op 10.000 ingezet is 4% yield. Geen van beide cijfers zegt veel zonder de periode en het aantal weddenschappen erachter.",
+      },
+      takeaway:
+        "De ROI zegt wat de bankroll opbracht. Hij zegt niet of de strategie goed is, want dezelfde 40% kan uit 200 weddenschappen komen of uit één gelukkige zaterdag.",
+      example: {
+        title: "400 winst op een bankroll van 1.000",
+        rows: [
+          { label: "Kapitaal", value: "1.000" },
+          { label: "Winst over de periode", value: "+400" },
+          { label: "ROI", value: "+40,00%" },
+          { label: "Kapitaal daarna", value: "1.400" },
+          { label: "Dezelfde 400 op 10.000 ingezet", value: "yield +4,00%" },
+        ],
+        note:
+          "Beide percentages beschrijven één identiek resultaat. Die +40,00% op de bankroll kostte 200 weddenschappen van 50 — 10.000 omzet, tien keer het kapitaal — en 4,00% van die omzet is diezelfde 400. Draai de bankroll twee keer om in plaats van tien keer en de yield achter 40% ROI zou 20% moeten zijn, wat bijna niemand volhoudt.",
+      },
+      explainerTitle: "Winst gemeten tegen het geld in risico",
+      explainer: [
+        "**ROI is winst gedeeld door het geld dat je in risico zette**, en alle moeilijkheid zit in de tweede helft van die zin. Een bankroll van 1.000 die een seizoen 400 hoger afsluit heeft 40,00% opgebracht, en dat cijfer valt eerlijk te vergelijken met alles wat je anders met diezelfde 1.000 had gedaan. Wat het niet kan beschrijven zijn de weddenschappen. Een rendement van 40% zegt niets over hoeveel weddenschappen ervoor nodig waren, over hoeveel tijd, of hoe dicht het saldo onderweg bij nul kwam — en dat zijn precies de drie dingen die bepalen of het opnieuw gebeurt. Dus **benoem de noemer voordat je het cijfer noemt**: startbankroll, gemiddeld saldo en totaal gestort geven drie verschillende percentages uit één identieke reeks weddenschappen, en het vleiendste is altijd het kleinste.",
+        "**Dezelfde 400 winst is tegelijk 40% ROI en 4% yield**, en weten welke van de twee je in handen hebt is bijna de hele waarde van beide pagina's. ROI meet tegen kapitaal, yield tegen omzet — de som van elke geplaatste inzet. Ons voorbeeld kwam daar met 200 weddenschappen van 50, dus er ging 10.000 door de bankroll: tien keer het kapitaal, en 4,00% daarvan is precies die 400. **Die vermenigvuldiger is de hele brug tussen de twee cijfers**, en daarom vleit ROI op zichzelf wie veel speelt. Wie een bankroll van 1.000 tien keer omdraait met 4% yield en wie hem twee keer omdraait met 20% yield rapporteren beiden 40%, en maar één daarvan is herhaalbaar. De kwaliteit per weddenschap meet je met de yield-calculator; houd ROI voor waar hij echt goed in is: vergelijken wat dat geld opbracht tegenover de alternatieven.",
+      ],
+      faq: [
+        {
+          q: "Wat is het verschil tussen ROI en yield?",
+          a: "ROI deelt de winst door het kapitaal, yield deelt hem door de omzet — de som van alle inzetten. Dezelfde 400 winst is 40,00% van een bankroll van 1.000 en 4,00% van 10.000 ingezet. ROI zegt wat het geld opbracht, yield hoe goed de weddenschappen waren, en de verhouding tussen beide is hoe vaak je de bankroll hebt omgedraaid.",
+        },
+        {
+          q: "Welk kapitaal hoort in de noemer?",
+          a: "Het kapitaal dat je kunt benoemen en daarna vasthouden — meestal de startbankroll. Hoogste saldo, gemiddeld saldo en totaal gestort leveren uit dezelfde weddenschappen verschillende percentages op, dus het cijfer betekent alleen iets naast zijn definitie. Halverwege de periode bijstorten zonder de noemer opnieuw te benoemen is de gewoonste manier om een ROI op te blazen.",
+        },
+        {
+          q: "Is 40% ROI goed?",
+          a: "Dat hangt van de periode en het aantal weddenschappen af. Over een seizoen met 200 weddenschappen is het een sterk maar plausibel resultaat. Dezelfde 40% over twintig weddenschappen valt ruim binnen wat het toeval zelf produceert, en 40% in een week betekent meestal dat de inzetten groot waren ten opzichte van de bankroll, niet dat de edge groot was.",
+        },
+        {
+          q: "Kan de ROI negatief zijn?",
+          a: "Ja, en de calculator laat het zien in plaats van het te verbergen: 250 verlies op een bankroll van 1.000 is -25,00%. Herstel is niet symmetrisch — na -25% heb je +33,33% nodig op wat er over is om weer op nul te komen — en daarom verdient de drawdown net zoveel aandacht als het rendement.",
+        },
+      ],
+    },
   },
 };
 

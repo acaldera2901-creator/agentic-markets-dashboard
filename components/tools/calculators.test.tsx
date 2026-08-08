@@ -297,3 +297,44 @@ describe("parlay calculator", () => {
     expect(screen.getByTestId("out-parlay-margin").textContent).toBe("—");
   });
 });
+
+describe("roi calculator", () => {
+  it("1000 di capitale e 400 di profitto danno +40.00% e cassa a 1400", () => {
+    // I default SONO l'esempio lavorato della pagina: nessuna digitazione.
+    mount("roi-calculator");
+    expect(screen.getByTestId("out-roi").textContent).toBe("+40.00%");
+    expect(screen.getByTestId("out-roi-ending").textContent).toBe("1400.00");
+  });
+
+  it("un periodo in perdita mostra il negativo, non il trattino", async () => {
+    const user = userEvent.setup();
+    mount("roi-calculator");
+    const profit = screen.getByLabelText("Profit");
+    await user.clear(profit);
+    await user.type(profit, "-250");
+    expect(screen.getByTestId("out-roi").textContent).toBe("-25.00%");
+    expect(screen.getByTestId("out-roi-ending").textContent).toBe("750.00");
+  });
+
+  it("profitto zero è 0.00%, non un valore mancante", async () => {
+    const user = userEvent.setup();
+    mount("roi-calculator");
+    const profit = screen.getByLabelText("Profit");
+    await user.clear(profit);
+    await user.type(profit, "0");
+    expect(screen.getByTestId("out-roi").textContent).toBe("+0.00%");
+  });
+
+  it("capitale a zero o spazzatura non produce Infinity né NaN", async () => {
+    const user = userEvent.setup();
+    mount("roi-calculator");
+    const capital = screen.getByLabelText("Capital");
+    await user.clear(capital);
+    await user.type(capital, "0");
+    expect(screen.getByTestId("out-roi").textContent).toBe("—");
+    await user.clear(capital);
+    await user.type(capital, "banana");
+    expect(screen.getByTestId("out-roi").textContent).toBe("—");
+    expect(screen.getByTestId("out-roi-ending").textContent).toBe("—");
+  });
+});

@@ -18,8 +18,8 @@ describe("registry", () => {
   // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
   // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
   // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
-  it("ha sette tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(7);
+  it("ha otto tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(8);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -216,6 +216,25 @@ describe("dizionari registrati", () => {
         // 21,6% è l'arrotondamento della vecchia pagina: qui il calcolatore
         // mostra due decimali, e l'esempio deve dire quello che si legge.
         expect(numbers, "21,6 non è quello che mostra il readout").not.toMatch(/21[.,]6[^0-9]/);
+      });
+
+      it("l'esempio del ROI porta il contrasto con lo yield, non un arrotondamento", () => {
+        // Il valore delle due pagine è il confronto: lo STESSO 400 di profitto
+        // è +40,00% su 1.000 di cassa e +4,00% su 10.000 giocati. Se una delle
+        // due cifre sparisce dalla pagina, sparisce il contenuto.
+        const t = dict.tools["roi-calculator"];
+        const numbers = [...t.example.rows.map((r) => r.value), t.example.note].join(" ");
+        expect(numbers, "manca il capitale 1.000").toMatch(/1[ .,]?000/);
+        expect(numbers, "manca il ROI 40,00%").toMatch(/40[.,]00/);
+        expect(numbers, "manca il capitale finale 1.400").toMatch(/1[ .,]?400/);
+        expect(numbers, "manca il giocato 10.000").toMatch(/10[ .,]?000/);
+        expect(numbers, "manca lo yield 4,00% del caso identico").toMatch(/4[.,]00/);
+        // Il readout mostra due decimali: "40,0%" o "4,0%" non è ciò che si legge.
+        expect(numbers, "40,0 non è quello che mostra il readout").not.toMatch(/40[.,]0(?!0)/);
+        expect(numbers, "4,0 non è quello che mostra il readout").not.toMatch(/(?<!\d)4[.,]0(?!0)/);
+        // Il rimando all'altra pagina non è decorativo: senza di lui la pagina
+        // invita a confrontare un 40% di ROI con un 4% di yield.
+        expect(t.explainer.join(" "), "l'explainer ROI non cita lo yield").toMatch(/yield/i);
       });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {

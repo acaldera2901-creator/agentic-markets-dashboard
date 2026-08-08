@@ -302,3 +302,37 @@ export function arbitrage(args: {
 
   return { impliedSum, profitPercent: 1 / impliedSum - 1, stakes, returns };
 }
+
+/** Importo scritto da un umano che PUÒ essere negativo: il profitto di un
+ *  periodo in perdita è un dato, non un errore di input. `parseAmount` di
+ *  parts.tsx rifiuta i negativi ed è giusto così per gli stake — qui serve
+ *  l'altra semantica, e vive accanto alla matematica che la consuma. */
+export function parseSignedAmount(raw: string): number | null {
+  const s = raw.trim().replace(",", ".");
+  if (!/^[+-]?\d*\.?\d+$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+// ─────────────────────────── ritorno: ROI e yield ───────────────────────
+// Due divisioni, lo stesso numeratore e due denominatori diversi: è tutta la
+// differenza fra le due metriche, e il motivo per cui vanno lette insieme.
+// Stesso 400 di profitto: su 1.000 di cassa è il 40% (ROI), su 10.000 giocati è
+// il 4% (yield). Il ponte fra i due è quante volte la cassa è stata rigirata.
+
+/** ROI: profitto sul CAPITALE impiegato (la cassa), non sul giocato.
+ *  Zero profitto è 0, non `null`: "non ho guadagnato niente" è un'informazione.
+ *  `null` è riservato al denominatore che non esiste. */
+export function roi(args: { profit: number; capital: number }): number | null {
+  const { profit, capital } = args;
+  if (!Number.isFinite(profit) || !Number.isFinite(capital) || capital <= 0) return null;
+  return profit / capital;
+}
+
+/** Yield: profitto sul TOTALE GIOCATO (turnover). È la metrica con cui si
+ *  confrontano scommettitori diversi, perché non dipende da quanta cassa hanno. */
+export function yieldPercent(args: { profit: number; turnover: number }): number | null {
+  const { profit, turnover } = args;
+  if (!Number.isFinite(profit) || !Number.isFinite(turnover) || turnover <= 0) return null;
+  return profit / turnover;
+}

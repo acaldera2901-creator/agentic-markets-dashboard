@@ -463,6 +463,62 @@ const it: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "Calcolatore ROI scommesse — ritorno sul capitale | BetRedge",
+      metaDescription:
+        "Calcolatore ROI gratuito per le scommesse: inserisci capitale e profitto e leggi il ritorno sulla cassa, il capitale finale e perché lo stesso profitto è uno yield del 4%.",
+      h1: "Calcolatore ROI",
+      lede:
+        "Quanto ha reso la cassa in un periodo — e perché lo stesso profitto di 400 qui è un ROI del 40% e sull'altra pagina uno yield del 4%.",
+      labels: {
+        inputTitle: "Capitale e risultato",
+        capital: "Capitale",
+        profit: "Profitto",
+        resultTitle: "Ritorno su quel capitale",
+        roi: "ROI",
+        endingCapital: "Capitale finale",
+        hint: "Il profitto va inserito netto e può essere negativo: -250 è un periodo in perdita. Il capitale è la cassa che hai messo a rischio, non il totale giocato.",
+        verdict:
+          "Il ROI dipende interamente dal denominatore, quindi dichiaralo: 400 su una cassa da 1.000 è il 40%, lo stesso 400 su 10.000 giocati è uno yield del 4%. Nessuno dei due numeri dice molto senza il periodo e il numero di scommesse che ci stanno dietro.",
+      },
+      takeaway:
+        "Il ROI dice quanto ha reso la cassa. Non dice se la strategia è buona, perché lo stesso 40% può venire da 200 scommesse o da un sabato fortunato.",
+      example: {
+        title: "400 di profitto su una cassa da 1.000",
+        rows: [
+          { label: "Capitale", value: "1.000" },
+          { label: "Profitto del periodo", value: "+400" },
+          { label: "ROI", value: "+40,00%" },
+          { label: "Capitale finale", value: "1.400" },
+          { label: "Lo stesso 400 su 10.000 giocati", value: "yield +4,00%" },
+        ],
+        note:
+          "Le due percentuali descrivono un solo risultato identico. Arrivare a +40,00% sulla cassa ha richiesto 200 scommesse da 50 — 10.000 di giocato, dieci volte il capitale — e il 4,00% di quel giocato è lo stesso 400. Rigira la cassa due volte invece di dieci e lo yield dietro un ROI del 40% dovrebbe essere il 20%, che quasi nessuno sostiene.",
+      },
+      explainerTitle: "Il profitto misurato sui soldi a rischio",
+      explainer: [
+        "**Il ROI è il profitto diviso i soldi che hai messo a rischio**, e tutta la difficoltà sta nella seconda metà della frase. Una cassa da 1.000 che chiude la stagione con 400 in più ha reso il 40,00%, e quella cifra si può confrontare onestamente con qualunque altra cosa avresti fatto con quei 1.000. Ciò che non può descrivere sono le scommesse. Un ritorno del 40% non dice quante giocate sono servite, in quanto tempo, né quanto la cassa si è avvicinata allo zero per strada — e sono le tre cose che decidono se ricapiterà. Quindi **dichiara il denominatore prima di citare il numero**: cassa iniziale, saldo medio e totale versato danno tre percentuali diverse dallo stesso identico insieme di scommesse, e quella che fa più bella figura è sempre la più piccola.",
+        "**Lo stesso 400 di profitto è un ROI del 40% e uno yield del 4% insieme**, e sapere quale dei due hai in mano è quasi tutto il valore delle due pagine. Il ROI misura sul capitale, lo yield sul giocato — la somma di ogni singolo stake piazzato. Nel nostro esempio ci sono volute 200 scommesse da 50, quindi 10.000 sono passati per la cassa: dieci volte il capitale, e il 4,00% di quella cifra è proprio quel 400. **Quel moltiplicatore è tutto il ponte fra i due numeri**, ed è il motivo per cui il ROI da solo fa un favore a chi gioca molto. Chi rigira una cassa da 1.000 dieci volte con uno yield del 4% e chi la rigira due volte con uno yield del 20% dichiarano entrambi il 40%, e solo uno dei due è ripetibile. La qualità per scommessa si misura sul calcolatore yield; il ROI tienilo per ciò in cui è davvero utile: confrontare quanto ha reso quel denaro rispetto alle alternative.",
+      ],
+      faq: [
+        {
+          q: "Che differenza c'è fra ROI e yield?",
+          a: "Il ROI divide il profitto per il capitale, lo yield lo divide per il giocato — la somma di tutti gli stake. Lo stesso 400 di profitto è il 40,00% di una cassa da 1.000 e il 4,00% di 10.000 giocati. Il ROI dice quanto ha reso il denaro, lo yield quanto erano buone le scommesse, e il rapporto fra i due è quante volte hai rigirato la cassa.",
+        },
+        {
+          q: "Quale capitale devo usare come denominatore?",
+          a: "Quello che sai dichiarare e poi tenere fisso: di solito la cassa iniziale. Saldo massimo, saldo medio e totale versato producono percentuali diverse dalle stesse scommesse, quindi il numero significa qualcosa solo accanto alla sua definizione. Ricaricare il conto a metà periodo senza ridichiarare il denominatore è il modo più comune di gonfiare un ROI.",
+        },
+        {
+          q: "Un ROI del 40% è buono?",
+          a: "Dipende dal periodo e dal numero di scommesse. Su una stagione e 200 giocate è un risultato forte ma plausibile. Lo stesso 40% su venti scommesse sta comodamente dentro l'intervallo che produce il caso da solo, e un 40% in una settimana di solito significa che gli stake erano grossi rispetto alla cassa, non che il vantaggio era grosso.",
+        },
+        {
+          q: "Il ROI può essere negativo?",
+          a: "Sì, e il calcolatore lo mostra invece di nasconderlo: una perdita di 250 su una cassa da 1.000 è -25,00%. Il recupero non è simmetrico — dopo un -25% serve un +33,33% su quello che resta per tornare in pari — ed è il motivo per cui il drawdown merita la stessa attenzione del ritorno.",
+        },
+      ],
+    },
   },
 };
 

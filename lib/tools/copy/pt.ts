@@ -462,6 +462,62 @@ const pt: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "Calculadora de ROI para apostas — retorno da banca | BetRedge",
+      metaDescription:
+        "Calculadora de ROI gratuita para apostas: insere capital e lucro para ver o retorno da banca, o capital final e porque o mesmo lucro é um yield de 4%.",
+      h1: "Calculadora de ROI",
+      lede:
+        "O que a banca rendeu num período — e porque o mesmo lucro de 400 é aqui um ROI de 40% e na outra página um yield de 4%.",
+      labels: {
+        inputTitle: "Capital e resultado",
+        capital: "Capital",
+        profit: "Lucro",
+        resultTitle: "Retorno sobre esse capital",
+        roi: "ROI",
+        endingCapital: "Capital final",
+        hint: "O lucro entra líquido e pode ser negativo: -250 é um período de perdas. O capital é a banca que colocaste em risco, não o total apostado.",
+        verdict:
+          "O ROI depende inteiramente do denominador, por isso declara-o: 400 numa banca de 1.000 são 40%, os mesmos 400 sobre 10.000 apostados são um yield de 4%. Nenhum dos números diz muito sem o período e o número de apostas por trás.",
+      },
+      takeaway:
+        "O ROI diz o que a banca rendeu. Não diz se a estratégia é boa, porque os mesmos 40% podem vir de 200 apostas ou de um sábado com sorte.",
+      example: {
+        title: "400 de lucro numa banca de 1.000",
+        rows: [
+          { label: "Capital", value: "1.000" },
+          { label: "Lucro do período", value: "+400" },
+          { label: "ROI", value: "+40,00%" },
+          { label: "Capital final", value: "1.400" },
+          { label: "Os mesmos 400 sobre 10.000 apostados", value: "yield +4,00%" },
+        ],
+        note:
+          "As duas percentagens descrevem um único resultado idêntico. Chegar a +40,00% da banca exigiu 200 apostas de 50 — 10.000 de volume apostado, dez vezes o capital — e 4,00% desse volume são os mesmos 400. Roda a banca duas vezes em vez de dez e o yield por trás de um ROI de 40% teria de ser 20%, algo que quase ninguém sustenta.",
+      },
+      explainerTitle: "O lucro medido sobre o dinheiro em risco",
+      explainer: [
+        "**O ROI é o lucro dividido pelo dinheiro que colocaste em risco**, e toda a dificuldade está na segunda metade da frase. Uma banca de 1.000 que fecha a temporada com 400 a mais rendeu 40,00%, e esse número compara-se honestamente com qualquer outra coisa que tivesses feito com esses 1.000. O que não consegue descrever são as apostas. Um retorno de 40% não diz quantas apostas foram precisas, em quanto tempo, nem quão perto do zero o saldo passou pelo caminho — e são essas as três coisas que decidem se volta a acontecer. Por isso **declara o denominador antes de citar o número**: banca inicial, saldo médio e total depositado dão três percentagens diferentes a partir do mesmo conjunto de apostas, e a mais lisonjeira é sempre a mais pequena.",
+        "**Os mesmos 400 de lucro são um ROI de 40% e um yield de 4% ao mesmo tempo**, e saber qual deles tens na mão é quase todo o valor das duas páginas. O ROI mede contra o capital, o yield contra o volume apostado — a soma de cada stake colocado. O nosso exemplo chegou lá com 200 apostas de 50, portanto passaram 10.000 pela banca: dez vezes o capital, e 4,00% desse volume são precisamente esses 400. **Esse multiplicador é toda a ponte entre os dois números**, e é a razão pela qual o ROI sozinho favorece quem joga muito. Quem roda uma banca de 1.000 dez vezes com um yield de 4% e quem a roda duas vezes com um yield de 20% declaram ambos 40%, e apenas um deles é repetível. A qualidade por aposta mede-se na calculadora de yield; guarda o ROI para aquilo em que é realmente útil: comparar o que aquele dinheiro rendeu face às alternativas.",
+      ],
+      faq: [
+        {
+          q: "Qual é a diferença entre ROI e yield?",
+          a: "O ROI divide o lucro pelo capital, o yield divide-o pelo volume apostado — a soma de todos os stakes. Os mesmos 400 de lucro são 40,00% de uma banca de 1.000 e 4,00% de 10.000 apostados. O ROI diz o que o dinheiro rendeu, o yield diz se as apostas eram boas, e a razão entre os dois é quantas vezes rodaste a banca.",
+        },
+        {
+          q: "Que capital devo usar como denominador?",
+          a: "Aquele que consegues declarar e depois manter fixo — normalmente a banca inicial. Saldo máximo, saldo médio e total depositado produzem percentagens diferentes a partir das mesmas apostas, por isso o número só significa algo ao lado da sua definição. Reforçar a conta a meio do período sem redeclarar o denominador é a forma mais comum de inflacionar um ROI.",
+        },
+        {
+          q: "Um ROI de 40% é bom?",
+          a: "Depende do período e do número de apostas. Numa temporada com 200 apostas é um resultado forte mas plausível. Os mesmos 40% em vinte apostas ficam bem dentro do intervalo que o azar produz por si só, e 40% numa semana normalmente significa que os stakes eram grandes face à banca, não que a vantagem o era.",
+        },
+        {
+          q: "O ROI pode ser negativo?",
+          a: "Sim, e a calculadora mostra-o em vez de o esconder: uma perda de 250 numa banca de 1.000 é -25,00%. A recuperação não é simétrica — depois de -25% precisas de +33,33% sobre o que resta para voltar ao ponto de partida — e é por isso que o drawdown merece tanta atenção como o retorno.",
+        },
+      ],
+    },
   },
 };
 

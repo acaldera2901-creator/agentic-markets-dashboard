@@ -11,6 +11,7 @@ export const TOOL_SLUGS = [
   "probability-calculator",
   "arbitrage-calculator",
   "parlay-calculator",
+  "roi-calculator",
 ] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];

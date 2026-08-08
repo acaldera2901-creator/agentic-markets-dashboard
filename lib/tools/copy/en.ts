@@ -474,6 +474,62 @@ const en: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "ROI Calculator for Betting — Return on Your Bankroll | BetRedge",
+      metaDescription:
+        "Free betting ROI calculator: enter capital and profit to get the return on your bankroll, the closing balance, and why the same profit reads as a 4% yield.",
+      h1: "ROI calculator",
+      lede:
+        "What the bankroll returned over a period — and why the same 400 of profit is a 40% ROI here and a 4% yield on the other page.",
+      labels: {
+        inputTitle: "Capital and result",
+        capital: "Capital",
+        profit: "Profit",
+        resultTitle: "Return on that capital",
+        roi: "ROI",
+        endingCapital: "Capital after",
+        hint: "Profit goes in net and can be negative: -250 is a losing period. Capital is the bankroll you put at risk, not the total you staked.",
+        verdict:
+          "ROI depends entirely on the denominator, so declare it: 400 on a 1,000 bankroll is 40%, the same 400 against 10,000 staked is a 4% yield. Neither figure means much without the period and the number of bets behind it.",
+      },
+      takeaway:
+        "ROI says what the bankroll returned. It does not say whether the strategy is any good, because the same 40% can come from 200 bets or from one lucky Saturday.",
+      example: {
+        title: "400 of profit on a 1,000 bankroll",
+        rows: [
+          { label: "Capital", value: "1,000" },
+          { label: "Profit over the period", value: "+400" },
+          { label: "ROI", value: "+40.00%" },
+          { label: "Capital after", value: "1,400" },
+          { label: "Same 400 against 10,000 staked", value: "yield +4.00%" },
+        ],
+        note:
+          "Both percentages describe one identical result. Reaching +40.00% on the bankroll took 200 bets of 50 — 10,000 of turnover, ten times the capital — and 4.00% of that turnover is the same 400. Turn the bankroll over twice instead of ten times and the yield behind a 40% ROI would have to be 20%, which almost nobody sustains.",
+      },
+      explainerTitle: "Profit measured against the money at risk",
+      explainer: [
+        "**ROI is profit divided by the money you put at risk**, and all the difficulty sits in the second half of that sentence. A bankroll of 1,000 that finishes a season 400 in front returned 40.00%, and that figure can honestly be compared with anything else you might have done with the same 1,000. What it cannot describe is the betting. A 40% return says nothing about how many bets it took, over how long, or how close the balance came to zero on the way — and those are the three things that decide whether it happens again. So **declare the denominator before quoting the number**: starting bankroll, average balance and total deposits give three different percentages from one identical set of bets, and the flattering one is always the smallest.",
+        "**The same 400 of profit is a 40% ROI and a 4% yield at once**, and knowing which one you are holding is most of the value of both pages. ROI measures against capital, yield measures against turnover — the sum of every stake placed. Our example got there with 200 bets of 50, so 10,000 went through the bankroll: ten times the capital, and 4.00% of it is that same 400. **That multiplier is the whole bridge between the two numbers**, and it is why ROI on its own flatters a busy bettor. Someone turning a 1,000 bankroll over ten times at a 4% yield and someone turning it over twice at a 20% yield both report 40%, and only one of those is repeatable. Work out the per-bet quality on the yield calculator, and keep ROI for what it is genuinely good at: comparing what that money returned against the alternatives.",
+      ],
+      faq: [
+        {
+          q: "What is the difference between ROI and yield?",
+          a: "ROI divides profit by capital, yield divides it by turnover — the sum of every stake. The same 400 of profit is 40.00% of a 1,000 bankroll and 4.00% of 10,000 staked. ROI tells you what the money returned, yield tells you how good the bets were, and the ratio between them is how many times you turned the bankroll over.",
+        },
+        {
+          q: "Which capital should I use as the denominator?",
+          a: "Whichever one you can state and then keep fixed — the starting bankroll is the usual choice. Peak balance, average balance and total deposits each produce a different percentage from the same bets, so the number only means something next to its definition. Topping the account up mid-period without restating the denominator is the commonest way an ROI ends up overstated.",
+        },
+        {
+          q: "Is a 40% ROI good?",
+          a: "It depends on the period and the number of bets. Over a season and 200 bets it is a strong but plausible result. The same 40% over twenty bets sits well inside the range luck produces on its own, and 40% in a week usually means the stakes were large relative to the bankroll rather than that the edge was.",
+        },
+        {
+          q: "Can ROI be negative?",
+          a: "Yes, and the calculator shows it instead of hiding it: a 250 loss on a 1,000 bankroll is -25.00%. Recovery is not symmetric — after -25% you need +33.33% on what is left to get back to even — which is why the drawdown deserves as much attention as the return.",
+        },
+      ],
+    },
   },
 };
 

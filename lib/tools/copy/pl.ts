@@ -462,6 +462,62 @@ const pl: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "Kalkulator ROI dla zakładów — zwrot z bankrolla | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator ROI dla zakładów: podaj kapitał i zysk, aby zobaczyć zwrot z bankrolla, kapitał końcowy i dlaczego ten sam zysk to yield na poziomie 4%.",
+      h1: "Kalkulator ROI",
+      lede:
+        "Ile bankroll zarobił w danym okresie — i dlaczego ten sam zysk 400 to tutaj ROI 40%, a na drugiej stronie yield 4%.",
+      labels: {
+        inputTitle: "Kapitał i wynik",
+        capital: "Kapitał",
+        profit: "Zysk",
+        resultTitle: "Zwrot z tego kapitału",
+        roi: "ROI",
+        endingCapital: "Kapitał po okresie",
+        hint: "Zysk wpisujesz netto i może być ujemny: -250 to okres na minusie. Kapitał to bankroll wystawiony na ryzyko, a nie suma postawionych stawek.",
+        verdict:
+          "ROI zależy w całości od mianownika, więc go zadeklaruj: 400 na bankrollu 1000 to 40%, te same 400 przy obrocie 10 000 to yield 4%. Żadna z tych liczb nie mówi wiele bez okresu i liczby zakładów, które za nią stoją.",
+      },
+      takeaway:
+        "ROI mówi, ile zarobił bankroll. Nie mówi, czy strategia jest dobra, bo te same 40% mogą pochodzić z 200 zakładów albo z jednej szczęśliwej soboty.",
+      example: {
+        title: "400 zysku na bankrollu 1000",
+        rows: [
+          { label: "Kapitał", value: "1000" },
+          { label: "Zysk w okresie", value: "+400" },
+          { label: "ROI", value: "+40,00%" },
+          { label: "Kapitał po okresie", value: "1400" },
+          { label: "Te same 400 przy obrocie 10 000", value: "yield +4,00%" },
+        ],
+        note:
+          "Oba procenty opisują jeden i ten sam wynik. Dojście do +40,00% na bankrollu wymagało 200 zakładów po 50 — 10 000 obrotu, dziesięć razy kapitał — a 4,00% tego obrotu to te same 400. Obróć bankroll dwa razy zamiast dziesięciu i yield stojący za ROI 40% musiałby wynosić 20%, czego prawie nikt nie utrzymuje.",
+      },
+      explainerTitle: "Zysk mierzony pieniędzmi wystawionymi na ryzyko",
+      explainer: [
+        "**ROI to zysk podzielony przez pieniądze wystawione na ryzyko**, a cała trudność siedzi w drugiej połowie tego zdania. Bankroll 1000, który kończy sezon 400 wyżej, dał 40,00%, i tę liczbę można uczciwie porównać z czymkolwiek innym, co zrobiłbyś z tym 1000. Czego nie potrafi opisać, to same zakłady. Zwrot 40% nie mówi, ile zakładów było potrzebnych, w jakim czasie, ani jak blisko zera saldo znalazło się po drodze — a to trzy rzeczy, które decydują, czy powtórzy się jeszcze raz. Dlatego **zadeklaruj mianownik, zanim podasz liczbę**: bankroll początkowy, średnie saldo i suma wpłat dają trzy różne procenty z jednego identycznego zestawu zakładów, a najkorzystniejszy zawsze jest ten najmniejszy.",
+        "**Te same 400 zysku to jednocześnie ROI 40% i yield 4%**, a wiedza, którą z tych liczb trzymasz w ręce, to prawie cała wartość obu stron. ROI mierzy względem kapitału, yield względem obrotu — sumy wszystkich postawionych stawek. W naszym przykładzie potrzeba było 200 zakładów po 50, więc przez bankroll przeszło 10 000: dziesięć razy kapitał, a 4,00% tej kwoty to dokładnie te 400. **Ten mnożnik jest całym pomostem między dwiema liczbami** i dlatego samo ROI schlebia temu, kto gra dużo. Ktoś, kto obraca bankroll 1000 dziesięć razy z yieldem 4%, i ktoś, kto obraca go dwa razy z yieldem 20%, raportują te same 40%, a powtarzalne jest tylko jedno z nich. Jakość pojedynczego zakładu policzysz w kalkulatorze yield; ROI zachowaj do tego, w czym jest naprawdę dobry: porównania, ile te pieniądze dały wobec alternatyw.",
+      ],
+      faq: [
+        {
+          q: "Czym różni się ROI od yieldu?",
+          a: "ROI dzieli zysk przez kapitał, yield dzieli go przez obrót — sumę wszystkich stawek. Te same 400 zysku to 40,00% bankrolla 1000 i 4,00% obrotu 10 000. ROI mówi, ile dały pieniądze, yield mówi, jak dobre były zakłady, a stosunek między nimi to liczba obrotów bankrolla.",
+        },
+        {
+          q: "Jaki kapitał wpisać w mianownik?",
+          a: "Taki, który potrafisz zadeklarować i potem utrzymać bez zmian — zwykle bankroll początkowy. Szczyt salda, średnie saldo i suma wpłat dają z tych samych zakładów różne procenty, więc liczba znaczy coś tylko obok swojej definicji. Dopłata w środku okresu bez ponownego zadeklarowania mianownika to najczęstszy sposób zawyżenia ROI.",
+        },
+        {
+          q: "Czy ROI 40% to dobry wynik?",
+          a: "To zależy od okresu i liczby zakładów. Na przestrzeni sezonu i 200 zakładów jest to wynik mocny, ale wiarygodny. Te same 40% na dwudziestu zakładach mieszczą się spokojnie w zakresie, który przypadek produkuje sam, a 40% w tygodniu zwykle znaczy, że stawki były duże względem bankrolla, a nie że przewaga była duża.",
+        },
+        {
+          q: "Czy ROI może być ujemne?",
+          a: "Tak, i kalkulator to pokazuje, zamiast ukrywać: strata 250 na bankrollu 1000 to -25,00%. Odbicie nie jest symetryczne — po -25% potrzebujesz +33,33% z tego, co zostało, aby wrócić do punktu wyjścia — i dlatego obsunięcie zasługuje na tyle samo uwagi co zwrot.",
+        },
+      ],
+    },
   },
 };
 

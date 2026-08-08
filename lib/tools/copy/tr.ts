@@ -462,6 +462,62 @@ const tr: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "Bahis ROI hesaplayıcı — sermayenin getirisi | BetRedge",
+      metaDescription:
+        "Ücretsiz bahis ROI hesaplayıcı: sermaye ve kârı gir, sermayenin getirisini, dönem sonu sermayeyi ve aynı kârın neden %4 yield olduğunu gör.",
+      h1: "ROI hesaplayıcı",
+      lede:
+        "Sermayenin bir dönemde ne kazandırdığı — ve aynı 400 kârın burada neden %40 ROI, diğer sayfada neden %4 yield olduğu.",
+      labels: {
+        inputTitle: "Sermaye ve sonuç",
+        capital: "Sermaye",
+        profit: "Kâr",
+        resultTitle: "Bu sermayenin getirisi",
+        roi: "ROI",
+        endingCapital: "Dönem sonu sermaye",
+        hint: "Kâr net girilir ve negatif olabilir: -250 zararla kapanan bir dönemdir. Sermaye, riske attığın kasadır; oynadığın toplam tutar değil.",
+        verdict:
+          "ROI tamamen paydaya bağlıdır, o yüzden paydayı açıkça söyle: 1.000 kasada 400 kâr %40 eder, aynı 400 kâr 10.000 hacim üzerinde %4 yield eder. İkisi de arkasındaki dönem ve bahis sayısı olmadan pek bir şey anlatmaz.",
+      },
+      takeaway:
+        "ROI kasanın ne kazandırdığını söyler. Stratejinin iyi olup olmadığını söylemez, çünkü aynı %40 hem 200 bahisten hem de şanslı bir cumartesiden gelebilir.",
+      example: {
+        title: "1.000 kasada 400 kâr",
+        rows: [
+          { label: "Sermaye", value: "1.000" },
+          { label: "Dönem kârı", value: "+400" },
+          { label: "ROI", value: "%+40,00" },
+          { label: "Dönem sonu sermaye", value: "1.400" },
+          { label: "Aynı 400, 10.000 hacim üzerinde", value: "yield %+4,00" },
+        ],
+        note:
+          "İki yüzde de tek ve aynı sonucu anlatıyor. Kasada %+40,00 seviyesine gelmek 50 birimlik 200 bahis aldı — 10.000 hacim, sermayenin on katı — ve o hacmin %4,00 kadarı yine aynı 400. Kasayı on kez değil iki kez çevirirsen %40 ROI'nin arkasındaki yield %20 olmak zorunda kalır ki bunu neredeyse kimse sürdüremez.",
+      },
+      explainerTitle: "Riske atılan paraya göre ölçülen kâr",
+      explainer: [
+        "**ROI, kârın riske attığın paraya bölünmesidir** ve bütün zorluk bu cümlenin ikinci yarısında saklıdır. Sezonu 400 önde kapatan 1.000 birimlik bir kasa %40,00 getirmiştir ve bu sayı, aynı 1.000 ile yapabileceğin her şeyle dürüstçe karşılaştırılabilir. Anlatamadığı şey bahislerin kendisidir. %40 getiri; kaç bahis gerektiğini, ne kadar sürede olduğunu, yolda bakiyenin sıfıra ne kadar yaklaştığını söylemez — ve tekrar edip etmeyeceğine karar veren tam olarak bu üç şeydir. Bu yüzden **sayıyı söylemeden önce paydayı açıkça belirt**: başlangıç kasası, ortalama bakiye ve toplam yatırım aynı bahis kümesinden üç ayrı yüzde üretir ve en gösterişli olan her zaman en küçüğüdür.",
+        "**Aynı 400 kâr hem %40 ROI hem de %4 yield'dir** ve hangisini elinde tuttuğunu bilmek iki sayfanın değerinin neredeyse tamamıdır. ROI sermayeye göre ölçer, yield hacme göre — yani yatırılan her stake'in toplamına. Örneğimiz buraya 50 birimlik 200 bahisle geldi, yani kasadan 10.000 geçti: sermayenin on katı ve bunun %4,00 kadarı tam olarak o 400. **Bu çarpan iki sayı arasındaki köprünün tamamıdır** ve ROI'nin tek başına çok oynayanı kayırmasının sebebidir. 1.000 kasayı %4 yield ile on kez çeviren de, iki kez %20 yield ile çeviren de %40 bildirir; ikisinden yalnızca biri tekrarlanabilir. Bahis başına kaliteyi yield hesaplayıcıda ölçersin; ROI'yi gerçekten işe yaradığı yer için sakla: o paranın getirisini alternatiflerle karşılaştırmak.",
+      ],
+      faq: [
+        {
+          q: "ROI ile yield arasındaki fark nedir?",
+          a: "ROI kârı sermayeye böler, yield ise hacme — yani tüm stake'lerin toplamına. Aynı 400 kâr, 1.000 kasanın %40,00 kadarı ve 10.000 hacmin %4,00 kadarıdır. ROI paranın ne kazandırdığını, yield bahislerin ne kadar iyi olduğunu söyler; aralarındaki oran ise kasayı kaç kez çevirdiğindir.",
+        },
+        {
+          q: "Paydaya hangi sermayeyi yazmalıyım?",
+          a: "Açıkça söyleyip sonra sabit tutabildiğini — genelde başlangıç kasası. Zirve bakiye, ortalama bakiye ve toplam yatırım aynı bahislerden farklı yüzdeler üretir, yani sayı ancak tanımının yanında bir anlam taşır. Dönem ortasında para ekleyip paydayı yeniden bildirmemek, bir ROI'yi şişirmenin en yaygın yoludur.",
+        },
+        {
+          q: "%40 ROI iyi mi?",
+          a: "Döneme ve bahis sayısına bağlı. Bir sezon ve 200 bahis üzerinde güçlü ama makul bir sonuçtur. Aynı %40 yirmi bahiste, şansın kendi başına ürettiği aralığın rahatça içinde kalır; bir haftada %40 ise genelde stake'lerin kasaya göre büyük olduğunu, avantajın büyük olduğunu değil, gösterir.",
+        },
+        {
+          q: "ROI negatif olabilir mi?",
+          a: "Evet ve hesaplayıcı bunu saklamak yerine gösterir: 1.000 kasada 250 zarar %-25,00 eder. Toparlanma simetrik değildir — %-25 sonrasında başa dönmek için kalanın %+33,33 kadarına ihtiyaç duyarsın — ve bu yüzden düşüş, getiri kadar dikkat hak eder.",
+        },
+      ],
+    },
   },
 };
 

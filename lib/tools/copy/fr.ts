@@ -462,6 +462,62 @@ const fr: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "Calculateur de ROI paris — rendement de votre bankroll | BetRedge",
+      metaDescription:
+        "Calculateur de ROI gratuit pour les paris : entrez capital et profit pour obtenir le rendement de la bankroll, le capital final et pourquoi le même profit fait 4 % de yield.",
+      h1: "Calculateur de ROI",
+      lede:
+        "Ce que la bankroll a rapporté sur une période — et pourquoi le même profit de 400 donne un ROI de 40 % ici et un yield de 4 % sur l'autre page.",
+      labels: {
+        inputTitle: "Capital et résultat",
+        capital: "Capital",
+        profit: "Profit",
+        resultTitle: "Rendement de ce capital",
+        roi: "ROI",
+        endingCapital: "Capital final",
+        hint: "Le profit s'entre net et peut être négatif : -250 est une période perdante. Le capital est la bankroll mise en risque, pas le total misé.",
+        verdict:
+          "Le ROI dépend entièrement du dénominateur, donc déclarez-le : 400 sur une bankroll de 1 000 font 40 %, ce même 400 sur 10 000 misés fait un yield de 4 %. Aucun des deux chiffres ne dit grand-chose sans la période et le nombre de paris derrière.",
+      },
+      takeaway:
+        "Le ROI dit ce que la bankroll a rapporté. Il ne dit pas si la stratégie est bonne, car le même 40 % peut venir de 200 paris ou d'un samedi chanceux.",
+      example: {
+        title: "400 de profit sur une bankroll de 1 000",
+        rows: [
+          { label: "Capital", value: "1 000" },
+          { label: "Profit de la période", value: "+400" },
+          { label: "ROI", value: "+40,00 %" },
+          { label: "Capital final", value: "1 400" },
+          { label: "Le même 400 sur 10 000 misés", value: "yield +4,00 %" },
+        ],
+        note:
+          "Les deux pourcentages décrivent un seul et même résultat. Atteindre +40,00 % sur la bankroll a demandé 200 paris de 50 — 10 000 de volume misé, dix fois le capital — et 4,00 % de ce volume, c'est le même 400. Faites tourner la bankroll deux fois au lieu de dix et le yield derrière un ROI de 40 % devrait être de 20 %, ce que presque personne ne tient.",
+      },
+      explainerTitle: "Le profit mesuré sur l'argent en risque",
+      explainer: [
+        "**Le ROI, c'est le profit divisé par l'argent mis en risque**, et toute la difficulté tient dans la seconde moitié de la phrase. Une bankroll de 1 000 qui finit la saison avec 400 de plus a rendu 40,00 %, et ce chiffre se compare honnêtement à tout ce que vous auriez pu faire d'autre avec ces 1 000. Ce qu'il ne décrit pas, ce sont les paris. Un rendement de 40 % ne dit ni combien de paris il a fallu, ni sur combien de temps, ni à quel point le solde s'est approché de zéro en route — et ce sont les trois choses qui décident si cela se reproduira. Donc **déclarez le dénominateur avant d'annoncer le chiffre** : bankroll de départ, solde moyen et total déposé donnent trois pourcentages différents pour un jeu de paris identique, et le plus flatteur est toujours le plus petit.",
+        "**Le même 400 de profit est un ROI de 40 % et un yield de 4 % en même temps**, et savoir lequel vous tenez fait presque toute la valeur des deux pages. Le ROI se mesure sur le capital, le yield sur le volume misé — la somme de chaque mise placée. Notre exemple y est arrivé avec 200 paris de 50, donc 10 000 sont passés par la bankroll : dix fois le capital, et 4,00 % de ce volume font ce même 400. **Ce multiplicateur est tout le pont entre les deux nombres**, et c'est pourquoi le ROI seul flatte celui qui joue beaucoup. Faire tourner 1 000 dix fois avec un yield de 4 % ou deux fois avec un yield de 20 % donne 40 % dans les deux cas, et un seul des deux est reproductible. La qualité par pari se mesure sur le calculateur de yield ; gardez le ROI pour ce à quoi il sert vraiment : comparer ce que cet argent a rapporté face aux alternatives.",
+      ],
+      faq: [
+        {
+          q: "Quelle est la différence entre ROI et yield ?",
+          a: "Le ROI divise le profit par le capital, le yield le divise par le volume misé — la somme de toutes les mises. Le même 400 de profit fait 40,00 % d'une bankroll de 1 000 et 4,00 % de 10 000 misés. Le ROI dit ce que l'argent a rapporté, le yield dit si les paris étaient bons, et le rapport entre les deux est le nombre de fois où la bankroll a tourné.",
+        },
+        {
+          q: "Quel capital utiliser comme dénominateur ?",
+          a: "Celui que vous savez déclarer puis garder fixe : la bankroll de départ, en général. Solde maximum, solde moyen et total déposé produisent des pourcentages différents à partir des mêmes paris, donc le chiffre ne veut dire quelque chose qu'à côté de sa définition. Recharger le compte en cours de période sans redéclarer le dénominateur est la façon la plus courante de gonfler un ROI.",
+        },
+        {
+          q: "Un ROI de 40 % est-il bon ?",
+          a: "Cela dépend de la période et du nombre de paris. Sur une saison et 200 paris, c'est un résultat fort mais plausible. Le même 40 % sur vingt paris tient largement dans l'intervalle que le hasard produit seul, et 40 % en une semaine signifie d'habitude que les mises étaient grosses par rapport à la bankroll, pas que l'avantage l'était.",
+        },
+        {
+          q: "Le ROI peut-il être négatif ?",
+          a: "Oui, et le calculateur l'affiche au lieu de le cacher : une perte de 250 sur une bankroll de 1 000 fait -25,00 %. La récupération n'est pas symétrique — après -25 % il faut +33,33 % sur ce qui reste pour revenir à l'équilibre — et c'est pourquoi le drawdown mérite autant d'attention que le rendement.",
+        },
+      ],
+    },
   },
 };
 

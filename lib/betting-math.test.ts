@@ -17,6 +17,9 @@ import {
   parlayProbability,
   parlayOdds,
   arbitrage,
+  roi,
+  yieldPercent,
+  parseSignedAmount,
 } from "./betting-math";
 
 const near = (v: number | null | undefined, expected: number, digits = 6) => {
@@ -337,5 +340,68 @@ describe("arbitrage", () => {
     expect(arbitrage({ decimals: [], total: 1000 })).toBeNull();
     expect(arbitrage({ decimals: [2.1, 0], total: 1000 })).toBeNull();
     expect(arbitrage({ decimals: [2.1, 2.1], total: 0 })).toBeNull();
+  });
+});
+
+describe("roi", () => {
+  it("400 di profitto su 1000 di capitale è il 40%", () => {
+    expect(roi({ profit: 400, capital: 1000 })).toBeCloseTo(0.4, 9);
+  });
+
+  it("una perdita dà un ROI negativo", () => {
+    expect(roi({ profit: -250, capital: 1000 })).toBeCloseTo(-0.25, 9);
+  });
+
+  it("profitto zero è 0, non null: 'non ho guadagnato niente' è un'informazione", () => {
+    expect(roi({ profit: 0, capital: 1000 })).toBe(0);
+  });
+
+  it("capitale zero o negativo è null, non Infinity", () => {
+    expect(roi({ profit: 400, capital: 0 })).toBeNull();
+    expect(roi({ profit: 400, capital: -10 })).toBeNull();
+    expect(roi({ profit: Number.NaN, capital: 1000 })).toBeNull();
+  });
+});
+
+describe("yieldPercent", () => {
+  it("400 di profitto su 10.000 giocati è il 4%", () => {
+    expect(yieldPercent({ profit: 400, turnover: 10000 })).toBeCloseTo(0.04, 9);
+  });
+
+  it("lo stesso profitto su un denominatore diverso dà un numero diverso", () => {
+    // È il punto delle due pagine: stesso 400, cassa 1000 → ROI 40%, giocato
+    // 10.000 → yield 4%. E il ponte fra i due è il turnover sul capitale (10×).
+    expect(yieldPercent({ profit: 400, turnover: 1000 })).toBeCloseTo(0.4, 9);
+    const y = yieldPercent({ profit: 400, turnover: 10000 })!;
+    const r = roi({ profit: 400, capital: 1000 })!;
+    expect(y * (10000 / 1000)).toBeCloseTo(r, 9);
+  });
+
+  it("uno yield negativo resta negativo", () => {
+    expect(yieldPercent({ profit: -300, turnover: 10000 })).toBeCloseTo(-0.03, 9);
+  });
+
+  it("turnover zero o negativo è null, non Infinity", () => {
+    expect(yieldPercent({ profit: 400, turnover: 0 })).toBeNull();
+    expect(yieldPercent({ profit: 400, turnover: -1 })).toBeNull();
+    expect(yieldPercent({ profit: Number.POSITIVE_INFINITY, turnover: 10000 })).toBeNull();
+  });
+});
+
+describe("parseSignedAmount", () => {
+  it("legge un profitto positivo, negativo o nullo, anche con la virgola", () => {
+    expect(parseSignedAmount("400")).toBe(400);
+    expect(parseSignedAmount("+400")).toBe(400);
+    expect(parseSignedAmount("-250")).toBe(-250);
+    expect(parseSignedAmount(" 1,5 ")).toBeCloseTo(1.5, 9);
+    expect(parseSignedAmount("0")).toBe(0);
+  });
+
+  it("rifiuta ciò che non è un numero", () => {
+    expect(parseSignedAmount("")).toBeNull();
+    expect(parseSignedAmount("  ")).toBeNull();
+    expect(parseSignedAmount("banana")).toBeNull();
+    expect(parseSignedAmount("--3")).toBeNull();
+    expect(parseSignedAmount("4-0-0")).toBeNull();
   });
 });

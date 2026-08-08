@@ -462,6 +462,62 @@ const de: ToolsCopy = {
         },
       ],
     },
+    "roi-calculator": {
+      metaTitle: "ROI-Rechner für Wetten — Rendite auf die Bankroll | BetRedge",
+      metaDescription:
+        "Kostenloser ROI-Rechner für Wetten: Kapital und Gewinn eingeben und Rendite der Bankroll, Endkapital und den Grund lesen, warum derselbe Gewinn 4 % Yield ist.",
+      h1: "ROI-Rechner",
+      lede:
+        "Was die Bankroll in einem Zeitraum gebracht hat — und warum derselbe Gewinn von 400 hier 40 % ROI und auf der anderen Seite 4 % Yield ist.",
+      labels: {
+        inputTitle: "Kapital und Ergebnis",
+        capital: "Kapital",
+        profit: "Gewinn",
+        resultTitle: "Rendite auf dieses Kapital",
+        roi: "ROI",
+        endingCapital: "Kapital danach",
+        hint: "Der Gewinn wird netto eingetragen und darf negativ sein: -250 ist ein Verlustzeitraum. Kapital ist die Bankroll im Risiko, nicht der gesamte Einsatz.",
+        verdict:
+          "Der ROI hängt vollständig vom Nenner ab, also nenne ihn: 400 auf einer Bankroll von 1.000 sind 40 %, dieselben 400 auf 10.000 Umsatz sind 4 % Yield. Keine der beiden Zahlen sagt viel ohne Zeitraum und Anzahl der Wetten dahinter.",
+      },
+      takeaway:
+        "Der ROI sagt, was die Bankroll gebracht hat. Er sagt nicht, ob die Strategie gut ist, denn dieselben 40 % können aus 200 Wetten oder aus einem glücklichen Samstag kommen.",
+      example: {
+        title: "400 Gewinn auf einer Bankroll von 1.000",
+        rows: [
+          { label: "Kapital", value: "1.000" },
+          { label: "Gewinn im Zeitraum", value: "+400" },
+          { label: "ROI", value: "+40,00 %" },
+          { label: "Kapital danach", value: "1.400" },
+          { label: "Dieselben 400 auf 10.000 Umsatz", value: "Yield +4,00 %" },
+        ],
+        note:
+          "Beide Prozentzahlen beschreiben ein einziges identisches Ergebnis. Für +40,00 % auf der Bankroll brauchte es 200 Wetten zu 50 — 10.000 Umsatz, zehnmal das Kapital — und 4,00 % dieses Umsatzes sind dieselben 400. Dreh die Bankroll zweimal statt zehnmal um, und der Yield hinter 40 % ROI müsste 20 % betragen, was fast niemand durchhält.",
+      },
+      explainerTitle: "Gewinn gemessen am Geld im Risiko",
+      explainer: [
+        "**Der ROI ist der Gewinn geteilt durch das Geld im Risiko**, und die ganze Schwierigkeit steckt in der zweiten Hälfte dieses Satzes. Eine Bankroll von 1.000, die eine Saison mit 400 Plus beendet, hat 40,00 % gebracht, und diese Zahl lässt sich ehrlich mit allem vergleichen, was du sonst mit denselben 1.000 gemacht hättest. Was sie nicht beschreiben kann, sind die Wetten. Eine Rendite von 40 % sagt nichts darüber, wie viele Wetten nötig waren, über welchen Zeitraum, oder wie nah der Kontostand unterwegs an der Null war — und genau das entscheidet, ob es wieder passiert. Also **nenne den Nenner, bevor du die Zahl nennst**: Start-Bankroll, mittlerer Kontostand und Summe der Einzahlungen ergeben drei verschiedene Prozentwerte aus einem identischen Satz Wetten, und der schmeichelhafteste ist immer der kleinste.",
+        "**Dieselben 400 Gewinn sind gleichzeitig 40 % ROI und 4 % Yield**, und zu wissen, welche Zahl man in der Hand hält, ist fast der ganze Wert beider Seiten. Der ROI misst am Kapital, der Yield am Umsatz — der Summe aller platzierten Einsätze. Unser Beispiel kam mit 200 Wetten zu 50 dorthin, also liefen 10.000 durch die Bankroll: zehnmal das Kapital, und 4,00 % davon sind genau diese 400. **Dieser Multiplikator ist die ganze Brücke zwischen den beiden Zahlen**, und deshalb schmeichelt der ROI allein dem, der viel spielt. Wer 1.000 zehnmal mit 4 % Yield umdreht und wer sie zweimal mit 20 % Yield umdreht, melden beide 40 % — wiederholbar ist nur eines davon. Die Qualität pro Wette misst der Yield-Rechner; den ROI behalte für das, wofür er wirklich taugt: den Vergleich dieser Rendite mit den Alternativen.",
+      ],
+      faq: [
+        {
+          q: "Was ist der Unterschied zwischen ROI und Yield?",
+          a: "Der ROI teilt den Gewinn durch das Kapital, der Yield durch den Umsatz — die Summe aller Einsätze. Dieselben 400 Gewinn sind 40,00 % einer Bankroll von 1.000 und 4,00 % von 10.000 Umsatz. Der ROI sagt, was das Geld gebracht hat, der Yield, wie gut die Wetten waren, und ihr Verhältnis ist die Zahl der Umdrehungen der Bankroll.",
+        },
+        {
+          q: "Welches Kapital gehört in den Nenner?",
+          a: "Das, das du benennen und dann festhalten kannst — üblich ist die Start-Bankroll. Höchststand, Durchschnittsstand und Summe der Einzahlungen ergeben aus denselben Wetten verschiedene Prozentwerte, die Zahl bedeutet also nur neben ihrer Definition etwas. Mitten im Zeitraum nachzuzahlen, ohne den Nenner neu zu nennen, ist der häufigste Weg zu einem aufgeblasenen ROI.",
+        },
+        {
+          q: "Sind 40 % ROI gut?",
+          a: "Das hängt vom Zeitraum und der Anzahl der Wetten ab. Über eine Saison und 200 Wetten ist es ein starkes, aber plausibles Ergebnis. Dieselben 40 % über zwanzig Wetten liegen bequem im Bereich, den der Zufall allein erzeugt, und 40 % in einer Woche heißt meist, dass die Einsätze im Verhältnis zur Bankroll groß waren, nicht der Vorteil.",
+        },
+        {
+          q: "Kann der ROI negativ sein?",
+          a: "Ja, und der Rechner zeigt es statt es zu verstecken: 250 Verlust auf einer Bankroll von 1.000 sind -25,00 %. Die Erholung ist nicht symmetrisch — nach -25 % braucht es +33,33 % auf den Rest, um wieder bei null zu sein — und deshalb verdient der Drawdown so viel Aufmerksamkeit wie die Rendite.",
+        },
+      ],
+    },
   },
 };
 
