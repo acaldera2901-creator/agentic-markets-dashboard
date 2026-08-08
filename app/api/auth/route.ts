@@ -9,6 +9,7 @@ import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
 import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
 
@@ -379,6 +380,19 @@ export async function POST(req: Request) {
         "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
         [identifier]
       );
+      // #REFERRAL-V2-0808 — i 7 giorni di PRO all'invitato si concedono
+      // all'ATTIVAZIONE, non all'INSERT: il profilo nasce plan='free' e diventa
+      // usabile solo dopo l'attivazione (HIGH-3), quindi un regalo concesso
+      // prima scadrebbe mentre l'utente non può ancora entrare.
+      // L'helper valida `referred_by` contro un `profiles.referral_code` reale
+      // (alla registrazione passa solo la regex) e concede una volta sola.
+      // Best-effort: un bonus mancato non deve impedire l'attivazione.
+      // Prima di loadProfile, così la sessione risponde col piano già concesso.
+      try {
+        await grantInviteeBonus(identifier);
+      } catch (e) {
+        console.error("[auth] bonus invitato fallito:", String(e));
+      }
       const profile = await loadProfile(identifier);
       if (!profile) return NextResponse.json({ error: "registration failed" }, { status: 500 });
       return issueSession(profile);
@@ -423,6 +437,16 @@ export async function POST(req: Request) {
       "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
       [identifier]
     );
+    // #REFERRAL-V2-0808 — TERZO percorso di attivazione (il piano ne dichiarava
+    // due): il heal pigro di una riga rimasta non attivata dalla finestra senza
+    // provider email. È un'attivazione a tutti gli effetti, quindi qui il bonus
+    // va concesso o l'invitato non lo vedrebbe mai. Idempotente (UNIQUE su
+    // tier=0): se lo aveva già preso in registrazione, non raddoppia.
+    try {
+      await grantInviteeBonus(identifier);
+    } catch (e) {
+      console.error("[auth] bonus invitato fallito:", String(e));
+    }
   }
 
   const profile = await loadProfile(identifier);

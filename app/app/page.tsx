@@ -7432,6 +7432,21 @@ function AccountMenu({
 // everyone), creator sees a counter; per-code revenue is a backend toggle on
 // request. Code is self-declared + remembered in localStorage — persisting a
 // referral_code on the profile is a gated follow-up.
+//
+// #REFERRAL-V2-0808: il pannello ora mostra il PROGRESSO verso il gradino
+// successivo (2 → 29gg PRO · 5 → altri 60gg · 10 → stanza Telegram) e cosa
+// riceve l'amico. Numeri e gradini arrivano tutti da /api/referral/stats: qui
+// non si hardcoda nessun premio, altrimenti la copy mente appena la scala cambia.
+// Il −50% di lancio è scritto come informazione, non come vantaggio dell'invito:
+// lo riceve chiunque si iscriva, ed era il difetto originale del programma.
+type ReferralTierStat = {
+  tier: number;
+  reached: boolean;
+  granted_at: string | null;
+  rewardDays: number | null;
+  grantsRoom: boolean;
+};
+
 function ReferralPanel() {
   const lang = useLang();
   // #REFERRAL-HARDENING: il codice ora si CLAIMA una volta sola sul profilo
@@ -7441,7 +7456,12 @@ function ReferralPanel() {
   const [phase, setPhase] = useState<"loading" | "unclaimed" | "claimed">("loading");
   const [code, setCode] = useState("");
   const [claimedCode, setClaimedCode] = useState<string | null>(null);
-  const [stats, setStats] = useState<{ signups: number; paid: number } | null>(null);
+  const [stats, setStats] = useState<{
+    signups: number;
+    paying: number;
+    inviteeBonusDays: number;
+    tiers: ReferralTierStat[];
+  } | null>(null);
   const [statsErr, setStatsErr] = useState(false);
   const [claimErr, setClaimErr] = useState<"taken" | "invalid" | "generic" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -7453,7 +7473,22 @@ function ReferralPanel() {
         if (r.ok) {
           const d = await r.json();
           setClaimedCode(typeof d?.code === "string" ? d.code : null);
-          setStats({ signups: Number(d?.signups) || 0, paid: Number(d?.paid) || 0 });
+          setStats({
+            signups: Number(d?.signups) || 0,
+            paying: Number(d?.paying) || 0,
+            inviteeBonusDays: Number(d?.inviteeBonusDays) || 0,
+            tiers: Array.isArray(d?.tiers)
+              ? (d.tiers as ReferralTierStat[]).map((t) => ({
+                  tier: Number(t?.tier) || 0,
+                  reached: t?.reached === true,
+                  granted_at: typeof t?.granted_at === "string" ? t.granted_at : null,
+                  // `null` = il premio non è tempo (la stanza). Number(null) è 0,
+                  // quindi il null va riconosciuto prima della conversione.
+                  rewardDays: typeof t?.rewardDays === "number" ? t.rewardDays : null,
+                  grantsRoom: t?.grantsRoom === true,
+                }))
+              : [],
+          });
           setPhase("claimed");
         } else if (r.status === 403) {
           setPhase("unclaimed"); // nessun codice claimato: mostra il claim
@@ -7471,6 +7506,8 @@ function ReferralPanel() {
   const valid = /^[A-Z0-9_-]{2,20}$/.test(normalized);
   const shownCode = claimedCode ?? "";
   const link = shownCode && typeof window !== "undefined" ? `${window.location.origin}/r/${shownCode}` : "";
+  // Il primo gradino non ancora raggiunto: è quello di cui si mostra la distanza.
+  const nextTier = stats?.tiers.find((t) => !t.reached) ?? null;
 
   const claim = async () => {
     if (!valid || busy) return;
@@ -7514,11 +7551,11 @@ function ReferralPanel() {
   };
 
   const c = pick5(lang, {
-    it: { title: "Invita", intro: "Condividi il tuo link: chi si iscrive col tuo codice ti viene attribuito.", promo: "I nuovi iscritti hanno la promo di lancio −50% sul primo acquisto (uguale per tutti): lo sconto si applica da solo al checkout.", codeLabel: "Scegli il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _ · una volta scelto non si cambia", claimBtn: "Riserva il codice", claimBusy: "Riservo…", errTaken: "Codice già preso: scegline un altro.", errInvalid: "Codice non valido (2–20 caratteri: lettere, numeri, - _).", errGeneric: "Errore momentaneo, riprova.", yourCode: "Il tuo codice", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paid: "Di cui abbonati", statsErr: "Statistiche non disponibili al momento.", loading: "Carico…", note: "Guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
-    en: { title: "Invite", intro: "Share your link: anyone who signs up with your code is attributed to you.", promo: "New sign-ups get the −50% launch promo on their first purchase (same for everyone): the discount applies automatically at checkout.", codeLabel: "Choose your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _ · cannot be changed once claimed", claimBtn: "Claim code", claimBusy: "Claiming…", errTaken: "Code already taken — pick another.", errInvalid: "Invalid code (2–20 chars: letters, numbers, - _).", errGeneric: "Temporary error, try again.", yourCode: "Your code", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paid: "Subscribers among them", statsErr: "Stats unavailable right now.", loading: "Loading…", note: "You earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
-    es: { title: "Invitar", intro: "Comparte tu link: quien se registre con tu código se te atribuye.", promo: "Los nuevos registros tienen la promo de lanzamiento −50% en su primera compra (igual para todos): el descuento se aplica solo al finalizar la compra.", codeLabel: "Elige tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _ · no se puede cambiar", claimBtn: "Reservar código", claimBusy: "Reservando…", errTaken: "Código ya ocupado: elige otro.", errInvalid: "Código no válido (2–20 caracteres: letras, números, - _).", errGeneric: "Error momentáneo, reintenta.", yourCode: "Tu código", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paid: "De ellos, suscriptores", statsErr: "Estadísticas no disponibles ahora.", loading: "Cargando…", note: "Ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
-    fr: { title: "Inviter", intro: "Partagez votre lien : toute inscription avec votre code vous est attribuée.", promo: "Les nouveaux inscrits ont la promo de lancement −50% sur leur premier achat (identique pour tous) : la réduction s'applique automatiquement au paiement.", codeLabel: "Choisissez votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _ · définitif une fois réservé", claimBtn: "Réserver le code", claimBusy: "Réservation…", errTaken: "Code déjà pris — choisissez-en un autre.", errInvalid: "Code invalide (2–20 caractères : lettres, chiffres, - _).", errGeneric: "Erreur momentanée, réessayez.", yourCode: "Votre code", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paid: "Dont abonnés", statsErr: "Statistiques indisponibles pour le moment.", loading: "Chargement…", note: "Vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
-    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый, кто зарегистрируется по вашему коду, закрепляется за вами.", promo: "Новые регистрации получают промо запуска −50% на первую покупку (для всех одинаково): скидка применяется автоматически при оплате.", codeLabel: "Выберите ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _ · нельзя изменить после", claimBtn: "Занять код", claimBusy: "Резервирую…", errTaken: "Код уже занят — выберите другой.", errInvalid: "Неверный код (2–20 символов).", errGeneric: "Временная ошибка, попробуйте ещё раз.", yourCode: "Ваш код", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paid: "Из них подписчиков", statsErr: "Статистика сейчас недоступна.", loading: "Загрузка…", note: "Вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам, чтобы запросить." },
+    it: { title: "Invita", intro: "Condividi il tuo link: ogni amico che si iscrive e paga ti avvicina al premio successivo.", promo: "La promo di lancio −50% sul primo acquisto vale per chiunque si iscriva, con o senza invito: non è un vantaggio del tuo link.", codeLabel: "Scegli il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _ · una volta scelto non si cambia", claimBtn: "Riserva il codice", claimBusy: "Riservo…", errTaken: "Codice già preso: scegline un altro.", errInvalid: "Codice non valido (2–20 caratteri: lettere, numeri, - _).", errGeneric: "Errore momentaneo, riprova.", yourCode: "Il tuo codice", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paying: "Amici paganti", statsErr: "Statistiche non disponibili al momento.", loading: "Carico…", friendGets: (d: number) => `Chi si iscrive col tuo link riceve ${d} giorni di PRO gratis: è l'argomento con cui convincerlo.`, rewardsTitle: "I tuoi premi", progress: (n: number, k: number) => `${n === 1 ? "1 amico pagante" : `${n} amici paganti`} · ${k} al prossimo premio`, progressDone: (n: number) => `${n} amici paganti · tutti i premi sbloccati`, tierAt: (n: number) => `a ${n} amici`, rewardDays: (d: number) => `+${d} giorni di PRO`, rewardRoom: "Stanza Telegram riservata", note: "Opzione creator: guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
+    en: { title: "Invite", intro: "Share your link: every friend who signs up and pays brings you closer to the next reward.", promo: "The −50% launch promo on the first purchase applies to anyone who signs up, invited or not: it is not a perk of your link.", codeLabel: "Choose your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _ · cannot be changed once claimed", claimBtn: "Claim code", claimBusy: "Claiming…", errTaken: "Code already taken — pick another.", errInvalid: "Invalid code (2–20 chars: letters, numbers, - _).", errGeneric: "Temporary error, try again.", yourCode: "Your code", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paying: "Paying friends", statsErr: "Stats unavailable right now.", loading: "Loading…", friendGets: (d: number) => `Anyone who signs up with your link gets ${d} free days of PRO — that is your argument to convince them.`, rewardsTitle: "Your rewards", progress: (n: number, k: number) => `${n === 1 ? "1 paying friend" : `${n} paying friends`} · ${k} to the next reward`, progressDone: (n: number) => `${n} paying friends · all rewards unlocked`, tierAt: (n: number) => `at ${n} friends`, rewardDays: (d: number) => `+${d} days of PRO`, rewardRoom: "Private Telegram room", note: "Creator option: you earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
+    es: { title: "Invitar", intro: "Comparte tu link: cada amigo que se registra y paga te acerca al siguiente premio.", promo: "La promo de lanzamiento −50% en la primera compra la recibe cualquiera que se registre, con o sin invitación: no es una ventaja de tu link.", codeLabel: "Elige tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _ · no se puede cambiar", claimBtn: "Reservar código", claimBusy: "Reservando…", errTaken: "Código ya ocupado: elige otro.", errInvalid: "Código no válido (2–20 caracteres: letras, números, - _).", errGeneric: "Error momentáneo, reintenta.", yourCode: "Tu código", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paying: "Amigos que pagan", statsErr: "Estadísticas no disponibles ahora.", loading: "Cargando…", friendGets: (d: number) => `Quien se registre con tu link recibe ${d} días de PRO gratis: es el argumento para convencerlo.`, rewardsTitle: "Tus premios", progress: (n: number, k: number) => `${n === 1 ? "1 amigo que paga" : `${n} amigos que pagan`} · ${k} para el próximo premio`, progressDone: (n: number) => `${n} amigos que pagan · todos los premios desbloqueados`, tierAt: (n: number) => `con ${n} amigos`, rewardDays: (d: number) => `+${d} días de PRO`, rewardRoom: "Sala privada de Telegram", note: "Opción creator: ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
+    fr: { title: "Inviter", intro: "Partagez votre lien : chaque ami qui s'inscrit et paie vous rapproche de la récompense suivante.", promo: "La promo de lancement −50% sur le premier achat s'applique à toute personne qui s'inscrit, avec ou sans invitation : ce n'est pas un avantage de votre lien.", codeLabel: "Choisissez votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _ · définitif une fois réservé", claimBtn: "Réserver le code", claimBusy: "Réservation…", errTaken: "Code déjà pris — choisissez-en un autre.", errInvalid: "Code invalide (2–20 caractères : lettres, chiffres, - _).", errGeneric: "Erreur momentanée, réessayez.", yourCode: "Votre code", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paying: "Amis payants", statsErr: "Statistiques indisponibles pour le moment.", loading: "Chargement…", friendGets: (d: number) => `Toute personne inscrite via votre lien reçoit ${d} jours de PRO offerts : c'est votre argument pour la convaincre.`, rewardsTitle: "Vos récompenses", progress: (n: number, k: number) => `${n === 1 ? "1 ami payant" : `${n} amis payants`} · ${k} avant la prochaine récompense`, progressDone: (n: number) => `${n} amis payants · toutes les récompenses débloquées`, tierAt: (n: number) => `à ${n} amis`, rewardDays: (d: number) => `+${d} jours de PRO`, rewardRoom: "Salon Telegram privé", note: "Option créateur : vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
+    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый друг, который зарегистрируется и оплатит, приближает вас к следующей награде.", promo: "Промо запуска −50% на первую покупку получает любой, кто зарегистрируется, — с приглашением или без: это не преимущество вашей ссылки.", codeLabel: "Выберите ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _ · нельзя изменить после", claimBtn: "Занять код", claimBusy: "Резервирую…", errTaken: "Код уже занят — выберите другой.", errInvalid: "Неверный код (2–20 символов).", errGeneric: "Временная ошибка, попробуйте ещё раз.", yourCode: "Ваш код", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paying: "Оплатившие друзья", statsErr: "Статистика сейчас недоступна.", loading: "Загрузка…", friendGets: (d: number) => `Каждый, кто зарегистрируется по вашей ссылке, получает ${d} дней PRO бесплатно — это ваш главный аргумент.`, rewardsTitle: "Ваши награды", progress: (n: number, k: number) => `Оплатившие друзья: ${n} · до следующей награды: ${k}`, progressDone: (n: number) => `Оплатившие друзья: ${n} · все награды получены`, tierAt: (n: number) => `при ${n} друзьях`, rewardDays: (d: number) => `+${d} дней PRO`, rewardRoom: "Закрытая комната в Telegram", note: "Опция для креаторов: вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам." },
   });
 
   return (
@@ -7527,11 +7564,6 @@ function ReferralPanel() {
         <div className="space-y-1">
           <p className="eyebrow">{c.title}</p>
           <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{c.intro}</p>
-          {/* #PRELAUNCH-AUDIT: il claim −50% appare SOLO quando la promo è davvero
-              attiva (stesso flag del LaunchPromoBanner) → niente deceptive pricing. */}
-          {process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true" && (
-            <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{c.promo}</p>
-          )}
         </div>
         {phase === "loading" && (
           <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.loading}</p>
@@ -7568,6 +7600,11 @@ function ReferralPanel() {
               <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.linkLabel}</p>
               <p className="mb-link">{link}</p>
               <button onClick={copyLink} className="mb-cta">{copied ? c.copied : c.copy}</button>
+              {/* Cosa ottiene l'AMICO: sta accanto al link perché è la frase che chi
+                  invita copia nel messaggio. */}
+              {!!stats?.inviteeBonusDays && (
+                <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.friendGets(stats.inviteeBonusDays)}</p>
+              )}
             </div>
             <div className="flex gap-3">
               <div className="am-surface p-3 flex-1 text-center">
@@ -7575,16 +7612,54 @@ function ReferralPanel() {
                 <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.signups}</div>
               </div>
               <div className="am-surface p-3 flex-1 text-center">
-                <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.paid : "…"}</div>
-                <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.paid}</div>
+                <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.paying : "…"}</div>
+                <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.paying}</div>
               </div>
             </div>
+            {/* Il progresso è il motore del programma: senza, l'utente non sa di
+                essere a metà strada. I premi arrivano dall'API — mai hardcodati. */}
+            {!!stats?.tiers.length && (
+              <div className="am-surface-inset p-3 space-y-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.rewardsTitle}</p>
+                  <p className="text-[10px] font-mono text-[var(--am-coral)]">
+                    {nextTier
+                      ? c.progress(stats.paying, Math.max(1, nextTier.tier - stats.paying))
+                      : c.progressDone(stats.paying)}
+                  </p>
+                </div>
+                <ul className="space-y-1">
+                  {stats.tiers.map((t) => (
+                    <li
+                      key={t.tier}
+                      className="flex items-baseline gap-2 text-[10px] font-mono"
+                      style={{ color: t.reached ? "var(--am-coral)" : "var(--am-muted-2)" }}
+                    >
+                      <span aria-hidden="true" style={{ width: 10, flex: "0 0 auto" }}>{t.reached ? "✓" : "·"}</span>
+                      <span style={{ flex: "0 0 auto", minWidth: 76 }}>{c.tierAt(t.tier)}</span>
+                      <span style={{ minWidth: 0 }}>
+                        {t.rewardDays !== null ? c.rewardDays(t.rewardDays) : c.rewardRoom}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {statsErr && (
               <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.statsErr}</p>
             )}
           </>
         )}
-        <p className="text-[10px] font-mono text-[var(--am-muted-2)] border-t pt-3" style={{ borderColor: "var(--am-line)" }}>{c.note}</p>
+        {/* Tono minore, sotto la linea: la rev-share è un'opzione per creator, non
+            l'offerta; il −50% è un'informazione sul prezzo, non un premio.
+            #PRELAUNCH-AUDIT: il claim −50% appare SOLO quando la promo è davvero
+            attiva (stesso flag del LaunchPromoBanner) → niente deceptive pricing. */}
+        <div className="space-y-1 border-t pt-3" style={{ borderColor: "var(--am-line)" }}>
+          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.note}</p>
+          {process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true" && (
+            <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.promo}</p>
+          )}
+        </div>
       </div>
     </div>
   );
