@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Il DB è mockato; `computePaygateGrant` resta REALE (è puro e già testato):
@@ -16,6 +19,8 @@ import {
   countPayingInvitees,
   checkReferralTiers,
   grantInviteeBonus,
+  hasRoomAccess,
+  isRoomActivePlan,
 } from "./referral-rewards";
 import { planAmountUsdt, PUBLIC_PLAN_KEYS } from "./commercial-plan";
 import { dbQueryStrict, dbExecute } from "./db";
@@ -239,13 +244,15 @@ describe("checkReferralTiers — il grant dei gradini", () => {
     expect(days).toBeLessThan(89.1);
   });
 
-  it("il gradino 10 alza il flag della stanza e non tocca i giorni", async () => {
+  it("il gradino 10 non scrive nessun flag e non tocca i giorni", async () => {
     queueReads(...tierReads({ referredBy: "AMICO", payingCount: 10 }));
 
     await checkReferralTiers(INVITED);
 
+    // Il premio è la riga referral_rewards, non un flag: `referral_room_access`
+    // sapeva solo diventare TRUE ⇒ stanza eterna. Ora l'appartenenza si calcola.
     const room = vi.mocked(dbExecute).mock.calls.filter((c) => /referral_room_access/i.test(String(c[0])));
-    expect(room).toHaveLength(1);
+    expect(room).toHaveLength(0);
     // Tre gradini raggiunti, ma solo due concedono giorni.
     const dayGrants = vi.mocked(dbExecute).mock.calls.filter((c) => /plan_source = 'referral'/.test(String(c[0])));
     expect(dayGrants).toHaveLength(2);
@@ -319,5 +326,125 @@ describe("grantInviteeBonus", () => {
   it("col DB che throwa non lancia: un'attivazione non deve fallire per un bonus", async () => {
     vi.mocked(dbQueryStrict).mockRejectedValue(new Error("boom"));
     await expect(grantInviteeBonus(INVITED)).resolves.toBe(false);
+  });
+});
+
+// ── La stanza del gradino 10: il premio finisce quando finisce il piano ──────
+// Il buco che questi test chiudono: `profiles.referral_room_access` veniva
+// scritto SOLO a TRUE e da nessuna parte a FALSE ⇒ stanza di fatto eterna,
+// contro la promessa «finché resti attivo». Ora l'appartenenza si CALCOLA.
+
+/** La riga che `hasRoomAccess` legge: gradino 10 raggiunto o no, piano, scadenza. */
+function roomRow(opts: { tier10: boolean; plan: string; expiry: string | null }) {
+  return [{ plan: opts.plan, plan_expires_at: opts.expiry, tier10: opts.tier10 ? 1 : 0 }];
+}
+
+const MEMBER = "member@x.com";
+
+describe("hasRoomAccess", () => {
+  beforeEach(resetDb);
+
+  it("gradino 10 + premium non scaduto ⇒ membro", async () => {
+    queueReads(roomRow({ tier10: true, plan: "premium", expiry: new Date(Date.now() + 10 * DAY).toISOString() }));
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(true);
+  });
+
+  it("gradino 10 + piano scaduto ieri ⇒ NON membro (è la revoca che mancava)", async () => {
+    queueReads(roomRow({ tier10: true, plan: "premium", expiry: new Date(Date.now() - DAY).toISOString() }));
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(false);
+  });
+
+  it("gradino 10 + plan 'free' ⇒ NON membro", async () => {
+    queueReads(roomRow({ tier10: true, plan: "free", expiry: null }));
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(false);
+  });
+
+  it("scaduto e poi ri-pagato ⇒ membro di nuovo, senza rifare i 10 inviti", async () => {
+    // La riga tier = 10 in referral_rewards non si perde: cambia solo il piano.
+    queueReads(
+      roomRow({ tier10: true, plan: "premium", expiry: new Date(Date.now() - DAY).toISOString() }),
+      roomRow({ tier10: true, plan: "premium", expiry: new Date(Date.now() + 30 * DAY).toISOString() })
+    );
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(false);
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(true);
+    // Il rientro non richiede NESSUNA scrittura: niente da ri-concedere.
+    expect(dbExecute).not.toHaveBeenCalled();
+  });
+
+  it("gradino 10 non raggiunto + premium attivo ⇒ NON membro", async () => {
+    queueReads(roomRow({ tier10: false, plan: "premium", expiry: new Date(Date.now() + 10 * DAY).toISOString() }));
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(false);
+  });
+
+  it("piano a pagamento con scadenza NULL (righe legacy) ⇒ membro, come effectivePlan", async () => {
+    queueReads(roomRow({ tier10: true, plan: "base", expiry: null }));
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(true);
+  });
+
+  it("profilo inesistente ⇒ NON membro", async () => {
+    queueReads([]);
+    await expect(hasRoomAccess(MEMBER)).resolves.toBe(false);
+  });
+
+  it("legge il gradino 10 e risolve il profilo come lib/auth.ts", async () => {
+    queueReads(roomRow({ tier10: true, plan: "premium", expiry: null }));
+    await hasRoomAccess(MEMBER);
+    const [sql, params] = vi.mocked(dbQueryStrict).mock.calls[0] as [string, unknown[]];
+    expect(sql).toMatch(/r\.tier = 10/);
+    // Il flag memorizzato non deve rientrare dalla finestra.
+    expect(sql).not.toMatch(/referral_room_access/i);
+    // Match esatto preferito al normalizzato: nel DB esistono profili che
+    // differiscono per sole maiuscole.
+    expect(sql).toMatch(/LOWER\(TRIM\(p\.identifier\)\) = \$1/);
+    expect(params).toEqual([MEMBER]);
+  });
+
+  // Al contrario dei rail di pagamento, qui il fail-closed sarebbe PEGGIORE:
+  // un singhiozzo del DB butterebbe fuori un pagante dalla stanza.
+  it("con il DB rotto LANCIA, non risponde 'non è membro'", async () => {
+    vi.mocked(dbQueryStrict).mockRejectedValue(new Error("boom"));
+    await expect(hasRoomAccess(MEMBER)).rejects.toThrow(/boom/);
+  });
+});
+
+describe("isRoomActivePlan — specchio di effectivePlan", () => {
+  it("una data di scadenza CORROTTA nega l'accesso, non lo rende eterno", () => {
+    // #BUGCHECK-0617: `NaN < Date.now()` è false, quindi senza il fail-closed
+    // una riga con data corrotta resterebbe attiva per sempre.
+    expect(isRoomActivePlan("premium", "non-una-data")).toBe(false);
+  });
+  it("admin_full non è nella stanza: la regola del gradino 10 è base/premium", () => {
+    expect(isRoomActivePlan("admin_full", null)).toBe(false);
+  });
+  it("pending_payment non è un piano attivo", () => {
+    expect(isRoomActivePlan("pending_payment", null)).toBe(false);
+  });
+});
+
+describe("la vista 016 e hasRoomAccess non possono divergere in silenzio", () => {
+  // Due specchi della stessa regola (SQL per il bot, TS per l'app): se qualcuno
+  // ne cambia uno solo, questo test diventa rosso.
+  const MIGRATION = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "db", "migrations", "016_referral_room_view.sql"),
+    "utf8"
+  );
+
+  it("la vista calcola la stessa condizione: tier 10 + piano a pagamento non scaduto", () => {
+    expect(MIGRATION).toMatch(/CREATE OR REPLACE VIEW public\.referral_room_members/);
+    expect(MIGRATION).toMatch(/r\.tier = 10/);
+    expect(MIGRATION).toMatch(/plan IN \('base', 'premium'\)/);
+    expect(MIGRATION).toMatch(/plan_expires_at IS NULL OR p\.plan_expires_at > NOW\(\)/);
+  });
+
+  it("la vista non è un canale di lettura per anon/authenticated", () => {
+    // Le viste in PG girano coi permessi del PROPRIETARIO se non lo dichiarano:
+    // senza questo, la vista scavalcherebbe l'RLS di referral_rewards (015).
+    expect(MIGRATION).toMatch(/security_invoker\s*=\s*true/);
+    expect(MIGRATION).toMatch(/REVOKE ALL ON public\.referral_room_members FROM anon, authenticated/);
+  });
+
+  it("nessuno rimette in vita il flag vestigiale", () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "referral-rewards.ts"), "utf8");
+    expect(src).not.toMatch(/referral_room_access\s*=\s*TRUE/i);
   });
 });
