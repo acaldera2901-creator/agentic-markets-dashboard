@@ -10,6 +10,12 @@ import { MarginCalculator } from "./MarginCalculator";
 import { EvCalculator } from "./EvCalculator";
 import { KellyCalculator } from "./KellyCalculator";
 import { ProbabilityCalculator } from "./ProbabilityCalculator";
+import { ArbitrageCalculator } from "./ArbitrageCalculator";
+import { ParlayCalculator } from "./ParlayCalculator";
+import { RoiCalculator } from "./RoiCalculator";
+import { YieldCalculator } from "./YieldCalculator";
+import { StakeCalculator } from "./StakeCalculator";
+import { BankrollCalculator } from "./BankrollCalculator";
 
 export function ToolCalculator({
   slug,
@@ -31,5 +37,17 @@ export function ToolCalculator({
       return <KellyCalculator copy={copy} dash={dash} />;
     case "probability-calculator":
       return <ProbabilityCalculator copy={copy} dash={dash} />;
+    case "arbitrage-calculator":
+      return <ArbitrageCalculator copy={copy} dash={dash} />;
+    case "parlay-calculator":
+      return <ParlayCalculator copy={copy} dash={dash} />;
+    case "roi-calculator":
+      return <RoiCalculator copy={copy} dash={dash} />;
+    case "yield-calculator":
+      return <YieldCalculator copy={copy} dash={dash} />;
+    case "stake-calculator":
+      return <StakeCalculator copy={copy} dash={dash} />;
+    case "bankroll-calculator":
+      return <BankrollCalculator copy={copy} dash={dash} />;
   }
 }

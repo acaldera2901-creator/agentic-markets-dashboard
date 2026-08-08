@@ -8,13 +8,13 @@ const pt: ToolsCopy = {
   hub: {
     metaTitle: "Ferramentas grátis de apostas — odds, EV, Kelly e margem | BetRedge",
     metaDescription:
-      "Cinco calculadoras gratuitas: converte odds em qualquer formato, remove a margem da casa, calcula o valor esperado e dimensiona a aposta com Kelly. Sem registo.",
+      "11 calculadoras gratuitas: converte odds em qualquer formato, remove a margem da casa, calcula o valor esperado, dimensiona a aposta com Kelly, verifica uma arbitragem e mede o ROI. Sem registo.",
     h1: "Ferramentas gratuitas de apostas",
     lede:
-      "As cinco contas que se fazem antes de apostar: odds convertidas, margem removida, aposta dimensionada. Grátis, sem conta.",
+      "As onze contas que se fazem antes de apostar: odds convertidas, margem removida, aposta dimensionada, ROI medido. Grátis, sem conta.",
     cardCta: "Abrir a ferramenta",
     intro: [
-      "Toda aposta é uma comparação entre um preço e uma probabilidade. Estas cinco calculadoras fazem essa comparação como deve ser: traduzem as odds entre formatos, removem a margem da casa para expor a linha justa, transformam uma estimativa de probabilidade em valor esperado e dimensionam a aposta para que uma série negativa não acabe com a banca.",
+      "Toda aposta é uma comparação entre um preço e uma probabilidade. Estas onze calculadoras fazem essa comparação como deve ser: traduzem as odds entre formatos, removem a margem da casa para expor a linha justa, transformam uma estimativa de probabilidade em valor esperado, juntam as pernas de uma múltipla numa só odd, dizem quando duas casas divergem o suficiente para fechar uma arbitragem, dimensionam a aposta para que uma série negativa não acabe com a banca e medem depois quanto essas apostas renderam de facto.",
       "Funcionam inteiramente no teu navegador: nada é enviado, nada é guardado e não há conta para criar. Usa-as sozinhas, ou usa-as para verificar o que o nosso modelo já publica em cada jogo.",
     ],
   },
@@ -336,6 +336,367 @@ const pt: ToolsCopy = {
         {
           q: "A probabilidade implícita de um preço é a probabilidade real?",
           a: "Não. Contém ainda a margem da casa, portanto é sistematicamente maior que a estimativa honesta do mercado. Usa a calculadora de margem para a remover antes de a comparares com o teu número.",
+        },
+      ],
+    },
+
+    "arbitrage-calculator": {
+      metaTitle: "Calculadora de arbitragem — dividir a aposta entre casas | BetRedge",
+      metaDescription:
+        "Calculadora de arbitragem gratuita: introduz a melhor odd de cada resultado em casas diferentes e vê a soma das implícitas, como dividir a aposta e o lucro — ou que não existe nenhum.",
+      h1: "Calculadora de arbitragem",
+      lede:
+        "Introduz a melhor odd disponível em cada resultado e vê se duas casas juntas deixam margem — e como dividir a aposta se deixarem.",
+      labels: {
+        inputTitle: "Melhor odd em cada resultado",
+        outcome: "Resultado",
+        addOutcome: "Adicionar resultado",
+        removeOutcome: "Remover",
+        total: "Aposta total",
+        resultTitle: "Como dividir",
+        profit: "Lucro",
+        impliedSum: "Soma das probabilidades implícitas",
+        stakeOn: "Aposta no resultado",
+        guaranteedReturn: "Retorno em cada resultado",
+        verdictArb:
+          "As odds somam menos de 100%: dividida assim, cada resultado devolve a mesma quantia.",
+        verdictNoArb:
+          "As odds somam mais de 100%, portanto aqui não há arbitragem — qualquer divisão perde essa margem, saia o que sair.",
+        hint: "Uma odd por resultado, cada uma da casa que paga mais nesse lado. O decimal aceita vírgula: 2,10 vale como 2.10.",
+      },
+      takeaway:
+        "A arbitragem não é uma previsão. Nunca te pede para acertar em quem ganha: pede que duas casas discordem mais do que valem as margens delas.",
+      example: {
+        title: "Duas casas, 1.000 para dividir",
+        rows: [
+          { label: "Odds, uma casa por lado", value: "2.10 · 2.10" },
+          { label: "Soma das probabilidades implícitas", value: "95,24%" },
+          { label: "Aposta em cada lado, sobre 1.000", value: "500 · 500" },
+          { label: "Retorno em cada resultado", value: "1.050" },
+          { label: "Lucro", value: "+50 (+5,00%)" },
+        ],
+        note:
+          "O mesmo mercado a 1.90/1.90 dentro de uma só casa soma 105,26% e devolve −5,00% qualquer que seja a divisão. Entre as duas linhas nada mudou no jogo: a diferença está toda em qual casa paga mais em qual lado, e em ter contas com saldo nas duas enquanto as odds ainda estavam expostas.",
+      },
+      explainerTitle: "Quando duas casas discordam o suficiente",
+      explainer: [
+        "**Soma um dividido por cada odd e tens o mercado inteiro num único número.** Dentro de uma casa esse número passa sempre dos 100% — é a margem que o mantém lá. Mas a melhor odd de um lado e a melhor do outro estão muitas vezes em casas diferentes, e ao combiná-las a soma pode cair abaixo dos 100%. É toda a condição: **as probabilidades implícitas têm de somar menos de 1**. Divide a aposta total na proporção dessas implícitas e cada resultado devolve a mesma quantia, portanto o que recuperas deixa de depender do marcador. Duas odds de 2.10 somam 95,24%, e 500 em cada lado de uma aposta de 1.000 devolvem 1.050 aconteça o que acontecer.",
+        "**Na prática isto fecha muito menos vezes do que a aritmética sugere, e os motivos contam mais do que a fórmula.** As odds movem-se: a diferença que viste é normalmente a casa mais lenta a alinhar-se, e pode desaparecer nos segundos entre a primeira perna e a segunda, deixando-te uma aposta comum e descoberta a uma odd escolhida para cobrir e não pelo valor. Os limites de aposta apertam exactamente onde a diferença é maior, por isso 5% no papel é muitas vezes 5% sobre quarenta unidades e não sobre mil. E **as casas restringem as contas de quem faz isto de forma sistemática**: primeiro limites mais baixos, depois apostas recusadas e encerramentos. Junta o capital parado em várias casas e o câmbio entre moedas, e a arbitragem parece-se menos com uma máquina e mais com uma forma lenta e operacionalmente pesada de raspar uma margem fina.",
+      ],
+      faq: [
+        {
+          q: "Preciso de conta em todas as casas?",
+          a: "Sim. Uma arbitragem só existe entre as casas concretas que expõem aquelas odds concretas, portanto são precisas contas com saldo em cada uma antes de as odds se moverem. Esse capital, espalhado por várias casas e parado a maior parte do tempo, é o custo que quase nenhuma calculadora mostra.",
+        },
+        {
+          q: "O que acontece se a segunda odd se mover antes de eu apostar?",
+          a: "Ficas com a primeira perna sozinha: uma aposta comum, a uma odd escolhida para cobrir e não pelo valor. Coloca primeiro a perna com maior probabilidade de se mover, e trata o ficar descoberto como parte do risco, não como um acidente.",
+        },
+        {
+          q: "Porque é que as casas restringem quem faz arbitragem?",
+          a: "Porque a margem delas vive do fluxo equilibrado dos clientes recreativos, e uma conta que só apanha a melhor odd de um lado é para elas puro custo. As restrições chegam em silêncio como limites de aposta mais baixos, muito antes do encerramento da conta.",
+        },
+        {
+          q: "A arbitragem desportiva é legal?",
+          a: "A actividade em si é legal: estás a fazer apostas comuns a odds publicadas. O que pode proibi-la são os termos da casa, que costumam reservar o direito de limitar, recusar ou anular apostas que considerem arbitragem. Legal e permitido não são a mesma coisa.",
+        },
+      ],
+    },
+
+    "parlay-calculator": {
+      metaTitle: "Calculadora de múltiplas — odd combinada, probabilidade real e margem composta | BetRedge",
+      metaDescription:
+        "Calculadora de múltiplas gratuita: insere cada perna e vê a odd combinada, a probabilidade que o boletim exige de facto e como a margem da casa se compõe perna a perna.",
+      h1: "Calculadora de múltiplas",
+      lede:
+        "Cada perna que acrescentas multiplica a odd — e multiplica com ela a parte que fica para a casa. Aqui estão os dois números antes de apostar.",
+      labels: {
+        inputTitle: "As pernas",
+        leg: "Perna",
+        addLeg: "Adicionar perna",
+        removeLeg: "Remover",
+        marginPerLeg: "Margem da casa por perna (%)",
+        resultTitle: "Quanto vale a múltipla",
+        combinedOdds: "Odd combinada",
+        impliedProb: "Probabilidade de entrar",
+        compoundMargin: "Margem composta",
+        verdict:
+          "Multiplicar assume pernas independentes. Duas seleções do mesmo jogo não o são: a probabilidade real delas é normalmente maior do que o produto, e é por isso que as casas cotam múltiplas do mesmo jogo com um modelo próprio.",
+        hint: "Uma odd decimal por perna, até oito. A margem por perna escreve-se como número: 5 significa 5%, aproximadamente o que retém um mercado de duas saídas apertado.",
+      },
+      takeaway:
+        "A parte que a casa retém não se soma entre as pernas, compõe-se — quatro pernas a 1.80 parecem quatro apostas quase equilibradas e são um único evento de 9,53%.",
+      example: {
+        title: "Quatro pernas a 1.80, uma aposta de 9,53%",
+        rows: [
+          { label: "Pernas", value: "4 × 1.80" },
+          { label: "Odd combinada", value: "10.50" },
+          { label: "Probabilidade de entrar", value: "9,53%" },
+          { label: "Margem por perna", value: "5%" },
+          { label: "Margem composta", value: "21,55%" },
+        ],
+        note:
+          "Isolada, cada perna é a aposta em que ninguém pensa duas vezes: 55,56% implícito, 1.80 a ganhar. Em cadeia, as quatro exigem um evento de 9,53% — e os 5% que a casa retém em cada perna tornam-se 1,05⁴ − 1 = 21,55% na múltipla. Nada foi acrescentado à aposta a não ser mais formas de a perder: a odd subiu porque a probabilidade desceu.",
+      },
+      explainerTitle: "Porque a odd cresce mais depressa do que a probabilidade",
+      explainer: [
+        "**Uma múltipla é uma aposta só com várias formas de perder, não várias apostas.** A odd combinada é o produto das pernas — 1.80 quatro vezes dá 10.4976 — e a probabilidade é o produto das probabilidades, e é aí que a aritmética deixa de ser simpática: quatro seleções que chamarias quase equilibradas dão 9,53%. A margem comporta-se da mesma maneira, e essa é a parte que quase ninguém conta. Não se soma perna a perna, **compõe-se**: uma casa que retém 5% em cada uma de quatro pernas retém 1,05⁴ − 1 = 21,55% na múltipla, e com oito pernas esses mesmos 5% por perna já são 47,75%. O prémio parece generoso porque a probabilidade caiu, não porque alguém pague mais pelo mesmo risco.",
+        "**As múltiplas são o produto mais promovido das apostas e o menos favorável ao cliente**, e são o mesmo facto visto dos dois lados: quanto maior a margem composta, mais uma casa pode dar-se ao luxo de aumentar, segurar e publicitar aquele boletim. Uma vantagem fina numa perna não sobrevive a ser multiplicada por mais três pernas de margem — as mesmas seleções em simples pagam a margem uma vez cada, a quádrupla paga-a quatro vezes. Falta o que a multiplicação assume: **que as pernas são independentes**. Duas seleções do mesmo jogo estão correlacionadas, por isso multiplicar é a conta errada: a vitória em casa e o gol do seu ponta de lança tendem a chegar juntos, logo o par é mais provável do que o produto diz, enquanto pernas que dificilmente coexistem valem muito menos. É por isso que as casas constroem as múltiplas do mesmo jogo com um modelo próprio em vez de te deixarem montá-las a partir das simples — e é por isso que esta calculadora é honesta com pernas de jogos diferentes.",
+      ],
+      faq: [
+        {
+          q: "Serve para múltiplas do mesmo jogo?",
+          a: "Não exatamente. Aqui multiplica-se, e multiplicar assume pernas independentes. Os resultados dentro do mesmo jogo movem-se juntos, portanto a probabilidade real do par é diferente — muitas vezes maior do que o produto — e é por isso que as casas cotam esses mercados com um modelo próprio e não a partir das simples.",
+        },
+        {
+          q: "Porque é que a probabilidade combinada é tão baixa?",
+          a: "Porque as probabilidades multiplicam-se em vez de fazerem média. Quatro pernas a 55,56% dão 9,53%: cada perna que acrescentas torna o boletim inteiro menos provável, logo uma cadeia de seleções plausíveis vira depressa uma aposta improvável. A odd sobe para compensar, e com ela sobe a margem acumulada.",
+        },
+        {
+          q: "O que é exatamente a margem composta?",
+          a: "A parte da casa depois de cada perna a ter multiplicado. Insere quanto te custa uma perna — cerca de 5% num mercado de duas saídas apertado — e a calculadora compõe-na: um mais a margem, elevado ao número de pernas, menos um. Quatro pernas a 5% custam 21,55%, oito pernas 47,75%.",
+        },
+        {
+          q: "Quatro simples são melhores do que uma quádrupla?",
+          a: "Para quem aposta com vantagem, sim: as mesmas quatro seleções em simples pagam a margem uma vez cada em vez de a multiplicarem, e uma perna errada custa uma aposta e não o boletim todo. A múltipla compra variância — uma pequena probabilidade de um retorno grande — e o preço dessa variância é a margem composta.",
+        },
+      ],
+    },
+    "roi-calculator": {
+      metaTitle: "Calculadora de ROI para apostas — retorno da banca | BetRedge",
+      metaDescription:
+        "Calculadora de ROI gratuita para apostas: insere capital e lucro para ver o retorno da banca, o capital final e porque o mesmo lucro é um yield de 4%.",
+      h1: "Calculadora de ROI",
+      lede:
+        "O que a banca rendeu num período — e porque o mesmo lucro de 400 é aqui um ROI de 40% e na outra página um yield de 4%.",
+      labels: {
+        inputTitle: "Capital e resultado",
+        capital: "Capital",
+        profit: "Lucro",
+        resultTitle: "Retorno sobre esse capital",
+        roi: "ROI",
+        endingCapital: "Capital final",
+        hint: "O lucro entra líquido e pode ser negativo: -250 é um período de perdas. O capital é a banca que colocaste em risco, não o total apostado.",
+        verdict:
+          "O ROI depende inteiramente do denominador, por isso declara-o: 400 numa banca de 1.000 são 40%, os mesmos 400 sobre 10.000 apostados são um yield de 4%. Nenhum dos números diz muito sem o período e o número de apostas por trás.",
+      },
+      takeaway:
+        "O ROI diz o que a banca rendeu. Não diz se a estratégia é boa, porque os mesmos 40% podem vir de 200 apostas ou de um sábado com sorte.",
+      example: {
+        title: "400 de lucro numa banca de 1.000",
+        rows: [
+          { label: "Capital", value: "1.000" },
+          { label: "Lucro do período", value: "+400" },
+          { label: "ROI", value: "+40,00%" },
+          { label: "Capital final", value: "1.400" },
+          { label: "Os mesmos 400 sobre 10.000 apostados", value: "yield +4,00%" },
+        ],
+        note:
+          "As duas percentagens descrevem um único resultado idêntico. Chegar a +40,00% da banca exigiu 200 apostas de 50 — 10.000 de volume apostado, dez vezes o capital — e 4,00% desse volume são os mesmos 400. Roda a banca duas vezes em vez de dez e o yield por trás de um ROI de 40% teria de ser 20%, algo que quase ninguém sustenta.",
+      },
+      explainerTitle: "O lucro medido sobre o dinheiro em risco",
+      explainer: [
+        "**O ROI é o lucro dividido pelo dinheiro que colocaste em risco**, e toda a dificuldade está na segunda metade da frase. Uma banca de 1.000 que fecha a temporada com 400 a mais rendeu 40,00%, e esse número compara-se honestamente com qualquer outra coisa que tivesses feito com esses 1.000. O que não consegue descrever são as apostas. Um retorno de 40% não diz quantas apostas foram precisas, em quanto tempo, nem quão perto do zero o saldo passou pelo caminho — e são essas as três coisas que decidem se volta a acontecer. Por isso **declara o denominador antes de citar o número**: banca inicial, saldo médio e total depositado dão três percentagens diferentes a partir do mesmo conjunto de apostas, e a mais lisonjeira é sempre a mais pequena.",
+        "**Os mesmos 400 de lucro são um ROI de 40% e um yield de 4% ao mesmo tempo**, e saber qual deles tens na mão é quase todo o valor das duas páginas. O ROI mede contra o capital, o yield contra o volume apostado — a soma de cada stake colocado. O nosso exemplo chegou lá com 200 apostas de 50, portanto passaram 10.000 pela banca: dez vezes o capital, e 4,00% desse volume são precisamente esses 400. **Esse multiplicador é toda a ponte entre os dois números**, e é a razão pela qual o ROI sozinho favorece quem joga muito. Quem roda uma banca de 1.000 dez vezes com um yield de 4% e quem a roda duas vezes com um yield de 20% declaram ambos 40%, e apenas um deles é repetível. A qualidade por aposta mede-se na calculadora de yield; guarda o ROI para aquilo em que é realmente útil: comparar o que aquele dinheiro rendeu face às alternativas.",
+      ],
+      faq: [
+        {
+          q: "Qual é a diferença entre ROI e yield?",
+          a: "O ROI divide o lucro pelo capital, o yield divide-o pelo volume apostado — a soma de todos os stakes. Os mesmos 400 de lucro são 40,00% de uma banca de 1.000 e 4,00% de 10.000 apostados. O ROI diz o que o dinheiro rendeu, o yield diz se as apostas eram boas, e a razão entre os dois é quantas vezes rodaste a banca.",
+        },
+        {
+          q: "Que capital devo usar como denominador?",
+          a: "Aquele que consegues declarar e depois manter fixo — normalmente a banca inicial. Saldo máximo, saldo médio e total depositado produzem percentagens diferentes a partir das mesmas apostas, por isso o número só significa algo ao lado da sua definição. Reforçar a conta a meio do período sem redeclarar o denominador é a forma mais comum de inflacionar um ROI.",
+        },
+        {
+          q: "Um ROI de 40% é bom?",
+          a: "Depende do período e do número de apostas. Numa temporada com 200 apostas é um resultado forte mas plausível. Os mesmos 40% em vinte apostas ficam bem dentro do intervalo que o azar produz por si só, e 40% numa semana normalmente significa que os stakes eram grandes face à banca, não que a vantagem o era.",
+        },
+        {
+          q: "O ROI pode ser negativo?",
+          a: "Sim, e a calculadora mostra-o em vez de o esconder: uma perda de 250 numa banca de 1.000 é -25,00%. A recuperação não é simétrica — depois de -25% precisas de +33,33% sobre o que resta para voltar ao ponto de partida — e é por isso que o drawdown merece tanta atenção como o retorno.",
+        },
+      ],
+    },
+    "yield-calculator": {
+      metaTitle: "Calculadora de yield para apostas — lucro sobre o volume | BetRedge",
+      metaDescription:
+        "Calculadora de yield gratuita: insere número de apostas, stake médio e lucro para obter o volume apostado e o yield — e quantas apostas são precisas para significar algo.",
+      h1: "Calculadora de yield",
+      lede:
+        "O lucro medido sobre tudo o que apostaste, não sobre a tua banca — a única cifra que compara dois apostadores com dinheiro diferente.",
+      labels: {
+        inputTitle: "Apostas, stake e resultado",
+        bets: "Número de apostas",
+        avgStake: "Stake médio",
+        profit: "Lucro",
+        resultTitle: "Yield sobre o volume",
+        turnover: "Volume apostado",
+        yieldPercent: "Yield",
+        hint: "O volume é calculado por nós: apostas × stake médio. Conta o stake de cada aposta, não o dinheiro exposto de uma vez. O lucro entra líquido e pode ser negativo.",
+        verdictNoise:
+          "Abaixo de mil apostas esta cifra é sobretudo ruído. Com stake plano a 2.00, um desvio-padrão do yield são 7,07 pontos em 200 apostas e ainda 3,16 em 1.000: lê-o como um intervalo, não como um resultado.",
+        verdictVolume:
+          "Passadas as mil apostas a cifra começa a transportar informação, mas um desvio-padrão continua a ser cerca de 3,16 pontos a 2.00 — um +4% e um +7% sobre o mesmo volume não são dois níveis de competência diferentes.",
+      },
+      takeaway:
+        "O yield é a métrica que compara apostadores: 4% sobre 10.000 apostados vale mais do que um ROI de 40% obtido em vinte apostas.",
+      example: {
+        title: "200 apostas de 50, 400 de lucro",
+        rows: [
+          { label: "Número de apostas", value: "200" },
+          { label: "Stake médio", value: "50" },
+          { label: "Volume apostado", value: "10.000" },
+          { label: "Lucro", value: "+400" },
+          { label: "Yield", value: "+4,00%" },
+          { label: "Os mesmos 400 numa banca de 1.000", value: "ROI +40,00%" },
+        ],
+        note:
+          "Um resultado, duas percentagens igualmente honestas: 4,00% dos 10.000 que passaram pela casa, 40,00% dos 1.000 que estiveram em risco. A distância entre elas são apenas as dez vezes em que a banca rodou. E a amostra pesa mais do que as duas cifras: em 200 apostas um desvio-padrão do yield são 7,07 pontos, portanto este +4,00% cai dentro do intervalo que uma série de moeda ao ar produz sozinha.",
+      },
+      explainerTitle: "A cifra que compara dois apostadores",
+      explainer: [
+        "**O yield é o lucro dividido pelo volume apostado** — a soma de cada stake colocado, não o saldo da conta. É a cifra que os apostadores citam entre si precisamente porque não depende de quanto dinheiro têm: 4% é 4% com stakes de 5 ou de 500. **O dado que todos erram é o denominador**, e erram sempre na mesma direção. O volume conta o stake de cada aposta no momento em que é colocada, portanto 200 apostas de 50 são 10.000 mesmo que num instante só estivessem 50 expostos, e a banca de 1.000 por onde essas apostas circularam não é o número pelo qual dividir. É por isso que esta página pede o número de apostas e o stake médio e calcula o volume à tua frente. Mede o mesmo lucro contra o capital e obténs o ROI: a calculadora de ROI guarda a outra metade da comparação, onde 400 de lucro são 40,00% de uma banca de 1.000 e 4,00% de 10.000 apostados.",
+        "**Um yield acima de cerca de 5%, sustentado em volume sério, é raro.** Onde existe, vive em mercados moles com limites baixos, e encolhe quando os stakes crescem, porque as odds que o permitiam não sobrevivem a ser atingidas com força. Qualquer cifra de longo prazo muito acima disso deve ser tratada como amostra curta, nicho mole ou uma definição diferente de volume. E **abaixo de algumas centenas de apostas o número é ruído, não um resultado**: com stake plano a 2.00 um desvio-padrão do yield é um dividido pela raiz do número de apostas — 7,07 pontos em 200, 3,16 em 1.000, 2,00 em 2.500. Um +4% de yield só chega a dois desvios-padrão acima de zero por volta das 2.500 apostas. Em odds mais altas a oscilação é maior: a 3.00 as mesmas 200 apostas carregam um desvio de 10 pontos. E é essa a leitura honesta de vinte apostas ganhas: não uma vantagem medida, só uma amostra demasiado curta.",
+      ],
+      faq: [
+        {
+          q: "Como calculo o meu volume apostado?",
+          a: "Somando o stake de cada aposta colocada, ganha ou perdida. 200 apostas de 50 são 10.000 de volume, mesmo que a banca por trás fosse só 1.000. Não uses o líquido nem o saldo: o volume é o dinheiro que passou pela casa, contado uma vez por aposta.",
+        },
+        {
+          q: "Um yield de 5% é bom?",
+          a: "Sustentado ao longo de milhares de apostas, sim — está perto do topo do que sobrevive a limites reais. Yields muito acima disso vêm normalmente de mercados moles, de uma amostra curta ou de valor promocional, e tendem a cair quando os stakes sobem, porque as odds que os produziam são retiradas ou limitadas.",
+        },
+        {
+          q: "Quantas apostas até o meu yield significar algo?",
+          a: "Mais do que a maioria supõe. Com stake plano a 2.00 um desvio-padrão do yield são 7,07 pontos em 200 apostas, 3,16 em 1.000 e 2,00 em 2.500, logo um +4% só chega a dois desvios acima de zero perto das 2.500 apostas. Abaixo de algumas centenas, trata a cifra como um intervalo.",
+        },
+        {
+          q: "E se os meus stakes variarem muito?",
+          a: "Então apostas × stake médio é só uma aproximação, e favorece-te quando as vitórias caíram nos stakes grandes. Soma os stakes reais e divide o lucro por esse total. Se apostas em unidades, conta unidades: o yield por unidade apostada é a mesma cifra e é mais fácil de manter honesta.",
+        },
+      ],
+    },
+    "stake-calculator": {
+      metaTitle: "Calculadora de stake — a aposta para um lucro alvo | BetRedge",
+      metaDescription:
+        "Calculadora de stake gratuita: introduz a odd e o lucro que queres e vê o stake necessário, o retorno total e que parte da banca essa aposta compromete.",
+      h1: "Calculadora de stake",
+      lede:
+        "O stake que um lucro alvo exige a um determinado preço — e a parte da banca que compromete sem o dizer.",
+      labels: {
+        inputTitle: "Preço e objetivo",
+        odds: "Preço",
+        targetProfit: "Lucro alvo",
+        bankroll: "Banca",
+        resultTitle: "Quanto custa esse objetivo",
+        stakeNeeded: "Stake necessário",
+        totalReturn: "Retorno total",
+        bankrollShare: "Parte da banca",
+        hint: "A banca é o que transforma o stake numa percentagem: sem ela, o stake é um número sem nada ao lado. O preço vai em decimal — 2.50, não +150.",
+        verdictModest:
+          "Este stake compromete menos de 5% da banca declarada, e uma série de dez derrotas não a acabaria. Lê-o ao lado do preço, não isolado: o mesmo objetivo a um preço mais curto pede uma aposta bem maior.",
+        verdictHeavy:
+          "Este stake compromete mais de 5% da banca declarada num único resultado. Nesse tamanho, uma série de dez derrotas — comum em preços perto de 2.00 — leva mais de metade dela, por isso confirma o número na calculadora de banca antes de apostar.",
+      },
+      takeaway:
+        "Partir do lucro que queres é a forma mais rápida de apostar demasiado: a pergunta útil não é quanto quero ganhar, é quanto posso perder.",
+      example: {
+        title: "Querer 100 de lucro a 2.50",
+        rows: [
+          { label: "Preço", value: "2.50" },
+          { label: "Lucro alvo", value: "100" },
+          { label: "Stake necessário", value: "66,67" },
+          { label: "Retorno total", value: "166,67" },
+          { label: "Parte de uma banca de 1.000", value: "6,67%" },
+        ],
+        note:
+          "Os mesmos 100 custam 25,00 a 5.00 e 400,00 a 1.25 — o objetivo não se moveu, moveu-se o preço. E 66,67 numa banca de 1.000 é exatamente o Kelly completo de quem acredita que o resultado sai 44% das vezes, quando 2.50 fica em zero a 40%. O desejo já contém uma estimativa de probabilidade com uma vantagem de +10%, apenas não declarada.",
+      },
+      explainerTitle: "Raciocinar ao contrário a partir de um número que escolheste",
+      explainer: [
+        "A aritmética é a metade fácil. Uma aposta devolve o stake mais stake × (preço − 1), portanto **o stake que um objetivo exige é o objetivo dividido pelo preço menos um** — 100 a 2.50 pede 66,67, e o boletim volta como 166,67. O que torna esta página útil é o segundo efeito: **quanto mais curto o preço, maior a aposta que o mesmo desejo exige**. Esses 100 custam 25,00 a 5.00, 66,67 a 2.50, 100,00 a 2.00 e 400,00 a 1.25. Entre essas quatro linhas a tua opinião não mudou nada, e o dinheiro em risco variou dezesseis vezes. É por isso que a calculadora pede uma banca de que não precisa: 66,67 não é grande nem pequeno até saberes que é 6,67% de tudo o que separaste.",
+        "**Raciocinar a partir do lucro que queres é o caminho mais rápido para um stake demasiado grande**, e falha de uma maneira específica. Perde a primeira e o objetivo cresce em silêncio para a cobrir: querer outros 100 depois de deixar 66,67 é pedir 166,67, que a 2.00 exige um stake de 166,67, e se essa também cair o pedido seguinte é 476,19 a 1.70. Três apostas depois, 709,52 de uma banca de 1.000 ficaram expostos para ganhar os 100 iniciais, e o preço encurtou de cada vez porque preços curtos parecem mais seguros. **A aposta cresce exatamente quando a razão para a fazer enfraquece.** A versão honesta deste cálculo corre ao contrário, do que podes perder para o que podes apostar, e é a calculadora do critério de Kelly: ali o tamanho nasce de uma vantagem medida, não de um número que escolheste. E o nosso número também não é coincidência — 66,67 sobre 1.000 é precisamente o que o Kelly completo recomenda a 2.50 a quem acredita em 44%, contra os 40% que o preço implica. Se não defendesses esses 44%, o stake nunca foi sobre a aposta.",
+      ],
+      faq: [
+        {
+          q: "Como se calcula o stake para um lucro alvo?",
+          a: "Divide o lucro que queres pelo preço menos um. A 2.50 o retorno líquido por unidade apostada é 1,50, por isso 100 de lucro pedem 100 / 1,50 = 66,67 de stake e pagam 166,67 no total. A 2.00 o retorno líquido é 1,00, e é por isso que ali o stake e o objetivo são o mesmo número.",
+        },
+        {
+          q: "Porque é que a calculadora pede a minha banca?",
+          a: "Porque o stake por si só não diz nada. 66,67 é um erro de arredondamento para um apostador e um terço da conta para outro, e o que decide qual dos dois é a parte da banca — aqui 6,67%. Deixa o campo vazio e o stake continua a funcionar; a percentagem passa a um travessão, o que é honesto, porque essa suposição é tua e não nossa.",
+        },
+        {
+          q: "Devo usar esta ou o critério de Kelly?",
+          a: "Usa esta para pôr preço num desejo e Kelly para dimensionar uma aposta. Esta página parte de um número que escolheste e calcula quanto custa; a calculadora do critério de Kelly parte de uma vantagem que mediste e calcula o que a banca aguenta. Quando as duas discordam, a que deves descartar é a que não consultou a tua estimativa de probabilidade.",
+        },
+        {
+          q: "Perseguir uma perda com um stake maior alguma vez faz sentido?",
+          a: "Não com esta aritmética. Cada pedido de recuperação é maior que o anterior, e costuma ser colocado a um preço mais curto porque preços curtos parecem mais seguros, logo o stake cresce enquanto a vantagem encolhe. As regras de banca existem para tornar o próximo stake independente do último resultado: fixa a unidade como percentagem da banca e a sequência não pode descontrolar-se.",
+        },
+      ],
+    },
+    "bankroll-calculator": {
+      metaTitle: "Calculadora de banca — unidade, drawdown e derrotas até à ruína | BetRedge",
+      metaDescription:
+        "Calculadora de banca gratuita: define a banca e a unidade e vê o stake por aposta, o custo de uma série de derrotas, o drawdown que deixa e quantas derrotas cobre.",
+      h1: "Calculadora de banca",
+      lede:
+        "O que uma unidade em percentagem compromete de facto: o stake por aposta, o custo de uma série negativa e quantas derrotas seguidas a banca sobrevive.",
+      labels: {
+        inputTitle: "Banca e regra",
+        bankroll: "Banca",
+        unitPercent: "Unidade (%)",
+        losingStreak: "Série de derrotas",
+        resultTitle: "Quanto custa a regra",
+        unit: "Stake por aposta",
+        streakLoss: "Custo da série",
+        drawdown: "Drawdown",
+        betsToRuin: "Derrotas até à ruína",
+        hint: "As percentagens escrevem-se como números: 2 significa 2% da banca por aposta. A série de derrotas é uma contagem de apostas, por isso só números inteiros — é a série que queres sobreviver, não uma previsão.",
+        verdictSafe:
+          "A 5% por unidade ou abaixo, a série que declaraste deixa a banca ainda a funcionar. Uma série de dez chega a 38,54% dos apostadores em 1.000 apostas a odds pares, por isso um plano que só aguenta se nunca a encontrares não é um plano.",
+        verdictAggressive:
+          "Acima de 5% por unidade a série negativa comum acaba com a conta: dez derrotas levam metade da banca ou mais, e a partir da metade seria preciso +100,00% para voltar. Como uma série de dez surge em 1.000 apostas para 38,54% dos apostadores, isto é apostar em não a encontrar.",
+      },
+      takeaway:
+        "A percentagem por unidade não é uma preferência. É a tua decisão sobre quão longa pode ser a pior série de derrotas antes de estares fora do jogo.",
+      example: {
+        title: "Uma banca de 2.000 a 2% por aposta",
+        rows: [
+          { label: "Banca", value: "2.000" },
+          { label: "Unidade", value: "2%" },
+          { label: "Stake por aposta", value: "40,00" },
+          { label: "Dez derrotas seguidas", value: "400,00" },
+          { label: "Drawdown", value: "20,00%" },
+          { label: "Derrotas até à ruína", value: "50" },
+        ],
+        note:
+          "Esse buraco de 20,00% pede +25,00% sobre o que resta para voltar a 2.000. Passa a unidade para 5% e as mesmas dez derrotas custam 1.000 — um drawdown de 50,00% que exige +100,00% para recuperar, com a banca a cobrir 20 derrotas seguidas em vez de 50. Três pontos de regra, e a série que sobrevives fica em menos de metade.",
+      },
+      explainerTitle: "A regra que decide que série negativa sobrevives",
+      explainer: [
+        "**Uma unidade é uma percentagem da banca, não um valor**, e a diferença só aparece quando as coisas correm mal. Aposta 40 fixos para sempre e uma banca que caiu para 1.000 está a apostar 4% em vez de 2%: a regra aperta exatamente quando devia aliviar. Recalcula a unidade sobre o saldo atual e cada derrota torna o stake seguinte mais pequeno, e é isso que impede uma série negativa de terminar o trabalho. A assimetria por baixo é toda a razão para te importares — **perder 20% exige +25,00% para recuperar, perder 50% exige +100,00% e perder 80% exige +400,00%.** Nada na segunda metade desses pares é simétrico da primeira, e nenhuma vantagem é grande o suficiente para fazer de +400,00% um plano em vez de uma esperança. Uma banca de 2.000 a 2% aposta 40 por jogada, absorve dez derrotas seguidas por 400,00 e sai com −20,00% — tendo gasto dez das 50 derrotas consecutivas que esse stake aguenta.",
+        "**Uma série de dez derrotas em odds perto de 2.00 é comum, não é azar**, e este é o número que o mostra. Em odds pares uma única sequência de dez tem probabilidade de 0,098% — uma em 1.024 — que se lê como nunca, até contares quantas sequências uma temporada contém. Em 1.000 apostas a probabilidade de encontrar pelo menos uma série de dez ou mais é **38,54%**; a 2.10, onde quem não tem vantagem ganha 47,62% das vezes, é **52,31%** — melhor do que lançar uma moeda. Em 500 apostas os mesmos dois números são 21,45% e 30,73%, e a série mais longa a esperar em 1.000 apostas a odds pares é cerca de dez, porque cresce com o logaritmo de base dois do número de apostas. A série não é a cauda da distribuição, é o seu centro, por isso **uma unidade acima de 5% é apostar em não encontrar o caso comum**: a 5% essas dez derrotas levam metade da banca, a 10% levam-na toda. Quando a vantagem é medida e não suposta, a calculadora do critério de Kelly dimensiona a unidade a partir da própria vantagem — lê esse número como um teto e esta página como o chão por baixo.",
+      ],
+      faq: [
+        {
+          q: "Que tamanho de unidade devo usar?",
+          a: "Entre um e dois por cento da banca por aposta é o intervalo habitual do stake plano, e acima de cinco por cento a série negativa comum passa a ser um evento que fecha a conta. A forma honesta de escolher é ao contrário: decide a série que queres sobreviver, lê o drawdown que esta calculadora dá e pergunta se depois continuarias a apostar da mesma maneira.",
+        },
+        {
+          q: "Porque é que as derrotas até à ruína são um número inteiro?",
+          a: "Porque contam apostas, e uma fração de aposta não é uma aposta. Uma banca de 1.000 a 3% dá uma unidade de 30, ou seja 33 derrotas e um terço — logo a resposta é 33, arredondada para baixo, porque a banca já não cobre a seguinte por inteiro. Arredondar para cima prometeria uma aposta para a qual o dinheiro não existe.",
+        },
+        {
+          q: "Dez derrotas seguidas são mesmo normais?",
+          a: "Sim, e a aritmética não está perto. Uma única sequência de dez derrotas a odds pares é um evento de 0,098%, mas em 1.000 apostas há sequências suficientes para que a probabilidade de encontrar pelo menos uma seja 38,54%, subindo a 52,31% a 2.10, onde quem não tem vantagem ganha 47,62% das vezes. Planeia-a em vez de te surpreender.",
+        },
+        {
+          q: "Devo usar esta ou o critério de Kelly?",
+          a: "Usa esta quando não tens vantagem medida, o que é quase sempre: uma unidade em percentagem não pede estimativas de probabilidade e o seu pior caso conhece-se de antemão. A calculadora do critério de Kelly é a ferramenta certa quando consegues defender uma probabilidade, e costuma recomendar mais do que 2% planos. Tratar a resposta dela como teto e a regra plana como chão mantém as duas honestas.",
         },
       ],
     },

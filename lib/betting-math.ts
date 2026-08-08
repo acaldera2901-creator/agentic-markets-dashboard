@@ -276,3 +276,130 @@ export function parlayOdds(decimals: number[]): number | null {
   if (!decimals.every(isOdds)) return null;
   return decimals.reduce((acc, d) => acc * d, 1);
 }
+
+// ──────────────────────────────── arbitraggio ───────────────────────────
+
+/**
+ * Arbitraggio su un mercato coperto interamente da quote di book diversi.
+ * Σ(1/quota) < 1 ⇒ esiste una divisione degli stake che vince in ogni esito.
+ * Ritorna il profitto ANCHE quando è negativo (nessun arbitraggio): dire
+ * "−4,99%" è un'informazione, `null` no. `null` è riservato all'input invalido.
+ */
+export function arbitrage(args: {
+  decimals: number[];
+  total: number;
+}): { impliedSum: number; profitPercent: number; stakes: number[]; returns: number[] } | null {
+  const { decimals, total } = args;
+  // isMarket garantisce ≥2 esiti e ogni quota finita e > 1: quindi impliedSum
+  // sta in (0, n) e nessuna divisione qui sotto può produrre NaN o Infinity.
+  if (!isMarket(decimals)) return null;
+  if (!Number.isFinite(total) || total <= 0) return null;
+
+  const impliedSum = overround(decimals);
+  // Stake proporzionale alla probabilità implicita ⇒ ritorno identico su ogni esito.
+  const stakes = decimals.map((d) => (total * (1 / d)) / impliedSum);
+  const returns = stakes.map((s, i) => s * decimals[i]);
+
+  return { impliedSum, profitPercent: 1 / impliedSum - 1, stakes, returns };
+}
+
+/** Importo scritto da un umano che PUÒ essere negativo: il profitto di un
+ *  periodo in perdita è un dato, non un errore di input. `parseAmount` di
+ *  parts.tsx rifiuta i negativi ed è giusto così per gli stake — qui serve
+ *  l'altra semantica, e vive accanto alla matematica che la consuma. */
+export function parseSignedAmount(raw: string): number | null {
+  const s = raw.trim().replace(",", ".");
+  if (!/^[+-]?\d*\.?\d+$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+// ─────────────────────────── ritorno: ROI e yield ───────────────────────
+// Due divisioni, lo stesso numeratore e due denominatori diversi: è tutta la
+// differenza fra le due metriche, e il motivo per cui vanno lette insieme.
+// Stesso 400 di profitto: su 1.000 di cassa è il 40% (ROI), su 10.000 giocati è
+// il 4% (yield). Il ponte fra i due è quante volte la cassa è stata rigirata.
+
+/** ROI: profitto sul CAPITALE impiegato (la cassa), non sul giocato.
+ *  Zero profitto è 0, non `null`: "non ho guadagnato niente" è un'informazione.
+ *  `null` è riservato al denominatore che non esiste. */
+export function roi(args: { profit: number; capital: number }): number | null {
+  const { profit, capital } = args;
+  if (!Number.isFinite(profit) || !Number.isFinite(capital) || capital <= 0) return null;
+  return profit / capital;
+}
+
+/** Yield: profitto sul TOTALE GIOCATO (turnover). È la metrica con cui si
+ *  confrontano scommettitori diversi, perché non dipende da quanta cassa hanno. */
+export function yieldPercent(args: { profit: number; turnover: number }): number | null {
+  const { profit, turnover } = args;
+  if (!Number.isFinite(profit) || !Number.isFinite(turnover) || turnover <= 0) return null;
+  return profit / turnover;
+}
+
+// ─────────── dimensionamento dello stake: desiderio, cassa, edge ──────────
+// Tre punti di partenza per la stessa domanda «quanto punto?», e le tre pagine
+// dei tool si rimandano l'una all'altra invece di finger di essere alternative:
+//  · `stakeForTarget` parte da quanto vuoi VINCERE — il più intuitivo e il più
+//    pericoloso, perché non guarda né la cassa né la probabilità;
+//  · `bankrollPlan` parte da una REGOLA DI CASSA — non sa niente dell'edge, ma
+//    sa dirti quanto lunga può essere la serie negativa che sopravvivi;
+//  · `kelly` (più sopra) parte da un EDGE MISURATO, ed è l'unico che risponde
+//    alla domanda giusta. Gli altri due ci portano.
+// Il ponte è verificato nel test: 100 di obiettivo a 2.50 chiede 66,67, che su
+// una cassa da 1.000 è il 6,667% — esattamente il full Kelly di chi crede al
+// 44% a quella quota (break-even 40%, edge +10%). Uno stake nato da un
+// desiderio è già una scommessa su una probabilità, solo non dichiarata.
+
+/** Lo stake che produce un profitto obiettivo a una data quota.
+ *  Il profitto netto è stake × (quota − 1) ⇒ stake = obiettivo / (quota − 1).
+ *  Un obiettivo ≤ 0 è `null`: «quanto punto per non guadagnare niente» non è
+ *  la domanda di questa pagina, e 0 sarebbe una risposta finta. */
+export function stakeForTarget(args: {
+  targetProfit: number;
+  decimal: number;
+}): number | null {
+  const { targetProfit, decimal } = args;
+  if (!Number.isFinite(targetProfit) || targetProfit <= 0) return null;
+  // isOdds garantisce quota > 1 e finita: il denominatore non può essere 0.
+  if (!isOdds(decimal)) return null;
+  return targetProfit / (decimal - 1);
+}
+
+/** Gestione della cassa a stake piatto: dimensione dell'unità, quanto costa una
+ *  serie negativa, e quante giocate perse di fila azzerano la cassa.
+ *  `betsToRuin` è floor: la giocata che la cassa non copre più non si fa.
+ *  `streakDrawdown` NON è troncato al 100%: se la serie dichiarata costa più
+ *  della cassa, il numero sopra il 100% è l'informazione — significa che il
+ *  piano non arriva in fondo alla serie. */
+export function bankrollPlan(args: {
+  bankroll: number;
+  unitPercent: number;
+  losingStreak: number;
+}): { unit: number; streakLoss: number; streakDrawdown: number; betsToRuin: number } | null {
+  const { bankroll, unitPercent, losingStreak } = args;
+  if (!Number.isFinite(bankroll) || bankroll <= 0) return null;
+  if (!Number.isFinite(unitPercent) || unitPercent <= 0 || unitPercent > 1) return null;
+  if (!Number.isFinite(losingStreak) || losingStreak < 0) return null;
+
+  const unit = bankroll * unitPercent;
+  const streakLoss = unit * losingStreak;
+  return {
+    unit,
+    streakLoss,
+    streakDrawdown: streakLoss / bankroll,
+    betsToRuin: Math.floor(bankroll / unit),
+  };
+}
+
+/** Conteggio scritto da un umano → intero positivo. Serve dove il numero conta
+ *  cose e non misura importi: una serie di «10,5» sconfitte non esiste, e
+ *  troncarla in silenzio produrrebbe un drawdown che nessuno saprebbe rifare.
+ *  Sta qui e non in `parts.tsx` per lo stesso motivo di `parseSignedAmount`:
+ *  quel file non si tocca, e la semantica vive accanto alla matematica. */
+export function parseCount(raw: string): number | null {
+  const s = raw.trim();
+  if (!/^\d+$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}

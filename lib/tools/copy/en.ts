@@ -12,13 +12,13 @@ const en: ToolsCopy = {
   hub: {
     metaTitle: "Free Betting Tools — Odds, EV, Kelly & Margin Calculators | BetRedge",
     metaDescription:
-      "Five free betting calculators: convert odds between every format, remove the bookmaker margin, work out expected value, size a stake with the Kelly criterion and combine probabilities. No signup.",
+      "11 free betting calculators: convert odds in any format, remove the bookmaker margin, work out expected value, size a stake with Kelly, check an arbitrage, price a parlay and measure ROI. No signup.",
     h1: "Free betting tools",
     lede:
-      "The five calculations every serious bettor runs before placing a bet — converted, de-margined and sized. Free, no account needed.",
+      "The eleven calculations every serious bettor runs before placing a bet — converted, de-margined, sized and measured. Free, no account needed.",
     cardCta: "Open the tool",
     intro: [
-      "Every bet is a comparison between a price and a probability. These five calculators do that comparison properly: they translate prices between formats, strip the bookmaker's margin out of a market to expose the fair line, turn a probability estimate into expected value, and size the stake so a losing run does not end the bankroll.",
+      "Every bet is a comparison between a price and a probability. These eleven calculators do that comparison properly: they translate prices between formats, strip the bookmaker's margin out of a market to expose the fair line, turn a probability estimate into expected value, fold a parlay's legs into one price, show when two books disagree enough to lock an arbitrage, size the stake so a losing run does not end the bankroll, and measure afterwards what those bets actually returned.",
       "They run entirely in your browser — nothing is sent anywhere, nothing is stored, and there is no account to create. Use them on their own, or use them to check what our model already publishes on every match.",
     ],
   },
@@ -348,6 +348,367 @@ const en: ToolsCopy = {
         {
           q: "Is the implied probability of a price the true probability?",
           a: "No. It still contains the bookmaker's margin, so it is systematically higher than the market's honest estimate. Use the margin calculator to strip it out before comparing with your own number.",
+        },
+      ],
+    },
+
+    "arbitrage-calculator": {
+      metaTitle: "Arbitrage Calculator — Split a Stake Across Bookmakers | BetRedge",
+      metaDescription:
+        "Free arbitrage calculator: enter the best price on each outcome from different bookmakers to see the implied sum, how to split the total stake, and the profit — or that there is none.",
+      h1: "Arbitrage calculator",
+      lede:
+        "Enter the best price available on each outcome and see whether two books together leave a margin — and how to split the stake if they do.",
+      labels: {
+        inputTitle: "Best price on each outcome",
+        outcome: "Outcome",
+        addOutcome: "Add outcome",
+        removeOutcome: "Remove",
+        total: "Total stake",
+        resultTitle: "How to split it",
+        profit: "Profit",
+        impliedSum: "Sum of implied probabilities",
+        stakeOn: "Stake on outcome",
+        guaranteedReturn: "Return in every outcome",
+        verdictArb:
+          "The prices add up to less than 100%: split this way, every outcome pays back the same amount.",
+        verdictNoArb:
+          "The prices add up to more than 100%, so there is no arbitrage here — any split loses that margin whichever outcome lands.",
+        hint: "One price per outcome, each from the book paying most on that side. Decimal accepts a comma: 2,10 works like 2.10.",
+      },
+      takeaway:
+        "Arbitrage is not a prediction. It never asks you to be right about who wins — it asks two bookmakers to disagree by more than their own margins.",
+      example: {
+        title: "Two books, 1,000 to split",
+        rows: [
+          { label: "Prices, one book each", value: "2.10 · 2.10" },
+          { label: "Sum of implied probabilities", value: "95.24%" },
+          { label: "Stake on each, out of 1,000", value: "500 · 500" },
+          { label: "Return in every outcome", value: "1,050" },
+          { label: "Profit", value: "+50 (+5.00%)" },
+        ],
+        note:
+          "The same market priced 1.90/1.90 inside one book sums to 105.26% and hands back −5.00% however you split it. Nothing about the match changed between the two lines: the whole difference is which book pays more on which side, and whether you had funded accounts at both while the prices were still up.",
+      },
+      explainerTitle: "When two books disagree enough",
+      explainer: [
+        "**Add up one divided by each price and you hold the whole market in a single number.** Inside one bookmaker that number always clears 100% — the margin is what keeps it there. But the best price on one side and the best price on the other often sit at different books, and combining them can drop the sum below 100%. That is the entire condition: **the implied probabilities have to add up to less than 1**. Split the total stake in proportion to those implied probabilities and every outcome returns the same amount, so what you get back stops depending on the result. Two prices of 2.10 sum to 95.24%, and 500 on each side of a 1,000 stake returns 1,050 whichever way the match goes.",
+        "**In practice this closes far less often than the arithmetic suggests, and the reasons matter more than the formula.** Prices move: the gap you spotted is usually the slower book catching up, and it can vanish in the seconds between placing the first leg and the second, leaving you holding an ordinary unhedged bet at a price you chose for hedging rather than for value. Stake limits bite hardest exactly where the gap is widest, so a 5% margin on paper is often a 5% margin on forty units rather than on a thousand. And **bookmakers restrict accounts that do this systematically** — lower limits first, refused bets and closures later. Add the capital parked across several books and the currency spread between them, and arbitrage reads less like a machine and more like a slow, operationally demanding way to shave a thin margin.",
+      ],
+      faq: [
+        {
+          q: "Do I need an account at every bookmaker?",
+          a: "Yes. An arbitrage exists only across the specific books quoting those specific prices, so you need funded accounts at each of them before the prices move. That capital, spread across several books and idle most of the time, is the cost most calculators leave out.",
+        },
+        {
+          q: "What happens if the second price moves before I place it?",
+          a: "You are left holding the first leg on its own — an ordinary bet, at a price you picked for hedging rather than for value. Place the leg most likely to move first, and treat being left unhedged as part of the risk rather than as an accident.",
+        },
+        {
+          q: "Why do bookmakers restrict arbitrage bettors?",
+          a: "Because their margin depends on balanced action from recreational customers, and an account that only ever takes the best price on one side is pure cost to them. Restrictions usually arrive quietly as lower stake limits, long before an account is closed outright.",
+        },
+        {
+          q: "Is arbitrage betting legal?",
+          a: "The activity itself is legal — you are placing ordinary bets at advertised prices. What can forbid it is the bookmaker's own terms, which commonly reserve the right to limit, refuse or void bets they judge to be arbitrage. Legal and permitted are not the same thing.",
+        },
+      ],
+    },
+
+    "parlay-calculator": {
+      metaTitle: "Parlay Calculator — Combined Odds, Real Probability, Compound Margin | BetRedge",
+      metaDescription:
+        "Free parlay calculator: enter each leg to get the combined price, the probability the accumulator actually needs, and how the bookmaker margin compounds leg by leg.",
+      h1: "Parlay calculator",
+      lede:
+        "Every leg you add multiplies the price — and multiplies the bookmaker's cut along with it. Here are both numbers before the bet is placed.",
+      labels: {
+        inputTitle: "The legs",
+        leg: "Leg",
+        addLeg: "Add leg",
+        removeLeg: "Remove",
+        marginPerLeg: "Bookmaker margin per leg (%)",
+        resultTitle: "What the accumulator is worth",
+        combinedOdds: "Combined price",
+        impliedProb: "Probability it lands",
+        compoundMargin: "Compound margin",
+        verdict:
+          "Multiplying assumes the legs are independent. Two selections from the same match are not: their real chance is usually higher than the product, which is why books price same-game multiples with a model of their own.",
+        hint: "One decimal price per leg, up to eight. The margin per leg goes in as a number: 5 means 5%, roughly what a tight two-way market holds.",
+      },
+      takeaway:
+        "The bookmaker's cut does not add up across the legs, it compounds — four legs at 1.80 look like four near-even bets and are a single 9.53% event.",
+      example: {
+        title: "Four legs at 1.80, one bet at 9.53%",
+        rows: [
+          { label: "Legs", value: "4 × 1.80" },
+          { label: "Combined price", value: "10.50" },
+          { label: "Probability it lands", value: "9.53%" },
+          { label: "Margin per leg", value: "5%" },
+          { label: "Compound margin", value: "21.55%" },
+        ],
+        note:
+          "On its own each leg is the kind of bet nobody thinks twice about: 55.56% implied, 1.80 to win. Chained, the four of them need a 9.53% event — and the 5% the book holds on each leg becomes 1.05⁴ − 1 = 21.55% on the accumulator. Nothing was added to the bet except more ways to lose it: the price went up because the chance went down.",
+      },
+      explainerTitle: "Why the price grows faster than the chance",
+      explainer: [
+        "**A parlay is one bet with several ways to lose, not several bets.** The combined price is the product of the legs — 1.80 taken four times is 10.4976 — and the probability is the product of the probabilities, which is where the arithmetic stops being friendly: four selections you would each call close to a coin flip come to 9.53%. The margin behaves the same way, and that is the part almost nobody prices in. It does not add up leg by leg, it **compounds**: a book holding 5% on each of four legs holds 1.05⁴ − 1 = 21.55% on the accumulator, and by eight legs that same 5% per leg has become 47.75%. The payout looks generous because the chance collapsed, not because anyone is paying you more for the same risk.",
+        "**Accumulators are the most heavily promoted product in betting and the least favourable one to the customer**, and those are the same fact seen from two sides: the larger the compounded margin, the more a bookmaker can afford to boost, insure and advertise the bet. A thin edge on one leg does not survive being multiplied by three more legs of margin — the same selections as singles pay the margin once each, the four-fold pays it four times over. Then there is what the multiplication assumes: **that the legs are independent**. Two selections from the same match are correlated, so multiplying is the wrong sum for them: a home win and its striker scoring tend to arrive together, so the pair is likelier than the product says, while legs that can barely coexist are worth far less. That is why books build same-game multiples with their own model instead of letting you assemble them out of the singles — and why this calculator is honest for legs from different matches.",
+      ],
+      faq: [
+        {
+          q: "Does this work for same-game parlays?",
+          a: "Not exactly. It multiplies, and multiplying assumes the legs are independent. Outcomes inside one match usually move together, so the true chance of the pair is different — often higher than the product — which is why bookmakers price those markets with their own model rather than from the singles.",
+        },
+        {
+          q: "Why is the combined probability so low?",
+          a: "Because probabilities multiply instead of averaging. Four legs at 55.56% come to 9.53%: every leg you add makes the whole bet less likely, so a chain of plausible selections quickly becomes an unlikely bet. The price rises to match it, and the accumulated margin rises with the price.",
+        },
+        {
+          q: "What exactly is the compound margin?",
+          a: "The bookmaker's cut after every leg has multiplied it. Enter what one leg costs you — around 5% on a tight two-way market — and the calculator compounds it: one plus the margin, raised to the number of legs, minus one. Four legs at 5% cost 21.55%, eight legs cost 47.75%.",
+        },
+        {
+          q: "Are four singles better than a four-fold?",
+          a: "For anyone betting on an edge, yes: the same four selections as singles pay the margin once each instead of multiplying it, and one wrong leg costs one bet rather than the whole ticket. A parlay buys variance — a small chance of a large return — and the price of that variance is the compounded margin.",
+        },
+      ],
+    },
+    "roi-calculator": {
+      metaTitle: "ROI Calculator for Betting — Return on Your Bankroll | BetRedge",
+      metaDescription:
+        "Free betting ROI calculator: enter capital and profit to get the return on your bankroll, the closing balance, and why the same profit reads as a 4% yield.",
+      h1: "ROI calculator",
+      lede:
+        "What the bankroll returned over a period — and why the same 400 of profit is a 40% ROI here and a 4% yield on the other page.",
+      labels: {
+        inputTitle: "Capital and result",
+        capital: "Capital",
+        profit: "Profit",
+        resultTitle: "Return on that capital",
+        roi: "ROI",
+        endingCapital: "Capital after",
+        hint: "Profit goes in net and can be negative: -250 is a losing period. Capital is the bankroll you put at risk, not the total you staked.",
+        verdict:
+          "ROI depends entirely on the denominator, so declare it: 400 on a 1,000 bankroll is 40%, the same 400 against 10,000 staked is a 4% yield. Neither figure means much without the period and the number of bets behind it.",
+      },
+      takeaway:
+        "ROI says what the bankroll returned. It does not say whether the strategy is any good, because the same 40% can come from 200 bets or from one lucky Saturday.",
+      example: {
+        title: "400 of profit on a 1,000 bankroll",
+        rows: [
+          { label: "Capital", value: "1,000" },
+          { label: "Profit over the period", value: "+400" },
+          { label: "ROI", value: "+40.00%" },
+          { label: "Capital after", value: "1,400" },
+          { label: "Same 400 against 10,000 staked", value: "yield +4.00%" },
+        ],
+        note:
+          "Both percentages describe one identical result. Reaching +40.00% on the bankroll took 200 bets of 50 — 10,000 of turnover, ten times the capital — and 4.00% of that turnover is the same 400. Turn the bankroll over twice instead of ten times and the yield behind a 40% ROI would have to be 20%, which almost nobody sustains.",
+      },
+      explainerTitle: "Profit measured against the money at risk",
+      explainer: [
+        "**ROI is profit divided by the money you put at risk**, and all the difficulty sits in the second half of that sentence. A bankroll of 1,000 that finishes a season 400 in front returned 40.00%, and that figure can honestly be compared with anything else you might have done with the same 1,000. What it cannot describe is the betting. A 40% return says nothing about how many bets it took, over how long, or how close the balance came to zero on the way — and those are the three things that decide whether it happens again. So **declare the denominator before quoting the number**: starting bankroll, average balance and total deposits give three different percentages from one identical set of bets, and the flattering one is always the smallest.",
+        "**The same 400 of profit is a 40% ROI and a 4% yield at once**, and knowing which one you are holding is most of the value of both pages. ROI measures against capital, yield measures against turnover — the sum of every stake placed. Our example got there with 200 bets of 50, so 10,000 went through the bankroll: ten times the capital, and 4.00% of it is that same 400. **That multiplier is the whole bridge between the two numbers**, and it is why ROI on its own flatters a busy bettor. Someone turning a 1,000 bankroll over ten times at a 4% yield and someone turning it over twice at a 20% yield both report 40%, and only one of those is repeatable. Work out the per-bet quality on the yield calculator, and keep ROI for what it is genuinely good at: comparing what that money returned against the alternatives.",
+      ],
+      faq: [
+        {
+          q: "What is the difference between ROI and yield?",
+          a: "ROI divides profit by capital, yield divides it by turnover — the sum of every stake. The same 400 of profit is 40.00% of a 1,000 bankroll and 4.00% of 10,000 staked. ROI tells you what the money returned, yield tells you how good the bets were, and the ratio between them is how many times you turned the bankroll over.",
+        },
+        {
+          q: "Which capital should I use as the denominator?",
+          a: "Whichever one you can state and then keep fixed — the starting bankroll is the usual choice. Peak balance, average balance and total deposits each produce a different percentage from the same bets, so the number only means something next to its definition. Topping the account up mid-period without restating the denominator is the commonest way an ROI ends up overstated.",
+        },
+        {
+          q: "Is a 40% ROI good?",
+          a: "It depends on the period and the number of bets. Over a season and 200 bets it is a strong but plausible result. The same 40% over twenty bets sits well inside the range luck produces on its own, and 40% in a week usually means the stakes were large relative to the bankroll rather than that the edge was.",
+        },
+        {
+          q: "Can ROI be negative?",
+          a: "Yes, and the calculator shows it instead of hiding it: a 250 loss on a 1,000 bankroll is -25.00%. Recovery is not symmetric — after -25% you need +33.33% on what is left to get back to even — which is why the drawdown deserves as much attention as the return.",
+        },
+      ],
+    },
+    "yield-calculator": {
+      metaTitle: "Yield Calculator for Betting — Profit per Unit Staked | BetRedge",
+      metaDescription:
+        "Free betting yield calculator: enter your number of bets, average stake and profit to get turnover and yield — and how many bets it takes before the number means anything.",
+      h1: "Yield calculator",
+      lede:
+        "Profit measured against everything you staked, not against your bankroll — the one figure that compares two bettors with different amounts of money.",
+      labels: {
+        inputTitle: "Bets, stake and result",
+        bets: "Number of bets",
+        avgStake: "Average stake",
+        profit: "Profit",
+        resultTitle: "Yield on turnover",
+        turnover: "Turnover",
+        yieldPercent: "Yield",
+        hint: "Turnover is worked out for you: bets × average stake. Count the stake of every bet, not the money exposed at one time. Profit goes in net and can be negative.",
+        verdictNoise:
+          "Under a thousand bets this figure is mostly noise. With flat stakes at 2.00 one standard deviation of yield is 7.07 points over 200 bets and still 3.16 over 1,000, so read it as a range rather than as a result.",
+        verdictVolume:
+          "Past a thousand bets the figure starts to carry information, but one standard deviation is still around 3.16 points at 2.00 — a +4% and a +7% over the same volume are not two different levels of skill.",
+      },
+      takeaway:
+        "Yield is the number that compares bettors: 4% on 10,000 staked is worth more than a 40% ROI collected over twenty bets.",
+      example: {
+        title: "200 bets of 50, 400 in profit",
+        rows: [
+          { label: "Number of bets", value: "200" },
+          { label: "Average stake", value: "50" },
+          { label: "Turnover", value: "10,000" },
+          { label: "Profit", value: "+400" },
+          { label: "Yield", value: "+4.00%" },
+          { label: "Same 400 on a 1,000 bankroll", value: "ROI +40.00%" },
+        ],
+        note:
+          "One result, two honest percentages: 4.00% of the 10,000 that went through the book, 40.00% of the 1,000 that was ever at risk. The gap between them is nothing but the ten times the bankroll was turned over. And the sample matters more than either figure — at 200 bets one standard deviation of yield is 7.07 points, so this +4.00% sits inside the range a coin-flip run produces on its own.",
+      },
+      explainerTitle: "The number that compares two bettors",
+      explainer: [
+        "**Yield is profit divided by turnover** — the total of every stake you have placed, not the balance in the account. It is the figure bettors quote to each other precisely because it does not depend on how much money they have: 4% is 4% whether the stakes are 5 or 500. **The input people get wrong is the denominator**, and they get it wrong in the same direction every time. Turnover counts each bet's stake as it is placed, so 200 bets of 50 is 10,000 even if only 50 was ever exposed at once, and the 1,000 bankroll those bets were recycled through is not the number to divide by. That is why this page asks for the count and the average stake and works the turnover out in front of you. Measure the same profit against capital instead and you get ROI: the ROI calculator holds the other half of the comparison, where 400 of profit is 40.00% of a 1,000 bankroll and 4.00% of 10,000 staked.",
+        "**A yield above roughly 5%, sustained over serious volume, is rare.** Where it exists it usually lives in soft markets with low limits, and it shrinks as the stakes grow, because the prices that allowed it do not survive being hit hard. Treat any long-run figure far above that as a short sample, a soft niche, or a different definition of turnover. And **under a few hundred bets the number is noise, not a result**: with flat stakes at 2.00 one standard deviation of yield is one divided by the square root of the number of bets — 7.07 points over 200 bets, 3.16 over 1,000, 2.00 over 2,500. A +4% yield only reaches two standard deviations from zero at around 2,500 bets. Longer prices swing wider still: at 3.00 the same 200 bets carry a standard deviation of 10 points. Which is the honest reading of twenty winning bets — not an edge measured, just a sample too short to tell the difference.",
+      ],
+      faq: [
+        {
+          q: "How do I work out my turnover?",
+          a: "Add up the stake of every bet you placed, win or lose. 200 bets of 50 is 10,000 of turnover, even if the bankroll behind them was only 1,000. Do not use the net amount and do not use the balance: turnover is the money that passed through the bookmaker, counted once per bet.",
+        },
+        {
+          q: "Is a 5% yield good?",
+          a: "Sustained over thousands of bets, yes — it is around the top of what survives real limits. Yields well above it usually come from soft markets, a short sample or promotional value, and they tend to fall as stakes rise, because the prices that produced them get taken or restricted.",
+        },
+        {
+          q: "How many bets before my yield means something?",
+          a: "More than most people assume. With flat stakes at 2.00 one standard deviation of yield is 7.07 points over 200 bets, 3.16 over 1,000 and 2.00 over 2,500, so a +4% only reaches two standard deviations from zero at about 2,500 bets. Below a few hundred bets, treat the figure as a range.",
+        },
+        {
+          q: "What if my stakes vary a lot?",
+          a: "Then bets × average stake is only an approximation, and it flatters you when the wins landed on the big stakes. Add up the actual stakes and divide the profit by that total. If you stake in units, count the units: the yield per unit staked is the same figure and easier to keep honest.",
+        },
+      ],
+    },
+    "stake-calculator": {
+      metaTitle: "Stake Calculator — The Stake Needed for a Target Profit | BetRedge",
+      metaDescription:
+        "Free stake calculator: enter the price and the profit you want to see the stake it takes, the total return, and how much of your bankroll that single bet commits.",
+      h1: "Stake calculator",
+      lede:
+        "The stake a target profit demands at a given price — and the share of your bankroll it quietly commits.",
+      labels: {
+        inputTitle: "Price and target",
+        odds: "Odds",
+        targetProfit: "Target profit",
+        bankroll: "Bankroll",
+        resultTitle: "What that target costs",
+        stakeNeeded: "Stake needed",
+        totalReturn: "Total return",
+        bankrollShare: "Share of bankroll",
+        hint: "The bankroll is what turns the stake into a share: without it the stake is a number with nothing to compare it to. Odds go in decimal — 2.50, not +150.",
+        verdictModest:
+          "This stake commits under 5% of the declared bankroll, which a run of ten losses would not end. Read it next to the price, not on its own: the same target at a shorter price asks for a much larger bet.",
+        verdictHeavy:
+          "This stake commits more than 5% of the declared bankroll on one result. At that size a run of ten losses — ordinary at prices around 2.00 — takes more than half of it, so check the number against the bankroll calculator before placing it.",
+      },
+      takeaway:
+        "Starting from the profit you want is the fastest way to bet too much: the useful question is not how much you want to win, it is how much you can afford to lose.",
+      example: {
+        title: "Wanting 100 of profit at 2.50",
+        rows: [
+          { label: "Odds", value: "2.50" },
+          { label: "Target profit", value: "100" },
+          { label: "Stake needed", value: "66.67" },
+          { label: "Total return", value: "166.67" },
+          { label: "Share of a 1,000 bankroll", value: "6.67%" },
+        ],
+        note:
+          "The same 100 costs 25.00 at 5.00 and 400.00 at 1.25 — the target never moved, only the price did. And 66.67 on a 1,000 bankroll is exactly full Kelly for someone who thinks the outcome lands 44% of the time, when 2.50 breaks even at 40%. So the wish already contains a probability estimate of a +10% edge, just an undeclared one.",
+      },
+      explainerTitle: "Working backwards from a number you picked",
+      explainer: [
+        "The arithmetic is the easy half. A bet returns its stake plus stake × (price − 1), so **the stake a target demands is the target divided by the price minus one** — 100 at 2.50 needs 66.67, and the ticket comes back as 166.67. What makes this page worth reading is the second effect: **the shorter the price, the bigger the bet the same wish requires**. That 100 costs 25.00 at 5.00, 66.67 at 2.50, 100.00 at 2.00 and 400.00 at 1.25. Nothing about your opinion changed between those four lines, and the money at risk moved by a factor of sixteen. This is why the calculator asks for a bankroll it does not strictly need: 66.67 is neither large nor small until you know it is 6.67% of everything you have set aside.",
+        "**Reasoning from the profit you want is the quickest route to a stake that is too large**, and it fails in a specific way. Lose the first bet and the target silently grows to cover it: wanting 100 again after dropping 66.67 means asking for 166.67, which at 2.00 takes a 166.67 stake, and if that goes too the next ask is 476.19 at 1.70. Three bets in, 709.52 of a 1,000 bankroll has been exposed to win the original 100, and the prices got shorter each time because short prices feel safer. **The bet gets bigger exactly as the reason for it gets weaker.** The honest version of this calculation runs the other way round, from what you can lose to what you can stake, and that is the Kelly criterion calculator: there the size comes from a measured edge, not from a figure you chose. Ours is not a coincidence either — 66.67 on 1,000 is precisely what full Kelly recommends at 2.50 to someone who believes 44%, against the 40% the price implies. If you would not defend that 44%, the stake was never about the bet.",
+      ],
+      faq: [
+        {
+          q: "How is the stake for a target profit worked out?",
+          a: "Divide the profit you want by the price minus one. At 2.50 the net return per unit staked is 1.50, so 100 of profit needs 100 / 1.50 = 66.67 of stake and pays 166.67 in total. At 2.00 the net return is 1.00, which is why the stake and the target are the same number there.",
+        },
+        {
+          q: "Why does the calculator ask for my bankroll?",
+          a: "Because the stake on its own tells you nothing. 66.67 is a rounding error to one bettor and a third of the account to another, and the figure that decides which is the share of the bankroll — 6.67% here. Leave the field empty and the stake still works; the share becomes a dash, which is honest, because that assumption is yours to make and not ours to invent.",
+        },
+        {
+          q: "Should I use this or the Kelly criterion?",
+          a: "Use this one to price a wish and Kelly to size a bet. This page starts from a number you picked and works out what it costs; the Kelly criterion calculator starts from an edge you have measured and works out what the bankroll can carry. When the two disagree, the one that did not consult your probability estimate is the one to drop.",
+        },
+        {
+          q: "Is chasing a loss with a bigger stake ever right?",
+          a: "Not on this arithmetic. Each recovery ask is larger than the last, and it is usually placed at a shorter price because short prices feel safer, so the stake grows while the edge shrinks. Bankroll rules exist to make the next stake independent of the last result: fix the unit as a share of the bankroll and the sequence cannot run away.",
+        },
+      ],
+    },
+    "bankroll-calculator": {
+      metaTitle: "Bankroll Calculator — Unit Size, Drawdown and Losses to Ruin | BetRedge",
+      metaDescription:
+        "Free bankroll calculator: set a bankroll and a unit size to see the stake per bet, what a losing run costs, the drawdown it leaves, and how many losses the bankroll covers.",
+      h1: "Bankroll calculator",
+      lede:
+        "What a percentage unit actually commits: the stake per bet, the cost of a losing run, and how many consecutive losses the bankroll survives.",
+      labels: {
+        inputTitle: "Bankroll and rule",
+        bankroll: "Bankroll",
+        unitPercent: "Unit size (%)",
+        losingStreak: "Losing streak",
+        resultTitle: "What the rule costs",
+        unit: "Stake per bet",
+        streakLoss: "Cost of the run",
+        drawdown: "Drawdown",
+        betsToRuin: "Losses to ruin",
+        hint: "Percentages go in as numbers: 2 means 2% of the bankroll per bet. The losing streak is a count of bets, so whole numbers only — it is the bad run you want to survive, not a prediction.",
+        verdictSafe:
+          "At or under 5% per unit the run you declared leaves the bankroll still working. A run of ten reaches 38.54% of bettors inside 1,000 bets at even money, so a plan that only holds if you never meet one is not a plan.",
+        verdictAggressive:
+          "Above 5% per unit the ordinary bad run ends the account: ten losses take half the bankroll or more, and half of it needs a 100.00% gain to come back. Since a run of ten arrives inside 1,000 even-money bets for 38.54% of bettors, this is a bet on not meeting it.",
+      },
+      takeaway:
+        "The unit percentage is not a preference. It is your decision about how long the worst losing run is allowed to be before you are out of the game.",
+      example: {
+        title: "A 2,000 bankroll at 2% per bet",
+        rows: [
+          { label: "Bankroll", value: "2,000" },
+          { label: "Unit size", value: "2%" },
+          { label: "Stake per bet", value: "40.00" },
+          { label: "Ten losses in a row", value: "400.00" },
+          { label: "Drawdown", value: "20.00%" },
+          { label: "Losses to ruin", value: "50" },
+        ],
+        note:
+          "That 20.00% hole needs a +25.00% gain on what is left to get back to 2,000. Move the unit to 5% and the same ten losses cost 1,000 — a 50.00% drawdown needing +100.00% to recover, with the bankroll covering 20 consecutive losses instead of 50. Three points on the rule, and the run you survive is less than half as long.",
+      },
+      explainerTitle: "The rule that decides how long a bad run you survive",
+      explainer: [
+        "**A unit is a percentage of the bankroll, not an amount**, and the difference only shows up when things go wrong. Stake a fixed 40 forever and a bankroll that has fallen to 1,000 is betting 4% instead of 2%: the rule tightens exactly when it should loosen. Recalculate the unit against the current balance and every loss makes the next stake smaller, which is what stops a bad run from finishing the job. The asymmetry underneath is the whole reason to care — **losing 20% needs +25.00% to recover, losing 50% needs +100.00%, and losing 80% needs +400.00%.** Nothing in the second half of those pairs is symmetric with the first, and no edge is big enough to make a 400.00% recovery a plan rather than a hope. A 2,000 bankroll at 2% stakes 40 a bet, absorbs ten straight losses for 400.00, and comes out down 20.00% — having used ten of the 50 consecutive losses that stake could survive.",
+        "**A run of ten losses at prices around 2.00 is ordinary, not bad luck**, and this is the number that makes the point. At even money any single sequence of ten has a probability of 0.098% — one in 1,024 — which reads like never until you count how many sequences a season contains. Across 1,000 bets the chance of meeting at least one losing run of ten or longer is **38.54%**; at 2.10, where a bettor with no edge wins 47.62% of the time, it is **52.31%** — better than a coin flip. Over 500 bets the same two figures are 21.45% and 30.73%, and the longest run to expect in 1,000 even-money bets is about ten, because it grows with the base-two logarithm of the number of bets. The run is not the tail of the distribution, it is the middle of it, so **a unit above 5% is a bet on not meeting the ordinary case**: at 5% those ten losses take half the bankroll, at 10% they take all of it. When the edge is measured rather than assumed, the Kelly criterion calculator sizes the unit from the edge itself — read what it gives you as a ceiling, and this page as the floor beneath it.",
+      ],
+      faq: [
+        {
+          q: "What unit size should I use?",
+          a: "One to two percent of the bankroll per bet is the usual range for flat staking, and above five percent the ordinary losing run becomes an account-ending event. The honest way to pick is backwards: choose the losing run you intend to survive, then read the drawdown this calculator gives and ask whether you would keep betting the same way after it.",
+        },
+        {
+          q: "Why does losses to ruin show a whole number?",
+          a: "Because it counts bets, and a fraction of a bet is not one. A 1,000 bankroll at 3% gives a 30 unit, which is 33 losses and a third — so the answer is 33, rounded down, because the bankroll cannot cover the next one in full. Rounding up would promise a bet the money does not exist for.",
+        },
+        {
+          q: "Is a ten-bet losing run really normal?",
+          a: "Yes, and the arithmetic is not close. Any one sequence of ten losses at even money is a 0.098% event, but across 1,000 bets there are enough sequences that the chance of meeting at least one is 38.54%, rising to 52.31% at 2.10 where a bettor with no edge wins 47.62% of the time. Plan around it rather than being surprised by it.",
+        },
+        {
+          q: "Should I use this or the Kelly criterion?",
+          a: "Use this when you do not have a measured edge, which is most of the time: a percentage unit needs no probability estimate and its worst case is knowable in advance. The Kelly criterion calculator is the right tool once you can defend a probability, and it will usually recommend more than a flat 2%. Treating its answer as a ceiling and a flat rule as the floor keeps both honest.",
         },
       ],
     },

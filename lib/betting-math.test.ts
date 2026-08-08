@@ -16,6 +16,13 @@ import {
   kelly,
   parlayProbability,
   parlayOdds,
+  arbitrage,
+  roi,
+  yieldPercent,
+  parseSignedAmount,
+  stakeForTarget,
+  bankrollPlan,
+  parseCount,
 } from "./betting-math";
 
 const near = (v: number | null | undefined, expected: number, digits = 6) => {
@@ -305,5 +312,227 @@ describe("multipla", () => {
     expect(parlayProbability([0.5, 1])).toBeNull();
     expect(parlayOdds([])).toBeNull();
     expect(parlayOdds([2, 1])).toBeNull();
+  });
+});
+
+describe("arbitrage", () => {
+  it("2.10 e 2.10 su due book danno +5.00% e stake simmetrici", () => {
+    const r = arbitrage({ decimals: [2.1, 2.1], total: 1000 });
+    expect(r).not.toBeNull();
+    expect(r!.impliedSum).toBeCloseTo(0.952381, 6);
+    expect(r!.profitPercent).toBeCloseTo(0.05, 6);
+    expect(r!.stakes[0]).toBeCloseTo(500, 6);
+    expect(r!.stakes[1]).toBeCloseTo(500, 6);
+    expect(r!.returns[0]).toBeCloseTo(1050, 6);
+  });
+
+  it("senza arbitraggio il profitto è negativo, non null", () => {
+    const r = arbitrage({ decimals: [1.9, 1.9], total: 1000 });
+    expect(r!.impliedSum).toBeCloseTo(1.052632, 6);
+    expect(r!.profitPercent).toBeLessThan(0);
+  });
+
+  it("quote asimmetriche: 3.00 e 1.60 sbilanciano gli stake ma pareggiano il ritorno", () => {
+    const r = arbitrage({ decimals: [3.0, 1.6], total: 1000 });
+    // 1/3 + 1/1.6 = 0.333333 + 0.625 = 0.958333
+    expect(r!.impliedSum).toBeCloseTo(0.958333, 6);
+    expect(r!.returns[0]).toBeCloseTo(r!.returns[1], 6);
+  });
+
+  it("input non validi tornano null, non NaN", () => {
+    expect(arbitrage({ decimals: [], total: 1000 })).toBeNull();
+    expect(arbitrage({ decimals: [2.1, 0], total: 1000 })).toBeNull();
+    expect(arbitrage({ decimals: [2.1, 2.1], total: 0 })).toBeNull();
+  });
+});
+
+describe("roi", () => {
+  it("400 di profitto su 1000 di capitale è il 40%", () => {
+    expect(roi({ profit: 400, capital: 1000 })).toBeCloseTo(0.4, 9);
+  });
+
+  it("una perdita dà un ROI negativo", () => {
+    expect(roi({ profit: -250, capital: 1000 })).toBeCloseTo(-0.25, 9);
+  });
+
+  it("profitto zero è 0, non null: 'non ho guadagnato niente' è un'informazione", () => {
+    expect(roi({ profit: 0, capital: 1000 })).toBe(0);
+  });
+
+  it("capitale zero o negativo è null, non Infinity", () => {
+    expect(roi({ profit: 400, capital: 0 })).toBeNull();
+    expect(roi({ profit: 400, capital: -10 })).toBeNull();
+    expect(roi({ profit: Number.NaN, capital: 1000 })).toBeNull();
+  });
+});
+
+describe("yieldPercent", () => {
+  it("400 di profitto su 10.000 giocati è il 4%", () => {
+    expect(yieldPercent({ profit: 400, turnover: 10000 })).toBeCloseTo(0.04, 9);
+  });
+
+  it("lo stesso profitto su un denominatore diverso dà un numero diverso", () => {
+    // È il punto delle due pagine: stesso 400, cassa 1000 → ROI 40%, giocato
+    // 10.000 → yield 4%. E il ponte fra i due è il turnover sul capitale (10×).
+    expect(yieldPercent({ profit: 400, turnover: 1000 })).toBeCloseTo(0.4, 9);
+    const y = yieldPercent({ profit: 400, turnover: 10000 })!;
+    const r = roi({ profit: 400, capital: 1000 })!;
+    expect(y * (10000 / 1000)).toBeCloseTo(r, 9);
+  });
+
+  it("uno yield negativo resta negativo", () => {
+    expect(yieldPercent({ profit: -300, turnover: 10000 })).toBeCloseTo(-0.03, 9);
+  });
+
+  it("turnover zero o negativo è null, non Infinity", () => {
+    expect(yieldPercent({ profit: 400, turnover: 0 })).toBeNull();
+    expect(yieldPercent({ profit: 400, turnover: -1 })).toBeNull();
+    expect(yieldPercent({ profit: Number.POSITIVE_INFINITY, turnover: 10000 })).toBeNull();
+  });
+});
+
+describe("parseSignedAmount", () => {
+  it("legge un profitto positivo, negativo o nullo, anche con la virgola", () => {
+    expect(parseSignedAmount("400")).toBe(400);
+    expect(parseSignedAmount("+400")).toBe(400);
+    expect(parseSignedAmount("-250")).toBe(-250);
+    expect(parseSignedAmount(" 1,5 ")).toBeCloseTo(1.5, 9);
+    expect(parseSignedAmount("0")).toBe(0);
+  });
+
+  it("rifiuta ciò che non è un numero", () => {
+    expect(parseSignedAmount("")).toBeNull();
+    expect(parseSignedAmount("  ")).toBeNull();
+    expect(parseSignedAmount("banana")).toBeNull();
+    expect(parseSignedAmount("--3")).toBeNull();
+    expect(parseSignedAmount("4-0-0")).toBeNull();
+  });
+});
+
+// ─────────────────── dimensionamento: desiderio, cassa, edge ───────────────
+// Tre modi di scegliere lo stake, e questo file ne copre due: stakeForTarget
+// parte da quanto vuoi vincere, bankrollPlan da una regola di cassa. Il terzo
+// è `kelly`, già più sopra, e parte da un edge misurato. I test qui sotto
+// tengono il triangolo agganciato con numeri verificati a mano.
+
+describe("stakeForTarget", () => {
+  it("100 di profitto a quota 2.50 chiede 66.67 di stake", () => {
+    // 100 / (2.50 − 1) = 100 / 1.5 = 66.666…
+    near(stakeForTarget({ targetProfit: 100, decimal: 2.5 }), 66.666667);
+  });
+
+  it("a quota 2.00 lo stake è pari al profitto", () => {
+    expect(stakeForTarget({ targetProfit: 100, decimal: 2 })).toBeCloseTo(100, 9);
+  });
+
+  it("più corta è la quota, più grande è lo stake per lo stesso profitto", () => {
+    // 1.50 → 200, 1.25 → 400: quattro volte lo stake per lo stesso 100 di 2.00.
+    expect(stakeForTarget({ targetProfit: 100, decimal: 1.5 })).toBeCloseTo(200, 9);
+    expect(stakeForTarget({ targetProfit: 100, decimal: 1.25 })).toBeCloseTo(400, 9);
+    expect(stakeForTarget({ targetProfit: 100, decimal: 5 })).toBeCloseTo(25, 9);
+  });
+
+  it("lo stake di un obiettivo a 2.50 è il full Kelly di una probabilità del 44%", () => {
+    // È il ponte fra questa pagina e Kelly: 66.67 su 1.000 è il 6,667% della
+    // cassa, e a 2.50 il full Kelly vale 6,667% solo se credi al 44% (break-even
+    // 40% ⇒ un edge del +10%). Lo stake nato da un desiderio è già una scommessa
+    // su una probabilità: qui la si legge.
+    const stake = stakeForTarget({ targetProfit: 100, decimal: 2.5 })!;
+    const k = kelly({ decimal: 2.5, probability: 0.44, bankroll: 1000, fraction: 1 })!;
+    expect(stake / 1000).toBeCloseTo(k.stakeFraction, 6);
+    expect(k.edge).toBeCloseTo(0.1, 9);
+    expect(k.stake).toBeCloseTo(stake, 6);
+  });
+
+  it("quota 1.00 o minore è null (nessun profitto possibile), non Infinity", () => {
+    expect(stakeForTarget({ targetProfit: 100, decimal: 1 })).toBeNull();
+    expect(stakeForTarget({ targetProfit: 100, decimal: 0.5 })).toBeNull();
+    expect(stakeForTarget({ targetProfit: 100, decimal: Number.NaN })).toBeNull();
+  });
+
+  it("un obiettivo nullo o negativo è null: non è uno stake, è un'altra domanda", () => {
+    expect(stakeForTarget({ targetProfit: 0, decimal: 2.5 })).toBeNull();
+    expect(stakeForTarget({ targetProfit: -100, decimal: 2.5 })).toBeNull();
+  });
+});
+
+describe("bankrollPlan", () => {
+  it("2000 al 2% dà unità 40, dieci perse = 400 e il 20% di drawdown, 50 giocate a rovina", () => {
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.02, losingStreak: 10 });
+    expect(r).not.toBeNull();
+    expect(r!.unit).toBeCloseTo(40, 9);
+    expect(r!.streakLoss).toBeCloseTo(400, 9);
+    expect(r!.streakDrawdown).toBeCloseTo(0.2, 9);
+    expect(r!.betsToRuin).toBe(50);
+  });
+
+  it("betsToRuin è intero e arrotonda per difetto", () => {
+    // 1000 al 3% → unità 30 → 33.33 giocate → 33, non 34: la 34ª non è coperta.
+    const r = bankrollPlan({ bankroll: 1000, unitPercent: 0.03, losingStreak: 5 });
+    expect(r!.betsToRuin).toBe(33);
+    expect(Number.isInteger(r!.betsToRuin)).toBe(true);
+  });
+
+  it("al 5% la stessa serie di dieci si mangia metà della cassa", () => {
+    // È il numero che giustifica la soglia dell'explainer: unità 100, dieci
+    // perse 1.000, drawdown 50%, e la cassa copre solo 20 giocate.
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.05, losingStreak: 10 });
+    expect(r!.unit).toBeCloseTo(100, 9);
+    expect(r!.streakLoss).toBeCloseTo(1000, 9);
+    expect(r!.streakDrawdown).toBeCloseTo(0.5, 9);
+    expect(r!.betsToRuin).toBe(20);
+  });
+
+  it("una serie più lunga della cassa non produce un drawdown sopra il 100%… lo produce, e va detto", () => {
+    // 2000 al 10% con 12 perse: 2.400 di perdita su 2.000 di cassa. La funzione
+    // NON tronca: la cassa è finita alla decima e il numero >100% è il segnale
+    // che il piano non regge la serie dichiarata. Il componente lo mostra.
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.1, losingStreak: 12 });
+    expect(r!.streakLoss).toBeCloseTo(2400, 9);
+    expect(r!.streakDrawdown).toBeCloseTo(1.2, 9);
+    expect(r!.betsToRuin).toBe(10);
+  });
+
+  it("una serie di zero giocate non costa niente", () => {
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.02, losingStreak: 0 });
+    expect(r!.streakLoss).toBe(0);
+    expect(r!.streakDrawdown).toBe(0);
+  });
+
+  it("una percentuale fuori da 0..1 è null", () => {
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: 0, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: 1.5, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: -0.02, losingStreak: 10 })).toBeNull();
+  });
+
+  it("cassa o serie non valide sono null, non NaN", () => {
+    expect(bankrollPlan({ bankroll: 0, unitPercent: 0.02, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: -100, unitPercent: 0.02, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: 0.02, losingStreak: -1 })).toBeNull();
+    expect(
+      bankrollPlan({ bankroll: Number.POSITIVE_INFINITY, unitPercent: 0.02, losingStreak: 10 })
+    ).toBeNull();
+  });
+});
+
+describe("parseCount", () => {
+  it("legge un conteggio intero positivo", () => {
+    expect(parseCount("10")).toBe(10);
+    expect(parseCount(" 250 ")).toBe(250);
+  });
+
+  it("rifiuta il non intero invece di troncarlo in silenzio", () => {
+    // Una serie di 10,5 sconfitte non esiste: meglio il trattino di un drawdown
+    // del 21% che nessuno saprebbe da dove viene.
+    expect(parseCount("10.5")).toBeNull();
+    expect(parseCount("10,5")).toBeNull();
+  });
+
+  it("rifiuta zero, i negativi e la spazzatura", () => {
+    expect(parseCount("0")).toBeNull();
+    expect(parseCount("-3")).toBeNull();
+    expect(parseCount("")).toBeNull();
+    expect(parseCount("banana")).toBeNull();
+    expect(parseCount("1e3")).toBeNull();
   });
 });

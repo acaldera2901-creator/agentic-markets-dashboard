@@ -15,8 +15,11 @@ import {
 import { getToolsCopy, TOOLS_COPY } from "./copy";
 
 describe("registry", () => {
-  it("ha cinque tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(5);
+  // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
+  // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
+  // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
+  it("ha undici tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(11);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -140,7 +143,7 @@ describe("dizionari registrati", () => {
         }
       });
 
-      it("ha tutti e cinque i tool", () => {
+      it("ha tutti i tool dichiarati in TOOL_SLUGS", () => {
         expect(Object.keys(dict.tools).sort()).toEqual([...TOOL_SLUGS].sort());
       });
 
@@ -197,6 +200,114 @@ describe("dizionari registrati", () => {
         for (const n of ["2.00", "55%", "10%", "100", "50", "590", "69", "774", "29"]) {
           expect(numbers, `numero mancante nell'esempio: ${n}`).toContain(n);
         }
+      });
+
+      it("l'esempio della multipla combacia con quello che mostra il calcolatore", () => {
+        // Il default del ParlayCalculator è 4 × 1.80 col 5% di margine per gamba,
+        // e mostra 10.50 · 9,53% · 21,55%. Il margine composto è l'unico numero
+        // della pagina che nasce da un'ASSUNZIONE (il 5%): se l'esempio scrivesse
+        // un valore diverso da 1,05⁴ − 1 nessuno saprebbe da dove viene.
+        const p = dict.tools["parlay-calculator"];
+        const numbers = [...p.example.rows.map((r) => r.value), p.example.note].join(" ");
+        expect(numbers, "manca la quota 1.80").toContain("1.80");
+        expect(numbers, "manca la quota combinata 10.50").toContain("10.50");
+        expect(numbers, "manca la probabilità 9,53%").toMatch(/9[.,]53/);
+        expect(numbers, "manca il margine composto 21,55%").toMatch(/21[.,]55/);
+        // 21,6% è l'arrotondamento della vecchia pagina: qui il calcolatore
+        // mostra due decimali, e l'esempio deve dire quello che si legge.
+        expect(numbers, "21,6 non è quello che mostra il readout").not.toMatch(/21[.,]6[^0-9]/);
+      });
+
+      it("l'esempio del ROI porta il contrasto con lo yield, non un arrotondamento", () => {
+        // Il valore delle due pagine è il confronto: lo STESSO 400 di profitto
+        // è +40,00% su 1.000 di cassa e +4,00% su 10.000 giocati. Se una delle
+        // due cifre sparisce dalla pagina, sparisce il contenuto.
+        const t = dict.tools["roi-calculator"];
+        const numbers = [...t.example.rows.map((r) => r.value), t.example.note].join(" ");
+        expect(numbers, "manca il capitale 1.000").toMatch(/1[ .,]?000/);
+        expect(numbers, "manca il ROI 40,00%").toMatch(/40[.,]00/);
+        expect(numbers, "manca il capitale finale 1.400").toMatch(/1[ .,]?400/);
+        expect(numbers, "manca il giocato 10.000").toMatch(/10[ .,]?000/);
+        expect(numbers, "manca lo yield 4,00% del caso identico").toMatch(/4[.,]00/);
+        // Il readout mostra due decimali: "40,0%" o "4,0%" non è ciò che si legge.
+        expect(numbers, "40,0 non è quello che mostra il readout").not.toMatch(/40[.,]0(?!0)/);
+        expect(numbers, "4,0 non è quello che mostra il readout").not.toMatch(/(?<!\d)4[.,]0(?!0)/);
+        // Il rimando all'altra pagina non è decorativo: senza di lui la pagina
+        // invita a confrontare un 40% di ROI con un 4% di yield.
+        expect(t.explainer.join(" "), "l'explainer ROI non cita lo yield").toMatch(/yield/i);
+      });
+
+      it("l'esempio dello yield porta il turnover, il contrasto col ROI e il rumore", () => {
+        // L'altra metà del confronto: 200 giocate da 50 fanno 10.000 di
+        // turnover, e lo STESSO 400 di profitto è +4,00% qui e +40,00% di ROI.
+        const t = dict.tools["yield-calculator"];
+        const numbers = [...t.example.rows.map((r) => r.value), t.example.note].join(" ");
+        expect(numbers, "mancano le 200 scommesse").toContain("200");
+        expect(numbers, "manca lo stake medio 50").toContain("50");
+        expect(numbers, "manca il turnover 10.000 derivato").toMatch(/10[ .,]?000/);
+        expect(numbers, "manca lo yield 4,00%").toMatch(/4[.,]00/);
+        expect(numbers, "manca il ROI 40,00% del caso identico").toMatch(/40[.,]00/);
+        // La deviazione standard su 200 giocate: 1/√200 = 7,07 punti. È la riga
+        // che impedisce alla pagina di far leggere un edge in venti scommesse.
+        expect(numbers, "manca la deviazione standard 7,07 su 200 giocate").toMatch(/7[.,]07/);
+        expect(numbers, "4,0 non è quello che mostra il readout").not.toMatch(/(?<!\d)4[.,]0(?!0)/);
+        expect(t.explainer.join(" "), "l'explainer yield non cita il ROI").toMatch(/ROI/i);
+        // Onestà obbligatoria: il tetto del ~5% e il campione che serve.
+        expect(t.explainer.join(" "), "manca il riferimento al 5% sostenuto").toMatch(/5\s*%|%\s*5/);
+        expect(t.explainer.join(" "), "manca il campione da 2.500 giocate").toMatch(/2[ .,]?500/);
+      });
+
+      it("l'esempio dello stake porta la puntata, il ritorno e la fetta di cassa", () => {
+        // 100 di obiettivo a 2.50 ⇒ 100 / 1.5 = 66,67 di puntata, 166,67 di
+        // ritorno, e su una cassa da 1.000 il 6,67%. Sono i default del
+        // calcolatore: se l'esempio si sposta, la pagina si contraddice.
+        const t = dict.tools["stake-calculator"];
+        const numbers = [...t.example.rows.map((r) => r.value), t.example.note].join(" ");
+        expect(numbers, "manca la quota 2.50").toMatch(/2[.,]50/);
+        expect(numbers, "manca la puntata 66,67").toMatch(/66[.,]67/);
+        expect(numbers, "manca il ritorno totale 166,67").toMatch(/166[.,]67/);
+        expect(numbers, "manca la fetta di cassa 6,67%").toMatch(/6[.,]67/);
+        // Il readout mostra due decimali: 66,7 e 6,7 non sono ciò che si legge.
+        expect(numbers, "66,7 non è quello che mostra il readout").not.toMatch(/166?[.,]7(?!\d)/);
+        expect(numbers, "6,7 non è quello che mostra il readout").not.toMatch(/(?<!\d)6[.,]7(?!\d)/);
+        // Il rimando a Kelly è il punto della pagina, e passa dal 44% implicito:
+        // 66,67 su 1.000 è il full Kelly di chi crede al 44% a 2.50 (edge +10%).
+        const prose = t.explainer.join(" ");
+        expect(prose, "l'explainer stake non cita Kelly").toMatch(/kelly|келли/i);
+        expect(prose, "manca il 44% implicito nello stake da desiderio").toMatch(/44/);
+      });
+
+      it("l'esempio del bankroll porta unità, drawdown e le giocate come INTERO", () => {
+        // 2.000 al 2% ⇒ unità 40, dieci perse 400, drawdown 20%, e la cassa
+        // copre 50 giocate perse consecutive. Sono i default del calcolatore.
+        const t = dict.tools["bankroll-calculator"];
+        const values = t.example.rows.map((r) => r.value);
+        const numbers = [...values, t.example.note].join(" ");
+        expect(numbers, "manca la cassa 2.000").toMatch(/2[ .,]?000/);
+        expect(numbers, "manca l'unità 40,00").toMatch(/40[.,]00/);
+        expect(numbers, "manca il costo della serie 400,00").toMatch(/400[.,]00/);
+        expect(numbers, "manca il drawdown 20,00%").toMatch(/20[.,]00/);
+        expect(numbers, "manca il recupero +25,00% dal 20% di buco").toMatch(/25[.,]00/);
+        // Le giocate a rovina sono un CONTEGGIO: il readout usa zero decimali,
+        // quindi l'esempio dice 50 e non 50,00. Il piano proponeva "50.00":
+        // sarebbe stato un numero di giocate con due decimali.
+        expect(values, "le giocate a rovina non sono l'intero 50").toContain("50");
+        for (const v of values) {
+          expect(v, "una riga scrive le giocate come 50,00").not.toMatch(/^50[.,]00$/);
+        }
+        // Onestà obbligatoria: la probabilità VERA della serie di dieci, non
+        // l'aggettivo «normale». 1.000 giocate a quote pari → 38,54%; a 2.10,
+        // dove chi non ha vantaggio vince il 47,62%, → 52,31%.
+        const prose = [t.explainer.join(" "), ...t.faq.map((f) => f.a)].join(" ");
+        expect(prose, "manca la probabilità 38,54% della serie di dieci").toMatch(/38[.,]54/);
+        expect(prose, "manca il 52,31% a quota 2.10").toMatch(/52[.,]31/);
+        expect(prose, "l'explainer bankroll non cita Kelly").toMatch(/kelly|келли/i);
+        // Il floor di 1.000 al 3%: 33,33 giocate ⇒ 33. La 34ª non è coperta, e
+        // scriverla sarebbe promettere una giocata che i soldi non pagano.
+        expect(prose, "manca il floor 33 di 1.000 al 3%").toMatch(/(?<!\d)33(?!\d)/);
+        expect(prose, "34 è l'arrotondamento per eccesso: la cassa non lo copre").not.toMatch(
+          /(?<!\d)34(?!\d)/
+        );
       });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {
