@@ -105,8 +105,8 @@ tocca un posto. Questo non è astrazione speculativa — le tabelle da unire son
 
 | Soglia | Premio | Meccanica |
 |---|---|---|
-| **2** amici paganti | 30 giorni di PRO | `computePaygateGrant` con `days: 30`, `plan: "premium"` |
-| **5** amici paganti | altri **60** giorni di PRO, cumulativi coi 30 del gradino precedente | stesso helper, `days: 60` |
+| **2** amici paganti | **29** giorni di PRO | `computePaygateGrant` con `days: 29`, `plan: "premium"` |
+| **5** amici paganti | altri **60** giorni di PRO, cumulativi coi 29 del gradino precedente | stesso helper, `days: 60` |
 | **10** amici paganti | Canale Telegram riservato, finché resti attivo (**revocabile**) | flag su `profiles`, letto dal bot |
 
 Nessun premio eterno: i primi due scadono, il terzo è condizionato e revocabile.
@@ -188,7 +188,7 @@ promo di lancio che ha comunque.
 | Auto-invito col proprio codice | Già implementata in `/api/referral/claim` (azzera `referred_by`); la query esclude `identifier <> $2` |
 | Account usa-e-getta | Neutralizzato dalla regola: un account gratuito non muove il contatore |
 | **Arbitraggio economico** | **Invariante testata**, non un numero fissato — vedi §1.5.1 |
-| Rimborso/chargeback dopo il grant | **Debito accettato:** il conteggio è monotono per progetto, quindi un premio già concesso non si revoca. Blast radius = 30 giorni di PRO. Owner: Andrea, da rivedere se si vede in BO |
+| Rimborso/chargeback dopo il grant | **Debito accettato:** il conteggio è monotono per progetto, quindi un premio già concesso non si revoca. Blast radius = 29 giorni di PRO. Owner: Andrea, da rivedere se si vede in BO |
 
 ### 1.5.1 L'invariante anti-arbitraggio
 
@@ -198,10 +198,16 @@ un centesimo: non profittevole in pratica. Alla soglia 1 che era stata proposta
 inizialmente costava $14.99 per $29.99 — **2× di profitto**, farmabile. Le soglie alzate
 da Andrea hanno chiuso il buco.
 
-Ma questo numero **non è stabile**, e scriverlo nella spec come fatto compiuto sarebbe
-un errore: sul branch `betredge/fixes-prices-badges` c'è già un *«prezzo Pro 49.90»*. Se
-quel prezzo arriva in main, lo stesso attacco costa $29.98 per un premio da $49.90 —
-**+66% di profitto**, e il programma diventa una macchina per regalare PRO.
+**Deciso da Andrea (2026-08-08): il primo gradino concede 29 giorni, non 30.** A
+$28.99 contro $29.98 di costo l'invariante è rispettata con circa un euro di margine, e
+fra 29 e 30 giorni l'utente non percepisce differenza. È la modifica più piccola che
+chiude il buco senza alzare l'ingresso della scala.
+
+Ma il margine **non è stabile**, e scriverlo nella spec come fatto compiuto sarebbe un
+errore: sul branch `betredge/fixes-prices-badges` c'è già un *«prezzo Pro 49.90»*. Se
+quel prezzo arriva in main, lo stesso attacco costa $29.98 per un premio da $48.23 —
+**+61% di profitto**, e il programma diventa una macchina per regalare PRO. Nemmeno i 29
+giorni ci salvano da un cambio di prezzo: solo il test lo fa.
 
 Quindi la difesa non è la soglia, è un **test che lega premio e costo**:
 
@@ -352,7 +358,7 @@ Nessuno di questi è «dichiarato»: ognuno è un comando o un check osservabile
 **Referral**
 8. Test della query di conteggio: un invitato che paga e **poi disdice resta contato** (il caso che rompe la versione attuale).
 9. Test di idempotenza: due chiamate concorrenti a `checkReferralTiers` sullo stesso gradino → **un solo** grant (lo `UNIQUE` regge).
-10. Test che il grant **estende e non accorcia**: utente con PRO attivo a 20 giorni + premio 30gg → **50 giorni**, non 30.
+10. Test che il grant **estende e non accorcia**: utente con PRO attivo a 20 giorni + premio 29gg → **49 giorni**, non 29.
 11. Test anti self-referral: il proprio codice non incrementa il contatore.
 12. Test che un premio referral **non blocchi** un acquisto Shopify successivo (`shopifyGrantAllowed` con `plan_source = 'referral'`).
 13. Il pannello mostra il progresso corretto sui dati veri, verificato **da loggato** con cookie Chrome (mai solo da anonimo).
