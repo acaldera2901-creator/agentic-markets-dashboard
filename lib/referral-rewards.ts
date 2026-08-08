@@ -136,14 +136,68 @@ async function grantRewardDays(
   return { plan, expiryISO };
 }
 
-/** Il gradino 10: accesso alla stanza riservata. Flag revocabile letto dal bot. */
-async function grantRoomAccess(identifier: string): Promise<void> {
-  await dbExecute(
-    `UPDATE profiles
-        SET referral_room_access = TRUE, updated_at = NOW()
-      WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1`,
+// ── Il gradino 10: la stanza riservata ───────────────────────────────────────
+// L'appartenenza NON è memorizzata. `profiles.referral_room_access` (015) è
+// VESTIGIALE: il codice la scriveva solo a TRUE e nessuna riga la rimetteva a
+// FALSE, quindi la stanza risultava eterna — l'opposto della promessa «finché
+// resti attivo». Non si scrive più (nessun lettore in repo, verificato con grep
+// il 2026-08-08); la colonna resta in prod perché un DROP è distruttivo e va
+// approvato da Andrea, e la migration 016 le mette un COMMENT che lo dichiara.
+// La verità si CALCOLA, in due specchi che devono restare identici:
+//   · SQL  → vista `referral_room_members` (db/migrations/016) — la legge il bot
+//   · TS   → hasRoomAccess() qui sotto — la legge il codice applicativo
+
+/** Piano «attivo» ai fini della stanza. Specchio di `effectivePlan()`
+ *  (lib/auth.ts), fail-closed incluso: solo `base`/`premium` contano
+ *  (`admin_full` NO, la regola del gradino 10 è esplicitamente questa), una
+ *  scadenza assente vale attiva (righe legacy) e una data CORROTTA nega
+ *  l'accesso invece di renderlo eterno (#BUGCHECK-0617).
+ *  Il confine dell'uguaglianza esatta (`t === now`) qui è attivo e nella vista
+ *  no (`> NOW()`): non osservabile, NOW() ha risoluzione microsecondi. */
+export function isRoomActivePlan(plan: string, expiresAtISO: string | null): boolean {
+  if (plan !== "base" && plan !== "premium") return false;
+  if (!expiresAtISO) return true;
+  const t = new Date(expiresAtISO).getTime();
+  if (Number.isNaN(t)) return false;
+  return t >= Date.now();
+}
+
+/** È ADESSO nella stanza del gradino 10? Punto d'ingresso per il codice
+ *  applicativo (il bot può interrogare direttamente la vista).
+ *
+ *  Legge i fatti grezzi e applica il predicato qui, invece di fare SELECT sulla
+ *  vista: così la regola è testabile senza un Postgres, e la funzione non si
+ *  rompe finché la 016 non è applicata. La riga tier = 10 è PERMANENTE, quindi
+ *  chi scade e poi ri-paga rientra senza rifare i 10 inviti.
+ *
+ *  Il profilo si risolve come in lib/auth.ts (match esatto preferito a quello
+ *  normalizzato) perché nel DB esistono profili che differiscono per sole
+ *  maiuscole.
+ *
+ *  **Fail-LOUD**: un errore del DB LANCIA (dbQueryStrict) invece di rispondere
+ *  `false`. Chi revoca l'accesso non deve poter confondere un singhiozzo di rete
+ *  con «non è più membro» e buttare fuori un pagante (stesso motivo di
+ *  MEDIUM-12 in lib/db.ts). `false` significa solo: non membro. */
+export async function hasRoomAccess(identifier: string): Promise<boolean> {
+  const rows = await dbQueryStrict<{
+    plan: string;
+    plan_expires_at: string | null;
+    tier10: number | string;
+  }>(
+    `SELECT p.plan,
+            p.plan_expires_at::text AS plan_expires_at,
+            (SELECT COUNT(*)::int FROM referral_rewards r
+              WHERE r.identifier = p.identifier AND r.tier = 10) AS tier10
+       FROM profiles p
+      WHERE p.identifier = $1 OR LOWER(TRIM(p.identifier)) = $1
+      ORDER BY (p.identifier = $1) DESC, p.created_at ASC
+      LIMIT 1`,
     [identifier]
   );
+  const row = rows[0];
+  if (!row) return false;
+  if (Number(row.tier10 ?? 0) === 0) return false; // gradino 10 mai raggiunto
+  return isRoomActivePlan(row.plan, row.plan_expires_at);
 }
 
 /** Chiamata dopo OGNI grant di pagamento riuscito, con l'identifier di chi ha
@@ -206,9 +260,10 @@ export async function checkReferralTiers(invitedIdentifier: string): Promise<voi
       if (spec.rewardDays !== null) {
         planState = await grantRewardDays(inviter.identifier, spec.rewardDays, planState);
       }
-      if (spec.grantsRoom) {
-        await grantRoomAccess(inviter.identifier);
-      }
+      // `spec.grantsRoom` non fa scattare nessuna scrittura: la riga appena
+      // inserita in referral_rewards È il premio, e l'appartenenza si calcola da
+      // lì (hasRoomAccess / vista referral_room_members). Alzare un flag lo
+      // rendeva irrevocabile.
       console.log(
         `[referral] gradino ${tier} concesso a ${inviter.identifier} (invitati paganti: ${payingCount})`
       );
