@@ -16,6 +16,7 @@ import {
   kelly,
   parlayProbability,
   parlayOdds,
+  arbitrage,
 } from "./betting-math";
 
 const near = (v: number | null | undefined, expected: number, digits = 6) => {
@@ -305,5 +306,36 @@ describe("multipla", () => {
     expect(parlayProbability([0.5, 1])).toBeNull();
     expect(parlayOdds([])).toBeNull();
     expect(parlayOdds([2, 1])).toBeNull();
+  });
+});
+
+describe("arbitrage", () => {
+  it("2.10 e 2.10 su due book danno +5.00% e stake simmetrici", () => {
+    const r = arbitrage({ decimals: [2.1, 2.1], total: 1000 });
+    expect(r).not.toBeNull();
+    expect(r!.impliedSum).toBeCloseTo(0.952381, 6);
+    expect(r!.profitPercent).toBeCloseTo(0.05, 6);
+    expect(r!.stakes[0]).toBeCloseTo(500, 6);
+    expect(r!.stakes[1]).toBeCloseTo(500, 6);
+    expect(r!.returns[0]).toBeCloseTo(1050, 6);
+  });
+
+  it("senza arbitraggio il profitto è negativo, non null", () => {
+    const r = arbitrage({ decimals: [1.9, 1.9], total: 1000 });
+    expect(r!.impliedSum).toBeCloseTo(1.052632, 6);
+    expect(r!.profitPercent).toBeLessThan(0);
+  });
+
+  it("quote asimmetriche: 3.00 e 1.60 sbilanciano gli stake ma pareggiano il ritorno", () => {
+    const r = arbitrage({ decimals: [3.0, 1.6], total: 1000 });
+    // 1/3 + 1/1.6 = 0.333333 + 0.625 = 0.958333
+    expect(r!.impliedSum).toBeCloseTo(0.958333, 6);
+    expect(r!.returns[0]).toBeCloseTo(r!.returns[1], 6);
+  });
+
+  it("input non validi tornano null, non NaN", () => {
+    expect(arbitrage({ decimals: [], total: 1000 })).toBeNull();
+    expect(arbitrage({ decimals: [2.1, 0], total: 1000 })).toBeNull();
+    expect(arbitrage({ decimals: [2.1, 2.1], total: 0 })).toBeNull();
   });
 });

@@ -276,3 +276,29 @@ export function parlayOdds(decimals: number[]): number | null {
   if (!decimals.every(isOdds)) return null;
   return decimals.reduce((acc, d) => acc * d, 1);
 }
+
+// ──────────────────────────────── arbitraggio ───────────────────────────
+
+/**
+ * Arbitraggio su un mercato coperto interamente da quote di book diversi.
+ * Σ(1/quota) < 1 ⇒ esiste una divisione degli stake che vince in ogni esito.
+ * Ritorna il profitto ANCHE quando è negativo (nessun arbitraggio): dire
+ * "−4,99%" è un'informazione, `null` no. `null` è riservato all'input invalido.
+ */
+export function arbitrage(args: {
+  decimals: number[];
+  total: number;
+}): { impliedSum: number; profitPercent: number; stakes: number[]; returns: number[] } | null {
+  const { decimals, total } = args;
+  // isMarket garantisce ≥2 esiti e ogni quota finita e > 1: quindi impliedSum
+  // sta in (0, n) e nessuna divisione qui sotto può produrre NaN o Infinity.
+  if (!isMarket(decimals)) return null;
+  if (!Number.isFinite(total) || total <= 0) return null;
+
+  const impliedSum = overround(decimals);
+  // Stake proporzionale alla probabilità implicita ⇒ ritorno identico su ogni esito.
+  const stakes = decimals.map((d) => (total * (1 / d)) / impliedSum);
+  const returns = stakes.map((s, i) => s * decimals[i]);
+
+  return { impliedSum, profitPercent: 1 / impliedSum - 1, stakes, returns };
+}
