@@ -8,13 +8,13 @@ const nl: ToolsCopy = {
   hub: {
     metaTitle: "Gratis wedtools — odds, EV, Kelly en marge | BetRedge",
     metaDescription:
-      "Vijf gratis rekenmachines: odds omrekenen naar elk formaat, de bookmakermarge verwijderen, verwachte waarde berekenen en je inzet bepalen met Kelly. Zonder account.",
+      "11 gratis rekenmachines: odds omrekenen naar elk formaat, de bookmakermarge verwijderen, verwachte waarde berekenen, je inzet bepalen met Kelly, arbitrage checken en je ROI meten. Zonder account.",
     h1: "Gratis wedtools",
     lede:
-      "De vijf berekeningen die je voor een wed maakt: odds omgerekend, marge verwijderd, inzet bepaald. Gratis, zonder account.",
+      "De elf berekeningen die je voor een wed maakt: odds omgerekend, marge verwijderd, inzet bepaald, ROI gemeten. Gratis, zonder account.",
     cardCta: "Open de tool",
     intro: [
-      "Elke wed is een vergelijking tussen een prijs en een kans. Deze vijf rekenmachines maken die vergelijking netjes: ze zetten odds om tussen formaten, halen de marge van de bookmaker eruit om de eerlijke lijn te tonen, veranderen een kansschatting in verwachte waarde en bepalen de inzet zodat een verliesreeks je bankroll niet beëindigt.",
+      "Elke wed is een vergelijking tussen een prijs en een kans. Deze elf rekenmachines maken die vergelijking netjes: ze zetten odds om tussen formaten, halen de marge van de bookmaker eruit om de eerlijke lijn te tonen, veranderen een kansschatting in verwachte waarde, rekenen de benen van een combi naar één prijs, laten zien wanneer twee bookmakers genoeg uit elkaar liggen voor arbitrage, bepalen de inzet zodat een verliesreeks je bankroll niet beëindigt en meten daarna wat die weds echt hebben opgebracht.",
       "Alles draait volledig in je browser: er wordt niets verzonden, niets opgeslagen en er is geen account nodig. Gebruik ze los, of gebruik ze om te controleren wat ons model al bij elke wedstrijd publiceert.",
     ],
   },

@@ -8,13 +8,13 @@ const sv: ToolsCopy = {
   hub: {
     metaTitle: "Gratis spelverktyg — odds, EV, Kelly och marginal | BetRedge",
     metaDescription:
-      "Fem gratis kalkylatorer: omvandla odds mellan alla format, ta bort spelbolagets marginal, räkna ut väntat värde och sätt insatsen med Kelly. Utan registrering.",
+      "11 gratis kalkylatorer: omvandla odds mellan alla format, ta bort spelbolagets marginal, räkna ut väntat värde, sätt insatsen med Kelly, kontrollera arbitrage och mät avkastningen. Utan registrering.",
     h1: "Gratis spelverktyg",
     lede:
-      "De fem räkneövningarna som görs före ett spel: odds omvandlade, marginal borttagen, insats satt. Gratis, utan konto.",
+      "De elva räkneövningarna som görs före ett spel: odds omvandlade, marginal borttagen, insats satt, avkastning mätt. Gratis, utan konto.",
     cardCta: "Öppna verktyget",
     intro: [
-      "Varje spel är en jämförelse mellan ett pris och en sannolikhet. De här fem kalkylatorerna gör jämförelsen ordentligt: de översätter odds mellan format, tar bort spelbolagets marginal och visar den rättvisa linjen, förvandlar en sannolikhetsuppskattning till väntat värde och sätter insatsen så att en förlustsvit inte avslutar kassan.",
+      "Varje spel är en jämförelse mellan ett pris och en sannolikhet. De här elva kalkylatorerna gör jämförelsen ordentligt: de översätter odds mellan format, tar bort spelbolagets marginal och visar den rättvisa linjen, förvandlar en sannolikhetsuppskattning till väntat värde, lägger ihop benen i ett kombinationsspel till ett odds, visar när två spelbolag skiljer sig nog för ett arbitrage, sätter insatsen så att en förlustsvit inte avslutar kassan och mäter efteråt vad spelen faktiskt gav.",
       "Allt körs helt i din webbläsare: inget skickas, inget sparas och det finns inget konto att skapa. Använd dem för sig — eller använd dem för att kontrollera vad vår modell redan publicerar för varje match.",
     ],
   },

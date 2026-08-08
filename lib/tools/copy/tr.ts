@@ -8,13 +8,13 @@ const tr: ToolsCopy = {
   hub: {
     metaTitle: "Ücretsiz bahis araçları — oran, EV, Kelly ve marj | BetRedge",
     metaDescription:
-      "Beş ücretsiz hesaplayıcı: oranları her formata çevir, bahis şirketinin marjını çıkar, beklenen değeri hesapla ve Kelly ile bahis miktarını belirle. Kayıt gerekmez.",
+      "11 ücretsiz hesaplayıcı: oranları her formata çevir, bahis şirketinin marjını çıkar, beklenen değeri hesapla, Kelly ile miktarı belirle, arbitrajı kontrol et ve getiriyi ölç. Kayıt gerekmez.",
     h1: "Ücretsiz bahis araçları",
     lede:
-      "Bahis öncesi yapılan beş hesap: oranlar çevrilmiş, marj çıkarılmış, miktar belirlenmiş. Ücretsiz, hesap açmadan.",
+      "Bahis öncesi yapılan on bir hesap: oranlar çevrilmiş, marj çıkarılmış, miktar belirlenmiş, getiri ölçülmüş. Ücretsiz, hesap açmadan.",
     cardCta: "Aracı aç",
     intro: [
-      "Her bahis, bir fiyat ile bir olasılığın karşılaştırmasıdır. Bu beş hesaplayıcı o karşılaştırmayı düzgün yapar: oranları formatlar arasında çevirir, bahis şirketinin marjını çıkarıp adil çizgiyi görünür kılar, bir olasılık tahminini beklenen değere dönüştürür ve kayıp serisinin kasayı bitirmemesi için bahis miktarını ölçekler.",
+      "Her bahis, bir fiyat ile bir olasılığın karşılaştırmasıdır. Bu on bir hesaplayıcı o karşılaştırmayı düzgün yapar: oranları formatlar arasında çevirir, bahis şirketinin marjını çıkarıp adil çizgiyi görünür kılar, bir olasılık tahminini beklenen değere dönüştürür, kombine bacaklarını tek bir orana toplar, iki bahis şirketinin arbitraj için yeterince ayrıştığı anı gösterir, kayıp serisinin kasayı bitirmemesi için bahis miktarını ölçekler ve sonrasında o bahislerin gerçekte ne getirdiğini ölçer.",
       "Tamamı tarayıcında çalışır: hiçbir şey gönderilmez, hiçbir şey saklanmaz ve açılacak bir hesap yoktur. Tek başına kullan ya da modelimizin her maç için zaten yayımladığını doğrulamak için kullan.",
     ],
   },

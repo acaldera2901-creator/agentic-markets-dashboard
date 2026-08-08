@@ -8,13 +8,13 @@ const es: ToolsCopy = {
   hub: {
     metaTitle: "Herramientas gratis de apuestas — cuotas, EV, Kelly y margen | BetRedge",
     metaDescription:
-      "Cinco calculadoras gratuitas: convierte cuotas en cualquier formato, quita el margen de la casa, calcula el valor esperado y dimensiona la apuesta con Kelly. Sin registro.",
+      "11 calculadoras gratuitas: convierte cuotas en cualquier formato, quita el margen de la casa, calcula el valor esperado, dimensiona la apuesta con Kelly, comprueba un arbitraje. Sin registro.",
     h1: "Herramientas gratuitas de apuestas",
     lede:
-      "Los cinco cálculos que se hacen antes de apostar: cuotas convertidas, margen retirado, apuesta dimensionada. Gratis y sin cuenta.",
+      "Los once cálculos que se hacen antes de apostar: cuotas convertidas, margen retirado, apuesta dimensionada, ROI medido. Gratis y sin cuenta.",
     cardCta: "Abrir la herramienta",
     intro: [
-      "Toda apuesta es una comparación entre un precio y una probabilidad. Estas cinco calculadoras hacen esa comparación bien: traducen las cuotas entre formatos, quitan el margen de la casa para mostrar la línea justa, convierten una estimación de probabilidad en valor esperado y dimensionan la apuesta para que una mala racha no acabe con el bankroll.",
+      "Toda apuesta es una comparación entre un precio y una probabilidad. Estas once calculadoras hacen esa comparación bien: traducen las cuotas entre formatos, quitan el margen de la casa para mostrar la línea justa, convierten una estimación de probabilidad en valor esperado, suman las patas de una combinada en una sola cuota, indican cuándo dos casas discrepan lo suficiente para cerrar un arbitraje, dimensionan la apuesta para que una mala racha no acabe con el bankroll y miden después lo que esas apuestas rindieron de verdad.",
       "Funcionan por completo en tu navegador: nada se envía, nada se guarda y no hay ninguna cuenta que crear. Úsalas por su cuenta, o úsalas para comprobar lo que nuestro modelo ya publica en cada partido.",
     ],
   },

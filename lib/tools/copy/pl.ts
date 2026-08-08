@@ -8,13 +8,13 @@ const pl: ToolsCopy = {
   hub: {
     metaTitle: "Darmowe narzędzia bukmacherskie — kursy, EV, Kelly i marża | BetRedge",
     metaDescription:
-      "Pięć darmowych kalkulatorów: przeliczanie kursów na każdy format, usuwanie marży bukmachera, wartość oczekiwana i dobór stawki według Kelly'ego. Bez rejestracji.",
+      "11 darmowych kalkulatorów: przeliczanie kursów na każdy format, usuwanie marży bukmachera, wartość oczekiwana, dobór stawki według Kelly'ego, sprawdzenie arbitrażu i pomiar ROI. Bez rejestracji.",
     h1: "Darmowe narzędzia bukmacherskie",
     lede:
-      "Pięć obliczeń, które wykonuje się przed zakładem: kursy przeliczone, marża usunięta, stawka dobrana. Bezpłatnie, bez konta.",
+      "Jedenaście obliczeń, które wykonuje się przed zakładem: kursy przeliczone, marża usunięta, stawka dobrana, ROI zmierzony. Bezpłatnie, bez konta.",
     cardCta: "Otwórz narzędzie",
     intro: [
-      "Każdy zakład to porównanie ceny z prawdopodobieństwem. Te pięć kalkulatorów wykonuje je porządnie: przeliczają kursy między formatami, usuwają marżę bukmachera i odsłaniają uczciwą linię, zamieniają oszacowanie prawdopodobieństwa w wartość oczekiwaną i dobierają stawkę tak, aby seria przegranych nie zamknęła bankrolla.",
+      "Każdy zakład to porównanie ceny z prawdopodobieństwem. Te jedenaście kalkulatorów wykonuje je porządnie: przeliczają kursy między formatami, usuwają marżę bukmachera i odsłaniają uczciwą linię, zamieniają oszacowanie prawdopodobieństwa w wartość oczekiwaną, składają nogi kuponu w jeden kurs, pokazują, kiedy dwóch bukmacherów rozchodzi się dość, by domknąć arbitraż, dobierają stawkę tak, aby seria przegranych nie zamknęła bankrolla, i mierzą potem, ile te zakłady naprawdę przyniosły.",
       "Wszystko działa wyłącznie w twojej przeglądarce: nic nie jest wysyłane, nic nie jest zapisywane i nie trzeba zakładać konta. Korzystaj z nich osobno albo używaj ich, by sprawdzić to, co nasz model publikuje przy każdym meczu.",
     ],
   },

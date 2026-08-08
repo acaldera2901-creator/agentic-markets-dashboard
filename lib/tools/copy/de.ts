@@ -8,13 +8,13 @@ const de: ToolsCopy = {
   hub: {
     metaTitle: "Kostenlose Wett-Tools — Quoten, EV, Kelly und Marge | BetRedge",
     metaDescription:
-      "Fünf kostenlose Rechner: Quoten in jedes Format umrechnen, Buchmacher-Marge entfernen, Erwartungswert berechnen und den Einsatz mit Kelly bestimmen. Ohne Anmeldung.",
+      "11 kostenlose Rechner: Quoten in jedes Format umrechnen, Buchmacher-Marge entfernen, Erwartungswert berechnen, den Einsatz mit Kelly bestimmen, Arbitrage prüfen und die Rendite messen. Ohne Anmeldung.",
     h1: "Kostenlose Wett-Tools",
     lede:
-      "Die fünf Rechnungen, die vor jeder Wette anstehen: Quoten umgerechnet, Marge entfernt, Einsatz bestimmt. Kostenlos, ohne Konto.",
+      "Die elf Rechnungen, die vor jeder Wette anstehen: Quoten umgerechnet, Marge entfernt, Einsatz bestimmt, Rendite gemessen. Kostenlos, ohne Konto.",
     cardCta: "Tool öffnen",
     intro: [
-      "Jede Wette ist ein Vergleich zwischen einem Preis und einer Wahrscheinlichkeit. Diese fünf Rechner führen diesen Vergleich sauber durch: sie übersetzen Quoten zwischen den Formaten, entfernen die Marge des Buchmachers und legen die faire Linie frei, verwandeln eine Wahrscheinlichkeitsschätzung in einen Erwartungswert und bestimmen den Einsatz so, dass eine Verlustserie die Bankroll nicht beendet.",
+      "Jede Wette ist ein Vergleich zwischen einem Preis und einer Wahrscheinlichkeit. Diese elf Rechner führen diesen Vergleich sauber durch: sie übersetzen Quoten zwischen den Formaten, entfernen die Marge des Buchmachers und legen die faire Linie frei, verwandeln eine Wahrscheinlichkeitsschätzung in einen Erwartungswert, fassen die Beine einer Kombiwette zu einer Quote zusammen, zeigen, wann zwei Buchmacher weit genug auseinanderliegen für eine Arbitrage, bestimmen den Einsatz so, dass eine Verlustserie die Bankroll nicht beendet, und messen hinterher, was diese Wetten wirklich gebracht haben.",
       "Alles läuft vollständig im Browser: nichts wird gesendet, nichts gespeichert, kein Konto nötig. Nutze sie für sich — oder nutze sie, um zu prüfen, was unser Modell zu jedem Spiel längst veröffentlicht.",
     ],
   },

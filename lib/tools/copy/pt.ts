@@ -8,13 +8,13 @@ const pt: ToolsCopy = {
   hub: {
     metaTitle: "Ferramentas grátis de apostas — odds, EV, Kelly e margem | BetRedge",
     metaDescription:
-      "Cinco calculadoras gratuitas: converte odds em qualquer formato, remove a margem da casa, calcula o valor esperado e dimensiona a aposta com Kelly. Sem registo.",
+      "11 calculadoras gratuitas: converte odds em qualquer formato, remove a margem da casa, calcula o valor esperado, dimensiona a aposta com Kelly, verifica uma arbitragem e mede o ROI. Sem registo.",
     h1: "Ferramentas gratuitas de apostas",
     lede:
-      "As cinco contas que se fazem antes de apostar: odds convertidas, margem removida, aposta dimensionada. Grátis, sem conta.",
+      "As onze contas que se fazem antes de apostar: odds convertidas, margem removida, aposta dimensionada, ROI medido. Grátis, sem conta.",
     cardCta: "Abrir a ferramenta",
     intro: [
-      "Toda aposta é uma comparação entre um preço e uma probabilidade. Estas cinco calculadoras fazem essa comparação como deve ser: traduzem as odds entre formatos, removem a margem da casa para expor a linha justa, transformam uma estimativa de probabilidade em valor esperado e dimensionam a aposta para que uma série negativa não acabe com a banca.",
+      "Toda aposta é uma comparação entre um preço e uma probabilidade. Estas onze calculadoras fazem essa comparação como deve ser: traduzem as odds entre formatos, removem a margem da casa para expor a linha justa, transformam uma estimativa de probabilidade em valor esperado, juntam as pernas de uma múltipla numa só odd, dizem quando duas casas divergem o suficiente para fechar uma arbitragem, dimensionam a aposta para que uma série negativa não acabe com a banca e medem depois quanto essas apostas renderam de facto.",
       "Funcionam inteiramente no teu navegador: nada é enviado, nada é guardado e não há conta para criar. Usa-as sozinhas, ou usa-as para verificar o que o nosso modelo já publica em cada jogo.",
     ],
   },

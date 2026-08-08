@@ -12,13 +12,13 @@ const en: ToolsCopy = {
   hub: {
     metaTitle: "Free Betting Tools — Odds, EV, Kelly & Margin Calculators | BetRedge",
     metaDescription:
-      "Five free betting calculators: convert odds between every format, remove the bookmaker margin, work out expected value, size a stake with the Kelly criterion and combine probabilities. No signup.",
+      "11 free betting calculators: convert odds in any format, remove the bookmaker margin, work out expected value, size a stake with Kelly, check an arbitrage, price a parlay and measure ROI. No signup.",
     h1: "Free betting tools",
     lede:
-      "The five calculations every serious bettor runs before placing a bet — converted, de-margined and sized. Free, no account needed.",
+      "The eleven calculations every serious bettor runs before placing a bet — converted, de-margined, sized and measured. Free, no account needed.",
     cardCta: "Open the tool",
     intro: [
-      "Every bet is a comparison between a price and a probability. These five calculators do that comparison properly: they translate prices between formats, strip the bookmaker's margin out of a market to expose the fair line, turn a probability estimate into expected value, and size the stake so a losing run does not end the bankroll.",
+      "Every bet is a comparison between a price and a probability. These eleven calculators do that comparison properly: they translate prices between formats, strip the bookmaker's margin out of a market to expose the fair line, turn a probability estimate into expected value, fold a parlay's legs into one price, show when two books disagree enough to lock an arbitrage, size the stake so a losing run does not end the bankroll, and measure afterwards what those bets actually returned.",
       "They run entirely in your browser — nothing is sent anywhere, nothing is stored, and there is no account to create. Use them on their own, or use them to check what our model already publishes on every match.",
     ],
   },

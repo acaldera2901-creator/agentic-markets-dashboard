@@ -8,13 +8,13 @@ const fr: ToolsCopy = {
   hub: {
     metaTitle: "Outils de paris gratuits — cotes, EV, Kelly et marge | BetRedge",
     metaDescription:
-      "Cinq calculateurs gratuits : convertir les cotes dans tous les formats, retirer la marge du bookmaker, calculer la valeur espérée et dimensionner la mise avec Kelly. Sans inscription.",
+      "11 calculateurs gratuits : convertir les cotes dans tout format, retirer la marge du bookmaker, calculer la valeur espérée, dimensionner la mise avec Kelly, vérifier un arbitrage. Sans inscription.",
     h1: "Outils de paris gratuits",
     lede:
-      "Les cinq calculs à faire avant de miser : cotes converties, marge retirée, mise dimensionnée. Gratuit, sans compte.",
+      "Les onze calculs à faire avant de miser : cotes converties, marge retirée, mise dimensionnée, ROI mesuré. Gratuit, sans compte.",
     cardCta: "Ouvrir l'outil",
     intro: [
-      "Tout pari est une comparaison entre un prix et une probabilité. Ces cinq calculateurs font cette comparaison correctement : ils traduisent les cotes d'un format à l'autre, retirent la marge du bookmaker pour révéler la ligne juste, transforment une estimation de probabilité en valeur espérée et dimensionnent la mise pour qu'une mauvaise série ne vide pas la bankroll.",
+      "Tout pari est une comparaison entre un prix et une probabilité. Ces onze calculateurs font cette comparaison correctement : ils traduisent les cotes d'un format à l'autre, retirent la marge du bookmaker pour révéler la ligne juste, transforment une estimation de probabilité en valeur espérée, additionnent les jambes d'un combiné en une seule cote, disent quand deux bookmakers divergent assez pour verrouiller un arbitrage, dimensionnent la mise pour qu'une mauvaise série ne vide pas la bankroll et mesurent ensuite ce que ces paris ont vraiment rapporté.",
       "Ils fonctionnent entièrement dans votre navigateur : rien n'est envoyé, rien n'est enregistré, aucun compte à créer. Utilisez-les seuls, ou utilisez-les pour vérifier ce que notre modèle publie déjà sur chaque match.",
     ],
   },

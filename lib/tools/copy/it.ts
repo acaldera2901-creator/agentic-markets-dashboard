@@ -9,13 +9,13 @@ const it: ToolsCopy = {
   hub: {
     metaTitle: "Strumenti gratis per scommesse — quote, EV, Kelly e margine | BetRedge",
     metaDescription:
-      "Cinque calcolatori gratuiti: converti le quote in ogni formato, togli il margine del bookmaker, calcola il valore atteso, dimensiona la puntata con Kelly. Senza registrazione.",
+      "11 calcolatori gratuiti: converti le quote in ogni formato, togli il margine del bookmaker, calcola il valore atteso, dimensiona la puntata con Kelly, verifica un arbitraggio. Senza registrazione.",
     h1: "Strumenti gratuiti per scommesse",
     lede:
-      "I cinque conti che vanno fatti prima di puntare: quote convertite, margine rimosso, puntata dimensionata. Gratis, senza account.",
+      "Gli undici conti che vanno fatti prima di puntare: quote convertite, margine rimosso, puntata dimensionata, ROI misurato. Gratis, senza account.",
     cardCta: "Apri lo strumento",
     intro: [
-      "Ogni scommessa è il confronto fra un prezzo e una probabilità. Questi cinque calcolatori fanno quel confronto per bene: traducono le quote fra i formati, togliono il margine del bookmaker per far vedere la linea equa, trasformano una stima di probabilità in valore atteso e dimensionano la puntata perché una serie negativa non chiuda il bankroll.",
+      "Ogni scommessa è il confronto fra un prezzo e una probabilità. Questi undici calcolatori fanno quel confronto per bene: traducono le quote fra i formati, togliono il margine del bookmaker per far vedere la linea equa, trasformano una stima di probabilità in valore atteso, sommano le gambe di una multipla in un'unica quota, dicono quando due bookmaker divergono abbastanza per chiudere un arbitraggio, dimensionano la puntata perché una serie negativa non chiuda il bankroll e misurano poi quanto hanno reso davvero quelle scommesse.",
       "Girano interamente nel tuo browser: niente viene inviato, niente viene salvato, non c'è nessun account da creare. Usali da soli, oppure usali per verificare quello che il nostro modello già pubblica su ogni partita.",
     ],
   },
