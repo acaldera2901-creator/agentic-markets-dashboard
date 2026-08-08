@@ -518,6 +518,66 @@ const pl: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Kalkulator yield dla zakładów — zysk od obrotu | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator yield: podaj liczbę zakładów, średnią stawkę i zysk, aby zobaczyć obrót i yield — oraz ile zakładów potrzeba, by liczba coś znaczyła.",
+      h1: "Kalkulator yield",
+      lede:
+        "Zysk mierzony wszystkim, co postawiłeś, a nie twoim bankrollem — jedyna liczba, która porównuje dwóch graczy o różnych pieniądzach.",
+      labels: {
+        inputTitle: "Zakłady, stawka i wynik",
+        bets: "Liczba zakładów",
+        avgStake: "Średnia stawka",
+        profit: "Zysk",
+        resultTitle: "Yield od obrotu",
+        turnover: "Obrót",
+        yieldPercent: "Yield",
+        hint: "Obrót liczymy za ciebie: zakłady × średnia stawka. Licz stawkę każdego zakładu, a nie pieniądze wystawione w jednej chwili. Zysk wpisujesz netto i może być ujemny.",
+        verdictNoise:
+          "Poniżej tysiąca zakładów ta liczba to głównie szum. Przy płaskiej stawce na kursie 2.00 jedno odchylenie standardowe yieldu to 7,07 punktu na 200 zakładach i nadal 3,16 na 1000: czytaj ją jako przedział, nie jako wynik.",
+        verdictVolume:
+          "Powyżej tysiąca zakładów liczba zaczyna nieść informację, ale jedno odchylenie standardowe to na kursie 2.00 wciąż około 3,16 punktu — +4% i +7% na tym samym wolumenie to nie dwa różne poziomy umiejętności.",
+      },
+      takeaway:
+        "Yield to miara, która porównuje graczy: 4% przy obrocie 10 000 jest warte więcej niż ROI 40% zebrane na dwudziestu zakładach.",
+      example: {
+        title: "200 zakładów po 50, 400 zysku",
+        rows: [
+          { label: "Liczba zakładów", value: "200" },
+          { label: "Średnia stawka", value: "50" },
+          { label: "Obrót", value: "10 000" },
+          { label: "Zysk", value: "+400" },
+          { label: "Yield", value: "+4,00%" },
+          { label: "Te same 400 na bankrollu 1000", value: "ROI +40,00%" },
+        ],
+        note:
+          "Jeden wynik, dwa równie uczciwe procenty: 4,00% z 10 000, które przeszły przez bukmachera, i 40,00% z 1000, które kiedykolwiek były na ryzyku. Różnica między nimi to wyłącznie dziesięć obrotów bankrolla. A próba waży więcej niż obie liczby: na 200 zakładach jedno odchylenie standardowe yieldu to 7,07 punktu, więc te +4,00% mieszczą się w zakresie, który sama seria rzutów monetą produkuje.",
+      },
+      explainerTitle: "Liczba, która porównuje dwóch graczy",
+      explainer: [
+        "**Yield to zysk podzielony przez obrót** — sumę wszystkich postawionych stawek, a nie saldo konta. To liczba, którą gracze podają sobie wzajemnie właśnie dlatego, że nie zależy od tego, ile mają pieniędzy: 4% to 4% przy stawkach 5 i przy stawkach 500. **Dana, którą wszyscy wpisują źle, to mianownik**, a błąd zawsze idzie w tę samą stronę. Obrót liczy stawkę każdego zakładu w chwili jego postawienia, więc 200 zakładów po 50 to 10 000, nawet jeśli w danym momencie wystawione było tylko 50, a bankroll 1000, przez który te zakłady krążyły, nie jest liczbą, przez którą się dzieli. Dlatego ta strona pyta o liczbę zakładów i średnią stawkę i wylicza obrót na twoich oczach. Zmierz ten sam zysk względem kapitału i dostaniesz ROI: kalkulator ROI trzyma drugą połowę porównania, gdzie 400 zysku to 40,00% bankrolla 1000 i 4,00% obrotu 10 000.",
+        "**Yield powyżej około 5%, utrzymany na poważnym wolumenie, jest rzadki.** Tam, gdzie istnieje, mieszka na miękkich rynkach z niskimi limitami i topnieje, gdy stawki rosną, bo kursy, które go umożliwiały, nie przeżywają mocnego uderzenia. Każdą długoterminową liczbę znacznie powyżej traktuj jako krótką próbę, miękką niszę albo inną definicję obrotu. A **poniżej kilkuset zakładów liczba jest szumem, nie wynikiem**: przy płaskiej stawce na kursie 2.00 jedno odchylenie standardowe yieldu to jeden podzielony przez pierwiastek z liczby zakładów — 7,07 punktu na 200 zakładach, 3,16 na 1000, 2,00 na 2500. Yield +4% osiąga dwa odchylenia standardowe od zera dopiero przy około 2500 zakładach. Na wyższych kursach wahania są większe: na 3.00 te same 200 zakładów niosą odchylenie 10 punktów. I to jest uczciwe odczytanie dwudziestu wygranych zakładów: nie zmierzona przewaga, tylko zbyt krótka próba.",
+      ],
+      faq: [
+        {
+          q: "Jak obliczyć swój obrót?",
+          a: "Dodając stawkę każdego postawionego zakładu, wygranego czy przegranego. 200 zakładów po 50 to 10 000 obrotu, nawet jeśli bankroll za nimi wynosił tylko 1000. Nie używaj kwoty netto ani salda: obrót to pieniądze, które przeszły przez bukmachera, liczone raz na zakład.",
+        },
+        {
+          q: "Czy yield 5% jest dobry?",
+          a: "Utrzymany na tysiącach zakładów tak — to okolice górnej granicy tego, co przeżywa prawdziwe limity. Znacznie wyższe wartości zwykle pochodzą z miękkich rynków, krótkiej próby albo wartości promocyjnej i spadają, gdy stawki rosną, bo kursy, które je dawały, są zabierane albo limitowane.",
+        },
+        {
+          q: "Ile zakładów, żeby mój yield coś znaczył?",
+          a: "Więcej, niż większość zakłada. Przy płaskiej stawce na kursie 2.00 jedno odchylenie standardowe yieldu to 7,07 punktu na 200 zakładach, 3,16 na 1000 i 2,00 na 2500, więc +4% osiąga dwa odchylenia od zera dopiero przy około 2500 zakładach. Poniżej kilkuset traktuj liczbę jako przedział.",
+        },
+        {
+          q: "Co, jeśli moje stawki bardzo się różnią?",
+          a: "Wtedy zakłady × średnia stawka to tylko przybliżenie, które ci schlebia, gdy trafienia padły na duże stawki. Zsumuj rzeczywiste stawki i podziel zysk przez tę sumę. Jeśli grasz w jednostkach, licz jednostki: yield na postawioną jednostkę to ta sama liczba i łatwiej ją utrzymać uczciwą.",
+        },
+      ],
+    },
   },
 };
 

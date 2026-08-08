@@ -518,6 +518,66 @@ const sv: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Yield-kalkylator för betting — vinst per satsad krona | BetRedge",
+      metaDescription:
+        "Gratis yield-kalkylator: fyll i antal spel, medelinsats och vinst för att få omsättning och yield — och hur många spel som krävs innan siffran betyder något.",
+      h1: "Yield-kalkylator",
+      lede:
+        "Vinst mätt mot allt du har satsat, inte mot din kassa — den enda siffran som jämför två spelare med olika mycket pengar.",
+      labels: {
+        inputTitle: "Spel, insats och resultat",
+        bets: "Antal spel",
+        avgStake: "Medelinsats",
+        profit: "Vinst",
+        resultTitle: "Yield på omsättningen",
+        turnover: "Omsättning",
+        yieldPercent: "Yield",
+        hint: "Omsättningen räknar vi ut: spel × medelinsats. Räkna insatsen för varje spel, inte pengarna som stod på spel samtidigt. Vinsten fylls i netto och får vara negativ.",
+        verdictNoise:
+          "Under tusen spel är siffran mest brus. Med platta insatser på 2.00 är en standardavvikelse av yielden 7,07 punkter över 200 spel och fortfarande 3,16 över 1 000: läs den som ett intervall, inte som ett resultat.",
+        verdictVolume:
+          "Efter tusen spel börjar siffran bära information, men en standardavvikelse är på 2.00 fortfarande omkring 3,16 punkter — en +4 % och en +7 % över samma volym är inte två olika nivåer av skicklighet.",
+      },
+      takeaway:
+        "Yield är siffran som jämför spelare: 4 % på 10 000 i omsättning är värt mer än 40 % ROI insamlat över tjugo spel.",
+      example: {
+        title: "200 spel om 50, 400 i vinst",
+        rows: [
+          { label: "Antal spel", value: "200" },
+          { label: "Medelinsats", value: "50" },
+          { label: "Omsättning", value: "10 000" },
+          { label: "Vinst", value: "+400" },
+          { label: "Yield", value: "+4,00 %" },
+          { label: "Samma 400 på en kassa om 1 000", value: "ROI +40,00 %" },
+        ],
+        note:
+          "Ett resultat, två lika hederliga procentsatser: 4,00 % av de 10 000 som gick genom spelbolaget, 40,00 % av de 1 000 som någonsin stod på spel. Avståndet mellan dem är ingenting annat än de tio gånger kassan vändes. Och urvalet väger tyngre än båda siffrorna: vid 200 spel är en standardavvikelse av yielden 7,07 punkter, så dessa +4,00 % ligger inom det intervall en serie krona eller klave skapar av sig själv.",
+      },
+      explainerTitle: "Siffran som jämför två spelare",
+      explainer: [
+        "**Yield är vinsten delad med omsättningen** — summan av varje lagd insats, inte saldot på kontot. Det är siffran spelare citerar för varandra just därför att den inte beror på hur mycket pengar de har: 4 % är 4 % vare sig insatserna är 5 eller 500. **Talet alla fyller i fel är nämnaren**, och felet går alltid i samma riktning. Omsättningen räknar varje spels insats i det ögonblick det läggs, så 200 spel om 50 blir 10 000 även om bara 50 stod på spel samtidigt, och kassan om 1 000 som spelen återanvände är inte talet man delar med. Därför frågar den här sidan efter antalet och medelinsatsen och räknar fram omsättningen framför dig. Mät samma vinst mot kapitalet i stället och du får ROI: ROI-kalkylatorn håller den andra halvan av jämförelsen, där 400 i vinst är 40,00 % av en kassa om 1 000 och 4,00 % av 10 000 i omsättning.",
+        "**En yield över ungefär 5 %, hållen över allvarlig volym, är ovanlig.** Där den finns bor den i mjuka marknader med låga gränser, och den krymper när insatserna växer, eftersom oddsen som tillät den inte överlever att träffas hårt. Varje långsiktig siffra långt över det behandlar man som ett kort urval, en mjuk nisch eller en annan definition av omsättning. Och **under några hundra spel är talet brus, inte ett resultat**: med platta insatser på 2.00 är en standardavvikelse av yielden ett delat med roten ur antalet spel — 7,07 punkter över 200 spel, 3,16 över 1 000, 2,00 över 2 500. En yield på +4 % når två standardavvikelser från noll först vid omkring 2 500 spel. Vid längre odds svänger det bredare: på 3.00 bär samma 200 spel en standardavvikelse om 10 punkter. Och det är den hederliga läsningen av tjugo vunna spel — ingen mätt kant, bara ett för kort urval.",
+      ],
+      faq: [
+        {
+          q: "Hur räknar jag ut min omsättning?",
+          a: "Genom att summera insatsen för varje lagt spel, vunnet eller förlorat. 200 spel om 50 är 10 000 i omsättning, även om kassan bakom bara var 1 000. Använd inte nettobeloppet och inte saldot: omsättning är pengarna som gick genom spelbolaget, räknade en gång per spel.",
+        },
+        {
+          q: "Är 5 % yield bra?",
+          a: "Hållen över tusentals spel, ja — det ligger nära taket för vad som överlever riktiga gränser. Betydligt högre siffror kommer oftast från mjuka marknader, ett kort urval eller kampanjvärde, och de faller när insatserna stiger, eftersom oddsen som skapade dem tas bort eller begränsas.",
+        },
+        {
+          q: "Hur många spel innan min yield betyder något?",
+          a: "Fler än de flesta antar. Med platta insatser på 2.00 är en standardavvikelse av yielden 7,07 punkter över 200 spel, 3,16 över 1 000 och 2,00 över 2 500, så en +4 % når två standardavvikelser från noll först vid ungefär 2 500 spel. Under några hundra spel är siffran ett intervall.",
+        },
+        {
+          q: "Vad händer om mina insatser varierar mycket?",
+          a: "Då är spel × medelinsats bara en approximation, och den smickrar dig när vinsterna landade på de stora insatserna. Summera de faktiska insatserna och dela vinsten med den summan. Spelar du i units, räkna units: yield per satsad unit är samma siffra och lättare att hålla hederlig.",
+        },
+      ],
+    },
   },
 };
 

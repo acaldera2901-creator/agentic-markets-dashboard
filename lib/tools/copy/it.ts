@@ -519,6 +519,66 @@ const it: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Calcolatore yield scommesse — profitto sul giocato | BetRedge",
+      metaDescription:
+        "Calcolatore yield gratuito: inserisci numero di scommesse, stake medio e profitto per ottenere giocato e yield — e quante giocate servono perché il numero significhi qualcosa.",
+      h1: "Calcolatore yield",
+      lede:
+        "Il profitto misurato su tutto ciò che hai giocato, non sulla tua cassa — l'unica cifra che confronta due scommettitori con soldi diversi.",
+      labels: {
+        inputTitle: "Scommesse, stake e risultato",
+        bets: "Numero di scommesse",
+        avgStake: "Stake medio",
+        profit: "Profitto",
+        resultTitle: "Yield sul giocato",
+        turnover: "Giocato totale",
+        yieldPercent: "Yield",
+        hint: "Il giocato lo calcoliamo noi: scommesse × stake medio. Conta lo stake di ogni giocata, non i soldi esposti in un momento. Il profitto va netto e può essere negativo.",
+        verdictNoise:
+          "Sotto il migliaio di scommesse questa cifra è in gran parte rumore. A stake piatto su quota 2.00 una deviazione standard dello yield vale 7,07 punti su 200 giocate e ancora 3,16 su 1.000: leggila come un intervallo, non come un risultato.",
+        verdictVolume:
+          "Oltre il migliaio di scommesse la cifra inizia a portare informazione, ma una deviazione standard vale ancora circa 3,16 punti su quota 2.00 — un +4% e un +7% sullo stesso volume non sono due livelli di bravura diversi.",
+      },
+      takeaway:
+        "Lo yield è la metrica che confronta gli scommettitori: un 4% su 10.000 giocati vale più di un ROI del 40% raccolto in venti scommesse.",
+      example: {
+        title: "200 scommesse da 50, 400 di profitto",
+        rows: [
+          { label: "Numero di scommesse", value: "200" },
+          { label: "Stake medio", value: "50" },
+          { label: "Giocato totale", value: "10.000" },
+          { label: "Profitto", value: "+400" },
+          { label: "Yield", value: "+4,00%" },
+          { label: "Lo stesso 400 su una cassa da 1.000", value: "ROI +40,00%" },
+        ],
+        note:
+          "Un solo risultato, due percentuali entrambe oneste: il 4,00% dei 10.000 passati dal book, il 40,00% dei 1.000 mai messi a rischio. La distanza fra le due è soltanto le dieci volte in cui la cassa è stata rigirata. E il campione conta più di entrambe: su 200 giocate una deviazione standard dello yield vale 7,07 punti, quindi questo +4,00% sta dentro l'intervallo che produce da sola una serie di lanci di monetina.",
+      },
+      explainerTitle: "Il numero che confronta due scommettitori",
+      explainer: [
+        "**Lo yield è il profitto diviso il giocato** — il totale di ogni singolo stake piazzato, non il saldo sul conto. È la cifra che gli scommettitori si citano a vicenda proprio perché non dipende da quanti soldi hanno: il 4% è il 4% sia con stake da 5 sia con stake da 500. **L'input che tutti sbagliano è il denominatore**, e lo sbagliano sempre nella stessa direzione. Il giocato conta lo stake di ogni scommessa nel momento in cui la piazzi, quindi 200 giocate da 50 fanno 10.000 anche se in un dato istante erano esposti solo 50, e i 1.000 di cassa attraverso cui quelle giocate sono state riciclate non sono il numero per cui dividere. Per questo la pagina chiede il numero di scommesse e lo stake medio e calcola il giocato davanti a te. Misura lo stesso profitto sul capitale e ottieni il ROI: il calcolatore ROI tiene l'altra metà del confronto, dove 400 di profitto sono il 40,00% di una cassa da 1.000 e il 4,00% di 10.000 giocati.",
+        "**Uno yield sopra il 5% circa, sostenuto su volumi seri, è raro.** Dove esiste vive di solito in mercati morbidi con limiti bassi, e si assottiglia al crescere degli stake, perché le quote che lo permettevano non sopravvivono a chi le colpisce forte. Qualunque cifra di lungo periodo molto sopra quella soglia va trattata come un campione corto, una nicchia morbida o una definizione diversa di giocato. E **sotto qualche centinaio di scommesse il numero è rumore, non un risultato**: a stake piatto su quota 2.00 una deviazione standard dello yield è uno diviso la radice del numero di giocate — 7,07 punti su 200 scommesse, 3,16 su 1.000, 2,00 su 2.500. Un +4% di yield arriva a due deviazioni standard da zero solo intorno alle 2.500 giocate. Sulle quote più alte le oscillazioni sono più larghe: a 2.00 sono 7,07 punti su 200 scommesse, a 3.00 diventano 10 punti sulle stesse 200. Ed è la lettura onesta di venti scommesse vinte — non un vantaggio misurato, solo un campione troppo corto per distinguere.",
+      ],
+      faq: [
+        {
+          q: "Come calcolo il giocato totale?",
+          a: "Sommando lo stake di ogni scommessa piazzata, vinta o persa. 200 giocate da 50 fanno 10.000 di giocato, anche se la cassa dietro era solo 1.000. Non usare il netto e non usare il saldo: il giocato è il denaro passato dal bookmaker, contato una volta per scommessa.",
+        },
+        {
+          q: "Uno yield del 5% è buono?",
+          a: "Sostenuto su migliaia di scommesse sì, ed è intorno al massimo di ciò che sopravvive a limiti veri. Gli yield molto più alti nascono di solito da mercati morbidi, da un campione corto o da valore promozionale, e tendono a scendere quando gli stake crescono, perché le quote che li producevano vengono prese o limitate.",
+        },
+        {
+          q: "Quante scommesse servono perché il mio yield significhi qualcosa?",
+          a: "Più di quante si pensi. A stake piatto su quota 2.00 una deviazione standard dello yield vale 7,07 punti su 200 giocate, 3,16 su 1.000 e 2,00 su 2.500, quindi un +4% arriva a due deviazioni standard da zero solo verso le 2.500 scommesse. Sotto qualche centinaio, trattalo come un intervallo.",
+        },
+        {
+          q: "E se i miei stake variano molto?",
+          a: "Allora scommesse × stake medio è solo un'approssimazione, e ti fa un favore quando le vittorie sono cadute sugli stake grossi. Somma gli stake reali e dividi il profitto per quel totale. Se giochi a unità, conta le unità: lo yield per unità giocata è la stessa cifra ed è più facile tenerla onesta.",
+        },
+      ],
+    },
   },
 };
 

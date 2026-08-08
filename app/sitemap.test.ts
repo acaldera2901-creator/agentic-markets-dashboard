@@ -12,7 +12,7 @@ describe("sitemap", () => {
   const entries = sitemap();
   const urls = entries.map((e) => e.url);
 
-  it("contiene gli otto tool in tutte e undici le lingue, più gli undici hub", () => {
+  it("contiene i nove tool in tutte e undici le lingue, più gli undici hub", () => {
     for (const locale of TOOL_LOCALES) {
       expect(urls, `hub ${locale}`).toContain(`${BASE}${hubPath(locale)}`);
       for (const slug of TOOL_SLUGS) {
@@ -20,9 +20,9 @@ describe("sitemap", () => {
       }
     }
     const toolUrls = urls.filter((u) => u.includes("/tools"));
-    // 8 tool × 11 lingue + 11 hub. Conteggio a mano: un tool che entra in
+    // 9 tool × 11 lingue + 11 hub. Conteggio a mano: un tool che entra in
     // TOOL_SLUGS ma non finisce in sitemap resta invisibile ai crawler.
-    expect(toolUrls).toHaveLength(99);
+    expect(toolUrls).toHaveLength(110);
   });
 
   it("non ha URL duplicate", () => {

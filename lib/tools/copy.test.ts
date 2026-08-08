@@ -18,8 +18,8 @@ describe("registry", () => {
   // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
   // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
   // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
-  it("ha otto tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(8);
+  it("ha nove tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(9);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -235,6 +235,26 @@ describe("dizionari registrati", () => {
         // Il rimando all'altra pagina non è decorativo: senza di lui la pagina
         // invita a confrontare un 40% di ROI con un 4% di yield.
         expect(t.explainer.join(" "), "l'explainer ROI non cita lo yield").toMatch(/yield/i);
+      });
+
+      it("l'esempio dello yield porta il turnover, il contrasto col ROI e il rumore", () => {
+        // L'altra metà del confronto: 200 giocate da 50 fanno 10.000 di
+        // turnover, e lo STESSO 400 di profitto è +4,00% qui e +40,00% di ROI.
+        const t = dict.tools["yield-calculator"];
+        const numbers = [...t.example.rows.map((r) => r.value), t.example.note].join(" ");
+        expect(numbers, "mancano le 200 scommesse").toContain("200");
+        expect(numbers, "manca lo stake medio 50").toContain("50");
+        expect(numbers, "manca il turnover 10.000 derivato").toMatch(/10[ .,]?000/);
+        expect(numbers, "manca lo yield 4,00%").toMatch(/4[.,]00/);
+        expect(numbers, "manca il ROI 40,00% del caso identico").toMatch(/40[.,]00/);
+        // La deviazione standard su 200 giocate: 1/√200 = 7,07 punti. È la riga
+        // che impedisce alla pagina di far leggere un edge in venti scommesse.
+        expect(numbers, "manca la deviazione standard 7,07 su 200 giocate").toMatch(/7[.,]07/);
+        expect(numbers, "4,0 non è quello che mostra il readout").not.toMatch(/(?<!\d)4[.,]0(?!0)/);
+        expect(t.explainer.join(" "), "l'explainer yield non cita il ROI").toMatch(/ROI/i);
+        // Onestà obbligatoria: il tetto del ~5% e il campione che serve.
+        expect(t.explainer.join(" "), "manca il riferimento al 5% sostenuto").toMatch(/5\s*%|%\s*5/);
+        expect(t.explainer.join(" "), "manca il campione da 2.500 giocate").toMatch(/2[ .,]?500/);
       });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {

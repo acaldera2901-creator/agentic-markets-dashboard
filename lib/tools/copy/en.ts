@@ -530,6 +530,66 @@ const en: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Yield Calculator for Betting — Profit per Unit Staked | BetRedge",
+      metaDescription:
+        "Free betting yield calculator: enter your number of bets, average stake and profit to get turnover and yield — and how many bets it takes before the number means anything.",
+      h1: "Yield calculator",
+      lede:
+        "Profit measured against everything you staked, not against your bankroll — the one figure that compares two bettors with different amounts of money.",
+      labels: {
+        inputTitle: "Bets, stake and result",
+        bets: "Number of bets",
+        avgStake: "Average stake",
+        profit: "Profit",
+        resultTitle: "Yield on turnover",
+        turnover: "Turnover",
+        yieldPercent: "Yield",
+        hint: "Turnover is worked out for you: bets × average stake. Count the stake of every bet, not the money exposed at one time. Profit goes in net and can be negative.",
+        verdictNoise:
+          "Under a thousand bets this figure is mostly noise. With flat stakes at 2.00 one standard deviation of yield is 7.07 points over 200 bets and still 3.16 over 1,000, so read it as a range rather than as a result.",
+        verdictVolume:
+          "Past a thousand bets the figure starts to carry information, but one standard deviation is still around 3.16 points at 2.00 — a +4% and a +7% over the same volume are not two different levels of skill.",
+      },
+      takeaway:
+        "Yield is the number that compares bettors: 4% on 10,000 staked is worth more than a 40% ROI collected over twenty bets.",
+      example: {
+        title: "200 bets of 50, 400 in profit",
+        rows: [
+          { label: "Number of bets", value: "200" },
+          { label: "Average stake", value: "50" },
+          { label: "Turnover", value: "10,000" },
+          { label: "Profit", value: "+400" },
+          { label: "Yield", value: "+4.00%" },
+          { label: "Same 400 on a 1,000 bankroll", value: "ROI +40.00%" },
+        ],
+        note:
+          "One result, two honest percentages: 4.00% of the 10,000 that went through the book, 40.00% of the 1,000 that was ever at risk. The gap between them is nothing but the ten times the bankroll was turned over. And the sample matters more than either figure — at 200 bets one standard deviation of yield is 7.07 points, so this +4.00% sits inside the range a coin-flip run produces on its own.",
+      },
+      explainerTitle: "The number that compares two bettors",
+      explainer: [
+        "**Yield is profit divided by turnover** — the total of every stake you have placed, not the balance in the account. It is the figure bettors quote to each other precisely because it does not depend on how much money they have: 4% is 4% whether the stakes are 5 or 500. **The input people get wrong is the denominator**, and they get it wrong in the same direction every time. Turnover counts each bet's stake as it is placed, so 200 bets of 50 is 10,000 even if only 50 was ever exposed at once, and the 1,000 bankroll those bets were recycled through is not the number to divide by. That is why this page asks for the count and the average stake and works the turnover out in front of you. Measure the same profit against capital instead and you get ROI: the ROI calculator holds the other half of the comparison, where 400 of profit is 40.00% of a 1,000 bankroll and 4.00% of 10,000 staked.",
+        "**A yield above roughly 5%, sustained over serious volume, is rare.** Where it exists it usually lives in soft markets with low limits, and it shrinks as the stakes grow, because the prices that allowed it do not survive being hit hard. Treat any long-run figure far above that as a short sample, a soft niche, or a different definition of turnover. And **under a few hundred bets the number is noise, not a result**: with flat stakes at 2.00 one standard deviation of yield is one divided by the square root of the number of bets — 7.07 points over 200 bets, 3.16 over 1,000, 2.00 over 2,500. A +4% yield only reaches two standard deviations from zero at around 2,500 bets. Longer prices swing wider still: at 3.00 the same 200 bets carry a standard deviation of 10 points. Which is the honest reading of twenty winning bets — not an edge measured, just a sample too short to tell the difference.",
+      ],
+      faq: [
+        {
+          q: "How do I work out my turnover?",
+          a: "Add up the stake of every bet you placed, win or lose. 200 bets of 50 is 10,000 of turnover, even if the bankroll behind them was only 1,000. Do not use the net amount and do not use the balance: turnover is the money that passed through the bookmaker, counted once per bet.",
+        },
+        {
+          q: "Is a 5% yield good?",
+          a: "Sustained over thousands of bets, yes — it is around the top of what survives real limits. Yields well above it usually come from soft markets, a short sample or promotional value, and they tend to fall as stakes rise, because the prices that produced them get taken or restricted.",
+        },
+        {
+          q: "How many bets before my yield means something?",
+          a: "More than most people assume. With flat stakes at 2.00 one standard deviation of yield is 7.07 points over 200 bets, 3.16 over 1,000 and 2.00 over 2,500, so a +4% only reaches two standard deviations from zero at about 2,500 bets. Below a few hundred bets, treat the figure as a range.",
+        },
+        {
+          q: "What if my stakes vary a lot?",
+          a: "Then bets × average stake is only an approximation, and it flatters you when the wins landed on the big stakes. Add up the actual stakes and divide the profit by that total. If you stake in units, count the units: the yield per unit staked is the same figure and easier to keep honest.",
+        },
+      ],
+    },
   },
 };
 

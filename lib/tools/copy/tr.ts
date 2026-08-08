@@ -518,6 +518,66 @@ const tr: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Bahis yield hesaplayıcı — oynanan tutar başına kâr | BetRedge",
+      metaDescription:
+        "Ücretsiz yield hesaplayıcı: bahis sayısı, ortalama stake ve kârı gir; hacmi ve yield değerini gör — ve sayının anlam kazanması için kaç bahis gerektiğini öğren.",
+      h1: "Yield hesaplayıcı",
+      lede:
+        "Kârın kasana değil, oynadığın her şeye göre ölçümü — parası farklı iki bahisçiyi karşılaştıran tek sayı.",
+      labels: {
+        inputTitle: "Bahisler, stake ve sonuç",
+        bets: "Bahis sayısı",
+        avgStake: "Ortalama stake",
+        profit: "Kâr",
+        resultTitle: "Hacme göre yield",
+        turnover: "Toplam hacim",
+        yieldPercent: "Yield",
+        hint: "Hacmi biz hesaplıyoruz: bahis sayısı × ortalama stake. Her bahsin stake'ini say, aynı anda riskte olan parayı değil. Kâr net girilir ve negatif olabilir.",
+        verdictNoise:
+          "Bin bahsin altında bu sayı büyük ölçüde gürültüdür. 2.00 oranında sabit stake ile yield'in bir standart sapması 200 bahiste 7,07 puan, 1.000 bahiste hâlâ 3,16 puandır: onu bir aralık gibi oku, sonuç gibi değil.",
+        verdictVolume:
+          "Bin bahsi geçtikten sonra sayı bilgi taşımaya başlar, ama 2.00 oranında bir standart sapma yine 3,16 puan civarındadır — aynı hacimde %+4 ile %+7 iki farklı beceri seviyesi değildir.",
+      },
+      takeaway:
+        "Yield, bahisçileri karşılaştıran ölçüdür: 10.000 hacim üzerinde %4, yirmi bahiste toplanmış %40 ROI'den daha değerlidir.",
+      example: {
+        title: "50 birimlik 200 bahis, 400 kâr",
+        rows: [
+          { label: "Bahis sayısı", value: "200" },
+          { label: "Ortalama stake", value: "50" },
+          { label: "Toplam hacim", value: "10.000" },
+          { label: "Kâr", value: "+400" },
+          { label: "Yield", value: "%+4,00" },
+          { label: "Aynı 400, 1.000 kasada", value: "ROI %+40,00" },
+        ],
+        note:
+          "Tek bir sonuç, aynı derecede dürüst iki yüzde: bahis şirketinden geçen 10.000'in %4,00 kadarı ve hiç riske girmiş olan 1.000'in %40,00 kadarı. Aradaki mesafe yalnızca kasanın on kez çevrilmesidir. Örneklem ise iki sayıdan da ağır basar: 200 bahiste yield'in bir standart sapması 7,07 puandır, yani bu %+4,00 yazı tura serisinin kendi başına ürettiği aralığın içinde kalır.",
+      },
+      explainerTitle: "İki bahisçiyi karşılaştıran sayı",
+      explainer: [
+        "**Yield, kârın hacme bölünmesidir** — yatırılan her stake'in toplamına, hesaptaki bakiyeye değil. Bahisçilerin birbirine söylediği sayı olmasının nedeni tam olarak paradan bağımsız olmasıdır: stake 5 de olsa 500 de olsa %4, %4'tür. **Herkesin yanlış girdiği veri paydadır** ve hata her zaman aynı yöne gider. Hacim, her bahsin stake'ini yatırıldığı anda sayar; yani 50 birimlik 200 bahis 10.000 eder, aynı anda yalnızca 50 riskte olsa bile, ve bu bahislerin döndüğü 1.000 kasa, bölünecek sayı değildir. Bu yüzden bu sayfa bahis sayısı ile ortalama stake'i ister ve hacmi gözünün önünde hesaplar. Aynı kârı sermayeye göre ölçersen ROI elde edersin: ROI hesaplayıcı karşılaştırmanın diğer yarısını tutar; orada 400 kâr, 1.000 kasanın %40,00 kadarı ve 10.000 hacmin %4,00 kadarıdır.",
+        "**Yaklaşık %5'in üzerinde, ciddi hacimde sürdürülen bir yield nadirdir.** Var olduğu yerde genelde limitleri düşük yumuşak pazarlarda yaşar ve stake büyüdükçe incelir, çünkü onu mümkün kılan oranlar sert vurulmaya dayanmaz. Bunun çok üzerindeki uzun vadeli her rakamı kısa örneklem, yumuşak niş ya da farklı bir hacim tanımı olarak ele al. Ve **birkaç yüz bahsin altında sayı sonuç değil gürültüdür**: 2.00 oranında sabit stake ile yield'in bir standart sapması, bir bölü bahis sayısının kareköküdür — 200 bahiste 7,07 puan, 1.000 bahiste 3,16 puan, 2.500 bahiste 2,00 puan. %+4 bir yield, sıfırdan iki standart sapma uzağa ancak 2.500 bahis civarında ulaşır. Yüksek oranlarda salınım daha da geniştir: 3.00'te aynı 200 bahis 10 puanlık bir standart sapma taşır. Yirmi kazanılan bahsin dürüst okuması da budur: ölçülmüş bir avantaj değil, ayırt etmeye yetmeyecek kadar kısa bir örneklem.",
+      ],
+      faq: [
+        {
+          q: "Toplam hacmimi nasıl hesaplarım?",
+          a: "Kazandığın ya da kaybettiğin her bahsin stake'ini toplayarak. 50 birimlik 200 bahis 10.000 hacim eder, arkasındaki kasa yalnızca 1.000 olsa bile. Net tutarı ya da bakiyeyi kullanma: hacim, bahis şirketinden geçen paradır ve bahis başına bir kez sayılır.",
+        },
+        {
+          q: "%5 yield iyi mi?",
+          a: "Binlerce bahis boyunca sürdürüldüyse evet — gerçek limitlere dayanabilenin üst sınırına yakındır. Çok daha yüksek değerler genelde yumuşak pazarlardan, kısa örneklemden ya da promosyon değerinden gelir ve stake yükseldikçe düşer, çünkü onları üreten oranlar kapatılır veya limitlenir.",
+        },
+        {
+          q: "Yield'imin anlam kazanması için kaç bahis gerekir?",
+          a: "Çoğu kişinin sandığından fazlası. 2.00 oranında sabit stake ile yield'in bir standart sapması 200 bahiste 7,07 puan, 1.000 bahiste 3,16 ve 2.500 bahiste 2,00 puandır; yani %+4 sıfırdan iki standart sapma uzağa ancak 2.500 bahis civarında ulaşır. Birkaç yüzün altında sayıyı aralık say.",
+        },
+        {
+          q: "Stake'lerim çok değişiyorsa?",
+          a: "O zaman bahis sayısı × ortalama stake yalnızca bir yaklaşımdır ve kazançlar büyük stake'lere denk geldiğinde seni kayırır. Gerçek stake'leri topla ve kârı bu toplama böl. Birim ile oynuyorsan birimleri say: oynanan birim başına yield aynı sayıdır ve dürüst tutmak daha kolaydır.",
+        },
+      ],
+    },
   },
 };
 

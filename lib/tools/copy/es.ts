@@ -518,6 +518,66 @@ const es: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Calculadora de yield para apuestas — beneficio sobre lo apostado | BetRedge",
+      metaDescription:
+        "Calculadora de yield gratuita: introduce número de apuestas, stake medio y beneficio para obtener el volumen apostado y el yield — y cuántas apuestas hacen falta para que signifique algo.",
+      h1: "Calculadora de yield",
+      lede:
+        "El beneficio medido sobre todo lo que has apostado, no sobre tu bankroll — la única cifra que compara a dos apostantes con dinero distinto.",
+      labels: {
+        inputTitle: "Apuestas, stake y resultado",
+        bets: "Número de apuestas",
+        avgStake: "Stake medio",
+        profit: "Beneficio",
+        resultTitle: "Yield sobre lo apostado",
+        turnover: "Volumen apostado",
+        yieldPercent: "Yield",
+        hint: "El volumen lo calculamos nosotros: apuestas × stake medio. Cuenta el stake de cada apuesta, no el dinero expuesto a la vez. El beneficio va neto y puede ser negativo.",
+        verdictNoise:
+          "Por debajo de mil apuestas esta cifra es sobre todo ruido. Con stake plano a 2.00, una desviación típica del yield son 7,07 puntos en 200 apuestas y aún 3,16 en 1.000: léela como un rango, no como un resultado.",
+        verdictVolume:
+          "Pasadas las mil apuestas la cifra empieza a llevar información, pero una desviación típica sigue siendo unos 3,16 puntos a 2.00 — un +4% y un +7% sobre el mismo volumen no son dos niveles de habilidad distintos.",
+      },
+      takeaway:
+        "El yield es la métrica que compara apostantes: un 4% sobre 10.000 apostados vale más que un ROI del 40% conseguido en veinte apuestas.",
+      example: {
+        title: "200 apuestas de 50, 400 de beneficio",
+        rows: [
+          { label: "Número de apuestas", value: "200" },
+          { label: "Stake medio", value: "50" },
+          { label: "Volumen apostado", value: "10.000" },
+          { label: "Beneficio", value: "+400" },
+          { label: "Yield", value: "+4,00%" },
+          { label: "El mismo 400 sobre un bankroll de 1.000", value: "ROI +40,00%" },
+        ],
+        note:
+          "Un único resultado, dos porcentajes igual de honestos: el 4,00% de los 10.000 que pasaron por la casa, el 40,00% de los 1.000 que estuvieron en riesgo. La distancia entre ambos son solo las diez veces que giró el bankroll. Y la muestra importa más que las dos cifras: en 200 apuestas una desviación típica del yield son 7,07 puntos, así que este +4,00% cae dentro del rango que produce sola una serie de caras y cruces.",
+      },
+      explainerTitle: "La cifra que compara a dos apostantes",
+      explainer: [
+        "**El yield es el beneficio dividido por el volumen apostado** — la suma de cada stake colocado, no el saldo de la cuenta. Es la cifra que los apostantes se citan entre ellos precisamente porque no depende de cuánto dinero tienen: el 4% es el 4% con stakes de 5 o de 500. **El dato que todos equivocan es el denominador**, y lo equivocan siempre en la misma dirección. El volumen cuenta el stake de cada apuesta en el momento de colocarla, así que 200 apuestas de 50 son 10.000 aunque en un instante dado solo hubiera 50 expuestos, y los 1.000 de bankroll por los que esas apuestas se reciclaron no son el número por el que dividir. Por eso esta página pide el número de apuestas y el stake medio y calcula el volumen delante de ti. Mide el mismo beneficio contra el capital y obtienes el ROI: la calculadora de ROI guarda la otra mitad de la comparación, donde 400 de beneficio son el 40,00% de un bankroll de 1.000 y el 4,00% de 10.000 apostados.",
+        "**Un yield por encima del 5% aproximado, sostenido sobre volumen serio, es raro.** Donde existe vive en mercados blandos con límites bajos, y se estrecha cuando crecen los stakes, porque los precios que lo permitían no sobreviven a que los golpeen fuerte. Cualquier cifra de largo plazo muy por encima hay que tratarla como muestra corta, nicho blando o una definición distinta de volumen. Y **por debajo de unos cientos de apuestas el número es ruido, no un resultado**: con stake plano a 2.00 una desviación típica del yield es uno dividido por la raíz del número de apuestas — 7,07 puntos en 200, 3,16 en 1.000 y 2,00 en 2.500. Un +4% de yield solo alcanza dos desviaciones típicas desde cero alrededor de las 2.500 apuestas. Con precios más altos las oscilaciones son mayores: a 3.00 las mismas 200 apuestas llevan una desviación de 10 puntos. Y esa es la lectura honesta de veinte apuestas ganadas: no una ventaja medida, solo una muestra demasiado corta para distinguir.",
+      ],
+      faq: [
+        {
+          q: "¿Cómo calculo mi volumen apostado?",
+          a: "Sumando el stake de cada apuesta colocada, ganada o perdida. 200 apuestas de 50 son 10.000 de volumen, aunque el bankroll detrás fuera solo 1.000. No uses el neto ni el saldo: el volumen es el dinero que pasó por la casa, contado una vez por apuesta.",
+        },
+        {
+          q: "¿Un yield del 5% es bueno?",
+          a: "Sostenido sobre miles de apuestas sí, y está cerca del techo de lo que sobrevive a límites reales. Los yields muy superiores suelen venir de mercados blandos, de una muestra corta o de valor promocional, y tienden a caer cuando los stakes suben, porque los precios que los producían se agotan o se limitan.",
+        },
+        {
+          q: "¿Cuántas apuestas necesito para que mi yield signifique algo?",
+          a: "Más de las que casi nadie supone. Con stake plano a 2.00 una desviación típica del yield son 7,07 puntos en 200 apuestas, 3,16 en 1.000 y 2,00 en 2.500, así que un +4% solo llega a dos desviaciones desde cero cerca de las 2.500 apuestas. Por debajo de unos cientos, trátalo como un rango.",
+        },
+        {
+          q: "¿Y si mis stakes varían mucho?",
+          a: "Entonces apuestas × stake medio es solo una aproximación, y te favorece cuando las victorias cayeron en los stakes grandes. Suma los stakes reales y divide el beneficio por ese total. Si apuestas en unidades, cuenta las unidades: el yield por unidad apostada es la misma cifra y es más fácil mantenerla honesta.",
+        },
+      ],
+    },
   },
 };
 

@@ -518,6 +518,66 @@ const fr: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Calculateur de yield paris — profit sur le volume misé | BetRedge",
+      metaDescription:
+        "Calculateur de yield gratuit : entrez le nombre de paris, la mise moyenne et le profit pour obtenir le volume misé et le yield — et le nombre de paris nécessaires.",
+      h1: "Calculateur de yield",
+      lede:
+        "Le profit mesuré sur tout ce que vous avez misé, pas sur votre bankroll — le seul chiffre qui compare deux parieurs aux moyens différents.",
+      labels: {
+        inputTitle: "Paris, mise et résultat",
+        bets: "Nombre de paris",
+        avgStake: "Mise moyenne",
+        profit: "Profit",
+        resultTitle: "Yield sur le volume misé",
+        turnover: "Volume misé",
+        yieldPercent: "Yield",
+        hint: "Le volume est calculé pour vous : paris × mise moyenne. Comptez la mise de chaque pari, pas l'argent exposé à un instant donné. Le profit s'entre net et peut être négatif.",
+        verdictNoise:
+          "Sous mille paris, ce chiffre est surtout du bruit. À mise plate sur 2.00, un écart-type du yield vaut 7,07 points sur 200 paris et encore 3,16 sur 1 000 : lisez-le comme une fourchette, pas comme un résultat.",
+        verdictVolume:
+          "Au-delà de mille paris le chiffre commence à porter de l'information, mais un écart-type reste d'environ 3,16 points sur 2.00 — un +4 % et un +7 % sur le même volume ne sont pas deux niveaux de talent différents.",
+      },
+      takeaway:
+        "Le yield est la mesure qui compare les parieurs : 4 % sur 10 000 misés valent mieux qu'un ROI de 40 % obtenu sur vingt paris.",
+      example: {
+        title: "200 paris de 50, 400 de profit",
+        rows: [
+          { label: "Nombre de paris", value: "200" },
+          { label: "Mise moyenne", value: "50" },
+          { label: "Volume misé", value: "10 000" },
+          { label: "Profit", value: "+400" },
+          { label: "Yield", value: "+4,00 %" },
+          { label: "Le même 400 sur une bankroll de 1 000", value: "ROI +40,00 %" },
+        ],
+        note:
+          "Un seul résultat, deux pourcentages tout aussi honnêtes : 4,00 % des 10 000 passés chez l'opérateur, 40,00 % des 1 000 réellement en risque. L'écart entre les deux, ce sont uniquement les dix fois où la bankroll a tourné. Et l'échantillon compte plus que les deux chiffres : sur 200 paris, un écart-type du yield vaut 7,07 points, donc ce +4,00 % tient dans la fourchette qu'une série de pile ou face produit seule.",
+      },
+      explainerTitle: "Le chiffre qui compare deux parieurs",
+      explainer: [
+        "**Le yield, c'est le profit divisé par le volume misé** — le total de chaque mise placée, pas le solde du compte. C'est le chiffre que les parieurs se citent entre eux justement parce qu'il ne dépend pas de leurs moyens : 4 %, c'est 4 % avec des mises de 5 comme de 500. **La donnée que tout le monde se trompe, c'est le dénominateur**, et l'erreur va toujours dans le même sens. Le volume compte la mise de chaque pari au moment où il est placé, donc 200 paris de 50 font 10 000 même si 50 seulement étaient exposés à la fois, et les 1 000 de bankroll recyclés à travers ces paris ne sont pas le nombre par lequel diviser. C'est pourquoi cette page demande le nombre de paris et la mise moyenne, et calcule le volume devant vous. Mesurez le même profit sur le capital et vous obtenez le ROI : le calculateur de ROI tient l'autre moitié de la comparaison, où 400 de profit font 40,00 % d'une bankroll de 1 000 et 4,00 % de 10 000 misés.",
+        "**Un yield au-dessus de 5 % environ, tenu sur un volume sérieux, est rare.** Là où il existe, il vit dans des marchés tendres à limites basses, et il se rétrécit quand les mises grossissent, parce que les cotes qui le permettaient ne survivent pas à qui les frappe fort. Tout chiffre de long terme très au-dessus doit être traité comme un échantillon court, une niche tendre ou une autre définition du volume. Et **sous quelques centaines de paris, le nombre est du bruit, pas un résultat** : à mise plate sur 2.00, un écart-type du yield vaut un divisé par la racine du nombre de paris — 7,07 points sur 200, 3,16 sur 1 000, 2,00 sur 2 500. Un +4 % de yield n'atteint deux écarts-types au-dessus de zéro qu'autour de 2 500 paris. Sur des cotes plus longues, les écarts sont plus larges : à 3.00, les mêmes 200 paris portent un écart-type de 10 points. Et c'est la lecture honnête de vingt paris gagnés : pas un avantage mesuré, juste un échantillon trop court pour trancher.",
+      ],
+      faq: [
+        {
+          q: "Comment calculer mon volume misé ?",
+          a: "En additionnant la mise de chaque pari placé, gagné ou perdu. 200 paris de 50 font 10 000 de volume, même si la bankroll derrière ne faisait que 1 000. N'utilisez pas le net et n'utilisez pas le solde : le volume est l'argent passé chez l'opérateur, compté une fois par pari.",
+        },
+        {
+          q: "Un yield de 5 % est-il bon ?",
+          a: "Tenu sur des milliers de paris, oui : c'est proche du plafond de ce qui survit à de vraies limites. Les yields bien supérieurs viennent d'habitude de marchés tendres, d'un échantillon court ou de valeur promotionnelle, et ils baissent quand les mises montent, car les cotes qui les produisaient sont prises ou limitées.",
+        },
+        {
+          q: "Combien de paris avant que mon yield veuille dire quelque chose ?",
+          a: "Plus que ce que l'on croit. À mise plate sur 2.00, un écart-type du yield vaut 7,07 points sur 200 paris, 3,16 sur 1 000 et 2,00 sur 2 500 : un +4 % n'atteint deux écarts-types au-dessus de zéro qu'aux environs de 2 500 paris. Sous quelques centaines, traitez le chiffre comme une fourchette.",
+        },
+        {
+          q: "Et si mes mises varient beaucoup ?",
+          a: "Alors paris × mise moyenne n'est qu'une approximation, et elle vous flatte si les gains sont tombés sur les grosses mises. Additionnez les mises réelles et divisez le profit par ce total. Si vous misez en unités, comptez les unités : le yield par unité misée est le même chiffre et se garde plus honnête.",
+        },
+      ],
+    },
   },
 };
 

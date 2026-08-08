@@ -13,6 +13,7 @@ import { ProbabilityCalculator } from "./ProbabilityCalculator";
 import { ArbitrageCalculator } from "./ArbitrageCalculator";
 import { ParlayCalculator } from "./ParlayCalculator";
 import { RoiCalculator } from "./RoiCalculator";
+import { YieldCalculator } from "./YieldCalculator";
 
 export function ToolCalculator({
   slug,
@@ -40,5 +41,7 @@ export function ToolCalculator({
       return <ParlayCalculator copy={copy} dash={dash} />;
     case "roi-calculator":
       return <RoiCalculator copy={copy} dash={dash} />;
+    case "yield-calculator":
+      return <YieldCalculator copy={copy} dash={dash} />;
   }
 }

@@ -518,6 +518,66 @@ const nl: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Yield-calculator voor wedden — winst per ingezette euro | BetRedge",
+      metaDescription:
+        "Gratis yield-calculator: vul aantal weddenschappen, gemiddelde inzet en winst in voor omzet en yield — en hoeveel weddenschappen nodig zijn voordat het cijfer iets zegt.",
+      h1: "Yield-calculator",
+      lede:
+        "Winst gemeten tegen alles wat je hebt ingezet, niet tegen je bankroll — het enige cijfer dat twee spelers met verschillend geld vergelijkt.",
+      labels: {
+        inputTitle: "Weddenschappen, inzet en resultaat",
+        bets: "Aantal weddenschappen",
+        avgStake: "Gemiddelde inzet",
+        profit: "Winst",
+        resultTitle: "Yield op de omzet",
+        turnover: "Omzet",
+        yieldPercent: "Yield",
+        hint: "De omzet rekenen wij uit: weddenschappen × gemiddelde inzet. Tel de inzet van elke weddenschap, niet het geld dat op één moment in risico stond. De winst gaat er netto in en mag negatief zijn.",
+        verdictNoise:
+          "Onder duizend weddenschappen is dit cijfer vooral ruis. Bij vlakke inzetten op 2.00 is één standaardafwijking van de yield 7,07 punten over 200 weddenschappen en nog 3,16 over 1.000: lees het als een bandbreedte, niet als een resultaat.",
+        verdictVolume:
+          "Voorbij duizend weddenschappen begint het cijfer informatie te dragen, maar één standaardafwijking is op 2.00 nog altijd ongeveer 3,16 punten — een +4% en een +7% over hetzelfde volume zijn geen twee niveaus van kunnen.",
+      },
+      takeaway:
+        "Yield is het cijfer dat spelers vergelijkt: 4% op 10.000 omzet is meer waard dan 40% ROI verzameld over twintig weddenschappen.",
+      example: {
+        title: "200 weddenschappen van 50, 400 winst",
+        rows: [
+          { label: "Aantal weddenschappen", value: "200" },
+          { label: "Gemiddelde inzet", value: "50" },
+          { label: "Omzet", value: "10.000" },
+          { label: "Winst", value: "+400" },
+          { label: "Yield", value: "+4,00%" },
+          { label: "Dezelfde 400 op een bankroll van 1.000", value: "ROI +40,00%" },
+        ],
+        note:
+          "Één resultaat, twee even eerlijke percentages: 4,00% van de 10.000 die door de bookmaker gingen, 40,00% van de 1.000 die ooit in risico stond. Het verschil tussen beide is niets anders dan de tien keer dat de bankroll werd omgedraaid. En de steekproef weegt zwaarder dan beide cijfers: bij 200 weddenschappen is één standaardafwijking van de yield 7,07 punten, dus deze +4,00% valt binnen wat een reeks muntworpen zelf voortbrengt.",
+      },
+      explainerTitle: "Het cijfer dat twee spelers vergelijkt",
+      explainer: [
+        "**Yield is winst gedeeld door omzet** — het totaal van elke geplaatste inzet, niet het saldo op de rekening. Het is het cijfer dat spelers elkaar noemen juist omdat het niet afhangt van hoeveel geld ze hebben: 4% is 4%, of de inzetten 5 of 500 zijn. **Het getal dat iedereen verkeerd invult is de noemer**, en de fout gaat altijd dezelfde kant op. Omzet telt de inzet van elke weddenschap op het moment dat je hem plaatst, dus 200 weddenschappen van 50 is 10.000, ook als er nooit meer dan 50 tegelijk in risico stond, en de bankroll van 1.000 waar die weddenschappen door heen gingen is niet het getal om door te delen. Daarom vraagt deze pagina om het aantal en de gemiddelde inzet en rekent de omzet voor je uit. Meet dezelfde winst tegen het kapitaal en je hebt de ROI: de ROI-calculator houdt de andere helft van de vergelijking, waar 400 winst 40,00% van een bankroll van 1.000 is en 4,00% van 10.000 ingezet.",
+        "**Een yield boven ongeveer 5%, volgehouden over serieus volume, is zeldzaam.** Waar hij bestaat, leeft hij in zachte markten met lage limieten, en hij krimpt zodra de inzetten groeien, omdat de odds die hem mogelijk maakten niet overleven als je er hard op speelt. Elk langetermijncijfer daar ruim boven behandel je als een korte steekproef, een zachte niche of een andere definitie van omzet. En **onder een paar honderd weddenschappen is het getal ruis, geen resultaat**: bij vlakke inzetten op 2.00 is één standaardafwijking van de yield één gedeeld door de wortel van het aantal weddenschappen — 7,07 punten over 200, 3,16 over 1.000, 2,00 over 2.500. Een +4% yield bereikt pas rond 2.500 weddenschappen twee standaardafwijkingen boven nul. Bij hogere odds zwaait het verder uit: op 3.00 dragen dezelfde 200 weddenschappen een standaardafwijking van 10 punten. En dat is de eerlijke lezing van twintig gewonnen weddenschappen: geen gemeten edge, alleen een te korte steekproef.",
+      ],
+      faq: [
+        {
+          q: "Hoe bereken ik mijn omzet?",
+          a: "Door de inzet van elke geplaatste weddenschap op te tellen, gewonnen of verloren. 200 weddenschappen van 50 is 10.000 omzet, ook als de bankroll erachter maar 1.000 was. Gebruik niet het netto bedrag en niet het saldo: omzet is het geld dat door de bookmaker ging, één keer per weddenschap geteld.",
+        },
+        {
+          q: "Is 5% yield goed?",
+          a: "Volgehouden over duizenden weddenschappen wel — het zit rond de bovengrens van wat echte limieten overleeft. Veel hogere yields komen meestal uit zachte markten, een korte steekproef of promotiewaarde, en ze dalen als de inzetten stijgen, omdat de odds die ze opleverden worden weggenomen of gelimiteerd.",
+        },
+        {
+          q: "Hoeveel weddenschappen voordat mijn yield iets betekent?",
+          a: "Meer dan de meesten aannemen. Bij vlakke inzetten op 2.00 is één standaardafwijking van de yield 7,07 punten over 200 weddenschappen, 3,16 over 1.000 en 2,00 over 2.500, dus een +4% haalt pas rond 2.500 weddenschappen twee standaardafwijkingen boven nul. Onder een paar honderd is het een bandbreedte.",
+        },
+        {
+          q: "En als mijn inzetten sterk verschillen?",
+          a: "Dan is weddenschappen × gemiddelde inzet slechts een benadering, en hij vleit je als de winnaars op de grote inzetten vielen. Tel de werkelijke inzetten op en deel de winst door dat totaal. Speel je in units, tel dan units: de yield per ingezette unit is hetzelfde cijfer en blijft makkelijker eerlijk.",
+        },
+      ],
+    },
   },
 };
 

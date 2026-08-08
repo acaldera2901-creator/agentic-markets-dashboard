@@ -338,3 +338,54 @@ describe("roi calculator", () => {
     expect(screen.getByTestId("out-roi-ending").textContent).toBe("—");
   });
 });
+
+describe("yield calculator", () => {
+  it("200 scommesse da 50 con 400 di profitto danno turnover 10000 e +4.00%", () => {
+    // I default SONO l'esempio lavorato: il turnover è derivato, non digitato.
+    mount("yield-calculator");
+    expect(screen.getByTestId("out-turnover").textContent).toBe("10000.00");
+    expect(screen.getByTestId("out-yield").textContent).toBe("+4.00%");
+  });
+
+  it("lo stesso profitto su un turnover diverso dà uno yield diverso", async () => {
+    const user = userEvent.setup();
+    mount("yield-calculator");
+    // 20 giocate da 50 = 1000 di turnover: lo stesso 400 diventa +40.00%, che è
+    // il numero della pagina ROI. È il contrasto che le due pagine spiegano.
+    const bets = screen.getByLabelText("Number of bets");
+    await user.clear(bets);
+    await user.type(bets, "20");
+    expect(screen.getByTestId("out-turnover").textContent).toBe("1000.00");
+    expect(screen.getByTestId("out-yield").textContent).toBe("+40.00%");
+  });
+
+  it("sotto il migliaio di giocate il verdetto avverte che è rumore", async () => {
+    const user = userEvent.setup();
+    const { container } = mount("yield-calculator");
+    expect(container.querySelector(".tl-verdict")!.className).toContain("is-warn");
+    const bets = screen.getByLabelText("Number of bets");
+    await user.clear(bets);
+    await user.type(bets, "2500");
+    expect(container.querySelector(".tl-verdict")!.className).not.toContain("is-warn");
+  });
+
+  it("un periodo in perdita mostra lo yield negativo", async () => {
+    const user = userEvent.setup();
+    mount("yield-calculator");
+    const profit = screen.getByLabelText("Profit");
+    await user.clear(profit);
+    await user.type(profit, "-300");
+    expect(screen.getByTestId("out-yield").textContent).toBe("-3.00%");
+  });
+
+  it("spazzatura negli input non produce NaN né Infinity", async () => {
+    const user = userEvent.setup();
+    mount("yield-calculator");
+    const stake = screen.getByLabelText("Average stake");
+    await user.clear(stake);
+    expect(screen.getByTestId("out-turnover").textContent).toBe("—");
+    expect(screen.getByTestId("out-yield").textContent).toBe("—");
+    await user.type(stake, "banana");
+    expect(screen.getByTestId("out-yield").textContent).toBe("—");
+  });
+});

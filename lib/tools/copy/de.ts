@@ -518,6 +518,66 @@ const de: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Yield-Rechner für Wetten — Gewinn pro Einsatz | BetRedge",
+      metaDescription:
+        "Kostenloser Yield-Rechner für Wetten: Anzahl der Wetten, mittleren Einsatz und Gewinn eingeben und Umsatz sowie Yield sehen — samt nötiger Anzahl Wetten.",
+      h1: "Yield-Rechner",
+      lede:
+        "Gewinn gemessen an allem, was du eingesetzt hast, nicht an deiner Bankroll — die einzige Zahl, die zwei Wettende mit unterschiedlichem Geld vergleicht.",
+      labels: {
+        inputTitle: "Wetten, Einsatz und Ergebnis",
+        bets: "Anzahl der Wetten",
+        avgStake: "Mittlerer Einsatz",
+        profit: "Gewinn",
+        resultTitle: "Yield auf den Umsatz",
+        turnover: "Umsatz",
+        yieldPercent: "Yield",
+        hint: "Den Umsatz rechnen wir aus: Wetten × mittlerer Einsatz. Zähle den Einsatz jeder Wette, nicht das Geld, das gleichzeitig im Risiko war. Der Gewinn wird netto eingetragen und darf negativ sein.",
+        verdictNoise:
+          "Unter tausend Wetten ist diese Zahl vor allem Rauschen. Bei flachen Einsätzen auf 2.00 beträgt eine Standardabweichung des Yields 7,07 Punkte über 200 Wetten und immer noch 3,16 über 1.000 — lies sie als Spanne, nicht als Ergebnis.",
+        verdictVolume:
+          "Jenseits von tausend Wetten trägt die Zahl Information, aber eine Standardabweichung liegt bei 2.00 noch bei etwa 3,16 Punkten — ein +4 % und ein +7 % über dasselbe Volumen sind nicht zwei verschiedene Können-Stufen.",
+      },
+      takeaway:
+        "Der Yield ist die Zahl, die Wettende vergleicht: 4 % auf 10.000 Umsatz sind mehr wert als 40 % ROI, gesammelt über zwanzig Wetten.",
+      example: {
+        title: "200 Wetten zu 50, 400 Gewinn",
+        rows: [
+          { label: "Anzahl der Wetten", value: "200" },
+          { label: "Mittlerer Einsatz", value: "50" },
+          { label: "Umsatz", value: "10.000" },
+          { label: "Gewinn", value: "+400" },
+          { label: "Yield", value: "+4,00 %" },
+          { label: "Dieselben 400 auf einer Bankroll von 1.000", value: "ROI +40,00 %" },
+        ],
+        note:
+          "Ein Ergebnis, zwei gleichermaßen ehrliche Prozentzahlen: 4,00 % der 10.000, die durch den Buchmacher liefen, und 40,00 % der 1.000, die je im Risiko waren. Der Abstand dazwischen sind allein die zehn Umdrehungen der Bankroll. Und die Stichprobe zählt mehr als beide Zahlen — bei 200 Wetten beträgt eine Standardabweichung des Yields 7,07 Punkte, dieses +4,00 % liegt also im Bereich, den eine Münzwurfserie von selbst erzeugt.",
+      },
+      explainerTitle: "Die Zahl, die zwei Wettende vergleicht",
+      explainer: [
+        "**Der Yield ist der Gewinn geteilt durch den Umsatz** — die Summe aller platzierten Einsätze, nicht der Kontostand. Es ist die Zahl, die Wettende einander nennen, genau weil sie nicht davon abhängt, wie viel Geld sie haben: 4 % sind 4 %, ob die Einsätze 5 oder 500 betragen. **Der Wert, den alle falsch eintragen, ist der Nenner**, und der Fehler geht immer in dieselbe Richtung. Der Umsatz zählt den Einsatz jeder Wette in dem Moment, in dem sie platziert wird, also sind 200 Wetten zu 50 gleich 10.000, auch wenn nie mehr als 50 gleichzeitig im Risiko standen — und die Bankroll von 1.000, durch die diese Wetten liefen, ist nicht die Zahl, durch die man teilt. Deshalb fragt diese Seite nach Anzahl und mittlerem Einsatz und rechnet den Umsatz vor deinen Augen aus. Miss denselben Gewinn am Kapital, und du hast den ROI: der ROI-Rechner hält die andere Hälfte des Vergleichs, wo 400 Gewinn 40,00 % einer Bankroll von 1.000 und 4,00 % von 10.000 Umsatz sind.",
+        "**Ein Yield über etwa 5 %, gehalten über ernstes Volumen, ist selten.** Wo er existiert, lebt er in weichen Märkten mit niedrigen Limits und schrumpft, sobald die Einsätze wachsen, weil die Quoten, die ihn erlaubten, es nicht überleben, hart getroffen zu werden. Jede Langfristzahl weit darüber behandelt man als kurze Stichprobe, weiche Nische oder andere Definition von Umsatz. Und **unter ein paar hundert Wetten ist die Zahl Rauschen, kein Ergebnis**: bei flachen Einsätzen auf 2.00 ist eine Standardabweichung des Yields eins geteilt durch die Wurzel der Wettenzahl — 7,07 Punkte über 200 Wetten, 3,16 über 1.000, 2,00 über 2.500. Ein +4 % Yield erreicht zwei Standardabweichungen über null erst bei rund 2.500 Wetten. Bei höheren Quoten schwankt es stärker: bei 3.00 tragen dieselben 200 Wetten eine Standardabweichung von 10 Punkten. Und das ist die ehrliche Lesart von zwanzig gewonnenen Wetten — kein gemessener Vorteil, nur eine zu kurze Stichprobe.",
+      ],
+      faq: [
+        {
+          q: "Wie ermittle ich meinen Umsatz?",
+          a: "Indem du den Einsatz jeder platzierten Wette addierst, gewonnen oder verloren. 200 Wetten zu 50 sind 10.000 Umsatz, auch wenn die Bankroll dahinter nur 1.000 betrug. Nicht den Netto-Betrag und nicht den Kontostand nehmen: Umsatz ist das Geld, das durch den Buchmacher lief, einmal pro Wette gezählt.",
+        },
+        {
+          q: "Sind 5 % Yield gut?",
+          a: "Über tausende Wetten gehalten ja — das liegt nahe an der Obergrenze dessen, was echte Limits überlebt. Deutlich höhere Werte kommen meist aus weichen Märkten, einer kurzen Stichprobe oder Bonuswert und fallen, wenn die Einsätze steigen, weil die zugrunde liegenden Quoten weggenommen oder limitiert werden.",
+        },
+        {
+          q: "Wie viele Wetten, bis mein Yield etwas bedeutet?",
+          a: "Mehr als die meisten annehmen. Bei flachen Einsätzen auf 2.00 beträgt eine Standardabweichung des Yields 7,07 Punkte über 200 Wetten, 3,16 über 1.000 und 2,00 über 2.500 — ein +4 % erreicht zwei Standardabweichungen über null erst bei etwa 2.500 Wetten. Unter ein paar hundert Wetten ist es eine Spanne.",
+        },
+        {
+          q: "Was, wenn meine Einsätze stark schwanken?",
+          a: "Dann ist Wetten × mittlerer Einsatz nur eine Näherung, und sie schmeichelt dir, wenn die Treffer auf den großen Einsätzen lagen. Addiere die tatsächlichen Einsätze und teile den Gewinn durch diese Summe. Wenn du in Units spielst, zähle Units: der Yield pro eingesetzter Unit ist dieselbe Zahl und bleibt ehrlicher.",
+        },
+      ],
+    },
   },
 };
 

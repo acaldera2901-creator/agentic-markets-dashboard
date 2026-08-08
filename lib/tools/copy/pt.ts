@@ -518,6 +518,66 @@ const pt: ToolsCopy = {
         },
       ],
     },
+    "yield-calculator": {
+      metaTitle: "Calculadora de yield para apostas — lucro sobre o volume | BetRedge",
+      metaDescription:
+        "Calculadora de yield gratuita: insere número de apostas, stake médio e lucro para obter o volume apostado e o yield — e quantas apostas são precisas para significar algo.",
+      h1: "Calculadora de yield",
+      lede:
+        "O lucro medido sobre tudo o que apostaste, não sobre a tua banca — a única cifra que compara dois apostadores com dinheiro diferente.",
+      labels: {
+        inputTitle: "Apostas, stake e resultado",
+        bets: "Número de apostas",
+        avgStake: "Stake médio",
+        profit: "Lucro",
+        resultTitle: "Yield sobre o volume",
+        turnover: "Volume apostado",
+        yieldPercent: "Yield",
+        hint: "O volume é calculado por nós: apostas × stake médio. Conta o stake de cada aposta, não o dinheiro exposto de uma vez. O lucro entra líquido e pode ser negativo.",
+        verdictNoise:
+          "Abaixo de mil apostas esta cifra é sobretudo ruído. Com stake plano a 2.00, um desvio-padrão do yield são 7,07 pontos em 200 apostas e ainda 3,16 em 1.000: lê-o como um intervalo, não como um resultado.",
+        verdictVolume:
+          "Passadas as mil apostas a cifra começa a transportar informação, mas um desvio-padrão continua a ser cerca de 3,16 pontos a 2.00 — um +4% e um +7% sobre o mesmo volume não são dois níveis de competência diferentes.",
+      },
+      takeaway:
+        "O yield é a métrica que compara apostadores: 4% sobre 10.000 apostados vale mais do que um ROI de 40% obtido em vinte apostas.",
+      example: {
+        title: "200 apostas de 50, 400 de lucro",
+        rows: [
+          { label: "Número de apostas", value: "200" },
+          { label: "Stake médio", value: "50" },
+          { label: "Volume apostado", value: "10.000" },
+          { label: "Lucro", value: "+400" },
+          { label: "Yield", value: "+4,00%" },
+          { label: "Os mesmos 400 numa banca de 1.000", value: "ROI +40,00%" },
+        ],
+        note:
+          "Um resultado, duas percentagens igualmente honestas: 4,00% dos 10.000 que passaram pela casa, 40,00% dos 1.000 que estiveram em risco. A distância entre elas são apenas as dez vezes em que a banca rodou. E a amostra pesa mais do que as duas cifras: em 200 apostas um desvio-padrão do yield são 7,07 pontos, portanto este +4,00% cai dentro do intervalo que uma série de moeda ao ar produz sozinha.",
+      },
+      explainerTitle: "A cifra que compara dois apostadores",
+      explainer: [
+        "**O yield é o lucro dividido pelo volume apostado** — a soma de cada stake colocado, não o saldo da conta. É a cifra que os apostadores citam entre si precisamente porque não depende de quanto dinheiro têm: 4% é 4% com stakes de 5 ou de 500. **O dado que todos erram é o denominador**, e erram sempre na mesma direção. O volume conta o stake de cada aposta no momento em que é colocada, portanto 200 apostas de 50 são 10.000 mesmo que num instante só estivessem 50 expostos, e a banca de 1.000 por onde essas apostas circularam não é o número pelo qual dividir. É por isso que esta página pede o número de apostas e o stake médio e calcula o volume à tua frente. Mede o mesmo lucro contra o capital e obténs o ROI: a calculadora de ROI guarda a outra metade da comparação, onde 400 de lucro são 40,00% de uma banca de 1.000 e 4,00% de 10.000 apostados.",
+        "**Um yield acima de cerca de 5%, sustentado em volume sério, é raro.** Onde existe, vive em mercados moles com limites baixos, e encolhe quando os stakes crescem, porque as odds que o permitiam não sobrevivem a ser atingidas com força. Qualquer cifra de longo prazo muito acima disso deve ser tratada como amostra curta, nicho mole ou uma definição diferente de volume. E **abaixo de algumas centenas de apostas o número é ruído, não um resultado**: com stake plano a 2.00 um desvio-padrão do yield é um dividido pela raiz do número de apostas — 7,07 pontos em 200, 3,16 em 1.000, 2,00 em 2.500. Um +4% de yield só chega a dois desvios-padrão acima de zero por volta das 2.500 apostas. Em odds mais altas a oscilação é maior: a 3.00 as mesmas 200 apostas carregam um desvio de 10 pontos. E é essa a leitura honesta de vinte apostas ganhas: não uma vantagem medida, só uma amostra demasiado curta.",
+      ],
+      faq: [
+        {
+          q: "Como calculo o meu volume apostado?",
+          a: "Somando o stake de cada aposta colocada, ganha ou perdida. 200 apostas de 50 são 10.000 de volume, mesmo que a banca por trás fosse só 1.000. Não uses o líquido nem o saldo: o volume é o dinheiro que passou pela casa, contado uma vez por aposta.",
+        },
+        {
+          q: "Um yield de 5% é bom?",
+          a: "Sustentado ao longo de milhares de apostas, sim — está perto do topo do que sobrevive a limites reais. Yields muito acima disso vêm normalmente de mercados moles, de uma amostra curta ou de valor promocional, e tendem a cair quando os stakes sobem, porque as odds que os produziam são retiradas ou limitadas.",
+        },
+        {
+          q: "Quantas apostas até o meu yield significar algo?",
+          a: "Mais do que a maioria supõe. Com stake plano a 2.00 um desvio-padrão do yield são 7,07 pontos em 200 apostas, 3,16 em 1.000 e 2,00 em 2.500, logo um +4% só chega a dois desvios acima de zero perto das 2.500 apostas. Abaixo de algumas centenas, trata a cifra como um intervalo.",
+        },
+        {
+          q: "E se os meus stakes variarem muito?",
+          a: "Então apostas × stake médio é só uma aproximação, e favorece-te quando as vitórias caíram nos stakes grandes. Soma os stakes reais e divide o lucro por esse total. Se apostas em unidades, conta unidades: o yield por unidade apostada é a mesma cifra e é mais fácil de manter honesta.",
+        },
+      ],
+    },
   },
 };
 
