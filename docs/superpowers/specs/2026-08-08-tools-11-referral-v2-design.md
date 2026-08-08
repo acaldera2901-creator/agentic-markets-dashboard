@@ -279,10 +279,17 @@ Ogni tool porta un esempio numerico coi conti fatti, come i cinque esistenti.
 | **Yield** | `profitto / totale giocato` (turnover) | 200 giocate da 50 = 10.000 di turnover, profitto 400 → **4.00%** |
 | **Stake** | `stake = profitto obiettivo / (quota − 1)` | 100 di profitto a 2.50 → **66.67** |
 | **Bankroll** | `unità = bankroll × %`; drawdown di una serie; giocate a rovina | 2000 al 2% → **40** per giocata; 10 perse = 400 = **20%** di drawdown; 50 giocate a rovina |
-| **Parlay** | quota combinata `= Π quotaᵢ`; probabilità implicita `= 1/combinata` | 4 gambe a 1.80 → 1.80⁴ = **10.4976**; implicita **9.53%**; margine composto **21.6%** |
+| **Parlay** | quota combinata `= Π quotaᵢ`; probabilità implicita `= 1/combinata`; margine composto `= (1+m)ⁿ − 1` | 4 gambe a 1.80 → 1.80⁴ = **10.4976**; implicita **9.53%**; margine composto **21.55%** con `m = 5%` per gamba |
 
 ROI e Yield sono deliberatamente distinti (capitale vs turnover): la differenza tra i
 due è essa stessa contenuto che qualcuno cerca, e le due pagine si linkano a vicenda.
+
+**Nessuna assunzione nascosta in una costante.** Il margine composto del parlay ha
+imposto la regola: il «21,6%» che questa spec riportava non discendeva dalle gambe a
+1.80 — veniva da un margine del 5% per gamba che nessuno aveva dichiarato (derivandolo
+dalle quote sarebbe stato 46,41%). Quando un output dipende da un parametro che l'utente
+non vede, il parametro diventa **un campo**, non una costante nel codice. E l'esempio
+scrive il numero che il readout stampa davvero (21,55%), non il suo arrotondamento.
 
 ## 2.3 Riuso, non nuova architettura
 
