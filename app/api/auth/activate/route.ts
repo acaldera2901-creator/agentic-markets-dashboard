@@ -4,6 +4,7 @@ import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/sessi
 import { siteOrigin, hashActivationToken, tokenHashMatches } from "@/lib/activation";
 import { welcomeEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
+import { grantInviteeBonus } from "@/lib/referral-rewards";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,19 @@ export async function GET(req: Request) {
   } catch (e) {
     console.error("[auth/activate] activation write failed:", String(e));
     return redirect(req, "?activation=error");
+  }
+
+  // #REFERRAL-V2-0808 — i 7 giorni di PRO all'invitato: questo è il percorso di
+  // attivazione normale (link email). Si concede QUI e non all'INSERT del
+  // profilo, che nasce plan='free' e non è usabile fino a questo click: un
+  // regalo concesso alla registrazione scadrebbe prima che l'utente entri.
+  // L'helper valida `referred_by` contro un `profiles.referral_code` reale (alla
+  // registrazione passa solo la regex) e lo concede una volta sola.
+  // Best-effort: un bonus mancato non deve costare l'attivazione dell'account.
+  try {
+    await grantInviteeBonus(row.identifier);
+  } catch (e) {
+    console.error("[auth/activate] bonus invitato fallito:", String(e));
   }
 
   // Welcome email — first email after a successful signup→activation. Best-effort
