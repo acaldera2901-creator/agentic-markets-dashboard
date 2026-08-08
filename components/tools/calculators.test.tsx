@@ -182,3 +182,73 @@ describe("probability calculator", () => {
     expect(screen.getByTestId("out-parlay-prob").textContent).toBe("12.50%");
   });
 });
+
+describe("arbitrage calculator", () => {
+  it("2.10 e 2.10 su 1000 danno +5.00% e stake 500/500", async () => {
+    const user = userEvent.setup();
+    mount("arbitrage-calculator");
+    for (const n of [1, 2]) {
+      const leg = screen.getByLabelText(`Outcome ${n}`);
+      await user.clear(leg);
+      await user.type(leg, "2.10");
+    }
+    await user.clear(screen.getByLabelText("Total stake"));
+    await user.type(screen.getByLabelText("Total stake"), "1000");
+    expect(screen.getByTestId("out-arb-profit").textContent).toBe("+5.00%");
+    expect(screen.getByTestId("out-arb-sum").textContent).toBe("95.24%");
+    expect(screen.getByTestId("out-arb-stake-1").textContent).toBe("500.00");
+    expect(screen.getByTestId("out-arb-stake-2").textContent).toBe("500.00");
+    expect(screen.getByTestId("out-arb-return").textContent).toBe("1050.00");
+  });
+
+  it("1.90/1.90 dice che non c'è arbitraggio invece di mostrare un profitto finto", async () => {
+    const user = userEvent.setup();
+    mount("arbitrage-calculator");
+    for (const n of [1, 2]) {
+      const leg = screen.getByLabelText(`Outcome ${n}`);
+      await user.clear(leg);
+      await user.type(leg, "1.90");
+    }
+    // 1/1.9 + 1/1.9 = 20/19 = 105.26%; il reciproco è 19/20 = 0.95 esatto,
+    // quindi la perdita è −5.00% e non −4.99%.
+    expect(screen.getByTestId("out-arb-profit").textContent).toBe("-5.00%");
+    expect(screen.getByTestId("out-arb-sum").textContent).toBe("105.26%");
+  });
+
+  it("le quote asimmetriche pareggiano il ritorno sbilanciando gli stake", async () => {
+    const user = userEvent.setup();
+    mount("arbitrage-calculator");
+    const first = screen.getByLabelText("Outcome 1");
+    await user.clear(first);
+    await user.type(first, "3.00");
+    const second = screen.getByLabelText("Outcome 2");
+    await user.clear(second);
+    await user.type(second, "1.60");
+    expect(screen.getByTestId("out-arb-stake-1").textContent).toBe("347.83");
+    expect(screen.getByTestId("out-arb-stake-2").textContent).toBe("652.17");
+    expect(screen.getByTestId("out-arb-return").textContent).toBe("1043.48");
+  });
+
+  it("aggiunge e toglie un terzo esito", async () => {
+    const user = userEvent.setup();
+    mount("arbitrage-calculator");
+    await user.click(screen.getByRole("button", { name: "Add outcome" }));
+    expect(screen.getByLabelText("Outcome 3")).toBeTruthy();
+    // Senza il "togli" un esito vuoto aggiunto per errore blocca il calcolatore
+    // sul trattino per sempre: la via di ritorno fa parte del tool.
+    await user.click(screen.getAllByRole("button", { name: "Remove" })[2]);
+    expect(screen.queryByLabelText("Outcome 3")).toBeNull();
+    expect(screen.getByTestId("out-arb-profit").textContent).toBe("+5.00%");
+  });
+
+  it("spazzatura in input non produce NaN", async () => {
+    const user = userEvent.setup();
+    mount("arbitrage-calculator");
+    const leg = screen.getByLabelText("Outcome 1");
+    await user.clear(leg);
+    await user.type(leg, "banana");
+    expect(screen.getByTestId("out-arb-profit").textContent).toBe("—");
+    expect(screen.getByTestId("out-arb-stake-1").textContent).toBe("—");
+    expect(screen.getByTestId("out-arb-return").textContent).toBe("—");
+  });
+});

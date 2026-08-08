@@ -339,6 +339,69 @@ const tr: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Arbitraj Hesaplayıcı — bahsi bürolar arasında bölmek | BetRedge",
+      metaDescription:
+        "Ücretsiz arbitraj hesaplayıcı: her sonuç için farklı bürolardaki en iyi oranı gir; örtük olasılıkların toplamını, bahsin nasıl bölüneceğini ve kârı gör — ya da kâr olmadığını.",
+      h1: "Arbitraj hesaplayıcı",
+      lede:
+        "Her sonuç için mevcut en iyi oranı gir ve iki büronun birlikte marj bırakıp bırakmadığını gör — bırakıyorsa bahsi nasıl böleceğini de.",
+      labels: {
+        inputTitle: "Her sonuçta en iyi oran",
+        outcome: "Sonuç",
+        addOutcome: "Sonuç ekle",
+        removeOutcome: "Kaldır",
+        total: "Toplam bahis",
+        resultTitle: "Nasıl bölünür",
+        profit: "Kâr",
+        impliedSum: "Örtük olasılıkların toplamı",
+        stakeOn: "Sonuca yatırılan",
+        guaranteedReturn: "Her sonuçta dönen tutar",
+        verdictArb:
+          "Oranlar %100'ün altında toplanıyor: böyle bölündüğünde her sonuç aynı tutarı geri veriyor.",
+        verdictNoArb:
+          "Oranlar %100'ün üzerinde toplanıyor, yani burada arbitraj yok — hangi sonuç gelirse gelsin her bölüşüm bu marjı kaybeder.",
+        hint: "Her sonuç için tek oran, her biri o tarafta en çok ödeyen büroda. Ondalık virgülü kabul eder: 2,10, 2.10 gibi çalışır.",
+      },
+      takeaway:
+        "Arbitraj bir tahmin değildir. Kimin kazanacağını bilmeni asla istemez; iki büronun kendi marjlarından daha fazla ayrışmasını ister.",
+      example: {
+        title: "İki büro, bölünecek 1.000",
+        rows: [
+          { label: "Oranlar, tarafa bir büro", value: "2.10 · 2.10" },
+          { label: "Örtük olasılıkların toplamı", value: "%95,24" },
+          { label: "Her tarafa, 1.000 üzerinden", value: "500 · 500" },
+          { label: "Her sonuçta dönen tutar", value: "1.050" },
+          { label: "Kâr", value: "+50 (+%5,00)" },
+        ],
+        note:
+          "Aynı pazar tek büroda 1.90/1.90 fiyatlandığında toplam %105,26 olur ve nasıl bölersen böl −%5,00 geri verir. İki çizgi arasında maçla ilgili hiçbir şey değişmedi: bütün fark hangi büronun hangi tarafta daha çok ödediğinde ve oranlar hâlâ açıkken ikisinde de bakiyeli hesabın olup olmadığında.",
+      },
+      explainerTitle: "İki büro yeterince ayrıştığında",
+      explainer: [
+        "**Her oranın tersini topla, bütün pazarı tek bir sayıda tutuyorsun.** Tek bir büroda bu sayı her zaman %100'ü geçer — orada tutan şey marjdır. Ama bir tarafın en iyi oranı ile diğerinin en iyi oranı sık sık farklı bürolarda durur ve birleştirildiğinde toplam %100'ün altına düşebilir. Koşulun tamamı bu: **örtük olasılıkların toplamı 1'in altında kalmalı**. Toplam bahsi bu örtük olasılıklarla orantılı böl; her sonuç aynı tutarı geri verir, yani geri aldığın şey maçın sonucuna bağlı olmaktan çıkar. İki tane 2.10 oranı %95,24 toplar ve 1.000'lik bahsin her tarafına 500, maç nasıl biterse bitsin 1.050 döndürür.",
+        "**Pratikte bu, aritmetiğin ima ettiğinden çok daha seyrek kapanır ve gerekçeler formülden daha ağır basar.** Oranlar hareket eder: yakaladığın açık genellikle geriden gelen büronun kendini toparlamasıdır ve ilk ayakla ikinci ayak arasındaki saniyelerde kaybolabilir — elinde, değeri için değil korunmak için seçilmiş bir oranda, sıradan ve korumasız bir bahis kalır. Bahis limitleri tam da açığın en geniş olduğu yerde sıkar; kâğıt üzerindeki %5 çoğu zaman binin değil kırk birimin %5'idir. Ve **bürolar bunu sistemli yapan hesapları kısıtlar**: önce düşük limitler, sonra reddedilen bahisler ve kapatmalar. Birkaç büroda bekleyen sermayeyi ve aralarındaki kur farkını da ekle; arbitraj bir makineden çok, ince bir marjı kazımanın yavaş ve operasyonel olarak yorucu bir yolu gibi okunur.",
+      ],
+      faq: [
+        {
+          q: "Her büroda hesap açmam gerekir mi?",
+          a: "Evet. Arbitraj yalnızca o belirli oranları veren belirli bürolar arasında vardır; dolayısıyla oranlar hareket etmeden önce her birinde bakiyeli hesap gerekir. Birkaç şirkete dağılmış ve zamanın çoğunda bekleyen bu sermaye, neredeyse hiçbir hesaplayıcının göstermediği maliyettir.",
+        },
+        {
+          q: "İkinci oran ben yatırmadan önce değişirse ne olur?",
+          a: "Elinde ilk ayak tek başına kalır: değeri için değil korunmak için seçilmiş bir oranda sıradan bir bahis. Hareket etmesi en muhtemel tarafı önce oyna ve korumasız kalmayı bir kaza değil, riskin parçası olarak gör.",
+        },
+        {
+          q: "Bürolar arbitraj oynayanları neden kısıtlar?",
+          a: "Çünkü marjları eğlence amaçlı müşterilerin dengeli akışından beslenir ve her zaman yalnızca bir tarafın en iyi oranını alan bir hesap onlar için saf maliyettir. Kısıtlamalar hesap kapatılmadan çok önce, sessizce düşen bahis limitleri olarak gelir.",
+        },
+        {
+          q: "Arbitraj bahsi yasal mı?",
+          a: "Faaliyetin kendisi yasaldır: ilan edilmiş oranlarda sıradan bahisler yapıyorsun. Yasaklayabilecek olan, arbitraj saydığı bahisleri kısıtlama, reddetme veya iptal etme hakkını genellikle saklı tutan büronun kendi kural ve koşullarıdır. Yasal olmak ile izin verilmiş olmak aynı şey değildir.",
+        },
+      ],
+    },
   },
 };
 

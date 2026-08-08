@@ -339,6 +339,69 @@ const sv: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Arbitragekalkylator — dela en insats mellan spelbolag | BetRedge",
+      metaDescription:
+        "Gratis arbitragekalkylator: ange bästa oddset på varje utfall hos olika spelbolag och se summan av de implicita sannolikheterna, hur insatsen delas och vinsten — eller att den inte finns.",
+      h1: "Arbitragekalkylator",
+      lede:
+        "Ange bästa tillgängliga odds på varje utfall och se om två spelbolag tillsammans lämnar en marginal — och hur insatsen då ska delas.",
+      labels: {
+        inputTitle: "Bästa odds på varje utfall",
+        outcome: "Utfall",
+        addOutcome: "Lägg till utfall",
+        removeOutcome: "Ta bort",
+        total: "Total insats",
+        resultTitle: "Så delas den",
+        profit: "Vinst",
+        impliedSum: "Summa av implicita sannolikheter",
+        stakeOn: "Insats på utfall",
+        guaranteedReturn: "Återbäring vid varje utfall",
+        verdictArb:
+          "Oddsen summerar till under 100 %: delad så här betalar varje utfall tillbaka samma belopp.",
+        verdictNoArb:
+          "Oddsen summerar till över 100 %, så här finns inget arbitrage — varje delning förlorar den marginalen, vilket utfall som än kommer.",
+        hint: "Ett odds per utfall, vart och ett från bolaget som betalar mest på den sidan. Decimal godtar komma: 2,10 fungerar som 2.10.",
+      },
+      takeaway:
+        "Arbitrage är ingen prognos. Det kräver aldrig att du har rätt om vinnaren — det kräver att två spelbolag är oense med mer än sina egna marginaler.",
+      example: {
+        title: "Två bolag, 1 000 att dela",
+        rows: [
+          { label: "Odds, ett bolag per sida", value: "2.10 · 2.10" },
+          { label: "Summa av implicita sannolikheter", value: "95,24 %" },
+          { label: "Insats per sida, av 1 000", value: "500 · 500" },
+          { label: "Återbäring vid varje utfall", value: "1 050" },
+          { label: "Vinst", value: "+50 (+5,00 %)" },
+        ],
+        note:
+          "Samma marknad prissatt 1.90/1.90 inom ett enda bolag summerar till 105,26 % och ger tillbaka −5,00 % hur du än delar. Inget i matchen har ändrats mellan de två linjerna: hela skillnaden ligger i vilket bolag som betalar mest på vilken sida, och i om du hade laddade konton hos båda medan oddsen fortfarande stod uppe.",
+      },
+      explainerTitle: "När två spelbolag är tillräckligt oense",
+      explainer: [
+        "**Summera ett delat med varje odds och du håller hela marknaden i ett enda tal.** Inom ett bolag passerar det talet alltid 100 % — marginalen är det som håller det där. Men bästa oddset på ena sidan och bästa på den andra ligger ofta hos olika bolag, och kombinerade kan summan falla under 100 %. Det är hela villkoret: **de implicita sannolikheterna måste summera till under 1**. Dela den totala insatsen i proportion till dessa sannolikheter och varje utfall betalar tillbaka samma belopp, så det du får tillbaka slutar bero på resultatet. Två odds på 2.10 summerar till 95,24 %, och 500 på varje sida av en insats på 1 000 ger 1 050 tillbaka hur matchen än slutar.",
+        "**I praktiken stänger detta betydligt mer sällan än räkneexemplet antyder, och skälen väger tyngre än formeln.** Odds rör sig: luckan du hittade är oftast det långsammare bolaget som hämtar in, och den kan försvinna på sekunderna mellan första och andra benet — då sitter du med ett vanligt, oskyddat spel till ett odds du valde för att gardera och inte för dess värde. Insatsgränser biter hårdast precis där luckan är bredast, så 5 % på pappret är ofta 5 % på fyrtio enheter och inte på tusen. Och **spelbolag begränsar konton som gör detta systematiskt** — först lägre gränser, sedan nekade spel och stängningar. Lägg till kapitalet som står parkerat hos flera bolag och valutaspreaden mellan dem, och arbitrage läses mindre som en maskin och mer som ett långsamt, operativt tungt sätt att skrapa av en tunn marginal.",
+      ],
+      faq: [
+        {
+          q: "Behöver jag konto hos varje spelbolag?",
+          a: "Ja. Ett arbitrage finns bara mellan de specifika bolag som erbjuder just de oddsen, så du behöver laddade konton hos varje av dem innan oddsen rör sig. Det kapitalet, spritt över flera bolag och stillastående större delen av tiden, är kostnaden nästan ingen kalkylator visar.",
+        },
+        {
+          q: "Vad händer om det andra oddset rör sig innan jag lägger det?",
+          a: "Då sitter du med första benet ensamt: ett vanligt spel, till ett odds du valde för att gardera och inte för dess värde. Lägg den sida som mest sannolikt rör sig först, och behandla att bli stående oskyddad som en del av risken, inte som en olycka.",
+        },
+        {
+          q: "Varför begränsar spelbolag arbitragespelare?",
+          a: "Eftersom deras marginal lever på balanserat flöde från fritidskunder, och ett konto som alltid bara tar bästa oddset på en sida är för dem en ren kostnad. Begränsningarna kommer tyst som lägre insatsgränser, långt innan ett konto stängs helt.",
+        },
+        {
+          q: "Är arbitragespel lagligt?",
+          a: "Själva aktiviteten är laglig: du lägger vanliga spel till publicerade odds. Vad som kan förbjuda det är bolagets egna villkor, som i regel förbehåller dem rätten att begränsa, neka eller ogiltigförklara spel de bedömer som arbitrage. Lagligt och tillåtet är inte samma sak.",
+        },
+      ],
+    },
   },
 };
 

@@ -15,8 +15,11 @@ import {
 import { getToolsCopy, TOOLS_COPY } from "./copy";
 
 describe("registry", () => {
-  it("ha cinque tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(5);
+  // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
+  // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
+  // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
+  it("ha sei tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(6);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -140,7 +143,7 @@ describe("dizionari registrati", () => {
         }
       });
 
-      it("ha tutti e cinque i tool", () => {
+      it("ha tutti i tool dichiarati in TOOL_SLUGS", () => {
         expect(Object.keys(dict.tools).sort()).toEqual([...TOOL_SLUGS].sort());
       });
 

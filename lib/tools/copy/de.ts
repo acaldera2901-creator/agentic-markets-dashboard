@@ -339,6 +339,69 @@ const de: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Arbitrage-Rechner — Einsatz auf mehrere Buchmacher aufteilen | BetRedge",
+      metaDescription:
+        "Kostenloser Arbitrage-Rechner: die beste Quote je Ergebnis bei verschiedenen Buchmachern eingeben und Summe der Impliziten, Aufteilung des Einsatzes und Gewinn sehen — oder dass es keinen gibt.",
+      h1: "Arbitrage-Rechner",
+      lede:
+        "Gib die beste verfügbare Quote je Ergebnis ein und sieh, ob zwei Buchmacher zusammen eine Marge übrig lassen — und wie der Einsatz dann aufzuteilen ist.",
+      labels: {
+        inputTitle: "Beste Quote je Ergebnis",
+        outcome: "Ergebnis",
+        addOutcome: "Ergebnis hinzufügen",
+        removeOutcome: "Entfernen",
+        total: "Gesamteinsatz",
+        resultTitle: "So wird aufgeteilt",
+        profit: "Gewinn",
+        impliedSum: "Summe der impliziten Wahrscheinlichkeiten",
+        stakeOn: "Einsatz auf Ergebnis",
+        guaranteedReturn: "Rückfluss bei jedem Ergebnis",
+        verdictArb:
+          "Die Quoten summieren sich auf unter 100 %: so aufgeteilt zahlt jedes Ergebnis denselben Betrag zurück.",
+        verdictNoArb:
+          "Die Quoten summieren sich auf über 100 %, hier gibt es also keine Arbitrage — jede Aufteilung verliert diese Marge, egal welches Ergebnis kommt.",
+        hint: "Eine Quote je Ergebnis, jeweils vom Buchmacher, der auf dieser Seite am meisten zahlt. Dezimal akzeptiert das Komma: 2,10 gilt wie 2.10.",
+      },
+      takeaway:
+        "Arbitrage ist keine Prognose. Sie verlangt nie, beim Sieger richtig zu liegen — sie verlangt, dass zwei Buchmacher weiter auseinanderliegen als ihre eigenen Margen.",
+      example: {
+        title: "Zwei Buchmacher, 1.000 zum Aufteilen",
+        rows: [
+          { label: "Quoten, je ein Buchmacher", value: "2.10 · 2.10" },
+          { label: "Summe der impliziten Wahrscheinlichkeiten", value: "95,24 %" },
+          { label: "Einsatz je Seite, von 1.000", value: "500 · 500" },
+          { label: "Rückfluss bei jedem Ergebnis", value: "1.050" },
+          { label: "Gewinn", value: "+50 (+5,00 %)" },
+        ],
+        note:
+          "Derselbe Markt zu 1.90/1.90 innerhalb eines Buchmachers summiert sich auf 105,26 % und gibt −5,00 % zurück, wie man auch aufteilt. Am Spiel hat sich zwischen den beiden Linien nichts geändert: der ganze Unterschied liegt darin, welcher Buchmacher auf welcher Seite mehr zahlt — und ob man bei beiden gedeckte Konten hatte, während die Quoten noch standen.",
+      },
+      explainerTitle: "Wenn zwei Buchmacher weit genug auseinanderliegen",
+      explainer: [
+        "**Addiere eins geteilt durch jede Quote, und du hältst den ganzen Markt in einer einzigen Zahl.** Innerhalb eines Buchmachers liegt diese Zahl immer über 100 % — die Marge hält sie dort. Aber die beste Quote der einen Seite und die beste der anderen stehen oft bei verschiedenen Buchmachern, und kombiniert kann die Summe unter 100 % fallen. Das ist die ganze Bedingung: **die impliziten Wahrscheinlichkeiten müssen zusammen unter 1 bleiben**. Teile den Gesamteinsatz im Verhältnis dieser Impliziten auf, und jedes Ergebnis zahlt denselben Betrag zurück — was du zurückbekommst, hängt damit nicht mehr am Resultat. Zwei Quoten von 2.10 summieren sich auf 95,24 %, und 500 auf jeder Seite eines Einsatzes von 1.000 bringen 1.050 zurück, wie das Spiel auch ausgeht.",
+        "**In der Praxis schließt sich das deutlich seltener, als die Arithmetik vermuten lässt, und die Gründe zählen mehr als die Formel.** Quoten bewegen sich: die entdeckte Lücke ist meist der langsamere Buchmacher, der nachzieht, und sie kann in den Sekunden zwischen erster und zweiter Wette verschwinden — dann hältst du eine gewöhnliche, ungedeckte Wette zu einer Quote, die du zum Absichern und nicht wegen ihres Werts gewählt hast. Einsatzlimits greifen genau dort am härtesten, wo die Lücke am größten ist: 5 % auf dem Papier sind oft 5 % auf vierzig Einheiten und nicht auf tausend. Und **Buchmacher beschränken Konten, die das systematisch betreiben** — erst niedrigere Limits, später abgelehnte Wetten und Schließungen. Rechne das bei mehreren Buchmachern gebundene Kapital und den Währungsspread dazwischen hinzu, und Arbitrage liest sich weniger wie eine Maschine als wie ein langsamer, operativ aufwendiger Weg, eine dünne Marge abzuschaben.",
+      ],
+      faq: [
+        {
+          q: "Brauche ich ein Konto bei jedem Buchmacher?",
+          a: "Ja. Eine Arbitrage existiert nur zwischen den konkreten Buchmachern, die diese konkreten Quoten stellen — es braucht also gedeckte Konten bei jedem von ihnen, bevor die Quoten sich bewegen. Dieses Kapital, auf mehrere Anbieter verteilt und meist ungenutzt, ist der Posten, den kaum ein Rechner zeigt.",
+        },
+        {
+          q: "Was passiert, wenn die zweite Quote fällt, bevor ich sie spiele?",
+          a: "Dann bleibt die erste Wette allein stehen: eine gewöhnliche Wette zu einer Quote, die zum Absichern und nicht wegen ihres Werts gewählt wurde. Setze die Seite zuerst, die sich am ehesten bewegt, und behandle das Ungedeckt-Bleiben als Teil des Risikos, nicht als Unfall.",
+        },
+        {
+          q: "Warum beschränken Buchmacher Arbitrage-Spieler?",
+          a: "Weil ihre Marge von ausgeglichenem Fluss der Freizeitkunden lebt und ein Konto, das immer nur die beste Quote einer Seite nimmt, für sie reiner Kostenposten ist. Beschränkungen kommen leise als niedrigere Einsatzlimits, lange vor der Kontoschließung.",
+        },
+        {
+          q: "Ist Arbitrage-Wetten legal?",
+          a: "Die Tätigkeit selbst ist legal: es sind gewöhnliche Wetten zu veröffentlichten Quoten. Verbieten können sie die AGB des Buchmachers, die sich meist das Recht vorbehalten, Wetten zu limitieren, abzulehnen oder zu annullieren, die sie als Arbitrage einordnen. Legal und erlaubt sind nicht dasselbe.",
+        },
+      ],
+    },
   },
 };
 

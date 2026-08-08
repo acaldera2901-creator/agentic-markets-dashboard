@@ -351,6 +351,69 @@ const en: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Arbitrage Calculator — Split a Stake Across Bookmakers | BetRedge",
+      metaDescription:
+        "Free arbitrage calculator: enter the best price on each outcome from different bookmakers to see the implied sum, how to split the total stake, and the profit — or that there is none.",
+      h1: "Arbitrage calculator",
+      lede:
+        "Enter the best price available on each outcome and see whether two books together leave a margin — and how to split the stake if they do.",
+      labels: {
+        inputTitle: "Best price on each outcome",
+        outcome: "Outcome",
+        addOutcome: "Add outcome",
+        removeOutcome: "Remove",
+        total: "Total stake",
+        resultTitle: "How to split it",
+        profit: "Profit",
+        impliedSum: "Sum of implied probabilities",
+        stakeOn: "Stake on outcome",
+        guaranteedReturn: "Return in every outcome",
+        verdictArb:
+          "The prices add up to less than 100%: split this way, every outcome pays back the same amount.",
+        verdictNoArb:
+          "The prices add up to more than 100%, so there is no arbitrage here — any split loses that margin whichever outcome lands.",
+        hint: "One price per outcome, each from the book paying most on that side. Decimal accepts a comma: 2,10 works like 2.10.",
+      },
+      takeaway:
+        "Arbitrage is not a prediction. It never asks you to be right about who wins — it asks two bookmakers to disagree by more than their own margins.",
+      example: {
+        title: "Two books, 1,000 to split",
+        rows: [
+          { label: "Prices, one book each", value: "2.10 · 2.10" },
+          { label: "Sum of implied probabilities", value: "95.24%" },
+          { label: "Stake on each, out of 1,000", value: "500 · 500" },
+          { label: "Return in every outcome", value: "1,050" },
+          { label: "Profit", value: "+50 (+5.00%)" },
+        ],
+        note:
+          "The same market priced 1.90/1.90 inside one book sums to 105.26% and hands back −5.00% however you split it. Nothing about the match changed between the two lines: the whole difference is which book pays more on which side, and whether you had funded accounts at both while the prices were still up.",
+      },
+      explainerTitle: "When two books disagree enough",
+      explainer: [
+        "**Add up one divided by each price and you hold the whole market in a single number.** Inside one bookmaker that number always clears 100% — the margin is what keeps it there. But the best price on one side and the best price on the other often sit at different books, and combining them can drop the sum below 100%. That is the entire condition: **the implied probabilities have to add up to less than 1**. Split the total stake in proportion to those implied probabilities and every outcome returns the same amount, so what you get back stops depending on the result. Two prices of 2.10 sum to 95.24%, and 500 on each side of a 1,000 stake returns 1,050 whichever way the match goes.",
+        "**In practice this closes far less often than the arithmetic suggests, and the reasons matter more than the formula.** Prices move: the gap you spotted is usually the slower book catching up, and it can vanish in the seconds between placing the first leg and the second, leaving you holding an ordinary unhedged bet at a price you chose for hedging rather than for value. Stake limits bite hardest exactly where the gap is widest, so a 5% margin on paper is often a 5% margin on forty units rather than on a thousand. And **bookmakers restrict accounts that do this systematically** — lower limits first, refused bets and closures later. Add the capital parked across several books and the currency spread between them, and arbitrage reads less like a machine and more like a slow, operationally demanding way to shave a thin margin.",
+      ],
+      faq: [
+        {
+          q: "Do I need an account at every bookmaker?",
+          a: "Yes. An arbitrage exists only across the specific books quoting those specific prices, so you need funded accounts at each of them before the prices move. That capital, spread across several books and idle most of the time, is the cost most calculators leave out.",
+        },
+        {
+          q: "What happens if the second price moves before I place it?",
+          a: "You are left holding the first leg on its own — an ordinary bet, at a price you picked for hedging rather than for value. Place the leg most likely to move first, and treat being left unhedged as part of the risk rather than as an accident.",
+        },
+        {
+          q: "Why do bookmakers restrict arbitrage bettors?",
+          a: "Because their margin depends on balanced action from recreational customers, and an account that only ever takes the best price on one side is pure cost to them. Restrictions usually arrive quietly as lower stake limits, long before an account is closed outright.",
+        },
+        {
+          q: "Is arbitrage betting legal?",
+          a: "The activity itself is legal — you are placing ordinary bets at advertised prices. What can forbid it is the bookmaker's own terms, which commonly reserve the right to limit, refuse or void bets they judge to be arbitrage. Legal and permitted are not the same thing.",
+        },
+      ],
+    },
   },
 };
 

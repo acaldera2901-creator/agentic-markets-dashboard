@@ -339,6 +339,69 @@ const pt: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Calculadora de arbitragem — dividir a aposta entre casas | BetRedge",
+      metaDescription:
+        "Calculadora de arbitragem gratuita: introduz a melhor odd de cada resultado em casas diferentes e vê a soma das implícitas, como dividir a aposta e o lucro — ou que não existe nenhum.",
+      h1: "Calculadora de arbitragem",
+      lede:
+        "Introduz a melhor odd disponível em cada resultado e vê se duas casas juntas deixam margem — e como dividir a aposta se deixarem.",
+      labels: {
+        inputTitle: "Melhor odd em cada resultado",
+        outcome: "Resultado",
+        addOutcome: "Adicionar resultado",
+        removeOutcome: "Remover",
+        total: "Aposta total",
+        resultTitle: "Como dividir",
+        profit: "Lucro",
+        impliedSum: "Soma das probabilidades implícitas",
+        stakeOn: "Aposta no resultado",
+        guaranteedReturn: "Retorno em cada resultado",
+        verdictArb:
+          "As odds somam menos de 100%: dividida assim, cada resultado devolve a mesma quantia.",
+        verdictNoArb:
+          "As odds somam mais de 100%, portanto aqui não há arbitragem — qualquer divisão perde essa margem, saia o que sair.",
+        hint: "Uma odd por resultado, cada uma da casa que paga mais nesse lado. O decimal aceita vírgula: 2,10 vale como 2.10.",
+      },
+      takeaway:
+        "A arbitragem não é uma previsão. Nunca te pede para acertar em quem ganha: pede que duas casas discordem mais do que valem as margens delas.",
+      example: {
+        title: "Duas casas, 1.000 para dividir",
+        rows: [
+          { label: "Odds, uma casa por lado", value: "2.10 · 2.10" },
+          { label: "Soma das probabilidades implícitas", value: "95,24%" },
+          { label: "Aposta em cada lado, sobre 1.000", value: "500 · 500" },
+          { label: "Retorno em cada resultado", value: "1.050" },
+          { label: "Lucro", value: "+50 (+5,00%)" },
+        ],
+        note:
+          "O mesmo mercado a 1.90/1.90 dentro de uma só casa soma 105,26% e devolve −5,00% qualquer que seja a divisão. Entre as duas linhas nada mudou no jogo: a diferença está toda em qual casa paga mais em qual lado, e em ter contas com saldo nas duas enquanto as odds ainda estavam expostas.",
+      },
+      explainerTitle: "Quando duas casas discordam o suficiente",
+      explainer: [
+        "**Soma um dividido por cada odd e tens o mercado inteiro num único número.** Dentro de uma casa esse número passa sempre dos 100% — é a margem que o mantém lá. Mas a melhor odd de um lado e a melhor do outro estão muitas vezes em casas diferentes, e ao combiná-las a soma pode cair abaixo dos 100%. É toda a condição: **as probabilidades implícitas têm de somar menos de 1**. Divide a aposta total na proporção dessas implícitas e cada resultado devolve a mesma quantia, portanto o que recuperas deixa de depender do marcador. Duas odds de 2.10 somam 95,24%, e 500 em cada lado de uma aposta de 1.000 devolvem 1.050 aconteça o que acontecer.",
+        "**Na prática isto fecha muito menos vezes do que a aritmética sugere, e os motivos contam mais do que a fórmula.** As odds movem-se: a diferença que viste é normalmente a casa mais lenta a alinhar-se, e pode desaparecer nos segundos entre a primeira perna e a segunda, deixando-te uma aposta comum e descoberta a uma odd escolhida para cobrir e não pelo valor. Os limites de aposta apertam exactamente onde a diferença é maior, por isso 5% no papel é muitas vezes 5% sobre quarenta unidades e não sobre mil. E **as casas restringem as contas de quem faz isto de forma sistemática**: primeiro limites mais baixos, depois apostas recusadas e encerramentos. Junta o capital parado em várias casas e o câmbio entre moedas, e a arbitragem parece-se menos com uma máquina e mais com uma forma lenta e operacionalmente pesada de raspar uma margem fina.",
+      ],
+      faq: [
+        {
+          q: "Preciso de conta em todas as casas?",
+          a: "Sim. Uma arbitragem só existe entre as casas concretas que expõem aquelas odds concretas, portanto são precisas contas com saldo em cada uma antes de as odds se moverem. Esse capital, espalhado por várias casas e parado a maior parte do tempo, é o custo que quase nenhuma calculadora mostra.",
+        },
+        {
+          q: "O que acontece se a segunda odd se mover antes de eu apostar?",
+          a: "Ficas com a primeira perna sozinha: uma aposta comum, a uma odd escolhida para cobrir e não pelo valor. Coloca primeiro a perna com maior probabilidade de se mover, e trata o ficar descoberto como parte do risco, não como um acidente.",
+        },
+        {
+          q: "Porque é que as casas restringem quem faz arbitragem?",
+          a: "Porque a margem delas vive do fluxo equilibrado dos clientes recreativos, e uma conta que só apanha a melhor odd de um lado é para elas puro custo. As restrições chegam em silêncio como limites de aposta mais baixos, muito antes do encerramento da conta.",
+        },
+        {
+          q: "A arbitragem desportiva é legal?",
+          a: "A actividade em si é legal: estás a fazer apostas comuns a odds publicadas. O que pode proibi-la são os termos da casa, que costumam reservar o direito de limitar, recusar ou anular apostas que considerem arbitragem. Legal e permitido não são a mesma coisa.",
+        },
+      ],
+    },
   },
 };
 

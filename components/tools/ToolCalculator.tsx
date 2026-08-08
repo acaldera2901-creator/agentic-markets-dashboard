@@ -10,6 +10,7 @@ import { MarginCalculator } from "./MarginCalculator";
 import { EvCalculator } from "./EvCalculator";
 import { KellyCalculator } from "./KellyCalculator";
 import { ProbabilityCalculator } from "./ProbabilityCalculator";
+import { ArbitrageCalculator } from "./ArbitrageCalculator";
 
 export function ToolCalculator({
   slug,
@@ -31,5 +32,7 @@ export function ToolCalculator({
       return <KellyCalculator copy={copy} dash={dash} />;
     case "probability-calculator":
       return <ProbabilityCalculator copy={copy} dash={dash} />;
+    case "arbitrage-calculator":
+      return <ArbitrageCalculator copy={copy} dash={dash} />;
   }
 }

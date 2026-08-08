@@ -339,6 +339,69 @@ const nl: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Arbitrage-calculator — een inzet over bookmakers verdelen | BetRedge",
+      metaDescription:
+        "Gratis arbitrage-calculator: geef per uitkomst de beste quotering bij verschillende bookmakers en zie de som van de impliciete kansen, de verdeling van de inzet en de winst — of dat die ontbreekt.",
+      h1: "Arbitrage-calculator",
+      lede:
+        "Voer de beste beschikbare quotering per uitkomst in en zie of twee bookmakers samen marge overlaten — en hoe je de inzet dan verdeelt.",
+      labels: {
+        inputTitle: "Beste quotering per uitkomst",
+        outcome: "Uitkomst",
+        addOutcome: "Uitkomst toevoegen",
+        removeOutcome: "Verwijderen",
+        total: "Totale inzet",
+        resultTitle: "Hoe je verdeelt",
+        profit: "Winst",
+        impliedSum: "Som van de impliciete kansen",
+        stakeOn: "Inzet op uitkomst",
+        guaranteedReturn: "Opbrengst bij elke uitkomst",
+        verdictArb:
+          "De quoteringen tellen op tot minder dan 100%: zo verdeeld betaalt elke uitkomst hetzelfde terug.",
+        verdictNoArb:
+          "De quoteringen tellen op tot meer dan 100%, dus hier is geen arbitrage — elke verdeling verliest die marge, welke uitkomst er ook valt.",
+        hint: "Eén quotering per uitkomst, elk bij de bookmaker die op die kant het meest betaalt. Decimaal accepteert een komma: 2,10 werkt als 2.10.",
+      },
+      takeaway:
+        "Arbitrage is geen voorspelling. Het vraagt nooit of je gelijk hebt over de winnaar — het vraagt of twee bookmakers verder uiteenlopen dan hun eigen marges.",
+      example: {
+        title: "Twee bookmakers, 1.000 te verdelen",
+        rows: [
+          { label: "Quoteringen, één bookmaker per kant", value: "2.10 · 2.10" },
+          { label: "Som van de impliciete kansen", value: "95,24%" },
+          { label: "Inzet per kant, van 1.000", value: "500 · 500" },
+          { label: "Opbrengst bij elke uitkomst", value: "1.050" },
+          { label: "Winst", value: "+50 (+5,00%)" },
+        ],
+        note:
+          "Dezelfde markt op 1.90/1.90 binnen één bookmaker telt op tot 105,26% en geeft −5,00% terug, hoe je ook verdeelt. Aan de wedstrijd is tussen de twee lijnen niets veranderd: het hele verschil zit in welke bookmaker op welke kant meer betaalt, en of je bij beide een gevulde rekening had toen de quoteringen er nog stonden.",
+      },
+      explainerTitle: "Wanneer twee bookmakers genoeg uiteenlopen",
+      explainer: [
+        "**Tel één gedeeld door elke quotering op en je hebt de hele markt in één getal.** Binnen één bookmaker komt dat getal altijd boven 100% uit — de marge houdt het daar. Maar de beste quotering op de ene kant en de beste op de andere staan vaak bij verschillende bookmakers, en gecombineerd kan de som onder 100% zakken. Dat is de hele voorwaarde: **de impliciete kansen moeten samen onder 1 blijven**. Verdeel de totale inzet naar verhouding van die impliciete kansen en elke uitkomst betaalt hetzelfde terug, waardoor wat je terugkrijgt niet langer van de uitslag afhangt. Twee quoteringen van 2.10 tellen op tot 95,24%, en 500 op elke kant van een inzet van 1.000 levert 1.050 op, hoe de wedstrijd ook eindigt.",
+        "**In de praktijk sluit dit veel minder vaak dan de rekensom suggereert, en de redenen wegen zwaarder dan de formule.** Quoteringen bewegen: het gat dat je zag is meestal de langzamere bookmaker die bijtrekt, en het kan verdwijnen in de seconden tussen de eerste en de tweede poot — dan houd je een gewone, ongedekte wedde over tegen een quotering die je koos om te dekken en niet om haar waarde. Inzetlimieten knijpen precies daar het hardst waar het gat het breedst is: 5% op papier is vaak 5% op veertig eenheden en niet op duizend. En **bookmakers beperken rekeningen die dit systematisch doen** — eerst lagere limieten, later geweigerde weddenschappen en sluitingen. Tel het kapitaal dat bij meerdere bookmakers vastligt en het koersverschil tussen valuta's erbij op, en arbitrage leest minder als een machine en meer als een langzame, operationeel zware manier om een dunne marge af te schrapen.",
+      ],
+      faq: [
+        {
+          q: "Heb ik bij elke bookmaker een rekening nodig?",
+          a: "Ja. Een arbitrage bestaat alleen tussen de specifieke bookmakers die die specifieke quoteringen aanbieden, dus je hebt bij elk van hen een gevulde rekening nodig voordat de quoteringen bewegen. Dat kapitaal, verspreid over meerdere aanbieders en het grootste deel van de tijd stil, is de kostenpost die vrijwel geen calculator laat zien.",
+        },
+        {
+          q: "Wat als de tweede quotering beweegt voordat ik hem speel?",
+          a: "Dan houd je de eerste poot alleen over: een gewone wedde, tegen een quotering die je koos om te dekken en niet om haar waarde. Zet de kant die het meest waarschijnlijk beweegt als eerste, en behandel ongedekt achterblijven als onderdeel van het risico, niet als een ongeluk.",
+        },
+        {
+          q: "Waarom beperken bookmakers arbitrage-spelers?",
+          a: "Omdat hun marge leeft van evenwichtige inzet van recreatieve klanten, en een rekening die altijd alleen de beste quotering op één kant pakt is voor hen pure kostenpost. Beperkingen komen stil binnen als lagere inzetlimieten, lang voordat een rekening wordt gesloten.",
+        },
+        {
+          q: "Is arbitrage-wedden legaal?",
+          a: "De activiteit zelf is legaal: je plaatst gewone weddenschappen tegen gepubliceerde quoteringen. Wat het kan verbieden zijn de voorwaarden van de bookmaker, die zich doorgaans het recht voorbehouden weddenschappen te beperken, te weigeren of te vernietigen die zij als arbitrage aanmerken. Legaal en toegestaan zijn niet hetzelfde.",
+        },
+      ],
+    },
   },
 };
 

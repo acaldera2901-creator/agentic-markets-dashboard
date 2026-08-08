@@ -339,6 +339,69 @@ const es: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Calculadora de arbitraje — repartir la apuesta entre casas | BetRedge",
+      metaDescription:
+        "Calculadora de arbitraje gratuita: introduce la mejor cuota de cada resultado en casas distintas y verás la suma de las implícitas, cómo repartir la apuesta y el beneficio, o que no lo hay.",
+      h1: "Calculadora de arbitraje",
+      lede:
+        "Introduce la mejor cuota disponible en cada resultado y comprueba si dos casas juntas dejan margen — y cómo repartir la apuesta si lo dejan.",
+      labels: {
+        inputTitle: "Mejor cuota de cada resultado",
+        outcome: "Resultado",
+        addOutcome: "Añadir resultado",
+        removeOutcome: "Quitar",
+        total: "Apuesta total",
+        resultTitle: "Cómo repartirla",
+        profit: "Beneficio",
+        impliedSum: "Suma de probabilidades implícitas",
+        stakeOn: "Apuesta al resultado",
+        guaranteedReturn: "Retorno en cada resultado",
+        verdictArb:
+          "Las cuotas suman menos del 100%: repartida así, cada resultado devuelve la misma cantidad.",
+        verdictNoArb:
+          "Las cuotas suman más del 100%, así que aquí no hay arbitraje — cualquier reparto pierde ese margen, salga lo que salga.",
+        hint: "Una cuota por resultado, cada una de la casa que más paga en ese lado. El decimal acepta coma: 2,10 vale como 2.10.",
+      },
+      takeaway:
+        "El arbitraje no es una predicción. Nunca te pide acertar quién gana: pide que dos casas discrepen más de lo que valen sus propios márgenes.",
+      example: {
+        title: "Dos casas, 1.000 para repartir",
+        rows: [
+          { label: "Cuotas, una casa por lado", value: "2.10 · 2.10" },
+          { label: "Suma de probabilidades implícitas", value: "95,24%" },
+          { label: "Apuesta a cada lado, sobre 1.000", value: "500 · 500" },
+          { label: "Retorno en cada resultado", value: "1.050" },
+          { label: "Beneficio", value: "+50 (+5,00%)" },
+        ],
+        note:
+          "El mismo mercado a 1.90/1.90 dentro de una sola casa suma 105,26% y devuelve −5,00% como lo repartas. Entre las dos líneas no ha cambiado nada del partido: la diferencia está entera en qué casa paga más en qué lado, y en tener cuentas con saldo en ambas mientras las cuotas seguían publicadas.",
+      },
+      explainerTitle: "Cuando dos casas discrepan lo suficiente",
+      explainer: [
+        "**Suma uno dividido por cada cuota y tienes el mercado entero en un solo número.** Dentro de una casa ese número siempre pasa del 100%: el margen es lo que lo mantiene ahí. Pero la mejor cuota de un lado y la mejor del otro suelen estar en casas distintas, y al combinarlas la suma puede caer por debajo del 100%. Esa es toda la condición: **las probabilidades implícitas tienen que sumar menos de 1**. Reparte la apuesta total en proporción a esas implícitas y cada resultado devuelve lo mismo, así que lo que recuperas deja de depender del marcador. Dos cuotas de 2.10 suman 95,24%, y 500 en cada lado de una apuesta de 1.000 devuelven 1.050 pase lo que pase.",
+        "**En la práctica esto se cierra mucho menos de lo que sugiere la aritmética, y los motivos importan más que la fórmula.** Las cuotas se mueven: la diferencia que has visto suele ser la casa más lenta poniéndose al día, y puede desaparecer en los segundos entre la primera pata y la segunda, dejándote una apuesta normal y descubierta a una cuota elegida para cubrirte y no por su valor. Los límites de apuesta aprietan justo donde la diferencia es mayor, así que un 5% sobre el papel suele ser un 5% sobre cuarenta unidades y no sobre mil. Y **las casas restringen las cuentas de quien lo hace de forma sistemática**: primero límites más bajos, luego apuestas rechazadas y cierres. Suma el capital aparcado en varias casas y el cambio de divisa entre ellas, y el arbitraje se parece menos a una máquina y más a una manera lenta y operativamente exigente de raspar un margen fino.",
+      ],
+      faq: [
+        {
+          q: "¿Necesito cuenta en todas las casas?",
+          a: "Sí. El arbitraje existe solo entre las casas concretas que publican esas cuotas concretas, así que necesitas cuentas con saldo en cada una antes de que las cuotas se muevan. Ese capital, repartido en varias casas y parado la mayor parte del tiempo, es el coste que casi ninguna calculadora enseña.",
+        },
+        {
+          q: "¿Qué pasa si la segunda cuota se mueve antes de apostarla?",
+          a: "Te quedas con la primera pata sola: una apuesta corriente, a una cuota elegida para cubrirte y no por su valor. Coloca primero la pata con más probabilidad de moverse, y trata el quedarte descubierto como parte del riesgo, no como un accidente.",
+        },
+        {
+          q: "¿Por qué las casas restringen a quien hace arbitraje?",
+          a: "Porque su margen vive del flujo equilibrado de clientes recreativos, y una cuenta que solo toma la mejor cuota de un lado es puro coste para ellas. Las restricciones llegan en silencio como límites de apuesta más bajos, mucho antes del cierre de la cuenta.",
+        },
+        {
+          q: "¿Es legal el arbitraje deportivo?",
+          a: "La actividad en sí es legal: estás haciendo apuestas normales a cuotas publicadas. Lo que puede prohibirlo son los términos de la casa, que suelen reservarse el derecho a limitar, rechazar o anular las apuestas que consideren arbitraje. Legal y permitido no son lo mismo.",
+        },
+      ],
+    },
   },
 };
 

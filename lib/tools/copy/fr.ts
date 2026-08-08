@@ -339,6 +339,69 @@ const fr: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Calculateur d'arbitrage — répartir une mise entre bookmakers | BetRedge",
+      metaDescription:
+        "Calculateur d'arbitrage gratuit : saisis la meilleure cote de chaque issue chez des books différents pour voir la somme des implicites, la répartition de la mise et le profit — ou son absence.",
+      h1: "Calculateur d'arbitrage",
+      lede:
+        "Saisis la meilleure cote disponible sur chaque issue et vois si deux books réunis laissent une marge — et comment répartir la mise si c'est le cas.",
+      labels: {
+        inputTitle: "Meilleure cote sur chaque issue",
+        outcome: "Issue",
+        addOutcome: "Ajouter une issue",
+        removeOutcome: "Retirer",
+        total: "Mise totale",
+        resultTitle: "Comment la répartir",
+        profit: "Profit",
+        impliedSum: "Somme des probabilités implicites",
+        stakeOn: "Mise sur l'issue",
+        guaranteedReturn: "Retour sur chaque issue",
+        verdictArb:
+          "Les cotes totalisent moins de 100 % : répartie ainsi, chaque issue rend la même somme.",
+        verdictNoArb:
+          "Les cotes totalisent plus de 100 %, il n'y a donc pas d'arbitrage ici — toute répartition perd cette marge, quelle que soit l'issue.",
+        hint: "Une cote par issue, chacune chez le book qui paie le plus de ce côté. Le décimal accepte la virgule : 2,10 vaut 2.10.",
+      },
+      takeaway:
+        "L'arbitrage n'est pas une prédiction. Il ne demande jamais d'avoir raison sur le vainqueur : il demande à deux books de diverger plus que leurs propres marges.",
+      example: {
+        title: "Deux books, 1 000 à répartir",
+        rows: [
+          { label: "Cotes, un book par côté", value: "2.10 · 2.10" },
+          { label: "Somme des probabilités implicites", value: "95,24 %" },
+          { label: "Mise de chaque côté, sur 1 000", value: "500 · 500" },
+          { label: "Retour sur chaque issue", value: "1 050" },
+          { label: "Profit", value: "+50 (+5,00 %)" },
+        ],
+        note:
+          "Le même marché coté 1.90/1.90 chez un seul book totalise 105,26 % et rend −5,00 % quelle que soit la répartition. Rien du match n'a changé entre les deux lignes : toute la différence tient à quel book paie le plus de quel côté, et au fait d'avoir des comptes approvisionnés chez les deux pendant que les cotes étaient encore affichées.",
+      },
+      explainerTitle: "Quand deux books divergent assez",
+      explainer: [
+        "**Additionne un divisé par chaque cote et tu tiens tout le marché dans un seul nombre.** Chez un book unique ce nombre dépasse toujours 100 % : c'est la marge qui l'y maintient. Mais la meilleure cote d'un côté et la meilleure de l'autre se trouvent souvent chez des books différents, et en les combinant la somme peut passer sous 100 %. C'est toute la condition : **les probabilités implicites doivent totaliser moins de 1**. Répartis la mise totale au prorata de ces implicites et chaque issue rend la même somme, donc ce que tu récupères cesse de dépendre du résultat. Deux cotes de 2.10 totalisent 95,24 %, et 500 de chaque côté d'une mise de 1 000 rendent 1 050 quoi qu'il arrive.",
+        "**En pratique cela se referme bien moins souvent que l'arithmétique ne le suggère, et les raisons comptent plus que la formule.** Les cotes bougent : l'écart repéré est le plus souvent le book le plus lent qui se met à jour, et il peut disparaître dans les secondes entre la première jambe et la seconde, te laissant un pari ordinaire et non couvert à une cote choisie pour couvrir et non pour sa valeur. Les limites de mise serrent précisément là où l'écart est le plus large : une marge de 5 % sur le papier est souvent une marge de 5 % sur quarante unités et non sur mille. Et **les books restreignent les comptes qui en font un système** : d'abord des limites plus basses, ensuite des paris refusés et des fermetures. Ajoute le capital immobilisé chez plusieurs books et le change entre devises, et l'arbitrage ressemble moins à une machine qu'à une façon lente et lourde en logistique de gratter une marge mince.",
+      ],
+      faq: [
+        {
+          q: "Faut-il un compte chez chaque bookmaker ?",
+          a: "Oui. Un arbitrage n'existe qu'entre les books précis qui affichent ces cotes précises, il faut donc des comptes approvisionnés chez chacun avant que les cotes bougent. Ce capital, réparti sur plusieurs books et immobile la plupart du temps, est le coût que presque aucun calculateur ne montre.",
+        },
+        {
+          q: "Que se passe-t-il si la seconde cote bouge avant que je la joue ?",
+          a: "Il te reste la première jambe seule : un pari ordinaire, à une cote choisie pour couvrir et non pour sa valeur. Place d'abord la jambe la plus susceptible de bouger, et considère le fait de rester à découvert comme une partie du risque, pas comme un accident.",
+        },
+        {
+          q: "Pourquoi les books restreignent-ils les arbitrageurs ?",
+          a: "Parce que leur marge vit du flux équilibré des clients récréatifs, et un compte qui ne prend jamais que la meilleure cote d'un côté n'est pour eux qu'un coût. Les restrictions arrivent discrètement sous forme de limites de mise plus basses, bien avant la fermeture du compte.",
+        },
+        {
+          q: "L'arbitrage sportif est-il légal ?",
+          a: "L'activité en elle-même est légale : tu places des paris ordinaires à des cotes publiées. Ce qui peut l'interdire, ce sont les conditions du book, qui se réservent en général le droit de limiter, refuser ou annuler les paris qu'il juge relever de l'arbitrage. Légal et autorisé ne sont pas la même chose.",
+        },
+      ],
+    },
   },
 };
 

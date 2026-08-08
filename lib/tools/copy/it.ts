@@ -340,6 +340,69 @@ const it: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Calcolatore di arbitraggio — dividere la puntata fra book | BetRedge",
+      metaDescription:
+        "Calcolatore di arbitraggio gratuito: inserisci la quota migliore su ogni esito da book diversi e leggi la somma delle implicite, come dividere la puntata e il profitto — o che non c'è.",
+      h1: "Calcolatore di arbitraggio",
+      lede:
+        "Inserisci la quota migliore disponibile su ogni esito e scopri se due book insieme lasciano un margine — e come dividere la puntata se lo lasciano.",
+      labels: {
+        inputTitle: "Quota migliore su ogni esito",
+        outcome: "Esito",
+        addOutcome: "Aggiungi esito",
+        removeOutcome: "Togli",
+        total: "Puntata totale",
+        resultTitle: "Come dividerla",
+        profit: "Profitto",
+        impliedSum: "Somma delle probabilità implicite",
+        stakeOn: "Puntata sull'esito",
+        guaranteedReturn: "Ritorno in ogni esito",
+        verdictArb:
+          "Le quote sommano a meno del 100%: divisa così, ogni esito restituisce la stessa cifra.",
+        verdictNoArb:
+          "Le quote sommano a più del 100%, quindi qui non c'è arbitraggio — qualunque divisione perde quel margine, qualunque esito si verifichi.",
+        hint: "Una quota per esito, ciascuna dal book che paga di più su quel lato. Il decimale accetta la virgola: 2,10 vale come 2.10.",
+      },
+      takeaway:
+        "L'arbitraggio non è una previsione. Non ti chiede mai di avere ragione su chi vince: chiede a due book di essere in disaccordo più dei loro margini.",
+      example: {
+        title: "Due book, 1.000 da dividere",
+        rows: [
+          { label: "Quote, un book per lato", value: "2.10 · 2.10" },
+          { label: "Somma delle probabilità implicite", value: "95,24%" },
+          { label: "Puntata su ciascuno, su 1.000", value: "500 · 500" },
+          { label: "Ritorno in ogni esito", value: "1.050" },
+          { label: "Profitto", value: "+50 (+5,00%)" },
+        ],
+        note:
+          "Lo stesso mercato prezzato 1.90/1.90 dentro un solo book somma a 105,26% e restituisce −5,00% comunque lo dividi. Fra le due linee della partita non è cambiato nulla: la differenza è tutta in quale book paga di più su quale lato, e nell'avere conti alimentati su entrambi mentre le quote erano ancora esposte.",
+      },
+      explainerTitle: "Quando due book sono in disaccordo abbastanza",
+      explainer: [
+        "**Somma uno diviso ogni quota e tieni tutto il mercato in un solo numero.** Dentro un book quel numero supera sempre il 100%: è il margine che lo tiene lì. Ma la quota migliore su un lato e quella migliore sull'altro stanno spesso su book diversi, e combinandole la somma può scendere sotto il 100%. È tutta la condizione: **le probabilità implicite devono sommare a meno di 1**. Dividi la puntata totale in proporzione a quelle implicite e ogni esito restituisce la stessa cifra, quindi quello che riprendi smette di dipendere dal risultato. Due quote di 2.10 sommano a 95,24%, e 500 su ciascun lato di una puntata da 1.000 restituiscono 1.050 come che vada la partita.",
+        "**In pratica si chiude molto meno spesso di quanto suggerisca l'aritmetica, e i motivi contano più della formula.** Le quote si muovono: la differenza che hai visto è di solito il book più lento che si allinea, e può sparire nei secondi fra la prima gamba e la seconda, lasciandoti una scommessa normale e scoperta a una quota scelta per coprirti e non per il valore. I limiti di puntata mordono esattamente dove la differenza è più ampia, quindi un margine del 5% sulla carta è spesso un margine del 5% su quaranta unità e non su mille. E **i book limitano i conti di chi lo fa di sistema**: prima limiti più bassi, poi scommesse rifiutate e chiusure. Aggiungi il capitale parcheggiato su più book e il cambio fra le valute, e l'arbitraggio somiglia meno a una macchina e più a un modo lento e operativamente pesante di raschiare un margine sottile.",
+      ],
+      faq: [
+        {
+          q: "Serve un conto su ogni bookmaker?",
+          a: "Sì. L'arbitraggio esiste solo fra i book specifici che espongono quelle quote specifiche, quindi servono conti alimentati su ognuno prima che le quote si muovano. Quel capitale, sparso su più book e fermo per la maggior parte del tempo, è il costo che quasi nessun calcolatore mostra.",
+        },
+        {
+          q: "Cosa succede se la seconda quota si muove prima che io la giochi?",
+          a: "Ti resta la prima gamba da sola: una scommessa normale, a una quota scelta per coprirti e non per il valore. Gioca prima la gamba che ha più probabilità di muoversi, e considera il restare scoperto parte del rischio, non un incidente.",
+        },
+        {
+          q: "Perché i book limitano chi fa arbitraggio?",
+          a: "Perché il loro margine vive sul flusso equilibrato dei clienti ricreativi, e un conto che prende sempre e solo la quota migliore su un lato è per loro puro costo. Le limitazioni arrivano in silenzio come limiti di puntata più bassi, molto prima della chiusura del conto.",
+        },
+        {
+          q: "L'arbitraggio è legale?",
+          a: "L'attività in sé è legale: stai piazzando scommesse normali a quote pubblicate. Quello che può vietarlo sono i termini del book, che di regola si riservano il diritto di limitare, rifiutare o annullare le scommesse che giudicano arbitraggio. Legale e permesso non sono la stessa cosa.",
+        },
+      ],
+    },
   },
 };
 

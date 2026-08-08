@@ -339,6 +339,69 @@ const pl: ToolsCopy = {
         },
       ],
     },
+
+    "arbitrage-calculator": {
+      metaTitle: "Kalkulator arbitrażu — podział stawki między bukmacherów | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator arbitrażu: wpisz najlepszy kurs na każdy wynik u różnych bukmacherów i zobacz sumę prawdopodobieństw, podział stawki oraz zysk — albo to, że go nie ma.",
+      h1: "Kalkulator arbitrażu",
+      lede:
+        "Wpisz najlepszy dostępny kurs na każdy wynik i sprawdź, czy dwóch bukmacherów razem zostawia marżę — i jak wtedy podzielić stawkę.",
+      labels: {
+        inputTitle: "Najlepszy kurs na każdy wynik",
+        outcome: "Wynik",
+        addOutcome: "Dodaj wynik",
+        removeOutcome: "Usuń",
+        total: "Stawka łączna",
+        resultTitle: "Jak ją podzielić",
+        profit: "Zysk",
+        impliedSum: "Suma prawdopodobieństw implikowanych",
+        stakeOn: "Stawka na wynik",
+        guaranteedReturn: "Zwrot przy każdym wyniku",
+        verdictArb:
+          "Kursy sumują się do mniej niż 100%: podzielona tak stawka zwraca tyle samo przy każdym wyniku.",
+        verdictNoArb:
+          "Kursy sumują się do więcej niż 100%, więc arbitrażu tu nie ma — każdy podział traci tę marżę, niezależnie od wyniku.",
+        hint: "Jeden kurs na wynik, każdy od bukmachera, który płaci najwięcej po tej stronie. Format dziesiętny przyjmuje przecinek: 2,10 działa jak 2.10.",
+      },
+      takeaway:
+        "Arbitraż nie jest prognozą. Nigdy nie wymaga trafienia zwycięzcy — wymaga, żeby dwóch bukmacherów różniło się bardziej niż ich własne marże.",
+      example: {
+        title: "Dwóch bukmacherów, 1000 do podziału",
+        rows: [
+          { label: "Kursy, po jednym bukmacherze", value: "2.10 · 2.10" },
+          { label: "Suma prawdopodobieństw implikowanych", value: "95,24%" },
+          { label: "Stawka na każdą stronę, z 1000", value: "500 · 500" },
+          { label: "Zwrot przy każdym wyniku", value: "1050" },
+          { label: "Zysk", value: "+50 (+5,00%)" },
+        ],
+        note:
+          "Ten sam rynek wyceniony 1.90/1.90 u jednego bukmachera sumuje się do 105,26% i oddaje −5,00%, jakkolwiek go podzielić. Między tymi dwiema liniami w meczu nie zmieniło się nic: cała różnica leży w tym, który bukmacher płaci więcej po której stronie, i czy miałeś zasilone konta u obu, gdy kursy jeszcze stały.",
+      },
+      explainerTitle: "Kiedy dwóch bukmacherów różni się wystarczająco",
+      explainer: [
+        "**Zsumuj jeden podzielony przez każdy kurs i masz cały rynek w jednej liczbie.** U jednego bukmachera ta liczba zawsze przekracza 100% — trzyma ją tam marża. Ale najlepszy kurs na jedną stronę i najlepszy na drugą często stoją u różnych bukmacherów, a po połączeniu suma może spaść poniżej 100%. To cały warunek: **prawdopodobieństwa implikowane muszą sumować się do mniej niż 1**. Podziel stawkę łączną proporcjonalnie do tych prawdopodobieństw i każdy wynik zwraca tyle samo, więc to, co odbierasz, przestaje zależeć od rezultatu. Dwa kursy 2.10 sumują się do 95,24%, a 500 na każdą stronę stawki 1000 zwraca 1050 niezależnie od przebiegu meczu.",
+        "**W praktyce zamyka się to znacznie rzadziej, niż sugeruje arytmetyka, a powody ważą więcej niż wzór.** Kursy się ruszają: znaleziona luka to zwykle wolniejszy bukmacher, który dopiero nadgania, i może zniknąć w sekundach między pierwszym a drugim zakładem — zostaje wtedy zwykły, niezabezpieczony zakład po kursie wybranym do zabezpieczenia, a nie ze względu na wartość. Limity stawek najmocniej gryzą dokładnie tam, gdzie luka jest najszersza, więc 5% na papierze to często 5% od czterdziestu jednostek, a nie od tysiąca. A **bukmacherzy ograniczają konta tych, którzy robią to systematycznie**: najpierw niższe limity, potem odmowy przyjęcia zakładu i zamknięcia. Dodaj kapitał zamrożony u kilku bukmacherów i spread walutowy między nimi, a arbitraż wygląda mniej jak maszyna, a bardziej jak żmudny i operacyjnie ciężki sposób zeskrobania cienkiej marży.",
+      ],
+      faq: [
+        {
+          q: "Czy potrzebuję konta u każdego bukmachera?",
+          a: "Tak. Arbitraż istnieje tylko między konkretnymi bukmacherami wystawiającymi te konkretne kursy, więc potrzebne są zasilone konta u każdego z nich, zanim kursy się poruszą. Ten kapitał, rozproszony u kilku firm i przez większość czasu bezczynny, jest kosztem, którego prawie żaden kalkulator nie pokazuje.",
+        },
+        {
+          q: "Co, jeśli drugi kurs zmieni się, zanim go zagram?",
+          a: "Zostaje ci pierwsza noga sama: zwykły zakład po kursie wybranym do zabezpieczenia, a nie ze względu na wartość. Zagraj najpierw stronę, która najprawdopodobniej się ruszy, i traktuj pozostanie bez zabezpieczenia jako część ryzyka, nie jako wypadek.",
+        },
+        {
+          q: "Dlaczego bukmacherzy ograniczają graczy arbitrażowych?",
+          a: "Bo ich marża żyje ze zrównoważonego strumienia klientów rekreacyjnych, a konto, które zawsze bierze tylko najlepszy kurs po jednej stronie, jest dla nich czystym kosztem. Ograniczenia przychodzą cicho, jako niższe limity stawek, na długo przed zamknięciem konta.",
+        },
+        {
+          q: "Czy arbitraż bukmacherski jest legalny?",
+          a: "Sama czynność jest legalna: obstawiasz zwykłe zakłady po opublikowanych kursach. Zakazać go mogą regulaminy bukmachera, które zwykle zastrzegają prawo do ograniczania, odrzucania lub anulowania zakładów uznanych za arbitraż. Legalne i dozwolone to nie to samo.",
+        },
+      ],
+    },
   },
 };
 

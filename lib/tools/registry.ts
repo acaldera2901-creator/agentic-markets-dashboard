@@ -9,6 +9,7 @@ export const TOOL_SLUGS = [
   "ev-calculator",
   "kelly-criterion",
   "probability-calculator",
+  "arbitrage-calculator",
 ] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];
