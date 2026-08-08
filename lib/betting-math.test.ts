@@ -21,6 +21,8 @@ import {
   yieldPercent,
   parseSignedAmount,
   stakeForTarget,
+  bankrollPlan,
+  parseCount,
 } from "./betting-math";
 
 const near = (v: number | null | undefined, expected: number, digits = 6) => {
@@ -451,5 +453,86 @@ describe("stakeForTarget", () => {
   it("un obiettivo nullo o negativo è null: non è uno stake, è un'altra domanda", () => {
     expect(stakeForTarget({ targetProfit: 0, decimal: 2.5 })).toBeNull();
     expect(stakeForTarget({ targetProfit: -100, decimal: 2.5 })).toBeNull();
+  });
+});
+
+describe("bankrollPlan", () => {
+  it("2000 al 2% dà unità 40, dieci perse = 400 e il 20% di drawdown, 50 giocate a rovina", () => {
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.02, losingStreak: 10 });
+    expect(r).not.toBeNull();
+    expect(r!.unit).toBeCloseTo(40, 9);
+    expect(r!.streakLoss).toBeCloseTo(400, 9);
+    expect(r!.streakDrawdown).toBeCloseTo(0.2, 9);
+    expect(r!.betsToRuin).toBe(50);
+  });
+
+  it("betsToRuin è intero e arrotonda per difetto", () => {
+    // 1000 al 3% → unità 30 → 33.33 giocate → 33, non 34: la 34ª non è coperta.
+    const r = bankrollPlan({ bankroll: 1000, unitPercent: 0.03, losingStreak: 5 });
+    expect(r!.betsToRuin).toBe(33);
+    expect(Number.isInteger(r!.betsToRuin)).toBe(true);
+  });
+
+  it("al 5% la stessa serie di dieci si mangia metà della cassa", () => {
+    // È il numero che giustifica la soglia dell'explainer: unità 100, dieci
+    // perse 1.000, drawdown 50%, e la cassa copre solo 20 giocate.
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.05, losingStreak: 10 });
+    expect(r!.unit).toBeCloseTo(100, 9);
+    expect(r!.streakLoss).toBeCloseTo(1000, 9);
+    expect(r!.streakDrawdown).toBeCloseTo(0.5, 9);
+    expect(r!.betsToRuin).toBe(20);
+  });
+
+  it("una serie più lunga della cassa non produce un drawdown sopra il 100%… lo produce, e va detto", () => {
+    // 2000 al 10% con 12 perse: 2.400 di perdita su 2.000 di cassa. La funzione
+    // NON tronca: la cassa è finita alla decima e il numero >100% è il segnale
+    // che il piano non regge la serie dichiarata. Il componente lo mostra.
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.1, losingStreak: 12 });
+    expect(r!.streakLoss).toBeCloseTo(2400, 9);
+    expect(r!.streakDrawdown).toBeCloseTo(1.2, 9);
+    expect(r!.betsToRuin).toBe(10);
+  });
+
+  it("una serie di zero giocate non costa niente", () => {
+    const r = bankrollPlan({ bankroll: 2000, unitPercent: 0.02, losingStreak: 0 });
+    expect(r!.streakLoss).toBe(0);
+    expect(r!.streakDrawdown).toBe(0);
+  });
+
+  it("una percentuale fuori da 0..1 è null", () => {
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: 0, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: 1.5, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: -0.02, losingStreak: 10 })).toBeNull();
+  });
+
+  it("cassa o serie non valide sono null, non NaN", () => {
+    expect(bankrollPlan({ bankroll: 0, unitPercent: 0.02, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: -100, unitPercent: 0.02, losingStreak: 10 })).toBeNull();
+    expect(bankrollPlan({ bankroll: 2000, unitPercent: 0.02, losingStreak: -1 })).toBeNull();
+    expect(
+      bankrollPlan({ bankroll: Number.POSITIVE_INFINITY, unitPercent: 0.02, losingStreak: 10 })
+    ).toBeNull();
+  });
+});
+
+describe("parseCount", () => {
+  it("legge un conteggio intero positivo", () => {
+    expect(parseCount("10")).toBe(10);
+    expect(parseCount(" 250 ")).toBe(250);
+  });
+
+  it("rifiuta il non intero invece di troncarlo in silenzio", () => {
+    // Una serie di 10,5 sconfitte non esiste: meglio il trattino di un drawdown
+    // del 21% che nessuno saprebbe da dove viene.
+    expect(parseCount("10.5")).toBeNull();
+    expect(parseCount("10,5")).toBeNull();
+  });
+
+  it("rifiuta zero, i negativi e la spazzatura", () => {
+    expect(parseCount("0")).toBeNull();
+    expect(parseCount("-3")).toBeNull();
+    expect(parseCount("")).toBeNull();
+    expect(parseCount("banana")).toBeNull();
+    expect(parseCount("1e3")).toBeNull();
   });
 });

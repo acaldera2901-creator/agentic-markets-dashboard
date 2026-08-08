@@ -15,6 +15,7 @@ import { ParlayCalculator } from "./ParlayCalculator";
 import { RoiCalculator } from "./RoiCalculator";
 import { YieldCalculator } from "./YieldCalculator";
 import { StakeCalculator } from "./StakeCalculator";
+import { BankrollCalculator } from "./BankrollCalculator";
 
 export function ToolCalculator({
   slug,
@@ -46,5 +47,7 @@ export function ToolCalculator({
       return <YieldCalculator copy={copy} dash={dash} />;
     case "stake-calculator":
       return <StakeCalculator copy={copy} dash={dash} />;
+    case "bankroll-calculator":
+      return <BankrollCalculator copy={copy} dash={dash} />;
   }
 }

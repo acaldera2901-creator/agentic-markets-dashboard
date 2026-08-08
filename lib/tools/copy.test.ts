@@ -18,8 +18,8 @@ describe("registry", () => {
   // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
   // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
   // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
-  it("ha dieci tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(10);
+  it("ha undici tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(11);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });
@@ -275,6 +275,39 @@ describe("dizionari registrati", () => {
         const prose = t.explainer.join(" ");
         expect(prose, "l'explainer stake non cita Kelly").toMatch(/kelly|келли/i);
         expect(prose, "manca il 44% implicito nello stake da desiderio").toMatch(/44/);
+      });
+
+      it("l'esempio del bankroll porta unità, drawdown e le giocate come INTERO", () => {
+        // 2.000 al 2% ⇒ unità 40, dieci perse 400, drawdown 20%, e la cassa
+        // copre 50 giocate perse consecutive. Sono i default del calcolatore.
+        const t = dict.tools["bankroll-calculator"];
+        const values = t.example.rows.map((r) => r.value);
+        const numbers = [...values, t.example.note].join(" ");
+        expect(numbers, "manca la cassa 2.000").toMatch(/2[ .,]?000/);
+        expect(numbers, "manca l'unità 40,00").toMatch(/40[.,]00/);
+        expect(numbers, "manca il costo della serie 400,00").toMatch(/400[.,]00/);
+        expect(numbers, "manca il drawdown 20,00%").toMatch(/20[.,]00/);
+        expect(numbers, "manca il recupero +25,00% dal 20% di buco").toMatch(/25[.,]00/);
+        // Le giocate a rovina sono un CONTEGGIO: il readout usa zero decimali,
+        // quindi l'esempio dice 50 e non 50,00. Il piano proponeva "50.00":
+        // sarebbe stato un numero di giocate con due decimali.
+        expect(values, "le giocate a rovina non sono l'intero 50").toContain("50");
+        for (const v of values) {
+          expect(v, "una riga scrive le giocate come 50,00").not.toMatch(/^50[.,]00$/);
+        }
+        // Onestà obbligatoria: la probabilità VERA della serie di dieci, non
+        // l'aggettivo «normale». 1.000 giocate a quote pari → 38,54%; a 2.10,
+        // dove chi non ha vantaggio vince il 47,62%, → 52,31%.
+        const prose = [t.explainer.join(" "), ...t.faq.map((f) => f.a)].join(" ");
+        expect(prose, "manca la probabilità 38,54% della serie di dieci").toMatch(/38[.,]54/);
+        expect(prose, "manca il 52,31% a quota 2.10").toMatch(/52[.,]31/);
+        expect(prose, "l'explainer bankroll non cita Kelly").toMatch(/kelly|келли/i);
+        // Il floor di 1.000 al 3%: 33,33 giocate ⇒ 33. La 34ª non è coperta, e
+        // scriverla sarebbe promettere una giocata che i soldi non pagano.
+        expect(prose, "manca il floor 33 di 1.000 al 3%").toMatch(/(?<!\d)33(?!\d)/);
+        expect(prose, "34 è l'arrotondamento per eccesso: la cassa non lo copre").not.toMatch(
+          /(?<!\d)34(?!\d)/
+        );
       });
 
       it("la pagina Kelly porta l'avvertimento su varianza e rovina", () => {

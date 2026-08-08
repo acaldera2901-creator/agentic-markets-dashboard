@@ -638,6 +638,68 @@ const fr: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Calculateur de bankroll — unité, drawdown et défaites avant la ruine | BetRedge",
+      metaDescription:
+        "Calculateur de bankroll gratuit : fixez le capital et l'unité pour voir la mise par pari, le coût d'une mauvaise série, le drawdown laissé et le nombre de défaites couvertes.",
+      h1: "Calculateur de bankroll",
+      lede:
+        "Ce qu'une unité en pourcentage engage vraiment : la mise par pari, le coût d'une mauvaise série et le nombre de défaites consécutives que la bankroll encaisse.",
+      labels: {
+        inputTitle: "Bankroll et règle",
+        bankroll: "Bankroll",
+        unitPercent: "Unité (%)",
+        losingStreak: "Mauvaise série",
+        resultTitle: "Ce que coûte la règle",
+        unit: "Mise par pari",
+        streakLoss: "Coût de la série",
+        drawdown: "Drawdown",
+        betsToRuin: "Défaites avant la ruine",
+        hint: "Les pourcentages s'écrivent en nombres : 2 signifie 2 % de la bankroll par pari. La mauvaise série est un nombre de paris, donc des entiers seulement — c'est la série que vous voulez encaisser, pas une prédiction.",
+        verdictSafe:
+          "À 5 % par unité ou moins, la série déclarée laisse la bankroll encore en état de travailler. Une série de dix touche 38,54 % des parieurs en 1 000 paris à cote paire : un plan qui ne tient que si vous ne la croisez jamais n'est pas un plan.",
+        verdictAggressive:
+          "Au-delà de 5 % par unité, la mauvaise série ordinaire ferme le compte : dix défaites emportent la moitié de la bankroll ou plus, et de la moitié il faudrait +100,00 % pour revenir. Comme une série de dix arrive en 1 000 paris pour 38,54 % des parieurs, c'est un pari sur le fait de ne pas la croiser.",
+      },
+      takeaway:
+        "Le pourcentage par unité n'est pas une préférence. C'est votre décision sur la longueur que la pire mauvaise série peut atteindre avant que vous soyez hors jeu.",
+      example: {
+        title: "Une bankroll de 2 000 à 2 % par pari",
+        rows: [
+          { label: "Bankroll", value: "2 000" },
+          { label: "Unité", value: "2 %" },
+          { label: "Mise par pari", value: "40,00" },
+          { label: "Dix défaites de suite", value: "400,00" },
+          { label: "Drawdown", value: "20,00 %" },
+          { label: "Défaites avant la ruine", value: "50" },
+        ],
+        note:
+          "Ce trou de 20,00 % exige +25,00 % sur ce qui reste pour revenir à 2 000. Passez l'unité à 5 % et les mêmes dix défaites coûtent 1 000 — un drawdown de 50,00 % qui demande +100,00 % pour être comblé, avec une bankroll qui couvre 20 défaites consécutives au lieu de 50. Trois points de règle, et la série encaissée est réduite de plus de moitié.",
+      },
+      explainerTitle: "La règle qui décide de la mauvaise série que vous encaissez",
+      explainer: [
+        "**Une unité est un pourcentage de la bankroll, pas un montant**, et la différence n'apparaît que quand ça tourne mal. Misez 40 fixes pour toujours et une bankroll tombée à 1 000 mise 4 % au lieu de 2 % : la règle se resserre exactement quand elle devrait se desserrer. Recalculez l'unité sur le solde courant et chaque défaite réduit la mise suivante, et c'est cela qui empêche une mauvaise série d'achever le travail. L'asymétrie en dessous est toute la raison de s'en soucier — **perdre 20 % demande +25,00 % pour revenir, perdre 50 % demande +100,00 %, perdre 80 % demande +400,00 %.** Rien dans la seconde moitié de ces paires n'est symétrique de la première, et aucun avantage n'est assez grand pour faire d'un retour de 400,00 % un plan plutôt qu'un espoir. Une bankroll de 2 000 à 2 % mise 40 par pari, absorbe dix défaites d'affilée pour 400,00 et en sort à −20,00 % — ayant consommé dix des 50 défaites consécutives que cette mise peut encaisser.",
+        "**Une série de dix défaites à des cotes autour de 2.00 est ordinaire, pas de la malchance**, et voici le chiffre qui le montre. À cote paire, une séquence de dix a une probabilité de 0,098 % — une sur 1 024 — ce qui se lit comme jamais, jusqu'à ce que vous comptiez combien de séquences contient une saison. Sur 1 000 paris, la probabilité de croiser au moins une série de dix ou plus est de **38,54 %** ; à 2.10, où un parieur sans avantage gagne 47,62 % du temps, elle est de **52,31 %** — mieux qu'un lancer de pièce. Sur 500 paris, les deux mêmes chiffres valent 21,45 % et 30,73 %, et la plus longue série à attendre sur 1 000 paris à cote paire est d'environ dix, car elle croît comme le logarithme en base deux du nombre de paris. La série n'est pas la queue de la distribution, elle en est le centre : donc **une unité au-dessus de 5 % est un pari sur le fait de ne pas croiser le cas ordinaire** — à 5 % ces dix défaites prennent la moitié de la bankroll, à 10 % elles la prennent entièrement. Quand l'avantage est mesuré et non supposé, le calculateur du critère de Kelly dimensionne l'unité depuis l'avantage lui-même : lisez son chiffre comme un plafond, et cette page comme le plancher en dessous.",
+      ],
+      faq: [
+        {
+          q: "Quelle taille d'unité utiliser ?",
+          a: "Un à deux pour cent de la bankroll par pari est la fourchette habituelle en mise plate, et au-dessus de cinq pour cent la mauvaise série ordinaire devient un événement qui ferme le compte. La façon honnête de choisir va à l'envers : décidez la série que vous voulez encaisser, lisez le drawdown que donne ce calculateur, et demandez-vous si vous continueriez à parier pareil après.",
+        },
+        {
+          q: "Pourquoi les défaites avant la ruine sont-elles un entier ?",
+          a: "Parce qu'elles comptent des paris, et une fraction de pari n'en est pas un. Une bankroll de 1 000 à 3 % donne une unité de 30, soit 33 défaites et un tiers — la réponse est donc 33, arrondie vers le bas, car la bankroll ne couvre plus la suivante en entier. Arrondir vers le haut promettrait un pari dont l'argent n'existe pas.",
+        },
+        {
+          q: "Dix défaites de suite, est-ce vraiment normal ?",
+          a: "Oui, et l'arithmétique n'est même pas serrée. Une séquence de dix défaites à cote paire est un événement à 0,098 %, mais sur 1 000 paris il y a assez de séquences pour que la probabilité d'en croiser au moins une soit de 38,54 %, montant à 52,31 % à 2.10 où un parieur sans avantage gagne 47,62 % du temps. Prévoyez-la au lieu d'en être surpris.",
+        },
+        {
+          q: "Celui-ci ou le critère de Kelly ?",
+          a: "Celui-ci quand vous n'avez pas d'avantage mesuré, c'est-à-dire la plupart du temps : une unité en pourcentage ne demande aucune estimation de probabilité et son pire cas est connu d'avance. Le calculateur du critère de Kelly est le bon outil dès que vous pouvez défendre une probabilité, et il recommandera souvent plus qu'un 2 % plat. Traiter sa réponse comme un plafond et la règle plate comme un plancher garde les deux honnêtes.",
+        },
+      ],
+    },
   },
 };
 

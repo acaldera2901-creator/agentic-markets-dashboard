@@ -14,6 +14,7 @@ export const TOOL_SLUGS = [
   "roi-calculator",
   "yield-calculator",
   "stake-calculator",
+  "bankroll-calculator",
 ] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];

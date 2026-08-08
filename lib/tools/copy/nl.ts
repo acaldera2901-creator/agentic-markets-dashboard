@@ -638,6 +638,68 @@ const nl: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Bankroll-calculator — eenheid, drawdown en verliezen tot ruïne | BetRedge",
+      metaDescription:
+        "Gratis bankroll-calculator: stel bankroll en eenheid in en zie de inzet per wed, wat een verliesreeks kost, de drawdown die hij achterlaat en hoeveel verliezen je dekt.",
+      h1: "Bankroll-calculator",
+      lede:
+        "Wat een procentuele eenheid echt vastlegt: de inzet per wed, de kosten van een verliesreeks en hoeveel verliezen op rij de bankroll overleeft.",
+      labels: {
+        inputTitle: "Bankroll en regel",
+        bankroll: "Bankroll",
+        unitPercent: "Eenheid (%)",
+        losingStreak: "Verliesreeks",
+        resultTitle: "Wat de regel kost",
+        unit: "Inzet per wed",
+        streakLoss: "Kosten van de reeks",
+        drawdown: "Drawdown",
+        betsToRuin: "Verliezen tot ruïne",
+        hint: "Percentages als getal invoeren: 2 betekent 2% van de bankroll per wed. De verliesreeks telt wedden, dus alleen hele getallen — het is de reeks die je wil overleven, geen voorspelling.",
+        verdictSafe:
+          "Op 5% per eenheid of lager laat de opgegeven reeks de bankroll nog werkend achter. Een reeks van tien bereikt 38,54% van de spelers binnen 1.000 wedden bij gelijke odds, dus een plan dat alleen houdt als je hem nooit tegenkomt is geen plan.",
+        verdictAggressive:
+          "Boven 5% per eenheid beëindigt de gewone verliesreeks de rekening: tien verliezen nemen de helft van de bankroll of meer, en vanaf de helft is +100,00% nodig om terug te komen. Omdat een reeks van tien binnen 1.000 wedden 38,54% van de spelers treft, is dit een wed op hem niet tegenkomen.",
+      },
+      takeaway:
+        "Het eenheidspercentage is geen voorkeur. Het is jouw besluit over hoe lang de slechtste verliesreeks mag zijn voordat je uit het spel ligt.",
+      example: {
+        title: "Een bankroll van 2.000 bij 2% per wed",
+        rows: [
+          { label: "Bankroll", value: "2.000" },
+          { label: "Eenheid", value: "2%" },
+          { label: "Inzet per wed", value: "40,00" },
+          { label: "Tien verliezen op rij", value: "400,00" },
+          { label: "Drawdown", value: "20,00%" },
+          { label: "Verliezen tot ruïne", value: "50" },
+        ],
+        note:
+          "Dat gat van 20,00% vraagt +25,00% op wat er over is om terug te komen op 2.000. Zet de eenheid op 5% en dezelfde tien verliezen kosten 1.000 — een drawdown van 50,00% die +100,00% nodig heeft om te herstellen, terwijl de bankroll 20 verliezen op rij dekt in plaats van 50. Drie punten regel, en de reeks die je overleeft wordt minder dan de helft.",
+      },
+      explainerTitle: "De regel die bepaalt hoeveel tegenslag je overleeft",
+      explainer: [
+        "**Een eenheid is een percentage van de bankroll, geen bedrag**, en het verschil komt pas boven als het slecht gaat. Zet voor altijd 40 vast in en een bankroll die naar 1.000 is gezakt wedt 4% in plaats van 2%: de regel knijpt precies wanneer hij zou moeten lossen. Herbereken de eenheid op het huidige saldo en elk verlies maakt de volgende inzet kleiner, en dat is wat een verliesreeks belet het karwei af te maken. De asymmetrie eronder is de hele reden om je zorgen te maken — **20% verliezen vraagt +25,00% om terug te komen, 50% vraagt +100,00% en 80% vraagt +400,00%.** Niets in de tweede helft van die paren is symmetrisch met de eerste, en geen voordeel is groot genoeg om van +400,00% een plan te maken in plaats van een hoop. Een bankroll van 2.000 bij 2% zet 40 per wed in, absorbeert tien verliezen op rij voor 400,00 en komt eruit op −20,00% — met tien van de 50 opeenvolgende verliezen verbruikt die deze inzet aankan.",
+        "**Een reeks van tien verliezen bij odds rond 2.00 is gewoon, geen pech**, en dit is het getal dat het aantoont. Bij gelijke odds heeft één reeks van tien een kans van 0,098% — één op 1.024 — wat leest als nooit, tot je telt hoeveel reeksen een seizoen bevat. Over 1.000 wedden is de kans om minstens één verliesreeks van tien of langer tegen te komen **38,54%**; bij 2.10, waar een speler zonder voordeel 47,62% van de tijd wint, is het **52,31%** — beter dan kop of munt. Over 500 wedden zijn diezelfde twee cijfers 21,45% en 30,73%, en de langste reeks om te verwachten in 1.000 wedden bij gelijke odds is ongeveer tien, want hij groeit met de logaritme met grondtal twee van het aantal wedden. De reeks is niet de staart van de verdeling, hij is het midden, dus **een eenheid boven 5% is een wed op het niet tegenkomen van het gewone geval**: bij 5% nemen die tien verliezen de helft van de bankroll, bij 10% nemen ze alles. Wanneer het voordeel gemeten is in plaats van aangenomen, bepaalt de Kelly-criterium calculator de eenheid uit het voordeel zelf — lees dat getal als een plafond en deze pagina als de vloer eronder.",
+      ],
+      faq: [
+        {
+          q: "Welke eenheidsgrootte moet ik gebruiken?",
+          a: "Eén tot twee procent van de bankroll per wed is het gebruikelijke bereik voor vlak inzetten, en boven vijf procent wordt de gewone verliesreeks een gebeurtenis die de rekening sluit. De eerlijke manier van kiezen loopt achterstevoren: bepaal de verliesreeks die je wil overleven, lees de drawdown die deze calculator geeft, en vraag je af of je daarna nog net zo zou wedden.",
+        },
+        {
+          q: "Waarom is verliezen tot ruïne een heel getal?",
+          a: "Omdat het wedden telt, en een fractie van een wed is er geen. Een bankroll van 1.000 bij 3% geeft een eenheid van 30, dus 33 verliezen en een derde — het antwoord is dus 33, naar beneden afgerond, want de bankroll dekt de volgende niet meer volledig. Naar boven afronden zou een wed beloven waarvoor het geld niet bestaat.",
+        },
+        {
+          q: "Is een reeks van tien verliezen echt normaal?",
+          a: "Ja, en de rekensom is niet eens close. Eén reeks van tien verliezen bij gelijke odds is een gebeurtenis van 0,098%, maar over 1.000 wedden zijn er genoeg reeksen dat de kans op minstens één 38,54% is, oplopend tot 52,31% bij 2.10 waar een speler zonder voordeel 47,62% van de tijd wint. Plan ervoor in plaats van je te laten verrassen.",
+        },
+        {
+          q: "Deze of het Kelly-criterium?",
+          a: "Deze wanneer je geen gemeten voordeel hebt, wat meestal zo is: een procentuele eenheid vraagt geen kansschatting en het slechtste geval is vooraf bekend. De Kelly-criterium calculator is het juiste gereedschap zodra je een kans kan verdedigen, en die raadt doorgaans meer aan dan een vlakke 2%. Zijn antwoord als plafond en de vlakke regel als vloer behandelen houdt ze beide eerlijk.",
+        },
+      ],
+    },
   },
 };
 

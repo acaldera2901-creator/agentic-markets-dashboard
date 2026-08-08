@@ -650,6 +650,68 @@ const en: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Bankroll Calculator — Unit Size, Drawdown and Losses to Ruin | BetRedge",
+      metaDescription:
+        "Free bankroll calculator: set a bankroll and a unit size to see the stake per bet, what a losing run costs, the drawdown it leaves, and how many losses the bankroll covers.",
+      h1: "Bankroll calculator",
+      lede:
+        "What a percentage unit actually commits: the stake per bet, the cost of a losing run, and how many consecutive losses the bankroll survives.",
+      labels: {
+        inputTitle: "Bankroll and rule",
+        bankroll: "Bankroll",
+        unitPercent: "Unit size (%)",
+        losingStreak: "Losing streak",
+        resultTitle: "What the rule costs",
+        unit: "Stake per bet",
+        streakLoss: "Cost of the run",
+        drawdown: "Drawdown",
+        betsToRuin: "Losses to ruin",
+        hint: "Percentages go in as numbers: 2 means 2% of the bankroll per bet. The losing streak is a count of bets, so whole numbers only — it is the bad run you want to survive, not a prediction.",
+        verdictSafe:
+          "At or under 5% per unit the run you declared leaves the bankroll still working. A run of ten reaches 38.54% of bettors inside 1,000 bets at even money, so a plan that only holds if you never meet one is not a plan.",
+        verdictAggressive:
+          "Above 5% per unit the ordinary bad run ends the account: ten losses take half the bankroll or more, and half of it needs a 100.00% gain to come back. Since a run of ten arrives inside 1,000 even-money bets for 38.54% of bettors, this is a bet on not meeting it.",
+      },
+      takeaway:
+        "The unit percentage is not a preference. It is your decision about how long the worst losing run is allowed to be before you are out of the game.",
+      example: {
+        title: "A 2,000 bankroll at 2% per bet",
+        rows: [
+          { label: "Bankroll", value: "2,000" },
+          { label: "Unit size", value: "2%" },
+          { label: "Stake per bet", value: "40.00" },
+          { label: "Ten losses in a row", value: "400.00" },
+          { label: "Drawdown", value: "20.00%" },
+          { label: "Losses to ruin", value: "50" },
+        ],
+        note:
+          "That 20.00% hole needs a +25.00% gain on what is left to get back to 2,000. Move the unit to 5% and the same ten losses cost 1,000 — a 50.00% drawdown needing +100.00% to recover, with the bankroll covering 20 consecutive losses instead of 50. Three points on the rule, and the run you survive is less than half as long.",
+      },
+      explainerTitle: "The rule that decides how long a bad run you survive",
+      explainer: [
+        "**A unit is a percentage of the bankroll, not an amount**, and the difference only shows up when things go wrong. Stake a fixed 40 forever and a bankroll that has fallen to 1,000 is betting 4% instead of 2%: the rule tightens exactly when it should loosen. Recalculate the unit against the current balance and every loss makes the next stake smaller, which is what stops a bad run from finishing the job. The asymmetry underneath is the whole reason to care — **losing 20% needs +25.00% to recover, losing 50% needs +100.00%, and losing 80% needs +400.00%.** Nothing in the second half of those pairs is symmetric with the first, and no edge is big enough to make a 400.00% recovery a plan rather than a hope. A 2,000 bankroll at 2% stakes 40 a bet, absorbs ten straight losses for 400.00, and comes out down 20.00% — having used ten of the 50 consecutive losses that stake could survive.",
+        "**A run of ten losses at prices around 2.00 is ordinary, not bad luck**, and this is the number that makes the point. At even money any single sequence of ten has a probability of 0.098% — one in 1,024 — which reads like never until you count how many sequences a season contains. Across 1,000 bets the chance of meeting at least one losing run of ten or longer is **38.54%**; at 2.10, where a bettor with no edge wins 47.62% of the time, it is **52.31%** — better than a coin flip. Over 500 bets the same two figures are 21.45% and 30.73%, and the longest run to expect in 1,000 even-money bets is about ten, because it grows with the base-two logarithm of the number of bets. The run is not the tail of the distribution, it is the middle of it, so **a unit above 5% is a bet on not meeting the ordinary case**: at 5% those ten losses take half the bankroll, at 10% they take all of it. When the edge is measured rather than assumed, the Kelly criterion calculator sizes the unit from the edge itself — read what it gives you as a ceiling, and this page as the floor beneath it.",
+      ],
+      faq: [
+        {
+          q: "What unit size should I use?",
+          a: "One to two percent of the bankroll per bet is the usual range for flat staking, and above five percent the ordinary losing run becomes an account-ending event. The honest way to pick is backwards: choose the losing run you intend to survive, then read the drawdown this calculator gives and ask whether you would keep betting the same way after it.",
+        },
+        {
+          q: "Why does losses to ruin show a whole number?",
+          a: "Because it counts bets, and a fraction of a bet is not one. A 1,000 bankroll at 3% gives a 30 unit, which is 33 losses and a third — so the answer is 33, rounded down, because the bankroll cannot cover the next one in full. Rounding up would promise a bet the money does not exist for.",
+        },
+        {
+          q: "Is a ten-bet losing run really normal?",
+          a: "Yes, and the arithmetic is not close. Any one sequence of ten losses at even money is a 0.098% event, but across 1,000 bets there are enough sequences that the chance of meeting at least one is 38.54%, rising to 52.31% at 2.10 where a bettor with no edge wins 47.62% of the time. Plan around it rather than being surprised by it.",
+        },
+        {
+          q: "Should I use this or the Kelly criterion?",
+          a: "Use this when you do not have a measured edge, which is most of the time: a percentage unit needs no probability estimate and its worst case is knowable in advance. The Kelly criterion calculator is the right tool once you can defend a probability, and it will usually recommend more than a flat 2%. Treating its answer as a ceiling and a flat rule as the floor keeps both honest.",
+        },
+      ],
+    },
   },
 };
 

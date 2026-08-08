@@ -638,6 +638,68 @@ const es: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Calculadora de bankroll — unidad, drawdown y derrotas hasta la ruina | BetRedge",
+      metaDescription:
+        "Calculadora de bankroll gratuita: fija la banca y la unidad y verás el stake por apuesta, lo que cuesta una mala racha, el drawdown que deja y cuántas derrotas cubre.",
+      h1: "Calculadora de bankroll",
+      lede:
+        "Lo que compromete de verdad una unidad en porcentaje: el stake por apuesta, el coste de una mala racha y cuántas derrotas seguidas sobrevive la banca.",
+      labels: {
+        inputTitle: "Banca y regla",
+        bankroll: "Bankroll",
+        unitPercent: "Unidad (%)",
+        losingStreak: "Mala racha",
+        resultTitle: "Lo que cuesta la regla",
+        unit: "Stake por apuesta",
+        streakLoss: "Coste de la racha",
+        drawdown: "Drawdown",
+        betsToRuin: "Derrotas hasta la ruina",
+        hint: "Los porcentajes se escriben como números: 2 significa el 2% del bankroll por apuesta. La mala racha es un recuento de apuestas, así que solo números enteros — es la racha que quieres sobrevivir, no una predicción.",
+        verdictSafe:
+          "Al 5% por unidad o por debajo, la racha que has declarado deja el bankroll todavía operativo. Una racha de diez alcanza al 38,54% de los apostantes en 1.000 apuestas a cuota par, así que un plan que solo aguanta si no la encuentras no es un plan.",
+        verdictAggressive:
+          "Por encima del 5% por unidad la mala racha normal acaba con la cuenta: diez derrotas se llevan la mitad del bankroll o más, y desde la mitad haría falta un +100,00% para volver. Como una racha de diez llega en 1.000 apuestas al 38,54% de los apostantes, esto es apostar a no encontrarla.",
+      },
+      takeaway:
+        "El porcentaje por unidad no es una preferencia. Es tu decisión sobre cuánto puede durar la peor mala racha antes de que estés fuera del juego.",
+      example: {
+        title: "Una banca de 2.000 al 2% por apuesta",
+        rows: [
+          { label: "Bankroll", value: "2.000" },
+          { label: "Unidad", value: "2%" },
+          { label: "Stake por apuesta", value: "40,00" },
+          { label: "Diez derrotas seguidas", value: "400,00" },
+          { label: "Drawdown", value: "20,00%" },
+          { label: "Derrotas hasta la ruina", value: "50" },
+        ],
+        note:
+          "Ese agujero del 20,00% pide un +25,00% sobre lo que queda para volver a 2.000. Sube la unidad al 5% y esas mismas diez derrotas cuestan 1.000 — un drawdown del 50,00% que exige un +100,00% para recuperarse, con la banca cubriendo 20 derrotas seguidas en vez de 50. Tres puntos de regla, y la racha que sobrevives se reduce a menos de la mitad.",
+      },
+      explainerTitle: "La regla que decide cuánta mala racha sobrevives",
+      explainer: [
+        "**Una unidad es un porcentaje del bankroll, no una cantidad**, y la diferencia solo aparece cuando las cosas van mal. Apuesta 40 fijos para siempre y una banca caída a 1.000 está apostando el 4% en lugar del 2%: la regla se aprieta justo cuando debería aflojarse. Recalcula la unidad sobre el saldo actual y cada derrota hace más pequeño el stake siguiente, y eso es lo que impide que una mala racha termine el trabajo. La asimetría de fondo es toda la razón para preocuparse — **perder el 20% exige un +25,00% para recuperarse, perder el 50% exige un +100,00% y perder el 80% exige un +400,00%.** En la segunda mitad de esos pares no hay nada simétrico con la primera, y ninguna ventaja es lo bastante grande para convertir un +400,00% en un plan en vez de una esperanza. Una banca de 2.000 al 2% apuesta 40 por jugada, absorbe diez derrotas seguidas por 400,00 y sale con un −20,00% — habiendo usado diez de las 50 derrotas consecutivas que ese stake puede sobrevivir.",
+        "**Una racha de diez derrotas a cuotas cercanas a 2.00 es normal, no mala suerte**, y este es el número que lo demuestra. A cuota par una sola secuencia de diez tiene una probabilidad del 0,098% — una entre 1.024 — que se lee como nunca hasta que cuentas cuántas secuencias contiene una temporada. En 1.000 apuestas la probabilidad de encontrar al menos una racha de diez o más es **38,54%**; a 2.10, donde quien no tiene ventaja gana el 47,62% de las veces, es **52,31%** — mejor que lanzar una moneda. En 500 apuestas esas dos cifras son 21,45% y 30,73%, y la racha más larga que esperar en 1.000 apuestas a cuota par es de unas diez, porque crece con el logaritmo en base dos del número de apuestas. La racha no es la cola de la distribución, es su centro, así que **una unidad por encima del 5% es apostar a no encontrar el caso ordinario**: al 5% esas diez derrotas se llevan la mitad de la banca, al 10% se la llevan entera. Cuando la ventaja está medida y no supuesta, la calculadora del criterio de Kelly dimensiona la unidad desde la ventaja misma — lee ese número como un techo y esta página como el suelo debajo.",
+      ],
+      faq: [
+        {
+          q: "¿Qué tamaño de unidad debo usar?",
+          a: "Entre el uno y el dos por ciento del bankroll por apuesta es el rango habitual del stake plano, y por encima del cinco por ciento la mala racha normal se convierte en un evento que cierra la cuenta. La forma honesta de elegir es al revés: decide la mala racha que quieres sobrevivir, lee el drawdown que te da esta calculadora y pregúntate si después seguirías apostando igual.",
+        },
+        {
+          q: "¿Por qué las derrotas hasta la ruina son un número entero?",
+          a: "Porque cuentan apuestas, y una fracción de apuesta no es una apuesta. Una banca de 1.000 al 3% da una unidad de 30, es decir 33 derrotas y un tercio — así que la respuesta es 33, redondeada a la baja, porque la banca ya no cubre la siguiente completa. Redondear al alza prometería una apuesta para la que el dinero no existe.",
+        },
+        {
+          q: "¿Diez derrotas seguidas son de verdad normales?",
+          a: "Sí, y la aritmética no está ni cerca. Una sola secuencia de diez derrotas a cuota par es un evento del 0,098%, pero en 1.000 apuestas hay secuencias suficientes para que la probabilidad de encontrar al menos una sea 38,54%, que sube al 52,31% a 2.10, donde quien no tiene ventaja gana el 47,62% de las veces. Planifícala en vez de que te sorprenda.",
+        },
+        {
+          q: "¿Uso esta o el criterio de Kelly?",
+          a: "Usa esta cuando no tengas una ventaja medida, que es casi siempre: una unidad en porcentaje no pide estimaciones de probabilidad y su peor caso se conoce por adelantado. La calculadora del criterio de Kelly es la herramienta correcta cuando puedes defender una probabilidad, y suele recomendar más que un 2% plano. Tratar su respuesta como techo y la regla plana como suelo mantiene honestas a las dos.",
+        },
+      ],
+    },
   },
 };
 

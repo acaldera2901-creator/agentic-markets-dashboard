@@ -447,3 +447,64 @@ describe("stake calculator", () => {
     expect(screen.getByTestId("out-bankroll-share").textContent).toBe("—");
   });
 });
+
+describe("bankroll calculator", () => {
+  it("2000 al 2% dà unità 40, 20.00% di drawdown su dieci perse e 50 giocate a rovina", () => {
+    // I default SONO l'esempio lavorato della pagina: nessuna digitazione.
+    mount("bankroll-calculator");
+    expect(screen.getByTestId("out-unit").textContent).toBe("40.00");
+    expect(screen.getByTestId("out-streak-loss").textContent).toBe("400.00");
+    expect(screen.getByTestId("out-drawdown").textContent).toBe("20.00%");
+    // Un conteggio di giocate, non un importo: "50", non "50.00".
+    expect(screen.getByTestId("out-bets-to-ruin").textContent).toBe("50");
+  });
+
+  it("al 5% la stessa serie si mangia metà della cassa", async () => {
+    const user = userEvent.setup();
+    mount("bankroll-calculator");
+    const unit = screen.getByLabelText("Unit size (%)");
+    await user.clear(unit);
+    await user.type(unit, "5");
+    expect(screen.getByTestId("out-unit").textContent).toBe("100.00");
+    expect(screen.getByTestId("out-drawdown").textContent).toBe("50.00%");
+    expect(screen.getByTestId("out-bets-to-ruin").textContent).toBe("20");
+  });
+
+  it("1000 al 3% dà 33 giocate a rovina, non 34: la 34ª non è coperta", async () => {
+    const user = userEvent.setup();
+    mount("bankroll-calculator");
+    const bankroll = screen.getByLabelText("Bankroll");
+    await user.clear(bankroll);
+    await user.type(bankroll, "1000");
+    const unit = screen.getByLabelText("Unit size (%)");
+    await user.clear(unit);
+    await user.type(unit, "3");
+    expect(screen.getByTestId("out-unit").textContent).toBe("30.00");
+    expect(screen.getByTestId("out-bets-to-ruin").textContent).toBe("33");
+  });
+
+  it("sopra il 5% per unità il verdetto avverte", async () => {
+    const user = userEvent.setup();
+    const { container } = mount("bankroll-calculator");
+    expect(container.querySelector(".tl-verdict")!.className).not.toContain("is-warn");
+    const unit = screen.getByLabelText("Unit size (%)");
+    await user.clear(unit);
+    await user.type(unit, "10");
+    expect(container.querySelector(".tl-verdict")!.className).toContain("is-warn");
+    expect(screen.getByTestId("out-drawdown").textContent).toBe("100.00%");
+  });
+
+  it("una serie non intera o spazzatura non produce NaN né Infinity", async () => {
+    const user = userEvent.setup();
+    mount("bankroll-calculator");
+    const streak = screen.getByLabelText("Losing streak");
+    await user.clear(streak);
+    await user.type(streak, "10.5");
+    expect(screen.getByTestId("out-drawdown").textContent).toBe("—");
+    expect(screen.getByTestId("out-bets-to-ruin").textContent).toBe("—");
+    const unit = screen.getByLabelText("Unit size (%)");
+    await user.clear(unit);
+    await user.type(unit, "banana");
+    expect(screen.getByTestId("out-unit").textContent).toBe("—");
+  });
+});

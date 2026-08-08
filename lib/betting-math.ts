@@ -365,3 +365,41 @@ export function stakeForTarget(args: {
   if (!isOdds(decimal)) return null;
   return targetProfit / (decimal - 1);
 }
+
+/** Gestione della cassa a stake piatto: dimensione dell'unità, quanto costa una
+ *  serie negativa, e quante giocate perse di fila azzerano la cassa.
+ *  `betsToRuin` è floor: la giocata che la cassa non copre più non si fa.
+ *  `streakDrawdown` NON è troncato al 100%: se la serie dichiarata costa più
+ *  della cassa, il numero sopra il 100% è l'informazione — significa che il
+ *  piano non arriva in fondo alla serie. */
+export function bankrollPlan(args: {
+  bankroll: number;
+  unitPercent: number;
+  losingStreak: number;
+}): { unit: number; streakLoss: number; streakDrawdown: number; betsToRuin: number } | null {
+  const { bankroll, unitPercent, losingStreak } = args;
+  if (!Number.isFinite(bankroll) || bankroll <= 0) return null;
+  if (!Number.isFinite(unitPercent) || unitPercent <= 0 || unitPercent > 1) return null;
+  if (!Number.isFinite(losingStreak) || losingStreak < 0) return null;
+
+  const unit = bankroll * unitPercent;
+  const streakLoss = unit * losingStreak;
+  return {
+    unit,
+    streakLoss,
+    streakDrawdown: streakLoss / bankroll,
+    betsToRuin: Math.floor(bankroll / unit),
+  };
+}
+
+/** Conteggio scritto da un umano → intero positivo. Serve dove il numero conta
+ *  cose e non misura importi: una serie di «10,5» sconfitte non esiste, e
+ *  troncarla in silenzio produrrebbe un drawdown che nessuno saprebbe rifare.
+ *  Sta qui e non in `parts.tsx` per lo stesso motivo di `parseSignedAmount`:
+ *  quel file non si tocca, e la semantica vive accanto alla matematica. */
+export function parseCount(raw: string): number | null {
+  const s = raw.trim();
+  if (!/^\d+$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}

@@ -638,6 +638,68 @@ const tr: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Kasa hesaplayıcı — birim, düşüş ve iflasa kalan kayıp sayısı | BetRedge",
+      metaDescription:
+        "Ücretsiz kasa hesaplayıcı: kasayı ve birimi belirle, bahis başına miktarı, bir kayıp serisinin maliyetini, bıraktığı düşüşü ve kasanın kaç kaybı taşıdığını gör.",
+      h1: "Kasa hesaplayıcı",
+      lede:
+        "Yüzdeyle tanımlı bir birimin gerçekte ne kadarını bağladığı: bahis başına miktar, kayıp serisinin maliyeti ve kasanın kaç üst üste kaybı kaldırdığı.",
+      labels: {
+        inputTitle: "Kasa ve kural",
+        bankroll: "Kasa",
+        unitPercent: "Birim (%)",
+        losingStreak: "Kayıp serisi",
+        resultTitle: "Bu kuralın maliyeti",
+        unit: "Bahis başına miktar",
+        streakLoss: "Serinin maliyeti",
+        drawdown: "Düşüş",
+        betsToRuin: "İflasa kalan kayıp",
+        hint: "Yüzdeleri sayı olarak yaz: 2, bahis başına kasanın %2'si demektir. Kayıp serisi bahis sayısıdır, yani yalnızca tam sayı — atlatmak istediğin kötü seridir, bir tahmin değil.",
+        verdictSafe:
+          "Birim başına %5 ve altında, bildirdiğin seri kasayı hâlâ çalışır durumda bırakır. On maçlık bir seri, eşit oranlarda 1.000 bahis içinde oyuncuların %38,54'üne uğrar; yalnızca ona denk gelmezsen ayakta kalan bir plan, plan değildir.",
+        verdictAggressive:
+          "Birim başına %5'in üzerinde olağan kötü seri hesabı bitirir: on kayıp kasanın yarısını ya da daha fazlasını alır ve yarıdan geri dönmek için +%100,00 gerekir. On maçlık seri 1.000 bahis içinde oyuncuların %38,54'üne geldiğine göre, bu ona denk gelmemeye oynamaktır.",
+      },
+      takeaway:
+        "Birim yüzdesi bir tercih değil. En kötü kayıp serisinin, sen oyundan çıkmadan önce ne kadar uzun olabileceğine dair verdiğin karardır.",
+      example: {
+        title: "2.000 kasa, bahis başına %2",
+        rows: [
+          { label: "Kasa", value: "2.000" },
+          { label: "Birim", value: "%2" },
+          { label: "Bahis başına miktar", value: "40,00" },
+          { label: "Üst üste on kayıp", value: "400,00" },
+          { label: "Düşüş", value: "%20,00" },
+          { label: "İflasa kalan kayıp", value: "50" },
+        ],
+        note:
+          "Bu %20,00'lik çukur, 2.000'e dönmek için kalanın üzerine +%25,00 ister. Birimi %5'e çıkar, aynı on kayıp 1.000 tutar — geri dönmek için +%100,00 gerektiren %50,00'lik bir düşüş, ve kasa 50 değil 20 üst üste kaybı taşır. Kuralda üç puan, atlatılabilen seride yarıdan fazla kısalma.",
+      },
+      explainerTitle: "Ne kadar uzun bir kötü seriyi atlattığına karar veren kural",
+      explainer: [
+        "**Birim, kasanın bir yüzdesidir, bir tutar değil** ve fark ancak işler kötü gittiğinde görünür. Sonsuza kadar sabit 40 oyna; 1.000'e düşmüş bir kasa artık %2 değil %4 oynuyordur: kural tam gevşemesi gerektiği anda sıkışır. Birimi güncel bakiyeye göre yeniden hesapla, her kayıp sıradaki miktarı küçültür — kötü serinin işi bitirmesini engelleyen şey budur. Altındaki asimetri, meselenin tamamıdır: **%20 kaybetmek geri dönmek için +%25,00, %50 kaybetmek +%100,00, %80 kaybetmek +%400,00 ister.** Bu çiftlerin ikinci yarısında ilk yarısıyla simetrik hiçbir şey yok ve hiçbir avantaj +%400,00'lük bir toparlanmayı umut yerine plan yapacak kadar büyük değil. 2.000 kasa %2 ile bahis başına 40 oynar, üst üste on kaybı 400,00 karşılığında yutar ve −%20,00 ile çıkar — o miktarın kaldırabildiği 50 üst üste kaybın onunu kullanarak.",
+        "**2.00 civarı oranlarda on maçlık kayıp serisi olağandır, şanssızlık değil** ve bunu gösteren sayı şudur. Eşit oranlarda tek bir on maçlık dizinin olasılığı %0,098 — 1.024'te bir — ve bir sezonun kaç dizi barındırdığını saymadan bu asla gibi okunur. 1.000 bahiste en az bir kez on ya da daha uzun bir kayıp serisine denk gelme olasılığı **%38,54**; avantajı olmayan birinin zamanın %47,62'sinde kazandığı 2.10 oranında ise **%52,31** — yazı turadan daha olası. 500 bahiste aynı iki sayı %21,45 ve %30,73 olur ve eşit oranlı 1.000 bahiste beklenecek en uzun seri yaklaşık ondur, çünkü bahis sayısının iki tabanındaki logaritmasıyla büyür. Yani seri dağılımın kuyruğu değil, tam ortası; dolayısıyla **birimin %5'in üzerinde olması, olağan duruma denk gelmemeye oynamaktır**: %5'te bu on kayıp kasanın yarısını, %10'da tamamını alır. Avantaj varsayılmak yerine ölçülmüşse, Kelly kriteri hesaplayıcısı birimi doğrudan avantajdan çıkarır — onun verdiği sayıyı bir tavan, bu sayfayı da altındaki taban olarak oku.",
+      ],
+      faq: [
+        {
+          q: "Hangi birim büyüklüğünü kullanmalıyım?",
+          a: "Sabit miktarla oynamada bahis başına kasanın yüzde biri ile ikisi arası alışılmış aralıktır; yüzde beşin üzerinde olağan kötü seri hesabı kapatan bir olaya dönüşür. Dürüst seçim tersten yapılır: atlatmak istediğin kayıp serisine karar ver, bu hesaplayıcının verdiği düşüşü oku ve ondan sonra aynı şekilde oynamaya devam eder miydin diye sor.",
+        },
+        {
+          q: "İflasa kalan kayıp neden tam sayı?",
+          a: "Çünkü bahis sayar ve bahsin kesri bahis değildir. 1.000 kasa %3 ile 30 birim verir, bu da 33 kayıp ve üçte bir eder — cevap aşağı yuvarlanmış 33'tür, çünkü kasa bir sonrakini tam olarak karşılamaz. Yukarı yuvarlamak, karşılığı olmayan bir bahsi vaat etmek olurdu.",
+        },
+        {
+          q: "Üst üste on kayıp gerçekten normal mi?",
+          a: "Evet ve aritmetik yakın bile değil. Eşit oranlarda tek bir on kayıp dizisi %0,098'lik bir olaydır, ama 1.000 bahiste yeterince dizi vardır ve en az birine denk gelme olasılığı %38,54 olur; avantajı olmayan birinin %47,62 kazandığı 2.10 oranında bu %52,31'e çıkar. Şaşırmak yerine ona göre planla.",
+        },
+        {
+          q: "Bunu mu, Kelly kriterini mi kullanmalıyım?",
+          a: "Ölçülmüş bir avantajın yokken bunu kullan, yani çoğu zaman: yüzdeyle tanımlı birim olasılık tahmini istemez ve en kötü durumu önceden bilinir. Kelly kriteri hesaplayıcısı, bir olasılığı savunabildiğin anda doğru araçtır ve genellikle sabit %2'den fazlasını önerir. Onun cevabını tavan, sabit kuralı taban saymak ikisini de dürüst tutar.",
+        },
+      ],
+    },
   },
 };
 

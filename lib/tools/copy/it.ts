@@ -639,6 +639,68 @@ const it: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Calcolatore bankroll — unità, drawdown e sconfitte alla rovina | BetRedge",
+      metaDescription:
+        "Calcolatore di bankroll gratuito: imposta cassa e unità e leggi la puntata per scommessa, quanto costa una serie negativa, il drawdown che lascia e quante sconfitte copre.",
+      h1: "Calcolatore bankroll",
+      lede:
+        "Quanto impegna davvero un'unità in percentuale: la puntata per scommessa, il costo di una serie negativa e quante sconfitte consecutive la cassa sopravvive.",
+      labels: {
+        inputTitle: "Cassa e regola",
+        bankroll: "Bankroll",
+        unitPercent: "Unità (%)",
+        losingStreak: "Serie negativa",
+        resultTitle: "Quanto costa la regola",
+        unit: "Puntata per scommessa",
+        streakLoss: "Costo della serie",
+        drawdown: "Drawdown",
+        betsToRuin: "Sconfitte alla rovina",
+        hint: "Le percentuali vanno scritte come numeri: 2 significa il 2% del bankroll per scommessa. La serie negativa è un conteggio di giocate, quindi solo numeri interi — è la serie che vuoi sopravvivere, non una previsione.",
+        verdictSafe:
+          "Al 5% per unità o sotto, la serie che hai dichiarato lascia il bankroll ancora funzionante. Una serie di dieci arriva al 38,54% di chi gioca entro 1.000 giocate a quote pari, quindi un piano che regge solo se non la incontri non è un piano.",
+        verdictAggressive:
+          "Sopra il 5% per unità la serie negativa ordinaria chiude il conto: dieci sconfitte si portano via metà del bankroll o più, e da metà servirebbe un +100,00% per tornare indietro. Poiché una serie di dieci arriva entro 1.000 giocate al 38,54% di chi gioca, questa è una scommessa sul non incontrarla.",
+      },
+      takeaway:
+        "La percentuale per unità non è una preferenza. È la tua decisione su quanto lunga può essere la serie negativa peggiore prima che tu esca dal gioco.",
+      example: {
+        title: "Un bankroll da 2.000 al 2% per scommessa",
+        rows: [
+          { label: "Bankroll", value: "2.000" },
+          { label: "Unità", value: "2%" },
+          { label: "Puntata per scommessa", value: "40,00" },
+          { label: "Dieci sconfitte di fila", value: "400,00" },
+          { label: "Drawdown", value: "20,00%" },
+          { label: "Sconfitte alla rovina", value: "50" },
+        ],
+        note:
+          "Quel buco del 20,00% chiede un +25,00% su ciò che resta per tornare a 2.000. Porta l'unità al 5% e le stesse dieci sconfitte costano 1.000 — un drawdown del 50,00% che chiede un +100,00% per rientrare, con la cassa che copre 20 sconfitte consecutive invece di 50. Tre punti di regola, e la serie che sopravvivi si dimezza.",
+      },
+      explainerTitle: "La regola che decide quanto lunga una serie negativa sopravvivi",
+      explainer: [
+        "**Un'unità è una percentuale del bankroll, non un importo**, e la differenza si vede solo quando le cose vanno male. Punta 40 fissi per sempre e un bankroll scivolato a 1.000 sta scommettendo il 4% invece del 2%: la regola si stringe esattamente quando dovrebbe allargarsi. Ricalcola l'unità sul saldo corrente e ogni sconfitta rende più piccola la puntata successiva, ed è questo che impedisce a una serie negativa di finire il lavoro. L'asimmetria sotto è tutto il motivo per cui importa — **perdere il 20% chiede un +25,00% per rientrare, perdere il 50% chiede un +100,00%, perdere l'80% chiede un +400,00%.** Nella seconda metà di quelle coppie non c'è niente di simmetrico con la prima, e nessun vantaggio è grande abbastanza per fare di un recupero del 400,00% un piano invece di una speranza. Un bankroll da 2.000 al 2% punta 40 per scommessa, assorbe dieci sconfitte consecutive per 400,00 e ne esce con un −20,00% — avendo usato dieci delle 50 sconfitte consecutive che quella puntata può sopravvivere.",
+        "**Una serie di dieci sconfitte a quote intorno a 2.00 è ordinaria, non sfortuna**, ed è questo il numero che lo dimostra. A quote pari una singola sequenza di dieci ha una probabilità dello 0,098% — una su 1.024 — che si legge come mai, finché non conti quante sequenze contiene una stagione. Su 1.000 giocate la probabilità di incontrare almeno una serie di dieci o più è **38,54%**; a quota 2.10, dove chi non ha vantaggio vince il 47,62% delle volte, è **52,31%** — meglio di un lancio di moneta. Su 500 giocate le stesse due cifre sono 21,45% e 30,73%, e la serie più lunga da aspettarsi in 1.000 giocate a quote pari è circa dieci, perché cresce col logaritmo in base due del numero di scommesse. La serie non è la coda della distribuzione, è il suo centro, quindi **un'unità sopra il 5% è una scommessa sul non incontrare il caso ordinario**: al 5% quelle dieci sconfitte prendono metà del bankroll, al 10% lo prendono tutto. Quando il vantaggio è misurato e non assunto, il calcolatore del criterio di Kelly dimensiona l'unità sul vantaggio stesso — leggi quel numero come un tetto, e questa pagina come il pavimento sotto di lui.",
+      ],
+      faq: [
+        {
+          q: "Quale unità dovrei usare?",
+          a: "Fra l'uno e il due per cento del bankroll per scommessa è l'intervallo abituale dello stake piatto, e sopra il cinque per cento la serie negativa ordinaria diventa un evento che chiude il conto. Il modo onesto di scegliere è al contrario: decidi la serie negativa che vuoi sopravvivere, leggi il drawdown che questo calcolatore ti dà e chiediti se dopo continueresti a giocare così.",
+        },
+        {
+          q: "Perché le sconfitte alla rovina sono un numero intero?",
+          a: "Perché contano giocate, e una frazione di giocata non è una giocata. Un bankroll da 1.000 al 3% dà un'unità di 30, cioè 33 sconfitte e un terzo — quindi la risposta è 33, arrotondata per difetto, perché la cassa non copre più la successiva per intero. Arrotondare per eccesso promette una scommessa per cui i soldi non ci sono.",
+        },
+        {
+          q: "Dieci sconfitte di fila sono davvero normali?",
+          a: "Sì, e l'aritmetica non è nemmeno vicina. Una singola sequenza di dieci sconfitte a quote pari è un evento dello 0,098%, ma su 1.000 giocate le sequenze sono tante e la probabilità di incontrarne almeno una è 38,54%, che sale al 52,31% a quota 2.10, dove chi non ha vantaggio vince il 47,62% delle volte. Pianificala, invece di stupirti.",
+        },
+        {
+          q: "Meglio questo o il criterio di Kelly?",
+          a: "Usa questo quando non hai un vantaggio misurato, cioè quasi sempre: un'unità in percentuale non chiede stime di probabilità e il suo caso peggiore si conosce in anticipo. Il calcolatore del criterio di Kelly è lo strumento giusto quando una probabilità la puoi difendere, e di solito consiglierà più di un 2% piatto. Trattare la sua risposta come un tetto e la regola piatta come il pavimento tiene onesti entrambi.",
+        },
+      ],
+    },
   },
 };
 

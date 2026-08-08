@@ -638,6 +638,68 @@ const pl: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Kalkulator bankrolla — jednostka, obsunięcie i przegrane do ruiny | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator bankrolla: ustaw bankroll i jednostkę, a zobaczysz stawkę na zakład, koszt złej serii, obsunięcie, jakie po niej zostaje, i ile przegranych pokrywasz.",
+      h1: "Kalkulator bankrolla",
+      lede:
+        "Ile naprawdę angażuje jednostka wyrażona w procentach: stawka na zakład, koszt złej serii i ile przegranych z rzędu bankroll przetrzyma.",
+      labels: {
+        inputTitle: "Bankroll i zasada",
+        bankroll: "Bankroll",
+        unitPercent: "Jednostka (%)",
+        losingStreak: "Zła seria",
+        resultTitle: "Ile kosztuje ta zasada",
+        unit: "Stawka na zakład",
+        streakLoss: "Koszt serii",
+        drawdown: "Obsunięcie",
+        betsToRuin: "Przegrane do ruiny",
+        hint: "Procenty wpisuj jako liczby: 2 oznacza 2% bankrolla na zakład. Zła seria to licznik zakładów, więc tylko liczby całkowite — to seria, którą chcesz przetrzymać, nie prognoza.",
+        verdictSafe:
+          "Przy 5% na jednostkę lub mniej podana seria zostawia bankroll wciąż zdolny do pracy. Seria dziesięciu dotyka 38,54% graczy w ciągu 1000 zakładów przy kursach parzystych, więc plan, który trzyma się tylko wtedy, gdy jej nie spotkasz, nie jest planem.",
+        verdictAggressive:
+          "Powyżej 5% na jednostkę zwyczajna zła seria kończy konto: dziesięć przegranych zabiera połowę bankrolla lub więcej, a z połowy potrzeba +100,00%, by wrócić. Skoro seria dziesięciu pojawia się w 1000 zakładach u 38,54% graczy, to zakład o to, że jej nie spotkasz.",
+      },
+      takeaway:
+        "Procent na jednostkę nie jest preferencją. To twoja decyzja o tym, jak długa może być najgorsza zła seria, zanim wypadniesz z gry.",
+      example: {
+        title: "Bankroll 2000 przy 2% na zakład",
+        rows: [
+          { label: "Bankroll", value: "2000" },
+          { label: "Jednostka", value: "2%" },
+          { label: "Stawka na zakład", value: "40,00" },
+          { label: "Dziesięć przegranych z rzędu", value: "400,00" },
+          { label: "Obsunięcie", value: "20,00%" },
+          { label: "Przegrane do ruiny", value: "50" },
+        ],
+        note:
+          "Ta dziura 20,00% wymaga +25,00% na tym, co zostało, by wrócić do 2000. Podnieś jednostkę do 5% i te same dziesięć przegranych kosztuje 1000 — obsunięcie 50,00%, które do odrobienia wymaga +100,00%, a bankroll pokrywa 20 przegranych z rzędu zamiast 50. Trzy punkty zasady, a przetrzymywana seria skraca się o ponad połowę.",
+      },
+      explainerTitle: "Zasada, która decyduje, jak długą złą serię przetrzymasz",
+      explainer: [
+        "**Jednostka to procent bankrolla, nie kwota**, a różnica ujawnia się dopiero, gdy jest źle. Stawiaj na zawsze stałe 40, a bankroll spadły do 1000 obstawia 4% zamiast 2%: zasada zacieśnia się dokładnie wtedy, gdy powinna poluzować. Przelicz jednostkę na bieżącym saldzie i każda przegrana zmniejsza kolejną stawkę, i to właśnie nie pozwala złej serii dokończyć dzieła. Asymetria pod spodem to cały powód, by się tym przejmować — **strata 20% wymaga +25,00% na odrobienie, strata 50% wymaga +100,00%, a strata 80% wymaga +400,00%.** W drugiej połowie tych par nie ma nic symetrycznego wobec pierwszej i żadna przewaga nie jest dość duża, żeby +400,00% było planem, a nie nadzieją. Bankroll 2000 przy 2% stawia 40 na zakład, wchłania dziesięć przegranych z rzędu za 400,00 i wychodzi z tego na −20,00% — zużywszy dziesięć z 50 kolejnych przegranych, które ta stawka wytrzyma.",
+        "**Seria dziesięciu przegranych przy kursach około 2.00 jest zwyczajna, a nie pechowa**, i to liczba, która to pokazuje. Przy kursach parzystych pojedyncza sekwencja dziesięciu ma prawdopodobieństwo 0,098% — jedna na 1024 — co czyta się jak nigdy, dopóki nie policzysz, ile sekwencji zawiera sezon. Na 1000 zakładach prawdopodobieństwo spotkania co najmniej jednej serii dziesięciu lub dłuższej to **38,54%**; przy 2.10, gdzie gracz bez przewagi wygrywa 47,62% razy, wynosi **52,31%** — lepiej niż rzut monetą. Na 500 zakładach te same dwie liczby to 21,45% i 30,73%, a najdłuższa seria, jakiej należy oczekiwać w 1000 zakładach przy kursach parzystych, to około dziesięć, bo rośnie z logarytmem o podstawie dwa z liczby zakładów. Seria nie jest ogonem rozkładu, jest jego środkiem, więc **jednostka powyżej 5% to zakład o to, że nie trafisz na przypadek zwyczajny**: przy 5% te dziesięć przegranych zabiera połowę bankrolla, przy 10% zabiera całość. Kiedy przewaga jest zmierzona, a nie założona, kalkulator kryterium Kelly'ego wymierza jednostkę z samej przewagi — czytaj tę liczbę jako sufit, a tę stronę jako podłogę pod nim.",
+      ],
+      faq: [
+        {
+          q: "Jakiej wielkości jednostki używać?",
+          a: "Jeden do dwóch procent bankrolla na zakład to zwykły zakres płaskiego stawiania, a powyżej pięciu procent zwyczajna zła seria staje się zdarzeniem kończącym konto. Uczciwie wybiera się od tyłu: zdecyduj, jaką złą serię chcesz przetrzymać, przeczytaj obsunięcie, które daje ten kalkulator, i zapytaj siebie, czy po nim grałbyś dalej tak samo.",
+        },
+        {
+          q: "Dlaczego przegrane do ruiny to liczba całkowita?",
+          a: "Bo liczą zakłady, a część zakładu zakładem nie jest. Bankroll 1000 przy 3% daje jednostkę 30, czyli 33 przegrane i jedną trzecią — więc odpowiedź to 33, w dół, bo bankroll nie pokrywa już kolejnej w całości. Zaokrąglenie w górę obiecywałoby zakład, na który pieniędzy nie ma.",
+        },
+        {
+          q: "Czy dziesięć przegranych z rzędu jest naprawdę normalne?",
+          a: "Tak, i arytmetyka nie jest tu nawet bliska. Jedna sekwencja dziesięciu przegranych przy kursach parzystych to zdarzenie 0,098%, ale na 1000 zakładach sekwencji jest tyle, że prawdopodobieństwo spotkania co najmniej jednej wynosi 38,54%, a przy 2.10, gdzie gracz bez przewagi wygrywa 47,62% razy, rośnie do 52,31%. Zaplanuj to, zamiast się dziwić.",
+        },
+        {
+          q: "Ten kalkulator czy kryterium Kelly'ego?",
+          a: "Ten, gdy nie masz zmierzonej przewagi, czyli niemal zawsze: jednostka w procentach nie wymaga oszacowania prawdopodobieństwa, a jej najgorszy przypadek znasz z góry. Kalkulator kryterium Kelly'ego jest właściwym narzędziem, gdy potrafisz obronić prawdopodobieństwo, i zwykle zaleci więcej niż płaskie 2%. Traktowanie jego odpowiedzi jako sufitu, a płaskiej zasady jako podłogi trzyma oba w ryzach.",
+        },
+      ],
+    },
   },
 };
 

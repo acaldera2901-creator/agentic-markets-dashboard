@@ -638,6 +638,68 @@ const de: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Bankroll-Rechner — Einheit, Drawdown und Niederlagen bis zum Ruin | BetRedge",
+      metaDescription:
+        "Kostenloser Bankroll-Rechner: Bankroll und Einheit setzen und den Einsatz pro Wette, die Kosten einer Verlustserie, den Drawdown und die gedeckten Niederlagen sehen.",
+      h1: "Bankroll-Rechner",
+      lede:
+        "Was eine prozentuale Einheit wirklich bindet: der Einsatz pro Wette, die Kosten einer Verlustserie und wie viele Niederlagen in Folge die Bankroll übersteht.",
+      labels: {
+        inputTitle: "Bankroll und Regel",
+        bankroll: "Bankroll",
+        unitPercent: "Einheit (%)",
+        losingStreak: "Verlustserie",
+        resultTitle: "Was die Regel kostet",
+        unit: "Einsatz pro Wette",
+        streakLoss: "Kosten der Serie",
+        drawdown: "Drawdown",
+        betsToRuin: "Niederlagen bis zum Ruin",
+        hint: "Prozentwerte als Zahl eingeben: 2 bedeutet 2 % der Bankroll pro Wette. Die Verlustserie zählt Wetten, also nur ganze Zahlen — es ist die Serie, die du überstehen willst, keine Prognose.",
+        verdictSafe:
+          "Bei 5 % pro Einheit oder darunter lässt die angegebene Serie die Bankroll arbeitsfähig. Eine Serie von zehn erreicht 38,54 % der Wettenden innerhalb von 1.000 Wetten zu geraden Quoten — ein Plan, der nur hält, wenn du sie nie triffst, ist kein Plan.",
+        verdictAggressive:
+          "Über 5 % pro Einheit beendet die gewöhnliche Verlustserie das Konto: zehn Niederlagen nehmen die halbe Bankroll oder mehr, und aus der Hälfte bräuchte es +100,00 % zurück. Da eine Serie von zehn innerhalb von 1.000 Wetten 38,54 % der Wettenden trifft, ist das eine Wette darauf, sie nicht zu treffen.",
+      },
+      takeaway:
+        "Der Prozentsatz pro Einheit ist keine Vorliebe. Er ist deine Entscheidung darüber, wie lang die schlimmste Verlustserie sein darf, bevor du aus dem Spiel bist.",
+      example: {
+        title: "Eine Bankroll von 2.000 bei 2 % pro Wette",
+        rows: [
+          { label: "Bankroll", value: "2.000" },
+          { label: "Einheit", value: "2 %" },
+          { label: "Einsatz pro Wette", value: "40,00" },
+          { label: "Zehn Niederlagen in Folge", value: "400,00" },
+          { label: "Drawdown", value: "20,00 %" },
+          { label: "Niederlagen bis zum Ruin", value: "50" },
+        ],
+        note:
+          "Dieses Loch von 20,00 % verlangt +25,00 % auf den Rest, um zurück auf 2.000 zu kommen. Stell die Einheit auf 5 % und dieselben zehn Niederlagen kosten 1.000 — ein Drawdown von 50,00 %, der +100,00 % zur Erholung braucht, während die Bankroll nur noch 20 Niederlagen in Folge deckt statt 50. Drei Punkte Regel, und die überstehbare Serie ist weniger als halb so lang.",
+      },
+      explainerTitle: "Die Regel entscheidet, wie lange Pechsträhne du überstehst",
+      explainer: [
+        "**Eine Einheit ist ein Prozentsatz der Bankroll, kein Betrag**, und der Unterschied zeigt sich erst, wenn es schlecht läuft. Setze für immer fixe 40, und eine auf 1.000 gefallene Bankroll setzt 4 % statt 2 %: die Regel zieht sich genau dann zu, wenn sie sich lockern sollte. Rechne die Einheit am aktuellen Stand neu, und jede Niederlage macht den nächsten Einsatz kleiner — genau das verhindert, dass eine Verlustserie die Arbeit vollendet. Die Asymmetrie darunter ist der ganze Grund, sich zu kümmern: **20 % Verlust brauchen +25,00 % zurück, 50 % brauchen +100,00 %, 80 % brauchen +400,00 %.** In der zweiten Hälfte dieser Paare ist nichts symmetrisch zur ersten, und kein Vorteil ist groß genug, um aus +400,00 % einen Plan statt einer Hoffnung zu machen. Eine Bankroll von 2.000 bei 2 % setzt 40 pro Wette, verkraftet zehn Niederlagen in Folge für 400,00 und kommt mit −20,00 % heraus — zehn der 50 aufeinanderfolgenden Niederlagen verbraucht, die dieser Einsatz aushält.",
+        "**Eine Serie von zehn Niederlagen bei Quoten um 2.00 ist gewöhnlich, nicht Pech**, und diese Zahl zeigt es. Bei geraden Quoten hat eine einzelne Folge von zehn eine Wahrscheinlichkeit von 0,098 % — eine von 1.024 — was sich wie niemals liest, bis man zählt, wie viele Folgen eine Saison enthält. Über 1.000 Wetten ist die Chance, mindestens eine Serie von zehn oder länger zu treffen, **38,54 %**; bei 2.10, wo ein Wettender ohne Vorteil 47,62 % der Zeit gewinnt, sind es **52,31 %** — besser als ein Münzwurf. Über 500 Wetten lauten dieselben Zahlen 21,45 % und 30,73 %, und die längste zu erwartende Serie in 1.000 Wetten zu geraden Quoten liegt bei etwa zehn, weil sie mit dem Zweierlogarithmus der Wettenzahl wächst. Die Serie ist nicht der Rand der Verteilung, sondern ihre Mitte, also ist **eine Einheit über 5 % eine Wette darauf, den Normalfall nicht zu treffen**: bei 5 % nehmen diese zehn Niederlagen die halbe Bankroll, bei 10 % die ganze. Ist der Vorteil gemessen statt vermutet, bemisst der Rechner zum Kelly-Kriterium die Einheit am Vorteil selbst — lies dessen Zahl als Obergrenze und diese Seite als Boden darunter.",
+      ],
+      faq: [
+        {
+          q: "Welche Einheitsgröße soll ich nehmen?",
+          a: "Ein bis zwei Prozent der Bankroll pro Wette ist der übliche Bereich für flaches Setzen, und über fünf Prozent wird die gewöhnliche Verlustserie zum kontobeendenden Ereignis. Ehrlich wählt man rückwärts: entscheide die Serie, die du überstehen willst, lies den Drawdown, den dieser Rechner ausgibt, und frage dich, ob du danach noch genauso weiterwetten würdest.",
+        },
+        {
+          q: "Warum ist Niederlagen bis zum Ruin eine ganze Zahl?",
+          a: "Weil sie Wetten zählt, und ein Bruchteil einer Wette keine ist. Eine Bankroll von 1.000 bei 3 % ergibt eine Einheit von 30, also 33 Niederlagen und ein Drittel — die Antwort lautet daher 33, abgerundet, weil die Bankroll die nächste nicht mehr voll deckt. Aufrunden würde eine Wette versprechen, für die das Geld nicht existiert.",
+        },
+        {
+          q: "Sind zehn Niederlagen in Folge wirklich normal?",
+          a: "Ja, und die Rechnung ist nicht einmal knapp. Eine einzelne Folge von zehn Niederlagen bei geraden Quoten ist ein 0,098-%-Ereignis, doch über 1.000 Wetten gibt es so viele Folgen, dass die Chance auf mindestens eine 38,54 % beträgt — bei 2.10, wo ein Wettender ohne Vorteil 47,62 % gewinnt, 52,31 %. Plane damit, statt überrascht zu werden.",
+        },
+        {
+          q: "Dieser Rechner oder das Kelly-Kriterium?",
+          a: "Dieser, wenn du keinen gemessenen Vorteil hast, also meistens: eine prozentuale Einheit braucht keine Wahrscheinlichkeitsschätzung, und ihr schlimmster Fall ist vorher bekannt. Der Rechner zum Kelly-Kriterium ist richtig, sobald du eine Wahrscheinlichkeit verteidigen kannst, und er empfiehlt meist mehr als flache 2 %. Seine Antwort als Decke und die flache Regel als Boden zu behandeln, hält beide ehrlich.",
+        },
+      ],
+    },
   },
 };
 

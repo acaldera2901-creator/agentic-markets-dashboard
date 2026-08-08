@@ -638,6 +638,68 @@ const sv: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Kassakalkylator — enhet, drawdown och förluster till ruin | BetRedge",
+      metaDescription:
+        "Gratis kassakalkylator: ange kassa och enhet och se insatsen per spel, vad en förlustsvit kostar, drawdownen den lämnar och hur många förluster kassan täcker.",
+      h1: "Kassakalkylator",
+      lede:
+        "Vad en enhet i procent faktiskt binder: insatsen per spel, kostnaden för en förlustsvit och hur många förluster i rad kassan klarar.",
+      labels: {
+        inputTitle: "Kassa och regel",
+        bankroll: "Kassa",
+        unitPercent: "Enhet (%)",
+        losingStreak: "Förlustsvit",
+        resultTitle: "Vad regeln kostar",
+        unit: "Insats per spel",
+        streakLoss: "Svitens kostnad",
+        drawdown: "Drawdown",
+        betsToRuin: "Förluster till ruin",
+        hint: "Procent skrivs som tal: 2 betyder 2 % av kassan per spel. Förlustsviten räknar spel, så bara heltal — det är sviten du vill klara, inte en förutsägelse.",
+        verdictSafe:
+          "Vid 5 % per enhet eller lägre lämnar den svit du angav kassan fortfarande arbetsduglig. En svit på tio når 38,54 % av spelarna inom 1 000 spel vid jämna odds, så en plan som bara håller om du aldrig möter en är ingen plan.",
+        verdictAggressive:
+          "Över 5 % per enhet avslutar den vanliga förlustsviten kontot: tio förluster tar halva kassan eller mer, och från hälften krävs +100,00 % för att komma tillbaka. Eftersom en svit på tio dyker upp inom 1 000 spel för 38,54 % av spelarna är detta ett spel på att inte möta den.",
+      },
+      takeaway:
+        "Enhetsprocenten är ingen preferens. Den är ditt beslut om hur lång den värsta förlustsviten får vara innan du är ute ur spelet.",
+      example: {
+        title: "En kassa på 2 000 vid 2 % per spel",
+        rows: [
+          { label: "Kassa", value: "2 000" },
+          { label: "Enhet", value: "2 %" },
+          { label: "Insats per spel", value: "40,00" },
+          { label: "Tio förluster i rad", value: "400,00" },
+          { label: "Drawdown", value: "20,00 %" },
+          { label: "Förluster till ruin", value: "50" },
+        ],
+        note:
+          "Det hålet på 20,00 % kräver +25,00 % på det som är kvar för att nå 2 000 igen. Flytta enheten till 5 % och samma tio förluster kostar 1 000 — en drawdown på 50,00 % som behöver +100,00 % för att återhämtas, med en kassa som täcker 20 förluster i rad i stället för 50. Tre punkter på regeln, och sviten du klarar är mindre än hälften så lång.",
+      },
+      explainerTitle: "Regeln som avgör hur lång svacka du klarar",
+      explainer: [
+        "**En enhet är en procent av kassan, inte ett belopp**, och skillnaden syns bara när det går illa. Satsa fasta 40 för alltid och en kassa som fallit till 1 000 spelar 4 % i stället för 2 %: regeln dras åt precis när den borde lossna. Räkna om enheten mot aktuellt saldo och varje förlust gör nästa insats mindre, och det är det som hindrar en förlustsvit från att fullborda jobbet. Asymmetrin under är hela skälet att bry sig — **att tappa 20 % kräver +25,00 % tillbaka, att tappa 50 % kräver +100,00 % och att tappa 80 % kräver +400,00 %.** Inget i andra halvan av de paren är symmetriskt med den första, och ingen fördel är stor nog att göra +400,00 % till en plan snarare än ett hopp. En kassa på 2 000 vid 2 % satsar 40 per spel, tar tio raka förluster för 400,00 och kommer ut på −20,00 % — med tio av de 50 förluster i rad som insatsen klarar förbrukade.",
+        "**En svit på tio förluster vid odds kring 2.00 är helt vanlig, inte otur**, och detta är talet som visar det. Vid jämna odds har en enskild följd av tio en sannolikhet på 0,098 % — en på 1 024 — vilket läses som aldrig, tills du räknar hur många följder en säsong innehåller. Över 1 000 spel är chansen att möta minst en förlustsvit på tio eller längre **38,54 %**; vid 2.10, där en spelare utan fördel vinner 47,62 % av gångerna, är den **52,31 %** — bättre än en slantsingling. Över 500 spel är samma två tal 21,45 % och 30,73 %, och den längsta svit man ska vänta sig i 1 000 spel vid jämna odds är ungefär tio, eftersom den växer med tvålogaritmen av antalet spel. Sviten är inte fördelningens svans, den är dess mitt, så **en enhet över 5 % är ett spel på att inte möta det vanliga fallet**: vid 5 % tar de tio förlusterna halva kassan, vid 10 % tar de hela. När fördelen är uppmätt i stället för antagen dimensionerar kalkylatorn för Kelly-kriteriet enheten utifrån fördelen själv — läs dess tal som ett tak och den här sidan som golvet under.",
+      ],
+      faq: [
+        {
+          q: "Vilken enhetsstorlek ska jag använda?",
+          a: "En till två procent av kassan per spel är det vanliga intervallet för platt insats, och över fem procent blir den vanliga förlustsviten en händelse som stänger kontot. Det hederliga sättet att välja går baklänges: bestäm den förlustsvit du vill klara, läs drawdownen kalkylatorn ger och fråga dig om du skulle spela likadant efteråt.",
+        },
+        {
+          q: "Varför visas förluster till ruin som ett heltal?",
+          a: "För att det räknar spel, och en bråkdel av ett spel är inget spel. En kassa på 1 000 vid 3 % ger en enhet på 30, alltså 33 förluster och en tredjedel — svaret blir därför 33, avrundat nedåt, eftersom kassan inte längre täcker nästa i sin helhet. Att avrunda uppåt skulle utlova ett spel som pengarna inte finns till.",
+        },
+        {
+          q: "Är tio förluster i rad verkligen normalt?",
+          a: "Ja, och räkningen är inte ens nära. En enskild följd av tio förluster vid jämna odds är en händelse på 0,098 %, men över 1 000 spel finns så många följder att chansen att möta minst en är 38,54 %, och 52,31 % vid 2.10 där en spelare utan fördel vinner 47,62 % av gångerna. Planera för den i stället för att bli överraskad.",
+        },
+        {
+          q: "Ska jag använda den här eller Kelly-kriteriet?",
+          a: "Den här när du inte har en uppmätt fördel, vilket är för det mesta: en enhet i procent kräver ingen sannolikhetsbedömning och dess värsta fall är känt i förväg. Kalkylatorn för Kelly-kriteriet är rätt verktyg så snart du kan försvara en sannolikhet, och den rekommenderar oftast mer än platta 2 %. Att läsa dess svar som ett tak och den platta regeln som ett golv håller båda hederliga.",
+        },
+      ],
+    },
   },
 };
 

@@ -638,6 +638,68 @@ const pt: ToolsCopy = {
         },
       ],
     },
+    "bankroll-calculator": {
+      metaTitle: "Calculadora de banca — unidade, drawdown e derrotas até à ruína | BetRedge",
+      metaDescription:
+        "Calculadora de banca gratuita: define a banca e a unidade e vê o stake por aposta, o custo de uma série de derrotas, o drawdown que deixa e quantas derrotas cobre.",
+      h1: "Calculadora de banca",
+      lede:
+        "O que uma unidade em percentagem compromete de facto: o stake por aposta, o custo de uma série negativa e quantas derrotas seguidas a banca sobrevive.",
+      labels: {
+        inputTitle: "Banca e regra",
+        bankroll: "Banca",
+        unitPercent: "Unidade (%)",
+        losingStreak: "Série de derrotas",
+        resultTitle: "Quanto custa a regra",
+        unit: "Stake por aposta",
+        streakLoss: "Custo da série",
+        drawdown: "Drawdown",
+        betsToRuin: "Derrotas até à ruína",
+        hint: "As percentagens escrevem-se como números: 2 significa 2% da banca por aposta. A série de derrotas é uma contagem de apostas, por isso só números inteiros — é a série que queres sobreviver, não uma previsão.",
+        verdictSafe:
+          "A 5% por unidade ou abaixo, a série que declaraste deixa a banca ainda a funcionar. Uma série de dez chega a 38,54% dos apostadores em 1.000 apostas a odds pares, por isso um plano que só aguenta se nunca a encontrares não é um plano.",
+        verdictAggressive:
+          "Acima de 5% por unidade a série negativa comum acaba com a conta: dez derrotas levam metade da banca ou mais, e a partir da metade seria preciso +100,00% para voltar. Como uma série de dez surge em 1.000 apostas para 38,54% dos apostadores, isto é apostar em não a encontrar.",
+      },
+      takeaway:
+        "A percentagem por unidade não é uma preferência. É a tua decisão sobre quão longa pode ser a pior série de derrotas antes de estares fora do jogo.",
+      example: {
+        title: "Uma banca de 2.000 a 2% por aposta",
+        rows: [
+          { label: "Banca", value: "2.000" },
+          { label: "Unidade", value: "2%" },
+          { label: "Stake por aposta", value: "40,00" },
+          { label: "Dez derrotas seguidas", value: "400,00" },
+          { label: "Drawdown", value: "20,00%" },
+          { label: "Derrotas até à ruína", value: "50" },
+        ],
+        note:
+          "Esse buraco de 20,00% pede +25,00% sobre o que resta para voltar a 2.000. Passa a unidade para 5% e as mesmas dez derrotas custam 1.000 — um drawdown de 50,00% que exige +100,00% para recuperar, com a banca a cobrir 20 derrotas seguidas em vez de 50. Três pontos de regra, e a série que sobrevives fica em menos de metade.",
+      },
+      explainerTitle: "A regra que decide que série negativa sobrevives",
+      explainer: [
+        "**Uma unidade é uma percentagem da banca, não um valor**, e a diferença só aparece quando as coisas correm mal. Aposta 40 fixos para sempre e uma banca que caiu para 1.000 está a apostar 4% em vez de 2%: a regra aperta exatamente quando devia aliviar. Recalcula a unidade sobre o saldo atual e cada derrota torna o stake seguinte mais pequeno, e é isso que impede uma série negativa de terminar o trabalho. A assimetria por baixo é toda a razão para te importares — **perder 20% exige +25,00% para recuperar, perder 50% exige +100,00% e perder 80% exige +400,00%.** Nada na segunda metade desses pares é simétrico da primeira, e nenhuma vantagem é grande o suficiente para fazer de +400,00% um plano em vez de uma esperança. Uma banca de 2.000 a 2% aposta 40 por jogada, absorve dez derrotas seguidas por 400,00 e sai com −20,00% — tendo gasto dez das 50 derrotas consecutivas que esse stake aguenta.",
+        "**Uma série de dez derrotas em odds perto de 2.00 é comum, não é azar**, e este é o número que o mostra. Em odds pares uma única sequência de dez tem probabilidade de 0,098% — uma em 1.024 — que se lê como nunca, até contares quantas sequências uma temporada contém. Em 1.000 apostas a probabilidade de encontrar pelo menos uma série de dez ou mais é **38,54%**; a 2.10, onde quem não tem vantagem ganha 47,62% das vezes, é **52,31%** — melhor do que lançar uma moeda. Em 500 apostas os mesmos dois números são 21,45% e 30,73%, e a série mais longa a esperar em 1.000 apostas a odds pares é cerca de dez, porque cresce com o logaritmo de base dois do número de apostas. A série não é a cauda da distribuição, é o seu centro, por isso **uma unidade acima de 5% é apostar em não encontrar o caso comum**: a 5% essas dez derrotas levam metade da banca, a 10% levam-na toda. Quando a vantagem é medida e não suposta, a calculadora do critério de Kelly dimensiona a unidade a partir da própria vantagem — lê esse número como um teto e esta página como o chão por baixo.",
+      ],
+      faq: [
+        {
+          q: "Que tamanho de unidade devo usar?",
+          a: "Entre um e dois por cento da banca por aposta é o intervalo habitual do stake plano, e acima de cinco por cento a série negativa comum passa a ser um evento que fecha a conta. A forma honesta de escolher é ao contrário: decide a série que queres sobreviver, lê o drawdown que esta calculadora dá e pergunta se depois continuarias a apostar da mesma maneira.",
+        },
+        {
+          q: "Porque é que as derrotas até à ruína são um número inteiro?",
+          a: "Porque contam apostas, e uma fração de aposta não é uma aposta. Uma banca de 1.000 a 3% dá uma unidade de 30, ou seja 33 derrotas e um terço — logo a resposta é 33, arredondada para baixo, porque a banca já não cobre a seguinte por inteiro. Arredondar para cima prometeria uma aposta para a qual o dinheiro não existe.",
+        },
+        {
+          q: "Dez derrotas seguidas são mesmo normais?",
+          a: "Sim, e a aritmética não está perto. Uma única sequência de dez derrotas a odds pares é um evento de 0,098%, mas em 1.000 apostas há sequências suficientes para que a probabilidade de encontrar pelo menos uma seja 38,54%, subindo a 52,31% a 2.10, onde quem não tem vantagem ganha 47,62% das vezes. Planeia-a em vez de te surpreender.",
+        },
+        {
+          q: "Devo usar esta ou o critério de Kelly?",
+          a: "Usa esta quando não tens vantagem medida, o que é quase sempre: uma unidade em percentagem não pede estimativas de probabilidade e o seu pior caso conhece-se de antemão. A calculadora do critério de Kelly é a ferramenta certa quando consegues defender uma probabilidade, e costuma recomendar mais do que 2% planos. Tratar a resposta dela como teto e a regra plana como chão mantém as duas honestas.",
+        },
+      ],
+    },
   },
 };
 
