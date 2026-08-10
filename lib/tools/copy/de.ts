@@ -30,6 +30,11 @@ const de: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Fragen",
     invalid: "—",
+    saveCta: "Diese Rechnung speichern",
+    saveHintAnon: "Kostenloses Konto — gespeicherte Rechnungen öffnest du auf jedem Gerät wieder.",
+    saveHintUser: "In deinem Konto gespeichert — auf jedem Gerät wieder abrufbar.",
+    savedTitle: "Gespeichert",
+    saveError: "Nicht gespeichert. Bitte erneut versuchen.",
   },
 
   tools: {

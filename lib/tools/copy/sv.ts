@@ -30,6 +30,11 @@ const sv: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Frågor",
     invalid: "—",
+    saveCta: "Spara den här beräkningen",
+    saveHintAnon: "Gratiskonto — sparade beräkningar öppnar du igen på vilken enhet som helst.",
+    saveHintUser: "Sparad på ditt konto — öppna den igen på vilken enhet som helst.",
+    savedTitle: "Sparade",
+    saveError: "Inte sparad. Försök igen.",
   },
 
   tools: {

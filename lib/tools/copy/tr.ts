@@ -30,6 +30,11 @@ const tr: ToolsCopy = {
     free: "Ücretsiz",
     faqTitle: "Sorular",
     invalid: "—",
+    saveCta: "Bu hesabı kaydet",
+    saveHintAnon: "Ücretsiz hesap — kaydettiğin hesaplamaları her cihazdan yeniden açarsın.",
+    saveHintUser: "Hesabına kaydedildi — her cihazdan yeniden açabilirsin.",
+    savedTitle: "Kayıtlı",
+    saveError: "Kaydedilmedi. Tekrar dene.",
   },
 
   tools: {

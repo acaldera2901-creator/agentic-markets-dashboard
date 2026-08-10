@@ -30,6 +30,11 @@ const pl: ToolsCopy = {
     free: "Darmowe",
     faqTitle: "Pytania",
     invalid: "—",
+    saveCta: "Zapisz to obliczenie",
+    saveHintAnon: "Darmowe konto — zapisane obliczenia otworzysz na każdym urządzeniu.",
+    saveHintUser: "Zapisane na Twoim koncie — otworzysz je na każdym urządzeniu.",
+    savedTitle: "Zapisane",
+    saveError: "Nie zapisano. Spróbuj ponownie.",
   },
 
   tools: {

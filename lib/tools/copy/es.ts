@@ -30,6 +30,11 @@ const es: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Preguntas",
     invalid: "—",
+    saveCta: "Guardar este cálculo",
+    saveHintAnon: "Cuenta gratuita: tus cálculos guardados se abren desde cualquier dispositivo.",
+    saveHintUser: "Guardado en tu cuenta: lo abres de nuevo desde cualquier dispositivo.",
+    savedTitle: "Guardados",
+    saveError: "No se ha guardado. Inténtalo de nuevo.",
   },
 
   tools: {

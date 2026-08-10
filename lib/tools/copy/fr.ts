@@ -30,6 +30,11 @@ const fr: ToolsCopy = {
     free: "Gratuit",
     faqTitle: "Questions",
     invalid: "—",
+    saveCta: "Enregistrer ce calcul",
+    saveHintAnon: "Compte gratuit — vos calculs enregistrés se rouvrent depuis n'importe quel appareil.",
+    saveHintUser: "Enregistré sur votre compte — à rouvrir depuis n'importe quel appareil.",
+    savedTitle: "Enregistrés",
+    saveError: "Non enregistré. Réessayez.",
   },
 
   tools: {
