@@ -621,8 +621,8 @@ export function cancellationEmail(lang = "it"): { subject: string; html: string;
   const t = CANCELLATION[l];
   return {
     subject: t.subject,
-    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/app?tab=account`)}`, { lang: l }),
-    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/app?tab=account`,
+    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/plans`)}`, { lang: l }),
+    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/plans`,
   };
 }
 
@@ -660,7 +660,7 @@ export function winBackEmail(lang = "it"): { subject: string; html: string; text
   const t = WINBACK[l];
   return {
     subject: t.subject,
-    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/app?tab=account`)}`, { lang: l }),
-    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/app?tab=account`,
+    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/plans`)}`, { lang: l }),
+    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/plans`,
   };
 }

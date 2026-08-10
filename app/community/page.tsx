@@ -3,7 +3,7 @@
 // col Match Builder. Pagina pubblica di discovery: i match sono visibili a
 // tutti, pick e probabilità restano dietro la registrazione (stessa proiezione
 // per-sessione del board — il lock È la CTA). Ogni card riapre la schedina
-// originale via /app?mb=...&ref=CODICE, quindi il traffico da qui mantiene
+// originale via /match-builder?mb=...&ref=CODICE, quindi il traffico da qui mantiene
 // l'attribution del creator.
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
@@ -198,11 +198,11 @@ export default function CommunityPage() {
           </p>
         </div>
         {/* Plain <a> (hard nav), NOT next/link: a soft client-side nav to
-            /app?tab=match-builder lands on the default Bets tab because the tab is
+            /match-builder lands on the default Bets tab because the tab is
             resolved only in a useState initializer at mount. A full load applies
             the ?tab= deep-link correctly. */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional hard nav, see comment above */}
-        <a href="/app?tab=match-builder" className="btn-secondary shrink-0">
+        <a href="/match-builder" className="btn-secondary shrink-0">
           {t.create}
         </a>
       </header>
@@ -223,7 +223,7 @@ export default function CommunityPage() {
               )}
             </div>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so the ?tab= deep-link resolves (see header note) */}
-            <a href="/app?tab=plans" className="btn-primary shrink-0">
+            <a href="/plans" className="btn-primary shrink-0">
               {t.seePlans}
             </a>
           </div>
@@ -274,7 +274,7 @@ export default function CommunityPage() {
               <p className="text-sm font-bold" style={{ color: "var(--am-text)" }}>{t.emptyTitle}</p>
               <p className="text-xs font-mono max-w-sm mx-auto" style={{ color: "var(--am-muted)" }}>{t.emptySub}</p>
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so the ?tab= deep-link resolves (see header note) */}
-              <a href="/app?tab=match-builder" className="btn-primary">{t.create}</a>
+              <a href="/match-builder" className="btn-primary">{t.create}</a>
             </div>
           </div>
         )}
@@ -331,7 +331,7 @@ export default function CommunityPage() {
                 /* #CREATOR-GATE-0626: schedina bloccata → upsell ai Piani (hard nav). */
                 /* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so ?tab= resolves */
                 <a
-                  href="/app?tab=plans"
+                  href="/plans"
                   className="text-xs font-mono uppercase tracking-wider px-3 py-1.5 border transition-colors"
                   style={{ borderColor: "var(--am-coral-b)", color: "var(--am-coral)", background: "var(--am-coral-dim)" }}
                 >
@@ -339,7 +339,7 @@ export default function CommunityPage() {
                 </a>
               ) : (
                 <Link
-                  href={`/app?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
+                  href={`/match-builder?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 border transition-colors"
                   style={{ borderColor: "var(--am-line-2)", color: "var(--am-muted)" }}
                 >

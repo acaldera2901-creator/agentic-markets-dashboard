@@ -649,7 +649,7 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
     <>
       {/* outcome rows / gate overlay */}
       {p.locked ? (
-        <Link href="/app" className="lock-overlay wc-lock" role="button">
+        <Link href="/predictions" className="lock-overlay wc-lock" role="button">
           <span className="blurred">▒▒ HOME ▒▒▒%</span>
           <span className="blurred">▒▒ DRAW ▒▒▒%</span>
           <span className="blurred">▒▒ AWAY ▒▒▒%</span>

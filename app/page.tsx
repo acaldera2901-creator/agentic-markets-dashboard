@@ -3,7 +3,7 @@
 // ── BetRedge — Landing pubblica (#LANDING-BETREDGE-1) ────────────────────────
 // Prima pagina su "/". Ricrea l'inspo BetRedge (hero split football/tennis,
 // scie energia coral/cobalt, 4 card) interamente in CSS/SVG (nessuna foto).
-// Le CTA reindirizzano nel desk su /app (deep-link ?tab=&sport=).
+// Le CTA reindirizzano nel desk sui path per-tab (#URL-PATHS-0810: /predictions?sport=…, /plans, …).
 // Stile: dark energetico sportsbook su token --am-* + font Hanken/JetBrains.
 
 import { useEffect, useState } from "react";
@@ -689,7 +689,7 @@ export default function LandingPage() {
                pill nome+piano (che resta link all'account). Su home/route separate
                il logout fa POST /api/auth {action:"logout"} poi reload su "/". */
             <>
-              <a href="/app?tab=account" className="am-acct" title={auth.identifier}>
+              <a href="/plans" className="am-acct" title={auth.identifier}>
                 {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
               </a>
               <button type="button" className="lp-nav-link" onClick={logoutHome}>
@@ -722,15 +722,15 @@ export default function LandingPage() {
            scrolla in orizzontale DENTRO la riga, non il body. ── */}
       <nav className="v-sportnav-wrap" aria-label="Sports">
         <div className="v-sportnav">
-          <a href="/app?tab=bets&sport=all" className="v-sportbtn">
+          <a href="/predictions?sport=all" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-allsports-sm.png" alt="" aria-hidden="true" />
             {t.spAllSports}
           </a>
-          <a href="/app?tab=bets&sport=football" className="v-sportbtn">
+          <a href="/predictions?sport=football" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-football-sm.png" alt="" aria-hidden="true" />
             {t.spFootball}
           </a>
-          <a href="/app?tab=bets&sport=tennis" className="v-sportbtn">
+          <a href="/predictions?sport=tennis" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-tennis-sm.png" alt="" aria-hidden="true" />
             {t.spTennis}
           </a>
@@ -741,7 +741,7 @@ export default function LandingPage() {
             <img className="v-sportbtn-ic" src="/icons/menu-tools-sm.png" alt="" aria-hidden="true" />
             {t.spTools}
           </Link>
-          <a href="/app?tab=bets&sport=all" className="v-sportbtn v-sportbtn--live">
+          <a href="/predictions?sport=all" className="v-sportbtn v-sportbtn--live">
             <span className="dot" aria-hidden="true" />
             LIVE
           </a>
@@ -772,8 +772,8 @@ export default function LandingPage() {
           <h1>{t.waHead1}<br /><span className="g">{t.waHead2}</span></h1>
           <p className="lede">{t.waBody}</p>
           <div className="v-actions">
-            <a href="/app?tab=bets" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
-            <a href="/app?tab=history" className="v-btn v-btn--secondary">{v.ctaTrack}</a>
+            <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
+            <a href="/history" className="v-btn v-btn--secondary">{v.ctaTrack}</a>
           </div>
           <div className="v-trust">
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipLogged}</span>
@@ -885,7 +885,7 @@ export default function LandingPage() {
         <div className="v-sec-head"><div className="v-kick q">{v.suEyebrow}</div><h2>{v.suHead}</h2><p>{v.suSub}</p></div>
         <div className="v-suite">
           {v.suItems.map((it, i) => (
-            <a className="v-prow" key={it.pk} href={["/app?tab=bets", "/weekly-pick", "/app?tab=builder", "/app?tab=bets"][i]}>
+            <a className="v-prow" key={it.pk} href={["/predictions", "/weekly-pick", "/match-builder", "/predictions"][i]}>
               <div><div className="pk">{it.pk}</div><div className="pn">{it.pn}</div></div>
               <p>{it.p}</p>
               <div className="ps">{it.ps}<b>{it.psB}</b></div>
@@ -907,12 +907,12 @@ export default function LandingPage() {
           <div className="v-tier">
             <div className="name">{v.pcBase}</div><div className="price">${PUBLIC_PAID_PLANS.base.amountUsdt}<small>{v.pcMo}</small></div>
             <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <a href="/app?tab=account" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</a>
+            <a href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</a>
           </div>
           <div className="v-tier pro">
             <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${PUBLIC_PAID_PLANS.premium.amountUsdt}<small>{v.pcMo}</small></div>
             <ul>{v.pcProList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <a href="/app?tab=account" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</a>
+            <a href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</a>
           </div>
         </div>
       </div></section>
@@ -922,8 +922,8 @@ export default function LandingPage() {
         <h2>{v.fnHead1}<span className="g">{v.fnHeadG}</span></h2>
         <p>{v.fnBody}</p>
         <div className="v-actions">
-          <a href="/app?tab=bets" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
-          <a href="/app?tab=history" className="v-btn v-btn--secondary">{v.ctaBrowse}</a>
+          <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
+          <a href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</a>
         </div>
       </div></section>
 

@@ -60,8 +60,8 @@ export async function POST(req: Request) {
     ...(customerId ? { customer: customerId } : { customer_email: ctx.identifier }),
     subscription_data: { metadata: { plan, identifier: ctx.identifier } },
     metadata: { plan, identifier: ctx.identifier },
-    success_url: `${origin}/app?stripe=success`,
-    cancel_url: `${origin}/app?stripe=cancel`,
+    success_url: `${origin}/predictions?stripe=success`,
+    cancel_url: `${origin}/predictions?stripe=cancel`,
     allow_promotion_codes: false,
   });
 

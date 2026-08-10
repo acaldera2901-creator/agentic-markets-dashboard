@@ -212,7 +212,7 @@ export default function SiteTopbar({
                WC è route separata dal desk → POST /api/auth {action:"logout"} poi
                reload su "/". */
             <>
-              <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
+              <Link href="/plans" className="am-acct" title={auth.identifier}>
                 {auth.name || auth.identifier}
                 <span className="plan">{planPillLabel(auth.plan)}</span>
               </Link>

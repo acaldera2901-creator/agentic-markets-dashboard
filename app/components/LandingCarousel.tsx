@@ -54,7 +54,7 @@ type OverlayDef = {
 };
 type SlideDef = CreativeDef | OverlayDef;
 
-const ACCOUNT_HREF = "/app?tab=account";
+const ACCOUNT_HREF = "/plans";
 
 // Rotazione curata di creativi finiti di Ole (16:9, /banners/creatives/ole-*).
 // #HOME-CREATIVE-1 · #SITE-BANNERS-OLE. Selezione: solo la palette VERDE on-brand

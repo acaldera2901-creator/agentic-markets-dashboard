@@ -240,7 +240,7 @@ export function HomeAuthModal({
         setMode("login"); // register → login (gate email), come il desk
       } else if (resp.ok) {
         // Login riuscito: il cookie di sessione è settato → entra nel desk.
-        window.location.href = "/app";
+        window.location.href = "/predictions";
       } else if (resp.status === 403 && data.error === "activation_required") {
         setError(t.activationReq); setShowResend(true);
       } else if (resp.status === 401) setError(t.errWrong);

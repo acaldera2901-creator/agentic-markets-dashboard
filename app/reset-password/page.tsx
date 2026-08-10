@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
       });
       if (resp.ok) {
         setDone(true);
-        window.setTimeout(() => { window.location.href = "/app?auth=login"; }, 1800);
+        window.setTimeout(() => { window.location.href = "/predictions?auth=login"; }, 1800);
         return;
       }
       const data = await resp.json().catch(() => ({})) as { error?: string };
@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
             </button>
           </>
         )}
-        <a href="/app?auth=login" style={{ fontSize: 12, color: "var(--am-muted, #94a3b8)", textAlign: "center" }}>
+        <a href="/predictions?auth=login" style={{ fontSize: 12, color: "var(--am-muted, #94a3b8)", textAlign: "center" }}>
           {it ? "Torna all'accesso" : "Back to login"}
         </a>
       </form>

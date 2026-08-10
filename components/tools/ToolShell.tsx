@@ -98,7 +98,7 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
             <h2>{copy.common.ctaTitle}</h2>
             <p>{copy.common.ctaBody}</p>
           </div>
-          <Link href="/app" className="tl-cta-btn">
+          <Link href="/predictions" className="tl-cta-btn">
             {copy.common.ctaButton}
           </Link>
         </aside>

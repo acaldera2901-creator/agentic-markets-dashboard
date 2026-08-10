@@ -141,7 +141,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "Commence gratuitement", headline: "L'edge sur chaque", accent: "sport", sub: "Crée un compte et teste le modèle — football, tennis et plus." },
       ru: { eyebrow: "Начни бесплатно", headline: "Эдж в каждом", accent: "виде спорта", sub: "Создай аккаунт и попробуй модель — футбол, теннис и не только." },
     },
-    cta: { href: "/app?tab=account", it: "Crea account gratis →", en: "Create free account →", es: "Crear cuenta gratis →", fr: "Créer un compte gratuit →", ru: "Создать бесплатный аккаунт →" },
+    cta: { href: "/plans", it: "Crea account gratis →", en: "Create free account →", es: "Crear cuenta gratis →", fr: "Créer un compte gratuit →", ru: "Создать бесплатный аккаунт →" },
     image: { src: "/banners/football-ball.jpg", overlay: "l" },
   },
   {
@@ -157,7 +157,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "Débloque l'edge sur chaque", accent: "sport", sub: "Probabilités calibrées · football, tennis et plus · historique vérifié." },
       ru: { eyebrow: "BetRedge Pro", headline: "Открой эдж в каждом", accent: "виде спорта", sub: "Калиброванные вероятности · футбол, теннис и не только · проверенная история." },
     },
-    cta: { href: "/app?tab=account&plans=1", it: "Passa a Pro →", en: "Go Pro →", es: "Pasar a Pro →", fr: "Passer à Pro →", ru: "Перейти на Pro →" },
+    cta: { href: "/plans", it: "Passa a Pro →", en: "Go Pro →", es: "Pasar a Pro →", fr: "Passer à Pro →", ru: "Перейти на Pro →" },
     image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
   {
@@ -190,7 +190,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "Ajoute les agents", accent: "automatiques", sub: "Exécution en direct, stake sizing et stop loss. Passe à Pro." },
       ru: { eyebrow: "BetRedge Pro", headline: "Добавь автоматических", accent: "агентов", sub: "Исполнение в реальном времени, расчёт ставки и стоп-лосс. Перейди на Pro." },
     },
-    cta: { href: "/app?tab=account&plans=1", it: "Sali a Pro →", en: "Upgrade to Pro →", es: "Subir a Pro →", fr: "Passer à Pro →", ru: "Повысить до Pro →" },
+    cta: { href: "/plans", it: "Sali a Pro →", en: "Upgrade to Pro →", es: "Subir a Pro →", fr: "Passer à Pro →", ru: "Повысить до Pro →" },
     image: { src: "/banners/football-pitch.jpg", overlay: "l" },
   },
 
@@ -226,7 +226,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "L'edge sur chaque", accent: "match", sub: "Probabilités calibrées sur football, tennis et Coupe du Monde. Avant le marché." },
       ru: { eyebrow: "BetRedge Pro", headline: "Эдж в каждом", accent: "матче", sub: "Калиброванные вероятности по футболу, теннису и ЧМ. Раньше рынка." },
     },
-    cta: { href: "/app?tab=account", it: "Esplora le pick →", en: "Explore the picks →", es: "Explorar las picks →", fr: "Explorer les picks →", ru: "Смотреть пики →" },
+    cta: { href: "/plans", it: "Esplora le pick →", en: "Explore the picks →", es: "Explorar las picks →", fr: "Explorer les picks →", ru: "Смотреть пики →" },
     image: { src: "/banners/football-action.jpg", overlay: "b" },
   },
   {
@@ -281,7 +281,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "Le tennis lu par le modèle, tournoi par tournoi", sub: "Probabilités calibrées sur chaque surface. Historique complet." },
       ru: { eyebrow: "BetRedge Pro", headline: "Теннис прочитан моделью, турнир за турниром", sub: "Калиброванные вероятности на каждом покрытии. Полная история." },
     },
-    cta: { href: "/app?tab=account", it: "Esplora il tennis →", en: "Explore tennis →", es: "Explorar el tenis →", fr: "Explorer le tennis →", ru: "Смотреть теннис →" },
+    cta: { href: "/plans", it: "Esplora il tennis →", en: "Explore tennis →", es: "Explorar el tenis →", fr: "Explorer le tennis →", ru: "Смотреть теннис →" },
   },
 
   // ── DESK BOTTOM (billboard) ─────────────────────────────────────────────
@@ -298,7 +298,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "Football · Tennis · Coupe du Monde", headline: "Un modèle. Tous les sports.", accent: "Gratuit.", sub: "Probabilités calibrées avec edge. Crée un compte et teste, sans carte." },
       ru: { eyebrow: "Футбол · Теннис · ЧМ", headline: "Одна модель. Все виды спорта.", accent: "Бесплатно.", sub: "Калиброванные вероятности с эджем. Создай аккаунт и попробуй, без карты." },
     },
-    cta: { href: "/app?tab=account", it: "Inizia gratis →", en: "Start free →", es: "Empieza gratis →", fr: "Commence gratuitement →", ru: "Начать бесплатно →" },
+    cta: { href: "/plans", it: "Inizia gratis →", en: "Start free →", es: "Empieza gratis →", fr: "Commence gratuitement →", ru: "Начать бесплатно →" },
     image: { src: "/banners/football-pitch.jpg", overlay: "l" },
   },
   {
@@ -314,7 +314,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "Football · Tennis · Coupe du Monde", headline: "Un modèle qui trouve l'edge sur", accent: "chaque sport", sub: "Probabilités calibrées, avant le marché. Teste-le gratuitement." },
       ru: { eyebrow: "Футбол · Теннис · ЧМ", headline: "Модель, которая находит эдж в", accent: "каждом спорте", sub: "Калиброванные вероятности, раньше рынка. Попробуй бесплатно." },
     },
-    cta: { href: "/app?tab=account&plans=1", it: "Passa a Pro →", en: "Go Pro →", es: "Pasar a Pro →", fr: "Passer à Pro →", ru: "Перейти на Pro →" },
+    cta: { href: "/plans", it: "Passa a Pro →", en: "Go Pro →", es: "Pasar a Pro →", fr: "Passer à Pro →", ru: "Перейти на Pro →" },
     image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
   {
@@ -347,7 +347,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "Du signal à l'", accent: "exécution", sub: "Avec Pro les agents misent pour toi : stake sizing, stop loss, portfolio en direct." },
       ru: { eyebrow: "BetRedge Pro", headline: "От сигнала к", accent: "исполнению", sub: "С Pro агенты ставят за тебя: расчёт ставки, стоп-лосс, портфель в реальном времени." },
     },
-    cta: { href: "/app?tab=account&plans=1", it: "Sali a Pro →", en: "Upgrade to Pro →", es: "Subir a Pro →", fr: "Passer à Pro →", ru: "Повысить до Pro →" },
+    cta: { href: "/plans", it: "Sali a Pro →", en: "Upgrade to Pro →", es: "Subir a Pro →", fr: "Passer à Pro →", ru: "Повысить до Pro →" },
     image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
   },
 
@@ -383,7 +383,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "Football. Tennis. Coupe du Monde.", accent: "Un edge.", sub: "Probabilités calibrées sur chaque discipline." },
       ru: { eyebrow: "BetRedge Pro", headline: "Футбол. Теннис. ЧМ.", accent: "Один эдж.", sub: "Калиброванные вероятности в каждой дисциплине." },
     },
-    cta: { href: "/app?tab=account&plans=1", it: "Sblocca le pick →", en: "Unlock picks →", es: "Desbloquear picks →", fr: "Débloquer les picks →", ru: "Открыть пики →" },
+    cta: { href: "/plans", it: "Sblocca le pick →", en: "Unlock picks →", es: "Desbloquear picks →", fr: "Débloquer les picks →", ru: "Открыть пики →" },
   },
   {
     id: "rail-tools",
@@ -415,7 +415,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "BetRedge Pro", headline: "Le tennis aussi,", accent: "sans flou", sub: "Probabilités calibrées sur chaque tournoi. Historique complet." },
       ru: { eyebrow: "BetRedge Pro", headline: "Теннис тоже,", accent: "без размытия", sub: "Калиброванные вероятности по каждому турниру. Полная история." },
     },
-    cta: { href: "/app?tab=account&plans=1", it: "Sblocca tutto →", en: "Unlock all →", es: "Desbloquear todo →", fr: "Tout débloquer →", ru: "Открыть всё →" },
+    cta: { href: "/plans", it: "Sblocca tutto →", en: "Unlock all →", es: "Desbloquear todo →", fr: "Tout débloquer →", ru: "Открыть всё →" },
   },
   {
     id: "feed-tennis-creators",
@@ -447,7 +447,7 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       fr: { eyebrow: "Football · Tennis · Coupe du Monde", headline: "Un modèle.", accent: "Tous les sports.", sub: "Probabilités calibrées avec edge sur chaque discipline. Pas d'avis de comptoir." },
       ru: { eyebrow: "Футбол · Теннис · ЧМ", headline: "Одна модель.", accent: "Все виды спорта.", sub: "Калиброванные вероятности с эджем в каждой дисциплине. Без разговоров за барной стойкой." },
     },
-    cta: { href: "/app?tab=account", it: "Inizia gratis →", en: "Start free →", es: "Empieza gratis →", fr: "Commence gratuitement →", ru: "Начать бесплатно →" },
+    cta: { href: "/plans", it: "Inizia gratis →", en: "Start free →", es: "Empieza gratis →", fr: "Commence gratuitement →", ru: "Начать бесплатно →" },
     image: { src: "/banners/football-pitch.jpg", overlay: "l" },
   },
 ];

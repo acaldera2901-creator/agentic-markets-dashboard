@@ -63,7 +63,7 @@ const WEEKLY_PICK_CTA: L10n = {
 };
 
 // `cta` è OPZIONALE: senza, il touchpoint si comporta esattamente come prima
-// (bottone "Apri BetRedge" → /app?tab=plans). Serve perché un'email che parla
+// (bottone "Apri BetRedge" → /plans). Serve perché un'email che parla
 // della Weekly Pick non può mandare alla pagina dei piani: il prodotto si compra
 // dalla sua pagina, e chiedere all'utente di ritrovarsela da solo è il modo più
 // semplice di perdere l'acquisto.
@@ -309,7 +309,7 @@ export function renderCrm(
   // che permette di attribuire una conversione all'email che l'ha generata, e
   // perderlo sul percorso nuovo renderebbe la Weekly Pick l'unica cosa non
   // misurabile del CRM.
-  const path = t.cta?.path ?? "/app?tab=plans";
+  const path = t.cta?.path ?? "/plans";
   const sep = path.includes("?") ? "&" : "?";
   const href = `${SITE}${path}${sep}crm=${encodeURIComponent(t.key)}`;
   const label = t.cta?.label[lang] ?? OPEN_LABEL[lang];

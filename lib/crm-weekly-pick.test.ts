@@ -123,7 +123,8 @@ describe("Weekly Pick nel CRM — destinazione del bottone", () => {
         launchDeadline: "2026-09-05T23:59:00Z",
       });
       expect(r, t.key).toBeTruthy();
-      expect(r!.html, t.key).toMatch(/\/app\?tab=plans&crm=/);
+      // #URL-PATHS-0810: la destinazione default del CRM è il path nuovo /plans.
+      expect(r!.html, t.key).toMatch(/\/plans\?crm=/);
       expect(r!.html.includes("Apri BetRedge"), `${t.key}: label generica persa`).toBe(true);
     }
   });
