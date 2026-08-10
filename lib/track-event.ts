@@ -52,4 +52,12 @@ export function trackEvent(
     // beacon resta identica a prima del fix.
     body: JSON.stringify({ event_type, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...extra }),
   }).catch(() => { /* ignore */ });
+  // #PIXELS-TRACKING-0810: stesso evento anche al dataLayer GTM per le conversioni
+  // ads. Il dataLayer esiste solo se TrackingScripts ha iniettato GTM (= consenso
+  // dato E NEXT_PUBLIC_GTM_ID settato): senza consenso non esiste → nessun push.
+  if (consented) {
+    try {
+      (window as Window & { dataLayer?: unknown[] }).dataLayer?.push({ event: event_type, ...extra });
+    } catch { /* ignore */ }
+  }
 }

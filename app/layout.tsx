@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
+import { TrackingScripts } from "@/components/TrackingScripts";
 import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
@@ -108,6 +109,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             /app): senza banner sulla landing nessuno accettava, e tutto ciò che è
             gated sul consenso — attribuzione compresa — non si attivava mai lì. */}
         <CookieBanner />
+        {/* #PIXELS-TRACKING-0810: GTM consent-gated, renderizza null (nessuna UI).
+            Dopo CookieBanner di proposito: il banner è la SORGENTE del consenso,
+            questo ne è il consumatore. Funzionalmente reagiscono entrambi alla
+            stessa chiave, ma leggerli in quest'ordine dice qual è la dipendenza. */}
+        <TrackingScripts />
         {children}
       </body>
     </html>
