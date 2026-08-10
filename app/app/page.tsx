@@ -15,6 +15,8 @@ import {
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { readRefCode, writeRefCode } from "@/lib/referral-code";
+// #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
+import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
@@ -3275,7 +3277,7 @@ function CheckoutModal({
             });
             const d = (await r.json()) as { ok?: boolean; granted?: boolean };
             markPayPending();
-            window.location.assign(d.granted ? "/app?paypal=success" : "/app?paypal=pending");
+            window.location.assign(d.granted ? "/predictions?paypal=success" : "/predictions?paypal=pending");
           },
         }).render("#paypal-button-container");
       })
@@ -3385,7 +3387,7 @@ function CheckoutModal({
           const capData = (await capRes.json()) as { ok?: boolean; granted?: boolean };
           session.completePayment(capData.granted ? AppleSession.STATUS_SUCCESS : AppleSession.STATUS_FAILURE);
           markPayPending();
-          window.location.assign(capData.granted ? "/app?paypal=success" : "/app?paypal=pending");
+          window.location.assign(capData.granted ? "/predictions?paypal=success" : "/predictions?paypal=pending");
         } catch (err) {
           console.error("[applepay] confirmOrder/capture:", err);
           session.completePayment(AppleSession.STATUS_FAILURE);
@@ -3657,7 +3659,7 @@ function CheckoutModal({
                     {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {price.toFixed(2)} USD
                   </button>
                 ) : (
-                  <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/app?crypto=paid")} />
+                  <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/predictions?crypto=paid")} />
                 )}
                 <p style={{ fontSize: 11, opacity: 0.7, margin: "6px 0 0" }}>
                   {pick5(lang, {
@@ -6084,7 +6086,7 @@ const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled
 // ─── Match Builder Tab (#MB-1, influencer tool) ──────────────────────────────
 //
 // L'influencer (loggato) seleziona 2–5 predizioni, vede il moltiplicatore
-// combinato e genera un link /app?mb=id1,id2&ref=CODICE. Il visitatore che apre
+// combinato e genera un link /match-builder?mb=id1,id2&ref=CODICE. Il visitatore che apre
 // il link trova la schedina precaricata: i pick/quote restano gated per gli
 // anonimi (projection server-side), quindi il link è esso stesso il funnel.
 // Onestà quote: le selezioni senza mercato reale usano le FAIR ODDS del
@@ -6326,7 +6328,7 @@ function MatchBuilderTab({
     const params = new URLSearchParams({ mb: selected.join(",") });
     const code = influencerCode.trim().toUpperCase();
     if (/^[A-Z0-9_-]{2,20}$/.test(code)) params.set("ref", code);
-    return `${base}/app?${params.toString()}`;
+    return `${base}/match-builder?${params.toString()}`;
   })();
 
   const [publishState, setPublishState] = useState<"idle" | "published">("idle");
@@ -8248,39 +8250,50 @@ function CookieBanner() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "leaderboard", "match-builder", "invita"];
-
-// #UI-ACCOUNT-DROPDOWN-0623: la vecchia tab "account" è ora il dropdown; i deep-link
-// legacy (?tab=account, banner ?tab=account&plans=1) atterrano sulla tab Plans.
+// #URL-PATHS-0810: le tab valide, gli alias legacy (?tab=account→plans di
+// #UI-ACCOUNT-DROPDOWN-0623, ?tab=builder→match-builder) e i path per-tab vivono
+// in lib/app-tab-paths, condivisi col middleware che redirige i /app?tab= legacy.
 // #PARTNER-REMOVE-0626: la tab Partner è stata rimossa; i deep-link legacy
 // ?tab=partner(s) ricadono sul board (default), nessun alias.
-const TAB_ALIASES: Record<string, Tab> = { account: "plans" };
 
 export default function Dashboard() {
-  // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
-  // hub's Place Bet button) land directly on a tab. Whitelisted values only.
+  // #URL-PATHS-0810: la tab si risolve dal pathname (/predictions, /history, …);
+  // il ?tab= resta come fallback per link legacy non ancora passati dal middleware.
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window === "undefined") return "bets";
-    const raw = new URLSearchParams(window.location.search).get("tab");
-    const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
-    return requested && VALID_TABS.includes(requested) ? requested : "bets";
+    const fromPath = PATH_TO_TAB[window.location.pathname];
+    if (fromPath) return fromPath;
+    return normalizeTab(new URLSearchParams(window.location.search).get("tab")) ?? "bets";
   });
-  // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a /app?tab=… ma `tab` viene
-  // letto dall'URL solo al mount: un <Link> alla STESSA route (siamo già su /app)
-  // non lo risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
-  // same-page e cambiamo tab in place (come la nav laterale, setTab). Gli href
-  // cross-route (/world-cup, /community) tornano false → naviga il <Link>.
+  // #URL-PATHS-0810: la barra URL segue la tab attiva. replaceState (non push):
+  // il cambio tab non creava una entry di history prima e non deve iniziare ora.
+  // Gli altri query param restano intatti (?sport/?ref/?crm… hanno i loro effect).
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      // Solo sulle pagine del desk: se siamo altrove (es. render annidato futuro)
+      // la barra URL non va toccata.
+      if (!PATH_TO_TAB[url.pathname] && url.pathname !== "/app") return;
+      if (PATH_TO_TAB[url.pathname] === tab && !url.searchParams.has("tab")) return;
+      url.pathname = TAB_PATHS[tab];
+      url.searchParams.delete("tab");
+      window.history.replaceState(null, "", url);
+    } catch { /* URL non disponibile: no-op */ }
+  }, [tab]);
+  // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a una pagina del desk ma
+  // `tab` viene letto dall'URL solo al mount: un <Link> alla STESSA route non lo
+  // risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
+  // del desk (path nuovi e /app?tab= legacy) e cambiamo tab in place (come la
+  // nav laterale). Gli href cross-route (/world-cup, /community) tornano false
+  // → naviga il <Link>.
   const handleBannerCta = (href: string): boolean => {
     try {
       const url = new URL(href, window.location.origin);
-      if (url.pathname === "/app") {
-        const raw = url.searchParams.get("tab");
-        const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
-        if (requested && VALID_TABS.includes(requested)) {
-          // Deep-link legacy /app?tab=account(&plans=1) → l'alias mappa account→plans.
-          setTab(requested);
-          return true;
-        }
+      const requested = PATH_TO_TAB[url.pathname]
+        ?? (url.pathname === "/app" ? normalizeTab(url.searchParams.get("tab")) ?? "bets" : null);
+      if (requested) {
+        setTab(requested);
+        return true;
       }
     } catch { /* href non parsabile: lascia fare al <Link> */ }
     return false;

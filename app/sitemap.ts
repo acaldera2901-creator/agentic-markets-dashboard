@@ -11,7 +11,12 @@ type Entry = { path: string; changeFrequency: "daily" | "weekly" | "monthly"; pr
 
 const PUBLIC_ROUTES: Entry[] = [
   { path: "/", changeFrequency: "daily", priority: 1 },
-  { path: "/app", changeFrequency: "daily", priority: 0.9 },
+  // #URL-PATHS-0810: /app è diventato un redirect permanente → in sitemap vanno
+  // i path veri del desk. Plans/history sono pagine di prodotto indicizzabili;
+  // leaderboard/match-builder/invite restano fuori (contenuto dietro login).
+  { path: "/predictions", changeFrequency: "daily", priority: 0.9 },
+  { path: "/plans", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/history", changeFrequency: "daily", priority: 0.7 },
   { path: "/weekly-pick", changeFrequency: "daily", priority: 0.8 },
   { path: "/community", changeFrequency: "daily", priority: 0.6 },
   { path: "/partners", changeFrequency: "monthly", priority: 0.5 },

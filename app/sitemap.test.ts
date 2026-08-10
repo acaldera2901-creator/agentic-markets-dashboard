@@ -30,9 +30,11 @@ describe("sitemap", () => {
   });
 
   it("tiene le rotte pubbliche che c'erano già", () => {
-    for (const path of ["", "/app", "/weekly-pick", "/community", "/partners", "/terms", "/privacy"]) {
+    // #URL-PATHS-0810: /app è un redirect permanente, al suo posto i path del desk.
+    for (const path of ["", "/predictions", "/plans", "/history", "/weekly-pick", "/community", "/partners", "/terms", "/privacy"]) {
       expect(urls).toContain(path === "" ? BASE : `${BASE}${path}`);
     }
+    expect(urls).not.toContain(`${BASE}/app`);
   });
 
   it("declassa /world-cup: il torneo è finito, la pagina resta come archivio", () => {
