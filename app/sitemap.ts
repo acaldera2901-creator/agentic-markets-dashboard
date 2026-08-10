@@ -17,6 +17,9 @@ const PUBLIC_ROUTES: Entry[] = [
   { path: "/predictions", changeFrequency: "daily", priority: 0.9 },
   { path: "/plans", changeFrequency: "weekly", priority: 0.8 },
   { path: "/history", changeFrequency: "daily", priority: 0.7 },
+  // #SEO-PACK-0810: pillar UK (brief 06) — contenuto statico, weekly.
+  { path: "/ai-tennis-predictions", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/ai-football-predictions", changeFrequency: "weekly", priority: 0.8 },
   { path: "/weekly-pick", changeFrequency: "daily", priority: 0.8 },
   { path: "/community", changeFrequency: "daily", priority: 0.6 },
   { path: "/partners", changeFrequency: "monthly", priority: 0.5 },

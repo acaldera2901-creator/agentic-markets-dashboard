@@ -9287,7 +9287,8 @@ export default function Dashboard() {
           </nav>
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
-              <h2>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h2>
+              {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading */}
+              <h1>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
               <p className="am-sub">
                 {tab === "plans" ? (
                   uiLanguage === "it"

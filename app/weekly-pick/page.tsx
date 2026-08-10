@@ -252,7 +252,9 @@ export default function WeeklyPickPage() {
   const [data, setData] = useState<Data | null>(null);
   const [hist, setHist] = useState<Hist | null>(null);
   const [error, setError] = useState(false);
-  const [lang, setLang] = useState<Lang>("it");
+  // #SEO-PACK-0810: default SSR = "en" — prima era "it" e i crawler vedevano
+  // l'h1 italiano sotto lang="en" (finding Tommy). localStorage switcha al mount.
+  const [lang, setLang] = useState<Lang>("en");
   const [buying, setBuying] = useState<"card" | "crypto" | null>(null);
   const [cryptoOpen, setCryptoOpen] = useState(false);
   const [checkoutErr, setCheckoutErr] = useState(false);

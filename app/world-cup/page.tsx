@@ -22,7 +22,8 @@ import { dbQuery } from "@/lib/db";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "World Cup 2026 — Groups, Calendar, Squads & AI Predictions | BetRedge",
+  title: "World Cup 2026: Groups, Calendar and AI Predictions | BetRedge",
+  alternates: { canonical: "/world-cup" },
   description:
     "FIFA World Cup 2026 hub: all 12 groups, the full 104-match calendar with venues, official squad reveals for the 48 teams, and the AI prediction board with a transparent hit-rate track record.",
 };

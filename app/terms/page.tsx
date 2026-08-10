@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — BetRedge",
-  description: "Terms of Service for BetRedge — accounts, plans, payments, and acceptable use",
+  title: "Terms of Service | BetRedge",
+  description: "Terms of Service for BetRedge: accounts, plans, payments, and acceptable use.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

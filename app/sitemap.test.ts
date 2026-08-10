@@ -31,7 +31,7 @@ describe("sitemap", () => {
 
   it("tiene le rotte pubbliche che c'erano già", () => {
     // #URL-PATHS-0810: /app è un redirect permanente, al suo posto i path del desk.
-    for (const path of ["", "/predictions", "/plans", "/history", "/weekly-pick", "/community", "/partners", "/terms", "/privacy"]) {
+    for (const path of ["", "/predictions", "/plans", "/history", "/ai-tennis-predictions", "/ai-football-predictions", "/weekly-pick", "/community", "/partners", "/terms", "/privacy"]) {
       expect(urls).toContain(path === "" ? BASE : `${BASE}${path}`);
     }
     expect(urls).not.toContain(`${BASE}/app`);

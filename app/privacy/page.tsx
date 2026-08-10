@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — BetRedge",
-  description: "Privacy Policy and GDPR information for BetRedge",
+  title: "Privacy Policy | BetRedge",
+  description: "Privacy Policy and GDPR information for BetRedge.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

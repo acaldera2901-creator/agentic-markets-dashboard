@@ -586,6 +586,9 @@ button:disabled {
   background: rgba(255,255,255,0.03);
 }
 
+/* #SEO-PACK-0810: il titolo del desk è ora un h1 (heading mancante sulla pagina
+   prodotto); h2 tenuto nel selettore per compatibilità con eventuali altri usi. */
+.book-main-head h1,
 .book-main-head h2 {
   margin: 2px 0 0;
   color: var(--text);
