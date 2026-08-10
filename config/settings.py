@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     MATCHBOOK_PASSWORD: str = ""
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_CHAT_ID: str = ""
+    # Canale FREE (#TG-FREE-0810): la cima dell'imbuto, dove atterra il pubblico
+    # ampio. Vuoto = il canale non esiste ancora e gli invii free sono no-op,
+    # quindi il codice si deploya prima del canale senza errori.
+    TELEGRAM_CHAT_ID_FREE: str = ""
 
     FOOTBALL_DATA_ORG_API_KEY: str = ""
     BALLDONTLIE_API_KEY: str = ""
