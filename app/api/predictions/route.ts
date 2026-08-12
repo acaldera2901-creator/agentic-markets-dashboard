@@ -22,6 +22,7 @@ import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
+import { favouritePick } from "@/lib/pick-selection";
 import {
   SUMMER_LEAGUES,
   isSummerLeague,
@@ -501,15 +502,20 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       const poolCoherent = modelPoolIsCoherent(code);
       const canClaimEdge = probs.reliable && poolCoherent;
 
+      // #PICK-FAVOURITE-0812: the selection is the blend FAVOURITE — the same
+      // outcome the surfacing gate measures and settlement grades — not the
+      // max-edge outcome (on blended probs the edge sign is model noise and
+      // lands on longshots; see lib/pick-selection.ts for the live measurement).
+      // edge is the favourite's own edge vs its de-vigged price (can be < 0).
       let edge: number | null = null;
       let bestSel: string | null = null;
       if (odds && canClaimEdge) {
-        const eH = probs.pHome - 1 / odds.oddsHome;
-        const eD = probs.pDraw - 1 / odds.oddsDraw;
-        const eA = probs.pAway - 1 / odds.oddsAway;
-        edge = Math.max(eH, eD, eA);
-        bestSel = edge === eH ? "HOME" : edge === eD ? "DRAW" : "AWAY";
-        edge = Math.round(edge * 10_000) / 10_000;
+        const fav = favouritePick(
+          probs.pHome, probs.pDraw, probs.pAway,
+          odds.oddsHome, odds.oddsDraw, odds.oddsAway
+        );
+        bestSel = fav.selection;
+        edge = fav.edge;
       }
 
       // ── Build enrichment payload ─────────────────────────────────────────
