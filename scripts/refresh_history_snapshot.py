@@ -73,6 +73,21 @@ NEW_LEAGUES: dict[str, tuple[str, str | None]] = {
     "DNK": ("DNK", "den.1"),
     "POL": ("POL", None),  # ESPN non ha l'Ekstraklasa: si tengono i nomi CSV
     "SWZ": ("SWZ", "sui.1"),
+    # #COVERAGE-0812-L1 — leghe fuori Europa nel formato "new leagues". Sonda del
+    # 12/08/2026 su file e slug: ARG 6.296 righe/arg.1 30 squadre, BRA 5.536/bra.1
+    # 20, MEX 4.683/mex.1 18, USA 6.086/usa.1 30, JPN 4.524/jpn.1 20.
+    # Corea e Cile SCARTATE: il loro file esiste ma è vuoto (7 righe, sola
+    # intestazione) — coprirle richiede una fonte a pagamento.
+    "ARG": ("ARG", "arg.1"),
+    "BRA": ("BRA", "bra.1"),
+    "MEX": ("MEX", "mex.1"),
+    "MLS": ("USA", "usa.1"),
+    # JPN (J.League) SCARTATA il 12/08/2026: il file football-data.co.uk ha ZERO
+    # righe 2026 e si ferma alla stagione 2025 (chiusa a dicembre). Il campionato
+    # e' ad anno solare e ora e' a due terzi, quindi serviremmo un modello che
+    # ignora due terzi della stagione in corso. Diverso da Championship/League One,
+    # che hanno la stagione PRECEDENTE COMPLETA e sono appena ripartiti.
+    # Rientra quando la fonte pubblica il 2026.
 }
 
 # Formato PRINCIPALE mmz4281 (HomeTeam/AwayTeam/FTHG/FTAG) via core/football_data_uk.
@@ -80,6 +95,21 @@ NEW_LEAGUES: dict[str, tuple[str, str | None]] = {
 MMZ_LEAGUES: dict[str, tuple[str, str]] = {
     "SB": ("I2", "ita.2"),
     "BEL": ("B1", "bel.1"),
+    # #COVERAGE-0812-L1 — le undici divisioni europee del formato principale.
+    # Tutte sondate il 12/08/2026: CSV stagione 2025/26 presente (200 + righe) e
+    # slug ESPN con rosa completa. Le quote di chiusura Pinnacle ci sono, quindi
+    # lo storico è della stessa qualità di quello di Serie B e Belgio.
+    "EFLC": ("E1", "eng.2"),   # Championship — il volume di scommesse più alto del lotto
+    "EL1": ("E2", "eng.3"),    # League One
+    "EL2": ("E3", "eng.4"),    # League Two
+    "SCO": ("SC0", "sco.1"),   # Scottish Premiership
+    "BL2": ("D2", "ger.2"),    # 2. Bundesliga — vedi nota sul floor in surfacing-gate
+    "FL2": ("F2", "fra.2"),    # Ligue 2
+    "PD2": ("SP2", "esp.2"),   # Segunda División
+    "NED": ("N1", "ned.1"),    # Eredivisie
+    "POR": ("P1", "por.1"),    # Primeira Liga
+    "TUR": ("T1", "tur.1"),    # Süper Lig
+    "GRE": ("G1", "gre.1"),    # Super League Greece
 }
 
 # Alias manuali dove il fuzzy non può arrivare (ø/ł non decomponibili da NFKD, o
@@ -145,7 +175,9 @@ def make_mapper(code: str, slug: str | None, prev_names: set[str]):
     # nei generatori precedenti. Il match con le fixture lo fa matchModelTeam a
     # serve-time, coi suoi vincoli fail-closed.
     if not slug:
-        return (lambda name: (name, True)), "nomi sorgente (nessuno slug ESPN)"
+        # tier 0: in questa modalità il nome sorgente È il nome canonico, quindi
+        # non deve mai perdere un pareggio in resolve_names.
+        return (lambda name: (name, True, 0)), "nomi sorgente (nessuno slug ESPN)"
 
     names: list[str] = []
     try:
@@ -164,32 +196,83 @@ def make_mapper(code: str, slug: str | None, prev_names: set[str]):
     if strict:
         if not prev_names:
             print(f"     ! {code}: ESPN vuoto e nessuno snapshot precedente → nomi sorgente")
-            return (lambda name: (name, True)), "nomi sorgente (fallback)"
+            return (lambda name: (name, True, 0)), "nomi sorgente (fallback)"
         print(f"     ! {code}: ESPN {slug} ha reso {len(names)} squadre (<{ESPN_MIN_TEAMS}) → "
               f"modo degradato: solo match esatti sui {len(prev_names)} nomi dello snapshot precedente")
         names = sorted(prev_names)
         origin = "snapshot precedente (match esatti)"
     espn_norm = {norm(n): n for n in names}
 
-    def mapper(name: str) -> tuple[str, bool]:
+    # tier: 0 = match normalizzato esatto, 1 = contenimento, 2 = fuzzy, 3 = nessuno.
+    # Serve a resolve_names per decidere CHI vince quando due nomi sorgente
+    # puntano allo stesso nome ESPN: l'evidenza più forte, mai l'ordine di arrivo.
+    def mapper(name: str) -> tuple[str, bool, int]:
         n = norm(name)
         if n in espn_norm:
-            return espn_norm[n], True
+            return espn_norm[n], True, 0
         if strict:
-            return name, False
+            return name, False, 3
         for en, orig in espn_norm.items():
             if n and (n in en or en in n):
-                return orig, True
+                return orig, True, 1
         best, score = None, 0.0
         for en, orig in espn_norm.items():
             r = SequenceMatcher(None, n, en).ratio()
             if r > score:
                 best, score = orig, r
         if best and score >= FUZZY_MIN:
-            return best, True
-        return name, False
+            return best, True, 2
+        return name, False, 3
 
     return mapper, origin
+
+
+def resolve_names(sources: set[str], mapper) -> tuple[dict[str, str], dict[str, list[str]]]:
+    """Nome sorgente -> nome finale, con INIETTIVITÀ garantita.
+
+    PERCHÉ (#COVERAGE-0812-L1). Il mapper decide un nome alla volta e non sa cosa
+    hanno scelto gli altri, quindi due club diversi possono finire sullo stesso
+    nome ESPN — e allora i risultati di uno entrano nella storia dell'altro:
+    dati plausibili a occhio, modello corrotto, nessun errore. Misurato il
+    12/08/2026 sulle CSV 2025/26, sei casi reali:
+        Sheffield Weds -> Sheffield United   (Championship, fuzzy)
+        Notts County   -> Newport County     (League Two, fuzzy)
+        Antalyaspor    -> Alanyaspor         (Süper Lig, fuzzy)
+        Kayserispor    -> Kocaelispor        (Süper Lig, fuzzy)
+        Larisa         -> Aris               (Grecia, contenimento: "aris" ⊂ "larisa")
+    È la stessa classe di bug chiusa a valle il 27/07 (#TEAM-MATCH-SAFETY-0727),
+    qui a monte e per tutte le leghe.
+
+    REGOLA, fail-closed: un nome ESPN può essere reclamato da UN SOLO nome
+    sorgente, e vince solo chi porta l'evidenza più forte (esatto > contenimento
+    > fuzzy). A parità di tier NESSUNO vince: entrambi tengono il nome sorgente,
+    perché indovinare quale dei due sia quello giusto è esattamente ciò che non
+    si deve fare. Chi perde resta una squadra separata col suo nome di sorgente:
+    il gate fail-closed a valle salterà le sue partite invece di attribuirle
+    all'avversaria sbagliata.
+    """
+    scored: dict[str, list[tuple[int, str]]] = {}
+    for src in sources:
+        final, matched, tier = mapper(src)
+        if not matched:
+            continue
+        scored.setdefault(final, []).append((tier, src))
+
+    resolved: dict[str, str] = {}
+    refused: dict[str, list[str]] = {}
+    for final, claims in scored.items():
+        if len(claims) == 1:
+            resolved[claims[0][1]] = final
+            continue
+        best_tier = min(t for t, _ in claims)
+        winners = [s for t, s in claims if t == best_tier]
+        if len(winners) == 1:
+            resolved[winners[0]] = final
+            refused[final] = sorted(s for _, s in claims if s != winners[0])
+        else:
+            # Pareggio: nessuno vince, tutti restano col nome sorgente.
+            refused[final] = sorted(s for _, s in claims)
+    return resolved, refused
 
 
 def parse_date(s: str) -> date | None:
@@ -214,8 +297,9 @@ def collect_new_league(code: str, cc: str, slug: str | None, since: date,
     rows = fetch_new_league(cc)
     mapper, _origin = make_mapper(code, slug, prev_names)
     al = ALIASES.get(code, {})
-    matches: list[dict] = []
-    unmatched: set[str] = set()
+
+    # Passo 1: le righe in finestra, coi nomi ancora quelli della sorgente.
+    raw: list[tuple[str, str, int, int, date]] = []
     for r in rows:
         d = parse_date(r.get("Date") or "")
         if d is None or d < since:
@@ -224,12 +308,23 @@ def collect_new_league(code: str, cc: str, slug: str | None, since: date,
             hg, ag = int(float(r["HG"])), int(float(r["AG"]))
         except (KeyError, TypeError, ValueError):
             continue
-        raw_h, raw_a = r["Home"].strip(), r["Away"].strip()
-        h, hm = mapper(al.get(raw_h, raw_h))
-        a, am = mapper(al.get(raw_a, raw_a))
-        if not hm:
+        raw.append((r["Home"].strip(), r["Away"].strip(), hg, ag, d))
+
+    # Passo 2: la mappatura si decide su TUTTI i nomi insieme, mai riga per riga
+    # (vedi resolve_names: è l'unico modo di accorgersi di due club che puntano
+    # allo stesso nome ESPN).
+    sources = {al.get(n, n) for h, a, _, _, _ in raw for n in (h, a)}
+    resolved, refused = resolve_names(sources, mapper)
+    report_refused(code, refused)
+
+    matches: list[dict] = []
+    unmatched: set[str] = set()
+    for raw_h, raw_a, hg, ag, d in raw:
+        src_h, src_a = al.get(raw_h, raw_h), al.get(raw_a, raw_a)
+        h, a = resolved.get(src_h, src_h), resolved.get(src_a, src_a)
+        if src_h not in resolved:
             unmatched.add(raw_h)
-        if not am:
+        if src_a not in resolved:
             unmatched.add(raw_a)
         matches.append({"homeTeam": h, "awayTeam": a, "homeGoals": hg, "awayGoals": ag, "date": str(d)})
     matches.sort(key=lambda m: m["date"])
@@ -243,12 +338,11 @@ def collect_mmz_league(code: str, div: str, slug: str, since: date,
     fd.DIVISION_MAP[code] = div
     mapper, _origin = make_mapper(code, slug, prev_names)
     al = ALIASES.get(code, {})
-    matches: list[dict] = []
-    unmatched: set[str] = set()
     # Due stagioni: quella in corso (spesso non ancora pubblicata a inizio agosto)
     # e la precedente, che da sola copre il resto della finestra dei 365 giorni.
     today = date.today()
     cur = today.year if today.month >= 7 else today.year - 1
+    raw: list[tuple[str, str, int, int, date]] = []
     for yr in (cur - 1, cur):
         try:
             fdms = fd.parse_csv(fd.download_csv(code, yr), code)
@@ -258,19 +352,37 @@ def collect_mmz_league(code: str, div: str, slug: str, since: date,
         for m in fdms:
             if m.date < since:
                 continue
-            h, hm = mapper(al.get(m.home_team, m.home_team))
-            a, am = mapper(al.get(m.away_team, m.away_team))
-            if not hm:
-                unmatched.add(m.home_team)
-            if not am:
-                unmatched.add(m.away_team)
-            matches.append({
-                "homeTeam": h, "awayTeam": a,
-                "homeGoals": m.home_goals, "awayGoals": m.away_goals,
-                "date": str(m.date),
-            })
+            raw.append((m.home_team, m.away_team, m.home_goals, m.away_goals, m.date))
+
+    # Come in collect_new_league: la mappatura si decide su tutti i nomi insieme.
+    sources = {al.get(n, n) for h, a, _, _, _ in raw for n in (h, a)}
+    resolved, refused = resolve_names(sources, mapper)
+    report_refused(code, refused)
+
+    matches: list[dict] = []
+    unmatched: set[str] = set()
+    for raw_h, raw_a, hg, ag, d in raw:
+        src_h, src_a = al.get(raw_h, raw_h), al.get(raw_a, raw_a)
+        h, a = resolved.get(src_h, src_h), resolved.get(src_a, src_a)
+        if src_h not in resolved:
+            unmatched.add(raw_h)
+        if src_a not in resolved:
+            unmatched.add(raw_a)
+        matches.append({
+            "homeTeam": h, "awayTeam": a,
+            "homeGoals": hg, "awayGoals": ag,
+            "date": str(d),
+        })
     matches.sort(key=lambda m: m["date"])
     return matches, unmatched
+
+
+def report_refused(code: str, refused: dict[str, list[str]]) -> None:
+    """Le collisioni di nome non devono mai essere silenziose: due club fusi in
+    uno sono invisibili nei conteggi ma corrompono il modello di entrambi."""
+    for final, losers in sorted(refused.items()):
+        print(f"     ! {code}: COLLISIONE su '{final}' — {losers} restano separate "
+              f"coi nomi di sorgente (fail-closed, mai attribuite alla stessa squadra)")
 
 
 def teams_of(block: dict) -> set[str]:

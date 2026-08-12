@@ -79,13 +79,41 @@ export const SUMMER_LEAGUES: Record<string, string> = {
   // 2. Bundesliga (D2) sondata nello stesso lab e SCARTATA: 64.3% @56,
   // instabile per stagione, e 5 squadre su 18 senza storico alla ripartenza.
   BEL: "Belgian Pro League",
+  // #COVERAGE-0812-L1 — 16 campionati, tutti sulla stessa macchina off-free-tier.
+  // Storico e slug ESPN sondati uno per uno il 12/08/2026 (vedi la tabella nella
+  // spec). Entrano COVERAGE-FIRST: floor 70 in lib/surfacing-gate.ts, nessun lab
+  // ancora fatto, quindi solo i favoriti piu' forti possono emergere come pick.
+  //
+  // I NOMI SONO ASCII DI PROPOSITO. surfaceFloorFor fa `name.toLowerCase()` e poi
+  // `includes(keyword)`, senza piegare i diacritici: "Süper Lig" NON contiene
+  // "super lig" e il floor cadrebbe in silenzio su quello di default (56),
+  // pubblicando pick su una lega mai validata. Stessa ragione per "Brasileirao"
+  // (che evita anche la sottostringa "serie a"/"serie b" del Modena/Monza cluster).
+  EFLC: "Championship",
+  EL1: "League One",
+  EL2: "League Two",
+  SCO: "Scottish Premiership",
+  BL2: "2. Bundesliga",
+  FL2: "Ligue 2",
+  PD2: "Segunda Division",
+  NED: "Eredivisie",
+  POR: "Primeira Liga",
+  TUR: "Turkish Super Lig",
+  GRE: "Super League Greece",
+  ARG: "Liga Profesional",
+  BRA: "Brasileirao",
+  MEX: "Liga MX",
+  MLS: "MLS",
+  // JPN scartata: fonte storica ferma alla stagione 2025 (vedi generatore).
 };
 
 export function isSummerLeague(code: string): boolean {
   return code in SUMMER_LEAGUES;
 }
 
-const ESPN_SLUGS: Record<string, string> = {
+// Esportata da #COVERAGE-0812-L1: /api/live la usa per interrogare solo gli
+// scoreboard delle leghe che hanno un fixture in finestra (vedi liveSlugsInWindow).
+export const ESPN_SLUGS: Record<string, string> = {
   ELI: "nor.1",
   ALL: "swe.1",
   VEI: "fin.1", // empty on ESPN — kept for completeness; fixtures come from odds events
@@ -99,6 +127,23 @@ const ESPN_SLUGS: Record<string, string> = {
   DNK: "den.1",
   SWZ: "sui.1",
   BEL: "bel.1", // batch 2 — sondato 2026-07-27: 18 squadre, 1a giornata gia' a calendario
+  // #COVERAGE-0812-L1 — sondati il 12/08/2026 via site.web.api (site.api rende 403
+  // fuori dalle reti residenziali, #HISTORY-REFRESH-CI-0812): tutti con rosa piena.
+  EFLC: "eng.2",  // 24 squadre
+  EL1: "eng.3",   // 24
+  EL2: "eng.4",   // 24
+  SCO: "sco.1",   // 12
+  BL2: "ger.2",   // 18
+  FL2: "fra.2",   // 18
+  PD2: "esp.2",   // 22
+  NED: "ned.1",   // 18
+  POR: "por.1",   // 18
+  TUR: "tur.1",   // 18
+  GRE: "gre.1",   // 14
+  ARG: "arg.1",   // 30
+  BRA: "bra.1",   // 20
+  MEX: "mex.1",   // 18
+  MLS: "usa.1",   // 30
 };
 
 // #LIVE-LEAGUES-0627: slug ESPN da interrogare anche nel feed LIVE del board
@@ -127,6 +172,24 @@ export const ODDS_SPORT_KEYS: Record<string, string> = {
   POL: "soccer_poland_ekstraklasa",
   SWZ: "soccer_switzerland_superleague",
   BEL: "soccer_belgium_first_div", // batch 2 — verificata attiva 2026-07-27
+  // #COVERAGE-0812-L1 — tutte e 16 verificate ATTIVE su The Odds API il
+  // 12/08/2026 (endpoint /v4/sports, che non consuma quota). La quota non e' un
+  // vincolo: 4.956.609 richieste rimanenti su 43.391 usate, cioe' lo 0,9%.
+  EFLC: "soccer_efl_champ",
+  EL1: "soccer_england_league1",
+  EL2: "soccer_england_league2",
+  SCO: "soccer_spl",
+  BL2: "soccer_germany_bundesliga2",
+  FL2: "soccer_france_ligue_two",
+  PD2: "soccer_spain_segunda_division",
+  NED: "soccer_netherlands_eredivisie",
+  POR: "soccer_portugal_primeira_liga",
+  TUR: "soccer_turkey_super_league",
+  GRE: "soccer_greece_super_league",
+  ARG: "soccer_argentina_primera_division",
+  BRA: "soccer_brazil_campeonato",
+  MEX: "soccer_mexico_ligamx",
+  MLS: "soccer_usa_mls",
 };
 
 type SnapshotShape = {
