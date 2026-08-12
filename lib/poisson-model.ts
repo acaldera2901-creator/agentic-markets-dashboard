@@ -34,6 +34,49 @@ export interface PoissonModel {
 export const SHRINKAGE_PRIOR = 4; // pseudo-matches of league-average prior
 export const MIN_MATCHES_PER_TEAM = 4; // below this a prediction is "insufficient_data"
 
+// ─── Competizioni cross-lega (#COVERAGE-0812-L2bis, APPROVE Andrea 12/08/2026) ──
+//
+// IL PROBLEMA NON E' LA NUMEROSITA', E' LA COERENZA DEL POOL. Le forze di
+// attacco/difesa di questo modello sono RELATIVE alla media del proprio pool.
+// In una competizione cross-lega il pool non e' uno: il PSG e' misurato su
+// avversari di Ligue 1 e l'Aston Villa su avversari di Premier, e le due scale
+// non sono confrontabili. E' la versione cross-lega del difetto che il lab
+// World Cup ha gia' diagnosticato sulle nazionali: «le medie di gol a 5 anni non
+// sono aggiustate per avversario — un 3-0 al San Marino conta come un 3-0 alla
+// Francia» (core/world_cup_elo_model.py).
+//
+// PERCHE' NON BASTA IL GATE DI NUMEROSITA' ESISTENTE. MIN_MATCHES_PER_TEAM vale
+// 4, e nella fase a campionato ogni squadra gioca 8 partite: dalla terza-quarta
+// giornata la riga diventa "reliable" e il route calcola edge e pick su un pool
+// di 4-8 partite. Peggio: uno shrinkage debole su pochi dati produce lambda
+// estreme, quindi confidence ALTA — cioe' un floor di surfacing lascerebbe
+// passare proprio i casi meno difendibili, invece di fermarli.
+//
+// PERCHE' NON UN FLOOR PIU' ALTO. Il floor misura la confidence, non la validita'
+// del pool. Qui il pool e' sbagliato a monte: nessuna soglia di confidence lo
+// rende giusto.
+//
+// COSA FA: queste competizioni restano SEMPRE senza pick e senza edge. La
+// probabilita' servita resta quella del blend col mercato (che per loro esiste
+// sempre), quindi la card c'e' e i numeri sono onesti — e' copertura dichiarata,
+// non un consiglio travestito.
+//
+// PERCORSO DI UPGRADE: #COVERAGE-0812-L2b, un Elo di club cross-lega con le
+// partite di coppa come ponte fra i campionati, sulla stessa strada del modello
+// WC: lab walk-forward, artefatti congelati contro le fughe di calibrazione,
+// shadow, promotion gate + APPROVE umano. Solo allora questo set si svuota, una
+// competizione alla volta e con i numeri in mano.
+export const CROSS_COMPETITION_CODES: ReadonlySet<string> = new Set([
+  "CL",   // Champions League
+  "EL",   // Europa League
+  "ECL",  // Conference League
+]);
+
+/** Il pool storico di questa competizione e' su una scala sola? */
+export function modelPoolIsCoherent(leagueCode: string): boolean {
+  return !CROSS_COMPETITION_CODES.has(leagueCode);
+}
+
 // ─── xG blend (Football V4) ────────────────────────────────────────────────────
 // Goals are a noisy sample of chance creation; xG is the better signal (backtest
 // 2026-06: blending xG into the ratings closes ~60% of the Brier gap to market).

@@ -72,3 +72,54 @@ export function confidenceWord(strong: boolean, smallSample: boolean, lang: WhyL
   if (strong) return p5(lang, { it: "lettura solida", en: "a solid read", es: "lectura sólida", fr: "lecture solide", ru: "уверенное чтение" });
   return p5(lang, { it: "partita incerta", en: "an uncertain match", es: "partido incierto", fr: "match incertain", ru: "неопределённый матч" });
 }
+
+// ─── La clausola "valore" (#COVERAGE-0812-L2bis) ─────────────────────────────
+//
+// Vive qui, e non inline nel builder, perche' e' la frase che puo' MENTIRE. Nel
+// builder collassava due situazioni diverse in un ramo `else` e per una delle due
+// era falsa su entrambi i punti: diceva «non c'è una quota di mercato: è la
+// lettura del modello» a righe che avevano la quota e non avevano il modello.
+// Scattava su ogni prima giornata di Champions ed Europa League.
+//
+// IT/EN come il resto di buildFootballWhy (che fa `lang === "it"` e manda tutto
+// il resto in inglese): qui non si inventano traduzioni che nessuno ha riletto.
+export type ValueContext = {
+  /** Esiste una quota 1X2 reale su questa riga? */
+  hasMarket: boolean;
+  /** L'edge e' stato calcolato? (falso quando il modello non e' autorizzato a pretenderlo) */
+  hasEdge: boolean;
+  /** Se c'e' un edge: e' un value bet? */
+  isBestBet: boolean;
+  /** Se non c'e' edge: perche'. Distingue il temporaneo dallo strutturale. */
+  reason?: "insufficient_data" | "cross_competition";
+};
+
+export function valuePhrase(ctx: ValueContext, tail: string, lang: WhyLang): string {
+  const it = lang === "it";
+  if (ctx.hasEdge && ctx.hasMarket) {
+    if (ctx.isBestBet) {
+      return it
+        ? `il modello la dà più probabile della quota: c'è valore${tail}`
+        : `the model rates it likelier than the price — there's value${tail}`;
+    }
+    return it
+      ? `il mercato è già in linea, nessun margine di valore`
+      : `the market is already in line, no value edge`;
+  }
+  if (ctx.hasMarket && ctx.reason === "cross_competition") {
+    // Strutturale: le squadre vengono da campionati diversi, quindi il modello
+    // non le misura sulla stessa scala. Si dice, non si mima una lettura.
+    return it
+      ? `le due squadre arrivano da campionati diversi, quindi qui non confrontiamo il nostro modello con la quota: la probabilità che leggi è il prezzo di mercato ripulito dal margine, e non pubblichiamo un pick`
+      : `the two sides come from different leagues, so we don't pit our model against the price here: the probability you're reading is the market price with the margin stripped out, and we publish no pick`;
+  }
+  if (ctx.hasMarket) {
+    // Temporaneo: poche partite a squadra. Si risolve giocando.
+    return it
+      ? `troppe poche partite su queste squadre per pretendere di battere la quota: la probabilità segue il mercato e non pubblichiamo un pick`
+      : `too few matches on these sides to claim an edge over the price: the probability follows the market and we publish no pick`;
+  }
+  return it
+    ? `non c'è una quota di mercato: è la lettura del modello, non una value bet`
+    : `no market price here — it's the model's read, not a value bet`;
+}

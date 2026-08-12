@@ -18,7 +18,7 @@ import { readRefCode, writeRefCode } from "@/lib/referral-code";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
-import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord } from "@/lib/why-text";
+import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
@@ -1484,6 +1484,15 @@ function fmtFormAny(f?: string | WcFormCounts | null): string | null {
 }
 
 interface PredictionEnrichment {
+  // #COVERAGE-0812-L2bis — perche' questa riga non porta un pick, se non ne porta.
+  // "insufficient_data" = poche partite a squadra, temporaneo. "cross_competition"
+  // = squadre da campionati diversi, il pool del modello non e' su una scala sola:
+  // strutturale, si chiude solo con l'Elo cross-lega (#COVERAGE-0812-L2b).
+  // Scritto da /api/predictions, letto da buildFootballWhy. NON e' in
+  // PREMIUM_ENRICHMENT_KEYS, quindi arriva anche al tier base — deve, perche' e'
+  // la spiegazione di un'assenza, non una feature Pro.
+  reliability?: "insufficient_data" | "cross_competition";
+  team_matches?: number;
   pi_home?: number;
   pi_away?: number;
   xg_home?: number;
@@ -4716,14 +4725,16 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
   const tail = top.isDraw ? (it ? " sul pareggio" : " on the draw")
     : top.isHome ? (it ? " in casa" : " on the home side")
     : (it ? " sulla trasferta" : " on the away side");
-  let value: string;
-  if (p.edge != null && p.odds_home != null) {
-    value = isFootballBestBet(p)
-      ? (it ? `il modello la dà più probabile della quota: c'è valore${tail}` : `the model rates it likelier than the price — there's value${tail}`)
-      : (it ? `il mercato è già in linea, nessun margine di valore` : `the market is already in line, no value edge`);
-  } else {
-    value = it ? `non c'è una quota di mercato: è la lettura del modello, non una value bet` : `no market price here — it's the model's read, not a value bet`;
-  }
+  // #COVERAGE-0812-L2bis — la clausola sta in lib/why-text (valuePhrase), pura e
+  // pinnata dai test: e' la frase che puo' mentire, e qui collassava due casi
+  // diversi in un `else` che diceva «non c'è una quota di mercato: è la lettura
+  // del modello» a righe che avevano la quota e non avevano il modello.
+  const value = valuePhrase({
+    hasMarket: p.odds_home != null,
+    hasEdge: p.edge != null,
+    isBestBet: isFootballBestBet(p),
+    reason: p.enrichment?.reliability,
+  }, tail, lang === "it" ? "it" : "en");
   out.push(`${cap(conf)}: ${value}.`);
 
   return out.join(" ");

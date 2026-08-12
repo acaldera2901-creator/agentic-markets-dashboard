@@ -127,6 +127,39 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   // ma ad agosto — le prime giornate, quelle che vanno live subito — 60 scende
   // a 62.5% mentre 65 tiene 70.0%. Si parte stretti e si rivede su dati live.
   ["belgian pro league", 65],    // anno 80.7% @65; agosto 70.0% @65
+  // #COVERAGE-0812-L1 — i 16 campionati nuovi entrano tutti a 70, il valore che
+  // in questa lista significa "quasi chiusa": nessun lab walk-forward e' ancora
+  // stato fatto su di loro, quindi la barra sta al massimo del cluster
+  // precauzionale (come Danish Superliga ed Ekstraklasa) e solo i favoriti piu'
+  // forti possono emergere come pick. Il resto della griglia mostra probabilita'
+  // calibrate SENZA pick: e' copertura, non consiglio.
+  //
+  // NB 70 non e' "zero pick": e' la convenzione della casa per il coverage-first
+  // (Serie B sta a 65 con lo stesso ragionamento). Il conteggio reale dei pick
+  // che emergono va MISURATO sul servito, non assunto — vedi il report.
+  //
+  // Da rivedere lega per lega su dati live settled (#MINORS-TIGHTEN), abbassando
+  // il floor solo dove i numeri lo guadagnano.
+  ["championship", 70],
+  ["league one", 70],
+  ["league two", 70],
+  ["scottish premiership", 70],
+  // "2. bundesliga" e NON "bundesliga": la sottostringa nuda catturerebbe anche
+  // la Bundesliga di BL1, che sta sul floor di default e non va toccata.
+  // Questa lega e' stata sondata dal lab e SCARTATA (64,3%, instabile per
+  // stagione, 5 squadre su 18 senza storico alla ripartenza): entra solo come
+  // copertura, e non deve mai diventare una fonte di pick abbassando il floor.
+  ["2. bundesliga", 70],
+  ["ligue 2", 70],
+  ["segunda division", 70],
+  ["eredivisie", 70],
+  ["primeira liga", 70],
+  ["turkish super lig", 70],
+  ["super league greece", 70],
+  ["liga profesional", 70],
+  ["brasileirao", 70],
+  ["liga mx", 70],
+  ["mls", 70],
 ];
 
 export type SurfaceDecision = {

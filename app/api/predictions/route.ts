@@ -16,6 +16,7 @@ import {
   devig1x2,
   MARKET_BLEND_ALPHA,
   MatchResult,
+  modelPoolIsCoherent,
 } from "@/lib/poisson-model";
 import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
@@ -492,9 +493,17 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // for them — they are shown only as flagged model estimates.
       // NB: edge is computed on the POST-blend probability. Since the blend tilts
       // toward the line, the edge shrinks (correct: true edge over the close ≈ 0).
+      // #COVERAGE-0812-L2bis: una competizione cross-lega non ha un pool su una
+      // scala sola (vedi modelPoolIsCoherent), quindi non puo' produrre un edge
+      // nemmeno quando le partite bastano. Il gate di numerosita' da solo non la
+      // fermava: a 4 partite a squadra la riga diventava "reliable" e dalla terza
+      // giornata di Champions usciva un pick su un pool di 4-8 partite.
+      const poolCoherent = modelPoolIsCoherent(code);
+      const canClaimEdge = probs.reliable && poolCoherent;
+
       let edge: number | null = null;
       let bestSel: string | null = null;
-      if (odds && probs.reliable) {
+      if (odds && canClaimEdge) {
         const eH = probs.pHome - 1 / odds.oddsHome;
         const eD = probs.pDraw - 1 / odds.oddsDraw;
         const eA = probs.pAway - 1 / odds.oddsAway;
@@ -505,11 +514,22 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
 
       // ── Build enrichment payload ─────────────────────────────────────────
       const enrichment: EnrichmentPayload = {};
+      // Le due ragioni per cui non c'e' un pick sono DIVERSE e vanno distinte:
+      // "non abbiamo abbastanza partite" e' temporaneo e si risolve giocando,
+      // "il pool non e' su una scala sola" e' strutturale e si risolve solo con
+      // un modello nuovo (#COVERAGE-0812-L2b). La card lo dice all'utente in
+      // buildFootballWhy, quindi l'etichetta non e' solo diagnostica.
       if (!probs.reliable) {
         enrichment.reliability = "insufficient_data";
         enrichment.team_matches = probs.teamMatches;
         console.log(
           `[${code}] insufficient_data: ${fix.homeTeam} vs ${fix.awayTeam} (min ${probs.teamMatches} matches/team)`
+        );
+      } else if (!poolCoherent) {
+        enrichment.reliability = "cross_competition";
+        enrichment.team_matches = probs.teamMatches;
+        console.log(
+          `[${code}] cross_competition: ${fix.homeTeam} vs ${fix.awayTeam} — pool non coerente, nessun pick`
         );
       }
 
