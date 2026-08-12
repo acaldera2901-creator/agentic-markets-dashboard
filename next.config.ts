@@ -25,8 +25,16 @@ const CSP_POLICY = [
   // cliente (verificato: non compare in nessuna delle 8 pagine pubbliche). In
   // enforce senza questa voce l'unica cosa che si romperebbe sarebbe la toolbar
   // per noi.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live",
-  "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com",
+  // #SORO-BETREDGE-0812: the /blog route embeds Soro's SEO blog widget
+  // (app/blog/soro-embed.tsx). Soro serves the embed <script> from
+  // app.trysoro.com, the widget then fetches the blog content (connect-src) and
+  // may inject its own external stylesheet (style-src). Without these three the
+  // enforcing CSP kills the widget on arrival. img-src is already `https:` so
+  // article images are covered; frame-src is intentionally left untouched — if
+  // Soro turns out to use an iframe it will surface in /api/csp-report on the
+  // preview. *.trysoro.com kept alongside the apex for any CDN/api subdomain.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live https://app.trysoro.com https://*.trysoro.com",
+  "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com https://app.trysoro.com https://*.trysoro.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://*.tawk.to https://chat.betredge.com",
   // Browser talks only to our own origin (the server proxies external APIs).
@@ -35,7 +43,9 @@ const CSP_POLICY = [
   // #CSP-ALLOWLIST-0730: ipapi.co is fetched from the browser for language
   // auto-detect (app/app/page.tsx) — it was the known Report-Only violation
   // since 2026-06-08 and was never allowlisted; PayPal SDK XHRs cross-origin.
-  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com",
+  // #SORO-BETREDGE-0812: app.trysoro.com added — the Soro blog widget fetches
+  // its content from there after the embed script loads.
+  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com https://app.trysoro.com https://*.trysoro.com",
   // Tawk.to renders its chat UI inside an iframe from *.tawk.to; the PayPal SDK
   // renders the button/checkout flow inside paypal.com iframes.
   "frame-src 'self' https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com",
