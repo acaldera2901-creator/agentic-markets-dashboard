@@ -111,7 +111,11 @@ def norm(s: str) -> str:
 
 
 def espn_teams(slug: str) -> list[str]:
-    url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/teams"
+    # site.web.api, non site.api: il secondo risponde 403 fuori dalle reti
+    # residenziali (runner GitHub inclusi — run 03/08 e 10/08 in modo degradato
+    # su 9 leghe su 11), il primo serve lo stesso JSON. Stessa root-cause del
+    # feed tennis (#REQ-260805-betredge-03).
+    url = f"https://site.web.api.espn.com/apis/site/v2/sports/soccer/{slug}/teams"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=25) as r:  # noqa: S310 (host fidato)
         data = json.load(r)
