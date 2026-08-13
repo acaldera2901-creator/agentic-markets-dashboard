@@ -14,7 +14,8 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
-import { readRefCode, writeRefCode } from "@/lib/referral-code";
+import { currentRefCode, writeRefCode } from "@/lib/referral-code";
+import { storageGet, storageSet } from "@/lib/safe-storage";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
@@ -4307,7 +4308,9 @@ function ClientAuthModal({
           name: mode === "create" ? name.trim() : undefined,
           language: lang, timezone: tz,
           // #MB-1: first-touch influencer ref (lib/referral-code: normalizza + scadenza)
-          ref: mode === "create" ? (readRefCode() ?? undefined) : undefined,
+          // #INVITE-ROBUSTNESS-0813: currentRefCode, non readRefCode - con lo storage
+          // bloccato il codice si perdeva e l'iscrizione arrivava senza attribuzione.
+          ref: mode === "create" ? (currentRefCode() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
@@ -8310,14 +8313,17 @@ export default function Dashboard() {
     return false;
   };
   const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "en";
-    const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
+    // #STORAGE-CRASH-0813: questa lettura girava NUDA dentro l'inizializzatore,
+    // cioe' durante il render: dove lo storage e' vietato (Safari privato,
+    // browser interni delle app, cookie bloccati) lanciava e portava l'INTERO
+    // desk nel boundary globale. Riprodotto con Playwright, stack alla mano.
+    const stored = storageGet("agentic-lang") as Lang | null;
     return stored && LANGUAGES.includes(stored) ? stored : "en";
   });
   const selectLanguage = (next: Lang) => {
     if (next === uiLanguage) return;
     setUiLanguage(next);
-    localStorage.setItem("agentic-lang", next);
+    storageSet("agentic-lang", next); // #STORAGE-CRASH-0813: un click non deve poter lanciare
     trackEvent("language_change", { language: next });
   };
   // #GOLIVE-QW-A: keep <html lang> in sync with the UI language (a11y + SEO).
@@ -8547,7 +8553,7 @@ export default function Dashboard() {
 
   // IP-based language detection — only runs when no stored preference exists
   useEffect(() => {
-    const stored = localStorage.getItem("agentic-lang");
+    const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
     if (stored && LANGUAGES.includes(stored as Lang)) return;
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
@@ -8556,7 +8562,7 @@ export default function Dashboard() {
         const primary = (d.languages ?? "").split(",")[0]?.split("-")[0]?.toLowerCase() as Lang;
         const detected: Lang = LANGUAGES.includes(primary) ? primary : "en";
         setUiLanguage(detected);
-        localStorage.setItem("agentic-lang", detected);
+        storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
       })
       .catch(() => { /* keep default */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
