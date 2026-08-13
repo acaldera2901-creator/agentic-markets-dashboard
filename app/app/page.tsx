@@ -7592,7 +7592,10 @@ function ReferralPanel() {
         setClaimedCode(String(d?.code ?? normalized));
         setPhase("claimed");
         loadStats();
-        trackEvent("referral_code_claimed", { meta: { code: normalized } });
+        // Niente `code` nel meta: gli usage event sono dichiarati anonimi in
+        // /privacy e il referral_code è riconducibile a un profilo. Ci serve
+        // quante volte accade, non quale codice.
+        trackEvent("referral_code_claimed");
       } else if (r.status === 409 && d?.code) {
         // Avevi gia' un codice (magari claimato da un altro device): usalo.
         setClaimedCode(String(d.code));
@@ -7617,7 +7620,7 @@ function ReferralPanel() {
     try { await navigator.clipboard.writeText(link); } catch { /* clipboard denied: link shown below anyway */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    trackEvent("referral_link_copied", { meta: { code: shownCode } });
+    trackEvent("referral_link_copied"); // vedi sopra: nessun codice nel meta
   };
 
   const c = pick5(lang, {

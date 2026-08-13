@@ -25,9 +25,15 @@ export type Attribution = Partial<Record<(typeof ATTRIBUTION_KEYS)[number], stri
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content"] as const;
 
 // Client-only. Idempotente: se un record esiste già non tocca nulla.
+// Nessuna scrittura prima del consenso: stessa regola di lib/track-event
+// (#GOLIVE-QW-A), che manda il session_id solo con gdpr_consent === "accepted".
+// Senza consenso — o dopo un Decline esplicito — è un no-op. Se il consenso
+// arriva dopo, il chiamante ri-invoca: l'utente è ancora sulla stessa pagina,
+// quindi query string e referrer sono ancora leggibili.
 export function initAttribution(): void {
   if (typeof window === "undefined") return;
   try {
+    if (window.localStorage.getItem("gdpr_consent") !== "accepted") return;
     if (window.localStorage.getItem(KEY)) return; // first-touch: mai sovrascrivere
     const q = new URLSearchParams(window.location.search);
     const rec: Attribution = {};

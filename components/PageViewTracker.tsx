@@ -14,11 +14,22 @@ import { trackEvent } from "@/lib/track-event";
 export default function PageViewTracker() {
   const pathname = usePathname();
   useEffect(() => {
-    // First-touch: scrive solo al primo caricamento, poi è un no-op.
+    // First-touch: scrive solo al primo caricamento e solo col consenso, poi è
+    // un no-op (la regola vive dentro initAttribution).
     initAttribution();
     // `path` in meta: è il campo libero della tabella events (meta JSONB);
     // event_type resta "page_view" per non spezzare le query esistenti.
     trackEvent("page_view", { meta: { path: pathname } });
   }, [pathname]);
+
+  // Consenso accettato dopo il caricamento: l'utente è ancora sulla pagina di
+  // ingresso, quindi utm e referrer sono ancora leggibili e l'attribuzione si
+  // cattura adesso. Stesso evento del banner già ascoltato da LiveChat.
+  useEffect(() => {
+    const onConsent = () => initAttribution();
+    window.addEventListener("betredge:gdpr-consent", onConsent);
+    return () => window.removeEventListener("betredge:gdpr-consent", onConsent);
+  }, []);
+
   return null;
 }

@@ -2,15 +2,47 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { initAttribution, getAttribution, sanitizeAttribution, acquisitionJson } from "./attribution";
 
 // #FUNNEL-MEAS-0813 — la regola che questi test difendono: l'attribuzione è
-// FIRST-touch (la sorgente che ha portato l'utente la prima volta, non l'ultima)
-// e il payload che arriva al DB è sanificato, perché lo scrive il client.
+// FIRST-touch (la sorgente che ha portato l'utente la prima volta, non l'ultima),
+// non si scrive nulla senza consenso, e il payload che arriva al DB è sanificato
+// perché lo scrive il client.
 
 const setUrl = (url: string) => window.history.replaceState({}, "", url);
 
 beforeEach(() => {
   window.localStorage.clear();
+  // Il consenso è il presupposto della scrittura: i test sulla cattura partono
+  // da "accepted", quelli sul gate se lo tolgono esplicitamente.
+  window.localStorage.setItem("gdpr_consent", "accepted");
   setUrl("/");
   Object.defineProperty(document, "referrer", { value: "", configurable: true });
+});
+
+describe("initAttribution — gate di consenso", () => {
+  it("consenso rifiutato: non scrive am_attrib", () => {
+    window.localStorage.setItem("gdpr_consent", "declined");
+    setUrl("/tools?utm_source=reddit");
+    initAttribution();
+    expect(window.localStorage.getItem("am_attrib")).toBeNull();
+    expect(getAttribution()).toBeNull();
+  });
+
+  it("nessun consenso ancora espresso: non scrive am_attrib", () => {
+    window.localStorage.removeItem("gdpr_consent");
+    setUrl("/tools?utm_source=reddit");
+    initAttribution();
+    expect(window.localStorage.getItem("am_attrib")).toBeNull();
+    expect(getAttribution()).toBeNull();
+  });
+
+  it("consenso dato dopo: la cattura avviene alla seconda chiamata", () => {
+    window.localStorage.removeItem("gdpr_consent");
+    setUrl("/tools?utm_source=reddit");
+    initAttribution();
+    expect(getAttribution()).toBeNull();
+    window.localStorage.setItem("gdpr_consent", "accepted");
+    initAttribution();
+    expect(getAttribution()?.utm_source).toBe("reddit");
+  });
 });
 
 describe("initAttribution", () => {
