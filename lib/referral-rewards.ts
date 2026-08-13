@@ -9,6 +9,7 @@
 // in prod sull'INSERT. Il test lo inchioda.
 
 import { dbQueryStrict, dbExecute } from "./db";
+import { internalInviteSpec } from "./internal-invite";
 import { computePaygateGrant, type GrantablePlan } from "./plan-grant";
 
 export const INVITEE_BONUS_DAYS = 7;
@@ -278,6 +279,11 @@ export async function checkReferralTiers(invitedIdentifier: string): Promise<voi
 /** Il bonus dell'INVITATO: 7 giorni di PRO all'attivazione, se si è registrato
  *  con un codice che esiste davvero. Registrato con `tier = 0` per l'idempotenza.
  *
+ *  #INTERNAL-INVITE-0813 — un codice INTERNO (lib/internal-invite, da env) passa
+ *  da qui con i SUOI giorni e senza proprietario: è un link che mandiamo a mano,
+ *  non il referral di un utente. Lo slot resta lo stesso (tier 0), quindi una
+ *  persona prende UN bonus e quale dipende dal link con cui è entrata.
+ *
  *  **Non lancia mai** (ritorna false): un bonus mancato non deve impedire
  *  un'attivazione. Ritorna true solo se i giorni sono stati concessi ora. */
 export async function grantInviteeBonus(identifier: string): Promise<boolean> {
@@ -297,15 +303,22 @@ export async function grantInviteeBonus(identifier: string): Promise<boolean> {
     const code = (me?.referred_by ?? "").trim().toUpperCase();
     if (!me || !code) return false;
 
-    // Il codice deve esistere su un ALTRO profilo. Senza questo controllo
-    // chiunque si registra con ?ref=QUALSIASICOSA si prende 7 giorni di PRO:
-    // alla registrazione `referred_by` passa solo la regex.
-    const owner = await dbQueryStrict<{ n: number | string }>(
-      `SELECT COUNT(*)::int AS n FROM profiles
-        WHERE UPPER(referral_code) = $1 AND identifier <> $2`,
-      [code, identifier]
-    );
-    if (Number(owner[0]?.n ?? 0) === 0) return false;
+    // Un codice interno non ha proprietario per definizione: la sua autorità è
+    // la env, quindi il controllo sotto va SALTATO (non allentato).
+    const internal = internalInviteSpec(code);
+    const days = internal ? internal.days : INVITEE_BONUS_DAYS;
+
+    if (!internal) {
+      // Il codice deve esistere su un ALTRO profilo. Senza questo controllo
+      // chiunque si registra con ?ref=QUALSIASICOSA si prende 7 giorni di PRO:
+      // alla registrazione `referred_by` passa solo la regex.
+      const owner = await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM profiles
+          WHERE UPPER(referral_code) = $1 AND identifier <> $2`,
+        [code, identifier]
+      );
+      if (Number(owner[0]?.n ?? 0) === 0) return false;
+    }
 
     if (PLANS_NOT_OVERWRITABLE.has(me.plan)) {
       console.error(`[referral] bonus invitato rinviato: ${identifier} è in stato '${me.plan}'`);
@@ -316,11 +329,13 @@ export async function grantInviteeBonus(identifier: string): Promise<boolean> {
     // NOT NULL e per il tier 0 il valore d'audit è appunto zero.
     if (!(await claimTier(identifier, INVITEE_TIER, 0))) return false;
 
-    await grantRewardDays(identifier, INVITEE_BONUS_DAYS, {
+    await grantRewardDays(identifier, days, {
       plan: me.plan,
       expiryISO: me.plan_expires_at,
     });
-    console.log(`[referral] bonus invitato di ${INVITEE_BONUS_DAYS} giorni concesso a ${identifier}`);
+    console.log(
+      `[referral] bonus invitato di ${days} giorni concesso a ${identifier} (codice ${code}${internal ? ", interno" : ""})`
+    );
     return true;
   } catch (e) {
     console.error(`[referral] bonus invitato fallito per ${identifier}:`, String(e));
