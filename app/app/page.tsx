@@ -16,6 +16,7 @@ import {
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { storageGet, storageSet } from "@/lib/safe-storage";
+import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
@@ -4296,6 +4297,10 @@ function ClientAuthModal({
   // distrugge (unmount), quindi un Escape/click-fuori accidentale azzerava
   // tutto. Ora la chiusura è solo esplicita via la × in alto a destra.
 
+  // #FUNNEL-MEAS-0813: quanti aprono il register e non lo finiscono. Scatta al
+  // mount con intent=create e a ogni passaggio sul tab di registrazione.
+  useEffect(() => { if (mode === "create") trackEvent("signup_started"); }, [mode]);
+
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
@@ -4311,6 +4316,8 @@ function ClientAuthModal({
           // #INVITE-ROBUSTNESS-0813: currentRefCode, non readRefCode - con lo storage
           // bloccato il codice si perdeva e l'iscrizione arrivava senza attribuzione.
           ref: mode === "create" ? (currentRefCode() ?? undefined) : undefined,
+          // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
+          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
@@ -4319,6 +4326,9 @@ function ClientAuthModal({
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
+      // #FUNNEL-MEAS-0813: 202 = profilo creato, in attesa di attivazione email;
+      // 200 = creato e loggato (gate email off). Entrambi sono "signup completato".
+      if (mode === "create" && (resp.ok || resp.status === 202)) trackEvent("signup_completed");
       // HIGH-3: register no longer logs in — it sends an activation email. Show
       // a "check your inbox" notice instead of a session.
       if (resp.status === 202 || data.pending_activation) {
@@ -8546,7 +8556,8 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
-  useEffect(() => { trackEvent("page_view"); }, []);
+  // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
+  // nel root layout (con il path), per ogni rotta. Tenerlo qui lo raddoppiava su /app.
   useEffect(() => {
     if (tab === "plans") trackEvent("plan_view");
   }, [tab]);

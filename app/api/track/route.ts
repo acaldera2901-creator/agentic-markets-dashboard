@@ -23,6 +23,10 @@ const ALLOWED_EVENTS = new Set([
   // 2026-08-13. `value` resta 0 come per ogni evento client: non e' una metrica.
   "client_error",
   "house_banner_view", "house_banner_click", "house_banner_dismiss",
+  // #FUNNEL-MEAS-0813 — funnel di acquisizione. Gli ultimi tre erano GIÀ emessi
+  // dal codice (referral V2, consenso prelievo) e scartati in silenzio qui.
+  "signup_started", "signup_completed", "first_pick_viewed",
+  "referral_code_claimed", "referral_link_copied", "withdrawal_consent",
 ]);
 
 const cap = (v: unknown, n: number): string | null =>

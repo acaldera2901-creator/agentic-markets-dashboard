@@ -27,6 +27,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
+import { getAttribution } from "@/lib/attribution";
+import { trackEvent } from "@/lib/track-event";
 
 export type HomeAuthIntent = "login" | "create";
 
@@ -215,6 +217,11 @@ export function HomeAuthModal({
     ? emailValid && pwValid
     : usernameValid && emailValid && pwValid && ageOk && tosOk;
 
+  // #FUNNEL-MEAS-0813: la home è l'ingresso principale al signup — senza questo,
+  // signup_started/completed e l'attribuzione coprirebbero solo il modal del desk
+  // e i profili nati da / resterebbero senza sorgente (soglia del 20/08).
+  useEffect(() => { if (mode === "create") trackEvent("signup_started"); }, [mode]);
+
   // Riusa LO STESSO contratto /api/auth del desk. Nessuna modifica al server.
   const submit = async () => {
     if (!canSubmit || busy) return;
@@ -231,6 +238,8 @@ export function HomeAuthModal({
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           language: lang, timezone: tz,
           ref: mode === "create" ? (effectiveRef ?? undefined) : undefined,
+          // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
+          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
           age_confirmed: mode === "create" ? ageOk : undefined,
@@ -238,6 +247,8 @@ export function HomeAuthModal({
         }),
       });
       const data = await resp.json().catch(() => ({})) as { pending_activation?: boolean; error?: string };
+      // #FUNNEL-MEAS-0813: 202 = creato in attesa di attivazione, 200 = creato e loggato.
+      if (mode === "create" && (resp.ok || resp.status === 202)) trackEvent("signup_completed");
       if (resp.status === 202 || data.pending_activation) {
         setInfo(t.pendingMail(normalizedEmail));
         setShowResend(true);
