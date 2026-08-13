@@ -26,7 +26,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { readRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
+import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
 
 export type HomeAuthIntent = "login" | "create";
 
@@ -175,7 +175,11 @@ export function HomeAuthModal({
   // un'attribuzione attiva.
   const [refOpen, setRefOpen] = useState(false);
   useEffect(() => {
-    const c = readRefCode();
+    // #INVITE-ROBUSTNESS-0813: currentRefCode legge lo storage e, se e' bloccato o
+    // vuoto, ricade sulla ?ref= della URL - misurato il 2026-08-13: senza questo,
+    // in Safari privato e nei browser interni delle app il campo restava vuoto e
+    // il mese gratis non veniva mai concesso.
+    const c = currentRefCode();
     if (c) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync del ref da localStorage (one-shot)
       setRefInput(c);
