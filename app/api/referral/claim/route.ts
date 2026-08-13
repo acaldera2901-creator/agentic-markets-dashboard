@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
 import { dbExecute, dbQuery } from "@/lib/db";
+import { isInternalInviteCode } from "@/lib/internal-invite";
 import { normalizeRefCode } from "@/lib/referral-code";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,14 @@ export async function POST(req: Request) {
 
   const code = normalizeRefCode(typeof body.code === "string" ? body.code : "");
   if (!code) return NextResponse.json({ error: "invalid code" }, { status: 400 });
+
+  // #INTERNAL-INVITE-0813: i codici dei link interni sono riservati. Il claim è
+  // first-come-first-served su testo libero, quindi senza questo guard un utente
+  // può rivendicare il codice del link che mandiamo agli amici e prendersi
+  // l'attribuzione (e i gradini) di ogni iscritto che arriva da lì.
+  if (isInternalInviteCode(code)) {
+    return NextResponse.json({ error: "code reserved" }, { status: 409 });
+  }
 
   const [me] = await dbQuery<{ referral_code: string | null; referred_by: string | null }>(
     "SELECT referral_code, referred_by FROM profiles WHERE identifier = $1",
