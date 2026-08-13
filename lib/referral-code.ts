@@ -40,6 +40,29 @@ export function readRefCode(): string | null {
   }
 }
 
+// #INVITE-ROBUSTNESS-0813 — il codice valido ADESSO, con la URL come rete di
+// sicurezza. Misurato il 2026-08-13: con lo storage bloccato (Safari privato,
+// browser interni di WhatsApp/Instagram) `writeRefCode` è un no-op e il codice
+// spariva senza che nessuno se ne accorgesse — la pagina caricava, l'utente si
+// iscriveva, e il mese gratis non arrivava mai.
+//
+// L'ordine NON è arbitrario: lo storage vince sulla URL, altrimenti un link
+// nuovo aperto da chi era già stato attribuito a qualcun altro ruberebbe
+// l'attribuzione — la regola first-touch di questo file.
+//
+// `search` è iniettabile per i test; in pagina si chiama senza argomenti.
+export function currentRefCode(search?: string): string | null {
+  const stored = readRefCode();
+  if (stored) return stored;
+  if (search === undefined && typeof window === "undefined") return null;
+  try {
+    const qs = search ?? window.location.search;
+    return normalizeRefCode(new URLSearchParams(qs).get("ref") ?? "");
+  } catch {
+    return null;
+  }
+}
+
 // Scrive il codice (first-touch): salva solo se non c'è già un ref valido.
 export function writeRefCode(raw: string): void {
   if (typeof window === "undefined") return;
