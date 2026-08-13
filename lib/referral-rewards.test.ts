@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Il DB è mockato; `computePaygateGrant` resta REALE (è puro e già testato):
 // il test #1 verifica proprio che il grant passi da lì e non da un
@@ -329,6 +329,97 @@ describe("grantInviteeBonus", () => {
   });
 });
 
+// ── Il link invito INTERNO (#INTERNAL-INVITE-0813) ───────────────────────────
+// Un codice che NON appartiene a nessun profilo e regala i giorni della sua env.
+// Passa dallo stesso slot idempotente (tier 0) del bonus invitato: una persona
+// prende UN bonus, e quale dipende dal link con cui è entrata.
+describe("grantInviteeBonus col codice interno", () => {
+  const ENV = "INTERNAL_INVITE_CODES";
+  beforeEach(() => {
+    resetDb();
+    process.env[ENV] = "MAVEN30:30";
+  });
+  afterEach(() => {
+    delete process.env[ENV];
+  });
+
+  it("concede i 30 giorni senza che il codice appartenga a nessuno", async () => {
+    const now = Date.now();
+    queueReads(
+      [{ referred_by: "MAVEN30", plan: "free", plan_expires_at: null }],
+      [{ n: 0 }], // nessun bonus già preso
+      [{ n: 1 }] // verifica post-INSERT
+    );
+
+    await expect(grantInviteeBonus(INVITED)).resolves.toBe(true);
+
+    const upd = lastProfileUpdate()!;
+    expect(upd.params[1]).toBe("premium");
+    const days = (new Date(String(upd.params[2])).getTime() - now) / DAY;
+    expect(days).toBeGreaterThan(29.9);
+    expect(days).toBeLessThan(30.1);
+    // Il punto della feature: nessuna ricerca del proprietario. Se qualcuno
+    // rimette il controllo su referral_code, il codice interno smette di
+    // funzionare e questo test diventa rosso.
+    const ownerLookups = vi
+      .mocked(dbQueryStrict)
+      .mock.calls.filter((c) => /referral_code/i.test(String(c[0])));
+    expect(ownerLookups).toHaveLength(0);
+  });
+
+  it("il secondo tentativo della stessa persona non raddoppia il regalo", async () => {
+    queueReads([{ referred_by: "MAVEN30", plan: "free", plan_expires_at: null }], [{ n: 1 }], [{ n: 1 }]);
+    await expect(grantInviteeBonus(INVITED)).resolves.toBe(false);
+    expect(lastProfileUpdate()).toBeNull();
+  });
+
+  it("su chi ha già PRO a 10 giorni impila invece di accorciare (10 + 30 = 40)", async () => {
+    const now = Date.now();
+    const expiry = new Date(now + 10 * DAY).toISOString();
+    queueReads(
+      [{ referred_by: "MAVEN30", plan: "premium", plan_expires_at: expiry }],
+      [{ n: 0 }],
+      [{ n: 1 }]
+    );
+
+    await expect(grantInviteeBonus(INVITED)).resolves.toBe(true);
+
+    const upd = lastProfileUpdate()!;
+    expect(upd.sql).not.toMatch(/INTERVAL/i);
+    const days = (new Date(String(upd.params[2])).getTime() - now) / DAY;
+    expect(days).toBeGreaterThan(39.9);
+    expect(days).toBeLessThan(40.1);
+  });
+
+  it("non scrive su un profilo in pending_payment nemmeno col codice interno", async () => {
+    queueReads([{ referred_by: "MAVEN30", plan: "pending_payment", plan_expires_at: null }]);
+    await expect(grantInviteeBonus(INVITED)).resolves.toBe(false);
+    expect(dbExecute).not.toHaveBeenCalled();
+  });
+
+  it("col codice interno configurato, il referral di un amico resta a 7 giorni", async () => {
+    const now = Date.now();
+    queueReads(
+      [{ referred_by: "AMICO", plan: "free", plan_expires_at: null }],
+      [{ n: 1 }], // AMICO esiste su un altro profilo
+      [{ n: 0 }],
+      [{ n: 1 }]
+    );
+
+    await expect(grantInviteeBonus(INVITED)).resolves.toBe(true);
+
+    const days = (new Date(String(lastProfileUpdate()!.params[2])).getTime() - now) / DAY;
+    expect(days).toBeGreaterThan(INVITEE_BONUS_DAYS - 0.1);
+    expect(days).toBeLessThan(INVITEE_BONUS_DAYS + 0.1);
+  });
+
+  it("un codice inventato non diventa interno solo perché la env esiste", async () => {
+    queueReads([{ referred_by: "PIPPO", plan: "free", plan_expires_at: null }], [{ n: 0 }]);
+    await expect(grantInviteeBonus(INVITED)).resolves.toBe(false);
+    expect(dbExecute).not.toHaveBeenCalled();
+  });
+});
+
 // ── La stanza del gradino 10: il premio finisce quando finisce il piano ──────
 // Il buco che questi test chiudono: `profiles.referral_room_access` veniva
 // scritto SOLO a TRUE e da nessuna parte a FALSE ⇒ stanza di fatto eterna,
@@ -418,6 +509,48 @@ describe("isRoomActivePlan — specchio di effectivePlan", () => {
   });
   it("pending_payment non è un piano attivo", () => {
     expect(isRoomActivePlan("pending_payment", null)).toBe(false);
+  });
+});
+
+// Il bug che questo test chiude (trovato collaudando in reale il 2026-08-13):
+// grantRewardDays scrive plan_source = 'referral', ma il CHECK di profiles in
+// prod ammetteva solo paygate|shopify|stripe|paypal|manual|NULL. Ogni premio
+// esplodeva sul vincolo, e il rail chiamante inghiotte l'errore (best-effort),
+// quindi il fallimento era MUTO. Nessun test lo vedeva perché il DB è mockato:
+// l'unico modo di inchiodarlo dai test è confrontare il letterale col vincolo
+// scritto nella migration.
+describe("plan_source scritto dal codice ⊆ CHECK della migration", () => {
+  const MIGRATION = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "supabase",
+      "migrations",
+      "20260813150000_plan_source_referral.sql"
+    ),
+    "utf8"
+  );
+
+  /** I valori ammessi dal CHECK, letti dall'SQL invece di essere riscritti a mano. */
+  const allowed = new Set(
+    [...MIGRATION.matchAll(/'([a-z_]+)'::text/g)].map((m) => m[1])
+  );
+
+  it("il vincolo ammette 'referral'", () => {
+    expect(allowed.has("referral")).toBe(true);
+  });
+
+  it("non toglie nessuno dei rail di pagamento già ammessi", () => {
+    for (const rail of ["paygate", "shopify", "stripe", "paypal", "manual"]) {
+      expect(allowed.has(rail)).toBe(true);
+    }
+  });
+
+  it("ogni plan_source scritto da referral-rewards.ts è ammesso dal vincolo", () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "referral-rewards.ts"), "utf8");
+    const written = [...src.matchAll(/plan_source\s*=\s*'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(written.length).toBeGreaterThan(0); // se il letterale sparisce, il test non deve passare a vuoto
+    for (const v of written) expect(allowed.has(v)).toBe(true);
   });
 });
 
