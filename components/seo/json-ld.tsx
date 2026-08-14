@@ -33,6 +33,34 @@ export function breadcrumbJsonLd(items: Array<[name: string, path: string]>): ob
   };
 }
 
+// Article per i post del blog (#BLOG-SSR-0814). publisher/author = Organization
+// BetRedge (i post arrivano dal feed Soro senza byline personale: inventare un
+// autore-persona sarebbe un fake signal). Vietati numeri di performance come
+// per il resto del file: il gate è la revisione umana pre-publish.
+export function articleJsonLd(a: {
+  title: string;
+  description?: string | null;
+  path: string;
+  image?: string | null;
+  datePublished?: string | null;
+  dateModified?: string | null;
+}): object {
+  const org = { "@type": "Organization", name: "BetRedge", url: ORIGIN };
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: a.title,
+    ...(a.description ? { description: a.description } : {}),
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${ORIGIN}${a.path}` },
+    ...(a.image ? { image: [a.image] } : {}),
+    ...(a.datePublished ? { datePublished: a.datePublished } : {}),
+    ...(a.dateModified ? { dateModified: a.dateModified } : {}),
+    inLanguage: "en",
+    author: org,
+    publisher: org,
+  };
+}
+
 // FAQPage: usare SOLO con domande la cui risposta è visibile nella pagina
 // renderizzata (una FAQ schema senza risposta visibile è rischio manual action).
 export function faqJsonLd(qa: Array<[question: string, answer: string]>, inLanguage?: string): object {
