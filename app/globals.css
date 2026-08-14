@@ -9759,8 +9759,28 @@ button:disabled {
    ultimi 17px della CTA "Open the terminal". Sotto i 640px i bottoni escono dal
    flusso e il testo li avvolge: stessa copy, stesso font, ~30px in meno e la CTA
    torna tappabile per intero. flow-root contiene il float senza clearfix.
-   !important perché il componente porta display e padding inline. */
+   !important perché il componente porta display e padding inline.
+   #FUNNEL-MEAS-0813 (2): padding 10→8px e margin-bottom del float 6→0. Con la
+   copy accorciata il testo scende a 2 righe (26,4px) e diventa lui il pavimento
+   della barra, appena sopra i bottoni (26px): ogni px tolto qui è un px di barra
+   in meno. Totale 1 (border) + 8 + 26,4 + 8 = 43,4px, sotto i 44,7px che
+   servono a liberare anche la CTA secondaria della home. */
 @media (max-width: 640px) {
-  .cookie-consent { display: flow-root !important; padding: 10px 16px !important; }
-  .cookie-consent-actions { float: right; margin: 0 0 6px 10px; }
+  .cookie-consent { display: flow-root !important; padding: 8px 16px !important; }
+  .cookie-consent-actions { float: right; margin: 0 0 0 10px; }
+}
+
+/* Hover/focus: stanno qui e non inline perché lo stile inline non esprime
+   pseudo-classi. brightness() invece di due colori di hover calibrati a mano —
+   è la STESSA regola su entrambi i bottoni, quindi la simmetria EDPB regge per
+   costruzione: ognuno si schiarisce nella propria tinta della stessa quantità.
+   Il focus-visible dedicato serve: la regola globale usa var(--am-coral), che in
+   tema light diventa #15803D e cade a 3,18:1 sulla barra — che è hardcoded dark
+   in ENTRAMBI i temi. Il letterale #23A559 tiene 6,14:1 ovunque. */
+.cookie-consent-actions button { transition: filter .12s ease, transform .06s ease; }
+.cookie-consent-actions button:hover { filter: brightness(1.22); }
+.cookie-consent-actions button:active { transform: translateY(1px); }
+.cookie-consent-actions button:focus-visible { outline: 2px solid #23A559; outline-offset: 2px; border-radius: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .cookie-consent-actions button { transition: none; }
 }
