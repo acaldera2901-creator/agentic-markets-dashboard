@@ -16,6 +16,7 @@ import {
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { storageGet, storageSet } from "@/lib/safe-storage";
+import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
@@ -4296,6 +4297,10 @@ function ClientAuthModal({
   // distrugge (unmount), quindi un Escape/click-fuori accidentale azzerava
   // tutto. Ora la chiusura è solo esplicita via la × in alto a destra.
 
+  // #FUNNEL-MEAS-0813: quanti aprono il register e non lo finiscono. Scatta al
+  // mount con intent=create e a ogni passaggio sul tab di registrazione.
+  useEffect(() => { if (mode === "create") trackEvent("signup_started"); }, [mode]);
+
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
@@ -4311,6 +4316,8 @@ function ClientAuthModal({
           // #INVITE-ROBUSTNESS-0813: currentRefCode, non readRefCode - con lo storage
           // bloccato il codice si perdeva e l'iscrizione arrivava senza attribuzione.
           ref: mode === "create" ? (currentRefCode() ?? undefined) : undefined,
+          // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
+          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
@@ -4319,6 +4326,9 @@ function ClientAuthModal({
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
+      // #FUNNEL-MEAS-0813: 202 = profilo creato, in attesa di attivazione email;
+      // 200 = creato e loggato (gate email off). Entrambi sono "signup completato".
+      if (mode === "create" && (resp.ok || resp.status === 202)) trackEvent("signup_completed");
       // HIGH-3: register no longer logs in — it sends an activation email. Show
       // a "check your inbox" notice instead of a session.
       if (resp.status === 202 || data.pending_activation) {
@@ -7582,7 +7592,10 @@ function ReferralPanel() {
         setClaimedCode(String(d?.code ?? normalized));
         setPhase("claimed");
         loadStats();
-        trackEvent("referral_code_claimed", { meta: { code: normalized } });
+        // Niente `code` nel meta: gli usage event sono dichiarati anonimi in
+        // /privacy e il referral_code è riconducibile a un profilo. Ci serve
+        // quante volte accade, non quale codice.
+        trackEvent("referral_code_claimed");
       } else if (r.status === 409 && d?.code) {
         // Avevi gia' un codice (magari claimato da un altro device): usalo.
         setClaimedCode(String(d.code));
@@ -7607,7 +7620,7 @@ function ReferralPanel() {
     try { await navigator.clipboard.writeText(link); } catch { /* clipboard denied: link shown below anyway */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    trackEvent("referral_link_copied", { meta: { code: shownCode } });
+    trackEvent("referral_link_copied"); // vedi sopra: nessun codice nel meta
   };
 
   const c = pick5(lang, {
@@ -8224,44 +8237,6 @@ function UnifiedBetsTab({
   );
 }
 
-// ─── GDPR Cookie Consent Banner ──────────────────────────────────────────────
-
-function CookieBanner() {
-  const [visible, setVisible] = useState(false);
-  const lang = useLang();
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from localStorage: a lazy initializer would mismatch the server-rendered (hidden) markup at hydration.
-    try { if (!localStorage.getItem("gdpr_consent")) setVisible(true); } catch { /* SSR/no-storage */ }
-  }, []);
-  if (!visible) return null;
-  const decide = (v: "accepted" | "declined") => {
-    try { localStorage.setItem("gdpr_consent", v); } catch { /* */ }
-    // #PRELAUNCH-AUDIT: segnala il consenso ai client che caricano terze parti solo
-    // dopo l'Accept (es. LiveChat/Tawk.to) → si attivano senza reload.
-    try { window.dispatchEvent(new Event("betredge:gdpr-consent")); } catch { /* */ }
-    setVisible(false);
-  };
-  const it = lang === "it";
-  return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9999,
-      background: "rgba(10,12,18,0.97)", borderTop: "1px solid rgba(255,255,255,0.08)",
-      padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", backdropFilter: "blur(8px)" }}>
-      <p style={{ color: "#94a3b8", fontSize: "11px", fontFamily: "monospace", flex: 1, minWidth: "200px", margin: 0 }}>
-        {it ? "Usiamo cookie per migliorare l'esperienza. I link ai bookmaker partner possono essere affiliati — potremmo ricevere una commissione, senza costi aggiuntivi per te."
-            : "We use cookies to improve your experience. Links to partner sportsbooks may be affiliate links — we may earn a commission at no extra cost to you."}
-      </p>
-      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-        <button onClick={() => decide("declined")} style={{ fontSize: "10px", fontFamily: "monospace", padding: "6px 12px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#64748b", cursor: "pointer" }}>
-          {it ? "Rifiuta" : "Decline"}
-        </button>
-        <button onClick={() => decide("accepted")} style={{ fontSize: "10px", fontFamily: "monospace", padding: "6px 12px", borderRadius: "6px", border: "1px solid rgba(99,212,255,0.4)", background: "rgba(99,212,255,0.08)", color: "#67e8f9", cursor: "pointer" }}>
-          {it ? "Accetta" : "Accept"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 // #URL-PATHS-0810: le tab valide, gli alias legacy (?tab=account→plans di
@@ -8546,7 +8521,8 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
-  useEffect(() => { trackEvent("page_view"); }, []);
+  // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
+  // nel root layout (con il path), per ogni rotta. Tenerlo qui lo raddoppiava su /app.
   useEffect(() => {
     if (tab === "plans") trackEvent("plan_view");
   }, [tab]);
@@ -9096,7 +9072,6 @@ export default function Dashboard() {
     <GeoCountryCtx.Provider value={geoCountry}>
     <main className="portal-root">
       <SportGlyphSprite />
-      <CookieBanner />
       {/* #PAYGATE-RETURN-SMOOTH: feedback al rientro da un checkout PayGate */}
       {payReturn && (
         <div role="status"

@@ -13,6 +13,7 @@ import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
 import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
+import { acquisitionJson } from "@/lib/attribution";
 
 export const dynamic = "force-dynamic";
 
@@ -379,25 +380,57 @@ export async function POST(req: Request) {
     // Consenso marketing FACOLTATIVO dal signup (#CRM-LIFECYCLE): sblocca i flussi
     // CRM acquisition. Si registra anche il timestamp come prova del consenso.
     const marketingOptIn = body.marketing_opt_in === true;
+    // #FUNNEL-MEAS-0813 attribuzione di acquisizione: il body è controllato dal
+    // client, quindi si sanifica qui (solo chiavi note, valori troncati, oggetto
+    // scartato se oltre il cap). Null se assente/illeggibile — non blocca mai il signup.
+    const acquisition = acquisitionJson((body as { acquisition?: unknown }).acquisition);
     // HIGH-3: set the password but DO NOT activate or issue a session here. The
     // profile becomes usable only after the email-activation link is clicked —
     // this is what prevents a legacy (passwordless) profile from being claimed
     // by anyone who simply knows the email. activated_at is left untouched
     // (NULL for new/legacy rows; a real activated account never reaches here).
-    try {
-      await dbExecute(
-        // Solo account NUOVI arrivano qui (le righe esistenti sono già gestite sopra
-        // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
-        // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
-        // una riga esistente (niente takeover via race).
+    // Solo account NUOVI arrivano qui (le righe esistenti sono già gestite sopra
+    // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
+    // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
+    // una riga esistente (niente takeover via race).
+    // SQL scritto per esteso nei due rami (niente interpolazione nel template:
+    // lib/sql-guard.test.ts la vieta, ed è la regola giusta).
+    const insertParams = [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn, CURRENT_CONSENT_VERSION];
+    const insertWithAcquisition = () =>
+      dbExecute(
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version, acquisition)
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8, $9::jsonb)
+       ON CONFLICT (identifier) DO NOTHING`,
+        [...insertParams, acquisition]
+      );
+    const insertWithoutAcquisition = () =>
+      dbExecute(
         `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version)
          VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8)
        ON CONFLICT (identifier) DO NOTHING`,
-        [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn, CURRENT_CONSENT_VERSION]
+        insertParams
       );
+    try {
+      await (acquisition !== null ? insertWithAcquisition() : insertWithoutAcquisition());
     } catch (e) {
-      console.error("[auth] register failed:", String(e));
-      return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      // #FUNNEL-MEAS-0813 rete di sicurezza sulla colonna `acquisition`. La
+      // migration 20260813120000 è APPLICATA e verificata in prod (2026-08-14),
+      // quindi questo ramo non dovrebbe più scattare: resta come rete, non come
+      // guard temporaneo di ordine di deploy. Un solo ritentativo senza
+      // l'attribuzione — perdere la sorgente è recuperabile, perdere l'utente no.
+      // Vale ancora per gli ambienti non migrati (preview/locale su DB vecchio).
+      if (acquisition !== null) {
+        console.error("[auth] register with acquisition failed, retrying without:", String(e));
+        try {
+          await insertWithoutAcquisition();
+        } catch (e2) {
+          console.error("[auth] register failed:", String(e2));
+          return NextResponse.json({ error: "registration failed" }, { status: 500 });
+        }
+      } else {
+        console.error("[auth] register failed:", String(e));
+        return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      }
     }
     // When email confirmation isn't available, auto-activate + sign in (the
     // pre-HIGH-3 behavior) so signup→login→checkout work without a mail provider.

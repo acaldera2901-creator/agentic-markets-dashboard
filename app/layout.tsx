@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import PageViewTracker from "@/components/PageViewTracker";
+import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
 
 const hankenGrotesk = Hanken_Grotesk({
@@ -93,6 +95,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Grana sub-percettiva: texture = segnale human-made (vedi .am-grain in
             globals.css). Fissa, dietro al contenuto (z-index:-1), non interattiva. */}
         <div className="am-grain" aria-hidden="true" />
+        {/* #FUNNEL-MEAS-0813: page_view su OGNI rotta (prima solo dentro /app). */}
+        <PageViewTracker />
+        {/* #FUNNEL-MEAS-0813: il consenso si chiede su OGNI rotta (prima solo dentro
+            /app): senza banner sulla landing nessuno accettava, e tutto ciò che è
+            gated sul consenso — attribuzione compresa — non si attivava mai lì. */}
+        <CookieBanner />
         {children}
       </body>
     </html>
