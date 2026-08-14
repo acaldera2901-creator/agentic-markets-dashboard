@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { dbQueryStrict, dbExecute } from "@/lib/db";
+import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
+import { signupCountryAllowed, resolveRequestCountry } from "@/lib/signup-geo";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
@@ -294,6 +295,31 @@ export async function POST(req: Request) {
   }
 
   if (action === "register") {
+    // #SIGNUP-GEO-0814 (D2 #LAUNCHDEC-0814): gate geo al signup, chiuso di
+    // default FUORI dall'allowlist env SIGNUP_COUNTRY_ALLOWLIST. INATTIVO
+    // finché la env non è settata (questo merge non cambia nulla in prod).
+    // Solo register: login/logout/reset restano aperti, un utente esistente
+    // non perde mai l'accesso. Il denial si LOGGA con country (decisione D2:
+    // la domanda dai paesi chiusi deve vedersi nei pannelli, non perdersi) —
+    // best-effort, il deny vale anche se il log fallisce.
+    const requestCountry = resolveRequestCountry(req);
+    if (!signupCountryAllowed(requestCountry)) {
+      const deniedCountry = requestCountry ?? "unknown";
+      try {
+        await dbQuery(
+          `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+           VALUES ('signup_geo_denied', NULL, $1, NULL, NULL, NULL, 0, '{}')`,
+          [deniedCountry]
+        );
+      } catch (e) {
+        console.error("[auth] signup_geo_denied log failed:", String(e));
+      }
+      console.log(`[auth] register geo-denied country=${deniedCountry}`);
+      return NextResponse.json(
+        { error: "signups are not available in your region yet" },
+        { status: 403 }
+      );
+    }
     // #SP3-2 compliance gate: +18/ToS consent is enforced server-side, not just
     // in the UI — a direct API call must not be able to skip it. No profile is
     // created/touched until both flags are confirmed true.
