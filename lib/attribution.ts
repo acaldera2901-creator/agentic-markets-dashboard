@@ -5,6 +5,8 @@
 // che conta è quella che ha portato l'utente la PRIMA volta, non l'ultima
 // (stessa regola di lib/referral-code.ts, chiave diversa).
 
+import { storageGet, storageSet } from "@/lib/safe-storage";
+
 const KEY = "am_attrib";
 const MAX_VALUE_LEN = 200;
 const MAX_PAYLOAD_BYTES = 2048;
@@ -32,35 +34,41 @@ const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content"] as 
 // quindi query string e referrer sono ancora leggibili.
 export function initAttribution(): void {
   if (typeof window === "undefined") return;
-  try {
-    if (window.localStorage.getItem("gdpr_consent") !== "accepted") return;
-    if (window.localStorage.getItem(KEY)) return; // first-touch: mai sovrascrivere
-    const q = new URLSearchParams(window.location.search);
-    const rec: Attribution = {};
-    for (const k of UTM_KEYS) {
-      const v = q.get(k);
-      if (v) rec[k] = v.slice(0, MAX_VALUE_LEN);
-    }
-    // Il referrer interno non è una sorgente di acquisizione: se l'utente arriva
-    // dalla home a /tools, la sorgente resta quella con cui è entrato in home.
-    const ref = typeof document !== "undefined" ? document.referrer : "";
-    if (ref && !ref.startsWith(window.location.origin)) rec.referrer = ref.slice(0, MAX_VALUE_LEN);
-    rec.landing_path = window.location.pathname.slice(0, MAX_VALUE_LEN);
-    rec.first_seen = new Date().toISOString();
-    window.localStorage.setItem(KEY, JSON.stringify(rec));
-  } catch {
-    /* storage bloccato (private mode / policy): no-op, il signup funziona lo stesso */
+  // #STORAGE-CRASH-0813: si passa da lib/safe-storage, non da window.localStorage
+  // nudo. Dove lo storage è vietato (Safari privato, browser interni delle app,
+  // cookie bloccati) `getItem` LANCIA, e questa funzione gira in un useEffect del
+  // root layout: un throw qui porterebbe OGNI rotta nel boundary globale.
+  // storageGet/storageSet non lanciano mai — niente try/catch che li riavvolga.
+  if (storageGet("gdpr_consent") !== "accepted") return;
+  if (storageGet(KEY)) return; // first-touch: mai sovrascrivere
+  const q = new URLSearchParams(window.location.search);
+  const rec: Attribution = {};
+  for (const k of UTM_KEYS) {
+    const v = q.get(k);
+    if (v) rec[k] = v.slice(0, MAX_VALUE_LEN);
   }
+  // Il referrer interno non è una sorgente di acquisizione: se l'utente arriva
+  // dalla home a /tools, la sorgente resta quella con cui è entrato in home.
+  const ref = typeof document !== "undefined" ? document.referrer : "";
+  if (ref && !ref.startsWith(window.location.origin)) rec.referrer = ref.slice(0, MAX_VALUE_LEN);
+  rec.landing_path = window.location.pathname.slice(0, MAX_VALUE_LEN);
+  rec.first_seen = new Date().toISOString();
+  // Storage vietato: storageSet torna false e l'attribuzione semplicemente non
+  // viene catturata. Una sorgente persa è un inconveniente, una pagina che non
+  // carica è un cliente perso.
+  storageSet(KEY, JSON.stringify(rec));
 }
 
 // Client-only. Null se assente o illeggibile — l'assenza non deve mai rompere il signup.
 export function getAttribution(): Attribution | null {
   if (typeof window === "undefined") return null;
+  // #STORAGE-CRASH-0813: la lettura passa da safe-storage (torna null se lo
+  // storage è vietato). Il try/catch che resta NON è ridondante: copre solo
+  // JSON.parse, che lancia davvero su un record corrotto o manomesso.
+  const raw = storageGet(KEY);
+  if (!raw) return null;
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    return sanitizeAttribution(parsed);
+    return sanitizeAttribution(JSON.parse(raw) as unknown);
   } catch {
     return null;
   }

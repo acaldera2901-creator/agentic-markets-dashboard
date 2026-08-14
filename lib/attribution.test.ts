@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { initAttribution, getAttribution, sanitizeAttribution, acquisitionJson } from "./attribution";
 
 // #FUNNEL-MEAS-0813 — la regola che questi test difendono: l'attribuzione è
@@ -114,6 +114,39 @@ describe("sanitizeAttribution (trust boundary del server)", () => {
 describe("getAttribution", () => {
   it("null se il record è corrotto (il signup non deve mai rompersi)", () => {
     window.localStorage.setItem("am_attrib", "{non-json");
+    expect(getAttribution()).toBeNull();
+  });
+});
+
+// #STORAGE-CRASH-0813: initAttribution gira in un useEffect del ROOT layout, cioè
+// su ogni rotta del sito. Dove lo storage è vietato `getItem` LANCIA, e un throw
+// qui spegnerebbe l'intero sito come il 2026-08-13. Stesso blocco di
+// lib/safe-storage.test.ts: se qualcuno rimette un window.localStorage nudo in
+// attribution.ts, questi due test diventano rossi.
+describe("storage vietato (Safari privato / browser interni / cookie bloccati)", () => {
+  const REAL = Object.getOwnPropertyDescriptor(window, "localStorage");
+  const block = () => {
+    const boom = () => {
+      throw new DOMException("The operation is insecure.", "SecurityError");
+    };
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get: () => ({ getItem: boom, setItem: boom, removeItem: boom, clear: boom, key: boom, length: 0 }),
+    });
+  };
+  afterEach(() => {
+    if (REAL) Object.defineProperty(window, "localStorage", REAL);
+  });
+
+  it("initAttribution non lancia e non cattura nulla", () => {
+    setUrl("/tools?utm_source=reddit");
+    block();
+    expect(() => initAttribution()).not.toThrow();
+  });
+
+  it("getAttribution non lancia e torna null", () => {
+    block();
+    expect(() => getAttribution()).not.toThrow();
     expect(getAttribution()).toBeNull();
   });
 });

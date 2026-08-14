@@ -413,11 +413,12 @@ export async function POST(req: Request) {
     try {
       await (acquisition !== null ? insertWithAcquisition() : insertWithoutAcquisition());
     } catch (e) {
-      // #FUNNEL-MEAS-0813 guard di ordine di deploy: se questo codice arriva in
-      // prod PRIMA che la migration 20260813120000 sia applicata, la colonna non
-      // esiste e il signup fallirebbe del tutto. Un solo ritentativo senza
-      // l'attribuzione: perdere la sorgente è recuperabile, perdere l'utente no.
-      // Da rimuovere quando la colonna è confermata in prod.
+      // #FUNNEL-MEAS-0813 rete di sicurezza sulla colonna `acquisition`. La
+      // migration 20260813120000 è APPLICATA e verificata in prod (2026-08-14),
+      // quindi questo ramo non dovrebbe più scattare: resta come rete, non come
+      // guard temporaneo di ordine di deploy. Un solo ritentativo senza
+      // l'attribuzione — perdere la sorgente è recuperabile, perdere l'utente no.
+      // Vale ancora per gli ambienti non migrati (preview/locale su DB vecchio).
       if (acquisition !== null) {
         console.error("[auth] register with acquisition failed, retrying without:", String(e));
         try {
