@@ -9780,7 +9780,13 @@ button:disabled {
 .cookie-consent-actions button { transition: filter .12s ease, transform .06s ease; }
 .cookie-consent-actions button:hover { filter: brightness(1.22); }
 .cookie-consent-actions button:active { transform: translateY(1px); }
-.cookie-consent-actions button:focus-visible { outline: 2px solid #23A559; outline-offset: 2px; border-radius: 0; }
+.cookie-consent-actions button:focus-visible,
+.cookie-consent a:focus-visible { outline: 2px solid #23A559; outline-offset: 2px; border-radius: 0; }
+/* Il link all'informativa sta DENTRO il <p>, che nel DOM segue i bottoni perché
+   il float li deve precedere: l'ordine di tabulazione è quindi Rifiuta →
+   Accetta → Privacy. Regge SC 2.4.3 (nulla dipende dal raggiungere il link
+   prima dei bottoni) e tiene il rifiuto come primo elemento focalizzabile. */
+.cookie-consent a:hover { filter: brightness(1.15); }
 @media (prefers-reduced-motion: reduce) {
   .cookie-consent-actions button { transition: none; }
 }

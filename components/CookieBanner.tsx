@@ -11,6 +11,7 @@
 // esiste. Stessa fonte che il desk usa per inizializzare uiLanguage.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -87,19 +88,32 @@ export default function CookieBanner() {
         </button>
       </div>
       {/* Copy accorciata (#FUNNEL-MEAS-0813): la disclosure affiliate resta nella
-          sostanza — link ai bookmaker partner + possibile commissione — mentre
-          cadono le parti non necessarie ("per migliorare l'esperienza", "senza
-          costi aggiuntivi per te"). Il 18+ non serve qui: sta nel SiteFooter, su
-          tutto il sito. Il taglio non è estetico ma di altezza: a 390px queste
-          due lingue stanno in 2 righe dentro l'altezza dei bottoni, e la barra
-          scende da 103,5px a 44px liberando entrambe le CTA della home.
-          ATTENZIONE: la copy è sensibile al wrapping. A 390px la prima riga ha
-          30 caratteri (monospace 11px accanto ai bottoni in float); una parola
-          in più manda a 3 righe e la barra torna a 56,6px — non si rompe nulla,
-          ma la CTA secondaria torna coperta. Rimisurare se si ritocca. */}
+          sostanza — link ai bookmaker + commissione — mentre cadono le parti non
+          necessarie ("per migliorare l'esperienza", "senza costi aggiuntivi per
+          te"). Il 18+ non serve qui: sta nel SiteFooter, su tutto il sito. Il
+          link a /privacy invece sì: ePrivacy e art. 13 GDPR vogliono
+          l'informativa raggiungibile dal primo livello del banner.
+          ATTENZIONE: la copy è sensibile al wrapping, ed è un vincolo di
+          layout, non di stile. A 390px la prima riga ha ~30 caratteri
+          (monospace 11px accanto ai bottoni in float): una parola in più manda
+          a 3 righe e la barra passa da 43,4 a 56,6px, che ri-copre la CTA
+          secondaria della home. Le due lingue hanno di proposito la STESSA
+          struttura telegrafica (nome + provenienza, niente verbo): è la forma
+          più corta che tiene insieme "commissioni" e "link ai bookmaker", ed è
+          l'unica verificata a 2 righe fino a 360px. La versione con verbo
+          ("Sportsbook links may earn us a commission") sta in 2 righe a 390px
+          ma va a 3 a 375px, che è un iPhone SE/mini. Non allungarle senza
+          rimisurare a 360/375/390. */}
       <p style={{ color: "#AEB4BE", fontSize: "11px", lineHeight: 1.2, fontFamily: "monospace", flex: 1, minWidth: "200px", margin: 0 }}>
-        {it ? "Cookie. I link ai bookmaker possono darci una commissione."
-            : "Cookies. Sportsbook links may earn us a commission."}
+        {it ? "Cookie. Commissioni dai link ai bookmaker. "
+            : "Cookies. Commissions from sportsbook links. "}
+        {/* #EDEFF2 = --am-text (variante dark, letterale come il resto: vedi
+            sopra il perché niente var() qui). Più chiaro del testo attorno
+            (#AEB4BE) E sottolineato: l'affordance non è affidata al solo
+            colore, come chiede SC 1.4.1. 15,9:1 sulla barra. */}
+        <Link href="/privacy" style={{ color: "#EDEFF2", textDecoration: "underline" }}>
+          Privacy
+        </Link>
       </p>
     </div>
   );

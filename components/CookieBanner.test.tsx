@@ -80,12 +80,38 @@ describe("CookieBanner — parità dei due bottoni (EDPB)", () => {
   it("la disclosure affiliate resta nella sostanza in entrambe le lingue", () => {
     localStorage.setItem("agentic-lang", "en");
     const { unmount } = render(<CookieBanner />);
-    expect(screen.getByText(/cookies/i).textContent).toMatch(/commission/i);
+    expect(screen.getByText(/sportsbook links/i).textContent).toMatch(/commission/i);
     unmount();
 
     localStorage.clear();
     localStorage.setItem("agentic-lang", "it");
     render(<CookieBanner />);
-    expect(screen.getByText(/cookie/i).textContent).toMatch(/commissione/i);
+    expect(screen.getByText(/bookmaker/i).textContent).toMatch(/commissioni/i);
+  });
+
+  // ePrivacy + art. 13 GDPR: l'informativa va raggiungibile dal primo livello
+  // del banner, non solo dal footer.
+  for (const [lang, label] of [["en", "EN"], ["it", "IT"]] as const) {
+    it(`${label}: l'informativa è linkata dal banner ed è focalizzabile`, () => {
+      localStorage.setItem("agentic-lang", lang);
+      render(<CookieBanner />);
+      const link = screen.getByRole("link", { name: /privacy/i });
+      expect(link.getAttribute("href")).toBe("/privacy");
+      // <a href> è nativamente nel tab order: nessun tabindex a mano, nessun
+      // handler che simuli un link su un altro elemento.
+      expect(link.tagName).toBe("A");
+      expect(link.hasAttribute("tabindex")).toBe(false);
+      // SC 1.4.1: l'affordance non può essere il solo colore.
+      expect(getComputedStyle(link).textDecoration).toContain("underline");
+    });
+  }
+
+  it("il link non ruba il primo focus al rifiuto", () => {
+    localStorage.setItem("agentic-lang", "en");
+    const { container } = render(<CookieBanner />);
+    const focusables = container.querySelectorAll("button, a[href]");
+    expect(focusables[0]).toBe(buttons().decline);
+    expect(focusables[1]).toBe(buttons().accept);
+    expect(focusables[2]).toBe(screen.getByRole("link", { name: /privacy/i }));
   });
 });
