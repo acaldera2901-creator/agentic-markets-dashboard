@@ -16,7 +16,7 @@ export default function PrivacyPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: July 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: August 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -49,14 +49,14 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">4. Cookies</h2>
           <p className="text-xs leading-relaxed">
-            We use essential technical storage (localStorage for your plan profile) and anonymous usage analytics. Our live-chat provider (Tawk.to) is loaded only after you accept cookies via the banner, and then sets its own cookies; if you decline, it is not loaded. Partner links to bookmakers and casinos may set their own cookies — please review their privacy policies before clicking.
+            We use essential technical storage (localStorage for your plan profile) and anonymous usage analytics. Non-essential tools are loaded only after you accept cookies via the banner; if you decline, they are not loaded. These are: our live-chat provider (Tawk.to), which sets its own cookies, and — where active — Google advertising and analytics tools (Google Tag Manager, Google Analytics 4, Google Ads) and the Meta Pixel, which set their own cookies and identifiers. Consent signals are passed to Google via Consent Mode; without your acceptance these tools remain fully disabled. Partner links to bookmakers and casinos may set their own cookies — please review their privacy policies before clicking.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">5. Data Sharing</h2>
           <p className="text-xs leading-relaxed">
-            We do not sell personal data. We use Supabase (EU-hosted) as our database provider. Vercel (US-based) hosts the application; their DPA applies. We use Resend, Inc. (US-based) to deliver account and marketing emails, as our processor under a Data Processing Agreement, with EU-US transfers covered by Standard Contractual Clauses and/or the EU-US Data Privacy Framework. No other third parties receive your personal data.
+            We do not sell personal data. We use Supabase (EU-hosted) as our database provider. Vercel (US-based) hosts the application; their DPA applies. We use Resend, Inc. (US-based) to deliver account and marketing emails, as our processor under a Data Processing Agreement, with EU-US transfers covered by Standard Contractual Clauses and/or the EU-US Data Privacy Framework. Only if you accept cookies via the banner, Google LLC (US-based) and Meta Platforms, Inc. (US-based) receive usage and advertising data (such as pseudonymous identifiers, page views and conversion events) through the tools listed in Section 4; these transfers are covered by the EU-US Data Privacy Framework and/or Standard Contractual Clauses. No other third parties receive your personal data.
           </p>
         </section>
 
