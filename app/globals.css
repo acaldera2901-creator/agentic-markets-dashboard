@@ -9752,3 +9752,15 @@ button:disabled {
   .tl-head-ic { width: 52px !important; height: 52px !important; }
 }
 /* ── end #TOOLS-HUB-0805 ── */
+
+/* ── Consent bar (#FUNNEL-MEAS-0813) ──────────────────────────────────────────
+   Da quando il banner sta nel root layout compare anche sulla landing, dove a
+   390px i bottoni si prendevano una seconda riga (barra 116px) e coprivano gli
+   ultimi 17px della CTA "Open the terminal". Sotto i 640px i bottoni escono dal
+   flusso e il testo li avvolge: stessa copy, stesso font, ~30px in meno e la CTA
+   torna tappabile per intero. flow-root contiene il float senza clearfix.
+   !important perché il componente porta display e padding inline. */
+@media (max-width: 640px) {
+  .cookie-consent { display: flow-root !important; padding: 10px 16px !important; }
+  .cookie-consent-actions { float: right; margin: 0 0 6px 10px; }
+}
