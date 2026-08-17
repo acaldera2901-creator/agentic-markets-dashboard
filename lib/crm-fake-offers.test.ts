@@ -108,13 +108,74 @@ describe("i touchpoint con offerta sono gatati e datati", () => {
 
   it("winback e retention non sono gatati: chi ha già pagato NON è idoneo", () => {
     // Prometterebbero uno sconto che il checkout rifiuta (firstPaidOrder=false).
-    // Il copy di Steve era già coerente: il winback dice "never better than
-    // joining offers", il retention "loyalty bonus, not discounts".
+    // ⚠️ Il 05/08 questo commento diceva che il copy di winback e retention "era
+    // già coerente" perché non prometteva sconti. Era vero e insufficiente: quelle
+    // due email promettevano un "bonus fedeltà (early access)" e "un'offerta
+    // riservata", cioè benefici inesistenti invece di prezzi inesistenti. Corrette
+    // il 17/08 (#CRM-COPY-TRUTHFUL-0817); la guardia sta nel describe qui sotto.
     const gated = promoGatedKeys();
     const wrongFlow = CRM_TOUCHPOINTS.filter(
       (t) => gated.has(t.key) && t.flow !== "acquisition"
     ).map((t) => t.key);
     expect(wrongFlow).toEqual([]);
+  });
+});
+
+// #CRM-COPY-TRUTHFUL-0817 — il fix del 05/08 guardava UN asse solo (percentuali,
+// sconti, trial) e ne restava un altro aperto: benefici inventati che non sono
+// prezzi. Tre email promettevano roba che nel prodotto non esiste — un "bonus
+// fedeltà (early access)" con una "streak" (ret_1d_before), "un'offerta riservata"
+// non gatata e con CTA a prezzo pieno (wb_day14_offer), "il riepilogo del mese"
+// che l'email non contiene (ret_7d_before) — e ret_7d_before era già uscita a un
+// destinatario reale il 17/08 alle 07:00.
+//
+// Un denylist non può dimostrare un'assenza: la regola che difende è "se il copy
+// NOMINA un beneficio, quel beneficio deve esistere nel prodotto". Quando ne
+// scappa un altro, si aggiunge qui invece di correggere solo la stringa.
+describe("nessun beneficio inventato può rientrare", () => {
+  const FAKE_BENEFITS: Array<[string, RegExp]> = [
+    ["bonus fedeltà", /bonus\s+(fedelt\w+|de\s+fidelidad|fid[ée]lit\w*)|loyalty\s+bonus|бонус за лояльность/i],
+    ["early access", /early\s+access|access[oa]\s+anticipad[oa]|accès\s+anticipé|ранний доступ/i],
+    ["streak", /\bstreak\b|\bracha\b|votre\s+série|сохраните серию/i],
+    ["riepilogo del mese", /riepilogo del mese|monthly recap|resumen del mes|r[ée]cap du mois|итоги месяца/i],
+    ["offerta riservata", /offert[ae]\s+(riservat\w+|privat\w+)|private\s+\w*\s?offer|oferta\s+(reservada|privada)|offre\s+(réservée|privée)|(закрытое|личное) предложение/i],
+    ["programma fedeltà", /programma\s+fedelt\w+|loyalty\s+program|programa\s+de\s+fidelidad/i],
+  ];
+
+  it.each(FAKE_BENEFITS)("nessun touchpoint promette %s", (_label, re) => {
+    const offenders: string[] = [];
+    for (const t of CRM_TOUCHPOINTS) {
+      for (const lang of LANGS) {
+        for (const field of ["subject", "body"] as const) {
+          if (re.test(t[field][lang])) offenders.push(`${t.key}.${field}.${lang}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("i tre touchpoint corretti restano corretti in tutte e 5 le lingue", () => {
+    // Pin di regressione sui casi concreti: non basta che il denylist passi, i
+    // tre devono avere copy non vuoto e coerente col fatto che li ha sostituiti.
+    for (const key of ["ret_1d_before", "ret_7d_before", "wb_day14_offer"]) {
+      const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
+      expect(t, key).toBeDefined();
+      for (const lang of LANGS) {
+        expect(t!.subject[lang].length, `${key}/${lang} subject`).toBeGreaterThan(10);
+        expect(t!.body[lang].length, `${key}/${lang} body`).toBeGreaterThan(40);
+      }
+    }
+  });
+
+  it("wb_day14_offer non promette più nulla di acquistabile a condizioni speciali", () => {
+    // La chiave conserva "_offer" perché è la PK del dedup (rinominarla
+    // rimanderebbe l'email a chi l'ha già ricevuta): il contratto vero è il copy.
+    const t = CRM_TOUCHPOINTS.find((x) => x.key === "wb_day14_offer")!;
+    expect(t.requiresLaunchPromo).toBeUndefined();
+    for (const lang of LANGS) {
+      expect(t.body[lang]).not.toMatch(/sconto|discount|descuento|remise|скидк/i);
+      expect(t.body[lang]).not.toContain("{deadline}");
+    }
   });
 });
 

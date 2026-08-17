@@ -196,12 +196,15 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     subject: {
       it: "Il tuo accesso scade tra 7 giorni", en: "Your access expires in 7 days", es: "Tu acceso caduca en 7 días",
       fr: "Votre accès expire dans 7 jours", ru: "Ваш доступ истекает через 7 дней" },
+    // #CRM-COPY-TRUTHFUL-0817: prometteva "il riepilogo del mese", che questa
+    // email non contiene e che il prodotto non genera. Al suo posto la cosa vera
+    // e concreta: alla scadenza si torna al Free, che è 1 pick per sport.
     body: {
-      it: "Riepilogo del mese e cosa stai per perdere. L'accesso non si rinnova da solo: paga di nuovo per continuare.",
-      en: "Your monthly recap and what you'd lose. Access doesn't auto-renew: pay again to continue.",
-      es: "Resumen del mes y lo que estás a punto de perder. El acceso no se renueva solo: vuelve a pagar para continuar.",
-      fr: "Le récap du mois et ce que vous êtes sur le point de perdre. L'accès ne se renouvelle pas tout seul : payez à nouveau pour continuer.",
-      ru: "Итоги месяца и то, что вы можете потерять. Доступ не продлевается сам: оплатите снова, чтобы продолжить." } },
+      it: "Alla scadenza torni al piano Free: 1 pick per sport a settimana. L'accesso non si rinnova da solo: paga di nuovo per continuare.",
+      en: "When it expires you go back to Free: 1 pick per sport each week. Access doesn't auto-renew: pay again to continue.",
+      es: "Al caducar vuelves al plan Free: 1 pick por deporte a la semana. El acceso no se renueva solo: vuelve a pagar para continuar.",
+      fr: "À l'échéance vous repassez au plan Free : 1 pronostic par sport et par semaine. L'accès ne se renouvelle pas tout seul : payez à nouveau pour continuer.",
+      ru: "После истечения вы вернётесь на тариф Free: 1 прогноз по каждому виду спорта в неделю. Доступ не продлевается сам: оплатите снова, чтобы продолжить." } },
   { key: "ret_3d_before", flow: "retention", day: 3,
     subject: {
       it: "Rinnova: 3 giorni alla scadenza", en: "Renew: 3 days to expiry", es: "Renueva: quedan 3 días",
@@ -213,15 +216,19 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       fr: "Reprenez là où vous êtes. Renouvellement rapide, aucune interruption du board.",
       ru: "Продолжайте с того же места. Быстрое продление, борд без перерывов." } },
   { key: "ret_1d_before", flow: "retention", day: 1,
+    // #CRM-COPY-TRUTHFUL-0817: prometteva un "bonus fedeltà (early access)" e una
+    // "streak" che NON esistono nel prodotto (grep: nessun early access, nessuna
+    // streak, nessun programma fedeltà). Restano solo fatti verificabili: la data
+    // di scadenza e il fatto che lo storico non si perde.
     subject: {
-      it: "Ultimo promemoria + bonus fedeltà", en: "Final reminder + loyalty bonus", es: "Último recordatorio + bonus de fidelidad",
-      fr: "Dernier rappel + bonus fidélité", ru: "Последнее напоминание + бонус за лояльность" },
+      it: "Ultimo promemoria: domani scade", en: "Final reminder: expires tomorrow", es: "Último recordatorio: caduca mañana",
+      fr: "Dernier rappel : expire demain", ru: "Последнее напоминание: завтра истекает" },
     body: {
-      it: "Domani scade. Rinnova ora e mantieni la streak: bonus fedeltà (early access), non sconti.",
-      en: "Expires tomorrow. Renew now and keep your streak: loyalty bonus (early access), not discounts.",
-      es: "Mañana caduca. Renueva ahora y mantén la racha: bonus de fidelidad (early access), no descuentos.",
-      fr: "Ça expire demain. Renouvelez maintenant et gardez votre série : bonus fidélité (accès anticipé), pas de remises.",
-      ru: "Завтра доступ истекает. Продлите сейчас и сохраните серию: бонус за лояльность (ранний доступ), а не скидки." } },
+      it: "Domani scade. Rinnova ora per non interrompere l'accesso al board completo; il tuo storico resta salvato in ogni caso.",
+      en: "Expires tomorrow. Renew now to keep the full board without a gap; your history stays saved either way.",
+      es: "Mañana caduca. Renueva ahora para no interrumpir el acceso al board completo; tu historial queda guardado en cualquier caso.",
+      fr: "Ça expire demain. Renouvelez maintenant pour garder le board complet sans interruption ; votre historique reste sauvegardé dans tous les cas.",
+      ru: "Завтра доступ истекает. Продлите сейчас, чтобы не терять полный борд; ваша история сохраняется в любом случае." } },
   { key: "wb_day1_expired", flow: "winback", day: 1,
     subject: {
       it: "Il tuo accesso è scaduto", en: "Your access has expired", es: "Tu acceso ha caducado",
@@ -246,16 +253,22 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     // per un ex-pagante lo sblocco singolo è il rientro più leggero che esista, e
     // mandarlo alla pagina dei piani sarebbe chiedergli di nuovo un abbonamento.
     cta: { path: "/weekly-pick", label: WEEKLY_PICK_CTA } },
+  // #CRM-COPY-TRUTHFUL-0817: prometteva "un'offerta riservata / private offer"
+  // che non esiste — e NON era nemmeno promo-gated, quindi il CTA portava al
+  // prezzo pieno. Nota: la promo di lancio vale sul PRIMO acquisto, quindi per un
+  // ex-pagante non sarebbe applicabile comunque: qui non può esistere un'offerta,
+  // e la chiave resta `wb_day14_offer` perché è la PK del dedup (rinominarla
+  // rimanderebbe l'email a chi l'ha già ricevuta).
   { key: "wb_day14_offer", flow: "winback", day: 14,
     subject: {
-      it: "Offerta di riattivazione privata", en: "Private reactivation offer", es: "Oferta privada de reactivación",
-      fr: "Offre privée de réactivation", ru: "Личное предложение о возвращении" },
+      it: "Cosa resta chiuso sul piano Free", en: "What stays locked on Free", es: "Qué sigue cerrado en el plan Free",
+      fr: "Ce qui reste fermé sur le plan Free", ru: "Что остаётся закрытым на тарифе Free" },
     body: {
-      it: "Un'offerta riservata per tornare. Mai migliore degli sconti di ingresso — ma pensata per te.",
-      en: "A private offer to return. Never better than joining offers — but made for you.",
-      es: "Una oferta reservada para volver. Nunca mejor que las ofertas de entrada — pero pensada para ti.",
-      fr: "Une offre réservée pour revenir. Jamais meilleure que les offres d'entrée — mais pensée pour vous.",
-      ru: "Закрытое предложение для возвращения. Не выгоднее стартовых скидок — но составлено для вас." } },
+      it: "Sul Free vedi 1 pick per sport a settimana: il board completo con edge, stake e closing line value resta chiuso. Riattiva quando vuoi — i tuoi dati e il tuo storico sono ancora al loro posto.",
+      en: "On Free you see 1 pick per sport each week: the full board with edge, stake and closing line value stays locked. Reactivate whenever you want — your data and history are still in place.",
+      es: "En Free ves 1 pick por deporte a la semana: el board completo con edge, stake y closing line value sigue cerrado. Reactiva cuando quieras — tus datos y tu historial siguen en su sitio.",
+      fr: "En Free vous voyez 1 pronostic par sport et par semaine : le board complet avec edge, mise et closing line value reste fermé. Réactivez quand vous voulez — vos données et votre historique sont toujours en place.",
+      ru: "На Free вы видите 1 прогноз по каждому виду спорта в неделю: полный борд с edge, размером ставки и closing line value остаётся закрыт. Возвращайтесь когда захотите — ваши данные и история на месте." } },
   { key: "wb_day21_final", flow: "winback", day: 21,
     subject: {
       it: "Ultimo promemoria", en: "Last reminder", es: "Último recordatorio",
