@@ -18,6 +18,7 @@
 // sarebbero rimasti VUOTI.
 
 import { promoEligibility } from "@/lib/creator-promo";
+import { isInternalIdentifier } from "@/lib/crm-internal";
 import { dbQuery } from "@/lib/db";
 
 const API_BASE = "https://api.resend.com";
@@ -206,6 +207,18 @@ export async function enterResendOnboarding(
   identifier: string,
   loadContact: (id: string) => Promise<SegmentContact | null> = loadProfileContact
 ): Promise<boolean> {
+  // #CRM-EXCLUDE-INTERNAL-0817 — il gate degli interni sta QUI e non solo in
+  // `isEligible`, perché dal 17/08 l'acquisition non passa più dal motore CRM:
+  // questa funzione crea il contatto in Audience e innesca l'automation, quindi è
+  // l'unico punto che decide se un indirizzo entra nella sequenza. Un membro del
+  // team che attiva un account con l'opt-in spuntato entrerebbe altrimenti nella
+  // stessa scala di un cliente, e il gate del cron non lo vedrebbe mai.
+  // (Il sync giornaliero è coperto a monte: i contatti arrivano da
+  // buildSegmentQuery, che ora esclude gli interni in SQL.)
+  if (isInternalIdentifier(identifier)) {
+    console.log("[resend-contacts] interno: nessun ingresso nell'automation", identifier);
+    return false;
+  }
   const ready = await upsertContactForActivation(identifier, loadContact);
   if (!ready) {
     console.error(

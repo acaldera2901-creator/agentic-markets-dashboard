@@ -1,6 +1,11 @@
 // lib/crm.ts
-// Logica lifecycle CRM (#CRM-LIFECYCLE) — PURA e testabile. Determina il flow di
-// un profilo (uno solo alla volta) e i trigger dovuti oggi.
+// Logica lifecycle CRM (#CRM-LIFECYCLE) — determina il flow di un profilo (uno
+// solo alla volta) e i trigger dovuti oggi. Resta senza I/O e testabile, ma dal
+// 17/08 NON è più pura in senso stretto: `isEligible` consulta la lista degli
+// indirizzi interni, che vive in env (#CRM-EXCLUDE-INTERNAL-0817). Nei test si
+// governa settando CRM_INTERNAL_IDENTIFIERS / CRM_INTERNAL_DOMAINS.
+
+import { isInternalIdentifier } from "./crm-internal";
 
 export type CrmFlow = "onboarding" | "acquisition" | "retention" | "winback" | "none";
 
@@ -51,6 +56,11 @@ export function isEligible(p: CrmProfile): boolean {
   if (p.plan === "admin_full") return false;
   if (p.marketing_opt_out) return false;
   if (!p.identifier.includes("@")) return false;
+  // #CRM-EXCLUDE-INTERNAL-0817: team, account di prova e referral interni non
+  // sono clienti da coltivare. Prima di questo gate il lifecycle scriveva a 8
+  // indirizzi interni su 9 destinatari totali. Stessa lista usata dall'Audience
+  // (lib/crm-internal.ts) per non far divergere le due superfici.
+  if (isInternalIdentifier(p.identifier)) return false;
   // Consenso = SOFT OPT-IN CLIENTI (decisione Andrea 2026-06-28, opzione A):
   // si contattano solo i clienti (base/premium) e gli utenti attivati. I profili
   // non attivati sono esclusi (niente marketing senza attivazione).

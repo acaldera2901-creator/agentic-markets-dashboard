@@ -5,6 +5,7 @@
 // vengono escapati da lib/db.interpolate. Mai SQL raw dall'input.
 
 import { ADMIN_IDENTIFIER } from "./admin-profile-policy";
+import { internalSqlFragment } from "./crm-internal";
 
 export type SegmentClause = { field: string; op: string; value?: unknown };
 export type SegmentRule = { all: SegmentClause[] };
@@ -112,10 +113,20 @@ function compileClause(c: SegmentClause, next: number): { sql: string; params: u
 // 2026-06-28 esclude (soft opt-in NON copre gli sconti ai free mai paganti).
 // Ora: paganti (soft opt-in, art. 130 c.4) OPPURE free attivati CON opt-in
 // esplicito; chi ha fatto opt-out è sempre fuori.
+// 2026-08-17 (#CRM-EXCLUDE-INTERNAL-0817): aggiunta l'esclusione degli interni.
+// Mancava qui come mancava nel motore CRM, quindi il team stava nell'Audience da
+// cui si compongono i Broadcast. Il frammento arriva da lib/crm-internal.ts —
+// lo stesso modulo che usa isEligible — perché è già successo (27/07) che questa
+// copia SQL e quella TypeScript divergessero per un mese.
 function eligibilitySql(): { sql: string; params: unknown[] } {
+  const params: unknown[] = [ADMIN_ELIGIBILITY_EXCLUDE_EMAIL];
+  const internal = internalSqlFragment(params.length + 1);
+  params.push(...internal.params);
   return {
-    sql: "(plan IN ('base','premium') OR (plan = 'free' AND activated_at IS NOT NULL AND marketing_opt_in IS TRUE)) AND COALESCE(marketing_opt_out, false) = false AND plan <> 'admin_full' AND lower(identifier) <> $1",
-    params: [ADMIN_ELIGIBILITY_EXCLUDE_EMAIL],
+    sql:
+      "(plan IN ('base','premium') OR (plan = 'free' AND activated_at IS NOT NULL AND marketing_opt_in IS TRUE)) AND COALESCE(marketing_opt_out, false) = false AND plan <> 'admin_full' AND lower(identifier) <> $1" +
+      ` AND ${internal.sql}`,
+    params,
   };
 }
 
