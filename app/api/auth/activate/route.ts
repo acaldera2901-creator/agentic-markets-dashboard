@@ -5,6 +5,7 @@ import { siteOrigin, hashActivationToken, tokenHashMatches } from "@/lib/activat
 import { welcomeEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { grantInviteeBonus } from "@/lib/referral-rewards";
+import { sendResendEvent } from "@/lib/resend-contacts";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ type Row = {
   activation_token_hash: string | null;
   activation_token_expires: string | null;
   language: string | null;
+  marketing_opt_in: boolean | null;
 };
 
 function redirect(req: Request, query: string): NextResponse {
@@ -32,7 +34,7 @@ export async function GET(req: Request) {
   if (!token || !id) return redirect(req, "?activation=invalid");
 
   const rows = await dbQuery<Row>(
-    "SELECT identifier, activated_at, activation_token_hash, activation_token_expires, language FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
+    "SELECT identifier, activated_at, activation_token_hash, activation_token_expires, language, marketing_opt_in FROM profiles WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1 LIMIT 1",
     [id]
   );
   const row = rows[0];
@@ -88,6 +90,29 @@ export async function GET(req: Request) {
       html: mail.html,
       text: mail.text,
     });
+
+    // #CRM-RESEND-ENGINE-0817 — innesca l'automation `Onboarding_Automation` su
+    // Resend, che da qui in avanti possiede la sequenza di acquisition (g2/g4/g7
+    // i testi di Steve, g10/g21/g28 le offerte, g35 il congedo). Senza questo
+    // evento l'automation resta a zero run: le Automations si innescano SOLO su
+    // `POST /events/send`, mai su un invio transazionale.
+    //
+    // Il consenso si verifica QUI e non su Resend: l'evento crea il contatto in
+    // Audience, quindi è già trattamento marketing, e la sequenza è conversione
+    // verso free mai paganti — che il soft opt-in non copre (verdetto
+    // legale-compliance 2026-06-28). Chi non ha spuntato la casella al signup
+    // riceve attivazione e welcome (servizio) e nient'altro: è una decisione di
+    // Andrea del 17/08, non una dimenticanza.
+    //
+    // Fail-closed sul dato mancante: solo `=== true` spara. Best-effort come la
+    // welcome sopra — un errore di Resend non deve costare l'attivazione.
+    if (row.marketing_opt_in === true) {
+      try {
+        await sendResendEvent("Account_Activated", row.identifier);
+      } catch (e) {
+        console.error("[auth/activate] evento Account_Activated fallito:", String(e));
+      }
+    }
   }
 
   // Activated → issue the session cookie and land on the board.

@@ -30,6 +30,14 @@ assert.equal(payload.properties.lifecycle_stage, "active");
 assert.equal(payload.properties.cohort_month, "2026-05");
 assert.equal(payload.properties.tenure_bucket, "30d_plus");
 
+// #CRM-RESEND-ENGINE-0817 — `promo_eligible` gata le tre mail-offerta su Resend, dove
+// la deadline è scritta letterale nel template e nessuna env può fermarla. Il default
+// DEVE essere "false": chi chiama senza calcolare l'eleggibilità non può finire per
+// promettere uno sconto che il checkout rifiuta (#CRM-FAKE-OFFERS-0805).
+assert.equal(payload.properties.promo_eligible, "false");
+assert.equal(buildContactPayload(base, NOW, false).properties.promo_eligible, "false");
+assert.equal(buildContactPayload(base, NOW, true).properties.promo_eligible, "true");
+
 // tenure come etichetta: le properties Resend sono stringhe, e un Broadcast non sa
 // confrontare date. Sostituisce i segmenti joined_last_7d / tenure_30d_plus, che il
 // piano (3 segmenti) non consente di tenere come contenitori.
@@ -110,11 +118,14 @@ async function propertyTests() {
     }) as unknown as typeof fetch;
 
     const created = await ensureContactProperties("k");
-    assert.deepEqual(created.sort(), ["cohort_month", "language", "lifecycle_stage", "plan", "tenure_bucket"]);
+    // `promo_eligible` (#CRM-RESEND-ENGINE-0817) è il gate delle tre mail-offerta su
+    // Resend: se il sync non la dichiara, i nodi-offerta leggono una property che non
+    // esiste — lo stesso difetto che aveva ucciso `Deposit_Done`.
+    assert.deepEqual(created.sort(), ["cohort_month", "language", "lifecycle_stage", "plan", "promo_eligible", "tenure_bucket"]);
     // create con `key` + `type` (non `name`: la doc parla di key, e con name Resend
     // accetta la chiamata ma la property nasce senza chiave usabile)
     const posts = calls.filter((c) => c.method === "POST");
-    assert.equal(posts.length, 5);
+    assert.equal(posts.length, 6);
     assert.deepEqual(posts[0].body, { key: "plan", type: "string" });
     assert.equal(posts.every((c) => c.path === "/contact-properties"), true);
   }

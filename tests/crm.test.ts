@@ -42,9 +42,11 @@ assert.deepEqual(dueTriggers("acquisition", 14, tps, new Set(["acq_day7"])).map(
 assert.deepEqual(dueTriggers("retention", 14, tps, new Set()).map(t => t.key), []);
 assert.deepEqual(dueTriggers("retention", 3, tps, new Set()).map(t => t.key), ["ret_3d"]);
 
-// flowAllowed: acquisition richiede opt-in esplicito; gli altri flussi no
+// flowAllowed: #CRM-RESEND-ENGINE-0817 — l'acquisition la manda l'automation Resend,
+// non questo motore, quindi qui è chiusa SEMPRE: nemmeno l'opt-in la riapre. È la
+// guardia che impedisce due sequenze sulle stesse persone negli stessi giorni.
 assert.equal(flowAllowed("acquisition", { ...base, marketing_opt_in: false }), false);
-assert.equal(flowAllowed("acquisition", { ...base, marketing_opt_in: true }), true);
+assert.equal(flowAllowed("acquisition", { ...base, marketing_opt_in: true }), false);
 assert.equal(flowAllowed("retention", { ...base, marketing_opt_in: false }), true);
 assert.equal(flowAllowed("winback", { ...base, marketing_opt_in: false }), true);
 assert.equal(flowAllowed("onboarding", { ...base, marketing_opt_in: false }), true);
