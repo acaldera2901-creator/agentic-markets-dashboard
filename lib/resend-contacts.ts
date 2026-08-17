@@ -18,6 +18,7 @@
 // sarebbero rimasti VUOTI.
 
 import { promoEligibility } from "@/lib/creator-promo";
+import { dbQuery } from "@/lib/db";
 
 const API_BASE = "https://api.resend.com";
 const EXPIRING_WINDOW_DAYS = 7;
@@ -124,6 +125,96 @@ async function call(
   let json: unknown = null;
   try { json = await resp.json(); } catch { /* 204 o body vuoto */ }
   return { ok: resp.ok, status: resp.status, json };
+}
+
+/**
+ * Crea/aggiorna su Resend il contatto di UN profilo, con le properties già scritte.
+ *
+ * #CRM-RESEND-CONTACT-FIRST-0817 — va chiamata PRIMA di `sendResendEvent`, e il
+ * perché è l'intero senso di questa funzione. Le condizioni dell'automation leggono
+ * `contact.lifecycle_stage`; il contatto però lo creerebbe l'evento stesso, e le
+ * properties le scrive il sync delle 05:00. Chi si registra e attiva nello stesso
+ * momento — il percorso NORMALE, minuti di distanza — sarebbe valutato con
+ * `lifecycle_stage` ASSENTE, e siccome le properties nascono senza fallback (vedi
+ * `ensureContactProperties`) `assente is not equal to "prospect"` è vero: su quei
+ * nodi vero significa uscire. Risultato: l'utente esce a g0 e non riceve nulla.
+ *
+ * È la stessa forma del difetto che teneva morta l'automation di Steve
+ * (`Deposit_Done`): una condizione che legge uno stato che non esiste ancora. La
+ * cura è la stessa in entrambi i casi — far esistere lo stato prima che qualcuno
+ * lo legga, non dare un fallback che mentirebbe sui paganti.
+ *
+ * Best-effort: ritorna `false` invece di lanciare. È sul percorso di attivazione.
+ */
+export async function loadProfileContact(identifier: string): Promise<SegmentContact | null> {
+  const rows = await dbQuery<SegmentContact>(
+    `SELECT id::text, identifier, name, plan, language, requested_plan,
+            plan_expires_at::text, created_at::text, activated_at::text
+       FROM profiles WHERE identifier = $1 LIMIT 1`,
+    [identifier]
+  );
+  return rows[0] ?? null;
+}
+
+export async function upsertContactForActivation(
+  identifier: string,
+  // Cucitura per il test dell'ordine: la sola dipendenza non-HTTP di questa
+  // funzione. Il default è la lettura vera; il test inietta un profilo finto
+  // perché quello che va difeso è la SEQUENZA delle chiamate a Resend.
+  loadContact: (id: string) => Promise<SegmentContact | null> = loadProfileContact
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const audienceId = process.env.RESEND_AUDIENCE_ID;
+  if (!apiKey || !audienceId) {
+    console.error("[resend-contacts] upsert pre-evento saltato: RESEND_API_KEY/RESEND_AUDIENCE_ID non configurate");
+    return false;
+  }
+  try {
+    const c = await loadContact(identifier);
+    if (!c) {
+      console.error("[resend-contacts] upsert pre-evento: profilo non trovato", identifier);
+      return false;
+    }
+    // Stessa fonte del sync e del checkout, così le tre superfici non divergono.
+    let promoEligible = false;
+    try {
+      promoEligible = (await promoEligibility(identifier)).firstPaidOrder;
+    } catch (e) {
+      console.error("[resend-contacts] promo eligibility fallita (pre-evento):", identifier, String(e));
+    }
+    await ensureContactProperties(apiKey);
+    await upsertContact(audienceId, apiKey, buildContactPayload(c, new Date().toISOString(), promoEligible));
+    return true;
+  } catch (e) {
+    console.error("[resend-contacts] upsert pre-evento fallito:", identifier, String(e));
+    return false;
+  }
+}
+
+/**
+ * Fa entrare un profilo nell'automation di onboarding su Resend: contatto con le
+ * properties PRIMA, evento DOPO. L'ordine è il contenuto di questa funzione, e sta
+ * qui e non nella route perché è la cosa che regredisce in silenzio se qualcuno
+ * riordina due righe.
+ *
+ * Se l'upsert del contatto non riesce l'evento NON parte, di proposito: un evento
+ * su un contatto senza `lifecycle_stage` produce un run che scarta l'utente e in
+ * Observability è indistinguibile da «ha funzionato». Meglio nessun run e una riga
+ * di errore che dice cosa è mancato — l'utente si recupera dopo il sync.
+ */
+export async function enterResendOnboarding(
+  identifier: string,
+  loadContact: (id: string) => Promise<SegmentContact | null> = loadProfileContact
+): Promise<boolean> {
+  const ready = await upsertContactForActivation(identifier, loadContact);
+  if (!ready) {
+    console.error(
+      "[resend-contacts] evento NON inviato: contatto non pronto, l'automation scarterebbe il profilo",
+      identifier
+    );
+    return false;
+  }
+  return sendResendEvent("Account_Activated", identifier);
 }
 
 /**

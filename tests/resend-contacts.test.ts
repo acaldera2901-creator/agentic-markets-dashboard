@@ -1,6 +1,6 @@
 // tests/resend-contacts.test.ts
 import assert from "node:assert/strict";
-import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, tenureBucket, ensureContactProperties, syncSegmentToResend, CONTACT_PROPERTY_KEYS, type SegmentContact } from "../lib/resend-contacts";
+import { lifecycleStage, cohortMonth, buildContactPayload, reconcileContactSegments, tenureBucket, ensureContactProperties, syncSegmentToResend, enterResendOnboarding, CONTACT_PROPERTY_KEYS, type SegmentContact } from "../lib/resend-contacts";
 
 const NOW = "2026-06-27T12:00:00.000Z";
 
@@ -168,6 +168,59 @@ async function propertyTests() {
   console.log("resend properties ok");
 }
 
+// #CRM-RESEND-CONTACT-FIRST-0817 — l'ORDINE è il difetto che questo test difende.
+// Le condizioni dell'automation leggono `contact.lifecycle_stage`; se l'evento parte
+// prima che il contatto esista con le properties, l'utente viene valutato con la
+// property assente ed esce a g0 senza ricevere nulla. È la stessa forma del difetto
+// che teneva morta l'automation di Steve (`Deposit_Done`): una condizione che legge
+// uno stato inesistente. Qui si verifica che lo stato venga creato PRIMA.
+async function orderingTests() {
+  const realFetch = globalThis.fetch;
+  process.env.RESEND_API_KEY = "k";
+  process.env.RESEND_AUDIENCE_ID = "aud";
+  {
+    // percorso felice: /contacts DEVE precedere /events/send
+    const paths: string[] = [];
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string }) => {
+      const path = String(url).replace("https://api.resend.com", "");
+      const method = init?.method ?? "GET";
+      if (method !== "GET") paths.push(path);
+      return new Response(JSON.stringify({ id: "x", data: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const ok = await enterResendOnboarding("a@b.com", async () => base);
+    assert.equal(ok, true);
+    const contactAt = paths.indexOf("/contacts");
+    const eventAt = paths.indexOf("/events/send");
+    assert.ok(contactAt >= 0, "il contatto deve essere creato");
+    assert.ok(eventAt >= 0, "l'evento deve essere inviato");
+    assert.ok(contactAt < eventAt, "il contatto DEVE precedere l'evento");
+  }
+  {
+    // contatto non creabile → l'evento NON parte: un run che scarta l'utente è
+    // indistinguibile da "ha funzionato", una riga di errore no.
+    const paths: string[] = [];
+    globalThis.fetch = (async (url: string | URL, init?: { method?: string }) => {
+      const path = String(url).replace("https://api.resend.com", "");
+      const method = init?.method ?? "GET";
+      if (method !== "GET") paths.push(path);
+      // sia POST /contacts sia il PATCH di fallback devono fallire: `upsertContact`
+      // fa upsert in due tempi, e far cadere solo il POST lascia riuscire il PATCH.
+      if (path === "/contacts" || path.startsWith("/contacts/")) {
+        return new Response(JSON.stringify({ statusCode: 422 }), { status: 422 });
+      }
+      return new Response(JSON.stringify({ id: "x", data: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const ok = await enterResendOnboarding("a@b.com", async () => base);
+    assert.equal(ok, false);
+    assert.equal(paths.includes("/events/send"), false, "nessun evento se il contatto non è pronto");
+  }
+  globalThis.fetch = realFetch;
+  console.log("resend ordering ok");
+}
+
 membershipTests()
   .then(propertyTests)
+  .then(orderingTests)
   .catch((e) => { console.error(e); process.exit(1); });
