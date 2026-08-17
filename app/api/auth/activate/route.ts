@@ -5,7 +5,7 @@ import { siteOrigin, hashActivationToken, tokenHashMatches } from "@/lib/activat
 import { welcomeEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { grantInviteeBonus } from "@/lib/referral-rewards";
-import { sendResendEvent } from "@/lib/resend-contacts";
+import { enterResendOnboarding } from "@/lib/resend-contacts";
 
 export const dynamic = "force-dynamic";
 
@@ -108,9 +108,12 @@ export async function GET(req: Request) {
     // welcome sopra — un errore di Resend non deve costare l'attivazione.
     if (row.marketing_opt_in === true) {
       try {
-        await sendResendEvent("Account_Activated", row.identifier);
+        // #CRM-RESEND-CONTACT-FIRST-0817 — contatto con le properties prima,
+        // evento dopo: l'ordine vive in `enterResendOnboarding` proprio perché è
+        // la cosa che si rompe se qualcuno riordina due righe qui.
+        await enterResendOnboarding(row.identifier);
       } catch (e) {
-        console.error("[auth/activate] evento Account_Activated fallito:", String(e));
+        console.error("[auth/activate] ingresso automation Resend fallito:", String(e));
       }
     }
   }
