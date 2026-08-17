@@ -21,8 +21,19 @@ export type Touchpoint = { key: string; flow: Exclude<CrmFlow, "none">; day: num
 // a utenti free MAI paganti) richiede OPT-IN ESPLICITO; retention/win-back/onboarding
 // stanno sul soft opt-in clienti (già filtrato da isEligible). Finché non esiste la
 // checkbox al signup, marketing_opt_in=false → nessuna email di acquisition.
-export function flowAllowed(flow: CrmFlow, p: CrmProfile): boolean {
-  if (flow === "acquisition") return p.marketing_opt_in === true;
+//
+// #CRM-RESEND-ENGINE-0817 — l'acquisition NON la manda più questo motore: la manda
+// l'automation `Onboarding_Automation` su Resend (g2/g4/g7 = i testi di Steve, g10/
+// g21/g28 = le tre offerte, g35 = il congedo), innescata da `Account_Activated` che
+// `app/api/auth/activate/route.ts` spara SOLO con marketing_opt_in=true. Lasciare
+// vivi anche i touchpoint di acquisition qui significherebbe due sequenze sulle
+// stesse persone negli stessi giorni.
+// Il copy dei 7 touchpoint resta in `lib/crm-content.ts` di proposito: se un giorno
+// il motore torna nel codice basta togliere questa riga, e le chiavi invariate +
+// `crm_trigger_sends` garantiscono che nessuno riceva due volte la stessa mail.
+// Retention, win-back e `onb_activate` restano di questo motore.
+export function flowAllowed(flow: CrmFlow, _p: CrmProfile): boolean {
+  if (flow === "acquisition") return false;
   return true;
 }
 
