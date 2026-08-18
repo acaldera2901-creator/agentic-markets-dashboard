@@ -13,7 +13,10 @@ const call = async (headers: Record<string, string>) => {
 describe("GET /api/geo-books", () => {
   it("restituisce il country dall'header Vercel, normalizzato ISO-2 uppercase", async () => {
     expect(await call({ "x-vercel-ip-country": "no" })).toEqual({ blocked: false, country: "NO" });
-    expect(await call({ "x-vercel-ip-country": " CH " })).toEqual({ blocked: false, country: "CH" });
+    // Qui c'era " CH " come esempio di geo NON bloccata. Dal 18/08 la Svizzera è nel
+    // hard-block (#CH01-P0-ADSPOLICY-0814), quindi come caso "trim + uppercase su geo
+    // ammessa" serve un'altra geo; CH si è spostata nel test del blocco qui sotto.
+    expect(await call({ "x-vercel-ip-country": " gb " })).toEqual({ blocked: false, country: "GB" });
   });
 
   it("accetta anche l'header Cloudflare", async () => {
@@ -23,6 +26,11 @@ describe("GET /api/geo-books", () => {
   it("blocca le giurisdizioni vietate e ne restituisce comunque il country", async () => {
     expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: true, country: "IT" });
     expect((await call({ "x-vercel-ip-country": "DE" })).blocked).toBe(true);
+    // La Svizzera passa da qui: è questo `blocked` che chiude, fail-closed, la riga
+    // loghi partner e il link /partners nel footer (SiteFooter) e l'intera pagina
+    // /partners — superfici che l'allowlist env NON governa. È la ragione per cui il
+    // blocco CH sta in codice e non in `SPORTSBOOK_GEO_ALLOWLIST`.
+    expect(await call({ "x-vercel-ip-country": " ch " })).toEqual({ blocked: true, country: "CH" });
   });
 
   it("senza header: country vuoto e non bloccato (fail-open pre-esistente, #GOLIVE-HIGH-D)", async () => {

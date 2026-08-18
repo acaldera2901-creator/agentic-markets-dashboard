@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mergeBooksToResponse, type FpOddsEntry } from "@/lib/fortuneplay-board";
 import { fetchAllBooks } from "@/lib/betconstruct-feed";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 export const dynamic = "force-dynamic"; // la funzione gira sempre fresca (no build-time fetch cache)
 
@@ -17,8 +18,13 @@ const ODDS_CACHE = "public, s-maxage=25, stale-while-revalidate=300";
 // #A2-B2 (Decreto Dignità, D.L. 87/2018 art.9): stessa risoluzione geo di
 // /api/geo-books (header Vercel/Cloudflare, non falsificabile dal client). Hard-block
 // a livello di SOURCE così ogni consumer (WcBoard, MatchDetailSheet, football board)
-// non riceve MAI URL/quote FortunePlay per un viewer IT — non solo non le renderizza.
-const GEO_BLOCKED_COUNTRIES = new Set(["IT"]);
+// non riceve MAI URL/quote FortunePlay per un viewer bloccato — non solo non le renderizza.
+//
+// #CH01-P0-ADSPOLICY-0814: questa rotta teneva un set LOCALE con dentro solo "IT",
+// quindi serviva quote e deep-link FortunePlay a DE/FR/NL/ES/BE malgrado la policy
+// li dichiari hard-bloccati — e avrebbe continuato a servirli alla Svizzera anche
+// togliendo CH da SPORTSBOOK_GEO_ALLOWLIST, perché questo rail non guarda l'allowlist.
+// Ora arriva dalla costante condivisa (importata in testa): una lista sola, sette geo.
 function resolveCountry(req: NextRequest): string {
   return (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")
     .trim()
