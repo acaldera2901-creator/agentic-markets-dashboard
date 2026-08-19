@@ -3,6 +3,7 @@
 // scheda (non per-card). TTL-cache per match lato lib. Degrada a [] su errore.
 import { NextRequest, NextResponse } from "next/server";
 import { fetchFortuneplayMatchMarkets, curateMarkets } from "@/lib/fortuneplay-match";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,8 @@ export const dynamic = "force-dynamic";
 // /api/geo-books (header Vercel/Cloudflare, non falsificabile dal client). Hard-block
 // a livello di SOURCE così ogni consumer (es. MatchDetailSheet) non riceve MAI le
 // quote FortunePlay per un viewer IT.
-const GEO_BLOCKED_COUNTRIES = new Set(["IT"]);
+// #GEO-OPEN-0819: era un set LOCALE con solo "IT" (vedi la nota gemella in
+// /api/fortuneplay-odds). Ora arriva dalla costante condivisa, importata in testa.
 function resolveCountry(req: NextRequest): string {
   return (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")
     .trim()

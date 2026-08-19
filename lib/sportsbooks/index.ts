@@ -8,16 +8,39 @@ export function linksEnabled(): boolean {
   return process.env.SPORTSBOOK_LINKS_ENABLED === "true";
 }
 
-// #GOLIVE-HIGH-D (audit go-live legale): mercati UE dove promuovere operatori non
-// licenziati localmente è illecito autonomo — IT (Decreto Dignità, D.L. 87/2018
-// art.9), DE (GlüStV 2021), FR (ANJ), NL (KOA/KSA), ES (DGOJ), BE (Gaming Commission).
-// I link ai book + revshare = pubblicità INDIRETTA di scommesse. Hard-block a livello
-// codice, PRIMA dell'allowlist env: queste geo non ricevono MAI link-book anche se
-// SPORTSBOOK_GEO_ALLOWLIST è "*" o le include per errore. Presidio non aggirabile via
-// misconfig. Policy PROVVISORIA in attesa del memo legale-compliance; in futuro
-// restringibile via allowlist per-operatore/licenza. Fonte unica di verità: la stessa
-// costante è importata da app/api/geo-books/route.ts (niente set duplicati da allineare).
-export const GEO_BLOCKED_COUNTRIES = new Set(["IT", "DE", "FR", "NL", "ES", "BE"]);
+// #GEO-OPEN-0819 — GEO APERTA IN TUTTO IL MONDO. Decisione di Jo (il capo) del
+// 19/08/2026, con parere legale SCRITTO a copertura, relayata da calde per conto di
+// Andrea: ogni utente vede il sito completo, partner e link bookmaker inclusi.
+// Il default di questa costante è quindi VUOTO = nessuna geo bloccata.
+//
+// Cosa c'era prima, e perché sta scritto qui invece di essere cancellato: fino a oggi
+// il set conteneva IT, DE, FR, NL, ES, BE — i mercati che l'audit go-live
+// (#GOLIVE-HIGH-D) aveva identificato come giurisdizioni dove promuovere operatori
+// non licenziati localmente è un ILLECITO AUTONOMO, non un rischio di policy:
+// IT (Decreto Dignità, D.L. 87/2018 art.9), DE (GlüStV 2021), FR (ANJ), NL (KOA/KSA),
+// ES (DGOJ), BE (Gaming Commission). In Italia il divieto di pubblicità è totale.
+// Quella lista non era una preferenza di prodotto e la si riapre su una decisione
+// umana documentata, non per semplificazione: se in futuro qualcuno chiede in base a
+// cosa l'Italia è stata riaperta, la risposta è il parere di Jo del 19/08, che va
+// tenuto agli atti (vault/council) — richiesta già girata a calde.
+//
+// La lista è ora governata dall'ENV `GEO_BLOCKED_COUNTRIES` (ISO-2, separati da
+// virgola) così che ri-chiudere una singola giurisdizione — se arriva una diffida o
+// cambia il parere — sia una modifica di configurazione e non una release di codice.
+// ⚠️ Il rovescio, dichiarato: prima il presidio era in codice e NON aggirabile per
+// misconfig; ora una env sbagliata o assente lascia tutto APERTO. È il compromesso
+// che questa decisione comporta, ed è scritto qui perché chi lo cambia sappia cosa
+// sta cambiando.
+//
+// Consumatori (fonte unica, niente set duplicati): app/api/geo-books/route.ts — che a
+// sua volta gatta la riga loghi partner e il link /partners nel footer e la pagina
+// /partners, tutti fail-closed su questo valore — e le due rotte FortunePlay.
+export const GEO_BLOCKED_COUNTRIES = new Set(
+  (process.env.GEO_BLOCKED_COUNTRIES || "")
+    .split(",")
+    .map((c) => c.trim().toUpperCase())
+    .filter(Boolean),
+);
 
 // Geo-gate. Lista vuota -> nessuna geo ammessa (default sicuro). "*" -> globale.
 export function geoAllowed(country: string | null | undefined): boolean {

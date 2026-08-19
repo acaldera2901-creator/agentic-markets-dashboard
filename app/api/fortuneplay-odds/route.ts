@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mergeBooksToResponse, type FpOddsEntry } from "@/lib/fortuneplay-board";
 import { fetchAllBooks } from "@/lib/betconstruct-feed";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 export const dynamic = "force-dynamic"; // la funzione gira sempre fresca (no build-time fetch cache)
 
@@ -18,7 +19,12 @@ const ODDS_CACHE = "public, s-maxage=25, stale-while-revalidate=300";
 // /api/geo-books (header Vercel/Cloudflare, non falsificabile dal client). Hard-block
 // a livello di SOURCE così ogni consumer (WcBoard, MatchDetailSheet, football board)
 // non riceve MAI URL/quote FortunePlay per un viewer IT — non solo non le renderizza.
-const GEO_BLOCKED_COUNTRIES = new Set(["IT"]);
+// #GEO-OPEN-0819: questa rotta teneva una COPIA LOCALE del set con dentro solo "IT",
+// mentre il commento della costante condivisa dichiarava di essere la fonte unica.
+// Conseguenza pratica: aprendo la geo (decisione Jo del 19/08) un utente italiano
+// vedrebbe i loghi partner e la vetrina /partners ma NON le quote FortunePlay — cioè
+// una policy applicata a metà, in una direzione o nell'altra. Ora importa la costante
+// condivisa, così "aperto" e "chiuso" significano la stessa cosa su tutte le superfici.
 function resolveCountry(req: NextRequest): string {
   return (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")
     .trim()

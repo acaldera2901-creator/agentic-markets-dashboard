@@ -20,9 +20,14 @@ describe("GET /api/geo-books", () => {
     expect(await call({ "cf-ipcountry": "FI" })).toEqual({ blocked: false, country: "FI" });
   });
 
-  it("blocca le giurisdizioni vietate e ne restituisce comunque il country", async () => {
-    expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: true, country: "IT" });
-    expect((await call({ "x-vercel-ip-country": "DE" })).blocked).toBe(true);
+  it("#GEO-OPEN-0819: per default NESSUNA giurisdizione è bloccata", async () => {
+    // Prima IT e DE tornavano blocked:true (#GOLIVE-HIGH-D). La policy è cambiata —
+    // geo aperta, decisione di Jo del 19/08 con parere legale scritto — quindi qui ci
+    // si aspetta blocked:false. Ed è questo valore che apre la riga loghi partner, il
+    // link /partners nel footer e la pagina /partners: sono tutti gattati fail-closed
+    // su questo endpoint, quindi il cambio si propaga da qui senza altri interventi.
+    expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: false, country: "IT" });
+    expect((await call({ "x-vercel-ip-country": "DE" })).blocked).toBe(false);
   });
 
   it("senza header: country vuoto e non bloccato (fail-open pre-esistente, #GOLIVE-HIGH-D)", async () => {
