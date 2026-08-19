@@ -24,6 +24,32 @@ function activationFromAddress(): string {
   return process.env.ACTIVATION_FROM || fromAddress();
 }
 
+// #EMAIL-WARMUP-0819 — il marketing esce da un dominio SEPARATO dal transazionale
+// (news.betredge.com, verificato in Resend il 19/08 con spf/dkim/dmarc pass letti
+// su un invio reale). Serve perché una giornata brutta di promozionali non deve
+// portarsi dietro le mail di login: se la reputazione della radice si sporca,
+// l'utente non riceve l'OTP e non entra più.
+// Il fallback su fromAddress() è deliberato: senza MARKETING_FROM il comportamento
+// è identico a prima, quindi il deploy e l'impostazione della env sono indipendenti
+// e non esiste una finestra in cui le lifecycle non partono.
+export function marketingFromAddress(): string {
+  return process.env.MARKETING_FROM || fromAddress();
+}
+
+// Domini che per standard NON possono esistere su Internet: `.local` (RFC 6762),
+// `.test`/`.example`/`.invalid`/`.localhost` (RFC 2606/6761). Un invio verso questi
+// indirizzi non può che rimbalzare, e ogni bounce pesa sulla reputazione del
+// dominio mittente — non su quella del destinatario, che non esiste.
+// Non è teoria: un form di QA compilato con `qa-manual@betredge-test.local` ha
+// prodotto 1 bounce su 22 invii, cioè un bounce rate del 4,55% contro una soglia
+// di rischio del 2%, su un dominio che stiamo scaldando.
+const UNROUTABLE_TLDS = new Set(["local", "test", "example", "invalid", "localhost"]);
+
+export function isUnroutableAddress(addr: string): boolean {
+  const domain = (addr.split("@").pop() || "").toLowerCase().replace(/\.$/, "");
+  return UNROUTABLE_TLDS.has(domain.split(".").pop() || "");
+}
+
 // Public site origin used for email CTA links. Defaults to the production domain
 // so links never point at a stale preview deploy.
 function siteUrl(): string {
@@ -41,6 +67,14 @@ export async function sendEmail(opts: {
 }): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY not configured");
+
+  // Trust boundary: si rifiuta PRIMA della chiamata a Resend, così l'indirizzo
+  // impossibile non diventa un bounce a nostro carico. Fallisce loud di proposito —
+  // un signup con dominio inesistente deve rompersi in modo visibile, non passare
+  // in silenzio (è così che il QA se ne accorge invece della reputazione).
+  if (isUnroutableAddress(opts.to)) {
+    throw new Error(`Refusing to send to unroutable domain: ${opts.to}`);
+  }
 
   const resp = await fetch(RESEND_ENDPOINT, {
     method: "POST",
