@@ -328,7 +328,7 @@ export function launchDeadlineLabel(lang: CrmLang, iso?: string | null): string 
 //   - tutto il resto (referral, manuale, admin, sorgente assente): NESSUNA clausola.
 //     Chi non ha pagato non deve leggere "paga di nuovo", e su un dato mancante il
 //     silenzio è l'unica cosa che non può essere falsa.
-const RENEWAL_CLAUSE: Record<"oneoff" | "shopify", L10n> = {
+const RENEWAL_CLAUSE: Record<"oneoff" | "recurring", L10n> = {
   oneoff: {
     it: "L'accesso non si rinnova da solo: per continuare serve un nuovo pagamento.",
     en: "Access doesn't auto-renew: continuing takes a new payment.",
@@ -336,20 +336,36 @@ const RENEWAL_CLAUSE: Record<"oneoff" | "shopify", L10n> = {
     fr: "L'accès ne se renouvelle pas tout seul : continuer demande un nouveau paiement.",
     ru: "Доступ не продлевается сам: чтобы продолжить, нужен новый платёж.",
   },
-  shopify: {
-    it: "Se il tuo piano è a rinnovo automatico non devi fare nulla; se non lo è, per continuare serve un nuovo pagamento.",
-    en: "If your plan renews automatically there's nothing to do; if it doesn't, continuing takes a new payment.",
-    es: "Si tu plan se renueva automáticamente no tienes que hacer nada; si no, para continuar hace falta un nuevo pago.",
-    fr: "Si votre plan se renouvelle automatiquement, rien à faire ; sinon, continuer demande un nouveau paiement.",
-    ru: "Если ваш тариф продлевается автоматически, делать ничего не нужно; если нет — нужен новый платёж.",
+  recurring: {
+    it: "Il tuo piano si rinnova da solo alla scadenza: non devi fare nulla.",
+    en: "Your plan renews itself at the end of the period: there's nothing to do.",
+    es: "Tu plan se renueva solo al vencimiento: no tienes que hacer nada.",
+    fr: "Votre plan se renouvelle tout seul à l'échéance : rien à faire.",
+    ru: "Ваш тариф продлевается автоматически: делать ничего не нужно.",
   },
 };
 
-/** Rail → clausola. Sorgente sconosciuta o non-pagante ⇒ stringa vuota (nessun claim). */
+/**
+ * Rail → clausola. Sorgente sconosciuta o non-pagante ⇒ stringa vuota (nessun claim).
+ *
+ * #CRM-RENEWAL-COND-0819, secondo giro: la prima versione trattava `shopify` come
+ * AMBIGUO e usava una frase con un "se". Era inutilmente prudente: `plan-grant.ts:370`
+ * distingue GIÀ i due casi e lo scrive nel dato —
+ *   `shopify`        = dietro c'è un subscription contract che si rinnova da solo
+ *   `shopify_oneoff` = 30 giorni comprati una volta, nessun contratto
+ * — quindi la frase può essere CERTA invece di condizionale. L'informazione che
+ * cercavo di aggiungere con una colonna nuova esisteva già, sotto un nome che non
+ * avevo guardato.
+ * `stripe` sta fra i ricorrenti perché quel rail concede abbonamenti (c'è
+ * `stripe_subscription_id` sul profilo); è dormiente, ma se si accende la frase è
+ * giusta senza dover ripassare da qui.
+ */
 export function renewalClause(lang: CrmLang, planSource?: string | null): string {
   const s = (planSource ?? "").trim().toLowerCase();
-  if (s === "shopify") return RENEWAL_CLAUSE.shopify[lang];
-  if (s === "paygate" || s === "paypal" || s === "crypto") return RENEWAL_CLAUSE.oneoff[lang];
+  if (s === "shopify" || s === "stripe") return RENEWAL_CLAUSE.recurring[lang];
+  if (s === "shopify_oneoff" || s === "paygate" || s === "paypal" || s === "crypto") {
+    return RENEWAL_CLAUSE.oneoff[lang];
+  }
   return "";
 }
 

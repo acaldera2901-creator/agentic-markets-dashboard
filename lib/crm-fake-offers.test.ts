@@ -255,10 +255,21 @@ describe("clausola sul rinnovo: condizionale al rail, muta se non sa", () => {
     }
   });
 
-  it("Shopify: NON afferma che non si rinnova, perché si rinnova", () => {
-    const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: "shopify" });
-    expect(m!.text).not.toMatch(/non si rinnova da solo/i);
-    expect(m!.text).toMatch(/rinnovo automatico/i);
+  it("rail ricorrenti: dice che si rinnova da solo, senza 'se'", () => {
+    // plan-grant.ts distingue GIA' i due casi shopify: 'shopify' = subscription
+    // contract, 'shopify_oneoff' = 30 giorni una volta. Quindi la frase e' certa.
+    for (const src of ["shopify", "stripe"]) {
+      const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: src });
+      expect(m!.text, src).toMatch(/si rinnova da solo/i);
+      expect(m!.text, src).not.toMatch(/non si rinnova/i);
+      expect(m!.text, src).not.toMatch(/se.*rinnovo automatico/i);
+    }
+  });
+
+  it("shopify_oneoff sta con i one-off, non con i ricorrenti", () => {
+    // E' il caso che avevo trattato come ambiguo al primo giro: non lo e'.
+    const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: "shopify_oneoff" });
+    expect(m!.text).toMatch(/non si rinnova da solo/i);
   });
 
   it("sorgente assente o non-pagante: NESSUNA frase sul rinnovo", () => {
