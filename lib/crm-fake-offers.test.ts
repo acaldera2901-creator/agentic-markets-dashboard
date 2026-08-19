@@ -238,3 +238,49 @@ describe("la data annunciata è quella che il server applica", () => {
     expect(launchDeadlineLabel("en")).toBe("1 September");
   });
 });
+
+// #CRM-RENEWAL-COND-0819 — la clausola sul rinnovo deve dipendere dal rail, e in
+// assenza di informazione deve TACERE. Il difetto che questo test difende: dire
+// "l'accesso non si rinnova da solo, paga di nuovo" a un abbonato carta Shopify è
+// falso (i selling plan sono MONTH/YEAR, verificato nel sorgente da calde il 19/08)
+// e nella lettura peggiore lo invita a pagare due volte.
+describe("clausola sul rinnovo: condizionale al rail, muta se non sa", () => {
+  const RINNOVO = /rinnov|renew|renov|продлев/i;
+
+  it("rail one-off: dice che non si rinnova, ed è vero", () => {
+    for (const src of ["paygate", "PayGate", " paypal ", "crypto"]) {
+      const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: src });
+      expect(m, src).not.toBeNull();
+      expect(m!.text, src).toMatch(/non si rinnova da solo/i);
+    }
+  });
+
+  it("Shopify: NON afferma che non si rinnova, perché si rinnova", () => {
+    const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: "shopify" });
+    expect(m!.text).not.toMatch(/non si rinnova da solo/i);
+    expect(m!.text).toMatch(/rinnovo automatico/i);
+  });
+
+  it("sorgente assente o non-pagante: NESSUNA frase sul rinnovo", () => {
+    for (const src of [undefined, null, "", "referral", "manual", "admin"]) {
+      const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: src });
+      expect(m, String(src)).not.toBeNull();
+      expect(m!.text, String(src)).not.toMatch(RINNOVO);
+      // e il resto dell'email c'è ancora: il silenzio non deve svuotare il corpo
+      expect(m!.text, String(src)).toMatch(/piano Free/i);
+    }
+  });
+
+  it("nessun token grezzo e nessun doppio spazio in nessuna lingua e su nessun rail", () => {
+    for (const lang of LANGS) {
+      for (const src of [undefined, "shopify", "paygate", "referral"]) {
+        const m = renderCrm("ret_7d_before", lang, "a@b.com", { planSource: src });
+        const tag = `${lang}/${src}`;
+        expect(m, tag).not.toBeNull();
+        expect(m!.text, tag).not.toContain("{renewal}");
+        expect(m!.html, tag).not.toContain("{renewal}");
+        expect(m!.text, tag).not.toMatch(/ {2,}/);
+      }
+    }
+  });
+});

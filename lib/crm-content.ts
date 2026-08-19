@@ -199,12 +199,20 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     // #CRM-COPY-TRUTHFUL-0817: prometteva "il riepilogo del mese", che questa
     // email non contiene e che il prodotto non genera. Al suo posto la cosa vera
     // e concreta: alla scadenza si torna al Free, che è 1 pick per sport.
+    // #CRM-RENEWAL-COND-0819: la frase sul rinnovo era FALSA per metà dei clienti.
+    // Il 19/08 calde ha verificato nel sorgente che i selling plan Shopify hanno
+    // `billingPolicy.recurring.interval` = MONTH/YEAR, quindi si rinnovano da soli;
+    // solo gli SKU marcati `recurring:false` non lo fanno. Dire "l'accesso non si
+    // rinnova da solo: paga di nuovo" a un abbonato carta è dirgli il contrario del
+    // vero, e nella peggiore delle letture è invitarlo a pagare due volte. Ora la
+    // clausola è il token {renewal}, risolto per rail di pagamento — e in assenza di
+    // informazione NON dice nulla, invece di indovinare.
     body: {
-      it: "Alla scadenza torni al piano Free: 1 pick per sport a settimana. L'accesso non si rinnova da solo: paga di nuovo per continuare.",
-      en: "When it expires you go back to Free: 1 pick per sport each week. Access doesn't auto-renew: pay again to continue.",
-      es: "Al caducar vuelves al plan Free: 1 pick por deporte a la semana. El acceso no se renueva solo: vuelve a pagar para continuar.",
-      fr: "À l'échéance vous repassez au plan Free : 1 pronostic par sport et par semaine. L'accès ne se renouvelle pas tout seul : payez à nouveau pour continuer.",
-      ru: "После истечения вы вернётесь на тариф Free: 1 прогноз по каждому виду спорта в неделю. Доступ не продлевается сам: оплатите снова, чтобы продолжить." } },
+      it: "Alla scadenza torni al piano Free: 1 pick per sport a settimana. {renewal}",
+      en: "When it expires you go back to Free: 1 pick per sport each week. {renewal}",
+      es: "Al caducar vuelves al plan Free: 1 pick por deporte a la semana. {renewal}",
+      fr: "À l'échéance vous repassez au plan Free : 1 pronostic par sport et par semaine. {renewal}",
+      ru: "После истечения вы вернётесь на тариф Free: 1 прогноз по каждому виду спорта в неделю. {renewal}" } },
   { key: "ret_3d_before", flow: "retention", day: 3,
     subject: {
       it: "Rinnova: 3 giorni alla scadenza", en: "Renew: 3 days to expiry", es: "Renueva: quedan 3 días",
@@ -309,11 +317,47 @@ export function launchDeadlineLabel(lang: CrmLang, iso?: string | null): string 
   }
 }
 
+// #CRM-RENEWAL-COND-0819 — la clausola sul rinnovo, per rail di pagamento.
+// Tre casi e non due, perché `plan_source` non basta a decidere in un caso:
+//   - rail one-off (PayGate/crypto, PayPal): il pagamento è singolo → la frase
+//     originale è VERA e resta;
+//   - Shopify: i selling plan sono ricorrenti (MONTH/YEAR) MA esiste anche uno SKU
+//     one-off a 30 giorni, e sul profilo non c'è nulla che distingua i due. Quindi
+//     non si afferma né l'uno né l'altro: si dice che dipende dal piano, che è vero
+//     in ogni caso e non manda nessuno a pagare due volte;
+//   - tutto il resto (referral, manuale, admin, sorgente assente): NESSUNA clausola.
+//     Chi non ha pagato non deve leggere "paga di nuovo", e su un dato mancante il
+//     silenzio è l'unica cosa che non può essere falsa.
+const RENEWAL_CLAUSE: Record<"oneoff" | "shopify", L10n> = {
+  oneoff: {
+    it: "L'accesso non si rinnova da solo: per continuare serve un nuovo pagamento.",
+    en: "Access doesn't auto-renew: continuing takes a new payment.",
+    es: "El acceso no se renueva solo: para continuar hace falta un nuevo pago.",
+    fr: "L'accès ne se renouvelle pas tout seul : continuer demande un nouveau paiement.",
+    ru: "Доступ не продлевается сам: чтобы продолжить, нужен новый платёж.",
+  },
+  shopify: {
+    it: "Se il tuo piano è a rinnovo automatico non devi fare nulla; se non lo è, per continuare serve un nuovo pagamento.",
+    en: "If your plan renews automatically there's nothing to do; if it doesn't, continuing takes a new payment.",
+    es: "Si tu plan se renueva automáticamente no tienes que hacer nada; si no, para continuar hace falta un nuevo pago.",
+    fr: "Si votre plan se renouvelle automatiquement, rien à faire ; sinon, continuer demande un nouveau paiement.",
+    ru: "Если ваш тариф продлевается автоматически, делать ничего не нужно; если нет — нужен новый платёж.",
+  },
+};
+
+/** Rail → clausola. Sorgente sconosciuta o non-pagante ⇒ stringa vuota (nessun claim). */
+export function renewalClause(lang: CrmLang, planSource?: string | null): string {
+  const s = (planSource ?? "").trim().toLowerCase();
+  if (s === "shopify") return RENEWAL_CLAUSE.shopify[lang];
+  if (s === "paygate" || s === "paypal" || s === "crypto") return RENEWAL_CLAUSE.oneoff[lang];
+  return "";
+}
+
 export function renderCrm(
   key: string,
   lang: CrmLang,
   identifier: string,
-  opts?: { launchDeadline?: string | null }
+  opts?: { launchDeadline?: string | null; planSource?: string | null }
 ): { subject: string; html: string; text: string; unsubUrl: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
@@ -334,6 +378,15 @@ export function renderCrm(
     const deadline = launchDeadlineLabel(lang, opts?.launchDeadline);
     if (!deadline) return null;
     body = body.replaceAll("{deadline}", deadline);
+  }
+  // {renewal}: a differenza di {deadline} NON è fail-closed, perché la stringa vuota
+  // è un esito legittimo e desiderato (nessuna affermazione sul rinnovo). Va però
+  // ripulita la spaziatura, altrimenti resta un doppio spazio prima del punto finale
+  // — il tipo di dettaglio che fa sembrare l'email generata male.
+  if (body.includes("{renewal}")) {
+    body = body.replaceAll("{renewal}", renewalClause(lang, opts?.planSource))
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
   }
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
   const unl = UNSUB_LABEL[lang];

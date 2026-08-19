@@ -18,6 +18,11 @@ export type CrmProfile = {
   plan_expires_at: string | null;
   marketing_opt_out?: boolean;
   marketing_opt_in?: boolean;
+  /** #CRM-RENEWAL-COND-0819: rail di pagamento (shopify | paygate | paypal | referral
+   *  | manual | admin | null). Serve SOLO alla clausola sul rinnovo: dire "non si
+   *  rinnova da solo" a un abbonato carta e' falso. Opzionale di proposito, cosi'
+   *  chi non lo passa ottiene il silenzio invece di un'affermazione sbagliata. */
+  plan_source?: string | null;
 };
 
 export type Touchpoint = { key: string; flow: Exclude<CrmFlow, "none">; day: number };

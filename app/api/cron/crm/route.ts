@@ -46,7 +46,7 @@ export async function GET(req: Request) {
   const nowISO = new Date().toISOString();
 
   const profiles = (await dbQuery<CrmProfile>(
-    `SELECT identifier, plan, language, created_at::text, activated_at::text, plan_expires_at::text, marketing_opt_out, marketing_opt_in
+    `SELECT identifier, plan, plan_source, language, created_at::text, activated_at::text, plan_expires_at::text, marketing_opt_out, marketing_opt_in
        FROM profiles`
   )) ?? [];
 
@@ -98,7 +98,10 @@ export async function GET(req: Request) {
     if (preview.length < 50) preview.push({ to: p.identifier, flow, key: toSend.key });
     if (!live) continue;
     const lang = resolveCrmLang(p.language);
-    const mail = renderCrm(toSend.key, lang, p.identifier);
+    // #CRM-RENEWAL-COND-0819: il rail serve alla clausola sul rinnovo. Passarlo qui
+    // e non dentro renderCrm perché è un dato del PROFILO, e il renderer resta una
+    // funzione pura del suo input (è quello che lo rende testabile senza DB).
+    const mail = renderCrm(toSend.key, lang, p.identifier, { planSource: p.plan_source });
     if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
     let res: { sent: boolean; error?: string };
     try {
