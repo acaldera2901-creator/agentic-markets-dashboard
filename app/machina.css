@@ -46,7 +46,7 @@
 :root:not([data-theme="light"]) [data-mc-ground] .t-body{font-size:.95rem;line-height:1.6;color:var(--ink2);margin:0}
 :root:not([data-theme="light"]) [data-mc-ground] .t-key{font-family:var(--fm);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3)}
 :root:not([data-theme="light"]) [data-mc-ground] .num{font-family:var(--fm);font-variant-numeric:tabular-nums}
-:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{display:inline-flex;align-items:center;gap:.65rem;font-family:var(--fm);font-size:.66rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,var(--verde))}
+:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{display:inline-flex;align-items:center;gap:.65rem;font-family:var(--fm);font-size:.66rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--mc-accent,var(--verde))}
 :root:not([data-theme="light"]) [data-mc-ground] .eyebrow::before{content:"";width:1.6rem;height:3px;background:currentColor;flex:none}
 :root:not([data-theme="light"]) [data-mc-ground] .wrap{width:100%;max-width:1400px;margin-inline:auto;padding-inline:clamp(1rem,3.5vw,3rem)}
 
@@ -129,8 +129,8 @@
 /* ══ LA SCHEDA — struttura invariata ══ */
 :root:not([data-theme="light"]) [data-mc] .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;padding-block:1.3rem}
 :root:not([data-theme="light"]) [data-mc] .pred{position:relative;isolation:isolate;overflow:hidden;background:var(--night2);border:1px solid var(--night3);color:#fff;display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
-:root:not([data-theme="light"]) [data-mc] .pred::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;z-index:3;background:var(--accent,var(--d-football))}
-:root:not([data-theme="light"]) [data-mc] .pred:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent,var(--d-football)) 65%,transparent)}
+:root:not([data-theme="light"]) [data-mc] .pred::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;z-index:3;background:var(--mc-accent,var(--d-football))}
+:root:not([data-theme="light"]) [data-mc] .pred:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--mc-accent,var(--d-football)) 65%,transparent)}
 :root:not([data-theme="light"]) [data-mc] .card-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;opacity:.9;filter:saturate(1.08) contrast(1.04)}
 :root:not([data-theme="light"]) [data-mc] .card-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(18,21,25,.95) 50%,rgba(18,21,25,.76) 76%,rgba(18,21,25,.20) 100%)}
 :root:not([data-theme="light"]) [data-mc] .pred>*:not(.card-bg):not(.card-veil){position:relative;z-index:2}
@@ -446,7 +446,7 @@
 :root:not([data-theme="light"]) [data-mc] .seg-bar i{background:var(--verde-b)}
 
 /* ── il verde: il gradino chiaro è quello leggibile sul buio ── */
-:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--accent,var(--verde-b))}
+:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--mc-accent,var(--verde-b))}
 :root:not([data-theme="light"]) [data-mc] .edge,:root:not([data-theme="light"]) [data-mc] .sel-r .pp,:root:not([data-theme="light"]) [data-mc] .plan-l .ok,:root:not([data-theme="light"]) [data-mc] .scan-h b,:root:not([data-theme="light"]) [data-mc] .band-n b,:root:not([data-theme="light"]) [data-mc] .sband-n b,:root:not([data-theme="light"]) [data-mc] .pnote b{color:var(--verde-b)}
 :root:not([data-theme="light"]) [data-mc] .dot{background:var(--verde-b)}
 :root:not([data-theme="light"]) [data-mc] .rail a.on{box-shadow:inset 3px 0 0 var(--verde-b)}
@@ -537,7 +537,7 @@
 :root:not([data-theme="light"]) [data-mc] .pcard-b{padding:.85rem 1rem;display:grid;gap:.2rem}
 :root:not([data-theme="light"]) [data-mc] .pcard-b b{font-size:1rem}
 :root:not([data-theme="light"]) [data-mc] .pcard-f{margin-top:auto;padding:0 1rem 1rem;display:grid;gap:.5rem}
-:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--accent,#33c974)}
+:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--mc-accent,#33c974)}
 :root:not([data-theme="light"]) [data-mc] .scene .eyebrow{color:#fff!important}
 
 /* Un figlio di grid/flex non scende sotto la larghezza del suo contenuto:
@@ -605,12 +605,15 @@
    .pred::before / ::after per i due tratti obliqui che chiudono gli angoli
    tagliati (LEVEL-UP 1e): il filetto della preview li sovrascriveva e si
    vedeva un trattino diagonale nell'angolo invece di una barra in testa.
-   Qui si restituisce ai due pseudo la geometria di globals... */
-:root:not([data-theme="light"]) [data-mc] .card > .pred::before{
+   Qui si restituisce ai due pseudo la geometria di globals.
+   NB il selettore e' COMPOSTO (:root:not([data-theme="light"]) [data-mc].card, senza spazio): [data-mc] sta
+   sull'article.card, non su un suo antenato. Scritto con lo spazio la regola
+   non aggancia mai e resta un moncone diagonale al posto della smussatura. */
+:root:not([data-theme="light"]) [data-mc].card > .pred::before{
   inset:auto;top:calc(var(--ch) / 2);left:calc(var(--ch) / 2);
   width:calc(var(--ch) * 1.41421);height:1.4px;background:var(--_pe);z-index:auto;
   transform:translate(-50%,-50%) rotate(-45deg)}
-:root:not([data-theme="light"]) [data-mc] .card > .pred::after{
+:root:not([data-theme="light"]) [data-mc].card > .pred::after{
   inset:auto;bottom:calc(var(--ch) / 2);right:calc(var(--ch) / 2);
   width:calc(var(--ch) * 1.41421);height:1.4px;background:var(--_pe);
   transform:translate(50%,50%) rotate(-45deg)}
@@ -618,7 +621,7 @@
    che è il primo figlio e ha già position:relative. */
 :root:not([data-theme="light"]) [data-mc] .pred .top::before{
   content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
-  background:var(--accent,var(--d-football))}
+  background:var(--mc-accent,var(--d-football))}
 
 /* Il grigio del prodotto, alzato DENTRO lo scope. Il fondo nuovo ha spostato di
    poco la luminanza sotto il testo secondario e otto nodi sono scesi appena
