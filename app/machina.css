@@ -569,12 +569,12 @@
    pagina significa cambiare quella classe, senza variabili CSS
    impostate da JavaScript.
    ══════════════════════════════════════════════════════════════ */
-:root:not([data-theme="light"]) [data-mc-ground] .bgfix{background-position:center;background-size:cover;background-repeat:no-repeat}
-:root:not([data-theme="light"]) [data-mc-ground].mc-scene-stadium .bgfix{background-image:url(/banners/gen/scene-stadium.jpg)}
-:root:not([data-theme="light"]) [data-mc-ground].mc-scene-court .bgfix{background-image:url(/banners/gen/scene-court.jpg)}
-:root:not([data-theme="light"]) [data-mc-ground].mc-scene-clay .bgfix{background-image:url(/banners/gen/scene-clay.jpg)}
+[data-mc-ground] .bgfix{background-position:center;background-size:cover;background-repeat:no-repeat}
+[data-mc-ground].mc-scene-stadium .bgfix{background-image:url(/banners/gen/scene-stadium.jpg)}
+[data-mc-ground].mc-scene-court .bgfix{background-image:url(/banners/gen/scene-court.jpg)}
+[data-mc-ground].mc-scene-clay .bgfix{background-image:url(/banners/gen/scene-clay.jpg)}
 
-:root:not([data-theme="light"]) [data-mc] .card-bg{background-position:center;background-size:cover;background-repeat:no-repeat}
+[data-mc] .card-bg{background-position:center;background-size:cover;background-repeat:no-repeat}
 /* LE FOTO DELLE SCHEDE SONO LE SCENE DELLA PREVIEW, non le foto sport del repo.
    Misurato su produzione da loggato: con stadium-night / football-pitch /
    football-action la fascia alta leggeva come una velatura grigio-pallida senza
@@ -584,12 +584,15 @@
    contenuto del taglio.
    La varieta' viene da TAGLI diversi della stessa scena, non da file diversi:
    nessuna immagine nuova, come vuole la fase 1. */
-:root:not([data-theme="light"]) [data-mc] .im-stadium{background-image:url(/banners/gen/scene-stadium.jpg);background-position:22% 24%}
-:root:not([data-theme="light"]) [data-mc] .im-pitch{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 62%}
-:root:not([data-theme="light"]) [data-mc] .im-action{background-image:url(/banners/gen/scene-stadium.jpg);background-position:88% 58%}
-:root:not([data-theme="light"]) [data-mc] .im-court{background-image:url(/banners/gen/scene-court.jpg);background-position:center 38%}
-:root:not([data-theme="light"]) [data-mc] .im-clay{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 58%}
-:root:not([data-theme="light"]) [data-mc] .im-crowd{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 14%}
+/* I tagli pescano dove la scena e' ILLUMINATA e il soggetto si riconosce: nelle
+   due scene il campo sta nella meta' BASSA, il cielo in alto e' quasi nero. Coi
+   tagli alti si vedevano solo i fari, cioe' due macchie di luce senza soggetto. */
+[data-mc] .im-stadium{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 66%}  /* il campo illuminato */
+[data-mc] .im-pitch{background-image:url(/banners/gen/scene-stadium.jpg);background-position:20% 46%}      /* fari + tribuna */
+[data-mc] .im-action{background-image:url(/banners/gen/scene-stadium.jpg);background-position:84% 74%}     /* angolo campo + gradinate */
+[data-mc] .im-court{background-image:url(/banners/gen/scene-court.jpg);background-position:center 78%}     /* le righe del campo */
+[data-mc] .im-clay{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 74%}
+[data-mc] .im-crowd{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 34%}
 
 /* ══════════════════════════════════════════════════════════════
    AZZERAMENTO — ciò che globals.css mette e la preview non toglieva
@@ -603,6 +606,9 @@
 /* globals arrotondava gli incassi (7px e 12px): il box-dentro-box vietato. */
 :root:not([data-theme="light"]) [data-mc] .pred .scorebar,:root:not([data-theme="light"]) [data-mc] .pred .v2r{border-radius:0;border-inline:0;border-bottom:0}
 :root:not([data-theme="light"]) [data-mc] .pred .pred-more{border-radius:0}
+/* L'etichetta KICKOFF: col fondo piu' acceso il suo grigio #7E858E scende a
+   2,59:1 (misurato su tre schede). Al grigio del sistema regge. */
+:root:not([data-theme="light"]) [data-mc] .pred .stt{color:#b4bbc4}
 /* la casa ha angoli vivi: nessuna pastiglia rounded generica */
 :root:not([data-theme="light"]) [data-mc] .v2r-val,:root:not([data-theme="light"]) [data-mc] .tag,:root:not([data-theme="light"]) [data-mc] .stt{border-radius:0}
 
@@ -627,6 +633,25 @@
 :root:not([data-theme="light"]) [data-mc] .pred .top::before{
   content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
   background:var(--mc-accent,var(--d-football))}
+
+/* ── FOTO PIU' ACCESE (richiesta di Andrea, 2026-08-20) ────────────────────
+   La scena resta la stessa; cambia quanta se ne vede. Tre leve, e la terza e'
+   quella che conta: la velatura si apre PIU' IN ALTO, cosi' la fascia della
+   testata respira mentre gli incassi coi numeri restano pieni.
+   Il limite non e' estetico, e' misurato: .teams sta SOPRA la foto, quindi
+   ogni passo di luminosita' si verifica con l'armatura sui quattro campi che
+   la spec vuole >= 4,5:1 (.teams .v2r-qn .v2r-val .v2r-sub). */
+:root:not([data-theme="light"]) [data-mc] .card-bg{opacity:1;filter:saturate(1.28) contrast(1.1) brightness(1.32)}
+:root:not([data-theme="light"]) [data-mc] .card-veil{background:linear-gradient(to top,
+  rgba(18,21,25,.95) 46%,
+  rgba(18,21,25,.66) 74%,
+  rgba(18,21,25,.10) 100%)}
+/* su telefono la scheda e' alta e stretta: la velatura resta piatta e densa,
+   altrimenti la fascia centrale rimane scoperta (misurato su MACHINA) */
+@media(max-width:640px){
+  :root:not([data-theme="light"]) [data-mc] .card-bg{opacity:.86;filter:saturate(1.2) contrast(1.06) brightness(1.16)}
+  :root:not([data-theme="light"]) [data-mc] .card-veil{background:linear-gradient(to top,rgba(18,21,25,.95) 46%,rgba(18,21,25,.8))}
+}
 
 /* Il grigio del prodotto, alzato DENTRO lo scope. Il fondo nuovo ha spostato di
    poco la luminanza sotto il testo secondario e otto nodi sono scesi appena
@@ -700,3 +725,50 @@
   background:linear-gradient(270deg,rgba(12,14,17,.96) 42%,rgba(12,14,17,.74))}
 /* il filetto che separa le fasce, al posto del salto di colore */
 :root:not([data-theme="light"]) [data-mc-ground] .v-sec,:root:not([data-theme="light"]) [data-mc-ground] .v-final{border-top:1px solid var(--rule)}
+
+/* ══════════════════════════════════════════════════════════════
+   IL TEMA CHIARO — la foto c'e', la velatura e' bianca
+   Il resto del tema chiaro NON e' toccato: ha ~60 colori
+   low-contrast noti (project_theme_light_fix), che sono un
+   lavoro suo e non si risolvono di straforo qui.
+   ══════════════════════════════════════════════════════════════ */
+:root[data-theme="light"] [data-mc] .pred{position:relative;isolation:isolate;overflow:hidden}
+:root[data-theme="light"] [data-mc] .pred>*:not(.card-bg):not(.card-veil){position:relative;z-index:2}
+:root[data-theme="light"] [data-mc] .card-bg{
+  position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;
+  opacity:.85;filter:brightness(1.28) saturate(1.75) contrast(1.02)}
+  /* saturazione ALTA e luminosita' contenuta: una scena notturna schiarita
+     troppo diventa una foschia grigia. Col verde del campo che resta verde, la
+     foto si riconosce anche dietro una velatura bianca. */
+:root[data-theme="light"] [data-mc] .card-veil{
+  position:absolute;inset:0;z-index:1;background:linear-gradient(to top,
+  rgba(255,255,255,.99) 52%,
+  rgba(255,255,255,.9) 78%,
+  rgba(255,255,255,.6) 100%)}
+/* In chiaro il testo e' SCURO e i grigi piccoli del prodotto stanno sopra la
+   foto: misurati, lega/orario/`v`/turno scendevano da 3,93 a 2,0-2,5. Si
+   agisce su due leve insieme — velatura piu' densa dove sta il testo, e quei
+   grigi al gradino scuro del tema chiaro (--am-muted #4A515B). */
+:root[data-theme="light"] [data-mc] .pred .league,:root[data-theme="light"] [data-mc] .pred .when,
+:root[data-theme="light"] [data-mc] .pred .vs,:root[data-theme="light"] [data-mc] .pred .rnd,
+:root[data-theme="light"] [data-mc] .pred .stt{color:#3a4149}
+/* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara e'
+   il prodotto di prima con una sfumatura sopra */
+/* la riga di testata porta il proprio fondo anche in chiaro: senza, lega e
+   orario finiscono grigi sopra la parte illuminata della foto (misurato:
+   illeggibili). E' la stessa mitigazione del tema scuro, ribaltata. */
+:root[data-theme="light"] [data-mc] .pred .top{position:relative;background:linear-gradient(to bottom,
+  rgba(255,255,255,.94),rgba(255,255,255,.74) 62%,rgba(255,255,255,.28))}
+:root[data-theme="light"] [data-mc] .pred .top::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
+  background:var(--mc-accent,#6d28d9)}
+@media(max-width:640px){
+  :root[data-theme="light"] [data-mc] .card-bg{opacity:.3}
+  :root[data-theme="light"] [data-mc] .card-veil{background:linear-gradient(to top,rgba(255,255,255,.97) 46%,rgba(255,255,255,.9))}
+}
+/* La scena DI PAGINA in chiaro e' stata provata e TOLTA: misurata, spostava di
+   poco il fondo sotto decine di grigi gia' al limite e portava 32 nodi sotto
+   soglia (59 -> 91) per un effetto quasi invisibile. La richiesta era lo sfondo
+   della SCHEDA, e quello resta. Il fondo di pagina in chiaro e' un lavoro che
+   va fatto insieme ai ~60 colori low-contrast del tema (project_theme_light_fix),
+   non di straforo qui. */

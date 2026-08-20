@@ -36,6 +36,9 @@ SRC = pathlib.Path("docs/ui-machina/machina.css")
 DST = pathlib.Path("app/machina.css")
 THEME = ':root:not([data-theme="light"])'
 SCOPE = f'{THEME} [data-mc]'            # i componenti
+MC = '[data-mc]'                        # senza tema: le mappature immagine
+MCG = '[data-mc-ground]'
+LIGHT = ':root[data-theme="light"]'
 GROUND = f'{THEME} [data-mc-ground]'    # il fondo e la tipografia
 
 # selettori sorgente che appartengono al FONDO, non ai componenti.
@@ -164,12 +167,12 @@ def main() -> int:
    pagina significa cambiare quella classe, senza variabili CSS
    impostate da JavaScript.
    ══════════════════════════════════════════════════════════════ */
-{GROUND} .bgfix{{background-position:center;background-size:cover;background-repeat:no-repeat}}
-{GROUND}.mc-scene-stadium .bgfix{{background-image:url(/banners/gen/scene-stadium.jpg)}}
-{GROUND}.mc-scene-court .bgfix{{background-image:url(/banners/gen/scene-court.jpg)}}
-{GROUND}.mc-scene-clay .bgfix{{background-image:url(/banners/gen/scene-clay.jpg)}}
+{MCG} .bgfix{{background-position:center;background-size:cover;background-repeat:no-repeat}}
+{MCG}.mc-scene-stadium .bgfix{{background-image:url(/banners/gen/scene-stadium.jpg)}}
+{MCG}.mc-scene-court .bgfix{{background-image:url(/banners/gen/scene-court.jpg)}}
+{MCG}.mc-scene-clay .bgfix{{background-image:url(/banners/gen/scene-clay.jpg)}}
 
-{SCOPE} .card-bg{{background-position:center;background-size:cover;background-repeat:no-repeat}}
+{MC} .card-bg{{background-position:center;background-size:cover;background-repeat:no-repeat}}
 /* LE FOTO DELLE SCHEDE SONO LE SCENE DELLA PREVIEW, non le foto sport del repo.
    Misurato su produzione da loggato: con stadium-night / football-pitch /
    football-action la fascia alta leggeva come una velatura grigio-pallida senza
@@ -179,12 +182,15 @@ def main() -> int:
    contenuto del taglio.
    La varieta' viene da TAGLI diversi della stessa scena, non da file diversi:
    nessuna immagine nuova, come vuole la fase 1. */
-{SCOPE} .im-stadium{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:22% 24%}}
-{SCOPE} .im-pitch{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 62%}}
-{SCOPE} .im-action{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:88% 58%}}
-{SCOPE} .im-court{{background-image:url(/banners/gen/scene-court.jpg);background-position:center 38%}}
-{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 58%}}
-{SCOPE} .im-crowd{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 14%}}
+/* I tagli pescano dove la scena e' ILLUMINATA e il soggetto si riconosce: nelle
+   due scene il campo sta nella meta' BASSA, il cielo in alto e' quasi nero. Coi
+   tagli alti si vedevano solo i fari, cioe' due macchie di luce senza soggetto. */
+{MC} .im-stadium{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 66%}}  /* il campo illuminato */
+{MC} .im-pitch{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:20% 46%}}      /* fari + tribuna */
+{MC} .im-action{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:84% 74%}}     /* angolo campo + gradinate */
+{MC} .im-court{{background-image:url(/banners/gen/scene-court.jpg);background-position:center 78%}}     /* le righe del campo */
+{MC} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 74%}}
+{MC} .im-crowd{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 34%}}
 """
     # ── 4b. LA VARIABILE VA NELLO SPAZIO DEI NOMI ───────────────────────────
     # globals.css definisce GIA' `--accent: var(--am-panel-3)`, cioe' un colore di
@@ -217,6 +223,9 @@ def main() -> int:
 /* globals arrotondava gli incassi (7px e 12px): il box-dentro-box vietato. */
 {SCOPE} .pred .scorebar,{SCOPE} .pred .v2r{{border-radius:0;border-inline:0;border-bottom:0}}
 {SCOPE} .pred .pred-more{{border-radius:0}}
+/* L'etichetta KICKOFF: col fondo piu' acceso il suo grigio #7E858E scende a
+   2,59:1 (misurato su tre schede). Al grigio del sistema regge. */
+{SCOPE} .pred .stt{{color:#b4bbc4}}
 /* la casa ha angoli vivi: nessuna pastiglia rounded generica */
 {SCOPE} .v2r-val,{SCOPE} .tag,{SCOPE} .stt{{border-radius:0}}
 
@@ -241,6 +250,25 @@ def main() -> int:
 {SCOPE} .pred .top::before{{
   content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
   background:var(--mc-accent,var(--d-football))}}
+
+/* ── FOTO PIU' ACCESE (richiesta di Andrea, 2026-08-20) ────────────────────
+   La scena resta la stessa; cambia quanta se ne vede. Tre leve, e la terza e'
+   quella che conta: la velatura si apre PIU' IN ALTO, cosi' la fascia della
+   testata respira mentre gli incassi coi numeri restano pieni.
+   Il limite non e' estetico, e' misurato: .teams sta SOPRA la foto, quindi
+   ogni passo di luminosita' si verifica con l'armatura sui quattro campi che
+   la spec vuole >= 4,5:1 (.teams .v2r-qn .v2r-val .v2r-sub). */
+{SCOPE} .card-bg{{opacity:1;filter:saturate(1.28) contrast(1.1) brightness(1.32)}}
+{SCOPE} .card-veil{{background:linear-gradient(to top,
+  rgba(18,21,25,.95) 46%,
+  rgba(18,21,25,.66) 74%,
+  rgba(18,21,25,.10) 100%)}}
+/* su telefono la scheda e' alta e stretta: la velatura resta piatta e densa,
+   altrimenti la fascia centrale rimane scoperta (misurato su MACHINA) */
+@media(max-width:640px){{
+  {SCOPE} .card-bg{{opacity:.86;filter:saturate(1.2) contrast(1.06) brightness(1.16)}}
+  {SCOPE} .card-veil{{background:linear-gradient(to top,rgba(18,21,25,.95) 46%,rgba(18,21,25,.8))}}
+}}
 
 /* Il grigio del prodotto, alzato DENTRO lo scope. Il fondo nuovo ha spostato di
    poco la luminanza sotto il testo secondario e otto nodi sono scesi appena
@@ -316,6 +344,63 @@ def main() -> int:
 {GROUND} .v-sec,{GROUND} .v-final{{border-top:1px solid var(--rule)}}
 """
 
+    # ── 6. IL TEMA CHIARO ────────────────────────────────────────────────────
+    # Il fondo cinematico e' scuro e resta gated fuori dal chiaro. Ma la FOTO
+    # dietro la scheda si puo' avere anche qui: cambia la velatura, che diventa
+    # BIANCA. Il testo in chiaro e' scuro, quindi sotto gli serve chiaro: con la
+    # velatura scura della notte sarebbe illeggibile.
+    # Nota di struttura: le regole di geometria (.card-bg absolute, gli z-index)
+    # vivono nello scope scuro, quindi qui vanno ripetute — sono quattro righe e
+    # ripeterle costa meno che spostare mezzo foglio fuori dal tema.
+    res += f"""
+/* ══════════════════════════════════════════════════════════════
+   IL TEMA CHIARO — la foto c'e', la velatura e' bianca
+   Il resto del tema chiaro NON e' toccato: ha ~60 colori
+   low-contrast noti (project_theme_light_fix), che sono un
+   lavoro suo e non si risolvono di straforo qui.
+   ══════════════════════════════════════════════════════════════ */
+{LIGHT} [data-mc] .pred{{position:relative;isolation:isolate;overflow:hidden}}
+{LIGHT} [data-mc] .pred>*:not(.card-bg):not(.card-veil){{position:relative;z-index:2}}
+{LIGHT} [data-mc] .card-bg{{
+  position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;
+  opacity:.85;filter:brightness(1.28) saturate(1.75) contrast(1.02)}}
+  /* saturazione ALTA e luminosita' contenuta: una scena notturna schiarita
+     troppo diventa una foschia grigia. Col verde del campo che resta verde, la
+     foto si riconosce anche dietro una velatura bianca. */
+{LIGHT} [data-mc] .card-veil{{
+  position:absolute;inset:0;z-index:1;background:linear-gradient(to top,
+  rgba(255,255,255,.99) 52%,
+  rgba(255,255,255,.9) 78%,
+  rgba(255,255,255,.6) 100%)}}
+/* In chiaro il testo e' SCURO e i grigi piccoli del prodotto stanno sopra la
+   foto: misurati, lega/orario/`v`/turno scendevano da 3,93 a 2,0-2,5. Si
+   agisce su due leve insieme — velatura piu' densa dove sta il testo, e quei
+   grigi al gradino scuro del tema chiaro (--am-muted #4A515B). */
+{LIGHT} [data-mc] .pred .league,{LIGHT} [data-mc] .pred .when,
+{LIGHT} [data-mc] .pred .vs,{LIGHT} [data-mc] .pred .rnd,
+{LIGHT} [data-mc] .pred .stt{{color:#3a4149}}
+/* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara e'
+   il prodotto di prima con una sfumatura sopra */
+/* la riga di testata porta il proprio fondo anche in chiaro: senza, lega e
+   orario finiscono grigi sopra la parte illuminata della foto (misurato:
+   illeggibili). E' la stessa mitigazione del tema scuro, ribaltata. */
+{LIGHT} [data-mc] .pred .top{{position:relative;background:linear-gradient(to bottom,
+  rgba(255,255,255,.94),rgba(255,255,255,.74) 62%,rgba(255,255,255,.28))}}
+{LIGHT} [data-mc] .pred .top::before{{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
+  background:var(--mc-accent,#6d28d9)}}
+@media(max-width:640px){{
+  {LIGHT} [data-mc] .card-bg{{opacity:.3}}
+  {LIGHT} [data-mc] .card-veil{{background:linear-gradient(to top,rgba(255,255,255,.97) 46%,rgba(255,255,255,.9))}}
+}}
+/* La scena DI PAGINA in chiaro e' stata provata e TOLTA: misurata, spostava di
+   poco il fondo sotto decine di grigi gia' al limite e portava 32 nodi sotto
+   soglia (59 -> 91) per un effetto quasi invisibile. La richiesta era lo sfondo
+   della SCHEDA, e quello resta. Il fondo di pagina in chiaro e' un lavoro che
+   va fatto insieme ai ~60 colori low-contrast del tema (project_theme_light_fix),
+   non di straforo qui. */
+"""
+
     DST.write_text(res, encoding="utf-8")
 
     # ── 5. il controllo che rende lo script affidabile ───────────────────────
@@ -330,7 +415,12 @@ def main() -> int:
                 check(body, "@media > ")
             elif s.startswith("@keyframes"):
                 pass
-            elif not s.startswith((SCOPE, GROUND)):
+            # I prefissi legittimi sono TRE, e ognuno ha una ragione:
+            #   SCOPE/GROUND   il sistema scuro (gated fuori dal tema chiaro)
+            #   [data-mc]…     le mappature immagine, che valgono in ENTRAMBI i temi
+            #   :root[data-theme="light"] …  il blocco del tema chiaro
+            # Qualunque altra cosa e' una regola che sfugge allo scope: errore.
+            elif not s.startswith((SCOPE, GROUND, MC, MCG, LIGHT)):
                 bad.append(pfx + s)
     check(masked)
     print(f"{DST}: {len(res.splitlines())} righe · selettori fuori scope: {len(bad)}")
