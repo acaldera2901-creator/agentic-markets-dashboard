@@ -25,7 +25,11 @@ logger = logging.getLogger("espn_soccer_client")
 
 _BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world"
 _SOCCER_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
-_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)"}
+# #ESPN-UA-403-0820 — stesso host, stesso 403 dello UA finto-browser: vedi il
+# blocco in core/espn_tennis_client.py per la misura. Qui costava
+# get_world_cup_teams() = 0 squadre invece di 48 (rose, infortuni, venue,
+# formazioni: tutto vuoto in silenzio).
+_HEADERS = {"User-Agent": f"BetRedge/1.0 python-httpx/{httpx.__version__}"}
 
 # Our league codes -> ESPN league slugs (fixtures fallback, decision Andrea
 # 2026-06-05: free ESPN instead of paying the API-Football quota).

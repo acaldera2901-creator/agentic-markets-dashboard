@@ -8,12 +8,19 @@ from the per-day scoreboard (atp+wta, today+tomorrow) so SCHEDULED matches
 populate the board — the old header endpoint only saw live/completed
 matches, which emptied Best Bets every evening.
 """
+import re
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from core.espn_tennis_client import _parse_notes, get_fixtures, infer_surface
+from core.espn_tennis_client import (
+    _HEADERS,
+    EspnFeedUnavailable,
+    _parse_notes,
+    get_fixtures,
+    infer_surface,
+)
 
 
 def _iso(dt: datetime) -> str:
@@ -177,3 +184,73 @@ def test_infer_surface_covers_clay_grass_hard():
     assert infer_surface("Boss Open") == "grass"
     assert infer_surface("Libema Open") == "grass"
     assert infer_surface("US Open") == "hard"
+
+
+# --- #ESPN-UA-403-0820 -----------------------------------------------------
+# Il 20/08 site.api.espn.com rendeva 403 a TUTTE le nostre chiamate perche' lo
+# User-Agent si finge browser. Misurato 3/3 deterministico, una sola variabile:
+#   Mozilla/5.0 (compatible; AgenticMarkets/1.0) -> 403   (il nostro)
+#   BetRedge/1.0 / UA Safari / nessuno UA        -> 403
+#   curl/8.0 · python-httpx/0.28.1 · python-requests/2.31.0 -> 200
+# La regola Akamai e' un allowlist per SUBSTRING del token client: basta che lo
+# UA contenga `python-httpx/<ver>` e passa, quindi identificarsi resta possibile
+# (`BetRedge/1.0 python-httpx/0.28.1` -> 200). Il fallback sull'host `header`
+# (site.web.api.espn.com, dove la regola non c'e') copriva metA del board, per
+# questo il guasto e' passato per "poche partite" invece che per un guasto.
+
+_ACCEPTED_CLIENT_TOKEN = re.compile(
+    r"(?:curl|python-httpx|python-requests|Go-http-client)/\d", re.IGNORECASE
+)
+
+
+def test_user_agent_declares_a_real_http_client():
+    """Blocca la regressione verso uno UA da browser: e' quella che ESPN 403-a.
+
+    Verificato per mutazione: rimettendo "Mozilla/5.0 (compatible;
+    AgenticMarkets/1.0)" questo test diventa rosso.
+    """
+    ua = _HEADERS["User-Agent"]
+    assert _ACCEPTED_CLIENT_TOKEN.search(ua), (
+        f"UA {ua!r} non dichiara un client HTTP reale: site.api.espn.com lo 403-a"
+    )
+    assert "Mozilla" not in ua, "gli UA da browser sono la classe bloccata"
+
+
+async def test_all_requests_refused_raises_instead_of_empty_list():
+    """403 su tutto = GUASTO, non "oggi non c'e' tennis".
+
+    Prima rendeva [] e il chiamante non poteva distinguere le due cause: e'
+    esattamente come il board e' rimasto a meta' per 15 giorni.
+    """
+    refused = MagicMock()
+    refused.status_code = 403
+    client = MagicMock()
+    client.get = AsyncMock(return_value=refused)
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=client)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    with patch("core.espn_tennis_client.httpx.AsyncClient", return_value=cm):
+        with pytest.raises(EspnFeedUnavailable):
+            await get_fixtures()
+
+
+async def test_partial_refusal_still_returns_what_answered():
+    """Se UNA delle 4 chiamate risponde, quelle fixture si servono: il raise e'
+    solo per il rifiuto TOTALE (fail-closed sul guasto, non sul degrado)."""
+    ok = _mock_response(_scoreboard([_competition("Carlos Alcaraz", "Jannik Sinner")]))
+    refused = MagicMock()
+    refused.status_code = 403
+    client = MagicMock()
+    client.get = AsyncMock(side_effect=[refused, refused, refused, ok])
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=client)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    with patch("core.espn_tennis_client.httpx.AsyncClient", return_value=cm):
+        rows = await get_fixtures()
+    assert len(rows) == 1
+
+
+async def test_no_events_is_not_a_failure():
+    """Feed che risponde 200 con zero eventi = giornata vuota, NON un guasto."""
+    rows = await _fixtures_for({"events": []})
+    assert rows == []

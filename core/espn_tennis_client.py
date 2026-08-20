@@ -27,7 +27,20 @@ _SCOREBOARD_LEAGUES = ("atp", "wta")
 # trading window the dashboard applies (scheduled_at > NOW()-2h), plus tomorrow.
 _PAST_GRACE = timedelta(hours=2)
 _FUTURE_HORIZON = timedelta(hours=48)
-_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)"}
+# #ESPN-UA-403-0820 — site.api.espn.com 403-a chi si finge browser e accetta
+# solo gli UA che DICHIARANO un client HTTP reale. Misurato 20/08, 3/3
+# deterministico, una sola variabile cambiata:
+#   "Mozilla/5.0 (compatible; AgenticMarkets/1.0)" -> 403  <- quello di prima
+#   "BetRedge/1.0" / UA Safari / nessuno UA        -> 403
+#   "curl/8.0" · "python-httpx/0.28.1" · "python-requests/2.31.0" -> 200
+# La regola e' un allowlist per SUBSTRING del token client, quindi possiamo
+# ancora identificarci: "BetRedge/1.0 python-httpx/0.28.1" -> 200. NON e' un
+# mascheramento — httpx e' davvero il client che stiamo usando.
+# Attenzione: l'host `header` (site.web.api.espn.com, usato da
+# get_fixtures_from_header e get_completed_results) NON ha questa regola e
+# rispondeva 200 anche allo UA vecchio. E' per questo che il guasto e' sembrato
+# "poche partite" per 15 giorni invece di un feed morto.
+_HEADERS = {"User-Agent": f"BetRedge/1.0 python-httpx/{httpx.__version__}"}
 _DOUBLES_SEP = re.compile(r"\s*&\s*")
 _NOTE_SPLIT = re.compile(
     r"^(?P<p1>.+?)\s+(?P<verb>bt|def\.?|defeated|leads)\s+(?P<p2>.+?)(?:\s+\d|$)",
@@ -195,12 +208,19 @@ async def get_fixtures() -> list[dict]:
     (atp + wta feeds, today + tomorrow UTC). Scheduled ("pre") and live
     ("in") singles matches only; completed matches are never emitted.
     Returns canonical fixture dicts compatible with tennis_fixtures.
+
+    Solleva EspnFeedUnavailable se NESSUNA delle chiamate ha risposto
+    (#ESPN-UA-403-0820): prima rendeva [] e il chiamante non poteva distinguere
+    "il feed rifiuta" da "oggi non c'e' tennis" — le due cause hanno urgenze
+    opposte. Un rifiuto PARZIALE non solleva: le fixture arrivate si servono.
     """
     now = datetime.now(timezone.utc)
     dates = [now.strftime("%Y%m%d"), (now + timedelta(days=1)).strftime("%Y%m%d")]
 
     seen: set[str] = set()
     results: list[dict] = []
+    answered = 0
+    last_error: str | None = None
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
             for league in _SCOREBOARD_LEAGUES:
@@ -213,13 +233,18 @@ async def get_fixtures() -> list[dict]:
                         )
                         if resp.status_code != 200:
                             logger.warning("ESPN tennis %s/%s: %s", league, day, resp.status_code)
+                            last_error = f"http {resp.status_code}"
                             continue
                         _parse_scoreboard(resp.json(), now, seen, results)
+                        answered += 1
                     except Exception as exc:
                         logger.warning("ESPN tennis %s/%s error (non-fatal): %s", league, day, exc)
+                        last_error = str(exc)
     except Exception as exc:
-        logger.warning("ESPN tennis error (non-fatal): %s", exc)
-        return []
+        raise EspnFeedUnavailable(f"day-scoreboard unreachable: {exc}") from exc
+
+    if answered == 0:
+        raise EspnFeedUnavailable(f"day-scoreboard refused every call ({last_error})")
 
     logger.info("ESPN tennis: found %d singles fixtures (today+tomorrow)", len(results))
     return results

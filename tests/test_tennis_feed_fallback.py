@@ -210,3 +210,24 @@ def test_no_active_tournaments_is_never_reported_when_the_feed_failed():
 
     for err in ["403", "500", "timeout", "not json", "header feed carried no sports block"]:
         assert collection_status(err, None) != "no_active_tournaments"
+
+
+# ── #ESPN-UA-403-0820: volume > 0 non vuol dire feed sano ────────────────────
+def test_served_status_calls_a_covered_fault_a_fault():
+    from agents.tennis_data_collector import served_status
+
+    # IL CASO DEL 05/08-20/08: il day-scoreboard rifiuta, l'header copre, il
+    # volume non e' zero -> l'allarme di `collection_status` non scatta mai e il
+    # board serve 4 quarti di Cincinnati su 8 per 15 giorni.
+    assert served_status("day-scoreboard refused every call (http 403)", 4) == "degraded"
+    assert served_status("day-scoreboard unreachable: boom", 51) == "degraded"
+
+
+def test_served_status_is_ok_when_the_primary_answered():
+    from agents.tennis_data_collector import served_status
+
+    assert served_status(None, 8) == "ok"
+    assert served_status(None, 0) == "ok"
+    # Primaria giu' E volume zero: lo dice gia' `collection_status`
+    # (feed_unavailable), qui non si duplica l'allarme.
+    assert served_status("http 403", 0) == "ok"
