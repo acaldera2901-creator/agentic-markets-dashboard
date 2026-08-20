@@ -48,23 +48,24 @@ def test_rete_giu_e_unknown_non_red(mocker):
     assert "dns" in v.headline
 
 
-def test_latenza_db_soglie(mocker):
-    tempi = iter([0.0, 0.2])
-    mocker.patch.object(platform.time, "monotonic", side_effect=lambda: next(tempi))
-    mocker.patch.object(platform, "fetch_all", return_value=[(1,)])
-    assert platform.check_db_latency().level == "green"
+def test_latenza_db_soglie_sulla_query_non_sulla_connessione(mocker):
+    # Un handshake da 700 ms verso eu-west-1 e' normale e non dice niente
+    # sulla salute del DB: con la soglia sulla somma il tile lampeggerebbe
+    # per sempre. Misurato il 2026-08-20: query 65-132 ms, connessione ~650.
+    mocker.patch.object(platform, "measure_latency", return_value=(0.7, 0.07))
+    v = platform.check_db_latency()
+    assert v.level == "green"
+    assert v.evidence == {"query_ms": 70, "connessione_ms": 700}
 
-    tempi = iter([0.0, 1.5])
-    mocker.patch.object(platform.time, "monotonic", side_effect=lambda: next(tempi))
+    mocker.patch.object(platform, "measure_latency", return_value=(0.7, 0.9))
     assert platform.check_db_latency().level == "amber"
 
-    tempi = iter([0.0, 4.0])
-    mocker.patch.object(platform.time, "monotonic", side_effect=lambda: next(tempi))
+    mocker.patch.object(platform, "measure_latency", return_value=(0.7, 3.0))
     assert platform.check_db_latency().level == "red"
 
 
 def test_db_giu_e_unknown(mocker):
-    mocker.patch.object(platform, "fetch_all", side_effect=DbUnavailable("timeout"))
+    mocker.patch.object(platform, "measure_latency", side_effect=DbUnavailable("timeout"))
     v = platform.check_db_latency()
     assert v.level == "unknown"
     assert "timeout" in v.headline

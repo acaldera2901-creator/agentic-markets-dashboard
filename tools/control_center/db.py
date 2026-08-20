@@ -1,6 +1,7 @@
 """Accesso al DB di produzione, in sola lettura e senza sorprese di schema."""
 
 import os
+import time
 from pathlib import Path
 
 import psycopg2
@@ -74,5 +75,26 @@ def fetch_all(sql: str, params: tuple = ()) -> list[tuple]:
                 cur.execute("SET TRANSACTION READ ONLY")
                 cur.execute(sql, params)
                 return cur.fetchall()
+    except psycopg2.Error as exc:
+        raise DbUnavailable(str(exc).strip().splitlines()[0]) from exc
+
+
+def measure_latency() -> tuple[float, float]:
+    """Ritorna (secondi di connessione, secondi di query) separati.
+
+    Misurarli insieme non dice niente sulla salute del DB: verso il pooler in
+    eu-west-1 l'handshake TLS costa ~650 ms stabili mentre la query costa ~65
+    ms. Una soglia sulla somma segnala la distanza geografica, non un problema,
+    e lampeggia per sempre a poche decine di ms dal confine.
+    """
+    inizio = time.monotonic()
+    try:
+        with psycopg2.connect(_dsn(), connect_timeout=8) as conn:
+            connesso = time.monotonic()
+            with conn.cursor() as cur:
+                cur.execute("SET TRANSACTION READ ONLY")
+                cur.execute("select 1")
+                cur.fetchall()
+            return connesso - inizio, time.monotonic() - connesso
     except psycopg2.Error as exc:
         raise DbUnavailable(str(exc).strip().splitlines()[0]) from exc

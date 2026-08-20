@@ -1,11 +1,9 @@
 """Il sito, il deploy, il database: cio' che rende BetRedge raggiungibile."""
 
-import time
-
 import requests
 
 from ..contract import Check, Verdict, amber, green, red, unknown
-from ..db import DbUnavailable, fetch_all
+from ..db import DbUnavailable, fetch_all, measure_latency
 
 BASE = "https://www.betredge.com"
 
@@ -19,8 +17,11 @@ FLAG_GATED_PAGES = {
     "/oggi": "NEXT_PUBLIC_UX_NEW",
 }
 
-DB_LATENCY_AMBER_S = 0.8
-DB_LATENCY_RED_S = 3.0
+# La soglia sta sulla QUERY, non su connessione+query: l'handshake verso il
+# pooler in eu-west-1 costa ~650 ms stabili e non dice niente sulla salute del
+# database. Misurato il 2026-08-20: query 65-132 ms, connessione 626-789 ms.
+DB_QUERY_AMBER_S = 0.4
+DB_QUERY_RED_S = 2.0
 ERRORS_AMBER = 1
 
 
@@ -70,18 +71,20 @@ def check_api_version() -> Verdict:
 
 
 def check_db_latency() -> Verdict:
-    inizio = time.monotonic()
     try:
-        fetch_all("select 1")
+        connessione, query = measure_latency()
     except DbUnavailable as exc:
         return unknown(f"database non raggiungibile: {exc}", "db:select 1")
-    trascorso = time.monotonic() - inizio
-    ms = f"{trascorso * 1000:.0f} ms"
-    if trascorso >= DB_LATENCY_RED_S:
-        return red(f"pooler lentissimo: {ms}", "db:select 1", value=ms)
-    if trascorso >= DB_LATENCY_AMBER_S:
-        return amber(f"pooler lento: {ms}", "db:select 1", value=ms)
-    return green(f"risponde in {ms}", "db:select 1", value=ms)
+    ms = f"{query * 1000:.0f} ms"
+    prove = {"query_ms": round(query * 1000), "connessione_ms": round(connessione * 1000)}
+    if query >= DB_QUERY_RED_S:
+        return red(f"query lentissima: {ms}", "db:select 1", value=ms, evidence=prove)
+    if query >= DB_QUERY_AMBER_S:
+        return amber(f"query lenta: {ms}", "db:select 1", value=ms, evidence=prove)
+    return green(
+        f"query in {ms} (connessione {prove['connessione_ms']} ms)",
+        "db:select 1", value=ms, evidence=prove,
+    )
 
 
 def check_errors_24h() -> Verdict:
