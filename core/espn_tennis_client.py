@@ -16,18 +16,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API, ESPN_V2_API
 from core.tennis_names import clean_player_name, canonical_player_key
 
 logger = logging.getLogger("espn_tennis_client")
 
-_URL = "https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=tennis"
-_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/tennis/{league}/scoreboard"
+_URL = f"{ESPN_V2_API}/scoreboard/header?sport=tennis"
+_SCOREBOARD_URL = f"{ESPN_SITE_API}/tennis/{{league}}/scoreboard"
 _SCOREBOARD_LEAGUES = ("atp", "wta")
 # A fixture is servable from 2h before "now-window" up to 48h ahead: the same
 # trading window the dashboard applies (scheduled_at > NOW()-2h), plus tomorrow.
 _PAST_GRACE = timedelta(hours=2)
 _FUTURE_HORIZON = timedelta(hours=48)
-_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)"}
 _DOUBLES_SEP = re.compile(r"\s*&\s*")
 _NOTE_SPLIT = re.compile(
     r"^(?P<p1>.+?)\s+(?P<verb>bt|def\.?|defeated|leads)\s+(?P<p2>.+?)(?:\s+\d|$)",
@@ -195,12 +195,19 @@ async def get_fixtures() -> list[dict]:
     (atp + wta feeds, today + tomorrow UTC). Scheduled ("pre") and live
     ("in") singles matches only; completed matches are never emitted.
     Returns canonical fixture dicts compatible with tennis_fixtures.
+
+    Solleva EspnFeedUnavailable se NESSUNA delle chiamate ha risposto
+    (#ESPN-UA-403-0820): prima rendeva [] e il chiamante non poteva distinguere
+    "il feed rifiuta" da "oggi non c'e' tennis" — le due cause hanno urgenze
+    opposte. Un rifiuto PARZIALE non solleva: le fixture arrivate si servono.
     """
     now = datetime.now(timezone.utc)
     dates = [now.strftime("%Y%m%d"), (now + timedelta(days=1)).strftime("%Y%m%d")]
 
     seen: set[str] = set()
     results: list[dict] = []
+    answered = 0
+    last_error: str | None = None
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
             for league in _SCOREBOARD_LEAGUES:
@@ -209,17 +216,22 @@ async def get_fixtures() -> list[dict]:
                         resp = await c.get(
                             _SCOREBOARD_URL.format(league=league),
                             params={"dates": day},
-                            headers=_HEADERS,
+                            headers=ESPN_HEADERS,
                         )
                         if resp.status_code != 200:
                             logger.warning("ESPN tennis %s/%s: %s", league, day, resp.status_code)
+                            last_error = f"http {resp.status_code}"
                             continue
                         _parse_scoreboard(resp.json(), now, seen, results)
+                        answered += 1
                     except Exception as exc:
                         logger.warning("ESPN tennis %s/%s error (non-fatal): %s", league, day, exc)
+                        last_error = str(exc)
     except Exception as exc:
-        logger.warning("ESPN tennis error (non-fatal): %s", exc)
-        return []
+        raise EspnFeedUnavailable(f"day-scoreboard unreachable: {exc}") from exc
+
+    if answered == 0:
+        raise EspnFeedUnavailable(f"day-scoreboard refused every call ({last_error})")
 
     logger.info("ESPN tennis: found %d singles fixtures (today+tomorrow)", len(results))
     return results
@@ -307,7 +319,7 @@ async def get_fixtures_from_header() -> list[dict]:
     now = datetime.now(timezone.utc)
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(_URL, headers=_HEADERS)
+            resp = await c.get(_URL, headers=ESPN_HEADERS)
     except Exception as exc:
         raise EspnFeedUnavailable(f"header feed unreachable: {exc}") from exc
     if resp.status_code != 200:
@@ -346,7 +358,7 @@ async def get_completed_results() -> list[dict]:
     """
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(_URL, headers=_HEADERS)
+            resp = await c.get(_URL, headers=ESPN_HEADERS)
             if resp.status_code != 200:
                 logger.warning("ESPN tennis results: %s", resp.status_code)
                 return []

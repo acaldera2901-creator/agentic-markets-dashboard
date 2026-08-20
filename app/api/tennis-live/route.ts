@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ const TOURNAMENT_DENYLIST = [
   "puglie", "ilkley", "fontana",
 ];
 
-const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/tennis";
+const ESPN_BASE = `${ESPN_SITE_API}/tennis`;
 const LEAGUES = ["atp", "wta"] as const;
 
 type LiveTennisMatch = {
@@ -55,7 +56,7 @@ export async function GET() {
     try {
       const resp = await fetch(`${ESPN_BASE}/${league}/scoreboard?dates=${today}`, {
         cache: "no-store",
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)" },
+        headers: ESPN_HEADERS,
       });
       if (!resp.ok) continue;
       const data = await resp.json();

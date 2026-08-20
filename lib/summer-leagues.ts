@@ -29,6 +29,7 @@ import historySnapshot from "@/data/summer_leagues/history.json";
 import type { MatchResult } from "@/lib/poisson-model";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import type { FDMatch } from "@/lib/football-data";
+import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
 
 // Display names drive the per-league surfacing floor (lib/surfacing-gate.ts
 // CLUB_FLOOR_OVERRIDES matches on these): keep them aligned with the lab table.
@@ -304,8 +305,6 @@ export function matchModelTeam(sourceName: string, modelTeams: Iterable<string>)
 
 // ── 2. Fixtures ──────────────────────────────────────────────────────────────
 
-const UA = { "User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)" };
-
 function yyyymmdd(d: Date): string {
   return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
@@ -317,10 +316,10 @@ async function fetchEspnFixtures(code: string): Promise<FDMatch[]> {
   const to = new Date();
   to.setDate(to.getDate() + PREDICTION_WINDOW_DAYS);
   const url =
-    `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard` +
+    `${ESPN_SITE_API}/soccer/${slug}/scoreboard` +
     `?dates=${yyyymmdd(from)}-${yyyymmdd(to)}&limit=200`;
   try {
-    const r = await fetch(url, { headers: UA, cache: "no-store" });
+    const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
     if (!r.ok) return [];
     const data = (await r.json()) as {
       events?: Array<{
@@ -414,10 +413,10 @@ async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
   const from = new Date();
   from.setDate(from.getDate() - 3);
   const url =
-    `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard` +
+    `${ESPN_SITE_API}/soccer/${slug}/scoreboard` +
     `?dates=${yyyymmdd(from)}-${yyyymmdd(to)}&limit=200`;
   try {
-    const r = await fetch(url, { headers: UA, cache: "no-store" });
+    const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
     if (!r.ok) return [];
     const data = (await r.json()) as {
       events?: Array<{
