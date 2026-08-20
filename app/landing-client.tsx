@@ -356,6 +356,7 @@ const SCAN_EXAMPLE_ROWS: ScanRow[] = [
 // la COPY esistente (waEyebrow/waHead*/waBody/hw*), già tradotta e FTC-safe.
 // EN + IT completi; es/fr/ru ricadono su EN (localizzazione = follow-up).
 type V3Copy = {
+  inviteHead: string; inviteBody: string;
   ctaTerminal: string; ctaTrack: string; ctaBrowse: string;
   chipLogged: string; chipClv: string; chipCal: string;
   anEyebrow: string; anHead: string; anSub: string;
@@ -372,6 +373,7 @@ type V3Copy = {
   fnHead1: string; fnHeadG: string; fnBody: string;
 };
 const V3_EN: V3Copy = {
+  inviteHead: "Your invite is live", inviteBody: "days of PRO, free — unlocked when you confirm your email.",
   ctaTerminal: "Open the terminal", ctaTrack: "See the track record", ctaBrowse: "Browse the track record",
   chipLogged: "Logged before kick-off", chipClv: "CLV verified", chipCal: "Calibrated, not hyped",
   anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.",
@@ -405,6 +407,7 @@ const V3_EN: V3Copy = {
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
 };
 const V3_IT: V3Copy = {
+  inviteHead: "Il tuo invito è attivo", inviteBody: "giorni di PRO, gratis — si attivano quando confermi la mail.",
   ctaTerminal: "Apri il terminale", ctaTrack: "Vedi il track record", ctaBrowse: "Sfoglia il track record",
   chipLogged: "Registrata prima del fischio", chipClv: "CLV verificato", chipCal: "Calibrata, mai gonfiata",
   anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype. È la scheda identica a quella sulla board.",
@@ -541,6 +544,27 @@ export default function LandingPage() {
     try { writeRefCode(new URLSearchParams(window.location.search).get("ref") ?? ""); } catch { /* no-op */ }
   }, []);
 
+  // #TG-TRIAL-SITE: se si arriva con un link invito interno, la pagina DEVE dire
+  // cosa dà — il canale Telegram promette «3 giorni di PRO» e una promessa che
+  // la pagina non conferma vale zero. La fetch parte solo con ?ref= presente, e
+  // un 404 (codice creator o inesistente) non mostra niente: fail-soft.
+  const [inviteDays, setInviteDays] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    let code = "";
+    try { code = new URLSearchParams(window.location.search).get("ref") ?? ""; } catch { /* no-op */ }
+    if (!code) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/invite?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+        if (!r.ok) return;
+        const j = (await r.json()) as { ok?: boolean; days?: number };
+        if (!cancelled && j.ok && typeof j.days === "number") setInviteDays(j.days);
+      } catch { /* no-op */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Auth-aware topnav: chiede a /api/auth (stessa chiamata del desk) e mostra
   // il nome utente solo se loggato; altrimenti i link Sign In / Register.
   useEffect(() => {
@@ -672,6 +696,15 @@ export default function LandingPage() {
   return (
     <div className="lp hv3" data-mounted={mounted ? "1" : "0"}>
       <SportGlyphSprite />
+
+      {/* #TG-TRIAL-SITE: banda invito — appare SOLO con un codice interno valido */}
+      {inviteDays != null && (
+        <div className="lp-invite" role="status">
+          <span className="lp-invite-dot" aria-hidden="true" />
+          <strong>{v.inviteHead}:</strong>
+          <span>&nbsp;{inviteDays} {v.inviteBody}</span>
+        </div>
+      )}
 
       {/* ── Topnav ─────────────────────────────────────────────── */}
       <header className="lp-nav">
