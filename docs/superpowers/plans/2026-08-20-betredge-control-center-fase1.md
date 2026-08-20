@@ -1458,38 +1458,81 @@ def test_launchctl_non_disponibile_e_unknown(mocker):
     assert daemons.check_launchd("qualsiasi").level == "unknown"
 
 
+def _fresh(hard=True):
+    return daemons.CronSpec("cron_x", "X", "match_predictions", "computed_at", 1800, hard)
+
+
 def test_cron_verde_se_l_artefatto_e_recente(mocker):
-    spec = daemons.CronSpec("cron_settle", "Settle", "pick_settlement", "settled_at", 1800)
     mocker.patch.object(daemons, "fetch_all", return_value=[(600,)])
-    v = daemons.check_cron(spec)
-    assert v.level == "green"
+    assert daemons.check_cron(_fresh()).level == "green"
 
 
-def test_cron_rosso_se_l_artefatto_manca_oltre_il_doppio_dell_intervallo(mocker):
-    # Il cron settle gira ogni 30 minuti: 12 ore di silenzio sono rosse
-    # anche se Vercel risponde 200. Un processo puo' uscire con codice zero
-    # e non produrre niente.
-    spec = daemons.CronSpec("cron_settle", "Settle", "pick_settlement", "settled_at", 1800)
+def test_cron_incondizionato_rosso_oltre_il_doppio_dell_intervallo(mocker):
+    # Un cron che scrive a ogni run: il silenzio e' un guasto, anche se
+    # Vercel risponde 200. Un processo puo' uscire con codice zero e non
+    # produrre niente.
     mocker.patch.object(daemons, "fetch_all", return_value=[(43440,)])
-    v = daemons.check_cron(spec)
+    v = daemons.check_cron(_fresh(hard=True))
     assert v.level == "red"
     assert "12h" in v.headline
+
+
+def test_cron_condizionale_e_ambra_non_rosso(mocker):
+    # Un cron che scrive solo quando c'e' lavoro: il silenzio e' ambiguo.
+    # Chiamarlo rosso genera falsi allarmi e insegna a ignorarli.
+    mocker.patch.object(daemons, "fetch_all", return_value=[(43440,)])
+    v = daemons.check_cron(_fresh(hard=False))
+    assert v.level == "amber"
+    assert "o non c'era nulla da fare" in v.headline
 
 
 def test_cron_su_tabella_vuota_e_rosso_non_unknown(mocker):
     # None significa "nessuna riga": il cron non ha mai prodotto nulla.
     # E' un'assenza di artefatto, quindi rosso, non "non misurato".
-    spec = daemons.CronSpec("cron_crm", "CRM", "crm_trigger_sends", "sent_at", 86400)
     mocker.patch.object(daemons, "fetch_all", return_value=[(None,)])
-    v = daemons.check_cron(spec)
+    v = daemons.check_cron(_fresh())
     assert v.level == "red"
     assert "mai" in v.headline
 
 
 def test_cron_con_db_giu_e_unknown(mocker):
-    spec = daemons.CronSpec("cron_crm", "CRM", "crm_trigger_sends", "sent_at", 86400)
     mocker.patch.object(daemons, "fetch_all", side_effect=DbUnavailable("timeout"))
-    assert daemons.check_cron(spec).level == "unknown"
+    assert daemons.check_cron(_fresh()).level == "unknown"
+
+
+def _backlog():
+    return daemons.BacklogSpec("cron_y", "Y", "select 1", "ordini", "pagati e non abilitati")
+
+
+def test_arretrato_zero_e_verde_anche_dopo_settimane_di_silenzio(mocker):
+    # Il falso rosso misurato il 2026-08-20: paygate-reconcile sembrava fermo
+    # da 22 giorni perche' nessuno comprava, mentre il suo arretrato era zero.
+    # Nessun ordine da smaltire non e' un guasto: e' un fatto di business.
+    mocker.patch.object(daemons, "fetch_all", return_value=[(0,)])
+    v = daemons.check_backlog(_backlog())
+    assert v.level == "green"
+    assert v.value == 0
+
+
+def test_arretrato_maggiore_di_zero_e_rosso(mocker):
+    mocker.patch.object(daemons, "fetch_all", return_value=[(66,)])
+    v = daemons.check_backlog(_backlog())
+    assert v.level == "red"
+    assert "66 ordini" in v.headline
+    assert v.value == 66
+
+
+def test_arretrato_con_db_giu_e_unknown(mocker):
+    mocker.patch.object(daemons, "fetch_all", side_effect=DbUnavailable("timeout"))
+    assert daemons.check_backlog(_backlog()).level == "unknown"
+
+
+def test_i_cron_condizionali_usano_l_arretrato_non_la_freschezza():
+    fresh_ids = {s.id for s in daemons.CRONS}
+    backlog_ids = {s.id for s in daemons.BACKLOGS}
+    assert "cron_settle" in backlog_ids
+    assert "cron_paygate" in backlog_ids
+    assert not fresh_ids & backlog_ids
 
 
 def test_lo_scope_esclude_i_progetti_non_betredge():
@@ -1502,7 +1545,7 @@ def test_lo_scope_esclude_i_progetti_non_betredge():
 
 def test_il_registro_copre_scope_e_cron():
     ids = [c.id for c in daemons.checks()]
-    assert len(ids) == len(daemons.SCOPE) + len(daemons.CRONS)
+    assert len(ids) == len(daemons.SCOPE) + len(daemons.CRONS) + len(daemons.BACKLOGS)
     assert len(set(ids)) == len(ids)
     assert "cron_settle" in ids
 ```
@@ -1528,7 +1571,7 @@ silenzio, incluso il controllore di salute.
 import subprocess
 from collections import namedtuple
 
-from ..contract import Check, Verdict, green, red, unknown
+from ..contract import Check, Verdict, amber, green, red, unknown
 from ..db import DbUnavailable, fetch_all
 
 SCOPE = (
@@ -1542,13 +1585,53 @@ SCOPE = (
     "io.maven.softmarkets.predict",
 )
 
-CronSpec = namedtuple("CronSpec", "id label table column interval_seconds")
+# Due modi di giudicare un cron, e la scelta fra i due non e' cosmetica.
+#
+# FRESHNESS vale solo per i cron il cui artefatto e' INCONDIZIONATO: scrivono
+# ogni volta che girano. Li' il silenzio e' un guasto.
+#
+# BACKLOG vale per i cron CONDIZIONALI, che scrivono solo se c'e' lavoro. Li'
+# il silenzio e' ambiguo, e misurare la freschezza produce falsi rossi: il
+# 2026-08-20 paygate-reconcile risultava rosso da 22 giorni solo perche'
+# nessuno comprava, mentre il suo arretrato era zero. Per questi si misura il
+# lavoro in attesa che il cron avrebbe dovuto smaltire.
+CronSpec = namedtuple("CronSpec", "id label table column interval_seconds hard")
+BacklogSpec = namedtuple("BacklogSpec", "id label sql unita nota")
 
 CRONS = (
-    CronSpec("cron_settle", "Cron settle", "pick_settlement", "settled_at", 1800),
-    CronSpec("cron_predictions", "Cron predictions/refresh", "match_predictions", "computed_at", 7200),
-    CronSpec("cron_crm", "Cron CRM", "crm_trigger_sends", "sent_at", 86400),
-    CronSpec("cron_paygate", "Cron paygate-reconcile", "paygate_orders", "created_at", 300),
+    CronSpec("cron_predictions", "Cron predictions/refresh", "match_predictions", "computed_at", 7200, True),
+    # Il CRM scrive solo quando qualcuno entra in un trigger: il silenzio puo'
+    # voler dire "fermo" o "nessuno da contattare". Non si puo' distinguere
+    # senza replicare la logica dei segmenti, quindi ambra e frase onesta,
+    # mai una notifica su un dato ambiguo.
+    CronSpec("cron_crm", "Cron CRM", "crm_trigger_sends", "sent_at", 86400, False),
+)
+
+BACKLOGS = (
+    BacklogSpec(
+        "cron_settle",
+        "Cron settle",
+        """
+        select count(*) from pick_ledger l
+        left join pick_settlement s
+          on s.source_table = l.source_table and s.source_id = l.source_id
+        where l.commence_time < now() - interval '4 hours'
+          and s.id is null and l.is_backfill = false
+        """,
+        "pick",
+        "partite finite da oltre 4h senza settlement",
+    ),
+    BacklogSpec(
+        "cron_paygate",
+        "Cron paygate-reconcile",
+        """
+        select count(*) from paygate_orders
+        where paid_at is not null and granted_at is null
+          and paid_at < now() - interval '15 minutes'
+        """,
+        "ordini",
+        "pagati da oltre 15 min e non ancora abilitati",
+    ),
 )
 
 # Tabelle e colonne provengono da una lista chiusa scritta qui sopra, mai
@@ -1636,8 +1719,17 @@ def check_cron(spec: CronSpec) -> Verdict:
     limite = spec.interval_seconds * 2
     testo = _human(eta)
     if eta > limite:
+        atteso = _human(spec.interval_seconds)
+        if not spec.hard:
+            return amber(
+                f"nessuna scrittura da {testo}: o e' fermo o non c'era nulla da fare"
+                f" (atteso ogni {atteso})",
+                f"db:{spec.table}",
+                value=testo,
+                evidence={"age_s": int(eta), "limite_s": limite, "condizionale": True},
+            )
         return red(
-            f"nessuna scrittura da {testo} (atteso ogni {_human(spec.interval_seconds)})",
+            f"nessuna scrittura da {testo} (atteso ogni {atteso})",
             f"db:{spec.table}",
             value=testo,
             evidence={"age_s": int(eta), "limite_s": limite},
@@ -1647,6 +1739,34 @@ def check_cron(spec: CronSpec) -> Verdict:
         f"db:{spec.table}",
         value=testo,
         evidence={"age_s": int(eta)},
+    )
+
+
+def check_backlog(spec: BacklogSpec) -> Verdict:
+    """Misura il lavoro in attesa, non la data dell'ultima scrittura.
+
+    Zero arretrato e' verde anche dopo settimane di silenzio: significa che il
+    cron non aveva niente da fare, non che e' morto. Arretrato maggiore di zero
+    e' rosso anche se ha scritto un minuto fa: c'e' lavoro fermo.
+    """
+    try:
+        righe = fetch_all(spec.sql)
+    except DbUnavailable as exc:
+        return unknown(f"database non raggiungibile: {exc}", f"db:{spec.id}")
+
+    arretrato = int(righe[0][0]) if righe and righe[0][0] is not None else 0
+    if arretrato:
+        return red(
+            f"{arretrato} {spec.unita} in attesa: {spec.nota}",
+            f"db:{spec.id}",
+            value=arretrato,
+            evidence={"arretrato": arretrato, "criterio": spec.nota},
+        )
+    return green(
+        f"nessun arretrato ({spec.nota})",
+        f"db:{spec.id}",
+        value=0,
+        evidence={"criterio": spec.nota},
     )
 
 
@@ -1665,13 +1785,17 @@ def checks() -> list[Check]:
         Check(spec.id, "cron", spec.label, lambda s=spec: check_cron(s), timeout_seconds=20)
         for spec in CRONS
     ]
+    fatti += [
+        Check(spec.id, "cron", spec.label, lambda s=spec: check_backlog(s), timeout_seconds=25)
+        for spec in BACKLOGS
+    ]
     return fatti
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `venv/bin/python -m pytest tests/test_cc_checks_daemons.py -v`
-Expected: PASS, 12 test
+Expected: PASS, 17 test
 
 - [ ] **Step 5: Verifica contro la macchina vera**
 
