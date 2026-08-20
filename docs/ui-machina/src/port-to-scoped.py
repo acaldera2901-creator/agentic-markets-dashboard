@@ -170,16 +170,21 @@ def main() -> int:
 {GROUND}.mc-scene-clay .bgfix{{background-image:url(/banners/gen/scene-clay.jpg)}}
 
 {SCOPE} .card-bg{{background-position:center;background-size:cover;background-repeat:no-repeat}}
-/* L'inquadratura cambia con la foto, non solo il file: le tre foto del calcio
-   sono tutte campi verdi e in una riga di tre schede l'alternanza NON si vedeva.
-   Con tagli diversi la varieta' si percepisce senza generare immagini nuove
-   (in fase 1 non si genera nulla). */
-{SCOPE} .im-stadium{{background-image:url(/banners/stadium-night.jpg);background-position:center 28%}}
-{SCOPE} .im-pitch{{background-image:url(/banners/football-pitch.jpg);background-position:center 72%}}
-{SCOPE} .im-action{{background-image:url(/banners/football-action.jpg);background-position:60% 40%}}
-{SCOPE} .im-court{{background-image:url(/banners/tennis-player.jpg);background-position:center 32%}}
-{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 60%}}
-{SCOPE} .im-crowd{{background-image:url(/banners/stadium-crowd.jpg);background-position:center 40%}}
+/* LE FOTO DELLE SCHEDE SONO LE SCENE DELLA PREVIEW, non le foto sport del repo.
+   Misurato su produzione da loggato: con stadium-night / football-pitch /
+   football-action la fascia alta leggeva come una velatura grigio-pallida senza
+   soggetto riconoscibile — un'altra famiglia tonale rispetto alla preview
+   approvata, dove le scene sono notturne con i fari e il campo verde. Non e' una
+   questione di luminosita' media (produzione era perfino piu' scura): e' il
+   contenuto del taglio.
+   La varieta' viene da TAGLI diversi della stessa scena, non da file diversi:
+   nessuna immagine nuova, come vuole la fase 1. */
+{SCOPE} .im-stadium{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:22% 24%}}
+{SCOPE} .im-pitch{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 62%}}
+{SCOPE} .im-action{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:88% 58%}}
+{SCOPE} .im-court{{background-image:url(/banners/gen/scene-court.jpg);background-position:center 38%}}
+{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 58%}}
+{SCOPE} .im-crowd{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 14%}}
 """
     # ── 4b. LA VARIABILE VA NELLO SPAZIO DEI NOMI ───────────────────────────
     # globals.css definisce GIA' `--accent: var(--am-panel-3)`, cioe' un colore di
