@@ -170,12 +170,16 @@ def main() -> int:
 {GROUND}.mc-scene-clay .bgfix{{background-image:url(/banners/gen/scene-clay.jpg)}}
 
 {SCOPE} .card-bg{{background-position:center;background-size:cover;background-repeat:no-repeat}}
-{SCOPE} .im-stadium{{background-image:url(/banners/stadium-night.jpg)}}
-{SCOPE} .im-pitch{{background-image:url(/banners/football-pitch.jpg)}}
-{SCOPE} .im-action{{background-image:url(/banners/football-action.jpg)}}
-{SCOPE} .im-court{{background-image:url(/banners/tennis-player.jpg)}}
-{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg)}}
-{SCOPE} .im-crowd{{background-image:url(/banners/stadium-crowd.jpg)}}
+/* L'inquadratura cambia con la foto, non solo il file: le tre foto del calcio
+   sono tutte campi verdi e in una riga di tre schede l'alternanza NON si vedeva.
+   Con tagli diversi la varieta' si percepisce senza generare immagini nuove
+   (in fase 1 non si genera nulla). */
+{SCOPE} .im-stadium{{background-image:url(/banners/stadium-night.jpg);background-position:center 28%}}
+{SCOPE} .im-pitch{{background-image:url(/banners/football-pitch.jpg);background-position:center 72%}}
+{SCOPE} .im-action{{background-image:url(/banners/football-action.jpg);background-position:60% 40%}}
+{SCOPE} .im-court{{background-image:url(/banners/tennis-player.jpg);background-position:center 32%}}
+{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 60%}}
+{SCOPE} .im-crowd{{background-image:url(/banners/stadium-crowd.jpg);background-position:center 40%}}
 """
     # ── 5. AZZERAMENTO ───────────────────────────────────────────────────────
     # La CSS della preview presupponeva una tela bianca. Nel prodotto sotto c'è

@@ -575,12 +575,16 @@
 :root:not([data-theme="light"]) [data-mc-ground].mc-scene-clay .bgfix{background-image:url(/banners/gen/scene-clay.jpg)}
 
 :root:not([data-theme="light"]) [data-mc] .card-bg{background-position:center;background-size:cover;background-repeat:no-repeat}
-:root:not([data-theme="light"]) [data-mc] .im-stadium{background-image:url(/banners/stadium-night.jpg)}
-:root:not([data-theme="light"]) [data-mc] .im-pitch{background-image:url(/banners/football-pitch.jpg)}
-:root:not([data-theme="light"]) [data-mc] .im-action{background-image:url(/banners/football-action.jpg)}
-:root:not([data-theme="light"]) [data-mc] .im-court{background-image:url(/banners/tennis-player.jpg)}
-:root:not([data-theme="light"]) [data-mc] .im-clay{background-image:url(/banners/gen/scene-clay.jpg)}
-:root:not([data-theme="light"]) [data-mc] .im-crowd{background-image:url(/banners/stadium-crowd.jpg)}
+/* L'inquadratura cambia con la foto, non solo il file: le tre foto del calcio
+   sono tutte campi verdi e in una riga di tre schede l'alternanza NON si vedeva.
+   Con tagli diversi la varieta' si percepisce senza generare immagini nuove
+   (in fase 1 non si genera nulla). */
+:root:not([data-theme="light"]) [data-mc] .im-stadium{background-image:url(/banners/stadium-night.jpg);background-position:center 28%}
+:root:not([data-theme="light"]) [data-mc] .im-pitch{background-image:url(/banners/football-pitch.jpg);background-position:center 72%}
+:root:not([data-theme="light"]) [data-mc] .im-action{background-image:url(/banners/football-action.jpg);background-position:60% 40%}
+:root:not([data-theme="light"]) [data-mc] .im-court{background-image:url(/banners/tennis-player.jpg);background-position:center 32%}
+:root:not([data-theme="light"]) [data-mc] .im-clay{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 60%}
+:root:not([data-theme="light"]) [data-mc] .im-crowd{background-image:url(/banners/stadium-crowd.jpg);background-position:center 40%}
 
 /* ══════════════════════════════════════════════════════════════
    AZZERAMENTO — ciò che globals.css mette e la preview non toglieva
