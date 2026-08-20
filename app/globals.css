@@ -7101,6 +7101,25 @@ button:disabled {
 }
 
 /* ── Topnav ── */
+/* #TG-TRIAL-SITE: banda invito sopra la topnav della landing. Compare solo con
+   un codice invito interno valido, quindi per la quasi totalità delle visite
+   questo blocco non rende nulla. Usa i token, così regge tema chiaro e scuro
+   senza un override dedicato. */
+.lp-invite {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 2px;
+  padding: 10px clamp(16px, 4vw, 48px);
+  background: color-mix(in srgb, var(--am-green) 14%, var(--am-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--am-green) 38%, var(--am-line));
+  color: var(--am-text);
+  font-size: 14px; line-height: 1.4;
+}
+.lp-invite strong { font-weight: 650; }
+.lp-invite-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--am-green); margin-right: 10px; flex: 0 0 auto;
+}
+
 .lp-nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px clamp(16px, 4vw, 48px);
