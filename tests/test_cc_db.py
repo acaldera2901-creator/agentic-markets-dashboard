@@ -40,3 +40,30 @@ def test_load_env_legge_le_coppie_e_salta_i_commenti(tmp_path):
     assert env["TELEGRAM_BOT_TOKEN"] == "abc"
     assert env["VUOTO"] == ""
     assert "# commento" not in env
+
+
+def test_una_query_con_percento_letterale_non_esplode(mocker):
+    # Con params=() psycopg2 interpola comunque, e ogni % letterale diventa un
+    # segnaposto: "ilike '%mail%'" moriva con IndexError.
+    from tools.control_center import db
+
+    finto = mocker.Mock()
+    finto.fetchall.return_value = [(1,)]
+    cur = mocker.MagicMock()
+    cur.__enter__ = mocker.Mock(return_value=finto)
+    cur.__exit__ = mocker.Mock(return_value=False)
+    conn = mocker.MagicMock()
+    conn.__enter__ = mocker.Mock(return_value=conn)
+    conn.__exit__ = mocker.Mock(return_value=False)
+    conn.cursor.return_value = cur
+    mocker.patch.object(db.psycopg2, "connect", return_value=conn)
+    mocker.patch.object(db, "_dsn", return_value="postgresql://x")
+
+    db.fetch_all("select 1 where a ilike '%mail%'")
+    # senza params, execute riceve un solo argomento
+    chiamate = [c for c in finto.execute.call_args_list if "ilike" in str(c)]
+    assert len(chiamate[0][0]) == 1
+
+    db.fetch_all("select 1 where a = %s", ("x",))
+    con_params = [c for c in finto.execute.call_args_list if c[0][0].endswith("%s")]
+    assert con_params[0][0][1] == ("x",)

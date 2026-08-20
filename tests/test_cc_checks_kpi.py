@@ -1,6 +1,6 @@
 import pytest
 
-from tools.control_center.checks import business, channels, results
+from tools.control_center.checks import business, results
 from tools.control_center.db import DbUnavailable
 
 
@@ -89,40 +89,6 @@ def test_l_incassato_dichiara_cosa_resta_fuori_dalla_somma(mocker):
     assert v.value == "$24.99"
     assert "non registrano un importo" in v.evidence["fuori_somma"]
 
-
-# ── canali ───────────────────────────────────────────────────────────────────
-
-def test_telegram_senza_id_del_canale_e_unknown(mocker):
-    mocker.patch.object(channels, "load_env", return_value={"TELEGRAM_BOT_TOKEN": "t"})
-    v = channels.check_telegram()
-    assert v.level == "unknown"
-    assert "TELEGRAM_CHANNEL_ID" in v.headline
-
-
-def test_telegram_non_usa_la_chat_personale_come_canale(mocker):
-    # TELEGRAM_CHAT_ID e' la chat di Andrea: riporterebbe 1 iscritto, un
-    # numero vero che risponde alla domanda sbagliata.
-    mocker.patch.object(
-        channels, "load_env",
-        return_value={"TELEGRAM_BOT_TOKEN": "t", "TELEGRAM_CHAT_ID": "42"},
-    )
-    assert channels.check_telegram().level == "unknown"
-
-
-def test_i_social_senza_credenziale_dicono_quale_manca(mocker):
-    mocker.patch.object(channels, "load_env", return_value={})
-    v = channels.check_instagram()
-    assert v.level == "unknown"
-    assert "IG_ACCESS_TOKEN" in v.headline
-    assert channels.check_tiktok().level == "unknown"
-
-
-def test_reddit_403_dice_che_serve_oauth(mocker):
-    class Resp:
-        def raise_for_status(self):
-            raise RuntimeError("403 Client Error: Blocked")
-
-    mocker.patch.object(channels.requests, "get", return_value=Resp())
-    v = channels.check_reddit()
-    assert v.level == "unknown"
-    assert "OAuth" in v.headline
+# I check dei canali hanno un file dedicato: tests/test_cc_checks_channels.py
+# (sono stati riscritti quando le credenziali sono state trovate nei progetti
+# accelerator/studio-instagram e accelerator/studio).

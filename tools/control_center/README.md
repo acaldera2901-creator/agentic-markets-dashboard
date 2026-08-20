@@ -59,6 +59,39 @@ Due guardie sul track record: sotto **30 pick chiusi** la finestra scrive
 −100%), e `result` vale `won`/`lost`/`void`/`unresolved` — **non** `win`: una
 query scritta su `win` restituisce zero vittorie e un ROI di −100%.
 
+## Da dove vengono le credenziali
+
+Non sono copiate qui: la dashboard le legge dove vivono, in ordine di priorità
+crescente (`FONTI_ENV` in `db.py`).
+
+| Fonte | Cosa porta |
+|---|---|
+| `<repo>/.env` | DB, quote, Telegram bot, chat personale |
+| `accelerator/studio-instagram/.env` | `IG_ACCESS_TOKEN_EN/IT`, `IG_USER_ID_EN/IT` |
+| `accelerator/studio/.env` | `TELEGRAM_CHAT_ID_FREE` — il canale pubblico |
+| `~/.betredge-cc/credentials.env` | ciò che non sta in nessun repo: Resend, Reddit |
+
+**Cosa manca e perché** (stato 2026-08-20):
+
+- **`RESEND_API_KEY`** — Vercel la marca *sensitive* e non la restituisce:
+  `vercel env pull` ha reso 28 valori su 106 e questo era fra i vuoti. Va
+  incollata a mano in `credentials.env`.
+- **Instagram** — i token in `studio-instagram/.env` esistono ma sono
+  **scaduti** (errore 190). Il tile dice "SCADUTO, va rigenerato", non
+  "mancante": sono due azioni diverse. `IG_*_IT` è invece vuoto.
+- **TikTok** — nessuna credenziale in nessun progetto: l'account non è
+  Business, quindi non ha API.
+- **Reddit** — l'endpoint pubblico dà 403 anche con UA da browser: serve
+  un'app OAuth.
+
+## Email: il database dice se è PARTITA, Resend se è ARRIVATA
+
+`crm_trigger_sends` è il registro degli invii, perché il motore è il CRM in
+codice (l'automation di Resend è disabilitata dal 27/07). Resend serve per lo
+strato che il DB non conosce: domini autenticati, bounce, consegne. Senza la
+chiave i due tile Resend restano `unknown` — e il conteggio degli invii
+funziona comunque.
+
 ## Come si aggiunge un check
 
 Una funzione che ritorna un `Verdict` in `checks/<gruppo>.py`, più una riga in

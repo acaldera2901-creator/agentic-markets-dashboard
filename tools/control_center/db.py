@@ -57,6 +57,33 @@ def load_env(path: str | None = None) -> dict[str, str]:
     return out
 
 
+# Le credenziali non vivono tutte nello stesso posto, e copiarle qui sarebbe
+# duplicarle: la dashboard legge le fonti dove sono, in ordine di priorita'
+# crescente (l'ultima vince). Ogni voce dice perche' esiste.
+FONTI_ENV = (
+    REPO_ROOT / ".env",
+    # I profili Instagram di BetRedge sono pubblicati da questo progetto:
+    # IG_ACCESS_TOKEN_EN/IT e IG_USER_ID_EN/IT vivono qui.
+    Path.home() / "Desktop/00-SISTEMA/accelerator/studio-instagram/.env",
+    # TELEGRAM_CHAT_ID_FREE: l'id del canale pubblico, distinto dalla chat
+    # personale di Andrea che sta in TELEGRAM_CHAT_ID.
+    Path.home() / "Desktop/00-SISTEMA/accelerator/studio/.env",
+    # Chiavi che non stanno in nessun repo: RESEND_API_KEY, che Vercel marca
+    # sensitive e non restituisce (verificato: 28 valori su 106 nel pull).
+    Path.home() / ".betredge-cc/credentials.env",
+)
+
+
+def load_all_env() -> dict[str, str]:
+    """Unione delle fonti dichiarate. I valori vuoti non sovrascrivono i pieni."""
+    unione: dict[str, str] = {}
+    for fonte in FONTI_ENV:
+        for chiave, valore in load_env(str(fonte)).items():
+            if valore or chiave not in unione:
+                unione[chiave] = valore
+    return unione
+
+
 def _dsn() -> str:
     raw = os.environ.get("DATABASE_URL") or load_env().get("DATABASE_URL")
     return normalize_db_url(raw)
@@ -73,7 +100,13 @@ def fetch_all(sql: str, params: tuple = ()) -> list[tuple]:
         with psycopg2.connect(_dsn(), connect_timeout=8) as conn:
             with conn.cursor() as cur:
                 cur.execute("SET TRANSACTION READ ONLY")
-                cur.execute(sql, params)
+                # Senza params NON si passa la tupla vuota: psycopg2 farebbe
+                # comunque l'interpolazione e ogni % letterale nel SQL
+                # (ilike '%x%') diventerebbe un segnaposto, con IndexError.
+                if params:
+                    cur.execute(sql, params)
+                else:
+                    cur.execute(sql)
                 return cur.fetchall()
     except psycopg2.Error as exc:
         raise DbUnavailable(str(exc).strip().splitlines()[0]) from exc
