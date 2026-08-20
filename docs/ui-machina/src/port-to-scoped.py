@@ -247,6 +247,50 @@ def main() -> int:
    il trattamento che la preview usa per i suoi bottoni. Il bianco andrebbe sul
    verde scuro #15703B, che qui non e' il fondo. */
 {GROUND} .v-btn--primary,{GROUND} .best{{color:#06140c}}
+
+/* ── IL CHROME ─────────────────────────────────────────────────────────────
+   La testata e il rail del prodotto esistono e funzionano: si cambia la VESTE,
+   non la struttura. Nessun nodo aggiunto o rimosso, nessuna icona toccata —
+   solo il registro tipografico della preview (mono maiuscolo spaziato) e il
+   marcatore della voce attiva, che diventa un filetto e non un fondo pieno. */
+{GROUND} .am-topbar{{background:var(--night);border-bottom:1px solid var(--rule)}}
+{GROUND} .am-topnav button{{
+  font-family:var(--fm);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+  color:#a9b0b9;border-radius:0;background:none}}
+{GROUND} .am-topnav button:hover{{color:#fff}}
+{GROUND} .am-topnav button.active{{
+  color:#fff;background:none;border-bottom:2px solid var(--verde-b);border-radius:0}}
+/* il rail: etichette di gruppo in mono, voce attiva marcata da un filetto
+   incassato a sinistra (la preview: box-shadow inset 3px, non un fondo) */
+{GROUND} .rail-lab{{
+  font-family:var(--fm);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink3)}}
+{GROUND} .rail-item{{border-radius:0}}
+{GROUND} .rail-label{{letter-spacing:-.01em}}
+{GROUND} .rail-item.is-active{{
+  background:none;box-shadow:inset 3px 0 0 var(--verde-b);color:#fff}}
+
+/* ── LE FASCE CON LA SCENA ─────────────────────────────────────────────────
+   È questo che dà il respiro del target: una sezione non è un fondo piatto, è
+   una fotografia sotto UNA velatura. Due sezioni sole — l'apertura e la
+   chiusura — perché su tutte diventerebbe rumore.
+   Una sola velatura: due gradienti sovrapposti spengono l'immagine (errore già
+   pagato su MACHINA). I due pseudo di .v-hero e .v-final sono liberi: globals
+   non li usa (verificato con grep prima di prenderli). */
+{GROUND} .v-hero,{GROUND} .v-final{{position:relative;isolation:isolate;overflow:hidden}}
+{GROUND} .v-hero::before,{GROUND} .v-final::before{{
+  content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+  background-position:center;background-size:cover;
+  opacity:.55;filter:saturate(1.1) contrast(1.03)}}
+{GROUND} .v-hero::before{{background-image:url(/banners/gen/scene-stadium.jpg)}}
+{GROUND} .v-final::before{{background-image:url(/banners/gen/scene-court.jpg)}}
+{GROUND} .v-hero::after,{GROUND} .v-final::after{{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(12,14,17,.96) 42%,rgba(12,14,17,.74))}}
+{GROUND} .v-final::after{{
+  background:linear-gradient(270deg,rgba(12,14,17,.96) 42%,rgba(12,14,17,.74))}}
+/* il filetto che separa le fasce, al posto del salto di colore */
+{GROUND} .v-sec,{GROUND} .v-final{{border-top:1px solid var(--rule)}}
 """
 
     DST.write_text(res, encoding="utf-8")
