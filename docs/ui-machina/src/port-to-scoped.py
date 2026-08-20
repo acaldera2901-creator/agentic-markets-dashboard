@@ -226,6 +226,12 @@ def main() -> int:
 /* L'etichetta KICKOFF: col fondo piu' acceso il suo grigio #7E858E scende a
    2,59:1 (misurato su tre schede). Al grigio del sistema regge. */
 {SCOPE} .pred .stt{{color:#b4bbc4}}
+/* Le etichette del READOUT — la parte piu' importante della scheda. Col fondo
+   piu' acceso il grigio #7E858E le teneva a 4,39 (occhiello) e 3,45 (etichetta
+   della quota): appena sotto. Restano secondarie rispetto al pick bianco, ma
+   si leggono. */
+{SCOPE} .pred .v2r-eye,{SCOPE} .pred .v2r-qlab,{SCOPE} .pred .v2r-conf-t,
+{SCOPE} .pred .v2r-sub{{color:#b4bbc4}}
 /* la casa ha angoli vivi: nessuna pastiglia rounded generica */
 {SCOPE} .v2r-val,{SCOPE} .tag,{SCOPE} .stt{{border-radius:0}}
 
@@ -378,7 +384,9 @@ def main() -> int:
    grigi al gradino scuro del tema chiaro (--am-muted #4A515B). */
 {LIGHT} [data-mc] .pred .league,{LIGHT} [data-mc] .pred .when,
 {LIGHT} [data-mc] .pred .vs,{LIGHT} [data-mc] .pred .rnd,
-{LIGHT} [data-mc] .pred .stt{{color:#3a4149}}
+{LIGHT} [data-mc] .pred .stt,{LIGHT} [data-mc] .pred .v2r-eye,
+{LIGHT} [data-mc] .pred .v2r-qlab,{LIGHT} [data-mc] .pred .v2r-conf-t,
+{LIGHT} [data-mc] .pred .v2r-sub{{color:#3a4149}}
 /* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara e'
    il prodotto di prima con una sfumatura sopra */
 /* la riga di testata porta il proprio fondo anche in chiaro: senza, lega e

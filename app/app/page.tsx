@@ -4940,6 +4940,21 @@ function GoalscorerBlock({
   );
 }
 
+// #UI-MACHINA-0802 — lucchetto in SVG inline, non emoji. Le emoji come risorsa
+// grafica sono vietate (regola standing anti-slop), e su questa superficie il
+// glifo arrivava alla dimensione della quota, cioe' grande e fuori stile: un
+// disegno di sistema resta nel colore del testo e nel peso del tratto.
+function McLock({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" aria-hidden="true"
+      style={{ display: "inline-block", verticalAlign: "-0.15em" }}>
+      <rect x="4" y="10.5" width="16" height="10.5" rx="1.2" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
 // #UI-MACHINA-0802 — la foto dietro la scheda. Segue lo SPORT (non è
 // decorazione casuale) e alterna in modo deterministico sull'indice, così due
 // schede adiacenti non portano la stessa immagine. Le foto sono quelle già in
@@ -5257,9 +5272,23 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       {/* model-vs-market readout / gate overlay */}
       {p.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-          <span className="blurred">▒▒ HOME ▒▒▒%</span>
-          <span className="blurred">▒▒ DRAW ▒▒▒%</span>
-          <span className="blurred">▒▒ AWAY ▒▒▒%</span>
+        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
+            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
+            vietate dalla regola standing di giugno E promettevano una struttura
+            che il prodotto sbloccato non ha (pronostico + quota + value). Un
+            lucchetto su una struttura vera converte meglio di una promessa
+            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
+          <div className="v2r is-locked" aria-hidden="true">
+            <div className="v2r-l">
+              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
+              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
+            </div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
+              <span className="v2r-qn lock"><McLock size={22} /></span>
+            </div>
+          </div>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
       ) : (
@@ -5269,7 +5298,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><McLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5277,7 +5306,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock">🔒</span>
+                <span className="v2r-qn lock"><McLock size={22} /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -5821,8 +5850,23 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       {/* verdict line + rows / gate overlay */}
       {m.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-          <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
-          <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
+        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
+            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
+            vietate dalla regola standing di giugno E promettevano una struttura
+            che il prodotto sbloccato non ha (pronostico + quota + value). Un
+            lucchetto su una struttura vera converte meglio di una promessa
+            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
+          <div className="v2r is-locked" aria-hidden="true">
+            <div className="v2r-l">
+              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
+              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
+            </div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
+              <span className="v2r-qn lock"><McLock size={22} /></span>
+            </div>
+          </div>
           <span className="locked-cta">{t.locked_title}</span>
         </div>
       ) : (
@@ -5832,7 +5876,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><McLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5840,7 +5884,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock">🔒</span>
+                <span className="v2r-qn lock"><McLock size={22} /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>

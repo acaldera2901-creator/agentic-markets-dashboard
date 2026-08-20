@@ -609,6 +609,12 @@
 /* L'etichetta KICKOFF: col fondo piu' acceso il suo grigio #7E858E scende a
    2,59:1 (misurato su tre schede). Al grigio del sistema regge. */
 :root:not([data-theme="light"]) [data-mc] .pred .stt{color:#b4bbc4}
+/* Le etichette del READOUT — la parte piu' importante della scheda. Col fondo
+   piu' acceso il grigio #7E858E le teneva a 4,39 (occhiello) e 3,45 (etichetta
+   della quota): appena sotto. Restano secondarie rispetto al pick bianco, ma
+   si leggono. */
+:root:not([data-theme="light"]) [data-mc] .pred .v2r-eye,:root:not([data-theme="light"]) [data-mc] .pred .v2r-qlab,:root:not([data-theme="light"]) [data-mc] .pred .v2r-conf-t,
+:root:not([data-theme="light"]) [data-mc] .pred .v2r-sub{color:#b4bbc4}
 /* la casa ha angoli vivi: nessuna pastiglia rounded generica */
 :root:not([data-theme="light"]) [data-mc] .v2r-val,:root:not([data-theme="light"]) [data-mc] .tag,:root:not([data-theme="light"]) [data-mc] .stt{border-radius:0}
 
@@ -751,7 +757,9 @@
    grigi al gradino scuro del tema chiaro (--am-muted #4A515B). */
 :root[data-theme="light"] [data-mc] .pred .league,:root[data-theme="light"] [data-mc] .pred .when,
 :root[data-theme="light"] [data-mc] .pred .vs,:root[data-theme="light"] [data-mc] .pred .rnd,
-:root[data-theme="light"] [data-mc] .pred .stt{color:#3a4149}
+:root[data-theme="light"] [data-mc] .pred .stt,:root[data-theme="light"] [data-mc] .pred .v2r-eye,
+:root[data-theme="light"] [data-mc] .pred .v2r-qlab,:root[data-theme="light"] [data-mc] .pred .v2r-conf-t,
+:root[data-theme="light"] [data-mc] .pred .v2r-sub{color:#3a4149}
 /* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara e'
    il prodotto di prima con una sfumatura sopra */
 /* la riga di testata porta il proprio fondo anche in chiaro: senza, lega e
