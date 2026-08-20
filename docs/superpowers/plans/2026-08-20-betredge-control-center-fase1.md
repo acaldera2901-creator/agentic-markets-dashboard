@@ -544,6 +544,19 @@ def test_il_ttl_scaduto_richiama_la_fonte():
         now=FIXED,
     )
     assert out["caro"].headline == "fresco"
+
+
+def test_un_check_appeso_non_ritarda_lo_snapshot():
+    # Il timeout del singolo check non serve a niente se poi lo spegnimento
+    # del pool attende comunque il thread lento: lo snapshot arriverebbe in
+    # ritardo esattamente quando qualcosa e' rotto.
+    import time as _t
+
+    inizio = _t.monotonic()
+    out = run_checks([_chk("appeso", lambda: _t.sleep(8), timeout_seconds=0.2)], now=FIXED)
+    trascorso = _t.monotonic() - inizio
+    assert out["appeso"].level == "unknown"
+    assert trascorso < 2.0, f"run_checks ha atteso {trascorso:.1f}s"
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -592,7 +605,8 @@ def run_checks(
     out: dict[str, Verdict] = {}
     pending: dict = {}
 
-    with ThreadPoolExecutor(max_workers=8, thread_name_prefix="cc") as pool:
+    pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="cc")
+    try:
         for chk in checks:
             cached = prev.get(chk.id)
             if chk.ttl_seconds and cached and _age_seconds(cached, moment) < chk.ttl_seconds:
@@ -605,15 +619,16 @@ def run_checks(
             try:
                 result = future.result(timeout=chk.timeout_seconds)
             except FutureTimeout:
-                # Nota: il thread resta appeso fino a che la sua I/O non
-                # scade. Accettato: i check fanno HTTP e DB con timeout
-                # propri, quindi la coda si libera. Se un giorno un check
-                # bloccasse per sempre, servira' un processo separato.
+                # Il thread resta appeso fino a che la sua I/O non scade, ma
+                # non trattiene lo snapshot: lo shutdown qui sotto e' senza
+                # attesa. Accettato: i check fanno HTTP e DB con timeout
+                # propri. Se un giorno un check bloccasse per sempre,
+                # servirebbe un processo separato, non un thread.
                 out[check_id] = unknown(
                     f"timeout dopo {chk.timeout_seconds:g}s", f"check:{check_id}", now=moment
                 )
                 continue
-            except Exception as exc:  # noqa: BLE001 — qualsiasi errore diventa unknown
+            except Exception as exc:  # noqa: BLE001 - qualsiasi errore diventa unknown
                 out[check_id] = unknown(
                     str(exc) or exc.__class__.__name__,
                     f"check:{check_id}",
@@ -629,6 +644,11 @@ def run_checks(
                 )
                 continue
             out[check_id] = result
+    finally:
+        # wait=False e' il punto: un check appeso non deve ritardare la
+        # scrittura dello snapshot. Senza questo, il context manager
+        # attenderebbe il thread lento e vanificherebbe il timeout.
+        pool.shutdown(wait=False, cancel_futures=True)
 
     return out
 ```
@@ -636,7 +656,7 @@ def run_checks(
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `venv/bin/python -m pytest tests/test_cc_runner.py -v`
-Expected: PASS, 5 test
+Expected: PASS, 6 test
 
 - [ ] **Step 5: Commit**
 
