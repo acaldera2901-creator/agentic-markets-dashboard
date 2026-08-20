@@ -11,7 +11,11 @@ STATE_DIR = Path.home() / ".betredge-cc"
 STATE_FILE = STATE_DIR / "state.json"
 HISTORY_FILE = STATE_DIR / "history.jsonl"
 
-_ORDER = {"red": 0, "amber": 1, "unknown": 2, "green": 3}
+# Un solo ordinamento di gravita' per tutto il sistema. Era duplicato nel
+# collector e nella pagina, e la copia nel collector non conosceva "info":
+# il dry-run e' morto con KeyError appena e' arrivato il primo KPI.
+ORDER = {"red": 0, "amber": 1, "unknown": 2, "green": 3, "info": 4}
+_ORDER = ORDER
 
 
 def read_state(path: Path | None = None) -> dict:
@@ -63,7 +67,7 @@ def append_history(
 
 def verdict_summary(verdicts: dict[str, Verdict]) -> dict:
     """Il contenuto della barra del verdetto: un livello e una frase sola."""
-    counts = {level: 0 for level in ("green", "amber", "red", "unknown")}
+    counts = {level: 0 for level in ("green", "amber", "red", "unknown", "info")}
     for verdict in verdicts.values():
         counts[verdict.level] += 1
 
@@ -101,12 +105,24 @@ def build_state(
     groups: dict[str, str],
     alert_state: dict,
     generated_at: str,
+    riavviabili: set[str] | None = None,
 ) -> dict:
+    """Lo snapshot che la pagina legge.
+
+    `riavviabile` viaggia per check, non come regola: la pagina non deve
+    dedurre dal prefisso dell'id quali azioni esistono. Indovinandolo offriva
+    "Riavvia" su daemon-health, dove il riavvio non puo' funzionare.
+    """
+    puo_riavviare = riavviabili or set()
     return {
         "generated_at": generated_at,
         "summary": verdict_summary(verdicts),
         "checks": {
-            cid: {**v.to_dict(), "group": groups.get(cid, "altro")}
+            cid: {
+                **v.to_dict(),
+                "group": groups.get(cid, "altro"),
+                "riavviabile": cid in puo_riavviare,
+            }
             for cid, v in verdicts.items()
         },
         "alerts": alert_state,

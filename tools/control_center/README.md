@@ -13,7 +13,51 @@ Usare sempre `venv/bin/python -m ...`, mai `venv/bin/pytest`.
 
 **Stato su disco:** `~/.betredge-cc/state.json` e `history.jsonl`
 **Log:** `~/Library/Logs/betredge-cc/`
-**launchd:** i due plist stanno in `ops/launchd/`, copiati in `~/Library/LaunchAgents/`
+**launchd:** i tre plist stanno in `ops/launchd/`, copiati in `~/Library/LaunchAgents/`
+— `collector` (ogni 5 min), `server` (KeepAlive), `watcher` (ogni 60s, lavora
+le diagnosi in coda).
+
+## I tasti sui rossi
+
+Due livelli, e la differenza non è burocrazia.
+
+**Riavvia** compare solo sui LaunchAgent di perimetro: `launchctl kickstart -k`,
+reversibile, nessun dato in gioco. La lista arriva dal server per ogni check
+(`riavviabile` nello snapshot); la pagina non la deduce dal nome, perché
+dedurla faceva comparire il tasto su `daemon-health`, dove il riavvio non può
+funzionare.
+
+**Chiedi a Claude** accoda un job. Il watcher lo esegue con
+`--permission-mode plan` e una lista di strumenti ristretta: Claude può
+leggere, cercare e guardare i log, non può scrivere file né toccare il DB né
+deployare. Produce un documento con CAUSA, COSA NON È, PROPOSAL e RISCHIO, che
+resta in attesa del tuo `APPROVE`. Un tasto che riparasse la produzione da solo
+aggirerebbe il gate di approvazione.
+
+Le POST sono protette da un token (in `~/.betredge-cc/token`, iniettato nella
+pagina servita) più un controllo dell'`Origin`: il loopback da solo non basta,
+perché qualsiasi pagina aperta nel browser può fare una POST verso 127.0.0.1.
+
+## Reporter: chi giudica invece di lavorare
+
+`daemon-health` esce 1 **per progetto** — significa "almeno un check è rosso".
+Leggerlo come un guasto del processo era un falso rosso che puntava al
+messaggero. I daemon in `REPORTER` vengono letti dal loro report, non dall'exit
+code, e non sono riavviabili.
+
+Nota affine: `launchctl` riporta SIGTERM come `-15` **o** come `143` (128+15).
+Entrambi sono uscite ordinate.
+
+## KPI: numeri, non semafori
+
+I KPI hanno livello `info`, non un colore: "un ROI del 3% è buono?" non si
+risponde con una soglia, e dare un colore a un dato senza soglia difendibile
+è inventare un verdetto. `info` non entra mai in "cosa è rotto" e non notifica.
+
+Due guardie sul track record: sotto **30 pick chiusi** la finestra scrive
+"campione insufficiente" invece di un numero (su 3 pick il ROI grezzo dava
+−100%), e `result` vale `won`/`lost`/`void`/`unresolved` — **non** `win`: una
+query scritta su `win` restituisce zero vittorie e un ROI di −100%.
 
 ## Come si aggiunge un check
 
@@ -34,6 +78,11 @@ modificarlo, il contratto è sbagliato ed è un segnale, non un dettaglio.
   mentre il suo arretrato era zero — nessuno comprava, e non è un guasto.
 - **Le rotte dietro feature flag non si sorvegliano.** `/risultati` e `/oggi`
   fanno `notFound()` quando `NEXT_PUBLIC_UX_NEW != "1"`.
+- **Le query non scansionano tabelle enormi.** `max(captured_at)` su
+  `odds_snapshots` (20,9 milioni di righe, nessun indice su quella colonna) è
+  una scansione completa: misurata 33,4 s, ogni 5 minuti, su produzione. Le
+  righe entrano in ordine di tempo, quindi l'ultima per chiave primaria dà la
+  stessa risposta in 0,65 s.
 - **Le soglie si mettono su ciò che misurano.** `db_latency` guarda la query
   (65-200 ms), non connessione+query: l'handshake verso eu-west-1 costa ~650 ms
   stabili e una soglia sulla somma segnala la distanza da Dublino.

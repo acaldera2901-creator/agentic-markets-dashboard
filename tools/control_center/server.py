@@ -4,7 +4,16 @@ import json
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
+from .actions import (
+    RESTARTABLE,
+    ensure_token,
+    jobs_stato,
+    leggi_report,
+    request_diagnosis,
+    restart_daemon,
+)
 from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 
 HOST = "127.0.0.1"
@@ -24,17 +33,86 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _autorizzato(self) -> bool:
+        """Token piu' controllo dell'Origin.
+
+        Il loopback da solo non basta: qualsiasi pagina aperta nel browser puo'
+        fare una POST verso 127.0.0.1. Il token vive solo nel file di stato e
+        nella pagina servita da qui, quindi una pagina di terzi non lo ha.
+        """
+        origin = self.headers.get("Origin")
+        if origin and origin not in self._origini_ammesse():
+            return False
+        return self.headers.get("X-CC-Token", "") == ensure_token()
+
+    def _origini_ammesse(self) -> set[str]:
+        porta = self.server.server_address[1]
+        return {f"http://127.0.0.1:{porta}", f"http://localhost:{porta}"}
+
+    def do_POST(self) -> None:  # noqa: N802 - firma imposta da BaseHTTPRequestHandler
+        if self.path.split("?", 1)[0] != "/api/action":
+            self._send(404, b'{"error":"not found"}', "application/json; charset=utf-8")
+            return
+        if not self._autorizzato():
+            self._send(403, b'{"error":"token assente o non valido"}',
+                       "application/json; charset=utf-8")
+            return
+        try:
+            lunghezza = int(self.headers.get("Content-Length") or 0)
+            corpo = json.loads(self.rfile.read(lunghezza) or b"{}")
+        except (ValueError, json.JSONDecodeError):
+            self._send(400, b'{"error":"corpo non valido"}', "application/json; charset=utf-8")
+            return
+
+        check_id = str(corpo.get("check_id", ""))
+        azione = str(corpo.get("azione", ""))
+        stato = read_state(STATE_FILE)
+        check = (stato.get("checks") or {}).get(check_id)
+        if check is None:
+            self._send(404, b'{"error":"check sconosciuto"}',
+                       "application/json; charset=utf-8")
+            return
+
+        if azione == "riavvia":
+            if check_id not in RESTARTABLE:
+                esito = {"ok": False, "errore": "questo check non ha un rimedio meccanico"}
+            else:
+                esito = restart_daemon(check_id)
+        elif azione == "diagnosi":
+            esito = request_diagnosis(check_id, check)
+        else:
+            esito = {"ok": False, "errore": f"azione non ammessa: {azione!r}"}
+
+        self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
+                   "application/json; charset=utf-8")
+
     def do_GET(self) -> None:  # noqa: N802 - firma imposta da BaseHTTPRequestHandler
         path = self.path.split("?", 1)[0]
         # Whitelist esplicita di tre percorsi: nessuna mappatura path->file,
         # quindi nessun traversal possibile per costruzione.
         if path in ("/", "/index.html"):
-            self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            # Il token viene iniettato nella pagina servita: cosi' vive solo
+            # qui e nel file di stato, mai in un file versionato.
+            html = PAGE.read_text(encoding="utf-8").replace(
+                "__CC_TOKEN__", ensure_token()
+            )
+            self._send(200, html.encode(), "text/html; charset=utf-8")
         elif path == "/api/state":
             body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")
         elif path == "/api/history":
             self._send(200, self._history(), "application/json; charset=utf-8")
+        elif path == "/api/jobs":
+            self._send(200, json.dumps(jobs_stato(), ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+        elif path == "/api/report":
+            job = parse_qs(urlparse(self.path).query).get("id", [""])[0]
+            testo = leggi_report(job)
+            if testo is None:
+                self._send(404, b'{"error":"report non trovato"}',
+                           "application/json; charset=utf-8")
+            else:
+                self._send(200, testo.encode(), "text/plain; charset=utf-8")
         else:
             self._send(404, b'{"error":"not found"}', "application/json; charset=utf-8")
 

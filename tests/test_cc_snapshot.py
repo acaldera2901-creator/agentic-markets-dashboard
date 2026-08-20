@@ -56,7 +56,7 @@ def test_summary_conta_i_livelli_e_scrive_la_frase():
         "home": green("200", "http", now=FIXED),
     }
     s = verdict_summary(verdicts)
-    assert s["counts"] == {"green": 1, "amber": 1, "red": 2, "unknown": 1}
+    assert s["counts"] == {"green": 1, "amber": 1, "red": 2, "unknown": 1, "info": 0}
     assert s["level"] == "red"
     assert s["headline"].startswith("2 rossi")
     # Il dettaglio deve dire QUALE check: "exit 126" senza il nome non
@@ -78,3 +78,43 @@ def test_build_state_espone_i_gruppi_e_il_riassunto():
     assert st["generated_at"] == "2026-08-20T17:45:00Z"
     assert st["checks"]["home"]["group"] == "piattaforma"
     assert st["summary"]["level"] == "green"
+
+
+def test_i_kpi_non_entrano_nel_verdetto_ne_fra_i_rotti():
+    from tools.control_center.contract import info
+
+    s = verdict_summary(
+        {
+            "roi": info("ROI -6.9%", "db", value="-6.9%", now=FIXED),
+            "home": green("200", "http", now=FIXED),
+        }
+    )
+    assert s["level"] == "green"
+    assert s["counts"]["info"] == 1
+    assert s["detail"] == ""
+
+
+def test_l_ordinamento_di_gravita_copre_tutti_i_livelli():
+    # Era duplicato in tre punti e una copia non conosceva "info": il dry-run
+    # e' morto con KeyError appena e' arrivato il primo KPI.
+    from tools.control_center.contract import LEVELS
+    from tools.control_center.snapshot import ORDER
+
+    assert set(ORDER) == set(LEVELS)
+
+
+def test_la_pagina_riceve_quali_check_sono_riavviabili():
+    # Dedurlo dal prefisso dell'id faceva comparire "Riavvia" su daemon-health,
+    # dove il riavvio non puo' funzionare: il tile offriva un'azione inutile.
+    st = build_state(
+        {
+            "launchd_watchdog": red("exit 1", "launchctl", now=FIXED),
+            "launchd_daemon-health": red("6 check rossi", "file", now=FIXED),
+        },
+        {},
+        {},
+        "2026-08-20T17:45:00Z",
+        riavviabili={"launchd_watchdog"},
+    )
+    assert st["checks"]["launchd_watchdog"]["riavviabile"] is True
+    assert st["checks"]["launchd_daemon-health"]["riavviabile"] is False

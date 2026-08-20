@@ -4,8 +4,15 @@ Le fasi 2 e 3 aggiungono moduli qui e non toccano il collector. Se una fase
 costringe a modificare il collector, il contratto del check era sbagliato.
 """
 
-from . import daemons, platform
+from . import business, channels, daemons, pipeline, platform, results
 
 
 def all_checks() -> list:
-    return [*platform.checks(), *daemons.checks()]
+    return [
+        *platform.checks(),
+        *daemons.checks(),
+        *pipeline.checks(),
+        *results.checks(),
+        *business.checks(),
+        *channels.checks(),
+    ]

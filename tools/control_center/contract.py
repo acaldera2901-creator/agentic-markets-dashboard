@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-LEVELS = ("green", "amber", "red", "unknown")
+LEVELS = ("green", "amber", "red", "unknown", "info")
+# "info" e' un numero senza giudizio: i KPI non hanno un semaforo, perche'
+# "un ROI del 3% e' buono?" non si risponde con una soglia. Dare un colore a
+# un dato che non ha una soglia difendibile e' inventare un verdetto.
 
 
 def now_iso(now: datetime | None = None) -> str:
@@ -92,6 +95,11 @@ def amber(headline, source, *, value=None, evidence=None, now=None) -> Verdict:
 
 def red(headline, source, *, value=None, evidence=None, now=None) -> Verdict:
     return _mk("red", headline, source, value, evidence, now)
+
+
+def info(headline, source, *, value=None, evidence=None, now=None) -> Verdict:
+    """Un numero misurato, senza giudizio. Non entra mai in 'cosa e' rotto'."""
+    return _mk("info", headline, source, value, evidence, now)
 
 
 def unknown(reason, source, *, evidence=None, now=None) -> Verdict:

@@ -145,3 +145,57 @@ def test_il_registro_copre_scope_e_cron():
     assert len(ids) == len(daemons.SCOPE) + len(daemons.CRONS) + len(daemons.BACKLOGS)
     assert len(set(ids)) == len(ids)
     assert "cron_settle" in ids
+
+
+def test_sigterm_143_non_e_un_guasto(mocker):
+    # launchctl riporta SIGTERM come -15 o come 143 (128+15) a seconda di come
+    # il processo e' finito. Confrontare solo con -15 faceva leggere
+    # telegram-watch (status 143) come rosso.
+    out = "PID\tStatus\tLabel\n56729\t143\tcom.esempio.tal\n"
+    mocker.patch.object(daemons, "_launchctl_table", return_value=daemons.parse_launchctl(out))
+    assert daemons.check_launchd("com.esempio.tal").level == "green"
+    assert 143 in daemons.USCITE_ORDINATE
+
+
+def test_un_reporter_punta_al_messaggio_non_al_messaggero(mocker, tmp_path):
+    # daemon-health esce 1 PER PROGETTO: significa "almeno un check e' rosso".
+    # Leggerlo come un guasto del processo e' un falso rosso che nasconde i
+    # problemi veri invece di mostrarli.
+    report = tmp_path / "last-report.txt"
+    report.write_text(
+        "# daemon-health\n"
+        "✅ learning-loop     ok\n"
+        "❌ ig-refresh-news   news-of-day.json · 3g fa\n"
+        "❌ ig-build-queue    build-queue.out.log · 3g fa\n"
+    )
+    mocker.patch.dict(daemons.REPORTER, {"com.tal.reporter": report}, clear=False)
+    out = "PID\tStatus\tLabel\n-\t1\tcom.tal.reporter\n"
+    mocker.patch.object(daemons, "_launchctl_table", return_value=daemons.parse_launchctl(out))
+    v = daemons.check_launchd("com.tal.reporter")
+    assert v.level == "red"
+    assert v.value == 2
+    assert "ig-refresh-news" in v.headline
+    assert "exit 1" not in v.headline
+    assert len(v.evidence["problemi"]) == 2
+
+
+def test_un_reporter_senza_report_leggibile_e_unknown(mocker, tmp_path):
+    mocker.patch.dict(
+        daemons.REPORTER, {"com.tal.reporter": tmp_path / "manca.txt"}, clear=False
+    )
+    out = "PID\tStatus\tLabel\n-\t1\tcom.tal.reporter\n"
+    mocker.patch.object(daemons, "_launchctl_table", return_value=daemons.parse_launchctl(out))
+    assert daemons.check_launchd("com.tal.reporter").level == "unknown"
+
+
+def test_un_rosso_porta_la_coda_del_log_di_errore(mocker, tmp_path):
+    # Senza questo, evidence conteneva solo {pid, status}: per capire un exit 1
+    # bisognava andare a caccia del log a mano.
+    log = tmp_path / "tal.err.log"
+    log.write_text("riga vecchia\nModuleNotFoundError: no module named x\n")
+    mocker.patch.object(daemons, "_coda_log_errori", return_value=log.read_text().strip())
+    out = "PID\tStatus\tLabel\n-\t1\tcom.tal.normale\n"
+    mocker.patch.object(daemons, "_launchctl_table", return_value=daemons.parse_launchctl(out))
+    v = daemons.check_launchd("com.tal.normale")
+    assert v.level == "red"
+    assert "ModuleNotFoundError" in v.evidence["err_log"]

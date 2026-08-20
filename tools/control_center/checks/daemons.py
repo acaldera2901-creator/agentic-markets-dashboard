@@ -6,8 +6,10 @@ scrivere una riga. Il 2026-08-20 tre daemon di questo elenco erano morti in
 silenzio, incluso il controllore di salute.
 """
 
+import plistlib
 import subprocess
 from collections import namedtuple
+from pathlib import Path
 
 from ..contract import Check, Verdict, amber, green, red, unknown
 from ..db import DbUnavailable, fetch_all
@@ -76,6 +78,22 @@ BACKLOGS = (
 # dall'esterno: e' cio' che rende sicura l'interpolazione nella query.
 _AGE_SQL = "select extract(epoch from now() - max({col})) from {tbl}"
 
+# launchctl riporta SIGTERM in due modi a seconda di come il processo e' finito:
+# -15 (segnale) oppure 143 (128+15, la convenzione della shell). Entrambi sono
+# un'uscita ordinata su richiesta, non un guasto. Confrontare solo con -15
+# faceva leggere telegram-watch (status 143) come rosso.
+USCITE_ORDINATE = (0, -15, 143)
+
+# Alcuni daemon non lavorano: GIUDICANO. Il loro exit diverso da zero non dice
+# "sono rotto", dice "ho trovato problemi" — e trattarlo come un guasto e' un
+# falso rosso che punta al messaggero invece che al messaggio. daemon-health
+# dichiara nella propria intestazione "exit 1 se almeno un check e' ROSSO".
+REPORTER = {
+    "com.agentic-markets.daemon-health": Path.home()
+    / "Library/Application Support/daemon-health/last-report.txt",
+}
+LAUNCH_AGENTS = Path.home() / "Library/LaunchAgents"
+
 
 def _launchctl_table() -> dict[str, dict]:
     out = subprocess.run(
@@ -105,6 +123,56 @@ def parse_launchctl(output: str) -> dict[str, dict]:
     return tabella
 
 
+def _coda_log_errori(label: str, righe: int = 12) -> str | None:
+    """La coda dello StandardErrorPath dichiarato nel plist del daemon.
+
+    Senza questo, evidence conteneva solo {pid, status}: per capire un exit 1
+    bisognava andare a caccia del log a mano — ed e' esattamente cio' che la
+    spec chiedeva di evitare.
+    """
+    plist = LAUNCH_AGENTS / f"{label}.plist"
+    try:
+        with plist.open("rb") as fh:
+            percorso = plistlib.load(fh).get("StandardErrorPath")
+    except Exception:  # noqa: BLE001 - plist assente o illeggibile
+        return None
+    if not percorso:
+        return None
+    try:
+        contenuto = Path(percorso).read_text(errors="replace").splitlines()
+    except (OSError, FileNotFoundError):
+        return None
+    if not contenuto:
+        return "(log di errore vuoto)"
+    return "\n".join(contenuto[-righe:])
+
+
+def _verdetto_reporter(label: str, riga: dict) -> Verdict:
+    """Un daemon che giudica: il suo exit e' un puntatore, non il verdetto."""
+    report = REPORTER[label]
+    try:
+        testo = report.read_text()
+    except (OSError, FileNotFoundError):
+        return unknown(
+            f"ha segnalato problemi (exit {riga['status']}) ma {report.name} non e' leggibile",
+            f"launchctl:{label}",
+        )
+    problemi = [r.strip() for r in testo.splitlines() if r.lstrip().startswith("\u274c")]
+    if not problemi:
+        return unknown(
+            f"exit {riga['status']} ma il report non elenca problemi: da guardare a mano",
+            f"file:{report.name}",
+            evidence={"report": testo[-1500:]},
+        )
+    nomi = ", ".join(p.split()[1] for p in problemi[:4] if len(p.split()) > 1)
+    return red(
+        f"{len(problemi)} check rossi: {nomi}",
+        f"file:{report.name}",
+        value=len(problemi),
+        evidence={"problemi": problemi, "report": testo[-1500:]},
+    )
+
+
 def _human(seconds: float) -> str:
     seconds = int(seconds)
     if seconds < 3600:
@@ -124,13 +192,18 @@ def check_launchd(label: str) -> Verdict:
     if riga is None:
         return red("non caricato in launchd", f"launchctl:{label}")
 
-    if riga["status"] not in (0, -15):
-        # -15 e' SIGTERM: un'uscita ordinata su richiesta, non un guasto.
+    if riga["status"] not in USCITE_ORDINATE:
+        if label in REPORTER:
+            return _verdetto_reporter(label, riga)
+        prove = dict(riga)
+        coda = _coda_log_errori(label)
+        if coda:
+            prove["err_log"] = coda
         return red(
             f"ultimo exit {riga['status']}",
             f"launchctl:{label}",
             value=f"exit {riga['status']}",
-            evidence=riga,
+            evidence=prove,
         )
 
     if riga["pid"] is not None:

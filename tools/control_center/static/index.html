@@ -58,6 +58,20 @@
   .pill.amber{color:var(--warn);background:var(--warn-bg)}
   .pill.red{color:var(--bad);background:var(--bad-bg)}
   .pill.unknown{color:var(--unk);background:var(--unk-bg)}
+  .pill.info{color:var(--ink-3);background:var(--surface-2)}
+  .pill.info::before{display:none}
+  .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .act{font:600 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;
+       padding:5px 9px;border:1px solid var(--rule);background:var(--surface-2);
+       color:var(--ink);cursor:pointer;border-radius:2px}
+  .act:hover{border-color:var(--signal);color:var(--signal)}
+  .act:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
+  .act[disabled]{opacity:.5;cursor:default}
+  .act.primary{border-color:var(--signal);color:var(--signal)}
+  .esito{font:11px var(--mono);color:var(--ink-2);margin-top:6px;overflow-wrap:anywhere}
+  .report{margin-top:8px;font:11.5px/1.55 var(--mono);white-space:pre-wrap;
+          background:var(--surface-2);padding:12px 14px;max-height:420px;overflow:auto;
+          color:var(--ink-2)}
   .empty{padding:16px 18px;background:var(--surface);border:1px solid var(--rule);
          font-size:14px;color:var(--ink-2)}
   pre.ev{margin:6px 0 0;font:11.5px var(--mono);background:var(--surface-2);
@@ -77,16 +91,22 @@
 <script>
 const GRUPPI = [
   ["rotto",       "Cosa \u00e8 rotto adesso"],
+  ["risultati",   "Risultati del modello"],
+  ["business",    "Business"],
   ["piattaforma", "Piattaforma"],
+  ["pipeline",    "Pipeline dati"],
   ["daemon",      "Daemon locali"],
   ["cron",        "Cron su Vercel"],
+  ["canali",      "Canali"],
 ];
+const TOKEN = "__CC_TOKEN__";
+
 const eta = (iso) => {
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
   if (!isFinite(s)) return "?";
   return s < 90 ? `${s}s fa` : s < 5400 ? `${Math.round(s/60)} min fa` : `${Math.round(s/3600)}h fa`;
 };
-function tile(id, c) {
+function tile(id, c, job) {
   const el = document.createElement("button");
   el.className = "tile";
   el.type = "button";
@@ -96,7 +116,8 @@ function tile(id, c) {
   el.querySelector(".val").textContent = c.value ?? "-";
   el.querySelector(".line").textContent = c.headline;
   el.querySelector(".src").textContent = `misurato ${eta(c.measured_at)} · ${c.source}`;
-  el.addEventListener("click", () => {
+  el.addEventListener("click", (ev) => {
+    if (ev.target.closest(".acts") || ev.target.closest(".report")) return;
     let pre = el.querySelector("pre.ev");
     if (pre) { pre.remove(); return; }
     pre = document.createElement("pre");
@@ -104,10 +125,85 @@ function tile(id, c) {
     pre.textContent = JSON.stringify(c.evidence ?? {}, null, 1);
     el.appendChild(pre);
   });
+  if (c.level === "red") el.appendChild(azioni(id, c, job));
   return el;
 }
+
+async function chiedi(azione, id) {
+  const r = await fetch("/api/action", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "X-CC-Token": TOKEN},
+    body: JSON.stringify({check_id: id, azione}),
+  });
+  return r.json();
+}
+
+function azioni(id, c, job) {
+  const box = document.createElement("div");
+  box.className = "acts";
+  const esito = document.createElement("div");
+  esito.className = "esito";
+
+  if (c.riavviabile) {
+    const b = document.createElement("button");
+    b.className = "act";
+    b.type = "button";
+    b.textContent = "Riavvia";
+    b.addEventListener("click", async () => {
+      b.disabled = true;
+      b.textContent = "riavvio\u2026";
+      const r = await chiedi("riavvia", id);
+      esito.textContent = r.ok
+        ? `riavviato: ${r.azione} \u2014 il prossimo giro lo riverifica`
+        : `non riavviato: ${r.errore ?? r.stderr ?? "errore"}`;
+      b.textContent = "Riavvia";
+      b.disabled = false;
+    });
+    box.appendChild(b);
+  }
+
+  const d = document.createElement("button");
+  d.className = "act primary";
+  d.type = "button";
+  const inCorso = job && (job.stato === "in_coda" || job.stato === "in_corso");
+  d.textContent = inCorso ? `Claude: ${job.stato.replace("_", " ")}` : "Chiedi a Claude";
+  d.disabled = Boolean(inCorso);
+  d.addEventListener("click", async () => {
+    d.disabled = true;
+    d.textContent = "in coda\u2026";
+    const r = await chiedi("diagnosi", id);
+    esito.textContent = r.ok
+      ? "diagnosi accodata: legge le prove e scrive una PROPOSAL, non applica niente"
+      : `non accodata: ${r.errore ?? "errore"}`;
+  });
+  box.appendChild(d);
+
+  if (job && job.stato === "pronto") {
+    const v = document.createElement("button");
+    v.className = "act";
+    v.type = "button";
+    v.textContent = "Leggi la diagnosi";
+    v.addEventListener("click", async () => {
+      const esistente = box.parentElement.querySelector(".report");
+      if (esistente) { esistente.remove(); return; }
+      const testo = await (await fetch(`/api/report?id=${encodeURIComponent(job.report)}`)).text();
+      const pre = document.createElement("div");
+      pre.className = "report";
+      pre.textContent = testo;
+      box.parentElement.appendChild(pre);
+    });
+    box.appendChild(v);
+  }
+  if (job && job.stato === "fallito") esito.textContent = "la diagnosi precedente e fallita";
+
+  box.appendChild(esito);
+  return box;
+}
 async function render() {
-  const st = await (await fetch("/api/state", {cache: "no-store"})).json();
+  const [st, jobs] = await Promise.all([
+    (await fetch("/api/state", {cache: "no-store"})).json(),
+    (await fetch("/api/jobs", {cache: "no-store"})).json().catch(() => ({})),
+  ]);
   if (!st.generated_at) {
     document.getElementById("stamp").textContent = "nessuno snapshot: il collector non ha ancora girato";
     return;
@@ -138,7 +234,7 @@ async function render() {
     g.className = "grid";
     const ordine = {red: 0, amber: 1, unknown: 2, green: 3};
     sel.sort((a, b) => ordine[a[1].level] - ordine[b[1].level]);
-    for (const [id, c] of sel) g.appendChild(tile(id, c));
+    for (const [id, c] of sel) g.appendChild(tile(id, c, jobs[id]));
     zone.appendChild(g);
   }
 }

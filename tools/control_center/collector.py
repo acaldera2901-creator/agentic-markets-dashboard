@@ -6,12 +6,13 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .actions import RESTARTABLE
 from .alerting import decide_alerts
 from .checks import all_checks
 from .contract import now_iso
 from .notify import send
 from .runner import run_checks
-from .snapshot import append_history, build_state, read_state, write_state
+from .snapshot import ORDER, append_history, build_state, read_state, write_state
 
 
 def collect(
@@ -30,7 +31,9 @@ def collect(
     notifiche, alert_state = decide_alerts(precedente.get("alerts", {}), verdicts, moment)
 
     gruppi = {c.id: c.group for c in lista}
-    stato = build_state(verdicts, gruppi, alert_state, now_iso(moment))
+    stato = build_state(
+        verdicts, gruppi, alert_state, now_iso(moment), riavviabili=set(RESTARTABLE)
+    )
 
     # La consegna avviene prima della scrittura, cosi' il suo esito finisce
     # nello snapshot: un notificatore morto in silenzio sarebbe invisibile
@@ -60,8 +63,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.dry_run:
         verdicts = run_checks(all_checks())
-        ordine = {"red": 0, "amber": 1, "unknown": 2, "green": 3}
-        for cid, verdict in sorted(verdicts.items(), key=lambda kv: ordine[kv[1].level]):
+        for cid, verdict in sorted(verdicts.items(), key=lambda kv: ORDER[kv[1].level]):
             print(f"{verdict.level:8} {cid:28} {verdict.headline}")
         return 0
 

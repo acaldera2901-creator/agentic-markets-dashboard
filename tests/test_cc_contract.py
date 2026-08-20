@@ -55,3 +55,13 @@ def test_check_ha_timeout_di_default():
     c = Check(id="x", group="piattaforma", label="X", fn=lambda: green("ok", "s"))
     assert c.timeout_seconds == 10.0
     assert c.ttl_seconds == 0
+
+
+def test_info_e_un_numero_senza_giudizio():
+    # Un KPI non ha un semaforo: dare un colore a un dato senza soglia
+    # difendibile significa inventare un verdetto.
+    from tools.control_center.contract import info
+
+    v = info("ROI -6.9% su 91 pick", "db:pick_ledger", value="-6.9%", now=FIXED)
+    assert v.level == "info"
+    assert v.value == "-6.9%"
