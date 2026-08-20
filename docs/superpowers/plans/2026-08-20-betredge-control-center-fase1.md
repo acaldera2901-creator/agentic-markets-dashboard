@@ -21,7 +21,7 @@ Questi vincoli valgono per **ogni** task, anche quando il task non li ripete.
 - **`unknown` non è `red`.** Fonte non disponibile, credenziale mancante, tabella vuota, timeout → `unknown` con il motivo. Mai uno zero al posto di un dato non misurato.
 - **Si giudica l'artefatto, non l'invocazione.** Un cron è verde se ha prodotto la sua scrittura, non se ha risposto 200.
 - **Le rotte dietro feature flag non si sorvegliano.** `/risultati` e `/oggi` fanno `notFound()` quando `NEXT_PUBLIC_UX_NEW != "1"`: sono escluse dal check di disponibilità, non aggiungerle.
-- **Python:** usare sempre `venv/bin/python` e `venv/bin/pytest`. `psycopg2`, non `psycopg`.
+- **Python:** usare sempre `venv/bin/python` e `venv/bin/python -m pytest`. `psycopg2`, non `psycopg`. **Gli script del venv hanno lo shebang rotto** (punta a `~/Desktop/sistema-andrea/agentic-markets/venv`, percorso di prima di uno spostamento): usare sempre `venv/bin/python -m pytest`, mai `venv/bin/pytest`.
 - **Interprete e paths:** il codice vive in `tools/control_center/` (versionato); lo stato runtime in `~/.betredge-cc/`. Deviazione deliberata dalla spec, che collocava anche il codice nella home: codice fuori da git non è versionato né testabile.
 - **Lingua:** commenti e stringhe utente in italiano, identificatori in inglese, come il resto del repo.
 
@@ -145,7 +145,7 @@ def test_check_ha_timeout_di_default():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/Desktop/agentic-markets && venv/bin/pytest tests/test_cc_contract.py -v`
+Run: `cd ~/Desktop/agentic-markets && venv/bin/python -m pytest tests/test_cc_contract.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -258,7 +258,7 @@ def unknown(reason, source, *, evidence=None, now=None) -> Verdict:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_contract.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_contract.py -v`
 Expected: PASS, 7 test
 
 - [ ] **Step 5: Commit**
@@ -335,7 +335,7 @@ def test_load_env_legge_le_coppie_e_salta_i_commenti(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_db.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_db.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.db'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -425,7 +425,7 @@ def fetch_all(sql: str, params: tuple = ()) -> list[tuple]:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_db.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_db.py -v`
 Expected: PASS, 6 test
 
 - [ ] **Step 5: Verifica manuale contro il DB vero**
@@ -548,7 +548,7 @@ def test_il_ttl_scaduto_richiama_la_fonte():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_runner.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_runner.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.runner'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -635,7 +635,7 @@ def run_checks(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_runner.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_runner.py -v`
 Expected: PASS, 5 test
 
 - [ ] **Step 5: Commit**
@@ -750,7 +750,7 @@ def test_build_state_espone_i_gruppi_e_il_riassunto():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_snapshot.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_snapshot.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.snapshot'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -873,7 +873,7 @@ def build_state(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_snapshot.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_snapshot.py -v`
 Expected: PASS, 8 test
 
 - [ ] **Step 5: Commit**
@@ -989,7 +989,7 @@ def test_un_check_scomparso_non_resta_nello_stato():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_alerting.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_alerting.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.alerting'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1079,7 +1079,7 @@ def decide_alerts(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_alerting.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_alerting.py -v`
 Expected: PASS, 7 test
 
 - [ ] **Step 5: Commit**
@@ -1203,7 +1203,7 @@ def test_il_registro_espone_id_stabili():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_checks_platform.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_checks_platform.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.checks'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1350,7 +1350,7 @@ def checks() -> list:
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_checks_platform.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_checks_platform.py -v`
 Expected: PASS, 9 test
 
 - [ ] **Step 6: Commit**
@@ -1489,7 +1489,7 @@ def test_il_registro_copre_scope_e_cron():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_checks_daemons.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_checks_daemons.py -v`
 Expected: FAIL — `AttributeError: module ... has no attribute 'parse_launchctl'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1650,7 +1650,7 @@ def checks() -> list[Check]:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_checks_daemons.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_checks_daemons.py -v`
 Expected: PASS, 12 test
 
 - [ ] **Step 5: Verifica contro la macchina vera**
@@ -1744,7 +1744,7 @@ def test_un_canale_che_esplode_non_blocca_l_altro(mocker):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_notify.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_notify.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.notify'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1811,7 +1811,7 @@ def send(notifiche: list[dict], env: dict | None = None) -> list[str]:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_notify.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_notify.py -v`
 Expected: PASS, 5 test
 
 - [ ] **Step 5: Commit**
@@ -1893,7 +1893,7 @@ def test_lo_stato_di_allerta_sopravvive_al_riavvio(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_collector.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_collector.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.collector'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1971,7 +1971,7 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_collector.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_collector.py -v`
 Expected: PASS, 3 test
 
 - [ ] **Step 5: Prova a secco contro il sistema vero**
@@ -2063,7 +2063,7 @@ def test_ogni_altro_percorso_e_404(in_piedi):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `venv/bin/pytest tests/test_cc_server.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_server.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'tools.control_center.server'`
 
 - [ ] **Step 3: Write minimal implementation**
@@ -2296,7 +2296,7 @@ setInterval(render, 60000);
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `venv/bin/pytest tests/test_cc_server.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_server.py -v`
 Expected: PASS, 5 test
 
 - [ ] **Step 5: Verifica visiva reale**
@@ -2451,7 +2451,7 @@ sorveglia le rotte dietro feature flag (`/risultati` e `/oggi` fanno
 
 - [ ] **Step 7: Suite completa e commit**
 
-Run: `venv/bin/pytest tests/test_cc_*.py -v`
+Run: `venv/bin/python -m pytest tests/test_cc_*.py -v`
 Expected: PASS su tutti i file (61 test)
 
 ```bash
