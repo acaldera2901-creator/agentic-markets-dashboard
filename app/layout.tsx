@@ -3,6 +3,7 @@ import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
+import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-display",
@@ -75,7 +76,12 @@ const serviceJsonLd = {
 // No-flash theme bootstrap (Cobalt & Coral redesign, F1).
 // Runs before paint: resolves agentic-theme (localStorage) → prefers-color-scheme,
 // then sets data-theme on <html>. Default dark. Pure presentation, no logic change.
-const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+// #UI-MACHINA-0802: senza una scelta esplicita il tema e' SCURO, non quello del
+// sistema operativo. Il restyling e' un mondo visivo scuro (fondo cinematico) e
+// vive dentro :root:not([data-theme="light"]): seguendo il sistema, chi ha il
+// Mac in chiaro non vedrebbe MAI la veste nuova. La scelta manuale continua a
+// vincere e a persistere: chi preme LIGHT resta sul prodotto di oggi.
+const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

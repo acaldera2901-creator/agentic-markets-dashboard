@@ -509,31 +509,17 @@ export default function LandingPage() {
     // da idratazione non lascia il tema sbagliato.
     let t = "";
     try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi app/layout.tsx.
     if (t !== "light" && t !== "dark") {
-      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+      t = "dark";
     }
     setTheme(t as "dark" | "light");
     document.documentElement.setAttribute("data-theme", t);
   }, []);
 
-  // #THEME-CONSISTENCY-0623: segui l'impostazione di sistema (computer/browser)
-  // SOLO se l'utente non ha mai scelto un tema manualmente (agentic-theme vuoto).
-  // Appena tocca DARK/LIGHT la scelta persiste e vince. Così il tema "resta sulla
-  // scelta dell'utente OPPURE segue il sistema", senza divergere tra le pagine.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let chosen = "";
-      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-      if (chosen === "light" || chosen === "dark") return; // scelta esplicita: non sovrascrivere
-      const next: "dark" | "light" = e.matches ? "light" : "dark";
-      setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema di
+  // sistema è rimosso anche qui, così landing e desk restano sullo stesso
+  // contratto (default scuro, scelta manuale che vince e persiste).
 
   // #PRICING-CREATORS-0706: i link invito creator (/r/CODICE) atterrano QUI con
   // ?ref=. First-touch identico al desk (#MB-1): persistiamo una volta sola in
@@ -694,7 +680,10 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="lp hv3" data-mounted={mounted ? "1" : "0"}>
+    <div className="lp hv3 mc-scene-stadium" data-mounted={mounted ? "1" : "0"} data-mc-ground>
+      {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata, sotto
+          la velatura di [data-mc-ground]::after. Decorazione, non contenuto. */}
+      <span className="bgfix" aria-hidden="true" />
       <SportGlyphSprite />
 
       {/* #TG-TRIAL-SITE: banda invito — appare SOLO con un codice interno valido */}

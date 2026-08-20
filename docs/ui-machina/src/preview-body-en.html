@@ -1,0 +1,545 @@
+<header class="top-bar"><div class="wrap">
+  <a class="logo" data-go="home" href="#" aria-label="BetRedge — home"><img src="data:image/webp;base64,{{LOGO_W}}" alt="BetRedge"></a>
+  <nav class="tnav" aria-label="Desk">
+    <button data-go="previsioni">Predictions</button>
+    <button data-go="storico">History</button>
+    <button data-go="classifica">Leaderboard</button>
+    <button data-go="builder">Match Builder</button>
+    <button data-go="piani">Plans</button>
+  </nav>
+  <span class="acct">profa finale <span class="pro">Pro</span> · EN</span>
+</div></header>
+
+<div class="bgfix im-stadium" id="bgscene" aria-hidden="true"></div>
+<main id="app"></main>
+<nav class="botnav" id="botnav" aria-label="Sections"></nav>
+
+<footer class="site-foot">
+  <div class="wrap foot-top">
+    <div class="foot-brand">
+      <img class="foot-logo" src="data:image/webp;base64,{{LOGO_W}}" alt="BetRedge">
+      <p class="t-body">A probability engine, not a bookmaker. We publish calibrated probabilities and the reasoning behind them — you make the call.</p>
+      <div class="foot-social" aria-label="Follow us">
+        <span class="t-key">Follow us</span>
+        <a href="#" aria-label="X">X</a><a href="#" aria-label="Instagram">IG</a><a href="#" aria-label="Telegram">TG</a>
+      </div>
+    </div>
+    <div class="foot-col"><span class="t-key">Product</span>
+      <a data-go="previsioni" href="#">Predictions</a><a data-go="storico" href="#">Track record</a>
+      <a data-go="builder" href="#">Match Builder</a><a data-go="weekly" href="#">Weekly Pick</a>
+      <a data-go="worldcup" href="#">World Cup</a></div>
+    <div class="foot-col"><span class="t-key">Account</span>
+      <a data-go="piani" href="#">Plans</a><a data-go="invita" href="#">Invite</a>
+      <a data-go="classifica" href="#">Leaderboard</a><a data-go="community" href="#">Creator Picks</a></div>
+    <div class="foot-col"><span class="t-key">Legal</span>
+      <a data-go="partner" href="#">Partners</a><a href="#">Terms of Service</a><a href="#">Privacy Policy</a>
+      <a href="#">Responsible gaming</a></div>
+  </div>
+  <div class="wrap foot-legal">
+    <p>BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. <b>18+</b> Past performance does not guarantee future results. Partner links are commercial affiliates.</p>
+    <p class="foot-ent">BetRedge — operated by Maven Agency AG · Blegistrasse 7, 6340 Baar (ZG), Switzerland · UID CHE‑193.960.193 · info@betredge.com
+      <span class="foot-ra">GamCare · BeGambleAware · 18+</span></p>
+  </div>
+</footer>
+
+<script>
+// Ogni immagine ripetuta vive una volta sola nel CSS: qui solo la classe.
+const IMG = {
+  ban:["im-ban1","im-ban2","im-ban3"],"night": "im-stadium", "court": "im-court", "clay": "im-clay", "crowd": "im-crowd", "pitch": "im-pitch", "tennis": "im-court", "oFoot": "im-of", "oTen": "im-ot", "oBoot": "im-ob", "icF": "im-icf", "icT": "im-ict", "mPrediction": "im-mprediction", "mHistory": "im-mhistory", "mLeaderboard": "im-mleaderboard", "mBuilder": "im-mbuilder", "mInvite": "im-minvite", "mPlans": "im-mplans", "mCreator": "im-mcreator", "mWeekly": "im-mweekly", "mPartner": "im-mpartner"};
+// Partner reali dal catalogo del prodotto (lib/partners.ts), coi loghi forniti.
+const PARTNERS = [
+  { n:"FortunePlay", c:"Sportsbook", l:"data:image/svg+xml;base64,{{P_FORTUNEPLAY}}", em:true },
+  { n:"YBets",       c:"Sportsbook", l:"data:image/svg+xml;base64,{{P_YBETS}}" },
+  { n:"BetScore",    c:"Sportsbook", l:"data:image/svg+xml;base64,{{P_BETSCORE}}" },
+  { n:"FeliceBet",   c:"Sportsbook", l:"data:image/webp;base64,{{P_FELICEBET}}", em:true },
+  { n:"VeloBet",     c:"Casino",     l:"data:image/webp;base64,{{P_VELOBET}}" },
+  { n:"Casea",       c:"Casino",     l:"data:image/webp;base64,{{P_CASEA}}" },
+  { n:"slotsbonus",  c:"Casino",     l:"data:image/svg+xml;base64,{{P_SLOTSBONUS}}" },
+  { n:"Stake",       c:"Sportsbook", l:"data:image/svg+xml;base64,{{P_STAKE}}" },
+  { n:"Roobet",      c:"Casino",     l:"data:image/svg+xml;base64,{{P_ROOBET}}" },
+];
+// Estratto dal sito vero, sessione PRO in inglese: 67 schede del board,
+// 296 pick del registro, 44 segmenti, 12 gironi, 130 selezioni del builder.
+const D = {{DATA}};
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const FOTO_F = [IMG.night, IMG.pitch, IMG.crowd], FOTO_T = [IMG.court, IMG.clay];
+
+function card(c, i) {
+  const tennis = c.sport === "tennis";
+  const bg = tennis ? FOTO_T[i % 2] : FOTO_F[i % 3];
+  const ic = tennis ? IMG.icT : IMG.icF;
+  const dots = { HIGH:3, MEDIUM:2, LOW:1 }[(c.conf||"").toUpperCase()] ?? 0;
+  const live = /LIVE/i.test(c.status || "") || /^\d+'$/.test(c.when || "");
+  const m = (c.teams || "").match(/^(.+?[A-Za-zÀ-ÿ0-9\)\.])v([A-ZÀ-Ý0-9].*)$/);
+  const h = m ? m[1] : (c.teams || ""), a = m ? m[2] : "";
+  const sub = (c.sub || "").replace(c.val || " ", "").trim();
+  return `<article class="pred" style="--accent:var(${tennis ? "--d-tennis" : "--d-football"})">
+    <div class="card-bg ${bg}"></div><div class="card-veil"></div>
+    <div class="top">
+      <span class="comp"><span class="sgi ${ic}"></span><span class="league">${esc(c.league)}</span></span>
+      <span class="when${live ? " live" : ""}">${live ? '<span class="pulse"></span>' : ""}${esc(c.when)}</span>
+    </div>
+    <div class="fx">
+      <div class="teams">${esc(h)}<span class="vs">v</span>${esc(a)}</div>
+      <div class="scorebar"><span class="stt${live ? " live" : ""}">${esc(c.status)}</span>
+        ${/\d\s*–\s*\d/.test(c.score || "")
+          ? `<span class="sc">${esc(c.score).replace("–", '<span class="x">–</span>')}</span>`
+          : `<span class="sc sched">${esc(c.score)}</span>`}
+        ${c.verdict ? `<span class="grow"></span><span class="verd">${esc(c.verdict)}</span>` : ""}
+      </div>
+    </div>
+    ${c.locked ? `<div class="lock-overlay"><span class="blurred">▒▒▒ ▒▒▒ ▒▒%</span><span class="locked-cta">Unlock with Pro</span></div>` : `
+    <div class="v2r">
+      <div class="v2r-l">
+        <span class="v2r-eye">${esc(c.eye || "Our prediction")}</span>
+        <span class="v2r-pick">${esc(c.pick)}</span>
+        <span class="v2r-conf"><span class="v2r-conf-t">${esc((c.conf||"").toLowerCase())}</span>${
+          [0,1,2,3].map(k=>`<i class="d${k<dots?" on":""}"></i>`).join("")}</span>
+      </div>
+      <div class="v2r-q">
+        <span class="v2r-qlab">${esc(c.qlab || "FortunePlay odds")}</span>
+        <span class="v2r-qn">${esc(c.odds)}</span>
+        <span class="v2r-sub">${esc(sub)}${c.val ? `<span class="v2r-val">${esc(c.val)}</span>` : ""}</span>
+      </div>
+    </div>`}
+    <div class="pred-more"><span class="pm-lab">Open full card</span><span class="pm-chev"></span></div>
+  </article>`;
+}
+
+function houseBanner(img, cta) {
+  return `<article class="hb"><button class="hb-x" aria-label="Dismiss">×</button>
+    <a href="#" data-go="previsioni"><span class="slide ${img}" role="img" aria-label="BetRedge campaign"></span></a>
+    <div class="hb-f"><button class="btn" data-go="previsioni">${cta}</button><span class="hb-lab">Sponsored</span></div>
+  </article>`;
+}
+
+const RAIL = [
+  ["previsioni","Predictions",IMG.mPrediction,"141"],["storico","History",IMG.mHistory],
+  ["classifica","Leaderboard",IMG.mLeaderboard],["builder","Match Builder",IMG.mBuilder],
+  ["invita","Invite",IMG.mInvite],["piani","Plans",IMG.mPlans,null,"Pro"],
+];
+const RAIL2 = [["worldcup","World Cup",IMG.icF],["community","Creator Picks",IMG.mCreator],
+  ["weekly","Weekly Pick",IMG.mWeekly],["partner","Partners",IMG.mPartner]];
+const rail = (on) => `<aside class="rail">
+  <div class="rail-g"><div class="rail-t">Desk</div>${RAIL.map(([k,l,i,n,p])=>
+    `<a data-go="${k}" href="#" class="${on===k?"on":""}"><span class="ic ${i}"></span>${l}${n?`<span class="n">${n}</span>`:""}${p?`<span class="pro">${p}</span>`:""}</a>`).join("")}</div>
+  <div class="rail-g"><div class="rail-t">Featured</div>${RAIL2.map(([k,l,i])=>
+    `<a data-go="${k}" href="#" class="${on===k?"on":""}"><span class="ic ${i}"></span>${l}</a>`).join("")}</div>
+  <div class="rail-live"><span class="dot"></span>Refresh odds · live</div></aside>`;
+
+const kpis = `<div class="kpis">
+  <div class="kpi"><b class="num">141</b><span>Fixtures</span></div>
+  <div class="kpi"><b class="num">61</b><span>With edge</span></div>
+  <div class="kpi hot"><b class="num">60.9%</b><span>Hit · 716 settled</span></div></div>`;
+
+const P = {};
+
+/* ══ HOME ══ */
+P.home = () => `
+<div class="caro" id="caro">
+  <div class="caro-vp"><div class="caro-run" id="caro-run">
+    ${IMG.ban.concat(IMG.ban).map((b,i)=>`<div class="caro-s"><a href="#" data-go="previsioni"><span class="slide ${b}" role="img" aria-label="BetRedge campaign ${i%3+1}"></span></a></div>`).join("")}
+  </div></div>
+  <button class="caro-nav caro-prev" id="caro-p" aria-label="Previous">‹</button>
+  <button class="caro-nav caro-next" id="caro-n" aria-label="Next">›</button>
+  <div class="caro-dots" id="caro-d"></div>
+</div>
+<div class="tape"><div class="tape-run">${[0,1].map(()=>
+  ["Brazil–Argentina · model 49 · mkt 42 · <b>+7.1</b>","Inter–Napoli · model 54 · mkt 48 · <b>+6.2</b>",
+   "Sinner–Zverev · model 66 · mkt 61 · <b>+5.4</b>","Bayern–Dortmund · model 58 · mkt 54 · <b>+4.1</b>"]
+  .map(t=>`<i>${t}</i>`).join("")).join("")}</div></div>
+
+<section class="scene"><span class="scene-img im-stadium"></span><div class="veil"></div>
+  <span class="cover-obj ${IMG.oFoot}"></span>
+  <div class="wrap cover">
+  <span class="eyebrow">Probability engine · not a bookmaker</span>
+  <h1 class="t-h1">We don't beat the book.<br>We make it readable.</h1>
+  <p class="t-lead">Every match runs through the model: calibrated probabilities, lined up against the odds. Where there's a gap we flag it and explain it — before kick-off — and we log it. No tips, no black box: honest numbers and the reasoning behind them.</p>
+  <div class="acts"><button class="btn" data-go="previsioni">Open the terminal</button><button class="btn btn-dg" data-go="storico">See the track record</button></div>
+  <div class="chips"><span class="chip">Logged before kick-off</span><span class="chip">CLV verified</span><span class="chip">Calibrated, not hyped</span></div>
+</div></section>
+
+<div class="wrap sec"><div class="scan">
+  <div class="scan-h"><b><span class="dot"></span>Edge scanner · live</b><span>Scanning 61 fixtures</span></div>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Match</th><th>Sport</th><th style="text-align:right">Model</th><th style="text-align:right">Market</th><th style="text-align:right">Edge</th></tr></thead><tbody>
+  ${[["Malmö FF–Degerfors IF","Football",22,16,"+6.1"],["Brazil–Argentina","World Cup",49,42,"+7.1"],
+     ["Inter–Napoli","Football",54,48,"+6.2"],["Sinner–Zverev","Tennis",66,61,"+5.4"],
+     ["Bayern–Dortmund","Football",58,54,"+4.1"]]
+    .map(([m,s,a,b,e])=>`<tr><td><b>${m}</b></td><td class="t-key">${s}</td><td class="n">${a}</td><td class="n">${b}</td><td class="n edge">${e}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div style="padding:.7rem .8rem;border-top:1px solid var(--rule)" class="note">61 fixtures · 38 with edge · Edge = model probability − market-implied probability. Below our confidence floor we show “no clear favourite” instead of forcing a pick.</div>
+</div></div>
+
+<div class="sec-alt"><div class="wrap sec">
+  <span class="eyebrow">How it works</span><h2 class="t-h2">From signal to your call.</h2>
+  <div class="duo"><div class="cols">
+    <div class="col-h"><h3 class="t-h3">Signal</h3><p class="t-body">Agents scan the fixtures and isolate where the model diverges from the price.</p></div>
+    <div class="col-h"><h3 class="t-h3">Explain</h3><p class="t-body">See probability, odds and edge — and the why, in plain terms. No black box.</p></div>
+    <div class="col-h"><h3 class="t-h3">Decide</h3><p class="t-body">You decide. BetRedge places nothing for you: no automatic execution.</p></div>
+    <div class="col-h"><h3 class="t-h3">Track</h3><p class="t-body">Every pick is logged before the event → it becomes a verifiable track record.</p></div>
+  </div><span class="obj-side ${IMG.oBoot}"></span></div>
+</div></div>
+
+<div class="wrap sec">
+  <span class="eyebrow">Anatomy of a reading</span><h2 class="t-h2">Exactly what you read.</h2>
+  <p class="t-lead">One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.</p>
+  <div class="two anat" style="grid-template-columns:minmax(300px,380px) 1fr">
+    <div class="board" style="padding:0;grid-template-columns:1fr">${card({sport:"tennis",
+      league:"National Bank Open presented by Rogers",when:"Mon 3 Aug, 05:00",
+      teams:"Maya JointvYuliia Starodubtseva",status:"Scheduled",score:"Mon 3 Aug, 05:00 · hard",
+      eye:"Our prediction",pick:"Maya Joint",conf:"HIGH",odds:"76%",qlab:"Model probability",sub:"above the floor"},0)}</div>
+    <div class="cols" style="grid-template-columns:1fr">
+      <div class="col-h"><h3 class="t-h3">Pick — the call, stated plainly.</h3><p class="t-body">A single side — or “no clear favourite” when the model is below its floor. We never force one.</p></div>
+      <div class="col-h"><h3 class="t-h3">Probability — calibrated, not inflated.</h3><p class="t-body">71% means the model expects it to land close to 71 times out of 100 over the long run.</p></div>
+      <div class="col-h"><h3 class="t-h3">Market — the price, made comparable.</h3><p class="t-body">We convert the book's odds into implied probability, so model and market sit side by side.</p></div>
+      <div class="col-h"><h3 class="t-h3">Edge — the gap, quantified.</h3><p class="t-body">Where the model sees more value than the price implies — never a promise of profit.</p></div>
+      <div class="col-h"><h3 class="t-h3">Deep Analysis — the “why”, in plain terms.</h3><p class="t-body">Form, xG, injuries, Elo, serve/return, H2H, surface: reasoning, not a black box.</p></div>
+    </div></div></div>
+
+<section class="scene" style="padding-block:clamp(2rem,4vw,3rem)"><span class="scene-img im-crowd"></span><div class="veil"></div>
+  <div class="wrap" style="display:grid;gap:1rem">
+    <span class="eyebrow">The proof</span><h2 class="t-h2">The receipts come first.</h2>
+    <p class="t-mega">60.9%</p>
+    <p class="t-lead">716 settled picks, each time-stamped before the whistle. This is the <b>settled</b> hit-rate — past performance, not a forecast. Nothing edited after the fact.</p>
+    <div class="chips">${D.registro.slice(0,5).map(r=>`<span class="chip">${esc(r.m)} · ${r.w?"won":"lost"}</span>`).join("")}</div>
+    <p class="note">Below the confidence floor we publish “no clear favourite” instead of manufacturing a pick.</p>
+  </div></section>
+
+<div class="wrap sec">
+  <span class="eyebrow">The suite</span><h2 class="t-h2">Four ways to read the board.</h2>
+  <p class="t-lead">One engine, surfaced the way you actually work — from a single value bet to the whole week.</p>
+  <div class="cols">
+    <div class="col-h"><span class="t-key">Best bets · +EV</span><h3 class="t-h3">The value feed</h3><p class="t-body">Every fixture where the model sees value versus the price, ranked by edge and confidence.</p><p class="note">refreshed live · +EV only</p></div>
+    <div class="col-h"><span class="t-key">Weekly pick</span><h3 class="t-h3">The house multi</h3><p class="t-body">One curated accumulator a week, frozen the moment it's published — you see the same slip we do.</p><p class="note">frozen at publish · fully logged</p></div>
+    <div class="col-h"><span class="t-key">Match builder</span><h3 class="t-h3">Build your own read</h3><p class="t-body">Combine markets across a fixture and watch the blended probability update, selection by selection.</p></div>
+    <div class="col-h"><span class="t-key">World cup</span><h3 class="t-h3">The whole tournament</h3><p class="t-body">Full-bracket simulation, groups, calendar and squads in one place.</p></div>
+  </div>
+</div>
+
+<div class="sec-alt"><div class="wrap sec">
+  <span class="eyebrow">Plans</span><h2 class="t-h2">Start free. Read deeper when you're ready.</h2>
+  <div class="cols">
+    <div class="col-h"><span class="t-key">Free · $0</span><p class="t-body">One pick per sport, per week. Public track record. Preview of the edge scanner.</p></div>
+    <div class="col-h"><span class="t-key">Base · $14.99/mo</span><p class="t-body">All Best Bets · +EV feed. Weekly Pick. Deep Analysis on every card. Full settled history.</p></div>
+    <div class="col-h"><span class="t-key">Pro · $29.99/mo</span><p class="t-body">Everything in Base, plus live in-play readings, Match Builder, priority scanner and crypto billing.</p></div>
+  </div>
+  <hr class="rule-t">
+  <h2 class="t-h2">Read your first match free.</h2>
+  <p class="t-lead">See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.</p>
+  <div class="acts"><button class="btn" data-go="previsioni">Open the terminal</button><button class="btn btn-o" data-go="storico">Browse the track record</button></div>
+</div></div>`;
+
+/* ══ PREDICTIONS ══ */
+P.previsioni = () => {
+  const f = D.cards.filter(c=>c.sport!=="tennis"), t = D.cards.filter(c=>c.sport==="tennis");
+  return `<div class="wrap desk">${rail("previsioni")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Board</span><h1 class="t-h1">Predictions</h1>
+    <p class="t-body" style="max-width:52ch">Model-calibrated probabilities on football and tennis. The model holds <b>one</b> opinion, not bar-room opinions.</p>
+  </div>${kpis}</div>
+  <div class="inplay"><span class="lab"><span class="dot"></span>In play</span>
+    <span class="m">SK Brann <b>1–0</b> Rosenborg <i>23'</i></span>
+    <span class="m">Rapid Vienna <b>1–0</b> SC Rheindorf Altach <i>32'</i></span>
+    <span class="m">Silkeborg IF <b>1–3</b> F.C. København <i>74'</i></span></div>
+  <div class="filters">
+    <button class="fchip on">All<span class="c">${D.cards.length}</span></button>
+    <button class="fchip">Football<span class="c">${f.length}</span></button>
+    <button class="fchip">Tennis<span class="c">${t.length}</span></button>
+    <button class="fchip">All predictions</button><button class="fchip">Best bets only<span class="c">${D.cards.filter(c=>c.val).length}</span></button>
+    <button class="fchip">Competition ▾</button><button class="fchip">Surface ▾</button><button class="fchip">Sort · time ▾</button>
+  </div>
+  <div class="feat"><span class="scene-img im-court"></span><div class="veil"></div><div class="feat-in">
+    <div><span class="eyebrow" style="color:#fb7a45">Edge of the day · model vs market</span>
+      <h2 class="t-h2" style="margin-top:.6rem">Jack Draper <span style="color:#8d939b;font-weight:400">v</span> Terence Atmane</h2>
+      <div class="note" style="margin-top:.35rem">National Bank Open presented by Rogers · hard</div>
+      <div class="feat-p"><b>90%</b><span><span style="font-weight:700;font-size:1.05rem">Jack Draper</span><span class="note">model probability</span></span></div>
+      <div class="chips" style="margin-top:.9rem"><span class="chip" style="border-color:var(--verde-b);color:var(--verde-b)">+40 pt over the second option</span></div></div>
+    <div class="feat-why"><span class="t-key">Why the model picks Draper</span>
+      <div class="feat-r"><div><span class="t-key">Hard rating</span><b>1850 · 1492</b></div>
+        <div><span class="t-key">Matches on surface</span><b>114 · 36</b></div></div>
+      <p class="t-body">The model makes Draper a clear favourite on hard court, with a clear edge on this surface (114 matches to 36). Solid read: the model rates it likelier than the price does.</p></div>
+  </div></div>
+  <section><div class="sband"><span class="scene-img im-stadium"></span><div class="veil"></div>
+    <span class="obj-band ${IMG.oFoot}"></span><div class="sband-in">
+      <span class="sband-l"><span class="ic ${IMG.icF}"></span><span><span class="eyebrow" style="color:#a78bfa">Football</span><div class="sband-n">${f.length} markets</div></span></span>
+      <span class="sband-n"><b>${f.filter(c=>c.val).length} value</b> right now</span></div></div>
+    <div class="board">${f.map(card).map((h,k)=>k===5?houseBanner(IMG.ban[0],"Explore the picks →")+h:h).join("")}</div></section>
+  <section><div class="sband"><span class="scene-img im-clay"></span><div class="veil"></div>
+    <span class="obj-band ${IMG.oTen}"></span><div class="sband-in">
+      <span class="sband-l"><span class="ic ${IMG.icT}"></span><span><span class="eyebrow" style="color:#fb7a45">Tennis</span><div class="sband-n">${t.length} markets</div></span></span>
+      <span class="sband-n"><b>${t.filter(c=>c.val).length} value</b> right now</span></div></div>
+    <div class="board">${t.map(card).map((h,k)=>k===5?houseBanner(IMG.ban[1],"See the tennis →")+h:(k===29?houseBanner(IMG.ban[2],"Compare the plans →")+h:h)).join("")}</div></section>
+</div></div>`;
+};
+
+/* ══ HISTORY ══ */
+P.storico = () => {
+  const row = (r) => `<tr><td class="num" style="white-space:nowrap">${esc(r.d)}</td>
+    <td><b>${esc(r.m)}</b><div class="note" style="text-transform:none;letter-spacing:0">${esc(r.r)}</div></td>
+    <td class="n">${r.p}%</td><td style="text-align:right"><span class="res ${r.w?"won":"lost"}">${r.w?"won":"lost"}</span></td></tr>`;
+  const maxN = Math.max(...D.segmenti.map(s=>parseInt(s.n)||0));
+  return `<div class="wrap desk">${rail("storico")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Log</span><h1 class="t-h1">History</h1>
+    <p class="t-body" style="max-width:52ch">Every settled pick, won or lost. The model's track record, unfiltered — it updates as each match ends.</p>
+  </div>${kpis}</div>
+  <div class="sec" style="gap:.8rem"><span class="eyebrow">Track record at a glance</span>
+    <div class="kpis" style="gap:3rem;justify-content:flex-start">
+      <div class="kpi" style="text-align:left"><b class="num">60.9%</b><span>Hit rate</span></div>
+      <div class="kpi" style="text-align:left"><b class="num">716</b><span>Settled picks</span></div>
+      <div class="kpi" style="text-align:left"><b class="num">436</b><span>Won</span></div>
+    </div>
+    <p class="note">Edge vs market (ROI · CLV) coming with the historical odds comparison.</p></div>
+  <hr class="rule-strong">
+  <div class="sec" style="gap:.7rem">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap">
+      <div><span class="eyebrow">Pick log</span><h2 class="t-h2" style="margin-top:.4rem">Every settled pick</h2></div>
+      <span class="count">${D.registro.length} in the log · they land here when the match ends</span></div>
+    <div class="subnav"><button class="on">All</button><button>Football</button><button>Tennis</button></div>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Date</th><th>Match · pick and competition</th><th style="text-align:right">Model</th><th style="text-align:right">Result</th></tr></thead>
+      <tbody>${D.registro.slice(0,20).map(row).join("")}</tbody>
+      </table></div>
+    <details class="more"><summary>Show all ${D.registro.length}</summary>
+      <div class="scroll"><table class="tbl"><tbody>${D.registro.slice(20).map(row).join("")}</tbody></table></div>
+    </details>
+  </div>
+  <hr class="rule-strong">
+  <div class="sec" style="gap:.7rem"><span class="eyebrow">By segment</span>
+    <h2 class="t-h2">Where the model works, and where it doesn't.</h2>
+    <p class="t-body" style="max-width:62ch">Hit rate per competition, with the sample size next to it: 80% on 20 picks is not 78% on 135.</p>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Competition</th><th style="text-align:right">Hit rate</th><th>Sample</th><th style="width:26%">Weight</th></tr></thead><tbody>
+      ${D.segmenti.map(s=>{const n=parseInt(s.n)||0;const h=parseFloat(s.h)||0;
+        return `<tr><td><b>${esc(s.k)}</b></td><td class="n" style="color:${h>=60?"var(--verde-b)":"var(--ink2)"};font-weight:700">${esc(s.h)}</td>
+        <td class="num">${esc(s.n)}</td><td><span class="seg-bar"><i style="width:${Math.round(n/maxN*100)}%"></i></span></td></tr>`}).join("")}
+    </tbody></table></div></div>
+</div></div>`;
+};
+
+/* ══ MATCH BUILDER ══ */
+P.builder = () => `<div class="wrap desk">${rail("builder")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Influencer tool</span><h1 class="t-h1">Match Builder</h1>
+    <p class="t-body" style="max-width:56ch">Build your own accumulator: the model computes the blended probability, selection by selection. Share the link with your followers.</p>
+  </div><div class="kpis"><div class="kpi"><b class="num">${D.builder.length}</b><span>Selections available</span></div></div></div>
+  <div class="two" style="padding-top:1.4rem">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap">
+        <span class="eyebrow">Select predictions · 2 to 5</span>
+        <span class="count">${D.builder.length} selections · football ${D.builder_counts.football ?? "—"}</span></div>
+      <div class="subnav"><button class="on">All</button><button>Football</button><button>Tennis</button><button>Probability ≥ 40%</button></div>
+      <div class="sel-l">${D.builder.map(x=>`<div class="sel-r"><button class="add" aria-label="Add">+</button>
+        <span class="mk"><b>${esc(x.h)} <span class="vs">v</span> ${esc(x.a)}</b><span class="pk">Pick: ${esc(x.pick)}</span></span>
+        <span class="pp">${x.p}%</span></div>`).join("")}</div>
+    </div>
+    <div class="stick"><div class="slip">
+      <div style="padding:.9rem 1rem;border-bottom:1px solid var(--rule)"><span class="eyebrow">Your slip</span></div>
+      <div class="empty" style="border:0;padding:1.4rem 1rem">
+        <span class="obj-empty ${IMG.oBoot}" style="width:120px;height:110px"></span><span class="t-key">No selections</span>
+        <p class="t-body" style="max-width:30ch">Add 2 to 5 predictions: the blended probability appears here.</p></div>
+      <div style="padding:1rem;border-top:1px solid var(--rule)">
+        <button class="btn" style="width:100%;justify-content:center" disabled>Create and share</button>
+        <p class="note" style="margin-top:.6rem;text-transform:none;letter-spacing:0">No odds, no promised edge — model probability only.</p></div>
+    </div></div>
+  </div>
+</div></div>`;
+
+/* ══ LEADERBOARD ══ */
+P.classifica = () => `<div class="wrap desk">${rail("classifica")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Public ranking</span><h1 class="t-h1">Leaderboard</h1>
+    <p class="t-body" style="max-width:52ch">How clients rank by hit rate. 10 points for every winning pick: it updates on every settlement.</p></div></div>
+  <div class="sec"><div class="podium">
+    <div class="pod"><span class="t-key">First</span><b>—</b><span class="note">pts</span></div>
+    <div class="pod"><span class="t-key">Second</span><b>—</b><span class="note">pts</span></div>
+    <div class="pod"><span class="t-key">Third</span><b>—</b><span class="note">pts</span></div></div>
+    <div class="empty"><span class="obj-empty ${IMG.oBoot}"></span><span class="t-key">No ranking yet</span>
+      <p class="t-body" style="max-width:46ch">The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.</p>
+      <button class="btn">Enable the leaderboard</button></div>
+    <hr class="rule-t"><span class="eyebrow">Your position</span>
+    <p class="t-body">Enable the leaderboard in Settings to appear in the rankings.</p></div>
+</div></div>`;
+
+/* ══ INVITE ══ */
+P.invita = () => `<div class="wrap desk">${rail("invita")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Invite</span><h1 class="t-h1">Your creator code</h1>
+    <p class="t-body" style="max-width:52ch">Share your link: anyone who signs up with your code is attributed to you.</p></div></div>
+  <div class="sec duo" style="align-items:start">
+    <div style="max-width:540px;display:grid;gap:1rem">
+      <label class="t-key" for="code">Choose your creator code</label>
+      <input class="field" id="code" placeholder="yourcode">
+      <p class="note" style="text-transform:none;letter-spacing:0">2–20 chars: letters, numbers, <b>-</b> <b>_</b> · cannot be changed once claimed.</p>
+      <div><button class="btn">Claim code</button></div><hr class="rule-t">
+      <p class="t-body">You earn on your sign-ups' subscriptions <b>only if we enable revenue on your code</b> — reach out to request it.</p>
+    </div><span class="obj-side ${IMG.oTen}"></span></div>
+</div></div>`;
+
+/* ══ PLANS ══ */
+const PLANS = [
+  ["BetRedge Free","$0","","Forever · 1 per sport / week",
+    [[1,"1 top football + 1 tennis prediction / week"],[1,"Pick, probabilities and explanation on those"],
+     [1,"Profile and language saved · public history"],[0,"Rest of the board, edge and Deep Analysis"]],"Activate Free","",""],
+  ["BetRedge Base","$14.99","/month","Card or crypto · 5 per sport / week",
+    [[1,"Top 5 football + 5 tennis / week (10 total)"],[1,"Pick, probabilities and explanation"],
+     [1,"Edge %, suggested stake, closing line value"],[1,"Full settled history"],
+     [0,"Unlimited predictions and Deep Analysis"]],"Already on Pro","Most popular",""],
+  ["BetRedge Pro","$29.99","/month","Card or crypto · unlimited",
+    [[1,"ALL predictions, unlimited"],[1,"Deep Analysis: form, injuries, venue"],
+     [1,"Tennis Live V4 and Football Live V4 research"],[1,"Match Builder and Best Bets +EV"],
+     [1,"Edge, stake and CLV on everything"],[1,"Weekly Pick included (the house accumulator)"]],"Current plan","Current plan","on"],
+];
+P.piani = () => `<div class="wrap desk">${rail("piani")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Plans</span><h1 class="t-h1">One paid plan, clear promise.</h1>
+    <p class="t-body" style="max-width:58ch">Free stays as preview. BetRedge Pro unlocks tennis live, football research, Best Bets, explanations and track record. No aggressive market-beating promise.</p></div></div>
+  <div class="sec"><div class="plans">${PLANS.map(([n,p,per,sub,feats,cta,tag,on])=>`
+    <div class="plan ${on}">${tag?`<span class="tag">${tag}</span>`:""}
+      <div class="plan-t"><span class="t-key">${n}</span>
+        <span class="plan-p">${p}${per?`<span style="font-size:.9rem;font-weight:400;color:var(--ink3)">${per}</span>`:""}</span>
+        <span class="note">${sub}</span></div>
+      <div class="plan-l">${feats.map(([ok,t])=>`<div><span class="${ok?"ok":"no"}">${ok?"✓":"—"}</span><span>${t}</span></div>`).join("")}</div>
+      <div class="plan-f"><button class="btn ${on?"":"btn-o"}" style="width:100%;justify-content:center" ${on?"disabled":""}>${cta}</button></div>
+    </div>`).join("")}</div>
+    <hr class="rule-strong">
+    <div class="cols">
+      <div class="col-h"><h3 class="t-h3">Signal</h3><p class="t-body">Agents find where the model diverges from the price.</p></div>
+      <div class="col-h"><h3 class="t-h3">Explain</h3><p class="t-body">The client sees odds, edge and the why, in plain terms.</p></div>
+      <div class="col-h"><h3 class="t-h3">Decide</h3><p class="t-body">The client decides whether to enter: no automatic execution.</p></div>
+      <div class="col-h"><h3 class="t-h3">Track</h3><p class="t-body">Predictions are saved before the event and measured in the track record.</p></div>
+    </div></div>
+</div></div>`;
+
+/* ══ WEEKLY PICK ══ */
+const WK = [
+  ["Ben Shelton vs Ethan Quinn","Ben Shelton","Mubadala DC Open","86%","Mon 05:00",
+   "Shelton is the strong pick against Quinn on hard, with an 86% chance to win: he is the steadier server. No live market price is available, so no betting edge is claimed. Informational only and does not guarantee an outcome."],
+  ["Alex Michelsen vs Jack Draper","Jack Draper","Mubadala DC Open","86%","Tue 05:00",
+   "Draper is a clear favourite on hard by rating and matches played on the surface. Model analysis — no guarantee of a win."],
+  ["Andres Martin vs Ugo Humbert","Ugo Humbert","Mubadala DC Open","86%","—",
+   "Humbert starts ahead on serve consistency and recent hard-court form. Model analysis — no guarantee of a win."],
+  ["Grigor Dimitrov vs Moise Kouame","Grigor Dimitrov","Mifel Tennis Open by Telcel Oppo","83%","Wed 02:00",
+   "Dimitrov has clearly superior experience and rating on the surface. Model analysis — no guarantee of a win."],
+  ["Anastasia Potapova vs Venus Williams","Anastasia Potapova","Mubadala DC Open","81%","—",
+   "Potapova is favoured on recent form and hard-court output. Model analysis — no guarantee of a win."],
+];
+P.weekly = () => `<section class="scene" style="padding-block:clamp(2rem,5vw,3.6rem)"><span class="scene-img im-court"></span><div class="veil"></div>
+  <div class="wrap cover"><span class="eyebrow">House accumulator</span>
+    <h1 class="t-h1">The most probable slip of the week.</h1>
+    <p class="t-lead">Our model's best picks, combined into a single slip. No odds, no promised edge — probability only.</p>
+    <div class="kpis" style="margin-top:.6rem;justify-content:flex-start;flex-wrap:wrap">
+      <div class="kpi" style="text-align:left"><b class="num" style="color:var(--verde-b)">43%</b><span>Blended prob.</span></div>
+      <div class="kpi" style="text-align:left"><b class="num">5</b><span>Selections</span></div>
+      <div class="kpi" style="text-align:left"><b class="num">3</b><span>Still to play</span></div>
+      <div class="kpi" style="text-align:left"><b class="num">1</b><span>Sport</span></div>
+      <div class="kpi" style="text-align:left"><b class="num">84%</b><span>Avg confidence</span></div>
+    </div></div></section>
+<div class="wrap sec"><span class="eyebrow">Slip in play</span>
+  <h2 class="t-h2">Strongest: Jack Draper, 86%.</h2>
+  <div class="slip">${WK.map(([m,p,c,pr,w])=>`<div class="slip-r"><div><b>${m}</b>
+    <div class="note" style="text-transform:none;letter-spacing:0">${p} · ${c}</div></div>
+    <span class="w">${w}</span><span class="p">${pr}</span></div>`).join("")}</div>
+  <p class="note">Blended model probability · every match analysed on form, expected goals, absences, context and line-ups · 18+ play responsibly</p>
+  <hr class="rule-strong"><span class="eyebrow">The week</span><h2 class="t-h2">Match by match analysis.</h2>
+  <div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    ${WK.map(([m,p,c,pr,w,why])=>`<div class="col-h"><span class="t-key">${m} · ${w}</span>
+      <h3 class="t-h3">${p} · ${pr}</h3><p class="t-body">${why}</p>
+      <p class="note">Model: elo_surface_v4_features_odds</p></div>`).join("")}
+  </div>
+  <hr class="rule-t"><span class="eyebrow">Archive</span><h2 class="t-h2">Previous weeks.</h2>
+  <p class="t-body">Closed slips stay available with their outcome.</p>
+</div>`;
+
+/* ══ CREATOR PICKS ══ */
+P.community = () => `<div class="wrap desk">${rail("community")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Community</span><h1 class="t-h1">Creator Picks</h1>
+    <p class="t-body" style="max-width:58ch">Accumulators built by the community with the Match Builder, based on our model's probabilities. No odds, no promised edge — only model predictions curated by creators.</p>
+  </div><div class="acts"><button class="btn" data-go="builder">Build yours</button></div></div>
+  <div class="sec"><div class="empty"><span class="obj-empty ${IMG.oTen}"></span>
+    <span class="t-key">Example · no accumulators published yet</span>
+    <p class="t-body" style="max-width:46ch">Be the first: build it with the Match Builder and share it.</p>
+    <button class="btn" data-go="builder">Build yours</button></div></div>
+</div></div>`;
+
+/* ══ PARTNERS ══ */
+P.partner = () => `<div class="wrap desk">${rail("partner")}<div>
+  <div class="phead"><div class="phead-l"><span class="eyebrow">Where you can bet</span><h1 class="t-h1">Partners</h1>
+    <p class="t-body" style="max-width:58ch">BetRedge does not take bets and does not hold funds. When you want to act on a reading, these are licensed operators we link to — links are commercial affiliates.</p>
+  </div></div>
+  <div class="sec"><div class="gsm">${PARTNERS.map(p=>`<div class="pcard">
+    <div class="pcard-l"><img src="${p.l}" alt="${p.n}" class="${p.em?"em":""}"></div>
+    <div class="pcard-b"><b>${p.n}</b><span class="t-key">${p.c}</span></div>
+    <div class="pcard-f"><button class="btn btn-o" style="width:100%;justify-content:center">Visit ${p.n} ↗</button>
+      <p class="note" style="text-transform:none;letter-spacing:0">18+ · play responsibly · affiliate link</p></div>
+  </div>`).join("")}</div>
+  <hr class="rule-t">
+  <p class="t-body" style="max-width:70ch">We only link to licensed operators. We are not a bookmaker: we do not take your stake and we do not hold your money. Availability depends on your jurisdiction.</p>
+  </div>
+</div></div>`;
+
+/* ══ WORLD CUP ══ */
+P.worldcup = () => `<section class="scene"><span class="scene-img im-crowd"></span><div class="veil"></div><div class="wrap cover">
+  <span class="eyebrow">FIFA World Cup 2026 · USA / Canada / Mexico</span>
+  <h1 class="t-h1">World Cup Intelligence Hub</h1>
+  <p class="t-lead">First World Cup signals publish when markets open — kick-off June 11.</p>
+  <div class="kpis" style="margin-top:.6rem;justify-content:flex-start;flex-wrap:wrap">
+    <div class="kpi" style="text-align:left"><b class="num">102</b><span>Settled</span></div>
+    <div class="kpi" style="text-align:left"><b class="num">71</b><span>Won</span></div>
+    <div class="kpi" style="text-align:left"><b class="num">31</b><span>Lost</span></div>
+    <div class="kpi" style="text-align:left"><b class="num" style="color:var(--verde-b)">69.6%</b><span>Hit rate</span></div>
+  </div></div></section>
+<div class="wrap sec"><span class="eyebrow" style="color:#5cc0f5">Model view · 100,000 tournament simulations</span>
+  <h2 class="t-h2">Who wins.</h2>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Team</th><th style="text-align:right">R32</th><th style="text-align:right">R16</th><th style="text-align:right">QF</th><th style="text-align:right">SF</th><th style="text-align:right">Final</th><th style="text-align:right">Win</th></tr></thead><tbody>
+    ${D.wc_win.map(r=>`<tr><td><b>${esc(r[0])}</b></td>${r.slice(1,6).map(v=>`<td class="n" style="color:var(--ink2)">${esc(v)}</td>`).join("")}<td class="n edge">${esc(r[6]||"")}</td></tr>`).join("")}
+  </tbody></table></div>
+  <p class="t-body" style="max-width:78ch">Pure model view — our calibrated engine, full-bracket simulation, host advantage included. <b>It is not blended with betting markets</b>, which price the favourites less aggressively (antepost markets put Spain nearer 18%). Same favourite and podium as the major public supercomputer models.</p>
+  <p class="note">Updated 2026-06-07 · for information only, not betting advice.</p>
+  <hr class="rule-strong"><span class="eyebrow" style="color:#5cc0f5">Tournament reference</span>
+  <h2 class="t-h2">The ${D.wc_groups.length} groups.</h2>
+  <div class="gsm">${D.wc_groups.map((g,i)=>`<div class="gcard"><h4>Group ${String.fromCharCode(65+i)}</h4>
+    <table class="tbl"><thead><tr><th>Team</th><th style="text-align:right">P</th><th style="text-align:right">GD</th><th style="text-align:right">Pts</th></tr></thead>
+    <tbody>${g.rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="n">${esc(r[1])}</td><td class="n">${esc(r[5])}</td><td class="n"><b>${esc(r[6])}</b></td></tr>`).join("")}</tbody></table></div>`).join("")}</div>
+</div>`;
+
+document.getElementById("botnav").innerHTML = [
+  ["previsioni","Board",IMG.mPrediction],["storico","History",IMG.mHistory],
+  ["builder","Builder",IMG.mBuilder],["weekly","Weekly",IMG.mWeekly],["piani","Plans",IMG.mPlans],
+].map(([k,l,i])=>`<button data-go="${k}"><span class="ic ${i}"></span>${l}</button>`).join("");
+
+function initCaro() {
+  const run = document.getElementById("caro-run"); if (!run) return;
+  const dots = document.getElementById("caro-d");
+  const n = IMG.ban.length;
+  const per = () => (window.innerWidth <= 860 ? 1 : 2);
+  let i = 0, timer = null;
+  dots.innerHTML = IMG.ban.map((_, k) => `<button aria-label="Slide ${k + 1}"></button>`).join("");
+  const draw = () => {
+    run.style.transform = `translateX(-${(i * 100) / per()}%)`;
+    [...dots.children].forEach((d, k) => d.classList.toggle("on", k === ((i % n) + n) % n));
+  };
+  const step = (d) => { i = (i + d + n) % n; draw(); };
+  document.getElementById("caro-p").onclick = () => step(-1);
+  document.getElementById("caro-n").onclick = () => step(1);
+  [...dots.children].forEach((d, k) => (d.onclick = () => { i = k; draw(); }));
+  const slow = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const start = () => { if (!slow && !timer) timer = setInterval(() => step(1), 4200); };
+  const stop = () => { clearInterval(timer); timer = null; };
+  const el = document.getElementById("caro");
+  el.addEventListener("mouseenter", stop); el.addEventListener("mouseleave", start);
+  el.addEventListener("focusin", stop);
+  window.addEventListener("resize", draw);
+  draw(); start();
+}
+
+const app = document.getElementById("app");
+function go(name) {
+  if (!P[name]) return;
+  app.innerHTML = P[name]();
+  const SCENE = { previsioni:IMG.night, weekly:IMG.court, worldcup:IMG.crowd,
+                  builder:IMG.clay, storico:IMG.night, partner:IMG.crowd };
+  document.getElementById("bgscene").className = "bgfix " + (SCENE[name] || IMG.night);
+  for (const b of document.querySelectorAll(".tnav button, .botnav button")) b.classList.toggle("on", b.dataset.go === name);
+  initCaro();
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-go]");
+  if (t && P[t.dataset.go]) { e.preventDefault(); go(t.dataset.go); }
+});
+go("home");
+</script>
