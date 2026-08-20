@@ -3,6 +3,7 @@ import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
+import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-display",
