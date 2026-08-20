@@ -21,15 +21,13 @@ from typing import Any
 
 import httpx
 
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API
+
 logger = logging.getLogger("espn_soccer_client")
 
-_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world"
-_SOCCER_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
-# #ESPN-UA-403-0820 — stesso host, stesso 403 dello UA finto-browser: vedi il
-# blocco in core/espn_tennis_client.py per la misura. Qui costava
-# get_world_cup_teams() = 0 squadre invece di 48 (rose, infortuni, venue,
-# formazioni: tutto vuoto in silenzio).
-_HEADERS = {"User-Agent": f"BetRedge/1.0 python-httpx/{httpx.__version__}"}
+_BASE = f"{ESPN_SITE_API}/soccer/fifa.world"
+_SOCCER_BASE = f"{ESPN_SITE_API}/soccer"
+
 
 # Our league codes -> ESPN league slugs (fixtures fallback, decision Andrea
 # 2026-06-05: free ESPN instead of paying the API-Football quota).
@@ -91,7 +89,7 @@ async def get_world_cup_teams() -> list[dict]:
         return cached
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(f"{_BASE}/teams", headers=_HEADERS)
+            resp = await c.get(f"{_BASE}/teams", headers=ESPN_HEADERS)
             if resp.status_code != 200:
                 logger.warning("ESPN soccer teams: %s", resp.status_code)
                 return []
@@ -118,7 +116,7 @@ async def get_team_squad(team_id: str) -> dict | None:
         return cached
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(f"{_BASE}/teams/{team_id}/roster", headers=_HEADERS)
+            resp = await c.get(f"{_BASE}/teams/{team_id}/roster", headers=ESPN_HEADERS)
             if resp.status_code != 200:
                 logger.debug("ESPN soccer roster %s: %s", team_id, resp.status_code)
                 return None
@@ -217,7 +215,7 @@ async def get_league_fixtures(league_code: str, days_ahead: int = 14) -> list[di
             resp = await c.get(
                 f"{_SOCCER_BASE}/{slug}/scoreboard",
                 params={"dates": date_range},
-                headers=_HEADERS,
+                headers=ESPN_HEADERS,
             )
             if resp.status_code != 200:
                 logger.warning("ESPN soccer scoreboard %s: %s", league_code, resp.status_code)
@@ -297,7 +295,7 @@ async def get_wc_venue_map(days_ahead: int = 45) -> dict[tuple[str, str], dict]:
             resp = await c.get(
                 f"{_SOCCER_BASE}/fifa.world/scoreboard",
                 params={"dates": date_range},
-                headers=_HEADERS,
+                headers=ESPN_HEADERS,
             )
             if resp.status_code != 200:
                 logger.warning("ESPN WC venue map: %s", resp.status_code)
@@ -356,7 +354,7 @@ async def get_wc_lineup_map(within_minutes: int = 120) -> dict[tuple[str, str], 
             resp = await c.get(
                 f"{_BASE}/scoreboard",
                 params={"dates": now.strftime("%Y%m%d")},
-                headers=_HEADERS,
+                headers=ESPN_HEADERS,
             )
             if resp.status_code != 200:
                 return out
@@ -410,7 +408,7 @@ async def get_match_lineups(event_id: str) -> dict | None:
     """
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(f"{_BASE}/summary", params={"event": event_id}, headers=_HEADERS)
+            resp = await c.get(f"{_BASE}/summary", params={"event": event_id}, headers=ESPN_HEADERS)
             if resp.status_code != 200:
                 return None
             data = resp.json()
@@ -492,7 +490,7 @@ async def get_match_disposition(league_code: str, event_id: str) -> str | None:
             resp = await c.get(
                 f"{_SOCCER_BASE}/{slug}/summary",
                 params={"event": event_id},
-                headers=_HEADERS,
+                headers=ESPN_HEADERS,
             )
             if resp.status_code != 200:
                 return None
@@ -524,7 +522,7 @@ async def get_match_result(league_code: str, event_id: str) -> dict | None:
             resp = await c.get(
                 f"{_SOCCER_BASE}/{slug}/summary",
                 params={"event": event_id},
-                headers=_HEADERS,
+                headers=ESPN_HEADERS,
             )
             if resp.status_code != 200:
                 logger.debug("ESPN result %s/%s: %s", league_code, event_id, resp.status_code)

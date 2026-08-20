@@ -6,12 +6,14 @@
 // truth, zero new tables, standings populate themselves once matches settle.
 // Squads come from the wc_squads tables written by Track A.
 
+import { ESPN_HEADERS, ESPN_SITE_API, ESPN_V2_API } from "@/lib/espn";
+
 export const WC_KICKOFF_ISO = "2026-06-11T19:00:00Z";
 
 const ESPN_STANDINGS =
-  "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026";
+  `${ESPN_V2_API}/sports/soccer/fifa.world/standings?season=2026`;
 const ESPN_SCOREBOARD =
-  "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260801&limit=250";
+  `${ESPN_SITE_API}/soccer/fifa.world/scoreboard?dates=20260601-20260801&limit=250`;
 
 export type WcStandingRow = {
   team: string;
@@ -119,7 +121,7 @@ type EspnStandingsResponse = {
 export async function fetchWcGroups(): Promise<WcGroup[]> {
   // fetch() throws on network/DNS errors (not just !ok): degrade to the same
   // empty-state instead of 500-ing the whole /world-cup render or the build.
-  const res = await fetch(ESPN_STANDINGS, { next: { revalidate: 300 } }).catch(() => null);
+  const res = await fetch(ESPN_STANDINGS, { headers: ESPN_HEADERS, next: { revalidate: 300 } }).catch(() => null);
   if (!res || !res.ok) return [];
   const data = (await res.json()) as EspnStandingsResponse;
   const groups: WcGroup[] = [];
@@ -171,7 +173,7 @@ type EspnScoreboardResponse = {
 
 export async function fetchWcFixtures(): Promise<WcFixture[]> {
   const [res, groupMap] = await Promise.all([
-    fetch(ESPN_SCOREBOARD, { next: { revalidate: 300 } }).catch(() => null),
+    fetch(ESPN_SCOREBOARD, { headers: ESPN_HEADERS, next: { revalidate: 300 } }).catch(() => null),
     fetchTeamGroupMap(),
   ]);
   if (!res || !res.ok) return [];

@@ -8,14 +8,15 @@ from the per-day scoreboard (atp+wta, today+tomorrow) so SCHEDULED matches
 populate the board — the old header endpoint only saw live/completed
 matches, which emptied Best Bets every evening.
 """
-import re
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from core.espn_http import ESPN_HEADERS
 from core.espn_tennis_client import (
-    _HEADERS,
+    _SCOREBOARD_URL,
+    _URL,
     EspnFeedUnavailable,
     _parse_notes,
     get_fixtures,
@@ -187,33 +188,33 @@ def test_infer_surface_covers_clay_grass_hard():
 
 
 # --- #ESPN-UA-403-0820 -----------------------------------------------------
-# Il 20/08 site.api.espn.com rendeva 403 a TUTTE le nostre chiamate perche' lo
-# User-Agent si finge browser. Misurato 3/3 deterministico, una sola variabile:
-#   Mozilla/5.0 (compatible; AgenticMarkets/1.0) -> 403   (il nostro)
-#   BetRedge/1.0 / UA Safari / nessuno UA        -> 403
-#   curl/8.0 · python-httpx/0.28.1 · python-requests/2.31.0 -> 200
-# La regola Akamai e' un allowlist per SUBSTRING del token client: basta che lo
-# UA contenga `python-httpx/<ver>` e passa, quindi identificarsi resta possibile
-# (`BetRedge/1.0 python-httpx/0.28.1` -> 200). Il fallback sull'host `header`
-# (site.web.api.espn.com, dove la regola non c'e') copriva metA del board, per
-# questo il guasto e' passato per "poche partite" invece che per un guasto.
-
-_ACCEPTED_CLIENT_TOKEN = re.compile(
-    r"(?:curl|python-httpx|python-requests|Go-http-client)/\d", re.IGNORECASE
-)
+# Il 20/08 il day-scoreboard rendeva 403 a TUTTE le nostre chiamate: giravamo
+# su `site.api.espn.com`, che ha un WAF sullo User-Agent, con uno UA che si
+# fingeva browser. La misura completa sta in core/espn_http.py; la sintesi:
+# inseguire lo UA e' una corsa che si perde (ogni token ha una regola sua, e
+# `BetRedge/1.0 curl/8.6.0` -> 403 mentre `curl/8.6.0` -> 200), mentre
+# `site.web.api.espn.com` serve lo STESSO payload senza nessun filtro.
+# Questi test bloccano la regressione verso l'host filtrato.
 
 
-def test_user_agent_declares_a_real_http_client():
-    """Blocca la regressione verso uno UA da browser: e' quella che ESPN 403-a.
+def test_every_url_uses_the_unfiltered_host():
+    """Il WAF sta su site.api.espn.com: nessuna URL nostra deve puntarci.
 
-    Verificato per mutazione: rimettendo "Mozilla/5.0 (compatible;
-    AgenticMarkets/1.0)" questo test diventa rosso.
+    Verificato per mutazione: rimettendo l'host filtrato questo test diventa
+    rosso.
     """
-    ua = _HEADERS["User-Agent"]
-    assert _ACCEPTED_CLIENT_TOKEN.search(ua), (
-        f"UA {ua!r} non dichiara un client HTTP reale: site.api.espn.com lo 403-a"
-    )
-    assert "Mozilla" not in ua, "gli UA da browser sono la classe bloccata"
+    for name, url in (("_SCOREBOARD_URL", _SCOREBOARD_URL), ("_URL", _URL)):
+        assert url.startswith("https://site.web.api.espn.com/"), (
+            f"{name} punta a {url!r}: quell'host filtra sullo UA e ci 403-a"
+        )
+
+
+def test_user_agent_says_who_we_are_instead_of_faking_a_browser():
+    """Sull'host senza filtro non serve camuffarsi — e uno UA onesto e' l'unico
+    che non scade quando ESPN gira una manopola."""
+    ua = ESPN_HEADERS["User-Agent"]
+    assert "BetRedge" in ua
+    assert "Mozilla" not in ua, "era proprio la classe che ESPN 403-ava"
 
 
 async def test_all_requests_refused_raises_instead_of_empty_list():

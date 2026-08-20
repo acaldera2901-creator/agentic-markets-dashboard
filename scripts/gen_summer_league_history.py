@@ -18,6 +18,8 @@ from datetime import date, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
 
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API
+
 LAB = Path(r"C:\Users\bragh\am-lab")
 OUT = Path(r"C:\Users\bragh\am-lab-wt-summer\data\summer_leagues")
 LEAGUES = {  # code -> (csv file, espn slug)
@@ -38,8 +40,8 @@ def norm(s: str) -> str:
 
 
 def espn_teams(slug: str) -> list[str]:
-    url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/teams"
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=20) as r:
+    url = f"{ESPN_SITE_API}/soccer/{slug}/teams"
+    with urllib.request.urlopen(urllib.request.Request(url, headers=ESPN_HEADERS), timeout=20) as r:
         data = json.load(r)
     out = []
     for lg in data.get("sports", [{}])[0].get("leagues", []):

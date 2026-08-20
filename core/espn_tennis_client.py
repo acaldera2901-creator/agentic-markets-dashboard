@@ -16,31 +16,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API, ESPN_V2_API
 from core.tennis_names import clean_player_name, canonical_player_key
 
 logger = logging.getLogger("espn_tennis_client")
 
-_URL = "https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=tennis"
-_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/tennis/{league}/scoreboard"
+_URL = f"{ESPN_V2_API}/scoreboard/header?sport=tennis"
+_SCOREBOARD_URL = f"{ESPN_SITE_API}/tennis/{{league}}/scoreboard"
 _SCOREBOARD_LEAGUES = ("atp", "wta")
 # A fixture is servable from 2h before "now-window" up to 48h ahead: the same
 # trading window the dashboard applies (scheduled_at > NOW()-2h), plus tomorrow.
 _PAST_GRACE = timedelta(hours=2)
 _FUTURE_HORIZON = timedelta(hours=48)
-# #ESPN-UA-403-0820 — site.api.espn.com 403-a chi si finge browser e accetta
-# solo gli UA che DICHIARANO un client HTTP reale. Misurato 20/08, 3/3
-# deterministico, una sola variabile cambiata:
-#   "Mozilla/5.0 (compatible; AgenticMarkets/1.0)" -> 403  <- quello di prima
-#   "BetRedge/1.0" / UA Safari / nessuno UA        -> 403
-#   "curl/8.0" · "python-httpx/0.28.1" · "python-requests/2.31.0" -> 200
-# La regola e' un allowlist per SUBSTRING del token client, quindi possiamo
-# ancora identificarci: "BetRedge/1.0 python-httpx/0.28.1" -> 200. NON e' un
-# mascheramento — httpx e' davvero il client che stiamo usando.
-# Attenzione: l'host `header` (site.web.api.espn.com, usato da
-# get_fixtures_from_header e get_completed_results) NON ha questa regola e
-# rispondeva 200 anche allo UA vecchio. E' per questo che il guasto e' sembrato
-# "poche partite" per 15 giorni invece di un feed morto.
-_HEADERS = {"User-Agent": f"BetRedge/1.0 python-httpx/{httpx.__version__}"}
 _DOUBLES_SEP = re.compile(r"\s*&\s*")
 _NOTE_SPLIT = re.compile(
     r"^(?P<p1>.+?)\s+(?P<verb>bt|def\.?|defeated|leads)\s+(?P<p2>.+?)(?:\s+\d|$)",
@@ -229,7 +216,7 @@ async def get_fixtures() -> list[dict]:
                         resp = await c.get(
                             _SCOREBOARD_URL.format(league=league),
                             params={"dates": day},
-                            headers=_HEADERS,
+                            headers=ESPN_HEADERS,
                         )
                         if resp.status_code != 200:
                             logger.warning("ESPN tennis %s/%s: %s", league, day, resp.status_code)
@@ -332,7 +319,7 @@ async def get_fixtures_from_header() -> list[dict]:
     now = datetime.now(timezone.utc)
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(_URL, headers=_HEADERS)
+            resp = await c.get(_URL, headers=ESPN_HEADERS)
     except Exception as exc:
         raise EspnFeedUnavailable(f"header feed unreachable: {exc}") from exc
     if resp.status_code != 200:
@@ -371,7 +358,7 @@ async def get_completed_results() -> list[dict]:
     """
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(_URL, headers=_HEADERS)
+            resp = await c.get(_URL, headers=ESPN_HEADERS)
             if resp.status_code != 200:
                 logger.warning("ESPN tennis results: %s", resp.status_code)
                 return []
