@@ -47,3 +47,26 @@ def test_lo_stato_di_allerta_sopravvive_al_riavvio(tmp_path):
     collect([_chk("a", lambda: red("giu'", "s", now=T0))], now=T0, **args)
     from tools.control_center.snapshot import read_state
     assert read_state(sp)["alerts"]["a"]["red_runs"] == 1
+
+
+def test_l_esito_della_consegna_finisce_nello_snapshot(tmp_path):
+    # Se il notificatore fallisce, deve essere visibile sulla pagina: un
+    # canale d'allerta morto in silenzio e' peggio di non averlo.
+    sp, hp = tmp_path / "state.json", tmp_path / "history.jsonl"
+    stato = collect(
+        [_chk("a", lambda: red("giu'", "s", now=T0))],
+        now=T0, state_path=sp, history_path=hp, notifier=lambda n, env=None: [],
+    )
+    assert "notify" not in stato  # primo run rosso: nessuna notifica dovuta
+
+    t1 = T0 + timedelta(minutes=5)
+    stato = collect(
+        [_chk("a", lambda: red("giu'", "s", now=t1))],
+        now=t1, state_path=sp, history_path=hp, notifier=lambda n, env=None: [],
+    )
+    assert stato["notify"]["notifiche"] == 1
+    assert stato["notify"]["consegnato"] is False
+    assert stato["notify"]["canali"] == []
+
+    from tools.control_center.snapshot import read_state
+    assert read_state(sp)["notify"]["consegnato"] is False

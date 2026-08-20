@@ -32,10 +32,20 @@ def collect(
     gruppi = {c.id: c.group for c in lista}
     stato = build_state(verdicts, gruppi, alert_state, now_iso(moment))
 
+    # La consegna avviene prima della scrittura, cosi' il suo esito finisce
+    # nello snapshot: un notificatore morto in silenzio sarebbe invisibile
+    # esattamente quando serve, ed e' il guasto che ha ucciso daemon-health.
+    if notifiche:
+        canali = consegna(notifiche)
+        stato["notify"] = {
+            "at": now_iso(moment),
+            "notifiche": len(notifiche),
+            "canali": canali or [],
+            "consegnato": bool(canali),
+        }
+
     write_state(stato, state_path)
     append_history(verdicts, now_iso(moment), history_path)
-    if notifiche:
-        consegna(notifiche)
     return stato
 
 

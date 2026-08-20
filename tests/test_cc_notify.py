@@ -47,3 +47,19 @@ def test_un_canale_che_esplode_non_blocca_l_altro(mocker):
         env={"TELEGRAM_BOT_TOKEN": "tok", "TELEGRAM_CHAT_ID": "42"},
     )
     assert canali == ["telegram"]
+
+
+def test_telegram_che_risponde_400_non_conta_come_consegnato(mocker):
+    # Un chat_id sbagliato da' 400: senza raise_for_status il canale
+    # d'allerta morirebbe in silenzio.
+    class Resp400:
+        def raise_for_status(self):
+            raise RuntimeError("400 Bad Request: chat not found")
+
+    mocker.patch.object(notify.subprocess, "run", side_effect=OSError("no osascript"))
+    mocker.patch.object(notify.requests, "post", return_value=Resp400())
+    canali = notify.send(
+        [{"check_id": "c", "kind": "down", "title": "T", "body": "B"}],
+        env={"TELEGRAM_BOT_TOKEN": "tok", "TELEGRAM_CHAT_ID": "sbagliato"},
+    )
+    assert canali == []

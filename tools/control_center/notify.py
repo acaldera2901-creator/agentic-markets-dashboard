@@ -27,11 +27,15 @@ def _macos(notifiche: list[dict]) -> None:
 
 
 def _telegram(notifiche: list[dict], token: str, chat_id: str) -> None:
-    requests.post(
+    resp = requests.post(
         f"https://api.telegram.org/bot{token}/sendMessage",
         json={"chat_id": chat_id, "text": _testo(notifiche), "disable_notification": False},
         timeout=15,
     )
+    # Senza questo, un chat_id sbagliato darebbe 400 e verrebbe contato come
+    # consegnato: il canale d'allerta morirebbe in silenzio, che e' lo stesso
+    # guasto che questa dashboard esiste per scoprire.
+    resp.raise_for_status()
 
 
 def send(notifiche: list[dict], env: dict | None = None) -> list[str]:
