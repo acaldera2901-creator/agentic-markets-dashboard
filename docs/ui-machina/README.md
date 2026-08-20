@@ -5,9 +5,9 @@ prodotto: è la **fonte di verità visiva** da cui nasce l'implementazione della
 fase 1 descritta in
 [`../superpowers/specs/2026-08-02-betredge-ui-machina-design.md`](../superpowers/specs/2026-08-02-betredge-ui-machina-design.md).
 
-> ⚠️ **La spec è superata sul fondo.** Descrive la carta chiara di MACHINA; il
-> 2 agosto si è passati al fondo cinematico scuro su richiesta di Andrea.
-> Va riallineata prima di scrivere il piano di implementazione.
+> ✅ **Spec riallineata il 2026-08-20** al fondo cinematico scuro, con lo scope
+> di fase 1 esteso al chrome del desk e i banner della landing agganciati a
+> quelli veri del sito. Il §0 della spec elenca cosa è cambiato.
 
 ## Cosa c'è
 
