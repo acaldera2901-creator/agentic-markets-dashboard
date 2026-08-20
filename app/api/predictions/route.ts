@@ -50,6 +50,7 @@ import { syncMatchPredictionsToUnified } from "@/lib/unified-adapter";
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 import { buildSoftLookup } from "@/lib/soft-lookup";
+import { mapLimit, EXTERNAL_FETCH_LIMIT } from "@/lib/map-limit";
 
 const LEAGUES: Record<string, string> = {
   SA: "Serie A",
@@ -349,30 +350,35 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   await wait(Math.max(62_000 - elapsed, 1_000));
 
   // ── BATCH 2: fixtures + odds + Understat xG + API-Football fixture lists ─
+  // #COVERAGE-0812-FANOUT — mapLimit, non Promise.all su tutto.
+  //
+  // Questi quattro fan-out partivano insieme e senza tetto: con 18 codici
+  // passava, col batch del 12/08 (33 codici) The Odds API ha iniziato a
+  // throttlare una parte delle richieste simultanee. fetchOdds fa
+  // `if (!r.ok) return []` senza loggare e il gate quality-first scarta ogni
+  // fixture di una lega senza quote → 5 leghe su 15 sparite dal board con dati
+  // sani e ZERO errori. Il tetto e' la causa, non il sintomo: vedi lib/map-limit.
   const [fixtureResults, oddsResults, xgResults, apifixResults] =
     await Promise.all([
-      Promise.all(
-        codes.map(async (code) => ({
-          code,
-          fixtures: isSummerLeague(code)
-            ? await fetchSummerFixtures(code)
-            : await fetchFixtures(code),
-        }))
-      ),
-      Promise.all(codes.map(async (code) => ({ code, odds: await fetchOdds(code) }))),
-      Promise.all(
-        codes.map(async (code) => ({
-          code,
-          // Understat has no coverage for the summer leagues — skip the call.
-          xg: isSummerLeague(code) ? ({} as XGMap) : await getXGForLeague(code),
-        }))
-      ),
-      Promise.all(
-        codes.map(async (code) => ({
-          code,
-          apifix: isSummerLeague(code) ? [] : await fetchApiFixtures(code, season),
-        }))
-      ),
+      mapLimit(codes, EXTERNAL_FETCH_LIMIT, async (code) => ({
+        code,
+        fixtures: isSummerLeague(code)
+          ? await fetchSummerFixtures(code)
+          : await fetchFixtures(code),
+      })),
+      mapLimit(codes, EXTERNAL_FETCH_LIMIT, async (code) => ({
+        code,
+        odds: await fetchOdds(code),
+      })),
+      mapLimit(codes, EXTERNAL_FETCH_LIMIT, async (code) => ({
+        code,
+        // Understat has no coverage for the summer leagues — skip the call.
+        xg: isSummerLeague(code) ? ({} as XGMap) : await getXGForLeague(code),
+      })),
+      mapLimit(codes, EXTERNAL_FETCH_LIMIT, async (code) => ({
+        code,
+        apifix: isSummerLeague(code) ? [] : await fetchApiFixtures(code, season),
+      })),
     ]);
 
   // Build lookup maps
@@ -380,6 +386,30 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   for (const { code, odds } of oddsResults) {
     oddsMap[code] = {};
     for (const o of odds) oddsMap[code][`${o.homeNorm}|${o.awayNorm}`] = o;
+  }
+
+  // #COVERAGE-0812-FANOUT — IL SILENZIO NON DEVE ESSERE SILENZIOSO.
+  //
+  // fetchOdds torna [] su throttling, 4xx, 5xx e su exception, senza loggare. A
+  // valle il gate quality-first scarta ogni fixture di una lega senza quote, e
+  // una lega intera esce dal board indistinguibile da "non ha partite in
+  // calendario". E' cosi' che 5 leghe su 15 sono sparite il 12/08 e me ne sono
+  // accorto solo contando le righe nel DB.
+  //
+  // Il tetto di concorrenza qui sopra riduce la probabilita' del guasto; questo
+  // lo rende VISIBILE quando succede comunque. Fixture > 0 e quote == 0 e' la
+  // firma esatta: la lega ha partite ma nessun prezzo.
+  {
+    const fixtureCount: Record<string, number> = {};
+    for (const { code, fixtures } of fixtureResults) fixtureCount[code] = fixtures.length;
+    const muted = codes.filter((c) => (fixtureCount[c] ?? 0) > 0 && Object.keys(oddsMap[c] ?? {}).length === 0);
+    if (muted.length) {
+      console.warn(
+        `[predictions] LEGHE SENZA QUOTE ma con fixture: ${muted.map((c) => `${c}(${fixtureCount[c]})`).join(", ")}` +
+        ` — per le off-free-tier il gate quality-first le scartera' TUTTE e spariranno dal board.` +
+        ` Cause tipiche: throttling di The Odds API sul fan-out, sport key inattiva, budget quota sotto la riserva.`
+      );
+    }
   }
 
   const xgMap: Record<string, XGMap> = {};
