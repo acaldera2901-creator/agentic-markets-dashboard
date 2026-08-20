@@ -170,17 +170,33 @@ def main() -> int:
 {GROUND}.mc-scene-clay .bgfix{{background-image:url(/banners/gen/scene-clay.jpg)}}
 
 {SCOPE} .card-bg{{background-position:center;background-size:cover;background-repeat:no-repeat}}
-/* L'inquadratura cambia con la foto, non solo il file: le tre foto del calcio
-   sono tutte campi verdi e in una riga di tre schede l'alternanza NON si vedeva.
-   Con tagli diversi la varieta' si percepisce senza generare immagini nuove
-   (in fase 1 non si genera nulla). */
-{SCOPE} .im-stadium{{background-image:url(/banners/stadium-night.jpg);background-position:center 28%}}
-{SCOPE} .im-pitch{{background-image:url(/banners/football-pitch.jpg);background-position:center 72%}}
-{SCOPE} .im-action{{background-image:url(/banners/football-action.jpg);background-position:60% 40%}}
-{SCOPE} .im-court{{background-image:url(/banners/tennis-player.jpg);background-position:center 32%}}
-{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 60%}}
-{SCOPE} .im-crowd{{background-image:url(/banners/stadium-crowd.jpg);background-position:center 40%}}
+/* LE FOTO DELLE SCHEDE SONO LE SCENE DELLA PREVIEW, non le foto sport del repo.
+   Misurato su produzione da loggato: con stadium-night / football-pitch /
+   football-action la fascia alta leggeva come una velatura grigio-pallida senza
+   soggetto riconoscibile — un'altra famiglia tonale rispetto alla preview
+   approvata, dove le scene sono notturne con i fari e il campo verde. Non e' una
+   questione di luminosita' media (produzione era perfino piu' scura): e' il
+   contenuto del taglio.
+   La varieta' viene da TAGLI diversi della stessa scena, non da file diversi:
+   nessuna immagine nuova, come vuole la fase 1. */
+{SCOPE} .im-stadium{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:22% 24%}}
+{SCOPE} .im-pitch{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 62%}}
+{SCOPE} .im-action{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:88% 58%}}
+{SCOPE} .im-court{{background-image:url(/banners/gen/scene-court.jpg);background-position:center 38%}}
+{SCOPE} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 58%}}
+{SCOPE} .im-crowd{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 14%}}
 """
+    # ── 4b. LA VARIABILE VA NELLO SPAZIO DEI NOMI ───────────────────────────
+    # globals.css definisce GIA' `--accent: var(--am-panel-3)`, cioe' un colore di
+    # SUPERFICIE (#1E2229). Le regole della preview usano `var(--accent, …)` per
+    # il colore dello SPORT: dentro il prodotto si prendevano la superficie, e
+    # l'occhiello finiva scuro su scuro (misurato 1,15:1 sul modale di login e
+    # sulla scheda bloccata, in produzione). E' la stessa trappola dei nomi di
+    # classe, su una variabile: qui si rinomina in --mc-accent. Chi imposta la
+    # variabile inline (le schede, in app/app/page.tsx) usa lo stesso nome.
+    res = res.replace("var(--accent", "var(--mc-accent")
+    res = res.replace("--accent:", "--mc-accent:")
+
     # ── 5. AZZERAMENTO ───────────────────────────────────────────────────────
     # La CSS della preview presupponeva una tela bianca. Nel prodotto sotto c'è
     # globals.css, e le proprietà che la preview non ha mai avuto BISOGNO di
@@ -208,12 +224,15 @@ def main() -> int:
    .pred::before / ::after per i due tratti obliqui che chiudono gli angoli
    tagliati (LEVEL-UP 1e): il filetto della preview li sovrascriveva e si
    vedeva un trattino diagonale nell'angolo invece di una barra in testa.
-   Qui si restituisce ai due pseudo la geometria di globals... */
-{SCOPE} .card > .pred::before{{
+   Qui si restituisce ai due pseudo la geometria di globals.
+   NB il selettore e' COMPOSTO ({SCOPE}.card, senza spazio): [data-mc] sta
+   sull'article.card, non su un suo antenato. Scritto con lo spazio la regola
+   non aggancia mai e resta un moncone diagonale al posto della smussatura. */
+{SCOPE}.card > .pred::before{{
   inset:auto;top:calc(var(--ch) / 2);left:calc(var(--ch) / 2);
   width:calc(var(--ch) * 1.41421);height:1.4px;background:var(--_pe);z-index:auto;
   transform:translate(-50%,-50%) rotate(-45deg)}}
-{SCOPE} .card > .pred::after{{
+{SCOPE}.card > .pred::after{{
   inset:auto;bottom:calc(var(--ch) / 2);right:calc(var(--ch) / 2);
   width:calc(var(--ch) * 1.41421);height:1.4px;background:var(--_pe);
   transform:translate(50%,50%) rotate(-45deg)}}
@@ -221,7 +240,7 @@ def main() -> int:
    che è il primo figlio e ha già position:relative. */
 {SCOPE} .pred .top::before{{
   content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
-  background:var(--accent,var(--d-football))}}
+  background:var(--mc-accent,var(--d-football))}}
 
 /* Il grigio del prodotto, alzato DENTRO lo scope. Il fondo nuovo ha spostato di
    poco la luminanza sotto il testo secondario e otto nodi sono scesi appena

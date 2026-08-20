@@ -5548,7 +5548,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   // compatta cliccabile che apre la scheda-dettaglio.
   if (!modalEnabled) {
     return (
-      <article className="card" data-mc style={{ "--accent": "var(--d-football)" } as React.CSSProperties}><div className="pred" {...cardProps}>
+      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred" {...cardProps}>
         <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
@@ -5559,7 +5559,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
 
   return (
     <>
-      <article className="card" data-mc style={{ "--accent": "var(--d-football)" } as React.CSSProperties}><div className="pred is-clickable" {...cardProps}>
+      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred is-clickable" {...cardProps}>
         <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
@@ -5979,7 +5979,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   if (!modalEnabled) {
     return (
-      <article className="card tennis" data-mc style={{ "--accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis" {...cardProps}>
         <McCardPhoto sport="tennis" i={idx} />
         {headerNode}
         {readoutNode}
@@ -5990,7 +5990,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   return (
     <>
-      <article className="card tennis" data-mc style={{ "--accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis is-clickable" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis is-clickable" {...cardProps}>
         <McCardPhoto sport="tennis" i={idx} />
         {headerNode}
         {readoutNode}
