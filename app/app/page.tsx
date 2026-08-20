@@ -2393,7 +2393,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const card = (
-                        <PredictionCard key={p.match_id} p={p} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
                       // #BANNER-FEED-FIX-0708: un SOLO creativo landscape 16:9 per punto,
                       // MAI due affiancati. Compatto (span-8, una card gli sta a fianco →
@@ -2451,7 +2451,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
+                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
                       );
                       // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
@@ -2619,7 +2619,7 @@ function BestBetsBoard({
                 <span className="rule" />
               </div>
               <div className="am-grid">
-                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
+                {visibleFootballValue.map((p, i) => <PredictionCard key={p.match_id} p={p} idx={i} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -2633,7 +2633,7 @@ function BestBetsBoard({
                 <span className="rule" />
               </div>
               <div className="am-grid">
-                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
+                {visibleTennisValue.map((m, i) => <TennisMatchCard key={m.id} m={m} idx={i} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -4940,7 +4940,31 @@ function GoalscorerBlock({
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+// #UI-MACHINA-0802 — la foto dietro la scheda. Segue lo SPORT (non è
+// decorazione casuale) e alterna in modo deterministico sull'indice, così due
+// schede adiacenti non portano la stessa immagine. Le foto sono quelle già in
+// repo: in fase 1 non si genera nulla.
+const MC_SCENES_FOOTBALL = ["im-stadium", "im-pitch", "im-action"] as const;
+const MC_SCENES_TENNIS = ["im-court", "im-clay"] as const;
+function mcScene(sport: "football" | "tennis" | "wc", i = 0): string {
+  if (sport === "tennis") return MC_SCENES_TENNIS[i % MC_SCENES_TENNIS.length];
+  if (sport === "wc") return "im-crowd";
+  return MC_SCENES_FOOTBALL[i % MC_SCENES_FOOTBALL.length];
+}
+// I due strati decorativi, fuori dall'albero dell'accessibilità. La velatura è
+// UNA: due gradienti sovrapposti spengono l'immagine (errore già corretto su
+// MACHINA). I numeri non ci finiscono sopra — .scorebar e .v2r sono incassi
+// pieni, vedi la spec §5.3.
+function McCardPhoto({ sport, i }: { sport: "football" | "tennis" | "wc"; i?: number }) {
+  return (
+    <>
+      <span className={`card-bg ${mcScene(sport, i)}`} aria-hidden="true" />
+      <span className="card-veil" aria-hidden="true" />
+    </>
+  );
+}
+
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGate, idx }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void; idx?: number }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -5524,7 +5548,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   // compatta cliccabile che apre la scheda-dettaglio.
   if (!modalEnabled) {
     return (
-      <article className="card"><div className="pred" {...cardProps}>
+      <article className="card" data-mc style={{ "--accent": "var(--d-football)" } as React.CSSProperties}><div className="pred" {...cardProps}>
+        <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
         {bodyNode}
@@ -5534,7 +5559,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
 
   return (
     <>
-      <article className="card"><div className="pred is-clickable" {...cardProps}>
+      <article className="card" data-mc style={{ "--accent": "var(--d-football)" } as React.CSSProperties}><div className="pred is-clickable" {...cardProps}>
+        <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
         <div className="pred-more" aria-hidden="true">
@@ -5569,7 +5595,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate, idx }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void; idx?: number }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -5953,7 +5979,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   if (!modalEnabled) {
     return (
-      <article className="card tennis"><div className="pred tennis" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis" {...cardProps}>
+        <McCardPhoto sport="tennis" i={idx} />
         {headerNode}
         {readoutNode}
         {bodyNode}
@@ -5963,7 +5990,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   return (
     <>
-      <article className="card tennis"><div className="pred tennis is-clickable" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis is-clickable" {...cardProps}>
+        <McCardPhoto sport="tennis" i={idx} />
         {headerNode}
         {readoutNode}
         <div className="pred-more" aria-hidden="true">
@@ -8317,8 +8345,10 @@ export default function Dashboard() {
   useEffect(() => {
     let t = "";
     try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi il commento
+    // in app/layout.tsx. La scelta esplicita salvata vince comunque.
     if (t !== "light" && t !== "dark") {
-      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+      t = "dark";
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
     setTheme(t as "dark" | "light");
@@ -8331,24 +8361,11 @@ export default function Dashboard() {
     try { localStorage.setItem("agentic-theme", next); } catch {}
     trackEvent("theme_change", { meta: { theme: next } });
   };
-  // #THEME-CONSISTENCY-0623: segue il tema di sistema SOLO se l'utente non ha
-  // mai scelto manualmente (agentic-theme vuoto). La scelta esplicita vince e
-  // persiste. Mantiene il desk allineato a home e /community sullo stesso
-  // contratto. Presentazionale, nessuna logica di modello/gate.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let chosen = "";
-      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-      if (chosen === "light" || chosen === "dark") return;
-      const next: "dark" | "light" = e.matches ? "light" : "dark";
-      setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema
+  // di sistema e' RIMOSSO. Prima, chi non
+  // aveva scelto seguiva il sistema; ora il default e' scuro, quindi un cambio
+  // di sistema non deve piu' ribaltare la veste sotto i piedi dell'utente.
+  // Chi vuole il chiaro lo preme, e la scelta persiste.
 
   // #UI-SCROLLTOP-0623: cambiare scheda è solo client-state (setTab), quindi la
   // pagina restava ferma a metà contenuto della scheda precedente. Riporta in
@@ -9070,7 +9087,11 @@ export default function Dashboard() {
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
     <GeoCountryCtx.Provider value={geoCountry}>
-    <main className="portal-root">
+    <main className="portal-root mc-scene-stadium" data-mc-ground>
+      {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata,
+          sotto la velatura di [data-mc-ground]::after. Decorazione pura, fuori
+          dall'albero dell'accessibilita'. */}
+      <span className="bgfix" aria-hidden="true" />
       <SportGlyphSprite />
       {/* #PAYGATE-RETURN-SMOOTH: feedback al rientro da un checkout PayGate */}
       {payReturn && (
