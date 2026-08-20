@@ -59,7 +59,10 @@ def test_summary_conta_i_livelli_e_scrive_la_frase():
     assert s["counts"] == {"green": 1, "amber": 1, "red": 2, "unknown": 1}
     assert s["level"] == "red"
     assert s["headline"].startswith("2 rossi")
-    assert "settle fermo da 12h" in s["detail"]
+    # Il dettaglio deve dire QUALE check: "exit 126" senza il nome non
+    # permette di agire, e la barra del verdetto e' l'unica riga che si legge.
+    assert "cron_settle: settle fermo da 12h" in s["detail"]
+    assert "launchd_sm: exit 126" in s["detail"]
 
 
 def test_summary_tutto_verde_dice_tutto_a_posto():

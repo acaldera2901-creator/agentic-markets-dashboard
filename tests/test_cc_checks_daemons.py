@@ -38,7 +38,9 @@ def test_exit_diverso_da_zero_e_rosso(mocker):
     v = daemons.check_launchd("io.maven.softmarkets.collect")
     assert v.level == "red"
     assert "126" in v.headline
-    assert v.value == 126
+    # Il numero grosso del tile: "126" da solo si legge come un conteggio,
+    # "exit 126" dice cosa e'.
+    assert v.value == "exit 126"
 
 
 def test_label_non_caricata_e_rossa(mocker):

@@ -129,7 +129,7 @@ def check_launchd(label: str) -> Verdict:
         return red(
             f"ultimo exit {riga['status']}",
             f"launchctl:{label}",
-            value=riga["status"],
+            value=f"exit {riga['status']}",
             evidence=riga,
         )
 

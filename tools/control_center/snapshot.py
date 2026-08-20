@@ -85,11 +85,13 @@ def verdict_summary(verdicts: dict[str, Verdict]) -> dict:
         pezzi.append(f"{counts['unknown']} non misurati")
     headline = ", ".join(pezzi) if pezzi else "tutto a posto"
 
+    # Il dettaglio nomina il check: "ultimo exit 1" da solo non dice nulla, e
+    # questa e' l'unica riga che si legge quando la barra e' rossa.
     gravi = sorted(
-        (v for v in verdicts.values() if v.level in ("red", "amber")),
-        key=lambda v: _ORDER[v.level],
+        ((cid, v) for cid, v in verdicts.items() if v.level in ("red", "amber")),
+        key=lambda kv: _ORDER[kv[1].level],
     )
-    detail = " - ".join(v.headline for v in gravi[:3])
+    detail = " - ".join(f"{cid}: {v.headline}" for cid, v in gravi[:3])
 
     return {"level": level, "counts": counts, "headline": headline, "detail": detail}
 
