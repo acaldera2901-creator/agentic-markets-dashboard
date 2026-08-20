@@ -4,7 +4,7 @@ import { resolveAccessState } from "@/lib/auth";
 import { isUnlocked, showcaseRanking } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
-import { surfaceDecision, tennisFloorFor } from "@/lib/surfacing-gate";
+import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,19 @@ export const dynamic = "force-dynamic";
 // (player1/player2/surface/p1/p2/...). When locked, the sensitive numbers are
 // nulled (frontend blurs on `locked`); the matchup + tournament stay visible so
 // the public board is populated. Distinct from the football projection on purpose.
-function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null }>(
+// The price on the side this route would show as the pick (same p1>=p2 rule used
+// below), so the market gate and the displayed pick can never look at different
+// sides of the market. #TENNIS-MARKET-GATE-0805.
+function pickedTennisOdds(m: {
+  p1: number;
+  p2: number;
+  odds_p1?: number | null;
+  odds_p2?: number | null;
+}): number | null {
+  return (m.p1 >= m.p2 ? m.odds_p1 : m.odds_p2) ?? null;
+}
+
+function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null; odds_p1?: number | null; odds_p2?: number | null }>(
   matches: T[],
   state: AccessState
 ): Array<T & { locked: boolean; pick_of_day: boolean }> {
@@ -28,10 +40,16 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
   const rankById = showcaseRanking(
     matches.map((m) => {
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
-      const floor = tennisFloorFor((m as { tournament?: string }).tournament);
       return {
         id: m.id,
-        surfaced: surfaceDecision(confidence, floor).isPick,
+        // #TENNIS-MARKET-GATE-0805: the showcase order must rank by the SAME
+        // notion of "surfaced" the card uses, market gate included — otherwise a
+        // no-market row would be unlocked ahead of a real pick.
+        surfaced: tennisSurfaceDecision(
+          confidence,
+          (m as { tournament?: string }).tournament,
+          pickedTennisOdds(m)
+        ).isPick,
         conf: Math.max(m.p1, m.p2),
         edge: typeof m.edge === "number" ? m.edge : null,
       };
@@ -47,8 +65,15 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       // no clear favourite — drop the directional pick (the card shows none).
       // Probability-neutral: p1/p2/confidence are unchanged.
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
-      const floor = tennisFloorFor((m as { tournament?: string }).tournament);
-      const { isPick, belowFloor } = surfaceDecision(confidence, floor);
+      // #TENNIS-MARKET-GATE-0805: no price on the picked side → no directional
+      // pick. `no_market` stays distinct from `below_floor`: below floor means
+      // the model has no clear favourite, no-market means we have one but no
+      // price to check it against — the copy must not conflate the two.
+      const { isPick, belowFloor, noMarket } = tennisSurfaceDecision(
+        confidence,
+        (m as { tournament?: string }).tournament,
+        pickedTennisOdds(m)
+      );
       const isPro = state === "premium" || state === "admin_full";
       const out: Record<string, unknown> = {
         ...m,
@@ -56,6 +81,7 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
         pick_of_day: isPotD,
         confidence_score: confidence,
         below_floor: belowFloor,
+        no_market: noMarket,
         pick: isPick
           ? (m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2)
           : null,
@@ -207,37 +233,61 @@ async function getFromRedis(): Promise<RedisTennisPayload | null> {
 }
 
 
-async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; computed_at?: string } | null> {
-  const rows = await dbQuery<DbTennisPrediction>(`
-    SELECT * FROM (
-      SELECT DISTINCT ON (COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id))
-             tp.match_id, tp.tournament, tp.surface, tp.player1, tp.player2, tp.scheduled_at,
+async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; computed_at?: string; is_fallback?: boolean } | null> {
+  // Colonne + chiave di dedup, condivise fra query primaria e fallback.
+  const DEDUP = `COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id)`;
+  const COLS = `tp.match_id, tp.tournament, tp.surface, tp.player1, tp.player2, tp.scheduled_at,
              tp.p1, tp.p2, tp.odds_p1, tp.odds_p2, tp.edge, tp.best_selection,
              tp.elo_p1, tp.elo_p2, tp.surface_matches_p1, tp.surface_matches_p2,
              tp.serve_form_p1, tp.serve_form_p2, tp.return_form_p1, tp.return_form_p2,
              tp.surface_reliability_p1, tp.surface_reliability_p2, tp.feature_quality,
              tp.p1_rest_days, tp.p2_rest_days, tp.p1_recent_matches_14d, tp.p2_recent_matches_14d,
              tp.h2h_p1_wins, tp.h2h_p2_wins,
-             tp.model_version, tp.computed_at
+             tp.model_version, tp.computed_at`;
+  // Fail-closed (#020 audit): mai righe senza probabilità reali (niente 0.5
+  // fabbricato); mai slot 'TBD' con tabellone non ancora fatto.
+  const BASE_FILTERS = `AND tp.p1 IS NOT NULL
+        AND tp.p2 IS NOT NULL
+        AND upper(btrim(tp.player1)) NOT IN ('TBD', '')
+        AND upper(btrim(tp.player2)) NOT IN ('TBD', '')`;
+
+  // Primaria: live/upcoming, non ancora settlati. #LIVE-1: 5h coprono anche un
+  // Bo5 lungo (il match resta visibile mentre si gioca; al settlement `winner`
+  // si valorizza e la riga esce → finisce in history).
+  let rows = await dbQuery<DbTennisPrediction>(`
+    SELECT * FROM (
+      SELECT DISTINCT ON (${DEDUP}) ${COLS}
       FROM tennis_predictions tp
-      -- #LIVE-1: 5h coprono anche un Bo5 lungo — il match resta visibile
-      -- mentre si gioca; al settlement winner si valorizza e la riga esce.
       WHERE tp.scheduled_at > NOW() - INTERVAL '5 hours'
         AND tp.winner IS NULL
-        -- Fail-closed (#020 audit): a row without real model probabilities
-        -- must never surface — the old ?? 0.5 default would have shown a
-        -- fabricated-looking 50/50.
-        AND tp.p1 IS NOT NULL
-        AND tp.p2 IS NOT NULL
-        -- No placeholder matches: ESPN returns 'TBD' players for slots whose
-        -- draw isn't made yet — never surface a "TBD vs TBD" card.
-        AND upper(btrim(tp.player1)) NOT IN ('TBD', '')
-        AND upper(btrim(tp.player2)) NOT IN ('TBD', '')
-      ORDER BY COALESCE(NULLIF(split_part(tp.match_id, ':', 3), ''), tp.match_id), tp.computed_at DESC
+        ${BASE_FILTERS}
+      ORDER BY ${DEDUP}, tp.computed_at DESC
     ) d
     ORDER BY d.scheduled_at ASC
     LIMIT 80
   `);
+  let is_fallback = false;
+
+  // #TENNIS-NEVER-EMPTY: se non c'è nulla di live/upcoming (buco notturno o fine
+  // slate), invece di lasciare il board VUOTO mostriamo gli ultimi match recenti
+  // (con predizione, anche già conclusi). Il frontend, via `is_placeholder`, li
+  // rende bypassando la finestra di trading. È l'unico stato in cui compaiono
+  // match finiti sul board — meglio di una pagina bianca.
+  if (!rows.length) {
+    rows = await dbQuery<DbTennisPrediction>(`
+      SELECT * FROM (
+        SELECT DISTINCT ON (${DEDUP}) ${COLS}
+        FROM tennis_predictions tp
+        WHERE tp.scheduled_at > NOW() - INTERVAL '24 hours'
+          ${BASE_FILTERS}
+        ORDER BY ${DEDUP}, tp.computed_at DESC
+      ) d
+      ORDER BY d.scheduled_at DESC
+      LIMIT 12
+    `);
+    is_fallback = rows.length > 0;
+  }
+
   if (!rows.length) return null;
 
   return {
@@ -277,7 +327,21 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
       model_version: row.model_version || "elo_surface_v2",
     })),
     computed_at: rows[0]?.computed_at || undefined,
+    is_fallback,
   };
+}
+
+// #TENNIS-TZ-FIX: `tennis_predictions.scheduled_at` è `timestamp without time
+// zone` (UTC ma naïve), quindi arriva senza designatore di fuso. Il frontend fa
+// `new Date("2026-08-05T19:35:00")`, che senza offset viene interpretato come ORA
+// LOCALE del browser → l'orario mostrato è sfasato dell'offset locale. Il calcio è
+// corretto perché serve `kickoff` con `+00:00`. Marchiamo la stringa come UTC: da
+// lì la stessa `fmtKickoff`/`useTz` la riproietta nel fuso geolocato dell'utente,
+// identica al calcio. Se una stringa ha già offset/Z (es. path Redis) resta com'è.
+function ensureUtc(s: string): string {
+  if (!s) return s;
+  if (/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) return s;
+  return s + "Z";
 }
 
 // Fail-closed (#020 audit): rows without real model probabilities return null
@@ -294,7 +358,7 @@ function normalizePrediction(p: TennisPredictionInput) {
     // the real tournament name); absent stays visibly absent.
     surface: (p.surface || "").toUpperCase(),
     round: p.round || "",
-    scheduled: p.scheduled_at || p.scheduled || "",
+    scheduled: ensureUtc(p.scheduled_at || p.scheduled || ""),
     p1: p.p1,
     p2: p.p2,
     odds_p1: p.odds_p1 ?? null,
@@ -370,6 +434,10 @@ export async function GET(req: Request) {
       status: "signal",
       computed_at: dbData.computed_at || now,
       source: "database",
+      // #TENNIS-NEVER-EMPTY: quando questi sono i match "ultimi recenti" di
+      // riserva (nessun live/upcoming), il flag dice al frontend di mostrarli
+      // bypassando la finestra di trading, così il board non resta mai vuoto.
+      is_placeholder: dbData.is_fallback ?? false,
     });
   }
 

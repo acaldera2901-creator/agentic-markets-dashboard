@@ -167,9 +167,10 @@ function PhotoBg({ src }: { src: string }) {
 // Accetta il set lingue ampio del desk (it/en/es/fr/ru): usa la copy nella
 // lingua del desk con fallback a en (copyFor/ctaLabelFor) per le campagne.
 // #QA-SERGIO-BAGS-1: `onCta` lets the host intercept a CTA click. Per i banner
-// renderizzati DENTRO /app, gli href same-page (/app?tab=…) non risincronizzano
-// il tab dell'host (lo legge solo al mount) → il <Link> alla stessa route è un
-// no-op e il bottone sembrava morto. L'host ritorna true se ha gestito il click.
+// renderizzati DENTRO il desk, gli href verso le pagine del desk (/predictions,
+// /plans, … — #URL-PATHS-0810) non risincronizzano il tab dell'host (lo legge
+// solo al mount) → il <Link> era un no-op e il bottone sembrava morto.
+// L'host ritorna true se ha gestito il click.
 export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean; inGrid?: boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const viewed = useRef(false);

@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { dbQueryStrict, dbExecute } from "@/lib/db";
+import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
+import { signupCountryAllowed, resolveRequestCountry } from "@/lib/signup-geo";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
 import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
-import { paymentReceivedEmail, activationEmail, passwordResetEmail } from "@/lib/email";
+import { paymentReceivedEmail, activationEmail, passwordResetEmail, resolveMailLang, type MailLang } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
 import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
+import { acquisitionJson } from "@/lib/attribution";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +24,7 @@ const TIMING_DUMMY_HASH = hashPassword("timing-equalizer-not-a-real-account");
 
 // Issue + persist a fresh activation token and email the activation link.
 // Throws if the email send fails so the caller surfaces a real error.
-async function sendActivation(req: Request, identifier: string, lang: "it" | "en"): Promise<void> {
+async function sendActivation(req: Request, identifier: string, lang: MailLang): Promise<void> {
   const { token, hash, expiresIso } = newActivationToken();
   await dbExecute(
     "UPDATE profiles SET activation_token_hash = $2, activation_token_expires = $3, updated_at = NOW() WHERE identifier = $1",
@@ -202,7 +205,8 @@ export async function POST(req: Request) {
     }
     // GAP4: confirm receipt to the customer (best-effort — never fails checkout).
     if (ctx.identifier.includes("@")) {
-      const lang = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+      // #MAIL-I18N-5LANG-0805: la lingua vera, non collassata a it|en.
+      const lang = resolveMailLang(typeof body.language === "string" ? body.language : null);
       const mail = paymentReceivedEmail(lang);
       await sendTransactional({
         type: "payment_received",
@@ -230,7 +234,7 @@ export async function POST(req: Request) {
   // admin) actually receives a link.
   if (action === "forgot_password") {
     const id = normalizeIdentifier(body.identifier ?? body.email);
-    const resetLang: "it" | "en" = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+    const resetLang = resolveMailLang(typeof body.language === "string" ? body.language : null);
     if (id && id.includes("@")) {
       const row = await loadAuthRow(id);
       if (row && row.password_hash && row.plan !== "admin_full") {
@@ -273,7 +277,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "this profile requires founder access" }, { status: 403 });
   }
 
-  const lang: "it" | "en" = typeof body.language === "string" && body.language === "en" ? "en" : "it";
+  // #MAIL-I18N-5LANG-0805 — era `body.language === "en" ? "en" : "it"`, quindi chi
+  // si registrava in spagnolo, francese o russo riceveva l'attivazione IN ITALIANO:
+  // la prima email del prodotto, sul percorso senza il quale non si entra. La lingua
+  // vera veniva già salvata nel profilo (piu' sotto), quindi CRM e ricevute la
+  // rispettavano e le mail di account no.
+  const lang = resolveMailLang(typeof body.language === "string" ? body.language : null);
 
   // "resend_activation": re-send the activation email for a not-yet-activated
   // account. Never reveals whether the email exists (always 200).
@@ -287,6 +296,31 @@ export async function POST(req: Request) {
   }
 
   if (action === "register") {
+    // #SIGNUP-GEO-0814 (D2 #LAUNCHDEC-0814): gate geo al signup, chiuso di
+    // default FUORI dall'allowlist env SIGNUP_COUNTRY_ALLOWLIST. INATTIVO
+    // finché la env non è settata (questo merge non cambia nulla in prod).
+    // Solo register: login/logout/reset restano aperti, un utente esistente
+    // non perde mai l'accesso. Il denial si LOGGA con country (decisione D2:
+    // la domanda dai paesi chiusi deve vedersi nei pannelli, non perdersi) —
+    // best-effort, il deny vale anche se il log fallisce.
+    const requestCountry = resolveRequestCountry(req);
+    if (!signupCountryAllowed(requestCountry)) {
+      const deniedCountry = requestCountry ?? "unknown";
+      try {
+        await dbQuery(
+          `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+           VALUES ('signup_geo_denied', NULL, $1, NULL, NULL, NULL, 0, '{}')`,
+          [deniedCountry]
+        );
+      } catch (e) {
+        console.error("[auth] signup_geo_denied log failed:", String(e));
+      }
+      console.log(`[auth] register geo-denied country=${deniedCountry}`);
+      return NextResponse.json(
+        { error: "signups are not available in your region yet" },
+        { status: 403 }
+      );
+    }
     // #SP3-2 compliance gate: +18/ToS consent is enforced server-side, not just
     // in the UI — a direct API call must not be able to skip it. No profile is
     // created/touched until both flags are confirmed true.
@@ -346,25 +380,57 @@ export async function POST(req: Request) {
     // Consenso marketing FACOLTATIVO dal signup (#CRM-LIFECYCLE): sblocca i flussi
     // CRM acquisition. Si registra anche il timestamp come prova del consenso.
     const marketingOptIn = body.marketing_opt_in === true;
+    // #FUNNEL-MEAS-0813 attribuzione di acquisizione: il body è controllato dal
+    // client, quindi si sanifica qui (solo chiavi note, valori troncati, oggetto
+    // scartato se oltre il cap). Null se assente/illeggibile — non blocca mai il signup.
+    const acquisition = acquisitionJson((body as { acquisition?: unknown }).acquisition);
     // HIGH-3: set the password but DO NOT activate or issue a session here. The
     // profile becomes usable only after the email-activation link is clicked —
     // this is what prevents a legacy (passwordless) profile from being claimed
     // by anyone who simply knows the email. activated_at is left untouched
     // (NULL for new/legacy rows; a real activated account never reaches here).
-    try {
-      await dbExecute(
-        // Solo account NUOVI arrivano qui (le righe esistenti sono già gestite sopra
-        // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
-        // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
-        // una riga esistente (niente takeover via race).
+    // Solo account NUOVI arrivano qui (le righe esistenti sono già gestite sopra
+    // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
+    // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
+    // una riga esistente (niente takeover via race).
+    // SQL scritto per esteso nei due rami (niente interpolazione nel template:
+    // lib/sql-guard.test.ts la vieta, ed è la regola giusta).
+    const insertParams = [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn, CURRENT_CONSENT_VERSION];
+    const insertWithAcquisition = () =>
+      dbExecute(
+        `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version, acquisition)
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8, $9::jsonb)
+       ON CONFLICT (identifier) DO NOTHING`,
+        [...insertParams, acquisition]
+      );
+    const insertWithoutAcquisition = () =>
+      dbExecute(
         `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version)
          VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8)
        ON CONFLICT (identifier) DO NOTHING`,
-        [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn, CURRENT_CONSENT_VERSION]
+        insertParams
       );
+    try {
+      await (acquisition !== null ? insertWithAcquisition() : insertWithoutAcquisition());
     } catch (e) {
-      console.error("[auth] register failed:", String(e));
-      return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      // #FUNNEL-MEAS-0813 rete di sicurezza sulla colonna `acquisition`. La
+      // migration 20260813120000 è APPLICATA e verificata in prod (2026-08-14),
+      // quindi questo ramo non dovrebbe più scattare: resta come rete, non come
+      // guard temporaneo di ordine di deploy. Un solo ritentativo senza
+      // l'attribuzione — perdere la sorgente è recuperabile, perdere l'utente no.
+      // Vale ancora per gli ambienti non migrati (preview/locale su DB vecchio).
+      if (acquisition !== null) {
+        console.error("[auth] register with acquisition failed, retrying without:", String(e));
+        try {
+          await insertWithoutAcquisition();
+        } catch (e2) {
+          console.error("[auth] register failed:", String(e2));
+          return NextResponse.json({ error: "registration failed" }, { status: 500 });
+        }
+      } else {
+        console.error("[auth] register failed:", String(e));
+        return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      }
     }
     // When email confirmation isn't available, auto-activate + sign in (the
     // pre-HIGH-3 behavior) so signup→login→checkout work without a mail provider.
@@ -373,6 +439,19 @@ export async function POST(req: Request) {
         "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
         [identifier]
       );
+      // #REFERRAL-V2-0808 — i 7 giorni di PRO all'invitato si concedono
+      // all'ATTIVAZIONE, non all'INSERT: il profilo nasce plan='free' e diventa
+      // usabile solo dopo l'attivazione (HIGH-3), quindi un regalo concesso
+      // prima scadrebbe mentre l'utente non può ancora entrare.
+      // L'helper valida `referred_by` contro un `profiles.referral_code` reale
+      // (alla registrazione passa solo la regex) e concede una volta sola.
+      // Best-effort: un bonus mancato non deve impedire l'attivazione.
+      // Prima di loadProfile, così la sessione risponde col piano già concesso.
+      try {
+        await grantInviteeBonus(identifier);
+      } catch (e) {
+        console.error("[auth] bonus invitato fallito:", String(e));
+      }
       const profile = await loadProfile(identifier);
       if (!profile) return NextResponse.json({ error: "registration failed" }, { status: 500 });
       return issueSession(profile);
@@ -417,6 +496,16 @@ export async function POST(req: Request) {
       "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
       [identifier]
     );
+    // #REFERRAL-V2-0808 — TERZO percorso di attivazione (il piano ne dichiarava
+    // due): il heal pigro di una riga rimasta non attivata dalla finestra senza
+    // provider email. È un'attivazione a tutti gli effetti, quindi qui il bonus
+    // va concesso o l'invitato non lo vedrebbe mai. Idempotente (UNIQUE su
+    // tier=0): se lo aveva già preso in registrazione, non raddoppia.
+    try {
+      await grantInviteeBonus(identifier);
+    } catch (e) {
+      console.error("[auth] bonus invitato fallito:", String(e));
+    }
   }
 
   const profile = await loadProfile(identifier);

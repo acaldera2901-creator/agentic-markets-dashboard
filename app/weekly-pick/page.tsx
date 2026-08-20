@@ -252,7 +252,9 @@ export default function WeeklyPickPage() {
   const [data, setData] = useState<Data | null>(null);
   const [hist, setHist] = useState<Hist | null>(null);
   const [error, setError] = useState(false);
-  const [lang, setLang] = useState<Lang>("it");
+  // #SEO-PACK-0810: default SSR = "en" — prima era "it" e i crawler vedevano
+  // l'h1 italiano sotto lang="en" (finding Tommy). localStorage switcha al mount.
+  const [lang, setLang] = useState<Lang>("en");
   const [buying, setBuying] = useState<"card" | "crypto" | null>(null);
   const [cryptoOpen, setCryptoOpen] = useState(false);
   const [checkoutErr, setCheckoutErr] = useState(false);
@@ -309,7 +311,7 @@ export default function WeeklyPickPage() {
             // lingua di default dello store (spagnolo) per tutti.
             body: JSON.stringify({ requested_plan: "weekly", lang }),
           });
-          if (sres.status === 401) { window.location.href = "/app?tab=account"; return; }
+          if (sres.status === 401) { window.location.href = "/plans"; return; }
           if (sres.ok) {
             const { url } = (await sres.json().catch(() => ({}))) as { url?: string };
             if (url) { window.location.href = url; return; }
@@ -323,7 +325,7 @@ export default function WeeklyPickPage() {
         }
       }
       const r = await fetch("/api/weekly-pick/checkout", { method: "POST", credentials: "same-origin" });
-      if (r.status === 401) { window.location.href = "/app?tab=account"; return; }
+      if (r.status === 401) { window.location.href = "/plans"; return; }
       const j = (await r.json().catch(() => null)) as { url?: string } | null;
       if (r.ok && j?.url) { window.location.href = j.url; return; }
       fail();
@@ -527,7 +529,7 @@ export default function WeeklyPickPage() {
                 </>
               )}
               <div className="wp-foot-row">
-                {!unlocked && <a href="/app?tab=plans" className="wp-pro">{t.proCta}</a>}
+                {!unlocked && <a href="/plans" className="wp-pro">{t.proCta}</a>}
                 <span className="wp-resp">{t.responsible}</span>
               </div>
             </div>

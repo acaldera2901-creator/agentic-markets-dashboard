@@ -13,17 +13,60 @@
 const API_VERSION = "2026-07";
 
 export function isShopifyAdminConfigured(): boolean {
-  return Boolean(process.env.SHOPIFY_ADMIN_TOKEN && process.env.SHOPIFY_SHOP_DOMAIN);
+  const creds =
+    process.env.SHOPIFY_ADMIN_TOKEN ||
+    (process.env.SHOPIFY_CLIENT_ID && process.env.SHOPIFY_CLIENT_SECRET);
+  return Boolean(creds && process.env.SHOPIFY_SHOP_DOMAIN);
+}
+
+// #LAUNCH-SETUP-0805 — le app del nuovo Dev Dashboard non espongono un Admin
+// token statico da copiare: solo Client ID + Secret. Il token si ottiene col
+// client credentials grant e dura ~24h, quindi lo si scambia qui e lo si tiene
+// in memoria fino a poco prima della scadenza. `SHOPIFY_ADMIN_TOKEN`, se
+// presente, vince: è il percorso già in produzione per il mirror crypto e non
+// deve cambiare comportamento.
+let cachedToken: { token: string; expiresAtMs: number } | null = null;
+
+async function shopifyAdminAccessToken(): Promise<string> {
+  const staticToken = process.env.SHOPIFY_ADMIN_TOKEN;
+  if (staticToken) return staticToken;
+
+  const domain = process.env.SHOPIFY_SHOP_DOMAIN;
+  const clientId = process.env.SHOPIFY_CLIENT_ID;
+  const clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
+  if (!domain || !clientId || !clientSecret) throw new Error("shopify admin not configured");
+
+  // Margine di 60s: un token che scade a metà di una mutation è un errore
+  // intermittente impossibile da riprodurre.
+  if (cachedToken && Date.now() < cachedToken.expiresAtMs - 60_000) return cachedToken.token;
+
+  const res = await fetch(`https://${domain}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "client_credentials",
+    }),
+  });
+  if (!res.ok) throw new Error(`shopify oauth http ${res.status}`);
+  const json = (await res.json()) as { access_token?: string; expires_in?: number };
+  if (!json.access_token) throw new Error("shopify oauth: missing access_token");
+  cachedToken = {
+    token: json.access_token,
+    expiresAtMs: Date.now() + (json.expires_in ?? 3600) * 1000,
+  };
+  return cachedToken.token;
 }
 
 type GqlResult<T> = { data?: T; errors?: Array<{ message?: string }> };
 
 // Fail-loud di proposito: un errore qui riguarda soldi (ordine da marcare
 // pagato), quindi deve risalire al chiamante e non degradare a "non trovato".
-async function adminGql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+export async function adminGql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN;
-  const token = process.env.SHOPIFY_ADMIN_TOKEN;
-  if (!domain || !token) throw new Error("shopify admin not configured");
+  if (!domain || !isShopifyAdminConfigured()) throw new Error("shopify admin not configured");
+  const token = await shopifyAdminAccessToken();
 
   const res = await fetch(`https://${domain}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",

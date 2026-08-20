@@ -26,7 +26,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { readRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
+import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
+import { getAttribution } from "@/lib/attribution";
+import { trackEvent } from "@/lib/track-event";
 
 export type HomeAuthIntent = "login" | "create";
 
@@ -175,7 +177,11 @@ export function HomeAuthModal({
   // un'attribuzione attiva.
   const [refOpen, setRefOpen] = useState(false);
   useEffect(() => {
-    const c = readRefCode();
+    // #INVITE-ROBUSTNESS-0813: currentRefCode legge lo storage e, se e' bloccato o
+    // vuoto, ricade sulla ?ref= della URL - misurato il 2026-08-13: senza questo,
+    // in Safari privato e nei browser interni delle app il campo restava vuoto e
+    // il mese gratis non veniva mai concesso.
+    const c = currentRefCode();
     if (c) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync del ref da localStorage (one-shot)
       setRefInput(c);
@@ -211,6 +217,11 @@ export function HomeAuthModal({
     ? emailValid && pwValid
     : usernameValid && emailValid && pwValid && ageOk && tosOk;
 
+  // #FUNNEL-MEAS-0813: la home è l'ingresso principale al signup — senza questo,
+  // signup_started/completed e l'attribuzione coprirebbero solo il modal del desk
+  // e i profili nati da / resterebbero senza sorgente (soglia del 20/08).
+  useEffect(() => { if (mode === "create") trackEvent("signup_started"); }, [mode]);
+
   // Riusa LO STESSO contratto /api/auth del desk. Nessuna modifica al server.
   const submit = async () => {
     if (!canSubmit || busy) return;
@@ -227,6 +238,8 @@ export function HomeAuthModal({
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           language: lang, timezone: tz,
           ref: mode === "create" ? (effectiveRef ?? undefined) : undefined,
+          // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
+          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
           age_confirmed: mode === "create" ? ageOk : undefined,
@@ -234,13 +247,15 @@ export function HomeAuthModal({
         }),
       });
       const data = await resp.json().catch(() => ({})) as { pending_activation?: boolean; error?: string };
+      // #FUNNEL-MEAS-0813: 202 = creato in attesa di attivazione, 200 = creato e loggato.
+      if (mode === "create" && (resp.ok || resp.status === 202)) trackEvent("signup_completed");
       if (resp.status === 202 || data.pending_activation) {
         setInfo(t.pendingMail(normalizedEmail));
         setShowResend(true);
         setMode("login"); // register → login (gate email), come il desk
       } else if (resp.ok) {
         // Login riuscito: il cookie di sessione è settato → entra nel desk.
-        window.location.href = "/app";
+        window.location.href = "/predictions";
       } else if (resp.status === 403 && data.error === "activation_required") {
         setError(t.activationReq); setShowResend(true);
       } else if (resp.status === 401) setError(t.errWrong);

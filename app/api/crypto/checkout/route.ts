@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getSessionPlan } from "@/lib/auth";
-import { dbExecute } from "@/lib/db";
+import { dbExecute, dbQueryStrict } from "@/lib/db";
 import { siteOrigin } from "@/lib/activation";
 import { newOrderToken, discountedAmountFor, blocksLowerTierPurchase, type PlanKey, type Period } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
@@ -158,6 +158,42 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("[crypto/checkout] wallet.php failed:", String(e));
     return NextResponse.json({ error: "deposit address failed" }, { status: 502 });
+  }
+
+  // #CRYPTO-ADDR-REGISTRY-0729 — un indirizzo di deposito, un ordine solo, per
+  // sempre e su entrambe le tabelle. `checkIncoming` somma TUTTI i trasferimenti
+  // confermati verso l'indirizzo e nessuna transazione è legata a un ordine: se
+  // wallet.php restituisse un indirizzo già visto, quella somma diventerebbe il
+  // saldo di due ordini. Con un indirizzo già PAGATO in passato non servirebbe
+  // nemmeno una corsa — l'ordine nuovo nascerebbe saldato dalla vecchia
+  // transazione. Il registro è dichiarativo (PRIMARY KEY) e vale anche fra
+  // `paygate_orders` e `weekly_pick_orders`, che hanno claim atomici separati e
+  // quindi concederebbero entrambi.
+  //
+  // Sta PRIMA dell'INSERT dell'ordine di proposito: un ordine senza indirizzo
+  // sicuro non deve esistere. Se il registro non risponde non si vende — fallire
+  // una vendita è recuperabile, concedere due volte lo stesso pagamento no.
+  const addressKey = deposit.addressIn.toLowerCase();
+  try {
+    const claimed = await dbQueryStrict<{ address: string }>(
+      `INSERT INTO crypto_deposit_addresses (address, order_id, order_kind, coin)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (address) DO NOTHING
+       RETURNING address`,
+      [addressKey, orderId, purchase.kind === "weekly" ? "weekly" : "plan", coin.id]
+    );
+    // Zero righe = la ON CONFLICT ha scartato l'INSERT, cioè l'indirizzo era già
+    // di qualcun altro. È un gate atomico: due checkout concorrenti sullo stesso
+    // indirizzo lo attraversano uno solo, senza SELECT-poi-INSERT.
+    if (claimed.length === 0) {
+      console.error(
+        `[crypto/checkout] indirizzo di deposito GIÀ REGISTRATO (${addressKey}) — ordine ${orderId} NON creato`
+      );
+      return NextResponse.json({ error: "deposit address unavailable" }, { status: 409 });
+    }
+  } catch (e) {
+    console.error("[crypto/checkout] address registry unavailable:", String(e));
+    return NextResponse.json({ error: "order create failed" }, { status: 500 });
   }
 
   try {

@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { notFound } from "next/navigation";
 import { dbQuery } from "@/lib/db";
 import { fetchWcFixtures, fetchTeamGroupMap, teamSlug, teamNeedleFromSlug, canonTeamSlug } from "@/lib/world-cup";
+import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -56,8 +57,9 @@ export async function generateMetadata(
   const squad = await loadSquad(team);
   const name = squad?.team_canonical || team.replace(/-/g, " ");
   return {
-    title: `${name} — World Cup 2026 squad, call-ups & fixtures | BetRedge`,
+    title: `${name}: World Cup 2026 Squad and Fixtures | BetRedge`,
     description: `${name} at the 2026 World Cup: official squad list with injury status, every call-up change as it was announced, and the full match schedule.`,
+    alternates: { canonical: `/world-cup/${canonTeamSlug(team)}` },
   };
 }
 
@@ -108,8 +110,35 @@ export default async function TeamPage(
     byPosition.get(key)!.push(p);
   }
 
+  // #SEO-PACK-0810: SportsEvent per fixture dalla stessa fonte dati della pagina
+  // (niente duplicazione a mano), più breadcrumb che rispecchia la gerarchia URL.
+  const sportsEventsJsonLd = teamFixtures.map((f) => ({
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: `${f.home_team} vs ${f.away_team}, FIFA World Cup 2026${f.group ? ` Group ${f.group}` : ""}`,
+    startDate: f.date,
+    eventStatus: "https://schema.org/EventScheduled",
+    ...(f.venue || f.city
+      ? {
+          location: {
+            "@type": "Place",
+            ...(f.venue ? { name: f.venue } : {}),
+            ...(f.city ? { address: { "@type": "PostalAddress", addressLocality: f.city } } : {}),
+          },
+        }
+      : {}),
+    competitor: [
+      { "@type": "SportsTeam", name: f.home_team },
+      { "@type": "SportsTeam", name: f.away_team },
+    ],
+  }));
+
   return (
     <div className="portal-root wc-root">
+      <JsonLd data={breadcrumbJsonLd([["World Cup 2026", "/world-cup"], [squad.team_canonical, `/world-cup/${teamKey}`]])} />
+      {sportsEventsJsonLd.map((ev, i) => (
+        <JsonLd key={i} data={ev} />
+      ))}
       <SiteTopbar backHref="/world-cup" backLabel="World Cup hub" />
       <main className="wc-page">
       <header className="wc-hero wc-hero-team">

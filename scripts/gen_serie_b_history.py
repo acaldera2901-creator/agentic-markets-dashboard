@@ -33,6 +33,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from core import football_data_uk as fd  # noqa: E402
 
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API
+
 ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT = ROOT / "data" / "summer_leagues" / "history.json"
 ESPN_SLUG = "ita.2"
@@ -51,8 +53,8 @@ def norm(s: str) -> str:
 
 
 def espn_teams(slug: str) -> list[str]:
-    url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/teams"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    url = f"{ESPN_SITE_API}/soccer/{slug}/teams"
+    req = urllib.request.Request(url, headers=ESPN_HEADERS)
     with urllib.request.urlopen(req, timeout=25) as r:
         data = json.load(r)
     out = []

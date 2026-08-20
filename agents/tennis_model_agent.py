@@ -132,10 +132,21 @@ class TennisModelAgent(BaseAgent):
             await self._log_tennis_shadow(predictions)
 
     async def _log_tennis_shadow(self, predictions: list[dict]) -> None:
-        """SHADOW A/B: market-blended tennis probability logged to prediction_log;
-        the SERVED model is untouched. Mirrors agents/model._log_wc_elo_v2_shadow —
-        gated, insert-on-change, fail-soft (never blocks the served loop).
-        Promotion to served requires a green gate + human APPROVE (deploy-gate)."""
+        """SHADOW A/B on the tennis market blend, logged to prediction_log.
+        Gated, insert-on-change, fail-soft (never blocks the served loop).
+
+        #TENNIS-BLEND-PROMOTE-0805 — the A/B is INVERTED when the blend is
+        served: `served` always carries what the customer actually got and
+        `model` the counterfactual, so the pair keeps answering the same question
+        after the promotion instead of ending with it. Before the promotion:
+        served=blend (candidate), model=raw (live). After: served=blend (live),
+        model=raw (what we would have shown). Same two columns, same reading,
+        and if the promotion has to be rolled back the comparison is still there.
+
+        The rows are settled by /api/cron/settle (#TENNIS-SHADOW-SETTLE-0805) —
+        before that fix NOT ONE of ~10.000 tennis shadow rows ever received a
+        result, so this A/B produced nothing measurable for two months.
+        """
         from config.settings import settings
         if not getattr(settings, "TENNIS_SHADOW_ENABLED", False):
             return
@@ -148,9 +159,20 @@ class TennisModelAgent(BaseAgent):
                 odds_p1 = self._float_or_none(pred.get("odds_p1"))
                 odds_p2 = self._float_or_none(pred.get("odds_p2"))
                 market = devig_2way(odds_p1, odds_p2)
-                b1, b2 = blend_tennis(float(p1), float(p2), market)
+                # Raw = pre-blend when the blend is served, otherwise p1/p2 IS
+                # the raw model. Falling back to p1/p2 keeps the shadow correct
+                # even if _score_fixture ever stops attaching the raw pair.
+                raw1 = pred.get("_p1_raw", p1)
+                raw2 = pred.get("_p2_raw", p2)
+                if pred.get("_blended"):
+                    served_probs = (float(p1), 0.0, float(p2))          # blend, LIVE
+                    model_probs = (float(raw1), 0.0, float(raw2))       # raw, counterfactual
+                else:
+                    b1, b2 = blend_tennis(float(raw1), float(raw2), market)
+                    served_probs = (b1, 0.0, b2)                        # blend, candidate
+                    model_probs = (float(raw1), 0.0, float(raw2))       # raw, LIVE
                 key = str(pred.get("match_id") or "")
-                sig = (round(b1, 4),)
+                sig = (round(served_probs[0], 4), round(model_probs[0], 4))
                 if not key or self._shadow_state.get(key) == sig:
                     continue
                 self._shadow_state[key] = sig
@@ -160,8 +182,8 @@ class TennisModelAgent(BaseAgent):
                     home_team=str(pred.get("player1") or ""),
                     away_team=str(pred.get("player2") or ""),
                     kickoff=str(pred.get("scheduled_at") or ""),
-                    served=(b1, 0.0, b2),               # shadow blended probability
-                    model=(float(p1), 0.0, float(p2)),  # raw served model (pre-blend)
+                    served=served_probs,
+                    model=model_probs,
                     odds={"home": odds_p1, "draw": None, "away": odds_p2},
                     market=({"home": market["p1"], "draw": 0.0, "away": market["p2"]} if market else None),
                     model_version=settings.TENNIS_SHADOW_VERSION,
@@ -265,6 +287,41 @@ class TennisModelAgent(BaseAgent):
 
         odds_p1 = self._float_or_none(fixture.get("odds_p1"))
         odds_p2 = self._float_or_none(fixture.get("odds_p2"))
+
+        # #TENNIS-BLEND-PROMOTE-0805 — the served probability becomes the blend
+        # with the de-vigged market (alpha 0.30: 30% model, 70% market), the same
+        # alpha as football. Fail-closed: no usable 2-way price -> blend_tennis
+        # returns the identity, so a match without a market is served EXACTLY as
+        # before. Rollback is the flag, not a revert.
+        #
+        # Live evidence (lab 05/08, am-lab/REPORT-tennis-blend-2026-08-05.md):
+        # 223 matches with a PRE-MATCH market snapshot in prediction_log and an
+        # independent settlement truth from tennis_predictions.winner —
+        #                        pick sopra floor   hit-rate   Brier
+        #   elo raw (served)           91            71.4%     0.2259
+        #   blend a=0.30              125            77.6%     0.1981
+        #   market alone              131            79.4%     0.1963
+        # i.e. +6.2 points of accuracy AND +37% volume at the same time, stable
+        # across both halves of the window; when the blend flips the side the
+        # model picked (50 matches) it is right 32 times out of 50 (z=1.98).
+        # The raw model keeps being logged as the shadow, so the A/B survives
+        # the promotion instead of ending with it.
+        from config.settings import settings
+
+        p1_raw, p2_raw = p1_prob, p2_prob
+        blended = False
+        if getattr(settings, "TENNIS_SHADOW_SERVE_ENABLED", False):
+            market = devig_2way(odds_p1, odds_p2)
+            if market:
+                p1_prob, p2_prob = blend_tennis(p1_prob, p2_prob, market)
+                blended = True
+
+        # `edge` is computed from the SERVED probability on purpose. Once the
+        # market is 70% of what we publish, our disagreement with it really is
+        # ~0.3x what it was: claiming the pre-blend edge would be advertising a
+        # value we no longer believe. Consequence to expect, not a side effect —
+        # fewer rows clear the value-bet threshold. Coherent with the product
+        # line: we have never beaten the closing line and do not sell that.
         edge, best_selection = self._market_edge(p1_prob, p2_prob, odds_p1, odds_p2)
         # #TENNIS-BS-1: il Match Builder richiede best_selection non-null; senza
         # valore di mercato (caso paper, post-Betfair) resta il lato a probabilità
@@ -297,6 +354,12 @@ class TennisModelAgent(BaseAgent):
             "scheduled_at": fixture.get("scheduled_at", ""),
             "p1": round(p1_prob, 4),
             "p2": round(p2_prob, 4),
+            # Pre-blend model, for the shadow A/B only. Stripped by
+            # _write_predictions (not in _PREDICTION_COLS) — nothing reaches the
+            # tennis_predictions schema. #TENNIS-BLEND-PROMOTE-0805.
+            "_p1_raw": round(p1_raw, 4),
+            "_p2_raw": round(p2_raw, 4),
+            "_blended": blended,
             "odds_p1": odds_p1,
             "odds_p2": odds_p2,
             "edge": edge,

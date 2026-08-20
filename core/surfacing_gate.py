@@ -53,6 +53,52 @@ def tennis_floor_for(tournament: str | None) -> int:
     return settings.SURFACE_FLOOR_TENNIS_LO
 
 
+def tennis_has_market(picked_odds: float | None) -> bool:
+    """A usable decimal price on the picked side (#TENNIS-MARKET-GATE-0805).
+
+    Fail-closed: None/NaN/<=1 (a price of 1.0 or less pays nothing and is a feed
+    artefact, not a market) -> no market. Mirror of hasTennisMarket in
+    lib/surfacing-gate.ts.
+    """
+    if picked_odds is None:
+        return False
+    try:
+        o = float(picked_odds)
+    except (TypeError, ValueError):
+        return False
+    return o == o and o > 1.0  # o == o rejects NaN
+
+
+def tennis_surface_decision(
+    *,
+    confidence: int,
+    tournament: str | None = None,
+    picked_odds: float | None = None,
+) -> tuple[bool, bool, bool]:
+    """Return ``(is_pick, below_floor, no_market)`` for a tennis row.
+
+    #TENNIS-MARKET-GATE-0805 — lab 05/08 on LIVE settled rows (01/06-05/08,
+    am-lab/REPORT-tennis-noodds-2026-08-05.md): tennis picks WITH a market price
+    return 74.9% against a claimed 71.6% (n=183), those WITHOUT return 58.9%
+    against a claimed 72.1% (n=270), z=3.51. The no-odds cell is broken at every
+    confidence band and WORST at the top (75-79 band: 42.2% actual vs 77.1%
+    claimed), so a higher floor selects more of the broken rows instead of fewer
+    — which is why the segment-aware floors of June never moved the number.
+
+    ``below_floor`` and ``no_market`` are kept DISTINCT because they mean
+    different things to a customer: below floor = the model has no clear
+    favourite; no market = it may well have one, we just have no price to check
+    it against. Probability-neutral, serving-only — the row keeps its card and
+    its probabilities, it just carries no directional pick.
+
+    Football is deliberately NOT subject to this rule (95% without a price on the
+    same window, n=20). Mirror of tennisSurfaceDecision in lib/surfacing-gate.ts.
+    """
+    below_floor = confidence < tennis_floor_for(tournament)
+    no_market = not tennis_has_market(picked_odds)
+    return (not below_floor and not no_market), below_floor, no_market
+
+
 def club_floor_for(competition: str | None) -> int:
     """Per-league club floor (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12).
 

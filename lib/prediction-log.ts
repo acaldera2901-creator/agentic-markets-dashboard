@@ -60,6 +60,30 @@ export async function logPredictionSnapshot(s: PredictionSnapshot): Promise<void
   }
 }
 
+// Settlement for a 2-way sport (tennis): no scoreline, only a winner.
+// #TENNIS-SHADOW-SETTLE-0805 — the tennis market-blend shadow has been logging
+// since June and NOT ONE of its ~10.000 rows ever received a result: nothing
+// settles them, because settlePredictionLog() is only reached from the football
+// paths (fd.org fixtures + summer leagues) and needs a scoreline the tennis feed
+// never produces. An A/B that cannot be settled is not an experiment, it is a
+// log — and the promotion gate it was supposed to feed could never go green.
+// `home` = player1, `away` = player2, the same convention the shadow writer uses.
+export async function settlePredictionLogWinner(
+  matchId: string,
+  player1Won: boolean
+): Promise<void> {
+  try {
+    await dbQuery(
+      `UPDATE prediction_log
+         SET result = $1, settled_at = NOW()
+       WHERE match_id = $2 AND result IS NULL`,
+      [player1Won ? "home" : "away", matchId]
+    );
+  } catch (e) {
+    console.error("[prediction-log] tennis settlement write failed (non-blocking):", String(e));
+  }
+}
+
 // Settlement: write the realized 1X2 result onto every still-open snapshot of a
 // finished match. Idempotent (only touches rows where result IS NULL). Fail-soft.
 export async function settlePredictionLog(

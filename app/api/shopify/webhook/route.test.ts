@@ -261,3 +261,82 @@ it("header topic assente: NON concede (niente più default a orders/paid)", asyn
   expect(await res.json()).toMatchObject({ ignored: null });
   expect(activateShopifyPlan).not.toHaveBeenCalled();
 });
+
+// --- fix#3: l'ordine si legge per RIGHE, non solo line_items[0] (#SHOPIFY-MULTILINE-0804) ---
+// Il nostro checkout manda sempre una riga sola, ma lo storefront è pubblico: da lì
+// il carrello può contenere qualsiasi combinazione, e finora ne vedevamo solo la prima.
+
+it("carrello piano + weekly: concede ENTRAMBI, non solo la prima riga", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "premium" });
+  // La weekly è PRIMA nel carrello: col vecchio line_items[0] il piano pagato spariva.
+  const body = JSON.stringify({
+    id: 960, email: "u@t.com",
+    line_items: [{ variant_id: 333 }, { variant_id: 222 }],
+  });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(200);
+  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly", false);
+  expect(grantWeeklyPick).toHaveBeenCalledTimes(1);
+});
+
+it("carrello misto: in shopify_events va il variant del PIANO, non il primo del carrello", async () => {
+  // La reconcile ri-tenta i piani leggendo shopify_events.variant_id: se lì
+  // finisse la weekly, un piano rimasto senza grant non sarebbe più recuperabile.
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "base" });
+  const body = JSON.stringify({
+    id: 961, email: "u@t.com",
+    line_items: [{ variant_id: 333 }, { variant_id: 111 }],
+  });
+  const { POST } = await import("./route");
+  await POST(req(body, sign(body)));
+  const insert = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  expect(insert?.[1]?.[2]).toBe("111"); // variant_id registrato = il piano
+});
+
+it("due piani nello stesso ordine: non indovina come si sommano → manuale", async () => {
+  const body = JSON.stringify({
+    id: 962, email: "u@t.com",
+    line_items: [{ variant_id: 111 }, { variant_id: 222 }],
+  });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(await res.json()).toMatchObject({ unresolved: true });
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+  expect(opsAlert).toHaveBeenCalled();
+});
+
+it("quantità 2 sulla stessa riga: nessun grant automatico, alert", async () => {
+  const body = JSON.stringify({
+    id: 963, email: "u@t.com",
+    line_items: [{ variant_id: 222, quantity: 2 }],
+  });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(await res.json()).toMatchObject({ unresolved: true });
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+});
+
+it("riga non mappabile accanto a un piano: il piano si concede, l'ignoto viene segnalato", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "premium" });
+  const body = JSON.stringify({
+    id: 964, email: "u@t.com",
+    line_items: [{ variant_id: 222 }, { variant_id: 8888 }],
+  });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(200);
+  expect(activateShopifyPlan).toHaveBeenCalledTimes(1);
+  expect(opsAlert).toHaveBeenCalled();
+});
+
+it("ordine monoriga: comportamento identico a prima (nessuna regressione)", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "premium" });
+  const body = JSON.stringify({ id: 965, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(200);
+  expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly", false);
+  expect(grantWeeklyPick).not.toHaveBeenCalled();
+  expect(opsAlert).not.toHaveBeenCalled();
+});

@@ -63,12 +63,29 @@ const WEEKLY_PICK_CTA: L10n = {
 };
 
 // `cta` è OPZIONALE: senza, il touchpoint si comporta esattamente come prima
-// (bottone "Apri BetRedge" → /app?tab=plans). Serve perché un'email che parla
+// (bottone "Apri BetRedge" → /plans). Serve perché un'email che parla
 // della Weekly Pick non può mandare alla pagina dei piani: il prodotto si compra
 // dalla sua pagina, e chiedere all'utente di ritrovarsela da solo è il modo più
 // semplice di perdere l'acquisto.
 type CrmCta = { path: string; label: L10n };
-type CrmTouchpoint = Touchpoint & { subject: L10n; body: L10n; cta?: CrmCta };
+// #CRM-FAKE-OFFERS-0805: `requiresLaunchPromo` marca i touchpoint che PARLANO di
+// uno sconto. Il cron non li invia se la promo di lancio non è attiva o se quell
+// utente non ne ha diritto (ha già pagato) → un'email non può più promettere un
+// prezzo che il checkout rifiuterebbe. Il corpo può usare il token {deadline},
+// sostituito con la data REALE di fine campagna: mai un countdown per-utente,
+// che è il dark pattern che il resto del prodotto evita di proposito.
+type CrmTouchpoint = Touchpoint & {
+  subject: L10n;
+  body: L10n;
+  cta?: CrmCta;
+  requiresLaunchPromo?: true;
+};
+
+// Locale per la data di scadenza in email. In email un countdown NON ha senso
+// (si legge dopo): va una data.
+const DATE_LOCALE: Record<CrmLang, string> = {
+  it: "it-IT", en: "en-GB", es: "es-ES", fr: "fr-FR", ru: "ru-RU",
+};
 
 // day: per onboarding/acquisition/winback = giorni dall'ancora; per retention = giorni ALLA scadenza.
 export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
@@ -109,16 +126,23 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "En Free ves 1 pick por deporte a la semana. Base abre todo el board con edge, stake y closing line value; Pro añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
       fr: "En Free, vous voyez 1 pick par sport chaque semaine. Base ouvre tout le board avec edge, mise et closing line value ; Pro ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
       ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. Base открывает весь борд с edge, ставкой и closing line value; Pro добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
-  { key: "acq_day14_welcome_offer", flow: "acquisition", day: 10,
+  // #CRM-FAKE-OFFERS-0805 — questo touchpoint prometteva "−20% per 72h" a un
+  // countdown per-utente. Nel codice il −20% NON È MAI ESISTITO (l'unico sconto è
+  // LAUNCH_PROMO_DISCOUNT = 50%, solo primo acquisto), quindi era una promessa che
+  // il checkout avrebbe rifiutato — ed era già uscita a clienti reali. Ora dice
+  // l'offerta VERA, con la data reale di fine campagna, e non parte affatto se la
+  // promo è spenta o se chi la riceve non ne ha diritto.
+  { key: "acq_day14_welcome_offer", flow: "acquisition", day: 10, requiresLaunchPromo: true,
     subject: {
-      it: "Offerta benvenuto: −20% per 72h", en: "Welcome offer: −20% for 72h", es: "Oferta de bienvenida: −20% por 72h",
-      fr: "Offre de bienvenue : −20% pendant 72h", ru: "Приветственное предложение: −20% на 72 часа" },
+      it: "Offerta di lancio: −50% sul primo acquisto", en: "Launch offer: −50% on your first purchase",
+      es: "Oferta de lanzamiento: −50% en tu primera compra",
+      fr: "Offre de lancement : −50% sur votre premier achat", ru: "Стартовое предложение: −50% на первую покупку" },
     body: {
-      it: "Solo per te, 72 ore: BetRedge Base a −20%. Probabilità calibrate e track record verificabile, tutto sbloccato.",
-      en: "Just for you, 72 hours: BetRedge Base at −20%. Calibrated probabilities and verifiable track record, all unlocked.",
-      es: "Solo para ti, 72 horas: BetRedge Base con −20%. Probabilidades calibradas y track record verificable, todo desbloqueado.",
-      fr: "Rien que pour vous, 72 heures : BetRedge Base à −20%. Probabilités calibrées et track record vérifiable, tout est débloqué.",
-      ru: "Только для вас, 72 часа: BetRedge Base со скидкой 20%. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто." } },
+      it: "Per il lancio, il primo acquisto è a metà prezzo — mensile o annuale, lo sconto si applica da solo al checkout. Probabilità calibrate e track record verificabile, tutto sbloccato. L'offerta vale fino al {deadline}.",
+      en: "For launch, your first purchase is half price — monthly or annual, and the discount applies automatically at checkout. Calibrated probabilities and a verifiable track record, all unlocked. The offer runs until {deadline}.",
+      es: "Por el lanzamiento, tu primera compra está a mitad de precio — mensual o anual, y el descuento se aplica solo al pagar. Probabilidades calibradas y track record verificable, todo desbloqueado. La oferta es válida hasta el {deadline}.",
+      fr: "Pour le lancement, votre premier achat est à moitié prix — mensuel ou annuel, et la remise s'applique automatiquement au paiement. Probabilités calibrées et track record vérifiable, tout est débloqué. L'offre est valable jusqu'au {deadline}.",
+      ru: "В честь запуска первая покупка — за полцены: месячная или годовая, скидка применяется автоматически при оплате. Откалиброванные вероятности и проверяемый трек-рекорд — всё открыто. Предложение действует до {deadline}." } },
   { key: "acq_day14_reminder", flow: "acquisition", day: 14,
     subject: {
       it: "Ultimo promemoria: l'upgrade ti aspetta", en: "Last reminder: your upgrade is waiting",
@@ -130,26 +154,31 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Es la última nota sobre el upgrade por ahora. El Free te dio una muestra del modelo: Base y Pro te dan el cuadro completo, cada semana.",
       fr: "C'est le dernier message sur l'upgrade pour l'instant. Le Free vous a donné un aperçu du modèle : Base et Pro vous donnent le tableau complet, chaque semaine.",
       ru: "Это пока последнее письмо об апгрейде. Free дал вам представление о модели — Base и Pro дают полную картину каждую неделю." } },
-  { key: "acq_day21_last_chance", flow: "acquisition", day: 21,
+  // #CRM-FAKE-OFFERS-0805: prometteva "−30% per 48h", sconto mai esistito.
+  { key: "acq_day21_last_chance", flow: "acquisition", day: 21, requiresLaunchPromo: true,
     subject: {
       it: "Ultima occasione — angolo nuovo", en: "Last chance — a fresh angle", es: "Última oportunidad — un ángulo nuevo",
       fr: "Dernière chance — un angle nouveau", ru: "Последний шанс — новый взгляд" },
     body: {
-      it: "Non i soliti pronostici: una opinione sola, calibrata, misurata. Sblocca il board completo a −30% per 48h.",
-      en: "Not the usual tips: one calibrated, measured opinion. Unlock the full board at −30% for 48h.",
-      es: "No los pronósticos de siempre: una sola opinión, calibrada y medida. Desbloquea el board completo con −30% por 48h.",
-      fr: "Pas les pronostics habituels : une seule opinion, calibrée et mesurée. Débloquez le board complet à −30% pendant 48h.",
-      ru: "Не обычные прогнозы: одно мнение, откалиброванное и взвешенное. Откройте полный борд со скидкой 30% на 48 часов." } },
-  { key: "acq_day28_final", flow: "acquisition", day: 28,
+      it: "Non i soliti pronostici: una opinione sola, calibrata, misurata. Il board completo, e il primo acquisto è a metà prezzo fino al {deadline}.",
+      en: "Not the usual tips: one calibrated, measured opinion. The full board — and your first purchase is half price until {deadline}.",
+      es: "No los pronósticos de siempre: una sola opinión, calibrada y medida. El board completo, y tu primera compra a mitad de precio hasta el {deadline}.",
+      fr: "Pas les pronostics habituels : une seule opinion, calibrée et mesurée. Le board complet, et votre premier achat à moitié prix jusqu'au {deadline}.",
+      ru: "Не обычные прогнозы: одно мнение, откалиброванное и взвешенное. Полный борд — и первая покупка за полцены до {deadline}." } },
+  // #CRM-FAKE-OFFERS-0805: prometteva "−30% + 3 giorni di prova Pro". Nel prodotto
+  // NON esiste né il −30% né alcun meccanismo di trial (verificato: l'unico
+  // "trialing" è lo stato di una subscription Stripe, che leggiamo, non concediamo).
+  // Erano due promesse impossibili nella stessa email, e ne sono uscite 2 copie.
+  { key: "acq_day28_final", flow: "acquisition", day: 28, requiresLaunchPromo: true,
     subject: {
-      it: "Offerta finale + 3 giorni Pro", en: "Final offer + 3-day Pro", es: "Oferta final + 3 días Pro",
-      fr: "Offre finale + 3 jours Pro", ru: "Финальное предложение + 3 дня Pro" },
+      it: "Offerta di lancio: ultima chiamata", en: "Launch offer: final call", es: "Oferta de lanzamiento: última llamada",
+      fr: "Offre de lancement : dernier appel", ru: "Стартовое предложение: последний шанс" },
     body: {
-      it: "Ultima spinta: BetRedge Base a −30% con 3 giorni di prova BetRedge Pro (analisi più profonda). Poi si torna a prezzo pieno.",
-      en: "Final push: BetRedge Base at −30% with a 3-day BetRedge Pro trial (deeper analysis). Then back to full price.",
-      es: "Último empujón: BetRedge Base con −30% y 3 días de prueba de BetRedge Pro (análisis más profundo). Después se vuelve al precio completo.",
-      fr: "Dernier coup de pouce : BetRedge Base à −30% avec 3 jours d'essai BetRedge Pro (analyse plus poussée). Ensuite, retour au plein tarif.",
-      ru: "Последний рывок: BetRedge Base со скидкой 30% и 3 дня пробного BetRedge Pro (более глубокий анализ). Потом снова полная цена." } },
+      it: "Ultima spinta: il primo acquisto è a metà prezzo fino al {deadline} — poi si torna a prezzo pieno. Se preferisci provare senza abbonarti, la Weekly Pick si sblocca da sola.",
+      en: "Final push: your first purchase is half price until {deadline} — then it's back to full price. If you'd rather try without subscribing, the Weekly Pick unlocks on its own.",
+      es: "Último empujón: tu primera compra está a mitad de precio hasta el {deadline} — después se vuelve al precio completo. Si prefieres probar sin suscribirte, la Weekly Pick se desbloquea por separado.",
+      fr: "Dernier coup de pouce : votre premier achat est à moitié prix jusqu'au {deadline} — ensuite, retour au plein tarif. Si vous préférez essayer sans abonnement, la Weekly Pick se débloque seule.",
+      ru: "Последний рывок: первая покупка за полцены до {deadline} — потом снова полная цена. Если хотите попробовать без подписки, Weekly Pick открывается отдельно." } },
   // Chiude la scala: dice "non ti scriviamo più", quindi deve stare DOPO le offerte.
   // Nella sequenza originale di Steve era al giorno 14, prima di due sconti.
   { key: "acq_day35_door_open", flow: "acquisition", day: 35,
@@ -167,12 +196,23 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     subject: {
       it: "Il tuo accesso scade tra 7 giorni", en: "Your access expires in 7 days", es: "Tu acceso caduca en 7 días",
       fr: "Votre accès expire dans 7 jours", ru: "Ваш доступ истекает через 7 дней" },
+    // #CRM-COPY-TRUTHFUL-0817: prometteva "il riepilogo del mese", che questa
+    // email non contiene e che il prodotto non genera. Al suo posto la cosa vera
+    // e concreta: alla scadenza si torna al Free, che è 1 pick per sport.
+    // #CRM-RENEWAL-COND-0819: la frase sul rinnovo era FALSA per metà dei clienti.
+    // Il 19/08 calde ha verificato nel sorgente che i selling plan Shopify hanno
+    // `billingPolicy.recurring.interval` = MONTH/YEAR, quindi si rinnovano da soli;
+    // solo gli SKU marcati `recurring:false` non lo fanno. Dire "l'accesso non si
+    // rinnova da solo: paga di nuovo" a un abbonato carta è dirgli il contrario del
+    // vero, e nella peggiore delle letture è invitarlo a pagare due volte. Ora la
+    // clausola è il token {renewal}, risolto per rail di pagamento — e in assenza di
+    // informazione NON dice nulla, invece di indovinare.
     body: {
-      it: "Riepilogo del mese e cosa stai per perdere. L'accesso non si rinnova da solo: paga di nuovo per continuare.",
-      en: "Your monthly recap and what you'd lose. Access doesn't auto-renew: pay again to continue.",
-      es: "Resumen del mes y lo que estás a punto de perder. El acceso no se renueva solo: vuelve a pagar para continuar.",
-      fr: "Le récap du mois et ce que vous êtes sur le point de perdre. L'accès ne se renouvelle pas tout seul : payez à nouveau pour continuer.",
-      ru: "Итоги месяца и то, что вы можете потерять. Доступ не продлевается сам: оплатите снова, чтобы продолжить." } },
+      it: "Alla scadenza torni al piano Free: 1 pick per sport a settimana. {renewal}",
+      en: "When it expires you go back to Free: 1 pick per sport each week. {renewal}",
+      es: "Al caducar vuelves al plan Free: 1 pick por deporte a la semana. {renewal}",
+      fr: "À l'échéance vous repassez au plan Free : 1 pronostic par sport et par semaine. {renewal}",
+      ru: "После истечения вы вернётесь на тариф Free: 1 прогноз по каждому виду спорта в неделю. {renewal}" } },
   { key: "ret_3d_before", flow: "retention", day: 3,
     subject: {
       it: "Rinnova: 3 giorni alla scadenza", en: "Renew: 3 days to expiry", es: "Renueva: quedan 3 días",
@@ -184,15 +224,19 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       fr: "Reprenez là où vous êtes. Renouvellement rapide, aucune interruption du board.",
       ru: "Продолжайте с того же места. Быстрое продление, борд без перерывов." } },
   { key: "ret_1d_before", flow: "retention", day: 1,
+    // #CRM-COPY-TRUTHFUL-0817: prometteva un "bonus fedeltà (early access)" e una
+    // "streak" che NON esistono nel prodotto (grep: nessun early access, nessuna
+    // streak, nessun programma fedeltà). Restano solo fatti verificabili: la data
+    // di scadenza e il fatto che lo storico non si perde.
     subject: {
-      it: "Ultimo promemoria + bonus fedeltà", en: "Final reminder + loyalty bonus", es: "Último recordatorio + bonus de fidelidad",
-      fr: "Dernier rappel + bonus fidélité", ru: "Последнее напоминание + бонус за лояльность" },
+      it: "Ultimo promemoria: domani scade", en: "Final reminder: expires tomorrow", es: "Último recordatorio: caduca mañana",
+      fr: "Dernier rappel : expire demain", ru: "Последнее напоминание: завтра истекает" },
     body: {
-      it: "Domani scade. Rinnova ora e mantieni la streak: bonus fedeltà (early access), non sconti.",
-      en: "Expires tomorrow. Renew now and keep your streak: loyalty bonus (early access), not discounts.",
-      es: "Mañana caduca. Renueva ahora y mantén la racha: bonus de fidelidad (early access), no descuentos.",
-      fr: "Ça expire demain. Renouvelez maintenant et gardez votre série : bonus fidélité (accès anticipé), pas de remises.",
-      ru: "Завтра доступ истекает. Продлите сейчас и сохраните серию: бонус за лояльность (ранний доступ), а не скидки." } },
+      it: "Domani scade. Rinnova ora per non interrompere l'accesso al board completo; il tuo storico resta salvato in ogni caso.",
+      en: "Expires tomorrow. Renew now to keep the full board without a gap; your history stays saved either way.",
+      es: "Mañana caduca. Renueva ahora para no interrumpir el acceso al board completo; tu historial queda guardado en cualquier caso.",
+      fr: "Ça expire demain. Renouvelez maintenant pour garder le board complet sans interruption ; votre historique reste sauvegardé dans tous les cas.",
+      ru: "Завтра доступ истекает. Продлите сейчас, чтобы не терять полный борд; ваша история сохраняется в любом случае." } },
   { key: "wb_day1_expired", flow: "winback", day: 1,
     subject: {
       it: "Il tuo accesso è scaduto", en: "Your access has expired", es: "Tu acceso ha caducado",
@@ -217,16 +261,22 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     // per un ex-pagante lo sblocco singolo è il rientro più leggero che esista, e
     // mandarlo alla pagina dei piani sarebbe chiedergli di nuovo un abbonamento.
     cta: { path: "/weekly-pick", label: WEEKLY_PICK_CTA } },
+  // #CRM-COPY-TRUTHFUL-0817: prometteva "un'offerta riservata / private offer"
+  // che non esiste — e NON era nemmeno promo-gated, quindi il CTA portava al
+  // prezzo pieno. Nota: la promo di lancio vale sul PRIMO acquisto, quindi per un
+  // ex-pagante non sarebbe applicabile comunque: qui non può esistere un'offerta,
+  // e la chiave resta `wb_day14_offer` perché è la PK del dedup (rinominarla
+  // rimanderebbe l'email a chi l'ha già ricevuta).
   { key: "wb_day14_offer", flow: "winback", day: 14,
     subject: {
-      it: "Offerta di riattivazione privata", en: "Private reactivation offer", es: "Oferta privada de reactivación",
-      fr: "Offre privée de réactivation", ru: "Личное предложение о возвращении" },
+      it: "Cosa resta chiuso sul piano Free", en: "What stays locked on Free", es: "Qué sigue cerrado en el plan Free",
+      fr: "Ce qui reste fermé sur le plan Free", ru: "Что остаётся закрытым на тарифе Free" },
     body: {
-      it: "Un'offerta riservata per tornare. Mai migliore degli sconti di ingresso — ma pensata per te.",
-      en: "A private offer to return. Never better than joining offers — but made for you.",
-      es: "Una oferta reservada para volver. Nunca mejor que las ofertas de entrada — pero pensada para ti.",
-      fr: "Une offre réservée pour revenir. Jamais meilleure que les offres d'entrée — mais pensée pour vous.",
-      ru: "Закрытое предложение для возвращения. Не выгоднее стартовых скидок — но составлено для вас." } },
+      it: "Sul Free vedi 1 pick per sport a settimana: il board completo con edge, stake e closing line value resta chiuso. Riattiva quando vuoi — i tuoi dati e il tuo storico sono ancora al loro posto.",
+      en: "On Free you see 1 pick per sport each week: the full board with edge, stake and closing line value stays locked. Reactivate whenever you want — your data and history are still in place.",
+      es: "En Free ves 1 pick por deporte a la semana: el board completo con edge, stake y closing line value sigue cerrado. Reactiva cuando quieras — tus datos y tu historial siguen en su sitio.",
+      fr: "En Free vous voyez 1 pronostic par sport et par semaine : le board complet avec edge, mise et closing line value reste fermé. Réactivez quand vous voulez — vos données et votre historique sont toujours en place.",
+      ru: "На Free вы видите 1 прогноз по каждому виду спорта в неделю: полный борд с edge, размером ставки и closing line value остаётся закрыт. Возвращайтесь когда захотите — ваши данные и история на месте." } },
   { key: "wb_day21_final", flow: "winback", day: 21,
     subject: {
       it: "Ultimo promemoria", en: "Last reminder", es: "Último recordatorio",
@@ -239,7 +289,92 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       ru: "Последний сигнал перед возвратом на тариф Free. Активируйте снова, чтобы не потерять историю." } },
 ];
 
-export function renderCrm(key: string, lang: CrmLang, identifier: string): { subject: string; html: string; text: string; unsubUrl: string } | null {
+// Le chiavi dei touchpoint che parlano di sconto. Derivata dai dati, non scritta
+// a mano: aggiungere un'offerta senza gatarla diventa impossibile per distrazione.
+export function promoGatedKeys(): Set<string> {
+  return new Set(CRM_TOUCHPOINTS.filter((t) => t.requiresLaunchPromo).map((t) => t.key));
+}
+
+// #CRM-FAKE-OFFERS-0805 — la data di fine campagna, localizzata. Legge la stessa
+// env che governa lo sconto server-side, così l'email non può annunciare una
+// scadenza diversa da quella che il checkout applica.
+export function launchDeadlineLabel(lang: CrmLang, iso?: string | null): string | null {
+  const raw = iso ?? process.env.LAUNCH_PROMO_DEADLINE;
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return null;
+  try {
+    // timeZone UTC NON è un dettaglio: launchPromoActive() confronta `now < deadline`
+    // in UTC, mentre toLocaleDateString userebbe il fuso del server. Con una
+    // deadline a 23:59Z e un server in Europa l'email avrebbe annunciato il GIORNO
+    // DOPO la scadenza reale — cioè un'altra promessa che il checkout rifiuta.
+    // Meglio la data che il server applica davvero.
+    return d.toLocaleDateString(DATE_LOCALE[lang], {
+      day: "numeric", month: "long", timeZone: "UTC",
+    });
+  } catch {
+    return d.toISOString().slice(0, 10); // fallback: mai un token grezzo in un'email
+  }
+}
+
+// #CRM-RENEWAL-COND-0819 — la clausola sul rinnovo, per rail di pagamento.
+// Tre casi e non due, perché `plan_source` non basta a decidere in un caso:
+//   - rail one-off (PayGate/crypto, PayPal): il pagamento è singolo → la frase
+//     originale è VERA e resta;
+//   - Shopify: i selling plan sono ricorrenti (MONTH/YEAR) MA esiste anche uno SKU
+//     one-off a 30 giorni, e sul profilo non c'è nulla che distingua i due. Quindi
+//     non si afferma né l'uno né l'altro: si dice che dipende dal piano, che è vero
+//     in ogni caso e non manda nessuno a pagare due volte;
+//   - tutto il resto (referral, manuale, admin, sorgente assente): NESSUNA clausola.
+//     Chi non ha pagato non deve leggere "paga di nuovo", e su un dato mancante il
+//     silenzio è l'unica cosa che non può essere falsa.
+const RENEWAL_CLAUSE: Record<"oneoff" | "recurring", L10n> = {
+  oneoff: {
+    it: "L'accesso non si rinnova da solo: per continuare serve un nuovo pagamento.",
+    en: "Access doesn't auto-renew: continuing takes a new payment.",
+    es: "El acceso no se renueva solo: para continuar hace falta un nuevo pago.",
+    fr: "L'accès ne se renouvelle pas tout seul : continuer demande un nouveau paiement.",
+    ru: "Доступ не продлевается сам: чтобы продолжить, нужен новый платёж.",
+  },
+  recurring: {
+    it: "Il tuo piano si rinnova da solo alla scadenza: non devi fare nulla.",
+    en: "Your plan renews itself at the end of the period: there's nothing to do.",
+    es: "Tu plan se renueva solo al vencimiento: no tienes que hacer nada.",
+    fr: "Votre plan se renouvelle tout seul à l'échéance : rien à faire.",
+    ru: "Ваш тариф продлевается автоматически: делать ничего не нужно.",
+  },
+};
+
+/**
+ * Rail → clausola. Sorgente sconosciuta o non-pagante ⇒ stringa vuota (nessun claim).
+ *
+ * #CRM-RENEWAL-COND-0819, secondo giro: la prima versione trattava `shopify` come
+ * AMBIGUO e usava una frase con un "se". Era inutilmente prudente: `plan-grant.ts:370`
+ * distingue GIÀ i due casi e lo scrive nel dato —
+ *   `shopify`        = dietro c'è un subscription contract che si rinnova da solo
+ *   `shopify_oneoff` = 30 giorni comprati una volta, nessun contratto
+ * — quindi la frase può essere CERTA invece di condizionale. L'informazione che
+ * cercavo di aggiungere con una colonna nuova esisteva già, sotto un nome che non
+ * avevo guardato.
+ * `stripe` sta fra i ricorrenti perché quel rail concede abbonamenti (c'è
+ * `stripe_subscription_id` sul profilo); è dormiente, ma se si accende la frase è
+ * giusta senza dover ripassare da qui.
+ */
+export function renewalClause(lang: CrmLang, planSource?: string | null): string {
+  const s = (planSource ?? "").trim().toLowerCase();
+  if (s === "shopify" || s === "stripe") return RENEWAL_CLAUSE.recurring[lang];
+  if (s === "shopify_oneoff" || s === "paygate" || s === "paypal" || s === "crypto") {
+    return RENEWAL_CLAUSE.oneoff[lang];
+  }
+  return "";
+}
+
+export function renderCrm(
+  key: string,
+  lang: CrmLang,
+  identifier: string,
+  opts?: { launchDeadline?: string | null; planSource?: string | null }
+): { subject: string; html: string; text: string; unsubUrl: string } | null {
   const t = CRM_TOUCHPOINTS.find((x) => x.key === key);
   if (!t) return null;
   // Destinazione: i piani per default, la pagina del prodotto se il touchpoint ne
@@ -247,11 +382,28 @@ export function renderCrm(key: string, lang: CrmLang, identifier: string): { sub
   // che permette di attribuire una conversione all'email che l'ha generata, e
   // perderlo sul percorso nuovo renderebbe la Weekly Pick l'unica cosa non
   // misurabile del CRM.
-  const path = t.cta?.path ?? "/app?tab=plans";
+  const path = t.cta?.path ?? "/plans";
   const sep = path.includes("?") ? "&" : "?";
   const href = `${SITE}${path}${sep}crm=${encodeURIComponent(t.key)}`;
   const label = t.cta?.label[lang] ?? OPEN_LABEL[lang];
-  const body = t.body[lang];
+  let body = t.body[lang];
+  // Un token non sostituito finirebbe letteralmente nell'inbox ("fino al
+  // {deadline}"), quindi senza una data VERA non si renderizza affatto: chi
+  // chiama tratta il null come "niente da inviare". Fail-closed, come lo sconto.
+  if (body.includes("{deadline}")) {
+    const deadline = launchDeadlineLabel(lang, opts?.launchDeadline);
+    if (!deadline) return null;
+    body = body.replaceAll("{deadline}", deadline);
+  }
+  // {renewal}: a differenza di {deadline} NON è fail-closed, perché la stringa vuota
+  // è un esito legittimo e desiderato (nessuna affermazione sul rinnovo). Va però
+  // ripulita la spaziatura, altrimenti resta un doppio spazio prima del punto finale
+  // — il tipo di dettaglio che fa sembrare l'email generata male.
+  if (body.includes("{renewal}")) {
+    body = body.replaceAll("{renewal}", renewalClause(lang, opts?.planSource))
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+  }
   const unsub = `${SITE}/api/crm/unsubscribe?t=${unsubToken(identifier)}`;
   const unl = UNSUB_LABEL[lang];
   const inner = `<p style="font-size:14px;line-height:1.6;margin:0;color:#cdd6dd;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">${body}</p>${brandCta(label, href)}`;

@@ -73,7 +73,7 @@ export function UpgradeSheet({
                 {/* SHORTCUT (marcato): il checkout vive nel monolite (/app, PlansTab/CheckoutModal).
                     Qui instradiamo al flusso legacy — nessun pagamento gestito in questo
                     componente. Upgrade path: portare il checkout in features/ in SP7. */}
-                <Link href="/app?tab=plans" style={ctaLinkStyle}>
+                <Link href="/plans" style={ctaLinkStyle}>
                   Passa a {planLabel(key, "it")}
                 </Link>
               </div>

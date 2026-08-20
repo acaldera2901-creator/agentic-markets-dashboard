@@ -16,11 +16,13 @@ import {
   devig1x2,
   MARKET_BLEND_ALPHA,
   MatchResult,
+  modelPoolIsCoherent,
 } from "@/lib/poisson-model";
 import { applyTemperature } from "@/lib/calibration";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
+import { favouritePick } from "@/lib/pick-selection";
 import {
   SUMMER_LEAGUES,
   isSummerLeague,
@@ -492,24 +494,48 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // for them — they are shown only as flagged model estimates.
       // NB: edge is computed on the POST-blend probability. Since the blend tilts
       // toward the line, the edge shrinks (correct: true edge over the close ≈ 0).
+      // #COVERAGE-0812-L2bis: una competizione cross-lega non ha un pool su una
+      // scala sola (vedi modelPoolIsCoherent), quindi non puo' produrre un edge
+      // nemmeno quando le partite bastano. Il gate di numerosita' da solo non la
+      // fermava: a 4 partite a squadra la riga diventava "reliable" e dalla terza
+      // giornata di Champions usciva un pick su un pool di 4-8 partite.
+      const poolCoherent = modelPoolIsCoherent(code);
+      const canClaimEdge = probs.reliable && poolCoherent;
+
+      // #PICK-FAVOURITE-0812: the selection is the blend FAVOURITE — the same
+      // outcome the surfacing gate measures and settlement grades — not the
+      // max-edge outcome (on blended probs the edge sign is model noise and
+      // lands on longshots; see lib/pick-selection.ts for the live measurement).
+      // edge is the favourite's own edge vs its de-vigged price (can be < 0).
       let edge: number | null = null;
       let bestSel: string | null = null;
-      if (odds && probs.reliable) {
-        const eH = probs.pHome - 1 / odds.oddsHome;
-        const eD = probs.pDraw - 1 / odds.oddsDraw;
-        const eA = probs.pAway - 1 / odds.oddsAway;
-        edge = Math.max(eH, eD, eA);
-        bestSel = edge === eH ? "HOME" : edge === eD ? "DRAW" : "AWAY";
-        edge = Math.round(edge * 10_000) / 10_000;
+      if (odds && canClaimEdge) {
+        const fav = favouritePick(
+          probs.pHome, probs.pDraw, probs.pAway,
+          odds.oddsHome, odds.oddsDraw, odds.oddsAway
+        );
+        bestSel = fav.selection;
+        edge = fav.edge;
       }
 
       // ── Build enrichment payload ─────────────────────────────────────────
       const enrichment: EnrichmentPayload = {};
+      // Le due ragioni per cui non c'e' un pick sono DIVERSE e vanno distinte:
+      // "non abbiamo abbastanza partite" e' temporaneo e si risolve giocando,
+      // "il pool non e' su una scala sola" e' strutturale e si risolve solo con
+      // un modello nuovo (#COVERAGE-0812-L2b). La card lo dice all'utente in
+      // buildFootballWhy, quindi l'etichetta non e' solo diagnostica.
       if (!probs.reliable) {
         enrichment.reliability = "insufficient_data";
         enrichment.team_matches = probs.teamMatches;
         console.log(
           `[${code}] insufficient_data: ${fix.homeTeam} vs ${fix.awayTeam} (min ${probs.teamMatches} matches/team)`
+        );
+      } else if (!poolCoherent) {
+        enrichment.reliability = "cross_competition";
+        enrichment.team_matches = probs.teamMatches;
+        console.log(
+          `[${code}] cross_competition: ${fix.homeTeam} vs ${fix.awayTeam} — pool non coerente, nessun pick`
         );
       }
 

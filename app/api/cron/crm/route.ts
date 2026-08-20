@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { resolveFlow, dueTriggers, isEligible, flowAllowed, type CrmProfile } from "@/lib/crm";
-import { CRM_TOUCHPOINTS, renderCrm, resolveCrmLang } from "@/lib/crm-content";
+import { CRM_TOUCHPOINTS, renderCrm, resolveCrmLang, promoGatedKeys } from "@/lib/crm-content";
 import { sendTransactional } from "@/lib/notify";
+import { launchPromoActive } from "@/lib/paygate";
+import { promoEligibility } from "@/lib/creator-promo";
+
+// Le chiavi che parlano di sconto, risolte una volta sola (#CRM-FAKE-OFFERS-0805).
+const promoGated = promoGatedKeys();
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +46,7 @@ export async function GET(req: Request) {
   const nowISO = new Date().toISOString();
 
   const profiles = (await dbQuery<CrmProfile>(
-    `SELECT identifier, plan, language, created_at::text, activated_at::text, plan_expires_at::text, marketing_opt_out, marketing_opt_in
+    `SELECT identifier, plan, plan_source, language, created_at::text, activated_at::text, plan_expires_at::text, marketing_opt_out, marketing_opt_in
        FROM profiles`
   )) ?? [];
 
@@ -65,7 +70,27 @@ export async function GET(req: Request) {
     if (flow === "none") continue;
     // Consenso per-flow (legale): acquisition (sconti a free) solo con opt-in esplicito.
     if (!flowAllowed(flow, p)) continue;
-    const due = dueTriggers(flow, dayInFlow, CRM_TOUCHPOINTS, sentByUser.get(p.identifier) ?? new Set());
+    let due = dueTriggers(flow, dayInFlow, CRM_TOUCHPOINTS, sentByUser.get(p.identifier) ?? new Set());
+    // #CRM-FAKE-OFFERS-0805 — un touchpoint che PARLA di sconto non parte se lo
+    // sconto non esiste per chi lo riceve. Prima tre email di acquisition
+    // promettevano −20%/72h, −30%/48h e −30% + 3 giorni di prova Pro: nessuno dei
+    // tre sconti e nessun trial sono mai esistiti nel codice, e ne sono uscite 8
+    // copie a 4 persone reali. Il filtro sta QUI e non nel copy perché la
+    // condizione è dinamica: promo attiva E primo acquisto di QUEL cliente.
+    if (due.some((t) => promoGated.has(t.key))) {
+      let promoOk = launchPromoActive();
+      if (promoOk) {
+        try {
+          promoOk = (await promoEligibility(p.identifier)).firstPaidOrder;
+        } catch (e) {
+          // Fail-closed: se non sappiamo se ha diritto allo sconto, non glielo
+          // promettiamo. Stessa regola del checkout, che in dubbio fa prezzo pieno.
+          console.error("[cron/crm] promo eligibility failed:", p.identifier, String(e));
+          promoOk = false;
+        }
+      }
+      if (!promoOk) due = due.filter((t) => !promoGated.has(t.key));
+    }
     if (due.length === 0) continue;
     const toSend = due[due.length - 1];           // il più recente dovuto
     const toSuppress = due.slice(0, -1);          // dovuti precedenti mancati → consuma senza inviare
@@ -73,12 +98,17 @@ export async function GET(req: Request) {
     if (preview.length < 50) preview.push({ to: p.identifier, flow, key: toSend.key });
     if (!live) continue;
     const lang = resolveCrmLang(p.language);
-    const mail = renderCrm(toSend.key, lang, p.identifier);
+    // #CRM-RENEWAL-COND-0819: il rail serve alla clausola sul rinnovo. Passarlo qui
+    // e non dentro renderCrm perché è un dato del PROFILO, e il renderer resta una
+    // funzione pura del suo input (è quello che lo rende testabile senza DB).
+    const mail = renderCrm(toSend.key, lang, p.identifier, { planSource: p.plan_source });
     if (!mail) { console.warn("[cron/crm] no template for", toSend.key); skipped++; continue; }
     let res: { sent: boolean; error?: string };
     try {
       res = await sendTransactional({
-        type: "winback",
+        // #MAIL-I18N-5LANG-0805: il flusso VERO, non "winback" per tutti — così
+        // `notifications` si può contare per flusso.
+        type: flow,
         to: p.identifier,
         subject: mail.subject,
         html: mail.html,

@@ -211,3 +211,54 @@ def test_summer_league_registries_are_consistent():
         assert code in SPORT_KEYS, f"{code} missing from SPORT_KEYS"
         assert code in LEAGUE_IDS, f"{code} missing from LEAGUE_IDS"
         assert code in settings.LEAGUES, f"{code} missing from settings.LEAGUES"
+
+
+# ── #TENNIS-MARKET-GATE-0805 ────────────────────────────────────────────────
+# Tennis: no market price on the picked side -> no directional pick.
+# Lab 05/08 su righe LIVE settled (am-lab/REPORT-tennis-noodds-2026-08-05.md,
+# 01/06-05/08): con quota 74.9% reale contro 71.6% dichiarato (n=183), senza
+# quota 58.9% contro 72.1% (n=270), z=3.51. La cella senza quota e' rotta in
+# OGNI fascia e peggiore proprio in cima (75-79: 42.2% reale vs 77.1%), quindi
+# alzare il floor ne seleziona di piu', non di meno.
+
+def test_tennis_has_market_fails_closed():
+    from core.surfacing_gate import tennis_has_market
+    assert tennis_has_market(1.5) is True
+    assert tennis_has_market(1.01) is True
+    assert tennis_has_market(None) is False
+    assert tennis_has_market(1.0) is False   # non paga nulla: artefatto del feed
+    assert tennis_has_market(0) is False
+    assert tennis_has_market(-2) is False
+    assert tennis_has_market(float("nan")) is False
+    assert tennis_has_market("x") is False
+
+
+def test_tennis_market_gate_drops_pick_without_price():
+    from core.surfacing_gate import tennis_surface_decision
+    # sopra il floor (lo tier = 64) con prezzo -> pick
+    assert tennis_surface_decision(confidence=70, tournament="Hamburg Open",
+                                   picked_odds=1.6) == (True, False, False)
+    # stessa riga senza prezzo -> niente pick, ma NON "nessun favorito netto"
+    assert tennis_surface_decision(confidence=70, tournament="Hamburg Open",
+                                   picked_odds=None) == (False, False, True)
+    # entrambe le ragioni restano distinte
+    assert tennis_surface_decision(confidence=50, tournament="Hamburg Open",
+                                   picked_odds=None) == (False, True, True)
+
+
+def test_tennis_market_gate_keeps_segment_floors():
+    from core.surfacing_gate import tennis_surface_decision
+    ok = dict(picked_odds=1.5)
+    assert tennis_surface_decision(confidence=63, tournament="Hamburg Open", **ok)[0] is False
+    assert tennis_surface_decision(confidence=64, tournament="Hamburg Open", **ok)[0] is True
+    assert tennis_surface_decision(confidence=62, tournament="Wimbledon", **ok)[0] is True
+    assert tennis_surface_decision(confidence=65, tournament="Libema Open", **ok)[0] is False
+    assert tennis_surface_decision(confidence=66, tournament="Libema Open", **ok)[0] is True
+
+
+def test_market_gate_does_not_touch_football():
+    # Sullo stesso periodo il football SENZA quota fa 95% (n=20): la stessa
+    # regola li' cancellerebbe le pick migliori. surface_decision resta cieca
+    # al prezzo per ogni sport.
+    assert surface_decision(sport="football", friendly=False, confidence=56) == (True, False)
+    assert surface_decision(sport="football", friendly=False, confidence=55) == (False, True)

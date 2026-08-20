@@ -16,18 +16,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API, ESPN_V2_API
 from core.tennis_names import clean_player_name, canonical_player_key
 
 logger = logging.getLogger("espn_tennis_client")
 
-_URL = "https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=tennis"
-_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/tennis/{league}/scoreboard"
+_URL = f"{ESPN_V2_API}/scoreboard/header?sport=tennis"
+_SCOREBOARD_URL = f"{ESPN_SITE_API}/tennis/{{league}}/scoreboard"
 _SCOREBOARD_LEAGUES = ("atp", "wta")
 # A fixture is servable from 2h before "now-window" up to 48h ahead: the same
 # trading window the dashboard applies (scheduled_at > NOW()-2h), plus tomorrow.
 _PAST_GRACE = timedelta(hours=2)
 _FUTURE_HORIZON = timedelta(hours=48)
-_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenticMarkets/1.0)"}
 _DOUBLES_SEP = re.compile(r"\s*&\s*")
 _NOTE_SPLIT = re.compile(
     r"^(?P<p1>.+?)\s+(?P<verb>bt|def\.?|defeated|leads)\s+(?P<p2>.+?)(?:\s+\d|$)",
@@ -195,12 +195,19 @@ async def get_fixtures() -> list[dict]:
     (atp + wta feeds, today + tomorrow UTC). Scheduled ("pre") and live
     ("in") singles matches only; completed matches are never emitted.
     Returns canonical fixture dicts compatible with tennis_fixtures.
+
+    Solleva EspnFeedUnavailable se NESSUNA delle chiamate ha risposto
+    (#ESPN-UA-403-0820): prima rendeva [] e il chiamante non poteva distinguere
+    "il feed rifiuta" da "oggi non c'e' tennis" — le due cause hanno urgenze
+    opposte. Un rifiuto PARZIALE non solleva: le fixture arrivate si servono.
     """
     now = datetime.now(timezone.utc)
     dates = [now.strftime("%Y%m%d"), (now + timedelta(days=1)).strftime("%Y%m%d")]
 
     seen: set[str] = set()
     results: list[dict] = []
+    answered = 0
+    last_error: str | None = None
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
             for league in _SCOREBOARD_LEAGUES:
@@ -209,20 +216,134 @@ async def get_fixtures() -> list[dict]:
                         resp = await c.get(
                             _SCOREBOARD_URL.format(league=league),
                             params={"dates": day},
-                            headers=_HEADERS,
+                            headers=ESPN_HEADERS,
                         )
                         if resp.status_code != 200:
                             logger.warning("ESPN tennis %s/%s: %s", league, day, resp.status_code)
+                            last_error = f"http {resp.status_code}"
                             continue
                         _parse_scoreboard(resp.json(), now, seen, results)
+                        answered += 1
                     except Exception as exc:
                         logger.warning("ESPN tennis %s/%s error (non-fatal): %s", league, day, exc)
+                        last_error = str(exc)
     except Exception as exc:
-        logger.warning("ESPN tennis error (non-fatal): %s", exc)
-        return []
+        raise EspnFeedUnavailable(f"day-scoreboard unreachable: {exc}") from exc
+
+    if answered == 0:
+        raise EspnFeedUnavailable(f"day-scoreboard refused every call ({last_error})")
 
     logger.info("ESPN tennis: found %d singles fixtures (today+tomorrow)", len(results))
     return results
+
+
+def _header_event_to_fixture(ev: dict, now: datetime) -> dict | None:
+    """Map one HEADER-feed event (which is one match) to a fixture dict.
+
+    Produces the SAME shape and the SAME match_id as _competition_to_fixture:
+    the header's `competitionId` is the very id the day-scoreboard exposes as
+    `competitions[].id`, so fixtures collected here dedupe, merge odds and settle
+    exactly like the ones from the other endpoint. Fail-closed on anything
+    incomplete, same as the scoreboard path.
+    """
+    if ev.get("status") not in ("pre", "in"):
+        return None  # "post" = completed: never emit a past match as a fixture
+
+    comp_type = ((ev.get("competitionType") or {}).get("text")) or ""
+    if "Singles" not in comp_type:
+        return None  # doubles have no single athlete per side
+
+    scheduled = _parse_iso_date(ev.get("date") or "")
+    if scheduled is None:
+        return None
+    if scheduled < now - _PAST_GRACE or scheduled > now + _FUTURE_HORIZON:
+        return None
+
+    competitors = ev.get("competitors") or []
+    if len(competitors) != 2:
+        return None
+    names = []
+    for side in competitors:
+        # Header events carry the athlete inline (no nested "athlete" object).
+        name = clean_player_name(side.get("displayName") or side.get("name") or "")
+        if not name:
+            return None
+        names.append(name)
+
+    p1, p2 = names
+    if canonical_player_key(p1) > canonical_player_key(p2):
+        p1, p2 = p2, p1
+
+    comp_id = str(ev.get("competitionId") or "")
+    if not comp_id:
+        return None
+    match_key = f"{canonical_player_key(p1)}:{canonical_player_key(p2)}".replace(" ", "-")
+
+    round_info = ev.get("round")
+    round_name = f"Round {round_info}" if round_info else ""
+    tournament = ev.get("name") or ev.get("shortName") or "Unknown"
+
+    return {
+        "match_id": f"tennis:espn:{comp_id}:{match_key}",
+        "player1": p1,
+        "player2": p2,
+        "tournament": tournament,
+        "surface": infer_surface(tournament),
+        "round": round_name,
+        "scheduled_at": scheduled.isoformat(),
+        "provider": "espn",
+    }
+
+
+class EspnFeedUnavailable(RuntimeError):
+    """The feed refused or could not be reached — NOT "there is no tennis today".
+
+    #TENNIS-FEED-DOWN-0805: the collector used to report `no_active_tournaments`
+    for both cases, which is the reassuring one, so an empty board looked like an
+    empty calendar. Raised so the caller can tell a blocked feed from a quiet day.
+    """
+
+
+async def get_fixtures_from_header() -> list[dict]:
+    """Forward-looking fixtures from the HEADER feed (#TENNIS-FEED-DOWN-0805).
+
+    Second source for fixtures, on the endpoint this module already uses for
+    settlement (get_completed_results) — i.e. the one demonstrably still
+    answering when the per-day scoreboard does not. Measured 2026-08-05: the
+    day-scoreboard returned 403 while this endpoint returned 51 non-completed
+    singles matches (Toronto Masters + Warsaw), and the board was empty.
+
+    Raises EspnFeedUnavailable if the feed itself is unusable, so "blocked" can
+    never again be reported as "no tournaments".
+    """
+    now = datetime.now(timezone.utc)
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            resp = await c.get(_URL, headers=ESPN_HEADERS)
+    except Exception as exc:
+        raise EspnFeedUnavailable(f"header feed unreachable: {exc}") from exc
+    if resp.status_code != 200:
+        raise EspnFeedUnavailable(f"header feed http {resp.status_code}")
+    try:
+        data = resp.json()
+    except Exception as exc:
+        raise EspnFeedUnavailable(f"header feed not json: {exc}") from exc
+
+    sports = data.get("sports") or []
+    if not sports:
+        raise EspnFeedUnavailable("header feed carried no sports block")
+
+    seen: set[str] = set()
+    out: list[dict] = []
+    for league in sports[0].get("leagues", []):
+        for ev in league.get("events", []):
+            fixture = _header_event_to_fixture(ev, now)
+            if fixture and fixture["match_id"] not in seen:
+                seen.add(fixture["match_id"])
+                out.append(fixture)
+
+    logger.info("ESPN tennis header: found %d singles fixtures", len(out))
+    return out
 
 
 async def get_completed_results() -> list[dict]:
@@ -237,7 +358,7 @@ async def get_completed_results() -> list[dict]:
     """
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(_URL, headers=_HEADERS)
+            resp = await c.get(_URL, headers=ESPN_HEADERS)
             if resp.status_code != 200:
                 logger.warning("ESPN tennis results: %s", resp.status_code)
                 return []

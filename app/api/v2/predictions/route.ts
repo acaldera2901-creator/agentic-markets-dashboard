@@ -4,7 +4,7 @@ import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { withAffiliate } from "@/lib/affiliate";
-import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
+import { PREDICTION_WINDOW_DAYS, V2_MAX_ROWS, isRowCapReached } from "@/lib/prediction-window";
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { buildSoftLookup } from "@/lib/soft-lookup";
 import { parseFinalScore } from "./final-score";
@@ -48,15 +48,29 @@ export async function GET(req: Request) {
     conditions.push(`status = $${values.length}`);
   }
 
+  // #V2-ROW-CAP-0803: il tetto è una costante dichiarata (lib/prediction-window),
+  // non un 100 sepolto nella query, e passa come parametro come tutto il resto.
+  values.push(V2_MAX_ROWS);
   const rows = await dbQuery<UnifiedPrediction>(
     `SELECT * FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      ORDER BY
        competition = 'World Cup' DESC,
        starts_at ASC
-     LIMIT 100`,
+     LIMIT $${values.length}`,
     values
   );
+
+  // Il troncamento non deve essere muto. L'ORDER BY è `starts_at ASC`, quindi al
+  // tetto cadono sempre le partite più lontane: senza questo warn un board che
+  // perde il fondo del calendario è indistinguibile da un calendario corto.
+  // È esattamente come il `LIMIT 100` è passato inosservato per settimane.
+  if (isRowCapReached(rows.length)) {
+    console.warn(
+      `[v2/predictions] TETTO RAGGIUNTO: ${rows.length} righe lette = V2_MAX_ROWS (${V2_MAX_ROWS}). ` +
+      `Le partite più lontane nella finestra di ${PREDICTION_WINDOW_DAYS} giorni sono troncate — alzare V2_MAX_ROWS.`
+    );
+  }
 
   // Friendly / WC paper rows store the 1X2 distribution in `notes` (JSON), not
   // in the p_home/p_draw/p_away columns (which stay null). Without this coalesce
@@ -96,14 +110,24 @@ export async function GET(req: Request) {
       const hasProb =
         typeof r.p_home === "number" ||
         (typeof r.pick === "string" && (r.pick as string).trim() !== "" && typeof r.confidence_score === "number") ||
-        // #TENNIS-BELOWFLOOR-1: le righe tennis sotto la soglia di confidence
-        // hanno pick=null di proposito (surfacing gate in tennis-adapter), ma
-        // restano match reali con una win-prob (confidence_score). Il board
-        // legacy /api/tennis le mostra senza direzione ("nessun favorito
-        // netto"); alliniamo v2 così non spariscono dal board (#218 le
-        // scartava tutte). Nessun pick sotto-soglia trapela: pick/odds/edge
-        // restano null, si serve solo il match + la confidence.
-        (r.sport === "tennis" && typeof r.confidence_score === "number");
+        // #TENNIS-BELOWFLOOR-1, esteso a OGNI sport da #V2-FOOTBALL-COVERAGE-0802:
+        // le righe sotto la soglia di confidence hanno pick=null di proposito (è
+        // il gate di surfacing), ma restano match reali con una probabilità
+        // (confidence_score). Il board legacy le mostra senza direzione ("nessun
+        // favorito netto"): v2 deve dire la stessa cosa, altrimenti due endpoint
+        // sullo stesso dato mostrano board diversi.
+        //
+        // La condizione era limitata al tennis, e per il football non scattava mai
+        // nessuna delle altre due: `p_home` esiste solo se coalescato dai notes, e
+        // MISURATO il 2026-08-02 le righe football club hanno `notes: null` — zero
+        // su 49. Risultato: v2 serviva **2 partite di football su 49** mentre il
+        // board ne serviva 49. Non era un dettaglio di coverage: era un board
+        // praticamente vuoto sull'endpoint candidato a diventare l'API venduta.
+        //
+        // Nessun pick sotto-soglia trapela: pick/odds/edge restano null esattamente
+        // come prima, si serve il match più la confidence. La proiezione per piano
+        // (locked/unlocked) resta quella di sempre, a valle di questo filtro.
+        typeof r.confidence_score === "number";
       if (!hasProb) continue; // incompleta → nascosta
       const key = [
         String(r.sport ?? ""),

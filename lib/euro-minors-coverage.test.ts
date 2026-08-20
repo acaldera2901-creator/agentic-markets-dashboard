@@ -102,7 +102,7 @@ describe("#ODDS-KEYS-PARITY-0730 fetchOdds conosce OGNI lega estiva", () => {
   });
 });
 
-describe("#EURO-MINORS batch 2 — Belgio dentro, 2. Bundesliga fuori", () => {
+describe("#EURO-MINORS batch 2 — Belgio dentro; 2. Bundesliga rientrata il 12/08 come copertura", () => {
   it("il Belgio e' cablato su tutte e quattro le superfici", () => {
     expect(isSummerLeague("BEL")).toBe(true);
     expect(SUMMER_LEAGUES.BEL).toBe("Belgian Pro League");
@@ -116,9 +116,21 @@ describe("#EURO-MINORS batch 2 — Belgio dentro, 2. Bundesliga fuori", () => {
     expect(isSurfacedRow({ sport: "football", competition: "Belgian Pro League", confidence_score: 65 })).toBe(true);
   });
 
-  it("la 2. Bundesliga resta FUORI (scartata dal lab, non dimenticata)", () => {
-    // 64.3% @56, instabile per stagione, 5 squadre su 18 senza storico alla
-    // ripartenza. Se un giorno rientra, questo test va aggiornato apposta.
+  it("la 2. Bundesliga rientra come SOLA COPERTURA, mai come fonte di pick", () => {
+    // Aggiornato APPOSTA il 12/08/2026 (#COVERAGE-0812-L1, APPROVE Andrea): il
+    // lab l'aveva scartata (64,3% @56, instabile per stagione, 5 squadre su 18
+    // senza storico alla ripartenza) e per questo restava fuori. Rientra ora
+    // COVERAGE-FIRST, col codice BL2 e floor 70 — il massimo del cluster
+    // precauzionale — perche' il verdetto del lab riguardava i PICK, non la
+    // presenza sul board.
+    //
+    // INVARIANTE DA NON ROMPERE: il floor di BL2 non va abbassato senza un lab
+    // nuovo che lo guadagni. Il vecchio codice GER2 non e' mai esistito come
+    // lega cablata e non deve ricomparire.
+    expect(isSummerLeague("BL2")).toBe(true);
+    expect(SUMMER_LEAGUES.BL2).toBe("2. Bundesliga");
+    expect(surfaceFloorFor("football", "2. Bundesliga")).toBe(70);
+    expect(fetchSummerHistory("BL2").length).toBeGreaterThan(200);
     expect(isSummerLeague("GER2")).toBe(false);
     expect(fetchSummerHistory("GER2")).toEqual([]);
   });
@@ -221,5 +233,81 @@ describe("#EURO-MINORS-0726 per-league floors (lab-derived)", () => {
     expect(isSurfacedRow({ sport: "football", competition: "Austrian Bundesliga", confidence_score: 60 })).toBe(true);
     expect(isSurfacedRow({ sport: "football", competition: "Danish Superliga", confidence_score: 69 })).toBe(false);
     expect(isSurfacedRow({ sport: "football", competition: "Ekstraklasa", confidence_score: 70 })).toBe(true);
+  });
+});
+
+describe("#COVERAGE-0812-L1 — 16 campionati nuovi, coverage-first", () => {
+  const NEW_CODES = [
+    "EFLC", "EL1", "EL2", "SCO", "BL2", "FL2", "PD2", "NED",
+    "POR", "TUR", "GRE", "ARG", "BRA", "MEX", "MLS",
+  ] as const;
+
+  it("ognuna e' cablata su tutte e quattro le superfici", () => {
+    for (const code of NEW_CODES) {
+      expect(isSummerLeague(code), `${code} non registrata`).toBe(true);
+      expect(SUMMER_LEAGUES[code], `${code} senza nome`).toBeTruthy();
+      expect(ODDS_SPORT_KEYS[code], `${code} senza sport key`).toBeTruthy();
+      expect(ODDS_API_SPORT_KEYS[code], `${code} assente in fetchOdds`).toBe(ODDS_SPORT_KEYS[code]);
+    }
+  });
+
+  it("ognuna porta uno snapshot storico non vuoto", () => {
+    for (const code of NEW_CODES) {
+      const hist = fetchSummerHistory(code);
+      expect(hist.length, `${code} senza storico`).toBeGreaterThan(100);
+      for (const m of hist.slice(0, 10)) {
+        expect(typeof m.homeTeam).toBe("string");
+        expect(Number.isInteger(m.homeGoals)).toBe(true);
+      }
+    }
+  });
+
+  it("entrano tutte a floor 70: nessuna cade sul default 56", () => {
+    // Se una cadesse sul default pubblicherebbe pick su una lega mai validata
+    // dal lab. E' il guasto silenzioso piu' costoso di questo batch.
+    for (const code of NEW_CODES) {
+      expect(surfaceFloorFor("football", SUMMER_LEAGUES[code]), `${code} fuori floor`).toBe(70);
+    }
+  });
+
+  // Il controllo che conta: i floor si risolvono per SOTTOSTRINGA del nome lega,
+  // quindi una chiave nuova puo' catturare la lega di qualcun altro. Il caso
+  // storico e' "serie b" che ha dovuto dichiarare "≠ serie a"; qui i candidati
+  // erano "2. bundesliga" contro "Bundesliga" e "ligue 2" contro "Ligue 1".
+  // Questa tabella e' esplicita di proposito: e' un pin, non una derivazione.
+  it("nessun floor sfora su un'altra lega", () => {
+    const EXPECTED: Array<[string, number]> = [
+      // top-5 + coppe: devono restare sul floor di default
+      ["Premier League", 56], ["Serie A", 56], ["La Liga", 56],
+      ["Bundesliga", 56], ["Ligue 1", 56],
+      ["Champions League", 56], ["Europa League", 56],
+      // preesistenti, coi loro floor dal lab
+      ["Eliteserien", 60], ["Allsvenskan", 65], ["Veikkausliiga", 65],
+      ["League of Ireland", 70], ["Chinese Super League", 70], ["Serie B", 65],
+      ["Austrian Bundesliga", 60], ["Danish Superliga", 70],
+      ["Ekstraklasa", 70], ["Swiss Super League", 65], ["Belgian Pro League", 65],
+      // le 16 nuove
+      ["Championship", 70], ["League One", 70], ["League Two", 70],
+      ["Scottish Premiership", 70], ["2. Bundesliga", 70], ["Ligue 2", 70],
+      ["Segunda Division", 70], ["Eredivisie", 70], ["Primeira Liga", 70],
+      ["Turkish Super Lig", 70], ["Super League Greece", 70],
+      ["Liga Profesional", 70], ["Brasileirao", 70], ["Liga MX", 70],
+      ["MLS", 70],
+    ];
+    for (const [name, floor] of EXPECTED) {
+      expect(surfaceFloorFor("football", name), `floor sbagliato per "${name}"`).toBe(floor);
+    }
+  });
+
+  it("i nomi restano ASCII: un diacritico farebbe cadere il floor sul default", () => {
+    // surfaceFloorFor fa toLowerCase() ma NON piega i diacritici, quindi
+    // "Süper Lig" non contiene "super lig". Un nome con accento qui vorrebbe
+    // dire pick pubblicati su una lega non validata.
+    for (const code of NEW_CODES) {
+      const name = SUMMER_LEAGUES[code];
+      expect(name, `${code} ha un carattere non-ASCII`).toBe(
+        name.normalize("NFKD").replace(/[^\x20-\x7E]/g, "")
+      );
+    }
   });
 });

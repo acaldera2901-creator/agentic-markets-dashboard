@@ -4,8 +4,42 @@
 // durante il render (es. una singola card con payload malformato) svuotava l'intera
 // app in pagina bianca. Qui la contieni in una fallback UI con "Ricarica", senza
 // toccare il monolite del board. Next.js richiede che global-error renda <html>/<body>.
+//
+// #INVITE-ROBUSTNESS-0813: e la RIPORTA. Il 2026-08-13 un utente ha visto questa
+// schermata e non è rimasta nessuna traccia: né digest, né path, né browser —
+// undici ambienti riprodotti a mano per non trovare niente. Il digest è la chiave
+// che lega questa schermata allo stack reale nei log di Vercel.
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+import { useEffect, useRef } from "react";
+
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // Una sola volta per errore: StrictMode invoca gli effetti due volte in dev, e
+  // un boundary che ri-renderizza non deve moltiplicare i beacon.
+  const reported = useRef(false);
+  useEffect(() => {
+    if (reported.current) return;
+    reported.current = true;
+    // Fire-and-forget e MUTO in ogni ramo: questa schermata è l'ultima cosa che
+    // resta all'utente: un report che lancia la sostituirebbe con una pagina bianca.
+    // `keepalive` perché l'utente può ricaricare subito dopo il render.
+    try {
+      void fetch("/api/track", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          event_type: "client_error",
+          meta: {
+            digest: error?.digest ?? null,
+            message: String(error?.message ?? "").slice(0, 300),
+            path: typeof window !== "undefined" ? window.location.pathname + window.location.search : "",
+            ua: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
+          },
+        }),
+      }).catch(() => { /* muto: la schermata d'errore non può fallire a sua volta */ });
+    } catch { /* fetch assente o bloccata: la schermata resta comunque */ }
+  }, [error]);
+
   return (
     <html lang="en">
       <body

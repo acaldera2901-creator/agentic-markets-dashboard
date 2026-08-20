@@ -1,6 +1,11 @@
 // lib/crm.ts
-// Logica lifecycle CRM (#CRM-LIFECYCLE) — PURA e testabile. Determina il flow di
-// un profilo (uno solo alla volta) e i trigger dovuti oggi.
+// Logica lifecycle CRM (#CRM-LIFECYCLE) — determina il flow di un profilo (uno
+// solo alla volta) e i trigger dovuti oggi. Resta senza I/O e testabile, ma dal
+// 17/08 NON è più pura in senso stretto: `isEligible` consulta la lista degli
+// indirizzi interni, che vive in env (#CRM-EXCLUDE-INTERNAL-0817). Nei test si
+// governa settando CRM_INTERNAL_IDENTIFIERS / CRM_INTERNAL_DOMAINS.
+
+import { isInternalIdentifier } from "./crm-internal";
 
 export type CrmFlow = "onboarding" | "acquisition" | "retention" | "winback" | "none";
 
@@ -13,6 +18,11 @@ export type CrmProfile = {
   plan_expires_at: string | null;
   marketing_opt_out?: boolean;
   marketing_opt_in?: boolean;
+  /** #CRM-RENEWAL-COND-0819: rail di pagamento (shopify | paygate | paypal | referral
+   *  | manual | admin | null). Serve SOLO alla clausola sul rinnovo: dire "non si
+   *  rinnova da solo" a un abbonato carta e' falso. Opzionale di proposito, cosi'
+   *  chi non lo passa ottiene il silenzio invece di un'affermazione sbagliata. */
+  plan_source?: string | null;
 };
 
 export type Touchpoint = { key: string; flow: Exclude<CrmFlow, "none">; day: number };
@@ -21,8 +31,19 @@ export type Touchpoint = { key: string; flow: Exclude<CrmFlow, "none">; day: num
 // a utenti free MAI paganti) richiede OPT-IN ESPLICITO; retention/win-back/onboarding
 // stanno sul soft opt-in clienti (già filtrato da isEligible). Finché non esiste la
 // checkbox al signup, marketing_opt_in=false → nessuna email di acquisition.
-export function flowAllowed(flow: CrmFlow, p: CrmProfile): boolean {
-  if (flow === "acquisition") return p.marketing_opt_in === true;
+//
+// #CRM-RESEND-ENGINE-0817 — l'acquisition NON la manda più questo motore: la manda
+// l'automation `Onboarding_Automation` su Resend (g2/g4/g7 = i testi di Steve, g10/
+// g21/g28 = le tre offerte, g35 = il congedo), innescata da `Account_Activated` che
+// `app/api/auth/activate/route.ts` spara SOLO con marketing_opt_in=true. Lasciare
+// vivi anche i touchpoint di acquisition qui significherebbe due sequenze sulle
+// stesse persone negli stessi giorni.
+// Il copy dei 7 touchpoint resta in `lib/crm-content.ts` di proposito: se un giorno
+// il motore torna nel codice basta togliere questa riga, e le chiavi invariate +
+// `crm_trigger_sends` garantiscono che nessuno riceva due volte la stessa mail.
+// Retention, win-back e `onb_activate` restano di questo motore.
+export function flowAllowed(flow: CrmFlow, _p: CrmProfile): boolean {
+  if (flow === "acquisition") return false;
   return true;
 }
 
@@ -40,6 +61,11 @@ export function isEligible(p: CrmProfile): boolean {
   if (p.plan === "admin_full") return false;
   if (p.marketing_opt_out) return false;
   if (!p.identifier.includes("@")) return false;
+  // #CRM-EXCLUDE-INTERNAL-0817: team, account di prova e referral interni non
+  // sono clienti da coltivare. Prima di questo gate il lifecycle scriveva a 8
+  // indirizzi interni su 9 destinatari totali. Stessa lista usata dall'Audience
+  // (lib/crm-internal.ts) per non far divergere le due superfici.
+  if (isInternalIdentifier(p.identifier)) return false;
   // Consenso = SOFT OPT-IN CLIENTI (decisione Andrea 2026-06-28, opzione A):
   // si contattano solo i clienti (base/premium) e gli utenti attivati. I profili
   // non attivati sono esclusi (niente marketing senza attivazione).

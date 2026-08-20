@@ -79,8 +79,8 @@ export function ProfileScreen() {
             Accedi o crea un account per vedere piano, referral e impostazioni.
           </p>
           {/* shortcut: /app resta il router auth finché SP3 non introduce sheet dedicati */}
-          <Button variant="primary" style={{ width: "100%" }} onClick={() => { window.location.href = "/app"; }}>Accedi</Button>
-          <Button variant="ghost" style={{ width: "100%" }} onClick={() => { window.location.href = "/app"; }}>Crea account</Button>
+          <Button variant="primary" style={{ width: "100%" }} onClick={() => { window.location.href = "/predictions"; }}>Accedi</Button>
+          <Button variant="ghost" style={{ width: "100%" }} onClick={() => { window.location.href = "/predictions"; }}>Crea account</Button>
         </div>
       </Shell>
     );
@@ -121,8 +121,8 @@ export function ProfileScreen() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--am-panel-2)", border: "1px solid var(--am-line)", borderRadius: 12, padding: 14 }}>
             <span style={{ fontSize: 14 }}>{planCopy(profile.plan)}</span>
             {planExpiry && <span style={{ fontSize: 12, color: "var(--am-muted)" }}>Scadenza: {planExpiry}</span>}
-            {/* shortcut: /app?tab=plans resta il router piani finché SP3 non introduce lo sheet dedicato */}
-            <Button variant="ghost" onClick={() => { window.location.href = "/app?tab=plans"; }}>{isPaidPlan(profile.plan) ? "Gestisci piano" : "Vedi piani"}</Button>
+            {/* shortcut: /plans resta il router piani finché SP3 non introduce lo sheet dedicato */}
+            <Button variant="ghost" onClick={() => { window.location.href = "/plans"; }}>{isPaidPlan(profile.plan) ? "Gestisci piano" : "Vedi piani"}</Button>
           </div>
         </section>
 

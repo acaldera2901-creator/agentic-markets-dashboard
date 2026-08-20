@@ -115,9 +115,16 @@ describe("Weekly Pick nel CRM — destinazione del bottone", () => {
     const senzaCta = CRM_TOUCHPOINTS.filter((t) => !t.cta);
     expect(senzaCta.length).toBeGreaterThan(10);
     for (const t of senzaCta) {
-      const r = renderCrm(t.key, "it", "test@example.com");
+      // #CRM-FAKE-OFFERS-0805: i touchpoint che parlano di sconto NON si
+      // renderizzano senza una deadline reale (fail-closed, per non spedire
+      // "{deadline}" o un'offerta senza scadenza). Qui la forniamo perché il test
+      // riguarda la DESTINAZIONE del bottone, non la promo.
+      const r = renderCrm(t.key, "it", "test@example.com", {
+        launchDeadline: "2026-09-05T23:59:00Z",
+      });
       expect(r, t.key).toBeTruthy();
-      expect(r!.html, t.key).toMatch(/\/app\?tab=plans&crm=/);
+      // #URL-PATHS-0810: la destinazione default del CRM è il path nuovo /plans.
+      expect(r!.html, t.key).toMatch(/\/plans\?crm=/);
       expect(r!.html.includes("Apri BetRedge"), `${t.key}: label generica persa`).toBe(true);
     }
   });

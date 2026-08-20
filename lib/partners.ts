@@ -44,6 +44,10 @@ const FELICEBET_URL = LANDING_PARTNERS.find((p) => p.name === "FeliceBet")?.url
 // nessun neutro → qui si riusa la mappa CASEA_GEO_URLS, niente duplicazione.
 const VELOBET_URL = LANDING_PARTNERS.find((p) => p.name === "VeloBet")?.url
   ?? "https://track.velobetpartners.com/visit/?bta=42786&nci=6119";
+// #PARTNER-GGBET (2026-08-06): sportsbook esports-first. Come gli altri solo-landing
+// l'URL vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
+const GGBET_URL = LANDING_PARTNERS.find((p) => p.name === "GG.BET")?.url
+  ?? "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?utm_source=Aff&utm_medium=267914&utm_campaign=seo&utm_content=bet&sub_id=betredge";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -55,6 +59,11 @@ export const PARTNERS: Partner[] = [
   { id: "betscore", name: "BetScore", category: "sportsbook", logo: "/logos/betscore.svg", url: BETSCORE_URL },
   // logo raster fornito dal partner (164x88 transparent): stemma quasi quadrato → stesso cap emblema di FortunePlay
   { id: "felicebet", name: "FeliceBet", category: "sportsbook", logo: "/logos/felicebet.png", url: FELICEBET_URL, logoShape: "emblem" },
+  // #PARTNER-GGBET: wordmark ufficiale estratto dal file 300×300 fornito dal partner
+  // (sfondo nero piatto rimosso col flood-fill dai bordi, autocrop → 400×79, 5.1:1)
+  // — la vetrina mette ogni logo su placca scura fissa, un quadrato pieno stonerebbe.
+  // Nessun logoShape: 5.1:1 è un wordmark come VeloBet, non un emblema.
+  { id: "ggbet", name: "GG.BET", category: "sportsbook", logo: "/logos/ggbet.png", url: GGBET_URL },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
   // #PARTNERS-VELOBET-CASEA (2026-07-31). Categoria "casino" per entrambi (scelta
   // Andrea): VeloBet è casinò + sportsbook (il suo JSON-LD si chiama "Velobet
@@ -85,6 +94,24 @@ export function partnersFor(country: string | null | undefined): ResolvedPartner
 export function partnerLogoByName(name: string): string | null {
   const key = name.trim().toLowerCase();
   return PARTNERS.find((p) => p.name.toLowerCase() === key)?.logo ?? null;
+}
+
+// #BET-MENU-ORDER (2026-08-06, Andrea) — ordine dei partner nel menu "Piazza la
+// scommessa" della scheda prediction. È una scelta di presentazione, non dei dati:
+// i book arrivano da fonti diverse (BetConstruct via `fp.books` + i solo-landing
+// via landingPartnersFor) e nessuna delle due controlla l'ordine finale. Ordinare
+// qui, al render, vale per tutte e 3 le superfici (football/tennis desk + World Cup)
+// senza toccarne i call-site. Non tocca la vetrina /partners, che ha il suo ordine.
+export const BET_MENU_ORDER = ["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets"] as const;
+
+// Chi non è nell'ordine (es. Casea, geo-ristretta) finisce in coda mantenendo
+// l'ordine d'arrivo: un partner nuovo compare comunque, non sparisce.
+export function sortBooksForMenu<T extends { name: string }>(books: T[]): T[] {
+  const rank = (name: string) => {
+    const i = BET_MENU_ORDER.findIndex((n) => n.toLowerCase() === name.trim().toLowerCase());
+    return i === -1 ? BET_MENU_ORDER.length : i;
+  };
+  return [...books].sort((a, b) => rank(a.name) - rank(b.name));
 }
 
 export type PartnersLang = "it" | "en" | "es" | "fr" | "ru";
@@ -179,6 +206,15 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook partner, registro directo desde la vitrina.",
     fr: "Sportsbook partenaire, inscription directe depuis la vitrine.",
     ru: "Партнёрский букмекер — регистрация прямо из витрины.",
+  },
+  // #PARTNER-GGBET: copy FTC-safe, nessun claim su bonus o quote (la loro landing li
+  // pubblicizza, noi non li abbiamo verificati → non li dichiariamo).
+  ggbet: {
+    it: "Sportsbook con copertura esports, oltre agli sport tradizionali.",
+    en: "Sportsbook covering esports alongside traditional sports.",
+    es: "Sportsbook con cobertura de esports, además de deportes tradicionales.",
+    fr: "Sportsbook couvrant l'esport, en plus des sports traditionnels.",
+    ru: "Букмекер с киберспортом и традиционными видами спорта.",
   },
   // #PARTNERS-VELOBET-CASEA: copy FTC-safe, nessun claim su bonus (i loro siti li
   // pubblicizzano, noi non li abbiamo verificati → non li dichiariamo).

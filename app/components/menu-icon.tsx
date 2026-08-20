@@ -8,7 +8,9 @@ type MenuName =
   // #RAIL-ICONS-V2: podio classifica, busta invito, biglietto weekly pick, stemma account.
   | "leaderboard" | "invite" | "weeklypick" | "account"
   // #PARTNERS-RAIL-1: stretta di mano (vetrina /partners nel rail).
-  | "partner";
+  | "partner"
+  // #TOOLS-HUB-0805: calcolatrice (hub /tools nel rail, al posto della World Cup).
+  | "tools";
 
 const SRC: Record<MenuName, string> = {
   prediction: "/icons/menu-prediction.png",
@@ -21,6 +23,7 @@ const SRC: Record<MenuName, string> = {
   weeklypick: "/icons/menu-weeklypick.png",
   account: "/icons/menu-account.png",
   partner: "/icons/menu-partner.png",
+  tools: "/icons/menu-tools.png",
 };
 const SRC_SM: Record<MenuName, string> = {
   prediction: "/icons/menu-prediction-sm.png",
@@ -33,6 +36,7 @@ const SRC_SM: Record<MenuName, string> = {
   weeklypick: "/icons/menu-weeklypick-sm.png",
   account: "/icons/menu-account-sm.png",
   partner: "/icons/menu-partner-sm.png",
+  tools: "/icons/menu-tools-sm.png",
 };
 
 export function MenuIcon({

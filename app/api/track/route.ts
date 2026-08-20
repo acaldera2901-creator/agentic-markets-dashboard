@@ -17,7 +17,16 @@ const ALLOWED_EVENTS = new Set([
   "page_view", "tab_click", "plan_view", "language_change", "theme_change",
   "conversion", "partner_click", "mb_link_copied",
   "operator_sidebar_click", "sportsbook_sidebar_click", "sportsbook_click",
+  // #INVITE-ROBUSTNESS-0813 — il boundary globale (app/global-error.tsx) riporta
+  // qui digest + path + user agent. Senza questa riga il report verrebbe scartato
+  // in silenzio e la schermata d'errore resterebbe invisibile, com'e' successo il
+  // 2026-08-13. `value` resta 0 come per ogni evento client: non e' una metrica.
+  "client_error",
   "house_banner_view", "house_banner_click", "house_banner_dismiss",
+  // #FUNNEL-MEAS-0813 — funnel di acquisizione. Gli ultimi tre erano GIÀ emessi
+  // dal codice (referral V2, consenso prelievo) e scartati in silenzio qui.
+  "signup_started", "signup_completed",
+  "referral_code_claimed", "referral_link_copied", "withdrawal_consent",
 ]);
 
 const cap = (v: unknown, n: number): string | null =>

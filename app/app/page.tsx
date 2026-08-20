@@ -14,9 +14,13 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
-import { readRefCode, writeRefCode } from "@/lib/referral-code";
+import { currentRefCode, writeRefCode } from "@/lib/referral-code";
+import { storageGet, storageSet } from "@/lib/safe-storage";
+import { getAttribution } from "@/lib/attribution";
+// #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
+import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor } from "@/lib/surfacing-gate";
-import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord } from "@/lib/why-text";
+import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
@@ -1482,6 +1486,15 @@ function fmtFormAny(f?: string | WcFormCounts | null): string | null {
 }
 
 interface PredictionEnrichment {
+  // #COVERAGE-0812-L2bis — perche' questa riga non porta un pick, se non ne porta.
+  // "insufficient_data" = poche partite a squadra, temporaneo. "cross_competition"
+  // = squadre da campionati diversi, il pool del modello non e' su una scala sola:
+  // strutturale, si chiude solo con l'Elo cross-lega (#COVERAGE-0812-L2b).
+  // Scritto da /api/predictions, letto da buildFootballWhy. NON e' in
+  // PREMIUM_ENRICHMENT_KEYS, quindi arriva anche al tier base — deve, perche' e'
+  // la spiegazione di un'assenza, non una feature Pro.
+  reliability?: "insufficient_data" | "cross_competition";
+  team_matches?: number;
   pi_home?: number;
   pi_away?: number;
   xg_home?: number;
@@ -1748,6 +1761,10 @@ export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy de
   pick_of_day?: boolean;
   pick?: string | null;
   confidence_score?: number | null;
+  // #TENNIS-MARKET-GATE-0805: server verdict — no market price on the picked
+  // side, so no directional pick. Kept separate from the floor verdict on
+  // purpose (different reason, different copy). Legacy payloads omit it.
+  no_market?: boolean | null;
   explanation?: string | null;
   affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
@@ -2067,8 +2084,13 @@ function isTennisBestBet(m: TennisMatch) {
   // keeps best_selection on the row → guard here too so a sub-floor coin-flip
   // never resurfaces as a value bet. #TENNIS-SEG-FLOOR-1: the floor is
   // segment-aware by tournament name (hi 62 / lo 64 / lo-grass 66).
-  const surfaced = m.confidence_score == null
-    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament);
+  // #TENNIS-MARKET-GATE-0805: `no_market` is the SERVER verdict (same lesson as
+  // #BESTBET-FLOOR-1 — re-deriving the rule client-side is how sub-floor picks
+  // resurfaced here last time). Absent on legacy payloads → treated as market
+  // present, so an old cached response cannot blank the whole board.
+  const surfaced = (m.confidence_score == null
+    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
+    && m.no_market !== true;
   // #BESTBET-MODEL-SIGNAL-0715: value bet (mercato+edge) OPPURE model signal
   // (prob pick ≥ 58%). Il floor `surfaced` resta binding (tennis lo-tier 64),
   // quindi durante il blackout quote le pick modello ad alta confidenza restano.
@@ -2524,8 +2546,10 @@ function BestBetsBoard({
     edge: m.edge,
     // #BESTBET-FLOOR-1: below the tennis floor → no directional pick.
     // #TENNIS-SEG-FLOOR-1: segment-aware floor resolved from the tournament.
-    belowFloor: m.confidence_score != null
-      && m.confidence_score < surfaceFloorFor("tennis", m.tournament),
+    // #TENNIS-MARKET-GATE-0805: no market price → same outcome (server verdict).
+    belowFloor: (m.confidence_score != null
+      && m.confidence_score < surfaceFloorFor("tennis", m.tournament))
+      || m.no_market === true,
   }));
   const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
     sportFilter,
@@ -3264,7 +3288,7 @@ function CheckoutModal({
             });
             const d = (await r.json()) as { ok?: boolean; granted?: boolean };
             markPayPending();
-            window.location.assign(d.granted ? "/app?paypal=success" : "/app?paypal=pending");
+            window.location.assign(d.granted ? "/predictions?paypal=success" : "/predictions?paypal=pending");
           },
         }).render("#paypal-button-container");
       })
@@ -3374,7 +3398,7 @@ function CheckoutModal({
           const capData = (await capRes.json()) as { ok?: boolean; granted?: boolean };
           session.completePayment(capData.granted ? AppleSession.STATUS_SUCCESS : AppleSession.STATUS_FAILURE);
           markPayPending();
-          window.location.assign(capData.granted ? "/app?paypal=success" : "/app?paypal=pending");
+          window.location.assign(capData.granted ? "/predictions?paypal=success" : "/predictions?paypal=pending");
         } catch (err) {
           console.error("[applepay] confirmOrder/capture:", err);
           session.completePayment(AppleSession.STATUS_FAILURE);
@@ -3646,7 +3670,7 @@ function CheckoutModal({
                     {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {price.toFixed(2)} USD
                   </button>
                 ) : (
-                  <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/app?crypto=paid")} />
+                  <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/predictions?crypto=paid")} />
                 )}
                 <p style={{ fontSize: 11, opacity: 0.7, margin: "6px 0 0" }}>
                   {pick5(lang, {
@@ -4273,6 +4297,10 @@ function ClientAuthModal({
   // distrugge (unmount), quindi un Escape/click-fuori accidentale azzerava
   // tutto. Ora la chiusura è solo esplicita via la × in alto a destra.
 
+  // #FUNNEL-MEAS-0813: quanti aprono il register e non lo finiscono. Scatta al
+  // mount con intent=create e a ogni passaggio sul tab di registrazione.
+  useEffect(() => { if (mode === "create") trackEvent("signup_started"); }, [mode]);
+
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
@@ -4285,7 +4313,11 @@ function ClientAuthModal({
           name: mode === "create" ? name.trim() : undefined,
           language: lang, timezone: tz,
           // #MB-1: first-touch influencer ref (lib/referral-code: normalizza + scadenza)
-          ref: mode === "create" ? (readRefCode() ?? undefined) : undefined,
+          // #INVITE-ROBUSTNESS-0813: currentRefCode, non readRefCode - con lo storage
+          // bloccato il codice si perdeva e l'iscrizione arrivava senza attribuzione.
+          ref: mode === "create" ? (currentRefCode() ?? undefined) : undefined,
+          // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
+          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
@@ -4294,6 +4326,9 @@ function ClientAuthModal({
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
+      // #FUNNEL-MEAS-0813: 202 = profilo creato, in attesa di attivazione email;
+      // 200 = creato e loggato (gate email off). Entrambi sono "signup completato".
+      if (mode === "create" && (resp.ok || resp.status === 202)) trackEvent("signup_completed");
       // HIGH-3: register no longer logs in — it sends an activation email. Show
       // a "check your inbox" notice instead of a session.
       if (resp.status === 202 || data.pending_activation) {
@@ -4703,14 +4738,16 @@ function buildFootballWhy(p: Prediction, lang: Lang): string {
   const tail = top.isDraw ? (it ? " sul pareggio" : " on the draw")
     : top.isHome ? (it ? " in casa" : " on the home side")
     : (it ? " sulla trasferta" : " on the away side");
-  let value: string;
-  if (p.edge != null && p.odds_home != null) {
-    value = isFootballBestBet(p)
-      ? (it ? `il modello la dà più probabile della quota: c'è valore${tail}` : `the model rates it likelier than the price — there's value${tail}`)
-      : (it ? `il mercato è già in linea, nessun margine di valore` : `the market is already in line, no value edge`);
-  } else {
-    value = it ? `non c'è una quota di mercato: è la lettura del modello, non una value bet` : `no market price here — it's the model's read, not a value bet`;
-  }
+  // #COVERAGE-0812-L2bis — la clausola sta in lib/why-text (valuePhrase), pura e
+  // pinnata dai test: e' la frase che puo' mentire, e qui collassava due casi
+  // diversi in un `else` che diceva «non c'è una quota di mercato: è la lettura
+  // del modello» a righe che avevano la quota e non avevano il modello.
+  const value = valuePhrase({
+    hasMarket: p.odds_home != null,
+    hasEdge: p.edge != null,
+    isBestBet: isFootballBestBet(p),
+    reason: p.enrichment?.reliability,
+  }, tail, lang === "it" ? "it" : "en");
   out.push(`${cap(conf)}: ${value}.`);
 
   return out.join(" ");
@@ -6073,7 +6110,7 @@ const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled
 // ─── Match Builder Tab (#MB-1, influencer tool) ──────────────────────────────
 //
 // L'influencer (loggato) seleziona 2–5 predizioni, vede il moltiplicatore
-// combinato e genera un link /app?mb=id1,id2&ref=CODICE. Il visitatore che apre
+// combinato e genera un link /match-builder?mb=id1,id2&ref=CODICE. Il visitatore che apre
 // il link trova la schedina precaricata: i pick/quote restano gated per gli
 // anonimi (projection server-side), quindi il link è esso stesso il funnel.
 // Onestà quote: le selezioni senza mercato reale usano le FAIR ODDS del
@@ -6315,7 +6352,7 @@ function MatchBuilderTab({
     const params = new URLSearchParams({ mb: selected.join(",") });
     const code = influencerCode.trim().toUpperCase();
     if (/^[A-Z0-9_-]{2,20}$/.test(code)) params.set("ref", code);
-    return `${base}/app?${params.toString()}`;
+    return `${base}/match-builder?${params.toString()}`;
   })();
 
   const [publishState, setPublishState] = useState<"idle" | "published">("idle");
@@ -7421,16 +7458,42 @@ function AccountMenu({
 // everyone), creator sees a counter; per-code revenue is a backend toggle on
 // request. Code is self-declared + remembered in localStorage — persisting a
 // referral_code on the profile is a gated follow-up.
+//
+// #REFERRAL-V2-0808: il pannello ora mostra il PROGRESSO verso il gradino
+// successivo (2 → 29gg PRO · 5 → altri 60gg · 10 → stanza Telegram) e cosa
+// riceve l'amico. Numeri e gradini arrivano tutti da /api/referral/stats: qui
+// non si hardcoda nessun premio, altrimenti la copy mente appena la scala cambia.
+// Il −50% di lancio è scritto come informazione, non come vantaggio dell'invito:
+// lo riceve chiunque si iscriva, ed era il difetto originale del programma.
+type ReferralTierStat = {
+  tier: number;
+  reached: boolean;
+  granted_at: string | null;
+  rewardDays: number | null;
+  grantsRoom: boolean;
+};
+
 function ReferralPanel() {
   const lang = useLang();
   // #REFERRAL-HARDENING: il codice ora si CLAIMA una volta sola sul profilo
   // (POST /api/referral/claim, migration 013) e le stats rispondono SOLO per
   // il proprio codice claimato: niente piu' ?code= arbitrario (enumerazione,
   // audit #1). Stati: loading -> unclaimed (input+claim) -> claimed (link+stats).
-  const [phase, setPhase] = useState<"loading" | "unclaimed" | "claimed">("loading");
+  //
+  // #REFERRAL-KPI-0808 — la fase "error" esiste perché un 5xx NON dice se hai un
+  // codice. Prima ogni errore non-403 cadeva su "unclaimed": chi AVEVA già un
+  // codice vedeva il form «scegli il tuo codice», e rivendicandone uno prendeva
+  // un 409. Solo il 403 significa davvero "nessun codice claimato"; per tutto il
+  // resto lo stato è ignoto e si dice, con un retry.
+  const [phase, setPhase] = useState<"loading" | "unclaimed" | "claimed" | "error">("loading");
   const [code, setCode] = useState("");
   const [claimedCode, setClaimedCode] = useState<string | null>(null);
-  const [stats, setStats] = useState<{ signups: number; paid: number } | null>(null);
+  const [stats, setStats] = useState<{
+    signups: number;
+    paying: number;
+    inviteeBonusDays: number;
+    tiers: ReferralTierStat[];
+  } | null>(null);
   const [statsErr, setStatsErr] = useState(false);
   const [claimErr, setClaimErr] = useState<"taken" | "invalid" | "generic" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -7442,16 +7505,37 @@ function ReferralPanel() {
         if (r.ok) {
           const d = await r.json();
           setClaimedCode(typeof d?.code === "string" ? d.code : null);
-          setStats({ signups: Number(d?.signups) || 0, paid: Number(d?.paid) || 0 });
+          setStats({
+            signups: Number(d?.signups) || 0,
+            paying: Number(d?.paying) || 0,
+            inviteeBonusDays: Number(d?.inviteeBonusDays) || 0,
+            tiers: Array.isArray(d?.tiers)
+              ? (d.tiers as ReferralTierStat[]).map((t) => ({
+                  tier: Number(t?.tier) || 0,
+                  reached: t?.reached === true,
+                  granted_at: typeof t?.granted_at === "string" ? t.granted_at : null,
+                  // `null` = il premio non è tempo (la stanza). Number(null) è 0,
+                  // quindi il null va riconosciuto prima della conversione.
+                  rewardDays: typeof t?.rewardDays === "number" ? t.rewardDays : null,
+                  grantsRoom: t?.grantsRoom === true,
+                }))
+              : [],
+          });
           setPhase("claimed");
         } else if (r.status === 403) {
           setPhase("unclaimed"); // nessun codice claimato: mostra il claim
         } else {
-          setPhase("unclaimed");
+          // Stato IGNOTO: offrire il claim qui è dannoso (chi ha già un codice
+          // prenderebbe un 409). Se un codice lo sappiamo già, si resta su
+          // "claimed" e le KPI mostrano il trattino.
           setStatsErr(true);
+          setPhase(claimedCode ? "claimed" : "error");
         }
       })
-      .catch(() => { setPhase("unclaimed"); setStatsErr(true); });
+      .catch(() => {
+        setStatsErr(true);
+        setPhase(claimedCode ? "claimed" : "error");
+      });
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot mount load
   useEffect(() => { loadStats(); }, []);
@@ -7460,6 +7544,40 @@ function ReferralPanel() {
   const valid = /^[A-Z0-9_-]{2,20}$/.test(normalized);
   const shownCode = claimedCode ?? "";
   const link = shownCode && typeof window !== "undefined" ? `${window.location.origin}/r/${shownCode}` : "";
+  // Il primo gradino non ancora raggiunto: è quello di cui si mostra la distanza.
+  const nextTier = stats?.tiers.find((t) => !t.reached) ?? null;
+  // #REFERRAL-KPI-0808 — le KPI personali, tutte derivate da /api/referral/stats:
+  // nessun premio e nessuna soglia sono scritti qui (il primo gradino vale 29
+  // giorni, non 30: hardcodarli farebbe mentire il pannello appena la scala cambia).
+  //
+  // Giorni di PRO GUADAGNATI: si contano solo i gradini con `granted_at` valorizzato,
+  // non quelli `reached`. `reached` è aritmetica sul conteggio; `granted_at` è la
+  // prova che il grant è avvenuto — dire "guadagnati" per un premio non concesso
+  // sarebbe una bugia. Il gradino 10 ha rewardDays null (la stanza): non è tempo e
+  // non entra nella somma (Number(null) sarebbe 0, ma il null va escluso a monte).
+  const earnedDays = (stats?.tiers ?? []).reduce(
+    (sum, t) => sum + (t.granted_at !== null && t.rewardDays !== null ? t.rewardDays : 0),
+    0
+  );
+  // Con zero iscritti il rapporto non esiste: trattino, mai NaN e mai uno 0% che
+  // suonerebbe come "il tuo pubblico non converte" quando non c'è ancora pubblico.
+  //
+  // NESSUN clamp a 100%, e non è una dimenticanza: `paying` ⊆ `signups` per
+  // costruzione — /api/referral/stats le calcola con lo STESSO
+  // `WHERE UPPER(referred_by) = $1 AND identifier <> $2`, e `paying` aggiunge solo
+  // il requisito dell'ordine granted. Un rapporto >100% è irraggiungibile, quindi
+  // difendersene sarebbe codice morto. ⚠️ Se un giorno le due query vengono
+  // disaccoppiate, questa KPI perde la sua garanzia: rimettere un guard qui.
+  const convPct = stats && stats.signups > 0 ? Math.round((stats.paying / stats.signups) * 100) : null;
+  // Frazione verso il gradino successivo, clampata: tutti i gradini raggiunti → piena.
+  const progressPct =
+    nextTier && nextTier.tier > 0
+      ? Math.min(100, Math.max(0, Math.round(((stats?.paying ?? 0) / nextTier.tier) * 100)))
+      : 100;
+  // Loading → "…", errore stats → "—". Lo zero resta uno zero: è un valore
+  // legittimo il primo giorno, non uno stato rotto.
+  const kpiVal = (v: number | null, suffix = "") =>
+    statsErr ? "—" : !stats ? "…" : v === null ? "—" : `${v}${suffix}`;
 
   const claim = async () => {
     if (!valid || busy) return;
@@ -7474,7 +7592,10 @@ function ReferralPanel() {
         setClaimedCode(String(d?.code ?? normalized));
         setPhase("claimed");
         loadStats();
-        trackEvent("referral_code_claimed", { meta: { code: normalized } });
+        // Niente `code` nel meta: gli usage event sono dichiarati anonimi in
+        // /privacy e il referral_code è riconducibile a un profilo. Ci serve
+        // quante volte accade, non quale codice.
+        trackEvent("referral_code_claimed");
       } else if (r.status === 409 && d?.code) {
         // Avevi gia' un codice (magari claimato da un altro device): usalo.
         setClaimedCode(String(d.code));
@@ -7499,15 +7620,15 @@ function ReferralPanel() {
     try { await navigator.clipboard.writeText(link); } catch { /* clipboard denied: link shown below anyway */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    trackEvent("referral_link_copied", { meta: { code: shownCode } });
+    trackEvent("referral_link_copied"); // vedi sopra: nessun codice nel meta
   };
 
   const c = pick5(lang, {
-    it: { title: "Invita", intro: "Condividi il tuo link: chi si iscrive col tuo codice ti viene attribuito.", promo: "I nuovi iscritti hanno la promo di lancio −50% sul primo acquisto (uguale per tutti): lo sconto si applica da solo al checkout.", codeLabel: "Scegli il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _ · una volta scelto non si cambia", claimBtn: "Riserva il codice", claimBusy: "Riservo…", errTaken: "Codice già preso: scegline un altro.", errInvalid: "Codice non valido (2–20 caratteri: lettere, numeri, - _).", errGeneric: "Errore momentaneo, riprova.", yourCode: "Il tuo codice", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paid: "Di cui abbonati", statsErr: "Statistiche non disponibili al momento.", loading: "Carico…", note: "Guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
-    en: { title: "Invite", intro: "Share your link: anyone who signs up with your code is attributed to you.", promo: "New sign-ups get the −50% launch promo on their first purchase (same for everyone): the discount applies automatically at checkout.", codeLabel: "Choose your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _ · cannot be changed once claimed", claimBtn: "Claim code", claimBusy: "Claiming…", errTaken: "Code already taken — pick another.", errInvalid: "Invalid code (2–20 chars: letters, numbers, - _).", errGeneric: "Temporary error, try again.", yourCode: "Your code", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paid: "Subscribers among them", statsErr: "Stats unavailable right now.", loading: "Loading…", note: "You earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
-    es: { title: "Invitar", intro: "Comparte tu link: quien se registre con tu código se te atribuye.", promo: "Los nuevos registros tienen la promo de lanzamiento −50% en su primera compra (igual para todos): el descuento se aplica solo al finalizar la compra.", codeLabel: "Elige tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _ · no se puede cambiar", claimBtn: "Reservar código", claimBusy: "Reservando…", errTaken: "Código ya ocupado: elige otro.", errInvalid: "Código no válido (2–20 caracteres: letras, números, - _).", errGeneric: "Error momentáneo, reintenta.", yourCode: "Tu código", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paid: "De ellos, suscriptores", statsErr: "Estadísticas no disponibles ahora.", loading: "Cargando…", note: "Ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
-    fr: { title: "Inviter", intro: "Partagez votre lien : toute inscription avec votre code vous est attribuée.", promo: "Les nouveaux inscrits ont la promo de lancement −50% sur leur premier achat (identique pour tous) : la réduction s'applique automatiquement au paiement.", codeLabel: "Choisissez votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _ · définitif une fois réservé", claimBtn: "Réserver le code", claimBusy: "Réservation…", errTaken: "Code déjà pris — choisissez-en un autre.", errInvalid: "Code invalide (2–20 caractères : lettres, chiffres, - _).", errGeneric: "Erreur momentanée, réessayez.", yourCode: "Votre code", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paid: "Dont abonnés", statsErr: "Statistiques indisponibles pour le moment.", loading: "Chargement…", note: "Vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
-    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый, кто зарегистрируется по вашему коду, закрепляется за вами.", promo: "Новые регистрации получают промо запуска −50% на первую покупку (для всех одинаково): скидка применяется автоматически при оплате.", codeLabel: "Выберите ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _ · нельзя изменить после", claimBtn: "Занять код", claimBusy: "Резервирую…", errTaken: "Код уже занят — выберите другой.", errInvalid: "Неверный код (2–20 символов).", errGeneric: "Временная ошибка, попробуйте ещё раз.", yourCode: "Ваш код", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paid: "Из них подписчиков", statsErr: "Статистика сейчас недоступна.", loading: "Загрузка…", note: "Вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам, чтобы запросить." },
+    it: { title: "Invita", intro: "Condividi il tuo link: ogni amico che si iscrive e paga ti avvicina al premio successivo.", promo: "La promo di lancio −50% sul primo acquisto vale per chiunque si iscriva, con o senza invito: non è un vantaggio del tuo link.", codeLabel: "Scegli il tuo codice creator", placeholder: "ILTUOCODICE", hint: "2–20 caratteri: lettere, numeri, - _ · una volta scelto non si cambia", claimBtn: "Riserva il codice", claimBusy: "Riservo…", errTaken: "Codice già preso: scegline un altro.", errInvalid: "Codice non valido (2–20 caratteri: lettere, numeri, - _).", errGeneric: "Errore momentaneo, riprova.", yourCode: "Il tuo codice", linkLabel: "Il tuo link di invito", copy: "Copia link", copied: "Copiato ✓", signups: "Iscritti col tuo codice", paying: "Amici paganti", kpiConv: "Conversione", kpiEarned: "Giorni PRO ottenuti", zeroState: "Ancora nessun iscritto col tuo codice: manda il link qui sopra a chi ti chiede già i pronostici.", statsErr: "Statistiche non disponibili al momento.", retry: "Riprova", pending: "in arrivo", loading: "Carico…", friendGets: (d: number) => `Chi si iscrive col tuo link riceve ${d} giorni di PRO gratis: è l'argomento con cui convincerlo.`, rewardsTitle: "I tuoi premi", progress: (n: number, k: number) => `${n === 1 ? "1 amico pagante" : `${n} amici paganti`} · ${k} al prossimo premio`, progressDone: (n: number) => `${n} amici paganti · tutti i premi sbloccati`, tierAt: (n: number) => `a ${n} amici`, rewardDays: (d: number) => `+${d} giorni di PRO`, rewardRoom: "Stanza Telegram riservata", nextUp: (r: string, n: number) => `Prossimo: ${r} · a ${n} amici paganti`, note: "Opzione creator: guadagni sugli abbonamenti dei tuoi iscritti solo se attiviamo la revenue sul tuo codice — scrivici per richiederla." },
+    en: { title: "Invite", intro: "Share your link: every friend who signs up and pays brings you closer to the next reward.", promo: "The −50% launch promo on the first purchase applies to anyone who signs up, invited or not: it is not a perk of your link.", codeLabel: "Choose your creator code", placeholder: "YOURCODE", hint: "2–20 chars: letters, numbers, - _ · cannot be changed once claimed", claimBtn: "Claim code", claimBusy: "Claiming…", errTaken: "Code already taken — pick another.", errInvalid: "Invalid code (2–20 chars: letters, numbers, - _).", errGeneric: "Temporary error, try again.", yourCode: "Your code", linkLabel: "Your invite link", copy: "Copy link", copied: "Copied ✓", signups: "Sign-ups with your code", paying: "Paying friends", kpiConv: "Conversion", kpiEarned: "PRO days earned", zeroState: "No sign-ups yet: send the link above to the people who already ask you for picks.", statsErr: "Stats unavailable right now.", retry: "Retry", pending: "on its way", loading: "Loading…", friendGets: (d: number) => `Anyone who signs up with your link gets ${d} free days of PRO — that is your argument to convince them.`, rewardsTitle: "Your rewards", progress: (n: number, k: number) => `${n === 1 ? "1 paying friend" : `${n} paying friends`} · ${k} to the next reward`, progressDone: (n: number) => `${n} paying friends · all rewards unlocked`, tierAt: (n: number) => `at ${n} friends`, rewardDays: (d: number) => `+${d} days of PRO`, rewardRoom: "Private Telegram room", nextUp: (r: string, n: number) => `Next: ${r} · at ${n} paying friends`, note: "Creator option: you earn on your sign-ups' subscriptions only if we enable revenue on your code — reach out to request it." },
+    es: { title: "Invitar", intro: "Comparte tu link: cada amigo que se registra y paga te acerca al siguiente premio.", promo: "La promo de lanzamiento −50% en la primera compra la recibe cualquiera que se registre, con o sin invitación: no es una ventaja de tu link.", codeLabel: "Elige tu código de creator", placeholder: "TUCODIGO", hint: "2–20 caracteres: letras, números, - _ · no se puede cambiar", claimBtn: "Reservar código", claimBusy: "Reservando…", errTaken: "Código ya ocupado: elige otro.", errInvalid: "Código no válido (2–20 caracteres: letras, números, - _).", errGeneric: "Error momentáneo, reintenta.", yourCode: "Tu código", linkLabel: "Tu link de invitación", copy: "Copiar link", copied: "Copiado ✓", signups: "Registros con tu código", paying: "Amigos que pagan", kpiConv: "Conversión", kpiEarned: "Días PRO obtenidos", zeroState: "Aún sin registros con tu código: manda el link de arriba a quien ya te pide pronósticos.", statsErr: "Estadísticas no disponibles ahora.", retry: "Reintentar", pending: "en camino", loading: "Cargando…", friendGets: (d: number) => `Quien se registre con tu link recibe ${d} días de PRO gratis: es el argumento para convencerlo.`, rewardsTitle: "Tus premios", progress: (n: number, k: number) => `${n === 1 ? "1 amigo que paga" : `${n} amigos que pagan`} · ${k} para el próximo premio`, progressDone: (n: number) => `${n} amigos que pagan · todos los premios desbloqueados`, tierAt: (n: number) => `con ${n} amigos`, rewardDays: (d: number) => `+${d} días de PRO`, rewardRoom: "Sala privada de Telegram", nextUp: (r: string, n: number) => `Siguiente: ${r} · con ${n} amigos que pagan`, note: "Opción creator: ganas con las suscripciones de tus registros solo si activamos la revenue en tu código — escríbenos para solicitarla." },
+    fr: { title: "Inviter", intro: "Partagez votre lien : chaque ami qui s'inscrit et paie vous rapproche de la récompense suivante.", promo: "La promo de lancement −50% sur le premier achat s'applique à toute personne qui s'inscrit, avec ou sans invitation : ce n'est pas un avantage de votre lien.", codeLabel: "Choisissez votre code creator", placeholder: "VOTRECODE", hint: "2–20 caractères : lettres, chiffres, - _ · définitif une fois réservé", claimBtn: "Réserver le code", claimBusy: "Réservation…", errTaken: "Code déjà pris — choisissez-en un autre.", errInvalid: "Code invalide (2–20 caractères : lettres, chiffres, - _).", errGeneric: "Erreur momentanée, réessayez.", yourCode: "Votre code", linkLabel: "Votre lien d'invitation", copy: "Copier le lien", copied: "Copié ✓", signups: "Inscriptions avec votre code", paying: "Amis payants", kpiConv: "Conversion", kpiEarned: "Jours PRO obtenus", zeroState: "Aucune inscription pour l'instant : envoyez le lien ci-dessus à ceux qui vous demandent déjà des pronostics.", statsErr: "Statistiques indisponibles pour le moment.", retry: "Réessayer", pending: "en cours", loading: "Chargement…", friendGets: (d: number) => `Toute personne inscrite via votre lien reçoit ${d} jours de PRO offerts : c'est votre argument pour la convaincre.`, rewardsTitle: "Vos récompenses", progress: (n: number, k: number) => `${n === 1 ? "1 ami payant" : `${n} amis payants`} · ${k} avant la prochaine récompense`, progressDone: (n: number) => `${n} amis payants · toutes les récompenses débloquées`, tierAt: (n: number) => `à ${n} amis`, rewardDays: (d: number) => `+${d} jours de PRO`, rewardRoom: "Salon Telegram privé", nextUp: (r: string, n: number) => `Suivant : ${r} · à ${n} amis payants`, note: "Option créateur : vous gagnez sur les abonnements de vos inscrits uniquement si nous activons la revenue sur votre code — contactez-nous pour la demander." },
+    ru: { title: "Пригласить", intro: "Поделитесь ссылкой: каждый друг, который зарегистрируется и оплатит, приближает вас к следующей награде.", promo: "Промо запуска −50% на первую покупку получает любой, кто зарегистрируется, — с приглашением или без: это не преимущество вашей ссылки.", codeLabel: "Выберите ваш код креатора", placeholder: "YOURCODE", hint: "2–20 символов: латинские буквы, цифры, - _ · нельзя изменить после", claimBtn: "Занять код", claimBusy: "Резервирую…", errTaken: "Код уже занят — выберите другой.", errInvalid: "Неверный код (2–20 символов).", errGeneric: "Временная ошибка, попробуйте ещё раз.", yourCode: "Ваш код", linkLabel: "Ваша ссылка-приглашение", copy: "Скопировать ссылку", copied: "Скопировано ✓", signups: "Регистраций по вашему коду", paying: "Оплатившие друзья", kpiConv: "Конверсия", kpiEarned: "Получено дней PRO", zeroState: "Регистраций пока нет: отправьте ссылку выше тем, кто уже спрашивает у вас прогнозы.", statsErr: "Статистика сейчас недоступна.", retry: "Повторить", pending: "в пути", loading: "Загрузка…", friendGets: (d: number) => `Каждый, кто зарегистрируется по вашей ссылке, получает ${d} дней PRO бесплатно — это ваш главный аргумент.`, rewardsTitle: "Ваши награды", progress: (n: number, k: number) => `Оплатившие друзья: ${n} · до следующей награды: ${k}`, progressDone: (n: number) => `Оплатившие друзья: ${n} · все награды получены`, tierAt: (n: number) => `при ${n} друзьях`, rewardDays: (d: number) => `+${d} дней PRO`, rewardRoom: "Закрытая комната в Telegram", nextUp: (r: string, n: number) => `Далее: ${r} · при ${n} оплативших друзьях`, note: "Опция для креаторов: вы зарабатываете на подписках приглашённых только если мы включим revenue для вашего кода — напишите нам." },
   });
 
   return (
@@ -7516,14 +7637,23 @@ function ReferralPanel() {
         <div className="space-y-1">
           <p className="eyebrow">{c.title}</p>
           <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{c.intro}</p>
-          {/* #PRELAUNCH-AUDIT: il claim −50% appare SOLO quando la promo è davvero
-              attiva (stesso flag del LaunchPromoBanner) → niente deceptive pricing. */}
-          {process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true" && (
-            <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{c.promo}</p>
-          )}
         </div>
         {phase === "loading" && (
           <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.loading}</p>
+        )}
+        {/* Stato ignoto (5xx/rete al primo caricamento): NON si offre il claim —
+            vedi il commento su `phase`. Si dice cosa è successo e si riprova. */}
+        {phase === "error" && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.statsErr}</p>
+            <button
+              type="button"
+              onClick={() => { setStatsErr(false); setPhase("loading"); loadStats(); }}
+              className="mb-cta"
+            >
+              {c.retry}
+            </button>
+          </div>
         )}
         {phase === "unclaimed" && (
           <div className="space-y-2">
@@ -7557,23 +7687,118 @@ function ReferralPanel() {
               <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.linkLabel}</p>
               <p className="mb-link">{link}</p>
               <button onClick={copyLink} className="mb-cta">{copied ? c.copied : c.copy}</button>
+              {/* Cosa ottiene l'AMICO: sta accanto al link perché è la frase che chi
+                  invita copia nel messaggio. */}
+              {!!stats?.inviteeBonusDays && (
+                <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.friendGets(stats.inviteeBonusDays)}</p>
+              )}
             </div>
-            <div className="flex gap-3">
-              <div className="am-surface p-3 flex-1 text-center">
-                <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.signups : "…"}</div>
-                <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.signups}</div>
+            {/* #REFERRAL-KPI-0808 — stat-tile `am-kpi chamfer-sm`, le stesse della
+                statbar di /app: qui con --surf=inset perché stanno DENTRO una card
+                (su tema chiaro un tile --am-panel sarebbe bianco su bianco).
+                Un solo valore coral — i giorni ottenuti, cioè il premio — mentre i
+                conteggi grezzi restano neutri: prima erano coral entrambi e la
+                gerarchia non si leggeva. Il coral qui significa "premio", nient'altro.
+                Mobile-first: 2 colonne a 390px, riga che avvolge il contenuto da 640px
+                (come .am-statbar) invece di 4 box stirati. */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2.5">
+              <div className="am-kpi chamfer-sm" style={{ ["--surf" as string]: "var(--am-inset)" }}>
+                <span className="v">{kpiVal(stats?.signups ?? null)}</span>
+                <span className="l">{c.signups}</span>
               </div>
-              <div className="am-surface p-3 flex-1 text-center">
-                <div className="text-2xl font-black font-mono text-[var(--am-coral)]">{statsErr ? "—" : stats ? stats.paid : "…"}</div>
-                <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.paid}</div>
+              <div className="am-kpi chamfer-sm" style={{ ["--surf" as string]: "var(--am-inset)" }}>
+                <span className="v">{kpiVal(stats?.paying ?? null)}</span>
+                <span className="l">{c.paying}</span>
+              </div>
+              <div className="am-kpi chamfer-sm" style={{ ["--surf" as string]: "var(--am-inset)" }}>
+                <span className="v">{kpiVal(convPct, "%")}</span>
+                <span className="l">{c.kpiConv}</span>
+              </div>
+              <div className="am-kpi chamfer-sm" style={{ ["--surf" as string]: "var(--am-inset)" }}>
+                <span className="v sig">{kpiVal(earnedDays)}</span>
+                <span className="l">{c.kpiEarned}</span>
               </div>
             </div>
+            {/* Zero iscritti non è un errore: lo si dice, con l'azione da fare. */}
+            {!statsErr && stats?.signups === 0 && (
+              <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.zeroState}</p>
+            )}
+            {/* Il progresso è il motore del programma: senza, l'utente non sa di
+                essere a metà strada. I premi arrivano dall'API — mai hardcodati. */}
+            {!!stats?.tiers.length && (
+              <div className="am-surface-inset p-3 space-y-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <p className="text-[10px] font-mono text-[var(--am-muted)]">{c.rewardsTitle}</p>
+                  <p className="text-[10px] font-mono text-[var(--am-coral)]">
+                    {nextTier
+                      ? c.progress(stats.paying, Math.max(1, nextTier.tier - stats.paying))
+                      : c.progressDone(stats.paying)}
+                  </p>
+                </div>
+                {/* La barra è un SUPPORTO: ogni numero che rappresenta è già scritto
+                    sopra (paganti · quanti mancano) e sotto (il premio, nominato).
+                    Quindi aria-hidden — a un lettore di schermo non toglie niente.
+                    Track su --am-line-2 e non --am-inset: il blocco È già inset e un
+                    track dello stesso colore sarebbe invisibile (chiaro e scuro).
+                    maxWidth: oltre ~420px la lunghezza non aggiunge informazione — a
+                    1440px una barra piena da 1090px leggeva come un filetto decorativo
+                    attraverso il pannello, non come una misura. */}
+                <div
+                  aria-hidden="true"
+                  style={{ height: 6, maxWidth: 420, borderRadius: 999, background: "var(--am-line-2)", overflow: "hidden" }}
+                >
+                  <div style={{ width: `${progressPct}%`, height: "100%", borderRadius: 999, background: "var(--am-coral)" }} />
+                </div>
+                {/* Il prossimo premio, NOMINATO: prima bisognava leggere la lista per
+                    capire cosa veniva dopo. Il testo del premio è la stessa stringa
+                    della lista → una sola fonte, niente numeri riscritti a mano. */}
+                {nextTier && (
+                  <p className="text-[10px] font-mono text-[var(--am-muted)]">
+                    {c.nextUp(
+                      nextTier.rewardDays !== null ? c.rewardDays(nextTier.rewardDays) : c.rewardRoom,
+                      nextTier.tier
+                    )}
+                  </p>
+                )}
+                <ul className="space-y-1">
+                  {stats.tiers.map((t) => (
+                    <li
+                      key={t.tier}
+                      className="flex items-baseline gap-2 text-[10px] font-mono"
+                      style={{ color: t.reached ? "var(--am-coral)" : "var(--am-muted-2)" }}
+                    >
+                      <span aria-hidden="true" style={{ width: 10, flex: "0 0 auto" }}>{t.reached ? "✓" : "·"}</span>
+                      <span style={{ flex: "0 0 auto", minWidth: 76 }}>{c.tierAt(t.tier)}</span>
+                      <span style={{ minWidth: 0 }}>
+                        {t.rewardDays !== null ? c.rewardDays(t.rewardDays) : c.rewardRoom}
+                        {/* Soglia raggiunta ma premio non ancora concesso: senza
+                            questo si leggeva «✓ a 2 amici» accanto a «giorni
+                            ottenuti 0» e il buco restava senza spiegazione.
+                            I giorni si contano da granted_at, non da reached. */}
+                        {t.reached && !t.granted_at && (
+                          <span style={{ color: "var(--am-muted-2)" }}> · {c.pending}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {statsErr && (
               <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.statsErr}</p>
             )}
           </>
         )}
-        <p className="text-[10px] font-mono text-[var(--am-muted-2)] border-t pt-3" style={{ borderColor: "var(--am-line)" }}>{c.note}</p>
+        {/* Tono minore, sotto la linea: la rev-share è un'opzione per creator, non
+            l'offerta; il −50% è un'informazione sul prezzo, non un premio.
+            #PRELAUNCH-AUDIT: il claim −50% appare SOLO quando la promo è davvero
+            attiva (stesso flag del LaunchPromoBanner) → niente deceptive pricing. */}
+        <div className="space-y-1 border-t pt-3" style={{ borderColor: "var(--am-line)" }}>
+          <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.note}</p>
+          {process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true" && (
+            <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.promo}</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -8012,92 +8237,68 @@ function UnifiedBetsTab({
   );
 }
 
-// ─── GDPR Cookie Consent Banner ──────────────────────────────────────────────
-
-function CookieBanner() {
-  const [visible, setVisible] = useState(false);
-  const lang = useLang();
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync from localStorage: a lazy initializer would mismatch the server-rendered (hidden) markup at hydration.
-    try { if (!localStorage.getItem("gdpr_consent")) setVisible(true); } catch { /* SSR/no-storage */ }
-  }, []);
-  if (!visible) return null;
-  const decide = (v: "accepted" | "declined") => {
-    try { localStorage.setItem("gdpr_consent", v); } catch { /* */ }
-    // #PRELAUNCH-AUDIT: segnala il consenso ai client che caricano terze parti solo
-    // dopo l'Accept (es. LiveChat/Tawk.to) → si attivano senza reload.
-    try { window.dispatchEvent(new Event("betredge:gdpr-consent")); } catch { /* */ }
-    setVisible(false);
-  };
-  const it = lang === "it";
-  return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9999,
-      background: "rgba(10,12,18,0.97)", borderTop: "1px solid rgba(255,255,255,0.08)",
-      padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", backdropFilter: "blur(8px)" }}>
-      <p style={{ color: "#94a3b8", fontSize: "11px", fontFamily: "monospace", flex: 1, minWidth: "200px", margin: 0 }}>
-        {it ? "Usiamo cookie per migliorare l'esperienza. I link ai bookmaker partner possono essere affiliati — potremmo ricevere una commissione, senza costi aggiuntivi per te."
-            : "We use cookies to improve your experience. Links to partner sportsbooks may be affiliate links — we may earn a commission at no extra cost to you."}
-      </p>
-      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-        <button onClick={() => decide("declined")} style={{ fontSize: "10px", fontFamily: "monospace", padding: "6px 12px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#64748b", cursor: "pointer" }}>
-          {it ? "Rifiuta" : "Decline"}
-        </button>
-        <button onClick={() => decide("accepted")} style={{ fontSize: "10px", fontFamily: "monospace", padding: "6px 12px", borderRadius: "6px", border: "1px solid rgba(99,212,255,0.4)", background: "rgba(99,212,255,0.08)", color: "#67e8f9", cursor: "pointer" }}>
-          {it ? "Accetta" : "Accept"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-const VALID_TABS: readonly Tab[] = ["bets", "plans", "history", "leaderboard", "match-builder", "invita"];
-
-// #UI-ACCOUNT-DROPDOWN-0623: la vecchia tab "account" è ora il dropdown; i deep-link
-// legacy (?tab=account, banner ?tab=account&plans=1) atterrano sulla tab Plans.
+// #URL-PATHS-0810: le tab valide, gli alias legacy (?tab=account→plans di
+// #UI-ACCOUNT-DROPDOWN-0623, ?tab=builder→match-builder) e i path per-tab vivono
+// in lib/app-tab-paths, condivisi col middleware che redirige i /app?tab= legacy.
 // #PARTNER-REMOVE-0626: la tab Partner è stata rimossa; i deep-link legacy
 // ?tab=partner(s) ricadono sul board (default), nessun alias.
-const TAB_ALIASES: Record<string, Tab> = { account: "plans" };
 
 export default function Dashboard() {
-  // ?tab= deep-link (#021 hotfix): lets external pages (e.g. the World Cup
-  // hub's Place Bet button) land directly on a tab. Whitelisted values only.
+  // #URL-PATHS-0810: la tab si risolve dal pathname (/predictions, /history, …);
+  // il ?tab= resta come fallback per link legacy non ancora passati dal middleware.
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window === "undefined") return "bets";
-    const raw = new URLSearchParams(window.location.search).get("tab");
-    const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
-    return requested && VALID_TABS.includes(requested) ? requested : "bets";
+    const fromPath = PATH_TO_TAB[window.location.pathname];
+    if (fromPath) return fromPath;
+    return normalizeTab(new URLSearchParams(window.location.search).get("tab")) ?? "bets";
   });
-  // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a /app?tab=… ma `tab` viene
-  // letto dall'URL solo al mount: un <Link> alla STESSA route (siamo già su /app)
-  // non lo risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
-  // same-page e cambiamo tab in place (come la nav laterale, setTab). Gli href
-  // cross-route (/world-cup, /community) tornano false → naviga il <Link>.
+  // #URL-PATHS-0810: la barra URL segue la tab attiva. replaceState (non push):
+  // il cambio tab non creava una entry di history prima e non deve iniziare ora.
+  // Gli altri query param restano intatti (?sport/?ref/?crm… hanno i loro effect).
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      // Solo sulle pagine del desk: se siamo altrove (es. render annidato futuro)
+      // la barra URL non va toccata.
+      if (!PATH_TO_TAB[url.pathname] && url.pathname !== "/app") return;
+      if (PATH_TO_TAB[url.pathname] === tab && !url.searchParams.has("tab")) return;
+      url.pathname = TAB_PATHS[tab];
+      url.searchParams.delete("tab");
+      window.history.replaceState(null, "", url);
+    } catch { /* URL non disponibile: no-op */ }
+  }, [tab]);
+  // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a una pagina del desk ma
+  // `tab` viene letto dall'URL solo al mount: un <Link> alla STESSA route non lo
+  // risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
+  // del desk (path nuovi e /app?tab= legacy) e cambiamo tab in place (come la
+  // nav laterale). Gli href cross-route (/world-cup, /community) tornano false
+  // → naviga il <Link>.
   const handleBannerCta = (href: string): boolean => {
     try {
       const url = new URL(href, window.location.origin);
-      if (url.pathname === "/app") {
-        const raw = url.searchParams.get("tab");
-        const requested = (raw && TAB_ALIASES[raw]) || (raw as Tab | null);
-        if (requested && VALID_TABS.includes(requested)) {
-          // Deep-link legacy /app?tab=account(&plans=1) → l'alias mappa account→plans.
-          setTab(requested);
-          return true;
-        }
+      const requested = PATH_TO_TAB[url.pathname]
+        ?? (url.pathname === "/app" ? normalizeTab(url.searchParams.get("tab")) ?? "bets" : null);
+      if (requested) {
+        setTab(requested);
+        return true;
       }
     } catch { /* href non parsabile: lascia fare al <Link> */ }
     return false;
   };
   const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "en";
-    const stored = window.localStorage.getItem("agentic-lang") as Lang | null;
+    // #STORAGE-CRASH-0813: questa lettura girava NUDA dentro l'inizializzatore,
+    // cioe' durante il render: dove lo storage e' vietato (Safari privato,
+    // browser interni delle app, cookie bloccati) lanciava e portava l'INTERO
+    // desk nel boundary globale. Riprodotto con Playwright, stack alla mano.
+    const stored = storageGet("agentic-lang") as Lang | null;
     return stored && LANGUAGES.includes(stored) ? stored : "en";
   });
   const selectLanguage = (next: Lang) => {
     if (next === uiLanguage) return;
     setUiLanguage(next);
-    localStorage.setItem("agentic-lang", next);
+    storageSet("agentic-lang", next); // #STORAGE-CRASH-0813: un click non deve poter lanciare
     trackEvent("language_change", { language: next });
   };
   // #GOLIVE-QW-A: keep <html lang> in sync with the UI language (a11y + SEO).
@@ -8320,14 +8521,15 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
-  useEffect(() => { trackEvent("page_view"); }, []);
+  // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
+  // nel root layout (con il path), per ogni rotta. Tenerlo qui lo raddoppiava su /app.
   useEffect(() => {
     if (tab === "plans") trackEvent("plan_view");
   }, [tab]);
 
   // IP-based language detection — only runs when no stored preference exists
   useEffect(() => {
-    const stored = localStorage.getItem("agentic-lang");
+    const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
     if (stored && LANGUAGES.includes(stored as Lang)) return;
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
@@ -8336,7 +8538,7 @@ export default function Dashboard() {
         const primary = (d.languages ?? "").split(",")[0]?.split("-")[0]?.toLowerCase() as Lang;
         const detected: Lang = LANGUAGES.includes(primary) ? primary : "en";
         setUiLanguage(detected);
-        localStorage.setItem("agentic-lang", detected);
+        storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
       })
       .catch(() => { /* keep default */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -8716,7 +8918,10 @@ export default function Dashboard() {
         const data = await resp.json();
         const liveMatches: TennisMatch[] = data.matches ?? [];
         setTennisMatches(liveMatches);
-        setTennisIsPlaceholder(false);
+        // #TENNIS-NEVER-EMPTY: se il board è in modalità "ultimi match recenti"
+        // di riserva (nessun live/upcoming), mostra le card bypassando la
+        // finestra di trading, così non resta mai vuoto.
+        setTennisIsPlaceholder(data.is_placeholder ?? false);
         setTennisSummary(data.summary ?? null);
         setTennisComputedAt(data.computed_at ?? null);
       } else if (resp.status === 401 || resp.status === 403) {
@@ -8867,7 +9072,6 @@ export default function Dashboard() {
     <GeoCountryCtx.Provider value={geoCountry}>
     <main className="portal-root">
       <SportGlyphSprite />
-      <CookieBanner />
       {/* #PAYGATE-RETURN-SMOOTH: feedback al rientro da un checkout PayGate */}
       {payReturn && (
         <div role="status"
@@ -9005,10 +9209,12 @@ export default function Dashboard() {
               {/* ── IN EVIDENZA group ── */}
               <span className="rail-sep" />
               <span className="rail-lab is-second">{tNav.featured_label}</span>
-              {/* Track B: World Cup hub is a route, not a tab */}
-              <Link className="rail-item" href="/world-cup">
-                <SportIcon sport="worldcup" size={17} className="rail-ic" variant="sm" />
-                <span className="rail-label">World Cup</span>
+              {/* #TOOLS-HUB-0805: al posto della World Cup (torneo finito, hub
+                  archiviato ma ancora online) ci sono i calcolatori gratuiti.
+                  Rotta, non tab, come era per l'hub WC. */}
+              <Link className="rail-item" href="/tools">
+                <MenuIcon name="tools" size={18} className="rail-ic" />
+                <span className="rail-label">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
               <a className="rail-item" href="/community">
@@ -9040,9 +9246,12 @@ export default function Dashboard() {
           <nav className="am-featured" aria-label={tNav.featured_label}>
             <span className="am-featured-lab">{tNav.featured_label}</span>
             <div className="am-featured-grid">
-              <Link className="am-feat-tile" href="/world-cup">
-                <SportIcon sport="worldcup" size={22} className="am-feat-ic" variant="sm" />
-                <span className="am-feat-l">World Cup</span>
+              {/* #TOOLS-HUB-0805: specchia la voce Strumenti del rail (su mobile
+                  il rail sparisce, senza questa tile l'hub /tools resterebbe
+                  raggiungibile solo dal footer). */}
+              <Link className="am-feat-tile" href="/tools">
+                <MenuIcon name="tools" size={22} className="am-feat-ic" />
+                <span className="am-feat-l">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
               <a className="am-feat-tile" href="/community">
                 <MenuIcon name="creator" size={22} className="am-feat-ic" />
@@ -9070,7 +9279,8 @@ export default function Dashboard() {
           </nav>
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
-              <h2>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h2>
+              {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading */}
+              <h1>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
               <p className="am-sub">
                 {tab === "plans" ? (
                   uiLanguage === "it"

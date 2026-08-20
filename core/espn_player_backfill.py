@@ -16,10 +16,11 @@ from core.espn_player_stats import parse_summary_players, aggregate_players
 from core.player_models import build_profile
 from core.player_data_tier import min_appearances_for
 from core.player_data_writers import upsert_player_profiles
+from core.espn_http import ESPN_HEADERS, ESPN_SITE_API
 
 logger = logging.getLogger(__name__)
 
-_SITE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
+_SITE = f"{ESPN_SITE_API}/soccer"
 
 
 async def _scoreboard_event_ids(client: httpx.AsyncClient, espn_league: str, day: date) -> list[str]:
@@ -52,7 +53,7 @@ async def build_competition_profiles(espn_league: str, our_league: str, season: 
     """Ritorna (profiles, summary) per una competizione. Non scrive."""
     summary = {"league": our_league, "events": 0, "players": 0, "eligible": 0, "errors": []}
     today = date.fromisoformat(today_iso[:10])
-    async with httpx.AsyncClient(headers={"User-Agent": "Mozilla/5.0"}, timeout=20.0) as client:
+    async with httpx.AsyncClient(headers=ESPN_HEADERS, timeout=20.0) as client:
         event_ids: list[str] = []
         for d in range(days_back + 1):
             event_ids.extend(await _scoreboard_event_ids(client, espn_league, today - timedelta(days=d)))

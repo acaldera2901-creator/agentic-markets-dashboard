@@ -3,7 +3,7 @@ import { fetchAllTodayMatches } from "@/lib/football-data";
 import { dbQuery } from "@/lib/db";
 import { requireAccess } from "@/lib/auth";
 import { settlePredictionLog } from "@/lib/prediction-log";
-import { SUMMER_LIVE_ESPN_SLUGS } from "@/lib/summer-leagues";
+import { SUMMER_LIVE_ESPN_SLUGS, ESPN_SLUGS } from "@/lib/summer-leagues";
 
 export const dynamic = "force-dynamic";
 
@@ -43,9 +43,16 @@ async function fetchEspnLeagueLive(league: string): Promise<Record<string, LiveS
   const out: Record<string, LiveScore> = {};
   try {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    // #COVERAGE-0812-L1 — site.web.api, NON site.api. Il secondo risponde 403
+    // fuori dalle reti residenziali (runner GitHub e function serverless
+    // incluse): stessa root-cause chiusa nel generatore dello storico il
+    // 12/08 (#HISTORY-REFRESH-CI-0812) e nel feed tennis
+    // (#REQ-260805-betredge-03), rimasta qui. Essendo il ramo fail-soft
+    // (`!resp.ok` → mappa vuota), il guasto e' MUTO: i punteggi live delle leghe
+    // off-free-tier semplicemente non compaiono, senza un errore da nessuna parte.
     const resp = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${today}`,
-      { cache: "no-store" }
+      `https://site.web.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${today}`,
+      { cache: "no-store", headers: { "User-Agent": "Mozilla/5.0" } }
     );
     if (!resp.ok) return out;
     const data = await resp.json();
@@ -73,7 +80,34 @@ async function fetchEspnLeagueLive(league: string): Promise<Record<string, LiveS
 
 // Fetch the live feed from all sources and build the served map. No DB writes
 // here — persistence/settlement is a side effect scheduled via `after()`.
+// #COVERAGE-0812-L1 — quali scoreboard ESPN interrogare ADESSO.
+//
+// Prima si interrogava l'intera lista statica a ogni cache miss. Con 9 leghe
+// passava; a 25 (batch del 12/08) non passa piu': MISURATO il 12/08/2026,
+// 25 slug in parallelo = 5,71s totali, con tre slug fermi a 5,7s mentre gli
+// altri stavano sotto il secondo — cioe' ESPN che rallenta sotto 25 richieste
+// concorrenti dallo stesso IP. Promise.all aspetta il piu' lento, quindi
+// l'intero feed live pagava 5,7s: esattamente il "le card arrivano tardi" che
+// la cache TTL qui sopra era stata messa a tamponare.
+//
+// Un timeout per-fetch avrebbe solo mascherato il throttle (slug lenti = niente
+// punteggio, in silenzio). La causa e' interrogare 25 leghe quando ne hanno una
+// partita zero o due: si interrogano SOLO quelle con un fixture servito nella
+// finestra live. Tipicamente 0-4 slug, cioe' meno delle 9 di prima.
+async function liveSlugsInWindow(): Promise<string[]> {
+  const rows = await dbQuery<{ league: string }>(
+    `SELECT DISTINCT league FROM match_predictions
+      WHERE kickoff > NOW() - interval '150 minutes'
+        AND kickoff < NOW() + interval '6 hours'`
+  );
+  const wanted = new Set(rows.map((r) => ESPN_SLUGS[r.league]).filter(Boolean));
+  // Fail-soft: se la query non rende nulla non si spegne il live: si ricade
+  // sulla lista statica, che e' il comportamento di prima.
+  return wanted.size ? [...wanted] : SUMMER_LIVE_ESPN_SLUGS;
+}
+
 async function computeLive(): Promise<{ liveMap: Record<string, LiveScore>; matches: TodayMatch[] }> {
+  const summerSlugs = await liveSlugsInWindow();
   const [matches, espnFriendly, espnWorldCup, ...espnSummer] = await Promise.all([
     fetchAllTodayMatches(),
     fetchEspnLeagueLive("fifa.friendly"),
@@ -81,10 +115,10 @@ async function computeLive(): Promise<{ liveMap: Record<string, LiveScore>; matc
     // fifa.friendly. football-data's plan doesn't surface WC in-play (returns
     // count:0 / TIER_ONE on /matches), so ESPN is the only live WC source.
     fetchEspnLeagueLive("fifa.world"),
-    // #LIVE-LEAGUES-0627: summer leagues (Allsvenskan/Eliteserien/LoI/Chinese SL)
-    // — same ESPN scoreboards the settler uses, so their cards show in-play/FT
-    // scores like the WC. Keyed `espn:<id>` → direct match to the served fixture.
-    ...SUMMER_LIVE_ESPN_SLUGS.map((slug) => fetchEspnLeagueLive(slug)),
+    // #LIVE-LEAGUES-0627: le leghe off-free-tier — gli stessi scoreboard ESPN che
+    // usa il settler, così le loro card mostrano in-play/FT come la World Cup.
+    // Chiave `espn:<id>` → match diretto col fixture servito.
+    ...summerSlugs.map((slug) => fetchEspnLeagueLive(slug)),
   ]);
 
   const liveMap: Record<string, LiveScore> = { ...espnFriendly, ...espnWorldCup, ...Object.assign({}, ...espnSummer) };

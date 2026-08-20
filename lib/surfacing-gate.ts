@@ -127,6 +127,39 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   // ma ad agosto — le prime giornate, quelle che vanno live subito — 60 scende
   // a 62.5% mentre 65 tiene 70.0%. Si parte stretti e si rivede su dati live.
   ["belgian pro league", 65],    // anno 80.7% @65; agosto 70.0% @65
+  // #COVERAGE-0812-L1 — i 16 campionati nuovi entrano tutti a 70, il valore che
+  // in questa lista significa "quasi chiusa": nessun lab walk-forward e' ancora
+  // stato fatto su di loro, quindi la barra sta al massimo del cluster
+  // precauzionale (come Danish Superliga ed Ekstraklasa) e solo i favoriti piu'
+  // forti possono emergere come pick. Il resto della griglia mostra probabilita'
+  // calibrate SENZA pick: e' copertura, non consiglio.
+  //
+  // NB 70 non e' "zero pick": e' la convenzione della casa per il coverage-first
+  // (Serie B sta a 65 con lo stesso ragionamento). Il conteggio reale dei pick
+  // che emergono va MISURATO sul servito, non assunto — vedi il report.
+  //
+  // Da rivedere lega per lega su dati live settled (#MINORS-TIGHTEN), abbassando
+  // il floor solo dove i numeri lo guadagnano.
+  ["championship", 70],
+  ["league one", 70],
+  ["league two", 70],
+  ["scottish premiership", 70],
+  // "2. bundesliga" e NON "bundesliga": la sottostringa nuda catturerebbe anche
+  // la Bundesliga di BL1, che sta sul floor di default e non va toccata.
+  // Questa lega e' stata sondata dal lab e SCARTATA (64,3%, instabile per
+  // stagione, 5 squadre su 18 senza storico alla ripartenza): entra solo come
+  // copertura, e non deve mai diventare una fonte di pick abbassando il floor.
+  ["2. bundesliga", 70],
+  ["ligue 2", 70],
+  ["segunda division", 70],
+  ["eredivisie", 70],
+  ["primeira liga", 70],
+  ["turkish super lig", 70],
+  ["super league greece", 70],
+  ["liga profesional", 70],
+  ["brasileirao", 70],
+  ["liga mx", 70],
+  ["mls", 70],
 ];
 
 export type SurfaceDecision = {
@@ -165,6 +198,12 @@ export function surfaceFloorFor(
 // confidence sat below its floor was shown as "no clear favourite" (no pick),
 // so it must NOT count toward the public hit-rate. A null confidence cannot be
 // proven to have been surfaced → excluded (fail-closed, defensive).
+//
+// NB: this helper answers "was it shown", i.e. it must describe the rule that
+// was live WHEN the row was published — it is deliberately NOT updated with
+// #TENNIS-MARKET-GATE-0805 below. Retrofitting today's stricter rule onto rows
+// published under the old one would inflate the historical hit-rate by dropping
+// picks we DID show (survivorship). Same call made for #MINORS-TIGHTEN 07/07.
 export function isSurfacedRow(row: {
   sport?: string | null;
   competition?: string | null;
@@ -173,6 +212,64 @@ export function isSurfacedRow(row: {
   const c = row.confidence_score;
   if (c == null) return false;
   return c >= surfaceFloorFor(row.sport, row.competition);
+}
+
+// ── #TENNIS-MARKET-GATE-0805 ────────────────────────────────────────────────
+// Tennis: no market price on the picked side → no directional pick.
+//
+// Lab 2026-08-05 on LIVE settled rows (am-lab/REPORT-tennis-noodds-2026-08-05.md),
+// unified_predictions 01/06 → 05/08, gate applied as served:
+//
+//              n     claimed   actual
+//   with odds  183    71.6%    74.9%   (calibrated, delivers above its claim)
+//   no odds    270    72.1%    58.9%   (−13.2, z=3.51, p<0.001)
+//
+// The no-odds cell is broken at EVERY confidence band and worst at the top:
+// the 75-79 band returns 42.2% against a claimed 77.1%. That is why raising the
+// floor cannot fix it — a higher floor selects MORE of the broken rows — and why
+// the segment-aware floors shipped in June did not move the published number.
+// Tournament tier was only a proxy for odds coverage (big events have prices).
+//
+// No look-ahead: `odds` is written at publication. Verified independently against
+// the pre-match snapshots in prediction_log — 252/252 agreement between "market
+// present pre-match" and `odds != null` on the settled join.
+//
+// PROBABILITY-NEUTRAL and serving-only, exactly like the floors: p1/p2 and
+// confidence_score are untouched, the match keeps its card and its probabilities,
+// it simply carries no directional pick.
+//
+// FOOTBALL IS DELIBERATELY EXCLUDED: on the same window football without a price
+// runs at 95% (n=20). The same rule there would delete the best picks.
+export const TENNIS_REQUIRE_MARKET = true;
+
+// A usable decimal price on the picked side. Fail-closed: null/NaN/≤1 (a price of
+// 1.0 or less pays nothing and is a feed artefact, not a market) → no market.
+export function hasTennisMarket(pickedOdds: number | null | undefined): boolean {
+  return (
+    typeof pickedOdds === "number" &&
+    Number.isFinite(pickedOdds) &&
+    pickedOdds > 1
+  );
+}
+
+export type TennisSurfaceDecision = SurfaceDecision & {
+  // Kept SEPARATE from belowFloor on purpose: the two mean different things to a
+  // customer. Below floor = "no clear favourite" (the model itself is undecided).
+  // No market = the model may well have a favourite, we just have no price to
+  // check it against — claiming "no clear favourite" there would be a lie.
+  noMarket: boolean;
+};
+
+// Single resolution point for the tennis board, the unified sync and the best-bet
+// guards, so the three can never disagree on what counts as a surfaced pick.
+export function tennisSurfaceDecision(
+  confidence: number,
+  tournament: string | null | undefined,
+  pickedOdds: number | null | undefined
+): TennisSurfaceDecision {
+  const { belowFloor } = surfaceDecision(confidence, tennisFloorFor(tournament));
+  const noMarket = TENNIS_REQUIRE_MARKET && !hasTennisMarket(pickedOdds);
+  return { isPick: !belowFloor && !noMarket, belowFloor, noMarket };
 }
 
 // `confidence` is the picked-outcome probability in whole percent (max-prob).

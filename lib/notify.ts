@@ -8,7 +8,7 @@
 // { throwOnError: true } for flows that MUST fail loud (e.g. activation on
 // registration, where a non-deliverable email should block signup).
 
-import { sendEmail } from "./email";
+import { sendEmail, marketingFromAddress } from "./email";
 import { dbExecute } from "./db";
 
 export type TxEmailType =
@@ -20,7 +20,27 @@ export type TxEmailType =
   | "receipt"
   | "cancellation"
   | "renewal_reminder"
-  | "winback";
+  | "winback"
+  // #MAIL-I18N-5LANG-0805: il cron CRM marcava OGNI email come "winback", anche
+  // le acquisition e le retention. Nella tabella `notifications` — l'unico registro
+  // di cosa abbiamo spedito — non si poteva contare per flusso: è così che 8
+  // offerte inesistenti sono uscite senza che nessuno le notasse in un conteggio.
+  // Il flusso vero era già in `meta.flow`, quindi lo storico resta leggibile.
+  | "acquisition"
+  | "retention"
+  | "onboarding";
+
+// #EMAIL-WARMUP-0819 — quali flussi sono marketing e quali sono servizio. I primi
+// escono dal dominio marketing, i secondi restano sulla radice.
+// `renewal_reminder` sta di proposito FUORI: parla di un abbonamento già in corso,
+// quindi è servizio dovuto al cliente, non promozione — e un cliente che paga deve
+// riceverlo anche se la reputazione del dominio marketing è compromessa.
+const MARKETING_TYPES: ReadonlySet<TxEmailType> = new Set([
+  "acquisition",
+  "retention",
+  "onboarding",
+  "winback",
+]);
 
 export async function sendTransactional(opts: {
   type: TxEmailType;
@@ -43,7 +63,9 @@ export async function sendTransactional(opts: {
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
-      from: opts.from,
+      // Un `from` esplicito del chiamante vince sempre; altrimenti il mittente lo
+      // decide il tipo di flusso. `undefined` fa applicare il default di sendEmail.
+      from: opts.from || (MARKETING_TYPES.has(opts.type) ? marketingFromAddress() : undefined),
       replyTo: opts.replyTo,
       headers: opts.headers,
     });

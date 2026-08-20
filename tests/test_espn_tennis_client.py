@@ -13,7 +13,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from core.espn_tennis_client import _parse_notes, get_fixtures, infer_surface
+from core.espn_http import ESPN_HEADERS
+from core.espn_tennis_client import (
+    _SCOREBOARD_URL,
+    _URL,
+    EspnFeedUnavailable,
+    _parse_notes,
+    get_fixtures,
+    infer_surface,
+)
 
 
 def _iso(dt: datetime) -> str:
@@ -177,3 +185,73 @@ def test_infer_surface_covers_clay_grass_hard():
     assert infer_surface("Boss Open") == "grass"
     assert infer_surface("Libema Open") == "grass"
     assert infer_surface("US Open") == "hard"
+
+
+# --- #ESPN-UA-403-0820 -----------------------------------------------------
+# Il 20/08 il day-scoreboard rendeva 403 a TUTTE le nostre chiamate: giravamo
+# su `site.api.espn.com`, che ha un WAF sullo User-Agent, con uno UA che si
+# fingeva browser. La misura completa sta in core/espn_http.py; la sintesi:
+# inseguire lo UA e' una corsa che si perde (ogni token ha una regola sua, e
+# `BetRedge/1.0 curl/8.6.0` -> 403 mentre `curl/8.6.0` -> 200), mentre
+# `site.web.api.espn.com` serve lo STESSO payload senza nessun filtro.
+# Questi test bloccano la regressione verso l'host filtrato.
+
+
+def test_every_url_uses_the_unfiltered_host():
+    """Il WAF sta su site.api.espn.com: nessuna URL nostra deve puntarci.
+
+    Verificato per mutazione: rimettendo l'host filtrato questo test diventa
+    rosso.
+    """
+    for name, url in (("_SCOREBOARD_URL", _SCOREBOARD_URL), ("_URL", _URL)):
+        assert url.startswith("https://site.web.api.espn.com/"), (
+            f"{name} punta a {url!r}: quell'host filtra sullo UA e ci 403-a"
+        )
+
+
+def test_user_agent_says_who_we_are_instead_of_faking_a_browser():
+    """Sull'host senza filtro non serve camuffarsi — e uno UA onesto e' l'unico
+    che non scade quando ESPN gira una manopola."""
+    ua = ESPN_HEADERS["User-Agent"]
+    assert "BetRedge" in ua
+    assert "Mozilla" not in ua, "era proprio la classe che ESPN 403-ava"
+
+
+async def test_all_requests_refused_raises_instead_of_empty_list():
+    """403 su tutto = GUASTO, non "oggi non c'e' tennis".
+
+    Prima rendeva [] e il chiamante non poteva distinguere le due cause: e'
+    esattamente come il board e' rimasto a meta' per 15 giorni.
+    """
+    refused = MagicMock()
+    refused.status_code = 403
+    client = MagicMock()
+    client.get = AsyncMock(return_value=refused)
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=client)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    with patch("core.espn_tennis_client.httpx.AsyncClient", return_value=cm):
+        with pytest.raises(EspnFeedUnavailable):
+            await get_fixtures()
+
+
+async def test_partial_refusal_still_returns_what_answered():
+    """Se UNA delle 4 chiamate risponde, quelle fixture si servono: il raise e'
+    solo per il rifiuto TOTALE (fail-closed sul guasto, non sul degrado)."""
+    ok = _mock_response(_scoreboard([_competition("Carlos Alcaraz", "Jannik Sinner")]))
+    refused = MagicMock()
+    refused.status_code = 403
+    client = MagicMock()
+    client.get = AsyncMock(side_effect=[refused, refused, refused, ok])
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=client)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    with patch("core.espn_tennis_client.httpx.AsyncClient", return_value=cm):
+        rows = await get_fixtures()
+    assert len(rows) == 1
+
+
+async def test_no_events_is_not_a_failure():
+    """Feed che risponde 200 con zero eventi = giornata vuota, NON un guasto."""
+    rows = await _fixtures_for({"events": []})
+    assert rows == []

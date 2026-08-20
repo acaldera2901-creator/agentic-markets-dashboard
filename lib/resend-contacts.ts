@@ -17,6 +17,10 @@
 // Con la vecchia versione i contatti sarebbero entrati nell'Audience e i segmenti
 // sarebbero rimasti VUOTI.
 
+import { promoEligibility } from "@/lib/creator-promo";
+import { isInternalIdentifier } from "@/lib/crm-internal";
+import { dbQuery } from "@/lib/db";
+
 const API_BASE = "https://api.resend.com";
 const EXPIRING_WINDOW_DAYS = 7;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -52,7 +56,7 @@ export function lifecycleStage(c: SegmentContact, nowISO: string): "prospect" | 
 // `POST /contacts` risponde 422 "One or more properties do not exist" — è ciò che
 // ha fatto fallire 11/11 contatti il 2026-07-28. Chi aggiunge una property a
 // `buildContactPayload` la aggiunge ANCHE qui, o il sync torna a fallire in blocco.
-export const CONTACT_PROPERTY_KEYS = ["plan", "language", "lifecycle_stage", "cohort_month", "tenure_bucket"] as const;
+export const CONTACT_PROPERTY_KEYS = ["plan", "language", "lifecycle_stage", "cohort_month", "tenure_bucket", "promo_eligible"] as const;
 
 /**
  * Anzianità dell'account come etichetta. Serve perché le properties Resend sono
@@ -74,7 +78,8 @@ export function tenureBucket(createdAtISO: string, nowISO: string): "new_7d" | "
 // bisogno di un segmento: plan / language / lifecycle_stage / cohort_month.
 export function buildContactPayload(
   c: SegmentContact,
-  nowISO: string
+  nowISO: string,
+  promoEligible = false
 ): { email: string; first_name?: string; properties: Record<string, string> } {
   const firstName = c.name?.trim().split(/\s+/)[0];
   const properties: Record<string, string> = {
@@ -83,6 +88,16 @@ export function buildContactPayload(
     lifecycle_stage: lifecycleStage(c, nowISO),
     cohort_month: cohortMonth(c.created_at),
     tenure_bucket: tenureBucket(c.created_at, nowISO),
+    // #CRM-RESEND-ENGINE-0817 — il kill-switch della promo per l'automation Resend.
+    // Le tre mail-offerta su Resend hanno la deadline scritta LETTERALE nel template
+    // (là non si può leggere un'env), quindi senza questa property continuerebbero a
+    // promettere −50% anche a promo spenta: è #CRM-FAKE-OFFERS-0805 che rientra, con
+    // la differenza che il codice non potrebbe fermarlo. I tre nodi-offerta sono
+    // gatati su `promo_eligible = "true"`, e la property nasce con fallback "false"
+    // → in dubbio non si promette.
+    // Default `false` nella firma di proposito: chi chiama senza calcolare
+    // l'eleggibilità non finisce per promettere uno sconto per distrazione.
+    promo_eligible: promoEligible ? "true" : "false",
   };
   const payload: { email: string; first_name?: string; properties: Record<string, string> } = {
     email: c.identifier,
@@ -111,6 +126,141 @@ async function call(
   let json: unknown = null;
   try { json = await resp.json(); } catch { /* 204 o body vuoto */ }
   return { ok: resp.ok, status: resp.status, json };
+}
+
+/**
+ * Crea/aggiorna su Resend il contatto di UN profilo, con le properties già scritte.
+ *
+ * #CRM-RESEND-CONTACT-FIRST-0817 — va chiamata PRIMA di `sendResendEvent`, e il
+ * perché è l'intero senso di questa funzione. Le condizioni dell'automation leggono
+ * `contact.lifecycle_stage`; il contatto però lo creerebbe l'evento stesso, e le
+ * properties le scrive il sync delle 05:00. Chi si registra e attiva nello stesso
+ * momento — il percorso NORMALE, minuti di distanza — sarebbe valutato con
+ * `lifecycle_stage` ASSENTE, e siccome le properties nascono senza fallback (vedi
+ * `ensureContactProperties`) `assente is not equal to "prospect"` è vero: su quei
+ * nodi vero significa uscire. Risultato: l'utente esce a g0 e non riceve nulla.
+ *
+ * È la stessa forma del difetto che teneva morta l'automation di Steve
+ * (`Deposit_Done`): una condizione che legge uno stato che non esiste ancora. La
+ * cura è la stessa in entrambi i casi — far esistere lo stato prima che qualcuno
+ * lo legga, non dare un fallback che mentirebbe sui paganti.
+ *
+ * Best-effort: ritorna `false` invece di lanciare. È sul percorso di attivazione.
+ */
+export async function loadProfileContact(identifier: string): Promise<SegmentContact | null> {
+  const rows = await dbQuery<SegmentContact>(
+    `SELECT id::text, identifier, name, plan, language, requested_plan,
+            plan_expires_at::text, created_at::text, activated_at::text
+       FROM profiles WHERE identifier = $1 LIMIT 1`,
+    [identifier]
+  );
+  return rows[0] ?? null;
+}
+
+export async function upsertContactForActivation(
+  identifier: string,
+  // Cucitura per il test dell'ordine: la sola dipendenza non-HTTP di questa
+  // funzione. Il default è la lettura vera; il test inietta un profilo finto
+  // perché quello che va difeso è la SEQUENZA delle chiamate a Resend.
+  loadContact: (id: string) => Promise<SegmentContact | null> = loadProfileContact
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const audienceId = process.env.RESEND_AUDIENCE_ID;
+  if (!apiKey || !audienceId) {
+    console.error("[resend-contacts] upsert pre-evento saltato: RESEND_API_KEY/RESEND_AUDIENCE_ID non configurate");
+    return false;
+  }
+  try {
+    const c = await loadContact(identifier);
+    if (!c) {
+      console.error("[resend-contacts] upsert pre-evento: profilo non trovato", identifier);
+      return false;
+    }
+    // Stessa fonte del sync e del checkout, così le tre superfici non divergono.
+    let promoEligible = false;
+    try {
+      promoEligible = (await promoEligibility(identifier)).firstPaidOrder;
+    } catch (e) {
+      console.error("[resend-contacts] promo eligibility fallita (pre-evento):", identifier, String(e));
+    }
+    await ensureContactProperties(apiKey);
+    await upsertContact(audienceId, apiKey, buildContactPayload(c, new Date().toISOString(), promoEligible));
+    return true;
+  } catch (e) {
+    console.error("[resend-contacts] upsert pre-evento fallito:", identifier, String(e));
+    return false;
+  }
+}
+
+/**
+ * Fa entrare un profilo nell'automation di onboarding su Resend: contatto con le
+ * properties PRIMA, evento DOPO. L'ordine è il contenuto di questa funzione, e sta
+ * qui e non nella route perché è la cosa che regredisce in silenzio se qualcuno
+ * riordina due righe.
+ *
+ * Se l'upsert del contatto non riesce l'evento NON parte, di proposito: un evento
+ * su un contatto senza `lifecycle_stage` produce un run che scarta l'utente e in
+ * Observability è indistinguibile da «ha funzionato». Meglio nessun run e una riga
+ * di errore che dice cosa è mancato — l'utente si recupera dopo il sync.
+ */
+export async function enterResendOnboarding(
+  identifier: string,
+  loadContact: (id: string) => Promise<SegmentContact | null> = loadProfileContact
+): Promise<boolean> {
+  // #CRM-EXCLUDE-INTERNAL-0817 — il gate degli interni sta QUI e non solo in
+  // `isEligible`, perché dal 17/08 l'acquisition non passa più dal motore CRM:
+  // questa funzione crea il contatto in Audience e innesca l'automation, quindi è
+  // l'unico punto che decide se un indirizzo entra nella sequenza. Un membro del
+  // team che attiva un account con l'opt-in spuntato entrerebbe altrimenti nella
+  // stessa scala di un cliente, e il gate del cron non lo vedrebbe mai.
+  // (Il sync giornaliero è coperto a monte: i contatti arrivano da
+  // buildSegmentQuery, che ora esclude gli interni in SQL.)
+  if (isInternalIdentifier(identifier)) {
+    console.log("[resend-contacts] interno: nessun ingresso nell'automation", identifier);
+    return false;
+  }
+  const ready = await upsertContactForActivation(identifier, loadContact);
+  if (!ready) {
+    console.error(
+      "[resend-contacts] evento NON inviato: contatto non pronto, l'automation scarterebbe il profilo",
+      identifier
+    );
+    return false;
+  }
+  return sendResendEvent("Account_Activated", identifier);
+}
+
+/**
+ * Spara un evento custom a Resend: è l'UNICA cosa che innesca una Automation
+ * (#CRM-RESEND-ENGINE-0817). Un invio transazionale su `POST /emails` non ne
+ * innesca nessuna — per questo `Onboarding_Automation` è rimasta a 0 run dal
+ * giorno in cui è nata.
+ *
+ * Il contatto viene creato da Resend quando l'automation gira, quindi chiamare
+ * questa funzione **è** un trattamento marketing: il chiamante deve verificare il
+ * consenso PRIMA (vedi `app/api/auth/activate/route.ts`), non dopo.
+ *
+ * Best-effort per scelta: ritorna `false` invece di lanciare. È chiamata su un
+ * percorso — l'attivazione dell'account — dove un errore di Resend non deve mai
+ * costare l'accesso all'utente.
+ */
+export async function sendResendEvent(event: string, email: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("[resend-contacts] events/send saltato: RESEND_API_KEY non configurata");
+    return false;
+  }
+  try {
+    const r = await call(apiKey, "POST", "/events/send", { event, email });
+    if (!r.ok) {
+      console.error(`[resend-contacts] events/send ${event} -> ${r.status}`, JSON.stringify(r.json));
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error(`[resend-contacts] events/send ${event} fallito:`, String(e));
+    return false;
+  }
 }
 
 function idOf(json: unknown): string | null {
@@ -273,7 +423,23 @@ export async function syncSegmentToResend(
   const errors: string[] = [];
   for (const c of contacts) {
     try {
-      await upsertContact(audienceId, apiKey, buildContactPayload(c, nowISO));
+      // #CRM-RESEND-ENGINE-0817 — l'eleggibilità la calcola `promoEligibility`, che è
+      // già la fonte unica usata dal checkout e copre tutti e tre i rail (PayGate,
+      // PayPal, carta Shopify) oltre a ritornare NOT_ELIGIBLE con la promo spenta.
+      // Riscriverne qui una copia della SQL sarebbe la strada per farle divergere —
+      // è già successo una volta, quando al conteggio mancava il rail carta.
+      // Scorciatoia accettata: una query per contatto (N+1). Con l'Audience attuale
+      // (14 contatti, sync una volta al giorno alle 05:00) è irrilevante; sopra il
+      // migliaio va sostituita con un'unica query che ritorna gli identifier con
+      // ordini pagati, calcolata prima del loop.
+      // Fail-closed: se il controllo non risponde, `false` → offerte non promesse.
+      let promoEligible = false;
+      try {
+        promoEligible = (await promoEligibility(c.identifier)).firstPaidOrder;
+      } catch (e) {
+        console.error("[resend-contacts] promo eligibility fallita:", c.identifier, String(e));
+      }
+      await upsertContact(audienceId, apiKey, buildContactPayload(c, nowISO, promoEligible));
       const want = new Set(wantIdsByContact.get(c.identifier) ?? []);
       const r = await reconcileContactSegments(apiKey, c.identifier, want, managedIds);
       added += r.added;

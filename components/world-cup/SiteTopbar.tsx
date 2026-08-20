@@ -37,7 +37,22 @@ function readLang(): SiteLang {
   return s === "en" || s === "es" || s === "fr" || s === "ru" ? s : "it";
 }
 
-export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { backHref?: string; backLabel?: string }) {
+export default function SiteTopbar({
+  backHref = "/",
+  backLabel = "Board",
+  hideLang = false,
+  lang: langOverride,
+}: {
+  backHref?: string;
+  backLabel?: string;
+  hideLang?: boolean;
+  /** #TOOLS-HUB-0805: pagine che hanno la lingua NELL'URL (le /tools) la passano
+   *  qui. Senza, la topbar leggeva solo localStorage (default "it") e mostrava
+   *  "Accedi/Registrati" a un visitatore arrivato su una pagina inglese — con il
+   *  dropdown nascosto non poteva nemmeno correggerlo. Le altre pagine non
+   *  passano il prop e continuano a seguire localStorage. */
+  lang?: SiteLang;
+}) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
   const router = useRouter();
   const pathname = usePathname();
@@ -144,7 +159,8 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
   // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
   // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
   // here dispatches `agentic-lang-change` so the board updates live in step.
-  const [lang, setLang] = useState<SiteLang>("it");
+  const [storedLang, setLang] = useState<SiteLang>("it");
+  const lang: SiteLang = langOverride ?? storedLang;
   useEffect(() => {
     const sync = () => setLang(readLang());
     sync();
@@ -196,7 +212,7 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
                WC è route separata dal desk → POST /api/auth {action:"logout"} poi
                reload su "/". */
             <>
-              <Link href="/app?tab=account" className="am-acct" title={auth.identifier}>
+              <Link href="/plans" className="am-acct" title={auth.identifier}>
                 {auth.name || auth.identifier}
                 <span className="plan">{planPillLabel(auth.plan)}</span>
               </Link>
@@ -211,7 +227,12 @@ export default function SiteTopbar({ backHref = "/", backLabel = "Board" }: { ba
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
 
-          <LangDropdown value={lang} onSelect={selectLang} />
+          {/* #TOOLS-HUB-0805: le pagine /tools hanno la lingua NELL'URL e il loro
+              selettore che ci naviga. Questo dropdown scrive solo localStorage:
+              su quelle pagine sarebbero due controlli lingua, uno dei quali non
+              cambierebbe niente di visibile. Le altre pagine non passano il prop
+              e continuano ad averlo. */}
+          {hideLang ? null : <LangDropdown value={lang} onSelect={selectLang} />}
         </div>
       </div>
     </header>

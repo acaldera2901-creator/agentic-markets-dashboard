@@ -156,6 +156,22 @@ def download_csv(league: str, start_year: int, timeout: float = 30.0) -> str:
         url, headers={"User-Agent": "Mozilla/5.0 (agentic-markets data loader)"}
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 (trusted host)
+        # #COVERAGE-0812-L1 — GUARD OBBLIGATORIO. Quando il file di una stagione
+        # non è ancora pubblicato, football-data.co.uk NON risponde 404: risponde
+        # 301 verso la CSV di un'ALTRA divisione, e urllib segue il redirect in
+        # silenzio. Misurato il 12/08/2026:
+        #     2627/E3.csv  (League Two) -> 2627/EC.csv  (National League)
+        #     2627/SP2.csv (Segunda)    -> 2627/SC2.csv (Scottish League One)
+        # Senza questo controllo lo storico della League Two si riempie di
+        # quinta divisione inglese e quello della Segunda di terza scozzese: dati
+        # plausibili a occhio, sbagliati nel modello, e nessun errore da nessuna
+        # parte. Fail-closed: se l'URL finale non è quello chiesto, la stagione
+        # non esiste e il chiamante deve trattarlo come assente.
+        final = resp.geturl()
+        if final != url:
+            raise FileNotFoundError(
+                f"{url} redirige a {final}: stagione non pubblicata, non è la divisione richiesta"
+            )
         raw = resp.read()
     return raw.decode("utf-8", errors="replace")
 

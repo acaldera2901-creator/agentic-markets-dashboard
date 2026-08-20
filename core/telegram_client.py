@@ -7,9 +7,23 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 
-async def send(text: str) -> bool:
+async def send(text: str, tier: str = "pro") -> bool:
+    """Pubblica su un canale Telegram.
+
+    `tier` esiste per il canale FREE (#TG-FREE-0810) e vale "pro" di default:
+    i cinque call site esistenti (analyst, strategist, risk_manager,
+    result_settlement, live_monitor) restano invariati e continuano a scrivere
+    sul canale a pagamento, esattamente come prima.
+
+    Il canale free è OPT-IN: senza TELEGRAM_CHAT_ID_FREE configurato un invio
+    con tier="free" è un no-op che ritorna False — la stessa postura
+    fail-closed che il client ha sempre avuto sul token mancante. Così il
+    codice si può deployare PRIMA che il canale esista, senza errori.
+    """
     token = settings.TELEGRAM_BOT_TOKEN
-    chat_id = settings.TELEGRAM_CHAT_ID
+    chat_id = (
+        settings.TELEGRAM_CHAT_ID_FREE if tier == "free" else settings.TELEGRAM_CHAT_ID
+    )
     if not token or not chat_id:
         return False
     try:

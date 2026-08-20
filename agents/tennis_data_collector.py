@@ -5,13 +5,53 @@ from datetime import datetime, timezone, timedelta
 from agents.base import BaseAgent
 from config.settings import settings
 from core.tennis_api_client import TennisAPIClient
-from core.espn_tennis_client import get_fixtures as espn_get_fixtures
+from core.espn_tennis_client import (
+    get_fixtures as espn_get_fixtures,
+    get_fixtures_from_header as espn_get_fixtures_from_header,
+    EspnFeedUnavailable,
+)
 from core.tennis_odds_api_client import get_tennis_odds, merge_tennis_odds, _pair_key
 from core.tennis_oddspapi_client import get_oddspapi_tennis_odds
 from core.tennis_tour_filter import filter_main_tour, parse_denylist
 
 NEAR_KICKOFF_HOURS = 6
 MAX_ODDSPAPI_ATTEMPTS = 3
+
+
+def collection_status(feed_error: str | None, dropped_report: dict | None) -> str:
+    """Perche' la raccolta ha reso ZERO fixture (#TENNIS-FEED-DOWN-0805).
+
+    Funzione a parte, e testata, perche' prima era un ramo `else` che riportava
+    SEMPRE `no_active_tournaments` — cioe' la piu' rassicurante delle tre cause —
+    e il 05/08 e' costato una mattina: ESPN aveva 51 partite singolari in corso di
+    programmazione, il board era vuoto e l'agente diceva che non c'erano tornei.
+
+      feed_unavailable      il feed ha rifiutato o non risponde -> E' UN GUASTO
+      all_filtered          il feed ha risposto, la curation ha scartato tutto
+      no_active_tournaments il feed ha risposto e davvero non c'e' nulla
+    """
+    if feed_error:
+        return "feed_unavailable"
+    if dropped_report and (dropped_report.get("qualifying") or dropped_report.get("minor")):
+        return "all_filtered"
+    return "no_active_tournaments"
+
+
+def served_status(primary_error: str | None, fixtures_count: int) -> str:
+    """Salute della RACCOLTA quando il volume NON e' zero (#ESPN-UA-403-0820).
+
+    Funzione a parte, e testata, per la stessa ragione di `collection_status`:
+    l'allarme sul feed scattava solo a volume zero, quindi il 05/08-20/08 il
+    day-scoreboard e' stato giu' per 15 giorni mentre il log diceva un tranquillo
+    "N fixtures da espn_header" e il board serviva 4 quarti su 8.
+
+      degraded  la primaria ha rifiutato, sta servendo un fallback -> E' UN GUASTO
+                (il volume > 0 lo maschera: guardare il volume non basta)
+      ok        la sorgente che ha risposto e' quella che doveva rispondere
+    """
+    if primary_error and fixtures_count:
+        return "degraded"
+    return "ok"
 
 
 def oddspapi_candidates(fixtures: list[dict], tried: dict[str, int],
@@ -110,9 +150,42 @@ class TennisDataCollectorAgent(BaseAgent):
             source = "rapidapi_tennis"
 
             # Fallback ESPN — gratuito, nessuna key, funziona durante i tornei
+            primary_error: str | None = None
             if not fixtures:
-                fixtures = await espn_get_fixtures()
-                source = "espn"
+                try:
+                    fixtures = await espn_get_fixtures()
+                    source = "espn"
+                except EspnFeedUnavailable as exc:
+                    primary_error = str(exc)
+
+            # #TENNIS-FEED-DOWN-0805 — secondo fallback sull'endpoint HEADER, lo
+            # stesso che questo modulo usa già per il settlement. Il 05/08 il
+            # day-scoreboard rendeva 403 mentre l'header rendeva 51 partite non
+            # concluse (Toronto Masters + Varsavia) e il board era VUOTO: due
+            # sorgenti sullo stesso feed, una sola cadeva.
+            feed_error: str | None = None
+            if not fixtures:
+                try:
+                    fixtures = await espn_get_fixtures_from_header()
+                    source = "espn_header"
+                except EspnFeedUnavailable as exc:
+                    feed_error = str(exc)
+                    self.logger.error("tennis: feed ESPN non disponibile: %s", exc)
+
+            # #ESPN-UA-403-0820 — il fallback che COPRE deve dirlo. Fino a oggi
+            # l'allarme scattava solo a volume ZERO: il 05/08 il day-scoreboard
+            # e' morto (403 sullo User-Agent), l'header ha coperto, e per 15
+            # giorni il log diceva un tranquillo "N fixtures da espn_header"
+            # mentre il board serviva 4 quarti di Cincinnati su 8. Un guasto
+            # della sorgente primaria mascherato da giornata povera.
+            degraded = served_status(primary_error, len(fixtures or [])) == "degraded"
+            if degraded:
+                self.logger.error(
+                    "tennis: sorgente PRIMARIA giu' (%s) — sto servendo da %s, "
+                    "board potenzialmente PARZIALE",
+                    primary_error,
+                    source,
+                )
 
             # Board curation (#020): main draw + main tour only. Drops are
             # logged per tournament so the curation is visible, never silent.
@@ -151,15 +224,33 @@ class TennisDataCollectorAgent(BaseAgent):
                     "dropped_qualifying": (dropped_report or {}).get("qualifying", 0),
                     "dropped_minor": (dropped_report or {}).get("minor", 0),
                     "source": source,
+                    # #ESPN-UA-403-0820: volume > 0 non vuol dire feed sano.
+                    "status": "degraded" if degraded else "ok",
+                    "primary_error": primary_error,
                     "collected_at": datetime.utcnow().isoformat(),
                 })
             else:
-                self.logger.info("tennis: nessun fixture disponibile (nessun torneo attivo o quota esaurita)")
+                # #TENNIS-FEED-DOWN-0805 — la ragione dello zero, distinta.
+                status = collection_status(feed_error, dropped_report)
+
+                if status == "feed_unavailable":
+                    # Un guasto della sorgente del 93% del volume servito non deve
+                    # stare in un campo di stato che nessuno guarda.
+                    self.logger.error(
+                        "tennis: NESSUN fixture perche' il feed non risponde (%s) — board a rischio vuoto",
+                        feed_error,
+                    )
+                else:
+                    self.logger.info("tennis: nessun fixture disponibile (status=%s)", status)
+
                 self.set_status_detail({
                     "type": "tennis_collection",
                     "fixtures_collected": 0,
                     "source": "none",
-                    "status": "no_active_tournaments",
+                    "status": status,
+                    "feed_error": feed_error,
+                    "dropped_qualifying": (dropped_report or {}).get("qualifying", 0),
+                    "dropped_minor": (dropped_report or {}).get("minor", 0),
                 })
         except Exception as exc:
             self.logger.error("tennis collection error: %s", exc)

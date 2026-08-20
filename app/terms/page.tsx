@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — BetRedge",
-  description: "Terms of Service for BetRedge — accounts, plans, payments, and acceptable use",
+  title: "Terms of Service | BetRedge",
+  description: "Terms of Service for BetRedge: accounts, plans, payments, and acceptable use.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {
@@ -42,7 +43,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">4. Accounts &amp; Plans</h2>
           <p className="text-xs leading-relaxed">
-            BetRedge offers a free tier and paid subscription plans (Base and Pro). The features included in each plan, and the current price, are those displayed on the <Link href="/?tab=account&plans=1" className="underline hover:text-[var(--am-coral)]">Plans page</Link> at the time of purchase. You are responsible for keeping your login credentials secure and for all activity under your profile.
+            BetRedge offers a free tier and paid subscription plans (Base and Pro). The features included in each plan, and the current price, are those displayed on the <Link href="/plans" className="underline hover:text-[var(--am-coral)]">Plans page</Link> at the time of purchase. You are responsible for keeping your login credentials secure and for all activity under your profile.
           </p>
         </section>
 

@@ -1,6 +1,7 @@
 import { dbQuery, dbQueryStrict, dbExecute } from "./db";
 import { planActivatedEmail, receiptEmail } from "./email";
 import { sendTransactional } from "./notify";
+import { checkReferralTiers } from "./referral-rewards";
 
 export type GrantablePlan = "base" | "premium";
 
@@ -46,6 +47,24 @@ async function notifyPlanActivated(row: ActivatedRow, source: ActivationSource):
       text: mail.text,
       meta: { source, plan: row.plan },
     });
+  }
+}
+
+// #REFERRAL-V2-0808 — il controllo dei gradini referral dopo un grant riuscito.
+// Chiamato da tutte e cinque le activate*Plan **fuori dal ramo della transizione**
+// (`if (before.plan !== plan)`) di proposito: un invitato che ha già PRO regalato
+// (`plan_source='referral'`) e poi PAGA va premium → premium, quindi NON
+// transiziona e non riceve notifica — ma è esattamente l'amico che deve contare
+// per chi lo ha invitato, ed è quello con la più alta probabilità di pagare
+// proprio perché il regalo lo aveva messo dentro il prodotto.
+// Best-effort come sendPlanReceipt: qui i soldi sono già arrivati e il piano è già
+// concesso. Un premio mancato si recupera dal log, un pagamento non concesso è un
+// cliente perso — quindi nessun errore del referral può risalire al rail.
+async function checkReferralTiersSafe(identifier: string): Promise<void> {
+  try {
+    await checkReferralTiers(identifier);
+  } catch (e) {
+    console.error(`[referral] check dei gradini fallito per ${identifier}:`, String(e));
   }
 }
 
@@ -127,6 +146,7 @@ export async function activateAdminPlan(identifier: string): Promise<ActivatedRo
 
   const activated: ActivatedRow = { identifier, name: before.name, plan: newPlan };
   await notifyPlanActivated(activated, "admin");
+  await checkReferralTiersSafe(identifier);
   return activated;
 }
 
@@ -174,6 +194,7 @@ export async function activateStripePlan(
     await notifyPlanActivated({ identifier: before.identifier, name: before.name, plan }, "stripe");
   }
 
+  await checkReferralTiersSafe(before.identifier);
   return { identifier: before.identifier, name: before.name, plan };
 }
 
@@ -247,6 +268,7 @@ export async function activatePaygatePlan(
   if (before.plan !== newPlan) {
     await notifyPlanActivated(activated, "paygate");
   }
+  await checkReferralTiersSafe(identifier);
   return activated;
 }
 
@@ -292,6 +314,7 @@ export async function activatePaypalPlan(
   if (before.plan !== newPlan) {
     await notifyPlanActivated(activated, "paypal");
   }
+  await checkReferralTiersSafe(identifier);
   return activated;
 }
 
@@ -388,6 +411,7 @@ export async function activateShopifyPlan(
   if (before.plan !== newPlan) {
     await notifyPlanActivated(activated, "shopify");
   }
+  await checkReferralTiersSafe(identifier);
   return activated;
 }
 

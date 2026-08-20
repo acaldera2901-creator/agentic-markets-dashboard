@@ -4,6 +4,7 @@ import {
   SURFACE_FLOOR_TENNIS,
   SURFACE_FLOOR_TENNIS_LO,
   SURFACE_FLOOR_TENNIS_LO_GRASS,
+  hasTennisMarket,
 } from "../lib/surfacing-gate";
 
 // #FLOOR-UNIFORM-1 (APPROVE Andrea 2026-06-09): the tennis confidence-surfacing
@@ -14,6 +15,22 @@ import {
 // Builder / Creator Picks.
 // #TENNIS-SEG-FLOOR-1 (lab 2026-06-11): the floor is segment-aware by
 // tournament name — hi tier 62, lower tiers 64, lower tiers on grass 66.
+//
+// #TENNIS-MARKET-GATE-0805 INTERACTION — why these fixtures carry prices.
+// Since 2026-08-05 the tennis pick is suppressed by TWO independent gates:
+// below the floor, OR no usable market price on the picked side
+// (`tennisSurfaceDecision` → `belowFloor || noMarket`). This file is about the
+// FLOOR, so every fixture must satisfy the market gate — otherwise `noMarket`
+// masks it and the assertions below measure the wrong rule.
+// Concretely, with the original `odds: null` fixtures the at-floor cases failed
+// (pick suppressed by noMarket, not by the floor) AND the below-floor cases
+// passed for the wrong reason — green while measuring nothing.
+// The market gate itself is covered by `lib/tennis-market-gate.test.ts`.
+
+// A usable decimal price on BOTH sides: the blocks below pick P1 in some cases
+// and P2 in others, and `hasTennisMarket` only looks at the picked side.
+const ODDS_P1 = 1.55;
+const ODDS_P2 = 2.6;
 
 function row(
   p1: number,
@@ -25,11 +42,19 @@ function row(
     match_id: "m1", tournament, surface: "hard",
     player1: "Alice", player2: "Bob",
     scheduled_at: new Date(Date.now() + 3_600_000).toISOString(),
-    p1, p2, odds_p1: null, odds_p2: null, edge: null, best_selection: best,
+    p1, p2, odds_p1: ODDS_P1, odds_p2: ODDS_P2, edge: null, best_selection: best,
     model_version: "test", serve_form_p1: null, serve_form_p2: null,
     return_form_p1: null, return_form_p2: null, feature_quality: null,
   };
 }
+
+// GUARD — the assertions below are only about the floor if the fixtures clear the
+// market gate. Without this, dropping the prices from `row()` would make every
+// "below floor → pick is null" case pass for the wrong reason, silently.
+assert.ok(
+  hasTennisMarket(ODDS_P1) && hasTennisMarket(ODDS_P2),
+  "fixtures must satisfy the market gate, otherwise the floor assertions are vacuous"
+);
 
 // ── HI tier (Slam): floor 62, inclusive ───────────────────────────────────────
 {
