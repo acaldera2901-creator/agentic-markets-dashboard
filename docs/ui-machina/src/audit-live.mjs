@@ -165,13 +165,24 @@ for (const url of URLS) {
         const d = ctx.getImageData(x0, y0, w, h).data;
         const Lt = L(n.color.match(/\d+/g).map(Number));
         // il pixel PEGGIORE: quello piu' vicino in luminanza al colore del testo
-        let worstPx = null, worstDelta = Infinity;
+        // Oltre al pixel peggiore si conta QUANTI pixel stanno entro il 20% di
+        // quella distanza. Serve a distinguere un fondo davvero critico da una
+        // scheggia: sotto un nome di squadra 29 pixel chiari su 2.491 erano
+        // un'annotazione della demo, non la foto — e il "pixel peggiore" da solo
+        // fa sembrare illeggibile un testo che si legge benissimo.
+        let worstPx = null, worstDelta = Infinity, tot = 0;
         for (let i = 0; i < d.length; i += 4 * 3) {
           const px = [d[i], d[i + 1], d[i + 2]];
           const delta = Math.abs(L(px) - Lt);
           if (delta < worstDelta) { worstDelta = delta; worstPx = px; }
+          tot++;
         }
-        out.push({ ...n, bg: worstPx });
+        let vicini = 0;
+        for (let i = 0; i < d.length; i += 4 * 3) {
+          const px = [d[i], d[i + 1], d[i + 2]];
+          if (Math.abs(L(px) - Lt) <= worstDelta * 1.2) vicini++;
+        }
+        out.push({ ...n, bg: worstPx, quota: tot ? vicini / tot : 0 });
       }
       return { out, skipped };
     }, { png, list: fresh });
@@ -186,7 +197,8 @@ for (const url of URLS) {
     const floor = big ? 3 : 4.5;
     if (r < floor) {
       failContrast++;
-      console.log(`✗ CONTRASTO ${r.toFixed(2)}:1 (soglia ${floor}) — "${n.txt}" · ${n.sel} · ${n.size}px`);
+      const q = n.quota != null ? ` · ${(n.quota * 100).toFixed(1)}% dei pixel` : "";
+      console.log(`✗ CONTRASTO ${r.toFixed(2)}:1 (soglia ${floor}) — "${n.txt}" · ${n.sel} · ${n.size}px${q}`);
     }
   }
   console.log(`— ${url}: ${worst.length} nodi di testo misurati`);

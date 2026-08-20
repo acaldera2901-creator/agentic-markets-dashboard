@@ -68,6 +68,20 @@ def main() -> int:
             continue
         if line.startswith(':root,:root[data-theme="dark"]'):  # color-scheme
             continue
+        if line.startswith('[class*="im-"]'):
+            # regola GENERICA della preview: centrava tutte le .im-* perche' li'
+            # erano data-URI intercambiabili. Nel prodotto ogni scena ha il SUO
+            # taglio, e questa - avendo specificita' piu' alta di [data-mc] .im-X
+            # - li sovrascriveva tutti riportando la posizione a center.
+            continue
+        if "{{" in line:
+            # I SEGNAPOSTO della preview (es. url(data:image/jpeg;base64,{{S_COURT}}))
+            # sono CSS non valido: il browser scarta la dichiarazione, e siccome
+            # quelle regole hanno specificita' piu' alta di quelle vere finiscono
+            # per SOPPRIMERE l'immagine invece di darla. Nel prodotto le immagini
+            # arrivano da file (vedi il blocco LE SCENE in coda). 22 dichiarazioni
+            # cosi' erano finite in produzione col primo merge.
+            continue
         if line.strip() == "body{padding-bottom:4.6rem}":
             continue   # faceva posto alla bottom-nav DELLA PREVIEW, non a questa
         if line.strip() in ("img{max-width:100%;display:block}", "a{color:inherit}"):
@@ -172,7 +186,7 @@ def main() -> int:
 {MCG}.mc-scene-court .bgfix{{background-image:url(/banners/gen/scene-court.jpg)}}
 {MCG}.mc-scene-clay .bgfix{{background-image:url(/banners/gen/scene-clay.jpg)}}
 
-{MC} .card-bg{{background-position:center;background-size:cover;background-repeat:no-repeat}}
+{MC} .card-bg{{background-size:cover;background-repeat:no-repeat}}
 /* LE FOTO DELLE SCHEDE SONO LE SCENE DELLA PREVIEW, non le foto sport del repo.
    Misurato su produzione da loggato: con stadium-night / football-pitch /
    football-action la fascia alta leggeva come una velatura grigio-pallida senza
@@ -188,8 +202,12 @@ def main() -> int:
 {MC} .im-stadium{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 66%}}  /* il campo illuminato */
 {MC} .im-pitch{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:20% 46%}}      /* fari + tribuna */
 {MC} .im-action{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:84% 74%}}     /* angolo campo + gradinate */
-{MC} .im-court{{background-image:url(/banners/gen/scene-court.jpg);background-position:center 78%}}     /* le righe del campo */
-{MC} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 74%}}
+/* TENNIS: qui la parte illuminata sono i FARI IN ALTO, non il campo - l'asfalto
+   e' nero. Col taglio basso (78%) la scheda risultava PIU' BUIA della versione
+   live, l'opposto della richiesta. Misurato guardando le due scene: nello stadio
+   il verde e' illuminato in basso, nel campo da tennis la luce sta in alto. */
+{MC} .im-court{{background-image:url(/banners/gen/scene-court.jpg);background-position:center 44%}}   /* i fari e l'alone: nel campo da tennis la luce sta in ALTO */
+{MC} .im-clay{{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 48%}}
 {MC} .im-crowd{{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 34%}}
 """
     # ── 4b. LA VARIABILE VA NELLO SPAZIO DEI NOMI ───────────────────────────
@@ -264,11 +282,17 @@ def main() -> int:
    Il limite non e' estetico, e' misurato: .teams sta SOPRA la foto, quindi
    ogni passo di luminosita' si verifica con l'armatura sui quattro campi che
    la spec vuole >= 4,5:1 (.teams .v2r-qn .v2r-val .v2r-sub). */
-{SCOPE} .card-bg{{opacity:1;filter:saturate(1.28) contrast(1.1) brightness(1.32)}}
+{SCOPE} .card-bg{{opacity:1;filter:saturate(1.4) contrast(1.14) brightness(1.9)}}
 {SCOPE} .card-veil{{background:linear-gradient(to top,
-  rgba(18,21,25,.95) 46%,
-  rgba(18,21,25,.66) 74%,
-  rgba(18,21,25,.10) 100%)}}
+  rgba(18,21,25,.94) 44%,
+  rgba(18,21,25,.52) 72%,
+  rgba(18,21,25,.02) 100%)}}
+/* La zona dei NOMI porta il proprio fondo, come la riga della lega. Misurato:
+   con la foto accesa .teams scendeva a 1,96:1 (soglia 3 per il testo grande) —
+   e' il testo piu' importante della scheda. Cosi' la foto resta accesa dove non
+   c'e' testo e i nomi si leggono comunque. */
+{SCOPE} .pred .fx{{background:linear-gradient(to bottom,
+  rgba(18,21,25,.86),rgba(18,21,25,.7) 62%,rgba(18,21,25,.34))}}
 /* su telefono la scheda e' alta e stretta: la velatura resta piatta e densa,
    altrimenti la fascia centrale rimane scoperta (misurato su MACHINA) */
 @media(max-width:640px){{
@@ -369,15 +393,16 @@ def main() -> int:
 {LIGHT} [data-mc] .pred>*:not(.card-bg):not(.card-veil){{position:relative;z-index:2}}
 {LIGHT} [data-mc] .card-bg{{
   position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;
-  opacity:.85;filter:brightness(1.28) saturate(1.75) contrast(1.02)}}
+  background-size:cover;background-repeat:no-repeat;
+  opacity:1;filter:brightness(1.12) saturate(2) contrast(1.06)}}
   /* saturazione ALTA e luminosita' contenuta: una scena notturna schiarita
      troppo diventa una foschia grigia. Col verde del campo che resta verde, la
      foto si riconosce anche dietro una velatura bianca. */
 {LIGHT} [data-mc] .card-veil{{
   position:absolute;inset:0;z-index:1;background:linear-gradient(to top,
-  rgba(255,255,255,.99) 52%,
-  rgba(255,255,255,.9) 78%,
-  rgba(255,255,255,.6) 100%)}}
+  rgba(255,255,255,.98) 50%,
+  rgba(255,255,255,.82) 76%,
+  rgba(255,255,255,.4) 100%)}}
 /* In chiaro il testo e' SCURO e i grigi piccoli del prodotto stanno sopra la
    foto: misurati, lega/orario/`v`/turno scendevano da 3,93 a 2,0-2,5. Si
    agisce su due leve insieme — velatura piu' densa dove sta il testo, e quei
@@ -394,6 +419,8 @@ def main() -> int:
    illeggibili). E' la stessa mitigazione del tema scuro, ribaltata. */
 {LIGHT} [data-mc] .pred .top{{position:relative;background:linear-gradient(to bottom,
   rgba(255,255,255,.94),rgba(255,255,255,.74) 62%,rgba(255,255,255,.28))}}
+{LIGHT} [data-mc] .pred .fx{{background:linear-gradient(to bottom,
+  rgba(255,255,255,.9),rgba(255,255,255,.76) 62%,rgba(255,255,255,.4))}}
 {LIGHT} [data-mc] .pred .top::before{{
   content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
   background:var(--mc-accent,#6d28d9)}}

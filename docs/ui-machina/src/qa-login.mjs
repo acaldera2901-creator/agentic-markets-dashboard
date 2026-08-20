@@ -1,35 +1,39 @@
 /* Apre una sessione PRO per il QA da loggato. #UI-MACHINA-0802
  *
- * Lo lancia ANDREA, non io: la password si digita qui e non passa
- * dalla chat, non finisce nella cronologia della shell (input nascosto)
- * e non viene mai scritta su disco. Sul disco finisce SOLO lo stato di
- * sessione del browser (/tmp/qa-session.json), che e' un cookie firmato.
+ * La password la chiede a chi lancia lo script con una FINESTRA di macOS a
+ * risposta nascosta, non da stdin: lanciato dentro un agente lo stdin non è un
+ * terminale, readline non riceve nulla e il processo muore con
+ * «unsettled top-level await» (succede davvero, provato).
  *
- * Uso:
- *   node docs/ui-machina/src/qa-login.mjs                  # locale :3011
- *   node docs/ui-machina/src/qa-login.mjs https://www.betredge.com
+ * La password vive solo in memoria: non viene stampata, non finisce nella
+ * cronologia della shell, non viene scritta su disco. Su disco finisce solo lo
+ * stato di sessione del browser (/tmp/qa-session.json), cioè un cookie firmato.
+ *
+ * Uso:  node docs/ui-machina/src/qa-login.mjs [base-url]
+ *       QA_EMAIL=… QA_PASS=… node …            (per automazioni: niente finestra)
  */
 import { chromium } from "/Users/calde/.npm/_npx/6f4879659183bc49/node_modules/playwright/index.mjs";
-import readline from "node:readline";
+import { execFileSync } from "node:child_process";
 
 const BASE = process.argv[2] || "http://localhost:3011";
 const OUT = "/tmp/qa-session.json";
 
-function ask(q, hidden = false) {
-  return new Promise(res => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    if (hidden) {
-      const onData = () => { rl.output.write("\x1B[2K\x1B[200D" + q); };
-      rl.input.on("data", onData);
-      rl.question(q, a => { rl.input.off("data", onData); rl.close(); process.stdout.write("\n"); res(a); });
-    } else {
-      rl.question(q, a => { rl.close(); res(a); });
-    }
-  });
+function chiedi(prompt, nascosta, predefinito = "") {
+  const hidden = nascosta ? " with hidden answer" : "";
+  const script = `display dialog ${JSON.stringify(prompt)} default answer ${JSON.stringify(predefinito)}${hidden} with title "BetRedge — QA da loggato" buttons {"Annulla","OK"} default button "OK"`;
+  try {
+    const out = execFileSync("osascript", ["-e", script], { encoding: "utf8" });
+    const m = out.match(/text returned:(.*)$/s);
+    return m ? m[1].trim() : "";
+  } catch {
+    console.log("finestra annullata.");
+    process.exit(1);
+  }
 }
 
-const email = await ask("email: ");
-const pass = await ask("password (non si vede): ", true);
+const email = process.env.QA_EMAIL || chiedi("Email dell'account PRO:", false, "acaldera62@gmail.com");
+const pass = process.env.QA_PASS || chiedi("Password (non viene mostrata né salvata):", true);
+if (!email || !pass) { console.log("email o password vuote."); process.exit(1); }
 
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -44,20 +48,21 @@ if (await form.count() === 0) {
   await p.waitForTimeout(1500);
   form = p.locator("form.auth-modal");
 }
+if (await form.count() === 0) { console.log("✗ modale di login non trovato su", BASE + "/app"); await b.close(); process.exit(1); }
 await form.locator('input[placeholder*="@"]').fill(email);
-await form.locator('input[type=password]').first().fill(pass);
+await form.locator("input[type=password]").first().fill(pass);
 await form.locator('button:has-text("Login")').last().click();
-await p.waitForTimeout(7000);
+await p.waitForTimeout(8000);
 
 const st = await p.evaluate(() => {
   const raw = localStorage.getItem("agentic-client-profile");
-  return { profile: raw ? JSON.parse(raw) : null, lucchetto: !!document.querySelector(".locked-gate,.locked-overlay") };
+  return { profile: raw ? JSON.parse(raw) : null, lucchetto: !!document.querySelector(".locked-gate,.lock-overlay") };
 });
 if (!st.profile) {
-  console.log("\n✗ login NON riuscito: nessun profilo in sessione. Password sbagliata, o il rail di auth risponde 401.");
+  console.log("\n✗ login NON riuscito: nessun profilo in sessione (password errata, o il rail di auth risponde 401).");
   await b.close(); process.exit(1);
 }
-console.log(`\n✓ dentro come ${st.profile.email} · piano ${st.profile.plan} · lucchetto sulla board: ${st.lucchetto ? "SI" : "no"}`);
+console.log(`\n✓ dentro come ${st.profile.email} · piano ${st.profile.plan} · lucchetto ancora presente: ${st.lucchetto ? "SÌ" : "no"}`);
 await ctx.storageState({ path: OUT });
-console.log(`sessione salvata in ${OUT} — ora Claude puo' fare il QA da loggato senza vedere la password.`);
+console.log(`sessione salvata in ${OUT} — Claude può fare il QA da loggato senza vedere la password.`);
 await b.close();
