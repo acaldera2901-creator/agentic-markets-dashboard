@@ -292,7 +292,7 @@ def main() -> int:
    e' il testo piu' importante della scheda. Cosi' la foto resta accesa dove non
    c'e' testo e i nomi si leggono comunque. */
 {SCOPE} .pred .fx{{background:linear-gradient(to bottom,
-  rgba(18,21,25,.86),rgba(18,21,25,.7) 62%,rgba(18,21,25,.34))}}
+  rgba(18,21,25,.95),rgba(18,21,25,.88) 58%,rgba(18,21,25,.4))}}
 /* su telefono la scheda e' alta e stretta: la velatura resta piatta e densa,
    altrimenti la fascia centrale rimane scoperta (misurato su MACHINA) */
 @media(max-width:640px){{
