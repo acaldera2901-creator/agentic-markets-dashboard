@@ -30,6 +30,10 @@ const pl: ToolsCopy = {
     free: "Darmowe",
     faqTitle: "Pytania",
     invalid: "—",
+    tgTitle: "Prognoza modelu na dziś, bezpłatnie na Telegramie",
+    tgBody:
+      "Bez konta i bez e-maila. Codziennie publikujemy mecz, w którym nasz model najbardziej różni się od rynku, 15 minut przed rozpoczęciem — i rozliczamy każdą opublikowaną prognozę, wygraną czy przegraną. Kanał jest w języku angielskim.",
+    tgButton: "Otwórz kanał",
   },
 
   tools: {

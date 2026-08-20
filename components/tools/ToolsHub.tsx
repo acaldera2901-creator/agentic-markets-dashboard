@@ -11,6 +11,7 @@ import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale } from "@/lib/tools/r
 import { hubJsonLd } from "@/lib/tools/seo";
 import { LocalePicker } from "./LocalePicker";
 import { ToolIcon } from "./ToolIcon";
+import { TelegramNudge } from "./TelegramNudge";
 import { MenuIcon } from "@/app/components/menu-icon";
 
 export function ToolsHub({ locale }: { locale: ToolLocale }) {
@@ -65,6 +66,12 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
             {copy.common.ctaButton}
           </Link>
         </aside>
+
+        <TelegramNudge
+          title={copy.common.tgTitle}
+          body={copy.common.tgBody}
+          button={copy.common.tgButton}
+        />
       </main>
       <SiteFooter lang={chromeLang(locale)} />
       <script
