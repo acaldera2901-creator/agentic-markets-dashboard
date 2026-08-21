@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
+import { GlyphLock, GlyphCheck, GlyphRank } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
@@ -3130,9 +3131,14 @@ function FAQSupportSection({ items }: { items: string[][] }) {
 }
 
 function PlanFeature({ children, locked = false }: { children: React.ReactNode; locked?: boolean }) {
+  // #UI-MACHINA-0802: al posto delle parole "OK"/"LOCK" un SEGNO. Erano due
+  // parole inglesi mostrate anche in italiano e spagnolo, ed erano testo dove
+  // serviva un simbolo. L'etichetta accessibile resta.
   return (
     <li className={locked ? "is-locked" : ""}>
-      <span>{locked ? "LOCK" : "OK"}</span>
+      <span aria-label={locked ? "locked" : "included"} role="img">
+        {locked ? <GlyphLock size={13} /> : <GlyphCheck size={13} />}
+      </span>
       <strong>{children}</strong>
     </li>
   );
@@ -4940,21 +4946,6 @@ function GoalscorerBlock({
   );
 }
 
-// #UI-MACHINA-0802 — lucchetto in SVG inline, non emoji. Le emoji come risorsa
-// grafica sono vietate (regola standing anti-slop), e su questa superficie il
-// glifo arrivava alla dimensione della quota, cioe' grande e fuori stile: un
-// disegno di sistema resta nel colore del testo e nel peso del tratto.
-function McLock({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" aria-hidden="true"
-      style={{ display: "inline-block", verticalAlign: "-0.15em" }}>
-      <rect x="4" y="10.5" width="16" height="10.5" rx="1.2" />
-      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
-
 // #UI-MACHINA-0802 — la foto dietro la scheda. Segue lo SPORT (non è
 // decorazione casuale) e alterna in modo deterministico sull'indice, così due
 // schede adiacenti non portano la stessa immagine. Le foto sono quelle già in
@@ -5286,7 +5277,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             </div>
             <div className="v2r-q">
               <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><McLock size={22} /></span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
             </div>
           </div>
           <span className="locked-cta">{t.locked_title}</span>
@@ -5298,15 +5289,25 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><McLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              {/* #UI-MACHINA-0802 — sotto il floor la scheda mostrava l'esito piu'
+                  probabile con l'occhiello "Il nostro pronostico", cioe' lo faceva
+                  passare per una pick. Lo standard chiede: esito piu' probabile,
+                  edge assente, ED ETICHETTA che dice che non c'e' un favorito
+                  netto. L'edge era gia' soppresso; mancava di dirlo. */}
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
+                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
+                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {!isPreview && belowFloor && (
+                <span className="v2r-conf-t">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>
+              )}
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock"><McLock size={22} /></span>
+                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -5864,7 +5865,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             </div>
             <div className="v2r-q">
               <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><McLock size={22} /></span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
             </div>
           </div>
           <span className="locked-cta">{t.locked_title}</span>
@@ -5876,7 +5877,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><McLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5884,7 +5885,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock"><McLock size={22} /></span>
+                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -6492,7 +6493,7 @@ function MatchBuilderTab({
               {sharedRows.map((row) => (
                 <div key={row.id} className="mb-slip-item">
                   <span className="mb-slip-fixture">{row.label}</span>
-                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
+                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]"><GlyphLock size={12} /></span></span>
                 </div>
               ))}
             </div>
@@ -6679,7 +6680,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Caricamento classifica…",
       noData: "Ancora nessuna classifica.",
       emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
-      podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+      podiumLabel: ["Primo", "Secondo", "Terzo"],
     },
     en: {
       eyebrow: "Public leaderboard",
@@ -6700,7 +6701,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Loading leaderboard…",
       noData: "No ranking yet.",
       emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
-      podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+      podiumLabel: ["First", "Second", "Third"],
     },
     es: {
       eyebrow: "Clasificación pública",
@@ -6721,7 +6722,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Cargando clasificación…",
       noData: "Aún no hay clasificación.",
       emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
-      podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
+      podiumLabel: ["Primero", "Segundo", "Tercero"],
     },
     fr: {
       eyebrow: "Classement public",
@@ -6742,7 +6743,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Chargement du classement…",
       noData: "Pas encore de classement.",
       emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
-      podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
+      podiumLabel: ["Premier", "Deuxième", "Troisième"],
     },
     ru: {
       eyebrow: "Публичный рейтинг",
@@ -6763,7 +6764,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Загрузка рейтинга…",
       noData: "Рейтинга пока нет.",
       emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
-      podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
+      podiumLabel: ["Первое", "Второе", "Третье"],
     },
   });
 
@@ -6863,7 +6864,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-3 gap-3" aria-hidden="true">
             {[0, 1, 2].map((i) => (
               <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
-                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
+                <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
                 <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
                 <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
                 <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
@@ -6882,7 +6883,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             <div className="grid grid-cols-3 gap-3">
               {podium.map((e, i) => (
                 <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={i === 0 ? { borderColor: medalBorder[i], background: "var(--am-coral)" } : { borderColor: medalBorder[i] }}>
-                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
+                  <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
                   <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
                   <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
                   <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-90" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
@@ -7124,7 +7125,7 @@ function HistoryTab({ history, stats, loading }: {
                       {SPORT_ICONS[h.sport] ?? ""} {eventLabel(h)}
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
-                    <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
+                    <td className="pk">{h.locked ? <GlyphLock size={13} /> : (h.pick ?? "—")}</td>
                     <td className="r">
                       <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
                     </td>

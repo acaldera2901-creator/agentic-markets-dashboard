@@ -23,6 +23,7 @@ import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
+import { GlyphLock } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 // #BUNDLE-SLIM-0702: la scheda pesante si carica on-demand (all'apertura del modal).
 const MatchDetailSheet = dynamic(() => import("@/components/MatchDetailSheet").then((m) => m.MatchDetailSheet));
 
@@ -650,9 +651,21 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
       {/* outcome rows / gate overlay */}
       {p.locked ? (
         <Link href="/predictions" className="lock-overlay wc-lock" role="button">
-          <span className="blurred">▒▒ HOME ▒▒▒%</span>
-          <span className="blurred">▒▒ DRAW ▒▒▒%</span>
-          <span className="blurred">▒▒ AWAY ▒▒▒%</span>
+          {/* #UI-MACHINA-0802 — la forma VERA del readout coi valori mascherati, non
+              tre barre HOME/DRAW/AWAY: quelle sono vietate dalla regola standing di
+              giugno e promettevano una struttura che il prodotto sbloccato non ha.
+              Stessa correzione gia' fatta su calcio e tennis. */}
+          <div className="v2r is-locked" aria-hidden="true">
+            <div className="v2r-l">
+              <span className="v2r-eye">{lang === "it" ? "Il nostro pronostico" : "Our prediction"}</span>
+              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
+              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
+            </div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{lang === "it" ? "Quota FortunePlay" : "FortunePlay odds"}</span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
+            </div>
+          </div>
           <span className="locked-cta">Sign in to reveal pick &amp; confidence</span>
         </Link>
       ) : (
