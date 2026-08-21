@@ -77,7 +77,12 @@ export function teamSlug(name: string): string {
 // entries in core/world_cup_history.py). Without this, hub links built from
 // ESPN names 404 against canonical team pages (found in visual QA 2026-06-06).
 const SLUG_TO_CANONICAL: Record<string, string> = {
-  "cape-verde": "cabo verde",
+  // #WC-SLUG-ROT-0821 — "cape-verde" NON va aliasato: il dataset scriveva
+  // "Cabo Verde" e ora scrive "Cape Verde", quindi l'alias faceva cercare un
+  // nome che non esiste piu' e la pagina squadra rispondeva 404. Trovato
+  // strisciando i link interni di produzione: 2 rotti su 94.
+  // Lo slug nudo ("cape verde") trova la riga da solo: nessuna voce serve.
+  "congo-dr": "dr congo",   // ESPN dice "Congo DR", il dataset "DR Congo"
   "turkiye": "turkey",
   "bosnia-herzegovina": "bosnia and herzegovina",
   "czechia": "czech republic",

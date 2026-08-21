@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
 import { GlyphLock, GlyphCheck, GlyphRank } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
+import { pickLanguage } from "@/lib/pick-language"; // #GEO-LANG-0821
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
@@ -2079,6 +2080,22 @@ function isFootballBestBet(p: Prediction) {
   return isValue || isModelSignal;
 }
 
+// #DUP-FLOOR-TENNIS-0821 — UNA definizione del verdetto sotto-floor per il
+// tennis, come `isFootballSurfaced` per il calcio. Viveva scritta a mano in tre
+// posti (il predicato best-bet, la riga dei candidati, e da nessuna parte nella
+// scheda). Il commento di #TENNIS-MARKET-GATE-0805 avvertiva che ri-derivare la
+// regola lato client e' esattamente come i pick sotto-floor sono riemersi
+// l'ultima volta: quindi si estrae, non si ricopia.
+//
+// `confidence_score` assente su payload vecchi -> trattato come sopra il floor,
+// cosi' una risposta in cache non svuota il board. `no_market` e' il verdetto
+// del SERVER (niente prezzo di mercato -> stesso esito).
+function isTennisSurfaced(m: TennisMatch): boolean {
+  return (m.confidence_score == null
+    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
+    && m.no_market !== true;
+}
+
 function isTennisBestBet(m: TennisMatch) {
   const odds = selectedTennisOdds(m);
   // #BESTBET-FLOOR-1: below the tennis floor the serving route drops `pick` but
@@ -2089,9 +2106,7 @@ function isTennisBestBet(m: TennisMatch) {
   // #BESTBET-FLOOR-1 — re-deriving the rule client-side is how sub-floor picks
   // resurfaced here last time). Absent on legacy payloads → treated as market
   // present, so an old cached response cannot blank the whole board.
-  const surfaced = (m.confidence_score == null
-    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
-    && m.no_market !== true;
+  const surfaced = isTennisSurfaced(m);
   // #BESTBET-MODEL-SIGNAL-0715: value bet (mercato+edge) OPPURE model signal
   // (prob pick ≥ 58%). Il floor `surfaced` resta binding (tennis lo-tier 64),
   // quindi durante il blackout quote le pick modello ad alta confidenza restano.
@@ -2548,9 +2563,7 @@ function BestBetsBoard({
     // #BESTBET-FLOOR-1: below the tennis floor → no directional pick.
     // #TENNIS-SEG-FLOOR-1: segment-aware floor resolved from the tournament.
     // #TENNIS-MARKET-GATE-0805: no market price → same outcome (server verdict).
-    belowFloor: (m.confidence_score != null
-      && m.confidence_score < surfaceFloorFor("tennis", m.tournament))
-      || m.no_market === true,
+    belowFloor: !isTennisSurfaced(m),
   }));
   const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
     sportFilter,
@@ -5629,6 +5642,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  // #DUP-FLOOR-TENNIS-0821 — lo stesso verdetto che usano il predicato best-bet
+  // e la riga dei candidati, non una copia della regola.
+  const belowFloor = !isTennisSurfaced(m);
   const t = useT();
   const lang = useLang();
   const tz = useTz();
@@ -5877,8 +5893,13 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
+                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
+                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {!isPreview && belowFloor && (
+                <span className="v2r-conf-t">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>
+              )}
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
@@ -8589,20 +8610,23 @@ export default function Dashboard() {
     if (tab === "plans") trackEvent("plan_view");
   }, [tab]);
 
-  // IP-based language detection — only runs when no stored preference exists
+  // #GEO-LANG-0821 — la lingua la dice il BROWSER, non un servizio di terzi.
+  // Prima si chiamava ipapi.co dal browser: misurato in produzione un 429 (quota
+  // superata) su /leaderboard, quindi il rilevamento falliva in silenzio e
+  // restava l'inglese; e l'IP del visitatore usciva verso un terzo alla prima
+  // visita, prima di qualsiasi consenso, per un dato che il browser ci da'
+  // gratis. `navigator.languages` e' anche piu' accurato: e' la preferenza
+  // DICHIARATA, non una deduzione dal paese. Regola in lib/pick-language.ts.
   useEffect(() => {
     const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
     if (stored && LANGUAGES.includes(stored as Lang)) return;
-    fetch("https://ipapi.co/json/")
-      .then((r) => r.json())
-      .then((d: { languages?: string }) => {
-        // ipapi.co returns e.g. "it-IT,en" or "es-ES,ca" — take first lang code
-        const primary = (d.languages ?? "").split(",")[0]?.split("-")[0]?.toLowerCase() as Lang;
-        const detected: Lang = LANGUAGES.includes(primary) ? primary : "en";
-        setUiLanguage(detected);
-        storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
-      })
-      .catch(() => { /* keep default */ });
+    const preferite = [
+      ...(typeof navigator !== "undefined" ? navigator.languages ?? [] : []),
+      typeof navigator !== "undefined" ? navigator.language ?? "" : "",
+    ];
+    const detected = pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang;
+    setUiLanguage(detected);
+    storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

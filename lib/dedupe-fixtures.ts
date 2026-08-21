@@ -49,19 +49,32 @@ function fixtureKey(home: string, away: string, kickoff: string): string | null 
 }
 
 type FixtureRow = {
-  match_id: string;
-  home_team: string;
-  away_team: string;
-  kickoff: string;
-  computed_at?: string | null;
+  home_team?: string | null;
+  away_team?: string | null;
+  kickoff?: string | null;
 };
 
-export function dedupeByFixture<T extends FixtureRow>(rows: T[]): T[] {
+/** Come leggere una riga: i due chiamanti hanno nomi di campo diversi
+ *  (`kickoff`/`computed_at` sul board, `starts_at`/`settled_at` nello storico) e
+ *  domande diverse (lo storico deve tenere DUE MERCATI sulla stessa partita).
+ *  Gli accessori evitano una seconda implementazione dell'identità. */
+type DedupeOpts<T> = {
+  /** quando si gioca — default `kickoff` */
+  when?: (r: T) => string | null | undefined;
+  /** chi vince fra due copie: il valore più ALTO — default `computed_at` */
+  freshness?: (r: T) => string | null | undefined;
+  /** parte extra della chiave: mercato, sport… — default nessuna */
+  extra?: (r: T) => string;
+};
+
+export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpts<T> = {}): T[] {
   const winner = new Map<string, number>();
   const keep = rows.map(() => true);
 
   rows.forEach((row, i) => {
-    const key = fixtureKey(row.home_team, row.away_team, row.kickoff);
+    const when = (opts.when ? opts.when(row) : (row as { kickoff?: string | null }).kickoff) ?? "";
+    const base = fixtureKey(row.home_team ?? "", row.away_team ?? "", when);
+    const key = base && opts.extra ? `${base}#${opts.extra(row)}` : base;
     if (!key) return; // identità sconosciuta → si tiene (fail-open)
 
     const prev = winner.get(key);
@@ -69,8 +82,10 @@ export function dedupeByFixture<T extends FixtureRow>(rows: T[]): T[] {
       winner.set(key, i);
       return;
     }
-    const prevAt = rows[prev].computed_at ?? "";
-    const thisAt = row.computed_at ?? "";
+    const fresh = (r: T) =>
+      (opts.freshness ? opts.freshness(r) : (r as { computed_at?: string | null }).computed_at) ?? "";
+    const prevAt = fresh(rows[prev]);
+    const thisAt = fresh(row);
     if (thisAt > prevAt) {
       keep[prev] = false;
       winner.set(key, i);

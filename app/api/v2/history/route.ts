@@ -4,6 +4,7 @@ import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { bySegment } from "@/lib/track-record-history";
+import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
 
 // #TRACKREC-REAL-0626 + #WC-FLOOR-0707: a row counts in the track record iff the
 // board ACTUALLY showed it as a directional pick. We read the board's own
@@ -120,7 +121,20 @@ export async function GET(req: Request) {
   // We now read the board's PERSISTED verdict (wasShownAsPick) rather than
   // re-deriving the floor, so the metric matches exactly what was displayed and
   // is stable across floor changes. Probability-neutral.
-  const rows = fetched.filter(wasShownAsPick);
+  // #DUP-FIXTURES-0821 (secondo giro) — la stessa partita non conta due volte.
+  // `unified_predictions` porta una riga per id del PROVIDER, e un cambio di
+  // fonte (il 403 di ESPN sullo User-Agent, poi il fix) ha lasciato righe
+  // gemelle: misurate il 21/08, **37 righe in eccesso su 278**, stessa partita
+  // E stesso mercato. Aggregate cosi', gonfiano la percentuale pubblicata
+  // contando due volte lo stesso esito.
+  // Si deduplica in LETTURA, con la stessa identita' e la stessa regola del
+  // board (lib/dedupe-fixtures.ts): nessun dato toccato, e due MERCATI diversi
+  // sulla stessa partita restano due righe (il mercato entra nella chiave).
+  const rows = dedupeByFixture(fetched.filter(wasShownAsPick), {
+    when: (r) => r.starts_at,
+    freshness: (r) => r.settled_at ?? r.starts_at,
+    extra: (r) => `${r.sport ?? ""}|${r.market ?? ""}`,
+  });
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
