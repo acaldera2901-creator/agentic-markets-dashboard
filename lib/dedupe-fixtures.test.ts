@@ -88,4 +88,35 @@ describe("dedupeByFixture", () => {
     ];
     expect(dedupeByFixture(rows).map((r) => r.match_id)).toEqual(["1", "2"]);
   });
+
+  // #DUP-FIXTURES-0821 (secondo giro) — lo STORICO. Il track record aggrega
+  // unified_predictions: due righe per la stessa partita E lo stesso mercato
+  // contano la partita DUE VOLTE nella percentuale pubblicata. Misurate 37
+  // righe in eccesso su 278 il 2026-08-21.
+  it("storico: collassa fixture+mercato, con nomi di campo diversi", () => {
+    const rows = [
+      { home_team: "Sochaux", away_team: "Guingamp", starts_at: "2026-08-21T18:00:00Z", market: "1X2", settled_at: "2026-08-21T20:00:00Z", id: "a" },
+      { home_team: "Sochaux", away_team: "Guingamp", starts_at: "2026-08-21T18:00:00Z", market: "1X2", settled_at: "2026-08-21T21:00:00Z", id: "b" },
+    ];
+    const out = dedupeByFixture(rows, {
+      when: (r) => r.starts_at,
+      freshness: (r) => r.settled_at,
+      extra: (r) => r.market,
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe("b"); // vince la regolata piu' tardi
+  });
+
+  it("storico: DUE MERCATI sulla stessa partita restano due righe", () => {
+    const rows = [
+      { home_team: "Sochaux", away_team: "Guingamp", starts_at: "2026-08-21T18:00:00Z", market: "1X2", settled_at: "x", id: "a" },
+      { home_team: "Sochaux", away_team: "Guingamp", starts_at: "2026-08-21T18:00:00Z", market: "OU25", settled_at: "x", id: "b" },
+    ];
+    const out = dedupeByFixture(rows, {
+      when: (r) => r.starts_at,
+      freshness: (r) => r.settled_at,
+      extra: (r) => r.market,
+    });
+    expect(out).toHaveLength(2);
+  });
 });
