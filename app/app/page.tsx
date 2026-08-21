@@ -6243,6 +6243,13 @@ interface MbItem {
   // percentuale modello, MAI come quota — coerente col prodotto
   // (probabilità calibrate, non promesse di edge).
   prob: number;
+  // #MB-FLOOR-0821 — sotto il floor NON si scrive "Pick". Misurato da PRO in
+  // produzione: 61 righe su 95 stavano sotto il 50% e il builder le annunciava
+  // come "Pick: X (37%)", cioe' come pronostici. E questo e' lo strumento che
+  // invita a condividere il link coi follower: la parola "Pick" qui esce dal
+  // prodotto e va a terzi. Il verdetto e' quello del server, lo stesso della
+  // scheda (isFootballSurfaced / isTennisSurfaced), non una regola nuova.
+  belowFloor?: boolean;
 }
 
 interface MbWcRow {
@@ -6366,6 +6373,7 @@ function MatchBuilderTab({
           market: p.best_selection === "HOME" ? p.home_team : p.best_selection === "AWAY" ? p.away_team : "Draw",
           sport: p.league_name || "Football", when: p.kickoff,
           prob,
+          belowFloor: !isFootballSurfaced(p),
         };
       })
       .filter((i): i is MbItem => i !== null),
@@ -6399,6 +6407,7 @@ function MatchBuilderTab({
           market: m.best_selection === "P1" ? m.player1 : m.player2,
           sport: `Tennis · ${m.tournament}`, when: m.scheduled,
           prob,
+          belowFloor: !isTennisSurfaced(m),
         };
       })
       .filter((i): i is MbItem => i !== null),
@@ -6490,7 +6499,7 @@ function MatchBuilderTab({
             code,
             mb: selected.join(","),
             selections: selectedItems.map((i) => ({
-              id: i.id, label: i.label, market: i.market, sport: i.sport, when: i.when, prob: i.prob,
+              id: i.id, label: i.label, market: i.market, sport: i.sport, when: i.when, prob: i.prob, belowFloor: i.belowFloor,
             })),
           }),
         });
@@ -6590,7 +6599,12 @@ function MatchBuilderTab({
                                   <>{home}<span className="mb-vs">vs</span>{away}</>
                                 ) : item.label}
                               </span>
-                              <span className="mb-pick"><span className="mb-pick-label">Pick: </span><strong>{item.market}</strong></span>
+                              <span className="mb-pick">
+                                <span className="mb-pick-label">{item.belowFloor
+                                  ? pick5(lang, { it: "Lettura: ", en: "Model read: ", es: "Lectura: ", fr: "Lecture : ", ru: "Чтение: " })
+                                  : "Pick: "}</span>
+                                <strong>{item.market}</strong>
+                              </span>
                             </span>
                             <span className="mb-row-tail">
                               <span className="mb-prob">{Math.round(item.prob * 100)}%</span>
