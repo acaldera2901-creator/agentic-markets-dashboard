@@ -69,6 +69,13 @@ describe("tennis market-anchor served row", () => {
     expect(d.edge_percent).toBeNull();
     expect(d.signal_type).toBe("paper");
     expect(d.is_paper).toBe(true);
+
+    // #TENNIS-MARKET-ANCHOR-0821 display fix: the odds are REAL (we anchored the
+    // probability to them), so they MUST be shown and the bookmaker must NOT read
+    // "no market" even though edge is null. Before the fix, odds/bookmaker were
+    // gated on `edge != null` and this row wrongly showed "no market"/null odds.
+    expect(d.odds).toBe(1.3);
+    expect(d.bookmaker).toBe("market composite");
   });
 
   it("below the floor the anchored row surfaces no directional pick", () => {
