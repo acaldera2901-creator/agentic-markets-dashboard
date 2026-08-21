@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
 import { GlyphLock, GlyphCheck, GlyphRank } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
+import { pickLanguage } from "@/lib/pick-language"; // #GEO-LANG-0821
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
@@ -8609,20 +8610,23 @@ export default function Dashboard() {
     if (tab === "plans") trackEvent("plan_view");
   }, [tab]);
 
-  // IP-based language detection — only runs when no stored preference exists
+  // #GEO-LANG-0821 — la lingua la dice il BROWSER, non un servizio di terzi.
+  // Prima si chiamava ipapi.co dal browser: misurato in produzione un 429 (quota
+  // superata) su /leaderboard, quindi il rilevamento falliva in silenzio e
+  // restava l'inglese; e l'IP del visitatore usciva verso un terzo alla prima
+  // visita, prima di qualsiasi consenso, per un dato che il browser ci da'
+  // gratis. `navigator.languages` e' anche piu' accurato: e' la preferenza
+  // DICHIARATA, non una deduzione dal paese. Regola in lib/pick-language.ts.
   useEffect(() => {
     const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
     if (stored && LANGUAGES.includes(stored as Lang)) return;
-    fetch("https://ipapi.co/json/")
-      .then((r) => r.json())
-      .then((d: { languages?: string }) => {
-        // ipapi.co returns e.g. "it-IT,en" or "es-ES,ca" — take first lang code
-        const primary = (d.languages ?? "").split(",")[0]?.split("-")[0]?.toLowerCase() as Lang;
-        const detected: Lang = LANGUAGES.includes(primary) ? primary : "en";
-        setUiLanguage(detected);
-        storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
-      })
-      .catch(() => { /* keep default */ });
+    const preferite = [
+      ...(typeof navigator !== "undefined" ? navigator.languages ?? [] : []),
+      typeof navigator !== "undefined" ? navigator.language ?? "" : "",
+    ];
+    const detected = pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang;
+    setUiLanguage(detected);
+    storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
