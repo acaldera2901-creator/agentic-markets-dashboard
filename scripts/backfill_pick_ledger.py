@@ -226,8 +226,12 @@ def collect_tennis(client: httpx.Client) -> list[BackfillPick]:
         client,
         "unified_predictions",
         {
+            # #TENNIS-BACKFILL-NAMES-0821: tennis names live in home_team/away_team
+            # (lib/tennis-adapter.ts writes player1->home_team, player2->away_team);
+            # unified_predictions has NO player_one/player_two columns, so the old
+            # select read nothing and every backfilled tennis row got NULL names.
             "select": "source_table,source_id,model_version,competition,"
-            "player_one,player_two,market,pick,confidence_score,odds,closing_odds,"
+            "home_team,away_team,market,pick,confidence_score,odds,closing_odds,"
             "starts_at,result,settled_at",
             "sport": "eq.tennis",
             "result": "in.(won,lost,void,unresolved)",
@@ -257,8 +261,8 @@ def collect_tennis(client: httpx.Client) -> list[BackfillPick]:
                 sport="tennis",
                 league=None,
                 competition=r.get("competition"),
-                home_team=r.get("player_one"),
-                away_team=r.get("player_two"),
+                home_team=r.get("home_team"),
+                away_team=r.get("away_team"),
                 market=r.get("market") or "MATCH",
                 pick=r.get("pick"),
                 p_home=d.get("p1"),

@@ -288,11 +288,20 @@ class TennisModelAgent(BaseAgent):
         odds_p1 = self._float_or_none(fixture.get("odds_p1"))
         odds_p2 = self._float_or_none(fixture.get("odds_p2"))
 
-        # #TENNIS-BLEND-PROMOTE-0805 — the served probability becomes the blend
-        # with the de-vigged market (alpha 0.30: 30% model, 70% market), the same
-        # alpha as football. Fail-closed: no usable 2-way price -> blend_tennis
-        # returns the identity, so a match without a market is served EXACTLY as
-        # before. Rollback is the flag, not a revert.
+        # #TENNIS-MARKET-ANCHOR-0821 — the served probability is now the de-vigged
+        # market DIRECTLY (full anchor), superseding the 0.30 blend of
+        # #TENNIS-BLEND-PROMOTE-0805. The blend served ~10 points over-confident vs
+        # realised, whereas the same rows priced on the de-vigged market ALONE hold
+        # ~70% (the "market alone" column below). So the served p1/p2 ARE the market
+        # and — exactly like the market-anchored MLB/UFC rows (baseball/mma agents)
+        # — we make NO edge claim against the line we are copying. The Elo model is
+        # still computed above (it feeds the why/narrative and the shadow A/B); it
+        # just no longer sets the served probability when a price exists.
+        #
+        # Fail-closed is UNCHANGED: no usable 2-way price -> `market` is None -> the
+        # else branch below serves the pure Elo model exactly as before. Rollback is
+        # still the flag (TENNIS_SHADOW_SERVE_ENABLED), not a revert. The 0.30 blend
+        # constant/function stay in place for the shadow collectors.
         #
         # Live evidence (lab 05/08, am-lab/REPORT-tennis-blend-2026-08-05.md):
         # 223 matches with a PRE-MATCH market snapshot in prediction_log and an
@@ -301,33 +310,30 @@ class TennisModelAgent(BaseAgent):
         #   elo raw (served)           91            71.4%     0.2259
         #   blend a=0.30              125            77.6%     0.1981
         #   market alone              131            79.4%     0.1963
-        # i.e. +6.2 points of accuracy AND +37% volume at the same time, stable
-        # across both halves of the window; when the blend flips the side the
-        # model picked (50 matches) it is right 32 times out of 50 (z=1.98).
-        # The raw model keeps being logged as the shadow, so the A/B survives
-        # the promotion instead of ending with it.
         from config.settings import settings
 
         p1_raw, p2_raw = p1_prob, p2_prob
         blended = False
+        market_anchored = False
         if getattr(settings, "TENNIS_SHADOW_SERVE_ENABLED", False):
             market = devig_2way(odds_p1, odds_p2)
             if market:
-                p1_prob, p2_prob = blend_tennis(p1_prob, p2_prob, market)
+                p1_prob, p2_prob = market["p1"], market["p2"]
                 blended = True
+                market_anchored = True
 
-        # `edge` is computed from the SERVED probability on purpose. Once the
-        # market is 70% of what we publish, our disagreement with it really is
-        # ~0.3x what it was: claiming the pre-blend edge would be advertising a
-        # value we no longer believe. Consequence to expect, not a side effect —
-        # fewer rows clear the value-bet threshold. Coherent with the product
-        # line: we have never beaten the closing line and do not sell that.
-        edge, best_selection = self._market_edge(p1_prob, p2_prob, odds_p1, odds_p2)
-        # #TENNIS-BS-1: il Match Builder richiede best_selection non-null; senza
-        # valore di mercato (caso paper, post-Betfair) resta il lato a probabilità
-        # massima del modello. Il claim di valore vive in edge+odds, non qui.
-        if best_selection is None:
-            best_selection = "P1" if p1_prob >= p2_prob else "P2"
+        if market_anchored:
+            # Market-anchored: no edge claim, ever (mirror baseball/mma). The pick
+            # is the market's favourite. #TENNIS-MARKET-ANCHOR-0821.
+            edge, best_selection = None, ("P1" if p1_prob >= p2_prob else "P2")
+        else:
+            # Not anchored (flag off, or no usable price): served EXACTLY as before
+            # — pure Elo probabilities, edge measured against the market if a price
+            # exists. #TENNIS-BS-1: il Match Builder richiede best_selection
+            # non-null; senza valore di mercato resta il lato a probabilità massima.
+            edge, best_selection = self._market_edge(p1_prob, p2_prob, odds_p1, odds_p2)
+            if best_selection is None:
+                best_selection = "P1" if p1_prob >= p2_prob else "P2"
         feature_snapshot = {
             "source": "jeff_sackmann_cache",
             "serve_return_delta": round(form_delta, 4),
