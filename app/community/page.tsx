@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { GlyphLock } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 
 type SlipSelection = {
   label: string;
@@ -320,7 +321,7 @@ export default function CommunityPage() {
                       // cue) + has the "Unlock with Pro" button — the per-row 🔒 sat
                       // under the blur, redundant. Keep 🔒 only for a rare non-locked
                       // row with no market.
-                      <span style={{ color: "var(--am-muted-2)" }}>🔒</span>
+                      <span style={{ color: "var(--am-muted-2)" }}><GlyphLock size={12} /></span>
                     ) : null}
                   </div>
                 </div>

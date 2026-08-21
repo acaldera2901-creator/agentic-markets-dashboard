@@ -3,6 +3,7 @@
 import { PickLedger, type LedgerRow } from "./PickLedger";
 import { EdgeCard } from "./EdgeCard";
 import { SegmentTable } from "./SegmentTable";
+import { GlyphLedger, GlyphTrend } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 
 // Stili namespaced .tr-* (token reali --am-*), iniettati una volta. Si evita
 // l'import di CSS globale (vincolo App Router) come nel prototipo verificato.
@@ -85,14 +86,14 @@ export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" 
       </div>
 
       <div className="tr-sh">
-        <span className="tr-glyph">🧾</span>
+        <span className="tr-glyph"><GlyphLedger size={16} /></span>
         <h2>{it ? "Registro pick" : "Pick log"}</h2>
         <span className="hint">{it ? "pick concluse · arrivano qui quando la partita finisce" : "settled picks · they land here when the match ends"}</span>
       </div>
       <PickLedger rows={rows} lang={lang} />
 
       <div className="tr-sh">
-        <span className="tr-glyph">📈</span>
+        <span className="tr-glyph"><GlyphTrend size={16} /></span>
         <h2>{it ? "Lo storico in sintesi" : "Track record at a glance"}</h2>
       </div>
       <EdgeCard lang={lang} />

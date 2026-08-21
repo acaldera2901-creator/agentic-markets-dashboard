@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SportMark } from "@/app/components/sport-icon";
 import { filterConcluded } from "@/lib/track-record-history";
+import { GlyphLock } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 
 export type LedgerRow = {
   sport: string;
@@ -84,7 +85,7 @@ export function PickLedger({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en
         )}
         {isLocked && (
           <div className="tr-glock">
-            🔒 {it ? "Registro completo e drill-down per-pick (prob-al-pick, CLV)" : "Full log and per-pick drill-down (pick probability, CLV)"} —{" "}
+            <GlyphLock size={13} /> {it ? "Registro completo e drill-down per-pick (prob-al-pick, CLV)" : "Full log and per-pick drill-down (pick probability, CLV)"} —{" "}
             <span className="tr-pill btn">{it ? "Sblocca con Pro" : "Unlock with Pro"}</span>
           </div>
         )}

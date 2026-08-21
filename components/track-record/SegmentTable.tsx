@@ -1,6 +1,7 @@
 "use client";
 
 import { useYearData } from "./useYearData";
+import { GlyphBars } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 
 // #HISTORY-TRIM-0626: "Per segmento" sul track record live (nessun filtro anno).
 // Hit-rate + campione per segmento.
@@ -11,7 +12,7 @@ export function SegmentTable({ lang }: { lang: "it" | "en" }) {
   return (
     <>
       <div className="tr-sh">
-        <span className="tr-glyph">📊</span>
+        <span className="tr-glyph"><GlyphBars size={16} /></span>
         <h2>{it ? "Per segmento" : "By segment"}</h2>
       </div>
       <div className="tr-card tr-score">

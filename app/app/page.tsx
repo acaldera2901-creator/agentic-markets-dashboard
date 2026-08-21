@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
+import { GlyphLock, GlyphCheck } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
@@ -3130,9 +3131,14 @@ function FAQSupportSection({ items }: { items: string[][] }) {
 }
 
 function PlanFeature({ children, locked = false }: { children: React.ReactNode; locked?: boolean }) {
+  // #UI-MACHINA-0802: al posto delle parole "OK"/"LOCK" un SEGNO. Erano due
+  // parole inglesi mostrate anche in italiano e spagnolo, ed erano testo dove
+  // serviva un simbolo. L'etichetta accessibile resta.
   return (
     <li className={locked ? "is-locked" : ""}>
-      <span>{locked ? "LOCK" : "OK"}</span>
+      <span aria-label={locked ? "locked" : "included"} role="img">
+        {locked ? <GlyphLock size={13} /> : <GlyphCheck size={13} />}
+      </span>
       <strong>{children}</strong>
     </li>
   );
@@ -4940,21 +4946,6 @@ function GoalscorerBlock({
   );
 }
 
-// #UI-MACHINA-0802 — lucchetto in SVG inline, non emoji. Le emoji come risorsa
-// grafica sono vietate (regola standing anti-slop), e su questa superficie il
-// glifo arrivava alla dimensione della quota, cioe' grande e fuori stile: un
-// disegno di sistema resta nel colore del testo e nel peso del tratto.
-function McLock({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" aria-hidden="true"
-      style={{ display: "inline-block", verticalAlign: "-0.15em" }}>
-      <rect x="4" y="10.5" width="16" height="10.5" rx="1.2" />
-      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
-
 // #UI-MACHINA-0802 — la foto dietro la scheda. Segue lo SPORT (non è
 // decorazione casuale) e alterna in modo deterministico sull'indice, così due
 // schede adiacenti non portano la stessa immagine. Le foto sono quelle già in
@@ -5286,7 +5277,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             </div>
             <div className="v2r-q">
               <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><McLock size={22} /></span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
             </div>
           </div>
           <span className="locked-cta">{t.locked_title}</span>
@@ -5298,7 +5289,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><McLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5306,7 +5297,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock"><McLock size={22} /></span>
+                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -5864,7 +5855,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             </div>
             <div className="v2r-q">
               <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><McLock size={22} /></span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
             </div>
           </div>
           <span className="locked-cta">{t.locked_title}</span>
@@ -5876,7 +5867,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><McLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
@@ -5884,7 +5875,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock"><McLock size={22} /></span>
+                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : fpPickOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
@@ -6492,7 +6483,7 @@ function MatchBuilderTab({
               {sharedRows.map((row) => (
                 <div key={row.id} className="mb-slip-item">
                   <span className="mb-slip-fixture">{row.label}</span>
-                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
+                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]"><GlyphLock size={12} /></span></span>
                 </div>
               ))}
             </div>
@@ -7124,7 +7115,7 @@ function HistoryTab({ history, stats, loading }: {
                       {SPORT_ICONS[h.sport] ?? ""} {eventLabel(h)}
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
-                    <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
+                    <td className="pk">{h.locked ? <GlyphLock size={13} /> : (h.pick ?? "—")}</td>
                     <td className="r">
                       <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
                     </td>
