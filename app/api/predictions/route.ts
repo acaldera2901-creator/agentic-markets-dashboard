@@ -50,6 +50,15 @@ import { syncMatchPredictionsToUnified } from "@/lib/unified-adapter";
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 import { buildSoftLookup } from "@/lib/soft-lookup";
+import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
+
+// #DUP-FIXTURES-0821 — si PRENDONO più righe di quante se ne servano.
+// Il cap era applicato PRIMA della deduplica: i 22 doppioni fra fonti
+// consumavano 22 posti dentro il limite, e altrettante partite vere non
+// arrivavano mai in board. Ora: si prende con margine, si deduplica per
+// identità della partita, POI si taglia. La dimensione servita non cambia.
+const BOARD_ROWS = 120;   // partite reali che vanno in board
+const FETCH_ROWS = 200;   // margine per i doppioni fra fonti
 
 const LEAGUES: Record<string, string> = {
   SA: "Serie A",
@@ -826,8 +835,8 @@ async function fetchUnifiedFallback(): Promise<PredictionRow[]> {
        -- vuota in off-season club, quindi questo fallback serve la WC; la WC
        -- resta comunque su /world-cup e il Match Builder deduplica.
      ORDER BY starts_at ASC
-     LIMIT 120`,
-    [PREDICTION_WINDOW_DAYS]
+     LIMIT $2`,
+    [PREDICTION_WINDOW_DAYS, FETCH_ROWS]
   );
   return rows
     .map(unifiedToPredictionRow)
@@ -844,8 +853,8 @@ export async function GET(req: Request) {
        WHERE kickoff > NOW() - interval '150 minutes'
          AND kickoff < NOW() + ($1 || ' days')::interval
        ORDER BY league = 'SA' DESC, kickoff ASC
-       LIMIT 120`,
-      [PREDICTION_WINDOW_DAYS]
+       LIMIT $2`,
+      [PREDICTION_WINDOW_DAYS, FETCH_ROWS]
     ),
     dbQuery<{ ts: string; cnt: string }>(
       `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
@@ -869,13 +878,16 @@ export async function GET(req: Request) {
     ? fallback_raw.filter((p) => p.league !== "WC")
     : [];
   const usingFallback = primaryNonWc.length === 0;
-  // Dedup difensivo per match_id (stesso fixture da fonti diverse).
-  const seenMatch = new Set<string>();
-  const predictions_raw = [...primaryNonWc, ...fallbackNonWc, ...fallbackWc].filter((p) => {
-    if (seenMatch.has(p.match_id)) return false;
-    seenMatch.add(p.match_id);
-    return true;
-  });
+  // #DUP-FIXTURES-0821 — una partita, una scheda. La deduplica precedente
+  // filtrava per `match_id`, cioè la chiave che fra due fonti non collide MAI:
+  // l'ingestione scrive una riga per fonte (`espn:401873989`,
+  // `oddsapi:31bd07…`) e il board serviva la stessa partita due volte, con due
+  // EDGE diversi perché sono due calcoli su istantanee di quote diverse.
+  // Misurato prima del fix: 120 righe servite, 120 distinte per match_id (la
+  // guardia non toglieva nulla), 98 distinte per identità della partita.
+  // Ora la chiave è `teamPairKey` e vince la riga più fresca. Fail-open: se
+  // l'identità non si calcola, la riga resta. Vedi lib/dedupe-fixtures.ts.
+  const predictions_raw = dedupeByFixture([...primaryNonWc, ...fallbackNonWc, ...fallbackWc]).slice(0, BOARD_ROWS);
 
   const computedAt = predictions_raw.length
     ? predictions_raw.reduce<string | null>(
