@@ -66,3 +66,29 @@ export function GlyphBars({ size = 18, className }: P) {
     </svg>
   );
 }
+
+/** Posizione sul podio: 1, 2, 3.
+ *
+ * Non usa oro/argento/bronzo: tre colori nuovi andrebbero rivalidati contro le
+ * due superfici, e il tetto misurato della palette e' 3 sport + il verde
+ * (il quarto colore falliva sempre). Il rango si legge dal PESO — riempimento
+ * pieno, mezzo, vuoto — e il segno resta monocromo, quindi eredita il colore
+ * del testo e funziona in entrambi i temi senza rischio di contrasto.
+ *
+ * La smussatura in alto a sinistra ripete quella delle schede prediction: il
+ * segno appartiene alla casa invece di sembrare preso da un set generico.
+ */
+export function GlyphRank({ rank, size = 22, className }: { rank: 1 | 2 | 3 } & P) {
+  const fill = rank === 1 ? 0.26 : rank === 2 ? 0.12 : 0;
+  const stroke = rank === 3 ? 1.4 : 2;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className}
+      aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.22em", flex: "none" }}>
+      <path d="M8 2.5h13.5v19H2.5V8z" fill="currentColor" fillOpacity={fill}
+        stroke="currentColor" strokeWidth={stroke} strokeLinejoin="miter" />
+      <text x="12.2" y="16.4" textAnchor="middle" fill="currentColor"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        fontSize="10.5" fontWeight="700" letterSpacing="0.02em">{rank}</text>
+    </svg>
+  );
+}

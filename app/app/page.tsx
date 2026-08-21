@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
-import { GlyphLock, GlyphCheck } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
+import { GlyphLock, GlyphCheck, GlyphRank } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
@@ -5289,8 +5289,18 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              {/* #UI-MACHINA-0802 — sotto il floor la scheda mostrava l'esito piu'
+                  probabile con l'occhiello "Il nostro pronostico", cioe' lo faceva
+                  passare per una pick. Lo standard chiede: esito piu' probabile,
+                  edge assente, ED ETICHETTA che dice che non c'e' un favorito
+                  netto. L'edge era gia' soppresso; mancava di dirlo. */}
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
+                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
+                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {!isPreview && belowFloor && (
+                <span className="v2r-conf-t">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>
+              )}
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
@@ -6670,7 +6680,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Caricamento classifica…",
       noData: "Ancora nessuna classifica.",
       emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
-      podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+      podiumLabel: ["Primo", "Secondo", "Terzo"],
     },
     en: {
       eyebrow: "Public leaderboard",
@@ -6691,7 +6701,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Loading leaderboard…",
       noData: "No ranking yet.",
       emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
-      podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+      podiumLabel: ["First", "Second", "Third"],
     },
     es: {
       eyebrow: "Clasificación pública",
@@ -6712,7 +6722,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Cargando clasificación…",
       noData: "Aún no hay clasificación.",
       emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
-      podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
+      podiumLabel: ["Primero", "Segundo", "Tercero"],
     },
     fr: {
       eyebrow: "Classement public",
@@ -6733,7 +6743,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Chargement du classement…",
       noData: "Pas encore de classement.",
       emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
-      podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
+      podiumLabel: ["Premier", "Deuxième", "Troisième"],
     },
     ru: {
       eyebrow: "Публичный рейтинг",
@@ -6754,7 +6764,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Загрузка рейтинга…",
       noData: "Рейтинга пока нет.",
       emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
-      podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
+      podiumLabel: ["Первое", "Второе", "Третье"],
     },
   });
 
@@ -6854,7 +6864,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-3 gap-3" aria-hidden="true">
             {[0, 1, 2].map((i) => (
               <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
-                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
+                <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
                 <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
                 <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
                 <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
@@ -6873,7 +6883,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             <div className="grid grid-cols-3 gap-3">
               {podium.map((e, i) => (
                 <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={i === 0 ? { borderColor: medalBorder[i], background: "var(--am-coral)" } : { borderColor: medalBorder[i] }}>
-                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
+                  <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
                   <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
                   <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
                   <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-90" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
