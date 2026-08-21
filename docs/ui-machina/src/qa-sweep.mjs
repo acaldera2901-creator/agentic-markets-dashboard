@@ -9,6 +9,13 @@
 import { chromium } from "/Users/calde/.npm/_npx/6f4879659183bc49/node_modules/playwright/index.mjs";
 
 const BASE = process.argv[2] || "http://localhost:3011";
+// #UI-MACHINA-0802 — una base malformata (es. "--base=http://…") faceva fallire
+// TUTTE le navigazioni e lo script usciva comunque 0: 28 timeout su 28 riportati
+// come verde. Una base non-http è un errore d'uso, non un risultato.
+if (!/^https?:\/\//.test(BASE)) {
+  console.error(`base non valida: "${BASE}" — passala posizionale, es. node qa-sweep.mjs http://localhost:3011`);
+  process.exit(2);
+}
 const ROUTES = ["/", "/app", "/history", "/leaderboard", "/plans", "/tools", "/weekly-pick",
                 "/partners", "/world-cup", "/community", "/blog", "/terms", "/privacy", "/match-builder"];
 const THEMES = ["dark", "light"];
@@ -64,3 +71,11 @@ for (const r of bad) console.log(`  ${r.theme} ${r.route} → http ${r.status} �
 const withErr = rows.filter(r => r.errs || r.failed);
 console.log(`\nROTTE CON ERRORI JS O RICHIESTE FALLITE: ${withErr.length}`);
 for (const r of withErr) console.log(`  ${r.theme} ${r.route} → ${r.errs} errJS ${r.failed} req✗ · ${r.errSample || r.failSample}`);
+
+// L'esito deve stare nell'exit code, non solo nell'output: un artefatto verde con
+// exit 0 su un fallimento totale è il modo in cui una verifica smette di verificare.
+if (bad.length || withErr.length) {
+  console.error(`\nESITO: ROSSO — ${bad.length} righe da guardare, ${withErr.length} con errori JS`);
+  process.exit(1);
+}
+console.log("\nESITO: VERDE — tutte le rotte 200, zero overflow, zero immagini rotte, zero errori JS");

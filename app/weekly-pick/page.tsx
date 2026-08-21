@@ -345,7 +345,9 @@ export default function WeeklyPickPage() {
   const fmtKick = (iso?: string | null) => { if (!iso) return null; try { return new Date(iso).toLocaleString(t.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }); } catch { return null; } };
 
   return (
-    <main className="wp-page">
+    <main className="wp-page mc-scene-court" data-mc-ground>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <SportGlyphSprite />
       <nav className="wp-nav">
         <Link href="/" className="wp-back">{t.back}</Link>

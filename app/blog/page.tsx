@@ -21,7 +21,9 @@ export default async function BlogIndexPage() {
   const posts = await listPublishedPosts();
 
   return (
-    <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+    <div className="min-h-screen font-mono mc-scene-court" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <JsonLd data={breadcrumbJsonLd([["Blog", "/blog"]])} />
       <main className="mx-auto max-w-3xl px-6 py-12" style={{ lineHeight: 1.7 }}>
         <p className="text-xs uppercase tracking-widest" style={{ color: "var(--am-coral, #f97316)" }}>Blog</p>
