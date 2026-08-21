@@ -77,6 +77,9 @@ def test_score_fixture_v4_adds_features_odds_edge_and_snapshot():
     assert pred["feature_quality"] > 0
     assert pred["odds_p1"] == 1.95
     assert pred["odds_p2"] == 2.10
-    assert pred["edge"] is not None
-    assert pred["best_selection"] in {"P1", "P2", None}
+    # #TENNIS-MARKET-ANCHOR-0821: with a usable 2-way price the row is now
+    # market-anchored, so it carries NO edge claim (mirror baseball/mma) and the
+    # pick is the market favourite.
+    assert pred["edge"] is None
+    assert pred["best_selection"] in {"P1", "P2"}
     assert "feature_snapshot" in pred
