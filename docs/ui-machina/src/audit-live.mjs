@@ -123,6 +123,17 @@ for (const url of URLS) {
         if (!el || el.closest("[aria-hidden='true']")) continue;
         const cs = getComputedStyle(el);
         if (cs.visibility === "hidden" || cs.display === "none" || +cs.opacity === 0) continue;
+        // #PRO-AA-0822 — tre esclusioni, tutte per correttezza, non per indulgenza:
+        // 1) i controlli DISABILITATI sono esplicitamente esentati dal minimo di
+        //    contrasto (WCAG 1.4.3 «Incidental: inactive user interface component»).
+        //    Il submit della modale di login su /plans è disabled a opacity .4 e
+        //    veniva contato come falla a 1.71:1.
+        // 2) testo con colore TRASPARENTE: il colore calcolato non descrive nessun
+        //    pixel (di solito è background-clip:text con un gradiente). Misurarlo
+        //    dà 1.02:1 su un titolo che si legge benissimo.
+        // 3) discendenti di un elemento disabilitato (il testo sta in uno span).
+        if (el.closest("[disabled], [aria-disabled='true']")) continue;
+        if (/rgba\(\s*\d+,\s*\d+,\s*\d+,\s*0\s*\)|^transparent$/.test(cs.color)) continue;
         const range = document.createRange();
         range.selectNodeContents(n);
         for (const r of range.getClientRects()) {

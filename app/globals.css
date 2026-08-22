@@ -133,12 +133,12 @@
   --am-chamfer-line:     #B8BFC9;
   --am-chamfer-line-2:   #A2AAB6;
 
-  --am-coral:      #15803D;   /* primary su light, contrasto AA come testo/bordo (brand green) */
+  --am-coral:      #137437;   /* #PRO-AA-0822: era #15803D → misurato 3.97–4.39:1 come testo su quattro fondi chiari (t-lab, badge live, «Already on Pro», v-kick). #137437 fa >=4.65:1 su tutti; su bianco il testo bianco dei CTA migliora. */
   --am-coral-2:    #1B9148;   /* fill/gradiente */
   --am-orange:     #EA7317;
   --am-cobalt:     #2563EB;
   --am-cobalt-2:   #3B82F6;
-  --am-amber:      #B5730A;
+  --am-amber:      #9B6209;  /* #PRO-AA-0822: era #B5730A → 3.87:1 su bianco (p.eyebrow su /plans). Ora >=4.64:1. */
 
   --am-positive:   #0F7A56;
   --am-positive-dim: rgba(15,122,86,0.10);
@@ -157,7 +157,7 @@
 
   --am-text:       #14171C;
   --am-muted:      #4A515B;
-  --am-muted-2:    #666E7B;  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
+  --am-muted-2:    #616975;  /* #PRO-AA-0822: #666E7B lasciava «/ mo» a 4.42:1 e «Русский» a 4.31:1 sui pannelli tinti. Ora >=4.65:1 su quei fondi. */  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
   --am-hi:         rgba(255,255,255,0.9);
 
   --ring:         rgba(21,128,61,0.38);  /* LEVEL-UP 1b: focus ring legacy → verde */
@@ -5031,7 +5031,7 @@ button:disabled {
   padding: 6px 10px;
   font-size: 9px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(255,255,255,0.22);
+  color: var(--am-muted);  /* #PRO-AA-0822: era rgba(255,255,255,0.22) = 2.01:1 su 9px. È l'avviso 18+ e gioco responsabile: deve essere leggibile. Ora 8.77:1. */
   text-align: center;
   border-top: 1px solid rgba(255,255,255,0.05);
   line-height: 1.4;
@@ -8698,7 +8698,7 @@ button:disabled {
 .wp-slip-badge svg { width: 11px; height: 11px; }
 .wp-slip-badge.live { color: var(--am-coral); background: var(--am-coral-dim); }
 .wp-slip-badge.won  { color: var(--am-coral); background: var(--am-coral-dim); }
-.wp-slip-badge.lost { color: #ef4444; background: rgba(239,68,68,0.13); }
+.wp-slip-badge.lost { color: var(--am-negative); background: var(--am-negative-dim); }  /* #PRO-AA-0822: terzo punto con #ef4444 cablato (dopo .wp-hist-out.lost e --v-red): 3.18:1 in chiaro, 4.28:1 in scuro. */
 
 .wp-legs { list-style: none; margin: 0; padding: 0; }
 .wp-leg { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center;
@@ -9237,8 +9237,8 @@ button:disabled {
 :root[data-theme="light"] .hv3{
   --v-bg:#F4F5F7; --v-bg2:#EEF0F3; --v-panel:#FFFFFF; --v-panel2:#FBFCFD; --v-panel3:#EEF0F3;
   --v-line:#E3E6EB; --v-line2:#D2D7DE;
-  --v-text:#14171C; --v-muted:#4A515B; --v-muted2:#666E7B; /* #V3-LABELS-AA: muted2 bumpato da #79818D (~3.5:1, sotto AA) a #666E7B → ≥4.5:1 su tutte le superfici light */
-  --v-coral:#15803D; --v-coral2:#1B9148; --v-coral-ink:#FFFFFF;
+  --v-text:#14171C; --v-muted:#4A515B; --v-muted2:#616975; /* #V3-LABELS-AA + #PRO-AA-0822: #79818D → #666E7B → #616975. Il valore precedente lasciava 4.31–4.42:1 sui pannelli tinti. Allineato a --am-muted-2. */
+  --v-coral:#137437; --v-coral2:#1B9148; --v-coral-ink:#FFFFFF; /* #PRO-AA-0822: allineato a --am-coral. Le due palette devono dire lo stesso verde: correggerne una sola è l'errore che ho fatto tre volte. */
   --v-glow:rgba(35,165,89,.16); --v-coral-dim:rgba(21,128,61,.08); --v-coral-b:rgba(21,128,61,.30);
   --v-cobalt:#2563EB; --v-cobalt2:#2563EB; --v-cobalt-soft:rgba(37,99,235,.08);
   --v-red:#B91C1C;  /* #UI-MACHINA-0802: la landing usa il namespace --v-*, non --am-*. Qui il rosso era rimasto #DC2626 → 4.43:1 su .res.lost del track record, misurato in produzione al 100% dei pixel. Stesso valore di --am-negative: le due palette ora dicono lo stesso rosso. */
