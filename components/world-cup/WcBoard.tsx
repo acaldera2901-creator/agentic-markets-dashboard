@@ -23,7 +23,7 @@ import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
-import { GlyphLock } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
+import { GlyphLock, GlyphInjury } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
 // #BUNDLE-SLIM-0702: la scheda pesante si carica on-demand (all'apertura del modal).
 const MatchDetailSheet = dynamic(() => import("@/components/MatchDetailSheet").then((m) => m.MatchDetailSheet));
 
@@ -252,7 +252,7 @@ function DeepAnalysis({ e, home, away, lang }: { e: WcEnrichment; home: string; 
       )}
       {(injH > 0 || injA > 0) && (
         <div className="da-row">
-          <span className="da-label">🚑 {it ? "Infortuni" : "Injuries"}</span>
+          <span className="da-label"><GlyphInjury size={12} /> {it ? "Infortuni" : "Injuries"}</span>
           <span className="da-value">H:{injH} · A:{injA}</span>
         </div>
       )}

@@ -67,6 +67,57 @@ export function GlyphBars({ size = 18, className }: P) {
   );
 }
 
+/** fiamma: "più attivo" in leaderboard. Tre lingue di fuoco asimmetriche —
+ *  simmetriche sembrerebbero una goccia. */
+export function GlyphFlame({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="M12 21c3.6 0 6-2.4 6-5.6 0-4.2-4.2-5.6-3.4-11.4-3 1.4-5 4-5 6.6 0 1.4.6 2.4.6 3.2 0 1-.8 1.6-1.6 1.2-.9-.5-1.2-1.7-1.2-2.8C5.6 14.2 6 21 12 21z" />
+    </svg>
+  );
+}
+
+/** croce medica: infortuni. Non l'ambulanza dell'emoji — la croce si legge a
+ *  12px e non ha un veicolo dentro. */
+export function GlyphInjury({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <rect x="3.5" y="6" width="17" height="12.5" rx="1.6" />
+      <path d="M12 9.5v5.5M9.2 12.2h5.6" />
+    </svg>
+  );
+}
+
+/** il modello: un nodo con tre rami, non una faccia di robot — il prodotto è un
+ *  motore di probabilità, non un assistente che chiacchiera.
+ *
+ *  Prima era un chip con otto piedini: a 12px i piedini si impastavano e il
+ *  segno leggeva come un asterisco. Verificato con uno screenshot a 10/14/22px.
+ *  Tre rami e quattro cerchi sopravvivono alla misura piccola. */
+export function GlyphModel({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M12 9.4V5M14.3 13.5l3.4 2.6M9.7 13.5l-3.4 2.6" />
+      <circle cx="12" cy="3.4" r="1.5" />
+      <circle cx="19" cy="17.2" r="1.5" />
+      <circle cx="5" cy="17.2" r="1.5" />
+    </svg>
+  );
+}
+
+/** coppa: miglior hit rate, colonna "vince". Base larga, coppa stretta: a 13px
+ *  una coppa proporzionata diventa una macchia. */
+export function GlyphTrophy({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="M7.5 4h9v4.2a4.5 4.5 0 0 1-9 0V4z" />
+      <path d="M7.5 5.4H5A2.4 2.4 0 0 0 7.4 9M16.5 5.4H19A2.4 2.4 0 0 1 16.6 9" />
+      <path d="M12 12.7V16M8.6 20h6.8" />
+    </svg>
+  );
+}
+
 /** Posizione sul podio: 1, 2, 3.
  *
  * Non usa oro/argento/bronzo: tre colori nuovi andrebbero rivalidati contro le

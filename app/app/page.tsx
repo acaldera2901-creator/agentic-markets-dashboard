@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
-import { GlyphLock, GlyphCheck, GlyphRank } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
+import { GlyphLock, GlyphCheck, GlyphRank, GlyphFlame, GlyphInjury, GlyphModel, GlyphTrophy } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
 import { pickLanguage } from "@/lib/pick-language"; // #GEO-LANG-0821
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
@@ -1678,8 +1678,14 @@ interface LiveTennisMatch {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// #NO-EMOJI-0822 - queste stringhe finiscono dentro un <option>, e li' l'HTML
+// ammette SOLO testo: nessun SVG e' possibile, quindi le bandiere restano. Sono
+// anche informative (dicono il paese del campionato), non decorative.
+// Le due che NON erano bandiere sono state sostituite: una stella per la
+// Champions e un cerchio arancione per l'Europa League non dicevano niente -
+// la sigla la riconosce chi scommette, e in un <option> il testo funziona.
 const LEAGUE_FLAGS: Record<string, string> = {
-  PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "⭐", EL: "🟠",
+  PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "UCL", EL: "UEL",
 };
 
 // Rail nav glyphs (mockup .rail svg <use>): tab → custom sport-glyph symbol id.
@@ -5513,7 +5519,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           )}
           {e.kind === "world_cup" && ((e.squad?.injuries_home?.length ?? 0) > 0 || (e.squad?.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
-              <span className="da-label">🚑 {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
+              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
               <span className="da-value">{e.squad?.injuries_home?.length ?? 0} vs {e.squad?.injuries_away?.length ?? 0}</span>
             </div>
           )}
@@ -5525,7 +5531,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           )}
           {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
-              <span className="da-label">🚑 {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
+              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
               <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
             </div>
           )}
@@ -5582,7 +5588,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           )}
           {e.research && (
             <div className="da-research">
-              <span className="da-label">🤖 AI</span>
+              <span className="da-label"><GlyphModel size={12} /> AI</span>
               <p className="da-research-text">{e.research}</p>
             </div>
           )}
@@ -5995,7 +6001,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
           {/* AI analysis — shown first when available */}
           {aiAnalysis && lang === "it" ? (
             <>
-              <div className="wlab"><span>🤖</span> {t.tennis_ai_label}</div>
+              <div className="wlab"><GlyphModel size={12} /> {t.tennis_ai_label}</div>
               <p className="why-prose mono">{aiAnalysis}</p>
             </>
           ) : loadingAnalysis ? (
@@ -6185,7 +6191,7 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
       <div className="am-surface p-4">
         <h3 className="text-xs font-mono text-[var(--am-coral)] uppercase tracking-wider mb-3">Pipeline Flow · 16 Agents</h3>
-        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider">⚽ Football</div>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider"><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-ball" /></svg> Football</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "DataCollector", "→", "ModelAgent", "→", "ContextService", "→",
@@ -6201,7 +6207,7 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
             <span key={i} className={["→", "·"].includes(item) ? "text-[var(--am-muted-2)]" : "text-[var(--am-text)]"}>{item}</span>
           ))}
         </div>
-        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider">🎾 Tennis</div>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider"><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-tball" /></svg> Tennis</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "TennisDataCollector", "→", "TennisModel", "→", "TennisAnalyst", "→",
@@ -6877,7 +6883,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-2 gap-3">
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                🏆 Top hit rate
+                <GlyphTrophy size={13} /> Top hit rate
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
@@ -6894,7 +6900,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             </div>
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                {pick5(lang, { it: "🔥 Più attivo", en: "🔥 Most active", es: "🔥 Más activo", fr: "🔥 Le plus actif", ru: "🔥 Самый активный" })}
+                <><GlyphFlame size={13} /> {pick5(lang, { it: "Più attivo", en: "Most active", es: "Más activo", fr: "Le plus actif", ru: "Самый активный" })}</>
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
@@ -7021,7 +7027,18 @@ function HistoryTab({ history, stats, loading }: {
   const [resultFilter, setResultFilter] = useState("all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
 
-  const SPORT_ICONS: Record<string, string> = { football: "⚽", tennis: "🎾" };
+  // #NO-EMOJI-0822: lo sprite degli sport è già montato nel desk e i suoi glifi
+  // ereditano currentColor; le emoji cambiavano forma con il sistema operativo.
+  const SPORT_ICONS: Record<string, string> = { football: "g-ball", tennis: "g-tball" };
+  const SportMark = ({ sport }: { sport: string }) => {
+    const id = SPORT_ICONS[sport];
+    if (!id) return null;
+    return (
+      <svg width="13" height="13" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.12em", flex: "none" }}>
+        <use href={`#${id}`} />
+      </svg>
+    );
+  };
   const resultOf = (h: V2HistoryRow) => h.result ?? "pending";
 
   // Sport is the first-level filter; competitions are derived from the rows of
@@ -7179,7 +7196,7 @@ function HistoryTab({ history, stats, loading }: {
                 return (
                   <tr key={h.id}>
                     <td className="fx-c">
-                      {SPORT_ICONS[h.sport] ?? ""} {eventLabel(h)}
+                      <SportMark sport={h.sport} /> {eventLabel(h)}
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
                     <td className="pk">{h.locked ? <GlyphLock size={13} /> : (h.pick ?? "—")}</td>
@@ -9481,7 +9498,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-              <span>⚽ {tNav.season_pause}</span>
+              <span><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-ball" /></svg> {tNav.season_pause}</span>
             </div>
           )}
           {tab === "bets" && (
