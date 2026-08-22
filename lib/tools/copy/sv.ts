@@ -30,6 +30,10 @@ const sv: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Frågor",
     invalid: "—",
+    tgTitle: "Dagens modellprognos, gratis på Telegram",
+    tgBody:
+      "Inget konto, ingen e-post. Varje dag publicerar vi matchen där vår modell avviker mest från marknaden, 15 minuter före start — och varje publicerad prognos redovisas, vunnen eller förlorad. Kanalen är på engelska.",
+    tgButton: "Öppna kanalen",
   },
 
   tools: {

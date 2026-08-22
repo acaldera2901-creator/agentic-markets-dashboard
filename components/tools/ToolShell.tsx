@@ -16,6 +16,7 @@ import { ToolCalculator } from "./ToolCalculator";
 import { LocalePicker } from "./LocalePicker";
 import { Prose } from "./Prose";
 import { ToolIcon } from "./ToolIcon";
+import { TelegramNudge } from "./TelegramNudge";
 
 export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
@@ -102,6 +103,12 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
             {copy.common.ctaButton}
           </Link>
         </aside>
+
+        <TelegramNudge
+          title={copy.common.tgTitle}
+          body={copy.common.tgBody}
+          button={copy.common.tgButton}
+        />
       </main>
       <SiteFooter lang={chromeLang(locale)} />
       <script

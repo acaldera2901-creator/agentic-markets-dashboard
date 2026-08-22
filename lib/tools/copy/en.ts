@@ -34,6 +34,10 @@ const en: ToolsCopy = {
     free: "Free",
     faqTitle: "Questions",
     invalid: "—",
+    tgTitle: "The model’s call of the day, free on Telegram",
+    tgBody:
+      "No account, no email. Every day we publish the match where our model disagrees most with the market, 15 minutes before it starts — and we settle every pick we publish, won or lost.",
+    tgButton: "Open the channel",
   },
 
   tools: {

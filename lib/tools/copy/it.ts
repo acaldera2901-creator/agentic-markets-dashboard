@@ -31,6 +31,10 @@ const it: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Domande",
     invalid: "—",
+    tgTitle: "La previsione del giorno, gratis su Telegram",
+    tgBody:
+      "Senza account e senza email. Ogni giorno pubblichiamo la partita su cui il nostro modello dissente più dal mercato, 15 minuti prima dell’inizio — e ogni previsione pubblicata la chiudiamo, vinta o persa. Il canale è in inglese.",
+    tgButton: "Apri il canale",
   },
 
   tools: {

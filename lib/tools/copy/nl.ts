@@ -30,6 +30,10 @@ const nl: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Vragen",
     invalid: "—",
+    tgTitle: "De modelvoorspelling van de dag, gratis op Telegram",
+    tgBody:
+      "Geen account, geen e-mail. Elke dag publiceren we de wedstrijd waarbij ons model het meest van de markt afwijkt, 15 minuten voor de aftrap — en elke gepubliceerde voorspelling rekenen we af, gewonnen of verloren. Het kanaal is Engelstalig.",
+    tgButton: "Kanaal openen",
   },
 
   tools: {

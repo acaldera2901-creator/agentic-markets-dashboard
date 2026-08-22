@@ -9672,6 +9672,20 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700;
   letter-spacing: .06em; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
 .tl-cta-btn:hover { box-shadow: 0 8px 26px -10px var(--am-glow); }
+/* ── canale Telegram: la voce subordinata alla CTA di prodotto (#TG-TOOLS-CTA) ──
+   NON un secondo box coral accanto al primo: il box-su-box è il tell #1 di
+   AI-slop. Filetto a sinistra e tipografia, come .tl-takeaway. Solo token --am-*,
+   quindi segue data-theme come il resto del sito. */
+.tl-tg { margin-top: clamp(18px, 2.4vw, 26px); padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--am-line); max-width: 62ch; }
+.tl-tg h2 { font-size: clamp(15px, 1.7vw, 17px); margin: 0 0 6px; }
+.tl-tg p { font-size: 13.5px; line-height: 1.6; color: var(--am-muted); margin: 0 0 10px; }
+.tl-tg a { display: inline-block; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--am-coral); text-decoration: none;
+  border-bottom: 1px solid var(--am-coral-b); padding-bottom: 2px; }
+.tl-tg a:hover { border-bottom-color: var(--am-coral); }
+
 .tl-others { display: flex; flex-wrap: wrap; gap: 8px; }
 .tl-others a { border: 1px solid var(--am-line); background: var(--am-panel); padding: 8px 12px;
   font-size: 13px; color: var(--am-muted); text-decoration: none; }

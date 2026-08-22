@@ -56,6 +56,13 @@ export type ToolsCopy = {
     free: string;
     faqTitle: string;
     invalid: string;
+    /** Canale Telegram: la voce subordinata alla CTA di prodotto. È l'ingresso a
+     *  basso attrito per il traffico organico freddo dei tool, che un account non
+     *  lo apre: un tap, nessuna email. Il canale è in inglese, e ogni lingua che
+     *  non è l'inglese lo dice — meglio dirlo prima del tap che dopo. */
+    tgTitle: string;
+    tgBody: string;
+    tgButton: string;
   };
   tools: Record<ToolSlug, ToolCopy>;
 };

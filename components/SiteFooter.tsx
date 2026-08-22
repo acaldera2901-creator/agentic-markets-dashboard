@@ -4,8 +4,9 @@
 // Footer unico del sito, usato su home, dashboard e pagine World Cup (che prima
 // non avevano footer). Presentazionale: rischio/18+, gioco responsabile,
 // Terms + Privacy IN-SITE (route interne, niente target="_blank" → il back
-// funziona), e una riga social con icone (Instagram/X/Facebook link; Telegram
-// solo icona finché non c'è il canale community).
+// funziona), e una riga social con icone, tutte con link. Gli URL vengono da
+// lib/social-links.ts: compaiono anche nell'hub dei tool, e un URL scritto in
+// due posti invecchia in uno.
 //
 // I link responsabilità di gioco (GamCare/BeGambleAware) sono ESTERNI → restano
 // target="_blank". Terms/Privacy sono route interne → <Link> client-side.
@@ -17,10 +18,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { partnersFor } from "@/lib/partners";
+import { SOCIAL } from "@/lib/social-links";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
-// tema). URL reali BetRedge. Telegram = SOLO icona, senza link: il canale/gruppo
-// community non esiste ancora; il link verrà attaccato quando sarà creato.
+// tema). URL reali BetRedge.
+//
+// #TG-TOOLS-CTA (2026-08-20): Telegram era l'unica icona senza link, in attesa
+// che il canale esistesse. Ora esiste ed è pubblico (t.me/betredge), quindi il
+// link c'è. Il ramo `href === null` resta: serve ancora se un canale va giù o
+// viene sospeso, ed è più onesto di un'icona che porta a un 404.
 const ICONS: Record<string, ReactNode> = {
   instagram: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -46,10 +52,10 @@ const ICONS: Record<string, ReactNode> = {
 
 // href: null → icona presente ma non cliccabile (Telegram, in attesa del canale).
 const SOCIAL_LINKS: { key: string; label: string; href: string | null }[] = [
-  { key: "instagram", label: "Instagram", href: "https://www.instagram.com/betr.edge/" },
-  { key: "x", label: "X", href: "https://x.com/BetrEdge" },
-  { key: "facebook", label: "Facebook", href: "https://www.facebook.com/" },
-  { key: "telegram", label: "Telegram", href: null },
+  { key: "instagram", label: "Instagram", href: SOCIAL.instagram },
+  { key: "x", label: "X", href: SOCIAL.x },
+  { key: "facebook", label: "Facebook", href: SOCIAL.facebook },
+  { key: "telegram", label: "Telegram", href: SOCIAL.telegram },
 ];
 
 type FooterLang = "it" | "en" | "es" | "fr" | "ru";
@@ -179,7 +185,7 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
               {ICONS[s.key]}
             </a>
           ) : (
-            // Telegram: solo icona finché il canale community non esiste (no link).
+            // Senza href: icona presente ma non cliccabile. Meglio di un 404.
             <span key={s.key} className="site-footer-social-icon" aria-label={s.label} role="img">
               {ICONS[s.key]}
             </span>
