@@ -40,12 +40,77 @@ import { normName } from "./odds-api";
 function fixtureKey(home: string, away: string, kickoff: string): string | null {
   const day = (kickoff || "").slice(0, 10);
   if (day.length !== 10) return null;
-  const strict = (n: string) => normName(n || "").replace(/[^a-z0-9]+/g, " ").trim();
+  // #DUP-CLUBNAMES-0822: l'apostrofo si RIMUOVE, non si sostituisce con uno
+  // spazio. "Newell's Old Boys" diventava "newell s old boys" e non combaciava
+  // con "Newells Old Boys" — la stessa squadra, due fonti, due righe in board.
+  const strict = (n: string) =>
+    normName(n || "").replace(/['\u2019\u0060]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   const a = strict(home);
   const b = strict(away);
   if (!a || !b) return null;
   const [x, y] = [a, b].sort();
   return `${day}:${x}|${y}`;
+}
+
+// ─── Passaggio LASCO: le grafie del club ────────────────────────────────────
+// #DUP-CLUBNAMES-0822 — misurato in produzione il 2026-08-22: 11 coppie sulle
+// 120 righe servite erano la stessa partita con nomi scritti diversamente dalle
+// due fonti ("CS Maritimo" e "Maritimo", "Royal Antwerp v Genk" e "Antwerp v
+// Racing Genk"). La chiave esatta non le vede, per costruzione.
+//
+// La regola è il SOTTOINSIEME dei token, non una lista di alias da mantenere a
+// mano: se dopo aver tolto le sigle generiche i token di un nome sono contenuti
+// in quelli dell'altro, è la stessa squadra. Copre i prefissi ("Atlético
+// Huracán" ⊃ "Huracán"), i suffissi ("Royal Charleroi SC" ⊃ "Charleroi") e gli
+// sponsor nel nome ("Torku Konyaspor" ⊃ "Konyaspor") senza sapere nulla dei
+// singoli club.
+//
+// Due guardie, perché il merge SBAGLIATO è peggio del doppione — farebbe
+// SPARIRE una partita dal board:
+//  · le riserve: "Bayern Munich II" è sottoinsieme-compatibile con "Bayern
+//    Munich" ma è un'altra squadra;
+//  · le sigle d'IDENTITÀ: "PSV Eindhoven" e "FC Eindhoven" sono due club. Una
+//    sigla corta che non è nella lista dei tipi generici blocca il merge. È
+//    l'unico punto dove serve sapere qualcosa: "PEC" è una variante del nome di
+//    Zwolle (sta nella lista), "PSV" è il club (non ci sta).
+//
+// I due nomi devono combaciare ENTRAMBI, sulla stessa data: una fusione
+// sbagliata richiederebbe due coincidenze insieme.
+
+// Sigle di TIPO societario, prive di identità: si possono togliere.
+const SIGLE_GENERICHE = new Set([
+  "fc", "sc", "cf", "ac", "as", "sv", "tsv", "vfb", "vfl", "kv", "sk", "cs", "ad",
+  "rc", "cd", "ud", "bsc", "ss", "ssc", "us", "sd", "afc", "fk", "nk", "hnk",
+  "mfk", "ifk", "bk", "ofk", "rcd", "rkc", "pec",
+]);
+
+// Marcatori di squadra NON prima: riserve, giovanili.
+const RISERVE = /^(ii|iii|iv|b|c|u\d{2}|res|reserves|am|amateure|jr)$/;
+
+function tokenSquadra(nome: string): string[] {
+  const grezzi = normName(nome || "")
+    .replace(/['\u2019\u0060]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  const nucleo = grezzi.filter((t) => !SIGLE_GENERICHE.has(t));
+  // "FC" da solo non deve svuotare l'insieme: senza token non c'è identità.
+  return nucleo.length ? nucleo : grezzi;
+}
+
+function stessaSquadra(a: string, b: string): boolean {
+  const x = new Set(tokenSquadra(a));
+  const y = new Set(tokenSquadra(b));
+  if (!x.size || !y.size) return false;
+  const [piccolo, grande] = x.size <= y.size ? [x, y] : [y, x];
+  for (const t of piccolo) if (!grande.has(t)) return false; // non è sottoinsieme
+  const differenza = [...grande].filter((t) => !piccolo.has(t));
+  for (const t of differenza) {
+    if (RISERVE.test(t)) return false; // squadra riserve
+    if (t.length <= 4 && !SIGLE_GENERICHE.has(t)) return false; // sigla d'identità
+  }
+  return true;
 }
 
 type FixtureRow = {
@@ -93,6 +158,40 @@ export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpt
       keep[i] = false;
     }
   });
+
+  // Secondo giro, LASCO: fra le righe sopravvissute, la stessa data e due nomi
+  // compatibili sono la stessa partita. O(n²) sulle righe di una giornata: su
+  // 120-200 righe sono confronti fra insiemi di 2-3 token, non pesa.
+  const fresh = (r: T) =>
+    (opts.freshness ? opts.freshness(r) : (r as { computed_at?: string | null }).computed_at) ?? "";
+  const giorno = (r: T) =>
+    ((opts.when ? opts.when(r) : (r as { kickoff?: string | null }).kickoff) ?? "").slice(0, 10);
+  const suffisso = (r: T) => (opts.extra ? opts.extra(r) : "");
+
+  const vivi = rows.map((_, i) => i).filter((i) => keep[i]);
+  for (let a = 0; a < vivi.length; a++) {
+    const i = vivi[a];
+    if (!keep[i]) continue;
+    for (let b = a + 1; b < vivi.length; b++) {
+      const j = vivi[b];
+      if (!keep[j]) continue;
+      const g = giorno(rows[i]);
+      if (g.length !== 10 || g !== giorno(rows[j])) continue; // fail-open
+      if (suffisso(rows[i]) !== suffisso(rows[j])) continue; // mercati diversi restano
+      const ci = rows[i];
+      const cj = rows[j];
+      const diritto =
+        stessaSquadra(ci.home_team ?? "", cj.home_team ?? "") &&
+        stessaSquadra(ci.away_team ?? "", cj.away_team ?? "");
+      const rovescio =
+        stessaSquadra(ci.home_team ?? "", cj.away_team ?? "") &&
+        stessaSquadra(ci.away_team ?? "", cj.home_team ?? "");
+      if (!diritto && !rovescio) continue;
+      // vince la più fresca; a parità la prima, così l'ordine è stabile
+      if (fresh(cj) > fresh(ci)) keep[i] = false;
+      else keep[j] = false;
+    }
+  }
 
   return rows.filter((_, i) => keep[i]);
 }

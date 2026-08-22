@@ -1,4 +1,5 @@
 "use client";
+import { GlyphTrophy } from "@/components/ui/glyphs"; // #NO-EMOJI-0822
 
 // "Who wins the World Cup" — tournament outlook table (APPROVE Andrea
 // 2026-06-07, lab michele-claude 0c2edb8). CONTENT ONLY, not a signal:
@@ -44,7 +45,7 @@ export default function WinnerOdds() {
             <th>QF</th>
             <th>SF</th>
             <th>Final</th>
-            <th className="wc-winner-col">🏆 Win</th>
+            <th className="wc-winner-col"><GlyphTrophy size={12} /> Win</th>
           </tr>
         </thead>
         <tbody>

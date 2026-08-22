@@ -119,4 +119,51 @@ describe("dedupeByFixture", () => {
     });
     expect(out).toHaveLength(2);
   });
+
+  // #DUP-CLUBNAMES-0822 — misurato in PRODUZIONE sulle 120 righe servite:
+  // 11 coppie erano la stessa partita con grafie del club diverse fra le due
+  // fonti. La chiave esatta non le vedeva. Ogni riga qui sotto è una coppia
+  // REALE letta da /api/predictions il 2026-08-22.
+  const coppieVere: Array<[string, string, string, string]> = [
+    ["Zulte-Waregem", "Waasland-Beveren", "SV Zulte-Waregem", "SK Beveren"],
+    ["CS Maritimo", "Académico de Viseu", "Maritimo", "Académico de Viseu"],
+    ["SC Rheindorf Altach", "TSV Hartberg", "Rheindorf Altach", "Hartberg"],
+    ["Royal Charleroi SC", "KV Mechelen", "Charleroi", "KV Mechelen"],
+    ["AD Ceuta FC", "Las Palmas", "Ceuta", "Las Palmas"],
+    ["Sturm Graz", "Austria Lustenau", "SK Sturm Graz", "Austria Lustenau"],
+    ["Fenerbahce", "Torku Konyaspor", "Fenerbahce", "Konyaspor"],
+    ["Royal Antwerp", "Genk", "Antwerp", "Racing Genk"],
+    ["Heerenveen", "PEC Zwolle", "Heerenveen", "FC Zwolle"],
+    ["Newells Old Boys", "Banfield", "Newell's Old Boys", "Banfield"],
+    ["Huracán", "Deportivo Riestra", "Atlético Huracán", "Deportivo Riestra"],
+  ];
+
+  it.each(coppieVere)("collassa la coppia vera %s v %s / %s v %s", (h1, a1, h2, a2) => {
+    const rows = [
+      { home_team: h1, away_team: a1, kickoff: base.kickoff, match_id: "espn:1", computed_at: "2026-08-22T12:00:00Z" },
+      { home_team: h2, away_team: a2, kickoff: base.kickoff, match_id: "oddsapi:2", computed_at: "2026-08-21T12:00:00Z" },
+    ];
+    const out = dedupeByFixture(rows);
+    expect(out).toHaveLength(1);
+    expect(out[0].match_id).toBe("espn:1"); // vince la più fresca
+  });
+
+  // Il rischio del passaggio lasco è il merge SBAGLIATO: due partite diverse
+  // fuse in una farebbe SPARIRE una partita dal board, che è peggio del
+  // doppione. Questi casi devono restare due righe.
+  const nonFondere: Array<[string, string, string, string, string]> = [
+    ["due club che condividono la città", "Manchester United", "Arsenal", "Manchester City", "Arsenal"],
+    ["due club che condividono il prefisso", "Real Madrid", "Betis", "Real Sociedad", "Betis"],
+    ["PSV non è FC Eindhoven", "PSV Eindhoven", "Ajax", "FC Eindhoven", "Ajax"],
+    ["squadre riserve", "Bayern Munich", "Koln", "Bayern Munich II", "Koln"],
+    ["partite diverse", "Roma", "Lazio", "Milan", "Inter"],
+  ];
+
+  it.each(nonFondere)("NON fonde: %s", (_caso, h1, a1, h2, a2) => {
+    const rows = [
+      { home_team: h1, away_team: a1, kickoff: base.kickoff, match_id: "a", computed_at: "2026-08-22T12:00:00Z" },
+      { home_team: h2, away_team: a2, kickoff: base.kickoff, match_id: "b", computed_at: "2026-08-21T12:00:00Z" },
+    ];
+    expect(dedupeByFixture(rows)).toHaveLength(2);
+  });
 });
