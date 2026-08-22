@@ -9241,7 +9241,7 @@ button:disabled {
   --v-coral:#15803D; --v-coral2:#1B9148; --v-coral-ink:#FFFFFF;
   --v-glow:rgba(35,165,89,.16); --v-coral-dim:rgba(21,128,61,.08); --v-coral-b:rgba(21,128,61,.30);
   --v-cobalt:#2563EB; --v-cobalt2:#2563EB; --v-cobalt-soft:rgba(37,99,235,.08);
-  --v-red:#DC2626;
+  --v-red:#B91C1C;  /* #UI-MACHINA-0802: la landing usa il namespace --v-*, non --am-*. Qui il rosso era rimasto #DC2626 → 4.43:1 su .res.lost del track record, misurato in produzione al 100% dei pixel. Stesso valore di --am-negative: le due palette ora dicono lo stesso rosso. */
 }
 /* Elementi con hex letterali (non-token) → override esplicito in light */
 :root[data-theme="light"] .hv3 .v-scan{background:linear-gradient(180deg,#FFFFFF,#FBFCFD);box-shadow:0 20px 50px rgba(15,23,42,.10),inset 0 1px 0 rgba(255,255,255,.6)}
