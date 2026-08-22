@@ -550,8 +550,10 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
 
       // Confidence-surfacing gate (Wave 1). The floor is on the model's
       // FAVOURITE by probability (max-prob = the served confidence_score the
-      // board renders), NOT on best_selection — which is the max-EDGE pick used
-      // only when real odds exist. When the favourite's probability is below the
+      // board renders). NB since #PICK-FAVOURITE-0812 best_selection IS that
+      // same favourite, so the two agree by construction; the sentence that used
+      // to live here ("best_selection is the max-EDGE pick") described the
+      // pre-0812 behaviour and outlived it. When the favourite's probability is below the
       // club floor there is "no clear favourite", so the frontend drops the pick
       // direction/edge regardless of any edge selection. Probability-neutral:
       // p_home/p_draw/p_away, edge and best_selection are all left untouched; we
