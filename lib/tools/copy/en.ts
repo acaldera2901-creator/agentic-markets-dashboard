@@ -34,6 +34,11 @@ const en: ToolsCopy = {
     free: "Free",
     faqTitle: "Questions",
     invalid: "—",
+    saveCta: "Save this calculation",
+    saveHintAnon: "Free account — your saved calculations open again on any device.",
+    saveHintUser: "Saved to your account — open them again on any device.",
+    savedTitle: "Saved",
+    saveError: "Not saved. Try again.",
   },
 
   tools: {

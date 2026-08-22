@@ -30,6 +30,11 @@ const nl: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Vragen",
     invalid: "—",
+    saveCta: "Deze berekening opslaan",
+    saveHintAnon: "Gratis account — opgeslagen berekeningen open je op elk apparaat opnieuw.",
+    saveHintUser: "Opgeslagen in je account — open je op elk apparaat opnieuw.",
+    savedTitle: "Opgeslagen",
+    saveError: "Niet opgeslagen. Probeer het opnieuw.",
   },
 
   tools: {

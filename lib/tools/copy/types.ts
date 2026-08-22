@@ -56,6 +56,18 @@ export type ToolsCopy = {
     free: string;
     faqTitle: string;
     invalid: string;
+    /** #TOOLS-SAVE-0810 — la riga "salva questo calcolo" sotto il calcolatore.
+     *  Sta in `common` e non in `tools` perché è la stessa in tutte e undici le
+     *  pagine: undici traduzioni, non centoventuno. Non usa la chrome a 5 lingue
+     *  (pick5) perché queste pagine SONO tradotte in undici: mostrare inglese su
+     *  /de/tools sarebbe l'unico pezzo non tradotto della pagina. */
+    saveCta: string;
+    /** Il motivo per registrarsi: lo legge chi NON è loggato. */
+    saveHintAnon: string;
+    /** Conferma per chi è già loggato. Lo slot esiste in entrambi gli stati. */
+    saveHintUser: string;
+    savedTitle: string;
+    saveError: string;
   };
   tools: Record<ToolSlug, ToolCopy>;
 };

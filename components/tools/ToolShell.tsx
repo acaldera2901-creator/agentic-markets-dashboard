@@ -13,6 +13,7 @@ import { getToolsCopy } from "@/lib/tools/copy";
 import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
 import { toolJsonLd } from "@/lib/tools/seo";
 import { ToolCalculator } from "./ToolCalculator";
+import { ToolSaveScope } from "./ToolSaveScope";
 import { LocalePicker } from "./LocalePicker";
 import { Prose } from "./Prose";
 import { ToolIcon } from "./ToolIcon";
@@ -41,7 +42,12 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
           </div>
         </header>
 
-        <ToolCalculator slug={slug} copy={t} dash={copy.common.invalid} />
+        {/* #TOOLS-SAVE-0810: lo scope avvolge il calcolatore senza modificarlo e
+            gli aggiunge la riga "salva questo calcolo" — un link per l'anonimo,
+            un salvataggio vero per chi è loggato. */}
+        <ToolSaveScope slug={slug} copy={copy.common}>
+          <ToolCalculator slug={slug} copy={t} dash={copy.common.invalid} />
+        </ToolSaveScope>
 
         {/* La frase chiave subito sotto il calcolatore: chi non scorre oltre ha
             comunque capito a cosa serve la pagina. */}

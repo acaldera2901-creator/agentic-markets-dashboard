@@ -9783,6 +9783,42 @@ button:disabled {
   .tl-head--tool { gap: 12px; }
   .tl-head-ic { width: 52px !important; height: 52px !important; }
 }
+/* ── #TOOLS-SAVE-0810: salva il calcolo (riga sotto il calcolatore) ─────────
+   Una riga di superficie, non un box: il calcolatore ha già i suoi due pannelli
+   e un terzo box sarebbe box-su-box. Il bottone riusa la grammatica di .tl-btn
+   (verde tenue, mono uppercase) e i chip quella di .tl-others.
+   Lo scope è trasparente al layout: .tl-page impagina per margini, quindi il
+   wrapper non aggiunge spazio e .tl-calc resta il primo figlio come prima. */
+.tl-save { display: flex; flex-direction: column; gap: 10px;
+  margin-top: clamp(12px, 1.6vw, 18px); }
+.tl-save-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.tl-save-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 14px;
+  border: 1px solid var(--am-coral-b); background: var(--am-coral-dim); color: var(--am-coral);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; text-decoration: none; cursor: pointer;
+  white-space: nowrap; }
+.tl-save-btn:hover { background: var(--am-coral); color: var(--am-coral-ink);
+  border-color: var(--am-coral); }
+.tl-save-btn:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
+.tl-save-btn[disabled] { opacity: .55; cursor: default; }
+.tl-save-hint { font-size: 12px; line-height: 1.5; color: var(--am-muted-2); max-width: 56ch; }
+.tl-save-hint.is-err { color: var(--am-negative); }
+.tl-save-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tl-save-lab { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--am-muted); }
+.tl-save-chip { border: 1px solid var(--am-line); background: var(--am-panel); padding: 7px 11px;
+  font-size: 12.5px; font-family: var(--font-mono), ui-monospace, monospace;
+  color: var(--am-muted); cursor: pointer; max-width: 100%; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.tl-save-chip:hover { border-color: var(--am-coral); color: var(--am-text); }
+.tl-save-chip:focus-visible { outline: 2px solid var(--am-coral); outline-offset: 2px; }
+@media (max-width: 560px) {
+  /* A colonna singola la riga va a capo da sola: il bottone tiene la sua riga e
+     l'aiuto la sua, invece di lasciare un bottone da 36px accanto a tre righe
+     di testo da 12px. */
+  .tl-save-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .tl-save-hint { max-width: none; }
+}
 /* ── end #TOOLS-HUB-0805 ── */
 
 /* ── Consent bar (#FUNNEL-MEAS-0813) ──────────────────────────────────────────
