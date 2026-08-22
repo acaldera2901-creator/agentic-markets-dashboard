@@ -313,6 +313,21 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
         $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34
       )
       ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL DO UPDATE SET
+        -- #PICK-STALE-0822: pick and bookmaker were missing from this list — the
+        -- same defect already fixed for tennis (pick) and on 04/08 for tennis'
+        -- bookmaker. A football fixture is inserted as soon as it is scheduled,
+        -- which is BEFORE odds exist; with no odds there is no best_selection, so
+        -- the first insert writes pick = NULL. Every later sync refreshed odds,
+        -- confidence_score, edge_percent and signal_type but left pick untouched,
+        -- so the row kept "no pick" FOREVER while carrying a real price and a
+        -- real favourite. Measured on the live board 22/08: of 53 future rows
+        -- above the surfacing floor only 10 carried a pick, while
+        -- match_predictions held a correct favourite for 39 of them (e.g.
+        -- Rangers v St Mirren, best_selection = HOME @1.30, confidence 67 →
+        -- served as pick NULL). It hits the big fixtures hardest, because those
+        -- are scheduled furthest in advance.
+        pick              = EXCLUDED.pick,
+        bookmaker         = EXCLUDED.bookmaker,
         odds              = EXCLUDED.odds,
         fair_odds         = EXCLUDED.fair_odds,
         edge_percent      = EXCLUDED.edge_percent,
