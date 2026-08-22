@@ -244,4 +244,40 @@
 
   /* Il selettore di modalità della modale (Login / Crea profilo): 145×34. */
   .auth-mode-switch button { min-height: 44px; }
+
+  /* ── 12. La board percorribile ───────────────────────────────────────────
+   * MISURATO da sessione PRO loggata a 390px: la board era alta 22.078px, cioè
+   * 26 schermate per 55 schede. Alla scheda 40 non ci si arriva: non è densità,
+   * è una lista che non finisce.
+   *
+   * Il taglio sta QUI, nel CSS, e non nel componente: così sopra i 640px non
+   * esiste e il desktop continua a mostrare tutto. Lo stato in React è solo un
+   * booleano il cui valore iniziale è identico su server e client — nessun ramo
+   * sul viewport, quindi nessun disallineamento di idratazione.
+   *
+   * Si contano i FIGLI della griglia, banner house compresi: un banner occupa
+   * uno dei dieci posti, ed è giusto — anche lui è una schermata da scorrere.
+   */
+  .sportsbook-board.mob-limita .am-grid > *:nth-child(n + 11) { display: none; }
+
+  /* Il comando è pieno-larghezza e alto 48px: si trova col pollice senza
+   * mirare. Fuori dal mobile non viene mostrato affatto (vedi sotto). */
+  .mob-board-toggle {
+    /* !important perche' il default e' uno stile INLINE (vedi il commento nel
+       componente): e' l'unico modo di batterlo, e vale solo sotto i 640px. */
+    display: block !important;
+    width: 100%;
+    min-height: 48px;
+    margin: 10px 0 2px;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--am-text);
+    background: var(--am-inset);
+    border: 1px solid var(--am-line-2);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .mob-board-toggle:active { background: var(--am-panel-2, var(--am-inset)); }
 }

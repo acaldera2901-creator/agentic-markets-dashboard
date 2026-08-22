@@ -2202,6 +2202,14 @@ function SportsbookBoard({
   const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
   const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("time");
   const [searchTerm, setSearchTerm] = useState("");
+  // #UI-MOBILE-BOARD-0822 — su un telefono la board era alta 22.078px: 26
+  // schermate per 55 schede, senza modo di arrivare alla quarantesima. Qui si
+  // limita a dieci e si lascia un comando per vederle tutte.
+  // Il valore iniziale NON dipende dal viewport: e' `true` sul server e sul
+  // client, quindi l'HTML combacia (la lezione del disallineamento in #275).
+  // Il taglio lo fa il CSS, che sopra i 640px non esiste — cosi' il desktop
+  // continua a mostrare tutto come prima.
+  const [boardLimitata, setBoardLimitata] = useState(true);
   const footballValue = predictions
     .filter(isFootballBestBet)
     .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
@@ -2318,12 +2326,45 @@ function SportsbookBoard({
   const showTennisSection = sportFilter !== "football" && !competitionFilter.startsWith("football:");
 
   return (
-    <div className="sportsbook-board">
+    <div className={"sportsbook-board" + (boardLimitata ? " mob-limita" : "")}>
       <div className="board-subhead">
         <span>{labels.showing} {filteredTotal}</span>
         <span>Football {footballRows.length}</span>
         <span>Tennis {tennisRows.length}</span>
       </div>
+
+      {filteredTotal > 10 && (
+        <button
+          type="button"
+          className="mob-board-toggle"
+          /* #UI-MOBILE-BOARD-0822: nascosto di DEFAULT con uno stile inline, e
+             rivelato dal CSS solo sotto i 640px. Serve per non scrivere nessuna
+             regola fuori dalla media query: un <button> senza regole resterebbe
+             visibile sul desktop.
+             Perche' inline e non l'attributo `hidden`: provato, e in Chromium il
+             `display:none` di `[hidden]` NON si sovrascrive (tutte le altre mie
+             proprieta' arrivavano, display no). Uno stile inline invece si batte
+             con !important, che sta dentro la media query. */
+          style={{ display: "none" }}
+          onClick={() => setBoardLimitata((v) => !v)}
+        >
+          {boardLimitata
+            ? pick5(lang, {
+                it: `Mostra tutte le ${filteredTotal}`,
+                en: `Show all ${filteredTotal}`,
+                es: `Mostrar las ${filteredTotal}`,
+                fr: `Afficher les ${filteredTotal}`,
+                ru: `Показать все (${filteredTotal})`,
+              })
+            : pick5(lang, {
+                it: "Mostra solo le prime 10",
+                en: "Show only the first 10",
+                es: "Mostrar solo las primeras 10",
+                fr: "Afficher seulement les 10 premieres",
+                ru: "Показать только первые 10",
+              })}
+        </button>
+      )}
 
       <div className="sports-filter-bar am-filters">
         <div className="am-seg" aria-label="Sport filter">
