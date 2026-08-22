@@ -143,9 +143,9 @@
   --am-positive:   #0F7A56;
   --am-positive-dim: rgba(15,122,86,0.10);
   --am-positive-b:   rgba(15,122,86,0.30);
-  --am-negative:   #DC2626;
-  --am-negative-dim: rgba(220,38,38,0.10);
-  --am-negative-b:   rgba(220,38,38,0.28);
+  --am-negative:   #B91C1C;  /* #UI-MACHINA-0802: era #DC2626. Sul chip .lost (tinta rossa al 13%) faceva 3.76:1 e sul track record 4.43:1, sotto AA. #B91C1C fa 5.03:1 sul chip: stessa rampa, stesso rosso, un gradino più scuro. Il verde brand NON è toccato. */
+  --am-negative-dim: rgba(185,28,28,0.10);
+  --am-negative-b:   rgba(185,28,28,0.28);
 
   --am-coral-dim:  rgba(21,128,61,0.08);
   --am-coral-b:    rgba(21,128,61,0.30);
@@ -8778,7 +8778,9 @@ button:disabled {
   font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
 .wp-hist-out svg { width: 11px; height: 11px; }
 .wp-hist-out.won { color: var(--am-coral); background: var(--am-coral-dim); }
-.wp-hist-out.lost { color: #ef4444; background: rgba(239,68,68,0.13); }
+.wp-hist-out.lost { color: var(--am-negative); background: var(--am-negative-dim); }
+/* #UI-MACHINA-0802: il chip cablava #ef4444 in ENTRAMBI i temi — in chiaro faceva
+   2.93:1 sulla propria tinta. Ora passa dal token, che il tema raggiunge. */
 .wp-hist-out.live { color: var(--am-muted); background: rgba(127,127,127,0.06); }
 .wp-hist-prob { font-family: var(--font-mono), monospace; font-size: 12px; color: var(--am-muted-2); }
 .wp-hist-leg { display: flex; align-items: center; justify-content: space-between; gap: 10px;
