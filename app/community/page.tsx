@@ -186,7 +186,9 @@ export default function CommunityPage() {
   // design-system --am-* tokens so the page follows data-theme; dark renders
   // identically to before, light becomes coherent with the rest of the app.
   return (
-    <main className="min-h-screen" style={{ background: "var(--am-bg)", color: "var(--am-text)" }}>
+    <main className="min-h-screen mc-scene-court" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-text)" }}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <header
         className="px-6 py-4 flex items-center justify-between border-b"
         style={{ borderColor: "var(--am-line)" }}

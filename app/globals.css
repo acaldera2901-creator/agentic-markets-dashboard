@@ -81,7 +81,7 @@
   /* Typography */
   --am-text:       #EDEFF2;
   --am-muted:      #AEB4BE;
-  --am-muted-2:    #6E7682;
+  --am-muted-2:    #767E89;  /* #UI-MACHINA-0802: era #6E7682 → 4.31:1 sul footer scuro, sotto AA. */
   --am-hi:         rgba(255,255,255,0.05);
 
   /* Semantic aliases consumed by bespoke rules (--border / --accent / --ring) */
@@ -157,7 +157,7 @@
 
   --am-text:       #14171C;
   --am-muted:      #4A515B;
-  --am-muted-2:    #79818D;
+  --am-muted-2:    #666E7B;  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
   --am-hi:         rgba(255,255,255,0.9);
 
   --ring:         rgba(21,128,61,0.38);  /* LEVEL-UP 1b: focus ring legacy → verde */
@@ -6607,6 +6607,17 @@ button:disabled {
 .house-banner.hb-photo .hb-x{ color:rgba(255,255,255,.72); }
 .house-banner.hb-photo .hb-x:hover{ background:rgba(255,255,255,.16); color:#fff; }
 .house-banner.hb-photo .hb-glow{ display:none; }
+
+/* #UI-MACHINA-0802 — la × del banner creativo galleggia su un <img> arbitrario:
+   nessun colore fisso regge (misurato 3.22:1 col grigio, 2.07:1 scurendolo).
+   Uno scrim opaco rende il rapporto indipendente dalla foto: bianco su .72 di
+   inchiostro fa ≥5.5:1 anche se sotto c'è bianco pieno. */
+.house-banner.hb-creative .hb-x{
+  background: rgba(10,12,15,.72);
+  color: #fff;
+  backdrop-filter: saturate(120%) blur(2px);
+}
+.house-banner.hb-creative .hb-x:hover{ background: rgba(10,12,15,.88); color:#fff; }
 /* direzioni overlay coral */
 .hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(35,165,89,.42) 100%); }
 .hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(35,165,89,.30) 100%); }
@@ -7143,7 +7154,7 @@ button:disabled {
   padding: 5px 11px; border: 0; border-radius: 999px; background: transparent;
   color: var(--am-muted); cursor: pointer; transition: all .18s;
 }
-.lp-theme button.on { background: var(--am-coral); color: #fff; }
+.lp-theme button.on { background: var(--am-coral); color: var(--bg); /* #UI-MACHINA-0802: era #fff su verde brand = 3.18:1, sotto AA. var(--bg) fa 6.15:1 in scuro e 4.60:1 in chiaro — stesso pattern di .am-tt button.on (riga 4021). */ }
 /* #UI-HOMEAUTH-0623: ora possono essere <button> (aprono la modale in-place) →
    font:inherit + line-height per renderli identici ai vecchi <a>. */
 /* LEVEL-UP HOME — controlli tattici (come /app): spigolo vivo 0px, label mono

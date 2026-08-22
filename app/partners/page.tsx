@@ -39,7 +39,9 @@ export default function PartnersPage() {
   const t = PARTNERS_COPY[lang];
 
   return (
-    <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+    <div className="min-h-screen font-mono mc-scene-stadium" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       {geo === "allowed" ? (
         <PartnersShowcase lang={lang} country={country} />
       ) : geo === "blocked" ? (
