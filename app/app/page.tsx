@@ -8375,14 +8375,21 @@ function UnifiedBetsTab({
 // #PARTNER-REMOVE-0626: la tab Partner è stata rimossa; i deep-link legacy
 // ?tab=partner(s) ricadono sul board (default), nessun alias.
 
-export default function Dashboard() {
+// #A11Y-CONSOLE-0822 — `initialTab` esiste perché il server non conosce il
+// pathname: prima rendeva SEMPRE "bets", mentre il client leggeva /history e
+// passava a History. Server e client disegnavano nav e rail diversi, quindi React
+// scartava e RICOSTRUIVA tutto l'albero all'idratazione (#418) sulla pagina più
+// pesante del prodotto — misurato su /history, /plans, /leaderboard,
+// /match-builder. Le route wrapper ora dichiarano la loro tab, così l'HTML del
+// server è già quello giusto. Il default resta "bets" per /app.
+export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // #URL-PATHS-0810: la tab si risolve dal pathname (/predictions, /history, …);
   // il ?tab= resta come fallback per link legacy non ancora passati dal middleware.
   const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "bets";
+    if (typeof window === "undefined") return initialTab ?? "bets";
     const fromPath = PATH_TO_TAB[window.location.pathname];
     if (fromPath) return fromPath;
-    return normalizeTab(new URLSearchParams(window.location.search).get("tab")) ?? "bets";
+    return normalizeTab(new URLSearchParams(window.location.search).get("tab")) ?? initialTab ?? "bets";
   });
   // #URL-PATHS-0810: la barra URL segue la tab attiva. replaceState (non push):
   // il cambio tab non creava una entry di history prima e non deve iniziare ora.
@@ -9564,6 +9571,12 @@ export default function Dashboard() {
           onClick={handleFounderTrigger}
           style={{ background: "none", border: "none", color: "transparent", cursor: "default", userSelect: "none", width: 10, height: 10 }}
           aria-hidden="true"
+          // #A11Y-CONSOLE-0822: aria-hidden da solo non basta su un <button>. Restava
+          // raggiungibile col Tab, quindi chi naviga da tastiera ci finiva sopra e lo
+          // screen reader non annunciava nulla: un elemento focusabile e invisibile
+          // agli assistivi è peggio di nessun elemento. tabIndex -1 lo toglie
+          // dall'ordine di tabulazione; il trigger founder resta sul click.
+          tabIndex={-1}
         >·</button>
       </div>
       {(authOpen || mustAuth) && (

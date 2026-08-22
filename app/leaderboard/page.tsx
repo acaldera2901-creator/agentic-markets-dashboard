@@ -14,7 +14,7 @@ export default function LeaderboardPage() {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Leaderboard", "/leaderboard"]])} />
-      <Dashboard />
+      <Dashboard initialTab="leaderboard" />
     </>
   );
 }
