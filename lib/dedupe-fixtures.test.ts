@@ -136,6 +136,8 @@ describe("dedupeByFixture", () => {
     ["Heerenveen", "PEC Zwolle", "Heerenveen", "FC Zwolle"],
     ["Newells Old Boys", "Banfield", "Newell's Old Boys", "Banfield"],
     ["Huracán", "Deportivo Riestra", "Atlético Huracán", "Deportivo Riestra"],
+    // trovata in produzione DOPO il primo giro: kvc non era fra le sigle note
+    ["Lommel SK", "Westerlo", "Lommel SK", "KVC Westerlo"],
   ];
 
   it.each(coppieVere)("collassa la coppia vera %s v %s / %s v %s", (h1, a1, h2, a2) => {

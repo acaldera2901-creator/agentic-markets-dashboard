@@ -78,10 +78,24 @@ function fixtureKey(home: string, away: string, kickoff: string): string | null 
 // sbagliata richiederebbe due coincidenze insieme.
 
 // Sigle di TIPO societario, prive di identità: si possono togliere.
+//
+// La lista va allungata quando arrivano campionati nuovi — è il prezzo di non
+// fondere due club diversi. Per trovare i candidati sui dati veri:
+//   curl -s .../api/predictions | (estrai i token di lunghezza <= 4 dai nomi)
+// Misurato il 2026-08-22 su 228 nomi distinti: le sigle ricorrenti erano fc(41),
+// sc(7), if, ac, sk, cf, us, afc, ifk, cfc, ssc, bc, ss, as, acf, is, bk.
+//
+// Non entrano MAI in questa lista le parole con un significato proprio, che nei
+// dati veri compaiono spesso: city, town, real, club, boys, san, new, york, red,
+// fire, roma, como. Toglierle fonderebbe "Manchester City" con "Manchester
+// United" e "Real Madrid" con "Real Sociedad".
 const SIGLE_GENERICHE = new Set([
   "fc", "sc", "cf", "ac", "as", "sv", "tsv", "vfb", "vfl", "kv", "sk", "cs", "ad",
   "rc", "cd", "ud", "bsc", "ss", "ssc", "us", "sd", "afc", "fk", "nk", "hnk",
   "mfk", "ifk", "bk", "ofk", "rcd", "rkc", "pec",
+  // #DUP-CLUBNAMES-0822b: trovate in produzione dopo il primo giro. "KVC
+  // Westerlo" e "Westerlo" restavano due righe perché kvc non era qui.
+  "kvc", "kaa", "krc", "kvk", "kfc", "rsc", "cfc", "acf", "fsv", "msv", "bc", "is",
 ]);
 
 // Marcatori di squadra NON prima: riserve, giovanili.
