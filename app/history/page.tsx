@@ -14,7 +14,7 @@ export default function HistoryPage() {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Track Record", "/history"]])} />
-      <Dashboard />
+      <Dashboard initialTab="history" />
     </>
   );
 }

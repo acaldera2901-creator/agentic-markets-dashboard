@@ -14,7 +14,7 @@ export default function InvitePage() {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Invite Friends", "/invite"]])} />
-      <Dashboard />
+      <Dashboard initialTab="invita" />
     </>
   );
 }

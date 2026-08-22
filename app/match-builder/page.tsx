@@ -14,7 +14,7 @@ export default function MatchBuilderPage() {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Match Builder", "/match-builder"]])} />
-      <Dashboard />
+      <Dashboard initialTab="match-builder" />
     </>
   );
 }
