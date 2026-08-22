@@ -280,4 +280,39 @@
     cursor: pointer;
   }
   .mob-board-toggle:active { background: var(--am-panel-2, var(--am-inset)); }
+
+  /* ── 13. Il blocco FEATURED, compatto ───────────────────────────────────
+   * MISURATO a 390px: occupava 334×196px, il 23% della prima schermata, con
+   * quattro tile da 162×79 in griglia a due colonne. Non è decorazione — sotto
+   * i 900px il rail scompare e queste sono le uniche porte verso Strumenti,
+   * Creator Picks, Weekly Pick e Invito — quindi resta in alto, dov'è giusto
+   * che stia una navigazione. Cambia solo la misura.
+   *
+   * Diventano chip in riga: icona (le raster illustrate, che restano) e
+   * etichetta accanto, 44px di altezza. Due righe da 44 invece di due da 79:
+   * circa 90px recuperati sulla prima schermata, senza scorrimento
+   * orizzontale — "tutto visibile" era una scelta esplicita di chi l'ha
+   * scritto e non la tradisco.
+   */
+  .am-featured { margin-bottom: 12px; }
+  .am-featured-grid { gap: 8px; }
+  .am-feat-tile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 44px;
+    height: 44px;
+    padding: 0 10px;
+  }
+  .am-feat-ic { width: 20px; height: 20px; flex: none; }
+  .am-feat-l {
+    font-size: 12px;
+    line-height: 1.1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
