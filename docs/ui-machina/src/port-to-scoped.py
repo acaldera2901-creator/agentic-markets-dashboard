@@ -305,7 +305,7 @@ def main() -> int:
    sotto 4,5:1 (misurati: 3,2–4,4). Invece di rincorrerli uno per uno si alzano
    i due token del grigio ai valori già validati della palette — --ink2 #B4BBC4
    e --ink3 #969CA5. Vale solo qui: globals.css non si tocca. */
-{GROUND}{{--am-muted:#b4bbc4;--am-muted-2:#969ca5;--muted:#b4bbc4;--muted-2:#969ca5}}
+{GROUND}{{--am-muted:#b4bbc4;--am-muted-2:#9ca2aa;--muted:#b4bbc4;--muted-2:#9ca2aa}}
 
 /* Otto nodi hanno un colore PROPRIO e il token non li tocca. Misurati sul
    fondo nuovo, e corretti con i valori che la palette ha già validato.
