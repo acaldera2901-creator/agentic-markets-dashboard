@@ -1,0 +1,247 @@
+/* app/mobile.css — #UI-MOBILE-0822
+ *
+ * PERCHÉ ESISTE UN FILE A PARTE. In globals.css ci sono 156 `max-width` sparsi
+ * su sette breakpoint diversi (560, 600, 640, 760, 860, 900, 1000): non è un
+ * sistema, è una sedimentazione. Aggiungere la 157ª query in fondo a un foglio
+ * da 9.500 righe avrebbe reso il mobile ancora meno leggibile di com'era.
+ * Qui c'è UN breakpoint e una regola sola: sotto i 640px il pollice e l'occhio
+ * vengono prima della densità.
+ *
+ * Importato DOPO globals.css e machina.css, quindi a parità di specificità
+ * vince. Tutto sta dentro la media query: sopra i 640px questo file non esiste,
+ * e il desktop appena verificato non può regredire.
+ *
+ * MISURATO sul desk vero a 390px, da sessione PRO loggata (2026-08-22):
+ *   · 501 testi sotto gli 11px — il più piccolo 8,48px
+ *   · 30 bersagli di tocco sotto i 40px, il peggiore 22×22
+ *   · pagina alta 22.078px: 26 schermate di scorrimento per 55 schede
+ *   · zero scroll orizzontale (quello era già a posto)
+ *
+ * I 501 testi si riducono a NOVE classi, i bersagli a dodici: si correggono le
+ * classi, non le istanze.
+ */
+
+@media (max-width: 640px) {
+  /* ── 1. Il pavimento tipografico ──────────────────────────────────────────
+   * Su un telefono, sotto gli 11px un'etichetta non si legge: si indovina.
+   * Le micro-etichette vanno a 11px, i valori secondari a 12px. Il tracking
+   * resta quello di prima, perché è ciò che le fa leggere come etichette e non
+   * come testo. Nessun colore cambia: il contrasto è già conforme e misurato.
+   *
+   * Le dimensioni di partenza (misurate) sono nel commento di ogni riga, così
+   * la prossima persona vede il delta invece di fidarsi.
+   */
+  .v2r-eye { font-size: 11px; }        /* era 8.8px  · "Model read" ×57 */
+  .v2r-qlab { font-size: 11px; }       /* era 8.48px · "FortunePlay odds" ×57 */
+  .stt { font-size: 11px; }            /* era 8.96px · "Scheduled" / "LIVE 90'" ×47 */
+  .v2r-conf-t { font-size: 12px; }     /* era 8.8px  · "no clear favourite" ×105 */
+  .v2r-sub { font-size: 12px; }        /* era 9.28px · "52% model" ×57 */
+  .league { font-size: 12px; }         /* era 9.6px  · "Championship" ×57 */
+  .when { font-size: 12px; }           /* era 9.6px  · "Sat 22 Aug, 15:00" ×54 */
+  .pm-lab { font-size: 12px; }         /* era 8.96px · "Open full card" ×57 */
+  .bn-l { font-size: 11px; }           /* era 9px    · etichette della nav in basso */
+
+  /* ── 2. I bersagli di tocco ───────────────────────────────────────────────
+   * 44px è il minimo su cui un pollice non sbaglia. Dove l'elemento è un
+   * campo o un bottone di testo si alza l'altezza; dove è un'icona piccola
+   * NON si ingrandisce il disegno — si allarga solo l'area sensibile con uno
+   * pseudo-elemento, così niente si muove nella pagina e l'icona resta della
+   * misura per cui è stata disegnata.
+   */
+  select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  .am-acct,
+  .mb-entry,
+  .hb-cta {
+    min-height: 44px;                  /* select 208×33 · input 280×20 · am-acct 154×34 · mb-entry 134×34 · hb-cta 151×38 */
+  }
+
+  /* L'area sensibile cresce, il segno no. `position` serve all'ancoraggio dello
+   * pseudo-elemento; se l'elemento è già posizionato non lo tocchiamo. */
+  .hb-x,
+  .site-footer-social-link,
+  .am-iconbtn {
+    position: relative;
+  }
+  .hb-x::after,
+  .site-footer-social-link::after,
+  .am-iconbtn::after {
+    content: "";
+    position: absolute;
+    /* centra un'area di 44px qualunque sia la misura visiva del bersaglio */
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    /* niente sfondo: è area sensibile, non decorazione */
+  }
+
+  /* ── 3. Due strati fissi che si pestavano ─────────────────────────────────
+   * Misurato in produzione: il widget della chat si sovrapponeva alla nav in
+   * basso, coprendo due delle quattro icone. Chi voleva cambiare scheda
+   * apriva la chat. La chat sale sopra la nav, che resta raggiungibile.
+   */
+  .botnav,
+  .bottom-nav {
+    z-index: 40;
+  }
+  /* Tawk.to inietta il proprio contenitore: si sposta lui, non la nav. */
+  #tawkchat-container,
+  .widget-visible iframe[title*="chat" i],
+  iframe[title*="chat" i] {
+    bottom: 68px !important;
+  }
+
+  /* ── 4. Il footer, che sta su OGNI pagina ────────────────────────────────
+   * Misurato: i link del footer sono alti 13px e scritti a 10.5px. Un piede di
+   * pagina non è decorazione: contiene i termini, la privacy, il 18+ e i link
+   * al gioco responsabile. Su un telefono devono essere leggibili e cliccabili.
+   */
+  .site-footer a,
+  .site-footer span,
+  .site-footer p,
+  .site-footer-18,
+  .site-footer-imprint,
+  .site-footer-partner-link,
+  .site-footer-social-lab { font-size: 12px; }   /* erano 10-10.5px */
+
+  /* I link del footer sono in linea: l'area sensibile cresce sotto e sopra
+   * senza spezzare il flusso del testo. */
+  .site-footer a {
+    padding-block: 11px;                          /* 13px di testo + 22 = 35 → con line-height arriva a 44 */
+    display: inline-block;
+  }
+  .site-footer-partner-logo { min-height: 44px; } /* era 104×34 */
+
+  /* ── 5. Bersagli minuscoli che non devono cambiare disegno ───────────────
+   * I puntini del carosello sono 7×7: giusti da vedere, impossibili da
+   * centrare col pollice. Cresce solo l'area sensibile.
+   */
+  .lp-carousel-dot,
+  .lp-brand,
+  .am-brandmark { position: relative; }
+  .lp-carousel-dot::after,
+  .lp-brand::after,
+  .am-brandmark::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ── 6. Etichette della landing e dei piani ──────────────────────────────
+   * Stesso pavimento delle etichette del desk: 11px per le micro-etichette,
+   * 12px per i valori che si leggono.
+   */
+  .sp,
+  .lab,
+  .pk,
+  .eyebrow,
+  .am-featured-lab { font-size: 12px; }           /* erano 10-10.56px */
+
+  /* ── 7. L'ultimo giro, sui contenitori ──────────────────────────────────
+   * Dopo il primo passaggio restavano 64 bersagli sotto i 44px. Misurandone il
+   * percorso nel DOM si è visto che non erano casi sparsi: sono sei contenitori,
+   * e molti mancavano il bersaglio di DUE O TRE pixel (il footer stava a 40, la
+   * modale a 42). Un bottone di testo prende un'altezza minima; l'area allargata
+   * con lo pseudo-elemento resta solo per le icone davvero piccole, dove
+   * ingrandire il disegno sarebbe sbagliato.
+   */
+  .tl-langs a,                       /* 11× 69×29 — scelta della lingua su /tools */
+  .cookie-consent-actions button,    /*  2× 68×26 — la PRIMA cosa che si tocca */
+  .cookie-consent p a,               /*      46×13 — link alla privacy nel banner */
+  .am-auth-primary,
+  .am-auth-secondary,
+  .lp-nav-link,
+  .lp-nav-cta,
+  .lp-lang,
+  .wc-topbar-home,
+  .crypto-pay-box button,            /*      268×40 — mancavano 4px */
+  .auth-modal button,                /*      304×42 — mancavano 2px */
+  .wp-back {
+    min-height: 44px;
+  }
+
+  /* I link in fila nel footer: inline-flex li tiene sulla riga ma permette
+   * all'altezza minima di avere effetto (su un inline puro non ne avrebbe). */
+  .site-footer-row a,
+  .site-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 0;                /* l'altezza la dà min-height, non il padding */
+  }
+
+  /* ── 8. Specificità: la lezione delle classi che collidono ───────────────
+   * Le regole della landing vivono sotto `.hv3` con TRE O QUATTRO classi
+   * (`.hv3 .v-wrow .fx .sp`). Le mie a una classe perdevano, e l'ordine di
+   * import non basta: la specificità vince sempre sulla posizione. Qui le
+   * riscrivo con lo stesso peso del bersaglio — misurato, non indovinato.
+   * Una di quelle regole vive già dentro una media query mobile e portava
+   * `small` a 8,5px: la sostituisco a parità di specificità, quindi vince
+   * l'ultima letta, che è questa.
+   */
+  .hv3 .v-wrow .fx .sp { font-size: 12px; }        /* era 10px   · "Cincinnati Open" */
+  .hv3 .v-notes .lab { font-size: 12px; }          /* era 10.5px · "Pick" */
+  .hv3 .v-prow .pk { font-size: 12px; }            /* era 10.5px · "Best Bets · +EV" */
+  .hv3 .v-scan-row .fx small { font-size: 11px; }  /* era 8.5px  · "WORLD CUP" */
+  .hv3 .v-scan .v-scan-cols span { font-size: 11px; }  /* era 9.5px · "Match" */
+  .hv3 .v-scan .v-scan-foot b { font-size: 11px; }     /* era 9.5px · "Edge = model…" */
+  p.eyebrow { font-size: 12px; }                   /* era 10.56px — elemento+classe per battere il .eyebrow nudo */
+  .plan-card-head span,
+  .crypto-pay-box span,
+  .auth-modal label span { font-size: 12px; }      /* erano 10px */
+
+  /* ── 9. Il banner cookie, che scrive i suoi stili INLINE ─────────────────
+   * `components/CookieBanner.tsx` mette misure e colori nell'attributo style,
+   * di proposito: così la barra sopravvive anche se il CSS non carica. Ma uno
+   * stile inline batte qualunque foglio, quindi qui `!important` non è pigrizia
+   * — è l'unico strumento che lo raggiunge, ed è confinato sotto i 640px.
+   * Sono i due bottoni che un utente tocca PRIMA di tutto il resto: erano
+   * 68×26 con testo a 10px.
+   */
+  .cookie-consent-actions button {
+    min-height: 44px !important;
+    font-size: 12px !important;
+  }
+  .cookie-consent p a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* ── 10. Gli ultimi bottoni corti ────────────────────────────────────────
+   * Mancavano quattro o cinque pixel: non è un difetto di disegno, è un
+   * bersaglio che non arriva al pollice.
+   */
+  .plan-action,                        /* 294×40 */
+  .plans-hero button,                  /* 190×40 */
+  li strong a {                        /* 190×35 — "Weekly Pick" nell'elenco */
+    min-height: 44px;
+  }
+  li strong a { display: inline-flex; align-items: center; }
+
+  /* ── 11. Gli ultimi, tutti per specificità ───────────────────────────────
+   * Ogni riga qui esiste perché la regola originale ha più peso della mia
+   * prima versione. Le riscrivo col percorso completo che ho MISURATO nel DOM,
+   * invece di alzare la specificità a caso o mettere !important.
+   */
+  .v-scan .v-scan-head span,
+  .v-scan .v-scan-head span.tag,
+  .v-scan .v-scan-foot span { font-size: 11px; }   /* erano 9.5px */
+  .top .comp .league { font-size: 12px; }          /* era 9.6px  · scheda: campionato */
+  .pred .top .when { font-size: 12px; }            /* era 9.6px  · scheda: orario */
+  .fx .scorebar .stt { font-size: 11px; }          /* era 8.96px · scheda: stato */
+  .plan-card-head .eyebrow,
+  .plans-hero .eyebrow,
+  .auth-modal-head .eyebrow { font-size: 12px; }   /* erano 10.56px */
+  .crypto-pay-box div span { font-size: 12px; }    /* era 10px */
+  .wp-nav .wp-nav-tag { font-size: 12px; }         /* era 10.5px */
+
+  /* Il selettore di modalità della modale (Login / Crea profilo): 145×34. */
+  .auth-mode-switch button { min-height: 44px; }
+}
