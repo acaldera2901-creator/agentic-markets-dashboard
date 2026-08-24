@@ -371,6 +371,7 @@ type V3Copy = {
   pcFree: string; pcBase: string; pcPro: string; pcBest: string; pcMo: string;
   pcFreeList: string[]; pcBaseList: string[]; pcProList: string[];
   fnHead1: string; fnHeadG: string; fnBody: string;
+  wgKick: string; wgHead: string; wgBody: string; wgCta: string;
 };
 const V3_EN: V3Copy = {
   inviteHead: "Your invite is live", inviteBody: "days of PRO, free — unlocked when you confirm your email.",
@@ -405,6 +406,11 @@ const V3_EN: V3Copy = {
   pcBaseList: ["All Best Bets · +EV feed", "Weekly Pick", "Deep Analysis on every card", "Full settled history"],
   pcProList: ["Everything in Base", "Live · in-play readings", "Match Builder", "Priority scanner & crypto billing"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
+  // #WIDGET-LANDING-0824 — richiamo ai proprietari di siti: il widget è un canale
+  // di acquisizione, e questa riga è il solo posto in home in cui esiste.
+  wgKick: "For site owners", wgHead: "Run a site? Put our picks on it.",
+  wgBody: "One line of code shows today's predictions on your pages, updates itself, and credits every signup it sends us.",
+  wgCta: "See the widget",
 };
 const V3_IT: V3Copy = {
   inviteHead: "Il tuo invito è attivo", inviteBody: "giorni di PRO, gratis — si attivano quando confermi la mail.",
@@ -439,6 +445,9 @@ const V3_IT: V3Copy = {
   pcBaseList: ["Tutto il feed Best Bets · +EV", "Weekly Pick", "Deep Analysis su ogni scheda", "Storico concluso completo"],
   pcProList: ["Tutto ciò che c’è in Base", "Letture live · in-play", "Match Builder", "Scanner prioritario & pagamento crypto"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
+  wgKick: "Per chi ha un sito", wgHead: "Hai un sito? Mettici i nostri pronostici.",
+  wgBody: "Una riga di codice mostra le predizioni del giorno sulle tue pagine, si aggiorna da sola e attribuisce a te le iscrizioni che porta.",
+  wgCta: "Vedi il widget",
 };
 const V3: Record<Lang, V3Copy> = { en: V3_EN, it: V3_IT, es: V3_EN, fr: V3_EN, ru: V3_EN };
 
@@ -946,6 +955,20 @@ export default function LandingPage() {
         <div className="v-actions">
           <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
           <a href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</a>
+        </div>
+      </div></section>
+
+      {/* ── #WIDGET-LANDING-0824: riga per i proprietari di siti. Sta DOPO la CTA
+           finale di proposito — non compete con l'iscrizione, raccoglie chi è
+           arrivato in fondo e ha un pubblico suo. ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ maxWidth: "56ch" }}>
+            <div className="v-kick q">{v.wgKick}</div>
+            <h2 style={{ margin: "10px 0 8px", fontSize: "clamp(20px,3vw,28px)", letterSpacing: "-.02em" }}>{v.wgHead}</h2>
+            <p style={{ margin: 0, color: "var(--am-muted)" }}>{v.wgBody}</p>
+          </div>
+          <a href="/widget" className="v-btn v-btn--secondary">{v.wgCta}</a>
         </div>
       </div></section>
 
