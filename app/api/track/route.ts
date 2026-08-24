@@ -27,6 +27,10 @@ const ALLOWED_EVENTS = new Set([
   // dal codice (referral V2, consenso prelievo) e scartati in silenzio qui.
   "signup_started", "signup_completed",
   "referral_code_claimed", "referral_link_copied", "withdrawal_consent",
+  // #WIDGET-EMBED-0824 — widget incorporato su siti terzi. `meta.host` dice
+  // QUALE sito converte (dichiarato dal client, come ogni altro evento qui:
+  // buono per misurare, mai per decidere accessi).
+  "widget_view", "widget_click",
 ]);
 
 const cap = (v: unknown, n: number): string | null =>

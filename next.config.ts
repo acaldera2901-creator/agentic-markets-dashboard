@@ -77,7 +77,23 @@ const nextConfig: NextConfig = {
   // .scrollRestoration). Presentational only.
   experimental: { scrollRestoration: true },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      // #WIDGET-EMBED-0824: /embed è l'unico path incorporabile da terzi e porta
+      // i suoi header nella route handler (frame-ancestors *, CSP con l'hash
+      // dello script inline). Va quindi ESCLUSO da questa regola: due regole che
+      // impostano lo stesso header lascerebbero all'ordine di merge la decisione
+      // su chi vince — qui invece è scritto, e c'è un test che lo verifica.
+      { source: "/((?!embed$).*)", headers: securityHeaders },
+      // Lo script del widget vive sui siti dei partner: cache lunga sul CDN,
+      // revalidabile, così un fix arriva senza toccare il loro HTML.
+      {
+        source: "/widget.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
+    ];
   },
 };
 
