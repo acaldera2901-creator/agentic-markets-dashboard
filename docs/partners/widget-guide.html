@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BetRedge Widget — Partner Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* #WIDGET-LANDING-0824 — sorgente del PDF per i partner.
+   Rigenerare: scripts/build-partner-pdf.py (Playwright print-to-pdf).
+   @page margin:0 + margini nel body: senza, Chrome aggiunge i suoi e il
+   fondo colorato si ferma prima del bordo pagina. */
+@page { size: A4; margin: 0; }
+:root{
+  --ink:#101310; --muted:#4E554E; --line:#DDE2DD; --sunk:#F4F6F4;
+  --accent:#1F8F4E; --accent-soft:#EAF5EE; --dark:#0B0C0E;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;font-size:10.5pt;line-height:1.55;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:210mm;min-height:297mm;padding:17mm 18mm 15mm;page-break-after:always;position:relative}
+.page:last-child{page-break-after:auto}
+h1,h2,h3,.ui,th,.kick,.btn{font-family:Archivo,system-ui,sans-serif}
+h1{font-size:26pt;line-height:1.06;letter-spacing:-.025em;margin:6mm 0 0;font-weight:700}
+h2{font-size:12pt;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 3mm;font-weight:600;font-size:9pt}
+h3{font-size:11.5pt;margin:0 0 1.5mm;font-weight:600;letter-spacing:-.01em}
+p{margin:0 0 3mm}
+.kick{font-size:8.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.lede{font-size:12.5pt;color:var(--muted);margin-top:4mm;max-width:64ch;line-height:1.5}
+.brand{display:flex;align-items:center;gap:3mm;padding-bottom:5mm;border-bottom:1px solid var(--line)}
+.mark{width:9mm;height:9mm;flex:none}
+.brand b{font-family:Archivo,sans-serif;font-size:11pt;letter-spacing:-.01em}
+.brand span{margin-left:auto;font-family:Archivo,sans-serif;font-size:8.5pt;color:var(--muted)}
+section{margin-top:7mm}
+code,.mono{font-family:"JetBrains Mono",monospace;font-size:8.6pt}
+pre{margin:0;background:var(--dark);color:#EDEFF2;border-radius:2.5mm;padding:5mm;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+pre code{font-size:8.4pt;line-height:1.75}
+table{width:100%;border-collapse:collapse;font-size:9.5pt}
+th{text-align:left;font-size:8pt;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 3mm 2mm;font-weight:600}
+td{padding:2.4mm 3mm;border-top:1px solid var(--line);vertical-align:top;color:var(--muted)}
+td:first-child{color:var(--ink);font-family:"JetBrains Mono",monospace;font-size:8.6pt;white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.card{border:1px solid var(--line);border-radius:2.5mm;padding:5mm;background:var(--sunk)}
+.card.accent{background:var(--accent-soft);border-color:#C9E5D4}
+.shots{display:grid;grid-template-columns:1.5fr 1fr;gap:5mm;align-items:start;margin-top:4mm}
+.shots img{width:100%;height:auto;border:1px solid var(--line);border-radius:2mm;display:block}
+figcaption{font-family:Archivo,sans-serif;font-size:8pt;color:var(--muted);margin-top:2mm;line-height:1.4}
+ul{margin:0;padding-left:5mm}
+li{margin-bottom:2mm}
+.steps{counter-reset:s}
+.steps .step{display:flex;gap:4mm;margin-bottom:4mm}
+.steps .n{font-family:"JetBrains Mono",monospace;font-size:9pt;color:var(--accent);flex:none;padding-top:.5mm}
+.foot{position:absolute;left:18mm;right:18mm;bottom:10mm;border-top:1px solid var(--line);padding-top:3mm;
+  font-family:Archivo,sans-serif;font-size:7.6pt;color:var(--muted);display:flex;justify-content:space-between;gap:4mm}
+.legal{font-size:8.6pt;color:var(--muted);line-height:1.5}
+.legal b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 17.5 9.5 11l4 4L21 7" stroke="#1F8F4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15.5 7H21v5.5" stroke="#1F8F4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <b>BETREDGE</b>
+    <span>Partner integration guide · August 2026</span>
+  </div>
+
+  <div class="kick" style="margin-top:12mm">For site owners</div>
+  <h1>Put our predictions<br>on your site</h1>
+  <p class="lede">One line of code shows today's model predictions on your pages. It updates on its own,
+  fits the space it finds, and carries your partner code on every click — so the signups it sends us are credited to you.</p>
+
+  <div class="shots">
+    <figure style="margin:0">
+      <img src="__LIGHT__" alt="The widget inside an article, light theme">
+      <figcaption>In the body of an article. Light theme, Italian, three matches.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="__DARK__" alt="The widget in a sidebar, dark theme">
+      <figcaption>In a sidebar. Dark theme, English, four matches.</figcaption>
+    </figure>
+  </div>
+
+  <section>
+    <h2>Install</h2>
+    <pre><code>&lt;script src="https://www.betredge.com/widget.js" async
+        data-ref="YOUR-CODE" data-sport="all" data-limit="3"
+        data-lang="en" data-theme="auto"&gt;&lt;/script&gt;</code></pre>
+    <p style="margin-top:3mm;font-size:9.5pt;color:var(--muted)">Paste it where you want the widget to appear — a sidebar, the middle of a post, a footer.
+    That is the whole integration: no account, no API key, no build step. We send you the code that goes in <span class="mono">data-ref</span>.</p>
+  </section>
+
+  <div class="foot"><span>BetRedge — Partner integration guide</span><span>betredge.com/widget</span></div>
+</div>
+
+<div class="page">
+  <section style="margin-top:0">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><div>
+        <h3>You paste one tag</h3>
+        <p>It loads after your content, in its own frame. It cannot block your page, and your CSS cannot break it — nor can it break your layout.</p></div></div>
+      <div class="step"><div class="n">02</div><div>
+        <h3>We keep it fed</h3>
+        <p>The matches come from the same board our subscribers read, refreshed as our model publishes. You never edit the tag again.</p></div></div>
+      <div class="step"><div class="n">03</div><div>
+        <h3>You get the credit</h3>
+        <p>Every link opens BetRedge with your code attached. We record which of your pages the visit came from, so performance is visible per site, not just per channel.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What you can change</h2>
+    <table>
+      <thead><tr><th>Attribute</th><th>Values</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>data-ref</td><td>your partner code</td><td>Attributes every click and signup to you.</td></tr>
+        <tr><td>data-sport</td><td>all · tennis · football</td><td>Which board to pull from.</td></tr>
+        <tr><td>data-limit</td><td>1 to 6</td><td>How many matches to show.</td></tr>
+        <tr><td>data-lang</td><td>en · it · es · fr · ru</td><td>Widget language; anything else falls back to English.</td></tr>
+        <tr><td>data-theme</td><td>auto · light · dark</td><td><span class="mono">auto</span> follows your visitor's system theme.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Two versions</h2>
+    <div class="two">
+      <div class="card">
+        <h3>Standard</h3>
+        <p style="font-size:9.5pt;margin:0">The best pick per sport is shown in full — teams, call, model confidence. The rest of the matches stay visible but their call is reserved for BetRedge. This is what a visitor sees by default.</p>
+      </div>
+      <div class="card accent">
+        <h3>Open</h3>
+        <p style="font-size:9.5pt;margin:0">Every pick visible, nothing held back. Reserved for partners who send real traffic, and enabled by us on your code — there is nothing to change in the tag.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot"><span>BetRedge — Partner integration guide</span><span>betredge.com/widget</span></div>
+</div>
+
+<div class="page">
+  <section style="margin-top:0">
+<h2>What it does not do</h2>
+    <ul style="font-size:9.8pt;color:var(--muted)">
+      <li><b style="color:var(--ink)">No cookies, no storage, no fingerprinting</b> on your page. Nothing about your visitor reaches us, so the widget adds nothing to your consent banner.</li>
+      <li><b style="color:var(--ink)">No layout takeover.</b> It takes the width you give it and sets its own height; it never opens overlays or navigates your page away.</li>
+      <li><b style="color:var(--ink)">No empty box.</b> When no matches are scheduled it says so and keeps the link — it never invents a fixture.</li>
+    </ul>
+    <p style="font-size:9.5pt;color:var(--muted)">We count how many times the widget was seen and clicked, and on which domain. That is all we measure.</p>
+  </section>
+
+  <section>
+    <h2>Before you go live</h2>
+    <ul style="font-size:9.8pt;color:var(--muted)">
+      <li>Ask us for your partner code and put it in <span class="mono">data-ref</span> — without it the widget still works, but nothing can be credited to you.</li>
+      <li>Pick the sport and how many matches suit the space you have. Three is a good default in a sidebar; one works inline.</li>
+      <li>Check it on a phone: the widget is fluid and will follow your column.</li>
+      <li>Tell us if your audience sits in a country where this content should not run, and we will keep it off your site.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>The small print that matters</h2>
+    <p class="legal"><b>This is information, not advice.</b> BetRedge publishes the output of statistical models on sports events.
+    It is not betting advice, it is not a tip service, and nothing in the widget is a promise of profit. Past results do not
+    guarantee future ones, and the widget carries an 18+ notice on every render.</p>
+    <p class="legal"><b>Jurisdictions.</b> Sports betting content is regulated differently in every country. You are responsible
+    for whether this content is appropriate for your audience; tell us your main markets and we will flag anything we know of.
+    We can disable the widget for your code at any time, and so can you — by deleting one line.</p>
+    <p class="legal"><b>Who we are.</b> BetRedge is operated by Maven Agency AG, Blegistrasse 7, 6340 Baar (ZG), Switzerland
+    (UID CHE-193.960.193). Correspondence: 66 Paul Street, London EC2A 4NA, United Kingdom.</p>
+  </section>
+
+  <section>
+    <h2>Next step</h2>
+    <div class="card accent">
+      <h3 style="margin-bottom:2mm">Tell us where the widget is going</h3>
+      <p style="font-size:9.8pt;margin:0">Send the domain and the page you have in mind to <b>info@betredge.com</b> and we will
+      reply with your partner code the same day. The live version of this guide, with an interactive preview you can play with,
+      is at <b>betredge.com/widget</b>.</p>
+    </div>
+  </section>
+
+  <div class="foot"><span>BetRedge — Partner integration guide · August 2026</span><span>info@betredge.com</span></div>
+</div>
+
+</body>
+</html>
