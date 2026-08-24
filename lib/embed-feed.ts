@@ -229,32 +229,27 @@ export async function fetchEmbedRows(opts: {
   mode: EmbedMode;
   lang: EmbedLang;
 }): Promise<EmbedRow[]> {
-  const conditions = [
-    "starts_at > NOW() - interval '150 minutes'",
-    "starts_at < NOW() + ($1 || ' days')::interval",
-    "expires_at > NOW() - interval '150 minutes'",
-    "published_at IS NOT NULL",
-    "is_historical = FALSE",
-    "is_demo = FALSE",
-  ];
-  const values: unknown[] = [PREDICTION_WINDOW_DAYS];
-  if (opts.sport && opts.sport !== "all") {
-    values.push(opts.sport);
-    conditions.push(`sport = $${values.length}`);
-  }
-  values.push(V2_MAX_ROWS);
-
-  // Il tetto è lo stesso del board di proposito: il rank della vetrina si
-  // calcola sull'insieme servito, quindi leggerne di meno farebbe apparire
-  // "top pick" nel widget una riga che sul sito non lo è.
+  // Query COSTANTE di proposito: il filtro sport è un parametro, non un pezzo di
+  // stringa concatenato. Il guard di lib/sql-guard.test.ts vieta l'interpolazione
+  // dentro una SQL, e qui non serve un'eccezione — `$2 IS NULL OR sport = $2`
+  // fa lo stesso lavoro senza costruire la WHERE a runtime.
   const rows = await dbQuery<RawRow>(
     `SELECT id, sport, competition, league, home_team, away_team, starts_at,
             market, pick, confidence_score, edge_percent, updated_at
        FROM unified_predictions
-      WHERE ${conditions.join(" AND ")}
+      WHERE starts_at > NOW() - interval '150 minutes'
+        AND starts_at < NOW() + ($1 || ' days')::interval
+        AND expires_at > NOW() - interval '150 minutes'
+        AND published_at IS NOT NULL
+        AND is_historical = FALSE
+        AND is_demo = FALSE
+        AND ($2::text IS NULL OR sport = $2::text)
       ORDER BY starts_at ASC
-      LIMIT $${values.length}`,
-    values
+      LIMIT $3`,
+    // Il tetto è lo stesso del board di proposito: il rank della vetrina si
+    // calcola sull'insieme servito, quindi leggerne di meno farebbe apparire
+    // "top pick" nel widget una riga che sul sito non lo è.
+    [PREDICTION_WINDOW_DAYS, opts.sport && opts.sport !== "all" ? opts.sport : null, V2_MAX_ROWS]
   );
   return toEmbedRows(rows, opts.mode, opts.limit, opts.lang);
 }
