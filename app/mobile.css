@@ -31,15 +31,12 @@
    * Le dimensioni di partenza (misurate) sono nel commento di ogni riga, così
    * la prossima persona vede il delta invece di fidarsi.
    */
-  .v2r-eye { font-size: 11px; }        /* era 8.8px  · "Model read" ×57 */
-  .v2r-qlab { font-size: 11px; }       /* era 8.48px · "FortunePlay odds" ×57 */
-  .stt { font-size: 11px; }            /* era 8.96px · "Scheduled" / "LIVE 90'" ×47 */
-  .v2r-conf-t { font-size: 12px; }     /* era 8.8px  · "no clear favourite" ×105 */
-  .v2r-sub { font-size: 12px; }        /* era 9.28px · "52% model" ×57 */
-  .league { font-size: 12px; }         /* era 9.6px  · "Championship" ×57 */
-  .when { font-size: 12px; }           /* era 9.6px  · "Sat 22 Aug, 15:00" ×54 */
-  .pm-lab { font-size: 12px; }         /* era 8.96px · "Open full card" ×57 */
-  .bn-l { font-size: 11px; }           /* era 9px    · etichette della nav in basso */
+  /* Le classi della SCHEDA (.v2r-*, .league, .when, .stt, .pm-lab) stavano qui,
+   * a una classe di specificità, e NON funzionavano: le batteva lo scope
+   * `[data-mc]` di machina.css. Ora vivono nel blocco 14 con `!important`, dove
+   * il pavimento arriva davvero. Le ho togliate da qui invece di lasciarle a
+   * far credere che il lavoro fosse fatto. */
+  .bn-l { font-size: 11px; }           /* era 9px · etichette della nav in basso */
 
   /* ── 2. I bersagli di tocco ───────────────────────────────────────────────
    * 44px è il minimo su cui un pollice non sbaglia. Dove l'elemento è un
@@ -315,4 +312,88 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  /* ── 14. Il pavimento tipografico ARRIVA anche alle schede ───────────────
+   * Il blocco 1 non funzionava, e me ne sono accorto solo il 23/08 misurando il
+   * desk DA LOGGATO con l'account di prova: le classi della scheda erano ancora
+   * a 8,48–9,6px. Sulle rotte pubbliche non si vedeva, perché le schede lì non
+   * ci sono.
+   *
+   * Causa: in `machina.css` quelle classi sono scritte come
+   *   :root:not([data-theme="light"]) [data-mc] .v2r-eye
+   * cioè specificità 0,4,0, e cambiano fra i due temi. Le mie a una classe
+   * perdevano nonostante l'import successivo.
+   *
+   * Perché `!important` invece di rincorrere la specificità: un pavimento
+   * tipografico È una regola incondizionata — "su un telefono niente sotto gli
+   * 11px" non ammette eccezioni per tema o per scope. Inseguire 0,4,0 con
+   * selettori sempre più pesanti, in due varianti di tema, sarebbe più fragile e
+   * meno leggibile. Tutto resta confinato sotto i 640px.
+   */
+  .v2r-eye,
+  .v2r-qlab,
+  .stt { font-size: 11px !important; }   /* erano 8.8 / 8.48 / 8.96px */
+  .v2r-conf-t,
+  .v2r-sub,
+  .league,
+  .when,
+  .pm-lab { font-size: 12px !important; } /* erano 8.8 / 9.28 / 9.6 / 9.6 / 8.96px */
+
+  /* ── 15. Le ultime classi, viste solo col conto di prova ─────────────────
+   * Emerse il 23/08 misurando il desk da loggato: fuori da quella sessione non
+   * sono renderizzate, quindi non c'era modo di trovarle prima.
+   *
+   * `.rg-footer` merita una riga a parte: è l'avviso "18+ · gioco responsabile",
+   * ed era a 9px su un telefono. Il suo CONTRASTO l'ho corretto ieri (da 2.01:1
+   * a 9.44:1) ma la MISURA no: un avviso conforme e illeggibile resta
+   * illeggibile. Su mobile va a 11px.
+   */
+  .model,
+  .gate,
+  .l,
+  .rg-footer { font-size: 11px !important; }   /* erano 9 / 9 / 9.5 / 9px */
+  .eyebrow { font-size: 12px !important; }     /* era 10.56px — batte gli scope piu' specifici */
+  /* Le etichette dei tre filtri della board (Competition / Surface / Sort):
+   * span senza classe dentro `.am-mini-field`, si prendono dal contenitore. */
+  .am-mini-field span { font-size: 11px !important; }  /* era 9px */
+
+  /* ── 16. I bersagli DENTRO la scheda, e il resto del desk ────────────────
+   * Anche questi visti solo dal conto di prova: 53 bersagli sotto i 44px sul
+   * desk loggato, contro i 7 delle rotte pubbliche. Due sono dentro OGNI scheda
+   * (20 volte ciascuno) e sono i due comandi che un utente usa davvero:
+   *   · `.why-more`  138×16 — "perché il modello sceglie…", il ragionamento;
+   *   · `.betbtn`    110×29 — il bottone per giocare la selezione.
+   * Un bersaglio da 16px di altezza su un telefono si sbaglia più spesso di
+   * quanto si prenda.
+   * Gli altri mancavano di 2-11 pixel: filtri, select, gate del bloccato.
+   */
+  .why-box .why-more,               /* 138×16  — 20 volte, una per scheda */
+  .why .act .betbtn,                /* 110×29  — 20 volte, una per scheda */
+  .sports-filter-bar .am-seg button,/* 113×33 e 41×33 — i chip dei filtri */
+  .sports-filter-bar select,        /* 237×33 */
+  .locked-overlay button,           /* 188×42 — mancavano 2px */
+  .btn-primary,
+  .btn-secondary {                  /* 79×40 e 72×40 — mancavano 4px */
+    min-height: 44px;
+  }
+  /* `.why-more` è un riepilogo inline dentro <details>: senza flex l'altezza
+   * minima non avrebbe effetto. */
+  .why-box .why-more { display: flex; align-items: center; }
+
+  /* ── 17. Gli ultimi tre, ognuno per una ragione diversa ──────────────────
+   * Non aggiungo !important a caso: ho letto CHI vince, e rispondo di
+   * conseguenza.
+   *
+   * 1) i select dei filtri: `.am-filters .am-mini-field select` in globals ha
+   *    `min-height: 33px` con specificità 0,3,1 — più alta della mia. Nessun
+   *    !important di mezzo: basta scrivere la regola con lo stesso peso, e
+   *    vince perché questo foglio è importato dopo.
+   * 2) il selettore Login/Crea profilo: `.auth-mode-switch button` in globals
+   *    ha `min-height: 34px !important`. Lì l'unico modo è !important.
+   * 3) il chip "All" dei filtri era 41px LARGO (l'altezza era già a posto):
+   *    serve una larghezza minima, non un'altezza.
+   */
+  .am-filters .am-mini-field select { min-height: 44px; }
+  .auth-mode-switch button { min-height: 44px !important; }
+  .sports-filter-bar .am-seg button { min-width: 44px; }
 }
