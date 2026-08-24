@@ -9,6 +9,7 @@
 import { dbQuery } from "@/lib/db";
 import { projectPrediction, showcaseRanking, type ShowcaseCandidate } from "@/lib/access-projection";
 import { humanizePick } from "@/features/feed/pick-view-model";
+import { dedupeByFixture } from "@/lib/dedupe-fixtures";
 import { PREDICTION_WINDOW_DAYS, V2_MAX_ROWS } from "@/lib/prediction-window";
 
 export type EmbedMode = "teaser" | "open";
@@ -76,6 +77,17 @@ const DRAW: Record<Exclude<EmbedLang, "it">, string> = {
 const GOALS: Record<Exclude<EmbedLang, "it">, string> = {
   en: "goals", es: "goles", fr: "buts", ru: "голов",
 };
+/** Quando il gate di surfacing non promuove nessuna direzione la riga resta un
+ *  match reale con una probabilità: il feed del sito la etichetta così, e il
+ *  widget che lo promuove non può dire meno (un "—" sembra un dato mancante). */
+const NO_FAVOURITE: Record<EmbedLang, string> = {
+  it: "Nessun favorito netto",
+  en: "No clear favourite",
+  es: "Sin favorito claro",
+  fr: "Pas de favori net",
+  ru: "Явного фаворита нет",
+};
+
 const BTTS: Record<Exclude<EmbedLang, "it">, [string, string]> = {
   en: ["Both teams to score", "Not both to score"],
   es: ["Ambos marcan", "No marcan ambos"],
@@ -88,7 +100,8 @@ function localizedDecision(
   lang: EmbedLang
 ): string | null {
   const pick = (p.pick ?? "").trim();
-  if (!pick) return null; // sotto floor: nessuna direzione, e non se ne inventa una
+  // Sotto floor: nessuna direzione. Non se ne inventa una, si dice che non c'è.
+  if (!pick) return NO_FAVOURITE[lang] ?? NO_FAVOURITE.en;
   if (lang === "it") return humanizePick(p) || null;
 
   const m = (p.market ?? "").toLowerCase();
@@ -116,10 +129,31 @@ type RawRow = Record<string, unknown>;
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
+/** MISURATO il 2026-08-24: `unified_predictions.confidence_score` è in scala
+ *  0-100 (min 34, max 79), mentre il commento di compareShowcase la descrive
+ *  0-1. Moltiplicare senza guardare stampava "7100%" dentro il sito di un
+ *  partner. Si accettano entrambe le scale perché su questa tabella scrivono
+ *  più pipeline: sopra 1 è già una percentuale, sotto è una probabilità. */
+export function toPercent(v: number | null): number | null {
+  if (v === null) return null;
+  const pct = v > 1 ? v : v * 100;
+  return Math.min(100, Math.max(0, Math.round(pct)));
+}
+
 /** Puro: dalle righe grezze alle card del widget. `mode` sceglie la vetrina —
  *  teaser proietta come il piano free (top-1 per sport), open come premium. */
-export function toEmbedRows(rows: RawRow[], mode: EmbedMode, limit: number, lang: EmbedLang): EmbedRow[] {
+export function toEmbedRows(rawRows: RawRow[], mode: EmbedMode, limit: number, lang: EmbedLang): EmbedRow[] {
   const state = mode === "open" ? "premium" : "free";
+
+  // Una partita, una card. Su tre righe dentro il sito di un partner un
+  // doppione è un terzo del widget — e le due copie possono portare verdetti
+  // diversi. Si riusa l'identità del board (#DUP-FIXTURES-0821), che regge le
+  // grafie divergenti fra fonti ("Tigre" / "CA Tigre BA"): la dedup a chiave
+  // esatta di /api/v2/predictions non le prende.
+  const rows = dedupeByFixture(rawRows as Array<RawRow & { home_team?: string | null; away_team?: string | null }>, {
+    when: (r) => str(r.starts_at),
+    freshness: (r) => str(r.updated_at),
+  }) as RawRow[];
 
   // Rank 0-based dentro lo sport, con lo stesso comparatore della vetrina.
   const rankById = new Map<string, number>();
@@ -141,6 +175,7 @@ export function toEmbedRows(rows: RawRow[], mode: EmbedMode, limit: number, lang
 
   const cards = rows.map((r) => {
     const rank = rankById.get(String(r.id)) ?? Infinity;
+    const surfaced = typeof r.pick === "string" && r.pick.trim() !== "";
     const p = projectPrediction(r, state, rank) as RawRow & { locked: boolean };
     const conf = num(p.confidence_score);
     return {
@@ -162,18 +197,24 @@ export function toEmbedRows(rows: RawRow[], mode: EmbedMode, limit: number, lang
               },
               lang
             ),
-        confidence: p.locked || conf === null ? null : Math.round(conf * 100),
+        confidence: p.locked ? null : toPercent(conf),
         locked: p.locked,
         topPick: rank === 0,
       } satisfies EmbedRow,
       rank,
+      surfaced,
     };
   });
 
-  // Le sbloccate davanti (sono ciò che attira), poi il rank, poi l'orario.
+  // Ordine di PRESENTAZIONE (non tocca il gate: cosa è sbloccato lo decide il
+  // rank della vetrina, sopra). Le sbloccate davanti perché sono ciò che
+  // attira; fra queste, prima quelle con una direzione reale: MISURATO il
+  // 2026-08-24, il tennis ha 0 pick su 38 righe, e senza questa riga la prima
+  // card del widget diceva "nessun favorito netto" — vero, ma è la vetrina.
   cards.sort(
     (a, b) =>
       Number(a.row.locked) - Number(b.row.locked) ||
+      Number(b.surfaced) - Number(a.surfaced) ||
       a.rank - b.rank ||
       a.row.startsAt.localeCompare(b.row.startsAt)
   );
@@ -208,7 +249,7 @@ export async function fetchEmbedRows(opts: {
   // "top pick" nel widget una riga che sul sito non lo è.
   const rows = await dbQuery<RawRow>(
     `SELECT id, sport, competition, league, home_team, away_team, starts_at,
-            market, pick, confidence_score, edge_percent
+            market, pick, confidence_score, edge_percent, updated_at
        FROM unified_predictions
       WHERE ${conditions.join(" AND ")}
       ORDER BY starts_at ASC

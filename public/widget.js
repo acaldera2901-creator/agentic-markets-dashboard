@@ -23,8 +23,8 @@
   var base;
   try {
     base = new URL(tag.getAttribute("src"), window.location.href);
-  } catch (e) {
-    return;
+  } catch {
+    return; // src irrecuperabile: meglio nessun widget che un iframe rotto
   }
 
   var url = new URL("/embed", base.origin);
