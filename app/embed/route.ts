@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import {
-  fetchEmbedRows, normalizeEmbedRef, resolveEmbedMode, clampEmbedLimit,
+  fetchEmbedRows, normalizeEmbedRef, resolveEmbedMode, clampEmbedLimit, isRefBlocked,
   type EmbedLang, type EmbedRow,
 } from "@/lib/embed-feed";
 import { renderEmbedHtml, EMBED_INLINE_SCRIPT, type EmbedTheme } from "./embed-html";
@@ -52,7 +52,13 @@ const cleanLang = (raw: string | null): EmbedLang => {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const ref = normalizeEmbedRef(searchParams.get("ref"));
+  const rawRef = normalizeEmbedRef(searchParams.get("ref"));
+  // #WIDGET-TRUTH-0824 — spegnimento per codice: la guida partner promette che
+  // possiamo disattivare il widget su un singolo ref, quindi deve esistere qui.
+  // Spegne PRIMA di tutto: niente predizioni, niente attribuzione, nemmeno la
+  // versione teaser. Il widget resta un guscio che dice di non essere attivo.
+  const blocked = isRefBlocked(rawRef, process.env.EMBED_BLOCKED_REFS);
+  const ref = blocked ? null : rawRef;
   const mode = resolveEmbedMode(ref, process.env.EMBED_FULL_REFS);
   const lang = cleanLang(searchParams.get("lang"));
   const host = cleanHost(searchParams.get("host"));
@@ -61,7 +67,7 @@ export async function GET(req: Request) {
   // degradare a widget vuoto, mai a una pagina di errore. Stessa ragione per
   // cui il rate limit non risponde 429: protegge il DB servendo il guscio.
   let rows: EmbedRow[] = [];
-  if (!rateLimit(`embed:${clientIp(req)}`, 120, 60_000)) {
+  if (!blocked && !rateLimit(`embed:${clientIp(req)}`, 120, 60_000)) {
     try {
       rows = await fetchEmbedRows({
         sport: cleanSport(searchParams.get("sport")),
@@ -74,7 +80,7 @@ export async function GET(req: Request) {
     }
   }
 
-  const html = renderEmbedHtml({ rows, ref, lang, theme: cleanTheme(searchParams.get("theme")), host, mode });
+  const html = renderEmbedHtml({ rows, ref, lang, theme: cleanTheme(searchParams.get("theme")), host, mode, disabled: blocked });
 
   return new NextResponse(html, {
     headers: {

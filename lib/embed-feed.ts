@@ -34,11 +34,35 @@ export type EmbedRow = {
   topPick: boolean;
 };
 
+/** I segnaposto che compaiono nella guida partner. Passano la regex, quindi
+ *  senza questa lista chi copia lo snippet e dimentica di sostituire il codice
+ *  manda le iscrizioni a un codice fantasma — e vede un widget che sembra
+ *  funzionare. Non è teoria: `profiles.referred_by` contiene già codici orfani
+ *  che non risolvono a nessun profilo (MARIO10, MAVEN30, misurati il 24/08). */
+const REF_PLACEHOLDERS = new Set([
+  "YOUR-CODE", "YOURCODE", "YOUR_CODE", "PARTNER-CODE", "PARTNERCODE",
+  "CODE", "MYCODE", "XXX", "XXXX", "TEST-CODE",
+]);
+
 /** Stessa regex del register e di /r/[code]: un codice fuori forma è INVALIDO,
  *  mai troncato in silenzio in un codice diverso (che sarebbe di un altro). */
 export function normalizeEmbedRef(raw: string | null | undefined): string | null {
   const ref = (raw ?? "").trim().toUpperCase();
-  return /^[A-Z0-9_-]{2,20}$/.test(ref) ? ref : null;
+  if (!/^[A-Z0-9_-]{2,20}$/.test(ref)) return null;
+  return REF_PLACEHOLDERS.has(ref) ? null : ref;
+}
+
+/** Spegnimento per codice. La guida partner promette che possiamo disattivare
+ *  il widget su un singolo `ref`: senza questa lista l'unico modo sarebbe
+ *  chiedere al partner di togliere il tag e sperare che lo faccia. Spegne, non
+ *  declassa: un ref bloccato non serve predizioni, nemmeno in teaser. */
+export function isRefBlocked(ref: string | null, blocklist: string | undefined): boolean {
+  if (!ref || !blocklist) return false;
+  return blocklist
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean)
+    .includes(ref.toUpperCase());
 }
 
 /** La versione la decide il SERVER, non l'HTML del partner: se dipendesse da un

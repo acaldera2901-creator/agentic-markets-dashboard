@@ -59,11 +59,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, ignored: true });
     }
 
-    const country =
-      cap(body.country, 8) ??
-      req.headers.get("x-vercel-ip-country") ??
-      req.headers.get("cf-ipcountry") ??
-      null;
+    // #WIDGET-TRUTH-0824 — il widget gira sul sito di terzi e la guida partner
+    // dichiara che non raccoglie nulla sul loro visitatore. Il paese derivato
+    // dall'IP è un dato sul visitatore: per gli eventi widget non si registra,
+    // così la frase è vera nel codice e non solo nel PDF. Del widget interessa
+    // il DOMINIO (meta.host), che resta.
+    const isWidgetEvent = eventType.startsWith("widget_");
+    const country = isWidgetEvent
+      ? null
+      : cap(body.country, 8) ??
+        req.headers.get("x-vercel-ip-country") ??
+        req.headers.get("cf-ipcountry") ??
+        null;
 
     // Cap meta size so a single beacon can't dump arbitrarily large payloads.
     let metaJson = "{}";
