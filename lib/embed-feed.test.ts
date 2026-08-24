@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  isRefBlocked,
   normalizeEmbedRef,
   resolveEmbedMode,
   clampEmbedLimit,
@@ -168,5 +169,36 @@ describe("toEmbedRows", () => {
     expect(it[0].decision).toBe("Vince l'Inter");
     const en = toEmbedRows([row({ id: "f9", sport: "football", home_team: "Inter", away_team: "Milan", market: "1x2", pick: "Inter" })], "open", 6, "en");
     expect(en[0].decision).toBe("Inter to win");
+  });
+});
+
+describe("segnaposto e blocklist (#WIDGET-TRUTH-0824)", () => {
+  it("il segnaposto della guida NON è un'attribuzione", () => {
+    // MISURATO: 'YOUR-CODE' passa la regex, quindi chi copia lo snippet dalla
+    // guida senza sostituirlo manderebbe le iscrizioni a un codice fantasma —
+    // e sembrerebbe funzionare. Nel DB ci sono già due referred_by orfani.
+    expect(normalizeEmbedRef("YOUR-CODE")).toBeNull();
+    expect(normalizeEmbedRef("your-code")).toBeNull();
+    expect(normalizeEmbedRef("YOURCODE")).toBeNull();
+    expect(normalizeEmbedRef("PARTNER-CODE")).toBeNull();
+    // un codice vero resta valido
+    expect(normalizeEmbedRef("SERGIOBETR")).toBe("SERGIOBETR");
+  });
+
+  it("un codice nella blocklist spegne il widget, non lo declassa", () => {
+    // La guida partner promette che possiamo disattivare il widget per un
+    // codice: deve essere vero nel codice, non solo nel PDF.
+    expect(isRefBlocked("CATTIVO", "CATTIVO,ALTRO")).toBe(true);
+    expect(isRefBlocked("cattivo", " cattivo ")).toBe(true);
+    expect(isRefBlocked("SERGIOBETR", "CATTIVO")).toBe(false);
+    expect(isRefBlocked(null, "CATTIVO")).toBe(false);
+    expect(isRefBlocked("CATTIVO", undefined)).toBe(false);
+  });
+
+  it("un ref bloccato non ottiene comunque la versione aperta", () => {
+    // Difesa in profondità: se un codice finisce in tutte e due le liste,
+    // vince lo spegnimento.
+    expect(resolveEmbedMode("CATTIVO", "CATTIVO")).toBe("open"); // l'allowlist da sola direbbe open…
+    expect(isRefBlocked("CATTIVO", "CATTIVO")).toBe(true);       // …ma la route spegne prima di servire
   });
 });

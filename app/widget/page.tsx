@@ -27,8 +27,8 @@ const FAQ: Array<[string, string]> = [
   ["How often does it update?", "The picks refresh as our model publishes them — you never touch the code again."],
   ["What happens when there are no matches?", "The widget stays, says there is nothing scheduled, and keeps the link to the full board. It never shows an empty box or a made-up match."],
   ["Will it slow my page down?", "It loads asynchronously in its own frame, after your content. It cannot block your page or inherit your CSS."],
-  ["Does it set cookies or track my visitors?", "No cookies, no storage, no fingerprinting on your page. We count how many times the widget was seen and clicked, and on which domain — nothing about the person looking at it."],
-  ["Can my visitors see every pick unlocked?", "By default the widget shows the top pick per sport in full and keeps the rest for BetRedge. Partners who send real traffic can have every pick opened — talk to us."],
+  ["Does it set cookies or track my visitors?", "No cookies, no storage, no fingerprinting on your page, and we never identify or profile your visitors. We store how many times the widget was seen and clicked and on which domain — no country, no visitor identifier. Like any remote asset, the browser connects to our server to fetch it, so we see that connection's IP; we don't store it."],
+  ["Can my visitors see every pick unlocked?", "By default the top match per sport is shown in full and the rest stay for BetRedge. When the model has no clear favourite it says so instead of inventing one. Partners who send real traffic can have every pick opened — talk to us."],
 ];
 
 export default function WidgetPage() {

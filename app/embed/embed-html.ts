@@ -18,15 +18,15 @@ const esc = (v: string): string =>
 // zero per costruzione, stamparlo sarebbe stampare rumore (#TG-EDGE-ZERO).
 const COPY: Record<EmbedLang, Record<string, string>> = {
   it: { kicker: "Pronostici del modello", model: "modello", unlock: "Sblocca", cta: "Vedi tutti i pronostici",
-        empty: "Nessuna partita in programma adesso.", disclaimer: "Solo a scopo informativo. Gioco riservato ai maggiorenni.", top: "Top pick" },
+        empty: "Nessuna partita in programma adesso.", off: "Questo widget non è attivo.", disclaimer: "Solo a scopo informativo. Gioco riservato ai maggiorenni.", top: "Top pick" },
   en: { kicker: "Model predictions", model: "model", unlock: "Unlock", cta: "See all predictions",
-        empty: "No matches scheduled right now.", disclaimer: "For informational purposes only. Adults only.", top: "Top pick" },
+        empty: "No matches scheduled right now.", off: "This widget is not active.", disclaimer: "For informational purposes only. Adults only.", top: "Top pick" },
   es: { kicker: "Pronósticos del modelo", model: "modelo", unlock: "Desbloquear", cta: "Ver todos los pronósticos",
-        empty: "No hay partidos programados ahora.", disclaimer: "Solo con fines informativos. Solo para mayores de edad.", top: "Top pick" },
+        empty: "No hay partidos programados ahora.", off: "Este widget no está activo.", disclaimer: "Solo con fines informativos. Solo para mayores de edad.", top: "Top pick" },
   fr: { kicker: "Pronostics du modèle", model: "modèle", unlock: "Débloquer", cta: "Voir tous les pronostics",
-        empty: "Aucun match programmé pour le moment.", disclaimer: "À titre informatif uniquement. Réservé aux majeurs.", top: "Top pick" },
+        empty: "Aucun match programmé pour le moment.", off: "Ce widget n'est pas actif.", disclaimer: "À titre informatif uniquement. Réservé aux majeurs.", top: "Top pick" },
   ru: { kicker: "Прогнозы модели", model: "модель", unlock: "Открыть", cta: "Все прогнозы",
-        empty: "Сейчас нет запланированных матчей.", disclaimer: "Только в информационных целях. Только для совершеннолетних.", top: "Top pick" },
+        empty: "Сейчас нет запланированных матчей.", off: "Этот виджет не активен.", disclaimer: "Только в информационных целях. Только для совершеннолетних.", top: "Top pick" },
 };
 
 /** Ogni link porta l'attribuzione. Si punta alla home e non a /r/CODICE perché
@@ -111,12 +111,16 @@ export function renderEmbedHtml(opts: {
   theme: EmbedTheme;
   host: string | null;
   mode: EmbedMode;
+  /** ref spento dalla blocklist: si serve il guscio, mai le predizioni. */
+  disabled?: boolean;
 }): string {
   const t = COPY[opts.lang] ?? COPY.en;
   const href = embedLink(opts.ref, opts.host);
-  const body = opts.rows.length
-    ? opts.rows.map((r) => card(r, t, href)).join("")
-    : `<article class="br-card br-empty">${esc(t.empty)}</article>`;
+  const body = opts.disabled
+    ? `<article class="br-card br-empty">${esc(t.off)}</article>`
+    : opts.rows.length
+      ? opts.rows.map((r) => card(r, t, href)).join("")
+      : `<article class="br-card br-empty">${esc(t.empty)}</article>`;
 
   // Token dal sito (app/globals.css --am-*): il widget deve sembrare BetRedge
   // anche fuori da betredge.com. Copiati come valori perché questa pagina non

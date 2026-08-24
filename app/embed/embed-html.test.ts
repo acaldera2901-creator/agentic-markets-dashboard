@@ -86,3 +86,22 @@ describe("renderEmbedHtml", () => {
     expect(render()).toContain("postMessage");
   });
 });
+
+describe("widget spento (#WIDGET-TRUTH-0824)", () => {
+  it("dice che non è attivo invece di fingere un calendario vuoto", () => {
+    const html = render({ disabled: true, rows: [] });
+    expect(html).toMatch(/non è attivo/i);
+    expect(html).not.toMatch(/Nessuna partita in programma/i);
+  });
+
+  it("da spento non serve nessuna predizione, nemmeno se gliene passi", () => {
+    const html = render({ disabled: true });
+    expect(html).not.toContain("Sinner");
+    expect(html).not.toContain("Vince Sinner");
+  });
+
+  it("da spento resta il disclaimer: è pur sempre una nostra superficie", () => {
+    const html = render({ disabled: true, rows: [] });
+    expect(html).toContain("18+");
+  });
+});

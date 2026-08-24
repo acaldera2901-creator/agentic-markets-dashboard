@@ -3,11 +3,14 @@
 
 Uso:  python3 scripts/build-partner-pdf.py [output.pdf]
 
-Le due schermate del widget vengono catturate DAL SITO IN ESECUZIONE (dev su
-:3010 o produzione) e incorporate come data URI: un PDF che mostra un mockup
-invecchia in silenzio, uno che mostra il widget vero no.
+Le due schermate del widget vengono catturate DAL SITO IN ESECUZIONE e
+incorporate come data URI: un PDF che mostra un mockup invecchia in silenzio,
+uno che mostra il widget vero no.
+
+Sorgente delle schermate: $WIDGET_PDF_BASE (default http://localhost:3010) —
+puntalo alla produzione per una guida da mandare senza dev server acceso.
 """
-import base64, io, sys, subprocess
+import base64, io, os, sys
 from pathlib import Path
 from PIL import Image
 from playwright.sync_api import sync_playwright
@@ -15,7 +18,7 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "docs/partners/widget-guide.html"
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "Desktop" / "BetRedge-Widget-Partner-Guide.pdf"
-BASE = "http://localhost:3010"
+BASE = os.environ.get("WIDGET_PDF_BASE", "http://localhost:3010")
 
 SHOTS = [
     ("__LIGHT__", f"{BASE}/embed?sport=all&limit=3&lang=it&theme=light&host=partner-site.com", 560),
