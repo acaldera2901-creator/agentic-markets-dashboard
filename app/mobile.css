@@ -55,12 +55,17 @@
 
   /* L'area sensibile cresce, il segno no. `position` serve all'ancoraggio dello
    * pseudo-elemento; se l'elemento è già posizionato non lo tocchiamo. */
-  .hb-x,
+  .house-banner .hb-x,
   .site-footer-social-link,
   .am-iconbtn {
     position: relative;
   }
-  .hb-x::after,
+  /* `.house-banner .hb-x::after` e non `.hb-x::after`: in globals la regola
+   * desktop (area 24px) è scritta col contenitore, quindi ha specificità 0,2,0 e
+   * batteva la mia a 0,1,0 — su mobile l'area era scesa da 44 a 24px. A parità
+   * di peso vince questo foglio, importato dopo. Verificato: 44px a 390px,
+   * 24px a 1440px. */
+  .house-banner .hb-x::after,
   .site-footer-social-link::after,
   .am-iconbtn::after {
     content: "";
