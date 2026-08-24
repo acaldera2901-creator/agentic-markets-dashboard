@@ -2,6 +2,8 @@
 // Used for customer OTP login codes. Fails loud to the caller so the auth route
 // can return a real error instead of silently "sending" nothing.
 
+import { impressumLine } from "./legal-entity";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 // Contact / sender identity for account emails. Andrea: le mail di attivazione
@@ -123,9 +125,14 @@ function defaultFooter(lang: "it" | "en"): string {
   const it = lang !== "en";
   const tagline = it ? "Il tuo vantaggio in ogni scommessa" : "Your edge in every bet";
   const year = new Date().getFullYear();
+  // #EMAIL-SENDER-IDENTITY-0824 — la riga di identità arriva dalla stessa fonte
+  // del footer CRM (lib/legal-entity.ts). Prima le transazionali non ne avevano
+  // NESSUNA: OTP, attivazioni e ricevute uscivano senza mittente identificabile,
+  // mentre le lifecycle ce l'avevano. Ora tutte le email dicono la stessa cosa.
   return `<p style="margin:0 0 4px;color:#c7d0d8;font-weight:600">The BetRedge Team</p>
   <p style="margin:0">${tagline}</p>
-  <p style="margin:8px 0 0">© ${year} BetRedge · <a href="mailto:${ACCOUNT_CONTACT_EMAIL}" style="color:${BRAND.muted};text-decoration:underline">${ACCOUNT_CONTACT_EMAIL}</a></p>`;
+  <p style="margin:8px 0 0">© ${year} BetRedge · <a href="mailto:${ACCOUNT_CONTACT_EMAIL}" style="color:${BRAND.muted};text-decoration:underline">${ACCOUNT_CONTACT_EMAIL}</a></p>
+  <p style="margin:6px 0 0">${impressumLine()}</p>`;
 }
 
 // Wrapper condiviso da tutte le email. `footerHtml` permette al CRM di passare il

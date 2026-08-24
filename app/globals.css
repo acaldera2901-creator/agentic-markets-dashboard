@@ -6528,6 +6528,16 @@ button:disabled {
   transition:background .14s, color .14s;
 }
 .house-banner .hb-x:hover{ background:var(--am-inset); color:var(--am-text); }
+/* #A11Y-TARGET-0824 — la × è disegnata 22×22, due pixel sotto il minimo di 24px
+   per un bersaglio (WCAG 2.5.8, AA). Non ingrandisco il segno: cresce solo
+   l'area sensibile con uno pseudo-elemento assoluto, quindi nessuno spostamento
+   nel layout e l'icona resta della misura per cui è stata disegnata.
+   Sotto i 640px `mobile.css` porta la stessa area a 44px: questa è la soglia
+   desktop, quella è la soglia del pollice. */
+.house-banner .hb-x::after{
+  content:""; position:absolute; top:50%; left:50%;
+  width:24px; height:24px; transform:translate(-50%,-50%);
+}
 .house-banner .hb-ic{ width:30px; height:30px; color:var(--am-muted); flex-shrink:0; }
 .house-banner .hb-ic-sm{ width:22px; height:22px; color:var(--am-muted); }
 /* icone sport 3D nei banner (sostituiscono i glifi line-art per calcio/tennis/WC) */
