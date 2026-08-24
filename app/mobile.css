@@ -396,4 +396,11 @@
   .am-filters .am-mini-field select { min-height: 44px; }
   .auth-mode-switch button { min-height: 44px !important; }
   .sports-filter-bar .am-seg button { min-width: 44px; }
+
+  /* ── 18. Gli ultimi due, visti in produzione dopo il merge ───────────────
+   * Il pavimento non li copriva perché appaiono solo in certe condizioni:
+   * il badge del piano nel chip account e l'occhiello di un banner house.
+   */
+  .am-acct .plan { font-size: 11px !important; }   /* era 9.5px · "PRO" */
+  .hb-eyebrow { font-size: 11px !important; }      /* era 10px  · "BetRedge Pro" */
 }
