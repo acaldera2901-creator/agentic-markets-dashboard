@@ -1,5 +1,7 @@
 "use client";
 
+import { LEGAL_ENTITY, impressumLine } from "@/lib/legal-entity";
+
 // components/SiteFooter.tsx (#UI-FOOTER-UNIFIED-0623)
 // Footer unico del sito, usato su home, dashboard e pagine World Cup (che prima
 // non avevano footer). Presentazionale: rischio/18+, gioco responsabile,
@@ -196,12 +198,13 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
           )
         )}
       </div>
-      {/* #GOLIVE-BLOCKER-1 (audit go-live legale): impressum — entità che opera la
-          piattaforma (interim "ponte Maven" in attesa della SL ES, decisione Andrea
-          2026-07-13). Dati verificati sul Registro di commercio ZG via Zefix
-          (CHE-193.960.193, stato EXISTIEREND). Testo identico su tutte le lingue. */}
+      {/* #SITE-ENTITY-0824 — impressum. La riga NON è più scritta qui: arriva da
+          lib/legal-entity.ts, la stessa fonte del footer delle email, così sito e
+          posta non possono dichiarare identità diverse (era il difetto chiuso dalla
+          PR #221 e riaperto quando le email sono cambiate il 24/08). Testo identico
+          su tutte le lingue. */}
       <p className="site-footer-imprint">
-        BetRedge · operated by Maven Agency AG · Blegistrasse 7, 6340 Baar (ZG), Switzerland · UID CHE&#8209;193.960.193 · info@betredge.com
+        {impressumLine()} &middot; {LEGAL_ENTITY.contactEmail}
       </p>
     </footer>
   );

@@ -17,10 +17,13 @@ describe("/widget (#WIDGET-LANDING-0824)", () => {
     expect(PAGE).not.toMatch(/\d+%\s*(win|accurate|profit)/i);
   });
 
-  it("dice che è informativo, 18+, e nomina l'entità che opera", () => {
+  it("dice che è informativo, 18+, e nomina chi opera senza la società", () => {
     expect(PAGE).toMatch(/information only/i);
     expect(PAGE).toContain("18+");
-    expect(PAGE).toMatch(/Maven Agency AG/);
+    // #SITE-ENTITY-0824 — l'identità arriva da LEGAL_ENTITY, non è più scritta qui,
+    // e la società operativa non deve comparire su nessuna superficie pubblica.
+    expect(PAGE).toMatch(/LEGAL_ENTITY\.senderName/);
+    expect(PAGE).not.toMatch(/Maven/i);
   });
 
   it("dichiara che non mette cookie sul sito ospite", () => {

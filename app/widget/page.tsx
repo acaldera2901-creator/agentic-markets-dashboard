@@ -4,6 +4,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
+import { LEGAL_ENTITY } from "@/lib/legal-entity";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { WidgetPlayground } from "./WidgetPlayground";
 
@@ -151,7 +152,7 @@ export default function WidgetPage() {
           <b>The small print that matters.</b> BetRedge publishes statistical model output for information only — it is not
           betting advice, and nothing here is a promise of profit. The widget shows an 18+ notice on every render. Sports
           betting is regulated differently in every country: if your audience sits somewhere the content should not run,
-          tell us and we will keep it off your site. Operated by Maven Agency AG, Baar (ZG), Switzerland.
+          tell us and we will keep it off your site. Operated by {LEGAL_ENTITY.senderName}, {LEGAL_ENTITY.correspondence}.
         </div>
       </div></section>
 

@@ -57,7 +57,46 @@ describe("tutte le email mostrano la stessa identita'", () => {
 describe("LEGAL_ENTITY", () => {
   it("non espone piu' campi di registro che il footer non deve dichiarare", () => {
     expect(Object.keys(LEGAL_ENTITY).sort()).toEqual(
-      ["brand", "correspondence", "senderName"].sort(),
+      ["brand", "contactEmail", "correspondence", "senderName"].sort(),
     );
+  });
+});
+
+// #SITE-ENTITY-0824 — guardia sulle superfici PUBBLICHE. La societa' operativa non
+// deve comparire in nessuna pagina o componente che l'utente legge. Il test guarda
+// il SORGENTE: se qualcuno riscrive l'entita' a mano invece di usare LEGAL_ENTITY,
+// diventa rosso prima del deploy. E' gia' successo quattro volte — app/terms,
+// app/privacy, components/SiteFooter e app/widget avevano ognuno la propria copia.
+describe("nessuna superficie pubblica nomina la societa' operativa", () => {
+  const SUPERFICI = [
+    "components/SiteFooter.tsx",
+    "app/privacy/page.tsx",
+    "app/terms/page.tsx",
+    "app/widget/page.tsx",
+  ];
+  const VIETATI = [/maven\s*agency/i, /blegistrasse/i, /CHE&#8209;193/i, /CHE-193/i];
+
+  function leggi(file: string): string {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    return readFileSync(`${process.cwd()}/${file}`, "utf8");
+  }
+
+  it("nessuna nomina la societa', la sede o il numero di registro", () => {
+    for (const file of SUPERFICI) {
+      const src = leggi(file);
+      for (const vietato of VIETATI) {
+        expect(src, `${file} contiene ${vietato}`).not.toMatch(vietato);
+      }
+    }
+  });
+
+  // NB: si pretende un IMPORT vero, non la stringa "legal-entity" da qualche parte.
+  // La prima versione di questo test passava perche' trovava il nome del modulo
+  // dentro un commento, mentre l'import mancava davvero (lo ha beccato tsc).
+  it("tutte importano LEGAL_ENTITY invece di riscrivere l'identita'", () => {
+    for (const file of SUPERFICI) {
+      expect(leggi(file), file).toMatch(/import\s*\{[^}]*LEGAL_ENTITY[^}]*\}\s*from\s*"@\/lib\/legal-entity"/);
+    }
   });
 });
