@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/soro-rss",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/indexnow",
+      "schedule": "0 6 * * *"
     }
   ]
 }

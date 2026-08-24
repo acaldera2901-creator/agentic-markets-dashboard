@@ -15,7 +15,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
     <section className="tr-hero tr-card">
       {s?.win_rate ? (
         <>
-          <h1>Track record</h1>
+          <h2>Track record</h2>
           <div className="tr-hbot">
             <div className="tr-card">
               <div className="tr-big">{s.win_rate}</div>
@@ -38,7 +38,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
         </>
       ) : (
         <>
-          <h1>Track record</h1>
+          <h2>Track record</h2>
           <p className="tr-lab" style={{ marginTop: 8 }}>
             {it
               ? "Le pick concluse appariranno qui man mano che le partite finiscono."

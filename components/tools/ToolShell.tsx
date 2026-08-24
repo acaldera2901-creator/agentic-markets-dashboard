@@ -24,7 +24,7 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
   const others = TOOL_SLUGS.filter((s) => s !== slug);
 
   return (
-    <div className="portal-root tl-root">
+    <div className="portal-root tl-root" lang={locale}>
       <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
       <main className="tl-page">
         <header className="tl-head tl-head--tool">
