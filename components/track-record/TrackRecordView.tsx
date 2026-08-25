@@ -42,7 +42,7 @@ const CSS = `
 .tr-root .tr-seg button.on{background:var(--c);color:#fff}
 .tr-root .tr-hero{position:relative;overflow:hidden;padding:26px;border-radius:16px}
 .tr-root .tr-hero::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--c),var(--cobalt));opacity:.55}
-.tr-root .tr-hero h1{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0 0 18px}
+.tr-root .tr-hero h2{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0 0 18px}
 .tr-root .tr-hbot{display:flex;gap:10px;margin-top:14px}
 .tr-root .tr-hbot .tr-card{flex:1;padding:14px;text-align:center}
 .tr-root .tr-fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}

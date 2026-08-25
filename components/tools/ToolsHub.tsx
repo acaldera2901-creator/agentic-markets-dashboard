@@ -18,7 +18,7 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
 
   return (
-    <div className="portal-root tl-root mc-scene-stadium" data-mc-ground>
+    <div className="portal-root tl-root mc-scene-stadium" data-mc-ground lang={locale}>
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
       <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />

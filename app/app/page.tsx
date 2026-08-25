@@ -551,7 +551,7 @@ const BASE_TRANSLATIONS = {
     language_en: "English",
     account_pending_detail: "Client account not connected yet. Balance starts at zero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Markets", nav_predictions: "Prediction", nav_leaderboard: "Leaderboard", nav_account: "Account",
+    nav_markets: "Markets", nav_predictions: "Predictions", nav_leaderboard: "Leaderboard", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
     theme_aria: "Theme", featured_label: "Featured",
     kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit · 100g",

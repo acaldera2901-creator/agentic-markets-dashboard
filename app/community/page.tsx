@@ -31,14 +31,15 @@ type Slip = {
 type Access = "none" | "partial" | "full";
 
 // BUG-007: the page was Italian-only and ignored the user's language choice.
-// Mirror the board's `agentic-lang` (default IT, the prior behavior) so users in
+// Mirror the board's `agentic-lang` (#SEO-AEO-0825: default EN come il resto
+// del sito, cosi' il markup servito coincide con lang/title/canonical) so users in
 // any of the board's 5 languages get matching copy. Standalone route, so a tiny
 // local dict beats wiring the full i18n provider.
 const COPY = {
   it: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Schedine costruite dalla community col Match Builder, basate sulle probabilità del nostro modello. Nessuna quota, nessun edge promesso — solo predizioni AI selezionate dai creator.",
+    sub: "Schedine costruite dalla community col Match Builder, basate sulle probabilità del nostro modello. Predizioni AI selezionate dai creator, con la probabilità in chiaro e nessun edge promesso.",
     create: "Crea la tua →",
     loading: "Caricamento…",
     loadError: "Impossibile caricare le schedine.",
@@ -59,7 +60,7 @@ const COPY = {
   en: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Accumulators built by the community with the Match Builder, based on our model's probabilities. No odds, no promised edge — just AI predictions hand-picked by creators.",
+    sub: "Accumulators built by the community with the Match Builder, based on our model's probabilities. AI predictions hand-picked by creators, with the probability shown and no promised edge.",
     create: "Build yours →",
     loading: "Loading…",
     loadError: "Couldn't load the slips.",
@@ -80,7 +81,7 @@ const COPY = {
   es: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Combinadas creadas por la comunidad con el Match Builder, basadas en las probabilidades de nuestro modelo. Sin cuotas, sin edge prometido — solo predicciones de IA seleccionadas por creators.",
+    sub: "Combinadas creadas por la comunidad con el Match Builder, basadas en las probabilidades de nuestro modelo. Predicciones de IA seleccionadas por creators, con la probabilidad a la vista y sin edge prometido.",
     create: "Crea la tuya →",
     loading: "Cargando…",
     loadError: "No se pudieron cargar las combinadas.",
@@ -101,7 +102,7 @@ const COPY = {
   fr: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Combinés créés par la communauté avec le Match Builder, basés sur les probabilités de notre modèle. Aucune cote, aucun edge promis — juste des prédictions IA sélectionnées par les creators.",
+    sub: "Combinés créés par la communauté avec le Match Builder, basés sur les probabilités de notre modèle. Prédictions IA sélectionnées par les creators, avec la probabilité affichée et aucun edge promis.",
     create: "Créez le vôtre →",
     loading: "Chargement…",
     loadError: "Impossible de charger les combinés.",
@@ -122,7 +123,7 @@ const COPY = {
   ru: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Экспрессы, собранные сообществом в Match Builder, на основе вероятностей нашей модели. Без коэффициентов и обещанного edge — только AI-прогнозы, отобранные креаторами.",
+    sub: "Экспрессы, собранные сообществом в Match Builder, на основе вероятностей нашей модели. AI-прогнозы, отобранные креаторами, с открытой вероятностью и без обещанного edge.",
     create: "Создать свой →",
     loading: "Загрузка…",
     loadError: "Не удалось загрузить экспрессы.",
@@ -148,7 +149,7 @@ export default function CommunityPage() {
   const [slips, setSlips] = useState<Slip[] | null>(null);
   const [access, setAccess] = useState<Access>("none");
   const [error, setError] = useState(false);
-  const [lang, setLang] = useState<Lang>("it");
+  const [lang, setLang] = useState<Lang>("en");
   const t = COPY[lang];
 
   useEffect(() => {
