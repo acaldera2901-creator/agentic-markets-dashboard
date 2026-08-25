@@ -508,6 +508,7 @@ export default function LandingPage() {
   const [anatomyIsLive, setAnatomyIsLive] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mounted + lingua e tema da localStorage: il pattern SSR-safe canonico, e lo storage va letto solo dopo il mount (#STORAGE-CRASH-0813)
     setMounted(true);
     try {
       const sl = localStorage.getItem("agentic-lang");
@@ -720,9 +721,9 @@ export default function LandingPage() {
                pill nome+piano (che resta link all'account). Su home/route separate
                il logout fa POST /api/auth {action:"logout"} poi reload su "/". */
             <>
-              <a href="/plans" className="am-acct" title={auth.identifier}>
+              <Link href="/plans" className="am-acct" title={auth.identifier}>
                 {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
-              </a>
+              </Link>
               <button type="button" className="lp-nav-link" onClick={logoutHome}>
                 {t.logout}
               </button>
@@ -753,18 +754,18 @@ export default function LandingPage() {
            scrolla in orizzontale DENTRO la riga, non il body. ── */}
       <nav className="v-sportnav-wrap" aria-label="Sports">
         <div className="v-sportnav">
-          <a href="/predictions?sport=all" className="v-sportbtn">
+          <Link href="/predictions?sport=all" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-allsports-sm.png" alt="" aria-hidden="true" />
             {t.spAllSports}
-          </a>
-          <a href="/predictions?sport=football" className="v-sportbtn">
+          </Link>
+          <Link href="/predictions?sport=football" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-football-sm.png" alt="" aria-hidden="true" />
             {t.spFootball}
-          </a>
-          <a href="/predictions?sport=tennis" className="v-sportbtn">
+          </Link>
+          <Link href="/predictions?sport=tennis" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-tennis-sm.png" alt="" aria-hidden="true" />
             {t.spTennis}
-          </a>
+          </Link>
           {/* #TOOLS-HUB-0805: lo slot che era della World Cup (torneo finito) porta
               ai calcolatori gratuiti — pagina pubblica, senza login, pensata per
               il traffico organico. L'hub WC resta online, fuori dalla nav. */}
@@ -772,10 +773,10 @@ export default function LandingPage() {
             <img className="v-sportbtn-ic" src="/icons/menu-tools-sm.png" alt="" aria-hidden="true" />
             {t.spTools}
           </Link>
-          <a href="/predictions?sport=all" className="v-sportbtn v-sportbtn--live">
+          <Link href="/predictions?sport=all" className="v-sportbtn v-sportbtn--live">
             <span className="dot" aria-hidden="true" />
             LIVE
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -803,8 +804,8 @@ export default function LandingPage() {
           <h1>{t.waHead1}<br /><span className="g">{t.waHead2}</span></h1>
           <p className="lede">{t.waBody}</p>
           <div className="v-actions">
-            <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
-            <a href="/history" className="v-btn v-btn--secondary">{v.ctaTrack}</a>
+            <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
+            <Link href="/history" className="v-btn v-btn--secondary">{v.ctaTrack}</Link>
           </div>
           <div className="v-trust">
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipLogged}</span>
@@ -938,12 +939,12 @@ export default function LandingPage() {
           <div className="v-tier">
             <div className="name">{v.pcBase}</div><div className="price">${PUBLIC_PAID_PLANS.base.amountUsdt}<small>{v.pcMo}</small></div>
             <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <a href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</a>
+            <Link href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</Link>
           </div>
           <div className="v-tier pro">
             <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${PUBLIC_PAID_PLANS.premium.amountUsdt}<small>{v.pcMo}</small></div>
             <ul>{v.pcProList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <a href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</a>
+            <Link href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</Link>
           </div>
         </div>
       </div></section>
@@ -953,8 +954,8 @@ export default function LandingPage() {
         <h2>{v.fnHead1}<span className="g">{v.fnHeadG}</span></h2>
         <p>{v.fnBody}</p>
         <div className="v-actions">
-          <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
-          <a href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</a>
+          <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
+          <Link href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</Link>
         </div>
       </div></section>
 
@@ -968,7 +969,7 @@ export default function LandingPage() {
             <h2 style={{ margin: "10px 0 8px", fontSize: "clamp(20px,3vw,28px)", letterSpacing: "-.02em" }}>{v.wgHead}</h2>
             <p style={{ margin: 0, color: "var(--am-muted)" }}>{v.wgBody}</p>
           </div>
-          <a href="/widget" className="v-btn v-btn--secondary">{v.wgCta}</a>
+          <Link href="/widget" className="v-btn v-btn--secondary">{v.wgCta}</Link>
         </div>
       </div></section>
 

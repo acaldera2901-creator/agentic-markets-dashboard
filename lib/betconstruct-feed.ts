@@ -41,6 +41,10 @@ async function defaultFetcher(book: BookConfig, page: number, sportKey?: string)
 let _fetcher: Fetcher = defaultFetcher;
 export function __setBookFetcherForTest(f: Fetcher) { _fetcher = f; }
 
+// #LINT-0825: del payload paginato questo file legge solo la paginazione;
+// il resto lo interpreta parseFortuneplayMatches, che gia' prende unknown.
+type RawBookPage = { pagination?: { last_page?: number } };
+
 const _cache = new Map<string, { at: number; map: Map<string, FpMatch> }>();
 const _refreshing = new Set<string>();
 
@@ -48,7 +52,7 @@ async function _refreshBook(book: BookConfig, now: number): Promise<Map<string, 
   const map = new Map<string, FpMatch>();
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const payload: any = await _fetcher(book, page);
+      const payload = (await _fetcher(book, page)) as RawBookPage;
       for (const fm of parseFortuneplayMatches(payload)) map.set(fm.teamPairKey, fm);
       const last = payload?.pagination?.last_page ?? page;
       if (page >= last) break;
@@ -58,7 +62,7 @@ async function _refreshBook(book: BookConfig, now: number): Promise<Map<string, 
     // senza scartare la mappa già raccolta.
     try {
       for (let page = 1; page <= TENNIS_MAX_PAGES; page++) {
-        const payload: any = await _fetcher(book, page, TENNIS_SPORT_KEY);
+        const payload = (await _fetcher(book, page, TENNIS_SPORT_KEY)) as RawBookPage;
         for (const fm of parseFortuneplayMatches(payload)) map.set(fm.teamPairKey, fm);
         const last = payload?.pagination?.last_page ?? page;
         if (page >= last) break;

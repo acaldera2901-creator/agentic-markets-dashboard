@@ -74,9 +74,11 @@ export function PredictionDetailModal({
   const [shown, setShown] = useState(false); // pilota la classe di stato per la transizione
 
   // portal target: solo dopo il mount (SSR-safe)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- il flag mounted per il portal e' il pattern SSR-safe canonico: il target del portal non esiste al primo render
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lo stato della transizione di apertura dipende dalla rect misurata sul DOM, che esiste solo dopo il commit
     if (!open) { setShown(false); return; }
     // scroll-lock del body mentre il modal è aperto
     const prevOverflow = document.body.style.overflow;

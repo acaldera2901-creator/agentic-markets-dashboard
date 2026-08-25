@@ -532,7 +532,7 @@ export default function WeeklyPickPage() {
                 </>
               )}
               <div className="wp-foot-row">
-                {!unlocked && <a href="/plans" className="wp-pro">{t.proCta}</a>}
+                {!unlocked && <Link href="/plans" className="wp-pro">{t.proCta}</Link>}
                 <span className="wp-resp">{t.responsible}</span>
               </div>
             </div>

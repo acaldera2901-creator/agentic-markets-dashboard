@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
@@ -366,12 +367,12 @@ export default function AdminPage() {
             {s}
           </button>
         ))}
-        <a
+        <Link
           href="/admin/segments"
           className="py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-colors"
         >
           Segmenti
-        </a>
+        </Link>
       </nav>
 
       <main className="px-6 py-6 max-w-7xl mx-auto space-y-6">
