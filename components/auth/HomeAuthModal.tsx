@@ -255,6 +255,7 @@ export function HomeAuthModal({
         setMode("login"); // register → login (gate email), come il desk
       } else if (resp.ok) {
         // Login riuscito: il cookie di sessione è settato → entra nel desk.
+        // eslint-disable-next-line react-hooks/immutability -- hard nav voluta: dopo il login serve un caricamento pieno perche' il server veda il cookie di sessione appena messo
         window.location.href = "/predictions";
       } else if (resp.status === 403 && data.error === "activation_required") {
         setError(t.activationReq); setShowResend(true);

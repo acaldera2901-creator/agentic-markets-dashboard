@@ -24,16 +24,22 @@ function lineFromSpecifier(spec: string): number | null {
   return null;
 }
 
+// #LINT-0825: forme grezze del feed FortunePlay per i mercati completi. Solo
+// annotazioni: nessuna espressione cambia.
+type RawOutcome = { name?: unknown; odds?: unknown };
+type RawFullMarket = { status?: unknown; name?: unknown; specifier?: string; outcomes?: RawOutcome[] };
+type RawMarketPage = { data?: RawFullMarket[]; pagination?: { last_page?: number } };
+
 export function parseFortuneplayMarkets(payload: unknown): FpFullMarket[] {
-  const data: any[] = (payload as any)?.data ?? [];
+  const data: RawFullMarket[] = (payload as RawMarketPage | null)?.data ?? [];
   const out: FpFullMarket[] = [];
   for (const m of data) {
     if (m?.status !== 1) continue; // solo mercati attivi
     const name = String(m?.name ?? "").trim();
     if (!name) continue;
     const outcomes = (m?.outcomes ?? [])
-      .map((o: any) => ({ label: String(o?.name ?? "").trim(), odds: odds(o?.odds) }))
-      .filter((o: any): o is { label: string; odds: number } => o.label.length > 0 && o.odds != null);
+      .map((o: RawOutcome) => ({ label: String(o?.name ?? "").trim(), odds: odds(o?.odds) }))
+      .filter((o): o is { label: string; odds: number } => o.label.length > 0 && o.odds != null);
     if (outcomes.length < 2) continue; // scarta mercati senza quote reali
     out.push({ name, line: lineFromSpecifier(m?.specifier ?? ""), outcomes });
   }
@@ -102,7 +108,7 @@ export async function fetchFortuneplayMatchMarkets(id: number, now = Date.now())
   const markets: FpFullMarket[] = [];
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const payload: any = await _fetcher(id, page);
+      const payload = (await _fetcher(id, page)) as RawMarketPage;
       markets.push(...parseFortuneplayMarkets(payload));
       const last = payload?.pagination?.last_page ?? page;
       if (page >= last) break;

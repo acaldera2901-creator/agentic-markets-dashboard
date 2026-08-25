@@ -22,6 +22,7 @@ export default function PartnersPage() {
   useEffect(() => {
     try {
       const sl = localStorage.getItem("agentic-lang");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lingua da localStorage: non esiste lato server e va letta dopo il mount (#STORAGE-CRASH-0813)
       if (sl) setLang(pickPartnersLang(sl));
     } catch { /* default en */ }
   }, []);

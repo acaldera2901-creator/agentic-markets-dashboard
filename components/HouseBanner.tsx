@@ -184,6 +184,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
   // Mount-sync da localStorage: se già chiuso in sessione, non mostrare.
   useEffect(() => {
     if (readDismissed().has(campaign.id)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- legge dallo storage se il banner era gia' stato chiuso: non disponibile lato server
       setDismissed(true);
     } else if (!viewed.current) {
       viewed.current = true;

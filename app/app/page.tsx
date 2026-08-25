@@ -2195,6 +2195,7 @@ function SportsbookBoard({
   // l'idratazione (SSR rende sempre "all", il client allinea qui).
   useEffect(() => {
     const s = new URLSearchParams(window.location.search).get("sport");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- il deep-link ?sport= si applica DOPO il mount di proposito: il server rende sempre "all" e leggerlo in render romperebbe l'idratazione
     if (s === "football" || s === "tennis") setSportFilter(s);
   }, []);
   const [signalFilter, setSignalFilter] = useState<"all" | "value">("all");
@@ -2568,6 +2569,7 @@ function BestBetsBoard({
   // l'idratazione (SSR rende sempre "all", il client allinea qui).
   useEffect(() => {
     const s = new URLSearchParams(window.location.search).get("sport");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- il deep-link ?sport= si applica DOPO il mount di proposito: il server rende sempre "all" e leggerlo in render romperebbe l'idratazione
     if (s === "football" || s === "tennis") setSportFilter(s);
   }, []);
   const [sortMode, setSortMode] = useState<"probability" | "edge" | "time">("probability");
@@ -6719,7 +6721,7 @@ function MatchBuilderTab({
                     {copied ? copy.copied : copy.copyLink}
                   </button>
                   {publishState === "published" && (
-                    <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
+                    <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <Link href="/community" className="underline">Creator Picks →</Link></p>
                   )}
                   <p className="mb-link">{shareLink}</p>
                 </div>
@@ -7567,6 +7569,7 @@ function AccountMenu({
   const isPremium = profileHasPremium(profile);
   const isAccess = profileHasAccess(profile);
   const daysLeft = profile.planExpiresAt && isAccess && profile.plan !== "admin_full"
+    // eslint-disable-next-line react-hooks/purity -- "giorni alla scadenza" ha bisogno dell'ora corrente; spostarlo in un effect lo scambierebbe con set-state-in-effect e aggiungerebbe un render
     ? Math.max(0, Math.ceil((new Date(profile.planExpiresAt).getTime() - Date.now()) / 86400000))
     : null;
   const planName = isPremium ? "BetRedge Pro" : isAccess ? "BetRedge Base" : profile.plan === "free" ? "BetRedge Free" : "Setup";
@@ -8726,6 +8729,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       typeof navigator !== "undefined" ? navigator.language ?? "" : "",
     ];
     const detected = pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator.languages non esiste lato server, e #STORAGE-CRASH-0813 dice che leggere lo storage fuori da un effect schianta Safari privato
     setUiLanguage(detected);
     storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -8836,6 +8840,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
     let stop = false;
     let tries = 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apre un poll asincrono sul ritorno dal pagamento: lo stato di avanzamento nasce per forza da un effect
     setPayReturn("checking");
     // #PAYGATE-INSTANT-GRANT: poll ATTIVO. Invece di aspettare passivamente che il
     // grant atterri (callback/cron), chiediamo a /api/paygate/settle-mine di saldare
@@ -9408,10 +9413,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 <span className="rail-label">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
-              <a className="rail-item" href="/community">
+              <Link className="rail-item" href="/community">
                 <MenuIcon name="creator" size={18} className="rail-ic" />
                 <span className="rail-label">Creator Picks</span>
-              </a>
+              </Link>
               {/* #WEEKLY-PICK-1: Weekly Pick — la multipla della casa (route) */}
               <Link className="rail-item" href="/weekly-pick">
                 <MenuIcon name="weeklypick" size={18} className="rail-ic" />
@@ -9444,10 +9449,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 <MenuIcon name="tools" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
-              <a className="am-feat-tile" href="/community">
+              <Link className="am-feat-tile" href="/community">
                 <MenuIcon name="creator" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Creator Picks</span>
-              </a>
+              </Link>
               <Link className="am-feat-tile" href="/weekly-pick">
                 <MenuIcon name="weeklypick" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Weekly Pick</span>

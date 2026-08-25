@@ -6,6 +6,7 @@
 // to /api/auth/reset. On success it sends the user to the login modal — the reset
 // endpoint does not issue a session (see app/api/auth/reset/route.ts).
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ResetPasswordPage() {
@@ -22,6 +23,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     try {
       const lang = window.localStorage.getItem("agentic-lang");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lingua da localStorage e token dalla query string: entrambi esistono solo nel browser
       setIt(lang !== "en" && lang !== "es" && lang !== "fr" && lang !== "ru");
     } catch { /* storage off */ }
     try {
@@ -120,9 +122,9 @@ export default function ResetPasswordPage() {
             </button>
           </>
         )}
-        <a href="/predictions?auth=login" style={{ fontSize: 12, color: "var(--am-muted, #94a3b8)", textAlign: "center" }}>
+        <Link href="/predictions?auth=login" style={{ fontSize: 12, color: "var(--am-muted, #94a3b8)", textAlign: "center" }}>
           {it ? "Torna all'accesso" : "Back to login"}
-        </a>
+        </Link>
       </form>
     </main>
   );
