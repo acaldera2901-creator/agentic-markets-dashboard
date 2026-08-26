@@ -131,6 +131,14 @@ class Settings(BaseSettings):
     FRIENDLY_V2_MODEL_VERSION: str = "football-friendlies-v2-elo"
     FRIENDLY_SOURCE_TABLE: str = "friendly_model"
     FRIENDLY_MIN_NATIONAL_QUALITY: float = 0.75   # same bar as the WC signal gate
+    # Nations League (#NATIONS-LEAGUE-0826): same national-team model path as
+    # WC/friendlies, own version namespace so calibration/track-record audits
+    # separate the segment (UEFA-NL is tier-banded = balanced matches, its own
+    # floor and its own expected hit-rate ~68%). ALWAYS paper in v1, like
+    # friendlies. Source table dedicated for the same audit reason.
+    NATIONS_MODEL_VERSION: str = "football-nations-v1"
+    NATIONS_V2_MODEL_VERSION: str = "football-nations-v2-elo"
+    NATIONS_SOURCE_TABLE: str = "nations_model"
 
     # Squad Condition Watch (spec 2026-06-07-squad-condition-watch.md). ①+② only:
     # probability-neutral why-layer + quality-gate cap. The model-feature layer ③
@@ -209,6 +217,22 @@ class Settings(BaseSettings):
         # ALL/VEI): coverage-first, rivedere sui dati live. Mirror in surfacing-gate.ts.
         "serie b": 65,
     }
+    # Nations League floors (#NATIONS-LEAGUE-0826, walk-forward lab
+    # am-lab/lab_nations_league_floor.py — same served v2-elo recipe as
+    # lab_football_commercial_tiers.py, floor chosen on 2018-2021 with the
+    # "min floor with hit>=0.70, n>=30" rule, validated on held-out 2022+):
+    #   UNL 62 -> train 71.6% (n=102), HELD-OUT 68.0% (n=128, keeps 37%).
+    #     UEFA-NL is the weak international segment (63.6% @56, minispec
+    #     2026-06-11): tier-banded groups = balanced matches, hence the
+    #     dedicated higher floor instead of the standard 56.
+    #   CNL 56 (standard football floor) -> HELD-OUT 74.3% (n=167, keeps 53%).
+    # Comms anchor for UNL is ~68%, NOT the football ~70/84 claims.
+    # Mirrored in lib/surfacing-gate.ts NATIONS_FLOORS — keep in sync.
+    SURFACE_FLOOR_NATIONS: Dict[str, int] = {
+        "UNL": 62,   # UEFA Nations League
+        "CNL": 56,   # Concacaf Nations League
+    }
+    SURFACE_FLOOR_NATIONS_DEFAULT: int = 62  # unknown nations code -> stricter (fail-closed)
     # CORRECTION (10-year lab 2026-06-08, 44.5k ATP+WTA matches): tennis confidence
     # DOES discriminate — the earlier "no floor" was a 60-match small-sample artifact.
     # Walk-forward held-out: floor 60 -> 70.9% hit (keeps 58.8%), 62 -> 72.1% (52%).

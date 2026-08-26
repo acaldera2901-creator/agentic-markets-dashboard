@@ -351,7 +351,10 @@ class ResultSettlementAgent(BaseAgent):
                     return result
             except Exception as e:
                 self.logger.debug(f"ESPN result lookup failed for {ext_str}: {e}")
-            if str(row.get("league") or "").upper() == "FRIENDLY":
+            # #NATIONS-LEAGUE-0826: the by-teams+date fallback covers UNL/CNL
+            # too — same class of feed (ESPN international slates) as
+            # fifa.friendly, same unreliability risk the Oman-Kuwait case showed.
+            if str(row.get("league") or "").upper() in ("FRIENDLY", "UNL", "CNL"):
                 # ESPN's fifa.friendly feed is unreliable for some
                 # internationals: it flagged Oman vs Kuwait (2026-06-09)
                 # canceled though it was played 4-2, so the row was wrongly

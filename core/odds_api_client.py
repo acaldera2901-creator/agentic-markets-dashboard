@@ -72,6 +72,10 @@ SPORT_KEYS = {
     # resolve MLB/UFC rows through get_score_by_teams_date.
     "MLB": "baseball_mlb",
     "UFC": "mma_mixed_martial_arts",
+    # #NATIONS-LEAGUE-0826: key verified ACTIVE on /v4/sports on 2026-08-26.
+    # CNL has NO Odds API key (checked same day): CONCACAF rows ride the
+    # friendlies contract — fair odds only, no market, no edge claim.
+    "UNL": "soccer_uefa_nations_league",
 }
 
 _SUFFIXES = re.compile(r"\b(FC|CF|SC|AC|AS|SV|1\. ?FC|VfB|VfL|TSG|RB|SS|US|SSC|AFC)\b", re.IGNORECASE)

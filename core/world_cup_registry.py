@@ -18,6 +18,16 @@ WORLD_CUP_CODE = "WC"
 # DataHub/API-Football paths never spend quota on it. Predictions ride the
 # same national-team model as the WC and are ALWAYS paper in v1.
 FRIENDLIES_CODE = "FRIENDLY"
+# Nations League (#NATIONS-LEAGUE-0826): the ONLY international competitions on
+# the autumn-2026 calendar (WC/Euro qualifiers restart in 2027 — ESPN probe
+# 26/08: uefa.nations 156 fixtures Sep-Nov, concacaf.nations.league 74).
+# Fixtures via ESPN only, same national-team model as WC/friendlies, ALWAYS
+# paper in v1 like friendlies. UNL has a dedicated surfacing floor (62): the
+# tier-banded groups make it the weakest international segment (63.6% @56).
+NATIONS_LEAGUE_CODES: dict[str, str] = {
+    "UNL": "UEFA Nations League",
+    "CNL": "Concacaf Nations League",
+}
 WORLD_CUP_API_FOOTBALL_LEAGUE_ID = 1
 WORLD_CUP_SEASON = 2026
 WORLD_CUP_EXPECTED_MATCHES = 104
@@ -67,9 +77,18 @@ def is_friendlies_code(code: str | None) -> bool:
     return (code or "").upper() == FRIENDLIES_CODE
 
 
+def is_nations_league_code(code: str | None) -> bool:
+    return (code or "").upper() in NATIONS_LEAGUE_CODES
+
+
+def nations_league_name(code: str | None) -> str:
+    """Display name for a Nations League code (fail-closed to the generic label)."""
+    return NATIONS_LEAGUE_CODES.get((code or "").upper(), "Nations League")
+
+
 def is_national_team_code(code: str | None) -> bool:
     """National-team competitions: routed to the national model (no Dixon-Coles)."""
-    return is_world_cup_code(code) or is_friendlies_code(code)
+    return is_world_cup_code(code) or is_friendlies_code(code) or is_nations_league_code(code)
 
 
 def api_football_season_for(code: str, fallback_year: int) -> int:

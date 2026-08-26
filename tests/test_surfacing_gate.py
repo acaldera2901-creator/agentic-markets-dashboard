@@ -262,3 +262,47 @@ def test_market_gate_does_not_touch_football():
     # al prezzo per ogni sport.
     assert surface_decision(sport="football", friendly=False, confidence=56) == (True, False)
     assert surface_decision(sport="football", friendly=False, confidence=55) == (False, True)
+
+
+# ── #NATIONS-LEAGUE-0826 ──────────────────────────────────────────────────────
+
+def test_nations_league_floors():
+    from core.surfacing_gate import nations_floor_for, surface_decision
+    # UNL 62 (walk-forward am-lab/lab_nations_league_floor.py: held-out 68.0%)
+    assert nations_floor_for("UNL") == 62
+    assert surface_decision(sport="football", friendly=False, confidence=61,
+                            nations_league_code="UNL") == (False, True)
+    assert surface_decision(sport="football", friendly=False, confidence=62,
+                            nations_league_code="UNL") == (True, False)
+    # CNL = floor standard 56 (held-out 74.3%)
+    assert nations_floor_for("CNL") == 56
+    assert surface_decision(sport="football", friendly=False, confidence=56,
+                            nations_league_code="CNL") == (True, False)
+    # codice nations sconosciuto -> default SEVERO (fail-closed)
+    assert nations_floor_for("XNL") == 62
+
+
+def test_nations_league_never_falls_on_wc_floor():
+    # LA TRAPPOLA: il path nazionale trattava ogni non-amichevole come World Cup
+    # (world_cup=not is_friendly -> floor 26). Una riga Nations League gata a 26
+    # pubblicherebbe quasi tutto sul segmento internazionale piu' debole. Il ramo
+    # nations DEVE vincere anche quando il chiamante passa world_cup=True.
+    assert surface_decision(sport="football", friendly=False, confidence=30,
+                            world_cup=True, nations_league_code="UNL") == (False, True)
+
+
+def test_nations_league_registry_routing():
+    from core.world_cup_registry import (
+        is_national_team_code, is_nations_league_code, nations_league_name,
+    )
+    assert is_nations_league_code("UNL") is True
+    assert is_nations_league_code("unl") is True
+    assert is_nations_league_code("CNL") is True
+    assert is_nations_league_code("FRIENDLY") is False
+    assert is_nations_league_code(None) is False
+    # il routing al modello nazionale include le nations
+    assert is_national_team_code("UNL") is True
+    assert is_national_team_code("CNL") is True
+    assert nations_league_name("UNL") == "UEFA Nations League"
+    assert nations_league_name("CNL") == "Concacaf Nations League"
+    assert nations_league_name("XNL") == "Nations League"  # fail-closed label
