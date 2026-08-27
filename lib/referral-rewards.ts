@@ -55,10 +55,21 @@ export function reachedTiers(payingCount: number): number[] {
 }
 
 /** Invitati col mio codice che hanno pagato ALMENO UNA VOLTA.
- *  Guarda gli ordini granted, non profiles.plan: un amico che paga e poi
+ *  Guarda i pagamenti avvenuti, non profiles.plan: un amico che paga e poi
  *  disdice resta contato ⇒ il conteggio non regredisce mai.
- *  ⚠️ Le tabelle ordini oggi sono due; con PR #217 arriva Shopify: questa
- *  query è l'UNICO posto da aggiornare. */
+ *
+ *  ⚠️ Qui dentro va ogni rail che incassa. Ce ne sono TRE e non hanno la stessa
+ *  forma (#REFERRAL-SHOPIFY-RAIL-0827):
+ *   · `paygate_orders` / `paypal_orders` → una riga ordine, il grant è `granted_at`;
+ *   · **Shopify (carta)** → NESSUNA riga ordine. Il webhook scrive solo
+ *     `shopify_events` e concede via `activateShopifyPlan` (lib/plan-grant.ts,
+ *     che non tocca le tabelle ordini). La `shopify_orders` del design doc
+ *     2026-07-24-shopify-billing-migration-design.md §97 non è mai stata creata,
+ *     e crearla oggi non è un'opzione: un file in `supabase/migrations/**` fa
+ *     partire `supabase db push` su PROD da CI, che aborta per il drift ⇒ la
+ *     tabella non nascerebbe e questa query si romperebbe.
+ *  Il rail carta era fuori dal conteggio da quando esiste: un invitato che paga
+ *  con carta valeva 0 e i gradini 2/5/10 non potevano scattare. */
 export async function countPayingInvitees(code: string, selfIdentifier: string): Promise<number> {
   const rows = await dbQueryStrict<{ n: number | string }>(
     `SELECT COUNT(DISTINCT p.identifier)::int AS n
@@ -67,6 +78,17 @@ export async function countPayingInvitees(code: string, selfIdentifier: string):
          SELECT identifier FROM paygate_orders WHERE granted_at IS NOT NULL
          UNION ALL
          SELECT identifier FROM paypal_orders  WHERE granted_at IS NOT NULL
+         UNION ALL
+         -- Rail carta. Filtrato su event_type = 'orders/paid' e non "qualunque
+         -- riga": il webhook concede SOLO su quel topic (whitelist esplicita in
+         -- app/api/shopify/webhook/route.ts, nessun default) e un refunds/create
+         -- finisce in una riga a parte con status 'unresolved'. Lo status
+         -- 'granted' esclude 'pending' (incassato ma non ancora concesso) e
+         -- 'unresolved' (da riconciliare): si conta chi ha pagato E ricevuto
+         -- l'accesso, esattamente come granted_at sugli altri due rail.
+         SELECT identifier FROM shopify_events
+          WHERE event_type = 'orders/paid' AND status = 'granted'
+            AND identifier IS NOT NULL
        ) o ON o.identifier = p.identifier
       WHERE UPPER(p.referred_by) = $1
         AND p.identifier <> $2`,

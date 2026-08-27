@@ -153,6 +153,32 @@ describe("countPayingInvitees", () => {
     expect(sql).toMatch(/identifier <> \$2/);
     expect(params).toEqual(["AMICO", INVITER]);
   });
+
+  // #REFERRAL-SHOPIFY-RAIL-0827 — il difetto che questo test inchioda: il rail
+  // CARTA (Shopify) non era nella UNION, quindi un invitato che pagava con
+  // carta valeva 0 e i gradini non scattavano mai. Non c'era nessun errore da
+  // vedere: solo un contatore fermo. Se qualcuno tolto il ramo shopify, o lo
+  // riscrive senza i filtri, qui diventa rosso.
+  it("conta TUTTI E TRE i rail che incassano, carta compresa", async () => {
+    queueReads([{ n: 0 }]);
+    await countPayingInvitees("amico", INVITER);
+    const [sql] = vi.mocked(dbQueryStrict).mock.calls[0] as [string, unknown[]];
+
+    expect(sql).toMatch(/paygate_orders/);
+    expect(sql).toMatch(/paypal_orders/);
+    expect(sql).toMatch(/shopify_events/);
+
+    // Il rail carta deve restare filtrato: senza `orders/paid` conterebbe anche
+    // i refund, senza `granted` conterebbe i 'pending' (incassati ma non
+    // ancora concessi) e gli 'unresolved' (da riconciliare a mano).
+    expect(sql).toMatch(/event_type = 'orders\/paid'/);
+    expect(sql).toMatch(/status = 'granted'/);
+
+    // La tabella del design doc non esiste e non può essere creata finché il
+    // drift delle migration è aperto (la CI applicherebbe DDL su prod e aborta):
+    // se ricompare qui, il fix è stato rifatto nel modo che si rompe.
+    expect(sql).not.toMatch(/shopify_orders/);
+  });
 });
 
 describe("checkReferralTiers — il grant dei gradini", () => {
