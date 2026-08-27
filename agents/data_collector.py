@@ -280,7 +280,9 @@ class DataCollectorAgent(BaseAgent):
         # FRIENDLY rides the same loop as the API-Football leagues but is
         # ESPN-only (league_id=0): kept OUT of LEAGUE_IDS so neither the
         # DataHub nor the model bootstrap ever spend API-Football quota on it.
-        collect_targets = {**LEAGUE_IDS, FRIENDLIES_CODE: 0}
+        # UNL/CNL (#NATIONS-LEAGUE-0826) ride the exact same ESPN-only contract;
+        # UNL additionally gets real odds from The Odds API (dedicated key).
+        collect_targets = {**LEAGUE_IDS, FRIENDLIES_CODE: 0, "UNL": 0, "CNL": 0}
         for league_code, league_id in collect_targets.items():
             try:
                 fixtures = await self._fetch_fixtures(league_code, league_id)
@@ -299,8 +301,14 @@ class DataCollectorAgent(BaseAgent):
                 # No odds source covers FRIENDLY (Odds API has no friendlies
                 # sport key); skip odds matching entirely so country names
                 # never fuzzy-match Matchbook club markets ("Chile"≈"Chelsea").
+                # #NATIONS-LEAGUE-0826: Matchbook is skipped for ALL national-team
+                # codes, not just friendlies — the fuzzy country-vs-club matching
+                # risk this comment describes ("Chile"≈"Chelsea") applies to any
+                # national slate. UNL gets its odds from the dedicated Odds API
+                # key below; CNL has no odds source and rides the friendly
+                # contract (fair odds only).
                 odds_map: dict = {}
-                if mb_configured() and not is_friendlies_code(league_code):
+                if mb_configured() and not is_national_team_code(league_code):
                     try:
                         mb_list = await asyncio.to_thread(mb_football_markets)
                         if mb_list:

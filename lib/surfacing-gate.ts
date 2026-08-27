@@ -52,6 +52,15 @@ export const SURFACE_FLOOR_MMA_PREMIUM = 75;
 // the World Cup ONLY (68.5% live on 92 settled — the product's strong suit;
 // balanced knockouts must surface). Club stays at 56. Mirror of settings.py.
 export const SURFACE_FLOOR_WC = 26;
+// Nations League (#NATIONS-LEAGUE-0826, walk-forward lab
+// am-lab/lab_nations_league_floor.py, floor chosen on 2018-2021, validated on
+// held-out 2022+): UEFA-NL is the weak international segment (tier-banded
+// groups = balanced matches, 63.6% @56) → dedicated 62 (held-out 68.0%,
+// n=128); CONCACAF-NL holds the bar at the standard 56 (held-out 74.3%,
+// n=167). Unknown nations competitions fall to the UEFA value = the stricter
+// one (fail-closed). Mirror of settings.py SURFACE_FLOOR_NATIONS.
+export const SURFACE_FLOOR_NATIONS_UEFA = 62;
+export const SURFACE_FLOOR_NATIONS_CONCACAF = 56;
 
 // High-tier tournament keywords (case-insensitive substring). Conservative on
 // purpose: only unambiguous names — anything unmatched falls to the LOWER tier,
@@ -187,6 +196,15 @@ export function surfaceFloorFor(
   const name = (competition ?? "").toLowerCase();
   // #WC-SURFACE-FLOOR: World Cup only — before the friendly/club resolution.
   if (name.includes("world cup")) return SURFACE_FLOOR_WC;
+  // #NATIONS-LEAGUE-0826: before the club fallback — without this branch a
+  // "UEFA Nations League" row would resolve to the club floor (56) while the
+  // Python gate served it at 62, and isSurfacedRow would count rows that were
+  // never shown. Non-CONCACAF nations resolve to the stricter UEFA value.
+  if (name.includes("nations league")) {
+    return name.includes("concacaf")
+      ? SURFACE_FLOOR_NATIONS_CONCACAF
+      : SURFACE_FLOOR_NATIONS_UEFA;
+  }
   if (name.includes("friendly")) return SURFACE_FLOOR_FRIENDLY;
   for (const [keyword, floor] of CLUB_FLOOR_OVERRIDES) {
     if (name.includes(keyword)) return floor;

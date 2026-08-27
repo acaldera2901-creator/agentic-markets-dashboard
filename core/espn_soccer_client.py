@@ -44,6 +44,11 @@ ESPN_LEAGUE_CODES: dict[str, str] = {
     # International friendlies (national teams) — pre-WC dry-run of the
     # national model. ESPN-only competition: no fdorg/API-Football coverage.
     "FRIENDLY": "fifa.friendly",
+    # Nations League (#NATIONS-LEAGUE-0826): ESPN-only competitions, same
+    # national path as FRIENDLY. Slugs probed OK on 2026-08-26 (uefa.nations
+    # 156 events Sep-Nov 2026, concacaf.nations.league 74).
+    "UNL": "uefa.nations",
+    "CNL": "concacaf.nations.league",
     # Summer-calendar leagues (#SUMMER-LEAGUES-1, APPROVE Andrea 2026-06-12):
     # quality-gated by the walk-forward lab (am-lab/lab_summer_leagues.py),
     # W1 package ~52 picks/yr @74.6%. Slugs probed OK on 2026-06-12.

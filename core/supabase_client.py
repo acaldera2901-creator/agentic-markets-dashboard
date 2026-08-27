@@ -256,6 +256,7 @@ def wc_prediction_to_unified_row(
     signal_allowed: bool = False,
     team_news_summary: str | None = None,
     friendly: bool = False,
+    nations_league_code: str | None = None,
     model_version: str | None = None,
     surface: tuple[bool, int] | None = None,
 ) -> dict:
@@ -312,6 +313,15 @@ def wc_prediction_to_unified_row(
         row["model_version"] = model_version or settings.FRIENDLY_MODEL_VERSION
         row["source_table"] = settings.FRIENDLY_SOURCE_TABLE
         row["competition"] = "International Friendly"
+        row["world_cup_stage"] = None
+    elif nations_league_code:
+        # #NATIONS-LEAGUE-0826: same national model, own version + source_table
+        # namespace (mirrors the friendly split) so calibration/track-record
+        # audits never mix the tier-banded Nations League into the WC record.
+        from core.world_cup_registry import nations_league_name
+        row["model_version"] = model_version or settings.NATIONS_MODEL_VERSION
+        row["source_table"] = settings.NATIONS_SOURCE_TABLE
+        row["competition"] = nations_league_name(nations_league_code)
         row["world_cup_stage"] = None
     else:
         row["model_version"] = model_version or settings.WC_MODEL_VERSION
