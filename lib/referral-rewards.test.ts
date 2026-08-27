@@ -168,11 +168,21 @@ describe("countPayingInvitees", () => {
     expect(sql).toMatch(/paypal_orders/);
     expect(sql).toMatch(/shopify_events/);
 
-    // Il rail carta deve restare filtrato: senza `orders/paid` conterebbe anche
-    // i refund, senza `granted` conterebbe i 'pending' (incassati ma non
-    // ancora concessi) e gli 'unresolved' (da riconciliare a mano).
+    // Il rail carta va filtrato sul TOPIC: senza `orders/paid` conterebbe anche
+    // i `refunds/create`.
     expect(sql).toMatch(/event_type = 'orders\/paid'/);
-    expect(sql).toMatch(/status = 'granted'/);
+
+    // E NON va filtrato sullo status, deliberatamente. Su `shopify_events` la
+    // riga nasce solo dopo il pagamento, quindi 'unresolved'/'pending'/'stale'
+    // vogliono dire «ha pagato, il grant è da recuperare»: escluderli negherebbe
+    // un premio già guadagnato. Stessa scelta, già rivista, di creator-promo.
+    expect(sql).not.toMatch(/status = 'granted'/);
+
+    // L'identifier del rail carta NON è normalizzato a monte (extractOrder usa
+    // il valore grezzo dei note_attributes): senza LOWER/TRIM il confronto non
+    // troverebbe proprio i paganti che questa query esiste per contare.
+    expect(sql).toMatch(/LOWER\(TRIM\(identifier\)\)/);
+    expect(sql).toMatch(/LOWER\(TRIM\(p\.identifier\)\)/);
 
     // La tabella del design doc non esiste e non può essere creata finché il
     // drift delle migration è aperto (la CI applicherebbe DDL su prod e aborta):

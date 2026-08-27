@@ -69,27 +69,43 @@ export function reachedTiers(payingCount: number): number[] {
  *     partire `supabase db push` su PROD da CI, che aborta per il drift ⇒ la
  *     tabella non nascerebbe e questa query si romperebbe.
  *  Il rail carta era fuori dal conteggio da quando esiste: un invitato che paga
- *  con carta valeva 0 e i gradini 2/5/10 non potevano scattare. */
+ *  con carta valeva 0 e i gradini 2/5/10 non potevano scattare.
+ *
+ *  I tre rail hanno prove di pagamento DIVERSE perché hanno forme diverse, e
+ *  confonderle sbaglia in entrambi i versi: chiedere `granted_at` al rail carta
+ *  (che non ce l'ha) non conta nessuno, e accettare una riga d'ordine aperta sui
+ *  primi due conterebbe chi non ha pagato. Vedi i commenti nella query. */
 export async function countPayingInvitees(code: string, selfIdentifier: string): Promise<number> {
   const rows = await dbQueryStrict<{ n: number | string }>(
     `SELECT COUNT(DISTINCT p.identifier)::int AS n
        FROM profiles p
        JOIN (
-         SELECT identifier FROM paygate_orders WHERE granted_at IS NOT NULL
+         -- Nei due rail crypto/PayPal la riga nasce all'APERTURA del checkout,
+         -- quindi la prova del pagamento è granted_at.
+         SELECT LOWER(TRIM(identifier)) AS ident FROM paygate_orders WHERE granted_at IS NOT NULL
          UNION ALL
-         SELECT identifier FROM paypal_orders  WHERE granted_at IS NOT NULL
+         SELECT LOWER(TRIM(identifier)) AS ident FROM paypal_orders  WHERE granted_at IS NOT NULL
          UNION ALL
-         -- Rail carta. Filtrato su event_type = 'orders/paid' e non "qualunque
-         -- riga": il webhook concede SOLO su quel topic (whitelist esplicita in
-         -- app/api/shopify/webhook/route.ts, nessun default) e un refunds/create
-         -- finisce in una riga a parte con status 'unresolved'. Lo status
-         -- 'granted' esclude 'pending' (incassato ma non ancora concesso) e
-         -- 'unresolved' (da riconciliare): si conta chi ha pagato E ricevuto
-         -- l'accesso, esattamente come granted_at sugli altri due rail.
-         SELECT identifier FROM shopify_events
-          WHERE event_type = 'orders/paid' AND status = 'granted'
+         -- Rail carta: forma diversa, quindi prova diversa. Qui la riga nasce
+         -- solo DOPO il pagamento (il webhook la inserisce a valle di HMAC +
+         -- financial_status), perciò l'esistenza stessa della riga È la prova.
+         -- NIENTE filtro sullo status, deliberatamente: 'unresolved', 'pending'
+         -- e 'stale' vogliono dire «ha pagato e il grant è da recuperare», non
+         -- «non ha pagato» — escluderli negherebbe in silenzio un premio già
+         -- guadagnato. Stesso ragionamento, già rivisto, di lib/creator-promo.ts
+         -- (#LAUNCH-PROMO-CARD-0805). Il filtro che serve è sul TOPIC: il
+         -- webhook concede solo su orders/paid (whitelist esplicita in
+         -- app/api/shopify/webhook/route.ts, nessun default) e un
+         -- refunds/create è una riga con un altro event_type, quindi fuori.
+         SELECT LOWER(TRIM(identifier)) AS ident FROM shopify_events
+          WHERE event_type = 'orders/paid'
             AND identifier IS NOT NULL
-       ) o ON o.identifier = p.identifier
+         -- LOWER/TRIM su tutti e tre i rail perché l'identifier del rail carta
+         -- NON è normalizzato: extractOrder (lib/shopify.ts) usa il valore dei
+         -- note_attributes del carrello così com'è e normalizza solo il
+         -- fallback via email. Un confronto grezzo qui non troverebbe proprio i
+         -- paganti che questa query esiste per contare.
+       ) o ON o.ident = LOWER(TRIM(p.identifier))
       WHERE UPPER(p.referred_by) = $1
         AND p.identifier <> $2`,
     [code.toUpperCase(), selfIdentifier]
