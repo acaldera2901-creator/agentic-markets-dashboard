@@ -100,3 +100,74 @@ it("l'ordine marcato 'stale' non ri-allerta al giro dopo", async () => {
   expect(body.stale).toBe(0);
   expect(opsAlert).not.toHaveBeenCalled();
 });
+
+// ── Watchdog decadimenti (#SHOPIFY-LAPSE-WATCHDOG-0827) ─────────────────────
+// Il caso reale del 27/08: il primo cliente carta paga il 25/07, il grant scade
+// il 24/08, nessun rinnovo arriva, il profilo torna `free` e nessuno se ne
+// accorge. Le due scansioni sopra non potevano vederlo: guardano pagamenti che
+// NON hanno ancora concesso, qui il pagamento era andato a buon fine.
+it("segnala un abbonamento carta scaduto senza rinnovo", async () => {
+  dbQuery
+    .mockResolvedValueOnce([]) // unresolved
+    .mockResolvedValueOnce([]) // stale
+    .mockResolvedValueOnce([{ identifier: "j@t.com", expired_at: "2026-08-24T19:28:57Z", amount: "14.99" }]);
+  const { GET } = await import("./route");
+  const body = await (await GET(req())).json();
+
+  expect(body.lapsed).toBe(1);
+  // Detection-only: non si ri-concede e non si tocca il piano dell'utente.
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+  const alert = vi.mocked(opsAlert).mock.calls[0];
+  expect(alert[0]).toBe("shopify-reconcile");
+  expect(String(alert[1])).toContain("j@t.com");
+  expect(String(alert[1])).toContain("2026-08-24T19:28:57Z");
+});
+
+// Il cron gira ogni 10 minuti: senza marcatore lo stesso decadimento
+// allerterebbe 144 volte al giorno e l'alert diventerebbe rumore da ignorare.
+it("marca il decadimento su last_error, e NON declassa lo status", async () => {
+  dbQuery
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([{ identifier: "j@t.com", expired_at: "2026-08-24T19:28:57Z", amount: null }]);
+  const { GET } = await import("./route");
+  await GET(req());
+
+  const upd = vi.mocked(dbExecute).mock.calls.find((c) => /lapse-alerted/.test(String(c[0])));
+  expect(upd).toBeTruthy();
+  expect(upd![1]).toEqual(["j@t.com"]);
+  // `status` deve restare 'granted': appena entra #REFERRAL-SHOPIFY-RAIL-0827
+  // quello è il rail carta di countPayingInvitees (lib/referral-rewards.ts), e
+  // declassarlo qui cancellerebbe in silenzio i premi referral dell'invitante.
+  // Solo la clausola SET, non tutta la query: la WHERE contiene legittimamente
+  // `status = 'granted'` come filtro.
+  const setClause = String(upd![0]).split(/\bWHERE\b/)[0];
+  expect(setClause).toMatch(/last_error\s*=/);
+  expect(setClause).not.toMatch(/status\s*=/);
+  // La stessa UPDATE esclude le righe già marcate: idempotente per definizione.
+  expect(String(upd![0])).toMatch(/NOT LIKE 'lapse-alerted%'/);
+  // Marca TUTTE le righe granted dell'utente, non solo quella selezionata: chi
+  // ha già rinnovato ne ha più di una e una riga senza marcatore riallerterebbe.
+  expect(String(upd![0])).toMatch(/WHERE identifier = \$1/);
+});
+
+it("un decadimento già marcato non ri-allerta (la query lo esclude)", async () => {
+  const { GET } = await import("./route");
+  const body = await (await GET(req())).json();
+  expect(body.lapsed).toBe(0);
+  expect(opsAlert).not.toHaveBeenCalled();
+});
+
+// Shopify può fatturare il rinnovo con qualche ora di ritardo: un allarme che
+// urla su un rinnovo lento verrebbe ignorato, e allora tanto vale non averlo.
+it("la query concede una grace prima di allertare e guarda solo il rail carta", async () => {
+  dbQuery.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+  const { GET } = await import("./route");
+  await GET(req());
+  const sql = String(vi.mocked(dbQuery).mock.calls[2][0]);
+  expect(sql).toMatch(/plan_expires_at < NOW\(\) - INTERVAL '6 hours'/);
+  expect(sql).toMatch(/plan_source = 'shopify'/);
+  // Solo pagamenti andati a buon fine: 'pending'/'unresolved'/'stale' sono
+  // gli altri due rami, non decadimenti.
+  expect(sql).toMatch(/e\.status = 'granted'/);
+});

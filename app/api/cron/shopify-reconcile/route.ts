@@ -91,13 +91,76 @@ export async function GET(req: Request) {
     console.error(`[shopify/reconcile] STALE order=${ev.event_id} identifier=${ev.identifier ?? "?"}`);
   }
 
+  // ── Abbonamenti scaduti senza rinnovo (#SHOPIFY-LAPSE-WATCHDOG-0827) ──────
+  // Il buco che ha lasciato passare il caso reale del 2026-08-27: il primo (e
+  // allora unico) cliente carta ha pagato il 25/07, il grant è scaduto il 24/08,
+  // nessun secondo `orders/paid` è arrivato e il profilo è tornato `free` senza
+  // che nessuno se ne accorgesse. Le due scansioni qui sopra non potevano
+  // vederlo: guardano 'unresolved' e 'pending', cioè pagamenti che NON hanno
+  // ancora concesso. Qui il pagamento era andato a buon fine — è il RINNOVO che
+  // non è mai arrivato, e uno stato sano che smette di rinnovarsi non somiglia a
+  // un errore da nessuna parte.
+  //
+  // NON è un rilevatore di bug: una disdetta legittima finisce qui identica a un
+  // webhook di rinnovo mai consegnato. È un watchdog sui ricavi — dice «un
+  // cliente pagante è decaduto, guardalo», e la distinzione la fa un umano sul
+  // subscription contract in Shopify Admin.
+  //
+  // Grace di 6 ore: Shopify può fatturare il rinnovo con qualche ora di ritardo,
+  // e un allarme che urla su un rinnovo semplicemente lento verrebbe ignorato.
+  //
+  // Marcatura su `last_error` e NON su `status`: il cron gira ogni 10 minuti, e
+  // senza marcatore lo stesso decadimento allerterebbe 144 volte al giorno.
+  // `status` deve restare 'granted' anche per un secondo motivo: appena entra
+  // #REFERRAL-SHOPIFY-RAIL-0827, `status = 'granted'` su `shopify_events` è il
+  // rail carta di countPayingInvitees() (lib/referral-rewards.ts). Declassarlo
+  // qui cancellerebbe in silenzio i premi referral dell'invitante — e le due
+  // branch sono indipendenti, quindi l'accoppiamento va scritto qui, non
+  // scoperto dopo il merge.
+  const lapsed = await dbQuery<{ identifier: string; expired_at: string; amount: string | null }>(
+    `SELECT DISTINCT ON (e.identifier)
+            e.identifier, p.plan_expires_at::text AS expired_at, e.amount::text AS amount
+       FROM shopify_events e
+       JOIN profiles p ON p.identifier = e.identifier
+      WHERE e.event_type = 'orders/paid'
+        AND e.status = 'granted'
+        AND e.identifier IS NOT NULL
+        AND COALESCE(e.last_error, '') NOT LIKE 'lapse-alerted%'
+        AND p.plan_source = 'shopify'
+        AND p.plan_expires_at IS NOT NULL
+        AND p.plan_expires_at < NOW() - INTERVAL '6 hours'
+      ORDER BY e.identifier, e.processed_at DESC
+      LIMIT 50`
+  );
+  for (const row of lapsed) {
+    // Marca OGNI riga granted di quell'utente, non solo quella selezionata: chi
+    // ha già rinnovato una volta ne ha più di una, e lasciarne una senza
+    // marcatore rifarebbe scattare l'alert al giro dopo. Un rinnovo futuro
+    // crea una riga NUOVA senza marcatore ⇒ se decade di nuovo, si riallerta.
+    await dbExecute(
+      `UPDATE shopify_events
+          SET last_error = 'lapse-alerted: piano scaduto senza rinnovo, verificare il subscription contract'
+        WHERE identifier = $1
+          AND event_type = 'orders/paid'
+          AND status = 'granted'
+          AND COALESCE(last_error, '') NOT LIKE 'lapse-alerted%'`,
+      [row.identifier]
+    );
+    console.error(`[shopify/reconcile] LAPSED identifier=${row.identifier} expired_at=${row.expired_at}`);
+  }
+
   // Un pagamento che resta senza piano è un problema di soldi: va segnalato, non
   // solo contato. Alert solo se c'è davvero qualcosa di irrisolto.
-  if (stillUnresolved > 0 || errors.length > 0 || stale.length > 0) {
+  if (stillUnresolved > 0 || errors.length > 0 || stale.length > 0 || lapsed.length > 0) {
     await opsAlert("shopify-reconcile", [
       ...(stillUnresolved > 0 ? [`${stillUnresolved} pagamenti Shopify ancora senza piano`] : []),
       ...stale.map(
         (ev) => `ordine ${ev.event_id} (${ev.identifier ?? "identifier ignoto"}): webhook interrotto, verificare il piano a mano`
+      ),
+      ...lapsed.map(
+        (row) =>
+          `abbonamento carta DECADUTO: ${row.identifier} scaduto il ${row.expired_at} senza rinnovo` +
+          `${row.amount ? ` (ultimo incasso ${row.amount})` : ""} — disdetta o rinnovo mancato? verificare il subscription contract in Shopify Admin`
       ),
       ...errors.slice(0, 5),
     ]);
@@ -108,6 +171,7 @@ export async function GET(req: Request) {
     granted,
     stillUnresolved,
     stale: stale.length,
+    lapsed: lapsed.length,
     errors,
   });
 }
