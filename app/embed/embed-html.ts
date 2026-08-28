@@ -137,15 +137,18 @@ ${opts.theme === "auto" ? `@media (prefers-color-scheme: light){:root{--bg:#FFFF
 html,body{background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 body{padding:10px}
 .br-w{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
-.br-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;border-bottom:1px solid var(--line);background:var(--panel2)}
-.br-logo{display:flex;align-items:center;gap:6px;text-decoration:none}
-.br-by{font-size:9.5px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+/* Due blocchi, e il capo va SOLO dentro quello di sinistra: così il logo non
+   può mai finire su una riga sua, e non serve indovinare un breakpoint —
+   con un @media (max-width:379px) in spagnolo a 420px il logo cascava a capo
+   a sinistra (misurato). Qui la soglia la decide il testo, in ogni lingua. */
+.br-h{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.br-hl{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
+.br-by{font-size:10.5px;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap}
+.br-by b{color:var(--text);font-weight:750}
+.br-logo{flex:0 0 auto;display:block;line-height:0;text-decoration:none}
 .br-logo picture{display:block;line-height:0}
 .br-mark{display:block;height:20px;width:auto}
-.br-k{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-/* Sotto i ~380px il lockup e il kicker non stanno su una riga: invece di
-   lasciare il kicker orfano a destra, diventa un sottotitolo a sinistra. */
-@media (max-width:379px){.br-k{margin-left:0;width:100%}}
+.br-k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
 .br-card{padding:10px 11px;border-bottom:1px solid var(--line)}
 .br-card:last-of-type{border-bottom:0}
 .br-top{background:linear-gradient(90deg,var(--brand-dim),transparent 55%)}
@@ -175,22 +178,24 @@ a:focus-visible,.br-cta:focus-visible{outline:2px solid var(--brand);outline-off
   // verde in entrambe), ma se ne SCARICA UNA SOLA: a tema esplicito la scelta
   // è già fatta qui, e su `auto` la fa <picture>. Con due <img> e uno swap in
   // CSS il browser scaricava comunque anche quella nascosta — misurato.
-  //
-  // "Powered by" resta in inglese in tutte e 5 le lingue: è il lockup di
-  // attribuzione del marchio, non copy di prodotto.
   const attrs = `class="br-mark" width="145" height="48" alt="BetRedge" decoding="async"`;
   const mark = opts.theme === "auto"
     ? `<picture><source srcset="${MARK_LIGHT}" media="(prefers-color-scheme: light)"><img src="${MARK_DARK}" ${attrs}></picture>`
     : `<img src="${opts.theme === "light" ? MARK_LIGHT : MARK_DARK}" ${attrs}>`;
-  const logo = `<a class="br-logo" href="${href}" target="_blank" rel="noopener nofollow">
-    <span class="br-by">Powered by</span>${mark}
-  </a>`;
+
+  // Attribuzione a sinistra, segno a destra. Il dominio è scritto per esteso e
+  // in evidenza: su un sito di terzi è l'unica riga che dice DOVE andare, e un
+  // wordmark non si digita in una barra degli indirizzi.
+  // Resta in inglese in tutte e 5 le lingue: è attribuzione del marchio, non
+  // copy di prodotto.
+  const by = `<a class="br-by" href="${href}" target="_blank" rel="noopener nofollow">Powered by <b>betredge.com</b></a>`;
+  const logo = `<a class="br-logo" href="${href}" target="_blank" rel="noopener nofollow">${mark}</a>`;
 
   return `<!doctype html>
 <html lang="${opts.lang}" class="${opts.theme === "light" ? "br-light" : ""}" data-host="${esc(opts.host ?? "")}" data-ref="${esc(opts.ref ?? "")}" data-mode="${opts.mode}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>BetRedge</title><style>${css}</style></head>
 <body><div class="br-w">
-<header class="br-h">${logo}<span class="br-k">${esc(t.kicker)}</span></header>
+<header class="br-h"><div class="br-hl">${by}<span class="br-k">${esc(t.kicker)}</span></div>${logo}</header>
 ${body}
 <footer class="br-f"><span class="br-dis"><span class="br-age">18+</span>${esc(t.disclaimer)}</span>
 <a class="br-cta" href="${href}" target="_blank" rel="noopener nofollow">${esc(t.cta)}</a></footer>
