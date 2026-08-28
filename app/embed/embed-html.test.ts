@@ -86,9 +86,14 @@ describe("renderEmbedHtml", () => {
   // del partner non si legge di chi sono le predizioni, il widget non serve.
   it("l'attribuzione è 'Powered by' + il logo del brand, non un glifo qualsiasi", () => {
     const html = render();
-    expect(html).toContain("Powered by");
+    expect(html).toContain("Powered by <b>betredge.com</b>");
     expect(html).toMatch(/<img[^>]+src="\/logos\/betredge-logo-(white|black)-48\.png"/);
     expect(html).toContain('alt="BetRedge"');
+  });
+
+  it("il dominio è scritto per esteso, non solo il marchio: è l'unica riga digitabile", () => {
+    // su un sito di terzi un wordmark non si digita in una barra degli indirizzi
+    expect(render()).toContain("betredge.com</b>");
   });
 
   it("scarica UNA sola variante del logo: a tema esplicito la scelta è già fatta qui", () => {
