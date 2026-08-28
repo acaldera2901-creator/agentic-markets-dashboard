@@ -60,6 +60,12 @@ export const EMBED_INLINE_SCRIPT = `
   if (window.ResizeObserver) new ResizeObserver(report).observe(document.documentElement);
   var d = document.documentElement.dataset;
   function beacon(type) {
+    // Anteprima sulle NOSTRE pagine (home, /widget): non è l'impression di un
+    // partner, e la home ha molto più traffico di loro. Contarla vorrebbe dire
+    // seppellire la metrica con cui misuriamo i partner sotto il nostro stesso
+    // traffico. Il flag sta nel dataset, non nello script: così la pagina resta
+    // UNA e l'hash della CSP non si sdoppia.
+    if (d.preview) return;
     try {
       fetch("/api/track", {
         method: "POST", keepalive: true, headers: { "Content-Type": "application/json" },
@@ -117,6 +123,8 @@ export function renderEmbedHtml(opts: {
   mode: EmbedMode;
   /** ref spento dalla blocklist: si serve il guscio, mai le predizioni. */
   disabled?: boolean;
+  /** anteprima su una nostra pagina: si mostra tutto, non si conta nulla. */
+  preview?: boolean;
 }): string {
   const t = COPY[opts.lang] ?? COPY.en;
   const href = embedLink(opts.ref, opts.host);
@@ -192,7 +200,7 @@ a:focus-visible,.br-cta:focus-visible{outline:2px solid var(--brand);outline-off
   const logo = `<a class="br-logo" href="${href}" target="_blank" rel="noopener nofollow">${mark}</a>`;
 
   return `<!doctype html>
-<html lang="${opts.lang}" class="${opts.theme === "light" ? "br-light" : ""}" data-host="${esc(opts.host ?? "")}" data-ref="${esc(opts.ref ?? "")}" data-mode="${opts.mode}">
+<html lang="${opts.lang}" class="${opts.theme === "light" ? "br-light" : ""}" data-host="${esc(opts.host ?? "")}" data-ref="${esc(opts.ref ?? "")}" data-mode="${opts.mode}"${opts.preview ? ' data-preview="1"' : ""}>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>BetRedge</title><style>${css}</style></head>
 <body><div class="br-w">
 <header class="br-h"><div class="br-hl">${by}<span class="br-k">${esc(t.kicker)}</span></div>${logo}</header>

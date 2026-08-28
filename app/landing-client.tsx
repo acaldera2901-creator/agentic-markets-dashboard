@@ -13,6 +13,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
 import LandingCarousel from "@/app/components/LandingCarousel"; // #HOME-BETMODE-1
 import { HouseBanner } from "@/components/HouseBanner";
+import { WidgetLivePreview } from "@/components/WidgetLivePreview";
 import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -963,13 +964,22 @@ export default function LandingPage() {
            finale di proposito — non compete con l'iscrizione, raccoglie chi è
            arrivato in fondo e ha un pubblico suo. ── */}
       <section className="v-sec"><div className="v-wrap">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ maxWidth: "56ch" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center", justifyContent: "space-between",
+                      // la riga si ferma prima del bordo della sezione: a 1280px, larga
+                      // quanto il wrap, tra il testo e il widget restavano 238px di vuoto
+                      // e i due pezzi smettevano di leggersi come una coppia (misurato).
+                      maxWidth: 960, margin: "0 auto" }}>
+          <div style={{ flex: "1 1 320px", maxWidth: "52ch" }}>
             <div className="v-kick q">{v.wgKick}</div>
             <h2 style={{ margin: "10px 0 8px", fontSize: "clamp(20px,3vw,28px)", letterSpacing: "-.02em" }}>{v.wgHead}</h2>
-            <p style={{ margin: 0, color: "var(--am-muted)" }}>{v.wgBody}</p>
+            <p style={{ margin: "0 0 16px", color: "var(--am-muted)" }}>{v.wgBody}</p>
+            <Link href="/widget" className="v-btn v-btn--secondary">{v.wgCta}</Link>
           </div>
-          <Link href="/widget" className="v-btn v-btn--secondary">{v.wgCta}</Link>
+          {/* Il widget VERO accanto alla riga che lo vende: la sezione si
+              dimostra da sola invece di descriversi. */}
+          <div style={{ flex: "1 1 300px", maxWidth: 400, width: "100%" }}>
+            <WidgetLivePreview lang={lang} theme={theme} />
+          </div>
         </div>
       </div></section>
 

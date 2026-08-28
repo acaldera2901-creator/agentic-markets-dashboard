@@ -80,7 +80,12 @@ export async function GET(req: Request) {
     }
   }
 
-  const html = renderEmbedHtml({ rows, ref, lang, theme: cleanTheme(searchParams.get("theme")), host, mode, disabled: blocked });
+  const html = renderEmbedHtml({
+    rows, ref, lang, theme: cleanTheme(searchParams.get("theme")), host, mode, disabled: blocked,
+    // Lo passiamo solo NOI, dalle nostre anteprime: widget.js non inoltra
+    // questo parametro, quindi un partner non può spegnersi le impression.
+    preview: searchParams.get("preview") === "1",
+  });
 
   return new NextResponse(html, {
     headers: {

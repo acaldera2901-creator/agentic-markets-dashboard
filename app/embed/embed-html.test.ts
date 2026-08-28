@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { renderEmbedHtml } from "@/app/embed/embed-html";
+import { renderEmbedHtml, EMBED_INLINE_SCRIPT } from "@/app/embed/embed-html";
 import type { EmbedRow } from "@/lib/embed-feed";
 
 const rows: EmbedRow[] = [
@@ -116,6 +116,25 @@ describe("renderEmbedHtml", () => {
 
   it("dichiara l'altezza al parent per l'auto-resize", () => {
     expect(render()).toContain("postMessage");
+  });
+});
+
+// #WIDGET-LANDING-0828 — il widget vive anche sulle NOSTRE pagine (home, /widget).
+// Lì si mostra tutto, ma non si conta niente: la home ha molto più traffico dei
+// partner, e contarla seppellirebbe la metrica con cui i partner si misurano.
+describe("anteprima su una nostra pagina", () => {
+  it("da anteprima non registra impression, ma serve le stesse predizioni", () => {
+    const html = render({ preview: true });
+    expect(html).toContain('data-preview="1"');
+    expect(html).toContain("Sinner"); // le righe ci sono: si spegne la misura, non il contenuto
+  });
+
+  it("di default NON è un'anteprima: un partner deve contare", () => {
+    expect(render()).not.toContain("data-preview");
+  });
+
+  it("lo spegnimento sta nel dataset, così la pagina resta una e l'hash CSP non si sdoppia", () => {
+    expect(EMBED_INLINE_SCRIPT).toContain("if (d.preview) return;");
   });
 });
 
