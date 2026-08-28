@@ -39,6 +39,8 @@ export function buildPreviewUrl(cfg: WidgetConfig): string {
     lang: cfg.lang,
     theme: cfg.theme,
     host: "betredge.com",
+    // Anteprima nostra, non impression di un partner: niente beacon.
+    preview: "1",
   });
   const ref = sanitizeRef(cfg.ref);
   if (ref) p.set("ref", ref);

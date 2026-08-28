@@ -33,6 +33,11 @@ describe("buildSnippet", () => {
 });
 
 describe("buildPreviewUrl", () => {
+  it("l'anteprima non si conta come impression di un partner", () => {
+    const u = new URL(buildPreviewUrl(cfg({ ref: "SERGIO" })), "https://x.test");
+    expect(u.searchParams.get("preview")).toBe("1");
+  });
+
   it("chiede all'anteprima gli stessi parametri dello snippet", () => {
     const u = new URL(buildPreviewUrl(cfg({ ref: "SERGIO", sport: "football", limit: 2, lang: "it", theme: "light" })), "https://x.test");
     expect(u.pathname).toBe("/embed");
