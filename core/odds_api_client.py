@@ -560,7 +560,33 @@ async def snapshot_odds_to_supabase(rows: List[Dict]) -> None:
         logger.debug("snapshot write failed (non-fatal): %s", exc)
 
 
-async def mark_closing_lines(lookback_hours: int = 36) -> int:
+# ── Closing-line marking: why this is sliced and paginated ───────────────────
+# Measured against production on 2026-08-28 (#CLOSING-LINES-SCAN-0828):
+#   · odds_snapshots = 23.1M rows / 9.0 GB and still growing (no retention).
+#   · There is NO plain index on commence_time. The only one covering it is
+#     PARTIAL: idx_odds_snapshots_commence (commence_time) WHERE is_closing =
+#     false. A range scan on commence_time WITHOUT `is_closing = false` seq-scans
+#     all 23M rows and dies on Supabase's statement timeout (57014) — measured
+#     even on a ONE-hour window. That predicate is not an optimisation, it is the
+#     only reason this query completes at all.
+#   · `ORDER BY captured_at DESC` over the 36h window sorts ~213k rows and times
+#     out too, predicate or not. It is gone: the latest capture per match is
+#     computed in Python, so no server-side sort is needed.
+#   · PostgREST caps responses at 1000 rows whatever `limit` asks for (measured:
+#     asked 10000, got 1000, on a window holding 7409). The old single request
+#     with limit=10000 was therefore ALSO silently truncated long before it began
+#     timing out — it only ever saw the newest sliver of the window.
+# The two defects together: the last closing line in production was marked on
+# 2026-06-27. The function had been dead for two months without a sound, because
+# every failure in here is fail-soft by contract.
+CLOSING_SLICE_HOURS = 3       # a slice this size stays inside the statement timeout
+CLOSING_PAGE_SIZE = 1000      # PostgREST's hard cap; asking for more is ignored
+CLOSING_MAX_PAGES = 60        # per-run budget: bounds the work, never correctness
+
+
+async def mark_closing_lines(
+    lookback_hours: int = 36, *, max_pages: int = CLOSING_MAX_PAGES
+) -> int:
     """Mark the last pre-kickoff snapshot of each started match as the closing line.
 
     For every match whose commence_time has passed within the lookback window
@@ -568,6 +594,14 @@ async def mark_closing_lines(lookback_hours: int = 36) -> int:
     captured_at batch. The closing line is the calibration/CLV reference
     (#ODDS-1) — without it the snapshots are write-only noise.
     Returns the number of matches marked. Fail-soft: returns 0 on any error.
+
+    The window is walked in CLOSING_SLICE_HOURS slices, OLDEST FIRST, under a
+    page budget. Oldest-first is deliberate: a marked match keeps its other
+    (non-closing) rows, so it still shows up in later scans — with newest-first
+    the budget would be eaten by the same recent slices every run and the backlog
+    would never drain. Slices left over when the budget runs out are retried next
+    run: the pass is idempotent (already-marked matches are skipped) and snapshot
+    rows are immutable history, so marking a closing line late costs nothing.
     """
     if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
         return 0
@@ -580,44 +614,87 @@ async def mark_closing_lines(lookback_hours: int = 36) -> int:
     now = datetime.now(timezone.utc)
     since = now - timedelta(hours=lookback_hours)
     marked = 0
+    pages_used = 0
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
-            resp = await c.get(
-                base,
-                # repeated filters on the same column are ANDed by PostgREST
-                params=[
-                    ("select", "match_id,captured_at,is_closing"),
-                    ("commence_time", f"lt.{now.isoformat()}"),
-                    ("commence_time", f"gt.{since.isoformat()}"),
-                    ("order", "captured_at.desc"),
-                    ("limit", "10000"),
-                ],
-                headers=headers,
-            )
-            if resp.status_code != 200:
-                return 0
-            latest: dict[str, str] = {}
-            already_closed: set[str] = set()
-            for row in resp.json():
-                mid = row.get("match_id")
-                if not mid:
-                    continue
-                if row.get("is_closing"):
-                    already_closed.add(mid)
-                    continue
-                # rows arrive captured_at DESC — first hit is the latest batch
-                latest.setdefault(mid, row.get("captured_at"))
-            for mid, cap in latest.items():
-                if mid in already_closed or not cap:
-                    continue
-                patch = await c.patch(
+            slice_start = since
+            while slice_start < now and pages_used < max_pages:
+                slice_end = min(slice_start + timedelta(hours=CLOSING_SLICE_HOURS), now)
+                # Matches in this slice that already carry a closing line. Cheap:
+                # is_closing = true is only ~24k rows overall and has its own
+                # partial index (measured 0.34s over a 36h window).
+                already_closed: set[str] = set()
+                closed_resp = await c.get(
                     base,
-                    params={"match_id": f"eq.{mid}", "captured_at": f"eq.{cap}"},
-                    json={"is_closing": True},
+                    params=[
+                        ("select", "match_id"),
+                        ("is_closing", "eq.true"),
+                        ("commence_time", f"gte.{slice_start.isoformat()}"),
+                        ("commence_time", f"lt.{slice_end.isoformat()}"),
+                        ("limit", str(CLOSING_PAGE_SIZE)),
+                    ],
                     headers=headers,
                 )
-                if patch.status_code in (200, 204):
-                    marked += 1
+                pages_used += 1
+                if closed_resp.status_code != 200:
+                    return marked  # DB unhappy: stop, next run retries this slice
+                for row in closed_resp.json():
+                    if row.get("match_id"):
+                        already_closed.add(row["match_id"])
+
+                # Candidates. Ordered by commence_time (the indexed column) and
+                # NOT by captured_at: the index already yields that order, so the
+                # sort is free and offset paging stays deterministic. `id` is the
+                # tiebreaker so two rows sharing a commence_time cannot swap
+                # between pages and be counted twice or skipped.
+                latest: dict[str, tuple[datetime, str]] = {}
+                offset = 0
+                while pages_used < max_pages:
+                    resp = await c.get(
+                        base,
+                        params=[
+                            ("select", "match_id,captured_at"),
+                            ("is_closing", "eq.false"),
+                            ("commence_time", f"gte.{slice_start.isoformat()}"),
+                            ("commence_time", f"lt.{slice_end.isoformat()}"),
+                            ("order", "commence_time.asc,id.asc"),
+                            ("limit", str(CLOSING_PAGE_SIZE)),
+                            ("offset", str(offset)),
+                        ],
+                        headers=headers,
+                    )
+                    pages_used += 1
+                    if resp.status_code != 200:
+                        return marked
+                    rows = resp.json()
+                    for row in rows:
+                        mid = row.get("match_id")
+                        cap = row.get("captured_at")
+                        if not mid or not cap:
+                            continue
+                        try:
+                            cap_dt = datetime.fromisoformat(cap)
+                        except (TypeError, ValueError):
+                            continue  # an unparsable timestamp is not a closing line
+                        known = latest.get(mid)
+                        if known is None or cap_dt > known[0]:
+                            latest[mid] = (cap_dt, cap)
+                    if len(rows) < CLOSING_PAGE_SIZE:
+                        break  # slice exhausted
+                    offset += CLOSING_PAGE_SIZE
+
+                for mid, (_cap_dt, cap) in latest.items():
+                    if mid in already_closed:
+                        continue
+                    patch = await c.patch(
+                        base,
+                        params={"match_id": f"eq.{mid}", "captured_at": f"eq.{cap}"},
+                        json={"is_closing": True},
+                        headers=headers,
+                    )
+                    if patch.status_code in (200, 204):
+                        marked += 1
+                slice_start = slice_end
     except Exception as exc:
         logger.debug("closing-line marking failed (non-fatal): %s", exc)
     if marked:
