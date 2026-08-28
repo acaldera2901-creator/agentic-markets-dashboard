@@ -198,51 +198,77 @@ def _rest() -> str | None:
     return f"{url}/rest/v1"
 
 
+# PostgREST caps every response at 1000 rows whatever `limit` asks for
+# (measured against production 2026-08-28: asked 10000, got 1000). The scraper
+# accumulates up to 48 captures per (match, book) — measured on the same day —
+# so a 40-key chunk over two books expects ~3800 rows and receives 1000. Since
+# rows arrive captured_at DESC and we keep the FIRST hit per (key, book), the
+# keys whose latest capture falls outside those 1000 newest rows silently got no
+# quote at all. Same defect as #CLOSING-LINES-SCAN-0828, second site: the fix is
+# to page until the chunk is actually exhausted instead of trusting one request.
+_QUOTE_PAGE_SIZE = 1000      # PostgREST's real cap; asking for more is ignored
+_QUOTE_MAX_PAGES = 12        # per-chunk budget against a 23M-row table
+
+
 async def _latest_book_quotes(
     client: httpx.AsyncClient, base: str, pair_keys: list[str]
 ) -> dict[str, dict[str, dict]]:
     """Latest non-closing Stake/Roobet quote per (pair_key, book).
 
-    Returns {pair_key: {book: {odds_...}}}. One PostgREST call per chunk of
-    keys; we keep only the most recent capture per (key, book).
+    Returns {pair_key: {book: {odds_...}}}. Paged PostgREST calls per chunk of
+    keys; we keep only the most recent capture per (key, book) — the first hit,
+    since rows arrive captured_at DESC.
     """
     out: dict[str, dict[str, dict]] = {}
     if not pair_keys:
         return out
     CHUNK = 40
+    BOOKS = 2  # stake + roobet: a key is done once both are resolved
     for i in range(0, len(pair_keys), CHUNK):
         chunk = pair_keys[i:i + CHUNK]
         in_list = ",".join(f'"{k}"' for k in chunk)
-        params = {
-            "select": "team_pair_key,source,odds_home,odds_draw,odds_away,captured_at",
-            "source": "in.(stake,roobet)",
-            "team_pair_key": f"in.({in_list})",
-            "order": "captured_at.desc",
-            "limit": "2000",
-        }
-        try:
-            resp = await client.get(
-                f"{base}/odds_snapshots", params=params, headers=_headers()
-            )
-            if resp.status_code != 200:
-                logger.warning("book-quote fetch failed: %s %s",
-                               resp.status_code, resp.text[:200])
-                continue
-            for r in resp.json() or []:
-                key, book = r["team_pair_key"], r["source"]
-                slot = out.setdefault(key, {})
-                if book in slot:  # already have a more recent capture (desc order)
-                    continue
-                if r.get("odds_draw") is None:  # tennis 2-way row
-                    slot[book] = {"odds_p1": r.get("odds_home"), "odds_p2": r.get("odds_away")}
-                else:
-                    slot[book] = {
-                        "odds_home": r.get("odds_home"),
-                        "odds_draw": r.get("odds_draw"),
-                        "odds_away": r.get("odds_away"),
-                    }
-        except Exception as exc:
-            logger.warning("book-quote fetch error: %s", exc)
+        offset = 0
+        for _page in range(_QUOTE_MAX_PAGES):
+            params = {
+                "select": "team_pair_key,source,odds_home,odds_draw,odds_away,captured_at",
+                "source": "in.(stake,roobet)",
+                "team_pair_key": f"in.({in_list})",
+                "order": "captured_at.desc",
+                "limit": str(_QUOTE_PAGE_SIZE),
+                "offset": str(offset),
+            }
+            try:
+                resp = await client.get(
+                    f"{base}/odds_snapshots", params=params, headers=_headers()
+                )
+                if resp.status_code != 200:
+                    logger.warning("book-quote fetch failed: %s %s",
+                                   resp.status_code, resp.text[:200])
+                    break
+                rows = resp.json() or []
+                for r in rows:
+                    key, book = r["team_pair_key"], r["source"]
+                    slot = out.setdefault(key, {})
+                    if book in slot:  # already have a more recent capture (desc order)
+                        continue
+                    if r.get("odds_draw") is None:  # tennis 2-way row
+                        slot[book] = {"odds_p1": r.get("odds_home"), "odds_p2": r.get("odds_away")}
+                    else:
+                        slot[book] = {
+                            "odds_home": r.get("odds_home"),
+                            "odds_draw": r.get("odds_draw"),
+                            "odds_away": r.get("odds_away"),
+                        }
+            except Exception as exc:
+                logger.warning("book-quote fetch error: %s", exc)
+                break
+            # Every key in this chunk resolved on both books: more pages can only
+            # carry older captures we would skip anyway.
+            if all(len(out.get(k, {})) >= BOOKS for k in chunk):
+                break
+            if len(rows) < _QUOTE_PAGE_SIZE:
+                break  # chunk exhausted
+            offset += _QUOTE_PAGE_SIZE
     return out
 
 
