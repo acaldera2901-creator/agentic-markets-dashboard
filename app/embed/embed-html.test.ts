@@ -82,6 +82,33 @@ describe("renderEmbedHtml", () => {
     expect(html).toContain("utm_source=widget");
   });
 
+  // #WIDGET-BRAND-0828 — l'attribuzione è il prodotto del widget: se sul sito
+  // del partner non si legge di chi sono le predizioni, il widget non serve.
+  it("l'attribuzione è 'Powered by' + il logo del brand, non un glifo qualsiasi", () => {
+    const html = render();
+    expect(html).toContain("Powered by");
+    expect(html).toMatch(/<img[^>]+src="\/logos\/betredge-logo-(white|black)-48\.png"/);
+    expect(html).toContain('alt="BetRedge"');
+  });
+
+  it("scarica UNA sola variante del logo: a tema esplicito la scelta è già fatta qui", () => {
+    const dark = render({ theme: "dark" });
+    expect(dark).toContain("betredge-logo-white-48.png");
+    expect(dark).not.toContain("betredge-logo-black-48.png");
+
+    const light = render({ theme: "light" });
+    expect(light).toContain("betredge-logo-black-48.png");
+    expect(light).not.toContain("betredge-logo-white-48.png");
+  });
+
+  it("su tema auto la scelta la fa <picture>, non uno swap CSS su due <img>", () => {
+    const html = render({ theme: "auto" });
+    expect(html).toContain("<picture>");
+    expect(html).toContain('media="(prefers-color-scheme: light)"');
+    // una sola <img>: due significherebbe due download, uno dei quali sprecato
+    expect([...html.matchAll(/<img /g)]).toHaveLength(1);
+  });
+
   it("dichiara l'altezza al parent per l'auto-resize", () => {
     expect(render()).toContain("postMessage");
   });
