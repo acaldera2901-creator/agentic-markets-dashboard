@@ -9,6 +9,10 @@ import { SITE_ORIGIN } from "@/lib/tools/registry";
 
 export type EmbedTheme = "light" | "dark" | "auto";
 
+// Wordmark bianco per fondo scuro, nero per fondo chiaro.
+const MARK_DARK = "/logos/betredge-logo-white-48.png";
+const MARK_LIGHT = "/logos/betredge-logo-black-48.png";
+
 const esc = (v: string): string =>
   v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -133,9 +137,15 @@ ${opts.theme === "auto" ? `@media (prefers-color-scheme: light){:root{--bg:#FFFF
 html,body{background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 body{padding:10px}
 .br-w{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
-.br-h{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line);background:var(--panel2)}
-.br-logo{display:flex;align-items:center;gap:6px;font-weight:800;letter-spacing:-.01em;font-size:12px;color:var(--text);text-decoration:none}
+.br-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.br-logo{display:flex;align-items:center;gap:6px;text-decoration:none}
+.br-by{font-size:9.5px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.br-logo picture{display:block;line-height:0}
+.br-mark{display:block;height:20px;width:auto}
 .br-k{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+/* Sotto i ~380px il lockup e il kicker non stanno su una riga: invece di
+   lasciare il kicker orfano a destra, diventa un sottotitolo a sinistra. */
+@media (max-width:379px){.br-k{margin-left:0;width:100%}}
 .br-card{padding:10px 11px;border-bottom:1px solid var(--line)}
 .br-card:last-of-type{border-bottom:0}
 .br-top{background:linear-gradient(90deg,var(--brand-dim),transparent 55%)}
@@ -156,11 +166,25 @@ body{padding:10px}
 .br-age{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 3px;font-weight:750;font-size:9px;color:var(--muted);margin-right:4px}
 a:focus-visible,.br-cta:focus-visible{outline:2px solid var(--brand);outline-offset:2px}`.trim();
 
-  // Il glifo è lo stesso segno del brand (chevron ascendente), non un'icona
-  // presa altrove: inline SVG, mai emoji.
+  // Il logo VERO del brand (mark + wordmark), non un glifo ridisegnato: PNG
+  // 145×48 (~13KB) servito dalla nostra origin — `img-src 'self'` è già nella
+  // CSP della route, e i file pesano un quarantesimo dei master in /logos, che
+  // su un sito di terzi conta.
+  //
+  // Due varianti perché il wordmark cambia colore col tema (il segno resta
+  // verde in entrambe), ma se ne SCARICA UNA SOLA: a tema esplicito la scelta
+  // è già fatta qui, e su `auto` la fa <picture>. Con due <img> e uno swap in
+  // CSS il browser scaricava comunque anche quella nascosta — misurato.
+  //
+  // "Powered by" resta in inglese in tutte e 5 le lingue: è il lockup di
+  // attribuzione del marchio, non copy di prodotto.
+  const attrs = `class="br-mark" width="145" height="48" alt="BetRedge" decoding="async"`;
+  const mark = opts.theme === "auto"
+    ? `<picture><source srcset="${MARK_LIGHT}" media="(prefers-color-scheme: light)"><img src="${MARK_DARK}" ${attrs}></picture>`
+    : `<img src="${opts.theme === "light" ? MARK_LIGHT : MARK_DARK}" ${attrs}>`;
   const logo = `<a class="br-logo" href="${href}" target="_blank" rel="noopener nofollow">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 17.5 9.5 11l4 4L21 7" stroke="${"#23A559"}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 7H21v5.5" stroke="${"#23A559"}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    BETREDGE</a>`;
+    <span class="br-by">Powered by</span>${mark}
+  </a>`;
 
   return `<!doctype html>
 <html lang="${opts.lang}" class="${opts.theme === "light" ? "br-light" : ""}" data-host="${esc(opts.host ?? "")}" data-ref="${esc(opts.ref ?? "")}" data-mode="${opts.mode}">
