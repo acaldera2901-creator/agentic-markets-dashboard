@@ -47,7 +47,7 @@ export function signSession(identifier: string, secret = getSecret()): string {
 // Verifies signature, freshness and shape. Returns the payload or null.
 export function verifySession(
   token: string | undefined | null,
-  secret = getSecret()
+  secret?: string
 ): SessionPayload | null {
   if (!token || typeof token !== "string") return null;
   const dot = token.indexOf(".");
@@ -55,7 +55,15 @@ export function verifySession(
   const body = token.slice(0, dot);
   const sig = token.slice(dot + 1);
 
-  const expected = sign(body, secret);
+  // #SESSION-ANON-0829 — il segreto si risolve QUI, non in un parametro di
+  // default. I default si valutano PRIMA del corpo della funzione: con
+  // `secret = getSecret()` la chiamata partiva anche per chi non aveva alcun
+  // cookie, e le guardie qui sopra non venivano mai raggiunte. Risultato: in un
+  // ambiente senza SESSION_SECRET non cadeva il login — cadeva TUTTO il sito
+  // pubblico, perché ogni rotta che risolve l'accesso passa di qui.
+  // Da un cookie in poi il comportamento non cambia: se una sessione vera c'è
+  // e non possiamo verificarla, si grida invece di sloggare in silenzio.
+  const expected = sign(body, secret ?? getSecret());
   // constant-time compare; lengths must match for timingSafeEqual
   const sigBuf = Buffer.from(sig);
   const expBuf = Buffer.from(expected);
