@@ -623,7 +623,7 @@ async def fetch_unsettled_unified_predictions(
     params = {
         "select": (
             "id,external_event_id,sport,league,competition,home_team,away_team,"
-            "market,pick,starts_at,world_cup_stage"
+            "market,pick,starts_at,world_cup_stage,source_id"
         ),
         "sport": "eq.football",
         "is_historical": "eq.false",
@@ -1036,3 +1036,62 @@ async def settle_shadow_eval_row(
     except Exception as exc:
         logger.warning("shadow_eval settle error for %s: %s", row_id, exc)
         return False
+
+
+# Mappa la selezione del modello (match_predictions) al vocabolario del pick.
+_SELEZIONE_CALCIO = {"HOME": "home", "DRAW": "draw", "AWAY": "away"}
+
+
+async def fetch_football_selections(source_ids: list[str]) -> dict[str, str]:
+    """
+    Il pronostico del modello per righe di calcio il cui `pick` e' vuoto.
+
+    `unified_predictions.pick` e' vuoto su un gran numero di righe di calcio, e
+    `_unified_settlement_cycle` fa `if pick not in ("home","draw","away") ->
+    void`: un esito VERO diventava un void. Misurato il 30/08 sulle righe con
+    kickoff fra il 19 e il 29 agosto: il `void` segue il `senza pick` quasi riga
+    per riga (22/08: 24 righe, 14 void, 18 senza pick; 23/08: 30, 20, 21).
+
+    E' lo stesso difetto del tennis, e la stessa cura: `match_predictions.
+    best_selection` (HOME/DRAW/AWAY). Copertura misurata: 76% delle righe.
+    Quando manca si torna al comportamento precedente — meglio un void che un
+    pronostico inventato.
+
+    In BLOCCO, non una richiesta per riga: un ciclo puo' avere 50 righe.
+    """
+    base = _rest_base()
+    if not base or not source_ids:
+        return {}
+    puliti = [str(x) for x in dict.fromkeys(source_ids) if x]
+    if not puliti:
+        return {}
+    fuori: dict[str, str] = {}
+    # PostgREST `in.()` ha un limite pratico sulla lunghezza dell'URL: a blocchi.
+    for i in range(0, len(puliti), 40):
+        blocco = puliti[i : i + 40]
+        elenco = ",".join(f'"{x}"' for x in blocco)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"{base}/match_predictions",
+                    params={
+                        "select": "match_id,best_selection",
+                        "match_id": f"in.({elenco})",
+                    },
+                    headers=_service_headers(),
+                )
+            if resp.status_code != 200:
+                logger.warning(
+                    "match_predictions selection lookup: %s %s",
+                    resp.status_code, resp.text[:150],
+                )
+                continue
+            for riga in resp.json():
+                sel = _SELEZIONE_CALCIO.get(str(riga.get("best_selection") or "").strip().upper())
+                mid = riga.get("match_id")
+                if sel and mid:
+                    fuori[str(mid)] = sel
+        except Exception as exc:
+            # Un blocco che non risponde non deve far cadere il ciclo.
+            logger.warning("match_predictions selection lookup fallita: %s", exc)
+    return fuori
