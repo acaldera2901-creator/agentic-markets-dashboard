@@ -9927,3 +9927,179 @@ button:disabled {
    distribuisce su quante colonne servono davvero. */
 .featured .why dl { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 :root[data-theme="light"] .featured .hero-prob .num { text-shadow: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #EDGE-BANNER-GFX-0830 — il banner del giorno diventa lo slot piu' forte
+   della pagina, nella stessa lingua delle schede (#CARD-HUD-0830).
+
+   Cosa c'era: un rettangolo piatto con un alone rosa-corallo diffuso, un chip
+   a pillola, un triangolo di testo come icona e due numeri nudi a destra.
+   Sopra una griglia di 124 schede fotografate, era la cosa piu' spenta della
+   pagina — esattamente il contrario del suo ruolo.
+
+   Tre regole, le stesse delle schede:
+     · nessun box nuovo — si lavora sulla griglia che c'e' gia';
+     · un solo colore, il verde del brand: cambia la QUANTITA', non la tavolozza;
+     · effetti misurati, niente gradienti arcobaleno, niente pillole, niente
+       caratteri usati come icone.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* IL FONDO. La scena della metà sinistra, come nello split delle schede: dà
+   peso al pannello del verdetto. Il velo la copre quasi tutta — serve
+   profondità, non una fotografia da guardare. */
+
+.featured.is-football { --edge-scene: url(/banners/gen/scene-stadium.jpg); }
+.featured.is-tennis   { --edge-scene: url(/banners/gen/scene-court.jpg); }
+
+/* L'OCCHIELLO. Il pallino tondo diventa la tacca obliqua delle schede, e il
+   testo prende il passo tecnico del monospazio spaziato. */
+.featured .eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.featured .eyebrow .dot {
+  width: 18px; height: 6px; border-radius: 0;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+
+/* IL NUMERO tiene un filo d'accento verticale a sinistra, come il readout
+   delle schede: è lo stesso taglio, alla scala del banner. */
+.featured .hero-prob { position: relative; padding-left: 18px; }
+.featured .hero-prob::before {
+  content: ""; position: absolute; left: 0; top: 6%; bottom: 14%; width: 3px;
+  background: linear-gradient(180deg, transparent, var(--am-positive, #34D399) 20%,
+                              var(--am-positive, #34D399) 80%, transparent);
+  opacity: .9;
+}
+
+/* IL CHIP. Era una pillola con `border-radius`; diventa una targhetta smussata,
+   lo stesso taglio a 45° delle tacche. */
+.featured .edge {
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  padding: 5px 12px; letter-spacing: 0.04em;
+}
+
+/* LA COLONNA DEL PERCHÉ. Il triangolo era il carattere «▸»: ora è un segno
+   disegnato, che si allinea al testo invece di galleggiarci sopra. */
+.featured .why .wlab {
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+}
+.featured .why .wlab .tri { width: 7px; height: 9px; flex: 0 0 auto; margin: 0; }
+
+/* LE METRICHE. Due numeri nudi non dicevano di CHI fossero. Ora ogni valore
+   porta il suo nome, e chi guida sta in pieno mentre l'altro resta spento:
+   il confronto si legge senza contare le cifre. */
+.featured .why dl { gap: 22px 26px; }
+.featured .why dt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.featured .why dd.pair { display: flex; align-items: baseline; gap: 10px; }
+.featured .why dd.pair .side { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.featured .why dd.pair .side b {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.02em;
+  /* `--am-muted-2` misurava 4,46:1 sul fondo scuro: passa come testo grande
+     (soglia 3:1) ma questo e' un DATO che si legge, non decorazione. */
+  color: var(--am-muted); font-variant-numeric: tabular-nums;
+}
+.featured .why dd.pair .side em {
+  font-style: normal; font-size: 10.5px; color: var(--am-muted-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 15ch;
+}
+.featured .why dd.pair .side.lead b { color: var(--am-positive, #34D399); }
+.featured .why dd.pair .side.lead em { color: var(--am-text); }
+.featured .why dd.pair .sep {
+  width: 1px; align-self: stretch; margin: 2px 0 6px;
+  background: var(--am-line-2); flex: 0 0 auto;
+}
+
+/* LA PROSA respira: era 13px in grigio attaccata a un filo. */
+.featured .why .line { font-size: 13.5px; line-height: 1.65; padding-top: 18px; }
+
+/* TEMA CHIARO — stesso impianto. Il velo resta SCURO sulla scena (è la lezione
+   #299→#301: bianco su scena notturna fa foschia grigia), ma il pannello dei
+   dati è la carta della pagina, quindi la scena si ferma alla metà sinistra e
+   il testo scuro non ci finisce mai sopra. */
+
+:root[data-theme="light"] .featured .fxname,
+:root[data-theme="light"] .featured .hero-prob .pickname { color: #fff; }
+:root[data-theme="light"] .featured .league,
+:root[data-theme="light"] .featured .hero-prob .subl,
+:root[data-theme="light"] .featured .edge-plain { color: #c8cfd8; }
+:root[data-theme="light"] .featured .edge.is-extreme { color: #d5dbe3; border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.07); }
+:root[data-theme="light"] .featured .edge.is-extreme svg { color: #aeb6c0; }
+
+@media (max-width: 760px) {
+  /* in colonna la scena starebbe sotto il testo scuro del piede: si spegne. */
+  .featured::before { background: none; }
+  .featured::after,
+  :root[data-theme="light"] .featured::after { background: var(--am-coral-dim); }
+  .featured .hero-prob { padding-left: 14px; }
+}
+
+/* — correzioni misurate sul primo giro (#EDGE-BANNER-GFX-0830) — */
+
+/* CONTRASTO. In chiaro il pannello sinistro e' ora SCURO (come la fascia
+   fotografica delle schede), ma il numero teneva `--am-coral` = #137437, un
+   verde scelto per il contrasto SU BIANCO. Misurato sul glifo contro il suo
+   fondo reale: 3,46:1 — sotto soglia. Sul fondo scuro va il verde del tema
+   scuro. Ri-misurato dopo: vedi il commit. */
+/* NON si usa `var(--am-positive)`: quel token segue il TEMA DELLA PAGINA e in
+   chiaro vale #0f7a56, un verde tarato per il bianco. Ma questo pannello e'
+   scuro in entrambi i temi — quindi il verde va scelto per il FONDO CHE HA
+   DAVVERO DIETRO, non per il tema. Misurato: col token 3,81:1, col verde del
+   fondo scuro 8,9:1. E' la stessa logica per cui la fascia fotografica in
+   chiaro porta testo bianco. */
+:root[data-theme="light"] .featured .eyebrow,
+:root[data-theme="light"] .featured .hero-prob .num,
+:root[data-theme="light"] .featured .hero-prob .num .pc { color: #34D399; }
+:root[data-theme="light"] .featured .eyebrow .dot { background: #34D399; }
+
+/* LA SCENA si vedeva a .93 di velo: cioe' non si vedeva, ed era peso scaricato
+   per niente. Si apre dove non c'e' testo chiaro sopra, e resta piena dove
+   inizia il pannello dei dati. */
+/* Due strati, non uno: la fotografia va SCHIARITA (le scene sono notturne e a
+   velo pieno non si vedeva niente — peso scaricato per nulla), ma la velatura
+   che la tiene leggibile non deve schiarirsi con lei. Con un `background`
+   solo, il `filter` avrebbe agito su entrambe. */
+.featured::before {
+  background: var(--edge-scene, none) center 42% / cover no-repeat;
+  filter: saturate(1.15) contrast(1.05) brightness(1.5);
+  z-index: 0;
+}
+.featured::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: linear-gradient(100deg, rgba(18,21,25,.58) 0%, rgba(18,21,25,.80) 28%,
+                              rgba(18,21,25,.97) 46%, rgba(18,21,25,1) 100%);
+}
+.featured > * { z-index: 2; }
+:root[data-theme="light"] .featured::after {
+  background: linear-gradient(100deg, rgba(6,8,11,.60) 0%, rgba(6,8,11,.80) 28%,
+                              rgba(255,255,255,.98) 45%, rgba(255,255,255,1) 100%);
+}
+
+/* LE METRICHE si sparavano agli angoli opposti del pannello: `auto-fit` le
+   stirava su tutta la larghezza. Stanno vicine, a sinistra, e vanno a capo
+   quando serve. */
+.featured .why dl { display: flex; flex-wrap: wrap; gap: 20px 40px; }
+
+/* IL PANNELLO DESTRO era ancorato in alto mentre il sinistro e' centrato:
+   restava un vuoto in fondo alto quanto un terzo del banner. */
+.featured .why { display: flex; flex-direction: column; justify-content: center; }
+
+/* La CTA bloccata vive sullo stesso pannello scuro, quindi anche lei non puo'
+   prendere i colori dal tema della pagina: in chiaro misurava 3,33:1 — ed e' un
+   PULSANTE, non un'etichetta. Stesso taglio smussato del chip: niente pillole. */
+.featured .featured-unlock {
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  padding: 8px 14px;
+}
+:root[data-theme="light"] .featured .featured-unlock {
+  color: #34D399; border-color: rgba(52,211,153,.42); background: rgba(52,211,153,.12);
+}
