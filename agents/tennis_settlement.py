@@ -116,11 +116,7 @@ class TennisSettlementAgent(BaseAgent):
         if not pending:
             return
 
-        resolved = await self._resolve_via_matchbook(pending)
-        if not resolved:
-            # ESPN fallback: the same feed the collector uses also carries
-            # completed results ("A bt B"), so no exchange is required.
-            resolved = await self._resolve_via_espn(pending)
+        resolved = await self._resolve_all(pending)
         if not resolved:
             return
 
@@ -173,6 +169,38 @@ class TennisSettlementAgent(BaseAgent):
                 f"[SETTLEMENT] settled {updated} recent row(s) "
                 f"({len(elo_applied)} distinct match(es)), Elo updated"
             )
+
+    @staticmethod
+    def _unresolved(pending: list, resolved: list[tuple]) -> list:
+        """Le righe che il resolver precedente NON ha chiuso."""
+        done = {p.id for p, *_ in resolved}
+        return [p for p in pending if p.id not in done]
+
+    async def _resolve_all(self, pending: list) -> list[tuple]:
+        """
+        I due resolver sono COMPLEMENTARI, non alternativi.
+
+        Prima erano incatenati con `if not resolved:` — cioe' ESPN veniva
+        interrogato SOLO quando Matchbook non aveva risolto NIENTE. Bastava che
+        Matchbook chiudesse UNA riga perche' tutte le altre restassero aperte
+        fino a scadere a 7 giorni in `unresolved`.
+
+        Misurato sul log del daemon: 67 cicli su 75 hanno chiuso esattamente
+        1 riga — e' l'impronta digitale del corto circuito. Effetto a valle: il
+        settlement del tennis e' passato dal 55-78% (fino al 19/08) allo 0-7%
+        (dal 23/08), e su 76 pick sopra il floor con kickoff fra 25h e 7 giorni
+        fa solo 4 avevano un esito utilizzabile. Chi paga riceveva il pronostico
+        e mai l'esito; il canale pubblico prometteva di chiudere cio' che apre e
+        non ci riusciva.
+
+        Ora Matchbook risolve quello che sa (e' un'exchange: preciso ma con
+        copertura stretta), ed ESPN viene chiamato sul RESTO.
+        """
+        resolved = list(await self._resolve_via_matchbook(pending))
+        remaining = self._unresolved(pending, resolved)
+        if remaining:
+            resolved += list(await self._resolve_via_espn(remaining))
+        return resolved
 
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
