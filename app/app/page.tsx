@@ -5701,7 +5701,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   // compatta cliccabile che apre la scheda-dettaglio.
   if (!modalEnabled) {
     return (
-      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred" {...cardProps}>
+      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud" {...cardProps}>
         <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
@@ -5712,7 +5712,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
 
   return (
     <>
-      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred is-clickable" {...cardProps}>
+      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud is-clickable" {...cardProps}>
         <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}

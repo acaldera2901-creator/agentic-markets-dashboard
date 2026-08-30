@@ -827,3 +827,111 @@
    soglia (59 -> 91) per un effetto quasi invisibile. Il fondo di pagina in
    chiaro e' un lavoro che va fatto insieme ai ~60 colori low-contrast del tema
    (project_theme_light_fix), non di straforo qui. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #CARD-HUD-0830 — la scheda diventa un colpo visivo: metà immagine, metà numero.
+   Direzione scelta da Andrea sulle inspo generate ("C + A"): lo split orizzontale
+   del formato che abbiamo davvero, con la cornice a strumento del registro HUD.
+   Andrea: «questa scheda deve stimolare i livelli di dopamina solo a guardarla».
+
+   Tre regole che questo blocco rispetta, e che vengono dalle sue note anti-slop:
+     · nessun box nuovo — si riusa la griglia della scheda, non si incapsula;
+     · un solo colore, il verde del brand: cambia la QUANTITA', non la tavolozza;
+     · gli effetti sono due e misurati (alone del numero, filo d'accento), niente
+       gradienti arcobaleno, niente pill, niente emoji.
+
+   Il numero non cambia mai: resta la probabilita' del modello, col floor e i
+   claim di sempre. Qui cambia solo quanto forte la si dice.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-mc] .pred.hud {
+  display: grid;
+  grid-template-columns: 1.04fr .96fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas: "top read" "fx read" "foot foot";
+  align-items: stretch;
+}
+/* la fotografia smette di stare sotto TUTTA la scheda: tiene la meta' sinistra,
+   e la destra resta nero pieno perche' il numero abbia su cosa staccare. */
+[data-mc] .pred.hud .card-bg,
+[data-mc] .pred.hud .card-veil { right: 48%; }
+[data-mc] .pred.hud .top  { grid-area: top; }
+[data-mc] .pred.hud .fx   { grid-area: fx; align-self: end; }
+[data-mc] .pred.hud .v2r  { grid-area: read; }
+[data-mc] .pred.hud .pred-more { grid-area: foot; }
+
+/* il lato destro: nero pieno, un filo d'accento verticale che fa da taglio. */
+[data-mc] .pred.hud .v2r {
+  position: relative;
+  flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: .35rem; padding: 1rem 1rem 1.05rem 1.15rem;
+  border-top: 0;
+  background: linear-gradient(180deg, rgba(52,211,153,.035), transparent 62%);
+}
+[data-mc] .pred.hud .v2r::before {
+  content: ""; position: absolute; left: 0; top: 12%; bottom: 12%; width: 2px;
+  background: linear-gradient(180deg, transparent, var(--am-positive, #34D399) 22%, var(--am-positive, #34D399) 78%, transparent);
+  opacity: .85;
+}
+[data-mc] .pred.hud .v2r-l { order: 2; width: 100%; }
+[data-mc] .pred.hud .v2r-q { order: 1; align-items: flex-start; text-align: left; width: 100%; }
+
+/* IL NUMERO. Condensata pesante, alone corto — non un neon diffuso. */
+[data-mc] .pred.hud .v2r-qn {
+  font-family: var(--font-tech), var(--fm), ui-monospace, monospace;
+  font-size: clamp(46px, 5.6vw, 68px); font-weight: 800; line-height: .84;
+  letter-spacing: -.03em; color: var(--am-positive, #34D399);
+  text-shadow: 0 0 22px rgba(52,211,153,.34);
+}
+[data-mc] .pred.hud .v2r-qn .u { font-size: .34em; opacity: .7; margin-left: .04em; }
+[data-mc] .pred.hud .v2r-qlab {
+  font-family: var(--fm), monospace; font-size: .55rem; letter-spacing: .2em;
+  text-transform: uppercase; margin-bottom: .3rem;
+}
+/* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
+[data-mc] .pred.hud .v2r-pick {
+  font-family: var(--font-tech), var(--fd), sans-serif;
+  font-size: 1.18rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .005em; line-height: 1.06; white-space: normal;
+}
+[data-mc] .pred.hud .v2r-sub { justify-content: flex-start; margin-top: .35rem; }
+
+/* la confidenza: tacche oblique al posto dei pallini — e' il tratto HUD che
+   Andrea ha scelto dalla direzione A. Stessa informazione, altro registro. */
+[data-mc] .pred.hud .v2r-conf { gap: 3px; margin-top: .5rem; }
+[data-mc] .pred.hud .v2r-conf .d {
+  width: 17px; height: 7px; border-radius: 0; box-shadow: none;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  background: rgba(255,255,255,.10);
+}
+[data-mc] .pred.hud .v2r-conf .d.on { background: var(--am-positive, #34D399); }
+
+/* la fascia foto si stringe: il suo lavoro e' dare contesto, non occupare meta' scheda. */
+[data-mc] .pred.hud .top { padding: .8rem .9rem .4rem; }
+[data-mc] .pred.hud .fx  { padding: 0 .9rem .85rem; }
+
+/* mobile: sotto i 640px lo split non ha respiro — si torna in colonna, ma il
+   numero resta grande e la fotografia riprende tutta la larghezza. */
+@media (max-width: 640px) {
+  [data-mc] .pred.hud {
+    grid-template-columns: 1fr;
+    grid-template-areas: "top" "fx" "read" "foot";
+  }
+  [data-mc] .pred.hud .card-bg,
+  [data-mc] .pred.hud .card-veil { right: 0; bottom: 42%; }
+  [data-mc] .pred.hud .v2r { padding: .85rem .95rem 1rem; }
+  [data-mc] .pred.hud .v2r::before { top: 0; bottom: auto; left: 0; right: 0; width: auto; height: 2px;
+    background: linear-gradient(90deg, var(--am-positive, #34D399), transparent 68%); }
+  [data-mc] .pred.hud .v2r-qn { font-size: 52px; }
+}
+
+/* TEMA CHIARO — stesso impianto, contrasto invertito. Il nero pieno diventa un
+   grigio profondo: su bianco un nero assoluto spezzerebbe la pagina. */
+:root[data-theme="light"] [data-mc] .pred.hud .v2r {
+  background: linear-gradient(180deg, rgba(35,165,89,.06), transparent 62%);
+}
+:root[data-theme="light"] [data-mc] .pred.hud .v2r-qn {
+  color: var(--am-coral, #23A559); text-shadow: none;
+}
+:root[data-theme="light"] [data-mc] .pred.hud .v2r-conf .d { background: rgba(0,0,0,.10); }
+:root[data-theme="light"] [data-mc] .pred.hud .v2r-conf .d.on { background: var(--am-coral, #23A559); }
