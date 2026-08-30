@@ -5125,11 +5125,16 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   // #HEADLINE-MARKET-0830 — su una partita equilibrata l'1X2 non ha una risposta
   // forte (Casa Pia v Moreirense: 33,9 / 30,8 / 35,4). La testata passa allora
   // alla doppia chance, che e' la STESSA previsione su una domanda piu' facile:
-  // 1X = p_home + p_draw, sommato dalla tripla gia' servita. Solo quando il
-  // favorito non arriva a HEADLINE_MIN_PROB, e solo se la riga non e' below-floor
-  // (li' vale gia' la regola sua). Misurato: il numero piu' basso in board passa
-  // da 35,1% a 50,2%.
-  const headline = belowFloor ? null : headlineRead(
+  // 1X = p_home + p_draw, sommato dalla tripla gia' servita.
+  //
+  // #HEADLINE-BELOWFLOOR-0830 — la prima versione escludeva le righe below-floor
+  // ("li' vale gia' la regola sua"). Era sbagliato: below-floor significa proprio
+  // "nessun favorito netto", cioe' ESATTAMENTE il caso che questo lavoro deve
+  // servire. Casa Pia era below-floor. Il visual check in produzione l'ha mostrato
+  // subito: SK Brann 39%, FC Andorra 39%, Molde 47% erano rimaste invariate.
+  // Non e' un claim di edge — su quelle righe il value resta nascosto comunque —
+  // ma una lettura piu' informativa della stessa identica previsione.
+  const headline = headlineRead(
     { pHome: p.p_home, pDraw: p.p_draw, pAway: p.p_away },
     { double_1x: extraOdds("double_1x"), double_x2: extraOdds("double_x2") },
   );
