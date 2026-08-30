@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 
 from agents.base import BaseAgent
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
-from core.espn_tennis_client import get_completed_results
+from core.espn_tennis_client import get_completed_results, get_completed_results_for_days
 from core.supabase_client import settle_unified_tennis
 from core.tennis_names import canonical_player_key
 from models.elo_surface import EloSurfaceModel
@@ -202,6 +202,32 @@ class TennisSettlementAgent(BaseAgent):
             resolved += list(await self._resolve_via_espn(remaining))
         return resolved
 
+    @staticmethod
+    def _giorni_di(pending: list) -> set:
+        """
+        I giorni (UTC) delle pick pendenti: e' l'insieme minimo di date da
+        chiedere all'archivio. Chiedere una finestra fissa costerebbe richieste
+        per giorni in cui non c'e' niente da chiudere.
+        """
+        giorni = set()
+        for pred in pending:
+            quando = (
+                getattr(pred, "scheduled", None)
+                or getattr(pred, "scheduled_at", None)
+                or getattr(pred, "starts_at", None)
+                or getattr(pred, "computed_at", None)
+            )
+            if not quando:
+                continue
+            try:
+                dt = quando if hasattr(quando, "date") else datetime.fromisoformat(
+                    str(quando).replace("Z", "+00:00")
+                )
+                giorni.add(dt.date())
+            except Exception:
+                continue
+        return giorni
+
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
         Resolve outcomes from ESPN completed results (free, no key).
@@ -209,11 +235,23 @@ class TennisSettlementAgent(BaseAgent):
         winner is whoever ESPN listed first ("A bt B"). Returns the same
         (TennisPrediction, "P1"|"P2") shape as the Matchbook resolver.
         """
+        # DUE fonti, unite. `get_completed_results()` legge il tabellone corrente
+        # (economico, prende cio' che e' appena finito). L'archivio per data
+        # recupera i giorni passati: senza, un esito che non viene raccolto entro
+        # poche ore e' perso per sempre — misurato il 30/08, e' la seconda meta'
+        # della causa per cui il settlement era andato a zero. Un errore su una
+        # fonte non deve spegnere l'altra.
+        results: list[dict] = []
         try:
-            results = await get_completed_results()
+            results.extend(await get_completed_results())
         except Exception as e:
-            self.logger.debug(f"espn results lookup failed: {e}")
-            return []
+            self.logger.warning(f"espn header lookup fallito: {e}")
+        giorni = self._giorni_di(pending)
+        if giorni:
+            try:
+                results.extend(await get_completed_results_for_days(giorni))
+            except Exception as e:
+                self.logger.warning(f"espn archivio fallito: {e}")
         if not results:
             return []
 
