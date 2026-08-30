@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { initAttribution } from "@/lib/attribution";
+import { initAttribution, sourceFromSearch } from "@/lib/attribution";
 import { trackEvent } from "@/lib/track-event";
 
 export default function PageViewTracker() {
@@ -19,7 +19,11 @@ export default function PageViewTracker() {
     initAttribution();
     // `path` in meta: è il campo libero della tabella events (meta JSONB);
     // event_type resta "page_view" per non spezzare le query esistenti.
-    trackEvent("page_view", { meta: { path: pathname } });
+    // La provenienza dichiarata nell'URL (`?src=tg-free` dai canali Telegram).
+    // Letta da window.location e non da useSearchParams(): quel hook renderebbe
+    // dinamiche le pagine statiche per SEO. Entra nel meta solo se c'e'.
+    const prov = typeof window !== "undefined" ? sourceFromSearch(window.location.search) : {};
+    trackEvent("page_view", { meta: { path: pathname, ...prov } });
   }, [pathname]);
 
   // Consenso accettato dopo il caricamento: l'utente è ancora sulla pagina di
