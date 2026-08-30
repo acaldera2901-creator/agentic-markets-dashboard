@@ -375,65 +375,60 @@ def main() -> int:
 """
 
     # ── 6. IL TEMA CHIARO ────────────────────────────────────────────────────
-    # Il fondo cinematico e' scuro e resta gated fuori dal chiaro. Ma la FOTO
-    # dietro la scheda si puo' avere anche qui: cambia la velatura, che diventa
-    # BIANCA. Il testo in chiaro e' scuro, quindi sotto gli serve chiaro: con la
-    # velatura scura della notte sarebbe illeggibile.
-    # Nota di struttura: le regole di geometria (.card-bg absolute, gli z-index)
-    # vivono nello scope scuro, quindi qui vanno ripetute — sono quattro righe e
-    # ripeterle costa meno che spostare mezzo foglio fuori dal tema.
+    # Il fondo cinematico e' scuro e resta gated fuori dal chiaro. La FOTO
+    # dietro la scheda e' stata provata anche qui, con la velatura ribaltata a
+    # BIANCA, e non regge: la carta chiara non e' un fondo cinematico, e due
+    # velature sovrapposte la riducevano a una macchia (dettaglio nel commento
+    # CSS sotto). In chiaro la scheda e' carta — ma il filetto dello sport ci
+    # vuole, quindi qui servono i token --d-*, che vivono nello scope scuro.
     res += f"""
 /* ══════════════════════════════════════════════════════════════
-   IL TEMA CHIARO — la foto c'e', la velatura e' bianca
+   IL TEMA CHIARO — la carta, senza foto
+   La foto dietro la scheda vive SOLO nel tema scuro, dov'e' coerente
+   col fondo cinematico. In chiaro era una macchia, e la causa era
+   strutturale: DUE velature bianche sovrapposte (.card-veil da 40% a
+   98%, e il fondo di .top da 94% a 28%) lasciavano la foto visibile in
+   una sola fascia sottile e accidentale — proprio sotto lega e orario.
+   Con `saturate(2)` sopra, il campo notturno diventava foschia grigia
+   e la terra rossa del tennis uno sbaffo rosa. Andrea, 30/08: in
+   chiaro la scheda e' carta. Le due velature cadono con la foto:
+   erano la sua maschera, non un fondo.
    Il resto del tema chiaro NON e' toccato: ha ~60 colori
    low-contrast noti (project_theme_light_fix), che sono un
    lavoro suo e non si risolvono di straforo qui.
    ══════════════════════════════════════════════════════════════ */
+/* I token dello sport vivono nel blocco :root:not([data-theme="light"]),
+   quindi in chiaro `var(--d-tennis)` non risolveva e --mc-accent cadeva
+   sul fallback: misurato, OGNI scheda portava il filetto viola del
+   calcio, tennis compreso. Qui i token ci sono, e il filetto segue lo
+   sport come nel tema scuro. */
+{LIGHT} [data-mc]{{--d-football:#6d28d9;--d-tennis:#c2410c;--d-wc:#0369a1}}
 {LIGHT} [data-mc] .pred{{position:relative;isolation:isolate;overflow:hidden}}
-{LIGHT} [data-mc] .pred>*:not(.card-bg):not(.card-veil){{position:relative;z-index:2}}
-{LIGHT} [data-mc] .card-bg{{
-  position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;
-  background-size:cover;background-repeat:no-repeat;
-  opacity:1;filter:brightness(1.12) saturate(2) contrast(1.06)}}
-  /* saturazione ALTA e luminosita' contenuta: una scena notturna schiarita
-     troppo diventa una foschia grigia. Col verde del campo che resta verde, la
-     foto si riconosce anche dietro una velatura bianca. */
-{LIGHT} [data-mc] .card-veil{{
-  position:absolute;inset:0;z-index:1;background:linear-gradient(to top,
-  rgba(255,255,255,.98) 50%,
-  rgba(255,255,255,.82) 76%,
-  rgba(255,255,255,.4) 100%)}}
-/* In chiaro il testo e' SCURO e i grigi piccoli del prodotto stanno sopra la
-   foto: misurati, lega/orario/`v`/turno scendevano da 3,93 a 2,0-2,5. Si
-   agisce su due leve insieme — velatura piu' densa dove sta il testo, e quei
-   grigi al gradino scuro del tema chiaro (--am-muted #4A515B). */
+{LIGHT} [data-mc] .pred>*{{position:relative;z-index:2}}
+/* le classi .im-* montano l'immagine FUORI dal tema (servono a entrambi):
+   togliere le regole chiare qui lascerebbe la foto nuda, senza velatura, a
+   tutta scheda. I due strati si spengono esplicitamente. */
+{LIGHT} [data-mc] .card-bg,{LIGHT} [data-mc] .card-veil{{display:none}}
+/* I grigi piccoli restano al gradino scuro del tema chiaro: la foto non
+   c'e' piu', ma erano gia' al limite sulla carta bianca (misurati a 3,93
+   lega/orario/`v`/turno). --am-muted #4A515B e' il gradino del tema. */
 {LIGHT} [data-mc] .pred .league,{LIGHT} [data-mc] .pred .when,
 {LIGHT} [data-mc] .pred .vs,{LIGHT} [data-mc] .pred .rnd,
 {LIGHT} [data-mc] .pred .stt,{LIGHT} [data-mc] .pred .v2r-eye,
 {LIGHT} [data-mc] .pred .v2r-qlab,{LIGHT} [data-mc] .pred .v2r-conf-t,
 {LIGHT} [data-mc] .pred .v2r-sub{{color:#3a4149}}
-/* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara e'
-   il prodotto di prima con una sfumatura sopra */
-/* la riga di testata porta il proprio fondo anche in chiaro: senza, lega e
-   orario finiscono grigi sopra la parte illuminata della foto (misurato:
-   illeggibili). E' la stessa mitigazione del tema scuro, ribaltata. */
-{LIGHT} [data-mc] .pred .top{{position:relative;background:linear-gradient(to bottom,
-  rgba(255,255,255,.94),rgba(255,255,255,.74) 62%,rgba(255,255,255,.28))}}
-{LIGHT} [data-mc] .pred .fx{{background:linear-gradient(to bottom,
-  rgba(255,255,255,.9),rgba(255,255,255,.76) 62%,rgba(255,255,255,.4))}}
+/* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara
+   e' il prodotto di prima. `position:relative` su .top resta — e' l'ancora
+   del filetto, non un residuo della velatura. */
+{LIGHT} [data-mc] .pred .top{{position:relative}}
 {LIGHT} [data-mc] .pred .top::before{{
   content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
   background:var(--mc-accent,#6d28d9)}}
-@media(max-width:640px){{
-  {LIGHT} [data-mc] .card-bg{{opacity:.3}}
-  {LIGHT} [data-mc] .card-veil{{background:linear-gradient(to top,rgba(255,255,255,.97) 46%,rgba(255,255,255,.9))}}
-}}
 /* La scena DI PAGINA in chiaro e' stata provata e TOLTA: misurata, spostava di
    poco il fondo sotto decine di grigi gia' al limite e portava 32 nodi sotto
-   soglia (59 -> 91) per un effetto quasi invisibile. La richiesta era lo sfondo
-   della SCHEDA, e quello resta. Il fondo di pagina in chiaro e' un lavoro che
-   va fatto insieme ai ~60 colori low-contrast del tema (project_theme_light_fix),
-   non di straforo qui. */
+   soglia (59 -> 91) per un effetto quasi invisibile. Il fondo di pagina in
+   chiaro e' un lavoro che va fatto insieme ai ~60 colori low-contrast del tema
+   (project_theme_light_fix), non di straforo qui. */
 """
 
     DST.write_text(res, encoding="utf-8")
