@@ -842,6 +842,7 @@ async def settle_unified_tennis(
     void: bool = False,
     unresolved: bool = False,
     final_score: str | None = None,
+    predicted_player: str | None = None,
 ) -> bool:
     """
     Bridge a tennis settlement to the served unified_predictions row.
@@ -887,7 +888,18 @@ async def settle_unified_tennis(
         if not rows:
             return False
         row = rows[0]
-        pick = (row.get("pick") or "").strip()
+        # `unified_predictions.pick` e' VUOTO sul 47% delle righe tennis degli
+        # ultimi 3 giorni (misurato il 30/08): la riga dice «confidence 68» senza
+        # dire su CHI. Con il solo `pick` il confronto col vincitore e'
+        # impossibile e la riga finisce in `void` — 14 delle prime 20 chiuse dopo
+        # la riparazione del settlement sono andate cosi', cioe' un esito VERO
+        # buttato via.
+        #
+        # `predicted_player` arriva da `tennis_predictions.best_selection`, che e'
+        # popolato al 100% (76 P1 + 56 P2 su 132 righe in 3 giorni, zero vuoti):
+        # e' la stessa fonte da cui il canale Telegram ricava il favorito sulle
+        # card, quindi il registro pubblico e la chiusura dicono la stessa cosa.
+        pick = (row.get("pick") or "").strip() or (predicted_player or "").strip()
         if unresolved:
             # #TENNIS-VOID-FIX-1: aged out without ever resolving the match.
             # Not a confirmed void — flagged so /api/v2/history excludes it from
