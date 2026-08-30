@@ -5295,7 +5295,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         pick: shownName
           ? (useHeadline || belowFloor || pickKey === "DRAW" ? shownName : `${shownName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`)
           : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modelo", ru: "Чтение модели" }),
-        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto · ", en: "no clear favourite · ", es: "sin favorito claro · ", fr: "pas de favori net · ", ru: "нет явного фаворита · " }) : ""}${shownProb != null ? pct(shownProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        // #CARD-HUD-0830 — la probabilita' del modello e' il numero protagonista
+        // anche dentro la scheda aperta, come nella scheda in griglia. `read`
+        // resta la didascalia e porta SOLO il caveat sotto il floor: la parola
+        // «low» non deve comparire (regola di Andrea, #FLOOR-LABEL-0830) — la
+        // confidenza la dicono le tacche.
+        prob: shownProb != null ? pct(shownProb) : null,
+        probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
+        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: shownOdds != null ? shownOdds.toFixed(2) : null,
@@ -5902,7 +5909,14 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         pick: pickName
           ? (belowFloor ? pickName : `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`)
           : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" }),
-        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto · ", en: "no clear favourite · ", es: "sin favorito claro · ", fr: "pas de favori net · ", ru: "нет явного фаворита · " }) : ""}${pickProb != null ? pct(pickProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        // #CARD-HUD-0830 — la probabilita' del modello e' il numero protagonista
+        // anche dentro la scheda aperta, come nella scheda in griglia. `read`
+        // resta la didascalia e porta SOLO il caveat sotto il floor: la parola
+        // «low» non deve comparire (regola di Andrea, #FLOOR-LABEL-0830) — la
+        // confidenza la dicono le tacche.
+        prob: pickProb != null ? pct(pickProb) : null,
+        probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
+        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
