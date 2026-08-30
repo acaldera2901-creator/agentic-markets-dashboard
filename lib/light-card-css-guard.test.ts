@@ -133,11 +133,25 @@ describe("la fascia fotografica in chiaro", () => {
   const chiare = rules.filter((r) => r.sel.split(",").some((p) => p.trim().startsWith(LIGHT)));
   const stilano = (sel: string) => chiare.filter((r) => r.sel.split(",").some((p) => p.trim().endsWith(sel)));
 
-  it("la velatura è UNA sola, ed è SCURA", () => {
+  // #CARD-HUD-0830 — la scheda ha ora DUE varianti: quella impilata (sempre) e
+  // lo split, che si accende via container query quando la scheda e' larga.
+  // Ognuna porta la sua velatura, ma una scheda ne vede sempre e solo UNA: la
+  // seconda regola SOVRASCRIVE la prima sullo stesso elemento, non ne aggiunge
+  // un'altra sopra — che era il difetto originale. Il guard passa quindi da
+  // «una sola regola» a «una per variante, e nessuna delle due bianca»: la
+  // lezione sorvegliata (niente bianco su scena notturna) resta intatta.
+  const variante = (r: Rule) => (/\.pred\.hud/.test(r.sel) ? "split" : "base");
+
+  it("ogni variante ha UNA velatura, e nessuna è BIANCA", () => {
     const v = stilano(".card-veil");
-    expect(v.length, `velature in chiaro: ${v.length} (deve essere 1)`).toBe(1);
-    expect(v[0].decls).toContain("linear-gradient");
-    expect(/rgba\(\s*255\s*,\s*255\s*,\s*255/.test(v[0].decls), "velatura BIANCA su scena notturna: fa foschia grigia").toBe(false);
+    const base = v.filter((r) => variante(r) === "base");
+    const split = v.filter((r) => variante(r) === "split");
+    expect(base.length, `velature base in chiaro: ${base.length} (deve essere 1)`).toBe(1);
+    expect(split.length, `velature split in chiaro: ${split.length} (max 1)`).toBeLessThanOrEqual(1);
+    for (const r of v) {
+      expect(r.decls, `velatura senza gradiente: ${r.sel}`).toContain("linear-gradient");
+      expect(/rgba\(\s*255\s*,\s*255\s*,\s*255/.test(r.decls), `velatura BIANCA su scena notturna (${r.sel}): fa foschia grigia`).toBe(false);
+    }
   });
 
   it("nessuna SECONDA velatura su .top o .fx (era la causa della macchia)", () => {
@@ -147,13 +161,26 @@ describe("la fascia fotografica in chiaro", () => {
     }
   });
 
-  it("foto e velatura finiscono nello stesso punto, sul bordo alto del readout", () => {
-    // 154px = distanza da `.v2r` al fondo scheda, misurata su tutte e 126 le
-    // schede con questa struttura. Se il layout del readout cambia, va
-    // RI-MISURATA, non indovinata.
-    const b = (s: string) => prop(stilano(s)[0]?.decls ?? "", "bottom");
-    expect(b(".card-bg"), "la foto non è ritagliata alla fascia").toBe("154px");
-    expect(b(".card-veil"), "la velatura non finisce dove finisce la foto").toBe(b(".card-bg"));
+  it("foto e velatura finiscono nello stesso punto, in ENTRAMBE le varianti", () => {
+    // Variante impilata: 154px = distanza da `.v2r` al fondo scheda, misurata su
+    // tutte e 126 le schede con questa struttura. Se il layout del readout
+    // cambia, va RI-MISURATA, non indovinata.
+    const primo = (sel: string, v: "base" | "split") =>
+      stilano(sel).find((r) => variante(r) === v)?.decls ?? "";
+    expect(prop(primo(".card-bg", "base"), "bottom"), "la foto non è ritagliata alla fascia").toBe("154px");
+    expect(prop(primo(".card-veil", "base"), "bottom"), "la velatura non finisce dove finisce la foto").toBe("154px");
+
+    // Variante split: niente costante da ri-misurare — foto e velatura arrivano
+    // al fondo scheda e sono coperte sotto il readout da `.v2r`/`.why` opachi.
+    // Devono pero' finire nello STESSO punto anche in orizzontale, altrimenti
+    // sotto il pannello dei dati resta una scheggia della fotografia.
+    const bg = primo(".card-bg", "split");
+    if (bg) {
+      const veil = primo(".card-veil", "split");
+      for (const lato of ["top", "bottom", "left", "right"]) {
+        expect(prop(veil, lato), `nello split la velatura diverge dalla foto su ${lato}`).toBe(prop(bg, lato));
+      }
+    }
   });
 
   it("la foto non è sovra-saturata (era lo sbaffo rosa sulla terra rossa)", () => {

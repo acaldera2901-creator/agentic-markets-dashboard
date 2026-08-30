@@ -6161,7 +6161,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   if (!modalEnabled) {
     return (
-      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis" {...cardProps}>
         <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
         {headerNode}
         {readoutNode}
@@ -6172,7 +6172,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   return (
     <>
-      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis is-clickable" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis is-clickable" {...cardProps}>
         <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
         {headerNode}
         {readoutNode}
