@@ -8244,7 +8244,13 @@ function FeaturedEdge({
   let pickName: string;
   let modelEdgePts: number;
   let why: string;
-  const metrics: { dt: string; dd: React.ReactNode }[] = [];
+  // #EDGE-BANNER-GFX-0830 — le metriche portavano due numeri nudi («1753 · 1430»)
+  // senza dire di CHI fossero: l'ordine era l'unico indizio. `pair` porta il nome
+  // accanto a ogni valore. NIENTE barra proporzionale: su un Elo il rapporto
+  // 1753/(1753+1430) disegnerebbe un 55/45 che sottostima un divario di 323 punti,
+  // cioe' mentirebbe. Si evidenzia chi guida, non si inventa una proporzione.
+  type Pair = { an: string; av: number; bn: string; bv: number };
+  const metrics: { dt: string; dd: React.ReactNode; pair?: Pair }[] = [];
 
   if (sport === "football" && topFootball) {
     const p = topFootball;
@@ -8283,7 +8289,9 @@ function FeaturedEdge({
       metrics.push({ dt: it ? "Forma (5)" : "Form (5)", dd: <>{fmt(fh)} <span className="vs">vs</span> {fmt(fa)}</> });
     }
     if (mH != null && mA != null) {
-      metrics.push({ dt: it ? "Campione" : "Sample", dd: <span className="tnum">{mH} <span className="vs">vs</span> {mA}</span> });
+      metrics.push({ dt: it ? "Campione" : "Sample",
+        dd: <span className="tnum">{mH} <span className="vs">vs</span> {mA}</span>,
+        pair: { an: p.home_team, av: mH, bn: p.away_team, bv: mA } });
     }
   } else {
     const m = topTennis as TennisMatch;
@@ -8311,10 +8319,14 @@ function FeaturedEdge({
     modelEdgePts = Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
     why = buildTennisWhy(m, lang);
     if (m.elo_p1 != null && m.elo_p2 != null) {
-      metrics.push({ dt: it ? `Rating ${surf}` : `Rating ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
+      metrics.push({ dt: it ? `Rating ${surf}` : `Rating ${surf}`,
+        dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span>,
+        pair: { an: m.player1, av: Math.round(m.elo_p1), bn: m.player2, bv: Math.round(m.elo_p2) } });
     }
     if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
-      metrics.push({ dt: it ? "Match superficie" : "Surface matches", dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span> });
+      metrics.push({ dt: it ? "Match superficie" : "Surface matches",
+        dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span>,
+        pair: { an: m.player1, av: m.surface_matches_p1, bn: m.player2, bv: m.surface_matches_p2 } });
     }
   }
 
@@ -8328,7 +8340,7 @@ function FeaturedEdge({
   if (!isPremiumClient) {
     return (
       <div className="edge-chamfer chamfer">
-      <section className="featured featured-locked" aria-label={eyebrow}>
+      <section className={`featured featured-locked is-${sport}`} aria-label={eyebrow}>
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
           <div className="fxrow">
@@ -8349,7 +8361,7 @@ function FeaturedEdge({
         </div>
         <div className="seam" />
         <div className="why">
-          <div className="wlab"><span className="tri">▸</span> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
+          <div className="wlab"><svg className="tri" viewBox="0 0 8 10" aria-hidden="true"><path d="M0 0l8 5-8 5z" fill="currentColor"/></svg> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
           <p className="line locked-blur" aria-hidden="true">
             {it
               ? "L'analisi completa — rating, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
@@ -8363,7 +8375,7 @@ function FeaturedEdge({
 
   return (
     <div className="edge-chamfer chamfer">
-    <section className="featured" aria-label={eyebrow}>
+    <section className={`featured is-${sport}`} aria-label={eyebrow}>
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
         <div className="fxrow">
@@ -8399,11 +8411,26 @@ function FeaturedEdge({
       </div>
       <div className="seam" />
       <div className="why">
-        <div className="wlab"><span className="tri">▸</span> {it ? `Perché il modello sceglie ${pickName}` : `Why the model picks ${pickName}`}</div>
+        <div className="wlab"><svg className="tri" viewBox="0 0 8 10" aria-hidden="true"><path d="M0 0l8 5-8 5z" fill="currentColor"/></svg> {it ? `Perché il modello sceglie ${pickName}` : `Why the model picks ${pickName}`}</div>
         {metrics.length > 0 && (
           <dl>
             {metrics.map((m, i) => (
-              <div className="it" key={i}><dt>{m.dt}</dt><dd>{m.dd}</dd></div>
+              <div className="it" key={i}>
+                <dt>{m.dt}</dt>
+                {m.pair ? (
+                  <dd className="pair">
+                    <span className={`side${m.pair.av >= m.pair.bv ? " lead" : ""}`}>
+                      <b className="tnum">{m.pair.av}</b><em>{m.pair.an}</em>
+                    </span>
+                    <span className="sep" aria-hidden="true" />
+                    <span className={`side${m.pair.bv > m.pair.av ? " lead" : ""}`}>
+                      <b className="tnum">{m.pair.bv}</b><em>{m.pair.bn}</em>
+                    </span>
+                  </dd>
+                ) : (
+                  <dd>{m.dd}</dd>
+                )}
+              </div>
             ))}
           </dl>
         )}
