@@ -890,8 +890,13 @@
   text-transform: uppercase; margin-bottom: .3rem;
 }
 /* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
+/* NIENTE var(--fd) qui: quel token vive solo in `[data-mc]` sotto il tema scuro,
+   e un var() che non risolve dentro `font-family` non degrada — INVALIDA la
+   dichiarazione intera, che eredita il font di sistema. Era gia' successo col
+   numero (var(--fm)); l'avevo corretto sull'istanza invece che sulla classe, e
+   la pick e' andata in produzione senza condensata in tema chiaro. */
 [data-mc] .pred.hud .v2r-pick {
-  font-family: var(--font-tech), var(--fd), sans-serif;
+  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
   font-size: 1.18rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .005em; line-height: 1.06; white-space: normal;
 }

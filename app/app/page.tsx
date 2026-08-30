@@ -8297,7 +8297,11 @@ function FeaturedEdge({
     const surf = it
       ? (m.surface === "CLAY" ? "terra" : m.surface === "GRASS" ? "erba" : "cemento")
       : (m.surface === "CLAY" ? "clay" : m.surface === "GRASS" ? "grass" : "hard");
-    league = `${m.tournament} · ${surf} · ${m.round}`;
+    // `round` arriva vuoto dal feed sul 100% dei match (misurato 30/08: 80/80),
+    // e la template string lasciava un "·" sospeso in fondo: «US Open · hard · ».
+    // Si compone dai pezzi che ESISTONO, cosi' il separatore non sopravvive al
+    // pezzo che deve separare.
+    league = [m.tournament, surf, m.round].filter((x) => String(x ?? "").trim()).join(" · ");
     // Coherence (FTC): pick, probability, model-edge and buildTennisWhy (which
     // narrates the higher-probability player as the favourite) must all point
     // at the same selection — the model's top player, not best_selection.
@@ -8314,7 +8318,11 @@ function FeaturedEdge({
     }
   }
 
-  const eyebrow = it ? "Edge del giorno · il modello vs il mercato" : "Edge of the day · model vs market";
+  // #EDGE-BANNER-0830 — l'occhiello diceva «il modello vs il mercato» sopra un
+  // blocco che di mercato non parla: la probabilita' e il chip sono lo scarto
+  // INTERNO del modello (pick vs seconda ipotesi), come spiega la riga sotto il
+  // chip. Il confronto col prezzo sta nella prosa a destra, non qui.
+  const eyebrow = it ? "Edge del giorno · lo scarto più ampio del modello" : "Edge of the day · the model's widest gap";
 
   // Locked / teaser variant — never expose pick name or probability.
   if (!isPremiumClient) {
