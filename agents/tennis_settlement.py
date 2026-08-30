@@ -157,8 +157,14 @@ class TennisSettlementAgent(BaseAgent):
             await self._settle_bets(pred.match_id, outcome)
             # Bridge to the public track record (/api/v2/history) — with the
             # REAL set score when ESPN provided one (#021).
+            # Il favorito secondo il modello, dalla fonte popolata al 100%.
+            # Serve al ponte quando `unified_predictions.pick` e' vuoto (47%
+            # delle righe tennis): senza, un esito vero diventa un `void`.
             await settle_unified_tennis(
-                pred.match_id, winner_name, final_score=score_text
+                pred.match_id,
+                winner_name,
+                final_score=score_text,
+                predicted_player=self._favorito(pred),
             )
             updated += 1
 
@@ -227,6 +233,20 @@ class TennisSettlementAgent(BaseAgent):
             except Exception:
                 continue
         return giorni
+
+    @staticmethod
+    def _favorito(pred) -> str | None:
+        """
+        Il giocatore su cui il modello ha puntato, da `best_selection` (P1/P2).
+        E' la stessa regola che il canale Telegram usa per il favorito sulle
+        card, quindi la card e la chiusura non possono contraddirsi.
+        """
+        sel = (getattr(pred, "best_selection", None) or "").strip().upper()
+        if sel == "P1":
+            return pred.player1
+        if sel == "P2":
+            return pred.player2
+        return None
 
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
