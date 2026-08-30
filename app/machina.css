@@ -827,3 +827,183 @@
    soglia (59 -> 91) per un effetto quasi invisibile. Il fondo di pagina in
    chiaro e' un lavoro che va fatto insieme ai ~60 colori low-contrast del tema
    (project_theme_light_fix), non di straforo qui. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #CARD-HUD-0830 — la scheda diventa un colpo visivo: metà immagine, metà numero.
+   Direzione scelta da Andrea sulle inspo generate ("C + A"): lo split orizzontale
+   del formato che abbiamo davvero, con la cornice a strumento del registro HUD.
+   Andrea: «questa scheda deve stimolare i livelli di dopamina solo a guardarla».
+
+   Tre regole che questo blocco rispetta, e che vengono dalle sue note anti-slop:
+     · nessun box nuovo — si riusa la griglia della scheda, non si incapsula;
+     · un solo colore, il verde del brand: cambia la QUANTITA', non la tavolozza;
+     · gli effetti sono due e misurati (alone del numero, filo d'accento), niente
+       gradienti arcobaleno, niente pill, niente emoji.
+
+   Il numero non cambia mai: resta la probabilita' del modello, col floor e i
+   claim di sempre. Qui cambia solo quanto forte la si dice.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Le schede in board non hanno UNA larghezza: misurate in produzione vanno da
+   270px (tennis a 1440) a 739px (calcio a 2560). Uno split fisso a meta' spezza
+   i nomi delle squadre e manda la data a capo sulle schede strette — provato e
+   misurato. Quindi si separano le due meta' della direzione scelta:
+
+     · l'ENFASI (numero gigante, pick condensata, tacche) vale SEMPRE;
+     · lo SPLIT si accende solo quando la scheda e' larga abbastanza per reggerlo,
+       e la soglia la decide la scheda stessa, non la finestra: container query.
+
+   Il `:root` in testa ai selettori non e' decorativo: la scheda base e' dichiarata
+   da `:root:not([data-theme="light"]) [data-mc] .pred{display:flex}` e senza
+   pareggiare quella specificita' la griglia non si attiva affatto. */
+:root [data-mc] { container-type: inline-size; container-name: mc; }
+
+/* ── L'ENFASI: vale a ogni larghezza ────────────────────────────────────── */
+
+[data-mc] .pred.hud .v2r {
+  position: relative;
+  flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: .35rem; padding: 1rem 1.05rem 1.05rem;
+  border-top: 0;
+  background: linear-gradient(180deg, rgba(52,211,153,.05), transparent 62%);
+}
+/* filo d'accento: orizzontale quando la scheda e' impilata, verticale nello split */
+[data-mc] .pred.hud .v2r::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, var(--am-positive, #34D399), transparent 68%);
+  opacity: .85;
+}
+/* il numero PRIMA della pick: si legge il verdetto, poi su chi. */
+[data-mc] .pred.hud .v2r-l { order: 2; width: 100%; }
+[data-mc] .pred.hud .v2r-q { order: 1; align-items: flex-start; text-align: left; width: 100%; }
+
+/* IL NUMERO. Condensata pesante, alone corto — non un neon diffuso. */
+[data-mc] .pred.hud .v2r-qn:not(.lock) {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-size: clamp(44px, 4.2rem, 68px); font-weight: 800; line-height: .84;
+  letter-spacing: -.03em; color: var(--am-positive, #34D399);
+  text-shadow: 0 0 22px rgba(52,211,153,.34);
+}
+[data-mc] .pred.hud .v2r-qn:not(.lock) .u { font-size: .34em; opacity: .7; margin-left: .04em; }
+[data-mc] .pred.hud .v2r-qlab {
+  font-family: var(--fm, ui-monospace), monospace; font-size: .55rem; letter-spacing: .2em;
+  text-transform: uppercase; margin-bottom: .3rem;
+}
+/* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
+[data-mc] .pred.hud .v2r-pick {
+  font-family: var(--font-tech), var(--fd), sans-serif;
+  font-size: 1.18rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .005em; line-height: 1.06; white-space: normal;
+}
+[data-mc] .pred.hud .v2r-sub { justify-content: flex-start; margin-top: .35rem; }
+
+/* la confidenza: tacche oblique al posto dei pallini — e' il tratto HUD della
+   direzione A. Stessa informazione, altro registro. */
+[data-mc] .pred.hud .v2r-conf { gap: 3px; margin-top: .5rem; }
+[data-mc] .pred.hud .v2r-conf .d {
+  width: 17px; height: 7px; border-radius: 0; box-shadow: none;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  background: rgba(255,255,255,.10);
+}
+[data-mc] .pred.hud .v2r-conf .d.on { background: var(--am-positive, #34D399); }
+
+/* ── LO SPLIT: solo su schede larghe ────────────────────────────────────── */
+@container mc (min-width: 430px) {
+  :root [data-mc] .pred.hud {
+    display: grid;
+    grid-template-columns: 1.08fr .92fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "top read" "fx read" "foot foot";
+    align-items: stretch;
+  }
+  /* Qualunque figlio non previsto attraversa entrambe le colonne invece di
+     incastrarsi in mezza scheda. Il `:where()` non e' cosmetico: azzera la
+     specificita' dei due `:not()`, altrimenti questa riga batte le aree nominate
+     qui sotto e TUTTO resta a tutta larghezza — misurato in visual check. */
+  :root [data-mc] .pred.hud > :where(*:not(.card-bg):not(.card-veil)) { grid-column: 1 / -1; }
+  :root [data-mc] .pred.hud .top { grid-area: top; }
+  :root [data-mc] .pred.hud .fx  { grid-area: fx; align-self: end; }
+  :root [data-mc] .pred.hud .v2r { grid-area: read; }
+  :root [data-mc] .pred.hud .why { grid-area: foot; }
+
+  /* La fotografia tiene la meta' SINISTRA, sotto lega e squadre; la destra resta
+     scura perche' il numero abbia su cosa staccare. Il velo pero' copre l'INTERA
+     scheda e diventa orizzontale: ristringere anche lui lasciava scoperto il fondo
+     e tagliava la scheda con una banda netta — misurato in visual check. Il bordo
+     destro della foto finisce sotto la parte opaca del velo, quindi non si vede. */
+  :root [data-mc] .pred.hud .card-bg { left: 0; right: 40%; width: auto; }
+  :root [data-mc] .pred.hud .card-veil {
+    inset: 0;
+    background: linear-gradient(100deg,
+      rgba(18,21,25,.28) 0%, rgba(18,21,25,.55) 30%,
+      rgba(18,21,25,.93) 46%, rgba(18,21,25,.97) 100%);
+  }
+  /* Nel tema chiaro la velatura NON e' bianca: e' la fascia scura che regge il
+     testo chiaro sulla fotografia (#299->#301). Nello split resta scura e resta
+     sulla fotografia; la meta' dei dati e' il fondo bianco della scheda, e il
+     taglio verticale fra le due e' il disegno, non un difetto.
+     Foto e velatura devono finire NELLO STESSO PUNTO — e' la regola che il guard
+     `light-card-css-guard` sorveglia da quando la divergenza lascio' una fascia
+     accidentale. Qui finiscono entrambe al fondo scheda, e a coprirle sotto il
+     readout ci pensano `.v2r` e `.why`, che in chiaro sono opachi: cosi' non
+     c'e' nessuna costante da ri-misurare quando il readout cambia altezza. */
+  :root[data-theme="light"] [data-mc] .pred.hud .card-bg {
+    top: 0; bottom: 0; left: 0; right: 46%;
+  }
+  :root[data-theme="light"] [data-mc] .pred.hud .card-veil {
+    top: 0; bottom: 0; left: 0; right: 46%;
+    background: linear-gradient(180deg, rgba(6,8,11,.72), rgba(6,8,11,.62));
+  }
+  /* il piede in chiaro porta testo scuro: senza fondo opaco finirebbe sulla
+     velatura scura della meta' fotografica. */
+  :root[data-theme="light"] [data-mc] .pred.hud .why { background: #fff; }
+
+  /* nello split il filo torna verticale: e' il taglio fra immagine e numero. */
+  :root [data-mc] .pred.hud .v2r::before {
+    left: 0; right: auto; top: 12%; bottom: 12%; height: auto; width: 2px;
+    background: linear-gradient(180deg, transparent,
+      var(--am-positive, #34D399) 22%, var(--am-positive, #34D399) 78%, transparent);
+  }
+  :root [data-mc] .pred.hud .v2r { padding: 1rem 1rem 1.05rem 1.15rem; }
+  :root [data-mc] .pred.hud .top { padding: .8rem .9rem .4rem; }
+  :root [data-mc] .pred.hud .fx  { padding: 0 .9rem .85rem; }
+}
+
+/* TEMA CHIARO — stesso impianto, contrasto invertito. Il nero pieno diventa un
+   grigio profondo: su bianco un nero assoluto spezzerebbe la pagina. */
+/* Nel tema chiaro la fascia fotografica finisce a `bottom:154px`, e quel numero
+   e' — sta scritto sopra, riga 783 — la distanza MISURATA dal bordo alto di `.v2r`
+   al fondo scheda. Il numero gigante alza `.v2r`, quindi la fascia gli finisce
+   sopra e la pick diventa illeggibile sulla fotografia. Invece di rincorrere un
+   nuovo numero magico (che cambierebbe con ogni nome di squadra che va a capo),
+   `.v2r` diventa OPACO: la fascia finisce dove inizia il blocco dati, qualunque
+   altezza abbia. Stesso risultato di prima, senza costante da mantenere. */
+:root[data-theme="light"] [data-mc] .pred.hud .v2r {
+  background: linear-gradient(180deg, rgba(35,165,89,.07), rgba(255,255,255,0) 62%), #fff;
+}
+:root[data-theme="light"] [data-mc] .pred.hud .v2r-qn:not(.lock) {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  color: var(--am-coral, #23A559); text-shadow: none;
+}
+:root[data-theme="light"] [data-mc] .pred.hud .v2r-conf .d { background: rgba(0,0,0,.10); }
+:root[data-theme="light"] [data-mc] .pred.hud .v2r-conf .d.on { background: var(--am-coral, #23A559); }
+
+/* Lo stato anonimo mette un lucchetto dentro .v2r-qn, non una cifra: tiene la sua
+   misura e niente alone — il trattamento gigante e' per il numero. (#CARD-HUD-0830) */
+[data-mc] .pred.hud .v2r-qn.lock {
+  font-size: 22px; line-height: 1; text-shadow: none;
+  display: inline-flex; align-items: center;
+}
+
+/* Lo split esiste per dare al NUMERO una meta' di scheda tutta sua. Da anonimo il
+   numero non c'e' (c'e' il lucchetto): lo split lascerebbe mezza scheda vuota e alta,
+   esattamente il difetto che questo lavoro doveva togliere. Quindi lo stato bloccato
+   resta sul layout a colonna. (#CARD-HUD-0830) */
+:root [data-mc] .pred.hud:has(.v2r.is-locked) {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  grid-template-areas: none;
+}
+:root [data-mc] .pred.hud:has(.v2r.is-locked) .card-bg,
+:root [data-mc] .pred.hud:has(.v2r.is-locked) .card-veil { inset: 0; right: 0; left: 0; }

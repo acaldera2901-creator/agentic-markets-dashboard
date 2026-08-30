@@ -9861,3 +9861,45 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .cookie-consent-actions button { transition: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #CARD-HUD-0830 — la scheda APERTA parla la lingua della scheda in griglia.
+   Andrea: «enfatizzare ancora di più le schede, sia la parte esterna sia la
+   parte interna quando l'utente clicca sulla scheda».
+
+   Il difetto misurato: fuori la scheda urlava la probabilità del modello, dentro
+   urlava la QUOTA e il 71% diventava una nota grigia in fondo a una frase. Stesso
+   dato, due gerarchie opposte. Qui la probabilità torna protagonista, con lo
+   stesso trattamento della griglia (condensata pesante, alone corto, tacche
+   oblique al posto dei pallini). La quota resta, e resta leggibile: scende di
+   grado, non sparisce.
+   ══════════════════════════════════════════════════════════════════════════ */
+.mds-pick-hud { display: flex; flex-direction: column; align-items: flex-start; }
+.mds-pick-hud .mds-problab {
+  font-family: var(--mds-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--am-muted);
+  margin-bottom: 2px;
+}
+/* il simbolo % scende di misura come nella scheda in griglia: a piena altezza
+   pesa quanto una cifra e sporca la lettura del numero. */
+.mds-pick-hud .mds-probu { font-size: 0.34em; opacity: 0.7; margin-left: 0.04em; letter-spacing: 0; }
+.mds-pick-hud .mds-probn {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-size: 54px; font-weight: 800; line-height: 0.84; letter-spacing: -0.03em;
+  color: var(--am-positive); text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+/* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
+.mds-pick-hud .mds-pk {
+  font-family: var(--font-tech), var(--fd), sans-serif;
+  font-size: 20px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.005em; line-height: 1.06; margin-top: 8px;
+}
+/* la quota scende di grado: resta il secondo numero, non il primo. */
+.mds-pick-hud ~ .mds-hq .mds-qn { font-size: 24px; }
+/* le tacche oblique della griglia, stesso tratto HUD */
+.mds-pick-hud .mds-dots .mds-d {
+  width: 15px; height: 6px; border-radius: 0;
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+}
+:root[data-theme="light"] .mds-pick-hud .mds-probn { text-shadow: none; }

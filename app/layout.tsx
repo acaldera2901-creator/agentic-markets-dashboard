@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
@@ -10,6 +10,16 @@ const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+});
+
+// #CARD-HUD-0830 — la condensata pesante del registro gaming: regge i numeri
+// enormi della scheda senza diventare Oswald, che si vede ovunque. Solo due pesi:
+// 700 per i nomi, 800 per il numero eroe.
+const sairaCondensed = Saira_Condensed({
+  variable: "--font-tech",
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -86,7 +96,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme')
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${hankenGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${hankenGrotesk.variable} ${jetbrainsMono.variable} ${sairaCondensed.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
