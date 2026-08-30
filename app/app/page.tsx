@@ -5428,22 +5428,19 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
                   nostro pronostico», l'esito non dice «vince», edge e value
                   restano soppressi. Si toglie l'etichetta, non la sostanza. */}
               {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
+                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
               {isPreview ? (
                 <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : shownOdds != null ? (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-                  <span className="v2r-qn">{shownOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{shownProb != null ? `${pct(shownProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{!belowFloor && !useHeadline && fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                </>
               ) : (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{shownProb != null ? pct(shownProb) : "\u2013"}</span>
+                  <span className="v2r-qn">{shownProb != null ? pct(shownProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
+                  {(shownOdds != null || (!belowFloor && !useHeadline && fpValue != null && fpValue > 0)) ? (
+                    <span className="v2r-sub">{shownOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {shownOdds.toFixed(2)}</> : null}{(!belowFloor && !useHeadline && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
+                  ) : null}
                 </>
               )}
             </div>
@@ -6023,22 +6020,19 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
                   nostro pronostico», l'esito non dice «vince», edge e value
                   restano soppressi. Si toglie l'etichetta, non la sostanza. */}
               {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
+                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
               {isPreview ? (
                 <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : fpPickOdds != null ? (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{!belowFloor && fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                </>
               ) : (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "\u2013"}</span>
+                  <span className="v2r-qn">{pickProb != null ? pct(pickProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
+                  {(fpPickOdds != null || (!belowFloor && fpValue != null && fpValue > 0)) ? (
+                    <span className="v2r-sub">{fpPickOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {fpPickOdds.toFixed(2)}</> : null}{(!belowFloor && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
+                  ) : null}
                 </>
               )}
             </div>
