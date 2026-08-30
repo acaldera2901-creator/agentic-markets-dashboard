@@ -1,9 +1,8 @@
 // app/api/fortuneplay-match/route.test.ts
-// #A2-B2 (Decreto Dignità, D.L. 87/2018 art.9): la SOURCE deve azzerare i mercati
-// FortunePlay per i viewer IT (usati dalla modal MatchDetailSheet), non solo
-// nasconderli lato client.
+// La route condivide la blocklist centrale con gli altri ingressi sportsbook.
 import { describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 const fetchFortuneplayMatchMarkets = vi.fn(async () => [
   { name: "Both Teams To Score", line: null, outcomes: [{ label: "Yes", odds: 1.8 }, { label: "No", odds: 2.1 }] },
@@ -21,19 +20,32 @@ function req(id: string, country?: string) {
   return new NextRequest(`http://localhost/api/fortuneplay-match?id=${id}`, { headers });
 }
 
-describe("GET /api/fortuneplay-match — geo-redaction (IT)", () => {
-  it("IT viewer: markets vuoti, upstream non interrogato", async () => {
+describe("GET /api/fortuneplay-match — blocklist centrale vuota", () => {
+  it("rende i mercati completi anche a un viewer IT", async () => {
     fetchFortuneplayMatchMarkets.mockClear();
     const res = await GET(req("99", "IT"));
     const body = await res.json();
-    expect(body).toEqual({ markets: [] });
-    expect(fetchFortuneplayMatchMarkets).not.toHaveBeenCalled();
+    expect(body.markets).toHaveLength(1);
+    expect(body.markets[0].outcomes[0].odds).toBe(1.8);
+    expect(fetchFortuneplayMatchMarkets).toHaveBeenCalledOnce();
   });
 
-  it("viewer non-IT: mercati pieni", async () => {
+  it("mantiene invariata la risposta per un viewer non-IT", async () => {
     const res = await GET(req("99", "GB"));
     const body = await res.json();
-    expect(body.markets.length).toBe(1);
+    expect(body.markets).toHaveLength(1);
     expect(body.markets[0].outcomes[0].odds).toBe(1.8);
+  });
+
+  it("riattiva la redazione quando IT viene reinserita nella blocklist centrale", async () => {
+    GEO_BLOCKED_COUNTRIES.add("IT");
+    fetchFortuneplayMatchMarkets.mockClear();
+    try {
+      const res = await GET(req("99", "IT"));
+      expect(await res.json()).toEqual({ markets: [] });
+      expect(fetchFortuneplayMatchMarkets).not.toHaveBeenCalled();
+    } finally {
+      GEO_BLOCKED_COUNTRIES.delete("IT");
+    }
   });
 });

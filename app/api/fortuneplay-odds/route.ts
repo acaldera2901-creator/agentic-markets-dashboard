@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mergeBooksToResponse, type FpOddsEntry } from "@/lib/fortuneplay-board";
 import { fetchAllBooks } from "@/lib/betconstruct-feed";
 import { FORTUNEPLAY_BET_URL } from "@/lib/affiliate";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 export const dynamic = "force-dynamic"; // la funzione gira sempre fresca (no build-time fetch cache)
 
@@ -14,11 +15,8 @@ export const dynamic = "force-dynamic"; // la funzione gira sempre fresca (no bu
 // (stale-while-revalidate). Niente attesa del fetch upstream BetConstruct lato utente.
 const ODDS_CACHE = "public, s-maxage=25, stale-while-revalidate=300";
 
-// #A2-B2 (Decreto Dignità, D.L. 87/2018 art.9): stessa risoluzione geo di
-// /api/geo-books (header Vercel/Cloudflare, non falsificabile dal client). Hard-block
-// a livello di SOURCE così ogni consumer (WcBoard, MatchDetailSheet, football board)
-// non riceve MAI URL/quote FortunePlay per un viewer IT — non solo non le renderizza.
-const GEO_BLOCKED_COUNTRIES = new Set(["IT"]);
+// Stessa blocklist centrale e reversibile di /api/geo-books: oggi è vuota,
+// in futuro un solo aggiornamento riallinea ogni consumer sportsbook.
 function resolveCountry(req: NextRequest): string {
   return (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")
     .trim()

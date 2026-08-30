@@ -8,16 +8,12 @@ export function linksEnabled(): boolean {
   return process.env.SPORTSBOOK_LINKS_ENABLED === "true";
 }
 
-// #GOLIVE-HIGH-D (audit go-live legale): mercati UE dove promuovere operatori non
-// licenziati localmente è illecito autonomo — IT (Decreto Dignità, D.L. 87/2018
-// art.9), DE (GlüStV 2021), FR (ANJ), NL (KOA/KSA), ES (DGOJ), BE (Gaming Commission).
-// I link ai book + revshare = pubblicità INDIRETTA di scommesse. Hard-block a livello
-// codice, PRIMA dell'allowlist env: queste geo non ricevono MAI link-book anche se
-// SPORTSBOOK_GEO_ALLOWLIST è "*" o le include per errore. Presidio non aggirabile via
-// misconfig. Policy PROVVISORIA in attesa del memo legale-compliance; in futuro
-// restringibile via allowlist per-operatore/licenza. Fonte unica di verità: la stessa
-// costante è importata da app/api/geo-books/route.ts (niente set duplicati da allineare).
-export const GEO_BLOCKED_COUNTRIES = new Set(["IT", "DE", "FR", "NL", "ES", "BE"]);
+// Blocklist geografica centrale per link partner, sportsbook e feed quote.
+// Temporaneamente vuota: il progetto è aperto globalmente. Per ripristinare
+// restrizioni mirate aggiungere qui codici ISO 3166-1 alpha-2 uppercase.
+// Questa costante è condivisa dalle API geo e FortunePlay per evitare liste
+// duplicate che possano divergere.
+export const GEO_BLOCKED_COUNTRIES = new Set<string>();
 
 // Geo-gate. Lista vuota -> nessuna geo ammessa (default sicuro). "*" -> globale.
 export function geoAllowed(country: string | null | undefined): boolean {
