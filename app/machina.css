@@ -149,14 +149,17 @@
 :root:not([data-theme="light"]) [data-mc] .vs{display:inline-block;margin-inline:.45rem;font-family:var(--fm);font-size:.64rem;font-weight:400;color:var(--ink3);vertical-align:.14em}
 :root:not([data-theme="light"]) [data-mc] .pred .vs,:root:not([data-theme="light"]) [data-mc] .feat .vs,:root:not([data-theme="light"]) [data-mc] .scene .vs{color:#ccd2d9}
 /* superfici incassate piene: i numeri non stanno mai sulla foto */
-:root:not([data-theme="light"]) [data-mc] .scorebar,:root:not([data-theme="light"]) [data-mc] .v2r{background:#101317;border-top:1px solid rgba(255,255,255,.06)}
+:root:not([data-theme="light"]) [data-mc] .scorebar{background:#101317;border-top:1px solid rgba(255,255,255,.06)}
+/* #CARD-ARCADE-0830: il readout perde il fondo — era un box dentro un box, il
+   tell #1 di feedback_antislop_tells. Resta la hairline di stacco. */
+:root:not([data-theme="light"]) [data-mc] .v2r{background:transparent;border-top:1px solid rgba(255,255,255,.09)}
 :root:not([data-theme="light"]) [data-mc] .scorebar{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem}
 :root:not([data-theme="light"]) [data-mc] .stt{font-family:var(--fm);font-size:.56rem;letter-spacing:.15em;text-transform:uppercase;color:#7e858e;flex:none}
 :root:not([data-theme="light"]) [data-mc] .stt.live{color:var(--verde-b)}
 :root:not([data-theme="light"]) [data-mc] .sc{font-family:var(--fm);font-variant-numeric:tabular-nums;font-size:1.02rem;font-weight:700}
 :root:not([data-theme="light"]) [data-mc] .sc .x{color:#8b939c;margin-inline:.3rem;font-weight:400}
 :root:not([data-theme="light"]) [data-mc] .sc.sched{font-size:.76rem;font-weight:400;color:#c3c9d1}
-:root:not([data-theme="light"]) [data-mc] .v2r{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:.9rem;padding:.8rem .95rem .9rem}
+:root:not([data-theme="light"]) [data-mc] .v2r{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:.9rem;padding:.85rem .95rem .7rem}
 :root:not([data-theme="light"]) [data-mc] .v2r-l{display:grid;gap:.28rem;min-width:0}
 :root:not([data-theme="light"]) [data-mc] .v2r-eye{font-family:var(--fm);font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;color:#7e858e}
 :root:not([data-theme="light"]) [data-mc] .v2r-pick{font-weight:700;font-size:1rem;letter-spacing:-.015em;line-height:1.15}
@@ -166,7 +169,10 @@
 :root:not([data-theme="light"]) [data-mc] .d.on{background:#c3c9d1}
 :root:not([data-theme="light"]) [data-mc] .v2r-q{text-align:right;display:grid;gap:.12rem;flex:none}
 :root:not([data-theme="light"]) [data-mc] .v2r-qlab{font-family:var(--fm);font-size:.53rem;letter-spacing:.14em;text-transform:uppercase;color:#7e858e}
-:root:not([data-theme="light"]) [data-mc] .v2r-qn{font-family:var(--fm);font-variant-numeric:tabular-nums;font-size:1.8rem;font-weight:700;line-height:1;letter-spacing:-.02em}
+/* #CARD-ARCADE-0830: 34px e colore pieno, come nel tema chiaro. Il numero era
+   1.8rem qui e 34px in globals: i due temi mostravano scale diverse. */
+:root:not([data-theme="light"]) [data-mc] .v2r-qn{font-family:var(--fm);font-variant-numeric:tabular-nums;font-size:34px;font-weight:800;line-height:.92;letter-spacing:-.035em;color:#34D399}
+:root:not([data-theme="light"]) [data-mc] .v2r-qn .u{font-size:16px;font-weight:700;opacity:.62;margin-left:1px;letter-spacing:0}
 :root:not([data-theme="light"]) [data-mc] .v2r-sub{font-family:var(--fm);font-size:.58rem;color:#9aa2ac;display:inline-flex;align-items:center;gap:.4rem;justify-content:flex-end}
 :root:not([data-theme="light"]) [data-mc] .v2r-val{font-weight:700;color:#06140c;background:var(--verde-b);padding:.14rem .38rem;letter-spacing:.05em}
 :root:not([data-theme="light"]) [data-mc] .pred-more{display:flex;align-items:center;justify-content:flex-end;gap:.4rem;padding:.6rem .95rem;border-top:1px solid var(--night3);background:var(--night2)}
@@ -457,7 +463,8 @@
 
 /* ── le schede devono staccare da un fondo che ora è scuro ── */
 :root:not([data-theme="light"]) [data-mc] .pred{background:var(--card-2);border-color:#333a42}
-:root:not([data-theme="light"]) [data-mc] .pred .scorebar,:root:not([data-theme="light"]) [data-mc] .pred .v2r{background:#0f1216}
+:root:not([data-theme="light"]) [data-mc] .pred .scorebar{background:#0f1216}
+:root:not([data-theme="light"]) [data-mc] .pred .v2r{background:transparent}
 :root:not([data-theme="light"]) [data-mc] .pred-more{background:var(--card-2);border-top-color:#333a42}
 :root:not([data-theme="light"]) [data-mc] .sband,:root:not([data-theme="light"]) [data-mc] .scene,:root:not([data-theme="light"]) [data-mc] .feat{border:1px solid var(--rule)}
 :root:not([data-theme="light"]) [data-mc] .sband>.scene-img,:root:not([data-theme="light"]) [data-mc] .feat>.scene-img{opacity:.72}
@@ -763,9 +770,10 @@
 :root[data-theme="light"] [data-mc] .pred .fx{padding:0 .95rem .85rem;display:grid;gap:.65rem}
 :root[data-theme="light"] [data-mc] .pred .scorebar{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;
   border-radius:0;border:0;border-top:1px solid rgba(0,0,0,.07);background:rgba(6,8,11,.42)}
+/* #CARD-ARCADE-0830: niente fondo, stesso trattamento del tema scuro. */
 :root[data-theme="light"] [data-mc] .pred .v2r{margin-top:auto;display:flex;align-items:flex-end;
-  justify-content:space-between;gap:.9rem;padding:.8rem .95rem .9rem;
-  border-radius:0;border:0;border-top:1px solid rgba(0,0,0,.09);background:#eef0f3}
+  justify-content:space-between;gap:.9rem;padding:.85rem .95rem .7rem;
+  border-radius:0;border:0;border-top:1px solid rgba(0,0,0,.10);background:transparent}
 :root[data-theme="light"] [data-mc] .pred .pred-more{padding:.6rem .95rem;border-radius:0;background:#fff}
 
 /* ── la fascia fotografica: l'adattamento chiaro del fondo scuro ──
