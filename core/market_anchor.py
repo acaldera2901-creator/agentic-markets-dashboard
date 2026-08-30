@@ -36,6 +36,28 @@ ANCHOR_PRIORITY: tuple[str, ...] = (
 
 _SHARP_FALLBACK = ANCHOR_PRIORITY[1:]  # everything below pinnacle
 
+# #ANCHOR-MARGIN-0830 — a sharp book that exposes unformed prices (an exchange
+# with no liquidity on a distant fixture) used to yield an anchor with a margin
+# up to 191%. Measured 2026-08-30 over 478 real football events: 101 of them
+# (21.1%), all from betfair_ex_eu, all labelled "sharp_exchange".
+# San Marino v Finland: Betfair quoted Finland 1.07 / San Marino 1.09 / Draw 1.09
+# while real books priced San Marino 25-38; de-vigging that gives three ~1/3
+# probabilities. Downstream, 82% of the apparent value against the fair line was
+# an artefact of this (9.8% -> 1.8% of quotes above fair once validated).
+# Threshold from the measured distribution over 1409 sharp quotes: pinnacle tops
+# out at 9%, matchbook at 13%, and betfair is bimodal (~4% or ~188%) with nothing
+# in between. 0.15 separates the two groups without touching anything healthy.
+MAX_ANCHOR_MARGIN = 0.15
+MIN_PLAUSIBLE_PRICE = 1.01
+
+
+def _plausible(odds: tuple[float, ...]) -> bool:
+    """True when the prices form a real market rather than filler quotes."""
+    if any(o is None or o < MIN_PLAUSIBLE_PRICE for o in odds):
+        return False
+    margin = sum(1 / o for o in odds) - 1
+    return -0.02 <= margin <= MAX_ANCHOR_MARGIN
+
 
 def anchor_source_for_book(bookmaker: str | None) -> str:
     """Re-derive the anchor TIER from a persisted bookmaker key.
@@ -88,12 +110,12 @@ def select_h2h_anchor(event: dict) -> dict | None:
     by_key: dict[str, dict] = {bm.get("key", ""): bm for bm in event.get("bookmakers", [])}
 
     pinn = by_key.get("pinnacle")
-    if pinn is not None and (o := _h2h_outcomes(pinn, home, away)):
+    if pinn is not None and (o := _h2h_outcomes(pinn, home, away)) and _plausible(o):
         return _h2h_result(home, away, o, "pinnacle", "pinnacle")
 
     for key in _SHARP_FALLBACK:
         bm = by_key.get(key)
-        if bm is not None and (o := _h2h_outcomes(bm, home, away)):
+        if bm is not None and (o := _h2h_outcomes(bm, home, away)) and _plausible(o):
             return _h2h_result(home, away, o, key, "sharp_exchange")
 
     return _best_margin_h2h(event)
@@ -142,12 +164,12 @@ def select_2way_anchor(event: dict) -> dict | None:
     by_key: dict[str, dict] = {bm.get("key", ""): bm for bm in event.get("bookmakers", [])}
 
     pinn = by_key.get("pinnacle")
-    if pinn is not None and (o := _2way_outcomes(pinn, p1, p2)):
+    if pinn is not None and (o := _2way_outcomes(pinn, p1, p2)) and _plausible(o):
         return _2way_result(o, "pinnacle", "pinnacle")
 
     for key in _SHARP_FALLBACK:
         bm = by_key.get(key)
-        if bm is not None and (o := _2way_outcomes(bm, p1, p2)):
+        if bm is not None and (o := _2way_outcomes(bm, p1, p2)) and _plausible(o):
             return _2way_result(o, key, "sharp_exchange")
 
     best: dict | None = None
