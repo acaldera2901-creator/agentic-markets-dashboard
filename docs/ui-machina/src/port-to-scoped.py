@@ -376,23 +376,24 @@ def main() -> int:
 
     # ── 6. IL TEMA CHIARO ────────────────────────────────────────────────────
     # Il fondo cinematico e' scuro e resta gated fuori dal chiaro. La FOTO
-    # dietro la scheda e' stata provata anche qui, con la velatura ribaltata a
-    # BIANCA, e non regge: la carta chiara non e' un fondo cinematico, e due
-    # velature sovrapposte la riducevano a una macchia (dettaglio nel commento
-    # CSS sotto). In chiaro la scheda e' carta — ma il filetto dello sport ci
-    # vuole, quindi qui servono i token --d-*, che vivono nello scope scuro.
+    # dietro la scheda c'e' anche qui, ma NON lavata di bianco: vive in una
+    # fascia dichiarata sotto una velatura SCURA, col testo chiaro sopra
+    # (dettaglio nel commento CSS sotto). Sotto la fascia si torna alla carta.
+    # Qui servono anche i token --d-*, che vivono nello scope scuro, e il
+    # filetto va sul CONTENITORE perche' .pred ha padding.
     res += f"""
 /* ══════════════════════════════════════════════════════════════
-   IL TEMA CHIARO — la carta, senza foto
-   La foto dietro la scheda vive SOLO nel tema scuro, dov'e' coerente
-   col fondo cinematico. In chiaro era una macchia, e la causa era
-   strutturale: DUE velature bianche sovrapposte (.card-veil da 40% a
-   98%, e il fondo di .top da 94% a 28%) lasciavano la foto visibile in
-   una sola fascia sottile e accidentale — proprio sotto lega e orario.
-   Con `saturate(2)` sopra, il campo notturno diventava foschia grigia
-   e la terra rossa del tennis uno sbaffo rosa. Andrea, 30/08: in
-   chiaro la scheda e' carta. Le due velature cadono con la foto:
-   erano la sua maschera, non un fondo.
+   IL TEMA CHIARO — la fascia fotografica
+   La foto ci sta anche in chiaro, ma NON lavata di bianco. Provato:
+   `scene-stadium.jpg` e' una scena NOTTURNA, e sotto una velatura
+   bianca puo' solo diventare foschia grigia — era per questo che la
+   prima versione portava `saturate(2)`, che sulla terra rossa del
+   tennis dava uno sbaffo rosa. E le velature erano DUE, sovrapposte
+   (.card-veil e il fondo di .top): lasciavano la foto visibile in una
+   sola fascia sottile e ACCIDENTALE, proprio sotto lega e orario.
+   Qui la foto vive in una fascia DICHIARATA, sotto UNA velatura
+   SCURA, col testo chiaro sopra — come nel tema scuro, dove funziona.
+   Sotto la fascia la scheda torna carta, e i numeri stanno li'.
    Il resto del tema chiaro NON e' toccato: ha ~60 colori
    low-contrast noti (project_theme_light_fix), che sono un
    lavoro suo e non si risolvono di straforo qui.
@@ -400,30 +401,68 @@ def main() -> int:
 /* I token dello sport vivono nel blocco :root:not([data-theme="light"]),
    quindi in chiaro `var(--d-tennis)` non risolveva e --mc-accent cadeva
    sul fallback: misurato, OGNI scheda portava il filetto viola del
-   calcio, tennis compreso. Qui i token ci sono, e il filetto segue lo
-   sport come nel tema scuro. */
+   calcio, tennis compreso. */
 {LIGHT} [data-mc]{{--d-football:#6d28d9;--d-tennis:#c2410c;--d-wc:#0369a1}}
+
+/* IL FILETTO STA SUL CONTENITORE, non su .top. `.pred` ha `padding:16px`,
+   quindi su `.top::before` il filetto nasceva 16px DENTRO il bordo e
+   restava 32px piu' corto della scheda: galleggiava invece di sedersi sul
+   bordo (segnalato da Andrea, 30/08). `article.card::before` e' libero —
+   verificato: `content:none` — mentre `.pred::before/::after` sono gia'
+   presi da globals per due filetti da 1,4px. */
+{LIGHT} [data-mc].card{{position:relative}}
+{LIGHT} [data-mc].card::before{{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:4;
+  background:var(--mc-accent,#6d28d9)}}
+{LIGHT} [data-mc] .pred .top::before{{content:none}}
+
 {LIGHT} [data-mc] .pred{{position:relative;isolation:isolate;overflow:hidden}}
 {LIGHT} [data-mc] .pred>*{{position:relative;z-index:2}}
-/* le classi .im-* montano l'immagine FUORI dal tema (servono a entrambi):
-   togliere le regole chiare qui lascerebbe la foto nuda, senza velatura, a
-   tutta scheda. I due strati si spengono esplicitamente. */
-{LIGHT} [data-mc] .card-bg,{LIGHT} [data-mc] .card-veil{{display:none}}
-/* I grigi piccoli restano al gradino scuro del tema chiaro: la foto non
-   c'e' piu', ma erano gia' al limite sulla carta bianca (misurati a 3,93
-   lega/orario/`v`/turno). --am-muted #4A515B e' il gradino del tema. */
-{LIGHT} [data-mc] .pred .league,{LIGHT} [data-mc] .pred .when,
-{LIGHT} [data-mc] .pred .vs,{LIGHT} [data-mc] .pred .rnd,
-{LIGHT} [data-mc] .pred .stt,{LIGHT} [data-mc] .pred .v2r-eye,
-{LIGHT} [data-mc] .pred .v2r-qlab,{LIGHT} [data-mc] .pred .v2r-conf-t,
-{LIGHT} [data-mc] .pred .v2r-sub{{color:#3a4149}}
-/* lo stesso filetto da 4px col colore dello sport: senza, la scheda chiara
-   e' il prodotto di prima. `position:relative` su .top resta — e' l'ancora
-   del filetto, non un residuo della velatura. */
-{LIGHT} [data-mc] .pred .top{{position:relative}}
-{LIGHT} [data-mc] .pred .top::before{{
-  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
-  background:var(--mc-accent,#6d28d9)}}
+
+/* LA FASCIA. `bottom:140px` non e' un numero a caso: e' la distanza dal
+   bordo alto del readout al fondo scheda, MISURATA su tutte e 126 le
+   schede della board (valore unico, nessuna variazione) — vedi
+   lib/light-card-css-guard.test.ts. Accorciare l'elemento fa anche una
+   cosa che serve: `cover` RI-INQUADRA la foto sulla striscia, e lo
+   stadio si riconosce invece di essere un dettaglio scuro ingrandito.
+   Se il readout cresce (nome lungo che va a capo) la fascia finisce
+   DENTRO un pannello opaco e non si vede; non puo' rimpicciolirsi. */
+{LIGHT} [data-mc] .card-bg{{
+  display:block;position:absolute;top:0;left:0;right:0;bottom:140px;z-index:0;
+  opacity:1;filter:saturate(1.12) contrast(1.04) brightness(1.34)}}
+/* UNA sola velatura, e SCURA. Da .70 a .64: sotto .64 il testo sopra i
+   fari dello stadio scendeva a 2,0-3,2 (calcolato sul caso peggiore, cioe'
+   un pixel bianco della foto sotto la velatura piu' sottile). */
+{LIGHT} [data-mc] .card-veil{{
+  display:block;position:absolute;top:0;left:0;right:0;bottom:140px;z-index:1;
+  background:linear-gradient(180deg,rgba(6,8,11,.70),rgba(6,8,11,.64))}}
+/* tagli scelti per la striscia bassa: sulla fascia il default portava
+   `im-court` a una banda quasi nera */
+{LIGHT} [data-mc] .card-bg.im-stadium{{background-position:center 58%}}
+{LIGHT} [data-mc] .card-bg.im-pitch{{background-position:20% 40%}}
+{LIGHT} [data-mc] .card-bg.im-action{{background-position:84% 66%}}
+{LIGHT} [data-mc] .card-bg.im-court{{background-position:center 74%}}
+{LIGHT} [data-mc] .card-bg.im-clay{{background-position:center 58%}}
+{LIGHT} [data-mc] .card-bg.im-crowd{{background-position:center 40%}}
+
+/* IL TESTO DENTRO LA FASCIA E' CHIARO. `.rnd` (il turno del torneo) sta
+   dentro `.top`, quindi nella fascia: nel raggruppamento vecchio era coi
+   grigi scuri e sarebbe stato scuro-su-scuro appena arriva il dato — oggi
+   e' vuoto su tutta la board, quindi non si vedeva. */
+{LIGHT} [data-mc] .pred .league{{color:#e8ebef}}
+{LIGHT} [data-mc] .pred .rnd{{color:#cfd6de}}
+{LIGHT} [data-mc] .pred .when{{color:#dde3ea}}
+{LIGHT} [data-mc] .pred .teams{{color:#fff}}
+{LIGHT} [data-mc] .pred .vs{{color:#dde2e8}}
+{LIGHT} [data-mc] .pred .scorebar{{background:rgba(6,8,11,.44);border:0}}
+{LIGHT} [data-mc] .pred .stt{{color:#c8cfd8}}
+{LIGHT} [data-mc] .pred .sc{{color:#fff}}
+{LIGHT} [data-mc] .pred .sc .x{{color:#aeb6c0}}
+
+/* SOTTO LA FASCIA E' CARTA: i grigi piccoli del readout restano al gradino
+   scuro del tema chiaro (--am-muted #4A515B e' il gradino). */
+{LIGHT} [data-mc] .pred .v2r-eye,{LIGHT} [data-mc] .pred .v2r-qlab,
+{LIGHT} [data-mc] .pred .v2r-conf-t,{LIGHT} [data-mc] .pred .v2r-sub{{color:#3a4149}}
 /* La scena DI PAGINA in chiaro e' stata provata e TOLTA: misurata, spostava di
    poco il fondo sotto decine di grigi gia' al limite e portava 32 nodi sotto
    soglia (59 -> 91) per un effetto quasi invisibile. Il fondo di pagina in

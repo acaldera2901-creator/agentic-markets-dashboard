@@ -5017,9 +5017,13 @@ function GoalscorerBlock({
 // schede adiacenti non portano la stessa immagine. Le foto sono quelle già in
 // repo: in fase 1 non si genera nulla.
 const MC_SCENES_FOOTBALL = ["im-stadium", "im-pitch", "im-action"] as const;
-const MC_SCENES_TENNIS = ["im-court", "im-clay"] as const;
-function mcScene(sport: "football" | "tennis" | "wc", i = 0): string {
-  if (sport === "tennis") return MC_SCENES_TENNIS[i % MC_SCENES_TENNIS.length];
+// #UI-LIGHT-BAND-0830 — il tennis NON alterna: la scena segue la SUPERFICIE
+// vera del match. L'alternanza sull'indice metteva la terra rossa sotto match
+// giocati su cemento — con la foto quasi invisibile non si notava, con la
+// fascia del tema chiaro e' un'immagine falsa in prima pagina. `scene-clay`
+// solo su CLAY; HARD e GRASS prendono il campo generico (asset erba non c'e').
+function mcScene(sport: "football" | "tennis" | "wc", i = 0, surface?: string | null): string {
+  if (sport === "tennis") return (surface ?? "").toUpperCase() === "CLAY" ? "im-clay" : "im-court";
   if (sport === "wc") return "im-crowd";
   return MC_SCENES_FOOTBALL[i % MC_SCENES_FOOTBALL.length];
 }
@@ -5027,10 +5031,10 @@ function mcScene(sport: "football" | "tennis" | "wc", i = 0): string {
 // UNA: due gradienti sovrapposti spengono l'immagine (errore già corretto su
 // MACHINA). I numeri non ci finiscono sopra — .scorebar e .v2r sono incassi
 // pieni, vedi la spec §5.3.
-function McCardPhoto({ sport, i }: { sport: "football" | "tennis" | "wc"; i?: number }) {
+function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc"; i?: number; surface?: string | null }) {
   return (
     <>
-      <span className={`card-bg ${mcScene(sport, i)}`} aria-hidden="true" />
+      <span className={`card-bg ${mcScene(sport, i, surface)}`} aria-hidden="true" />
       <span className="card-veil" aria-hidden="true" />
     </>
   );
@@ -6127,7 +6131,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   if (!modalEnabled) {
     return (
       <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis" {...cardProps}>
-        <McCardPhoto sport="tennis" i={idx} />
+        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
         {headerNode}
         {readoutNode}
         {bodyNode}
@@ -6138,7 +6142,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   return (
     <>
       <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred tennis is-clickable" {...cardProps}>
-        <McCardPhoto sport="tennis" i={idx} />
+        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
         {headerNode}
         {readoutNode}
         <div className="pred-more" aria-hidden="true">
