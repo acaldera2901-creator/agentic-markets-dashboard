@@ -20,9 +20,9 @@ describe("GET /api/geo-books", () => {
     expect(await call({ "cf-ipcountry": "FI" })).toEqual({ blocked: false, country: "FI" });
   });
 
-  it("blocca le giurisdizioni vietate e ne restituisce comunque il country", async () => {
-    expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: true, country: "IT" });
-    expect((await call({ "x-vercel-ip-country": "DE" })).blocked).toBe(true);
+  it("con blocklist vuota non blocca le giurisdizioni storiche", async () => {
+    expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: false, country: "IT" });
+    expect(await call({ "x-vercel-ip-country": "DE" })).toEqual({ blocked: false, country: "DE" });
   });
 
   it("senza header: country vuoto e non bloccato (fail-open pre-esistente, #GOLIVE-HIGH-D)", async () => {
