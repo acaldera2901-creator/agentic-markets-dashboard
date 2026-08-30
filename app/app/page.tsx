@@ -16,6 +16,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { storageGet, storageSet } from "@/lib/safe-storage";
 import { getAttribution } from "@/lib/attribution";
@@ -5185,14 +5186,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       const overP = findP("over"), underP = findP("under");
       const overVal = fp.totalOver != null && overP != null ? fpEdge(overP, fp.totalOver) : null;
       const underVal = fp.totalUnder != null && underP != null ? fpEdge(underP, fp.totalUnder) : null;
-      const recOver = overP != null && underP != null ? overP >= underP : (overVal ?? -1) > (underVal ?? -1);
+      const pickSide = goalPickSide({ overP, underP, overOdds: fp.totalOver ?? null, underOdds: fp.totalUnder ?? null, belowFloor });
       groups.push({
         key: "gol", icon: "goal", title: pick5(lang, { it: "Gol", en: "Goals", es: "Goles", fr: "Buts", ru: "Голы" }),
         meta: `${pick5(lang, { it: "linea", en: "line", es: "línea", fr: "ligne", ru: "линия" })} ${line}${e.goals_summary ? ` · ${pick5(lang, { it: "attesi", en: "exp.", es: "esp.", fr: "att.", ru: "ожид." })} ${e.goals_summary.expected_goals.toFixed(1)}` : ""}`,
         src: { kind: "fp", label: "FortunePlay" },
         chips: [
-          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: recOver },
-          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: !recOver },
+          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: pickSide === "over" },
+          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: pickSide === "under" },
         ],
       });
     }
@@ -5215,11 +5216,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     }
     const gs = [...gsMap.values()].sort((a, b) => b.pScores - a.pScores).slice(0, 4);
     if (gs.length) {
-      const topP = Math.max(...gs.map((x) => x.pScores));
       groups.push({
         key: "marcatore", icon: "boot", title: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }),
         src: { kind: "us", label: pick5(lang, { it: "best · book US", en: "best · US book", es: "best · casa US", fr: "best · book US", ru: "best · US" }) },
-        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: x.pScores === topP && x.bestPrice != null })),
+        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: scorerPickEligible({ p: x.pScores, odds: x.bestPrice }) })),
         note: pick5(lang, { it: "La nostra probabilità che ogni giocatore segni almeno un gol.", en: "Our probability that each player scores at least once.", es: "Nuestra probabilidad de que cada jugador marque al menos una vez.", fr: "Notre probabilité que chaque joueur marque au moins une fois.", ru: "Наша вероятность того, что игрок забьёт хотя бы раз." }),
       });
     }

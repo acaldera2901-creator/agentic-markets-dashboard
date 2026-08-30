@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 
 from agents.base import BaseAgent
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
-from core.espn_tennis_client import get_completed_results
+from core.espn_tennis_client import get_completed_results, get_completed_results_for_days
 from core.supabase_client import settle_unified_tennis
 from core.tennis_names import canonical_player_key
 from models.elo_surface import EloSurfaceModel
@@ -116,11 +116,7 @@ class TennisSettlementAgent(BaseAgent):
         if not pending:
             return
 
-        resolved = await self._resolve_via_matchbook(pending)
-        if not resolved:
-            # ESPN fallback: the same feed the collector uses also carries
-            # completed results ("A bt B"), so no exchange is required.
-            resolved = await self._resolve_via_espn(pending)
+        resolved = await self._resolve_all(pending)
         if not resolved:
             return
 
@@ -161,8 +157,14 @@ class TennisSettlementAgent(BaseAgent):
             await self._settle_bets(pred.match_id, outcome)
             # Bridge to the public track record (/api/v2/history) — with the
             # REAL set score when ESPN provided one (#021).
+            # Il favorito secondo il modello, dalla fonte popolata al 100%.
+            # Serve al ponte quando `unified_predictions.pick` e' vuoto (47%
+            # delle righe tennis): senza, un esito vero diventa un `void`.
             await settle_unified_tennis(
-                pred.match_id, winner_name, final_score=score_text
+                pred.match_id,
+                winner_name,
+                final_score=score_text,
+                predicted_player=self._favorito(pred),
             )
             updated += 1
 
@@ -174,6 +176,78 @@ class TennisSettlementAgent(BaseAgent):
                 f"({len(elo_applied)} distinct match(es)), Elo updated"
             )
 
+    @staticmethod
+    def _unresolved(pending: list, resolved: list[tuple]) -> list:
+        """Le righe che il resolver precedente NON ha chiuso."""
+        done = {p.id for p, *_ in resolved}
+        return [p for p in pending if p.id not in done]
+
+    async def _resolve_all(self, pending: list) -> list[tuple]:
+        """
+        I due resolver sono COMPLEMENTARI, non alternativi.
+
+        Prima erano incatenati con `if not resolved:` — cioe' ESPN veniva
+        interrogato SOLO quando Matchbook non aveva risolto NIENTE. Bastava che
+        Matchbook chiudesse UNA riga perche' tutte le altre restassero aperte
+        fino a scadere a 7 giorni in `unresolved`.
+
+        Misurato sul log del daemon: 67 cicli su 75 hanno chiuso esattamente
+        1 riga — e' l'impronta digitale del corto circuito. Effetto a valle: il
+        settlement del tennis e' passato dal 55-78% (fino al 19/08) allo 0-7%
+        (dal 23/08), e su 76 pick sopra il floor con kickoff fra 25h e 7 giorni
+        fa solo 4 avevano un esito utilizzabile. Chi paga riceveva il pronostico
+        e mai l'esito; il canale pubblico prometteva di chiudere cio' che apre e
+        non ci riusciva.
+
+        Ora Matchbook risolve quello che sa (e' un'exchange: preciso ma con
+        copertura stretta), ed ESPN viene chiamato sul RESTO.
+        """
+        resolved = list(await self._resolve_via_matchbook(pending))
+        remaining = self._unresolved(pending, resolved)
+        if remaining:
+            resolved += list(await self._resolve_via_espn(remaining))
+        return resolved
+
+    @staticmethod
+    def _giorni_di(pending: list) -> set:
+        """
+        I giorni (UTC) delle pick pendenti: e' l'insieme minimo di date da
+        chiedere all'archivio. Chiedere una finestra fissa costerebbe richieste
+        per giorni in cui non c'e' niente da chiudere.
+        """
+        giorni = set()
+        for pred in pending:
+            quando = (
+                getattr(pred, "scheduled", None)
+                or getattr(pred, "scheduled_at", None)
+                or getattr(pred, "starts_at", None)
+                or getattr(pred, "computed_at", None)
+            )
+            if not quando:
+                continue
+            try:
+                dt = quando if hasattr(quando, "date") else datetime.fromisoformat(
+                    str(quando).replace("Z", "+00:00")
+                )
+                giorni.add(dt.date())
+            except Exception:
+                continue
+        return giorni
+
+    @staticmethod
+    def _favorito(pred) -> str | None:
+        """
+        Il giocatore su cui il modello ha puntato, da `best_selection` (P1/P2).
+        E' la stessa regola che il canale Telegram usa per il favorito sulle
+        card, quindi la card e la chiusura non possono contraddirsi.
+        """
+        sel = (getattr(pred, "best_selection", None) or "").strip().upper()
+        if sel == "P1":
+            return pred.player1
+        if sel == "P2":
+            return pred.player2
+        return None
+
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
         Resolve outcomes from ESPN completed results (free, no key).
@@ -181,11 +255,23 @@ class TennisSettlementAgent(BaseAgent):
         winner is whoever ESPN listed first ("A bt B"). Returns the same
         (TennisPrediction, "P1"|"P2") shape as the Matchbook resolver.
         """
+        # DUE fonti, unite. `get_completed_results()` legge il tabellone corrente
+        # (economico, prende cio' che e' appena finito). L'archivio per data
+        # recupera i giorni passati: senza, un esito che non viene raccolto entro
+        # poche ore e' perso per sempre — misurato il 30/08, e' la seconda meta'
+        # della causa per cui il settlement era andato a zero. Un errore su una
+        # fonte non deve spegnere l'altra.
+        results: list[dict] = []
         try:
-            results = await get_completed_results()
+            results.extend(await get_completed_results())
         except Exception as e:
-            self.logger.debug(f"espn results lookup failed: {e}")
-            return []
+            self.logger.warning(f"espn header lookup fallito: {e}")
+        giorni = self._giorni_di(pending)
+        if giorni:
+            try:
+                results.extend(await get_completed_results_for_days(giorni))
+            except Exception as e:
+                self.logger.warning(f"espn archivio fallito: {e}")
         if not results:
             return []
 
