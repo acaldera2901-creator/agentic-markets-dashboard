@@ -20,6 +20,17 @@ describe("geoAllowed — apertura globale reversibile", () => {
     }
   });
 
+  it("una futura blocklist continua a prevalere sulla wildcard", () => {
+    process.env.SPORTSBOOK_GEO_ALLOWLIST = "*";
+    GEO_BLOCKED_COUNTRIES.add("IT");
+    try {
+      expect(geoAllowed("IT")).toBe(false);
+      expect(geoAllowed("US")).toBe(true);
+    } finally {
+      GEO_BLOCKED_COUNTRIES.delete("IT");
+    }
+  });
+
   it("con allowlist vuota non ammette alcun paese", () => {
     process.env.SPORTSBOOK_GEO_ALLOWLIST = "";
     expect(geoAllowed("IT")).toBe(false);

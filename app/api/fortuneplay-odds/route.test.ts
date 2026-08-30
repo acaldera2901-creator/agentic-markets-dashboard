@@ -2,6 +2,7 @@
 // La route condivide la blocklist centrale con gli altri ingressi sportsbook.
 import { describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 vi.mock("@/lib/betconstruct-feed", () => ({
   fetchAllBooks: vi.fn(async () => [
@@ -59,6 +60,21 @@ describe("GET /api/fortuneplay-odds — blocklist centrale vuota", () => {
     const e = body.odds["2026-07-15:brazil|italy"];
     expect(e.oddsHome).toBe(2.1);
     expect(e.matchUrl).not.toBe("");
+  });
+
+  it("riattiva la redazione quando IT viene reinserita nella blocklist centrale", async () => {
+    GEO_BLOCKED_COUNTRIES.add("IT");
+    try {
+      const res = await GET(req("IT"));
+      const body = await res.json();
+      const entry = body.odds["2026-07-15:brazil|italy"];
+      expect(body.geoBlocked).toBe(true);
+      expect(entry.oddsHome).toBeNull();
+      expect(entry.matchUrl).toBe("");
+      expect(entry.books).toEqual([]);
+    } finally {
+      GEO_BLOCKED_COUNTRIES.delete("IT");
+    }
   });
 
   it("Cache-Control varia per country header (no bypass via CDN condivisa)", async () => {

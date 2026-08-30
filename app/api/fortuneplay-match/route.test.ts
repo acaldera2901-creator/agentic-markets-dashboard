@@ -2,6 +2,7 @@
 // La route condivide la blocklist centrale con gli altri ingressi sportsbook.
 import { describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 const fetchFortuneplayMatchMarkets = vi.fn(async () => [
   { name: "Both Teams To Score", line: null, outcomes: [{ label: "Yes", odds: 1.8 }, { label: "No", odds: 2.1 }] },
@@ -34,5 +35,17 @@ describe("GET /api/fortuneplay-match — blocklist centrale vuota", () => {
     const body = await res.json();
     expect(body.markets).toHaveLength(1);
     expect(body.markets[0].outcomes[0].odds).toBe(1.8);
+  });
+
+  it("riattiva la redazione quando IT viene reinserita nella blocklist centrale", async () => {
+    GEO_BLOCKED_COUNTRIES.add("IT");
+    fetchFortuneplayMatchMarkets.mockClear();
+    try {
+      const res = await GET(req("99", "IT"));
+      expect(await res.json()).toEqual({ markets: [] });
+      expect(fetchFortuneplayMatchMarkets).not.toHaveBeenCalled();
+    } finally {
+      GEO_BLOCKED_COUNTRIES.delete("IT");
+    }
   });
 });
