@@ -1,5 +1,10 @@
+import logging
+
 import redis.asyncio as aioredis
+import redis.exceptions
 from config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 # #REDIS-TIMEOUT-0830 — until now from_url() was called with NO timeouts at all.
 # redis-py defaults socket_timeout and socket_connect_timeout to None, which
@@ -62,12 +67,67 @@ async def get_heartbeat(agent_name: str) -> str | None:
     r = await get_redis()
     return await r.get(f"health:{agent_name}")
 
+# #CONSUME-GUARD-0830 — misurato in prod da Andrea dopo #REDIS-TIMEOUT-0830.
+# Il socket_timeout ha fatto il suo lavoro (l'appeso infinito e' diventato
+# eccezione) ma ha scoperto un secondo problema, che il timeout non ha creato:
+# ha solo smesso di nasconderlo. Redis e' sano (slowlog max 10,8 ms) mentre il
+# NOSTRO event loop stalla oltre 10s sul fit CPU-sincrono del ModelAgent: tutte
+# le letture in volo scadono INSIEME, a grappoli, e con l'eccezione non gestita
+# uccidono piu' agenti in cascata. Cioe' il timeout misurava il nostro loop
+# bloccato, non Redis.
+#
+# Senza guardia il bilancio era ambiguo (appeso infinito vs crash a cascata);
+# con la guardia uno stallo transitorio torna a essere quello che era prima,
+# un ritardo, e l'appeso infinito resta curato.
+CONSUME_RETRIES = 1  # un ritentativo, poi si cede il turno: il chiamante ricicla
+
+# Per consumatore, non globale: due agenti che falliscono non devono contarsi
+# a vicenda ne' zittirsi il primo WARNING a testa.
+_consume_failures: dict[str, int] = {}
+
+
 async def consume(stream: str, group: str, consumer: str, count: int = 10) -> list:
+    """Leggi dal gruppo, sopravvivendo a un Redis che scade.
+
+    Tornare [] NON perde messaggi: con XREADGROUP ">" le entry non lette
+    restano PENDING nel gruppo e arrivano alla chiamata successiva. Il costo di
+    un tick saltato e' un ritardo, non un buco — ed e' l'unica ragione per cui
+    qui e' lecito degradare invece di propagare.
+
+    Le rotture si sopravvivono ma non si ingoiano: primo fallimento WARNING,
+    ripetizioni DEBUG (un Redis lento non deve allagare il log a ogni tick), e
+    la ripresa si annuncia. `RedisError` copre timeout e connessione ma NON
+    CancelledError (che e' BaseException) ne' gli errori di programmazione:
+    quelli devono continuare a esplodere.
+    """
     r = await get_redis()
     try:
         await r.xgroup_create(stream, group, id="$", mkstream=True)
     except Exception:
         pass
-    return await r.xreadgroup(
-        group, consumer, {stream: ">"}, count=count, block=STREAM_BLOCK_MS
-    ) or []
+    key = f"{stream}:{group}:{consumer}"
+    last_error: Exception | None = None
+    for _attempt in range(CONSUME_RETRIES + 1):
+        try:
+            entries = await r.xreadgroup(
+                group, consumer, {stream: ">"}, count=count, block=STREAM_BLOCK_MS
+            ) or []
+        except redis.exceptions.RedisError as exc:
+            last_error = exc
+            continue
+        failed_before = _consume_failures.pop(key, 0)
+        if failed_before:
+            logger.info(
+                "%s: stream reads recovered after %d failed tick(s)", key, failed_before
+            )
+        return entries
+    failures = _consume_failures.get(key, 0) + 1
+    _consume_failures[key] = failures
+    if failures == 1:
+        logger.warning(
+            "%s: stream read failed, entries stay pending and are retried next tick: %s",
+            key, last_error,
+        )
+    else:
+        logger.debug("%s: stream read still failing (%d ticks): %s", key, failures, last_error)
+    return []
