@@ -868,7 +868,7 @@
   background: linear-gradient(180deg, rgba(52,211,153,.05), transparent 62%);
 }
 /* filo d'accento: orizzontale quando la scheda e' impilata, verticale nello split */
-[data-mc] .pred.hud .v2r::before {
+[data-mc] .pred.hud .v2r:not(.is-locked)::before {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
   background: linear-gradient(90deg, var(--am-positive, #34D399), transparent 68%);
   opacity: .85;
@@ -909,7 +909,7 @@
 
 /* ── LO SPLIT: solo su schede larghe ────────────────────────────────────── */
 @container mc (min-width: 430px) {
-  :root [data-mc] .pred.hud {
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) {
     display: grid;
     grid-template-columns: 1.08fr .92fr;
     grid-template-rows: auto 1fr auto;
@@ -920,19 +920,19 @@
      incastrarsi in mezza scheda. Il `:where()` non e' cosmetico: azzera la
      specificita' dei due `:not()`, altrimenti questa riga batte le aree nominate
      qui sotto e TUTTO resta a tutta larghezza — misurato in visual check. */
-  :root [data-mc] .pred.hud > :where(*:not(.card-bg):not(.card-veil)) { grid-column: 1 / -1; }
-  :root [data-mc] .pred.hud .top { grid-area: top; }
-  :root [data-mc] .pred.hud .fx  { grid-area: fx; align-self: end; }
-  :root [data-mc] .pred.hud .v2r { grid-area: read; }
-  :root [data-mc] .pred.hud .why { grid-area: foot; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) > :where(*:not(.card-bg):not(.card-veil)) { grid-column: 1 / -1; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .top { grid-area: top; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .fx  { grid-area: fx; align-self: end; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .v2r { grid-area: read; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .why { grid-area: foot; }
 
   /* La fotografia tiene la meta' SINISTRA, sotto lega e squadre; la destra resta
      scura perche' il numero abbia su cosa staccare. Il velo pero' copre l'INTERA
      scheda e diventa orizzontale: ristringere anche lui lasciava scoperto il fondo
      e tagliava la scheda con una banda netta — misurato in visual check. Il bordo
      destro della foto finisce sotto la parte opaca del velo, quindi non si vede. */
-  :root [data-mc] .pred.hud .card-bg { left: 0; right: 40%; width: auto; }
-  :root [data-mc] .pred.hud .card-veil {
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .card-bg { left: 0; right: 40%; width: auto; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .card-veil {
     inset: 0;
     background: linear-gradient(100deg,
       rgba(18,21,25,.28) 0%, rgba(18,21,25,.55) 30%,
@@ -947,26 +947,26 @@
      accidentale. Qui finiscono entrambe al fondo scheda, e a coprirle sotto il
      readout ci pensano `.v2r` e `.why`, che in chiaro sono opachi: cosi' non
      c'e' nessuna costante da ri-misurare quando il readout cambia altezza. */
-  :root[data-theme="light"] [data-mc] .pred.hud .card-bg {
+  :root[data-theme="light"] [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .card-bg {
     top: 0; bottom: 0; left: 0; right: 46%;
   }
-  :root[data-theme="light"] [data-mc] .pred.hud .card-veil {
+  :root[data-theme="light"] [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .card-veil {
     top: 0; bottom: 0; left: 0; right: 46%;
     background: linear-gradient(180deg, rgba(6,8,11,.72), rgba(6,8,11,.62));
   }
   /* il piede in chiaro porta testo scuro: senza fondo opaco finirebbe sulla
      velatura scura della meta' fotografica. */
-  :root[data-theme="light"] [data-mc] .pred.hud .why { background: #fff; }
+  :root[data-theme="light"] [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .why { background: #fff; }
 
   /* nello split il filo torna verticale: e' il taglio fra immagine e numero. */
-  :root [data-mc] .pred.hud .v2r::before {
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .v2r::before {
     left: 0; right: auto; top: 12%; bottom: 12%; height: auto; width: 2px;
     background: linear-gradient(180deg, transparent,
       var(--am-positive, #34D399) 22%, var(--am-positive, #34D399) 78%, transparent);
   }
-  :root [data-mc] .pred.hud .v2r { padding: 1rem 1rem 1.05rem 1.15rem; }
-  :root [data-mc] .pred.hud .top { padding: .8rem .9rem .4rem; }
-  :root [data-mc] .pred.hud .fx  { padding: 0 .9rem .85rem; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .v2r { padding: 1rem 1rem 1.05rem 1.15rem; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .top { padding: .8rem .9rem .4rem; }
+  :root [data-mc] .pred.hud:not(:has(.v2r.is-locked)) .fx  { padding: 0 .9rem .85rem; }
 }
 
 /* TEMA CHIARO — stesso impianto, contrasto invertito. Il nero pieno diventa un
@@ -995,15 +995,10 @@
   display: inline-flex; align-items: center;
 }
 
-/* Lo split esiste per dare al NUMERO una meta' di scheda tutta sua. Da anonimo il
-   numero non c'e' (c'e' il lucchetto): lo split lascerebbe mezza scheda vuota e alta,
-   esattamente il difetto che questo lavoro doveva togliere. Quindi lo stato bloccato
-   resta sul layout a colonna. (#CARD-HUD-0830) */
-:root [data-mc] .pred.hud:has(.v2r.is-locked) {
-  display: flex;
-  flex-direction: column;
-  grid-template-columns: none;
-  grid-template-areas: none;
-}
-:root [data-mc] .pred.hud:has(.v2r.is-locked) .card-bg,
-:root [data-mc] .pred.hud:has(.v2r.is-locked) .card-veil { inset: 0; right: 0; left: 0; }
+/* Lo stato bloccato non entra piu' nello split ANNULLANDOLO dopo: e' la container
+   query stessa a non applicarglielo (`:not(:has(.v2r.is-locked))` su ogni riga).
+   La differenza non e' di stile. Annullare a valle lascia passare tutto cio' che
+   non si e' pensato ad annullare — ed e' successo: in produzione la scheda
+   bloccata larga si e' ritrovata il filetto d'accento VERTICALE a mezz'aria,
+   perche' avevo annullato il layout ma non la decorazione. Escludere a monte
+   non ha quel modo di fallire. (#CARD-HUD-0830) */
