@@ -16,6 +16,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { headlineRead } from "@/lib/headline-market"; // #HEADLINE-MARKET-0830
 import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { storageGet, storageSet } from "@/lib/safe-storage";
@@ -5096,6 +5097,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   })();
   // Demoted extra-markets (schedina) — moved into the expandable analysis.
   const extraPicks = (e.extra_markets ?? []).filter((m) => m.p >= 0.55).sort((a, b) => b.p - a.p).slice(0, 5);
+  // Quota REALE di un mercato extra, o undefined. Mai derivata dalla probabilita'.
+  const extraOdds = (key: string): number | undefined =>
+    (e.extra_markets ?? []).find((m) => m.key === key)?.market_odds ?? undefined;
 
   // ── Direction B readout: Market vs Model vs Edge (clear-pick cards only) ──
   // All figures are REAL: model% = the model's probability for the pick,
@@ -5118,6 +5122,26 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     : pickKey === "AWAY" ? p.p_away
     : pickKey === "DRAW" ? p.p_draw
     : null;
+  // #HEADLINE-MARKET-0830 — su una partita equilibrata l'1X2 non ha una risposta
+  // forte (Casa Pia v Moreirense: 33,9 / 30,8 / 35,4). La testata passa allora
+  // alla doppia chance, che e' la STESSA previsione su una domanda piu' facile:
+  // 1X = p_home + p_draw, sommato dalla tripla gia' servita. Solo quando il
+  // favorito non arriva a HEADLINE_MIN_PROB, e solo se la riga non e' below-floor
+  // (li' vale gia' la regola sua). Misurato: il numero piu' basso in board passa
+  // da 35,1% a 50,2%.
+  const headline = belowFloor ? null : headlineRead(
+    { pHome: p.p_home, pDraw: p.p_draw, pAway: p.p_away },
+    { double_1x: extraOdds("double_1x"), double_x2: extraOdds("double_x2") },
+  );
+  const useHeadline = headline != null && headline.market !== "h2h";
+  const headlineName = !useHeadline ? null
+    : headline!.selection === "1X"
+      ? pick5(lang, { it: `${p.home_team} o pareggio`, en: `${p.home_team} or draw`, es: `${p.home_team} o empate`, fr: `${p.home_team} ou nul`, ru: `${p.home_team} или ничья` })
+      : pick5(lang, { it: `${p.away_team} o pareggio`, en: `${p.away_team} or draw`, es: `${p.away_team} o empate`, fr: `${p.away_team} ou nul`, ru: `${p.away_team} или ничья` });
+  // Cio' che la testata mostra davvero. Il resto della card (schedina, mercati,
+  // settlement) continua a lavorare su pickKey/pickProb: qui cambia solo la vetrina.
+  const shownName = useHeadline ? headlineName : pickName;
+  const shownProb = useHeadline ? headline!.prob : pickProb;
   const pickOdds =
     pickKey === "HOME" ? p.odds_home
     : pickKey === "AWAY" ? p.odds_away
@@ -5255,10 +5279,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           : pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
         // sotto il floor l'esito piu' probabile si NOMINA, ma non si dice
         // «vince»: non e' una scommessa che stiamo consigliando.
-        pick: pickName
-          ? (belowFloor || pickKey === "DRAW" ? pickName : `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`)
+        pick: shownName
+          ? (useHeadline || belowFloor || pickKey === "DRAW" ? shownName : `${shownName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`)
           : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modelo", ru: "Чтение модели" }),
-        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto · ", en: "no clear favourite · ", es: "sin favorito claro · ", fr: "pas de favori net · ", ru: "нет явного фаворита · " }) : ""}${pickProb != null ? pct(pickProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto · ", en: "no clear favourite · ", es: "sin favorito claro · ", fr: "pas de favori net · ", ru: "нет явного фаворита · " }) : ""}${shownProb != null ? pct(shownProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
@@ -5383,7 +5407,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
               <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
                 ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
                 : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              <span className="v2r-pick">{shownName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
               {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
                   dalla scheda. Su 8 schede della board 6 la portavano, e la
                   griglia leggeva come «non abbiamo un'opinione». Resta tutto il
@@ -5401,12 +5425,12 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
                   <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{!belowFloor && fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
+                  <span className="v2r-sub">{shownProb != null ? `${pct(shownProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{!belowFloor && !useHeadline && fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
                 </>
               ) : (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "\u2013"}</span>
+                  <span className="v2r-qn">{shownProb != null ? pct(shownProb) : "\u2013"}</span>
                 </>
               )}
             </div>
