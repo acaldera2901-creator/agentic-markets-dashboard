@@ -9891,7 +9891,7 @@ button:disabled {
 }
 /* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
 .mds-pick-hud .mds-pk {
-  font-family: var(--font-tech), var(--fd), sans-serif;
+  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
   font-size: 20px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.005em; line-height: 1.06; margin-top: 8px;
 }
@@ -9903,3 +9903,27 @@ button:disabled {
   clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
 }
 :root[data-theme="light"] .mds-pick-hud .mds-probn { text-shadow: none; }
+/* ══════════════════════════════════════════════════════════════════════════
+   #EDGE-BANNER-0830 — il banner parla la lingua delle schede.
+   Le schede della board sono passate alla condensata pesante (#CARD-HUD-0830);
+   il banner in cima alla stessa pagina era rimasto col mono a 80px e il simbolo
+   % a 0,38em, che a quella misura pesa quanto una cifra. Stesso trattamento:
+   condensata, alone corto, % ridotto. Nessun colore nuovo.
+   ══════════════════════════════════════════════════════════════════════════ */
+.featured .hero-prob .num {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.84;
+  text-shadow: 0 0 22px rgba(52, 211, 153, 0.28);
+}
+.featured .hero-prob .num .pc { font-size: 0.34em; opacity: 0.7; font-weight: 800; margin-left: 0.04em; }
+/* la pick sotto il numero, in condensata maiuscola: stesso verdetto delle schede */
+.featured .hero-prob .pickname {
+  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.005em;
+}
+/* Due metriche in una griglia da tre lasciavano un buco a destra. `auto-fit` le
+   distribuisce su quante colonne servono davvero. */
+.featured .why dl { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+:root[data-theme="light"] .featured .hero-prob .num { text-shadow: none; }
