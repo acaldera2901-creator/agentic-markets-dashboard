@@ -375,69 +375,85 @@ def main() -> int:
 """
 
     # ── 6. IL TEMA CHIARO ────────────────────────────────────────────────────
-    # Il fondo cinematico e' scuro e resta gated fuori dal chiaro. La FOTO
-    # dietro la scheda c'e' anche qui, ma NON lavata di bianco: vive in una
-    # fascia dichiarata sotto una velatura SCURA, col testo chiaro sopra
-    # (dettaglio nel commento CSS sotto). Sotto la fascia si torna alla carta.
-    # Qui servono anche i token --d-*, che vivono nello scope scuro, e il
-    # filetto va sul CONTENITORE perche' .pred ha padding.
+    # Il fondo cinematico e' scuro e resta gated fuori dal chiaro, ma la
+    # SCHEDA no: Andrea la vuole identica nei due temi, coi soli colori
+    # diversi. Quindi qui si ripete la struttura del blocco scuro — padding
+    # sui figli, bordo vero, transizione su border-color, filetto su
+    # .top::before — e si cambiano i colori (dettaglio nel commento CSS).
     res += f"""
 /* ══════════════════════════════════════════════════════════════
-   IL TEMA CHIARO — la fascia fotografica
-   La foto ci sta anche in chiaro, ma NON lavata di bianco. Provato:
-   `scene-stadium.jpg` e' una scena NOTTURNA, e sotto una velatura
-   bianca puo' solo diventare foschia grigia — era per questo che la
-   prima versione portava `saturate(2)`, che sulla terra rossa del
-   tennis dava uno sbaffo rosa. E le velature erano DUE, sovrapposte
-   (.card-veil e il fondo di .top): lasciavano la foto visibile in una
-   sola fascia sottile e ACCIDENTALE, proprio sotto lega e orario.
-   Qui la foto vive in una fascia DICHIARATA, sotto UNA velatura
-   SCURA, col testo chiaro sopra — come nel tema scuro, dove funziona.
-   Sotto la fascia la scheda torna carta, e i numeri stanno li'.
+   IL TEMA CHIARO — LA STESSA SCHEDA, ALTRI COLORI
+   Regola di Andrea (30/08): «le schede devono essere uguali ma con i
+   temi diversi». Quindi qui NON si inventa una struttura: si ripete
+   quella del tema scuro, che funziona, e si cambiano solo i colori.
+   Il diff strutturale che c'era prima, misurato con getComputedStyle
+   sui due temi: .pred aveva `padding:16px 16px 14px` invece di 0,
+   `display:block` invece di flex/column, NESSUN bordo (un anello in
+   box-shadow al suo posto) e la transizione sbagliata
+   (`box-shadow,filter,transform` invece di `transform,border-color`).
+   Da lì i due difetti segnalati: il bordo non si accendeva all'hover
+   perché non c'era un bordo da accendere, e il filetto da 4px —
+   che anche nel tema scuro sta su `.top::before` — nasceva 16px
+   dentro il bordo perché .top viveva dentro il padding di .pred.
+   Con `padding:0` il filetto torna a filo da solo, come in scuro.
+   NB `.pred::before/::after` NON si toccano: sono le smussature degli
+   angoli di globals, e in chiaro sono già corrette (in scuro il foglio
+   della preview le sovrascriveva, per questo lì vengono ripristinate).
    Il resto del tema chiaro NON e' toccato: ha ~60 colori
    low-contrast noti (project_theme_light_fix), che sono un
    lavoro suo e non si risolvono di straforo qui.
    ══════════════════════════════════════════════════════════════ */
 /* I token dello sport vivono nel blocco :root:not([data-theme="light"]),
    quindi in chiaro `var(--d-tennis)` non risolveva e --mc-accent cadeva
-   sul fallback: misurato, OGNI scheda portava il filetto viola del
-   calcio, tennis compreso. */
+   sul fallback: OGNI scheda portava il filetto viola del calcio. */
 {LIGHT} [data-mc]{{--d-football:#6d28d9;--d-tennis:#c2410c;--d-wc:#0369a1}}
 
-/* IL FILETTO STA SUL CONTENITORE, non su .top. `.pred` ha `padding:16px`,
-   quindi su `.top::before` il filetto nasceva 16px DENTRO il bordo e
-   restava 32px piu' corto della scheda: galleggiava invece di sedersi sul
-   bordo (segnalato da Andrea, 30/08). `article.card::before` e' libero —
-   verificato: `content:none` — mentre `.pred::before/::after` sono gia'
-   presi da globals per due filetti da 1,4px. */
-{LIGHT} [data-mc].card{{position:relative}}
-{LIGHT} [data-mc].card::before{{
-  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:4;
+/* ── la scheda: stessa struttura del tema scuro ── */
+{LIGHT} [data-mc] .pred{{position:relative;isolation:isolate;overflow:hidden;
+  padding:0;border-radius:0;box-shadow:none;border:1px solid #c3cad4;
+  display:flex;flex-direction:column;transition:transform .15s,border-color .15s}}
+{LIGHT} [data-mc] .pred:hover{{transform:translateY(-2px);
+  border-color:color-mix(in oklab,var(--mc-accent,#6d28d9) 65%,transparent)}}
+{LIGHT} [data-mc] .pred>*:not(.card-bg):not(.card-veil){{position:relative;z-index:2}}
+/* il padding passa ai FIGLI, come in scuro: cosi' .scorebar e .v2r
+   diventano fasce a filo invece di riquadri dentro un riquadro */
+{LIGHT} [data-mc] .pred .top{{display:flex;align-items:center;justify-content:space-between;
+  gap:.7rem;padding:.9rem .95rem .55rem}}
+{LIGHT} [data-mc] .pred .top::before{{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
   background:var(--mc-accent,#6d28d9)}}
-{LIGHT} [data-mc] .pred .top::before{{content:none}}
+{LIGHT} [data-mc] .pred .fx{{padding:0 .95rem .85rem;display:grid;gap:.65rem}}
+{LIGHT} [data-mc] .pred .scorebar{{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;
+  border-radius:0;border:0;border-top:1px solid rgba(0,0,0,.07);background:rgba(6,8,11,.42)}}
+{LIGHT} [data-mc] .pred .v2r{{margin-top:auto;display:flex;align-items:flex-end;
+  justify-content:space-between;gap:.9rem;padding:.8rem .95rem .9rem;
+  border-radius:0;border:0;border-top:1px solid rgba(0,0,0,.09);background:#eef0f3}}
+{LIGHT} [data-mc] .pred .pred-more{{padding:.6rem .95rem;border-radius:0;background:#fff}}
 
-{LIGHT} [data-mc] .pred{{position:relative;isolation:isolate;overflow:hidden}}
-{LIGHT} [data-mc] .pred>*{{position:relative;z-index:2}}
-
-/* LA FASCIA. `bottom:140px` non e' un numero a caso: e' la distanza dal
-   bordo alto del readout al fondo scheda, MISURATA su tutte e 126 le
-   schede della board (valore unico, nessuna variazione) — vedi
-   lib/light-card-css-guard.test.ts. Accorciare l'elemento fa anche una
-   cosa che serve: `cover` RI-INQUADRA la foto sulla striscia, e lo
-   stadio si riconosce invece di essere un dettaglio scuro ingrandito.
-   Se il readout cresce (nome lungo che va a capo) la fascia finisce
-   DENTRO un pannello opaco e non si vede; non puo' rimpicciolirsi. */
+/* ── la fascia fotografica: l'adattamento chiaro del fondo scuro ──
+   In scuro la foto sta dietro TUTTA la scheda e gli incassi coi numeri
+   la coprono. In chiaro gli incassi sono di carta e il testo e' scuro,
+   quindi la foto si ferma dove comincia il readout: `bottom:154px` e' la
+   distanza dal bordo alto di `.v2r` al fondo scheda, MISURATA su tutte
+   e 126 le schede con questa struttura (valore unico). Sotto la fascia
+   il fondo e' quello della scheda, esattamente come in scuro sotto
+   `.v2r` il fondo e' quello della scheda: stesso rapporto, altro colore.
+   Ritagliare l'elemento fa anche una cosa che serve: `cover`
+   RI-INQUADRA la foto sulla striscia, e lo stadio si riconosce. */
 {LIGHT} [data-mc] .card-bg{{
-  display:block;position:absolute;top:0;left:0;right:0;bottom:140px;z-index:0;
+  display:block;position:absolute;top:0;left:0;right:0;bottom:154px;z-index:0;
   opacity:1;filter:saturate(1.12) contrast(1.04) brightness(1.34)}}
-/* UNA sola velatura, e SCURA. Da .70 a .64: sotto .64 il testo sopra i
-   fari dello stadio scendeva a 2,0-3,2 (calcolato sul caso peggiore, cioe'
-   un pixel bianco della foto sotto la velatura piu' sottile). */
+/* UNA sola velatura, e SCURA. Provata bianca e non regge: la scena e'
+   notturna e sotto il bianco fa foschia grigia — era per questo che la
+   prima versione aveva `saturate(2)`, che sulla terra rossa dava lo
+   sbaffo rosa. Da .70 a .64: sotto .64 il testo sopra i fari dello
+   stadio scendeva a 2,0-3,2 (caso peggiore, pixel bianco sotto la
+   velatura piu' sottile). */
 {LIGHT} [data-mc] .card-veil{{
-  display:block;position:absolute;top:0;left:0;right:0;bottom:140px;z-index:1;
+  display:block;position:absolute;top:0;left:0;right:0;bottom:154px;z-index:1;
   background:linear-gradient(180deg,rgba(6,8,11,.70),rgba(6,8,11,.64))}}
-/* tagli scelti per la striscia bassa: sulla fascia il default portava
-   `im-court` a una banda quasi nera */
+/* tagli scelti per la striscia bassa: col taglio pieno `im-court`
+   diventava una banda quasi nera */
 {LIGHT} [data-mc] .card-bg.im-stadium{{background-position:center 58%}}
 {LIGHT} [data-mc] .card-bg.im-pitch{{background-position:20% 40%}}
 {LIGHT} [data-mc] .card-bg.im-action{{background-position:84% 66%}}
@@ -445,22 +461,19 @@ def main() -> int:
 {LIGHT} [data-mc] .card-bg.im-clay{{background-position:center 58%}}
 {LIGHT} [data-mc] .card-bg.im-crowd{{background-position:center 40%}}
 
-/* IL TESTO DENTRO LA FASCIA E' CHIARO. `.rnd` (il turno del torneo) sta
-   dentro `.top`, quindi nella fascia: nel raggruppamento vecchio era coi
-   grigi scuri e sarebbe stato scuro-su-scuro appena arriva il dato — oggi
-   e' vuoto su tutta la board, quindi non si vedeva. */
+/* ── il testo: chiaro sulla fascia, scuro sulla carta ──
+   `.rnd` (turno del torneo) sta dentro `.top`, quindi nella fascia: nel
+   raggruppamento vecchio stava coi grigi scuri e sarebbe stato
+   scuro-su-scuro appena arriva il dato (oggi e' vuoto su tutta la
+   board, quindi il difetto non si vedeva). */
 {LIGHT} [data-mc] .pred .league{{color:#e8ebef}}
 {LIGHT} [data-mc] .pred .rnd{{color:#cfd6de}}
 {LIGHT} [data-mc] .pred .when{{color:#dde3ea}}
 {LIGHT} [data-mc] .pred .teams{{color:#fff}}
 {LIGHT} [data-mc] .pred .vs{{color:#dde2e8}}
-{LIGHT} [data-mc] .pred .scorebar{{background:rgba(6,8,11,.44);border:0}}
 {LIGHT} [data-mc] .pred .stt{{color:#c8cfd8}}
 {LIGHT} [data-mc] .pred .sc{{color:#fff}}
 {LIGHT} [data-mc] .pred .sc .x{{color:#aeb6c0}}
-
-/* SOTTO LA FASCIA E' CARTA: i grigi piccoli del readout restano al gradino
-   scuro del tema chiaro (--am-muted #4A515B e' il gradino). */
 {LIGHT} [data-mc] .pred .v2r-eye,{LIGHT} [data-mc] .pred .v2r-qlab,
 {LIGHT} [data-mc] .pred .v2r-conf-t,{LIGHT} [data-mc] .pred .v2r-sub{{color:#3a4149}}
 /* La scena DI PAGINA in chiaro e' stata provata e TOLTA: misurata, spostava di
