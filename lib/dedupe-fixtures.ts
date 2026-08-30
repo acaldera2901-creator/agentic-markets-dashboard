@@ -26,6 +26,31 @@
 
 import { normName } from "./odds-api";
 
+// #DEDUP-NORDIC-0830 — `normName` piega i diacritici COMBINANTI (Göteborg →
+// goteborg: la ö è o + U+0308, che NFKD separa). Non piega le lettere che in
+// Unicode sono un carattere a sé: ø, æ, ß, đ, ł, ð, þ, œ non si decompongono, e
+// il passaggio successivo `[^a-z0-9] → spazio` le CANCELLA. Misurato in
+// produzione il 30/08/2026:
+//   "Bodø/Glimt"      → "bod glimt"        (la ø sparisce, non diventa o)
+//   "Preußen Münster" → "preu en munster"  (la ß spezza la parola in due)
+// Risultato: `Bodø/Glimt v Rosenborg` (oddsapi) e `Bodo/Glimt v Rosenborg`
+// (espn) restavano due righe in board per la stessa partita.
+//
+// Si traslittera QUI e non in `normName`, che è la chiave del join fra quote e
+// predizioni: quella deve sbagliare per difetto (una quota attaccata alla
+// partita sbagliata è peggio di una quota mancante), questa può essere più
+// aggressiva. Vale la stessa distinzione già scritta sopra per `fixtureKey`.
+const LETTERE_NON_DECOMPONIBILI: Array<[RegExp, string]> = [
+  [/ø/g, "o"], [/æ/g, "ae"], [/å/g, "a"], [/ß/g, "ss"], [/đ/g, "d"],
+  [/ł/g, "l"], [/ð/g, "d"], [/þ/g, "th"], [/œ/g, "oe"], [/ħ/g, "h"], [/ı/g, "i"],
+];
+
+function piegaLettere(s: string): string {
+  let out = s;
+  for (const [re, sub] of LETTERE_NON_DECOMPONIBILI) out = out.replace(re, sub);
+  return out;
+}
+
 // La chiave della DEDUPLICA non è quella che aggancia le quote, e non deve
 // esserlo: sono due domande diverse. `teamPairKey` (lib/team-pair-key.ts) chiede
 // «questa riga del book è la stessa partita di questa predizione?» e deve
@@ -44,7 +69,7 @@ function fixtureKey(home: string, away: string, kickoff: string): string | null 
   // spazio. "Newell's Old Boys" diventava "newell s old boys" e non combaciava
   // con "Newells Old Boys" — la stessa squadra, due fonti, due righe in board.
   const strict = (n: string) =>
-    normName(n || "").replace(/['\u2019\u0060]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    piegaLettere(normName(n || "")).replace(/['\u2019\u0060]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   const a = strict(home);
   const b = strict(away);
   if (!a || !b) return null;
@@ -102,7 +127,7 @@ const SIGLE_GENERICHE = new Set([
 const RISERVE = /^(ii|iii|iv|b|c|u\d{2}|res|reserves|am|amateure|jr)$/;
 
 function tokenSquadra(nome: string): string[] {
-  const grezzi = normName(nome || "")
+  const grezzi = piegaLettere(normName(nome || ""))
     .replace(/['\u2019\u0060]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
@@ -122,6 +147,13 @@ function stessaSquadra(a: string, b: string): boolean {
   const differenza = [...grande].filter((t) => !piccolo.has(t));
   for (const t of differenza) {
     if (RISERVE.test(t)) return false; // squadra riserve
+    // #DEDUP-NORDIC-0830: un numero CORTO fa parte del nome tedesco, non
+    // identifica un altro club — "1. FC Kaiserslautern" ⊃ "Kaiserslautern",
+    // "Schalke 04" ⊃ "Schalke", "Hannover 96" ⊃ "Hannover". Il token "1"
+    // finiva qui e bloccava il merge. Restano bloccate le quattro cifre, che
+    // sono l'anno di fondazione e SI usa per distinguere: "1860 Munich" e
+    // "1899 Hoffenheim" non devono fondersi con la città.
+    if (/^\d{1,2}$/.test(t)) continue;
     if (t.length <= 4 && !SIGLE_GENERICHE.has(t)) return false; // sigla d'identità
   }
   return true;
