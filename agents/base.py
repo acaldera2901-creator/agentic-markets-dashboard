@@ -58,14 +58,52 @@ class BaseAgent(ABC):
             self._running = False
 
     async def _heartbeat_loop(self) -> None:
+        """Publish the liveness heartbeat until the agent stops.
+
+        #HEARTBEAT-GUARD-0830 — this task is created ONCE in run() and is never
+        recreated, so any exception escaping this loop killed it for good: the
+        agent then LOOKED dead to the MonitorAgent (which restarts the whole
+        orchestrator, not the single agent) while it was in fact still working.
+        `set_heartbeat` was the one await here with no guard at all — the same
+        "a Redis blip kills the agent for good" defect already fixed in run()
+        (lane lab 2026-06-18), left standing in its sibling.
+
+        Failures are SURVIVED, not swallowed: the first one is a WARNING, the
+        repeats are DEBUG so a long Redis outage cannot flood the log every
+        HEARTBEAT_INTERVAL, and the recovery is announced so "it came back" is
+        visible too. The sleep stays outside the guard: a failing tick waits
+        like a successful one instead of spinning hot.
+        """
+        consecutive_failures = 0
         while self._running:
-            await set_heartbeat(self.name, settings.HEARTBEAT_TIMEOUT, datetime.utcnow().isoformat())
-            detail = self._serialize_status_detail()
-            await asyncio.gather(
-                self._post_dashboard_heartbeat(detail),
-                upsert_heartbeat(self.name, detail),
-                return_exceptions=True,
-            )
+            try:
+                await set_heartbeat(self.name, settings.HEARTBEAT_TIMEOUT, datetime.utcnow().isoformat())
+                detail = self._serialize_status_detail()
+                await asyncio.gather(
+                    self._post_dashboard_heartbeat(detail),
+                    upsert_heartbeat(self.name, detail),
+                    return_exceptions=True,
+                )
+            except asyncio.CancelledError:
+                raise  # cooperative shutdown from run(): never swallow
+            except Exception as e:
+                consecutive_failures += 1
+                if consecutive_failures == 1:
+                    self.logger.warning(
+                        "heartbeat write failed, retrying every %ss: %s",
+                        settings.HEARTBEAT_INTERVAL, e,
+                    )
+                else:
+                    self.logger.debug(
+                        "heartbeat write still failing (%d consecutive): %s",
+                        consecutive_failures, e,
+                    )
+            else:
+                if consecutive_failures:
+                    self.logger.info(
+                        "heartbeat recovered after %d failed attempt(s)", consecutive_failures
+                    )
+                consecutive_failures = 0
             await asyncio.sleep(settings.HEARTBEAT_INTERVAL)
 
     def set_status_detail(self, detail: dict | str | None) -> None:
