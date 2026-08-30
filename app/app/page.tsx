@@ -5178,6 +5178,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     return null;
   })();
   const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
+  // #HEADLINE-ODDS-0830 — quando la testata cambia mercato, la quota 1X2 NON la
+  // segue: accostare "Casa Pia o pareggio · 65%" a 2,66 (che e' il prezzo di
+  // "Casa Pia vince") e' un accostamento falso. Visto in produzione subito dopo
+  // il deploy di #HEADLINE-MARKET-0830. Si mostra la quota REALE della doppia
+  // chance quando il book la espone, altrimenti nessuna quota: mai una derivata.
+  const shownOdds: number | null = useHeadline
+    ? (headline!.odds ?? null)
+    : fpPickOdds;
 
   // #CARD-REDESIGN-V2: dati risolti per la scheda info (MatchDetailSheet). Il modal
   // si apre solo per card sbloccate (modalEnabled) → qui i dati sono sempre completi.
@@ -5290,7 +5298,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
         read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto · ", en: "no clear favourite · ", es: "sin favorito claro · ", fr: "pas de favori net · ", ru: "нет явного фаворита · " }) : ""}${shownProb != null ? pct(shownProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
-        quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
+        quota: shownOdds != null ? shownOdds.toFixed(2) : null,
         // #FLOOR-VALUE-0821 — sotto il floor NIENTE value. Misurato in
         // produzione da PRO: tutte e tre le schede col chip verde erano sotto il
         // floor, cioe' dicevano «no clear favourite» E «value 27,6%» insieme. La
@@ -5426,10 +5434,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             <div className="v2r-q">
               {isPreview ? (
                 <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : fpPickOdds != null ? (
+              ) : shownOdds != null ? (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
+                  <span className="v2r-qn">{shownOdds.toFixed(2)}</span>
                   <span className="v2r-sub">{shownProb != null ? `${pct(shownProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{!belowFloor && !useHeadline && fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
                 </>
               ) : (

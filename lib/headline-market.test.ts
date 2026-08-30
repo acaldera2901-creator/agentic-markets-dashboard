@@ -118,3 +118,27 @@ describe("headlineRead sulle righe senza favorito netto", () => {
     }
   });
 });
+
+// #HEADLINE-ODDS-0830 — la quota deve seguire il mercato mostrato. Visto in
+// produzione: "Casa Pia o pareggio · 65%" accostato a 2,66, che e' il prezzo di
+// "Casa Pia vince" (la doppia chance sta a ~1,35). Un accostamento falso.
+describe("la quota segue il mercato in testata", () => {
+  it("con la doppia chance porta la quota della doppia chance, non quella 1X2", () => {
+    const r = must(headlineRead(casaPia, { home: 2.66, double_x2: 1.36 }));
+    expect(r.market).toBe("double_x2");
+    expect(r.odds).toBe(1.36);
+    expect(r.odds).not.toBe(2.66); // la quota 1X2 non deve seguire il cambio
+  });
+
+  it("se il book non espone la doppia chance, nessuna quota: mai una derivata", () => {
+    const r = must(headlineRead(casaPia, { home: 2.66, away: 2.74 }));
+    expect(r.market).toBe("double_x2");
+    expect(r.odds).toBeNull();
+  });
+
+  it("quando resta sull'1X2 la quota e' quella dell'esito scelto", () => {
+    const r = must(headlineRead({ pHome: 0.72, pDraw: 0.18, pAway: 0.10 }, { home: 1.35, away: 8.0 }));
+    expect(r.market).toBe("h2h");
+    expect(r.odds).toBe(1.35);
+  });
+});
