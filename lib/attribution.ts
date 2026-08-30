@@ -97,3 +97,36 @@ export function acquisitionJson(input: unknown): string | null {
   const clean = sanitizeAttribution(input);
   return clean ? JSON.stringify(clean) : null;
 }
+
+/**
+ * La provenienza dichiarata nell'URL (`?src=tg-free`, `?ref=TG3`).
+ *
+ * I link dei canali Telegram portano `src=` da agosto, ma NESSUNO lo registrava
+ * all'arrivo: `page_view` salvava solo `meta.path`. Misurato il 30/08: zero
+ * righe attribuibili a Telegram in 30 giorni, non perche' non arrivasse nessuno
+ * ma perche' non stavamo guardando.
+ *
+ * Si legge da `window.location.search` e non da `useSearchParams()`: quel hook
+ * rende DINAMICA la pagina che lo monta, e la home e le 132 pagine dei tool sono
+ * statiche per SEO. Qui siamo dentro un effetto, quindi client-only e senza
+ * conseguenze sul rendering.
+ *
+ * Valori ripuliti e tagliati: e' testo che arriva dall'URL, quindi non entra
+ * grezzo nel database.
+ */
+export function sourceFromSearch(search: string): { src?: string; ref?: string } {
+  const out: { src?: string; ref?: string } = {};
+  let params: URLSearchParams;
+  try {
+    params = new URLSearchParams(search || "");
+  } catch {
+    return out;
+  }
+  for (const chiave of ["src", "ref"] as const) {
+    const grezzo = params.get(chiave);
+    if (!grezzo) continue;
+    const pulito = grezzo.trim().slice(0, 40).replace(/[^A-Za-z0-9_.-]/g, "");
+    if (pulito) out[chiave] = pulito;
+  }
+  return out;
+}
