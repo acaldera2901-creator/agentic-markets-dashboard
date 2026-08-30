@@ -84,7 +84,8 @@ Devono inoltre restare configurati gli URL/codici degli sportsbook già attivi, 
 - Regressione geo incrociata: 7 file, 46 test passati.
 - Revisione della reversibilità: 4 file, 17 test passati; reinserendo temporaneamente IT vengono riattivati API blocked, mercati vuoti e redazione quote.
 - Resolver standalone: `sportsbooks-resolver ok`, `sportsbooks-regional registry ok`, `sportsbooks-regional resolve/build ok`.
-- Suite completa finale: `npm test -- --reporter=dot --silent` → exit code 0, 129 file e 1.784 test passati.
+- Suite completa sul branch di implementazione: `npm test -- --reporter=dot --silent` → exit code 0, 129 file e 1.784 test passati.
+- Verifica post-merge su `main`, dopo l'integrazione con `origin/main`: `npm test -- --reporter=dot --silent` → exit code 0, 131 file e 1.800 test passati.
 - Lint dei soli 8 file applicativi/test modificati: exit code 0, nessun errore o warning.
 - Lint globale: exit code 1 per 15 errori e 84 warning preesistenti in file estranei al cambiamento, tra cui `features/feed/market-groups.test.ts`, `features/feed/use-match-detail.ts`, `features/onboarding/AuthProvider.tsx`, `features/profile/use-referral.ts` e `scripts/backtest_2025_football.ts`.
 - Build Next.js 16.2.7: exit code 0, compilazione TypeScript completata e 171 pagine statiche generate.
