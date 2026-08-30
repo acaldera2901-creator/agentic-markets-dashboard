@@ -1569,6 +1569,8 @@ interface PredictionEnrichment {
   // the per-tier enrichment strip (NOT in PREMIUM_ENRICHMENT_KEYS), so it reaches
   // every unlocked tier. below_floor=true -> no clear favourite: the card drops
   // the pick direction + edge/value badge but keeps the probabilities and why.
+  // (#FLOOR-LABEL-0830: the literal label is gone from the card; the eyebrow
+  // "Model read" and the suppressed edge/value carry the gate.)
   surface?: { below_floor: boolean; floor: number };
   // Server-side kickoff provenance (not premium-stripped): true when the time
   // comes from a real source, so fmtKickoff can show a genuine 00:00 UTC slot.
@@ -2063,9 +2065,11 @@ function selectedTennisProbability(m: TennisMatch) {
   return Math.max(m.p1, m.p2);
 }
 
-// A below-floor pick is shown on the board as "no clear favourite" (no
-// directional pick). It must NEVER resurface as a value/best bet — the market
-// edge alone is not enough when the model has no clear favourite.
+// A below-floor pick is shown on the board under the "Model read" eyebrow, with
+// no directional pick asserted (#FLOOR-LABEL-0830 dropped the literal "no clear
+// favourite" label from the card; the modal readout still carries it). It must
+// NEVER resurface as a value/best bet — the market edge alone is not enough when
+// the model has no clear favourite.
 // #GOLIVE-AUDIT: usa il verdetto PERSISTITO dal server (enrichment.surface,
 // calcolato col NOME lega + floor per-lega/WC in /api/predictions), lo stesso che
 // legge la card (riga ~8673) e /api/v2/history. La vecchia derivazione passava a
@@ -5376,9 +5380,12 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
                 ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
                 : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {!isPreview && belowFloor && (
-                <span className="v2r-conf-t">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>
-              )}
+              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
+                  dalla scheda. Su 8 schede della board 6 la portavano, e la
+                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
+                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
+                  nostro pronostico», l'esito non dice «vince», edge e value
+                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
@@ -5968,9 +5975,12 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
                 ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
                 : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {!isPreview && belowFloor && (
-                <span className="v2r-conf-t">{pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })}</span>
-              )}
+              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
+                  dalla scheda. Su 8 schede della board 6 la portavano, e la
+                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
+                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
+                  nostro pronostico», l'esito non dice «vince», edge e value
+                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
               {!isPreview && confScore != null && (
                 <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
