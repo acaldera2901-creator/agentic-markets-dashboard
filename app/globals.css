@@ -8417,7 +8417,12 @@ button:disabled {
   position: absolute;
   pointer-events: none;
   width: calc(var(--ch) * 1.41421 + 2.5px);
-  height: 2px;
+  /* 1,2px, non 2: i 2px erano un rimedio a un tratto che non si vedeva, e la
+     causa vera era l'ordine di disegno (z-index qui sotto). Il clip NON lo
+     assottiglia — `overflow:hidden` ritaglia al padding box e il tratto sta
+     dentro — quindi 2px si vedevano tutti e la diagonale risultava piu'
+     spessa del bordo da 1px che deve continuare. */
+  height: 1.2px;
   background: var(--pred-line, var(--_pe));
   /* E QUESTA e' la causa vera dell'angolo aperto, non il colore ne' la misura.
      Gli pseudo stavano a `z-index:auto`, cioe' nel livello 0 della scheda, e
@@ -8438,6 +8443,12 @@ button:disabled {
   bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
   transform: translate(50%, 50%) rotate(-45deg);
 }
+/* #ACCENT-BAR-0831 — la smussatura IN ALTO A SINISTRA continua il bordo alto, e
+   il bordo alto porta il colore dello sport: quindi lo porta anche lei. Prima
+   era grigia e spezzava il filetto in due — un triangolino di colore staccato
+   dalla barra, con una cuneo grigio in mezzo. Quella in basso a destra resta
+   neutra: la' non c'e' niente da continuare. */
+.card > .pred::before { background: var(--mc-accent, var(--pred-line, var(--_pe))); }
 .card > .pred:hover {
   --_pe: var(--am-chamfer-line-2);
   box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);

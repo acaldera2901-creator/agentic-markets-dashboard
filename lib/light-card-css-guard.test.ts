@@ -107,12 +107,44 @@ describe("la scheda chiara ripete la struttura di quella scura", () => {
 });
 
 describe("il filetto da 4px", () => {
-  it("sta su .top::before nei DUE temi (in scuro .pred::before sono le smussature)", () => {
+  // #ACCENT-BAR-0831 — i 4px ora sono 1px di BORDO ALTO col colore dello sport
+  // piu' 3px di striscia su `.top::before`. Il cambio non e' cosmetico: `.top`
+  // vive dentro il bordo di `.pred`, e `overflow:hidden` ritaglia al padding box
+  // — quindi nessun figlio potra' mai coprire quel bordo, e con la striscia da
+  // 4px tutta dentro il filetto risultava rientrato di 1px su tre lati, come una
+  // striscia colorata dentro una cornice grigia. Il guard passa dal misurare la
+  // striscia al misurare il TOTALE, che e' l'invariante che conta.
+  it("il colore dello sport arriva a filo e somma 4px, nei DUE temi", () => {
     for (const [nome, t] of [["chiaro", LIGHT], ["scuro", DARK]] as const) {
       const d = declsFor(t, ".pred .top::before") + ";" + declsFor(t, ".top::before");
-      expect(prop(d, "height"), `${nome}: il filetto non è alto 4px`).toBe("4px");
-      expect(prop(d, "background"), `${nome}: il filetto non usa il colore dello sport`).toContain("--mc-accent");
+      const striscia = prop(d, "height");
+      expect(striscia, `${nome}: la striscia non dichiara un'altezza`).toBeTruthy();
+      const bordoAlto = prop(declsFor(t, ".pred"), "border-top-color");
+      expect(bordoAlto, `${nome}: il bordo alto non porta il colore dello sport, quindi il filetto resta rientrato di 1px`).toContain("--mc-accent");
+      // 1px di bordo + la striscia = i 4px di sempre
+      expect(1 + parseFloat(striscia!), `${nome}: bordo + striscia non fanno 4px`).toBe(4);
+      expect(prop(d, "background"), `${nome}: la striscia non usa il colore dello sport`).toContain("--mc-accent");
     }
+  });
+
+  it("l'hover non smorza il bordo ALTO: li' il colore resta pieno", () => {
+    // l'hover schiarisce i bordi al 65%; sul bordo alto quello spegnerebbe il
+    // filetto proprio mentre l'utente ci passa sopra.
+    for (const [nome, t] of [["chiaro", LIGHT], ["scuro", DARK]] as const) {
+      const h = declsFor(t, ".pred:hover");
+      expect(prop(h, "border-top-color"), `${nome}: l'hover non ridichiara il bordo alto`).toContain("--mc-accent");
+      expect(prop(h, "border-top-color"), `${nome}: l'hover smorza anche il bordo alto`).not.toContain("color-mix");
+    }
+  });
+
+  it("la smussatura IN ALTO continua il bordo alto, quella in basso resta neutra", () => {
+    // Se la smussatura alta e' grigia spezza il filetto in due: un triangolino di
+    // colore staccato dalla barra, con un cuneo grigio in mezzo. Misurato il 31/08.
+    const globals = readFileSync(join(REPO_ROOT, "app/globals.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const reg = /\.card > \.pred::before\s*\{([^}]*)\}/g;
+    const corpi = [...globals.matchAll(reg)].map((m) => m[1]);
+    expect(corpi.length, "nessuna regola per la smussatura alta in globals").toBeGreaterThan(0);
+    expect(corpi.join(";"), "la smussatura alta non prende il colore dello sport").toContain("--mc-accent");
   });
 
   it("in chiaro .pred ha padding:0, o il filetto nasce dentro il bordo", () => {
