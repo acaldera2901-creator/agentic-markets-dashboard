@@ -7,6 +7,12 @@ import { settlePredictionLog, settlePredictionLogWinner } from "@/lib/prediction
 import { gradeTennisPick, tennisWinnerSide } from "@/lib/tennis-settlement";
 import { verifyBearer } from "@/lib/admin-auth";
 import { opsAlert } from "@/lib/ops-alert";
+import {
+  LEDGER_MIRROR_CONFLICT,
+  isLedgerFkRejection,
+  ledgerMirrorRow,
+  sealedOrphansSql,
+} from "@/lib/pick-ledger-mirror";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -43,6 +49,22 @@ interface SettleReport {
   unified_football_settled: number;
   unified_tennis_settled: number;
   voided_stale: number;
+  /** #LEDGER-MIRROR-0831 — righe chiuse come 'unresolved' dallo step E per cui
+   *  e' stata scritta ANCHE la riga di chiusura nel registro sigillato. Prima
+   *  erano zero per costruzione: lo step E chiudeva la riga servita e lasciava
+   *  il pick sigillato senza chiusura (60 delle 88 orfane misurate il 31/08). */
+  stale_ledger_mirrored: number;
+  /** insert di chiusura rifiutati dalla FK verso pick_ledger (nessun pick
+   *  sigillato con quella chiave). E' un esito ATTESO — si chiudono solo i pick
+   *  registrati — ma va contato: senza il conteggio, «atteso» e «chiave
+   *  sbagliata» sono indistinguibili e il difetto si nasconde da solo. */
+  ledger_fk_skipped: number;
+  /** pick SIGILLATI con la partita iniziata da >6h e senza riga di chiusura.
+   *  E' il numero che avrebbe reso visibile la perdita del 27/06-29/08: valeva
+   *  88 al 31/08 e nessuna superficie lo mostrava. Non fa fallire il run — il
+   *  residuo storico va sanato dal backfill, non da un cron che urla ogni
+   *  mezz'ora — ma da qui e' leggibile a ogni giro. */
+  sealed_orphans: number;
   errors: string[];
   ran_at: string;
 }
@@ -95,6 +117,9 @@ export async function GET(req: NextRequest) {
     unified_football_settled: 0,
     unified_tennis_settled: 0,
     voided_stale: 0,
+    stale_ledger_mirrored: 0,
+    ledger_fk_skipped: 0,
+    sealed_orphans: 0,
     errors: [],
     ran_at: new Date().toISOString(),
   };
@@ -270,19 +295,22 @@ export async function GET(req: NextRequest) {
         // (source_table, source_id, model_version) un insert nudo darebbe errore
         // a ogni run: qui la seconda scrittura viene ignorata in silenzio, che è
         // il comportamento voluto — vince chi ha regolato per primo.
+        // #LEDGER-MIRROR-0831: chiave e payload dal modulo condiviso — erano
+        // scritti a mano qui, nell'agente Python e nell'adapter che sigilla, e
+        // tre copie di una chiave divergono presentandosi come un 23503
+        // "atteso".
         const { error: psErr } = await sb.from("pick_settlement").upsert(
-          {
-            source_table: "match_predictions",
-            source_id: String(row.external_event_id),
-            model_version: "football-v4-xg-model",
+          ledgerMirrorRow({
+            sourceId: String(row.external_event_id),
             result: outcome,
             outcome: realized,
-            final_score: `${m.homeGoals}-${m.awayGoals}`,
-            closing_odds: null,
-          },
-          { onConflict: "source_table,source_id,model_version", ignoreDuplicates: true }
+            finalScore: `${m.homeGoals}-${m.awayGoals}`,
+          }),
+          { onConflict: LEDGER_MIRROR_CONFLICT, ignoreDuplicates: true }
         );
-        if (psErr && psErr.code !== "23503") {
+        if (psErr && isLedgerFkRejection(psErr.code)) {
+          report.ledger_fk_skipped += 1;
+        } else if (psErr) {
           report.errors.push(`pick_settlement:${row.id}:${psErr.message}`);
         }
       }
@@ -371,7 +399,10 @@ export async function GET(req: NextRequest) {
       const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
       const { data: rows, error } = await sb
         .from("unified_predictions")
-        .select("id")
+        // #LEDGER-MIRROR-0831: external_event_id serve per la chiave della riga
+        // di chiusura. Senza, questo step chiude la riga servita e lascia il
+        // pick sigillato senza chiusura — erano 60 delle 88 orfane.
+        .select("id, external_event_id")
         .eq("sport", "football")
         .eq("is_historical", false)
         .is("result", null)
@@ -390,12 +421,51 @@ export async function GET(req: NextRequest) {
           })
           .eq("id", row.id)
           .is("result", null); // idempotency vs a concurrent settle
-        if (upErr) report.errors.push(`void_stale:${row.id}:${upErr.message}`);
-        else report.voided_stale += 1;
+        if (upErr) { report.errors.push(`void_stale:${row.id}:${upErr.message}`); continue; }
+        report.voided_stale += 1;
+        // #LEDGER-MIRROR-0831 — la riga di chiusura nel registro sigillato.
+        // Sicuro rispetto a `ignoreDuplicates`: l'update qui sopra ha appena
+        // messo result='unresolved' + is_historical=TRUE, e OGNI selettore di
+        // settlement (step C di questo cron, e fetch_unsettled_unified_predictions
+        // lato Python) filtra su `result IS NULL` e `is_historical = false`.
+        // La riga e' quindi TERMINALE: nessun esito vero potra' piu' arrivare e
+        // trovarsi scartato dal dedup.
+        if (!row.external_event_id) continue;
+        const { error: mirrorErr } = await sb.from("pick_settlement").upsert(
+          ledgerMirrorRow({
+            sourceId: String(row.external_event_id),
+            result: "unresolved",
+          }),
+          { onConflict: LEDGER_MIRROR_CONFLICT, ignoreDuplicates: true }
+        );
+        if (mirrorErr && isLedgerFkRejection(mirrorErr.code)) {
+          // Nessun pick sigillato per questa riga: normale, non tutte le righe
+          // servite entrano nel registro (le paper non si sigillano).
+          report.ledger_fk_skipped += 1;
+        } else if (mirrorErr) {
+          report.errors.push(`stale_mirror:${row.id}:${mirrorErr.message}`);
+        } else {
+          report.stale_ledger_mirrored += 1;
+        }
       }
     } catch (e) {
       report.errors.push(`void_stale:${String(e)}`);
     }
+  }
+
+  // ── E2. Registro sigillato: le orfane ────────────────────────────────────
+  // #LEDGER-MIRROR-0831 — il numero che mancava. `pick_ledger` promette che
+  // ogni riga sigillata ha il suo esito nella chiusura; fino al 31/08 nessuna
+  // superficie misurava quella promessa, e la violazione e' passata inosservata
+  // per due mesi (88 righe, 27/06-29/08). Non spinge un errore: il residuo
+  // storico si sana col backfill una volta, non con un cron che fallisce ogni
+  // mezz'ora. Ma dopo il backfill un numero diverso da zero qui vuol dire che
+  // una via di chiusura ha ricominciato a perdere.
+  try {
+    const rows = await dbQuery<{ n: number }>(sealedOrphansSql(6));
+    report.sealed_orphans = Number(rows[0]?.n ?? 0);
+  } catch (e) {
+    report.errors.push(`sealed_orphans:${String(e)}`);
   }
 
   // ── F. Tennis pipeline staleness watchdog (serverless) ────────────────────
