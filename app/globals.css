@@ -8586,7 +8586,6 @@ button:disabled {
    in fondo alla scheda, verso il basso finirebbe fuori dal contenitore. */
 .mds-books { flex: none; position: relative; }
 .mds-books .mds-cta { border: none; cursor: pointer; font-family: inherit; }
-.mds-books .mds-cta:disabled { opacity: .4; cursor: default; }
 .mds-bchev { display: inline-flex; transition: transform .15s; }
 .mds-bchev.open { transform: rotate(180deg); }
 .mds-bmenu { position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 30; min-width: 194px; display: flex; flex-direction: column; padding: 5px; border-radius: 12px; background: var(--am-panel); border: 1px solid var(--am-coral-b); box-shadow: 0 12px 32px rgba(0,0,0,.38); }
@@ -8598,7 +8597,6 @@ button:disabled {
    restare leggibili su tema chiaro E scuro (stessa scelta di /partners). */
 .mds-blogo { width: 26px; height: 18px; object-fit: contain; flex: none; border-radius: 4px; background: #0e1116; padding: 2px; }
 .mds-cta:hover { filter: brightness(1.08); }
-.mds-cta.disabled { opacity: .4; pointer-events: none; }
 .mds-cta .mds-ico { width: 14px; height: 14px; }
 .mds-disc { font-family: var(--mds-mono); font-size: 8.5px; color: var(--am-muted-2); text-align: center; padding: 0 14px 10px; margin: 0; line-height: 1.5; }
 .mds-side { font-family: var(--mds-mono); font-size: 10px; color: var(--am-muted-2); text-align: center; padding: 12px 16px 4px; margin: 0; line-height: 1.6; }
