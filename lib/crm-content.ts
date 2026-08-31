@@ -110,22 +110,22 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Has probado el Free. ¿Listo para más edge?", fr: "Vous avez essayé le Free. Prêt pour plus d'edge ?",
       ru: "Вы попробовали Free. Готовы к большему?" },
     body: {
-      it: "Con BetRedge Base ricevi le top 5 di calcio e 5 di tennis ogni settimana, con edge %, stake suggerito e closing line value su ogni pick. Con Pro non c'è tetto settimanale.",
-      en: "BetRedge Base gives you the top 5 football and 5 tennis predictions every week, with edge %, suggested stake and closing line value on every pick. Pro removes the weekly cap.",
-      es: "Con BetRedge Base recibes las 5 mejores predicciones de fútbol y 5 de tenis cada semana, con edge %, stake sugerido y closing line value en cada pick. Pro elimina el límite semanal.",
-      fr: "Avec BetRedge Base, vous recevez les 5 meilleurs pronostics football et 5 tennis chaque semaine, avec edge %, mise suggérée et closing line value sur chaque pick. Pro supprime le plafond hebdomadaire.",
-      ru: "BetRedge Base даёт топ-5 прогнозов по футболу и 5 по теннису каждую неделю, с edge %, рекомендованной ставкой и closing line value по каждому пику. Pro снимает недельный лимит." } },
+      it: "Con BetRedge Base ricevi le top 7 di calcio e 7 di tennis ogni giorno, con edge %, stake suggerito e closing line value su ogni pick. Con Pro non c'è nessun tetto.",
+      en: "BetRedge Base gives you the top 7 football and 7 tennis predictions every day, with edge %, suggested stake and closing line value on every pick. Pro removes the cap entirely.",
+      es: "Con BetRedge Base recibes las 7 mejores predicciones de fútbol y 7 de tenis cada día, con edge %, stake sugerido y closing line value en cada pick. Pro elimina el límite por completo.",
+      fr: "Avec BetRedge Base, vous recevez les 7 meilleurs pronostics football et 7 tennis chaque jour, avec edge %, mise suggérée et closing line value sur chaque pick. Pro supprime totalement le plafond.",
+      ru: "BetRedge Base даёт топ-7 прогнозов по футболу и 7 по теннису каждый день, с edge %, рекомендованной ставкой и closing line value по каждому пику. Pro снимает лимит полностью." } },
   { key: "acq_day5_picture", flow: "acquisition", day: 5,
     subject: {
       it: "Vuoi vedere il quadro completo?", en: "Ready to see the full picture?",
       es: "¿Quieres ver el cuadro completo?", fr: "Envie de voir le tableau complet ?",
       ru: "Хотите увидеть полную картину?" },
     body: {
-      it: "Nel Free vedi 1 pick per sport a settimana. Base apre l'intero board con edge, stake e closing line value; Pro aggiunge la Deep Analysis su forma, infortuni e campo, più il Match Builder e la Weekly Pick. La Weekly Pick — la multipla della casa, una a settimana — puoi anche sbloccarla da sola, una tantum, senza abbonarti.",
-      en: "Free shows 1 pick per sport each week. Base opens the full board with edge, stake and closing line value; Pro adds Deep Analysis on form, injuries and venue, plus Match Builder and the Weekly Pick. You can also unlock the Weekly Pick on its own — the house accumulator, one a week — as a one-off, without subscribing.",
-      es: "En Free ves 1 pick por deporte a la semana. Base abre todo el board con edge, stake y closing line value; Pro añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
-      fr: "En Free, vous voyez 1 pick par sport chaque semaine. Base ouvre tout le board avec edge, mise et closing line value ; Pro ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
-      ru: "В Free вы видите 1 пик по каждому виду спорта в неделю. Base открывает весь борд с edge, ставкой и closing line value; Pro добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
+      it: "Nel Free vedi 3 pick per sport al giorno. Base sale a 7 per sport, con edge, stake e closing line value; Pro toglie il tetto e aggiunge la Deep Analysis su forma, infortuni e campo, più il Match Builder e la Weekly Pick. La Weekly Pick — la multipla della casa, una a settimana — puoi anche sbloccarla da sola, una tantum, senza abbonarti.",
+      en: "Free shows 3 picks per sport a day. Base takes it to 7 per sport, with edge, stake and closing line value; Pro removes the cap and adds Deep Analysis on form, injuries and venue, plus Match Builder and the Weekly Pick. You can also unlock the Weekly Pick on its own — the house accumulator, one a week — as a one-off, without subscribing.",
+      es: "En Free ves 3 picks por deporte al día. Base sube a 7 por deporte, con edge, stake y closing line value; Pro elimina el límite y añade el Deep Analysis de forma, lesiones y campo, más el Match Builder y la Weekly Pick. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
+      fr: "En Free, vous voyez 3 pronostics par sport et par jour. Base passe à 7 par sport, avec edge, mise et closing line value ; Pro supprime le plafond et ajoute la Deep Analysis (forme, blessures, terrain), le Match Builder et la Weekly Pick. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
+      ru: "В Free вы видите 3 пика по каждому виду спорта в день. Base поднимает до 7 по виду спорта, с edge, ставкой и closing line value; Pro снимает лимит и добавляет Deep Analysis по форме, травмам и полю, а также Match Builder и Weekly Pick. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
   // #CRM-FAKE-OFFERS-0805 — questo touchpoint prometteva "−20% per 72h" a un
   // countdown per-utente. Nel codice il −20% NON È MAI ESISTITO (l'unico sconto è
   // LAUNCH_PROMO_DISCOUNT = 50%, solo primo acquisto), quindi era una promessa che
@@ -198,7 +198,7 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       fr: "Votre accès expire dans 7 jours", ru: "Ваш доступ истекает через 7 дней" },
     // #CRM-COPY-TRUTHFUL-0817: prometteva "il riepilogo del mese", che questa
     // email non contiene e che il prodotto non genera. Al suo posto la cosa vera
-    // e concreta: alla scadenza si torna al Free, che è 1 pick per sport.
+    // e concreta: alla scadenza si torna al Free, che è 3 pick per sport al giorno.
     // #CRM-RENEWAL-COND-0819: la frase sul rinnovo era FALSA per metà dei clienti.
     // Il 19/08 calde ha verificato nel sorgente che i selling plan Shopify hanno
     // `billingPolicy.recurring.interval` = MONTH/YEAR, quindi si rinnovano da soli;
@@ -208,11 +208,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     // clausola è il token {renewal}, risolto per rail di pagamento — e in assenza di
     // informazione NON dice nulla, invece di indovinare.
     body: {
-      it: "Alla scadenza torni al piano Free: 1 pick per sport a settimana. {renewal}",
-      en: "When it expires you go back to Free: 1 pick per sport each week. {renewal}",
-      es: "Al caducar vuelves al plan Free: 1 pick por deporte a la semana. {renewal}",
-      fr: "À l'échéance vous repassez au plan Free : 1 pronostic par sport et par semaine. {renewal}",
-      ru: "После истечения вы вернётесь на тариф Free: 1 прогноз по каждому виду спорта в неделю. {renewal}" } },
+      it: "Alla scadenza torni al piano Free: 3 pick per sport al giorno. {renewal}",
+      en: "When it expires you go back to Free: 3 picks per sport a day. {renewal}",
+      es: "Al caducar vuelves al plan Free: 3 picks por deporte al día. {renewal}",
+      fr: "À l'échéance vous repassez au plan Free : 3 pronostics par sport et par jour. {renewal}",
+      ru: "После истечения вы вернётесь на тариф Free: 3 прогноза по каждому виду спорта в день. {renewal}" } },
   { key: "ret_3d_before", flow: "retention", day: 3,
     subject: {
       it: "Rinnova: 3 giorni alla scadenza", en: "Renew: 3 days to expiry", es: "Renueva: quedan 3 días",
@@ -272,11 +272,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       it: "Cosa resta chiuso sul piano Free", en: "What stays locked on Free", es: "Qué sigue cerrado en el plan Free",
       fr: "Ce qui reste fermé sur le plan Free", ru: "Что остаётся закрытым на тарифе Free" },
     body: {
-      it: "Sul Free vedi 1 pick per sport a settimana: il board completo con edge, stake e closing line value resta chiuso. Riattiva quando vuoi — i tuoi dati e il tuo storico sono ancora al loro posto.",
-      en: "On Free you see 1 pick per sport each week: the full board with edge, stake and closing line value stays locked. Reactivate whenever you want — your data and history are still in place.",
-      es: "En Free ves 1 pick por deporte a la semana: el board completo con edge, stake y closing line value sigue cerrado. Reactiva cuando quieras — tus datos y tu historial siguen en su sitio.",
-      fr: "En Free vous voyez 1 pronostic par sport et par semaine : le board complet avec edge, mise et closing line value reste fermé. Réactivez quand vous voulez — vos données et votre historique sont toujours en place.",
-      ru: "На Free вы видите 1 прогноз по каждому виду спорта в неделю: полный борд с edge, размером ставки и closing line value остаётся закрыт. Возвращайтесь когда захотите — ваши данные и история на месте." } },
+      it: "Sul Free vedi 3 pick per sport al giorno: il resto del board, con edge, stake e closing line value, resta chiuso. Riattiva quando vuoi — i tuoi dati e il tuo storico sono ancora al loro posto.",
+      en: "On Free you see 3 picks per sport a day: the rest of the board, with edge, stake and closing line value, stays locked. Reactivate whenever you want — your data and history are still in place.",
+      es: "En Free ves 3 picks por deporte al día: el resto del board, con edge, stake y closing line value, sigue cerrado. Reactiva cuando quieras — tus datos y tu historial siguen en su sitio.",
+      fr: "En Free vous voyez 3 pronostics par sport et par jour : le reste du board, avec edge, mise et closing line value, reste fermé. Réactivez quand vous voulez — vos données et votre historique sont toujours en place.",
+      ru: "На Free вы видите 3 прогноза по каждому виду спорта в день: остальной борд — с edge, размером ставки и closing line value — остаётся закрыт. Возвращайтесь когда захотите — ваши данные и история на месте." } },
   { key: "wb_day21_final", flow: "winback", day: 21,
     subject: {
       it: "Ultimo promemoria", en: "Last reminder", es: "Último recordatorio",

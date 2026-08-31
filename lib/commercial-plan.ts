@@ -3,7 +3,9 @@ export type CheckoutPlanKey = "base" | "premium";
 export type SupportedLang = "it" | "en" | "es" | "fr" | "ru";
 
 // I due piani pagati pubblici (#PLANS-3TIER-1).
-// base = BetRedge Base (vetrina top 5/sport); premium = BetRedge Pro (tutto).
+// base = BetRedge Base (vetrina 7/sport al giorno); premium = BetRedge Pro (tutto).
+// I numeri veri stanno in lib/access-projection.ts (showcaseAllowance): qui è
+// solo un promemoria, non una seconda fonte.
 export const PUBLIC_PAID_PLANS = {
   // #UI-USD-DISPLAY-0623: prezzi presentati in USD ($) lato pubblico. SOLO display:
   // `amountUsdt` (l'importo addebitato in USDT) NON cambia, così la logica di

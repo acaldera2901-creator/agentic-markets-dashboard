@@ -4044,11 +4044,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Una prediction per sport ogni settimana, sbloccata del tutto. Profilo e storico pubblico.",
-              en: "One prediction per sport every week, fully unlocked. Profile and public history.",
-              es: "Una predicción por deporte cada semana, totalmente desbloqueada. Perfil e historial público.",
-              fr: "Une prédiction par sport chaque semaine, entièrement débloquée. Profil et historique public.",
-              ru: "Один прогноз на вид спорта каждую неделю, полностью открыт. Профиль и публичная история.",
+              it: "Tre prediction per sport ogni giorno, sbloccate del tutto. Profilo e storico pubblico.",
+              en: "Three predictions per sport every day, fully unlocked. Profile and public history.",
+              es: "Tres predicciones por deporte cada día, totalmente desbloqueadas. Perfil e historial público.",
+              fr: "Trois prédictions par sport chaque jour, entièrement débloquées. Profil et historique public.",
+              ru: "Три прогноза на вид спорта каждый день, полностью открыты. Профиль и публичная история.",
             })}
           </p>
           <div className="price-line">
@@ -4056,11 +4056,11 @@ function PlansTab({
             <span>{pick5(lang, { it: "Per sempre", en: "Forever", es: "Para siempre", fr: "Pour toujours", ru: "Навсегда" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "1 per sport / settimana", en: "1 per sport / week", es: "1 por deporte / semana", fr: "1 par sport / semaine", ru: "1 на вид спорта / неделя" })}</strong>
-            <em>{pick5(lang, { it: "La top del modello per calcio e per tennis.", en: "The model's top pick for football and tennis.", es: "La mejor selección del modelo para fútbol y tenis.", fr: "Le meilleur choix du modèle pour le football et le tennis.", ru: "Лучший выбор модели для футбола и тенниса." })}</em>
+            <strong>{pick5(lang, { it: "3 per sport / giorno", en: "3 per sport / day", es: "3 por deporte / día", fr: "3 par sport / jour", ru: "3 на вид спорта / день" })}</strong>
+            <em>{pick5(lang, { it: "Le migliori del modello di oggi, calcio e tennis.", en: "The model's best of today, football and tennis.", es: "Las mejores del modelo de hoy, fútbol y tenis.", fr: "Les meilleures du modèle du jour, football et tennis.", ru: "Лучшее от модели на сегодня — футбол и теннис." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "1 top prediction calcio + 1 tennis / settimana", en: "1 top football + 1 tennis prediction / week", es: "1 predicción top de fútbol + 1 de tenis / semana", fr: "1 prédiction top football + 1 tennis / semaine", ru: "1 топ-прогноз по футболу + 1 по теннису / неделя" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "3 top prediction calcio + 3 tennis, ogni giorno", en: "3 top football + 3 tennis predictions, every day", es: "3 predicciones top de fútbol + 3 de tenis, cada día", fr: "3 prédictions top football + 3 tennis, chaque jour", ru: "3 топ-прогноза по футболу + 3 по теннису, каждый день" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione su quelle", en: "Pick, probabilities and explanation on those", es: "Selección, probabilidades y explicación sobre ellas", fr: "Choix, probabilités et explication sur ceux-ci", ru: "Выбор, вероятности и пояснение по ним" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Profilo e lingua salvati · storico pubblico", en: "Profile and language saved · public history", es: "Perfil e idioma guardados · historial público", fr: "Profil et langue enregistrés · historique public", ru: "Профиль и язык сохранены · публичная история" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Resto del board, edge e Deep Analysis", en: "Rest of the board, edge and Deep Analysis", es: "Resto del panel, edge y Deep Analysis", fr: "Reste du tableau, edge et Deep Analysis", ru: "Остальная часть доски, edge и Deep Analysis" })}</PlanFeature>
@@ -4081,11 +4081,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Le top 5 prediction per sport ogni settimana, con edge e spiegazioni complete.",
-              en: "The top 5 predictions per sport every week, with full edge and explanations.",
-              es: "Las 5 mejores predicciones por deporte cada semana, con edge y explicaciones completas.",
-              fr: "Les 5 meilleures prédictions par sport chaque semaine, avec edge et explications complètes.",
-              ru: "Топ-5 прогнозов на вид спорта каждую неделю, с edge и полными пояснениями.",
+              it: "Le top 7 prediction per sport ogni giorno, con edge e spiegazioni complete.",
+              en: "The top 7 predictions per sport every day, with full edge and explanations.",
+              es: "Las 7 mejores predicciones por deporte cada día, con edge y explicaciones completas.",
+              fr: "Les 7 meilleures prédictions par sport chaque jour, avec edge et explications complètes.",
+              ru: "Топ-7 прогнозов на вид спорта каждый день, с edge и полными пояснениями.",
             })}
           </p>
           <div className="price-line">
@@ -4095,11 +4095,11 @@ function PlansTab({
             <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "5 per sport / settimana", en: "5 per sport / week", es: "5 por deporte / semana", fr: "5 par sport / semaine", ru: "5 на вид спорта / неделя" })}</strong>
-            <em>{pick5(lang, { it: "10 prediction a settimana, le migliori per edge.", en: "10 predictions a week, the best by edge.", es: "10 predicciones por semana, las mejores por edge.", fr: "10 prédictions par semaine, les meilleures par edge.", ru: "10 прогнозов в неделю, лучшие по edge." })}</em>
+            <strong>{pick5(lang, { it: "7 per sport / giorno", en: "7 per sport / day", es: "7 por deporte / día", fr: "7 par sport / jour", ru: "7 на вид спорта / день" })}</strong>
+            <em>{pick5(lang, { it: "14 prediction al giorno, le migliori del modello.", en: "14 predictions a day, the model's best.", es: "14 predicciones al día, las mejores del modelo.", fr: "14 prédictions par jour, les meilleures du modèle.", ru: "14 прогнозов в день — лучшее от модели." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "Top 5 calcio + 5 tennis / settimana (10 totali)", en: "Top 5 football + 5 tennis / week (10 total)", es: "Top 5 fútbol + 5 tenis / semana (10 en total)", fr: "Top 5 football + 5 tennis / semaine (10 au total)", ru: "Топ-5 футбол + 5 теннис / неделя (10 всего)" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Top 7 calcio + 7 tennis, ogni giorno (14 al giorno)", en: "Top 7 football + 7 tennis, every day (14 a day)", es: "Top 7 fútbol + 7 tenis, cada día (14 al día)", fr: "Top 7 football + 7 tennis, chaque jour (14 par jour)", ru: "Топ-7 футбол + 7 теннис, каждый день (14 в день)" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Edge %, stake suggerito, closing line value", en: "Edge %, suggested stake, closing line value", es: "Edge %, stake sugerido, closing line value", fr: "Edge %, mise suggérée, closing line value", ru: "Edge %, рекомендуемая ставка, closing line value" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Storico completo settlato", en: "Full settled history", es: "Historial completo liquidado", fr: "Historique complet réglé", ru: "Полная история расчётов" })}</PlanFeature>
@@ -4134,7 +4134,7 @@ function PlansTab({
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "Illimitato", en: "Unlimited", es: "Ilimitado", fr: "Illimité", ru: "Безлимитно" })}</strong>
-            <em>{pick5(lang, { it: "Nessun limite settimanale, tutta la piattaforma.", en: "No weekly cap, the whole platform.", es: "Sin límite semanal, toda la plataforma.", fr: "Aucune limite hebdomadaire, toute la plateforme.", ru: "Без недельного лимита, вся платформа." })}</em>
+            <em>{pick5(lang, { it: "Nessun tetto giornaliero, tutta la piattaforma.", en: "No daily cap, the whole platform.", es: "Sin límite diario, toda la plataforma.", fr: "Aucun plafond quotidien, toute la plateforme.", ru: "Без дневного лимита, вся платформа." })}</em>
           </div>
           <ul className="plan-feature-list">
             <PlanFeature>{pick5(lang, { it: "TUTTE le prediction, illimitate", en: "ALL predictions, unlimited", es: "TODAS las predicciones, ilimitadas", fr: "TOUTES les prédictions, illimitées", ru: "ВСЕ прогнозы, без лимита" })}</PlanFeature>
