@@ -648,8 +648,26 @@
    portandoli sopra la velatura, la diagonale grigia aveva iniziato a tagliare in
    due il capo sinistro del filetto. */
 :root:not([data-theme="light"]) [data-mc] .pred{border-top-color:var(--mc-accent,var(--d-football))}
+/* #CARD-OUTLINE-0831 — `right:-100%` non e' un trucco: nello SPLIT (#CARD-HUD-0830)
+   `.top` sta nella prima colonna della griglia, quindi la striscia copriva il 54%
+   della larghezza — misurato 284 su 525 — e il contorno alto cambiava spessore a
+   metà scheda: 4px sulla fotografia, 1px sul pannello dei dati. E' il «contorno
+   che non chiude la scheda». Sfondando di una larghezza intera si arriva sempre
+   oltre il bordo destro, e `overflow:hidden` di `.pred` taglia l'eccesso al
+   padding box: vale sia nello split sia impilata, senza una regola per caso. */
+/* #CARD-OUTLINE-0831 — `.top` sale sopra `.v2r`, e questa e' la seconda meta'
+   del difetto. `.top` e' essa stessa un contesto di impilamento (z-index 2, da
+   `.pred > *`), quindi lo `z-index:5` della striscia vale solo DENTRO `.top`:
+   fuori competono i due z-index 2 di `.top` e `.v2r`, e a pari livello vince chi
+   viene dopo nel DOM — `.v2r`. In scuro non si vedeva perche' il fondo di `.v2r`
+   e' translucido; in chiaro l'ho reso OPACO per lo split (#CARD-HUD-0830) e da
+   quel momento copriva la striscia sulla meta' destra. Misurato: accento sul
+   51,8% della larghezza in chiaro contro il 97,5% in scuro, a parita' di
+   geometria e z-index del pseudo. Le due meta' si sovrappongono solo sui 3px
+   della striscia, quindi alzare `.top` non sposta nient'altro. */
+:root:not([data-theme="light"]) [data-mc] .pred .top{z-index:4}
 :root:not([data-theme="light"]) [data-mc] .pred .top::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:5;
+  content:"";position:absolute;top:0;left:0;right:-100%;height:3px;z-index:5;
   background:var(--mc-accent,var(--d-football))}
 
 /* ── FOTO PIU' ACCESE (richiesta di Andrea, 2026-08-20) ────────────────────
@@ -797,8 +815,12 @@
 /* #ACCENT-BAR-0831 — vedi la nota sul gemello scuro: il bordo alto porta il
    colore, il filetto scende a 3px. I due temi devono dire la stessa cosa. */
 :root[data-theme="light"] [data-mc] .pred{border-top-color:var(--mc-accent,#6d28d9)}
+/* #CARD-OUTLINE-0831 — vedi la nota sul gemello scuro: la striscia deve
+   arrivare al bordo destro anche quando `.top` sta in mezza griglia. */
+/* #CARD-OUTLINE-0831 — vedi la nota sul gemello scuro. */
+:root[data-theme="light"] [data-mc] .pred .top{z-index:4}
 :root[data-theme="light"] [data-mc] .pred .top::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:5;
+  content:"";position:absolute;top:0;left:0;right:-100%;height:3px;z-index:5;
   background:var(--mc-accent,#6d28d9)}
 :root[data-theme="light"] [data-mc] .pred .fx{padding:0 .95rem .85rem;display:grid;gap:.65rem}
 :root[data-theme="light"] [data-mc] .pred .scorebar{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;
