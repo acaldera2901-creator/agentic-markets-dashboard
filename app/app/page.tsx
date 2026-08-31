@@ -16,6 +16,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { liveFootballOnBoard } from "@/lib/live-ticker";
 import { headlineRead } from "@/lib/headline-market"; // #HEADLINE-MARKET-0830
 import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
@@ -8134,17 +8135,41 @@ function LiveNowStrip({
   liveScores,
   liveTennis,
   boardTennisKeys,
+  boardFootball,
   lang,
 }: {
   liveScores: Record<string, LiveScore>;
   liveTennis: LiveTennisMatch[];
   boardTennisKeys: Set<string>;
+  boardFootball: Prediction[];
   lang: string;
 }) {
-  const liveFootball = Object.entries(liveScores).filter(
-    ([, s]) =>
-      (s.match_status === "IN_PLAY" || s.match_status === "PAUSED") &&
-      s.home_team && s.away_team
+  // #LIVE-TICKER-PARITY-0831 — il ticker calcio si costruisce DAI FIXTURE IN
+  // BOARD, non dalla mappa live grezza.
+  //
+  // Prima leggeva `Object.entries(liveScores)` e mostrava qualunque voce con
+  // stato IN_PLAY/PAUSED. Due conseguenze, misurate il 31/08:
+  //   · `fetchAllTodayMatches()` interroga football-data da IERI a oggi, e
+  //     football-data lascia partite FINITE con stato IN_PLAY: misurate 5
+  //     partite del 30/08 ancora IN_PLAY/PAUSED a 15-17 ORE dal fischio
+  //     d'inizio (Lazio-Genoa, Cagliari-Inter, Monaco-Marsiglia,
+  //     Deportivo-Valencia, Cambuur-Twente). Il ticker le dava per «in play».
+  //   · gli scoreboard ESPN restituiscono TUTTE le partite live della lega,
+  //     anche quelle per cui non abbiamo una predizione: annunciate nel ticker
+  //     e introvabili fra le schede.
+  // Il tennis aveva gia' il filtro di parita' con la board; il calcio no.
+  //
+  // Partendo dai fixture si eredita gratis anche la finestra dei 150 minuti
+  // (`IN_PLAY_GRACE_MS`): una partita di ieri non e' in board, quindi non puo'
+  // finire nel ticker. E si riusa lo STESSO abbinamento delle schede
+  // (`match_id` con fallback sui nomi) piu' `orientLive`, invece di
+  // inventarne un altro.
+  const liveFootball = liveFootballOnBoard(boardFootball, (p) =>
+    orientLive(
+      liveScores[p.match_id] ?? findLiveByTeams(liveScores, p.home_team, p.away_team),
+      p.home_team,
+      p.away_team,
+    ),
   );
   // Show only live tennis matches that also exist on the board (parity with /api/tennis board).
   const liveTennisOnBoard = liveTennis.filter((m) =>
@@ -9642,7 +9667,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             </div>
           )}
           {tab === "bets" && (
-            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))} lang={uiLanguage} />
+            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))} boardFootball={predictions} lang={uiLanguage} />
           )}
           {tab === "bets" && (
             <UnifiedBetsTab
