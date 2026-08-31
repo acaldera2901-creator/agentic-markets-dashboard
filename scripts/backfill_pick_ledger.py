@@ -348,9 +348,14 @@ def _insert(
 
 
 def _existing_settlement_keys(client: httpx.Client) -> set[tuple[str, str, str]]:
-    """pick_settlement is append-only with NO unique key (a correction is a new
-    row, latest settled_at wins). To stay idempotent we skip terns already
-    present rather than relying on a conflict resolution that has no target."""
+    """pick_settlement e' append-only e HA una chiave unica: l'indice
+    pick_settlement_pick_key (source_table, source_id, model_version), verificato
+    su produzione il 31/08 (#LEDGER-MIRROR-0831). Il commento precedente diceva
+    "NO unique key, una correzione e' una riga nuova": e' falso in entrambe le
+    meta' — una seconda riga per lo stesso pick viene RIFIUTATA, quindi una
+    correzione per accodamento non esiste e chi si fidasse di quella frase la
+    vedrebbe scartata in silenzio. Saltare i terni gia' presenti resta giusto: e'
+    la stessa cosa che farebbe il conflitto, decisa qui invece che dal database."""
     rows = _select(
         client,
         "pick_settlement",

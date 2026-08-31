@@ -247,6 +247,29 @@ class ResultSettlementAgent(BaseAgent):
                                 f"unified voided (abandoned): {row.get('home_team')} vs "
                                 f"{row.get('away_team')} ({row.get('competition')})"
                             )
+                            # #LEDGER-MIRROR-0831 — anche la chiusura per
+                            # abbandono va nel registro sigillato. Questo ramo
+                            # chiudeva la riga servita e NON scriveva il mirror:
+                            # misurate 17 righe 'void' fra le 88 pick sigillate
+                            # senza chiusura al 31/08 (4 a luglio, 13 ad agosto),
+                            # sulla tabella che Telegram pubblica come prova
+                            # pubblica. Un pick sigillato senza chiusura non e'
+                            # un pick neutro: e' un buco nel registro, e il
+                            # registro mente per omissione.
+                            # outcome e final_score restano None: la partita non
+                            # ha un punteggio, e inventarne uno sarebbe peggio
+                            # del buco. closing_odds e' None per lo stesso
+                            # motivo di sempre (nessuna chiusura agganciabile).
+                            ext_void = row.get("external_event_id")
+                            if ext_void:
+                                await record_pick_settlement(
+                                    source_table="match_predictions",
+                                    source_id=str(ext_void),
+                                    model_version="football-v4-xg-model",
+                                    result="void",
+                                    outcome=None,
+                                    final_score=None,
+                                )
                     continue  # not finished / providers have no score yet
 
                 pick = str(row.get("pick") or "").strip().lower()

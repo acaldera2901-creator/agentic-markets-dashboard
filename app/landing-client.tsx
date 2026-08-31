@@ -55,7 +55,7 @@ const COPY = {
     cardAppDesc: "Il desk in tasca. In arrivo su iOS e Android.",
     appSoon: "IN ARRIVO",
     spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali", spTools: "Strumenti",
-    cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
+    cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate su pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 14.99 · Pro 29.99 USDT/mese.", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. I risultati passati non garantiscono risultati futuri. 18+.",
@@ -65,7 +65,7 @@ const COPY = {
     waHead1: "Non battiamo il banco.",
     waHead2: "Lo rendiamo leggibile.",
     waBody: "Ogni partita passa nel modello: probabilità calibrate, confrontate con la quota. Dove c'è scarto lo evidenziamo e lo spieghiamo — prima del fischio — e lo registriamo. Niente soffiate, niente scatola nera: numeri onesti e il loro perché.",
-    waKpi1Val: "Hit-rate", waKpi1Lab: "su pick concluse", waKpi2Lab: "prima del fischio", waKpi3Val: "CLV", waKpi3Lab: "verificato e tracciato",
+    waKpi1Val: "Hit-rate", waKpi1Lab: "su pick concluse", waKpi2Lab: "prima del fischio",
     waCta: "Inizia gratis",
     waCtaSub: "Senza carta",
     // terminale edge_scanner — header colonne + stati + footer
@@ -105,7 +105,7 @@ const COPY = {
     cardAppDesc: "The desk in your pocket. Coming soon to iOS and Android.",
     appSoon: "COMING SOON",
     spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup", spTools: "Free tools",
-    cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "Hit rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
+    cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "Hit rate on settled picks, logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
     cardPlans: "Plans", cardPlansDesc: "Free to try · Base 14.99 · Pro 29.99 USDT/month.", cardPlansBtn: "See plans",
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. Past results do not guarantee future results. 18+.",
@@ -115,7 +115,7 @@ const COPY = {
     waHead1: "We don't beat the book.",
     waHead2: "We make it readable.",
     waBody: "Every match runs through the model: calibrated probabilities, lined up against the odds. Where there's a gap we flag it and explain it — before kick-off — and we log it. No tips, no black box: honest numbers and the reasoning behind them.",
-    waKpi1Val: "Hit rate", waKpi1Lab: "on settled picks", waKpi2Lab: "logged pre-match", waKpi3Val: "CLV", waKpi3Lab: "verified & tracked",
+    waKpi1Val: "Hit rate", waKpi1Lab: "on settled picks", waKpi2Lab: "logged pre-match",
     waCta: "Start free",
     waCtaSub: "No card",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -154,7 +154,7 @@ const COPY = {
     cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
     appSoon: "PRÓXIMAMENTE",
     spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial", spTools: "Herramientas",
-    cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
+    cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto en apuestas cerradas, registradas antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
     cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 14.99 · Pro 29.99 USDT/mes.", cardPlansBtn: "Ver planes",
     risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. Los resultados pasados no garantizan resultados futuros. 18+.",
@@ -164,7 +164,7 @@ const COPY = {
     waHead1: "No batimos a la casa.",
     waHead2: "La hacemos legible.",
     waBody: "Cada partido pasa por el modelo: probabilidades calibradas, frente a la cuota. Donde hay diferencia la señalamos y la explicamos — antes del pitido — y la registramos. Sin soplos, sin caja negra: números honestos y su porqué.",
-    waKpi1Val: "Acierto", waKpi1Lab: "en apuestas cerradas", waKpi2Lab: "antes del partido", waKpi3Val: "CLV", waKpi3Lab: "verificado y registrado",
+    waKpi1Val: "Acierto", waKpi1Lab: "en apuestas cerradas", waKpi2Lab: "antes del partido",
     waCta: "Empieza gratis",
     waCtaSub: "Sin tarjeta",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -203,7 +203,7 @@ const COPY = {
     cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
     appSoon: "BIENTÔT",
     spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde", spTools: "Outils",
-    cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
+    cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite sur paris clôturés, enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
     cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 14.99 · Pro 29.99 USDT/mois.", cardPlansBtn: "Voir les offres",
     risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. Les résultats passés ne garantissent pas les résultats futurs. 18+.",
@@ -213,7 +213,7 @@ const COPY = {
     waHead1: "On ne bat pas le bookmaker.",
     waHead2: "On le rend lisible.",
     waBody: "Chaque match passe dans le modèle : des probabilités calibrées, confrontées à la cote. Là où il y a un écart, on le signale et on l'explique — avant le coup d'envoi — et on l'enregistre. Pas de tuyaux, pas de boîte noire : des chiffres honnêtes et leur pourquoi.",
-    waKpi1Val: "Réussite", waKpi1Lab: "sur paris clôturés", waKpi2Lab: "avant le match", waKpi3Val: "CLV", waKpi3Lab: "vérifié et suivi",
+    waKpi1Val: "Réussite", waKpi1Lab: "sur paris clôturés", waKpi2Lab: "avant le match",
     waCta: "Commencer gratuitement",
     waCtaSub: "Sans carte",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -252,7 +252,7 @@ const COPY = {
     cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
     appSoon: "СКОРО",
     spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ", spTools: "Инструменты",
-    cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Точность попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
+    cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Точность попаданий по закрытым прогнозам. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
     cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 14.99 · Pro 29.99 USDT/мес.", cardPlansBtn: "Тарифы",
     risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. Прошлые результаты не гарантируют будущих результатов. 18+.",
@@ -262,7 +262,7 @@ const COPY = {
     waHead1: "Мы не обыгрываем букмекера.",
     waHead2: "Мы делаем его понятным.",
     waBody: "Каждый матч проходит через модель: калиброванные вероятности, сопоставленные с коэффициентом. Где есть расхождение — мы отмечаем его и объясняем — до свистка — и фиксируем. Никаких подсказок, никакого чёрного ящика: честные цифры и их причина.",
-    waKpi1Val: "Точность", waKpi1Lab: "по закрытым прогнозам", waKpi2Lab: "до матча", waKpi3Val: "CLV", waKpi3Lab: "проверенный, отслеживается",
+    waKpi1Val: "Точность", waKpi1Lab: "по закрытым прогнозам", waKpi2Lab: "до матча",
     waCta: "Начать бесплатно",
     waCtaSub: "Без карты",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -359,7 +359,18 @@ const SCAN_EXAMPLE_ROWS: ScanRow[] = [
 type V3Copy = {
   inviteHead: string; inviteBody: string;
   ctaTerminal: string; ctaTrack: string; ctaBrowse: string;
-  chipLogged: string; chipClv: string; chipCal: string;
+  // #CLV-CLAIM-0831: `chipClv` RIMOSSO. Era il chip di fiducia «CLV verified»
+  // sulla landing pubblica, accanto a due claim veri (sigillata prima del
+  // fischio, calibrata). Quel terzo non era vero: misurato il 31/08 su
+  // produzione, 0 righe su 3.730 in unified_predictions hanno closing_odds o
+  // closing_line_value, e 1 su 1.127 in pick_settlement. Non e' un ritardo di
+  // popolamento: le quote di chiusura degli ultimi 30 giorni coprono OTTO
+  // partite dalla sola fonte che per regola di sistema puo' alimentare il
+  // prodotto (odds_api), e nessuna delle otto compare in pick_ledger — le altre
+  // 1.169 righe `is_closing` vengono da stake/roobet, la via che alimenta solo
+  // la misura. Un claim di verifica senza il dato che lo verifica va tolto,
+  // non riformulato. Vedi lib/landing-claims.test.ts prima di rimetterlo.
+  chipLogged: string; chipCal: string;
   anEyebrow: string; anHead: string; anSub: string;
   anCapLive: string; anCapRepr: string;
   anNotes: { lab: string; body: string; strong: string }[];
@@ -377,7 +388,7 @@ type V3Copy = {
 const V3_EN: V3Copy = {
   inviteHead: "Your invite is live", inviteBody: "days of PRO, free — unlocked when you confirm your email.",
   ctaTerminal: "Open the terminal", ctaTrack: "See the track record", ctaBrowse: "Browse the track record",
-  chipLogged: "Logged before kick-off", chipClv: "CLV verified", chipCal: "Calibrated, not hyped",
+  chipLogged: "Logged before kick-off", chipCal: "Calibrated, not hyped",
   anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.",
   anCapLive: "Live pick — the exact card component from the board.",
   anCapRepr: "Representative reading — the exact card component from the board.",
@@ -388,7 +399,7 @@ const V3_EN: V3Copy = {
     { lab: "Edge", strong: "The gap, quantified.", body: "Where the model sees more value than the price implies — never a promise of profit." },
     { lab: "Deep Analysis", strong: "The “why”, in the open.", body: "Form, xG, injuries, Elo, serve/return, H2H, surface — reasoning, not a black box." },
   ],
-  prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "CLV VERIFIED · LOGGED PRE-KICK-OFF",
+  prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "LOGGED PRE-KICK-OFF",
   prMeta: (n) => `${n} settled picks, each time-stamped before the whistle. This is the settled hit-rate — past performance, not a forecast. Nothing edited after the fact.`,
   prMetaQual: "Every pick is time-stamped before the whistle and settled on the public record — past performance, not a forecast. Nothing edited after the fact.",
   prWall: "SETTLED PICKS", prColMatch: "MATCH", prColRes: "RESULT",
@@ -416,7 +427,7 @@ const V3_EN: V3Copy = {
 const V3_IT: V3Copy = {
   inviteHead: "Il tuo invito è attivo", inviteBody: "giorni di PRO, gratis — si attivano quando confermi la mail.",
   ctaTerminal: "Apri il terminale", ctaTrack: "Vedi il track record", ctaBrowse: "Sfoglia il track record",
-  chipLogged: "Registrata prima del fischio", chipClv: "CLV verificato", chipCal: "Calibrata, mai gonfiata",
+  chipLogged: "Registrata prima del fischio", chipCal: "Calibrata, mai gonfiata",
   anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype. È la scheda identica a quella sulla board.",
   anCapLive: "Pick live — il componente scheda identico a quello della board.",
   anCapRepr: "Lettura rappresentativa — il componente scheda identico a quello della board.",
@@ -427,7 +438,7 @@ const V3_IT: V3Copy = {
     { lab: "Edge", strong: "Lo scarto, quantificato.", body: "Dove il modello vede più valore di quanto implichi la quota — mai una promessa di profitto." },
     { lab: "Deep Analysis", strong: "Il “perché”, in chiaro.", body: "Forma, xG, infortuni, Elo, servizio/risposta, H2H, superficie — ragionamento, non scatola nera." },
   ],
-  prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "CLV VERIFICATO · REGISTRATA PRIMA DEL FISCHIO",
+  prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "REGISTRATA PRIMA DEL FISCHIO",
   prMeta: (n) => `${n} pick concluse, ciascuna con timestamp prima del fischio. Questo è l’hit-rate concluso — risultati passati, non una previsione. Nulla modificato a posteriori.`,
   prMetaQual: "Ogni pick ha un timestamp prima del fischio ed è conclusa sul registro pubblico — risultati passati, non una previsione. Nulla modificato a posteriori.",
   prWall: "PICK CONCLUSE", prColMatch: "MATCH", prColRes: "ESITO",
@@ -810,7 +821,6 @@ export default function LandingPage() {
           </div>
           <div className="v-trust">
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipLogged}</span>
-            <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipClv}</span>
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipCal}</span>
           </div>
         </div>

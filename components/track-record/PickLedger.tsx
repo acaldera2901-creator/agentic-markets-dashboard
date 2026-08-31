@@ -85,7 +85,7 @@ export function PickLedger({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en
         )}
         {isLocked && (
           <div className="tr-glock">
-            <GlyphLock size={13} /> {it ? "Registro completo e drill-down per-pick (prob-al-pick, CLV)" : "Full log and per-pick drill-down (pick probability, CLV)"} —{" "}
+            <GlyphLock size={13} /> {it ? "Registro completo e drill-down per-pick (prob-al-pick)" : "Full log and per-pick drill-down (pick probability)"} —{" "}
             <span className="tr-pill btn">{it ? "Sblocca con Pro" : "Unlock with Pro"}</span>
           </div>
         )}

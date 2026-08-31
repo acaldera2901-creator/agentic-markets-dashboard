@@ -781,8 +781,13 @@ async def record_pick_settlement(
 
     Written once per pick when the event resolves, pointing back at exactly one
     pick_ledger row via (source_table, source_id, model_version). The table has
-    no UPDATE/DELETE surface, so a correction is a NEW row (latest settled_at
-    wins in the runner), never an in-place edit. ``closing_odds`` is the price on
+    no UPDATE/DELETE surface AND a UNIQUE index on that same tern
+    (pick_settlement_pick_key, verified on prod 2026-08-31 #LEDGER-MIRROR-0831),
+    so a pick is settled EXACTLY ONCE: the first write wins and every later one
+    is ignored by the dedup below. NB the previous wording here promised that "a
+    correction is a NEW row (latest settled_at wins)" — it is not possible, the
+    unique index rejects it. Nothing relies on that promise today; do not build
+    on it. ``closing_odds`` is the price on
     the picked selection at close for CLV; NULL when no verified closing line is
     joinable (never fabricated). Fully fail-soft: the INSERT is rejected by the
     pick_settlement→pick_ledger FK when no matching ledger pick exists, which is
