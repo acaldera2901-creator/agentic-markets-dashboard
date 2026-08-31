@@ -73,6 +73,43 @@ def _format_confirmed_xi(home_team: str, away_team: str, lineups: dict) -> str |
     return "XI confermati — " + " · ".join(parts)
 
 
+# #FIT-OFFLOAD-0831 — la radice misurata da Andrea in prod (#CONSUME-GUARD-0830):
+# il singolo event loop asyncio resta bloccato oltre 10s e ogni via Redis in volo
+# scade insieme. La causa non e' Redis: e' che questo lavoro girava DENTRO il loop.
+#
+# `_neg_log_likelihood` (models/dixon_coles.py) e' un loop Python puro che
+# `scipy.optimize.minimize` richiama migliaia di volte, e `predict()` ha un doppio
+# ciclo sui gol: fra un `await` e il successivo il loop non respira.
+#
+# Vive FUORI dalla classe di proposito: non tocca `self` ne' stato globale, e
+# questa e' la garanzia che sia davvero sicuro spostarlo su un thread. Tutto cio'
+# che scrive stato condiviso (calibrate_from_history, ContextService, DB) resta
+# sul thread del loop, dove era.
+#
+# Onesto su cosa compra: essendo Python puro il GIL resta preso, quindi il loop
+# non torna a piena velocita' — ma torna a essere SCHEDULATO (l'interprete cede
+# il GIL a ogni switch interval, ~5 ms) invece di restare fermo per tutta la
+# durata del fit. Contro un socket_timeout da 10s, millisecondi di jitter non
+# sono niente: e' la differenza fra "in ritardo" e "scaduto".
+def _fit_and_calibration_probs(training: list[dict]) -> tuple["DixonColesModel", list[dict]]:
+    """Fit + probabilita' di calibrazione. CPU pura, zero stato condiviso."""
+    model = DixonColesModel()
+    model.fit(training)
+    # Ultimo 20% come split di calibrazione, per non avere data leakage.
+    n_cal = max(int(len(training) * 0.20), 10)
+    cal_probs: list[dict] = []
+    for m in training[-n_cal:]:
+        try:
+            ph, pd, pa = model.predict(m["home_team"], m["away_team"])
+        except Exception:
+            continue
+        cal_probs.append({
+            "p_home": ph, "p_draw": pd, "p_away": pa,
+            "home_goals": m["home_goals"], "away_goals": m["away_goals"],
+        })
+    return model, cal_probs
+
+
 class ModelAgent(BaseAgent):
     def __init__(self):
         super().__init__("ModelAgent")
@@ -118,25 +155,16 @@ class ModelAgent(BaseAgent):
                 results = await self._fetch_history(league_code, league_id)
                 training = self._parse_results(results)
                 if len(training) >= 10:
-                    model = DixonColesModel()
-                    model.fit(training)
+                    # #FIT-OFFLOAD-0831: il fit NON gira piu' sull'event loop.
+                    # Era una chiamata sincrona da decine di secondi dentro una
+                    # coroutine: mentre girava, NIENTE altro nel processo poteva
+                    # essere servito — heartbeat compresi, perche' anche loro
+                    # sono task di questo stesso loop.
+                    model, cal_probs = await asyncio.to_thread(
+                        _fit_and_calibration_probs, training
+                    )
                     self._models[league_code] = model
                     self._history[league_code] = training
-
-                    # Calibrate conformal predictor on the same training set
-                    # Use last 20% as "calibration" split to avoid data leakage
-                    n_cal = max(int(len(training) * 0.20), 10)
-                    calibration_set = training[-n_cal:]
-                    cal_probs = []
-                    for m in calibration_set:
-                        try:
-                            ph, pd, pa = model.predict(m["home_team"], m["away_team"])
-                            cal_probs.append({
-                                "p_home": ph, "p_draw": pd, "p_away": pa,
-                                "home_goals": m["home_goals"], "away_goals": m["away_goals"],
-                            })
-                        except Exception:
-                            continue
                     if cal_probs:
                         calibrate_from_history(league_code, cal_probs)
                         self.logger.info(
