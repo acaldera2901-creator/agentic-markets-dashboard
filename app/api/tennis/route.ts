@@ -397,6 +397,20 @@ export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
   const now = new Date().toISOString();
 
+  // #TENNIS-CACHE-VARY-0831 — questa route proietta PER SESSIONE (locked/unlocked
+  // dipendono dal piano), ma non dichiarava nessun Cache-Control: cadeva sul
+  // default `public, max-age=0, must-revalidate` e SENZA `Vary: Cookie`. È la
+  // stessa forma dell'incidente che /api/v2/predictions documenta nel proprio
+  // commento — lì una cache condivisa poteva servire la proiezione di un utente
+  // a un altro. Qui si copia il meccanismo già corretto, non se ne inventa uno:
+  // solo la proiezione anonima è identica per tutti, quindi condivisibile.
+  const cacheHeaders = {
+    "Cache-Control": state === "anonymous"
+      ? "public, s-maxage=120, stale-while-revalidate=60"
+      : "private, no-store",
+    Vary: "Cookie",
+  };
+
   const redisData = await getFromRedis();
 
   if (redisData && Array.isArray(redisData.predictions) && redisData.predictions.length > 0) {
@@ -416,7 +430,7 @@ export async function GET(req: Request) {
       status: "paper",
       computed_at: redisData.computed_at || now,
       source: "redis",
-    });
+    }, { headers: cacheHeaders });
   }
 
   const dbData = await getFromDb();
@@ -441,7 +455,7 @@ export async function GET(req: Request) {
       // riserva (nessun live/upcoming), il flag dice al frontend di mostrarli
       // bypassando la finestra di trading, così il board non resta mai vuoto.
       is_placeholder: dbData.is_fallback ?? false,
-    });
+    }, { headers: cacheHeaders });
   }
 
   return NextResponse.json({
@@ -461,5 +475,7 @@ export async function GET(req: Request) {
         "settlement/history writer",
       ],
     },
-  });
+    // Anche la risposta vuota porta gli header: una route che proietta per
+    // sessione non deve avere UNA sola uscita share-cacheable senza Vary.
+  }, { headers: cacheHeaders });
 }

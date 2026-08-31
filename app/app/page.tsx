@@ -16,6 +16,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { compareUnlockedFirst } from "@/lib/board-order"; // #UNLOCKED-FIRST-0831
 import { liveFootballOnBoard } from "@/lib/live-ticker";
 import { headlineRead } from "@/lib/headline-market"; // #HEADLINE-MARKET-0830
 import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
@@ -2293,7 +2294,18 @@ function SportsbookBoard({
 
   const surfaceOptions = Array.from(new Set(tennisMatches.map((m) => m.surface))).sort();
 
+  // #UNLOCKED-FIRST-0831 — le righe SBLOCCATE aprono la sezione. Andrea, da un
+  // account free: «c'è solo una prediction sbloccata». Le sue tre c'erano: la
+  // board ordina per ORARIO, quindi finivano sparse fra 136 schede coperte e per
+  // trovarle bisognava scorrere. Ciò che un piano gated può davvero usare sono le
+  // sue righe aperte: vanno dove le vede.
+  //
+  // Nessuna condizione sul piano, e non serve: per il Pro tutte le righe sono
+  // sbloccate e per l'anonimo nessuna, quindi il confronto è un no-op in
+  // entrambi i casi. Vale solo dove c'è un confine, cioè free e base.
   const sortFootball = (rows: Prediction[]) => rows.sort((a, b) => {
+    const gate = compareUnlockedFirst(a, b);
+    if (gate !== 0) return gate;
     const la = isFootballLive(a), lb = isFootballLive(b);
     if (la !== lb) return la ? -1 : 1;
     if (sortMode === "time") return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
@@ -2305,7 +2317,10 @@ function SportsbookBoard({
     return (b.edge ?? -1) - (a.edge ?? -1);
   });
 
+  // #UNLOCKED-FIRST-0831: stessa regola del calcio, vedi il commento sopra.
   const sortTennis = (rows: TennisMatch[]) => rows.sort((a, b) => {
+    const gate = compareUnlockedFirst(a, b);
+    if (gate !== 0) return gate;
     const la = isTennisLive(a), lb = isTennisLive(b);
     if (la !== lb) return la ? -1 : 1;
     if (sortMode === "time") return new Date(a.scheduled).getTime() - new Date(b.scheduled).getTime();
@@ -2483,15 +2498,21 @@ function SportsbookBoard({
                     // (access-projection: `free` sblocca rank 0, il resto arriva già
                     // senza pick/probabilità/edge), qui si smette solo di nasconderlo.
                     const rows = footballRows;
-                    // #FREE-BOARD-FULL-0831: col Free che ora scorre la board intera, il
-                    // <FreePaywall> a fondo pagina sta sotto ~50 schede e non lo vede
-                    // nessuno. Se ne mette una copia PRESTO, in griglia a tutta larghezza,
-                    // dopo la terza scheda. Posizione FISSA e non "dopo le righe
-                    // sbloccate": la board ordina per orario, quindi la riga sbloccata
-                    // (rank 0) può cadere a metà lista — non è un confine stabile.
+                    // #FREE-BOARD-FULL-0831 + #UNLOCKED-FIRST-0831: il <FreePaywall> a
+                    // fondo pagina sta sotto ~50 schede e non lo vede nessuno, quindi
+                    // una copia va in griglia, a tutta larghezza, SUBITO DOPO le righe
+                    // sbloccate — dove il Free passa dal reale al mascherato.
+                    // Prima era una posizione fissa (la terza scheda) proprio perché
+                    // "dopo le sbloccate" non era un confine stabile: la board ordinava
+                    // per orario e le aperte cadevano sparse. Ora aprono la sezione,
+                    // quindi il confine esiste ed è questo. Fallback alla terza scheda
+                    // se in questa sezione non c'è nulla di sbloccato.
                     // Salta i board corti (≤8 righe), dove finirebbe accanto a quello di
-                    // chiusura. i=2 non collide coi banner house, che stanno a i=5,11,…
-                    const fpGridAt = isFreeClient && rows.length > 8 ? 2 : -1;
+                    // chiusura.
+                    const primaCoperta = rows.findIndex((p) => p.locked);
+                    const fpGridAt = isFreeClient && rows.length > 8
+                      ? (primaCoperta > 0 ? primaCoperta - 1 : 2)
+                      : -1;
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const out: React.ReactNode[] = [
@@ -9357,6 +9378,25 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
   }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchLive, fetchTennisLive]);
+
+  // #PLAN-REFRESH-0831 — le prediction si rileggono ogni 60 minuti (l'intervallo
+  // qui sopra). Il piano è il dato che decide cosa è sbloccato: finché non si
+  // rileggevano, chi passava a Base — o rientrava da un piano scaduto — continuava
+  // a vedere la board del piano vecchio, anche per un'ora, e sembrava che il
+  // pagamento non fosse servito a niente. Al cambio di piano i due endpoint gated
+  // si rileggono subito. Il `plan` come dipendenza (non l'oggetto profilo) evita
+  // di rifare la fetch a ogni salvataggio di nome/lingua/timezone.
+  const clientPlan = clientProfile?.plan ?? null;
+  useEffect(() => {
+    if (!clientPlan) return;
+    // queueMicrotask come l'effetto di mount qui sopra: le due fetch alzano il
+    // loading in modo sincrono, e un setState sincrono dentro un effetto innesca
+    // render a cascata (regola react-hooks, errore in lint).
+    queueMicrotask(() => {
+      void fetchPredictions();
+      void fetchTennis();
+    });
+  }, [clientPlan, fetchPredictions, fetchTennis]);
 
   // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
   // session, the desk is walled — the auth modal is force-shown and locked.
