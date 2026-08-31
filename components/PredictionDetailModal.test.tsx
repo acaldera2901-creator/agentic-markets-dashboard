@@ -5,7 +5,7 @@
 // per riportare la chat sotto la soglia del modale. Qui si sorveglia il
 // marcatore — che il CSS legga il marcatore lo garantisce `globals.css`, che di
 // suo non e' testabile in jsdom.
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { PredictionDetailModal } from "@/components/PredictionDetailModal";
 
@@ -55,5 +55,58 @@ describe("il marcatore che fa passare la chat sotto", () => {
     unmount();
     expect(document.body.style.overflow).not.toBe("hidden");
     expect(document.documentElement.dataset.pdmOpen).toBeUndefined();
+  });
+});
+
+describe("la chat si nasconde con la SUA API (#TAWK-API-HIDE-0831)", () => {
+  // Il primo tentativo abbassava lo z-index del contenitore di Tawk via CSS, e
+  // dal telefono la bolla restava sopra: quel fix dipendeva dal DOM del widget,
+  // che cambia fra le versioni. `hideWidget`/`showWidget` sono l'interfaccia
+  // documentata e non dipendono dal markup.
+  const monta = () => {
+    const hideWidget = vi.fn();
+    const showWidget = vi.fn();
+    (window as unknown as { Tawk_API?: unknown }).Tawk_API = { hideWidget, showWidget };
+    return { hideWidget, showWidget };
+  };
+  afterEach(() => { delete (window as unknown as { Tawk_API?: unknown }).Tawk_API; });
+
+  it("aprendo la scheda la chat si nasconde", () => {
+    const { hideWidget, showWidget } = monta();
+    render(<PredictionDetailModal {...base} open><p>x</p></PredictionDetailModal>);
+    expect(hideWidget).toHaveBeenCalledTimes(1);
+    expect(showWidget).not.toHaveBeenCalled();
+  });
+
+  it("chiudendo la scheda la chat torna", () => {
+    const { hideWidget, showWidget } = monta();
+    const { rerender } = render(<PredictionDetailModal {...base} open><p>x</p></PredictionDetailModal>);
+    rerender(<PredictionDetailModal {...base} open={false}><p>x</p></PredictionDetailModal>);
+    expect(hideWidget).toHaveBeenCalledTimes(1);
+    expect(showWidget).toHaveBeenCalledTimes(1);
+  });
+
+  it("smontando il modale la chat torna: non si resta senza chat", () => {
+    const { showWidget } = monta();
+    const { unmount } = render(<PredictionDetailModal {...base} open><p>x</p></PredictionDetailModal>);
+    unmount();
+    expect(showWidget).toHaveBeenCalledTimes(1);
+  });
+
+  it("senza `Tawk_API` (consenso negato) non lancia e la scheda si apre", () => {
+    delete (window as unknown as { Tawk_API?: unknown }).Tawk_API;
+    expect(() => render(<PredictionDetailModal {...base} open><p>contenuto</p></PredictionDetailModal>)).not.toThrow();
+    expect(document.documentElement.dataset.pdmOpen).toBe("1");
+  });
+
+  it("se il widget lancia, la scheda si apre comunque", () => {
+    (window as unknown as { Tawk_API?: unknown }).Tawk_API = {
+      hideWidget: () => { throw new Error("widget non pronto"); },
+      showWidget: () => { throw new Error("widget non pronto"); },
+    };
+    expect(() => {
+      const { unmount } = render(<PredictionDetailModal {...base} open><p>contenuto</p></PredictionDetailModal>);
+      unmount();
+    }).not.toThrow();
   });
 });
