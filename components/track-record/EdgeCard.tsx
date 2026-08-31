@@ -32,8 +32,8 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
           </div>
           <p className="tr-lab" style={{ marginTop: 12 }}>
             {it
-              ? "Edge vs mercato (ROI · CLV) in arrivo col confronto quote storiche."
-              : "Edge vs market (ROI · CLV) coming with the historical-odds comparison."}
+              ? "Edge vs mercato (ROI) in arrivo col confronto quote storiche."
+              : "Edge vs market (ROI) coming with the historical-odds comparison."}
           </p>
         </>
       ) : (
