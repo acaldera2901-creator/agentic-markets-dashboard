@@ -665,7 +665,7 @@
    51,8% della larghezza in chiaro contro il 97,5% in scuro, a parita' di
    geometria e z-index del pseudo. Le due meta' si sovrappongono solo sui 3px
    della striscia, quindi alzare `.top` non sposta nient'altro. */
-:root:not([data-theme="light"]) [data-mc] .pred .top{z-index:4}
+:root:not([data-theme="light"]) [data-mc] .pred>.top:not(.card-bg):not(.card-veil){z-index:4}
 :root:not([data-theme="light"]) [data-mc] .pred .top::before{
   content:"";position:absolute;top:0;left:0;right:-100%;height:3px;z-index:5;
   background:var(--mc-accent,var(--d-football))}
@@ -818,7 +818,7 @@
 /* #CARD-OUTLINE-0831 — vedi la nota sul gemello scuro: la striscia deve
    arrivare al bordo destro anche quando `.top` sta in mezza griglia. */
 /* #CARD-OUTLINE-0831 — vedi la nota sul gemello scuro. */
-:root[data-theme="light"] [data-mc] .pred .top{z-index:4}
+:root[data-theme="light"] [data-mc] .pred>.top:not(.card-bg):not(.card-veil){z-index:4}
 :root[data-theme="light"] [data-mc] .pred .top::before{
   content:"";position:absolute;top:0;left:0;right:-100%;height:3px;z-index:5;
   background:var(--mc-accent,#6d28d9)}
