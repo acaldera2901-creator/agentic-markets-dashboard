@@ -86,7 +86,7 @@ describe("ordine della vetrina", () => {
   it("il board reale del 2026-08-01: i 4 pick finiscono nei primi 4 posti", () => {
     // Ricostruzione dal board servito quel giorno. Con l'ordine per edge i pick
     // stavano ai rank 0, 22, 24 e 42; con questo ordine stanno davanti, quindi
-    // un abbonato base (5 slot) li vede tutti e quattro.
+    // un abbonato base (7 slot) li vede tutti e quattro.
     const board: ShowcaseCandidate[] = [
       row("ELI-vaalerenga", true, 0.62, 0.0437),
       row("ALL-goteborg", false, 0.48, 0.0428),
@@ -104,19 +104,20 @@ describe("ordine della vetrina", () => {
     expect(picks.sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
     // e il pick con la confidenza più alta è il primo: è il "pick of the day".
     expect(rank.get("ELI-viking")).toBe(0);
-    // un abbonato base (5 slot) vede tutti e quattro i pick
+    // un abbonato base (7 slot) vede tutti e quattro i pick
     const unlockedPicks = board.filter(
       (r) => r.surfaced && isUnlocked("base", rank.get(r.id)!)
     );
     expect(unlockedPicks).toHaveLength(4);
-    // il free (1 slot) vede il pick più forte, non una riga senza favorito
-    const freeRow = board.find((r) => rank.get(r.id) === 0)!;
-    expect(freeRow.surfaced).toBe(true);
+    // e le 3 righe che il free sblocca sono tutte pick, non righe senza favorito
+    const freeRows = board.filter((r) => isUnlocked("free", rank.get(r.id)!));
+    expect(freeRows).toHaveLength(3);
+    expect(freeRows.every((r) => r.surfaced)).toBe(true);
   });
 
-  it("quote della vetrina invariate: il fix cambia l'ORDINE, non quanto si sblocca", () => {
-    expect(showcaseAllowance("free")).toBe(1);
-    expect(showcaseAllowance("base")).toBe(5);
+  it("quote della vetrina, per sport e per giorno (#FREE-BASE-DAILY-QUOTA-0831)", () => {
+    expect(showcaseAllowance("free")).toBe(3);
+    expect(showcaseAllowance("base")).toBe(7);
     expect(showcaseAllowance("premium")).toBe(Infinity);
     expect(showcaseAllowance("anonymous")).toBe(0);
   });

@@ -7,6 +7,7 @@ import {
   toEmbedRows,
   EMBED_MAX_LIMIT,
 } from "@/lib/embed-feed";
+import { showcaseAllowance } from "@/lib/access-projection";
 
 // Righe minime nella forma di `unified_predictions` (solo i campi che l'embed legge).
 const row = (over: Record<string, unknown> = {}) => ({
@@ -79,6 +80,17 @@ describe("toEmbedRows", () => {
     expect(locked.homeTeam).toBe("Rune");
     expect(locked.decision).toBeNull();
     expect(locked.confidence).toBeNull();
+  });
+
+  it("il tetto del teaser NON segue la quota del piano free (#FREE-BASE-DAILY-QUOTA-0831)", () => {
+    // Il teaser proietta con `state="free"`: era una scorciatoia per "apri la
+    // prima e copri il resto". Quando il free è passato da 1 a 3 pick per sport,
+    // quella scorciatoia avrebbe aperto il widget sul sito del partner senza che
+    // nessuno lo avesse deciso. Il widget ha un tetto suo: resta a 1.
+    expect(showcaseAllowance("free")).toBe(3);
+    const out = toEmbedRows(rows, "teaser", 6, "it");
+    expect(out.filter((r) => !r.locked && r.sport === "tennis")).toHaveLength(1);
+    expect(out.filter((r) => !r.locked && r.sport === "football")).toHaveLength(1);
   });
 
   it("open: tutte le righe portano la decisione", () => {

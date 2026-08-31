@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAccessState, type AccessState } from "@/lib/auth";
-import { isUnlocked, showcaseRanking } from "@/lib/access-projection";
+import { isUnlocked, showcaseRanking, currentShowcaseDay } from "@/lib/access-projection";
 import { verifyBearer } from "@/lib/admin-auth";
 // #PRELAUNCH-AUDIT: chiavi premium in lib/enrichment-gate (single source, condivise
 // con /api/data che prima leakava l'enrichment grezzo al tier Base).
@@ -961,8 +961,11 @@ export async function GET(req: Request) {
     return hydrated;
   });
 
-  // Vetrina settimanale (#PLANS-3TIER-1): free sblocca rank<1, base rank<5,
-  // premium tutto (vedi showcaseAllowance/isUnlocked). L'ORDINE è
+  // Vetrina GIORNALIERA (#FREE-BASE-DAILY-QUOTA-0831): free sblocca 3 righe per
+  // sport, base 7, premium tutto (vedi showcaseAllowance/isUnlocked) — e la
+  // quota si conta SOLO sulle partite di oggi: la finestra servita è di 10
+  // giorni, quindi senza `scopeDay` le stesse righe resterebbero sbloccate per
+  // giorni ed «al giorno» sarebbe un claim falso. L'ORDINE è
   // showcaseRanking — pick sopra floor prima, poi confidenza, poi edge
   // (#SHOWCASE-EDGE-0801: il vecchio ordine per edge desc sbloccava righe senza
   // pick e lasciava bloccati i pick, motivazione completa in access-projection).
@@ -978,7 +981,9 @@ export async function GET(req: Request) {
         (p.enrichment as EnrichmentPayload | undefined)?.surface?.below_floor !== true,
       conf: Math.max(p.p_home, p.p_draw, p.p_away),
       edge: typeof p.edge === "number" ? p.edge : null,
-    }))
+      startsAt: p.kickoff,
+    })),
+    { scopeDay: currentShowcaseDay() }
   );
 
   const predictions = hydratedRows.map((p) =>

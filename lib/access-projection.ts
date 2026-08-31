@@ -32,21 +32,32 @@ const PREMIUM_ONLY_FIELDS = ["enrichment"] as const;
 
 export type ProjectedPrediction = Record<string, unknown> & { locked: boolean };
 
-// ── Vetrina curata settimanale (#PLANS-3TIER-1) ──────────────────────────────
-// Quante prediction SBLOCCATE per ciascuno sport (le top-N per edge della
-// settimana). Modello stateless: nessun conteggio per-utente, tutti i free
-// vedono le stesse top. premium/admin = illimitato.
+// ── Vetrina curata GIORNALIERA (#FREE-BASE-DAILY-QUOTA-0831) ─────────────────
+// Quante prediction SBLOCCATE per ciascuno sport, DENTRO LA GIORNATA (vedi
+// `showcaseRanking` con `scopeDay`). Modello stateless: nessun conteggio
+// per-utente, tutti i free vedono le stesse top. premium/admin = illimitato.
+//
+// Era una vetrina sulla FINESTRA (10 giorni): free 1, base 5. Con quella regola
+// «1 a settimana» era la descrizione onesta — la top-1 restava sbloccata finché
+// quella partita non si giocava. La quota ora si conta sulle partite di oggi,
+// quindi i numeri sono per giorno e si rinnovano ogni giorno.
 export function showcaseAllowance(state: AccessState): number {
   if (state === "premium" || state === "admin_full") return Infinity;
-  if (state === "base") return 5;   // top 5 per sport
-  if (state === "free") return 1;   // top 1 per sport
+  if (state === "base") return 7;   // 7 per sport, ogni giorno
+  if (state === "free") return 3;   // 3 per sport, ogni giorno
   return 0;                          // anonymous, pending_payment, unpaid
 }
 
-// Una riga è sbloccata se il suo rank (0-based, dentro lo sport) rientra nella
-// quota della vetrina del piano.
+// Una riga è sbloccata se il suo rank (0-based, dentro lo sport e dentro la
+// giornata) rientra nella quota della vetrina del piano.
 export function isUnlocked(state: AccessState, rankInSport: number): boolean {
-  return rankInSport < showcaseAllowance(state);
+  const allowance = showcaseAllowance(state);
+  // #FREE-BASE-DAILY-QUOTA-0831: la guardia NON è ridondante. Le righe fuori
+  // giornata prendono rank `Infinity`, e `Infinity < Infinity` è falso: senza
+  // questa riga il Pro — l'unico piano con quota infinita — si bloccherebbe da
+  // solo su tutto ciò che non si gioca oggi.
+  if (allowance === Number.POSITIVE_INFINITY) return true;
+  return rankInSport < allowance;
 }
 
 // ── Ordine della vetrina (#SHOWCASE-EDGE-0801) ───────────────────────────────
@@ -81,7 +92,19 @@ export type ShowcaseCandidate = {
   conf: number;
   /** edge servito; null/NaN quando non calcolabile (nessuna quota reale). */
   edge: number | null;
+  /** ISO del calcio d'inizio. Serve SOLO alla regola giornaliera
+   *  (#FREE-BASE-DAILY-QUOTA-0831): senza `scopeDay` non viene letto. */
+  startsAt?: string | null;
 };
+
+/** Giorno UTC di un ISO, `null` se la data non è leggibile. Sta qui e non nei
+ *  chiamanti perché la giornata è parte della regola di vetrina: due definizioni
+ *  diverse di "oggi" su due route sono due prodotti diversi. */
+export function utcDay(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const t = new Date(iso);
+  return Number.isNaN(t.getTime()) ? null : t.toISOString().slice(0, 10);
+}
 
 export function compareShowcase(a: ShowcaseCandidate, b: ShowcaseCandidate): number {
   if (a.surfaced !== b.surfaced) return a.surfaced ? -1 : 1;
@@ -92,11 +115,38 @@ export function compareShowcase(a: ShowcaseCandidate, b: ShowcaseCandidate): num
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
-/** Rank 0-based per id. Non muta l'input. */
-export function showcaseRanking(rows: readonly ShowcaseCandidate[]): Map<string, number> {
+export type ShowcaseOptions = {
+  /** #FREE-BASE-DAILY-QUOTA-0831 — giorno UTC ("YYYY-MM-DD") su cui si conta la
+   *  quota. Solo le righe che si giocano in quel giorno prendono un rank finito
+   *  e possono quindi entrare nella vetrina; tutte le altre ricevono `Infinity`
+   *  e restano coperte finché non arriva il loro giorno.
+   *
+   *  Omesso = regola vecchia, l'intera finestra concorre. La usa ancora il hub
+   *  Mondiali (`/api/v2/predictions`): fuori stagione nessuna partita WC cade
+   *  "oggi", e la regola giornaliera lascerebbe quel hub interamente bloccato. */
+  scopeDay?: string;
+};
+
+/** Rank 0-based per id, dentro lo sport e — se `scopeDay` è dato — dentro la
+ *  giornata. Non muta l'input. */
+export function showcaseRanking(
+  rows: readonly ShowcaseCandidate[],
+  opts?: ShowcaseOptions
+): Map<string, number> {
+  const day = opts?.scopeDay;
+  const inScope = day ? rows.filter((r) => utcDay(r.startsAt) === day) : rows;
   const rank = new Map<string, number>();
-  [...rows].sort(compareShowcase).forEach((r, i) => rank.set(r.id, i));
+  [...inScope].sort(compareShowcase).forEach((r, i) => rank.set(r.id, i));
+  if (day) {
+    for (const r of rows) if (!rank.has(r.id)) rank.set(r.id, Number.POSITIVE_INFINITY);
+  }
   return rank;
+}
+
+/** Il giorno su cui si conta la vetrina adesso (UTC). Un solo posto, così board
+ *  calcio e board tennis non possono finire su due "oggi" diversi. */
+export function currentShowcaseDay(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
 }
 
 export function projectPrediction(
@@ -106,7 +156,9 @@ export function projectPrediction(
 ): ProjectedPrediction {
   const out: Record<string, unknown> = {};
   for (const f of PUBLIC_FIELDS) out[f] = row[f];
-  // top-1 per sport = "pick della settimana" (badge UI, ex pick-of-day).
+  // #FREE-BASE-DAILY-QUOTA-0831: top-1 per sport DENTRO LA GIORNATA. Il badge in
+  // UI dice "Pick of the Day" da sempre; con la vetrina sulla finestra da 10
+  // giorni era un'etichetta ottimistica, ora è la descrizione di ciò che è.
   out.pick_of_day = rankInSport === 0;
 
   const unlocked = isUnlocked(state, rankInSport);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { resolveAccessState } from "@/lib/auth";
-import { isUnlocked, showcaseRanking } from "@/lib/access-projection";
+import { isUnlocked, showcaseRanking, currentShowcaseDay } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
 import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
@@ -28,8 +28,9 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
   matches: T[],
   state: AccessState
 ): Array<T & { locked: boolean; pick_of_day: boolean }> {
-  // Vetrina settimanale (#PLANS-3TIER-1): free sblocca rank<1, base rank<5,
-  // premium tutto. L'ORDINE è showcaseRanking — pick sopra floor prima, poi
+  // Vetrina GIORNALIERA (#FREE-BASE-DAILY-QUOTA-0831): free 3 per sport, base 7,
+  // premium tutto — contate SOLO sulle partite di oggi (`scopeDay`), la stessa
+  // regola della board calcio. L'ORDINE è showcaseRanking — pick sopra floor prima, poi
   // confidenza, poi edge (#SHOWCASE-EDGE-0801: l'ordine per edge desc sbloccava
   // righe senza pick e lasciava bloccati i pick; il tennis aveva la stessa riga
   // del football, quindi lo stesso difetto).
@@ -52,8 +53,10 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
         ).isPick,
         conf: Math.max(m.p1, m.p2),
         edge: typeof m.edge === "number" ? m.edge : null,
+        startsAt: m.scheduled,
       };
-    })
+    }),
+    { scopeDay: currentShowcaseDay() }
   );
   return matches.map((m) => {
     const rank = rankById.get(m.id) ?? Infinity;

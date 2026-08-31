@@ -164,8 +164,16 @@ export function toPercent(v: number | null): number | null {
   return Math.min(100, Math.max(0, Math.round(pct)));
 }
 
+// #FREE-BASE-DAILY-QUOTA-0831 — quante card il teaser lascia aperte sul sito del
+// partner. È un numero SUO, non la quota del piano free: il teaser riusava
+// `state="free"` come scorciatoia per "mostra la prima e copri il resto", e
+// quando il free è passato a 3 per sport il widget si sarebbe aperto quasi
+// tutto senza che nessuno lo avesse deciso. Il piano free e la vetrina del
+// partner sono due decisioni commerciali diverse: qui restano separate.
+const EMBED_TEASER_UNLOCKED = 1;
+
 /** Puro: dalle righe grezze alle card del widget. `mode` sceglie la vetrina —
- *  teaser proietta come il piano free (top-1 per sport), open come premium. */
+ *  teaser apre EMBED_TEASER_UNLOCKED card per sport, open proietta come premium. */
 export function toEmbedRows(rawRows: RawRow[], mode: EmbedMode, limit: number, lang: EmbedLang): EmbedRow[] {
   const state = mode === "open" ? "premium" : "free";
 
@@ -198,7 +206,10 @@ export function toEmbedRows(rawRows: RawRow[], mode: EmbedMode, limit: number, l
   }
 
   const cards = rows.map((r) => {
-    const rank = rankById.get(String(r.id)) ?? Infinity;
+    const rawRank = rankById.get(String(r.id)) ?? Infinity;
+    // teaser: oltre il tetto del widget la riga è coperta, qualunque sia la
+    // quota del piano free in quel momento.
+    const rank = mode === "open" || rawRank < EMBED_TEASER_UNLOCKED ? rawRank : Infinity;
     const surfaced = typeof r.pick === "string" && r.pick.trim() !== "";
     const p = projectPrediction(r, state, rank) as RawRow & { locked: boolean };
     const conf = num(p.confidence_score);

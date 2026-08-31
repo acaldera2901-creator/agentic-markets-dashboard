@@ -414,9 +414,13 @@ const V3_EN: V3Copy = {
   ],
   pcEyebrow: "Access", pcHead: "Start free. Read deeper when you’re ready.",
   pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL ACCESS", pcMo: " / mo",
-  pcFreeList: ["One pick per sport, per week", "Public track record", "Preview of the edge scanner"],
-  pcBaseList: ["All Best Bets · +EV feed", "Weekly Pick", "Deep Analysis on every card", "Full settled history"],
-  pcProList: ["Everything in Base", "Live · in-play readings", "Match Builder", "Priority scanner & crypto billing"],
+  // #FREE-BASE-DAILY-QUOTA-0831 — i tre elenchi dicono ora quello che il gate
+  // consegna davvero. Base NON aveva "Deep Analysis su ogni scheda" (è Pro-only,
+  // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
+  // prodotto non manteneva.
+  pcFreeList: ["3 picks per sport, every day", "Public track record", "Preview of the edge scanner"],
+  pcBaseList: ["7 picks per sport, every day", "Edge %, suggested stake, closing line value", "Weekly Pick", "Full settled history"],
+  pcProList: ["Everything in Base, with no daily cap", "Deep Analysis on every card", "Live · in-play readings", "Match Builder"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
   // #WIDGET-LANDING-0824 — richiamo ai proprietari di siti: il widget è un canale
   // di acquisizione, e questa riga è il solo posto in home in cui esiste.
@@ -453,9 +457,9 @@ const V3_IT: V3Copy = {
   ],
   pcEyebrow: "Accesso", pcHead: "Inizia gratis. Leggi più a fondo quando vuoi.",
   pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "ACCESSO COMPLETO", pcMo: " / mese",
-  pcFreeList: ["Una pick per sport, a settimana", "Track record pubblico", "Anteprima dell’edge scanner"],
-  pcBaseList: ["Tutto il feed Best Bets · +EV", "Weekly Pick", "Deep Analysis su ogni scheda", "Storico concluso completo"],
-  pcProList: ["Tutto ciò che c’è in Base", "Letture live · in-play", "Match Builder", "Scanner prioritario & pagamento crypto"],
+  pcFreeList: ["3 pick per sport, ogni giorno", "Track record pubblico", "Anteprima dell’edge scanner"],
+  pcBaseList: ["7 pick per sport, ogni giorno", "Edge %, stake suggerito, closing line value", "Weekly Pick", "Storico concluso completo"],
+  pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep Analysis su ogni scheda", "Letture live · in-play", "Match Builder"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
   wgKick: "Per chi ha un sito", wgHead: "Hai un sito? Mettici i nostri pronostici.",
   wgBody: "Una riga di codice mostra le predizioni del giorno sulle tue pagine, si aggiorna da sola e attribuisce a te le iscrizioni che porta.",
