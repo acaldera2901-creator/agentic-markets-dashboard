@@ -2130,13 +2130,19 @@ function isTennisBestBet(m: TennisMatch) {
 }
 
 // #FREE-PRED-REVAMP-0626: paywall curato per i Free. Sostituisce i wall gialli +
-// i "🔒" placeholder: l'assaggio (1 pick reale per sport, già sbloccata dal server)
-// resta sopra, questo pannello converte il resto. CTA → tab Piani via onUpgrade.
-function FreePaywall({ count, hitRate, lang, onUpgrade }: {
+// i "🔒" placeholder. CTA → tab Piani via onUpgrade.
+// #FREE-BOARD-FULL-0831: da qui il Free scorre la board intera (1 riga sbloccata
+// per sport, tutte le altre come schede mascherate), quindi il pannello non
+// "rappresenta" più il resto del catalogo: lo affianca. Va in DUE punti — una
+// copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
+function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
   hitRate?: string | null;
   lang: Lang;
   onUpgrade?: () => void;
+  /** #FREE-BOARD-FULL-0831: istanza dentro .am-grid → banda full-width, margini
+      laterali azzerati (il padding lo dà già la griglia). */
+  inGrid?: boolean;
 }) {
   const bullets = [
     pick5(lang, { it: "Edge% e pick su ogni match", en: "Edge% and pick on every match", es: "Edge% y pick en cada partido", fr: "Edge% et pick sur chaque match", ru: "Edge% и пик в каждом матче" }),
@@ -2144,8 +2150,12 @@ function FreePaywall({ count, hitRate, lang, onUpgrade }: {
     pick5(lang, { it: "Tutte le competizioni + World Cup, calcio e tennis", en: "Every competition + World Cup, football and tennis", es: "Todas las competiciones + Mundial, fútbol y tenis", fr: "Toutes les compétitions + Coupe du Monde, football et tennis", ru: "Все турниры + Чемпионат мира, футбол и теннис" }),
   ];
   return (
-    <section className="free-paywall">
-      <p className="fp-eyebrow">{pick5(lang, { it: "Questo è l'assaggio gratis", en: "This is your free taste", es: "Esta es tu muestra gratis", fr: "Ceci est votre aperçu gratuit", ru: "Это ваш бесплатный пробник" })}</p>
+    <section className={`free-paywall${inGrid ? " fp-in-grid" : ""}`}>
+      {/* #FREE-BOARD-FULL-0831: "questo è l'assaggio gratis" descriveva il modello
+          vecchio — 1 pick mostrata e il resto del catalogo solo promesso. Ora il
+          Free ha davanti tutte le schede, coi pronostici coperti: l'occhiello dice
+          quello, che è anche l'argomento di vendita più diretto. */}
+      <p className="fp-eyebrow">{pick5(lang, { it: "Vedi tutte le partite, non i pronostici", en: "You see every match, not the predictions", es: "Ves todos los partidos, no los pronósticos", fr: "Vous voyez tous les matchs, pas les pronostics", ru: "Вы видите все матчи, но не прогнозы" })}</p>
       <h3>{pick5(lang, { it: `Sblocca tutte le ${count} prediction di oggi`, en: `Unlock all ${count} predictions today`, es: `Desbloquea las ${count} predicciones de hoy`, fr: `Débloquez les ${count} prédictions du jour`, ru: `Откройте все ${count} прогнозов на сегодня` })}</h3>
       <ul className="fp-bullets">
         {bullets.map((b, i) => (
@@ -2245,7 +2255,14 @@ function SportsbookBoard({
   // mandava una campagna World Cup/calcio nel feed tennis): il feed tennis riceve
   // SOLO campagne tennis; tutto il resto (calcio + multisport) va nel feed calcio.
   // Ognuna usata al massimo una volta → nessun banner ripetuto nel feed.
-  const feedCampsAll = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+  // #FREE-BOARD-FULL-0831: i banner erano spenti per il Free perché con 1-2 schede
+  // un creativo 16:9 era metà pagina. Ora il Free ha la griglia intera e il caso
+  // speciale non ha più motivo: decide l'audience, come per tutti gli altri piani.
+  // MISURATO 31/08: oggi rende comunque zero banner — le 4 campagne `desk-feed`
+  // esistenti sono tutte `audiences: ["base","premium"]`. Perché il Free ne veda
+  // uno serve una campagna desk-feed che lo elenchi: è una scelta di contenuto
+  // (AD/marketing), non di codice.
+  const feedCampsAll = campaignsFor("desk-feed", boardAudience);
   const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
   const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
 
@@ -2457,24 +2474,41 @@ function SportsbookBoard({
                   {(() => {
                     // #HOUSE-PHOTO-1: banner foto intercalati ogni ~8 card; ogni campagna
                     // del pool calcio (footballFeed) usata UNA sola volta → nessun duplicato.
-                    // #FREE-PRED-REVAMP-0626: il Free vede come ASSAGGIO le righe già
-                    // sbloccate dal server (top-1 per sport, !locked) come card COMPLETE.
-                    // Il resto è rappresentato dal <FreePaywall>, non da card blurrate.
-                    const rows = isFreeClient ? footballRows.filter((p) => !p.locked) : footballRows;
+                    // #FREE-BOARD-FULL-0831: il Free vede la board INTERA come un Pro —
+                    // le righe bloccate restano schede vere col readout mascherato
+                    // (`v2r is-locked`, ▒▒▒ + lucchetto sulla quota), non spariscono.
+                    // Prima il Free le filtrava via e vedeva 1 scheda per sport mentre
+                    // la sport-band ne contava 50: la board dichiarava un catalogo che
+                    // non mostrava. Nessun dato nuovo esposto — il gate è server-side
+                    // (access-projection: `free` sblocca rank 0, il resto arriva già
+                    // senza pick/probabilità/edge), qui si smette solo di nasconderlo.
+                    const rows = footballRows;
+                    // #FREE-BOARD-FULL-0831: col Free che ora scorre la board intera, il
+                    // <FreePaywall> a fondo pagina sta sotto ~50 schede e non lo vede
+                    // nessuno. Se ne mette una copia PRESTO, in griglia a tutta larghezza,
+                    // dopo la terza scheda. Posizione FISSA e non "dopo le righe
+                    // sbloccate": la board ordina per orario, quindi la riga sbloccata
+                    // (rank 0) può cadere a metà lista — non è un confine stabile.
+                    // Salta i board corti (≤8 righe), dove finirebbe accanto a quello di
+                    // chiusura. i=2 non collide coi banner house, che stanno a i=5,11,…
+                    const fpGridAt = isFreeClient && rows.length > 8 ? 2 : -1;
                     let placed = 0;
                     return rows.flatMap((p, i) => {
-                      const card = (
-                        <PredictionCard key={p.match_id} p={p} idx={i} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
-                      );
+                      const out: React.ReactNode[] = [
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
+                      ];
+                      if (i === fpGridAt) {
+                        out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
+                      }
                       // #BANNER-FEED-FIX-0708: un SOLO creativo landscape 16:9 per punto,
                       // MAI due affiancati. Compatto (span-8, una card gli sta a fianco →
                       // riga piena, zero gutter) e mostrato INTERO (aspect 16:9 → nessun crop
                       // del logo/claim baked). Distribuiti ogni 6 card a punti diversi.
                       if (placed < footballFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
-                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />];
+                        out.push(<HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />);
                       }
-                      return [card];
+                      return out;
                     });
                   })()}
                 </div>
@@ -2518,11 +2552,13 @@ function SportsbookBoard({
                   {(() => {
                     // #HOUSE-PHOTO-1: banner tennis dal pool DISGIUNTO (tennisFeed), ognuno una
                     // volta sola → mai duplicati col feed calcio nella stessa pagina.
-                    const rows = isFreeClient ? tennisRows.filter((m) => !m.locked) : tennisRows;
+                    // #FREE-BOARD-FULL-0831: come il calcio sopra — il Free vede tutte
+                    // le righe, quelle bloccate col readout mascherato.
+                    const rows = tennisRows;
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
+                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />
                       );
                       // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
@@ -5043,7 +5079,7 @@ function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGate, idx }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void; idx?: number }) {
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -5411,7 +5447,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
               <span className="v2r-qn lock"><GlyphLock size={22} /></span>
             </div>
           </div>
-          <span className="locked-cta">{t.locked_title}</span>
+          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
+              anonimo, falso per un Free che il login l'ha gia' fatto e che da
+              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
+              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
+              cosa dell'azione. */}
+          <span className="locked-cta">{isFree
+            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
+            : t.locked_title}</span>
         </div>
       ) : (
         <>
@@ -5756,7 +5799,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate, idx }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void; idx?: number }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -6015,7 +6058,14 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
               <span className="v2r-qn lock"><GlyphLock size={22} /></span>
             </div>
           </div>
-          <span className="locked-cta">{t.locked_title}</span>
+          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
+              anonimo, falso per un Free che il login l'ha gia' fatto e che da
+              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
+              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
+              cosa dell'azione. */}
+          <span className="locked-cta">{isFree
+            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
+            : t.locked_title}</span>
         </div>
       ) : (
         <>
