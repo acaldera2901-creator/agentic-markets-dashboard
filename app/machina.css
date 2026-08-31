@@ -132,8 +132,16 @@
 :root:not([data-theme="light"]) [data-mc] .pred::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;z-index:3;background:var(--mc-accent,var(--d-football))}
 /* l'hover schiarisce i bordi al 65%: il bordo ALTO no, li' il colore dello sport
    deve restare pieno (#ACCENT-BAR-0831). */
+/* #HOVER-OUTLINE-0831 — in hover il contorno passa tutto a `color-mix(accent
+   65%)`, ma `--pred-line` restava il grigio di riposo: e' quello che colora la
+   smussatura in basso a destra, quindi il contorno diventava viola con una
+   diagonale GRIGIA nell'angolo — letta come un bordo aperto. Il token si sposta
+   con lo stato, cosi' la smussatura segue il bordo che deve continuare.
+   La smussatura in alto legge `--mc-accent` e non serve toccarla: il bordo alto
+   resta pieno anche in hover. */
 :root:not([data-theme="light"]) [data-mc] .pred:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--mc-accent,var(--d-football)) 65%,transparent);
-  border-top-color:var(--mc-accent,var(--d-football))}
+  border-top-color:var(--mc-accent,var(--d-football));
+  --pred-line:color-mix(in oklab,var(--mc-accent,var(--d-football)) 65%,transparent)}
 :root:not([data-theme="light"]) [data-mc] .card-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;opacity:.9;filter:saturate(1.08) contrast(1.04)}
 :root:not([data-theme="light"]) [data-mc] .card-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(18,21,25,.95) 50%,rgba(18,21,25,.76) 76%,rgba(18,21,25,.20) 100%)}
 :root:not([data-theme="light"]) [data-mc] .pred>*:not(.card-bg):not(.card-veil){position:relative;z-index:2}
@@ -803,10 +811,13 @@
      l'unico modo perche' bordo e diagonale non possano divergere. */
   --pred-line:#c3cad4;
   display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
+/* #HOVER-OUTLINE-0831 — vedi la nota sul gemello scuro: `--pred-line` si
+   sposta con lo stato, o la smussatura in basso resta grigia su un contorno
+   viola e l'angolo sembra aperto. */
 :root[data-theme="light"] [data-mc] .pred:hover{transform:translateY(-2px);
   border-color:color-mix(in oklab,var(--mc-accent,#6d28d9) 65%,transparent);
-  /* vedi la nota sul gemello scuro: il bordo alto resta pieno. */
-  border-top-color:var(--mc-accent,#6d28d9)}
+  border-top-color:var(--mc-accent,#6d28d9);
+  --pred-line:color-mix(in oklab,var(--mc-accent,#6d28d9) 65%,transparent)}
 :root[data-theme="light"] [data-mc] .pred>*:not(.card-bg):not(.card-veil){position:relative;z-index:2}
 /* il padding passa ai FIGLI, come in scuro: cosi' .scorebar e .v2r
    diventano fasce a filo invece di riquadri dentro un riquadro */

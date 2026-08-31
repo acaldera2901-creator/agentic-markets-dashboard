@@ -179,6 +179,21 @@ describe("il filetto da 4px", () => {
     }
   });
 
+  it("in HOVER anche `--pred-line` si sposta, o la smussatura resta grigia su un contorno colorato", () => {
+    // #HOVER-OUTLINE-0831 — in hover il contorno passa tutto a
+    // `color-mix(accent 65%)`. Se `--pred-line` resta il grigio di riposo, la
+    // smussatura in basso a destra rimane grigia su un contorno colorato e
+    // l'angolo si legge APERTO. E' il difetto che Andrea ha fotografato: il
+    // contorno era completo, ma un pezzo aveva il colore dello stato sbagliato.
+    for (const [nome, t] of [["chiaro", LIGHT], ["scuro", DARK]] as const) {
+      const h = declsFor(t, ".pred:hover");
+      expect(h, `${nome}: nessuna regola :hover su .pred`).toBeTruthy();
+      const pl = prop(h, "--pred-line");
+      expect(pl, `${nome}: l'hover cambia il bordo ma non \`--pred-line\`: la smussatura resta del colore di riposo`).toBeTruthy();
+      expect(pl, `${nome}: \`--pred-line\` in hover non segue il colore del bordo`).toContain("--mc-accent");
+    }
+  });
+
   it("la smussatura IN ALTO continua il bordo alto, quella in basso resta neutra", () => {
     // Se la smussatura alta e' grigia spezza il filetto in due: un triangolino di
     // colore staccato dalla barra, con un cuneo grigio in mezzo. Misurato il 31/08.
