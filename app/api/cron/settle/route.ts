@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllTodayMatches } from "@/lib/football-data";
 import { SUMMER_LEAGUES, fetchSummerResults } from "@/lib/summer-leagues";
+import { ESPN_SLUG_BY_FD_LEAGUE, fetchEspnFinalsByDate, abbinaFinale, yyyymmddUtc } from "@/lib/espn-results";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
 import { settlePredictionLog, settlePredictionLogWinner } from "@/lib/prediction-log";
 import { gradeTennisPick, tennisWinnerSide } from "@/lib/tennis-settlement";
@@ -34,6 +35,11 @@ export const maxDuration = 300;
 interface SettleReport {
   scores_updated: number;
   log_settled: number;
+  /** #SETTLE-RECOVERY-0831 — righe rimaste IN_PLAY e recuperate da ESPN. */
+  recovered: number;
+  /** righe bloccate per cui ESPN non ha dato un abbinamento CERTO: restano
+   *  ferme, e questo numero e' il modo di accorgersene. */
+  recovery_unmatched: number;
   unified_football_settled: number;
   unified_tennis_settled: number;
   voided_stale: number;
@@ -84,6 +90,8 @@ export async function GET(req: NextRequest) {
   const report: SettleReport = {
     scores_updated: 0,
     log_settled: 0,
+    recovered: 0,
+    recovery_unmatched: 0,
     unified_football_settled: 0,
     unified_tennis_settled: 0,
     voided_stale: 0,
@@ -99,10 +107,18 @@ export async function GET(req: NextRequest) {
     const matches = await fetchAllTodayMatches();
     for (const m of matches) {
       if (m.status === "IN_PLAY" || m.status === "PAUSED" || m.status === "FINISHED") {
+        // #SETTLE-RECOVERY-0831 — un IN_PLAY/PAUSED non si scrive FUORI dalla
+        // finestra dei 150 minuti. football-data lascia partite finite in quello
+        // stato per ore, e i punteggi che porta sono congelati a meta' partita:
+        // misurati il 31/08, SBAGLIATI in 3 casi su 5 (Lazio-Genoa 0-0 contro
+        // 1-0 reale, Monaco-Marsiglia 1-0 contro 2-0, Cambuur-Twente 0-2 contro
+        // 1-4). Un FINISHED invece si scrive sempre: un finale che arriva tardi
+        // e' comunque un finale.
         await dbQuery(
           `UPDATE match_predictions
              SET home_score = $1, away_score = $2, match_status = $3
-           WHERE match_id = $4`,
+           WHERE match_id = $4
+             AND ($3 = 'FINISHED' OR kickoff > NOW() - interval '150 minutes')`,
           [m.homeGoals, m.awayGoals, m.status, m.id]
         ).then(() => { report.scores_updated += 1; })
           .catch((e: unknown) => report.errors.push(`scores:${m.id}:${String(e)}`));
@@ -138,6 +154,69 @@ export async function GET(req: NextRequest) {
     } catch (e) {
       report.errors.push(`summer:${code}:${String(e)}`);
     }
+  }
+
+  // ── A3. Recupero delle righe rimaste bloccate (#SETTLE-RECOVERY-0831) ─────
+  //
+  // Il buco: `settlePredictionLog` parte SOLO su FINISHED, e football-data
+  // lascia partite finite con stato IN_PLAY. Misurato il 31/08/2026 alle 10:11
+  // UTC — 5 partite del 30/08 ancora IN_PLAY/PAUSED a 15-17 ORE dal fischio
+  // d'inizio (Lazio-Genoa, Cagliari-Inter, Monaco-Marsiglia,
+  // Deportivo-Valencia, Cambuur-Twente). Interrogare il singolo match per id
+  // rende lo STESSO stato fermo: ri-chiedere alla stessa fonte non recupera
+  // nulla. E il tabellone ESPN senza data non le elenca piu' — e' la finestra
+  // dei risultati che aveva portato a zero il settlement del tennis.
+  //
+  // Con la DATA esplicita ESPN le ha tutte: misurato, `?dates=20260830` rende
+  // ogni partita con STATUS_FULL_TIME e il punteggio finale. Quindi qui si
+  // chiede il tabellone del GIORNO della partita e si settla da quello.
+  //
+  // Senza questo passo quelle righe finivano allo step E, che dopo 48h le
+  // marca 'unresolved' e le tiene fuori dalla history: nessun claim falso, ma
+  // punti dati veri buttati via. Recuperarli e' meglio che scartarli.
+  try {
+    const stuck = await dbQuery<{ match_id: string; league: string; home_team: string; away_team: string; kickoff: string }>(
+      `SELECT match_id, league, home_team, away_team, kickoff
+         FROM match_predictions
+        WHERE match_status IN ('IN_PLAY', 'PAUSED')
+          AND kickoff < NOW() - interval '150 minutes'
+          -- oltre una settimana non si inseguono: ESPN non e' un archivio
+          -- infinito e lo step E le ha gia' chiuse come 'unresolved'.
+          AND kickoff > NOW() - interval '7 days'
+        ORDER BY kickoff DESC
+        LIMIT 200`
+    );
+    // Un tabellone per (lega, giorno): le 10 partite di una giornata stanno in
+    // una sola richiesta, non dieci.
+    const gruppi = new Map<string, typeof stuck>();
+    for (const r of stuck) {
+      const slug = ESPN_SLUG_BY_FD_LEAGUE[r.league];
+      if (!slug) continue;
+      const k = `${slug}|${yyyymmddUtc(new Date(r.kickoff))}`;
+      const g = gruppi.get(k);
+      if (g) g.push(r); else gruppi.set(k, [r]);
+    }
+    for (const [k, righe] of gruppi) {
+      const [slug, giorno] = k.split("|");
+      const finals = await fetchEspnFinalsByDate(slug, giorno);
+      for (const r of righe) {
+        const f = abbinaFinale(r, finals);
+        if (!f) { report.recovery_unmatched += 1; continue; }
+        await dbQuery(
+          `UPDATE match_predictions
+             SET home_score = $1, away_score = $2, match_status = 'FINISHED'
+           WHERE match_id = $3 AND (match_status IS DISTINCT FROM 'FINISHED')`,
+          [f.homeGoals, f.awayGoals, r.match_id]
+        ).catch((e: unknown) => report.errors.push(`recovery_score:${r.match_id}:${String(e)}`));
+        await settlePredictionLog(r.match_id, f.homeGoals, f.awayGoals);
+        // entra nella mappa dei finiti: cosi' lo step C lo porta anche nella
+        // history pubblica, come qualunque altro risultato.
+        finished.set(r.match_id, { homeGoals: f.homeGoals, awayGoals: f.awayGoals });
+        report.recovered += 1;
+      }
+    }
+  } catch (e) {
+    report.errors.push(`recovery:${String(e)}`);
   }
 
   // ── C. unified_predictions football ───────────────────────────────────────

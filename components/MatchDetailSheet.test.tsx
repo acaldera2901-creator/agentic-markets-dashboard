@@ -117,7 +117,13 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("senza selezioni la CTA è disabilitata e il menu non si apre", () => {
+  // #BETSLIP-CTA-ON-0831 — requisito CAMBIATO su indicazione di Andrea: «quel
+  // bottone deve rimanere acceso sempre». Prima la CTA era disabilitata a
+  // schedina vuota e bisognava toccare un mercato per accenderla. Ora e' sempre
+  // attiva: con 0 selezioni il partner apre la pagina del match e la selezione
+  // la si fa la'. Questi due test sorvegliavano il gate; ora sorvegliano che il
+  // gate NON torni.
+  it("senza selezioni la CTA è attiva e il menu si apre", () => {
     // nessuna chip `rec` → schedina vuota all'apertura della scheda
     const data = makeData({
       groups: [
@@ -132,20 +138,26 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
     });
     render(<MatchDetailSheet data={data} />);
     const cta = screen.getByRole("button", { name: /Piazza la scommessa/ }) as HTMLButtonElement;
-    expect(cta.disabled).toBe(true);
+    expect(cta.disabled).toBe(false);
+    expect(cta.className).not.toContain("disabled");
     fireEvent.click(cta);
-    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.getByRole("menu")).toBeTruthy();
+    // e i link portano comunque al match dal partner scelto
+    const links = screen.getAllByRole("menuitem") as HTMLAnchorElement[];
+    expect(links.length).toBe(BOOKS.length);
+    expect(links[0].getAttribute("href")).toBeTruthy();
   });
 
-  it("svuotare la schedina col menu aperto lo chiude", () => {
-    // il menu aperto è derivato da (stato aperto && legs > 0): togliendo l'unica
-    // selezione sparisce senza bisogno di un effetto che insegua lo stato.
+  it("svuotare la schedina NON chiude il menu: zero selezioni è uno stato valido", () => {
+    // Prima il menu era derivato da (stato aperto && legs > 0), quindi togliere
+    // l'unica selezione lo faceva sparire. Con la CTA sempre accesa quello
+    // diventerebbe un bottone che si spegne da solo sotto il dito.
     // fireEvent.click non emette mousedown → non è il click-fuori a chiuderlo.
     render(<MatchDetailSheet data={makeData()} />);
     openMenu();
     expect(screen.getByRole("menu")).toBeTruthy();
     fireEvent.click(screen.getByText("Henan").closest("button") as HTMLButtonElement);
-    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.getByRole("menu")).toBeTruthy();
   });
 
   it("con un solo partner resta il link diretto, senza menu", () => {

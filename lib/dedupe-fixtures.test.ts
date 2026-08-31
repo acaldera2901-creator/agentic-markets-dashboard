@@ -169,3 +169,82 @@ describe("dedupeByFixture", () => {
     expect(dedupeByFixture(rows)).toHaveLength(2);
   });
 });
+
+// #DEDUP-NORDIC-0830 — due coppie viste in board il 30/08/2026, entrambe con la
+// firma nota (una riga espn:, una oddsapi:) ma sopravvissute alla deduplica:
+//   BL2  espn:401885137  "St. Pauli v Kaiserslautern"
+//        oddsapi:53c8f2a "FC St. Pauli v 1. FC Kaiserslautern"
+//   ELI  oddsapi:0219eb1 "Bodø/Glimt v Rosenborg"
+//        espn:401843426  "Bodo/Glimt v Rosenborg"
+// Causa, misurata eseguendo la normalizzazione:
+//   "Bodø/Glimt"          -> "bod glimt"        (la ø non e' un diacritico
+//                                                combinante: sopravvive a NFKD e
+//                                                viene poi cancellata da [^a-z0-9])
+//   "Preußen Munster"     -> "preu en munster"  (la ß spezza la parola in due)
+//   "1. FC Kaiserslautern"-> "1 kaiserslautern" (il token "1" finisce nella
+//                                                guardia sulle sigle d'identita')
+const nordic = (h: string, a: string, id: string, at: string) => ({
+  league: "X", home_team: h, away_team: a,
+  kickoff: "2026-08-30T11:30:00+00:00", match_id: id, computed_at: at,
+});
+
+describe("dedupeByFixture — lettere non decomponibili e numeri nel nome", () => {
+  it("collassa Bodo/Glimt e Bodø/Glimt (la o barrata non e' un accento)", () => {
+    const out = dedupeByFixture([
+      nordic("Bodø/Glimt", "Rosenborg", "oddsapi:0219eb1", "2026-08-30T09:00:00Z"),
+      nordic("Bodo/Glimt", "Rosenborg", "espn:401843426", "2026-08-30T12:00:00Z"),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].match_id).toBe("espn:401843426"); // vince la piu' fresca
+  });
+
+  it("collassa 1. FC Kaiserslautern e Kaiserslautern", () => {
+    const out = dedupeByFixture([
+      nordic("St. Pauli", "Kaiserslautern", "espn:401885137", "2026-08-30T12:00:00Z"),
+      nordic("FC St. Pauli", "1. FC Kaiserslautern", "oddsapi:53c8f2a", "2026-08-30T09:00:00Z"),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].match_id).toBe("espn:401885137");
+  });
+
+  it("collassa Preussen Munster e Preussen Munster con la esszett", () => {
+    const out = dedupeByFixture([
+      nordic("Preußen Münster", "Saarbrucken", "espn:1", "2026-08-30T12:00:00Z"),
+      nordic("Preussen Munster", "1. FC Saarbrucken", "oddsapi:1", "2026-08-30T09:00:00Z"),
+    ]);
+    expect(out).toHaveLength(1);
+  });
+
+  it("collassa Schalke 04 e Schalke, Hannover 96 e Hannover", () => {
+    expect(dedupeByFixture([
+      nordic("Schalke 04", "Hannover 96", "espn:2", "2026-08-30T12:00:00Z"),
+      nordic("Schalke", "Hannover", "oddsapi:2", "2026-08-30T09:00:00Z"),
+    ])).toHaveLength(1);
+  });
+
+  it("le squadre nordiche in board oggi non si fondono fra loro", () => {
+    // Brøndby, Djurgården, Nordsjælland, Białystok: la traslitterazione non deve
+    // creare collisioni fra club diversi.
+    const out = dedupeByFixture([
+      nordic("Brøndby IF", "Djurgården", "a:1", "2026-08-30T12:00:00Z"),
+      nordic("FC Nordsjælland", "Jagiellonia Białystok", "a:2", "2026-08-30T12:00:00Z"),
+    ]);
+    expect(out).toHaveLength(2);
+  });
+
+  it("NON fonde 1860 Munich con Munich: quattro cifre restano identita'", () => {
+    const out = dedupeByFixture([
+      nordic("1860 Munich", "Ingolstadt", "espn:3", "2026-08-30T12:00:00Z"),
+      nordic("Munich", "Ingolstadt", "oddsapi:3", "2026-08-30T09:00:00Z"),
+    ]);
+    expect(out).toHaveLength(2);
+  });
+
+  it("NON fonde le riserve col primo team, anche col numero nel nome", () => {
+    const out = dedupeByFixture([
+      nordic("Schalke 04 II", "Hannover", "espn:4", "2026-08-30T12:00:00Z"),
+      nordic("Schalke 04", "Hannover", "oddsapi:4", "2026-08-30T09:00:00Z"),
+    ]);
+    expect(out).toHaveLength(2);
+  });
+});

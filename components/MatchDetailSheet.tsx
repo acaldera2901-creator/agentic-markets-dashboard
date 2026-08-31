@@ -43,6 +43,12 @@ export type MdsData = {
   hero: {
     flag: string;
     pick: string;
+    // #CARD-HUD-0830 — la probabilita' del modello diventa un campo suo, non una
+    // parola dentro una frase: nella scheda in griglia e' il numero che urla, e
+    // qui dentro deve urlare uguale. `read` resta la didascalia (il caveat sotto
+    // il floor); quando `prob` manca, si rende come prima.
+    prob?: string | null;
+    probLabel?: string | null;
     read: string;
     confDots: number;
     quotaLabel: string;
@@ -168,9 +174,12 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
   // #BET-DROPDOWN-1: menu dei partner. Si apre verso l'alto perché la bet-bar è
   // sticky in fondo alla scheda. Chiusura: click fuori, Escape, scelta di una voce.
   const [booksMenu, setBooksMenu] = useState(false);
-  // derivato, non sincronizzato: se la schedina si svuota il menu è chiuso per
-  // costruzione — niente effetto che insegue lo stato.
-  const booksOpen = booksMenu && legs.length > 0;
+  // #BETSLIP-CTA-ON-0831 — il menu dei partner NON e' piu' derivato dalle
+  // selezioni. Andrea: «quel bottone deve rimanere acceso sempre». Con la
+  // schedina vuota il partner apre la pagina del match e la selezione la si
+  // fa la', che e' esattamente quello che dice la riga sotto la barra:
+  // «schedina composta su BetRedge -> scegli il partner con cui aprirla».
+  const booksOpen = booksMenu;
   const booksRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!booksOpen) return;
@@ -253,10 +262,22 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
         </div>
         <div className="mds-fx">{data.home}<span className="mds-vs">v</span>{data.away}</div>
         <div className="mds-call">
-          <div className="mds-pick">
-            <span className="mds-flagtag"><Ico id="star" />{data.hero.flag}</span>
+          <div className={`mds-pick${data.hero.prob ? " mds-pick-hud" : ""}`}>
+            {data.hero.prob ? (
+              <>
+                <span className="mds-problab">{data.hero.probLabel || data.hero.read}</span>
+                <span className="mds-probn">
+                  {/* il simbolo % scende di misura come nella scheda in griglia:
+                      a piena altezza pesa quanto una cifra e sporca la lettura. */}
+                  {data.hero.prob.replace(/%$/, "")}
+                  {data.hero.prob.endsWith("%") && <span className="mds-probu">%</span>}
+                </span>
+              </>
+            ) : (
+              <span className="mds-flagtag"><Ico id="star" />{data.hero.flag}</span>
+            )}
             <span className="mds-pk">{data.hero.pick}</span>
-            <span className="mds-rd">{data.hero.read}
+            <span className="mds-rd">{data.hero.prob ? data.hero.flag : data.hero.read}
               <span className="mds-dots">{[0, 1, 2, 3].map((i) => <span key={i} className={`mds-d${i < data.hero.confDots ? " on" : ""}`} />)}</span>
             </span>
           </div>
@@ -319,9 +340,8 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                 <div className={booksOpen ? "mds-books open" : "mds-books"} ref={booksRef}>
                   <button
                     type="button"
-                    className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-                    onClick={() => legs.length && setBooksMenu((o) => !o)}
-                    disabled={legs.length === 0}
+                    className="mds-cta"
+                    onClick={() => setBooksMenu((o) => !o)}
                     aria-expanded={booksOpen}
                     aria-haspopup="menu"
                   >
@@ -365,11 +385,10 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                 </div>
               ) : (
                 <a
-                  className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-                  href={legs.length ? data.matchUrl : undefined}
+                  className="mds-cta"
+                  href={data.matchUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-disabled={legs.length === 0}
                 >
                   {ctaLabel}<Ico id="arrow" />
                 </a>
