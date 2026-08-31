@@ -20,9 +20,14 @@
 // l'archivio. E' questa la differenza che rende il recupero possibile.
 
 import { tokenSquadra } from "@/lib/dedupe-fixtures";
-
-const ESPN_SITE_API = "https://site.api.espn.com/apis/site/v2/sports";
-const ESPN_HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; BetRedge/1.0)" };
+// L'host e gli header si prendono da qui e NON si riscrivono a mano. ESPN espone
+// la stessa API su due hostname e quello filtrato ha un WAF che 403-a qualunque
+// user-agent di un runtime Node: da Vercel sarebbe 403 SEMPRE, non a
+// intermittenza (#ESPN-UA-403-0820). Il primo giro di questo file l'aveva
+// scritto a mano, e il guard `tests/test_espn_host_no_residues.py` l'ha
+// bocciato: la mia verifica locale passava solo perche' girava da una rete
+// residenziale, dove il WAF non filtra.
+import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
 
 /** Codice lega football-data → slug ESPN. SONDATI il 31/08/2026 sulla data
  *  20260830, eventi completati: eng.1 4/4, ita.1 3/3, esp.1 3/3, ger.1 2/2,
