@@ -130,7 +130,10 @@
 :root:not([data-theme="light"]) [data-mc] .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;padding-block:1.3rem}
 :root:not([data-theme="light"]) [data-mc] .pred{position:relative;isolation:isolate;overflow:hidden;background:var(--night2);border:1px solid var(--night3);color:#fff;display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
 :root:not([data-theme="light"]) [data-mc] .pred::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;z-index:3;background:var(--mc-accent,var(--d-football))}
-:root:not([data-theme="light"]) [data-mc] .pred:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--mc-accent,var(--d-football)) 65%,transparent)}
+/* l'hover schiarisce i bordi al 65%: il bordo ALTO no, li' il colore dello sport
+   deve restare pieno (#ACCENT-BAR-0831). */
+:root:not([data-theme="light"]) [data-mc] .pred:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--mc-accent,var(--d-football)) 65%,transparent);
+  border-top-color:var(--mc-accent,var(--d-football))}
 :root:not([data-theme="light"]) [data-mc] .card-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;opacity:.9;filter:saturate(1.08) contrast(1.04)}
 :root:not([data-theme="light"]) [data-mc] .card-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(18,21,25,.95) 50%,rgba(18,21,25,.76) 76%,rgba(18,21,25,.20) 100%)}
 :root:not([data-theme="light"]) [data-mc] .pred>*:not(.card-bg):not(.card-veil){position:relative;z-index:2}
@@ -621,16 +624,32 @@
    non aggancia mai e resta un moncone diagonale al posto della smussatura. */
 :root:not([data-theme="light"]) [data-mc].card > .pred::before{
   inset:auto;top:calc(var(--ch) / 2);left:calc(var(--ch) / 2);
-  width:calc(var(--ch) * 1.41421 + 2.5px);height:2px;background:var(--pred-line,var(--_pe));z-index:4;
+  width:calc(var(--ch) * 1.41421 + 2.5px);height:1.2px;background:var(--mc-accent,var(--pred-line,var(--_pe)));z-index:4;
   transform:translate(-50%,-50%) rotate(-45deg)}
 :root:not([data-theme="light"]) [data-mc].card > .pred::after{
   inset:auto;bottom:calc(var(--ch) / 2);right:calc(var(--ch) / 2);
-  width:calc(var(--ch) * 1.41421 + 2.5px);height:2px;background:var(--pred-line,var(--_pe));
+  width:calc(var(--ch) * 1.41421 + 2.5px);height:1.2px;background:var(--pred-line,var(--_pe));
   transform:translate(50%,50%) rotate(-45deg)}
 /* ...e il filetto da 4px col colore dello sport passa alla riga di testata,
    che è il primo figlio e ha già position:relative. */
+/* #ACCENT-BAR-0831 — il filetto dello sport torna A FILO del bordo alto.
+   `.top` vive DENTRO il bordo da 1px di `.pred`, quindi il filetto nasceva
+   rientrato di 1px su tre lati e leggeva come una striscia colorata dentro una
+   cornice grigia, non come il bordo alto della scheda. (Il passaggio si e' perso
+   quando l'accento e' migrato da `.pred::before`, che aveva `inset:0 0 auto 0`
+   e copriva il bordo, a `.top::before`.)
+   Spostare il filetto a offset negativi NON funziona, ed e' la cosa che ho
+   provato per prima: `.pred` ha `overflow:hidden`, che ritaglia al PADDING box —
+   il bordo sta fuori da quello, quindi nessun figlio potra' mai coprirlo.
+   Quindi e' il BORDO ALTO a prendere il colore dello sport, e il filetto scende
+   a 3px: 1 + 3 = i 4px di sempre, ma a filo. Il clip taglia il bordo sulla
+   smussatura come taglia tutto il resto, quindi il colore segue i 45 gradi.
+   `z-index:5` lo mette sopra i due tratti obliqui (4, #CARD-CORNERS-0831): ieri,
+   portandoli sopra la velatura, la diagonale grigia aveva iniziato a tagliare in
+   due il capo sinistro del filetto. */
+:root:not([data-theme="light"]) [data-mc] .pred{border-top-color:var(--mc-accent,var(--d-football))}
 :root:not([data-theme="light"]) [data-mc] .pred .top::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:5;
   background:var(--mc-accent,var(--d-football))}
 
 /* ── FOTO PIU' ACCESE (richiesta di Andrea, 2026-08-20) ────────────────────
@@ -767,14 +786,19 @@
   --pred-line:#c3cad4;
   display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
 :root[data-theme="light"] [data-mc] .pred:hover{transform:translateY(-2px);
-  border-color:color-mix(in oklab,var(--mc-accent,#6d28d9) 65%,transparent)}
+  border-color:color-mix(in oklab,var(--mc-accent,#6d28d9) 65%,transparent);
+  /* vedi la nota sul gemello scuro: il bordo alto resta pieno. */
+  border-top-color:var(--mc-accent,#6d28d9)}
 :root[data-theme="light"] [data-mc] .pred>*:not(.card-bg):not(.card-veil){position:relative;z-index:2}
 /* il padding passa ai FIGLI, come in scuro: cosi' .scorebar e .v2r
    diventano fasce a filo invece di riquadri dentro un riquadro */
 :root[data-theme="light"] [data-mc] .pred .top{display:flex;align-items:center;justify-content:space-between;
   gap:.7rem;padding:.9rem .95rem .55rem}
+/* #ACCENT-BAR-0831 — vedi la nota sul gemello scuro: il bordo alto porta il
+   colore, il filetto scende a 3px. I due temi devono dire la stessa cosa. */
+:root[data-theme="light"] [data-mc] .pred{border-top-color:var(--mc-accent,#6d28d9)}
 :root[data-theme="light"] [data-mc] .pred .top::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:5;
   background:var(--mc-accent,#6d28d9)}
 :root[data-theme="light"] [data-mc] .pred .fx{padding:0 .95rem .85rem;display:grid;gap:.65rem}
 :root[data-theme="light"] [data-mc] .pred .scorebar{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;
