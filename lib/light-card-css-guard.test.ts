@@ -155,10 +155,27 @@ describe("il filetto da 4px", () => {
     // quindi lo z-index della striscia vale solo DENTRO `.top`: fuori competono
     // `.top` e `.v2r`, a pari livello vince chi viene dopo nel DOM. In scuro non
     // si vedeva (fondo translucido), in chiaro il readout e' OPACO e copriva.
+    // Il selettore va cercato per FORMA, non per uguaglianza: deve battere
+    // `.pred>*:not(.card-bg):not(.card-veil){z-index:2}`, quindi porta i suoi
+    // `:not()` per pareggiare la specificita'. Con un match esatto sul nome
+    // vecchio il guard passava mentre la regola NON era in vigore — misurato in
+    // produzione, `.top` restava a 2.
     for (const [nome, t] of [["chiaro", LIGHT], ["scuro", DARK]] as const) {
-      const z = prop(declsFor(t, ".pred .top"), "z-index");
-      expect(z, `${nome}: .top non dichiara uno z-index`).toBeTruthy();
+      const cand = rules.filter((r) =>
+        r.sel.split(",").some((pz) => {
+          const q = pz.trim();
+          return q.startsWith(t) && /\.pred\s*>?\s*\.top(?![\w-])/.test(q) && !q.includes("::");
+        }) && /(^|;)\s*z-index\s*:/.test(r.decls),
+      );
+      expect(cand.length, `${nome}: nessuna regola dichiara lo z-index di .top`).toBeGreaterThan(0);
+      const z = prop(cand.map((r) => r.decls).join(";"), "z-index");
       expect(Number(z), `${nome}: .top a z-index ${z} non batte il readout (2)`).toBeGreaterThan(2);
+      // e la regola deve poter VINCERE: senza i due :not() sta a (0,4,0) contro
+      // i (0,6,0) del blanket, quindi resta lettera morta.
+      const vincente = cand.some((r) =>
+        r.sel.includes(":not(.card-bg)") && r.sel.includes(":not(.card-veil)"),
+      );
+      expect(vincente, `${nome}: la regola su .top non pareggia la specificita' del blanket .pred>* — sarebbe lettera morta`).toBe(true);
     }
   });
 
