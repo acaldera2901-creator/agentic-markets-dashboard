@@ -5707,6 +5707,10 @@ button:disabled {
 .am-grid > .house-banner { min-width: 0; }
 .am-grid > .house-banner.hb-billboard,
 .am-grid > .house-banner.hb-leaderboard { grid-column: 1 / -1; }
+/* #FREE-BOARD-FULL-0831: il paywall Free dentro la griglia è una banda full-width
+   con lo stesso meccanismo del billboard house (1 / -1, non una larghezza sua);
+   i margini laterali li dà già il padding di .am-grid, quindi qui si azzerano. */
+.am-grid > .free-paywall.fp-in-grid { grid-column: 1 / -1; margin: 4px 0 8px; }
 .am-grid > .house-banner.hb-rectangle,
 .am-grid > .house-banner.hb-halfpage { grid-column: span 4; }
 .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
