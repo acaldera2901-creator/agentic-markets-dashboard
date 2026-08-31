@@ -174,9 +174,12 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
   // #BET-DROPDOWN-1: menu dei partner. Si apre verso l'alto perché la bet-bar è
   // sticky in fondo alla scheda. Chiusura: click fuori, Escape, scelta di una voce.
   const [booksMenu, setBooksMenu] = useState(false);
-  // derivato, non sincronizzato: se la schedina si svuota il menu è chiuso per
-  // costruzione — niente effetto che insegue lo stato.
-  const booksOpen = booksMenu && legs.length > 0;
+  // #BETSLIP-CTA-ON-0831 — il menu dei partner NON e' piu' derivato dalle
+  // selezioni. Andrea: «quel bottone deve rimanere acceso sempre». Con la
+  // schedina vuota il partner apre la pagina del match e la selezione la si
+  // fa la', che e' esattamente quello che dice la riga sotto la barra:
+  // «schedina composta su BetRedge -> scegli il partner con cui aprirla».
+  const booksOpen = booksMenu;
   const booksRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!booksOpen) return;
@@ -337,9 +340,8 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                 <div className={booksOpen ? "mds-books open" : "mds-books"} ref={booksRef}>
                   <button
                     type="button"
-                    className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-                    onClick={() => legs.length && setBooksMenu((o) => !o)}
-                    disabled={legs.length === 0}
+                    className="mds-cta"
+                    onClick={() => setBooksMenu((o) => !o)}
                     aria-expanded={booksOpen}
                     aria-haspopup="menu"
                   >
@@ -383,11 +385,10 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                 </div>
               ) : (
                 <a
-                  className={`mds-cta${legs.length === 0 ? " disabled" : ""}`}
-                  href={legs.length ? data.matchUrl : undefined}
+                  className="mds-cta"
+                  href={data.matchUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-disabled={legs.length === 0}
                 >
                   {ctaLabel}<Ico id="arrow" />
                 </a>
