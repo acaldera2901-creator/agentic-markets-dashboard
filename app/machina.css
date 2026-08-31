@@ -860,7 +860,7 @@
 
 /* ── L'ENFASI: vale a ogni larghezza ────────────────────────────────────── */
 
-[data-mc] .pred.hud .v2r {
+[data-mc] .pred.hud .v2r:not(.is-locked) {
   position: relative;
   flex-direction: column; align-items: flex-start; justify-content: center;
   gap: .35rem; padding: 1rem 1.05rem 1.05rem;
@@ -874,8 +874,8 @@
   opacity: .85;
 }
 /* il numero PRIMA della pick: si legge il verdetto, poi su chi. */
-[data-mc] .pred.hud .v2r-l { order: 2; width: 100%; }
-[data-mc] .pred.hud .v2r-q { order: 1; align-items: flex-start; text-align: left; width: 100%; }
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-l { order: 2; width: 100%; }
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-q { order: 1; align-items: flex-start; text-align: left; width: 100%; }
 
 /* IL NUMERO. Condensata pesante, alone corto — non un neon diffuso. */
 [data-mc] .pred.hud .v2r-qn:not(.lock) {
@@ -885,7 +885,7 @@
   text-shadow: 0 0 22px rgba(52,211,153,.34);
 }
 [data-mc] .pred.hud .v2r-qn:not(.lock) .u { font-size: .34em; opacity: .7; margin-left: .04em; }
-[data-mc] .pred.hud .v2r-qlab {
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-qlab {
   font-family: var(--fm, ui-monospace), monospace; font-size: .55rem; letter-spacing: .2em;
   text-transform: uppercase; margin-bottom: .3rem;
 }
@@ -895,22 +895,22 @@
    dichiarazione intera, che eredita il font di sistema. Era gia' successo col
    numero (var(--fm)); l'avevo corretto sull'istanza invece che sulla classe, e
    la pick e' andata in produzione senza condensata in tema chiaro. */
-[data-mc] .pred.hud .v2r-pick {
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-pick {
   font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
   font-size: 1.18rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .005em; line-height: 1.06; white-space: normal;
 }
-[data-mc] .pred.hud .v2r-sub { justify-content: flex-start; margin-top: .35rem; }
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-sub { justify-content: flex-start; margin-top: .35rem; }
 
 /* la confidenza: tacche oblique al posto dei pallini — e' il tratto HUD della
    direzione A. Stessa informazione, altro registro. */
-[data-mc] .pred.hud .v2r-conf { gap: 3px; margin-top: .5rem; }
-[data-mc] .pred.hud .v2r-conf .d {
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf { gap: 3px; margin-top: .5rem; }
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf .d {
   width: 17px; height: 7px; border-radius: 0; box-shadow: none;
   clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
   background: rgba(255,255,255,.10);
 }
-[data-mc] .pred.hud .v2r-conf .d.on { background: var(--am-positive, #34D399); }
+[data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf .d.on { background: var(--am-positive, #34D399); }
 
 /* ── LO SPLIT: solo su schede larghe ────────────────────────────────────── */
 @container mc (min-width: 430px) {
@@ -983,15 +983,15 @@
    nuovo numero magico (che cambierebbe con ogni nome di squadra che va a capo),
    `.v2r` diventa OPACO: la fascia finisce dove inizia il blocco dati, qualunque
    altezza abbia. Stesso risultato di prima, senza costante da mantenere. */
-:root[data-theme="light"] [data-mc] .pred.hud .v2r {
+:root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) {
   background: linear-gradient(180deg, rgba(35,165,89,.07), rgba(255,255,255,0) 62%), #fff;
 }
 :root[data-theme="light"] [data-mc] .pred.hud .v2r-qn:not(.lock) {
   font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
   color: var(--am-coral, #23A559); text-shadow: none;
 }
-:root[data-theme="light"] [data-mc] .pred.hud .v2r-conf .d { background: rgba(0,0,0,.10); }
-:root[data-theme="light"] [data-mc] .pred.hud .v2r-conf .d.on { background: var(--am-coral, #23A559); }
+:root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf .d { background: rgba(0,0,0,.10); }
+:root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf .d.on { background: var(--am-coral, #23A559); }
 
 /* Lo stato anonimo mette un lucchetto dentro .v2r-qn, non una cifra: tiene la sua
    misura e niente alone — il trattamento gigante e' per il numero. (#CARD-HUD-0830) */

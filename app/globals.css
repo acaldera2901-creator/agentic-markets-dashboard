@@ -10103,3 +10103,40 @@ button:disabled {
 :root[data-theme="light"] .featured .featured-unlock {
   color: #34D399; border-color: rgba(52,211,153,.42); background: rgba(52,211,153,.12);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #MOBILE-0831 — tre difetti misurati su telefono (375/393/412/430 px), non
+   dedotti. Due candidati sono stati SCARTATI perche' la misura li ha smentiti:
+   la barra fissa in basso NON copre contenuto (`.portal-desk` ha gia' 66px di
+   sgombero: 0 nodi coperti a fondo pagina, col DOM intatto), e il pulsante da
+   10x10 e' uno spaziatore `aria-hidden` con `tabindex="-1"`, non un controllo.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* 1. IL DISCLOSURE «WHY» ERA ALTO 14px. E' il modo con cui si apre la lettura
+     del modello, e su 20 schede in board era una striscia da 14px: misurato
+     279x14. Il testo resta di quella misura — cresce l'AREA che riceve il dito,
+     fino ai 44px che serve un pollice. */
+  .pred .why-box > summary.why-lab {
+    min-height: 44px;
+    margin: -12px -13px;      /* annulla il padding del box... */
+    padding: 12px 13px;        /* ...e lo ri-applica dentro il target */
+  }
+  /* con il disclosure aperto il testo non deve incollarsi al bordo alto */
+  .pred .why-box[open] > summary.why-lab { margin-bottom: 0; }
+
+  /* 2. LA SCHEDA BLOCCATA era alta 539px su un telefono da 852, con 94px di
+     vuoto misurati fra il riquadro del lucchetto e il piede: un terzo di
+     schermo per zero informazione. Il riquadro e' tarato sul desktop.
+     (La causa maggiore era una MIA regressione, corretta in `machina.css`:
+     il trattamento HUD del readout si applicava anche allo stato bloccato e lo
+     alzava di 41px. Ora l'enfasi e' esclusa a monte con `:not(.is-locked)` e la
+     scheda bloccata torna alla geometria originale — misurato delta 0 su mobile
+     e su desktop, in entrambi i temi.) */
+  .pred .lock-overlay { padding: 12px 12px; gap: 5px; margin-bottom: 9px; }
+
+  /* 3. DUE CONTROLLI SOTTO IL POLLICE. Il selettore lingua misurava 40x34 e i
+     link social del footer 30x44: sotto i 44px che serve un dito. Cresce l'area
+     tappabile, non la grafica. */
+  .am-iconbtn.lang-dd-trigger { min-height: 44px; min-width: 44px; }
+  .site-footer-social-link { min-width: 44px; }
+}
