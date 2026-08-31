@@ -137,6 +137,31 @@ describe("il filetto da 4px", () => {
     }
   });
 
+  // #CARD-OUTLINE-0831 — «il contorno non chiude la scheda»: nello SPLIT `.top`
+  // sta nella prima colonna della griglia, quindi la striscia copriva il 54%
+  // della larghezza (misurato 284 su 525) e il contorno alto cambiava spessore a
+  // metà scheda. Due meta' del difetto, due invarianti da sorvegliare.
+  it("la striscia sfonda oltre `.top`, per arrivare al bordo destro anche nello split", () => {
+    for (const [nome, t] of [["chiaro", LIGHT], ["scuro", DARK]] as const) {
+      const d = declsFor(t, ".pred .top::before") + ";" + declsFor(t, ".top::before");
+      const r = prop(d, "right");
+      expect(r, `${nome}: la striscia non dichiara \`right\``).toBeTruthy();
+      expect(r!.startsWith("-"), `${nome}: \`right:${r}\` ferma la striscia al bordo di .top, che nello split e' mezza scheda`).toBe(true);
+    }
+  });
+
+  it("`.top` sta sopra `.v2r`, o in chiaro il readout opaco copre la striscia", () => {
+    // `.top` e' essa stessa un contesto di impilamento (z-index 2 da `.pred > *`),
+    // quindi lo z-index della striscia vale solo DENTRO `.top`: fuori competono
+    // `.top` e `.v2r`, a pari livello vince chi viene dopo nel DOM. In scuro non
+    // si vedeva (fondo translucido), in chiaro il readout e' OPACO e copriva.
+    for (const [nome, t] of [["chiaro", LIGHT], ["scuro", DARK]] as const) {
+      const z = prop(declsFor(t, ".pred .top"), "z-index");
+      expect(z, `${nome}: .top non dichiara uno z-index`).toBeTruthy();
+      expect(Number(z), `${nome}: .top a z-index ${z} non batte il readout (2)`).toBeGreaterThan(2);
+    }
+  });
+
   it("la smussatura IN ALTO continua il bordo alto, quella in basso resta neutra", () => {
     // Se la smussatura alta e' grigia spezza il filetto in due: un triangolino di
     // colore staccato dalla barra, con un cuneo grigio in mezzo. Misurato il 31/08.
