@@ -126,7 +126,13 @@ const SIGLE_GENERICHE = new Set([
 // Marcatori di squadra NON prima: riserve, giovanili.
 const RISERVE = /^(ii|iii|iv|b|c|u\d{2}|res|reserves|am|amateure|jr)$/;
 
-function tokenSquadra(nome: string): string[] {
+/** I token identificativi di un nome di club, senza sigle generiche.
+ *  Esportata per il recupero del settlement (#SETTLE-RECOVERY-0831): i nomi
+ *  ESPN vanno confrontati coi nostri, e avere due normalizzatori che possono
+ *  divergere e' la cosa che si paga sempre. `stessaSquadra` resta interna:
+ *  la sua regola e' tarata sul dedup del NOSTRO feed, dove i nomi arrivano
+ *  dalla stessa fonte, e allentarla per un caso diverso la romperebbe. */
+export function tokenSquadra(nome: string): string[] {
   const grezzi = piegaLettere(normName(nome || ""))
     .replace(/['\u2019\u0060]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
