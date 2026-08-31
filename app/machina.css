@@ -462,7 +462,12 @@
 :root:not([data-theme="light"]) [data-mc] .btn:hover{background:#2dc06a;border-color:#2dc06a}
 
 /* ── le schede devono staccare da un fondo che ora è scuro ── */
-:root:not([data-theme="light"]) [data-mc] .pred{background:var(--card-2);border-color:#333a42}
+:root:not([data-theme="light"]) [data-mc] .pred{background:var(--card-2);border-color:#333a42;
+  /* #CARD-CORNERS-0831 — lo stesso colore lo usano i due tratti obliqui che
+     chiudono le smussature: dichiarato QUI, accanto al bordo, non possono
+     divergere. Prima il tratto prendeva `--am-chamfer-line` e in scuro era
+     quasi il fondo della scheda: l'angolo restava aperto. */
+  --pred-line:#333a42}
 :root:not([data-theme="light"]) [data-mc] .pred .scorebar{background:#0f1216}
 :root:not([data-theme="light"]) [data-mc] .pred .v2r{background:transparent}
 :root:not([data-theme="light"]) [data-mc] .pred-more{background:var(--card-2);border-top-color:#333a42}
@@ -616,11 +621,11 @@
    non aggancia mai e resta un moncone diagonale al posto della smussatura. */
 :root:not([data-theme="light"]) [data-mc].card > .pred::before{
   inset:auto;top:calc(var(--ch) / 2);left:calc(var(--ch) / 2);
-  width:calc(var(--ch) * 1.41421);height:1.4px;background:var(--_pe);z-index:auto;
+  width:calc(var(--ch) * 1.41421 + 2.5px);height:2px;background:var(--pred-line,var(--_pe));z-index:4;
   transform:translate(-50%,-50%) rotate(-45deg)}
 :root:not([data-theme="light"]) [data-mc].card > .pred::after{
   inset:auto;bottom:calc(var(--ch) / 2);right:calc(var(--ch) / 2);
-  width:calc(var(--ch) * 1.41421);height:1.4px;background:var(--_pe);
+  width:calc(var(--ch) * 1.41421 + 2.5px);height:2px;background:var(--pred-line,var(--_pe));
   transform:translate(50%,50%) rotate(-45deg)}
 /* ...e il filetto da 4px col colore dello sport passa alla riga di testata,
    che è il primo figlio e ha già position:relative. */
@@ -756,6 +761,10 @@
 /* ── la scheda: stessa struttura del tema scuro ── */
 :root[data-theme="light"] [data-mc] .pred{position:relative;isolation:isolate;overflow:hidden;
   padding:0;border-radius:0;box-shadow:none;border:1px solid #c3cad4;
+  /* #CARD-CORNERS-0831 — accanto al bordo, come in scuro: i due tratti obliqui
+     che chiudono le smussature leggono questo stesso colore. Dichiararlo qui e'
+     l'unico modo perche' bordo e diagonale non possano divergere. */
+  --pred-line:#c3cad4;
   display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
 :root[data-theme="light"] [data-mc] .pred:hover{transform:translateY(-2px);
   border-color:color-mix(in oklab,var(--mc-accent,#6d28d9) 65%,transparent)}
