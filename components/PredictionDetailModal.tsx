@@ -83,6 +83,12 @@ export function PredictionDetailModal({
     // scroll-lock del body mentre il modal è aperto
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // #TAWK-UNDER-MODAL-0831 — la bolla della chat e' `fixed` con uno z-index
+    // enorme (Tawk lo mette lei, ~2e9) e su telefono finiva SOPRA la CTA «Place
+    // your bet» della scheda aperta: fotografato da Andrea. Con la scheda aperta
+    // la chat passa sotto, e il CSS la riconosce dagli stessi selettori gia'
+    // collaudati in `mobile.css`.
+    document.documentElement.dataset.pdmOpen = "1";
     // calcola la transform iniziale dalla rect della card → "zoom dalla posizione"
     const reduce = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -110,6 +116,10 @@ export function PredictionDetailModal({
       cancelAnimationFrame(r);
       window.clearTimeout(tid);
       document.body.style.overflow = prevOverflow;
+      // #TAWK-UNDER-MODAL-0831 — il marcatore vive nello STESSO effetto dello
+      // scroll-lock: sono la stessa cosa (la pagina sotto e' fuori gioco) e
+      // tenerli separati vuol dire che uno dei due prima o poi resta appeso.
+      delete document.documentElement.dataset.pdmOpen;
     };
   }, [open, anchorRect]);
 

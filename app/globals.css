@@ -10173,3 +10173,23 @@ button:disabled {
   .am-iconbtn.lang-dd-trigger { min-height: 44px; min-width: 44px; }
   .site-footer-social-link { min-width: 44px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #TAWK-UNDER-MODAL-0831 — con la scheda aperta, la chat passa SOTTO.
+   La bolla di Tawk.to e' `fixed` e lo z-index lo mette lei, altissimo (~2e9):
+   su telefono finiva sopra la CTA «Place your bet» della bet-bar, cioe' sopra
+   l'unico bottone che porta al partner. Il modale sta a z-index 1000, quindi
+   basta riportare la chat sotto quella soglia mentre e' aperto — non si nasconde
+   e non si sposta: torna esattamente dov'era alla chiusura.
+   I selettori sono gli stessi gia' collaudati in `mobile.css`: Tawk cambia
+   struttura fra le versioni, e l'`id` da solo non basta.
+   Vale a ogni larghezza, non solo su telefono: su desktop la sovrapposizione e'
+   meno probabile, non impossibile.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root[data-pdm-open] #tawkchat-container,
+:root[data-pdm-open] #tawkchat-minified-wrapper,
+:root[data-pdm-open] .widget-visible iframe[title*="chat" i],
+:root[data-pdm-open] iframe[title*="chat" i],
+:root[data-pdm-open] div[class*="tawk" i] {
+  z-index: 999 !important;
+}
