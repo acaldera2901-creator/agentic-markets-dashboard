@@ -299,7 +299,7 @@ function vistaCouncil(co){
     return;
   }
   document.getElementById("u-council").textContent=
-    `${co.aperte} aperte · ${co.nel_gate} nel gate · ${co.totale} messaggi`;
+    `${co.aperte} aperte · ${co.nel_gate} nel gate · ${co.archiviate||0} archiviate`;
   if(!co.richieste.length){
     box.append(el("div","vuoto","Nessuna richiesta aperta che ci nomini."));
     return;
@@ -323,6 +323,21 @@ function vistaCouncil(co){
     }
     const acts=el("div","acts"), out=el("div","out");
     let nota="";
+    const ba=el("button","nota","✕ archivia");
+    ba.title="Toglila dalla lista senza toccare il Council: e' il nostro giudizio, locale.";
+    ba.addEventListener("click",async()=>{
+      const motivo=window.prompt(
+        "Perche' questa non serve piu'?\n\n(senza motivo non si archivia: fra un mese "+
+        "nessuno saprebbe piu' perche' era stata tolta)","");
+      if(!motivo) return;
+      ba.disabled=true;
+      const res=await azione({azione:"archivia",msg_id:r.id,motivo});
+      out.className="out "+(res.ok?"ok":"ko");
+      out.textContent=res.ok?"archiviata — si riapre da ~/.betredge-cc/council-archiviate.json"
+                            :("non archiviata: "+(res.errore||"errore"));
+      ba.disabled=false;
+      if(res.ok) setTimeout(caricaCouncil,900);
+    });
     const bn=el("button","nota","+ nota");
     bn.addEventListener("click",()=>{
       const v=window.prompt("Nota da allegare all'APPROVE (max 500 caratteri):",nota);
@@ -341,7 +356,7 @@ function vistaCouncil(co){
       b.textContent="✓ APPROVE"; b.disabled=false;
       if(res.ok) setTimeout(caricaCouncil,3000);
     });
-    acts.append(b,bn); d.append(acts,out);
+    acts.append(b,bn,ba); d.append(acts,out);
     box.append(d);
   }
 }

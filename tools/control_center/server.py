@@ -74,6 +74,18 @@ class Handler(BaseHTTPRequestHandler):
         check_id = str(corpo.get("check_id", ""))
         azione = str(corpo.get("azione", ""))
 
+        if azione in ("archivia", "riapri"):
+            # Archiviare NON tocca il Council: e' il nostro giudizio, locale.
+            if azione == "archivia":
+                esito = council.archivia(str(corpo.get("msg_id", "")),
+                                         str(corpo.get("motivo", "")),
+                                         str(corpo.get("prova", "")))
+            else:
+                esito = council.riapri(str(corpo.get("msg_id", "")))
+            self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+            return
+
         if azione == "approva":
             # Lo preme Andrea dal suo Mac: loopback + token. Il messaggio dice
             # da dove arriva, perche' nel Council non esiste un'identita' umana.
