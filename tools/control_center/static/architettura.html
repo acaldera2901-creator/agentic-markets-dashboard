@@ -219,8 +219,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
         che si chiude. Clicca un nodo per aprirlo.</p>
       </div>
       <div class="meta-row">
-        <div class="kpi"><label>nodi</label><b>46</b></div>
-        <div class="kpi"><label>territori</label><b>8</b></div>
+        <div class="kpi"><label>nodi</label><b id="n-nodi">—</b></div>
+        <div class="kpi"><label>territori</label><b id="n-terr">—</b></div>
         <div class="kpi"><label>canali</label><b>7</b></div>
         <div class="kpi"><label>tabelle</label><b>68</b></div>
       </div>
@@ -642,7 +642,7 @@ const OVERVIEW =
  'esterne e finisce in una tabella. La <b>persona</b> parte da 7 canali e finisce in un campo, ' +
  '<code>profiles.plan</code>. Il cancello ③ è l\'unico posto dove i due si incontrano — e l\'arco rosa ' +
  'è il cerchio che si chiude.</p>' +
- '<div class="blk"><h5>Gli 8 territori</h5>' +
+ '<div class="blk"><h5>I ' + TERR.length + ' territori</h5>' +
  '<div class="row"><span>☁ fuori</span><b>6 provider · nessuno è nostro</b></div>' +
  '<div class="row"><span>▲ vercel · calcolo</span><b>tutto il calcio</b></div>' +
  '<div class="row"><span>■ il mac</span><b>tennis · quote · settlement</b></div>' +
@@ -744,6 +744,15 @@ drawEdges();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawEdges());
 window.addEventListener('resize', drawEdges);
 window.addEventListener('load', drawEdges);
+
+// I conteggi si contano, non si scrivono: prima erano fissi a 46 e 8, e
+// aggiungendo le ali sono diventati falsi senza che nessuno se ne accorgesse.
+{
+  const n = document.getElementById('n-nodi');
+  const t = document.getElementById('n-terr');
+  if (n) n.textContent = String(NODES.length);
+  if (t) t.textContent = String(TERR.length);
+}
 </script>
 
 
