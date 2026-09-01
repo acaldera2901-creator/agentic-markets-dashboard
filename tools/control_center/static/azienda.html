@@ -44,6 +44,8 @@ nav a.est:hover{color:var(--cy-2)}
   border:1px solid var(--line-2);background:var(--panel);font-size:12px}
 .led{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 9px currentColor;flex:none}
 .led.red{background:var(--red)}.led.amber{background:var(--amber)}
+.stamp.stantio{color:var(--amber);font-weight:600}
+.stamp.stantio::before{content:"▲ ";}
 .stamp{font-size:10.5px;color:var(--dim);font-family:"JetBrains Mono",monospace}
 
 main{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,5fr) minmax(0,4fr);
@@ -614,7 +616,17 @@ async function caricaCouncil(){
 
 async function render(){
   const az=await fetch("/api/azienda",{cache:"no-store"}).then(r=>r.json()).catch(()=>null);
-  document.getElementById("stamp").textContent=az&&az.generato?"portafoglio "+eta(az.generato):"—";
+  // Un dato vecchio che si presenta come fresco e' il difetto peggiore: al 01/09
+  // `lab.json` era vecchio di 13 ore mentre questa pagina si ricaricava ogni 120s.
+  // Ora la riscrive un daemon ogni 10 minuti — e se smettesse, si vede qui.
+  const st=document.getElementById("stamp");
+  st.textContent=az&&az.generato?"portafoglio "+eta(az.generato):"mai misurato";
+  const vecchio = !az || !az.generato ||
+        (Date.now()-new Date(az.generato).getTime())/1000 > 1500;
+  st.classList.toggle("stantio", vecchio);
+  st.title = vecchio ? "Il portafoglio non si rigenera da oltre 25 minuti. "
+    + "Controlla: launchctl print gui/$(id -u)/com.betredge.control-center.aggiorna"
+    : "Rigenerato dal daemon com.betredge.control-center.aggiorna";
   const ri=document.getElementById("riga-identita");
   if(ri&&az&&az.totali){
     const vive=((az.da_fare)||[]).filter(x=>x.punti>5).length;
