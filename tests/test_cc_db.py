@@ -47,6 +47,10 @@ def test_una_query_con_percento_letterale_non_esplode(mocker):
     # segnaposto: "ilike '%mail%'" moriva con IndexError.
     from tools.control_center import db
 
+    # db.py importa psycopg2 DENTRO le funzioni (non e' in requirements-dev):
+    # si sostituisce il modulo vero, e si salta dove non e' installato.
+    pytest.importorskip("psycopg2")
+
     finto = mocker.Mock()
     finto.fetchall.return_value = [(1,)]
     cur = mocker.MagicMock()
@@ -56,7 +60,7 @@ def test_una_query_con_percento_letterale_non_esplode(mocker):
     conn.__enter__ = mocker.Mock(return_value=conn)
     conn.__exit__ = mocker.Mock(return_value=False)
     conn.cursor.return_value = cur
-    mocker.patch.object(db.psycopg2, "connect", return_value=conn)
+    mocker.patch("psycopg2.connect", return_value=conn)
     mocker.patch.object(db, "_dsn", return_value="postgresql://x")
 
     db.fetch_all("select 1 where a ilike '%mail%'")

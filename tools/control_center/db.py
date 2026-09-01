@@ -4,8 +4,6 @@ import os
 import time
 from pathlib import Path
 
-import psycopg2
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _SQLALCHEMY_PREFIXES = (
@@ -96,6 +94,7 @@ def fetch_all(sql: str, params: tuple = ()) -> list[tuple]:
     strumento di osservazione di scrivere su produzione, anche per errore di
     chi aggiungera' un check fra sei mesi.
     """
+    import psycopg2  # noqa: PLC0415 - non e' in requirements-dev: vedi il perche' la'
     try:
         with psycopg2.connect(_dsn(), connect_timeout=8) as conn:
             with conn.cursor() as cur:
@@ -120,6 +119,7 @@ def measure_latency() -> tuple[float, float]:
     ms. Una soglia sulla somma segnala la distanza geografica, non un problema,
     e lampeggia per sempre a poche decine di ms dal confine.
     """
+    import psycopg2  # noqa: PLC0415 - non e' in requirements-dev: vedi il perche' la'
     inizio = time.monotonic()
     try:
         with psycopg2.connect(_dsn(), connect_timeout=8) as conn:
