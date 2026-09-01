@@ -36,11 +36,29 @@ def test_api_state_restituisce_lo_snapshot(in_piedi):
     assert body["summary"]["level"] == "green"
 
 
-def test_la_radice_serve_la_pagina(in_piedi):
+def test_la_radice_serve_il_centro_di_controllo(in_piedi):
+    # Dal #BR-AZIENDA-0901 la radice e' il portafoglio dell'azienda; la sala
+    # controllo BetRedge si e' spostata su /betredge.
     with urllib.request.urlopen(in_piedi + "/", timeout=5) as r:
         html = r.read().decode()
     assert "<title>" in html
+    assert "api/azienda" in html and "api/council" in html
+
+
+def test_betredge_serve_la_sala_controllo(in_piedi):
+    with urllib.request.urlopen(in_piedi + "/betredge", timeout=5) as r:
+        html = r.read().decode()
+    assert "<title>" in html
     assert "api/state" in html
+
+
+def test_le_due_pagine_ricevono_entrambe_il_token(in_piedi):
+    # Il token vive nella pagina servita: se una delle due non lo riceve, i suoi
+    # tasti falliscono con 403 e sembra un problema di rete.
+    for percorso in ("/", "/betredge"):
+        with urllib.request.urlopen(in_piedi + percorso, timeout=5) as r:
+            html = r.read().decode()
+        assert "__CC_TOKEN__" not in html, percorso
 
 
 def test_api_history_su_file_assente_e_una_lista_vuota(in_piedi):

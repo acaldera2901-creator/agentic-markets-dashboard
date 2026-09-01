@@ -18,11 +18,14 @@ from .actions import (
     start_daemon,
     stop_daemon,
 )
+from . import council
 from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 
 HOST = "127.0.0.1"
 PORT = 8790
-PAGE = Path(__file__).resolve().parent / "static" / "index.html"
+STATIC = Path(__file__).resolve().parent / "static"
+PAGE = STATIC / "azienda.html"        # la home: il portafoglio
+PAGE_BR = STATIC / "index.html"       # la sala controllo BetRedge
 HISTORY_LIMIT = 500
 
 
@@ -71,6 +74,15 @@ class Handler(BaseHTTPRequestHandler):
         check_id = str(corpo.get("check_id", ""))
         azione = str(corpo.get("azione", ""))
 
+        if azione == "approva":
+            # Lo preme Andrea dal suo Mac: loopback + token. Il messaggio dice
+            # da dove arriva, perche' nel Council non esiste un'identita' umana.
+            esito = council.approva(str(corpo.get("msg_id", "")),
+                                    str(corpo.get("nota", "")))
+            self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+            return
+
         if azione == "apri":
             # Non e' un check: e' un'ala del lab. Si risponde qui e si esce.
             esito = apri_ala(str(corpo.get("ala", "")))
@@ -103,7 +115,12 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         # Whitelist esplicita di tre percorsi: nessuna mappatura path->file,
         # quindi nessun traversal possibile per costruzione.
-        if path in ("/", "/index.html"):
+        if path in ("/betredge", "/betredge.html", "/index.html"):
+            html = PAGE_BR.read_text(encoding="utf-8").replace(
+                "__CC_TOKEN__", ensure_token()
+            )
+            self._send(200, html.encode(), "text/html; charset=utf-8")
+        elif path in ("/",):
             # Il token viene iniettato nella pagina servita: cosi' vive solo
             # qui e nel file di stato, mai in un file versionato.
             html = PAGE.read_text(encoding="utf-8").replace(
@@ -113,11 +130,22 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/architettura.html":
             # La mappa e' un artefatto a se': si serve com'e', senza token
             # (e' sola lettura e non contiene segreti).
-            f = PAGE.parent / "architettura.html"
+            f = STATIC / "architettura.html"
             if not f.exists():
                 self._send(404, b"mappa non installata", "text/plain; charset=utf-8")
                 return
             self._send(200, f.read_bytes(), "text/html; charset=utf-8")
+        elif path == "/api/azienda":
+            # Lo scrive `lab azienda --json`. Se non e' mai girato lo dice,
+            # invece di restituire un portafoglio vuoto che sembra "niente in corso".
+            f = STATE_FILE.parent / "azienda.json"
+            corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
+            self._send(200, corpo, "application/json; charset=utf-8")
+        elif path == "/api/council":
+            # Puo' essere lento (chiama un servizio esterno): la pagina lo
+            # carica a parte, non insieme al resto.
+            self._send(200, json.dumps(council.stato(), ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/ali":
             # Le ali del lab, per i pulsanti della pagina.
             self._send(200, json.dumps(ali_disponibili(), ensure_ascii=False).encode(),
