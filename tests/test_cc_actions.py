@@ -143,3 +143,65 @@ def test_un_launchctl_che_fallisce_non_viene_dichiarato_riuscito(mocker):
     assert esito["ok"] is False
     assert esito["returncode"] == 3
     assert "Boot-out failed" in esito["stderr"]
+
+
+# ── aprire un'ala in un terminale (#BR-APRI-0901) ────────────────────────────
+# La pagina manda solo una CHIAVE. Se dal browser potesse arrivare un comando,
+# un token rubato diventerebbe esecuzione arbitraria sul Mac.
+
+
+def _tsv(tmp_path, righe):
+    f = tmp_path / "ali.tsv"
+    f.write_text("# commento\n\n" + "\n".join(righe) + "\n", encoding="utf-8")
+    return f
+
+
+def test_le_ali_si_leggono_dal_tsv(mocker, tmp_path):
+    mocker.patch.object(actions, "ALI_TSV", _tsv(tmp_path, [
+        "dev\tbr-dev\tprogrammatore-andrea\tsi\t-\t-\tIl codice",
+        "monitor\tbr-monitor\t-\tno\tsonnet\tlow\tGuarda e avvisa",
+    ]))
+    a = {x["chiave"]: x for x in actions.ali_disponibili()}
+    assert set(a) == {"dev", "monitor"}
+    assert a["dev"]["worktree"] is True and a["dev"]["agente"] == "programmatore-andrea"
+    assert a["monitor"]["worktree"] is False and a["monitor"]["agente"] is None
+    assert a["monitor"]["modello"] == "sonnet"
+
+
+def test_senza_il_tsv_nessuna_ala(mocker, tmp_path):
+    # Meglio zero pulsanti che un pulsante che promette e non mantiene.
+    mocker.patch.object(actions, "ALI_TSV", tmp_path / "manca.tsv")
+    assert actions.ali_disponibili() == []
+
+
+def test_apri_rifiuta_una_chiave_non_dichiarata(mocker, tmp_path):
+    mocker.patch.object(actions, "ALI_TSV", _tsv(tmp_path, ["dev\tbr-dev\t-\tno\t-\t-\tx"]))
+    corsa = mocker.patch.object(actions.subprocess, "run")
+    esito = actions.apri_ala("marketing")
+    assert esito["ok"] is False and "ali.tsv" in esito["errore"]
+    corsa.assert_not_called()
+
+
+def test_apri_rifiuta_cio_che_non_e_una_chiave(mocker, tmp_path):
+    # Il filtro viene PRIMA della whitelist: niente virgolette, niente spazi,
+    # niente che possa spezzare l'AppleScript.
+    mocker.patch.object(actions, "ALI_TSV", _tsv(tmp_path, ["dev\tbr-dev\t-\tno\t-\t-\tx"]))
+    corsa = mocker.patch.object(actions.subprocess, "run")
+    for cattiva in ['dev"; rm -rf /', "dev e poi altro", "../../etc", "DEV", ""]:
+        esito = actions.apri_ala(cattiva)
+        assert esito["ok"] is False, cattiva
+    corsa.assert_not_called()
+
+
+def test_apri_lancia_osascript_con_la_chiave_giusta(mocker, tmp_path):
+    mocker.patch.object(actions, "ALI_TSV", _tsv(tmp_path, ["mkt\tbr-mkt\t-\tno\t-\t-\tx"]))
+    finto = mocker.Mock(returncode=0, stderr="")
+    corsa = mocker.patch.object(actions.subprocess, "run", return_value=finto)
+
+    esito = actions.apri_ala("mkt")
+
+    assert esito["ok"] is True
+    argv = corsa.call_args[0][0]
+    assert argv[0] == "osascript"
+    assert 'do script "lab mkt"' in " ".join(argv)
+    assert "activate" in " ".join(argv)
