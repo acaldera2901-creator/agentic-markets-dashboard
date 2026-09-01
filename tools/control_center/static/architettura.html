@@ -69,7 +69,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   font-family:"JetBrains Mono",monospace}
 .kpi b{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--text);font-weight:600}
 
-#canvas{position:relative;width:1280px;height:2800px}
+#canvas{position:relative;width:1280px;height:3140px}
 
 /* ── territori ── */
 .terr{position:absolute;z-index:0;pointer-events:none;border:1px dashed}
@@ -144,6 +144,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .fn-out{border-top:2px solid rgba(232,236,242,.45)}
 .fn-chan .ico,.fn-chan .tag{color:var(--magenta)}
 .fn-chan{border-top:2px solid rgba(228,92,216,.6)}
+.fn-lab{--fn:var(--green-2)}
 .fn-ops .ico,.fn-ops .tag{color:var(--muted)}
 .fn-ops{border-top:2px solid rgba(137,148,165,.4)}
 .node.pivot{background:linear-gradient(180deg,rgba(47,187,104,.14) 0%,rgba(47,187,104,.05) 100%);
@@ -203,7 +204,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     <button data-zone="db">SUPABASE</button>
     <button data-zone="acq">CANALI</button>
     <button data-zone="conv">CONVERSIONE</button>
-    <button data-zone="ops">OPS</button>
+    <button data-zone="ops">OPS</button><button data-zone="lab">🧑‍✈️ Lab</button>
   </div>
   <div class="pill"><i class="dot"></i>letto dal codice vivo</div>
 </div>
@@ -240,6 +241,7 @@ const TERR = [
  {zone:"acq",   x:10,  y:1878, w:1230,h:236,name:"📣 ACQUISIZIONE",sub:"da dove arriva la gente — la bocca dell'imbuto"},
  {zone:"conv",  x:10,  y:2148, w:1230,h:330,name:"🚪 CONVERSIONE", sub:"dal clic al piano"},
  {zone:"ops",   x:10,  y:2520, w:1230,h:210,name:"🛠 OPERAZIONI",  sub:"non nel flusso: osservano, misurano, correggono"},
+ {zone:"lab",  x:10, y:2770, w:1230,h:350,name:"🧑‍✈️ IL LAB",  sub:"le ali che parlano col progetto — una shell per ognuna, `lab <ala>`"},
 ];
 
 /* ═══════════ NODI ═══════════ */
@@ -434,13 +436,67 @@ const NODES = [
  schema:{repo:"agentic-backoffice",url:"betredge-backoffice.vercel.app",nel_repo:"resta /admin ridotto (login, segmenti, banner)",regola:"aggiungere colonne è sicuro, rinominare no"},
  metrics:{bo_admins:"6"},status:"live"},
 {id:"X4",zone:"ops",fn:"ops",x:918,y:2572,w:284,h:140,ico:"🩺",tag:"SORVEGLIANZA",title:"Daemon e watchdog",
- desc:"8 daemon launchd oltre agli agenti.\nQuattro hanno l'ultimo esito\nnon-zero — fra cui il watchdog.",
- schema:{sani:"live-monitor · goalscorer-odds · social-loop",rossi:"watchdog · weeklypick-morning · control-center collector e watcher · softmarkets collect (126)",nota:"è l'ultimo codice d'uscita, non la prova che il servizio sia fermo"},
- metrics:{daemon:"8",in_errore:"4"},status:"idle"},
+ desc:"33 daemon vivi. Nessuno guasto: i tre\ncon esito non-zero sono reporter,\ne quel codice e' un verdetto."
+, schema:{perimetro:"8 daemon sorvegliati dal control center, gli unici coi tasti",reporter:"social-loop daily/weekly e studio-instagram daily-publish: escono 1 quando TROVANO un problema",trappola:"exit 0 con log vecchio non e' un guasto; exit != 0 non e' sempre un guasto",fermato:"cervello.telegram-obsidian-sync, che scriveva in un vault inesistente ogni 60 s"},
+ metrics:{vivi:"33",guasti:"0"},status:"live"},
+
+/* ─── 🧑‍✈️ IL LAB · le ali ─── */
+{id:"CC",zone:"lab",fn:"lab",x:24,y:2822,w:1202,h:74,cls:"pivot",ico:"🎛",tag:"127.0.0.1:8790",title:"Sala Controllo",
+ desc:"Il perno del lab: quattro viste (Postazioni, Check, Lab, Mappa) e i tasti che eseguono davvero — accendi, spegni, riavvia, fix. Ogni ala legge da qui lo stato vivo invece di ragionare su una fotografia.",
+ schema:{server:"tools/control_center/server.py su loopback",token:"~/.betredge-cc/token, iniettato nella pagina",stato:"GET /api/state · 41 check",lab:"GET /api/lab · progetti, daemon, worktree",azioni:"POST /api/action — solo sugli 8 daemon di perimetro"},
+ metrics:{check:"41",viste:"4"},status:"live"},
+{id:"L1",zone:"lab",fn:"lab",x:24,y:2916,w:186,h:82,ico:"◆",tag:"lab dev",title:"br-dev",
+ desc:"Il codice del prodotto:\nboard, API, motore, migration.\nHa un worktree suo.",
+ schema:{comando:"lab dev",agente:"programmatore-andrea",nome_per_SendMessage:"br-dev",tocca:"IN1 · O1"},
+ metrics:{},status:"live"},
+{id:"L2",zone:"lab",fn:"lab",x:226,y:2916,w:186,h:82,ico:"◆",tag:"lab qa",title:"br-qa",
+ desc:"Prova come un utente vero,\nprima che lo faccia un cliente.",
+ schema:{comando:"lab qa",agente:"qa-andrea",nome_per_SendMessage:"br-qa",tocca:"O1 · VET"},
+ metrics:{},status:"live"},
+{id:"L3",zone:"lab",fn:"lab",x:428,y:2916,w:186,h:82,ico:"◆",tag:"lab ui",title:"br-ui",
+ desc:"Interfaccia e resa visiva,\ndal desk alle schede.",
+ schema:{comando:"lab ui",agente:"ui-andrea",nome_per_SendMessage:"br-ui",tocca:"O2"},
+ metrics:{},status:"live"},
+{id:"L4",zone:"lab",fn:"lab",x:630,y:2916,w:186,h:82,ico:"◆",tag:"lab ml",title:"br-ml",
+ desc:"Modelli, calibrazione,\ngate di surfacing, backtest.",
+ schema:{comando:"lab ml",agente:"ml-engineer-agentic",nome_per_SendMessage:"br-ml",tocca:"C1 · G1"},
+ metrics:{},status:"live"},
+{id:"L5",zone:"lab",fn:"lab",x:832,y:2916,w:186,h:82,ico:"◆",tag:"lab mkt",title:"br-mkt",
+ desc:"Posizionamento, canali, funnel,\nprezzi, claim FTC-safe.",
+ schema:{comando:"lab mkt",agente:"marketing-betredge",nome_per_SendMessage:"br-mkt",tocca:"A1 · B1"},
+ metrics:{},status:"live"},
+{id:"L6",zone:"lab",fn:"lab",x:1034,y:2916,w:186,h:82,ico:"◆",tag:"lab social",title:"br-social",
+ desc:"Instagram: calendario, coda,\ncommunity, report.",
+ schema:{comando:"lab social",agente:"social-media-manager",nome_per_SendMessage:"br-social",tocca:"A2"},
+ metrics:{},status:"live"},
+{id:"L7",zone:"lab",fn:"lab",x:24,y:3010,w:186,h:82,ico:"◆",tag:"lab reddit",title:"br-reddit",
+ desc:"Il giro quotidiano su Reddit\ne l'account-artefatto.",
+ schema:{comando:"lab reddit",agente:"reddit-betredge",nome_per_SendMessage:"br-reddit",tocca:"A6"},
+ metrics:{},status:"live"},
+{id:"L8",zone:"lab",fn:"lab",x:226,y:3010,w:186,h:82,ico:"◆",tag:"lab art",title:"br-art",
+ desc:"Direzione visiva e coerenza\ncol Brand Kit.",
+ schema:{comando:"lab art",agente:"art-director",nome_per_SendMessage:"br-art",tocca:"A2"},
+ metrics:{},status:"live"},
+{id:"L9",zone:"lab",fn:"lab",x:428,y:3010,w:186,h:82,ico:"◆",tag:"lab legale",title:"br-legale",
+ desc:"GDPR, AI Act, qualificazione\ngambling, ToS.",
+ schema:{comando:"lab legale",agente:"legale-compliance",nome_per_SendMessage:"br-legale",tocca:"VET · B4"},
+ metrics:{},status:"live"},
+{id:"L10",zone:"lab",fn:"lab",x:630,y:3010,w:186,h:82,ico:"◆",tag:"lab dir",title:"br-dir",
+ desc:"Coordina, parla con Andrea,\ndelega alle altre ali.",
+ schema:{comando:"lab dir",agente:"(orchestra)",nome_per_SendMessage:"br-dir",tocca:"CC"},
+ metrics:{},status:"live"},
+{id:"L11",zone:"lab",fn:"lab",x:832,y:3010,w:186,h:82,ico:"◆",tag:"lab monitor",title:"br-monitor",
+ desc:"Guarda che tutto giri e avvisa.\nCosta poco, sta sempre acceso.",
+ schema:{comando:"lab monitor",agente:"(sonnet, effort low)",nome_per_SendMessage:"br-monitor",tocca:"X4"},
+ metrics:{},status:"live"},
 ];
 
 /* ═══════════ ARCHI ═══════════ */
 const EDGES = [
+ ["CC","X4"],
+ ["L1","IN1"],["L1","O1"],["L2","O1"],["L2","VET"],["L3","O2"],
+ ["L4","C1"],["L4","G1"],["L5","A1"],["L5","B1"],["L6","A2"],
+ ["L7","A6"],["L8","A2"],["L9","VET"],["L9","B4"],["L10","CC"],["L11","X4"],
  ["S1","IN1"],["S2","IN1"],["S3","IN1"],["S4","IN1"],
  ["S2","IN2"],["S5","IN2"],["S6","SS"],
  ["IN1","M1"],["IN1","M2"],["IN1","M3"],
