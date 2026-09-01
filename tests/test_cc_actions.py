@@ -80,3 +80,66 @@ def test_un_reporter_non_e_riavviabile():
     # funzionare e' peggio di nessun tasto.
     assert "launchd_daemon-health" not in actions.RESTARTABLE
     assert "launchd_watchdog" in actions.RESTARTABLE
+
+
+# ── accendi / spegni (#BR-JARVIS-0901) ────────────────────────────────────────
+# Stessa whitelist di riavvia, di proposito: un perimetro solo. Spegnere un
+# bridge del Council non si nota subito, quindi quei label restano fuori.
+
+
+def test_accendi_e_spegni_rifiutano_cio_che_non_e_sorvegliato():
+    for fn in (actions.start_daemon, actions.stop_daemon):
+        esito = fn("db_latency")
+        assert esito["ok"] is False
+        assert "governabili" in esito["errore"]
+
+
+def test_spegni_usa_bootout_sul_target(mocker):
+    finto = mocker.Mock(returncode=0, stderr="")
+    corsa = mocker.patch.object(actions.subprocess, "run", return_value=finto)
+
+    esito = actions.stop_daemon("launchd_watchdog")
+
+    assert esito["ok"] is True
+    argv = corsa.call_args[0][0]
+    assert argv[:2] == ["launchctl", "bootout"]
+    assert argv[2].endswith("/com.agentic-markets.watchdog")
+
+
+def test_accendi_usa_bootstrap_col_percorso_del_plist(mocker, tmp_path):
+    # bootstrap vuole il FILE, non il target: e' la differenza che rompe tutto
+    # se si copia la forma di bootout.
+    mocker.patch.object(actions, "LAUNCH_AGENTS", tmp_path)
+    (tmp_path / "com.agentic-markets.watchdog.plist").write_text("<plist/>")
+    finto = mocker.Mock(returncode=0, stderr="")
+    corsa = mocker.patch.object(actions.subprocess, "run", return_value=finto)
+
+    esito = actions.start_daemon("launchd_watchdog")
+
+    assert esito["ok"] is True
+    argv = corsa.call_args[0][0]
+    assert argv[:2] == ["launchctl", "bootstrap"]
+    assert argv[-1].endswith("com.agentic-markets.watchdog.plist")
+
+
+def test_accendi_lo_dice_se_il_plist_non_esiste_piu(mocker, tmp_path):
+    # Meglio una frase leggibile che un errore criptico di launchctl.
+    mocker.patch.object(actions, "LAUNCH_AGENTS", tmp_path)
+    corsa = mocker.patch.object(actions.subprocess, "run")
+
+    esito = actions.start_daemon("launchd_watchdog")
+
+    assert esito["ok"] is False
+    assert "plist non trovato" in esito["errore"]
+    corsa.assert_not_called()
+
+
+def test_un_launchctl_che_fallisce_non_viene_dichiarato_riuscito(mocker):
+    finto = mocker.Mock(returncode=3, stderr="Boot-out failed: 5: Input/output error")
+    mocker.patch.object(actions.subprocess, "run", return_value=finto)
+
+    esito = actions.stop_daemon("launchd_watchdog")
+
+    assert esito["ok"] is False
+    assert esito["returncode"] == 3
+    assert "Boot-out failed" in esito["stderr"]
