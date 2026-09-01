@@ -125,6 +125,24 @@ main{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,5fr) minm
 .ag .out{font-family:"JetBrains Mono",monospace;font-size:9px;padding:0 10px 7px;color:var(--dim)}
 .ag .out.ok{color:var(--green)}.ag .out.ko{color:var(--red)}
 
+/* ── certificazione ── */
+.cert-testa{display:flex;align-items:center;gap:14px;padding:12px 13px;
+  border-bottom:1px solid var(--line)}
+.cert-voto{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;
+  line-height:1;letter-spacing:-.03em}
+.cert-voto small{font-size:13px;color:var(--dim);font-weight:400}
+.cert-testa .d{font-size:11.5px;color:var(--mid);line-height:1.5}
+.cert-aree{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:1px;
+  background:var(--line)}
+.cert-area{background:var(--panel);padding:9px 10px}
+.cert-area b{display:block;font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700}
+.cert-area span{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim);margin-top:3px}
+.cert-area.ok b{color:var(--green)}.cert-area.ko b{color:var(--red)}
+.cert-area.mix b{color:var(--amber)}
+.cert-ko{padding:2px 0}
+.cert-ko .r{grid-template-columns:auto 1fr}
+
 /* ── kpi ── */
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--line)}
 .k{background:var(--panel);padding:11px 12px}
@@ -235,15 +253,23 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     </section>
 
     <section class="box">
-      <h2><i>05</i> Panoramica <u id="u-tot"></u></h2>
+      <h2><i>05</i> Certificazione interna <u id="u-cert"></u></h2>
+      <div id="cert"></div>
+      <p class="nota">26 regole in <code>lab/standard.md</code>, ognuna con un controllo che
+      la misura. Un controllo che non sa dire il suo numero è <b>«?», non verde</b>: il
+      silenzio non è un passaggio. Si rigenera con <code>lab certifica --json</code>.</p>
+    </section>
+
+    <section class="box">
+      <h2><i>06</i> Panoramica <u id="u-tot"></u></h2>
       <div class="kgrid" id="totali"></div>
     </section>
     <section class="box">
-      <h2><i>06</i> Chi aspetta chi <u id="u-asp"></u></h2>
+      <h2><i>07</i> Chi aspetta chi <u id="u-asp"></u></h2>
       <div class="rows" id="aspettano"></div>
     </section>
     <section class="box">
-      <h2><i>07</i> Fermi da oltre due settimane <u id="u-fermi"></u></h2>
+      <h2><i>08</i> Fermi da oltre due settimane <u id="u-fermi"></u></h2>
       <div class="rows" id="fermi"></div>
     </section>
   </div>
@@ -378,6 +404,56 @@ function vistaTask(az){
   const fatte=lista.length-vive.length;
   document.getElementById("u-task").textContent =
     `${vive.length} aperte` + (fatte?` · ${fatte} sembrano già chiuse`:"");
+}
+
+/* ── 05 la certificazione ── */
+const NOMI_AREA={dati:"dati",ordine:"ordine",lavoro:"lavoro",agenti:"agenti",
+                 comunicazione:"council",macchina:"macchina"};
+async function vistaCert(){
+  const box=document.getElementById("cert"); if(!box) return;
+  let c=null;
+  try{ c=await (await fetch("/api/certificazione",{cache:"no-store"})).json(); }catch(e){}
+  box.textContent="";
+  if(!c||c.assente){
+    box.append(el("div","vuoto","Mai eseguita. `lab certifica --json` la genera — "+
+      "e una certificazione assente non e' una certificazione superata."));
+    document.getElementById("u-cert").textContent="mai eseguita";
+    return;
+  }
+  const testa=el("div","cert-testa");
+  const col=c.voto>=85?"var(--green)":(c.voto>=65?"var(--amber)":"var(--red)");
+  const v=el("div","cert-voto"); v.style.color=col;
+  v.append(document.createTextNode(String(c.voto)), el("small","","/100"));
+  const d=el("div","d");
+  d.textContent=`${c.ok} a posto · ${c.ko} da sistemare`+
+    (c.non_misurati?` · ${c.non_misurati} non misurati`:"");
+  testa.append(v,d); box.append(testa);
+
+  const aree=el("div","cert-aree");
+  for(const k in NOMI_AREA){
+    const voci=(c.voci||[]).filter(x=>x.area===k);
+    if(!voci.length) continue;
+    const ok=voci.filter(x=>x.esito===true).length;
+    const cls = ok===voci.length ? "ok" : (ok===0 ? "ko" : "mix");
+    const a=el("div","cert-area "+cls);
+    a.append(el("b","",`${ok}/${voci.length}`), el("span","",NOMI_AREA[k]));
+    aree.append(a);
+  }
+  box.append(aree);
+
+  const ko=(c.voci||[]).filter(x=>x.esito!==true);
+  const lista=el("div","cert-ko rows");
+  ko.forEach(x=>{
+    const r=el("div","r "+(x.esito===false?"red":"amber"));
+    r.append(el("span","k1",x.esito===false?"✘":"?"));
+    const t=el("span","t1",x.nome);
+    t.append(el("small","",`${x.misura} — atteso ${x.soglia}`+
+      (x.riparo?` · ${x.riparo}`:"")));
+    r.append(t); lista.append(r);
+  });
+  if(!ko.length) lista.append(el("div","vuoto","Tutto in norma."));
+  box.append(lista);
+  document.getElementById("u-cert").textContent=c.generato?eta(c.generato):"—";
 }
 
 /* ── 04 con chi parlo ── */
@@ -538,7 +614,7 @@ async function render(){
     const vive=((az.da_fare)||[]).filter(x=>x.punti>5).length;
     ri.textContent=`stack calde · ${az.totali.prodotti} prodotti · ${vive} cose da fare`;
   }
-  vistaProdotti(az); vistaTask(az); vistaResto(az); vistaAgenti(az);
+  vistaProdotti(az); vistaTask(az); vistaResto(az); vistaAgenti(az); vistaCert();
 }
 
 render(); caricaCouncil();
