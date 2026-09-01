@@ -115,3 +115,70 @@ def test_se_il_council_non_risponde_lo_dice(mocker):
     assert s["raggiungibile"] is False and "rete giu'" in s["errore"]
     esito = council.approva("msg_gate004")
     assert esito["ok"] is False
+
+
+# ── l'archivio locale (#BR-TRIAGE-0901) ──────────────────────────────────────
+# Il Council non ha un campo «risolto», e postare una chiusura nel canale
+# marcherebbe risolte tutte le richieste di quel canale insieme: l'euristica
+# ragiona per canale. Quindi l'archivio e' nostro, locale, e non tocca il Council.
+
+
+@pytest.fixture(autouse=True)
+def archivio_isolato(tmp_path, mocker):
+    mocker.patch.object(council, "ARCHIVIO", tmp_path / "arch.json")
+    return tmp_path
+
+
+def test_senza_file_l_archivio_e_vuoto():
+    assert council.archiviate() == {}
+
+
+def test_una_archiviata_sparisce_dalle_aperte():
+    a = msg("msg_aaa1")
+    assert len(council.aperte([a])) == 1
+    council.archivia("msg_aaa1", "gia' in main", "1 commit che cita il tag")
+    assert council.aperte([a]) == []
+    # ma si puo' ancora vedere, se la si chiede
+    assert len(council.aperte([a], includi_archiviate=True)) == 1
+
+
+def test_non_si_archivia_senza_un_motivo():
+    # «obsoleto» senza il perche' e' un'opinione che fra un mese nessuno sa piu'
+    # ricostruire: meglio rifiutare che archiviare al buio.
+    for vuoto in ("", "   ", "\n"):
+        assert council.archivia("msg_aaa2", vuoto)["ok"] is False
+    assert council.archiviate() == {}
+
+
+def test_non_si_archivia_un_id_inventato():
+    for cattivo in ("", "../../etc", "msg_x", "'; drop"):
+        assert council.archivia(cattivo, "motivo")["ok"] is False
+    assert council.archiviate() == {}
+
+
+def test_il_motivo_e_la_prova_restano_scritti():
+    council.archivia("msg_aaa3", "superata dalla catena geo", "GET /api/geo-books -> blocked:false")
+    v = council.archiviate()["msg_aaa3"]
+    assert v["motivo"] == "superata dalla catena geo"
+    assert "geo-books" in v["prova"]
+    assert v["quando"]
+
+
+def test_si_puo_riaprire():
+    a = msg("msg_aaa4")
+    council.archivia("msg_aaa4", "sembrava fatta")
+    assert council.aperte([a]) == []
+    assert council.riapri("msg_aaa4")["ok"] is True
+    assert len(council.aperte([a])) == 1
+
+
+def test_riaprire_cio_che_non_era_archiviato_non_e_un_successo():
+    assert council.riapri("msg_aaa5")["ok"] is False
+
+
+def test_un_archivio_corrotto_non_fa_sparire_le_richieste(archivio_isolato):
+    # Se il file si rompe, il rischio da evitare e' il silenzio: meglio
+    # ri-mostrare tutto che nascondere una richiesta viva.
+    council.ARCHIVIO.write_text("{ non json", encoding="utf-8")
+    assert council.archiviate() == {}
+    assert len(council.aperte([msg("msg_aaa6")])) == 1

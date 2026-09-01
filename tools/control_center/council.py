@@ -33,6 +33,12 @@ CI_NOMINA = ("claude-calde-aziendale", "calde-aziendale", "@claude", "@andrea")
 # ma nessun automatismo deve poterci agire da solo.
 GATE = "ch_deploy_gate"
 
+# Il Council non ha un campo «risolto», e postare una chiusura nel canale
+# marcherebbe risolte TUTTE le richieste di quel canale insieme — l'euristica
+# ragiona per canale, non per messaggio. Quindi l'archivio e' NOSTRO e locale:
+# non tocca il Council, non parla per Andrea, e ogni voce porta il perche'.
+ARCHIVIO = Path.home() / ".betredge-cc/council-archiviate.json"
+
 _SLUG = re.compile(r"^ch_(.+)$")
 _MSGID = re.compile(r"^msg_[A-Za-z0-9_]{4,64}$")
 
@@ -83,7 +89,42 @@ def messaggi() -> list[dict]:
     return _get("/inbox").get("messages", [])
 
 
-def aperte(msgs: list[dict], solo_nostre: bool = True) -> list[dict]:
+def archiviate() -> dict:
+    """id → {motivo, quando, prova}. Vuoto se il file non c'e'."""
+    if not ARCHIVIO.exists():
+        return {}
+    try:
+        return json.loads(ARCHIVIO.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return {}
+
+
+def archivia(msg_id: str, motivo: str, prova: str = "") -> dict:
+    if not _MSGID.match(msg_id or ""):
+        return {"ok": False, "errore": "id messaggio non valido"}
+    if not motivo.strip():
+        return {"ok": False, "errore": "senza un motivo non si archivia niente"}
+    import datetime
+    d = archiviate()
+    d[msg_id] = {"motivo": motivo.strip()[:300], "prova": prova.strip()[:300],
+                 "quando": datetime.datetime.now().isoformat(timespec="seconds")}
+    ARCHIVIO.parent.mkdir(parents=True, exist_ok=True)
+    ARCHIVIO.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    return {"ok": True, "azione": f"archiviata {msg_id}", "totale": len(d)}
+
+
+def riapri(msg_id: str) -> dict:
+    d = archiviate()
+    if msg_id not in d:
+        return {"ok": False, "errore": "non era archiviata"}
+    del d[msg_id]
+    ARCHIVIO.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    return {"ok": True, "azione": f"riaperta {msg_id}"}
+
+
+def aperte(msgs: list[dict], solo_nostre: bool = True,
+           includi_archiviate: bool = False) -> list[dict]:
+    arch = archiviate()
     fuori = []
     for i, m in enumerate(msgs):
         if not m.get("requiresResponse"):
@@ -93,6 +134,8 @@ def aperte(msgs: list[dict], solo_nostre: bool = True) -> list[dict]:
             continue
         if any(x.get("channelId") == m.get("channelId") and x.get("authorAgentId") == NOI
                for x in msgs[i + 1:]):
+            continue
+        if not includi_archiviate and m.get("id") in arch:
             continue
         fuori.append({
             "id": m.get("id"),
@@ -133,10 +176,12 @@ def _calcola_stato() -> dict:
     except CouncilNonRaggiungibile as exc:
         return {"raggiungibile": False, "errore": str(exc)[:200]}
     ap = aperte(msgs, solo_nostre=True)
+    arch = archiviate()
     return {
         "raggiungibile": True,
         "totale": len(msgs),
         "aperte": len(ap),
+        "archiviate": len(arch),
         "nel_gate": len([x for x in ap if x["gate"]]),
         "richieste": ap[:20],
     }
