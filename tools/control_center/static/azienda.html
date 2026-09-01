@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agentic Markets · Centro di Controllo</title>
+<title>Maven Agency · stack calde</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
@@ -28,12 +28,9 @@ body{min-height:100vh;
 .top{position:sticky;top:0;z-index:70;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
   padding:11px 20px;background:linear-gradient(180deg,rgba(7,12,24,.97),rgba(7,12,24,.86));
   border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
-.logo{display:flex;align-items:center;gap:11px}
-.mark{width:34px;height:34px;border:1px solid var(--cy);border-radius:8px;display:grid;place-items:center;
-  color:var(--cy);font-weight:700;font-size:13px;
-  box-shadow:0 0 18px rgba(34,211,238,.28),inset 0 0 14px rgba(34,211,238,.12)}
-.logo b{display:block;font-size:15px;font-weight:700;letter-spacing:.13em;line-height:1.1}
-.logo span{display:block;font-size:9.5px;letter-spacing:.24em;color:var(--dim);margin-top:2px}
+.logo{display:flex;flex-direction:column;gap:1px;padding-right:6px}
+.logo b{font-size:16px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.logo span{font-size:11px;color:var(--dim);line-height:1.3}
 nav{display:flex;gap:2px;margin-left:8px}
 nav a,nav button{font-family:Saira,sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.15em;
   text-transform:uppercase;cursor:pointer;padding:9px 15px;border:0;background:transparent;
@@ -87,6 +84,46 @@ main{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,5fr) minm
 .prod .ft a{margin-left:auto;color:var(--cy-2);text-decoration:none;font-weight:700;
   letter-spacing:.08em;border:1px solid var(--line-2);padding:3px 9px;border-radius:3px}
 .prod .ft a:hover{border-color:var(--cy);box-shadow:0 0 10px rgba(34,211,238,.2)}
+
+/* ── cosa fare ── */
+.task{display:grid;grid-template-columns:auto 1fr auto;gap:11px;padding:10px 13px;
+  border-bottom:1px solid rgba(19,39,66,.6);border-left:2px solid transparent;align-items:start}
+.task:last-child{border-bottom:0}
+.task:hover{background:rgba(34,211,238,.03)}
+.task.alto{border-left-color:var(--red)}
+.task.medio{border-left-color:var(--amber)}
+.task.basso{border-left-color:var(--line-2)}
+.task .n{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;color:var(--dim);
+  min-width:20px;text-align:right;padding-top:1px}
+.task.alto .n{color:var(--red)}.task.medio .n{color:var(--amber)}
+.task .c h4{margin:0 0 2px;font-size:12.5px;font-weight:600}
+.task .c p{margin:0;font-size:11.5px;color:var(--mid);line-height:1.5}
+.task .perche{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px}
+.task .perche span{font-family:"JetBrains Mono",monospace;font-size:9px;padding:1px 6px;
+  border-radius:2px;border:1px solid var(--line-2);color:var(--dim)}
+.task .perche span.s{color:var(--red);border-color:rgba(240,82,91,.4)}
+.task .lato{text-align:right;white-space:nowrap}
+.task .lato .pr{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--dim)}
+.task .lato button{margin-top:5px;display:block;margin-left:auto;font-family:"JetBrains Mono",monospace;
+  font-size:9.5px;cursor:pointer;padding:3px 9px;border-radius:3px;border:1px solid var(--line-2);
+  background:var(--inset);color:var(--mid)}
+.task .lato button:hover{color:var(--cy-2);border-color:var(--cy)}
+
+/* ── agenti ── */
+.agenti{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px}
+.ag{background:var(--inset);border:1px solid var(--line);border-radius:5px;overflow:hidden;
+  display:flex;flex-direction:column;border-left:2px solid var(--violet)}
+.ag.prod{border-left-color:var(--cy)}
+.ag .t{padding:9px 10px 8px}
+.ag .t b{display:block;font-size:12px;font-weight:600}
+.ag .t small{display:block;font-size:9.5px;color:var(--dim);margin-top:2px;line-height:1.45}
+.ag button{margin-top:auto;border:0;border-top:1px solid var(--line);background:rgba(34,211,238,.05);
+  color:var(--cy-2);font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;
+  letter-spacing:.07em;padding:7px;cursor:pointer;width:100%}
+.ag button:hover:not(:disabled){background:rgba(34,211,238,.15)}
+.ag button:disabled{opacity:.5;cursor:wait}
+.ag .out{font-family:"JetBrains Mono",monospace;font-size:9px;padding:0 10px 7px;color:var(--dim)}
+.ag .out.ok{color:var(--green)}.ag .out.ko{color:var(--red)}
 
 /* ── kpi ── */
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--line)}
@@ -151,8 +188,8 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
 
 <div class="top">
   <div class="logo">
-    <div class="mark">AM</div>
-    <div><b>AGENTIC MARKETS</b><span>CENTRO DI CONTROLLO</span></div>
+    <b>Maven&nbsp;Agency</b>
+    <span id="riga-identita">stack calde</span>
   </div>
   <nav>
     <button role="tab" aria-selected="true" data-v="portafoglio">Portafoglio</button>
@@ -170,7 +207,15 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
 
   <div class="col">
     <section class="box">
-      <h2><i>02</i> Council · approvazioni <u id="u-council"></u></h2>
+      <h2><i>02</i> Cosa fare adesso <u id="u-task"></u></h2>
+      <div id="task"></div>
+      <p class="nota">Ordinate per <b>costo del ritardo</b>, non per data: pesa piu' una
+      conseguenza che l'anzianita'. Ogni riga dice <b>perche'</b> sta li' — se l'ordine
+      sembra sbagliato si vede subito il motivo, invece di doversi fidare di un numero.</p>
+    </section>
+
+    <section class="box">
+      <h2><i>03</i> Council · approvazioni <u id="u-council"></u></h2>
       <div id="council"></div>
       <p class="nota">Nel Council <b>non esiste un'identità umana</b>: su 999 messaggi, zero
       hanno <code>authorType: human</code>. Un APPROVE dato da qui risulta firmato dall'agente
@@ -182,15 +227,23 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
 
   <div class="col">
     <section class="box">
-      <h2><i>03</i> Panoramica <u id="u-tot"></u></h2>
+      <h2><i>04</i> Con chi parlo <u>si apre un terminale</u></h2>
+      <div class="pad"><div class="agenti" id="agenti"></div></div>
+      <p class="nota">Le chat di prodotto nascono da <code>lab/prodotti.tsv</code>: per un
+      prodotto nuovo (SWR7, o quello dopo) basta <b>aggiungere una riga li'</b> — la chat
+      compare qui da sola, col suo stato vero addosso, senza toccare codice.</p>
+    </section>
+
+    <section class="box">
+      <h2><i>05</i> Panoramica <u id="u-tot"></u></h2>
       <div class="kgrid" id="totali"></div>
     </section>
     <section class="box">
-      <h2><i>04</i> Chi aspetta chi <u id="u-asp"></u></h2>
+      <h2><i>06</i> Chi aspetta chi <u id="u-asp"></u></h2>
       <div class="rows" id="aspettano"></div>
     </section>
     <section class="box">
-      <h2><i>05</i> Fermi da oltre due settimane <u id="u-fermi"></u></h2>
+      <h2><i>07</i> Fermi da oltre due settimane <u id="u-fermi"></u></h2>
       <div class="rows" id="fermi"></div>
     </section>
   </div>
@@ -290,7 +343,75 @@ function vistaProdotti(az){
     `${az.prodotti.length} prodotti · ${az.totali.progetti} progetti`;
 }
 
-/* ── 02 il Council ── */
+/* ── 02 cosa fare, per costo del ritardo ── */
+function vistaTask(az){
+  const box=document.getElementById("task"); box.textContent="";
+  const lista=(az&&az.da_fare)||[];
+  if(!lista.length){ box.append(el("div","vuoto","Niente che aspetti te.")); return; }
+  const vive=lista.filter(x=>x.punti>5);
+  vive.slice(0,12).forEach((x,i)=>{
+    const liv = x.punti>=80 ? "alto" : (x.punti>=45 ? "medio" : "basso");
+    const t=el("div","task "+liv);
+    t.append(el("div","n",String(i+1)));
+    const c=el("div","c");
+    c.append(el("h4","",x.nome), el("p","",x.azione));
+    if(x.motivi&&x.motivi.length){
+      const w=el("div","perche");
+      x.motivi.forEach(m=>w.append(el("span", /soldi|spento|rischio/.test(m)?"s":"", m)));
+      c.append(w);
+    }
+    t.append(c);
+    const lato=el("div","lato");
+    lato.append(el("div","pr",x.prodotto));
+    if(x.prodotto_chiave){
+      const b=el("button","","apri chat");
+      b.addEventListener("click",async()=>{
+        b.disabled=true; b.textContent="apro…";
+        const r=await azione({azione:"apri_prodotto",chiave:x.prodotto_chiave});
+        b.textContent=r.ok?"aperta":"errore"; b.disabled=false;
+        setTimeout(()=>{b.textContent="apri chat";},2500);
+      });
+      lato.append(b);
+    }
+    t.append(lato); box.append(t);
+  });
+  const fatte=lista.length-vive.length;
+  document.getElementById("u-task").textContent =
+    `${vive.length} aperte` + (fatte?` · ${fatte} sembrano già chiuse`:"");
+}
+
+/* ── 04 con chi parlo ── */
+async function vistaAgenti(az){
+  const box=document.getElementById("agenti"); if(!box) return;
+  let pers=[];
+  try{ pers=await (await fetch("/api/personali",{cache:"no-store"})).json(); }catch(e){}
+  box.textContent="";
+  const scheda=(cls,titolo,remit,azione2,chiave)=>{
+    const c=el("div","ag "+cls);
+    const t=el("div","t"); t.append(el("b","",titolo), el("small","",remit)); c.append(t);
+    const out=el("div","out");
+    const b=el("button","","▸ APRI");
+    b.addEventListener("click",async()=>{
+      b.disabled=true; b.textContent="apro…";
+      const r=await azione({azione:azione2,chiave});
+      out.className="out "+(r.ok?"ok":"ko");
+      out.textContent=r.ok?"cerca la finestra del Terminale":(r.errore||"errore");
+      b.textContent="▸ APRI"; b.disabled=false;
+    });
+    c.append(b,out); return c;
+  };
+  pers.forEach(a=>box.append(scheda("",a.nome,a.remit,"apri_personale",a.chiave)));
+  ((az&&az.prodotti)||[]).forEach(p=>{
+    const c=p.conta||{};
+    const vivi=(c.ATTIVO||0)+(c.BLOCCATO||0);
+    box.append(scheda("prod", p.nome,
+      vivi ? `${c.ATTIVO||0} attivi · ${c.BLOCCATO||0} bloccati`
+           : (c.OPERATIVO ? "gira da solo" : "nessun progetto vivo"),
+      "apri_prodotto", p.chiave));
+  });
+}
+
+/* ── 03 il Council ── */
 function vistaCouncil(co){
   const box=document.getElementById("council"); box.textContent="";
   if(!co || co.raggiungibile===false){
@@ -412,7 +533,12 @@ async function caricaCouncil(){
 async function render(){
   const az=await fetch("/api/azienda",{cache:"no-store"}).then(r=>r.json()).catch(()=>null);
   document.getElementById("stamp").textContent=az&&az.generato?"portafoglio "+eta(az.generato):"—";
-  vistaProdotti(az); vistaResto(az);
+  const ri=document.getElementById("riga-identita");
+  if(ri&&az&&az.totali){
+    const vive=((az.da_fare)||[]).filter(x=>x.punti>5).length;
+    ri.textContent=`stack calde · ${az.totali.prodotti} prodotti · ${vive} cose da fare`;
+  }
+  vistaProdotti(az); vistaTask(az); vistaResto(az); vistaAgenti(az);
 }
 
 render(); caricaCouncil();

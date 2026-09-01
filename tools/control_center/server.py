@@ -12,7 +12,10 @@ from .actions import (
     jobs_stato,
     leggi_report,
     request_diagnosis,
+    PERSONALI,
     ali_disponibili,
+    apri_personale,
+    apri_prodotto,
     apri_ala,
     restart_daemon,
     start_daemon,
@@ -95,6 +98,14 @@ class Handler(BaseHTTPRequestHandler):
                        "application/json; charset=utf-8")
             return
 
+        if azione in ("apri_prodotto", "apri_personale"):
+            chiave = str(corpo.get("chiave", ""))
+            esito = (apri_prodotto(chiave) if azione == "apri_prodotto"
+                     else apri_personale(chiave))
+            self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+            return
+
         if azione == "apri":
             # Non e' un check: e' un'ala del lab. Si risponde qui e si esce.
             esito = apri_ala(str(corpo.get("ala", "")))
@@ -157,6 +168,9 @@ class Handler(BaseHTTPRequestHandler):
             # Puo' essere lento (chiama un servizio esterno): la pagina lo
             # carica a parte, non insieme al resto.
             self._send(200, json.dumps(council.stato(), ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+        elif path == "/api/personali":
+            self._send(200, json.dumps(PERSONALI, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
         elif path == "/api/ali":
             # Le ali del lab, per i pulsanti della pagina.
