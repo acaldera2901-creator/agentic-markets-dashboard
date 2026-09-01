@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LEGAL_ENTITY } from "@/lib/legal-entity";
 
 export const metadata: Metadata = {
   title: "Terms of Service | BetRedge",
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+    <div className="min-h-screen font-mono mc-scene-clay" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <div className="legal-sheet max-w-2xl mx-auto my-10 px-7 py-11 space-y-8">
         <div className="space-y-2">
           <Link href="/" className="text-[10px] text-[var(--am-muted-2)] hover:text-[var(--am-coral)] uppercase tracking-wider">
@@ -119,7 +122,12 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">14. Governing Law</h2>
           <p className="text-xs leading-relaxed">
-            The BetRedge platform is operated by <strong>Maven Agency AG</strong>, Blegistrasse 7, 6340 Baar (ZG), Switzerland — company identification UID CHE&#8209;193.960.193 (Commercial Register of the Canton of Zug). These Terms are governed by Swiss law, and the exclusive place of jurisdiction is Zug, Switzerland — without prejudice to any mandatory consumer-protection rights (including jurisdiction rules) you may have in your country of residence. Correspondence address: BetRedge, 66 Paul Street, London EC2A 4NA, United Kingdom.
+            {/* #SITE-ENTITY-0824 — identità da lib/legal-entity.ts.
+                ⚠️ AVVOCATO: è stato rimosso il NOME della società, NON la scelta di
+                legge — quella non è una decisione tecnica. Oggi la clausola indica
+                "legge svizzera, foro di Zugo" senza nominare un'entità svizzera:
+                internamente incoerente, da riconciliare. */}
+            The BetRedge platform is operated by {LEGAL_ENTITY.senderName}, {LEGAL_ENTITY.correspondence}. These Terms are governed by Swiss law, and the exclusive place of jurisdiction is Zug, Switzerland — without prejudice to any mandatory consumer-protection rights (including jurisdiction rules) you may have in your country of residence.
           </p>
         </section>
 

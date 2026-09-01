@@ -141,10 +141,19 @@ async function computeLive(): Promise<{ liveMap: Record<string, LiveScore>; matc
 async function persistLive(matches: TodayMatch[]): Promise<void> {
   for (const m of matches) {
     if (m.status === "IN_PLAY" || m.status === "PAUSED" || m.status === "FINISHED") {
+      // #SETTLE-RECOVERY-0831 — un IN_PLAY/PAUSED non si scrive FUORI dalla
+      // finestra dei 150 minuti, e non e' un dettaglio: `fetchAllTodayMatches`
+      // interroga da IERI, e football-data lascia partite finite in quello
+      // stato per ore coi punteggi congelati a meta' partita. Misurati il
+      // 31/08: sbagliati in 3 casi su 5 (Lazio-Genoa 0-0 contro 1-0 reale,
+      // Monaco-Marsiglia 1-0 contro 2-0, Cambuur-Twente 0-2 contro 1-4). Senza
+      // questa guardia li scrivevamo sulle nostre righe a ogni giro di cache.
+      // Un FINISHED si scrive sempre: un finale che arriva tardi resta valido.
       await dbQuery(
         `UPDATE match_predictions
          SET home_score = $1, away_score = $2, match_status = $3
-         WHERE match_id = $4`,
+         WHERE match_id = $4
+           AND ($3 = 'FINISHED' OR kickoff > NOW() - interval '150 minutes')`,
         [m.homeGoals, m.awayGoals, m.status, m.id]
       ).catch((e: unknown) => console.error("[live] DB error:", e));
     }

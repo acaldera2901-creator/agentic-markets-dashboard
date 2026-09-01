@@ -13,6 +13,27 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+// #TAWK-API-HIDE-0831 — la chat si nasconde con la SUA API, non spostandole i
+// pixel. Il primo tentativo abbassava lo z-index del suo contenitore via CSS e
+// dal telefono di Andrea la bolla restava sopra: quel fix dipendeva dal DOM di
+// Tawk, che cambia fra le versioni e che dal mio lato non posso nemmeno vedere
+// (senza consenso il widget non viene caricato — zero iframe in pagina).
+// `hideWidget`/`showWidget` sono l'interfaccia documentata e non dipendono dal
+// markup. Tutto opzionale e in try/catch: col consenso negato `Tawk_API` non
+// esiste, e un widget che non risponde non deve mai impedire l'apertura della
+// scheda.
+type TawkApi = { hideWidget?: () => void; showWidget?: () => void };
+function tawk(azione: "hide" | "show"): void {
+  if (typeof window === "undefined") return;
+  const api = (window as unknown as { Tawk_API?: TawkApi }).Tawk_API;
+  try {
+    if (azione === "hide") api?.hideWidget?.();
+    else api?.showWidget?.();
+  } catch {
+    // un widget che si lamenta non e' un motivo per rompere la scheda
+  }
+}
+
 export type DetailLang = "it" | "en" | "es" | "fr" | "ru";
 function L<T>(lang: DetailLang, v: { it: T; en: T; es: T; fr: T; ru: T }): T { return v[lang]; }
 
@@ -74,13 +95,22 @@ export function PredictionDetailModal({
   const [shown, setShown] = useState(false); // pilota la classe di stato per la transizione
 
   // portal target: solo dopo il mount (SSR-safe)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- il flag mounted per il portal e' il pattern SSR-safe canonico: il target del portal non esiste al primo render
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lo stato della transizione di apertura dipende dalla rect misurata sul DOM, che esiste solo dopo il commit
     if (!open) { setShown(false); return; }
     // scroll-lock del body mentre il modal è aperto
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // #TAWK-UNDER-MODAL-0831 — la bolla della chat e' `fixed` con uno z-index
+    // enorme (Tawk lo mette lei, ~2e9) e su telefono finiva SOPRA la CTA «Place
+    // your bet» della scheda aperta: fotografato da Andrea. Con la scheda aperta
+    // la chat passa sotto, e il CSS la riconosce dagli stessi selettori gia'
+    // collaudati in `mobile.css`.
+    document.documentElement.dataset.pdmOpen = "1";
+    tawk("hide");
     // calcola la transform iniziale dalla rect della card → "zoom dalla posizione"
     const reduce = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -108,6 +138,11 @@ export function PredictionDetailModal({
       cancelAnimationFrame(r);
       window.clearTimeout(tid);
       document.body.style.overflow = prevOverflow;
+      // #TAWK-UNDER-MODAL-0831 — il marcatore vive nello STESSO effetto dello
+      // scroll-lock: sono la stessa cosa (la pagina sotto e' fuori gioco) e
+      // tenerli separati vuol dire che uno dei due prima o poi resta appeso.
+      delete document.documentElement.dataset.pdmOpen;
+      tawk("show");
     };
   }, [open, anchorRect]);
 

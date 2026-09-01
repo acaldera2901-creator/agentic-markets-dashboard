@@ -30,6 +30,10 @@ const pt: ToolsCopy = {
     free: "Grátis",
     faqTitle: "Perguntas",
     invalid: "—",
+    tgTitle: "A previsão do dia, grátis no Telegram",
+    tgBody:
+      "Sem conta e sem e-mail. Todos os dias publicamos o jogo em que o nosso modelo mais discorda do mercado, 15 minutos antes do início — e liquidamos cada previsão que publicamos, ganha ou perdida. O canal é em inglês.",
+    tgButton: "Abrir o canal",
   },
 
   tools: {

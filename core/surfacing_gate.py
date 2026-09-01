@@ -114,6 +114,19 @@ def club_floor_for(competition: str | None) -> int:
     return settings.SURFACE_FLOOR_FOOTBALL
 
 
+def nations_floor_for(league_code: str | None) -> int:
+    """Per-competition Nations League floor (#NATIONS-LEAGUE-0826).
+
+    Walk-forward lab am-lab/lab_nations_league_floor.py: UNL 62 (held-out
+    68.0%, n=128 — the tier-banded groups make UEFA-NL the weak international
+    segment), CNL 56 = standard (held-out 74.3%, n=167). Unknown nations code
+    falls to the STRICTER default (fail-closed). Mirror of nationsFloorFor in
+    lib/surfacing-gate.ts — keep in sync.
+    """
+    code = (league_code or "").upper()
+    return settings.SURFACE_FLOOR_NATIONS.get(code, settings.SURFACE_FLOOR_NATIONS_DEFAULT)
+
+
 def surface_decision(
     *,
     sport: str,
@@ -121,6 +134,7 @@ def surface_decision(
     confidence: int,
     tournament: str | None = None,
     world_cup: bool = False,
+    nations_league_code: str | None = None,
 ) -> tuple[bool, bool]:
     """Return ``(is_pick, below_threshold)`` for a row.
 
@@ -147,6 +161,15 @@ def surface_decision(
         return is_pick, not is_pick
     if s in ("mma", "ufc"):
         is_pick = confidence >= settings.SURFACE_FLOOR_MMA
+        return is_pick, not is_pick
+
+    # #NATIONS-LEAGUE-0826: dedicated per-competition floor. Checked BEFORE the
+    # world_cup branch on purpose — the national model path used to treat every
+    # non-friendly as World Cup ("world_cup=not is_friendly"), and a Nations
+    # League row falling through to SURFACE_FLOOR_WC (26) would publish nearly
+    # everything on the weakest international segment.
+    if nations_league_code:
+        is_pick = confidence >= nations_floor_for(nations_league_code)
         return is_pick, not is_pick
 
     # #WC-SURFACE-FLOOR: floor dedicato SOLO World Cup (knockout equilibrati

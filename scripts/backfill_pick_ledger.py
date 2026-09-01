@@ -226,8 +226,12 @@ def collect_tennis(client: httpx.Client) -> list[BackfillPick]:
         client,
         "unified_predictions",
         {
+            # #TENNIS-BACKFILL-NAMES-0821: tennis names live in home_team/away_team
+            # (lib/tennis-adapter.ts writes player1->home_team, player2->away_team);
+            # unified_predictions has NO player_one/player_two columns, so the old
+            # select read nothing and every backfilled tennis row got NULL names.
             "select": "source_table,source_id,model_version,competition,"
-            "player_one,player_two,market,pick,confidence_score,odds,closing_odds,"
+            "home_team,away_team,market,pick,confidence_score,odds,closing_odds,"
             "starts_at,result,settled_at",
             "sport": "eq.tennis",
             "result": "in.(won,lost,void,unresolved)",
@@ -257,8 +261,8 @@ def collect_tennis(client: httpx.Client) -> list[BackfillPick]:
                 sport="tennis",
                 league=None,
                 competition=r.get("competition"),
-                home_team=r.get("player_one"),
-                away_team=r.get("player_two"),
+                home_team=r.get("home_team"),
+                away_team=r.get("away_team"),
                 market=r.get("market") or "MATCH",
                 pick=r.get("pick"),
                 p_home=d.get("p1"),
@@ -344,9 +348,14 @@ def _insert(
 
 
 def _existing_settlement_keys(client: httpx.Client) -> set[tuple[str, str, str]]:
-    """pick_settlement is append-only with NO unique key (a correction is a new
-    row, latest settled_at wins). To stay idempotent we skip terns already
-    present rather than relying on a conflict resolution that has no target."""
+    """pick_settlement e' append-only e HA una chiave unica: l'indice
+    pick_settlement_pick_key (source_table, source_id, model_version), verificato
+    su produzione il 31/08 (#LEDGER-MIRROR-0831). Il commento precedente diceva
+    "NO unique key, una correzione e' una riga nuova": e' falso in entrambe le
+    meta' — una seconda riga per lo stesso pick viene RIFIUTATA, quindi una
+    correzione per accodamento non esiste e chi si fidasse di quella frase la
+    vedrebbe scartata in silenzio. Saltare i terni gia' presenti resta giusto: e'
+    la stessa cosa che farebbe il conflitto, decisa qui invece che dal database."""
     rows = _select(
         client,
         "pick_settlement",

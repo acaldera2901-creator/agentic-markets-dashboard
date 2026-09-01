@@ -1,0 +1,510 @@
+<title>Fondo Cinematico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+/* ── token: il tema chiaro è la CARTA (quella bocciata), il tema scuro è il
+   FONDO CINEMATICO (quello approvato). La pagina è fatta col sistema che
+   descrive: stessi due font, stessi hex, stesso filetto da 3px. ── */
+:root{
+  --ground:#eae8e4; --panel:#ffffff; --inset:#f4f2ee; --rule:#cfcbc4;
+  --ink:#0c0e11; --ink2:#4f4c47; --ink3:#6b675f;
+  --accent:#15703b; --accent-ink:#ffffff;
+  --football:#6d28d9; --tennis:#c2410c; --wc:#0369a1;
+  --ok:#15703b; --warn:#8a5a00; --stop:#a3231f;
+  --shadow:0 1px 0 rgba(12,14,17,.05);
+  --fd:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
+  --fm:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0a0c0f; --panel:#15181c; --inset:#0f1216; --rule:#2b3037;
+    --ink:#ffffff; --ink2:#b4bbc4; --ink3:#969ca5;
+    --accent:#23a559; --accent-ink:#06140c;
+    --football:#8b5cf6; --tennis:#e2703a; --wc:#38a3dd;
+    --ok:#33c974; --warn:#e0a83c; --stop:#f4756f;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0a0c0f; --panel:#15181c; --inset:#0f1216; --rule:#2b3037;
+  --ink:#ffffff; --ink2:#b4bbc4; --ink3:#969ca5;
+  --accent:#23a559; --accent-ink:#06140c;
+  --football:#8b5cf6; --tennis:#e2703a; --wc:#38a3dd;
+  --ok:#33c974; --warn:#e0a83c; --stop:#f4756f;
+  --shadow:none;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ground);color:var(--ink);font-family:var(--fd);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+}
+.wrap{width:100%;max-width:1080px;margin-inline:auto;padding-inline:clamp(1.1rem,4vw,3rem)}
+main>section{padding-block:clamp(2.2rem,5vw,3.6rem);border-top:1px solid var(--rule)}
+main>section:first-of-type{border-top:0}
+
+/* ── tipografia: la scala della spec ── */
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-weight:800;letter-spacing:-.045em;line-height:.94;font-size:clamp(2.3rem,6vw,4.2rem);text-transform:uppercase}
+h2{font-weight:800;letter-spacing:-.03em;line-height:1.06;font-size:clamp(1.45rem,3vw,2.1rem)}
+h3{font-weight:700;letter-spacing:-.015em;font-size:1.02rem;margin-top:.2rem}
+p{margin:0;max-width:70ch;color:var(--ink2)}
+p strong,li strong{color:var(--ink);font-weight:700}
+a{color:var(--ink);text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+code,.num{font-family:var(--fm);font-variant-numeric:tabular-nums}
+code{font-size:.86em;background:var(--inset);border:1px solid var(--rule);padding:.06em .3em}
+.stack{display:grid;gap:clamp(.9rem,2vw,1.3rem)}
+.stack-l{display:grid;gap:clamp(1.5rem,3.4vw,2.4rem)}
+
+/* il filetto da 3px prima dell'etichetta mono: la firma della casa */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.65rem;font-family:var(--fm);font-size:.66rem;
+  font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);
+}
+.eyebrow::before{content:"";width:1.6rem;height:3px;background:currentColor;flex:none}
+.key{font-family:var(--fm);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3)}
+
+/* ── testata ── */
+header.head{padding-block:clamp(2.4rem,6vw,4.4rem) clamp(1.6rem,4vw,2.4rem)}
+.head .tags{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.4rem}
+.tag{font-family:var(--fm);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;
+  border:1px solid var(--rule);padding:.3rem .5rem;color:var(--ink2);background:var(--panel)}
+.tag.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.lede{font-size:clamp(1.02rem,1.6vw,1.2rem);line-height:1.5;max-width:60ch;margin-top:1.2rem}
+
+/* ── pannelli ── */
+.panel{background:var(--panel);border:1px solid var(--rule);padding:clamp(1rem,2.4vw,1.5rem);box-shadow:var(--shadow)}
+.panel.lead{border-left:3px solid var(--accent)}
+.grid2{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid3{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+
+/* ── tabelle ── */
+.tw{overflow-x:auto;border:1px solid var(--rule);background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.9rem}
+th,td{text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font-family:var(--fm);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);background:var(--inset)}
+tbody tr:last-child td{border-bottom:0}
+td.n{font-family:var(--fm);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ── liste ── */
+ul.plain{margin:0;padding-left:1.1rem;display:grid;gap:.5rem;max-width:70ch;color:var(--ink2)}
+ul.checks{margin:0;padding:0;list-style:none;display:grid;gap:.55rem}
+ul.checks li{display:grid;grid-template-columns:1.5rem 1fr;gap:.6rem;align-items:start;font-size:.93rem;color:var(--ink2)}
+ul.checks .bx{font-family:var(--fm);font-size:.7rem;color:var(--accent);border:1px solid var(--rule);
+  width:1.5rem;height:1.5rem;display:grid;place-items:center;background:var(--inset)}
+
+/* ── swatch ── */
+.sw{display:grid;grid-template-columns:2.6rem 1fr;gap:.7rem;align-items:center;font-size:.86rem}
+.sw i{display:block;width:2.6rem;height:2.6rem;border:1px solid var(--rule)}
+.sw b{display:block;font-family:var(--fm);font-size:.72rem;letter-spacing:.06em}
+.sw span{color:var(--ink3);font-size:.78rem}
+
+/* ── schema ── */
+figure{margin:0;display:grid;gap:.7rem}
+figcaption{font-size:.82rem;color:var(--ink3);max-width:66ch}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.svgwrap{overflow-x:auto;background:var(--panel);border:1px solid var(--rule);padding:clamp(.9rem,2.4vw,1.4rem)}
+
+/* ── nota ── */
+.note{border-left:3px solid var(--warn);padding-left:.9rem;font-size:.92rem;color:var(--ink2);max-width:68ch}
+.note.stop{border-left-color:var(--stop)}
+.note.ok{border-left-color:var(--ok)}
+
+pre{margin:0;overflow-x:auto;background:var(--inset);border:1px solid var(--rule);
+  padding:1rem;font-family:var(--fm);font-size:.76rem;line-height:1.65;color:var(--ink2)}
+
+footer{border-top:1px solid var(--rule);padding-block:2rem 3rem;color:var(--ink3);font-size:.82rem}
+@media (prefers-reduced-motion:no-preference){a,.tag{transition:color .15s ease,background .15s ease}}
+</style>
+
+<header class="head">
+  <div class="wrap stack">
+    <span class="eyebrow">Spec di design · fase 1</span>
+    <h1>Il fondo<br>cinematico</h1>
+    <p class="lede">Il frontend nuovo di BetRedge smette di essere una tinta e diventa un'atmosfera: una scena fotografica fissa dietro, una velatura davanti, i colori degli sport lavati sopra. Questa è la spec riallineata a quella decisione — e allo scope che ne è uscito.</p>
+    <div class="tags">
+      <span class="tag on">#UI-MACHINA-0802</span>
+      <span class="tag">scritta 2026-08-02</span>
+      <span class="tag">riallineata 2026-08-20</span>
+      <span class="tag">branch feat/ui-machina</span>
+      <span class="tag">gate: APPROVE prima del merge</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ════════ SCHEMA ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">Lo schema</span>
+    <h2>Quattro strati, due fogli, un gate</h2>
+    <p>Tre disegni che dicono il lavoro intero: com'è fatto il fondo, dove vive il CSS nuovo, e dove si è obbligati a fermarsi.</p>
+  </div>
+
+  <figure>
+    <div class="svgwrap">
+      <svg viewBox="0 0 880 300" role="img" aria-label="I quattro strati del fondo: base, scena fotografica fissa a z-index -2, velatura a z-index -1, contenuto e schede sopra.">
+        <g font-family="JetBrains Mono, monospace" font-size="11">
+          <!-- strati, dal fondo verso l'alto -->
+          <g>
+            <polygon points="60,236 460,236 560,196 160,196" fill="var(--inset)" stroke="var(--rule)"/>
+            <text x="580" y="222" fill="var(--ink3)">base · <tspan fill="var(--ink)">--paper #0A0C0F</tspan></text>
+          </g>
+          <g>
+            <polygon points="60,190 460,190 560,150 160,150" fill="var(--football)" opacity=".28" stroke="var(--rule)"/>
+            <text x="580" y="176" fill="var(--ink3)">scena · <tspan fill="var(--ink)">.bgfix</tspan> z:-2 · blur 4px · opacity .16</text>
+          </g>
+          <g>
+            <polygon points="60,144 460,144 560,104 160,104" fill="var(--ground)" opacity=".92" stroke="var(--rule)"/>
+            <text x="580" y="130" fill="var(--ink3)">velatura · <tspan fill="var(--ink)">body::after</tspan> z:-1 · .92 → .985</text>
+          </g>
+          <g>
+            <polygon points="60,98 460,98 560,58 160,58" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.5"/>
+            <rect x="76" y="72" width="120" height="3" fill="var(--tennis)"/>
+            <rect x="212" y="72" width="120" height="3" fill="var(--football)"/>
+            <text x="580" y="84" fill="var(--ink3)">contenuto · schede <tspan fill="var(--ink)">--card-2</tspan>, incassi <tspan fill="var(--ink)">#0F1216</tspan></text>
+          </g>
+          <!-- lavaggi -->
+          <g opacity=".9">
+            <circle cx="150" cy="272" r="7" fill="var(--football)"/><text x="164" y="276" fill="var(--ink3)">viola .30</text>
+            <circle cx="280" cy="272" r="7" fill="var(--tennis)"/><text x="294" y="276" fill="var(--ink3)">terracotta .24</text>
+            <circle cx="440" cy="272" r="7" fill="var(--accent)"/><text x="454" y="276" fill="var(--ink3)">verde .22</text>
+            <circle cx="570" cy="272" r="7" fill="var(--wc)"/><text x="584" y="276" fill="var(--ink3)">blu .18 · + grana .05</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Gli strati sono tutti <code>fixed</code>: scorrendo, la scena resta ferma e il contenuto le passa davanti. La scena è un <em>elemento</em>, non uno pseudo-elemento — così basta cambiargli la classe per cambiare pagina, senza variabili CSS impostate da JavaScript.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <figure>
+      <div class="svgwrap">
+        <svg viewBox="0 0 420 240" role="img" aria-label="Due fogli di stile affiancati: globals.css intoccato, machina.css nuovo importato dopo.">
+          <g font-family="JetBrains Mono, monospace" font-size="11">
+            <rect x="16" y="24" width="170" height="180" fill="var(--inset)" stroke="var(--rule)"/>
+            <text x="30" y="48" fill="var(--ink)" font-size="12">globals.css</text>
+            <text x="30" y="68" fill="var(--ink3)">9.484 righe</text>
+            <text x="30" y="84" fill="var(--ink3)">2.220 classi</text>
+            <text x="30" y="112" fill="var(--stop)">NON SI TOCCA</text>
+            <text x="30" y="132" fill="var(--ink3)">token --am-*</text>
+            <text x="30" y="148" fill="var(--ink3)">intatti</text>
+            <rect x="234" y="24" width="170" height="180" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.5"/>
+            <rect x="234" y="24" width="170" height="3" fill="var(--accent)"/>
+            <text x="248" y="52" fill="var(--ink)" font-size="12">machina.css</text>
+            <text x="248" y="72" fill="var(--ink3)">nuovo · un foglio</text>
+            <text x="248" y="88" fill="var(--ink3)">classi prefissate</text>
+            <text x="248" y="116" fill="var(--accent)">IMPORTATO DOPO</text>
+            <text x="248" y="136" fill="var(--ink3)">le pagine rifatte</text>
+            <text x="248" y="152" fill="var(--ink3)">usano queste</text>
+            <path d="M190 114 L228 114" stroke="var(--ink3)" stroke-width="1.2" marker-end="url(#ar)"/>
+            <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink3)"/></marker></defs>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Layer additivo. Se qualcosa si rompe si toglie un import — non si torna indietro su 2.220 classi.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="svgwrap">
+        <svg viewBox="0 0 420 240" role="img" aria-label="Il percorso: preview approvata, spec, piano, build, armature di verifica, PR, gate APPROVE umano, merge.">
+          <g font-family="JetBrains Mono, monospace" font-size="10.5">
+            <g fill="var(--ink2)">
+              <rect x="14" y="20" width="126" height="28" fill="var(--inset)" stroke="var(--rule)"/><text x="26" y="38" fill="var(--ok)">preview approvata</text>
+              <rect x="14" y="60" width="126" height="28" fill="var(--inset)" stroke="var(--rule)"/><text x="26" y="78" fill="var(--ok)">spec riallineata</text>
+              <rect x="14" y="100" width="126" height="28" fill="var(--panel)" stroke="var(--accent)"/><text x="26" y="118" fill="var(--ink)">piano</text>
+              <rect x="14" y="140" width="126" height="28" fill="var(--panel)" stroke="var(--rule)"/><text x="26" y="158" fill="var(--ink3)">build fase 1</text>
+              <rect x="14" y="180" width="126" height="28" fill="var(--panel)" stroke="var(--rule)"/><text x="26" y="198" fill="var(--ink3)">armature</text>
+            </g>
+            <path d="M77 48 L77 60 M77 88 L77 100 M77 128 L77 140 M77 168 L77 180" stroke="var(--rule)" stroke-width="1.4"/>
+            <path d="M140 194 L196 194 L196 118" stroke="var(--rule)" stroke-width="1.4" fill="none" stroke-dasharray="3 3"/>
+            <text x="202" y="116" fill="var(--ink3)">falliscono → si torna</text>
+            <rect x="248" y="20" width="150" height="188" fill="none" stroke="var(--stop)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="262" y="44" fill="var(--stop)" font-size="11">GATE UMANO</text>
+            <text x="262" y="72" fill="var(--ink2)">PR + preview</text>
+            <text x="262" y="92" fill="var(--ink2)">Vercel</text>
+            <text x="262" y="124" fill="var(--ink)">APPROVE</text>
+            <text x="262" y="142" fill="var(--ink3)">Andrea o Michele</text>
+            <text x="262" y="176" fill="var(--ink2)">poi merge su main</text>
+            <path d="M140 104 L244 104" stroke="var(--rule)" stroke-width="1.4"/>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Le armature girano <em>prima</em> del gate: al gate arriva materiale già misurato, non da giudicare a occhio.</figcaption>
+    </figure>
+  </div>
+</div>
+</section>
+
+<!-- ════════ COSA È CAMBIATO ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">La revisione</span>
+    <h2>Perché la spec è stata riscritta</h2>
+    <p>La stesura del 2 agosto descriveva la <strong>carta chiara</strong> di MACHINA, bocciata lo stesso giorno. Implementarla avrebbe costruito il prodotto sbagliato: è tutto il motivo di questa revisione.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>§</th><th>prima</th><th>ora</th></tr></thead>
+    <tbody>
+      <tr><td class="n">2.1 · 4.3</td><td>carta chiara <code>#EAE8E4</code> come casa</td><td><strong>fondo cinematico scuro</strong> <code>#0A0C0F</code>, scena fissa dietro</td></tr>
+      <tr><td class="n">2.2</td><td>sistema + home + schede board</td><td><strong>+ il chrome del desk</strong> — testata, rail, footer</td></tr>
+      <tr><td class="n">4.1</td><td>il layer evitava il tema chiaro rotto</td><td>il layer resta, il motivo è un altro: diff additivo e reversibile</td></tr>
+      <tr><td class="n">7</td><td>«la home»</td><td><strong>la landing</strong>, col carosello vero: 7 slide, non 3</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note ok">Tipografia, palette validata, struttura delle schede e armature di verifica reggevano e non sono state toccate.</p>
+</div>
+</section>
+
+<!-- ════════ DECISIONI ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">Le decisioni</span>
+    <h2>Sette scelte, prese da Andrea</h2>
+    <p>Le prime sei il 2 agosto, la settima e la revisione dello scope il 20.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel lead stack">
+      <h3>Il mondo, non la tinta</h3>
+      <p>Carta chiara → carta calda con grana → <strong>fondo cinematico scuro</strong>, con le prime due bocciate. La diagnosi che ha sbloccato: una tinta chiara non può competere coi creativi di Ole, che sono scuri, con l'azione e le scie verdi. Non era la tonalità sbagliata, era il mondo sbagliato.</p>
+    </div>
+    <div class="panel lead stack">
+      <h3>Il chrome entra in fase 1</h3>
+      <p>Sistema visivo + <strong>testata, rail laterale, footer</strong> + landing + schede della board. Il chrome è ciò che si vede in <em>ogni</em> tab: rifare le schede lasciando la cornice di oggi darebbe un prodotto a due facce già alla prima schermata.</p>
+    </div>
+    <div class="panel stack">
+      <h3>Verde = i soldi</h3>
+      <p>Riservato. Gli sport hanno colori propri validati; il P&amp;L smette di usare verde/rosso pieni e passa a <span class="num">↑ +12</span> / <span class="num">↓ −3</span>.</p>
+    </div>
+    <div class="panel stack">
+      <h3>La home apre col board</h3>
+      <p>Non con la vendita. Copertina compatta, poi il prodotto vero.</p>
+    </div>
+    <div class="panel stack">
+      <h3>Le schede non si ristrutturano</h3>
+      <p>«Stessa struttura, solo migliorate graficamente». Ordine delle zone, dati, stringhe e comportamenti: identici.</p>
+    </div>
+    <div class="panel stack">
+      <h3>I banner sono quelli veri</h3>
+      <p>«I banner della landing devono essere come i banner che abbiamo ora sul sito online.» Non una selezione nuova.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ════════ SISTEMA VISIVO ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">Il sistema</span>
+    <h2>Colori misurati, non scelti</h2>
+    <p>Validati con <code>--pairs all</code> — qualunque coppia può finire adiacente su un board — contro entrambe le superfici. Questa pagina usa esattamente questi valori.</p>
+  </div>
+
+  <div class="grid3">
+    <div class="panel"><div class="sw"><i style="background:#6d28d9"></i><span><b>#6D28D9</b><span>calcio · viola</span></span></div></div>
+    <div class="panel"><div class="sw"><i style="background:#c2410c"></i><span><b>#C2410C</b><span>tennis · terracotta</span></span></div></div>
+    <div class="panel"><div class="sw"><i style="background:#0369a1"></i><span><b>#0369A1</b><span>mondiali · blu</span></span></div></div>
+    <div class="panel"><div class="sw"><i style="background:#15703b"></i><span><b>#15703B</b><span>soldi · sulla carta</span></span></div></div>
+    <div class="panel"><div class="sw"><i style="background:#23a559"></i><span><b>#23A559</b><span>soldi · sul pannello</span></span></div></div>
+    <div class="panel"><div class="sw"><i style="background:#33c974"></i><span><b>#33C974</b><span>soldi · occhiello sul lavaggio</span></span></div></div>
+  </div>
+
+  <div class="stack">
+    <h3>Tre errori che il validatore ha preso e l'occhio no</h3>
+    <div class="tw"><table>
+      <thead><tr><th>errore</th><th>la misura</th><th>conseguenza</th></tr></thead>
+      <tbody>
+        <tr><td>Il verde brand porta testo sulla carta</td><td class="n">#23A559 su #EAE8E4 = 2,66:1<br>bianco sopra = 3,18:1</td><td>servono <strong>gradini</strong> dello stesso verde, uno per superficie. Un solo valore è la classe di bug che ha rotto quasi tutto il ribaltamento chiaro→scuro.</td></tr>
+        <tr><td>Ocra per il tennis</td><td class="n">#B45309 vs verde = ΔE 3,9 in protanopia</td><td>indistinguibili. Terracotta <code>#C2410C</code> risolve.</td></tr>
+        <tr><td>Un quarto sport con colore proprio</td><td class="n">cremisi vs terracotta = ΔE 8,3 a vista normale<br>blu vs viola = ΔE 0,3 in deuteranopia</td><td>il tetto è <strong>3 sport + il verde</strong>. Il quarto prende glifo ed etichetta, non un colore.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Il viola sul pannello scuro è <span class="num">2,51:1</span>: filetto da 4px in testa, <strong>mai testo</strong>. E il colore non è mai l'unico portatore — ogni scheda ha anche il glifo raster e l'etichetta scritta.</p>
+  </div>
+
+  <div class="stack">
+    <h3>Tipografia: i font sono già in casa</h3>
+    <p><code>app/layout.tsx</code> carica già <strong>Hanken Grotesk</strong> e <strong>JetBrains Mono</strong> via <code>next/font</code> — gli stessi due della preview. Non si aggiunge niente: si trapianta la scala.</p>
+    <div class="tw"><table>
+      <thead><tr><th>classe</th><th>ruolo</th><th>specifica</th></tr></thead>
+      <tbody>
+        <tr><td><code>.t-mega</code></td><td>conto alla rovescia</td><td class="n">800 · tracking −.05em · lh .84 · clamp(2.6rem, 7vw, 5.6rem) · tabellare</td></tr>
+        <tr><td><code>.t-h1</code></td><td>titolo di pagina</td><td class="n">800 · tracking −.036em · lh 1.02 · clamp(1.9rem, 4.4vw, 3.4rem)</td></tr>
+        <tr><td><code>.t-lead</code></td><td>prosa</td><td class="n">400 · lh 1.55 · max-width 62ch</td></tr>
+        <tr><td><code>.t-key</code></td><td>etichette</td><td class="n">mono .62rem · tracking .2em · uppercase</td></tr>
+        <tr><td><code>.eyebrow</code></td><td>occhiello</td><td class="n">mono .66rem 600 · tracking .22em · <strong>filetto 1.6rem × 3px</strong></td></tr>
+      </tbody>
+    </table></div>
+    <p>Il filetto dell'occhiello è la firma della casa — quello che vedi prima di ogni titolo di questa pagina. Su MACHINA è arancione, qui prende il colore dello sport della sezione.</p>
+  </div>
+</div>
+</section>
+
+<!-- ════════ LA SCHEDA ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">La scheda prediction</span>
+    <h2>La struttura è intoccabile</h2>
+    <p>Questa è la struttura live, da preservare identica: ordine delle zone, dati mostrati, stringhe, traduzioni, lucchetto delle schede bloccate, verdetto a fine partita, apertura del modal al clic.</p>
+  </div>
+  <pre>article.card &gt; div.pred
+  .top        glifo sport + .league          |  .when (orario · LIVE col .pulse)
+  .fx         .teams   "SK Brann v Rosenborg"
+              .scorebar  [KICKOFF · Sun 2 Aug, 19:15]  |  [FT 3–0]  |  [LIVE 67']
+  .v2r        .v2r-l  →  .v2r-eye "Il nostro pronostico"
+                         .v2r-pick  nome della selezione
+                         .v2r-conf  parola + 4 pallini
+              .v2r-q  →  .v2r-qlab "Quota FortunePlay"
+                         .v2r-qn    1.98
+                         .v2r-sub   "50% modello"  [.v2r-val "value 6.0%"]
+  .pred-more  "Apri scheda completa ▸"</pre>
+  <p class="note stop">Non si aggiunge un bottone di scommessa nella griglia. L'uscita all'operatore vive nel modal, come oggi: aggiungerla sarebbe un cambio di struttura.</p>
+
+  <div class="stack">
+    <h3>La foto dietro, e come si tiene leggibile</h3>
+    <p>Foto dello sport dietro <em>ogni</em> scheda del board è una decisione di Andrea. Il rischio — sei foto dietro sei tabelle di numeri — è stato sollevato e la scelta confermata. Si esegue con questa mitigazione, che non è opzionale.</p>
+    <ul class="checks">
+      <li><span class="bx">1</span><span><strong>I numeri non stanno mai sulla foto.</strong> Corpo della scheda <code>--card-2</code>; <code>.scorebar</code> e <code>.v2r</code> sono incassi pieni a <code>#0F1216</code>, un gradino sotto, <strong>senza bordo</strong> — così spariscono i box-dentro-box senza toccare la struttura.</span></li>
+      <li><span class="bx">2</span><span><strong>Una sola velatura.</strong> <code>rgba(18,21,25,.95)</code> al 50% → <code>.76</code> al 76% → <code>.20</code> in cima. Foto a <code>opacity .95</code>. Due gradienti sovrapposti spengono l'immagine: errore già fatto e corretto.</span></li>
+      <li><span class="bx">3</span><span><strong>Sotto i 640px la velatura si appiattisce</strong> e la foto scende a <code>opacity .66</code>: su telefono la scheda è alta e stretta, e il gradiente pensato per una scheda larga lascia scoperta la fascia centrale.</span></li>
+      <li><span class="bx">4</span><span><strong>La foto segue lo sport</strong>, con alternanza deterministica sull'indice: due schede adiacenti non portano la stessa foto.</span></li>
+      <li><span class="bx">5</span><span><strong>Contrasto misurato su almeno 6 schede rese</strong>, una per foto, su <code>.teams</code> <code>.v2r-qn</code> <code>.v2r-val</code> <code>.v2r-sub</code>. Sotto 4,5:1 la foto si scarta o si scurisce.</span></li>
+    </ul>
+    <p class="note">Controllo meccanico, dalla lezione di MACHINA dove l'occhio non vide che le schede torneo avevano <code>card-solid</code> ma nessuno sfondo: si contano le occorrenze di <code>card-bg</code> nell'HTML servito e si confrontano col numero di schede attese. E convertendo un'immagine da <code>&lt;img&gt;</code> a sfondo CSS, gli sfondi non risultano <em>rotti</em> — risultano <strong>assenti</strong>, e un controllo su <code>naturalWidth</code> non se ne accorge.</p>
+  </div>
+</div>
+</section>
+
+<!-- ════════ LANDING E BANNER ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">La landing</span>
+    <h2>I banner sono già quelli giusti: sono 7, non 3</h2>
+    <p>Il divario fra la preview e la produzione, misurato su <code>LandingCarousel.tsx</code>.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>preview #UI-MACHINA-0802</th><th>sito vero</th></tr></thead>
+    <tbody>
+      <tr><td>slide</td><td class="n">3, ripetute due volte</td><td class="n"><strong>7</strong></td></tr>
+      <tr><td>prima slide</td><td>un creativo di Ole</td><td><code>hero-allsports.jpg</code> — richiesta esplicita di Andrea: «il banner betredge deve essere il primo»</td></tr>
+      <tr><td>resto</td><td>—</td><td>6 creativi verdi di Ole: calcio, tennis ×2, multisport ×3</td></tr>
+      <tr><td>per vista</td><td class="n">1</td><td class="n">2 su desktop, 1 sotto 860px</td></tr>
+      <tr><td>ritmo</td><td>manuale</td><td class="n">autoplay 3,5s · pausa su hover · spento con reduced-motion</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Quindi il carosello si riusa così com'è.</strong> Stesse slide, stesso ordine, stesso comportamento: cambia solo la veste — cornice, frecce, dots. Tre cose non si toccano, e ognuna ha già il suo motivo scritto nel file:</p>
+  <ul class="plain">
+    <li>Lo slot è <code>aspect-ratio 16/9</code> e mostra il banner <strong>intero</strong>: i creativi di Ole sono <span class="num">1672×941</span>, cioè 16:9 esatto. Un ritaglio taglierebbe il logo in alto o il disclaimer in basso, che sono <em>dentro</em> l'immagine.</li>
+    <li>Sulle slide creative non si sovrappone copy HTML: il testo è già nell'immagine, aggiungerne sarebbe doppio-testo.</li>
+    <li>Gli <code>imgAlt</code> restano in inglese in tutte le lingue: l'alt è visibile finché l'immagine non è caricata, e in italiano sembrava copy sbagliata.</li>
+  </ul>
+  <div class="stack">
+    <h3>Il resto della pagina</h3>
+    <p>Copertina scura compatta col <strong>conto alla rovescia al prossimo calcio d'inizio</strong> calcolato sul server — niente timer JS, così regge la pre-generazione. Poi subito il board con le schede vere, il «come funziona» senza scaletta numerata, i piani, il footer.</p>
+    <div class="tw"><table>
+      <thead><tr><th>la voce oggi</th><th>la voce dopo</th></tr></thead>
+      <tbody><tr><td>«Probabilità calibrate su calcio &amp; tennis»</td><td><strong>«Le partite di oggi, e dove conviene puntarci»</strong></td></tr></tbody>
+    </table></div>
+    <p>Le metriche da analista non spariscono: <strong>cambiano posto</strong> e scendono nello Storico, dove chi vuole capire il modello le cerca. In cima a una pagina di prodotto sono rumore — e, dato il track record, sono anche terreno FTC. Le schede premium restano visibili e bloccate: un lucchetto su un dato vero converte meglio di una promessa, e non richiede nessun claim.</p>
+  </div>
+</div>
+</section>
+
+<!-- ════════ SCOPE ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">Lo scope</span>
+    <h2>Cosa entra, cosa no</h2>
+  </div>
+  <div class="grid2">
+    <div class="panel stack" style="border-left:3px solid var(--ok)">
+      <span class="key">fase 1 · dentro</span>
+      <ul class="plain">
+        <li><code>app/machina.css</code> — il sistema, foglio nuovo</li>
+        <li><code>app/layout.tsx</code> — l'import e l'elemento della scena</li>
+        <li>la landing e il suo carosello</li>
+        <li>il chrome del desk: testata, rail, footer</li>
+        <li>le schede calcio e tennis + la griglia del board</li>
+      </ul>
+    </div>
+    <div class="panel stack" style="border-left:3px solid var(--stop)">
+      <span class="key">fase 2 · fuori</span>
+      <ul class="plain">
+        <li>storico, classifica, piani, builder, invito, account</li>
+        <li>/partners, /weekly-pick, /community, /world-cup</li>
+        <li>bottom-nav mobile, modali</li>
+        <li>la riduzione di <code>globals.css</code></li>
+        <li>lo scorporo del file da 9.489 righe</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Non entra <em>nemmeno</em> in fase 2 finché non torna vivo ciò che oggi risponde 404: <code>/oggi</code>, <code>/risultati</code>, <code>/profilo</code> e i componenti sotto <code>features/</code>. Rifare la grafica di codice spento è lavoro che nessuno vede.</p>
+  <p class="note stop"><strong>Nessun feature flag nuovo.</strong> <code>NEXT_PUBLIC_UX_NEW</code> è già lì, mai impostata: tre rotte a 404 e tre cartelle spente. Un interruttore che nessuno accende non è una rete di sicurezza — è codice morto con l'aria di una scelta.</p>
+  <p><strong>Debito dichiarato:</strong> a fine fase 1 le tab non ridisegnate portano la veste di oggi dentro il chrome nuovo. Owner: Claude. Scadenza: fase 2. È il prezzo di avere un punto di controllo prima di ridipingere 45 componenti.</p>
+</div>
+</section>
+
+<!-- ════════ CRITERI ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">Il gate</span>
+    <h2>Quando fase 1 è finita</h2>
+    <p>Tutte vere, non alcune. Nessuna è «sembra a posto».</p>
+  </div>
+  <ul class="checks">
+    <li><span class="bx">✓</span><span><code>npm run build</code> completa e <code>tsc</code> è verde.</span></li>
+    <li><span class="bx">✓</span><span>La suite resta verde su <strong>entrambe</strong> le suite: <code>vitest</code> non esegue <code>tests/</code>. Nessun test nuovo — i componenti toccati vivono in un file da 9.489 righe e scriverli richiederebbe il refactor escluso.</span></li>
+    <li><span class="bx">✓</span><span>Il validatore della palette passa con <code>#0A0C0F</code> e <code>#0F1216</code> fra le superfici. Comando e output nel PR, non riassunti.</span></li>
+    <li><span class="bx">✓</span><span>Armatura di contrasto sul <strong>build Next vero</strong>, non sulla preview: 0 nodi sotto soglia. Sulla preview era 2.678 nodi, 0 sotto soglia, margine minimo +12% — quello è il livello da non perdere.</span></li>
+    <li><span class="bx">✓</span><span><strong>0 overflow orizzontale</strong> a 360 / 390 / 768 / 1440 su ogni pagina toccata.</span></li>
+    <li><span class="bx">✓</span><span>Il conteggio <code>card-bg</code> nell'HTML servito corrisponde al numero di schede.</span></li>
+    <li><span class="bx">✓</span><span>Il numero di riferimenti alle icone <code>menu-*</code> / <code>sport-*</code> non cala.</span></li>
+    <li><span class="bx">✓</span><span>Ispezione visiva su preview Vercel: desktop e <strong>390px reale con Playwright</strong> — l'estensione Chrome non cambia il viewport — <strong>da loggato</strong> oltre che in anonimo.</span></li>
+    <li><span class="bx">✓</span><span>Nessun file sotto <code>lib/</code>, <code>app/api/</code>, <code>db/</code>, <code>supabase/</code> nel diff.</span></li>
+    <li><span class="bx">✓</span><span>Dimensione del bundle prima/dopo riportata nel PR.</span></li>
+    <li><span class="bx">✓</span><span>Andrea guarda la preview e dice che è quello.</span></li>
+  </ul>
+  <p class="note stop">Poi: PR aperta, <strong>nessun merge senza APPROVE</strong>. L'auto-deploy Vercel è già stato rotto in passato e i merge non deployavano da soli: la preview del PR va verificata esistente, non presunta.</p>
+</div>
+</section>
+
+<!-- ════════ RISCHI ════════ -->
+<section>
+<div class="wrap stack-l">
+  <div class="stack">
+    <span class="eyebrow">I rischi</span>
+    <h2>Cosa può andare storto, e cosa lo prende</h2>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>rischio</th><th>mitigazione</th></tr></thead>
+    <tbody>
+      <tr><td>La foto dietro rende dubbio un numero</td><td>numeri su incassi pieni + contrasto misurato per ogni foto</td></tr>
+      <tr><td>Collisione di nomi di classe col CSS esistente</td><td>prefisso proprio + <code>grep</code> contro <code>globals.css</code> prima di introdurre una classe. È già successo: <code>.am-wm</code> → <code>.am-cardwm</code></td></tr>
+      <tr><td>Il chrome sta in un file da 9.489 righe</td><td>si cambiano solo le classi, nessuno scorporo: il diff resta leggibile riga per riga</td></tr>
+      <tr><td>Un figlio <code>width:max-content</code> stira gli antenati</td><td>l'armatura overflow lo prende. Precedente: un marquee allargò la board a ~3200px <em>nonostante</em> <code>overflow:hidden</code></td></tr>
+      <tr><td>Rimozione involontaria delle icone custom</td><td>conteggio prima/dopo — nasce da una rimozione che Andrea ha fatto revertire</td></tr>
+      <tr><td>Il carosello perde una slide o l'ordine</td><td><code>SLIDE_DEFS</code> deve comparire nel diff <strong>vuoto</strong></td></tr>
+    </tbody>
+  </table></div>
+</div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="key">#UI-MACHINA-0802 · spec riallineata 2026-08-20 · branch <code>feat/ui-machina</code> · sorgente markdown in <code>docs/superpowers/specs/</code></p>
+  </div>
+</footer>

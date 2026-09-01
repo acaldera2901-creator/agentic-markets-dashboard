@@ -15,7 +15,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
     <section className="tr-hero tr-card">
       {s?.win_rate ? (
         <>
-          <h1>Track record</h1>
+          <h2>Track record</h2>
           <div className="tr-hbot">
             <div className="tr-card">
               <div className="tr-big">{s.win_rate}</div>
@@ -32,13 +32,13 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
           </div>
           <p className="tr-lab" style={{ marginTop: 12 }}>
             {it
-              ? "Edge vs mercato (ROI · CLV) in arrivo col confronto quote storiche."
-              : "Edge vs market (ROI · CLV) coming with the historical-odds comparison."}
+              ? "Edge vs mercato (ROI) in arrivo col confronto quote storiche."
+              : "Edge vs market (ROI) coming with the historical-odds comparison."}
           </p>
         </>
       ) : (
         <>
-          <h1>Track record</h1>
+          <h2>Track record</h2>
           <p className="tr-lab" style={{ marginTop: 8 }}>
             {it
               ? "Le pick concluse appariranno qui man mano che le partite finiscono."

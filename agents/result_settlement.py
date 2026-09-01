@@ -33,6 +33,7 @@ from core.odds_api_client import (
 )
 from core.redis_client import publish
 from core.supabase_client import (
+    fetch_football_selections,
     fetch_unsettled_unified_predictions,
     record_pick_settlement,
     settle_unified_prediction,
@@ -219,6 +220,18 @@ class ResultSettlementAgent(BaseAgent):
         # re-fetched, not served from a stale "not completed" cache entry.
         self._scores_cache = {}
         self.logger.info(f"unified settlement: {len(rows)} rows past cutoff")
+        # Il pronostico del modello per le righe il cui `pick` e' vuoto. Senza,
+        # `pick not in ("home","draw","away")` le manda in `void` e un esito VERO
+        # va perso — misurato: il void del calcio segue il senza-pick riga per
+        # riga. In blocco, una volta per ciclo.
+        mancanti = [
+            str(r.get("source_id") or "")
+            for r in rows
+            if not str(r.get("pick") or "").strip() and r.get("source_id")
+        ]
+        selezioni = await fetch_football_selections(mancanti) if mancanti else {}
+        if selezioni:
+            self.logger.info(f"unified settlement: {len(selezioni)} pronostici recuperati da match_predictions")
         settled = 0
         for row in rows:
             try:
@@ -234,9 +247,34 @@ class ResultSettlementAgent(BaseAgent):
                                 f"unified voided (abandoned): {row.get('home_team')} vs "
                                 f"{row.get('away_team')} ({row.get('competition')})"
                             )
+                            # #LEDGER-MIRROR-0831 — anche la chiusura per
+                            # abbandono va nel registro sigillato. Questo ramo
+                            # chiudeva la riga servita e NON scriveva il mirror:
+                            # misurate 17 righe 'void' fra le 88 pick sigillate
+                            # senza chiusura al 31/08 (4 a luglio, 13 ad agosto),
+                            # sulla tabella che Telegram pubblica come prova
+                            # pubblica. Un pick sigillato senza chiusura non e'
+                            # un pick neutro: e' un buco nel registro, e il
+                            # registro mente per omissione.
+                            # outcome e final_score restano None: la partita non
+                            # ha un punteggio, e inventarne uno sarebbe peggio
+                            # del buco. closing_odds e' None per lo stesso
+                            # motivo di sempre (nessuna chiusura agganciabile).
+                            ext_void = row.get("external_event_id")
+                            if ext_void:
+                                await record_pick_settlement(
+                                    source_table="match_predictions",
+                                    source_id=str(ext_void),
+                                    model_version="football-v4-xg-model",
+                                    result="void",
+                                    outcome=None,
+                                    final_score=None,
+                                )
                     continue  # not finished / providers have no score yet
 
-                pick = str(row.get("pick") or "").lower()
+                pick = str(row.get("pick") or "").strip().lower()
+                if not pick:
+                    pick = selezioni.get(str(row.get("source_id") or ""), "")
                 market = str(row.get("market") or "1X2")
                 if market != "1X2" or pick not in ("home", "draw", "away"):
                     # Unknown market/pick: settle as void rather than guessing.
@@ -351,7 +389,10 @@ class ResultSettlementAgent(BaseAgent):
                     return result
             except Exception as e:
                 self.logger.debug(f"ESPN result lookup failed for {ext_str}: {e}")
-            if str(row.get("league") or "").upper() == "FRIENDLY":
+            # #NATIONS-LEAGUE-0826: the by-teams+date fallback covers UNL/CNL
+            # too — same class of feed (ESPN international slates) as
+            # fifa.friendly, same unreliability risk the Oman-Kuwait case showed.
+            if str(row.get("league") or "").upper() in ("FRIENDLY", "UNL", "CNL"):
                 # ESPN's fifa.friendly feed is unreliable for some
                 # internationals: it flagged Oman vs Kuwait (2026-06-09)
                 # canceled though it was played 4-2, so the row was wrongly

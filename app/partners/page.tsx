@@ -22,6 +22,7 @@ export default function PartnersPage() {
   useEffect(() => {
     try {
       const sl = localStorage.getItem("agentic-lang");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lingua da localStorage: non esiste lato server e va letta dopo il mount (#STORAGE-CRASH-0813)
       if (sl) setLang(pickPartnersLang(sl));
     } catch { /* default en */ }
   }, []);
@@ -39,7 +40,9 @@ export default function PartnersPage() {
   const t = PARTNERS_COPY[lang];
 
   return (
-    <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+    <div className="min-h-screen font-mono mc-scene-stadium" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       {geo === "allowed" ? (
         <PartnersShowcase lang={lang} country={country} />
       ) : geo === "blocked" ? (

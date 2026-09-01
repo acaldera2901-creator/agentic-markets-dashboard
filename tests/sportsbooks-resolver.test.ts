@@ -33,20 +33,20 @@ assert.equal(geoAllowed("GB"), false);
 assert.equal(resolveBooks("MT").length, 1);
 assert.deepEqual(resolveBooks("GB"), []);
 
-// Hard-block legale: nemmeno un'allowlist che li nomina esplicitamente li apre.
+// Blocklist centrale temporaneamente vuota: una allowlist esplicita apre anche
+// le geo storicamente bloccate.
 process.env.SPORTSBOOK_GEO_ALLOWLIST = "IT,DE,FR,NL,ES,BE";
-for (const blocked of ["IT", "DE", "FR", "NL", "ES", "BE", "it", "be"]) {
-  assert.equal(geoAllowed(blocked), false, `geo bloccato: ${blocked}`);
-  assert.deepEqual(resolveBooks(blocked), [], `nessun book per ${blocked}`);
+for (const country of ["IT", "DE", "FR", "NL", "ES", "BE", "it", "be"]) {
+  assert.equal(geoAllowed(country), true, `geo ammessa: ${country}`);
+  assert.equal(resolveBooks(country).length, 1, `book disponibile per ${country}`);
 }
 
-// globale "*": qualsiasi geo NON bloccato
+// Globale "*": qualsiasi geo, inclusa quella ignota.
 process.env.SPORTSBOOK_GEO_ALLOWLIST = "*";
-assert.equal(geoAllowed("US"), true);
-assert.equal(resolveBooks("US").length, 1);
-// ...ma "*" non scavalca l'hard-block.
-assert.equal(geoAllowed("IT"), false);
-assert.deepEqual(resolveBooks("IT"), []);
+for (const country of ["US", "IT", "DE", null, undefined]) {
+  assert.equal(geoAllowed(country), true, `geo globale: ${String(country)}`);
+  assert.equal(resolveBooks(country).length, 1, `book globale: ${String(country)}`);
+}
 
 // buildBetUrl produce un'opzione valida e non lancia mai
 const book = allSportsbooks()[0];

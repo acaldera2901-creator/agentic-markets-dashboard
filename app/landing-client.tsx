@@ -13,6 +13,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
 import LandingCarousel from "@/app/components/LandingCarousel"; // #HOME-BETMODE-1
 import { HouseBanner } from "@/components/HouseBanner";
+import { WidgetLivePreview } from "@/components/WidgetLivePreview";
 import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -54,7 +55,7 @@ const COPY = {
     cardAppDesc: "Il desk in tasca. In arrivo su iOS e Android.",
     appSoon: "IN ARRIVO",
     spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali", spTools: "Strumenti",
-    cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate · CLV verificato. Pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
+    cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate su pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: probabilità calibrate confrontate con la quota.", cardModelBtn: "Scopri",
     cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 14.99 · Pro 29.99 USDT/mese.", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. I risultati passati non garantiscono risultati futuri. 18+.",
@@ -64,7 +65,7 @@ const COPY = {
     waHead1: "Non battiamo il banco.",
     waHead2: "Lo rendiamo leggibile.",
     waBody: "Ogni partita passa nel modello: probabilità calibrate, confrontate con la quota. Dove c'è scarto lo evidenziamo e lo spieghiamo — prima del fischio — e lo registriamo. Niente soffiate, niente scatola nera: numeri onesti e il loro perché.",
-    waKpi1Val: "Hit-rate", waKpi1Lab: "su pick concluse", waKpi2Lab: "prima del fischio", waKpi3Val: "CLV", waKpi3Lab: "verificato e tracciato",
+    waKpi1Val: "Hit-rate", waKpi1Lab: "su pick concluse", waKpi2Lab: "prima del fischio",
     waCta: "Inizia gratis",
     waCtaSub: "Senza carta",
     // terminale edge_scanner — header colonne + stati + footer
@@ -104,7 +105,7 @@ const COPY = {
     cardAppDesc: "The desk in your pocket. Coming soon to iOS and Android.",
     appSoon: "COMING SOON",
     spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup", spTools: "Free tools",
-    cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "Hit rate · verified CLV. Picks logged before kickoff.", cardTrackBtn: "History",
+    cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "Hit rate on settled picks, logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: calibrated probabilities against the odds.", cardModelBtn: "Discover",
     cardPlans: "Plans", cardPlansDesc: "Free to try · Base 14.99 · Pro 29.99 USDT/month.", cardPlansBtn: "See plans",
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. Past results do not guarantee future results. 18+.",
@@ -114,7 +115,7 @@ const COPY = {
     waHead1: "We don't beat the book.",
     waHead2: "We make it readable.",
     waBody: "Every match runs through the model: calibrated probabilities, lined up against the odds. Where there's a gap we flag it and explain it — before kick-off — and we log it. No tips, no black box: honest numbers and the reasoning behind them.",
-    waKpi1Val: "Hit rate", waKpi1Lab: "on settled picks", waKpi2Lab: "logged pre-match", waKpi3Val: "CLV", waKpi3Lab: "verified & tracked",
+    waKpi1Val: "Hit rate", waKpi1Lab: "on settled picks", waKpi2Lab: "logged pre-match",
     waCta: "Start free",
     waCtaSub: "No card",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -153,7 +154,7 @@ const COPY = {
     cardAppDesc: "El desk en tu bolsillo. Próximamente en iOS y Android.",
     appSoon: "PRÓXIMAMENTE",
     spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial", spTools: "Herramientas",
-    cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto · CLV verificado. Picks registrados antes del partido.", cardTrackBtn: "Historial",
+    cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto en apuestas cerradas, registradas antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: probabilidades calibradas frente a la cuota.", cardModelBtn: "Descubre",
     cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 14.99 · Pro 29.99 USDT/mes.", cardPlansBtn: "Ver planes",
     risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. Los resultados pasados no garantizan resultados futuros. 18+.",
@@ -163,7 +164,7 @@ const COPY = {
     waHead1: "No batimos a la casa.",
     waHead2: "La hacemos legible.",
     waBody: "Cada partido pasa por el modelo: probabilidades calibradas, frente a la cuota. Donde hay diferencia la señalamos y la explicamos — antes del pitido — y la registramos. Sin soplos, sin caja negra: números honestos y su porqué.",
-    waKpi1Val: "Acierto", waKpi1Lab: "en apuestas cerradas", waKpi2Lab: "antes del partido", waKpi3Val: "CLV", waKpi3Lab: "verificado y registrado",
+    waKpi1Val: "Acierto", waKpi1Lab: "en apuestas cerradas", waKpi2Lab: "antes del partido",
     waCta: "Empieza gratis",
     waCtaSub: "Sin tarjeta",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -202,7 +203,7 @@ const COPY = {
     cardAppDesc: "Le desk dans ta poche. Bientôt sur iOS et Android.",
     appSoon: "BIENTÔT",
     spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde", spTools: "Outils",
-    cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite · CLV vérifié. Pronostics enregistrés avant le match.", cardTrackBtn: "Historique",
+    cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite sur paris clôturés, enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : probabilités calibrées face à la cote.", cardModelBtn: "Découvrir",
     cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 14.99 · Pro 29.99 USDT/mois.", cardPlansBtn: "Voir les offres",
     risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. Les résultats passés ne garantissent pas les résultats futurs. 18+.",
@@ -212,7 +213,7 @@ const COPY = {
     waHead1: "On ne bat pas le bookmaker.",
     waHead2: "On le rend lisible.",
     waBody: "Chaque match passe dans le modèle : des probabilités calibrées, confrontées à la cote. Là où il y a un écart, on le signale et on l'explique — avant le coup d'envoi — et on l'enregistre. Pas de tuyaux, pas de boîte noire : des chiffres honnêtes et leur pourquoi.",
-    waKpi1Val: "Réussite", waKpi1Lab: "sur paris clôturés", waKpi2Lab: "avant le match", waKpi3Val: "CLV", waKpi3Lab: "vérifié et suivi",
+    waKpi1Val: "Réussite", waKpi1Lab: "sur paris clôturés", waKpi2Lab: "avant le match",
     waCta: "Commencer gratuitement",
     waCtaSub: "Sans carte",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -251,7 +252,7 @@ const COPY = {
     cardAppDesc: "Desk в твоём кармане. Скоро на iOS и Android.",
     appSoon: "СКОРО",
     spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ", spTools: "Инструменты",
-    cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Точность попаданий · проверенный CLV. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
+    cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Точность попаданий по закрытым прогнозам. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: калиброванные вероятности против коэффициента.", cardModelBtn: "Узнать",
     cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 14.99 · Pro 29.99 USDT/мес.", cardPlansBtn: "Тарифы",
     risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. Прошлые результаты не гарантируют будущих результатов. 18+.",
@@ -261,7 +262,7 @@ const COPY = {
     waHead1: "Мы не обыгрываем букмекера.",
     waHead2: "Мы делаем его понятным.",
     waBody: "Каждый матч проходит через модель: калиброванные вероятности, сопоставленные с коэффициентом. Где есть расхождение — мы отмечаем его и объясняем — до свистка — и фиксируем. Никаких подсказок, никакого чёрного ящика: честные цифры и их причина.",
-    waKpi1Val: "Точность", waKpi1Lab: "по закрытым прогнозам", waKpi2Lab: "до матча", waKpi3Val: "CLV", waKpi3Lab: "проверенный, отслеживается",
+    waKpi1Val: "Точность", waKpi1Lab: "по закрытым прогнозам", waKpi2Lab: "до матча",
     waCta: "Начать бесплатно",
     waCtaSub: "Без карты",
     waColMatch: "Match", waReadModel: "Model", waReadMarket: "Market", waReadEdge: "Edge",
@@ -358,7 +359,18 @@ const SCAN_EXAMPLE_ROWS: ScanRow[] = [
 type V3Copy = {
   inviteHead: string; inviteBody: string;
   ctaTerminal: string; ctaTrack: string; ctaBrowse: string;
-  chipLogged: string; chipClv: string; chipCal: string;
+  // #CLV-CLAIM-0831: `chipClv` RIMOSSO. Era il chip di fiducia «CLV verified»
+  // sulla landing pubblica, accanto a due claim veri (sigillata prima del
+  // fischio, calibrata). Quel terzo non era vero: misurato il 31/08 su
+  // produzione, 0 righe su 3.730 in unified_predictions hanno closing_odds o
+  // closing_line_value, e 1 su 1.127 in pick_settlement. Non e' un ritardo di
+  // popolamento: le quote di chiusura degli ultimi 30 giorni coprono OTTO
+  // partite dalla sola fonte che per regola di sistema puo' alimentare il
+  // prodotto (odds_api), e nessuna delle otto compare in pick_ledger — le altre
+  // 1.169 righe `is_closing` vengono da stake/roobet, la via che alimenta solo
+  // la misura. Un claim di verifica senza il dato che lo verifica va tolto,
+  // non riformulato. Vedi lib/landing-claims.test.ts prima di rimetterlo.
+  chipLogged: string; chipCal: string;
   anEyebrow: string; anHead: string; anSub: string;
   anCapLive: string; anCapRepr: string;
   anNotes: { lab: string; body: string; strong: string }[];
@@ -371,11 +383,12 @@ type V3Copy = {
   pcFree: string; pcBase: string; pcPro: string; pcBest: string; pcMo: string;
   pcFreeList: string[]; pcBaseList: string[]; pcProList: string[];
   fnHead1: string; fnHeadG: string; fnBody: string;
+  wgKick: string; wgHead: string; wgBody: string; wgCta: string;
 };
 const V3_EN: V3Copy = {
   inviteHead: "Your invite is live", inviteBody: "days of PRO, free — unlocked when you confirm your email.",
   ctaTerminal: "Open the terminal", ctaTrack: "See the track record", ctaBrowse: "Browse the track record",
-  chipLogged: "Logged before kick-off", chipClv: "CLV verified", chipCal: "Calibrated, not hyped",
+  chipLogged: "Logged before kick-off", chipCal: "Calibrated, not hyped",
   anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.",
   anCapLive: "Live pick — the exact card component from the board.",
   anCapRepr: "Representative reading — the exact card component from the board.",
@@ -386,7 +399,7 @@ const V3_EN: V3Copy = {
     { lab: "Edge", strong: "The gap, quantified.", body: "Where the model sees more value than the price implies — never a promise of profit." },
     { lab: "Deep Analysis", strong: "The “why”, in the open.", body: "Form, xG, injuries, Elo, serve/return, H2H, surface — reasoning, not a black box." },
   ],
-  prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "CLV VERIFIED · LOGGED PRE-KICK-OFF",
+  prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "LOGGED PRE-KICK-OFF",
   prMeta: (n) => `${n} settled picks, each time-stamped before the whistle. This is the settled hit-rate — past performance, not a forecast. Nothing edited after the fact.`,
   prMetaQual: "Every pick is time-stamped before the whistle and settled on the public record — past performance, not a forecast. Nothing edited after the fact.",
   prWall: "SETTLED PICKS", prColMatch: "MATCH", prColRes: "RESULT",
@@ -401,15 +414,24 @@ const V3_EN: V3Copy = {
   ],
   pcEyebrow: "Access", pcHead: "Start free. Read deeper when you’re ready.",
   pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL ACCESS", pcMo: " / mo",
-  pcFreeList: ["One pick per sport, per week", "Public track record", "Preview of the edge scanner"],
-  pcBaseList: ["All Best Bets · +EV feed", "Weekly Pick", "Deep Analysis on every card", "Full settled history"],
-  pcProList: ["Everything in Base", "Live · in-play readings", "Match Builder", "Priority scanner & crypto billing"],
+  // #FREE-BASE-DAILY-QUOTA-0831 — i tre elenchi dicono ora quello che il gate
+  // consegna davvero. Base NON aveva "Deep Analysis su ogni scheda" (è Pro-only,
+  // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
+  // prodotto non manteneva.
+  pcFreeList: ["3 picks per sport, every day", "Public track record", "Preview of the edge scanner"],
+  pcBaseList: ["7 picks per sport, every day", "Edge %, suggested stake, closing line value", "Weekly Pick", "Full settled history"],
+  pcProList: ["Everything in Base, with no daily cap", "Deep Analysis on every card", "Live · in-play readings", "Match Builder"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
+  // #WIDGET-LANDING-0824 — richiamo ai proprietari di siti: il widget è un canale
+  // di acquisizione, e questa riga è il solo posto in home in cui esiste.
+  wgKick: "For site owners", wgHead: "Run a site? Put our picks on it.",
+  wgBody: "One line of code shows today's predictions on your pages, updates itself, and credits every signup it sends us.",
+  wgCta: "See the widget",
 };
 const V3_IT: V3Copy = {
   inviteHead: "Il tuo invito è attivo", inviteBody: "giorni di PRO, gratis — si attivano quando confermi la mail.",
   ctaTerminal: "Apri il terminale", ctaTrack: "Vedi il track record", ctaBrowse: "Sfoglia il track record",
-  chipLogged: "Registrata prima del fischio", chipClv: "CLV verificato", chipCal: "Calibrata, mai gonfiata",
+  chipLogged: "Registrata prima del fischio", chipCal: "Calibrata, mai gonfiata",
   anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype. È la scheda identica a quella sulla board.",
   anCapLive: "Pick live — il componente scheda identico a quello della board.",
   anCapRepr: "Lettura rappresentativa — il componente scheda identico a quello della board.",
@@ -420,7 +442,7 @@ const V3_IT: V3Copy = {
     { lab: "Edge", strong: "Lo scarto, quantificato.", body: "Dove il modello vede più valore di quanto implichi la quota — mai una promessa di profitto." },
     { lab: "Deep Analysis", strong: "Il “perché”, in chiaro.", body: "Forma, xG, infortuni, Elo, servizio/risposta, H2H, superficie — ragionamento, non scatola nera." },
   ],
-  prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "CLV VERIFICATO · REGISTRATA PRIMA DEL FISCHIO",
+  prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "REGISTRATA PRIMA DEL FISCHIO",
   prMeta: (n) => `${n} pick concluse, ciascuna con timestamp prima del fischio. Questo è l’hit-rate concluso — risultati passati, non una previsione. Nulla modificato a posteriori.`,
   prMetaQual: "Ogni pick ha un timestamp prima del fischio ed è conclusa sul registro pubblico — risultati passati, non una previsione. Nulla modificato a posteriori.",
   prWall: "PICK CONCLUSE", prColMatch: "MATCH", prColRes: "ESITO",
@@ -435,10 +457,13 @@ const V3_IT: V3Copy = {
   ],
   pcEyebrow: "Accesso", pcHead: "Inizia gratis. Leggi più a fondo quando vuoi.",
   pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "ACCESSO COMPLETO", pcMo: " / mese",
-  pcFreeList: ["Una pick per sport, a settimana", "Track record pubblico", "Anteprima dell’edge scanner"],
-  pcBaseList: ["Tutto il feed Best Bets · +EV", "Weekly Pick", "Deep Analysis su ogni scheda", "Storico concluso completo"],
-  pcProList: ["Tutto ciò che c’è in Base", "Letture live · in-play", "Match Builder", "Scanner prioritario & pagamento crypto"],
+  pcFreeList: ["3 pick per sport, ogni giorno", "Track record pubblico", "Anteprima dell’edge scanner"],
+  pcBaseList: ["7 pick per sport, ogni giorno", "Edge %, stake suggerito, closing line value", "Weekly Pick", "Storico concluso completo"],
+  pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep Analysis su ogni scheda", "Letture live · in-play", "Match Builder"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
+  wgKick: "Per chi ha un sito", wgHead: "Hai un sito? Mettici i nostri pronostici.",
+  wgBody: "Una riga di codice mostra le predizioni del giorno sulle tue pagine, si aggiorna da sola e attribuisce a te le iscrizioni che porta.",
+  wgCta: "Vedi il widget",
 };
 const V3: Record<Lang, V3Copy> = { en: V3_EN, it: V3_IT, es: V3_EN, fr: V3_EN, ru: V3_EN };
 
@@ -499,6 +524,7 @@ export default function LandingPage() {
   const [anatomyIsLive, setAnatomyIsLive] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mounted + lingua e tema da localStorage: il pattern SSR-safe canonico, e lo storage va letto solo dopo il mount (#STORAGE-CRASH-0813)
     setMounted(true);
     try {
       const sl = localStorage.getItem("agentic-lang");
@@ -509,31 +535,17 @@ export default function LandingPage() {
     // da idratazione non lascia il tema sbagliato.
     let t = "";
     try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi app/layout.tsx.
     if (t !== "light" && t !== "dark") {
-      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+      t = "dark";
     }
     setTheme(t as "dark" | "light");
     document.documentElement.setAttribute("data-theme", t);
   }, []);
 
-  // #THEME-CONSISTENCY-0623: segui l'impostazione di sistema (computer/browser)
-  // SOLO se l'utente non ha mai scelto un tema manualmente (agentic-theme vuoto).
-  // Appena tocca DARK/LIGHT la scelta persiste e vince. Così il tema "resta sulla
-  // scelta dell'utente OPPURE segue il sistema", senza divergere tra le pagine.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let chosen = "";
-      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-      if (chosen === "light" || chosen === "dark") return; // scelta esplicita: non sovrascrivere
-      const next: "dark" | "light" = e.matches ? "light" : "dark";
-      setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema di
+  // sistema è rimosso anche qui, così landing e desk restano sullo stesso
+  // contratto (default scuro, scelta manuale che vince e persiste).
 
   // #PRICING-CREATORS-0706: i link invito creator (/r/CODICE) atterrano QUI con
   // ?ref=. First-touch identico al desk (#MB-1): persistiamo una volta sola in
@@ -694,7 +706,10 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="lp hv3" data-mounted={mounted ? "1" : "0"}>
+    <div className="lp hv3 mc-scene-stadium" data-mounted={mounted ? "1" : "0"} data-mc-ground>
+      {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata, sotto
+          la velatura di [data-mc-ground]::after. Decorazione, non contenuto. */}
+      <span className="bgfix" aria-hidden="true" />
       <SportGlyphSprite />
 
       {/* #TG-TRIAL-SITE: banda invito — appare SOLO con un codice interno valido */}
@@ -722,9 +737,9 @@ export default function LandingPage() {
                pill nome+piano (che resta link all'account). Su home/route separate
                il logout fa POST /api/auth {action:"logout"} poi reload su "/". */
             <>
-              <a href="/plans" className="am-acct" title={auth.identifier}>
+              <Link href="/plans" className="am-acct" title={auth.identifier}>
                 {auth.name || auth.identifier}<span className="plan">{planPillLabel(auth.plan)}</span>
-              </a>
+              </Link>
               <button type="button" className="lp-nav-link" onClick={logoutHome}>
                 {t.logout}
               </button>
@@ -755,18 +770,18 @@ export default function LandingPage() {
            scrolla in orizzontale DENTRO la riga, non il body. ── */}
       <nav className="v-sportnav-wrap" aria-label="Sports">
         <div className="v-sportnav">
-          <a href="/predictions?sport=all" className="v-sportbtn">
+          <Link href="/predictions?sport=all" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-allsports-sm.png" alt="" aria-hidden="true" />
             {t.spAllSports}
-          </a>
-          <a href="/predictions?sport=football" className="v-sportbtn">
+          </Link>
+          <Link href="/predictions?sport=football" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-football-sm.png" alt="" aria-hidden="true" />
             {t.spFootball}
-          </a>
-          <a href="/predictions?sport=tennis" className="v-sportbtn">
+          </Link>
+          <Link href="/predictions?sport=tennis" className="v-sportbtn">
             <img className="v-sportbtn-ic" src="/banners/sport-tennis-sm.png" alt="" aria-hidden="true" />
             {t.spTennis}
-          </a>
+          </Link>
           {/* #TOOLS-HUB-0805: lo slot che era della World Cup (torneo finito) porta
               ai calcolatori gratuiti — pagina pubblica, senza login, pensata per
               il traffico organico. L'hub WC resta online, fuori dalla nav. */}
@@ -774,10 +789,10 @@ export default function LandingPage() {
             <img className="v-sportbtn-ic" src="/icons/menu-tools-sm.png" alt="" aria-hidden="true" />
             {t.spTools}
           </Link>
-          <a href="/predictions?sport=all" className="v-sportbtn v-sportbtn--live">
+          <Link href="/predictions?sport=all" className="v-sportbtn v-sportbtn--live">
             <span className="dot" aria-hidden="true" />
             LIVE
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -805,12 +820,11 @@ export default function LandingPage() {
           <h1>{t.waHead1}<br /><span className="g">{t.waHead2}</span></h1>
           <p className="lede">{t.waBody}</p>
           <div className="v-actions">
-            <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
-            <a href="/history" className="v-btn v-btn--secondary">{v.ctaTrack}</a>
+            <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
+            <Link href="/history" className="v-btn v-btn--secondary">{v.ctaTrack}</Link>
           </div>
           <div className="v-trust">
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipLogged}</span>
-            <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipClv}</span>
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipCal}</span>
           </div>
         </div>
@@ -940,12 +954,12 @@ export default function LandingPage() {
           <div className="v-tier">
             <div className="name">{v.pcBase}</div><div className="price">${PUBLIC_PAID_PLANS.base.amountUsdt}<small>{v.pcMo}</small></div>
             <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <a href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</a>
+            <Link href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</Link>
           </div>
           <div className="v-tier pro">
             <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${PUBLIC_PAID_PLANS.premium.amountUsdt}<small>{v.pcMo}</small></div>
             <ul>{v.pcProList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <a href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</a>
+            <Link href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</Link>
           </div>
         </div>
       </div></section>
@@ -955,8 +969,31 @@ export default function LandingPage() {
         <h2>{v.fnHead1}<span className="g">{v.fnHeadG}</span></h2>
         <p>{v.fnBody}</p>
         <div className="v-actions">
-          <a href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</a>
-          <a href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</a>
+          <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
+          <Link href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</Link>
+        </div>
+      </div></section>
+
+      {/* ── #WIDGET-LANDING-0824: riga per i proprietari di siti. Sta DOPO la CTA
+           finale di proposito — non compete con l'iscrizione, raccoglie chi è
+           arrivato in fondo e ha un pubblico suo. ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center", justifyContent: "space-between",
+                      // la riga si ferma prima del bordo della sezione: a 1280px, larga
+                      // quanto il wrap, tra il testo e il widget restavano 238px di vuoto
+                      // e i due pezzi smettevano di leggersi come una coppia (misurato).
+                      maxWidth: 960, margin: "0 auto" }}>
+          <div style={{ flex: "1 1 320px", maxWidth: "52ch" }}>
+            <div className="v-kick q">{v.wgKick}</div>
+            <h2 style={{ margin: "10px 0 8px", fontSize: "clamp(20px,3vw,28px)", letterSpacing: "-.02em" }}>{v.wgHead}</h2>
+            <p style={{ margin: "0 0 16px", color: "var(--am-muted)" }}>{v.wgBody}</p>
+            <Link href="/widget" className="v-btn v-btn--secondary">{v.wgCta}</Link>
+          </div>
+          {/* Il widget VERO accanto alla riga che lo vende: la sezione si
+              dimostra da sola invece di descriversi. */}
+          <div style={{ flex: "1 1 300px", maxWidth: 400, width: "100%" }}>
+            <WidgetLivePreview lang={lang} theme={theme} />
+          </div>
         </div>
       </div></section>
 

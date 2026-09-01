@@ -97,7 +97,9 @@ export default async function WorldCupPage() {
   );
 
   return (
-    <div className="portal-root wc-root">
+    <div className="portal-root wc-root mc-scene-stadium" data-mc-ground>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <SportGlyphSprite />
       <SiteTopbar backLabel="Board" />
       <main className="wc-page">

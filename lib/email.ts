@@ -2,6 +2,8 @@
 // Used for customer OTP login codes. Fails loud to the caller so the auth route
 // can return a real error instead of silently "sending" nothing.
 
+import { impressumLine } from "./legal-entity";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 // Contact / sender identity for account emails. Andrea: le mail di attivazione
@@ -123,9 +125,14 @@ function defaultFooter(lang: "it" | "en"): string {
   const it = lang !== "en";
   const tagline = it ? "Il tuo vantaggio in ogni scommessa" : "Your edge in every bet";
   const year = new Date().getFullYear();
+  // #EMAIL-SENDER-IDENTITY-0824 — la riga di identità arriva dalla stessa fonte
+  // del footer CRM (lib/legal-entity.ts). Prima le transazionali non ne avevano
+  // NESSUNA: OTP, attivazioni e ricevute uscivano senza mittente identificabile,
+  // mentre le lifecycle ce l'avevano. Ora tutte le email dicono la stessa cosa.
   return `<p style="margin:0 0 4px;color:#c7d0d8;font-weight:600">The BetRedge Team</p>
   <p style="margin:0">${tagline}</p>
-  <p style="margin:8px 0 0">© ${year} BetRedge · <a href="mailto:${ACCOUNT_CONTACT_EMAIL}" style="color:${BRAND.muted};text-decoration:underline">${ACCOUNT_CONTACT_EMAIL}</a></p>`;
+  <p style="margin:8px 0 0">© ${year} BetRedge · <a href="mailto:${ACCOUNT_CONTACT_EMAIL}" style="color:${BRAND.muted};text-decoration:underline">${ACCOUNT_CONTACT_EMAIL}</a></p>
+  <p style="margin:6px 0 0">${impressumLine()}</p>`;
 }
 
 // Wrapper condiviso da tutte le email. `footerHtml` permette al CRM di passare il
@@ -406,8 +413,9 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
 // È il giorno 0 della scala post-registrazione (#CRM-MERGE-0727): resta qui, nel path
 // transazionale, perché un benvenuto è comunicazione di servizio e non richiede il
 // consenso marketing che invece governa i touchpoint acquisition. Il testo viene da
-// Email_1 di Steve, con una correzione: il Free dà 1 pick PER SPORT a settimana
-// (lib/access-projection.ts), non "una pick a settimana".
+// Email_1 di Steve, con una correzione: il Free dà 3 pick PER SPORT AL GIORNO
+// (lib/access-projection.ts, #FREE-BASE-DAILY-QUOTA-0831), non "una pick a
+// settimana". Il numero vive lì: se cambia la quota, questa riga va con lei.
 // #CRYPTO-RECEIPTS-1 — lingua delle email: le stesse 5 del sito, risolte come fa
 // `resolveCrmLang` in lib/crm-content.ts (2 caratteri, fallback italiano) così le
 // mail di pagamento e quelle del CRM non possono uscire in lingue diverse per lo
@@ -426,35 +434,35 @@ type WelcomeLang = MailLang;
 const WELCOME: Record<WelcomeLang, { subject: string; body1: string; body2: string; plans: string; cta: string }> = {
   it: {
     subject: "Il tuo account gratuito è attivo",
-    body1: "Ogni settimana ricevi 1 pick per sport, con lo storico reale delle performance dove disponibile.",
+    body1: "Ogni giorno ricevi 3 pick per sport — calcio e tennis — con lo storico reale delle performance dove disponibile.",
     body2: "Due passi e hai visto il cuore di BetRedge: apri il desk, poi apri la prima pick per capire come inquadriamo un edge.",
     plans: "Quando vorrai di più, BetRedge Base sblocca più predizioni di calcio e tennis con edge e stake completi, e BetRedge Pro aggiunge predizioni illimitate, Deep Analysis e la Weekly Pick. Senza fretta: il piano gratuito resta tuo.",
     cta: "Apri il desk",
   },
   en: {
     subject: "Your free account is live",
-    body1: "Every week you'll get 1 pick per sport, plus real historical performance where available.",
+    body1: "Every day you get 3 picks per sport — football and tennis — plus real historical performance where available.",
     body2: "Two steps and you've seen the core of BetRedge: open the desk, then open your first pick to see how we frame an edge.",
     plans: "When you're ready for more, BetRedge Base unlocks more football and tennis predictions with full edge and stake data, and BetRedge Pro adds unlimited predictions, Deep Analysis and the Weekly Pick. No rush — your free plan isn't going anywhere.",
     cta: "Open the desk",
   },
   es: {
     subject: "Tu cuenta gratuita está activa",
-    body1: "Cada semana recibes 1 pick por deporte, con el historial real de rendimiento donde esté disponible.",
+    body1: "Cada día recibes 3 picks por deporte — fútbol y tenis — con el historial real de rendimiento donde esté disponible.",
     body2: "Dos pasos y ya has visto el núcleo de BetRedge: abre el desk y luego abre tu primer pick para ver cómo planteamos un edge.",
     plans: "Cuando quieras más, BetRedge Base desbloquea más predicciones de fútbol y tenis con edge y stake completos, y BetRedge Pro añade predicciones ilimitadas, Deep Analysis y la Weekly Pick. Sin prisa: tu plan gratuito sigue siendo tuyo.",
     cta: "Abrir el desk",
   },
   fr: {
     subject: "Votre compte gratuit est actif",
-    body1: "Chaque semaine, vous recevez 1 pick par sport, avec l'historique réel des performances lorsqu'il est disponible.",
+    body1: "Chaque jour, vous recevez 3 picks par sport — football et tennis — avec l'historique réel des performances lorsqu'il est disponible.",
     body2: "Deux étapes et vous avez vu l'essentiel de BetRedge : ouvrez le desk, puis ouvrez votre premier pick pour voir comment nous cadrons un edge.",
     plans: "Quand vous voudrez aller plus loin, BetRedge Base débloque davantage de pronostics football et tennis avec edge et mise complets, et BetRedge Pro ajoute les pronostics illimités, la Deep Analysis et la Weekly Pick. Sans précipitation : votre plan gratuit reste le vôtre.",
     cta: "Ouvrir le desk",
   },
   ru: {
     subject: "Ваш бесплатный аккаунт активен",
-    body1: "Каждую неделю вы получаете 1 пик по каждому виду спорта, а также реальную историю результатов, где она доступна.",
+    body1: "Каждый день вы получаете 3 пика по каждому виду спорта — футбол и теннис — а также реальную историю результатов, где она доступна.",
     body2: "Два шага — и вы увидели суть BetRedge: откройте деск, затем откройте свой первый пик, чтобы понять, как мы находим edge.",
     plans: "Когда захотите большего, BetRedge Base открывает больше прогнозов по футболу и теннису с полными edge и ставкой, а BetRedge Pro добавляет неограниченные прогнозы, Deep Analysis и Weekly Pick. Без спешки: бесплатный план остаётся вашим.",
     cta: "Открыть деск",

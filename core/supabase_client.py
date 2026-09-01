@@ -256,6 +256,7 @@ def wc_prediction_to_unified_row(
     signal_allowed: bool = False,
     team_news_summary: str | None = None,
     friendly: bool = False,
+    nations_league_code: str | None = None,
     model_version: str | None = None,
     surface: tuple[bool, int] | None = None,
 ) -> dict:
@@ -312,6 +313,15 @@ def wc_prediction_to_unified_row(
         row["model_version"] = model_version or settings.FRIENDLY_MODEL_VERSION
         row["source_table"] = settings.FRIENDLY_SOURCE_TABLE
         row["competition"] = "International Friendly"
+        row["world_cup_stage"] = None
+    elif nations_league_code:
+        # #NATIONS-LEAGUE-0826: same national model, own version + source_table
+        # namespace (mirrors the friendly split) so calibration/track-record
+        # audits never mix the tier-banded Nations League into the WC record.
+        from core.world_cup_registry import nations_league_name
+        row["model_version"] = model_version or settings.NATIONS_MODEL_VERSION
+        row["source_table"] = settings.NATIONS_SOURCE_TABLE
+        row["competition"] = nations_league_name(nations_league_code)
         row["world_cup_stage"] = None
     else:
         row["model_version"] = model_version or settings.WC_MODEL_VERSION
@@ -613,7 +623,7 @@ async def fetch_unsettled_unified_predictions(
     params = {
         "select": (
             "id,external_event_id,sport,league,competition,home_team,away_team,"
-            "market,pick,starts_at,world_cup_stage"
+            "market,pick,starts_at,world_cup_stage,source_id"
         ),
         "sport": "eq.football",
         "is_historical": "eq.false",
@@ -771,8 +781,13 @@ async def record_pick_settlement(
 
     Written once per pick when the event resolves, pointing back at exactly one
     pick_ledger row via (source_table, source_id, model_version). The table has
-    no UPDATE/DELETE surface, so a correction is a NEW row (latest settled_at
-    wins in the runner), never an in-place edit. ``closing_odds`` is the price on
+    no UPDATE/DELETE surface AND a UNIQUE index on that same tern
+    (pick_settlement_pick_key, verified on prod 2026-08-31 #LEDGER-MIRROR-0831),
+    so a pick is settled EXACTLY ONCE: the first write wins and every later one
+    is ignored by the dedup below. NB the previous wording here promised that "a
+    correction is a NEW row (latest settled_at wins)" — it is not possible, the
+    unique index rejects it. Nothing relies on that promise today; do not build
+    on it. ``closing_odds`` is the price on
     the picked selection at close for CLV; NULL when no verified closing line is
     joinable (never fabricated). Fully fail-soft: the INSERT is rejected by the
     pick_settlement→pick_ledger FK when no matching ledger pick exists, which is
@@ -832,6 +847,7 @@ async def settle_unified_tennis(
     void: bool = False,
     unresolved: bool = False,
     final_score: str | None = None,
+    predicted_player: str | None = None,
 ) -> bool:
     """
     Bridge a tennis settlement to the served unified_predictions row.
@@ -877,7 +893,18 @@ async def settle_unified_tennis(
         if not rows:
             return False
         row = rows[0]
-        pick = (row.get("pick") or "").strip()
+        # `unified_predictions.pick` e' VUOTO sul 47% delle righe tennis degli
+        # ultimi 3 giorni (misurato il 30/08): la riga dice «confidence 68» senza
+        # dire su CHI. Con il solo `pick` il confronto col vincitore e'
+        # impossibile e la riga finisce in `void` — 14 delle prime 20 chiuse dopo
+        # la riparazione del settlement sono andate cosi', cioe' un esito VERO
+        # buttato via.
+        #
+        # `predicted_player` arriva da `tennis_predictions.best_selection`, che e'
+        # popolato al 100% (76 P1 + 56 P2 su 132 righe in 3 giorni, zero vuoti):
+        # e' la stessa fonte da cui il canale Telegram ricava il favorito sulle
+        # card, quindi il registro pubblico e la chiusura dicono la stessa cosa.
+        pick = (row.get("pick") or "").strip() or (predicted_player or "").strip()
         if unresolved:
             # #TENNIS-VOID-FIX-1: aged out without ever resolving the match.
             # Not a confirmed void — flagged so /api/v2/history excludes it from
@@ -1014,3 +1041,62 @@ async def settle_shadow_eval_row(
     except Exception as exc:
         logger.warning("shadow_eval settle error for %s: %s", row_id, exc)
         return False
+
+
+# Mappa la selezione del modello (match_predictions) al vocabolario del pick.
+_SELEZIONE_CALCIO = {"HOME": "home", "DRAW": "draw", "AWAY": "away"}
+
+
+async def fetch_football_selections(source_ids: list[str]) -> dict[str, str]:
+    """
+    Il pronostico del modello per righe di calcio il cui `pick` e' vuoto.
+
+    `unified_predictions.pick` e' vuoto su un gran numero di righe di calcio, e
+    `_unified_settlement_cycle` fa `if pick not in ("home","draw","away") ->
+    void`: un esito VERO diventava un void. Misurato il 30/08 sulle righe con
+    kickoff fra il 19 e il 29 agosto: il `void` segue il `senza pick` quasi riga
+    per riga (22/08: 24 righe, 14 void, 18 senza pick; 23/08: 30, 20, 21).
+
+    E' lo stesso difetto del tennis, e la stessa cura: `match_predictions.
+    best_selection` (HOME/DRAW/AWAY). Copertura misurata: 76% delle righe.
+    Quando manca si torna al comportamento precedente — meglio un void che un
+    pronostico inventato.
+
+    In BLOCCO, non una richiesta per riga: un ciclo puo' avere 50 righe.
+    """
+    base = _rest_base()
+    if not base or not source_ids:
+        return {}
+    puliti = [str(x) for x in dict.fromkeys(source_ids) if x]
+    if not puliti:
+        return {}
+    fuori: dict[str, str] = {}
+    # PostgREST `in.()` ha un limite pratico sulla lunghezza dell'URL: a blocchi.
+    for i in range(0, len(puliti), 40):
+        blocco = puliti[i : i + 40]
+        elenco = ",".join(f'"{x}"' for x in blocco)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"{base}/match_predictions",
+                    params={
+                        "select": "match_id,best_selection",
+                        "match_id": f"in.({elenco})",
+                    },
+                    headers=_service_headers(),
+                )
+            if resp.status_code != 200:
+                logger.warning(
+                    "match_predictions selection lookup: %s %s",
+                    resp.status_code, resp.text[:150],
+                )
+                continue
+            for riga in resp.json():
+                sel = _SELEZIONE_CALCIO.get(str(riga.get("best_selection") or "").strip().upper())
+                mid = riga.get("match_id")
+                if sel and mid:
+                    fuori[str(mid)] = sel
+        except Exception as exc:
+            # Un blocco che non risponde non deve far cadere il ciclo.
+            logger.warning("match_predictions selection lookup fallita: %s", exc)
+    return fuori

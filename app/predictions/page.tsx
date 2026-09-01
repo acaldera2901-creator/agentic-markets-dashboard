@@ -14,7 +14,7 @@ export default function PredictionsPage() {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Predictions", "/predictions"]])} />
-      <Dashboard />
+      <Dashboard initialTab="bets" />
     </>
   );
 }

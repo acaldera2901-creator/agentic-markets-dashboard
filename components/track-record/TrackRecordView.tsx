@@ -3,6 +3,7 @@
 import { PickLedger, type LedgerRow } from "./PickLedger";
 import { EdgeCard } from "./EdgeCard";
 import { SegmentTable } from "./SegmentTable";
+import { GlyphLedger, GlyphTrend } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 
 // Stili namespaced .tr-* (token reali --am-*), iniettati una volta. Si evita
 // l'import di CSS globale (vincolo App Router) come nel prototipo verificato.
@@ -41,7 +42,7 @@ const CSS = `
 .tr-root .tr-seg button.on{background:var(--c);color:#fff}
 .tr-root .tr-hero{position:relative;overflow:hidden;padding:26px;border-radius:16px}
 .tr-root .tr-hero::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--c),var(--cobalt));opacity:.55}
-.tr-root .tr-hero h1{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0 0 18px}
+.tr-root .tr-hero h2{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0 0 18px}
 .tr-root .tr-hbot{display:flex;gap:10px;margin-top:14px}
 .tr-root .tr-hbot .tr-card{flex:1;padding:14px;text-align:center}
 .tr-root .tr-fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -85,14 +86,14 @@ export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" 
       </div>
 
       <div className="tr-sh">
-        <span className="tr-glyph">🧾</span>
+        <span className="tr-glyph"><GlyphLedger size={16} /></span>
         <h2>{it ? "Registro pick" : "Pick log"}</h2>
         <span className="hint">{it ? "pick concluse · arrivano qui quando la partita finisce" : "settled picks · they land here when the match ends"}</span>
       </div>
       <PickLedger rows={rows} lang={lang} />
 
       <div className="tr-sh">
-        <span className="tr-glyph">📈</span>
+        <span className="tr-glyph"><GlyphTrend size={16} /></span>
         <h2>{it ? "Lo storico in sintesi" : "Track record at a glance"}</h2>
       </div>
       <EdgeCard lang={lang} />

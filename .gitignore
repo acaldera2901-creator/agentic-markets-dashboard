@@ -77,6 +77,7 @@ public/icons/_candidates/
 
 # worktree temporanei degli agenti: mai nel repo (i gitlink rompono i cloni)
 .claude/worktrees/
+.worktrees/
 
 # log del job Refresh history snapshot: va nel body della PR, non nel tree
 # (il run del 10/08 lo ha committato per sbaglio insieme allo snapshot)

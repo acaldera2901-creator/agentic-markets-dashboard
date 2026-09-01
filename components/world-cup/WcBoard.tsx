@@ -12,6 +12,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeExtraMarkets, computeGoalsSummary } from "@/lib/poisson-model";
+import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, type WhyLang } from "@/lib/why-text";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 import { SportIcon } from "@/app/components/sport-icon";
@@ -23,6 +24,7 @@ import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
+import { GlyphLock, GlyphInjury } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
 // #BUNDLE-SLIM-0702: la scheda pesante si carica on-demand (all'apertura del modal).
 const MatchDetailSheet = dynamic(() => import("@/components/MatchDetailSheet").then((m) => m.MatchDetailSheet));
 
@@ -251,7 +253,7 @@ function DeepAnalysis({ e, home, away, lang }: { e: WcEnrichment; home: string; 
       )}
       {(injH > 0 || injA > 0) && (
         <div className="da-row">
-          <span className="da-label">🚑 {it ? "Infortuni" : "Injuries"}</span>
+          <span className="da-label"><GlyphInjury size={12} /> {it ? "Infortuni" : "Injuries"}</span>
           <span className="da-value">H:{injH} · A:{injA}</span>
         </div>
       )}
@@ -513,14 +515,16 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
       const underP = overP != null ? 1 - overP : null;
       const overVal = fp.totalOver != null && overP != null ? fpEdge(overP, fp.totalOver) : null;
       const underVal = fp.totalUnder != null && underP != null ? fpEdge(underP, fp.totalUnder) : null;
-      const recOver = overP != null && underP != null ? overP >= underP : (overVal ?? -1) > (underVal ?? -1);
+      // #PICK-FLOOR-0830 — stessa regola della board principale. Limite noto: questa
+      // board non espone `belowFloor`, quindi qui passa false; va allineata quando lo fara'.
+      const pickSide = goalPickSide({ overP, underP, overOdds: fp.totalOver ?? null, underOdds: fp.totalUnder ?? null, belowFloor: false });
       groups.push({
         key: "gol", icon: "goal", title: L2("Gol", "Goals"),
         meta: `${L2("linea", "line")} ${line}${goals ? ` · ${L2("attesi", "exp.")} ${goals.expected_goals.toFixed(1)}` : ""}`,
         src: { kind: "fp", label: "FortunePlay" },
         chips: [
-          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: recOver },
-          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: !recOver },
+          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: pickSide === "over" },
+          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: pickSide === "under" },
         ],
       });
     }
@@ -528,11 +532,10 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
     // Marcatore (goalscorer_markets, già deduplicati upstream #109) — top 4 per pScores.
     const gs = [...(e?.goalscorer_markets ?? [])].sort((a, b) => b.pScores - a.pScores).slice(0, 4);
     if (gs.length) {
-      const topP = Math.max(...gs.map((x) => x.pScores));
       groups.push({
         key: "marcatore", icon: "boot", title: L2("Marcatore", "Goalscorer"),
         src: { kind: "us", label: L2("best · book US", "best · US book") },
-        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: L2("Marcatore", "Goalscorer"), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: x.pScores === topP && x.bestPrice != null })),
+        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: L2("Marcatore", "Goalscorer"), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: scorerPickEligible({ p: x.pScores, odds: x.bestPrice }) })),
         note: L2("La nostra probabilità che ogni giocatore segni almeno un gol.", "Our probability that each player scores at least once."),
       });
     }
@@ -650,9 +653,21 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
       {/* outcome rows / gate overlay */}
       {p.locked ? (
         <Link href="/predictions" className="lock-overlay wc-lock" role="button">
-          <span className="blurred">▒▒ HOME ▒▒▒%</span>
-          <span className="blurred">▒▒ DRAW ▒▒▒%</span>
-          <span className="blurred">▒▒ AWAY ▒▒▒%</span>
+          {/* #UI-MACHINA-0802 — la forma VERA del readout coi valori mascherati, non
+              tre barre HOME/DRAW/AWAY: quelle sono vietate dalla regola standing di
+              giugno e promettevano una struttura che il prodotto sbloccato non ha.
+              Stessa correzione gia' fatta su calcio e tennis. */}
+          <div className="v2r is-locked" aria-hidden="true">
+            <div className="v2r-l">
+              <span className="v2r-eye">{lang === "it" ? "Il nostro pronostico" : "Our prediction"}</span>
+              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
+              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
+            </div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{lang === "it" ? "Quota FortunePlay" : "FortunePlay odds"}</span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
+            </div>
+          </div>
           <span className="locked-cta">Sign in to reveal pick &amp; confidence</span>
         </Link>
       ) : (

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "@/app/api/geo-books/route";
+import { GEO_BLOCKED_COUNTRIES } from "@/lib/sportsbooks";
 
 // #PARTNERS-VELOBET-CASEA: l'endpoint ora restituisce anche il `country`, che i
 // client usano per i partner con un link per paese. Il contratto `blocked` NON
@@ -20,9 +21,18 @@ describe("GET /api/geo-books", () => {
     expect(await call({ "cf-ipcountry": "FI" })).toEqual({ blocked: false, country: "FI" });
   });
 
-  it("blocca le giurisdizioni vietate e ne restituisce comunque il country", async () => {
-    expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: true, country: "IT" });
-    expect((await call({ "x-vercel-ip-country": "DE" })).blocked).toBe(true);
+  it("con blocklist vuota non blocca le giurisdizioni storiche", async () => {
+    expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: false, country: "IT" });
+    expect(await call({ "x-vercel-ip-country": "DE" })).toEqual({ blocked: false, country: "DE" });
+  });
+
+  it("riattiva il blocco quando un paese viene reinserito nella fonte centrale", async () => {
+    GEO_BLOCKED_COUNTRIES.add("IT");
+    try {
+      expect(await call({ "x-vercel-ip-country": "IT" })).toEqual({ blocked: true, country: "IT" });
+    } finally {
+      GEO_BLOCKED_COUNTRIES.delete("IT");
+    }
   });
 
   it("senza header: country vuoto e non bloccato (fail-open pre-esistente, #GOLIVE-HIGH-D)", async () => {

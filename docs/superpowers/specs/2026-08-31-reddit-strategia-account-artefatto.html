@@ -1,0 +1,466 @@
+<title>L'account artefatto</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F5F7F6; --panel:#FFFFFF; --panel-2:#EDF1EF; --line:#D6DEDA; --line-soft:#E5EBE8;
+    --ink:#101614; --ink-2:#3E4A46; --ink-3:#6B7873;
+    --accent:#1E8A4A; --accent-soft:#E2F2E8; --accent-line:#B9DFC9;
+    --warn:#9A6612; --warn-soft:#F7EEDC; --warn-line:#E4CFA4;
+    --stop:#A93731; --stop-soft:#F8E9E7; --stop-line:#E8C4C0;
+    --shadow:0 1px 2px rgba(16,22,20,.05), 0 8px 24px -16px rgba(16,22,20,.28);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0E1116; --panel:#151A20; --panel-2:#1B222A; --line:#2A333D; --line-soft:#222A33;
+      --ink:#E8EDEA; --ink-2:#AEBAB5; --ink-3:#7C8A86;
+      --accent:#3FC97A; --accent-soft:#15281E; --accent-line:#245C3C;
+      --warn:#D6A245; --warn-soft:#2A2113; --warn-line:#5C4820;
+      --stop:#E0736A; --stop-soft:#2B1817; --stop-line:#5E2F2B;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1116; --panel:#151A20; --panel-2:#1B222A; --line:#2A333D; --line-soft:#222A33;
+    --ink:#E8EDEA; --ink-2:#AEBAB5; --ink-3:#7C8A86;
+    --accent:#3FC97A; --accent-soft:#15281E; --accent-line:#245C3C;
+    --warn:#D6A245; --warn-soft:#2A2113; --warn-line:#5C4820;
+    --stop:#E0736A; --stop-soft:#2B1817; --stop-line:#5E2F2B;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--ink);
+    font:400 16px/1.62 "IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px; margin:0 auto; padding:56px 24px 96px; display:flex; flex-direction:column; gap:52px}
+  h1,h2,h3{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",Arial,sans-serif; text-wrap:balance; margin:0}
+  h1{font-weight:700; font-size:clamp(38px,6.4vw,62px); line-height:1.02; letter-spacing:-.012em}
+  h2{font-weight:700; font-size:clamp(23px,3vw,29px); line-height:1.14; letter-spacing:-.005em}
+  h3{font-weight:600; font-size:18px; line-height:1.25}
+  p{margin:0}
+  a{color:var(--accent)}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:500;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
+  }
+  section{display:flex; flex-direction:column; gap:18px}
+  .prose{max-width:66ch; display:flex; flex-direction:column; gap:14px; color:var(--ink-2)}
+  .prose strong{color:var(--ink); font-weight:600}
+
+  /* ---- header ---- */
+  header{display:flex; flex-direction:column; gap:20px; padding-bottom:8px}
+  .meta{display:flex; flex-wrap:wrap; gap:8px}
+  .tag{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.04em;
+    padding:4px 9px; border:1px solid var(--line); border-radius:3px; color:var(--ink-3); background:var(--panel);
+  }
+  .tag.on{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft)}
+  .thesis{
+    border-left:3px solid var(--accent); padding:4px 0 4px 20px; max-width:56ch;
+    font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600;
+    font-size:clamp(19px,2.5vw,24px); line-height:1.3; color:var(--ink);
+  }
+
+  /* ---- stat strip ---- */
+  .strip{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    border:1px solid var(--line); border-radius:6px; background:var(--panel); overflow:hidden; box-shadow:var(--shadow);
+  }
+  .stat{padding:16px 18px; border-right:1px solid var(--line-soft); display:flex; flex-direction:column; gap:5px}
+  .stat:last-child{border-right:0}
+  .stat b{
+    font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+    font-size:27px; font-weight:600; line-height:1; color:var(--ink); letter-spacing:-.02em;
+  }
+  .stat b.alarm{color:var(--stop)}
+  .stat span{font-size:12.5px; line-height:1.35; color:var(--ink-3)}
+
+  /* ---- pipeline schema ---- */
+  .schema-scroll{overflow-x:auto; padding-bottom:6px; margin:0 -4px}
+  .schema{display:grid; grid-template-columns:auto 22px auto 22px auto 22px auto; align-items:stretch; gap:0; min-width:860px; padding:4px}
+  .node{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 15px;
+    display:flex; flex-direction:column; gap:9px; box-shadow:var(--shadow);
+  }
+  .node .eyebrow{font-size:10.5px}
+  .node ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px}
+  .node li{font-size:13px; line-height:1.35; color:var(--ink-2); display:flex; gap:7px; align-items:baseline}
+  .node li .k{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); flex:none}
+  .node.gate{border-color:var(--warn-line); background:var(--warn-soft)}
+  .node.gate .eyebrow{color:var(--warn)}
+  .node.core{border-color:var(--accent-line); background:var(--accent-soft)}
+  .node.core .eyebrow{color:var(--accent)}
+  .node.core .name{font-family:"IBM Plex Mono",monospace; font-size:16px; font-weight:600; color:var(--ink)}
+  .node.verdict{border-color:var(--line)}
+  .arrow{display:flex; align-items:center; justify-content:center; color:var(--ink-3)}
+  .arrow svg{width:16px; height:12px}
+  .schema-note{font-size:12.5px; color:var(--ink-3); max-width:66ch}
+
+  /* ---- artefatti ---- */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:14px}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    padding:18px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow);
+  }
+  .card .rank{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600; letter-spacing:.1em;
+    color:var(--accent);
+  }
+  .card p{font-size:14px; line-height:1.5; color:var(--ink-2)}
+  .card .fig{
+    font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+    font-size:13px; color:var(--ink); padding-top:9px; border-top:1px solid var(--line-soft);
+  }
+  .card .fig em{font-style:normal; color:var(--ink-3)}
+
+  /* ---- tables ---- */
+  .tbl-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--panel); box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14px}
+  th,td{text-align:left; padding:11px 15px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+  thead th{
+    font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.11em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:500; background:var(--panel-2); border-bottom:1px solid var(--line);
+  }
+  tbody tr:last-child td{border-bottom:0}
+  td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td .sub{display:block; font-size:12.5px; color:var(--ink-3); margin-top:3px}
+  .who{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--warn); white-space:nowrap}
+
+  /* ---- never / rules ---- */
+  .never{
+    border:1px solid var(--stop-line); background:var(--stop-soft); border-radius:6px; padding:20px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .never .eyebrow{color:var(--stop)}
+  .never ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px}
+  .never li{font-size:14.5px; line-height:1.5; color:var(--ink-2); padding-left:20px; position:relative}
+  .never li::before{
+    content:"×"; position:absolute; left:2px; top:-1px; color:var(--stop);
+    font-family:"IBM Plex Mono",monospace; font-size:15px; font-weight:600;
+  }
+  .never li b{color:var(--ink); font-weight:600}
+
+  /* ---- roadmap ---- */
+  .road{display:flex; flex-direction:column; gap:0; border-left:2px solid var(--line); margin-left:6px}
+  .week{position:relative; padding:0 0 26px 26px; display:flex; flex-direction:column; gap:7px}
+  .week:last-child{padding-bottom:0}
+  .week::before{
+    content:""; position:absolute; left:-7px; top:5px; width:12px; height:12px; border-radius:50%;
+    background:var(--ground); border:2px solid var(--accent);
+  }
+  .week.final::before{background:var(--accent)}
+  .week .when{font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+  .week h3{font-size:17px}
+  .week p{font-size:14px; line-height:1.5; color:var(--ink-2); max-width:62ch}
+  .week .artefact{
+    display:inline-flex; align-items:center; gap:7px; align-self:flex-start; margin-top:2px;
+    font-family:"IBM Plex Mono",monospace; font-size:12px; padding:4px 9px; border-radius:3px;
+    background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-line);
+  }
+
+  /* ---- kill switch ---- */
+  .kill{
+    border:1px solid var(--line); border-top:3px solid var(--stop); border-radius:6px;
+    background:var(--panel); padding:22px; display:flex; flex-direction:column; gap:16px; box-shadow:var(--shadow);
+  }
+  .kill .rule{display:flex; flex-direction:column; gap:6px}
+  .kill .rule .lbl{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3)}
+  .kill .rule p{font-size:15px; line-height:1.55; color:var(--ink-2); max-width:64ch}
+  .kill .rule p b{color:var(--ink); font-weight:600}
+
+  footer{border-top:1px solid var(--line); padding-top:20px; font-size:13px; color:var(--ink-3); display:flex; flex-direction:column; gap:6px}
+  footer .mono{color:var(--ink-3)}
+
+  /* ---- rate ---- */
+  .rates{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px}
+  .rate{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:18px;
+    display:flex; flex-direction:column; gap:8px; box-shadow:var(--shadow);
+  }
+  .rate.lead{border-color:var(--accent-line); background:var(--accent-soft)}
+  .rate .big{
+    font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+    font-size:40px; font-weight:600; line-height:1; letter-spacing:-.03em; color:var(--ink);
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .rate .big s{text-decoration:none; font-size:14px; font-weight:400; color:var(--ink-3); letter-spacing:0}
+  .rate .what{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:17px; color:var(--ink)}
+  .rate .det{font-size:13.5px; line-height:1.45; color:var(--ink-2)}
+  .rate .det em{font-style:normal; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3)}
+  .why{margin:0; padding:0; display:flex; flex-direction:column; gap:12px; counter-reset:w}
+  .why li{
+    list-style:none; position:relative; padding-left:34px; font-size:14.5px; line-height:1.55; color:var(--ink-2);
+  }
+  .why li::before{
+    counter-increment:w; content:counter(w); position:absolute; left:0; top:1px;
+    width:21px; height:21px; border-radius:50%; border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); background:var(--panel-2);
+  }
+  .why li b{color:var(--ink); font-weight:600}
+  @media (max-width:640px){ .wrap{padding:36px 18px 72px; gap:42px} .stat b{font-size:23px} }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">BetRedge · strategia di canale · 31 agosto 2026</p>
+    <h1>L&rsquo;account<br>artefatto</h1>
+    <p class="thesis">Su Reddit BetRedge regala cose, non opinioni. Un calcolatore, un dataset, una tabella di esiti saldati non possono essere &laquo;AI slop&raquo;. Un paragrafo levigato s&igrave;.</p>
+    <div class="meta">
+      <span class="tag on">decisione 31/08 · un solo account</span>
+      <span class="tag">sostituisce il playbook del 13/08</span>
+      <span class="tag">owner: marketing</span>
+      <span class="tag">verdetto: 30/09/2026</span>
+    </div>
+  </header>
+
+  <section>
+    <p class="eyebrow">Diagnosi</p>
+    <h2>Il canale non &egrave; sotto-sfruttato. Non &egrave; mai partito.</h2>
+    <div class="strip">
+      <div class="stat"><b>4</b><span>commenti pubblicati in totale, tutti fra il 10 e il 14/08</span></div>
+      <div class="stat"><b class="alarm">17</b><span>giorni di silenzio dall&rsquo;ultimo commento</span></div>
+      <div class="stat"><b class="alarm">0</b><span>post pubblicati &mdash; quello principale &egrave; pronto dal 13/08</span></div>
+      <div class="stat"><b>3</b><span>blocchi umani mai sbloccati</span></div>
+    </div>
+    <div class="prose">
+      <p>La soglia di morte del playbook precedente era il <strong>27/08</strong>: &egrave; passata per inerzia, non per misura. Il difetto non era la tattica, era il ciclo &mdash; un post levigato per diciotto giorni e mai spedito, e un criterio di chiusura che si poteva mancare semplicemente non facendo nulla.</p>
+      <p><strong>Da verificare per primo:</strong> il feed pubblico <span class="mono">user/Betredge/comments.rss</span> risponde 200 con la bio corretta e <strong>zero commenti</strong>. Non &egrave; confermato che i quattro commenti siano stati rimossi &mdash; Reddit ha risposto 429 su tutti i control, quindi lo strumento potrebbe mentire. Ma finch&eacute; non si guarda dall&rsquo;account loggato, non sappiamo se stiamo progettando sopra un account gi&agrave; bruciato.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Lo schema</p>
+    <h2>Come funziona il canale</h2>
+    <div class="schema-scroll">
+      <div class="schema">
+        <div class="node gate">
+          <p class="eyebrow">Gate &mdash; nulla parte prima</p>
+          <ul>
+            <li><span class="k">1</span> Commenti ancora vivi?</li>
+            <li><span class="k">2</span> OK di Tommy (brand)</li>
+            <li><span class="k">3</span> Display name a mano</li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg viewBox="0 0 16 12" fill="none"><path d="M0 6h13M9 2l4 4-4 4" stroke="currentColor" stroke-width="1.4"/></svg></div>
+        <div class="node core">
+          <p class="eyebrow">Un solo account</p>
+          <p class="name">u/Betredge</p>
+          <ul>
+            <li>pubblica artefatti</li>
+            <li>commenti brevi e numerici</li>
+            <li>mai prosa, mai opinioni</li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg viewBox="0 0 16 12" fill="none"><path d="M0 6h13M9 2l4 4-4 4" stroke="currentColor" stroke-width="1.4"/></svg></div>
+        <div class="node">
+          <p class="eyebrow">Quattro artefatti</p>
+          <ul>
+            <li><span class="k">A</span> registro esiti sigillato</li>
+            <li><span class="k">B</span> dataset closing line</li>
+            <li><span class="k">C</span> 132 calcolatori</li>
+            <li><span class="k">D</span> curve di calibrazione</li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg viewBox="0 0 16 12" fill="none"><path d="M0 6h13M9 2l4 4-4 4" stroke="currentColor" stroke-width="1.4"/></svg></div>
+        <div class="node verdict">
+          <p class="eyebrow">Misura &rarr; verdetto</p>
+          <ul>
+            <li>click UTM dal profilo</li>
+            <li>query di marca in GSC</li>
+            <li>richieste del link</li>
+            <li><span class="k">&rarr;</span> 30/09: vive o muore</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="schema-note">Il link non compare mai nei post. Vive nel profilo, taggato <span class="mono">utm_medium=profile</span>: &egrave; l&rsquo;unica sorgente misurabile del canale.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Il vincolo</p>
+    <h2>I sub grandi non sono nel piano</h2>
+    <div class="prose">
+      <p>Un solo account, col nome del brand. r/sportsbook (615k) e r/sportsbetting (579k) sospendono gli account solo-promo a discrezione dei mod, e un nome-brand nei daily thread &egrave; indistinguibile da un tout. <strong>Quei 1,2 milioni di persone non sono raggiungibili cos&igrave;</strong> &mdash; va scritto, perch&eacute; il growth plan di aprile prometteva il contrario ed era falso.</p>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Subreddit</th><th>Iscritti</th><th>Cosa ci si pu&ograve; fare</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">r/algobetting</td><td class="num">25k</td><td>Sub primario: metodologia, dati, registro esiti.<span class="sub">No ads, e niente vanto su campioni piccoli.</span></td></tr>
+          <tr><td class="mono">r/sportsanalytics</td><td class="num">24k</td><td>Solo commenti, o post senza mercato e quote.<span class="sub">Regola scritta: niente submission su gambling.</span></td></tr>
+          <tr><td class="mono">r/datasets</td><td class="num">700k</td><td>Dataset gratuiti.<span class="sub">Il brand sul dataset &egrave; normale, non promo.</span></td></tr>
+          <tr><td class="mono">r/SideProject<br>r/InternetIsBeautiful</td><td class="num">500k<br>17M</td><td>I calcolatori, come prodotto gratuito.<span class="sub">Traffico basso in qualit&agrave;, ma legittimo.</span></td></tr>
+          <tr><td class="mono">r/SoccerBetting</td><td class="num">144k</td><td>Solo dentro il Daily Picks Thread, quindi commenti.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Ordine di grandezza atteso: <strong>decine di click al mese, non migliaia</strong>. Vale la pena per un motivo solo: oggi il sito intero fa 4,5 sessioni uniche al giorno e la bocca dell&rsquo;imbuto &egrave; zero. Venti click veri da gente che costruisce modelli valgono pi&ugrave; di 2.680 impression di banner che hanno prodotto 2 clic.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Il magazzino</p>
+    <h2>Quattro artefatti gi&agrave; costruiti e fermi</h2>
+    <div class="cards">
+      <div class="card">
+        <p class="rank">A &middot; IL PI&Ugrave; FORTE</p>
+        <h3>Il registro sigillato</h3>
+        <p>Tre pick dichiarate prima del calcio d&rsquo;inizio e saldate tutte. &Egrave; la valuta che Reddit rispetta e che quasi nessuno ha: un record dichiarato in anticipo, non selezionato a posteriori. Tabella dentro Reddit, righe perse incluse.</p>
+        <p class="fig">Esce solo dopo <em>14 giorni consecutivi saldati al 100%</em></p>
+      </div>
+      <div class="card">
+        <p class="rank">B &middot; IL PI&Ugrave; CREDIBILE</p>
+        <h3>Il dataset closing line</h3>
+        <p>Un estratto pulito, gratis, con licenza aperta. Costa una query e un CSV. &Egrave; il tipo di regalo che compra il diritto di parlare in quel sub per sei mesi, e non ha rischio legale: sono prezzi di mercato, non consigli.</p>
+        <p class="fig">24.864 <em>snapshot gi&agrave; raccolti</em></p>
+      </div>
+      <div class="card">
+        <p class="rank">C &middot; IL GI&Agrave; PAGATO</p>
+        <h3>I 132 calcolatori</h3>
+        <p>Gratuiti, senza registrazione, senza pubblicit&agrave;, in 11 lingue: il profilo esatto che r/SideProject accetta da un account-brand. Nei sub betting mai come post &mdash; solo rispondendo a chi chiede come si calcola.</p>
+        <p class="fig">7 <em>visite in 30 giorni, oggi</em></p>
+      </div>
+      <div class="card">
+        <p class="rank">D &middot; DA RISCRIVERE</p>
+        <h3>Le curve di calibrazione</h3>
+        <p>Il post gi&agrave; pronto dal 13/08, con l&rsquo;ammissione che sul calcio il mercato &egrave; meglio calibrato di noi. Valido, ma nella forma attuale &egrave; il tipo di prosa che quel sub caccia: va accorciato e reso irregolare prima di uscire.</p>
+        <p class="fig">23.091 <em>previsioni walk-forward</em></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Cadenza</p>
+    <h2>Le medie giornaliere</h2>
+    <div class="rates">
+      <div class="rate lead">
+        <p class="big">3 <s>al giorno</s></p>
+        <p class="what">Commenti</p>
+        <p class="det">~90 al mese, in r/algobetting, r/sportsanalytics e nel Daily Thread di r/SoccerBetting. <em>&Egrave; qui il volume.</em></p>
+      </div>
+      <div class="rate">
+        <p class="big">0,14 <s>al giorno</s></p>
+        <p class="what">Post &mdash; uno a settimana</p>
+        <p class="det">4&ndash;5 al mese, ruotati su sei sub: ognuno ci vede circa una volta al mese. <em>Il tetto vero.</em></p>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Rampa &mdash; l&rsquo;account &egrave; freddo</th><th>Commenti / giorno</th><th>Post / settimana</th></tr></thead>
+        <tbody>
+          <tr><td>Settimane 1&ndash;2</td><td class="num">2</td><td class="num">1</td></tr>
+          <tr><td>Dalla settimana 3</td><td class="num">3&ndash;4</td><td class="num">1 <span class="sub">2 finché dura il magazzino</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:12px">Perch&eacute; un post al giorno non esiste</h3>
+    <ul class="why">
+      <li><b>Il sub non regge il volume.</b> r/algobetting ha 25k iscritti e una manciata di post al giorno in totale. Un account-brand che ne pubblica uno al giorno <em>&egrave;</em> il sub: viene letto come spam dai mod prima che dagli utenti. La tolleranza reale per un nome commerciale in un sub piccolo &egrave; 1&ndash;2 post al mese.</li>
+      <li><b>Il magazzino non regge il volume.</b> Un post al giorno fa 30 al mese; gli artefatti veri sono quattro. Dal quinto giorno pubblicheremmo riempitivo, cio&egrave; esattamente il materiale che quel sub accusa di essere scritto da un&rsquo;AI.</li>
+      <li><b>L&rsquo;account non regge il volume, oggi.</b> Molti sub grandi hanno soglie minime di karma ed et&agrave; per pubblicare, e Reddit limita di suo gli account nuovi. Il rubinetto &egrave; chiuso finch&eacute; il profilo non si scalda.</li>
+    </ul>
+
+    <div class="prose">
+      <p><strong>Il volume vero sta nei commenti.</strong> Nessun tetto di sub, nessuna coda mod, e un buon commento dentro un thread attivo viene visto da pi&ugrave; persone di un post in un sub da 25k. &Egrave; l&igrave; che il nome utente viene cliccato.</p>
+      <p><strong>Onest&agrave; sul motore dei post:</strong> due a settimana si reggono per circa un mese, tanto dura il magazzino dei quattro artefatti. A regime il motore ricorrente vale <strong>uno a settimana</strong> &mdash; report settimanale sul movimento delle closing line, registro esiti mensile, drop di dataset spezzati per sport. Prometterne di pi&ugrave; significa promettere riempitivo.</p>
+      <p><strong>La cadenza batte la qualit&agrave; del singolo pezzo.</strong> Un commento mediocre pubblicato vale pi&ugrave; di un post perfetto in bozza: &egrave; la lezione dei diciotto giorni.</p>
+      <p>Forma vincolante, perch&eacute; in r/algobetting c&rsquo;&egrave; una caccia attiva ai contenuti scritti da AI: <strong>massimo quattro frasi e almeno un numero specifico</strong>; niente em-dash, niente &laquo;non &egrave; X, &egrave; Y&raquo;, niente struttura simmetrica &mdash; sono i tre tell che quel sub cita per riconoscere un LLM. Tutto in inglese. E ogni commento deve reggere senza il brand: se togliendo il nome utente perde valore, non si pubblica.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="never">
+      <p class="eyebrow">Cosa non si fa, mai</p>
+      <ul>
+        <li><b>Nessun link nel post.</b> Vive nel profilo, e nei commenti solo se qualcuno lo chiede.</li>
+        <li><b>Mai nominare BetRedge per primi.</b></li>
+        <li><b>Mai presentare il calcio come edge.</b> 184 pick regolate, 48,9%, edge mediano &minus;3,02%: vinciamo dalla parte sbagliata del prezzo. Se chiedono, si dice cos&igrave;.</li>
+        <li><b>Mai ripetere &laquo;CLV verified&raquo;.</b> &Egrave; sulla landing ed &egrave; falso: zero pick su 1.474 ha un CLV. Su Reddit un claim del genere viene verificato e demolito, e a quel punto il canale &egrave; finito.</li>
+        <li><b>Mai vendere.</b> Niente prezzo, niente PRO. La qualificazione gambling &egrave; aperta: su Reddit siamo un layer di intelligence che regala strumenti.</li>
+        <li><b>Niente Reddit Ads.</b> Le policy sui contenuti gambling-adiacenti rendono il rifiuto probabile e la segnalazione certa mentre il gate legale &egrave; aperto.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Prerequisiti</p>
+    <h2>Tre blocchi, tutti umani</h2>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Cosa</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>Verificare dall&rsquo;account loggato se i 4 commenti sono ancora vivi.<span class="sub">Il feed pubblico ne mostra zero, ma non &egrave; confermato.</span></td><td class="who">Andrea</td></tr>
+          <tr><td class="num">2</td><td>PROPOSAL ferma in <span class="mono">ch_deploy_gate</span>: il brand compare in contesto betting mentre la qualificazione gambling &egrave; aperta.<span class="sub">Vale anche per i post senza link, perch&eacute; il nome utente &egrave; il brand.</span></td><td class="who">Tommy</td></tr>
+          <tr><td class="num">3</td><td>Display name da mettere a mano in <span class="mono">reddit.com/settings/profile</span>.<span class="sub">Fallito tre volte in automazione: oggi il campo &egrave; vuoto.</span></td><td class="who">Andrea</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Roadmap</p>
+    <h2>Quattro settimane, un artefatto ciascuna</h2>
+    <div class="road">
+      <div class="week">
+        <p class="when">Settimana 1 &middot; 01&ndash;07 settembre</p>
+        <h3>Riapertura</h3>
+        <p>Sbloccare i tre prerequisiti e riprendere un commento al giorno.</p>
+        <span class="artefact">B &mdash; dataset closing line</span>
+        <p>Primo perch&eacute; &egrave; il meno attaccabile: sono dati, non affermazioni.</p>
+      </div>
+      <div class="week">
+        <p class="when">Settimana 2 &middot; 08&ndash;14 settembre</p>
+        <h3>Il prodotto gratuito</h3>
+        <span class="artefact">C &mdash; i calcolatori</span>
+        <p>In r/SideProject e r/InternetIsBeautiful. Prima risposta con link dentro un thread betting, solo su richiesta esplicita.</p>
+      </div>
+      <div class="week">
+        <p class="when">Settimana 3 &middot; 15&ndash;21 settembre</p>
+        <h3>Il metodo</h3>
+        <span class="artefact">D &mdash; le curve di calibrazione</span>
+        <p>Riscritto corto e irregolare, in r/algobetting.</p>
+      </div>
+      <div class="week final">
+        <p class="when">Settimana 4 &middot; 22&ndash;30 settembre</p>
+        <h3>La prova, e il verdetto</h3>
+        <span class="artefact">A &mdash; registro esiti mensile</span>
+        <p>Solo se il sigillo Telegram ha quattordici giorni consecutivi saldati al 100%. Il 30/09 si applica il criterio di morte.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Criterio di morte</p>
+    <div class="kill">
+      <div class="rule">
+        <p class="lbl">30 settembre 2026 &middot; owner Andrea</p>
+        <p>Se al 30/09 il totale fa <b>meno di 25 click dal profilo</b>, <b>zero query di marca nuove</b> in Search Console e <b>nessuna richiesta del link nei commenti</b>, Reddit non &egrave; il canale e si chiude.</p>
+      </div>
+      <div class="rule">
+        <p class="lbl">Clausola anti-inerzia</p>
+        <p>Cadenza minima = <b>2 commenti al giorno</b>. Una settimana in cui salta <b>due giorni consecutivi</b> conta come settimana fallita. <b>Tre settimane fallite = chiusura anticipata</b>, senza aspettare il 30/09. Il canale muore per misura o per inerzia dichiarata, mai per silenzio.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Onest&agrave; sul tetto</p>
+    <div class="prose">
+      <p>Con un solo account-brand il canale <strong>non pu&ograve;</strong> essere un motore di acquisizione di volume. Quello che pu&ograve; fare, e che nessun altro canale nostro fa oggi, &egrave; costruire la <strong>prova pubblica che dietro BetRedge c&rsquo;&egrave; un sistema vero</strong>, in un posto dove quella prova viene letta da persone competenti e indicizzata da Google. &Egrave; un canale di credibilit&agrave; con un rivolo di traffico, non un imbuto. Se serve volume, la leva &egrave; un&rsquo;altra e va discussa a parte.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p class="mono">docs/superpowers/specs/2026-08-31-reddit-strategia-account-artefatto.md</p>
+    <p>Sostituisce il playbook del 13/08. Collegato a: registro Telegram (artefatto A) &middot; hub /tools (artefatto C) &middot; claim CLV &middot; edge calcio &middot; qualificazione gambling.</p>
+  </footer>
+
+</div>

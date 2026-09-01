@@ -1,11 +1,14 @@
 "use client";
 
+import { LEGAL_ENTITY, impressumLine } from "@/lib/legal-entity";
+
 // components/SiteFooter.tsx (#UI-FOOTER-UNIFIED-0623)
 // Footer unico del sito, usato su home, dashboard e pagine World Cup (che prima
 // non avevano footer). Presentazionale: rischio/18+, gioco responsabile,
 // Terms + Privacy IN-SITE (route interne, niente target="_blank" → il back
-// funziona), e una riga social con icone (Instagram/X/Facebook link; Telegram
-// solo icona finché non c'è il canale community).
+// funziona), e una riga social con icone, tutte con link. Gli URL vengono da
+// lib/social-links.ts: compaiono anche nell'hub dei tool, e un URL scritto in
+// due posti invecchia in uno.
 //
 // I link responsabilità di gioco (GamCare/BeGambleAware) sono ESTERNI → restano
 // target="_blank". Terms/Privacy sono route interne → <Link> client-side.
@@ -17,10 +20,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { partnersFor } from "@/lib/partners";
+import { SOCIAL } from "@/lib/social-links";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
-// tema). URL reali BetRedge. Telegram = SOLO icona, senza link: il canale/gruppo
-// community non esiste ancora; il link verrà attaccato quando sarà creato.
+// tema). URL reali BetRedge.
+//
+// #TG-TOOLS-CTA (2026-08-20): Telegram era l'unica icona senza link, in attesa
+// che il canale esistesse. Ora esiste ed è pubblico (t.me/betredge), quindi il
+// link c'è. Il ramo `href === null` resta: serve ancora se un canale va giù o
+// viene sospeso, ed è più onesto di un'icona che porta a un 404.
 const ICONS: Record<string, ReactNode> = {
   instagram: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -46,51 +54,51 @@ const ICONS: Record<string, ReactNode> = {
 
 // href: null → icona presente ma non cliccabile (Telegram, in attesa del canale).
 const SOCIAL_LINKS: { key: string; label: string; href: string | null }[] = [
-  { key: "instagram", label: "Instagram", href: "https://www.instagram.com/betr.edge/" },
-  { key: "x", label: "X", href: "https://x.com/BetrEdge" },
-  { key: "facebook", label: "Facebook", href: "https://www.facebook.com/" },
-  { key: "telegram", label: "Telegram", href: null },
+  { key: "instagram", label: "Instagram", href: SOCIAL.instagram },
+  { key: "x", label: "X", href: SOCIAL.x },
+  { key: "facebook", label: "Facebook", href: SOCIAL.facebook },
+  { key: "telegram", label: "Telegram", href: SOCIAL.telegram },
 ];
 
 type FooterLang = "it" | "en" | "es" | "fr" | "ru";
 
 const COPY: Record<FooterLang, {
-  note: string; pastperf: string; partnerlinks: string; partner: string; terms: string; privacy: string; social: string; tools: string;
+  note: string; pastperf: string; partnerlinks: string; partner: string; terms: string; privacy: string; social: string; tools: string; widget: string;
 }> = {
   it: {
     note: "BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale.",
     pastperf: "Le performance passate non garantiscono risultati futuri.",
     partnerlinks: "I link partner sono affiliati commerciali.",
     partner: "Partner",
-    tools: "Strumenti gratuiti", terms: "Termini di Servizio", privacy: "Privacy Policy", social: "Seguici",
+    tools: "Strumenti gratuiti", widget: "Widget per il tuo sito", terms: "Termini di Servizio", privacy: "Privacy Policy", social: "Seguici",
   },
   en: {
     note: "BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management.",
     pastperf: "Past performance does not guarantee future results.",
     partnerlinks: "Partner links are commercial affiliates.",
     partner: "Partner",
-    tools: "Free tools", terms: "Terms of Service", privacy: "Privacy Policy", social: "Follow us",
+    tools: "Free tools", widget: "Widget for your site", terms: "Terms of Service", privacy: "Privacy Policy", social: "Follow us",
   },
   es: {
     note: "BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo.",
     pastperf: "El rendimiento pasado no garantiza resultados futuros.",
     partnerlinks: "Los enlaces de partners son afiliados comerciales.",
     partner: "Partner",
-    tools: "Herramientas gratis", terms: "Términos del Servicio", privacy: "Política de Privacidad", social: "Síguenos",
+    tools: "Herramientas gratis", widget: "Widget para tu web", terms: "Términos del Servicio", privacy: "Política de Privacidad", social: "Síguenos",
   },
   fr: {
     note: "BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque.",
     pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
     partnerlinks: "Les liens partners sont des affiliés commerciaux.",
     partner: "Partenaire",
-    tools: "Outils gratuits", terms: "Conditions de Service", privacy: "Politique de Confidentialité", social: "Suivez-nous",
+    tools: "Outils gratuits", widget: "Widget pour votre site", terms: "Conditions de Service", privacy: "Politique de Confidentialité", social: "Suivez-nous",
   },
   ru: {
     note: "BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками.",
     pastperf: "Прошлые результаты не гарантируют будущих.",
     partnerlinks: "Партнёрские ссылки — коммерческие аффилиаты.",
     partner: "Партнёр",
-    tools: "Инструменты", terms: "Условия обслуживания", privacy: "Политика конфиденциальности", social: "Мы в соцсетях",
+    tools: "Инструменты", widget: "Виджет для сайта", terms: "Условия обслуживания", privacy: "Политика конфиденциальности", social: "Мы в соцсетях",
   },
 };
 
@@ -142,6 +150,10 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
             è il linking interno che li fa trovare, non solo la barra in home. */}
         <Link href="/tools">{t.tools}</Link>
         <span className="site-footer-sep">|</span>
+        {/* #WIDGET-LANDING-0824: la pagina partner del widget è raggiungibile da
+            OGNI pagina — è il canale che porta traffico da siti terzi. */}
+        <Link href="/widget">{t.widget}</Link>
+        <span className="site-footer-sep">|</span>
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}
         <Link href="/terms">{t.terms}</Link>
         <Link href="/privacy">{t.privacy}</Link>
@@ -179,19 +191,20 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
               {ICONS[s.key]}
             </a>
           ) : (
-            // Telegram: solo icona finché il canale community non esiste (no link).
+            // Senza href: icona presente ma non cliccabile. Meglio di un 404.
             <span key={s.key} className="site-footer-social-icon" aria-label={s.label} role="img">
               {ICONS[s.key]}
             </span>
           )
         )}
       </div>
-      {/* #GOLIVE-BLOCKER-1 (audit go-live legale): impressum — entità che opera la
-          piattaforma (interim "ponte Maven" in attesa della SL ES, decisione Andrea
-          2026-07-13). Dati verificati sul Registro di commercio ZG via Zefix
-          (CHE-193.960.193, stato EXISTIEREND). Testo identico su tutte le lingue. */}
+      {/* #SITE-ENTITY-0824 — impressum. La riga NON è più scritta qui: arriva da
+          lib/legal-entity.ts, la stessa fonte del footer delle email, così sito e
+          posta non possono dichiarare identità diverse (era il difetto chiuso dalla
+          PR #221 e riaperto quando le email sono cambiate il 24/08). Testo identico
+          su tutte le lingue. */}
       <p className="site-footer-imprint">
-        BetRedge · operated by Maven Agency AG · Blegistrasse 7, 6340 Baar (ZG), Switzerland · UID CHE&#8209;193.960.193 · info@betredge.com
+        {impressumLine()} &middot; {LEGAL_ENTITY.contactEmail}
       </p>
     </footer>
   );

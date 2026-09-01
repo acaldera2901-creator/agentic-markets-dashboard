@@ -201,8 +201,17 @@ export async function GET(req: Request) {
     }
   }
 
-  // Vetrina settimanale (#PLANS-3TIER-1): rank per edge desc DENTRO ogni sport.
-  // free sblocca rank<1, base rank<5, premium tutto (showcaseAllowance).
+  // Vetrina (#PLANS-3TIER-1): rank per edge desc DENTRO ogni sport. I numeri li
+  // decide showcaseAllowance — dal #FREE-BASE-DAILY-QUOTA-0831 free 3 e base 7.
+  //
+  // Questa route serve il hub Mondiali e NON adotta la regola giornaliera delle
+  // board calcio/tennis: fuori stagione nessuna partita WC cade "oggi", quindi
+  // contare la quota sulla giornata lascerebbe il hub interamente bloccato per
+  // free e base. Qui la quota resta sulla finestra.
+  //
+  // Nota (pre-esistente, non toccata qui): l'ordine è ancora edge desc, cioè
+  // quello che #SHOWCASE-EDGE-0801 ha sostituito con compareShowcase su tutte le
+  // altre superfici — sblocca righe senza pick e lascia coperti i pick veri.
   const rankById = new Map<string, number>();
   const bySport = new Map<string, Array<Record<string, unknown>>>();
   for (const row of served) {

@@ -14,6 +14,13 @@ import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
 import { opsAlert } from "@/lib/ops-alert";
+// #SUB-LIFECYCLE-0828: i topic fuori whitelist non si buttano piu, si osservano.
+import {
+  isObservedTopic,
+  lifecycleEventKey,
+  extractResourceId,
+  extractLifecycleIdentifier,
+} from "@/lib/shopify-lifecycle";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -134,6 +141,33 @@ async function handleRefund(payload: unknown) {
   return NextResponse.json({ received: true, revoked });
 }
 
+// #SUB-LIFECYCLE-0828 — registra un evento di ciclo di vita SENZA concedere.
+//
+// Best-effort per costruzione: qualunque errore viene inghiottito e l'handler
+// risponde comunque 200. Un webhook senza ack viene ritentato da Shopify per
+// giorni, e una riga di osservabilita' non vale un loop di retry sul rail dei
+// soldi. `status` e' 'observed': un valore che NESSUNA query della reconcile
+// raccoglie (filtra su 'unresolved'/'pending' E event_type = 'orders/paid'),
+// doppia difesa perche' una riga di lifecycle non possa mai finire in un
+// ri-tentativo di grant.
+async function recordLifecycleEvent(topic: string, req: Request, payload: unknown): Promise<void> {
+  try {
+    const key = lifecycleEventKey(
+      topic,
+      req.headers.get("x-shopify-webhook-id"),
+      extractResourceId(payload)
+    );
+    await dbExecute(
+      `INSERT INTO shopify_events (event_id, event_type, identifier, status)
+       VALUES ($1, $2, $3, 'observed')
+       ON CONFLICT (event_id) DO NOTHING`,
+      [key, topic, extractLifecycleIdentifier(payload)]
+    );
+  } catch (e) {
+    console.error(`[shopify/webhook] lifecycle non registrato (${topic}):`, String(e));
+  }
+}
+
 export async function POST(req: Request) {
   if (!isShopifyConfigured()) {
     return NextResponse.json({ error: "shopify not configured" }, { status: 503 });
@@ -162,7 +196,23 @@ export async function POST(req: Request) {
   // Whitelist: solo orders/paid concede. Qualunque altro topic (o header assente,
   // es. un topic aggiunto in futuro sullo stesso URL) → ack senza grant, così non
   // si concede mai su un ordine non pagato.
+  //
+  // #SUB-LIFECYCLE-0828: la whitelist del GRANT resta identica — qui sotto non si
+  // concede, non si revoca e non si tocca nessun piano. Cambia solo che l'evento
+  // viene REGISTRATO invece di essere buttato: senza questo, un contratto
+  // disdetto, un addebito rifiutato e un contratto mai creato sono
+  // indistinguibili fra loro e dal nulla (misurato il 28/08: un cliente a cui il
+  // CRM dichiarava "si rinnova da solo" e' decaduto senza un solo evento a
+  // spiegarlo).
   if (topic !== "orders/paid") {
+    if (isObservedTopic(topic)) {
+      await recordLifecycleEvent(topic as string, req, payload);
+    } else if (topic) {
+      // Non registrato per non trasformare la tabella in una discarica, ma il
+      // nome finisce nei log: se un topic utile ci e' sfuggito si vede qui, e si
+      // aggiunge un prefisso in OBSERVED_TOPIC_PREFIXES.
+      console.log(`[shopify/webhook] topic non osservato: ${topic}`);
+    }
     return NextResponse.json({ received: true, ignored: topic ?? null });
   }
 

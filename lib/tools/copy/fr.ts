@@ -30,6 +30,10 @@ const fr: ToolsCopy = {
     free: "Gratuit",
     faqTitle: "Questions",
     invalid: "—",
+    tgTitle: "La prévision du jour, gratuite sur Telegram",
+    tgBody:
+      "Sans compte ni e-mail. Chaque jour, nous publions le match où notre modèle s’écarte le plus du marché, 15 minutes avant le coup d’envoi — et chaque prévision publiée est soldée, gagnée ou perdue. Le canal est en anglais.",
+    tgButton: "Ouvrir le canal",
   },
 
   tools: {

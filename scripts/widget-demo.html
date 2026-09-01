@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blog di prova — finto sito partner</title>
+<style>
+  body{margin:0;font-family:Georgia,serif;background:#fbfaf7;color:#1a1a1a}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px;display:grid;grid-template-columns:1fr 320px;gap:32px}
+  h1{font-size:30px;margin:0 0 6px} p{line-height:1.7;color:#333}
+  aside h2{font:600 11px/1 system-ui;letter-spacing:.1em;text-transform:uppercase;color:#888;margin:0 0 10px}
+  @media(max-width:760px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main>
+    <h1>Il sito di un partner</h1>
+    <p>Pagina finta servita da un'origin diversa (:8001) per verificare che il widget funzioni davvero cross-origin, come sul sito di un partner vero.</p>
+    <p>Sotto, il widget in versione inline; nella colonna a destra quello verticale.</p>
+    <script src="http://localhost:3000/widget.js" async
+            data-ref="SERGIO" data-sport="all" data-limit="3" data-lang="it" data-theme="auto"></script>
+    <p>Testo che segue il widget: serve a vedere se l'altezza viene applicata (nessuna sovrapposizione, nessuno spazio morto).</p>
+  </main>
+  <aside>
+    <h2>Pronostici</h2>
+    <script src="http://localhost:3000/widget.js" async
+            data-ref="SERGIO" data-sport="tennis" data-limit="4" data-lang="en" data-theme="dark"></script>
+  </aside>
+</div>
+</body>
+</html>

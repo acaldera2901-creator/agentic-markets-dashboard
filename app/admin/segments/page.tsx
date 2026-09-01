@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 let clauseSeq = 0;
@@ -32,6 +33,7 @@ export default function SegmentsPage() {
     const data = await res.json();
     setSegments(data.segments ?? []);
   }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- il setState sta dentro la callback async di load(), non nel corpo dell'effect: e' un fetch al mount
   useEffect(() => { void load(); }, [load]);
 
   const runPreview = useCallback(async () => {
@@ -88,7 +90,7 @@ export default function SegmentsPage() {
 
   return (
     <div style={{ maxWidth: 920, margin: "0 auto", padding: 24, fontFamily: "system-ui,sans-serif", color: "#0f172a" }}>
-      <a href="/admin" style={{ fontSize: 13, color: "#2563eb", textDecoration: "none" }}>← Dashboard</a>
+      <Link href="/admin" style={{ fontSize: 13, color: "#2563eb", textDecoration: "none" }}>← Dashboard</Link>
       <h1 style={{ fontSize: 22, fontWeight: 800 }}>Marketing — Segmenti</h1>
       <p style={{ color: "#64748b", fontSize: 13 }}>
         I segmenti sincronizzati su Resend non inviano email: i Broadcast si compongono nella dashboard Resend.

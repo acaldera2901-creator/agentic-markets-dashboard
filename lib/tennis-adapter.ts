@@ -57,6 +57,13 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   const odds = pickP1 ? row.odds_p1 : row.odds_p2;
 
   const hasRealMarket = odds != null && row.edge != null;
+  // #TENNIS-MARKET-ANCHOR-0821: a market-anchored tennis pick serves the devigged
+  // market as its probability and carries edge=null (no edge claim, like baseball/
+  // mma). The odds are REAL and must be shown; only the *edge* is withheld. So the
+  // odds/bookmaker DISPLAY is gated on odds presence, while edge_percent, the
+  // no-edge prose and the paper/signal label stay gated on a real computed edge
+  // (the publication gate correctly forces such rows to honest 'paper').
+  const hasMarketOdds = odds != null;
   const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
   const confidence = prob > 0 ? Math.round(prob * 100) : null;
   // Confidence-surfacing floor (#FLOOR-UNIFORM-1, APPROVE Andrea 2026-06-09;
@@ -108,8 +115,8 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
     away_team: row.player2,
     market: "ML",
     pick: surfacedPick,
-    bookmaker: hasRealMarket ? "market composite" : "no market",
-    odds: hasRealMarket && odds != null ? Math.round(odds * 100) / 100 : null,
+    bookmaker: hasMarketOdds ? "market composite" : "no market",
+    odds: odds != null ? Math.round(odds * 100) / 100 : null,
     fair_odds: fairOdds,
     edge_percent: hasRealMarket ? Math.round((row.edge ?? 0) * 10000) / 100 : null,
     confidence_score: confidence,

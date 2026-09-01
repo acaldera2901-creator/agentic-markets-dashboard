@@ -59,6 +59,13 @@ assert.equal(SURFACE_FLOOR_WC, 26);
   assert.equal(surfaceFloorFor("football", "FIFA World Cup 2026"), 26);
   assert.equal(surfaceFloorFor("football", "International Friendly"), 66);
   assert.equal(surfaceFloorFor(null, null), 56); // fail-soft default
+  // #NATIONS-LEAGUE-0826: senza il ramo dedicato una riga "UEFA Nations League"
+  // cadrebbe sul floor club (56) mentre il gate Python la serve a 62 — e
+  // isSurfacedRow conterebbe nel track record righe mai mostrate.
+  assert.equal(surfaceFloorFor("football", "UEFA Nations League"), 62);
+  assert.equal(surfaceFloorFor("football", "Concacaf Nations League"), 56);
+  // nations sconosciuta -> valore UEFA = il piu' severo (fail-closed)
+  assert.equal(surfaceFloorFor("football", "Ocean Nations League"), 62);
 }
 
 // ── tennisFloorFor: segment-aware tennis floors (#TENNIS-SEG-FLOOR-1) ────────

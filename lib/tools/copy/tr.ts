@@ -30,6 +30,10 @@ const tr: ToolsCopy = {
     free: "Ücretsiz",
     faqTitle: "Sorular",
     invalid: "—",
+    tgTitle: "Günün model tahmini, Telegram’da ücretsiz",
+    tgBody:
+      "Hesap yok, e-posta yok. Her gün modelimizin piyasadan en çok ayrıldığı maçı, başlamasından 15 dakika önce yayınlıyoruz — ve yayınladığımız her tahmini sonuçlandırıyoruz, kazandı ya da kaybetti. Kanal İngilizce.",
+    tgButton: "Kanalı aç",
   },
 
   tools: {

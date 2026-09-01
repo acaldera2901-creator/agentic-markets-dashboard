@@ -5,6 +5,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
+import { GlyphLock, GlyphCheck, GlyphRank, GlyphFlame, GlyphInjury, GlyphModel, GlyphTrophy } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
+import { pickLanguage } from "@/lib/pick-language"; // #GEO-LANG-0821
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
   PUBLIC_PAID_PLAN,
@@ -14,6 +16,10 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { compareUnlockedFirst } from "@/lib/board-order"; // #UNLOCKED-FIRST-0831
+import { liveFootballOnBoard } from "@/lib/live-ticker";
+import { headlineRead } from "@/lib/headline-market"; // #HEADLINE-MARKET-0830
+import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { storageGet, storageSet } from "@/lib/safe-storage";
 import { getAttribution } from "@/lib/attribution";
@@ -549,7 +555,7 @@ const BASE_TRANSLATIONS = {
     language_en: "English",
     account_pending_detail: "Client account not connected yet. Balance starts at zero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Markets", nav_predictions: "Prediction", nav_leaderboard: "Leaderboard", nav_account: "Account",
+    nav_markets: "Markets", nav_predictions: "Predictions", nav_leaderboard: "Leaderboard", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
     theme_aria: "Theme", featured_label: "Featured",
     kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit · 100g",
@@ -1567,6 +1573,8 @@ interface PredictionEnrichment {
   // the per-tier enrichment strip (NOT in PREMIUM_ENRICHMENT_KEYS), so it reaches
   // every unlocked tier. below_floor=true -> no clear favourite: the card drops
   // the pick direction + edge/value badge but keeps the probabilities and why.
+  // (#FLOOR-LABEL-0830: the literal label is gone from the card; the eyebrow
+  // "Model read" and the suppressed edge/value carry the gate.)
   surface?: { below_floor: boolean; floor: number };
   // Server-side kickoff provenance (not premium-stripped): true when the time
   // comes from a real source, so fmtKickoff can show a genuine 00:00 UTC slot.
@@ -1676,8 +1684,14 @@ interface LiveTennisMatch {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// #NO-EMOJI-0822 - queste stringhe finiscono dentro un <option>, e li' l'HTML
+// ammette SOLO testo: nessun SVG e' possibile, quindi le bandiere restano. Sono
+// anche informative (dicono il paese del campionato), non decorative.
+// Le due che NON erano bandiere sono state sostituite: una stella per la
+// Champions e un cerchio arancione per l'Europa League non dicevano niente -
+// la sigla la riconosce chi scommette, e in un <option> il testo funziona.
 const LEAGUE_FLAGS: Record<string, string> = {
-  PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "⭐", EL: "🟠",
+  PL: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", SA: "🇮🇹", PD: "🇪🇸", BL1: "🇩🇪", FL1: "🇫🇷", CL: "UCL", EL: "UEL",
 };
 
 // Rail nav glyphs (mockup .rail svg <use>): tab → custom sport-glyph symbol id.
@@ -2055,9 +2069,11 @@ function selectedTennisProbability(m: TennisMatch) {
   return Math.max(m.p1, m.p2);
 }
 
-// A below-floor pick is shown on the board as "no clear favourite" (no
-// directional pick). It must NEVER resurface as a value/best bet — the market
-// edge alone is not enough when the model has no clear favourite.
+// A below-floor pick is shown on the board under the "Model read" eyebrow, with
+// no directional pick asserted (#FLOOR-LABEL-0830 dropped the literal "no clear
+// favourite" label from the card; the modal readout still carries it). It must
+// NEVER resurface as a value/best bet — the market edge alone is not enough when
+// the model has no clear favourite.
 // #GOLIVE-AUDIT: usa il verdetto PERSISTITO dal server (enrichment.surface,
 // calcolato col NOME lega + floor per-lega/WC in /api/predictions), lo stesso che
 // legge la card (riga ~8673) e /api/v2/history. La vecchia derivazione passava a
@@ -2078,6 +2094,22 @@ function isFootballBestBet(p: Prediction) {
   return isValue || isModelSignal;
 }
 
+// #DUP-FLOOR-TENNIS-0821 — UNA definizione del verdetto sotto-floor per il
+// tennis, come `isFootballSurfaced` per il calcio. Viveva scritta a mano in tre
+// posti (il predicato best-bet, la riga dei candidati, e da nessuna parte nella
+// scheda). Il commento di #TENNIS-MARKET-GATE-0805 avvertiva che ri-derivare la
+// regola lato client e' esattamente come i pick sotto-floor sono riemersi
+// l'ultima volta: quindi si estrae, non si ricopia.
+//
+// `confidence_score` assente su payload vecchi -> trattato come sopra il floor,
+// cosi' una risposta in cache non svuota il board. `no_market` e' il verdetto
+// del SERVER (niente prezzo di mercato -> stesso esito).
+function isTennisSurfaced(m: TennisMatch): boolean {
+  return (m.confidence_score == null
+    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
+    && m.no_market !== true;
+}
+
 function isTennisBestBet(m: TennisMatch) {
   const odds = selectedTennisOdds(m);
   // #BESTBET-FLOOR-1: below the tennis floor the serving route drops `pick` but
@@ -2088,9 +2120,7 @@ function isTennisBestBet(m: TennisMatch) {
   // #BESTBET-FLOOR-1 — re-deriving the rule client-side is how sub-floor picks
   // resurfaced here last time). Absent on legacy payloads → treated as market
   // present, so an old cached response cannot blank the whole board.
-  const surfaced = (m.confidence_score == null
-    || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
-    && m.no_market !== true;
+  const surfaced = isTennisSurfaced(m);
   // #BESTBET-MODEL-SIGNAL-0715: value bet (mercato+edge) OPPURE model signal
   // (prob pick ≥ 58%). Il floor `surfaced` resta binding (tennis lo-tier 64),
   // quindi durante il blackout quote le pick modello ad alta confidenza restano.
@@ -2101,13 +2131,19 @@ function isTennisBestBet(m: TennisMatch) {
 }
 
 // #FREE-PRED-REVAMP-0626: paywall curato per i Free. Sostituisce i wall gialli +
-// i "🔒" placeholder: l'assaggio (1 pick reale per sport, già sbloccata dal server)
-// resta sopra, questo pannello converte il resto. CTA → tab Piani via onUpgrade.
-function FreePaywall({ count, hitRate, lang, onUpgrade }: {
+// i "🔒" placeholder. CTA → tab Piani via onUpgrade.
+// #FREE-BOARD-FULL-0831: da qui il Free scorre la board intera (1 riga sbloccata
+// per sport, tutte le altre come schede mascherate), quindi il pannello non
+// "rappresenta" più il resto del catalogo: lo affianca. Va in DUE punti — una
+// copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
+function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
   hitRate?: string | null;
   lang: Lang;
   onUpgrade?: () => void;
+  /** #FREE-BOARD-FULL-0831: istanza dentro .am-grid → banda full-width, margini
+      laterali azzerati (il padding lo dà già la griglia). */
+  inGrid?: boolean;
 }) {
   const bullets = [
     pick5(lang, { it: "Edge% e pick su ogni match", en: "Edge% and pick on every match", es: "Edge% y pick en cada partido", fr: "Edge% et pick sur chaque match", ru: "Edge% и пик в каждом матче" }),
@@ -2115,8 +2151,12 @@ function FreePaywall({ count, hitRate, lang, onUpgrade }: {
     pick5(lang, { it: "Tutte le competizioni + World Cup, calcio e tennis", en: "Every competition + World Cup, football and tennis", es: "Todas las competiciones + Mundial, fútbol y tenis", fr: "Toutes les compétitions + Coupe du Monde, football et tennis", ru: "Все турниры + Чемпионат мира, футбол и теннис" }),
   ];
   return (
-    <section className="free-paywall">
-      <p className="fp-eyebrow">{pick5(lang, { it: "Questo è l'assaggio gratis", en: "This is your free taste", es: "Esta es tu muestra gratis", fr: "Ceci est votre aperçu gratuit", ru: "Это ваш бесплатный пробник" })}</p>
+    <section className={`free-paywall${inGrid ? " fp-in-grid" : ""}`}>
+      {/* #FREE-BOARD-FULL-0831: "questo è l'assaggio gratis" descriveva il modello
+          vecchio — 1 pick mostrata e il resto del catalogo solo promesso. Ora il
+          Free ha davanti tutte le schede, coi pronostici coperti: l'occhiello dice
+          quello, che è anche l'argomento di vendita più diretto. */}
+      <p className="fp-eyebrow">{pick5(lang, { it: "Vedi tutte le partite, non i pronostici", en: "You see every match, not the predictions", es: "Ves todos los partidos, no los pronósticos", fr: "Vous voyez tous les matchs, pas les pronostics", ru: "Вы видите все матчи, но не прогнозы" })}</p>
       <h3>{pick5(lang, { it: `Sblocca tutte le ${count} prediction di oggi`, en: `Unlock all ${count} predictions today`, es: `Desbloquea las ${count} predicciones de hoy`, fr: `Débloquez les ${count} prédictions du jour`, ru: `Откройте все ${count} прогнозов на сегодня` })}</h3>
       <ul className="fp-bullets">
         {bullets.map((b, i) => (
@@ -2173,6 +2213,7 @@ function SportsbookBoard({
   // l'idratazione (SSR rende sempre "all", il client allinea qui).
   useEffect(() => {
     const s = new URLSearchParams(window.location.search).get("sport");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- il deep-link ?sport= si applica DOPO il mount di proposito: il server rende sempre "all" e leggerlo in render romperebbe l'idratazione
     if (s === "football" || s === "tennis") setSportFilter(s);
   }, []);
   const [signalFilter, setSignalFilter] = useState<"all" | "value">("all");
@@ -2180,6 +2221,14 @@ function SportsbookBoard({
   const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
   const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("time");
   const [searchTerm, setSearchTerm] = useState("");
+  // #UI-MOBILE-BOARD-0822 — su un telefono la board era alta 22.078px: 26
+  // schermate per 55 schede, senza modo di arrivare alla quarantesima. Qui si
+  // limita a dieci e si lascia un comando per vederle tutte.
+  // Il valore iniziale NON dipende dal viewport: e' `true` sul server e sul
+  // client, quindi l'HTML combacia (la lezione del disallineamento in #275).
+  // Il taglio lo fa il CSS, che sopra i 640px non esiste — cosi' il desktop
+  // continua a mostrare tutto come prima.
+  const [boardLimitata, setBoardLimitata] = useState(true);
   const footballValue = predictions
     .filter(isFootballBestBet)
     .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
@@ -2207,7 +2256,14 @@ function SportsbookBoard({
   // mandava una campagna World Cup/calcio nel feed tennis): il feed tennis riceve
   // SOLO campagne tennis; tutto il resto (calcio + multisport) va nel feed calcio.
   // Ognuna usata al massimo una volta → nessun banner ripetuto nel feed.
-  const feedCampsAll = isFreeClient ? [] : campaignsFor("desk-feed", boardAudience);
+  // #FREE-BOARD-FULL-0831: i banner erano spenti per il Free perché con 1-2 schede
+  // un creativo 16:9 era metà pagina. Ora il Free ha la griglia intera e il caso
+  // speciale non ha più motivo: decide l'audience, come per tutti gli altri piani.
+  // MISURATO 31/08: oggi rende comunque zero banner — le 4 campagne `desk-feed`
+  // esistenti sono tutte `audiences: ["base","premium"]`. Perché il Free ne veda
+  // uno serve una campagna desk-feed che lo elenchi: è una scelta di contenuto
+  // (AD/marketing), non di codice.
+  const feedCampsAll = campaignsFor("desk-feed", boardAudience);
   const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
   const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
 
@@ -2238,7 +2294,18 @@ function SportsbookBoard({
 
   const surfaceOptions = Array.from(new Set(tennisMatches.map((m) => m.surface))).sort();
 
+  // #UNLOCKED-FIRST-0831 — le righe SBLOCCATE aprono la sezione. Andrea, da un
+  // account free: «c'è solo una prediction sbloccata». Le sue tre c'erano: la
+  // board ordina per ORARIO, quindi finivano sparse fra 136 schede coperte e per
+  // trovarle bisognava scorrere. Ciò che un piano gated può davvero usare sono le
+  // sue righe aperte: vanno dove le vede.
+  //
+  // Nessuna condizione sul piano, e non serve: per il Pro tutte le righe sono
+  // sbloccate e per l'anonimo nessuna, quindi il confronto è un no-op in
+  // entrambi i casi. Vale solo dove c'è un confine, cioè free e base.
   const sortFootball = (rows: Prediction[]) => rows.sort((a, b) => {
+    const gate = compareUnlockedFirst(a, b);
+    if (gate !== 0) return gate;
     const la = isFootballLive(a), lb = isFootballLive(b);
     if (la !== lb) return la ? -1 : 1;
     if (sortMode === "time") return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
@@ -2250,7 +2317,10 @@ function SportsbookBoard({
     return (b.edge ?? -1) - (a.edge ?? -1);
   });
 
+  // #UNLOCKED-FIRST-0831: stessa regola del calcio, vedi il commento sopra.
   const sortTennis = (rows: TennisMatch[]) => rows.sort((a, b) => {
+    const gate = compareUnlockedFirst(a, b);
+    if (gate !== 0) return gate;
     const la = isTennisLive(a), lb = isTennisLive(b);
     if (la !== lb) return la ? -1 : 1;
     if (sortMode === "time") return new Date(a.scheduled).getTime() - new Date(b.scheduled).getTime();
@@ -2296,12 +2366,45 @@ function SportsbookBoard({
   const showTennisSection = sportFilter !== "football" && !competitionFilter.startsWith("football:");
 
   return (
-    <div className="sportsbook-board">
+    <div className={"sportsbook-board" + (boardLimitata ? " mob-limita" : "")}>
       <div className="board-subhead">
         <span>{labels.showing} {filteredTotal}</span>
         <span>Football {footballRows.length}</span>
         <span>Tennis {tennisRows.length}</span>
       </div>
+
+      {filteredTotal > 10 && (
+        <button
+          type="button"
+          className="mob-board-toggle"
+          /* #UI-MOBILE-BOARD-0822: nascosto di DEFAULT con uno stile inline, e
+             rivelato dal CSS solo sotto i 640px. Serve per non scrivere nessuna
+             regola fuori dalla media query: un <button> senza regole resterebbe
+             visibile sul desktop.
+             Perche' inline e non l'attributo `hidden`: provato, e in Chromium il
+             `display:none` di `[hidden]` NON si sovrascrive (tutte le altre mie
+             proprieta' arrivavano, display no). Uno stile inline invece si batte
+             con !important, che sta dentro la media query. */
+          style={{ display: "none" }}
+          onClick={() => setBoardLimitata((v) => !v)}
+        >
+          {boardLimitata
+            ? pick5(lang, {
+                it: `Mostra tutte le ${filteredTotal}`,
+                en: `Show all ${filteredTotal}`,
+                es: `Mostrar las ${filteredTotal}`,
+                fr: `Afficher les ${filteredTotal}`,
+                ru: `Показать все (${filteredTotal})`,
+              })
+            : pick5(lang, {
+                it: "Mostra solo le prime 10",
+                en: "Show only the first 10",
+                es: "Mostrar solo las primeras 10",
+                fr: "Afficher seulement les 10 premieres",
+                ru: "Показать только первые 10",
+              })}
+        </button>
+      )}
 
       <div className="sports-filter-bar am-filters">
         <div className="am-seg" aria-label="Sport filter">
@@ -2386,24 +2489,47 @@ function SportsbookBoard({
                   {(() => {
                     // #HOUSE-PHOTO-1: banner foto intercalati ogni ~8 card; ogni campagna
                     // del pool calcio (footballFeed) usata UNA sola volta → nessun duplicato.
-                    // #FREE-PRED-REVAMP-0626: il Free vede come ASSAGGIO le righe già
-                    // sbloccate dal server (top-1 per sport, !locked) come card COMPLETE.
-                    // Il resto è rappresentato dal <FreePaywall>, non da card blurrate.
-                    const rows = isFreeClient ? footballRows.filter((p) => !p.locked) : footballRows;
+                    // #FREE-BOARD-FULL-0831: il Free vede la board INTERA come un Pro —
+                    // le righe bloccate restano schede vere col readout mascherato
+                    // (`v2r is-locked`, ▒▒▒ + lucchetto sulla quota), non spariscono.
+                    // Prima il Free le filtrava via e vedeva 1 scheda per sport mentre
+                    // la sport-band ne contava 50: la board dichiarava un catalogo che
+                    // non mostrava. Nessun dato nuovo esposto — il gate è server-side
+                    // (access-projection: `free` sblocca rank 0, il resto arriva già
+                    // senza pick/probabilità/edge), qui si smette solo di nasconderlo.
+                    const rows = footballRows;
+                    // #FREE-BOARD-FULL-0831 + #UNLOCKED-FIRST-0831: il <FreePaywall> a
+                    // fondo pagina sta sotto ~50 schede e non lo vede nessuno, quindi
+                    // una copia va in griglia, a tutta larghezza, SUBITO DOPO le righe
+                    // sbloccate — dove il Free passa dal reale al mascherato.
+                    // Prima era una posizione fissa (la terza scheda) proprio perché
+                    // "dopo le sbloccate" non era un confine stabile: la board ordinava
+                    // per orario e le aperte cadevano sparse. Ora aprono la sezione,
+                    // quindi il confine esiste ed è questo. Fallback alla terza scheda
+                    // se in questa sezione non c'è nulla di sbloccato.
+                    // Salta i board corti (≤8 righe), dove finirebbe accanto a quello di
+                    // chiusura.
+                    const primaCoperta = rows.findIndex((p) => p.locked);
+                    const fpGridAt = isFreeClient && rows.length > 8
+                      ? (primaCoperta > 0 ? primaCoperta - 1 : 2)
+                      : -1;
                     let placed = 0;
                     return rows.flatMap((p, i) => {
-                      const card = (
-                        <PredictionCard key={p.match_id} p={p} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
-                      );
+                      const out: React.ReactNode[] = [
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
+                      ];
+                      if (i === fpGridAt) {
+                        out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
+                      }
                       // #BANNER-FEED-FIX-0708: un SOLO creativo landscape 16:9 per punto,
                       // MAI due affiancati. Compatto (span-8, una card gli sta a fianco →
                       // riga piena, zero gutter) e mostrato INTERO (aspect 16:9 → nessun crop
                       // del logo/claim baked). Distribuiti ogni 6 card a punti diversi.
                       if (placed < footballFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
-                        return [card, <HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />];
+                        out.push(<HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />);
                       }
-                      return [card];
+                      return out;
                     });
                   })()}
                 </div>
@@ -2447,11 +2573,13 @@ function SportsbookBoard({
                   {(() => {
                     // #HOUSE-PHOTO-1: banner tennis dal pool DISGIUNTO (tennisFeed), ognuno una
                     // volta sola → mai duplicati col feed calcio nella stessa pagina.
-                    const rows = isFreeClient ? tennisRows.filter((m) => !m.locked) : tennisRows;
+                    // #FREE-BOARD-FULL-0831: come il calcio sopra — il Free vede tutte
+                    // le righe, quelle bloccate col readout mascherato.
+                    const rows = tennisRows;
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} />
+                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />
                       );
                       // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
@@ -2505,6 +2633,7 @@ function BestBetsBoard({
   // l'idratazione (SSR rende sempre "all", il client allinea qui).
   useEffect(() => {
     const s = new URLSearchParams(window.location.search).get("sport");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- il deep-link ?sport= si applica DOPO il mount di proposito: il server rende sempre "all" e leggerlo in render romperebbe l'idratazione
     if (s === "football" || s === "tennis") setSportFilter(s);
   }, []);
   const [sortMode, setSortMode] = useState<"probability" | "edge" | "time">("probability");
@@ -2547,9 +2676,7 @@ function BestBetsBoard({
     // #BESTBET-FLOOR-1: below the tennis floor → no directional pick.
     // #TENNIS-SEG-FLOOR-1: segment-aware floor resolved from the tournament.
     // #TENNIS-MARKET-GATE-0805: no market price → same outcome (server verdict).
-    belowFloor: (m.confidence_score != null
-      && m.confidence_score < surfaceFloorFor("tennis", m.tournament))
-      || m.no_market === true,
+    belowFloor: !isTennisSurfaced(m),
   }));
   const bestRows = buildBestBetRows(footballCandidates, tennisCandidates, {
     sportFilter,
@@ -2619,7 +2746,7 @@ function BestBetsBoard({
                 <span className="rule" />
               </div>
               <div className="am-grid">
-                {visibleFootballValue.map((p) => <PredictionCard key={p.match_id} p={p} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
+                {visibleFootballValue.map((p, i) => <PredictionCard key={p.match_id} p={p} idx={i} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -2633,7 +2760,7 @@ function BestBetsBoard({
                 <span className="rule" />
               </div>
               <div className="am-grid">
-                {visibleTennisValue.map((m) => <TennisMatchCard key={m.id} m={m} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
+                {visibleTennisValue.map((m, i) => <TennisMatchCard key={m.id} m={m} idx={i} onSelect={onSelect} onBetNow={onBetNow} isPreview={isFreeClient} isPremium={isPremium} />)}
               </div>
             </section>
           )}
@@ -3130,9 +3257,14 @@ function FAQSupportSection({ items }: { items: string[][] }) {
 }
 
 function PlanFeature({ children, locked = false }: { children: React.ReactNode; locked?: boolean }) {
+  // #UI-MACHINA-0802: al posto delle parole "OK"/"LOCK" un SEGNO. Erano due
+  // parole inglesi mostrate anche in italiano e spagnolo, ed erano testo dove
+  // serviva un simbolo. L'etichetta accessibile resta.
   return (
     <li className={locked ? "is-locked" : ""}>
-      <span>{locked ? "LOCK" : "OK"}</span>
+      <span aria-label={locked ? "locked" : "included"} role="img">
+        {locked ? <GlyphLock size={13} /> : <GlyphCheck size={13} />}
+      </span>
       <strong>{children}</strong>
     </li>
   );
@@ -3933,11 +4065,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Una prediction per sport ogni settimana, sbloccata del tutto. Profilo e storico pubblico.",
-              en: "One prediction per sport every week, fully unlocked. Profile and public history.",
-              es: "Una predicción por deporte cada semana, totalmente desbloqueada. Perfil e historial público.",
-              fr: "Une prédiction par sport chaque semaine, entièrement débloquée. Profil et historique public.",
-              ru: "Один прогноз на вид спорта каждую неделю, полностью открыт. Профиль и публичная история.",
+              it: "Tre prediction per sport ogni giorno, sbloccate del tutto. Profilo e storico pubblico.",
+              en: "Three predictions per sport every day, fully unlocked. Profile and public history.",
+              es: "Tres predicciones por deporte cada día, totalmente desbloqueadas. Perfil e historial público.",
+              fr: "Trois prédictions par sport chaque jour, entièrement débloquées. Profil et historique public.",
+              ru: "Три прогноза на вид спорта каждый день, полностью открыты. Профиль и публичная история.",
             })}
           </p>
           <div className="price-line">
@@ -3945,11 +4077,11 @@ function PlansTab({
             <span>{pick5(lang, { it: "Per sempre", en: "Forever", es: "Para siempre", fr: "Pour toujours", ru: "Навсегда" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "1 per sport / settimana", en: "1 per sport / week", es: "1 por deporte / semana", fr: "1 par sport / semaine", ru: "1 на вид спорта / неделя" })}</strong>
-            <em>{pick5(lang, { it: "La top del modello per calcio e per tennis.", en: "The model's top pick for football and tennis.", es: "La mejor selección del modelo para fútbol y tenis.", fr: "Le meilleur choix du modèle pour le football et le tennis.", ru: "Лучший выбор модели для футбола и тенниса." })}</em>
+            <strong>{pick5(lang, { it: "3 per sport / giorno", en: "3 per sport / day", es: "3 por deporte / día", fr: "3 par sport / jour", ru: "3 на вид спорта / день" })}</strong>
+            <em>{pick5(lang, { it: "Le migliori del modello di oggi, calcio e tennis.", en: "The model's best of today, football and tennis.", es: "Las mejores del modelo de hoy, fútbol y tenis.", fr: "Les meilleures du modèle du jour, football et tennis.", ru: "Лучшее от модели на сегодня — футбол и теннис." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "1 top prediction calcio + 1 tennis / settimana", en: "1 top football + 1 tennis prediction / week", es: "1 predicción top de fútbol + 1 de tenis / semana", fr: "1 prédiction top football + 1 tennis / semaine", ru: "1 топ-прогноз по футболу + 1 по теннису / неделя" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "3 top prediction calcio + 3 tennis, ogni giorno", en: "3 top football + 3 tennis predictions, every day", es: "3 predicciones top de fútbol + 3 de tenis, cada día", fr: "3 prédictions top football + 3 tennis, chaque jour", ru: "3 топ-прогноза по футболу + 3 по теннису, каждый день" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione su quelle", en: "Pick, probabilities and explanation on those", es: "Selección, probabilidades y explicación sobre ellas", fr: "Choix, probabilités et explication sur ceux-ci", ru: "Выбор, вероятности и пояснение по ним" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Profilo e lingua salvati · storico pubblico", en: "Profile and language saved · public history", es: "Perfil e idioma guardados · historial público", fr: "Profil et langue enregistrés · historique public", ru: "Профиль и язык сохранены · публичная история" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Resto del board, edge e Deep Analysis", en: "Rest of the board, edge and Deep Analysis", es: "Resto del panel, edge y Deep Analysis", fr: "Reste du tableau, edge et Deep Analysis", ru: "Остальная часть доски, edge и Deep Analysis" })}</PlanFeature>
@@ -3970,11 +4102,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Le top 5 prediction per sport ogni settimana, con edge e spiegazioni complete.",
-              en: "The top 5 predictions per sport every week, with full edge and explanations.",
-              es: "Las 5 mejores predicciones por deporte cada semana, con edge y explicaciones completas.",
-              fr: "Les 5 meilleures prédictions par sport chaque semaine, avec edge et explications complètes.",
-              ru: "Топ-5 прогнозов на вид спорта каждую неделю, с edge и полными пояснениями.",
+              it: "Le top 7 prediction per sport ogni giorno, con edge e spiegazioni complete.",
+              en: "The top 7 predictions per sport every day, with full edge and explanations.",
+              es: "Las 7 mejores predicciones por deporte cada día, con edge y explicaciones completas.",
+              fr: "Les 7 meilleures prédictions par sport chaque jour, avec edge et explications complètes.",
+              ru: "Топ-7 прогнозов на вид спорта каждый день, с edge и полными пояснениями.",
             })}
           </p>
           <div className="price-line">
@@ -3984,11 +4116,11 @@ function PlansTab({
             <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "5 per sport / settimana", en: "5 per sport / week", es: "5 por deporte / semana", fr: "5 par sport / semaine", ru: "5 на вид спорта / неделя" })}</strong>
-            <em>{pick5(lang, { it: "10 prediction a settimana, le migliori per edge.", en: "10 predictions a week, the best by edge.", es: "10 predicciones por semana, las mejores por edge.", fr: "10 prédictions par semaine, les meilleures par edge.", ru: "10 прогнозов в неделю, лучшие по edge." })}</em>
+            <strong>{pick5(lang, { it: "7 per sport / giorno", en: "7 per sport / day", es: "7 por deporte / día", fr: "7 par sport / jour", ru: "7 на вид спорта / день" })}</strong>
+            <em>{pick5(lang, { it: "14 prediction al giorno, le migliori del modello.", en: "14 predictions a day, the model's best.", es: "14 predicciones al día, las mejores del modelo.", fr: "14 prédictions par jour, les meilleures du modèle.", ru: "14 прогнозов в день — лучшее от модели." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "Top 5 calcio + 5 tennis / settimana (10 totali)", en: "Top 5 football + 5 tennis / week (10 total)", es: "Top 5 fútbol + 5 tenis / semana (10 en total)", fr: "Top 5 football + 5 tennis / semaine (10 au total)", ru: "Топ-5 футбол + 5 теннис / неделя (10 всего)" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Top 7 calcio + 7 tennis, ogni giorno (14 al giorno)", en: "Top 7 football + 7 tennis, every day (14 a day)", es: "Top 7 fútbol + 7 tenis, cada día (14 al día)", fr: "Top 7 football + 7 tennis, chaque jour (14 par jour)", ru: "Топ-7 футбол + 7 теннис, каждый день (14 в день)" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Edge %, stake suggerito, closing line value", en: "Edge %, suggested stake, closing line value", es: "Edge %, stake sugerido, closing line value", fr: "Edge %, mise suggérée, closing line value", ru: "Edge %, рекомендуемая ставка, closing line value" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Storico completo settlato", en: "Full settled history", es: "Historial completo liquidado", fr: "Historique complet réglé", ru: "Полная история расчётов" })}</PlanFeature>
@@ -4023,14 +4155,14 @@ function PlansTab({
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "Illimitato", en: "Unlimited", es: "Ilimitado", fr: "Illimité", ru: "Безлимитно" })}</strong>
-            <em>{pick5(lang, { it: "Nessun limite settimanale, tutta la piattaforma.", en: "No weekly cap, the whole platform.", es: "Sin límite semanal, toda la plataforma.", fr: "Aucune limite hebdomadaire, toute la plateforme.", ru: "Без недельного лимита, вся платформа." })}</em>
+            <em>{pick5(lang, { it: "Nessun tetto giornaliero, tutta la piattaforma.", en: "No daily cap, the whole platform.", es: "Sin límite diario, toda la plataforma.", fr: "Aucun plafond quotidien, toute la plateforme.", ru: "Без дневного лимита, вся платформа." })}</em>
           </div>
           <ul className="plan-feature-list">
             <PlanFeature>{pick5(lang, { it: "TUTTE le prediction, illimitate", en: "ALL predictions, unlimited", es: "TODAS las predicciones, ilimitadas", fr: "TOUTES les prédictions, illimitées", ru: "ВСЕ прогнозы, без лимита" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Deep Analysis: forma, infortuni, venue", en: "Deep Analysis: form, injuries, venue", es: "Deep Analysis: forma, lesiones, estadio", fr: "Deep Analysis : forme, blessures, stade", ru: "Deep Analysis: форма, травмы, арена" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Match Builder e Best Bets +EV", en: "Match Builder and Best Bets +EV", es: "Match Builder y Best Bets +EV", fr: "Match Builder et Best Bets +EV", ru: "Match Builder и Best Bets +EV" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Edge, stake e CLV su tutto", en: "Edge, stake and CLV on everything", es: "Edge, stake y CLV en todo", fr: "Edge, mise et CLV sur tout", ru: "Edge, ставка и CLV по всему" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Edge e stake su tutto", en: "Edge and stake on everything", es: "Edge y stake en todo", fr: "Edge et mise sur tout", ru: "Edge и ставка по всему" })}</PlanFeature>
             <PlanFeature><Link href="/weekly-pick" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Pick inclusa (la multipla della casa)", en: "Weekly Pick included (the house accumulator)", es: "Weekly Pick incluida (la combinada de la casa)", fr: "Weekly Pick inclus (le combiné de la maison)", ru: "Weekly Pick включён (экспресс от команды)" })}</Link></PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
@@ -4940,7 +5072,35 @@ function GoalscorerBlock({
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+// #UI-MACHINA-0802 — la foto dietro la scheda. Segue lo SPORT (non è
+// decorazione casuale) e alterna in modo deterministico sull'indice, così due
+// schede adiacenti non portano la stessa immagine. Le foto sono quelle già in
+// repo: in fase 1 non si genera nulla.
+const MC_SCENES_FOOTBALL = ["im-stadium", "im-pitch", "im-action"] as const;
+// #UI-LIGHT-BAND-0830 — il tennis NON alterna: la scena segue la SUPERFICIE
+// vera del match. L'alternanza sull'indice metteva la terra rossa sotto match
+// giocati su cemento — con la foto quasi invisibile non si notava, con la
+// fascia del tema chiaro e' un'immagine falsa in prima pagina. `scene-clay`
+// solo su CLAY; HARD e GRASS prendono il campo generico (asset erba non c'e').
+function mcScene(sport: "football" | "tennis" | "wc", i = 0, surface?: string | null): string {
+  if (sport === "tennis") return (surface ?? "").toUpperCase() === "CLAY" ? "im-clay" : "im-court";
+  if (sport === "wc") return "im-crowd";
+  return MC_SCENES_FOOTBALL[i % MC_SCENES_FOOTBALL.length];
+}
+// I due strati decorativi, fuori dall'albero dell'accessibilità. La velatura è
+// UNA: due gradienti sovrapposti spengono l'immagine (errore già corretto su
+// MACHINA). I numeri non ci finiscono sopra — .scorebar e .v2r sono incassi
+// pieni, vedi la spec §5.3.
+function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc"; i?: number; surface?: string | null }) {
+  return (
+    <>
+      <span className={`card-bg ${mcScene(sport, i, surface)}`} aria-hidden="true" />
+      <span className="card-veil" aria-hidden="true" />
+    </>
+  );
+}
+
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -4995,6 +5155,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   })();
   // Demoted extra-markets (schedina) — moved into the expandable analysis.
   const extraPicks = (e.extra_markets ?? []).filter((m) => m.p >= 0.55).sort((a, b) => b.p - a.p).slice(0, 5);
+  // Quota REALE di un mercato extra, o undefined. Mai derivata dalla probabilita'.
+  const extraOdds = (key: string): number | undefined =>
+    (e.extra_markets ?? []).find((m) => m.key === key)?.market_odds ?? undefined;
 
   // ── Direction B readout: Market vs Model vs Edge (clear-pick cards only) ──
   // All figures are REAL: model% = the model's probability for the pick,
@@ -5017,6 +5180,31 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     : pickKey === "AWAY" ? p.p_away
     : pickKey === "DRAW" ? p.p_draw
     : null;
+  // #HEADLINE-MARKET-0830 — su una partita equilibrata l'1X2 non ha una risposta
+  // forte (Casa Pia v Moreirense: 33,9 / 30,8 / 35,4). La testata passa allora
+  // alla doppia chance, che e' la STESSA previsione su una domanda piu' facile:
+  // 1X = p_home + p_draw, sommato dalla tripla gia' servita.
+  //
+  // #HEADLINE-BELOWFLOOR-0830 — la prima versione escludeva le righe below-floor
+  // ("li' vale gia' la regola sua"). Era sbagliato: below-floor significa proprio
+  // "nessun favorito netto", cioe' ESATTAMENTE il caso che questo lavoro deve
+  // servire. Casa Pia era below-floor. Il visual check in produzione l'ha mostrato
+  // subito: SK Brann 39%, FC Andorra 39%, Molde 47% erano rimaste invariate.
+  // Non e' un claim di edge — su quelle righe il value resta nascosto comunque —
+  // ma una lettura piu' informativa della stessa identica previsione.
+  const headline = headlineRead(
+    { pHome: p.p_home, pDraw: p.p_draw, pAway: p.p_away },
+    { double_1x: extraOdds("double_1x"), double_x2: extraOdds("double_x2") },
+  );
+  const useHeadline = headline != null && headline.market !== "h2h";
+  const headlineName = !useHeadline ? null
+    : headline!.selection === "1X"
+      ? pick5(lang, { it: `${p.home_team} o pareggio`, en: `${p.home_team} or draw`, es: `${p.home_team} o empate`, fr: `${p.home_team} ou nul`, ru: `${p.home_team} или ничья` })
+      : pick5(lang, { it: `${p.away_team} o pareggio`, en: `${p.away_team} or draw`, es: `${p.away_team} o empate`, fr: `${p.away_team} ou nul`, ru: `${p.away_team} или ничья` });
+  // Cio' che la testata mostra davvero. Il resto della card (schedina, mercati,
+  // settlement) continua a lavorare su pickKey/pickProb: qui cambia solo la vetrina.
+  const shownName = useHeadline ? headlineName : pickName;
+  const shownProb = useHeadline ? headline!.prob : pickProb;
   const pickOdds =
     pickKey === "HOME" ? p.odds_home
     : pickKey === "AWAY" ? p.odds_away
@@ -5048,6 +5236,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     return null;
   })();
   const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
+  // #HEADLINE-ODDS-0830 — quando la testata cambia mercato, la quota 1X2 NON la
+  // segue: accostare "Casa Pia o pareggio · 65%" a 2,66 (che e' il prezzo di
+  // "Casa Pia vince") e' un accostamento falso. Visto in produzione subito dopo
+  // il deploy di #HEADLINE-MARKET-0830. Si mostra la quota REALE della doppia
+  // chance quando il book la espone, altrimenti nessuna quota: mai una derivata.
+  const shownOdds: number | null = useHeadline
+    ? (headline!.odds ?? null)
+    : fpPickOdds;
 
   // #CARD-REDESIGN-V2: dati risolti per la scheda info (MatchDetailSheet). Il modal
   // si apre solo per card sbloccate (modalEnabled) → qui i dati sono sempre completi.
@@ -5074,7 +5270,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
       chips: esito.map((o) => {
         const q = fpq(o.key);
-        return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: pickKey === o.key };
+        return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickKey === o.key };
       }),
     });
 
@@ -5085,14 +5281,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       const overP = findP("over"), underP = findP("under");
       const overVal = fp.totalOver != null && overP != null ? fpEdge(overP, fp.totalOver) : null;
       const underVal = fp.totalUnder != null && underP != null ? fpEdge(underP, fp.totalUnder) : null;
-      const recOver = overP != null && underP != null ? overP >= underP : (overVal ?? -1) > (underVal ?? -1);
+      const pickSide = goalPickSide({ overP, underP, overOdds: fp.totalOver ?? null, underOdds: fp.totalUnder ?? null, belowFloor });
       groups.push({
         key: "gol", icon: "goal", title: pick5(lang, { it: "Gol", en: "Goals", es: "Goles", fr: "Buts", ru: "Голы" }),
         meta: `${pick5(lang, { it: "linea", en: "line", es: "línea", fr: "ligne", ru: "линия" })} ${line}${e.goals_summary ? ` · ${pick5(lang, { it: "attesi", en: "exp.", es: "esp.", fr: "att.", ru: "ожид." })} ${e.goals_summary.expected_goals.toFixed(1)}` : ""}`,
         src: { kind: "fp", label: "FortunePlay" },
         chips: [
-          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: recOver },
-          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: !recOver },
+          { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: pickSide === "over" },
+          { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: pickSide === "under" },
         ],
       });
     }
@@ -5115,11 +5311,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
     }
     const gs = [...gsMap.values()].sort((a, b) => b.pScores - a.pScores).slice(0, 4);
     if (gs.length) {
-      const topP = Math.max(...gs.map((x) => x.pScores));
       groups.push({
         key: "marcatore", icon: "boot", title: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }),
         src: { kind: "us", label: pick5(lang, { it: "best · book US", en: "best · US book", es: "best · casa US", fr: "best · book US", ru: "best · US" }) },
-        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: x.pScores === topP && x.bestPrice != null })),
+        chips: gs.map((x, i) => ({ id: `gs-${i}`, mkt: pick5(lang, { it: "Marcatore", en: "Goalscorer", es: "Goleador", fr: "Buteur", ru: "Бомбардир" }), sel: x.name, prob: pct(x.pScores), q: x.bestPrice, value: pv(x.edge), rec: scorerPickEligible({ p: x.pScores, odds: x.bestPrice }) })),
         note: pick5(lang, { it: "La nostra probabilità che ogni giocatore segni almeno un gol.", en: "Our probability that each player scores at least once.", es: "Nuestra probabilidad de que cada jugador marque al menos una vez.", fr: "Notre probabilité que chaque joueur marque au moins une fois.", ru: "Наша вероятность того, что игрок забьёт хотя бы раз." }),
       });
     }
@@ -5145,14 +5340,37 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       when: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
       home: p.home_team, away: p.away_team,
       extraMarkets: e.extra_markets ?? undefined, // real model prediction for FP goal-derived markets
+      // #FLOOR-MODAL-0821 — il modale deve dire la STESSA cosa della scheda.
+      // Trovato da PRO loggato in produzione: la scheda diceva «no clear
+      // favourite» e il modale, a un clic di distanza, «Our prediction · Ried to
+      // win» con due badge «pick». L'onestà moriva appena si apriva la scheda.
       hero: {
-        flag: pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
-        pick: pickName ? (pickKey === "DRAW" ? pickName : `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`) : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" }),
-        read: `${pickProb != null ? pct(pickProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        flag: belowFloor
+          ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" })
+          : pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
+        // sotto il floor l'esito piu' probabile si NOMINA, ma non si dice
+        // «vince»: non e' una scommessa che stiamo consigliando.
+        pick: shownName
+          ? (useHeadline || belowFloor || pickKey === "DRAW" ? shownName : `${shownName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`)
+          : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modelo", ru: "Чтение модели" }),
+        // #CARD-HUD-0830 — la probabilita' del modello e' il numero protagonista
+        // anche dentro la scheda aperta, come nella scheda in griglia. `read`
+        // resta la didascalia e porta SOLO il caveat sotto il floor: la parola
+        // «low» non deve comparire (regola di Andrea, #FLOOR-LABEL-0830) — la
+        // confidenza la dicono le tacche.
+        prob: shownProb != null ? pct(shownProb) : null,
+        probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
+        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
-        quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
-        value: fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        quota: shownOdds != null ? shownOdds.toFixed(2) : null,
+        // #FLOOR-VALUE-0821 — sotto il floor NIENTE value. Misurato in
+        // produzione da PRO: tutte e tre le schede col chip verde erano sotto il
+        // floor, cioe' dicevano «no clear favourite» E «value 27,6%» insieme. La
+        // regola standing e' esplicita: sotto il floor il pick non deve MAI
+        // riemergere come value, perche' l'edge di mercato da solo non basta
+        // quando il modello non ha un favorito.
+        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
@@ -5233,10 +5451,31 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
       {/* model-vs-market readout / gate overlay */}
       {p.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-          <span className="blurred">▒▒ HOME ▒▒▒%</span>
-          <span className="blurred">▒▒ DRAW ▒▒▒%</span>
-          <span className="blurred">▒▒ AWAY ▒▒▒%</span>
-          <span className="locked-cta">{t.locked_title}</span>
+        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
+            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
+            vietate dalla regola standing di giugno E promettevano una struttura
+            che il prodotto sbloccato non ha (pronostico + quota + value). Un
+            lucchetto su una struttura vera converte meglio di una promessa
+            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
+          <div className="v2r is-locked" aria-hidden="true">
+            <div className="v2r-l">
+              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
+              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
+            </div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
+            </div>
+          </div>
+          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
+              anonimo, falso per un Free che il login l'ha gia' fatto e che da
+              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
+              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
+              cosa dell'azione. */}
+          <span className="locked-cta">{isFree
+            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
+            : t.locked_title}</span>
         </div>
       ) : (
         <>
@@ -5245,25 +5484,35 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
             onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {/* #UI-MACHINA-0802 — sotto il floor la scheda mostrava l'esito piu'
+                  probabile con l'occhiello "Il nostro pronostico", cioe' lo faceva
+                  passare per una pick. Lo standard chiede: esito piu' probabile,
+                  edge assente, ED ETICHETTA che dice che non c'e' un favorito
+                  netto. L'edge era gia' soppresso; mancava di dirlo. */}
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
+                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
+                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick">{shownName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
+                  dalla scheda. Su 8 schede della board 6 la portavano, e la
+                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
+                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
+                  nostro pronostico», l'esito non dice «vince», edge e value
+                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
               {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
+                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock">🔒</span>
-              ) : fpPickOdds != null ? (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                </>
+                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "\u2013"}</span>
+                  <span className="v2r-qn">{shownProb != null ? pct(shownProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
+                  {(shownOdds != null || (!belowFloor && !useHeadline && fpValue != null && fpValue > 0)) ? (
+                    <span className="v2r-sub">{shownOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {shownOdds.toFixed(2)}</> : null}{(!belowFloor && !useHeadline && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
+                  ) : null}
                 </>
               )}
             </div>
@@ -5430,7 +5679,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           )}
           {e.kind === "world_cup" && ((e.squad?.injuries_home?.length ?? 0) > 0 || (e.squad?.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
-              <span className="da-label">🚑 {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
+              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
               <span className="da-value">{e.squad?.injuries_home?.length ?? 0} vs {e.squad?.injuries_away?.length ?? 0}</span>
             </div>
           )}
@@ -5442,7 +5691,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           )}
           {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
             <div className="da-row">
-              <span className="da-label">🚑 {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
+              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
               <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
             </div>
           )}
@@ -5499,7 +5748,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
           )}
           {e.research && (
             <div className="da-research">
-              <span className="da-label">🤖 AI</span>
+              <span className="da-label"><GlyphModel size={12} /> AI</span>
               <p className="da-research-text">{e.research}</p>
             </div>
           )}
@@ -5524,7 +5773,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
   // compatta cliccabile che apre la scheda-dettaglio.
   if (!modalEnabled) {
     return (
-      <article className="card"><div className="pred" {...cardProps}>
+      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud" {...cardProps}>
+        <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
         {bodyNode}
@@ -5534,7 +5784,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, onGat
 
   return (
     <>
-      <article className="card"><div className="pred is-clickable" {...cardProps}>
+      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud is-clickable" {...cardProps}>
+        <McCardPhoto sport="football" i={idx} />
         {headerNode}
         {readoutNode}
         <div className="pred-more" aria-hidden="true">
@@ -5569,10 +5820,13 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, onGate }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; onGate?: () => void }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  // #DUP-FLOOR-TENNIS-0821 — lo stesso verdetto che usano il predicato best-bet
+  // e la riga dei candidati, non una copia della regola.
+  const belowFloor = !isTennisSurfaced(m);
   const t = useT();
   const lang = useLang();
   const tz = useTz();
@@ -5705,21 +5959,34 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
       chips: esito.map((o) => {
         const q = fpq(o.key);
-        return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: pickPlayer === o.key };
+        return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickPlayer === o.key };
       }),
     }];
     return {
       league: m.tournament,
       when: fmtKickoff(m.scheduled, lang, tz),
       home: m.player1, away: m.player2,
+      // #FLOOR-MODAL-0821 — stessa cosa della scheda, anche qui (vedi il calcio).
       hero: {
-        flag: pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
-        pick: pickName ? `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}` : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" }),
-        read: `${pickProb != null ? pct(pickProb) + " " : ""}${pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}${confLabel ? ` · ${pick5(lang, { it: "conf.", en: "conf.", es: "conf.", fr: "conf.", ru: "увер." })} ${confLabel}` : ""}`,
+        flag: belowFloor
+          ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" })
+          : pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
+        pick: pickName
+          ? (belowFloor ? pickName : `${pickName} ${pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" })}`)
+          : pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" }),
+        // #CARD-HUD-0830 — la probabilita' del modello e' il numero protagonista
+        // anche dentro la scheda aperta, come nella scheda in griglia. `read`
+        // resta la didascalia e porta SOLO il caveat sotto il floor: la parola
+        // «low» non deve comparire (regola di Andrea, #FLOOR-LABEL-0830) — la
+        // confidenza la dicono le tacche.
+        prob: pickProb != null ? pct(pickProb) : null,
+        probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
+        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
-        value: fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        // #FLOOR-VALUE-0821 — sotto il floor NIENTE value (vedi il calcio).
+        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
@@ -5795,9 +6062,31 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       {/* verdict line + rows / gate overlay */}
       {m.locked ? (
         <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-          <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
-          <span className="blurred">▒▒▒▒▒▒▒▒ ▒▒▒%</span>
-          <span className="locked-cta">{t.locked_title}</span>
+        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
+            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
+            vietate dalla regola standing di giugno E promettevano una struttura
+            che il prodotto sbloccato non ha (pronostico + quota + value). Un
+            lucchetto su una struttura vera converte meglio di una promessa
+            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
+          <div className="v2r is-locked" aria-hidden="true">
+            <div className="v2r-l">
+              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
+              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
+            </div>
+            <div className="v2r-q">
+              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
+              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
+            </div>
+          </div>
+          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
+              anonimo, falso per un Free che il login l'ha gia' fatto e che da
+              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
+              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
+              cosa dell'azione. */}
+          <span className="locked-cta">{isFree
+            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
+            : t.locked_title}</span>
         </div>
       ) : (
         <>
@@ -5806,25 +6095,30 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
             onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
           >
             <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? "🔒 Pro" : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
+              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
+                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
+                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
               <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
+                  dalla scheda. Su 8 schede della board 6 la portavano, e la
+                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
+                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
+                  nostro pronostico», l'esito non dice «vince», edge e value
+                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
               {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey}>{confLabel && <span className="v2r-conf-t">{confLabel}</span>}{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
+                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
               )}
             </div>
             <div className="v2r-q">
               {isPreview ? (
-                <span className="v2r-qn lock">🔒</span>
-              ) : fpPickOdds != null ? (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-                  <span className="v2r-qn">{fpPickOdds.toFixed(2)}</span>
-                  <span className="v2r-sub">{pickProb != null ? `${pct(pickProb)} ` : ""}{pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "mod\u00e8le", ru: "\u043c\u043e\u0434\u0435\u043b\u044c" })}{fpValue != null && fpValue > 0 ? (() => { const vv = fmtValuePct(fpValue); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                </>
+                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : (
                 <>
                   <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{pickProb != null ? pct(pickProb) : "\u2013"}</span>
+                  <span className="v2r-qn">{pickProb != null ? pct(pickProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
+                  {(fpPickOdds != null || (!belowFloor && fpValue != null && fpValue > 0)) ? (
+                    <span className="v2r-sub">{fpPickOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {fpPickOdds.toFixed(2)}</> : null}{(!belowFloor && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
+                  ) : null}
                 </>
               )}
             </div>
@@ -5881,7 +6175,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
           {/* AI analysis — shown first when available */}
           {aiAnalysis && lang === "it" ? (
             <>
-              <div className="wlab"><span>🤖</span> {t.tennis_ai_label}</div>
+              <div className="wlab"><GlyphModel size={12} /> {t.tennis_ai_label}</div>
               <p className="why-prose mono">{aiAnalysis}</p>
             </>
           ) : loadingAnalysis ? (
@@ -5953,7 +6247,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   if (!modalEnabled) {
     return (
-      <article className="card tennis"><div className="pred tennis" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis" {...cardProps}>
+        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
         {headerNode}
         {readoutNode}
         {bodyNode}
@@ -5963,7 +6258,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   return (
     <>
-      <article className="card tennis"><div className="pred tennis is-clickable" {...cardProps}>
+      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis is-clickable" {...cardProps}>
+        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
         {headerNode}
         {readoutNode}
         <div className="pred-more" aria-hidden="true">
@@ -6069,7 +6365,7 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 
       <div className="am-surface p-4">
         <h3 className="text-xs font-mono text-[var(--am-coral)] uppercase tracking-wider mb-3">Pipeline Flow · 16 Agents</h3>
-        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider">⚽ Football</div>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 uppercase tracking-wider"><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-ball" /></svg> Football</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "DataCollector", "→", "ModelAgent", "→", "ContextService", "→",
@@ -6085,7 +6381,7 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
             <span key={i} className={["→", "·"].includes(item) ? "text-[var(--am-muted-2)]" : "text-[var(--am-text)]"}>{item}</span>
           ))}
         </div>
-        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider">🎾 Tennis</div>
+        <div className="text-[10px] text-[var(--am-muted-2)] font-mono mb-1 mt-3 uppercase tracking-wider"><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-tball" /></svg> Tennis</div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--am-muted)]">
           {[
             "TennisDataCollector", "→", "TennisModel", "→", "TennisAnalyst", "→",
@@ -6127,6 +6423,13 @@ interface MbItem {
   // percentuale modello, MAI come quota — coerente col prodotto
   // (probabilità calibrate, non promesse di edge).
   prob: number;
+  // #MB-FLOOR-0821 — sotto il floor NON si scrive "Pick". Misurato da PRO in
+  // produzione: 61 righe su 95 stavano sotto il 50% e il builder le annunciava
+  // come "Pick: X (37%)", cioe' come pronostici. E questo e' lo strumento che
+  // invita a condividere il link coi follower: la parola "Pick" qui esce dal
+  // prodotto e va a terzi. Il verdetto e' quello del server, lo stesso della
+  // scheda (isFootballSurfaced / isTennisSurfaced), non una regola nuova.
+  belowFloor?: boolean;
 }
 
 interface MbWcRow {
@@ -6250,6 +6553,7 @@ function MatchBuilderTab({
           market: p.best_selection === "HOME" ? p.home_team : p.best_selection === "AWAY" ? p.away_team : "Draw",
           sport: p.league_name || "Football", when: p.kickoff,
           prob,
+          belowFloor: !isFootballSurfaced(p),
         };
       })
       .filter((i): i is MbItem => i !== null),
@@ -6283,6 +6587,7 @@ function MatchBuilderTab({
           market: m.best_selection === "P1" ? m.player1 : m.player2,
           sport: `Tennis · ${m.tournament}`, when: m.scheduled,
           prob,
+          belowFloor: !isTennisSurfaced(m),
         };
       })
       .filter((i): i is MbItem => i !== null),
@@ -6374,7 +6679,7 @@ function MatchBuilderTab({
             code,
             mb: selected.join(","),
             selections: selectedItems.map((i) => ({
-              id: i.id, label: i.label, market: i.market, sport: i.sport, when: i.when, prob: i.prob,
+              id: i.id, label: i.label, market: i.market, sport: i.sport, when: i.when, prob: i.prob, belowFloor: i.belowFloor,
             })),
           }),
         });
@@ -6420,7 +6725,7 @@ function MatchBuilderTab({
               {sharedRows.map((row) => (
                 <div key={row.id} className="mb-slip-item">
                   <span className="mb-slip-fixture">{row.label}</span>
-                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]">🔒</span></span>
+                  <span className="mb-slip-meta"><span className="text-[var(--am-muted-2)]"><GlyphLock size={12} /></span></span>
                 </div>
               ))}
             </div>
@@ -6474,7 +6779,12 @@ function MatchBuilderTab({
                                   <>{home}<span className="mb-vs">vs</span>{away}</>
                                 ) : item.label}
                               </span>
-                              <span className="mb-pick"><span className="mb-pick-label">Pick: </span><strong>{item.market}</strong></span>
+                              <span className="mb-pick">
+                                <span className="mb-pick-label">{item.belowFloor
+                                  ? pick5(lang, { it: "Lettura: ", en: "Model read: ", es: "Lectura: ", fr: "Lecture : ", ru: "Чтение: " })
+                                  : "Pick: "}</span>
+                                <strong>{item.market}</strong>
+                              </span>
                             </span>
                             <span className="mb-row-tail">
                               <span className="mb-prob">{Math.round(item.prob * 100)}%</span>
@@ -6542,7 +6852,7 @@ function MatchBuilderTab({
                     {copied ? copy.copied : copy.copyLink}
                   </button>
                   {publishState === "published" && (
-                    <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <a href="/community" className="underline">Creator Picks →</a></p>
+                    <p className="text-[10px] font-mono text-[var(--am-positive)]">{copy.published} · <Link href="/community" className="underline">Creator Picks →</Link></p>
                   )}
                   <p className="mb-link">{shareLink}</p>
                 </div>
@@ -6607,7 +6917,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Caricamento classifica…",
       noData: "Ancora nessuna classifica.",
       emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
-      podiumLabel: ["🥇 Primo", "🥈 Secondo", "🥉 Terzo"],
+      podiumLabel: ["Primo", "Secondo", "Terzo"],
     },
     en: {
       eyebrow: "Public leaderboard",
@@ -6628,7 +6938,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Loading leaderboard…",
       noData: "No ranking yet.",
       emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
-      podiumLabel: ["🥇 First", "🥈 Second", "🥉 Third"],
+      podiumLabel: ["First", "Second", "Third"],
     },
     es: {
       eyebrow: "Clasificación pública",
@@ -6649,7 +6959,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Cargando clasificación…",
       noData: "Aún no hay clasificación.",
       emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
-      podiumLabel: ["🥇 Primero", "🥈 Segundo", "🥉 Tercero"],
+      podiumLabel: ["Primero", "Segundo", "Tercero"],
     },
     fr: {
       eyebrow: "Classement public",
@@ -6670,7 +6980,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Chargement du classement…",
       noData: "Pas encore de classement.",
       emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
-      podiumLabel: ["🥇 Premier", "🥈 Deuxième", "🥉 Troisième"],
+      podiumLabel: ["Premier", "Deuxième", "Troisième"],
     },
     ru: {
       eyebrow: "Публичный рейтинг",
@@ -6691,7 +7001,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       loading: "Загрузка рейтинга…",
       noData: "Рейтинга пока нет.",
       emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
-      podiumLabel: ["🥇 Первое", "🥈 Второе", "🥉 Третье"],
+      podiumLabel: ["Первое", "Второе", "Третье"],
     },
   });
 
@@ -6747,7 +7057,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-2 gap-3">
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                🏆 Top hit rate
+                <GlyphTrophy size={13} /> Top hit rate
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
@@ -6764,7 +7074,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             </div>
             <div className="am-surface p-4 space-y-1">
               <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                {pick5(lang, { it: "🔥 Più attivo", en: "🔥 Most active", es: "🔥 Más activo", fr: "🔥 Le plus actif", ru: "🔥 Самый активный" })}
+                <><GlyphFlame size={13} /> {pick5(lang, { it: "Più attivo", en: "Most active", es: "Más activo", fr: "Le plus actif", ru: "Самый активный" })}</>
               </div>
               {(() => {
                 const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
@@ -6791,7 +7101,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
           <div className="grid grid-cols-3 gap-3" aria-hidden="true">
             {[0, 1, 2].map((i) => (
               <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
-                <div className="text-lg">{["🥇", "🥈", "🥉"][i]}</div>
+                <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
                 <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
                 <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
                 <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
@@ -6810,7 +7120,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
             <div className="grid grid-cols-3 gap-3">
               {podium.map((e, i) => (
                 <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={i === 0 ? { borderColor: medalBorder[i], background: "var(--am-coral)" } : { borderColor: medalBorder[i] }}>
-                  <div className="text-lg">{copy.podiumLabel[i].split(" ")[0]}</div>
+                  <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
                   <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
                   <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
                   <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-90" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
@@ -6891,7 +7201,18 @@ function HistoryTab({ history, stats, loading }: {
   const [resultFilter, setResultFilter] = useState("all");
   const [competitionFilter, setCompetitionFilter] = useState("all");
 
-  const SPORT_ICONS: Record<string, string> = { football: "⚽", tennis: "🎾" };
+  // #NO-EMOJI-0822: lo sprite degli sport è già montato nel desk e i suoi glifi
+  // ereditano currentColor; le emoji cambiavano forma con il sistema operativo.
+  const SPORT_ICONS: Record<string, string> = { football: "g-ball", tennis: "g-tball" };
+  const SportMark = ({ sport }: { sport: string }) => {
+    const id = SPORT_ICONS[sport];
+    if (!id) return null;
+    return (
+      <svg width="13" height="13" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.12em", flex: "none" }}>
+        <use href={`#${id}`} />
+      </svg>
+    );
+  };
   const resultOf = (h: V2HistoryRow) => h.result ?? "pending";
 
   // Sport is the first-level filter; competitions are derived from the rows of
@@ -7049,10 +7370,10 @@ function HistoryTab({ history, stats, loading }: {
                 return (
                   <tr key={h.id}>
                     <td className="fx-c">
-                      {SPORT_ICONS[h.sport] ?? ""} {eventLabel(h)}
+                      <SportMark sport={h.sport} /> {eventLabel(h)}
                       {h.final_score ? <span className="r" style={{ marginLeft: 8 }}>{h.final_score}</span> : null}
                     </td>
-                    <td className="pk">{h.locked ? "🔒" : (h.pick ?? "—")}</td>
+                    <td className="pk">{h.locked ? <GlyphLock size={13} /> : (h.pick ?? "—")}</td>
                     <td className="r">
                       <span className={`res ${resClass}`}><span className="d" />{resLabel}</span>
                     </td>
@@ -7379,6 +7700,7 @@ function AccountMenu({
   const isPremium = profileHasPremium(profile);
   const isAccess = profileHasAccess(profile);
   const daysLeft = profile.planExpiresAt && isAccess && profile.plan !== "admin_full"
+    // eslint-disable-next-line react-hooks/purity -- "giorni alla scadenza" ha bisogno dell'ora corrente; spostarlo in un effect lo scambierebbe con set-state-in-effect e aggiungerebbe un render
     ? Math.max(0, Math.ceil((new Date(profile.planExpiresAt).getTime() - Date.now()) / 86400000))
     : null;
   const planName = isPremium ? "BetRedge Pro" : isAccess ? "BetRedge Base" : profile.plan === "free" ? "BetRedge Free" : "Setup";
@@ -7884,17 +8206,41 @@ function LiveNowStrip({
   liveScores,
   liveTennis,
   boardTennisKeys,
+  boardFootball,
   lang,
 }: {
   liveScores: Record<string, LiveScore>;
   liveTennis: LiveTennisMatch[];
   boardTennisKeys: Set<string>;
+  boardFootball: Prediction[];
   lang: string;
 }) {
-  const liveFootball = Object.entries(liveScores).filter(
-    ([, s]) =>
-      (s.match_status === "IN_PLAY" || s.match_status === "PAUSED") &&
-      s.home_team && s.away_team
+  // #LIVE-TICKER-PARITY-0831 — il ticker calcio si costruisce DAI FIXTURE IN
+  // BOARD, non dalla mappa live grezza.
+  //
+  // Prima leggeva `Object.entries(liveScores)` e mostrava qualunque voce con
+  // stato IN_PLAY/PAUSED. Due conseguenze, misurate il 31/08:
+  //   · `fetchAllTodayMatches()` interroga football-data da IERI a oggi, e
+  //     football-data lascia partite FINITE con stato IN_PLAY: misurate 5
+  //     partite del 30/08 ancora IN_PLAY/PAUSED a 15-17 ORE dal fischio
+  //     d'inizio (Lazio-Genoa, Cagliari-Inter, Monaco-Marsiglia,
+  //     Deportivo-Valencia, Cambuur-Twente). Il ticker le dava per «in play».
+  //   · gli scoreboard ESPN restituiscono TUTTE le partite live della lega,
+  //     anche quelle per cui non abbiamo una predizione: annunciate nel ticker
+  //     e introvabili fra le schede.
+  // Il tennis aveva gia' il filtro di parita' con la board; il calcio no.
+  //
+  // Partendo dai fixture si eredita gratis anche la finestra dei 150 minuti
+  // (`IN_PLAY_GRACE_MS`): una partita di ieri non e' in board, quindi non puo'
+  // finire nel ticker. E si riusa lo STESSO abbinamento delle schede
+  // (`match_id` con fallback sui nomi) piu' `orientLive`, invece di
+  // inventarne un altro.
+  const liveFootball = liveFootballOnBoard(boardFootball, (p) =>
+    orientLive(
+      liveScores[p.match_id] ?? findLiveByTeams(liveScores, p.home_team, p.away_team),
+      p.home_team,
+      p.away_team,
+    ),
   );
   // Show only live tennis matches that also exist on the board (parity with /api/tennis board).
   const liveTennisOnBoard = liveTennis.filter((m) =>
@@ -7994,7 +8340,13 @@ function FeaturedEdge({
   let pickName: string;
   let modelEdgePts: number;
   let why: string;
-  const metrics: { dt: string; dd: React.ReactNode }[] = [];
+  // #EDGE-BANNER-GFX-0830 — le metriche portavano due numeri nudi («1753 · 1430»)
+  // senza dire di CHI fossero: l'ordine era l'unico indizio. `pair` porta il nome
+  // accanto a ogni valore. NIENTE barra proporzionale: su un Elo il rapporto
+  // 1753/(1753+1430) disegnerebbe un 55/45 che sottostima un divario di 323 punti,
+  // cioe' mentirebbe. Si evidenzia chi guida, non si inventa una proporzione.
+  type Pair = { an: string; av: number; bn: string; bv: number };
+  const metrics: { dt: string; dd: React.ReactNode; pair?: Pair }[] = [];
 
   if (sport === "football" && topFootball) {
     const p = topFootball;
@@ -8033,7 +8385,9 @@ function FeaturedEdge({
       metrics.push({ dt: it ? "Forma (5)" : "Form (5)", dd: <>{fmt(fh)} <span className="vs">vs</span> {fmt(fa)}</> });
     }
     if (mH != null && mA != null) {
-      metrics.push({ dt: it ? "Campione" : "Sample", dd: <span className="tnum">{mH} <span className="vs">vs</span> {mA}</span> });
+      metrics.push({ dt: it ? "Campione" : "Sample",
+        dd: <span className="tnum">{mH} <span className="vs">vs</span> {mA}</span>,
+        pair: { an: p.home_team, av: mH, bn: p.away_team, bv: mA } });
     }
   } else {
     const m = topTennis as TennisMatch;
@@ -8047,7 +8401,11 @@ function FeaturedEdge({
     const surf = it
       ? (m.surface === "CLAY" ? "terra" : m.surface === "GRASS" ? "erba" : "cemento")
       : (m.surface === "CLAY" ? "clay" : m.surface === "GRASS" ? "grass" : "hard");
-    league = `${m.tournament} · ${surf} · ${m.round}`;
+    // `round` arriva vuoto dal feed sul 100% dei match (misurato 30/08: 80/80),
+    // e la template string lasciava un "·" sospeso in fondo: «US Open · hard · ».
+    // Si compone dai pezzi che ESISTONO, cosi' il separatore non sopravvive al
+    // pezzo che deve separare.
+    league = [m.tournament, surf, m.round].filter((x) => String(x ?? "").trim()).join(" · ");
     // Coherence (FTC): pick, probability, model-edge and buildTennisWhy (which
     // narrates the higher-probability player as the favourite) must all point
     // at the same selection — the model's top player, not best_selection.
@@ -8057,20 +8415,28 @@ function FeaturedEdge({
     modelEdgePts = Number.isFinite(m.p1) && Number.isFinite(m.p2) ? modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) : 0;
     why = buildTennisWhy(m, lang);
     if (m.elo_p1 != null && m.elo_p2 != null) {
-      metrics.push({ dt: it ? `Rating ${surf}` : `Rating ${surf}`, dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span> });
+      metrics.push({ dt: it ? `Rating ${surf}` : `Rating ${surf}`,
+        dd: <span className="tnum">{Math.round(m.elo_p1)} <span className="vs">·</span> {Math.round(m.elo_p2)}</span>,
+        pair: { an: m.player1, av: Math.round(m.elo_p1), bn: m.player2, bv: Math.round(m.elo_p2) } });
     }
     if (m.surface_matches_p1 != null && m.surface_matches_p2 != null) {
-      metrics.push({ dt: it ? "Match superficie" : "Surface matches", dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span> });
+      metrics.push({ dt: it ? "Match superficie" : "Surface matches",
+        dd: <span className="tnum">{m.surface_matches_p1} <span className="vs">·</span> {m.surface_matches_p2}</span>,
+        pair: { an: m.player1, av: m.surface_matches_p1, bn: m.player2, bv: m.surface_matches_p2 } });
     }
   }
 
-  const eyebrow = it ? "Edge del giorno · il modello vs il mercato" : "Edge of the day · model vs market";
+  // #EDGE-BANNER-0830 — l'occhiello diceva «il modello vs il mercato» sopra un
+  // blocco che di mercato non parla: la probabilita' e il chip sono lo scarto
+  // INTERNO del modello (pick vs seconda ipotesi), come spiega la riga sotto il
+  // chip. Il confronto col prezzo sta nella prosa a destra, non qui.
+  const eyebrow = it ? "Edge del giorno · lo scarto più ampio del modello" : "Edge of the day · the model's widest gap";
 
   // Locked / teaser variant — never expose pick name or probability.
   if (!isPremiumClient) {
     return (
       <div className="edge-chamfer chamfer">
-      <section className="featured featured-locked" aria-label={eyebrow}>
+      <section className={`featured featured-locked is-${sport}`} aria-label={eyebrow}>
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
           <div className="fxrow">
@@ -8091,7 +8457,7 @@ function FeaturedEdge({
         </div>
         <div className="seam" />
         <div className="why">
-          <div className="wlab"><span className="tri">▸</span> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
+          <div className="wlab"><svg className="tri" viewBox="0 0 8 10" aria-hidden="true"><path d="M0 0l8 5-8 5z" fill="currentColor"/></svg> {it ? "Perché il modello sceglie questo pick" : "Why the model picks this"}</div>
           <p className="line locked-blur" aria-hidden="true">
             {it
               ? "L'analisi completa — rating, campione, testa a testa e narrativa — è riservata agli abbonati Pro."
@@ -8105,7 +8471,7 @@ function FeaturedEdge({
 
   return (
     <div className="edge-chamfer chamfer">
-    <section className="featured" aria-label={eyebrow}>
+    <section className={`featured is-${sport}`} aria-label={eyebrow}>
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
         <div className="fxrow">
@@ -8141,11 +8507,26 @@ function FeaturedEdge({
       </div>
       <div className="seam" />
       <div className="why">
-        <div className="wlab"><span className="tri">▸</span> {it ? `Perché il modello sceglie ${pickName}` : `Why the model picks ${pickName}`}</div>
+        <div className="wlab"><svg className="tri" viewBox="0 0 8 10" aria-hidden="true"><path d="M0 0l8 5-8 5z" fill="currentColor"/></svg> {it ? `Perché il modello sceglie ${pickName}` : `Why the model picks ${pickName}`}</div>
         {metrics.length > 0 && (
           <dl>
             {metrics.map((m, i) => (
-              <div className="it" key={i}><dt>{m.dt}</dt><dd>{m.dd}</dd></div>
+              <div className="it" key={i}>
+                <dt>{m.dt}</dt>
+                {m.pair ? (
+                  <dd className="pair">
+                    <span className={`side${m.pair.av >= m.pair.bv ? " lead" : ""}`}>
+                      <b className="tnum">{m.pair.av}</b><em>{m.pair.an}</em>
+                    </span>
+                    <span className="sep" aria-hidden="true" />
+                    <span className={`side${m.pair.bv > m.pair.av ? " lead" : ""}`}>
+                      <b className="tnum">{m.pair.bv}</b><em>{m.pair.bn}</em>
+                    </span>
+                  </dd>
+                ) : (
+                  <dd>{m.dd}</dd>
+                )}
+              </div>
             ))}
           </dl>
         )}
@@ -8194,7 +8575,7 @@ function UnifiedBetsTab({
   return (
     <>
       {!isLoggedIn && (
-        <div className="flex items-center justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-gray-300">
+        <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-gray-300">
           <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica.", en: "Register to save selections, get alerts and unlock auto-execution.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear la ejecución automática.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer l'exécution automatique.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть авто-исполнение." })}</span>
           <div className="flex gap-2 shrink-0">
             <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{pick5(lang, { it: "Accedi", en: "Sign In", es: "Acceder", fr: "Connexion", ru: "Войти" })}</button>
@@ -8245,14 +8626,21 @@ function UnifiedBetsTab({
 // #PARTNER-REMOVE-0626: la tab Partner è stata rimossa; i deep-link legacy
 // ?tab=partner(s) ricadono sul board (default), nessun alias.
 
-export default function Dashboard() {
+// #A11Y-CONSOLE-0822 — `initialTab` esiste perché il server non conosce il
+// pathname: prima rendeva SEMPRE "bets", mentre il client leggeva /history e
+// passava a History. Server e client disegnavano nav e rail diversi, quindi React
+// scartava e RICOSTRUIVA tutto l'albero all'idratazione (#418) sulla pagina più
+// pesante del prodotto — misurato su /history, /plans, /leaderboard,
+// /match-builder. Le route wrapper ora dichiarano la loro tab, così l'HTML del
+// server è già quello giusto. Il default resta "bets" per /app.
+export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // #URL-PATHS-0810: la tab si risolve dal pathname (/predictions, /history, …);
   // il ?tab= resta come fallback per link legacy non ancora passati dal middleware.
   const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "bets";
+    if (typeof window === "undefined") return initialTab ?? "bets";
     const fromPath = PATH_TO_TAB[window.location.pathname];
     if (fromPath) return fromPath;
-    return normalizeTab(new URLSearchParams(window.location.search).get("tab")) ?? "bets";
+    return normalizeTab(new URLSearchParams(window.location.search).get("tab")) ?? initialTab ?? "bets";
   });
   // #URL-PATHS-0810: la barra URL segue la tab attiva. replaceState (non push):
   // il cambio tab non creava una entry di history prima e non deve iniziare ora.
@@ -8317,8 +8705,10 @@ export default function Dashboard() {
   useEffect(() => {
     let t = "";
     try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
+    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi il commento
+    // in app/layout.tsx. La scelta esplicita salvata vince comunque.
     if (t !== "light" && t !== "dark") {
-      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+      t = "dark";
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
     setTheme(t as "dark" | "light");
@@ -8331,24 +8721,11 @@ export default function Dashboard() {
     try { localStorage.setItem("agentic-theme", next); } catch {}
     trackEvent("theme_change", { meta: { theme: next } });
   };
-  // #THEME-CONSISTENCY-0623: segue il tema di sistema SOLO se l'utente non ha
-  // mai scelto manualmente (agentic-theme vuoto). La scelta esplicita vince e
-  // persiste. Mantiene il desk allineato a home e /community sullo stesso
-  // contratto. Presentazionale, nessuna logica di modello/gate.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let chosen = "";
-      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-      if (chosen === "light" || chosen === "dark") return;
-      const next: "dark" | "light" = e.matches ? "light" : "dark";
-      setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema
+  // di sistema e' RIMOSSO. Prima, chi non
+  // aveva scelto seguiva il sistema; ora il default e' scuro, quindi un cambio
+  // di sistema non deve piu' ribaltare la veste sotto i piedi dell'utente.
+  // Chi vuole il chiaro lo preme, e la scelta persiste.
 
   // #UI-SCROLLTOP-0623: cambiare scheda è solo client-state (setTab), quindi la
   // pagina restava ferma a metà contenuto della scheda precedente. Riporta in
@@ -8527,20 +8904,24 @@ export default function Dashboard() {
     if (tab === "plans") trackEvent("plan_view");
   }, [tab]);
 
-  // IP-based language detection — only runs when no stored preference exists
+  // #GEO-LANG-0821 — la lingua la dice il BROWSER, non un servizio di terzi.
+  // Prima si chiamava ipapi.co dal browser: misurato in produzione un 429 (quota
+  // superata) su /leaderboard, quindi il rilevamento falliva in silenzio e
+  // restava l'inglese; e l'IP del visitatore usciva verso un terzo alla prima
+  // visita, prima di qualsiasi consenso, per un dato che il browser ci da'
+  // gratis. `navigator.languages` e' anche piu' accurato: e' la preferenza
+  // DICHIARATA, non una deduzione dal paese. Regola in lib/pick-language.ts.
   useEffect(() => {
     const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
     if (stored && LANGUAGES.includes(stored as Lang)) return;
-    fetch("https://ipapi.co/json/")
-      .then((r) => r.json())
-      .then((d: { languages?: string }) => {
-        // ipapi.co returns e.g. "it-IT,en" or "es-ES,ca" — take first lang code
-        const primary = (d.languages ?? "").split(",")[0]?.split("-")[0]?.toLowerCase() as Lang;
-        const detected: Lang = LANGUAGES.includes(primary) ? primary : "en";
-        setUiLanguage(detected);
-        storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
-      })
-      .catch(() => { /* keep default */ });
+    const preferite = [
+      ...(typeof navigator !== "undefined" ? navigator.languages ?? [] : []),
+      typeof navigator !== "undefined" ? navigator.language ?? "" : "",
+    ];
+    const detected = pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator.languages non esiste lato server, e #STORAGE-CRASH-0813 dice che leggere lo storage fuori da un effect schianta Safari privato
+    setUiLanguage(detected);
+    storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -8649,6 +9030,7 @@ export default function Dashboard() {
 
     let stop = false;
     let tries = 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apre un poll asincrono sul ritorno dal pagamento: lo stato di avanzamento nasce per forza da un effect
     setPayReturn("checking");
     // #PAYGATE-INSTANT-GRANT: poll ATTIVO. Invece di aspettare passivamente che il
     // grant atterri (callback/cron), chiediamo a /api/paygate/settle-mine di saldare
@@ -8997,6 +9379,25 @@ export default function Dashboard() {
     return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
   }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchLive, fetchTennisLive]);
 
+  // #PLAN-REFRESH-0831 — le prediction si rileggono ogni 60 minuti (l'intervallo
+  // qui sopra). Il piano è il dato che decide cosa è sbloccato: finché non si
+  // rileggevano, chi passava a Base — o rientrava da un piano scaduto — continuava
+  // a vedere la board del piano vecchio, anche per un'ora, e sembrava che il
+  // pagamento non fosse servito a niente. Al cambio di piano i due endpoint gated
+  // si rileggono subito. Il `plan` come dipendenza (non l'oggetto profilo) evita
+  // di rifare la fetch a ogni salvataggio di nome/lingua/timezone.
+  const clientPlan = clientProfile?.plan ?? null;
+  useEffect(() => {
+    if (!clientPlan) return;
+    // queueMicrotask come l'effetto di mount qui sopra: le due fetch alzano il
+    // loading in modo sincrono, e un setState sincrono dentro un effetto innesca
+    // render a cascata (regola react-hooks, errore in lint).
+    queueMicrotask(() => {
+      void fetchPredictions();
+      void fetchTennis();
+    });
+  }, [clientPlan, fetchPredictions, fetchTennis]);
+
   // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
   // session, the desk is walled — the auth modal is force-shown and locked.
   const mustAuth = authChecked && !hasSession;
@@ -9070,7 +9471,11 @@ export default function Dashboard() {
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
     <GeoCountryCtx.Provider value={geoCountry}>
-    <main className="portal-root">
+    <main className="portal-root mc-scene-stadium" data-mc-ground>
+      {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata,
+          sotto la velatura di [data-mc-ground]::after. Decorazione pura, fuori
+          dall'albero dell'accessibilita'. */}
+      <span className="bgfix" aria-hidden="true" />
       <SportGlyphSprite />
       {/* #PAYGATE-RETURN-SMOOTH: feedback al rientro da un checkout PayGate */}
       {payReturn && (
@@ -9217,10 +9622,10 @@ export default function Dashboard() {
                 <span className="rail-label">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
               {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
-              <a className="rail-item" href="/community">
+              <Link className="rail-item" href="/community">
                 <MenuIcon name="creator" size={18} className="rail-ic" />
                 <span className="rail-label">Creator Picks</span>
-              </a>
+              </Link>
               {/* #WEEKLY-PICK-1: Weekly Pick — la multipla della casa (route) */}
               <Link className="rail-item" href="/weekly-pick">
                 <MenuIcon name="weeklypick" size={18} className="rail-ic" />
@@ -9253,10 +9658,10 @@ export default function Dashboard() {
                 <MenuIcon name="tools" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
               </Link>
-              <a className="am-feat-tile" href="/community">
+              <Link className="am-feat-tile" href="/community">
                 <MenuIcon name="creator" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Creator Picks</span>
-              </a>
+              </Link>
               <Link className="am-feat-tile" href="/weekly-pick">
                 <MenuIcon name="weeklypick" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Weekly Pick</span>
@@ -9348,11 +9753,11 @@ export default function Dashboard() {
 
           {predFallback && tab === "bets" && (
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-              <span>⚽ {tNav.season_pause}</span>
+              <span><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-ball" /></svg> {tNav.season_pause}</span>
             </div>
           )}
           {tab === "bets" && (
-            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))} lang={uiLanguage} />
+            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))} boardFootball={predictions} lang={uiLanguage} />
           )}
           {tab === "bets" && (
             <UnifiedBetsTab
@@ -9438,6 +9843,12 @@ export default function Dashboard() {
           onClick={handleFounderTrigger}
           style={{ background: "none", border: "none", color: "transparent", cursor: "default", userSelect: "none", width: 10, height: 10 }}
           aria-hidden="true"
+          // #A11Y-CONSOLE-0822: aria-hidden da solo non basta su un <button>. Restava
+          // raggiungibile col Tab, quindi chi naviga da tastiera ci finiva sopra e lo
+          // screen reader non annunciava nulla: un elemento focusabile e invisibile
+          // agli assistivi è peggio di nessun elemento. tabIndex -1 lo toglie
+          // dall'ordine di tabulazione; il trigger founder resta sul click.
+          tabIndex={-1}
         >·</button>
       </div>
       {(authOpen || mustAuth) && (

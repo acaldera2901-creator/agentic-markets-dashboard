@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LEGAL_ENTITY } from "@/lib/legal-entity";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | BetRedge",
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+    <div className="min-h-screen font-mono mc-scene-clay" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <div className="legal-sheet max-w-2xl mx-auto my-10 px-7 py-11 space-y-8">
         <div className="space-y-2">
           <Link href="/" className="text-[10px] text-[var(--am-muted-2)] hover:text-[var(--am-coral)] uppercase tracking-wider">
@@ -22,7 +25,14 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">1. Controller</h2>
           <p className="text-xs leading-relaxed">
-            BetRedge (&quot;we&quot;, &quot;us&quot;) is a sports prediction platform operated by <strong>Maven Agency AG</strong>, Blegistrasse 7, 6340 Baar (ZG), Switzerland — UID CHE&#8209;193.960.193. For GDPR purposes, the data controller is Maven Agency AG. Contact: <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>. Correspondence address: BetRedge, 66 Paul Street, London EC2A 4NA, United Kingdom.
+            {/* #SITE-ENTITY-0824 — l'identità arriva da lib/legal-entity.ts, la stessa
+                fonte del footer e delle email.
+                ⚠️ AVVOCATO: GDPR art. 13(1)(a) richiede l'identità del TITOLARE del
+                trattamento. Qui ora c'è marchio + indirizzo di corrispondenza, senza
+                forma societaria né numero di registro: non si asserisce nulla di falso,
+                ma nessuna persona giuridica è nominata come titolare. Da riconciliare
+                quando l'entità è decisa. */}
+            BetRedge (&quot;we&quot;, &quot;us&quot;) is a sports prediction platform. For GDPR purposes, the data controller is {LEGAL_ENTITY.senderName}, {LEGAL_ENTITY.correspondence}. Contact: <a href={`mailto:${LEGAL_ENTITY.contactEmail}`} className="underline hover:text-[var(--am-coral)]">{LEGAL_ENTITY.contactEmail}</a>.
           </p>
         </section>
 

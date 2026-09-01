@@ -54,6 +54,10 @@ TENNIS_SPORT_KEYS = (
     "tennis_wta_italian_open",
     "tennis_wta_madrid_open",
     "tennis_wta_miami_open",
+    # #TG-EDGE-ZERO (24/08): unica competizione tennis ATTIVA presso il provider
+    # nel giorno in cui il board serviva 38 righe con ZERO quote. Mancava qui e
+    # basta — non e' un limite di copertura come i 250 su erba sopra.
+    "tennis_wta_monterrey_open",
     "tennis_wta_qatar_open",
     "tennis_wta_strasbourg",
     "tennis_wta_stuttgart_open",

@@ -120,9 +120,14 @@ export default function LandingCarousel({ lang }: { lang: string }) {
   }, []);
 
   // Tieni idx nei limiti quando perView cambia (resize desktop↔mobile).
-  useEffect(() => {
+  // #LINT-0825: era un effect, che clampava dopo il paint (un frame con
+  // l'indice fuori range). Aggiustare lo stato durante il render e' il pattern
+  // documentato da React per questo caso: stesso esito, un frame in meno.
+  const [bounds, setBounds] = useState({ perView, total });
+  if (bounds.perView !== perView || bounds.total !== total) {
+    setBounds({ perView, total });
     setIdx((i) => Math.min(i, Math.max(0, total - perView)));
-  }, [perView, total]);
+  }
 
   // #HOME-CREATIVE-3: swipe col dito (touch) — trascinamento orizzontale.
   const touchX = useRef<number | null>(null);

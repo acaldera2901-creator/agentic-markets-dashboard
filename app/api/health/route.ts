@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
+// #HEALTH-ROSTER-0828: roster in lib/ so it can be asserted against the Python fleet.
+import { CORE_AGENTS, SIGNAL_ONLY_AGENTS, KNOWN_AGENTS } from "@/lib/agent-roster";
 
 interface HeartbeatRow {
   agent_name: string;
@@ -15,18 +17,6 @@ interface TennisActivityRow {
   signals: string;
 }
 
-const CORE_AGENTS = [
-  "DataCollector", "ModelAgent", "AnalystAgent", "StrategistAgent",
-  "RiskManagerAgent", "TraderAgent", "MonitorAgent", "ResearchAgent",
-  "AHCollectorAgent", "ResultSettlementAgent",
-];
-
-const SIGNAL_ONLY_AGENTS = [
-  "TennisDataCollectorAgent", "TennisModelAgent", "TennisAnalystAgent",
-  "TennisRiskManagerAgent", "TennisTraderAgent", "TennisSettlementAgent",
-];
-
-const KNOWN_AGENTS = [...CORE_AGENTS, ...SIGNAL_ONLY_AGENTS];
 const TENNIS_SIGNAL_FRESH_SECONDS = 60 * 60;
 
 function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {

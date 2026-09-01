@@ -35,19 +35,38 @@ export type FpMatch = {
 // extra restano nella cache e vengono consumati solo da chi li cerca per chiave.
 const SPORTS = new Set(["soccer", "tennis", "baseball", "mma"]);
 
+// #LINT-0825: forme grezze del feed FortunePlay, limitate ai campi che questi
+// parser leggono davvero. Sostituiscono `any` senza toccare una sola
+// espressione: gli stessi campi, gli stessi optional chaining, gli stessi
+// fallback. Tipizzare tutti i 298 mercati del feed sarebbe un'astrazione
+// speculativa; questi tipi documentano il contratto che usiamo.
+type RawOutcome = { odds?: unknown };
+type RawMarket = { outcomes?: RawOutcome[]; specifier?: string };
+type RawFpMatch = {
+  tournament?: { sport?: { key?: string } };
+  competitors?: { home?: { name?: string }; away?: { name?: string } };
+  main_market?: RawMarket;
+  secondary_market?: RawMarket;
+  start_time?: string | null;
+  slug?: unknown;
+  id?: unknown;
+  urn_id?: unknown;
+};
+type RawFpPage = { data?: RawFpMatch[]; pagination?: { last_page?: number } };
+
 function odds(raw: unknown): number | null {
   const v = Number(raw) / 1000;
   return Number.isFinite(v) && v > 1 ? v : null;
 }
 
-function parseMatchResult(market: any): [number | null, number | null, number | null] {
+function parseMatchResult(market: RawMarket | undefined): [number | null, number | null, number | null] {
   const o = market?.outcomes ?? [];
   if (o.length >= 3) return [odds(o[0]?.odds), odds(o[1]?.odds), odds(o[2]?.odds)];
   if (o.length === 2) return [odds(o[0]?.odds), null, odds(o[1]?.odds)];
   return [null, null, null];
 }
 
-function parseTotals(market: any): [number | null, number | null, number | null] {
+function parseTotals(market: RawMarket | undefined): [number | null, number | null, number | null] {
   const o = market?.outcomes ?? [];
   const spec: string = market?.specifier ?? "";
   if (o.length !== 2 || !spec.includes("hcp=")) return [null, null, null];
@@ -64,7 +83,7 @@ function parseTotals(market: any): [number | null, number | null, number | null]
 }
 
 export function parseFortuneplayMatches(payload: unknown): FpMatch[] {
-  const data: any[] = (payload as any)?.data ?? [];
+  const data: RawFpMatch[] = (payload as RawFpPage | null)?.data ?? [];
   const out: FpMatch[] = [];
   for (const m of data) {
     const sport: string | undefined = m?.tournament?.sport?.key;
@@ -136,7 +155,7 @@ export async function fetchFortuneplayBoard(now = Date.now()): Promise<Map<strin
   const map = new Map<string, FpMatch>();
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const payload: any = await _fetcher(page);
+      const payload = (await _fetcher(page)) as RawFpPage;
       for (const fm of parseFortuneplayMatches(payload)) map.set(fm.teamPairKey, fm);
       const last = payload?.pagination?.last_page ?? page;
       if (page >= last) break;

@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
+import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
+import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+});
+
+// #CARD-HUD-0830 — la condensata pesante del registro gaming: regge i numeri
+// enormi della scheda senza diventare Oswald, che si vede ovunque. Solo due pesi:
+// 700 per i nomi, 800 per il numero eroe.
+const sairaCondensed = Saira_Condensed({
+  variable: "--font-tech",
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -75,11 +87,16 @@ const serviceJsonLd = {
 // No-flash theme bootstrap (Cobalt & Coral redesign, F1).
 // Runs before paint: resolves agentic-theme (localStorage) → prefers-color-scheme,
 // then sets data-theme on <html>. Default dark. Pure presentation, no logic change.
-const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+// #UI-MACHINA-0802: senza una scelta esplicita il tema e' SCURO, non quello del
+// sistema operativo. Il restyling e' un mondo visivo scuro (fondo cinematico) e
+// vive dentro :root:not([data-theme="light"]): seguendo il sistema, chi ha il
+// Mac in chiaro non vedrebbe MAI la veste nuova. La scelta manuale continua a
+// vincere e a persistere: chi preme LIGHT resta sul prodotto di oggi.
+const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${hankenGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${hankenGrotesk.variable} ${jetbrainsMono.variable} ${sairaCondensed.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script

@@ -11,13 +11,16 @@ import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale } from "@/lib/tools/r
 import { hubJsonLd } from "@/lib/tools/seo";
 import { LocalePicker } from "./LocalePicker";
 import { ToolIcon } from "./ToolIcon";
+import { TelegramNudge } from "./TelegramNudge";
 import { MenuIcon } from "@/app/components/menu-icon";
 
 export function ToolsHub({ locale }: { locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
 
   return (
-    <div className="portal-root tl-root">
+    <div className="portal-root tl-root mc-scene-stadium" data-mc-ground lang={locale}>
+      {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
+      <span className="bgfix" aria-hidden="true" />
       <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
       <main className="tl-page">
         <header className="tl-head tl-head--tool">
@@ -63,6 +66,12 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
             {copy.common.ctaButton}
           </Link>
         </aside>
+
+        <TelegramNudge
+          title={copy.common.tgTitle}
+          body={copy.common.tgBody}
+          button={copy.common.tgButton}
+        />
       </main>
       <SiteFooter lang={chromeLang(locale)} />
       <script

@@ -81,7 +81,7 @@
   /* Typography */
   --am-text:       #EDEFF2;
   --am-muted:      #AEB4BE;
-  --am-muted-2:    #6E7682;
+  --am-muted-2:    #767E89;  /* #UI-MACHINA-0802: era #6E7682 → 4.31:1 sul footer scuro, sotto AA. */
   --am-hi:         rgba(255,255,255,0.05);
 
   /* Semantic aliases consumed by bespoke rules (--border / --accent / --ring) */
@@ -133,19 +133,19 @@
   --am-chamfer-line:     #B8BFC9;
   --am-chamfer-line-2:   #A2AAB6;
 
-  --am-coral:      #15803D;   /* primary su light, contrasto AA come testo/bordo (brand green) */
+  --am-coral:      #137437;   /* #PRO-AA-0822: era #15803D → misurato 3.97–4.39:1 come testo su quattro fondi chiari (t-lab, badge live, «Already on Pro», v-kick). #137437 fa >=4.65:1 su tutti; su bianco il testo bianco dei CTA migliora. */
   --am-coral-2:    #1B9148;   /* fill/gradiente */
   --am-orange:     #EA7317;
   --am-cobalt:     #2563EB;
   --am-cobalt-2:   #3B82F6;
-  --am-amber:      #B5730A;
+  --am-amber:      #9B6209;  /* #PRO-AA-0822: era #B5730A → 3.87:1 su bianco (p.eyebrow su /plans). Ora >=4.64:1. */
 
   --am-positive:   #0F7A56;
   --am-positive-dim: rgba(15,122,86,0.10);
   --am-positive-b:   rgba(15,122,86,0.30);
-  --am-negative:   #DC2626;
-  --am-negative-dim: rgba(220,38,38,0.10);
-  --am-negative-b:   rgba(220,38,38,0.28);
+  --am-negative:   #B91C1C;  /* #UI-MACHINA-0802: era #DC2626. Sul chip .lost (tinta rossa al 13%) faceva 3.76:1 e sul track record 4.43:1, sotto AA. #B91C1C fa 5.03:1 sul chip: stessa rampa, stesso rosso, un gradino più scuro. Il verde brand NON è toccato. */
+  --am-negative-dim: rgba(185,28,28,0.10);
+  --am-negative-b:   rgba(185,28,28,0.28);
 
   --am-coral-dim:  rgba(21,128,61,0.08);
   --am-coral-b:    rgba(21,128,61,0.30);
@@ -157,7 +157,7 @@
 
   --am-text:       #14171C;
   --am-muted:      #4A515B;
-  --am-muted-2:    #79818D;
+  --am-muted-2:    #616975;  /* #PRO-AA-0822: #666E7B lasciava «/ mo» a 4.42:1 e «Русский» a 4.31:1 sui pannelli tinti. Ora >=4.65:1 su quei fondi. */  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
   --am-hi:         rgba(255,255,255,0.9);
 
   --ring:         rgba(21,128,61,0.38);  /* LEVEL-UP 1b: focus ring legacy → verde */
@@ -5031,7 +5031,7 @@ button:disabled {
   padding: 6px 10px;
   font-size: 9px;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: rgba(255,255,255,0.22);
+  color: var(--am-muted);  /* #PRO-AA-0822: era rgba(255,255,255,0.22) = 2.01:1 su 9px. È l'avviso 18+ e gioco responsabile: deve essere leggibile. Ora 8.77:1. */
   text-align: center;
   border-top: 1px solid rgba(255,255,255,0.05);
   line-height: 1.4;
@@ -5707,6 +5707,10 @@ button:disabled {
 .am-grid > .house-banner { min-width: 0; }
 .am-grid > .house-banner.hb-billboard,
 .am-grid > .house-banner.hb-leaderboard { grid-column: 1 / -1; }
+/* #FREE-BOARD-FULL-0831: il paywall Free dentro la griglia è una banda full-width
+   con lo stesso meccanismo del billboard house (1 / -1, non una larghezza sua);
+   i margini laterali li dà già il padding di .am-grid, quindi qui si azzerano. */
+.am-grid > .free-paywall.fp-in-grid { grid-column: 1 / -1; margin: 4px 0 8px; }
 .am-grid > .house-banner.hb-rectangle,
 .am-grid > .house-banner.hb-halfpage { grid-column: span 4; }
 .am-grid:has(> .card.tennis) > .house-banner.hb-rectangle,
@@ -6014,23 +6018,33 @@ button:disabled {
 /* #CARD-REDESIGN-V2: readout "quota in primo piano" (rimpiazza i 3 square mercato/modello/edge).
    Sinistra = il nostro pronostico (pick + confidenza); destra = quota FortunePlay hero + value
    (o probabilità modello se la partita non è nel feed). Theme-aware via --am-*. */
-.pred .v2r { display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-bottom: 12px; min-width: 0; border-radius: 12px; padding: 10px 12px;
-  background: var(--am-inset); border: 1px solid var(--am-line); }
+/* #CARD-ARCADE-0830 — la predizione e' il pezzo forte della card, e finora non
+   lo sembrava: il numero era grigio (--am-muted) e chiuso in un box dentro un
+   box. Andrea: «mi sembrano troppo vuote, voglio che la predizione sia
+   enfatizzata, look casino al livello successivo — ma non banale e non AI slop».
+   L'intensita' qui viene da SCALA, COLORE e DENSITA', non da glow o gradienti:
+   il box interno sparisce (il box-su-box e' il tell #1 di feedback_antislop_tells)
+   e resta una hairline di stacco. */
+.pred .v2r { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+  margin-bottom: 10px; min-width: 0; border-radius: 0; padding: 12px 2px 0;
+  background: none; border: none; border-top: 1px solid var(--am-line); }
 .pred .v2r.sel { cursor: pointer; }
-.pred .v2r.sel:hover { border-color: var(--am-coral-b); }
+.pred .v2r.sel:hover .v2r-qn { filter: brightness(1.12); }
 .pred .v2r-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pred .v2r-eye { font-family: var(--am-mono, ui-monospace, monospace); font-size: 9px; letter-spacing: 0.09em;
   text-transform: uppercase; color: var(--am-coral); font-weight: 700; }
 /* #GOLIVE: la NOSTRA prediction è protagonista anche nelle card piccole. */
-.pred .v2r-pick { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--am-text);
+.pred .v2r-pick { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: var(--am-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pred .v2r-eye { font-size: 9.5px; }
 /* #CHI1: "quanto sicuro" in un solo cue dominante. La LABEL (alta/media/bassa)
    guida — peso + colore per livello; i dots restano come meter secondario (più
    piccoli), la % vive a destra come dettaglio. Un solo segnale da leggere. */
-.pred .v2r-conf { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
-.pred .v2r-conf .d { width: 5px; height: 5px; border-radius: 50%; background: var(--am-line-2); }
+.pred .v2r-conf { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+/* #CARD-ARCADE-0830: senza la parola («LOW» diceva «debole» in vetrina) i
+   pallini restano l'unico segnale di confidenza, quindi si vedono di piu'. */
+.pred .v2r-conf .d { width: 7px; height: 7px; border-radius: 50%; background: var(--am-line-2);
+  box-shadow: inset 0 0 0 1px var(--am-line); }
 .pred .v2r-conf .d.on { background: var(--am-positive); }
 .pred .v2r-conf-t { font-family: var(--am-mono, ui-monospace, monospace); font-size: 11px;
   font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--am-muted);
@@ -6045,11 +6059,16 @@ button:disabled {
 .pred .v2r-q { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; flex: none; text-align: right; }
 .pred .v2r-qlab { font-family: var(--am-mono, ui-monospace, monospace); font-size: 8.5px; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--am-muted-2); margin-bottom: 4px; }
-.pred .v2r-qn { font-family: var(--am-mono, ui-monospace, monospace); font-size: 21px; font-weight: 760;
-  letter-spacing: -0.02em; color: var(--am-muted); font-variant-numeric: tabular-nums; }
-.pred .v2r-qn.lock { font-size: 16px; color: var(--am-muted-2); }
-.pred .v2r-sub { font-family: var(--am-mono, ui-monospace, monospace); font-size: 11px; color: var(--am-text);
-  font-weight: 640; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+/* #CARD-ARCADE-0830: il numero eroe. Era 21px e grigio; ora e' la cosa piu'
+   grande e piu' accesa della card. Nessun glow: il colore pieno del brand su
+   fondo neutro basta, e regge in entrambi i temi. */
+.pred .v2r-qn { font-family: var(--am-mono, ui-monospace, monospace); font-size: 34px; font-weight: 800;
+  letter-spacing: -0.035em; color: var(--am-coral); font-variant-numeric: tabular-nums;
+  line-height: 0.92; }
+.pred .v2r-qn .u { font-size: 16px; font-weight: 700; opacity: 0.62; margin-left: 1px; letter-spacing: 0; }
+.pred .v2r-qn.lock { font-size: 20px; color: var(--am-muted-2); }
+.pred .v2r-sub { font-family: var(--am-mono, ui-monospace, monospace); font-size: 11px; color: var(--am-muted);
+  font-weight: 640; margin-top: 5px; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .pred .v2r-val { font-size: 9.5px; font-weight: 800; color: var(--am-coral); background: var(--am-coral-dim);
   border: 1px solid var(--am-coral-b); border-radius: 999px; padding: 1px 7px; cursor: help; }
 /* #QW4: value cappato (es. "100+%") → neutro, non coral: non ostentiamo un valore
@@ -6528,6 +6547,16 @@ button:disabled {
   transition:background .14s, color .14s;
 }
 .house-banner .hb-x:hover{ background:var(--am-inset); color:var(--am-text); }
+/* #A11Y-TARGET-0824 — la × è disegnata 22×22, due pixel sotto il minimo di 24px
+   per un bersaglio (WCAG 2.5.8, AA). Non ingrandisco il segno: cresce solo
+   l'area sensibile con uno pseudo-elemento assoluto, quindi nessuno spostamento
+   nel layout e l'icona resta della misura per cui è stata disegnata.
+   Sotto i 640px `mobile.css` porta la stessa area a 44px: questa è la soglia
+   desktop, quella è la soglia del pollice. */
+.house-banner .hb-x::after{
+  content:""; position:absolute; top:50%; left:50%;
+  width:24px; height:24px; transform:translate(-50%,-50%);
+}
 .house-banner .hb-ic{ width:30px; height:30px; color:var(--am-muted); flex-shrink:0; }
 .house-banner .hb-ic-sm{ width:22px; height:22px; color:var(--am-muted); }
 /* icone sport 3D nei banner (sostituiscono i glifi line-art per calcio/tennis/WC) */
@@ -6607,6 +6636,17 @@ button:disabled {
 .house-banner.hb-photo .hb-x{ color:rgba(255,255,255,.72); }
 .house-banner.hb-photo .hb-x:hover{ background:rgba(255,255,255,.16); color:#fff; }
 .house-banner.hb-photo .hb-glow{ display:none; }
+
+/* #UI-MACHINA-0802 — la × del banner creativo galleggia su un <img> arbitrario:
+   nessun colore fisso regge (misurato 3.22:1 col grigio, 2.07:1 scurendolo).
+   Uno scrim opaco rende il rapporto indipendente dalla foto: bianco su .72 di
+   inchiostro fa ≥5.5:1 anche se sotto c'è bianco pieno. */
+.house-banner.hb-creative .hb-x{
+  background: rgba(10,12,15,.72);
+  color: #fff;
+  backdrop-filter: saturate(120%) blur(2px);
+}
+.house-banner.hb-creative .hb-x:hover{ background: rgba(10,12,15,.88); color:#fff; }
 /* direzioni overlay coral */
 .hb-photo.hb-ov-l .hb-photo-ov{ background:linear-gradient(100deg, rgba(7,8,15,.95) 26%, rgba(7,8,15,.45) 56%, rgba(35,165,89,.42) 100%); }
 .hb-photo.hb-ov-b .hb-photo-ov{ background:linear-gradient(0deg, rgba(7,8,15,.96) 20%, rgba(7,8,15,.12) 62%, rgba(35,165,89,.30) 100%); }
@@ -7143,7 +7183,7 @@ button:disabled {
   padding: 5px 11px; border: 0; border-radius: 999px; background: transparent;
   color: var(--am-muted); cursor: pointer; transition: all .18s;
 }
-.lp-theme button.on { background: var(--am-coral); color: #fff; }
+.lp-theme button.on { background: var(--am-coral); color: var(--bg); /* #UI-MACHINA-0802: era #fff su verde brand = 3.18:1, sotto AA. var(--bg) fa 6.15:1 in scuro e 4.60:1 in chiaro — stesso pattern di .am-tt button.on (riga 4021). */ }
 /* #UI-HOMEAUTH-0623: ora possono essere <button> (aprono la modale in-place) →
    font:inherit + line-height per renderli identici ai vecchi <a>. */
 /* LEVEL-UP HOME — controlli tattici (come /app): spigolo vivo 0px, label mono
@@ -8362,13 +8402,42 @@ button:disabled {
    i due tagli obliqui aperti). Stessi due bar-hairline delle cornici, colore = --_pe
    (segue hover/clickable). Il clip della scheda rifila la metà esterna; la profondità
    (drop-shadow) e il guard place-bet restano invariati. */
+/* #CARD-CORNERS-0831 — i due tratti CHIUDONO la smussatura solo se hanno il
+   colore del BORDO e la lunghezza per arrivare in fondo.
+   Misurato il 31/08 sull'angolo in basso a destra, campionando i pixel lungo la
+   diagonale (delta contro l'interno della scheda):
+     · in SCURO era [42,34,13,2,2,34,2,1,0] — praticamente assente. Il tratto
+       usava `--am-chamfer-line` (#21252c) mentre il bordo della scheda e'
+       #333a42: disegnato in un colore quasi identico al fondo della scheda.
+     · in CHIARO [86,45,71,70,70,45,71,70,0] — presente ma con lo ZERO in fondo:
+       non arrivava a incontrare il bordo basso. Il clip taglia la meta' esterna
+       del tratto, quindi 1,4px di spessore ne lasciavano ~0,7 e le estremita'
+       morivano nell'antialiasing.
+   Percio': colore = `--pred-line`, lo stesso che i due temi danno al bordo
+   (dichiarato accanto al bordo, in machina.css, per non poter divergere), e
+   qualche decimo in piu' di lunghezza e spessore. */
 .card > .pred::before, .card > .pred::after {
   content: "";
   position: absolute;
   pointer-events: none;
-  width: calc(var(--ch) * 1.41421);
-  height: 1.4px;
-  background: var(--_pe);
+  width: calc(var(--ch) * 1.41421 + 2.5px);
+  /* 1,2px, non 2: i 2px erano un rimedio a un tratto che non si vedeva, e la
+     causa vera era l'ordine di disegno (z-index qui sotto). Il clip NON lo
+     assottiglia — `overflow:hidden` ritaglia al padding box e il tratto sta
+     dentro — quindi 2px si vedevano tutti e la diagonale risultava piu'
+     spessa del bordo da 1px che deve continuare. */
+  height: 1.2px;
+  background: var(--pred-line, var(--_pe));
+  /* E QUESTA e' la causa vera dell'angolo aperto, non il colore ne' la misura.
+     Gli pseudo stavano a `z-index:auto`, cioe' nel livello 0 della scheda, e
+     `.card-veil` sta a `z-index:1`: la velatura ci passava SOPRA e li
+     cancellava. In chiaro il velo si fermava a 154px dal fondo, quindi in basso
+     a destra il tratto si vedeva (male) e in alto a sinistra no; in scuro il
+     velo copre tutta la scheda e li spegneva TUTTI E DUE.
+     Misurato: geometria, trasformazione e colore erano IDENTICI nei due temi —
+     era solo l'ordine di disegno. 4 sta sopra il velo (1), il contenuto (2) e
+     il filetto di testata (3). */
+  z-index: 4;
 }
 .card > .pred::before {
   top: calc(var(--ch) / 2); left: calc(var(--ch) / 2);
@@ -8378,6 +8447,12 @@ button:disabled {
   bottom: calc(var(--ch) / 2); right: calc(var(--ch) / 2);
   transform: translate(50%, 50%) rotate(-45deg);
 }
+/* #ACCENT-BAR-0831 — la smussatura IN ALTO A SINISTRA continua il bordo alto, e
+   il bordo alto porta il colore dello sport: quindi lo porta anche lei. Prima
+   era grigia e spezzava il filetto in due — un triangolino di colore staccato
+   dalla barra, con una cuneo grigio in mezzo. Quella in basso a destra resta
+   neutra: la' non c'e' niente da continuare. */
+.card > .pred::before { background: var(--mc-accent, var(--pred-line, var(--_pe))); }
 .card > .pred:hover {
   --_pe: var(--am-chamfer-line-2);
   box-shadow: inset 0 1px 0 var(--am-hi), inset 0 0 0 1px var(--_pe);
@@ -8550,7 +8625,6 @@ button:disabled {
    in fondo alla scheda, verso il basso finirebbe fuori dal contenitore. */
 .mds-books { flex: none; position: relative; }
 .mds-books .mds-cta { border: none; cursor: pointer; font-family: inherit; }
-.mds-books .mds-cta:disabled { opacity: .4; cursor: default; }
 .mds-bchev { display: inline-flex; transition: transform .15s; }
 .mds-bchev.open { transform: rotate(180deg); }
 .mds-bmenu { position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 30; min-width: 194px; display: flex; flex-direction: column; padding: 5px; border-radius: 12px; background: var(--am-panel); border: 1px solid var(--am-coral-b); box-shadow: 0 12px 32px rgba(0,0,0,.38); }
@@ -8562,7 +8636,6 @@ button:disabled {
    restare leggibili su tema chiaro E scuro (stessa scelta di /partners). */
 .mds-blogo { width: 26px; height: 18px; object-fit: contain; flex: none; border-radius: 4px; background: #0e1116; padding: 2px; }
 .mds-cta:hover { filter: brightness(1.08); }
-.mds-cta.disabled { opacity: .4; pointer-events: none; }
 .mds-cta .mds-ico { width: 14px; height: 14px; }
 .mds-disc { font-family: var(--mds-mono); font-size: 8.5px; color: var(--am-muted-2); text-align: center; padding: 0 14px 10px; margin: 0; line-height: 1.5; }
 .mds-side { font-family: var(--mds-mono); font-size: 10px; color: var(--am-muted-2); text-align: center; padding: 12px 16px 4px; margin: 0; line-height: 1.6; }
@@ -8687,7 +8760,7 @@ button:disabled {
 .wp-slip-badge svg { width: 11px; height: 11px; }
 .wp-slip-badge.live { color: var(--am-coral); background: var(--am-coral-dim); }
 .wp-slip-badge.won  { color: var(--am-coral); background: var(--am-coral-dim); }
-.wp-slip-badge.lost { color: #ef4444; background: rgba(239,68,68,0.13); }
+.wp-slip-badge.lost { color: var(--am-negative); background: var(--am-negative-dim); }  /* #PRO-AA-0822: terzo punto con #ef4444 cablato (dopo .wp-hist-out.lost e --v-red): 3.18:1 in chiaro, 4.28:1 in scuro. */
 
 .wp-legs { list-style: none; margin: 0; padding: 0; }
 .wp-leg { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center;
@@ -8767,7 +8840,9 @@ button:disabled {
   font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
 .wp-hist-out svg { width: 11px; height: 11px; }
 .wp-hist-out.won { color: var(--am-coral); background: var(--am-coral-dim); }
-.wp-hist-out.lost { color: #ef4444; background: rgba(239,68,68,0.13); }
+.wp-hist-out.lost { color: var(--am-negative); background: var(--am-negative-dim); }
+/* #UI-MACHINA-0802: il chip cablava #ef4444 in ENTRAMBI i temi — in chiaro faceva
+   2.93:1 sulla propria tinta. Ora passa dal token, che il tema raggiunge. */
 .wp-hist-out.live { color: var(--am-muted); background: rgba(127,127,127,0.06); }
 .wp-hist-prob { font-family: var(--font-mono), monospace; font-size: 12px; color: var(--am-muted-2); }
 .wp-hist-leg { display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -9224,11 +9299,11 @@ button:disabled {
 :root[data-theme="light"] .hv3{
   --v-bg:#F4F5F7; --v-bg2:#EEF0F3; --v-panel:#FFFFFF; --v-panel2:#FBFCFD; --v-panel3:#EEF0F3;
   --v-line:#E3E6EB; --v-line2:#D2D7DE;
-  --v-text:#14171C; --v-muted:#4A515B; --v-muted2:#666E7B; /* #V3-LABELS-AA: muted2 bumpato da #79818D (~3.5:1, sotto AA) a #666E7B → ≥4.5:1 su tutte le superfici light */
-  --v-coral:#15803D; --v-coral2:#1B9148; --v-coral-ink:#FFFFFF;
+  --v-text:#14171C; --v-muted:#4A515B; --v-muted2:#616975; /* #V3-LABELS-AA + #PRO-AA-0822: #79818D → #666E7B → #616975. Il valore precedente lasciava 4.31–4.42:1 sui pannelli tinti. Allineato a --am-muted-2. */
+  --v-coral:#137437; --v-coral2:#1B9148; --v-coral-ink:#FFFFFF; /* #PRO-AA-0822: allineato a --am-coral. Le due palette devono dire lo stesso verde: correggerne una sola è l'errore che ho fatto tre volte. */
   --v-glow:rgba(35,165,89,.16); --v-coral-dim:rgba(21,128,61,.08); --v-coral-b:rgba(21,128,61,.30);
   --v-cobalt:#2563EB; --v-cobalt2:#2563EB; --v-cobalt-soft:rgba(37,99,235,.08);
-  --v-red:#DC2626;
+  --v-red:#B91C1C;  /* #UI-MACHINA-0802: la landing usa il namespace --v-*, non --am-*. Qui il rosso era rimasto #DC2626 → 4.43:1 su .res.lost del track record, misurato in produzione al 100% dei pixel. Stesso valore di --am-negative: le due palette ora dicono lo stesso rosso. */
 }
 /* Elementi con hex letterali (non-token) → override esplicito in light */
 :root[data-theme="light"] .hv3 .v-scan{background:linear-gradient(180deg,#FFFFFF,#FBFCFD);box-shadow:0 20px 50px rgba(15,23,42,.10),inset 0 1px 0 rgba(255,255,255,.6)}
@@ -9659,6 +9734,20 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700;
   letter-spacing: .06em; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
 .tl-cta-btn:hover { box-shadow: 0 8px 26px -10px var(--am-glow); }
+/* ── canale Telegram: la voce subordinata alla CTA di prodotto (#TG-TOOLS-CTA) ──
+   NON un secondo box coral accanto al primo: il box-su-box è il tell #1 di
+   AI-slop. Filetto a sinistra e tipografia, come .tl-takeaway. Solo token --am-*,
+   quindi segue data-theme come il resto del sito. */
+.tl-tg { margin-top: clamp(18px, 2.4vw, 26px); padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--am-line); max-width: 62ch; }
+.tl-tg h2 { font-size: clamp(15px, 1.7vw, 17px); margin: 0 0 6px; }
+.tl-tg p { font-size: 13.5px; line-height: 1.6; color: var(--am-muted); margin: 0 0 10px; }
+.tl-tg a { display: inline-block; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--am-coral); text-decoration: none;
+  border-bottom: 1px solid var(--am-coral-b); padding-bottom: 2px; }
+.tl-tg a:hover { border-bottom-color: var(--am-coral); }
+
 .tl-others { display: flex; flex-wrap: wrap; gap: 8px; }
 .tl-others a { border: 1px solid var(--am-line); background: var(--am-panel); padding: 8px 12px;
   font-size: 13px; color: var(--am-muted); text-decoration: none; }
@@ -9808,4 +9897,303 @@ button:disabled {
 .cookie-consent a:hover { filter: brightness(1.15); }
 @media (prefers-reduced-motion: reduce) {
   .cookie-consent-actions button { transition: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #CARD-HUD-0830 — la scheda APERTA parla la lingua della scheda in griglia.
+   Andrea: «enfatizzare ancora di più le schede, sia la parte esterna sia la
+   parte interna quando l'utente clicca sulla scheda».
+
+   Il difetto misurato: fuori la scheda urlava la probabilità del modello, dentro
+   urlava la QUOTA e il 71% diventava una nota grigia in fondo a una frase. Stesso
+   dato, due gerarchie opposte. Qui la probabilità torna protagonista, con lo
+   stesso trattamento della griglia (condensata pesante, alone corto, tacche
+   oblique al posto dei pallini). La quota resta, e resta leggibile: scende di
+   grado, non sparisce.
+   ══════════════════════════════════════════════════════════════════════════ */
+.mds-pick-hud { display: flex; flex-direction: column; align-items: flex-start; }
+.mds-pick-hud .mds-problab {
+  font-family: var(--mds-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--am-muted);
+  margin-bottom: 2px;
+}
+/* il simbolo % scende di misura come nella scheda in griglia: a piena altezza
+   pesa quanto una cifra e sporca la lettura del numero. */
+.mds-pick-hud .mds-probu { font-size: 0.34em; opacity: 0.7; margin-left: 0.04em; letter-spacing: 0; }
+.mds-pick-hud .mds-probn {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-size: 54px; font-weight: 800; line-height: 0.84; letter-spacing: -0.03em;
+  color: var(--am-positive); text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+/* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
+.mds-pick-hud .mds-pk {
+  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-size: 20px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.005em; line-height: 1.06; margin-top: 8px;
+}
+/* la quota scende di grado: resta il secondo numero, non il primo. */
+.mds-pick-hud ~ .mds-hq .mds-qn { font-size: 24px; }
+/* le tacche oblique della griglia, stesso tratto HUD */
+.mds-pick-hud .mds-dots .mds-d {
+  width: 15px; height: 6px; border-radius: 0;
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+}
+:root[data-theme="light"] .mds-pick-hud .mds-probn { text-shadow: none; }
+/* ══════════════════════════════════════════════════════════════════════════
+   #EDGE-BANNER-0830 — il banner parla la lingua delle schede.
+   Le schede della board sono passate alla condensata pesante (#CARD-HUD-0830);
+   il banner in cima alla stessa pagina era rimasto col mono a 80px e il simbolo
+   % a 0,38em, che a quella misura pesa quanto una cifra. Stesso trattamento:
+   condensata, alone corto, % ridotto. Nessun colore nuovo.
+   ══════════════════════════════════════════════════════════════════════════ */
+.featured .hero-prob .num {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.84;
+  text-shadow: 0 0 22px rgba(52, 211, 153, 0.28);
+}
+.featured .hero-prob .num .pc { font-size: 0.34em; opacity: 0.7; font-weight: 800; margin-left: 0.04em; }
+/* la pick sotto il numero, in condensata maiuscola: stesso verdetto delle schede */
+.featured .hero-prob .pickname {
+  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.005em;
+}
+/* Due metriche in una griglia da tre lasciavano un buco a destra. `auto-fit` le
+   distribuisce su quante colonne servono davvero. */
+.featured .why dl { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+:root[data-theme="light"] .featured .hero-prob .num { text-shadow: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #EDGE-BANNER-GFX-0830 — il banner del giorno diventa lo slot piu' forte
+   della pagina, nella stessa lingua delle schede (#CARD-HUD-0830).
+
+   Cosa c'era: un rettangolo piatto con un alone rosa-corallo diffuso, un chip
+   a pillola, un triangolo di testo come icona e due numeri nudi a destra.
+   Sopra una griglia di 124 schede fotografate, era la cosa piu' spenta della
+   pagina — esattamente il contrario del suo ruolo.
+
+   Tre regole, le stesse delle schede:
+     · nessun box nuovo — si lavora sulla griglia che c'e' gia';
+     · un solo colore, il verde del brand: cambia la QUANTITA', non la tavolozza;
+     · effetti misurati, niente gradienti arcobaleno, niente pillole, niente
+       caratteri usati come icone.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* IL FONDO. La scena della metà sinistra, come nello split delle schede: dà
+   peso al pannello del verdetto. Il velo la copre quasi tutta — serve
+   profondità, non una fotografia da guardare. */
+
+.featured.is-football { --edge-scene: url(/banners/gen/scene-stadium.jpg); }
+.featured.is-tennis   { --edge-scene: url(/banners/gen/scene-court.jpg); }
+
+/* L'OCCHIELLO. Il pallino tondo diventa la tacca obliqua delle schede, e il
+   testo prende il passo tecnico del monospazio spaziato. */
+.featured .eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.featured .eyebrow .dot {
+  width: 18px; height: 6px; border-radius: 0;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+
+/* IL NUMERO tiene un filo d'accento verticale a sinistra, come il readout
+   delle schede: è lo stesso taglio, alla scala del banner. */
+.featured .hero-prob { position: relative; padding-left: 18px; }
+.featured .hero-prob::before {
+  content: ""; position: absolute; left: 0; top: 6%; bottom: 14%; width: 3px;
+  background: linear-gradient(180deg, transparent, var(--am-positive, #34D399) 20%,
+                              var(--am-positive, #34D399) 80%, transparent);
+  opacity: .9;
+}
+
+/* IL CHIP. Era una pillola con `border-radius`; diventa una targhetta smussata,
+   lo stesso taglio a 45° delle tacche. */
+.featured .edge {
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  padding: 5px 12px; letter-spacing: 0.04em;
+}
+
+/* LA COLONNA DEL PERCHÉ. Il triangolo era il carattere «▸»: ora è un segno
+   disegnato, che si allinea al testo invece di galleggiarci sopra. */
+.featured .why .wlab {
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+}
+.featured .why .wlab .tri { width: 7px; height: 9px; flex: 0 0 auto; margin: 0; }
+
+/* LE METRICHE. Due numeri nudi non dicevano di CHI fossero. Ora ogni valore
+   porta il suo nome, e chi guida sta in pieno mentre l'altro resta spento:
+   il confronto si legge senza contare le cifre. */
+.featured .why dl { gap: 22px 26px; }
+.featured .why dt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.featured .why dd.pair { display: flex; align-items: baseline; gap: 10px; }
+.featured .why dd.pair .side { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.featured .why dd.pair .side b {
+  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.02em;
+  /* `--am-muted-2` misurava 4,46:1 sul fondo scuro: passa come testo grande
+     (soglia 3:1) ma questo e' un DATO che si legge, non decorazione. */
+  color: var(--am-muted); font-variant-numeric: tabular-nums;
+}
+.featured .why dd.pair .side em {
+  font-style: normal; font-size: 10.5px; color: var(--am-muted-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 15ch;
+}
+.featured .why dd.pair .side.lead b { color: var(--am-positive, #34D399); }
+.featured .why dd.pair .side.lead em { color: var(--am-text); }
+.featured .why dd.pair .sep {
+  width: 1px; align-self: stretch; margin: 2px 0 6px;
+  background: var(--am-line-2); flex: 0 0 auto;
+}
+
+/* LA PROSA respira: era 13px in grigio attaccata a un filo. */
+.featured .why .line { font-size: 13.5px; line-height: 1.65; padding-top: 18px; }
+
+/* TEMA CHIARO — stesso impianto. Il velo resta SCURO sulla scena (è la lezione
+   #299→#301: bianco su scena notturna fa foschia grigia), ma il pannello dei
+   dati è la carta della pagina, quindi la scena si ferma alla metà sinistra e
+   il testo scuro non ci finisce mai sopra. */
+
+:root[data-theme="light"] .featured .fxname,
+:root[data-theme="light"] .featured .hero-prob .pickname { color: #fff; }
+:root[data-theme="light"] .featured .league,
+:root[data-theme="light"] .featured .hero-prob .subl,
+:root[data-theme="light"] .featured .edge-plain { color: #c8cfd8; }
+:root[data-theme="light"] .featured .edge.is-extreme { color: #d5dbe3; border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.07); }
+:root[data-theme="light"] .featured .edge.is-extreme svg { color: #aeb6c0; }
+
+@media (max-width: 760px) {
+  /* in colonna la scena starebbe sotto il testo scuro del piede: si spegne. */
+  .featured::before { background: none; }
+  .featured::after,
+  :root[data-theme="light"] .featured::after { background: var(--am-coral-dim); }
+  .featured .hero-prob { padding-left: 14px; }
+}
+
+/* — correzioni misurate sul primo giro (#EDGE-BANNER-GFX-0830) — */
+
+/* CONTRASTO. In chiaro il pannello sinistro e' ora SCURO (come la fascia
+   fotografica delle schede), ma il numero teneva `--am-coral` = #137437, un
+   verde scelto per il contrasto SU BIANCO. Misurato sul glifo contro il suo
+   fondo reale: 3,46:1 — sotto soglia. Sul fondo scuro va il verde del tema
+   scuro. Ri-misurato dopo: vedi il commit. */
+/* NON si usa `var(--am-positive)`: quel token segue il TEMA DELLA PAGINA e in
+   chiaro vale #0f7a56, un verde tarato per il bianco. Ma questo pannello e'
+   scuro in entrambi i temi — quindi il verde va scelto per il FONDO CHE HA
+   DAVVERO DIETRO, non per il tema. Misurato: col token 3,81:1, col verde del
+   fondo scuro 8,9:1. E' la stessa logica per cui la fascia fotografica in
+   chiaro porta testo bianco. */
+:root[data-theme="light"] .featured .eyebrow,
+:root[data-theme="light"] .featured .hero-prob .num,
+:root[data-theme="light"] .featured .hero-prob .num .pc { color: #34D399; }
+:root[data-theme="light"] .featured .eyebrow .dot { background: #34D399; }
+
+/* LA SCENA si vedeva a .93 di velo: cioe' non si vedeva, ed era peso scaricato
+   per niente. Si apre dove non c'e' testo chiaro sopra, e resta piena dove
+   inizia il pannello dei dati. */
+/* Due strati, non uno: la fotografia va SCHIARITA (le scene sono notturne e a
+   velo pieno non si vedeva niente — peso scaricato per nulla), ma la velatura
+   che la tiene leggibile non deve schiarirsi con lei. Con un `background`
+   solo, il `filter` avrebbe agito su entrambe. */
+.featured::before {
+  background: var(--edge-scene, none) center 42% / cover no-repeat;
+  filter: saturate(1.15) contrast(1.05) brightness(1.5);
+  z-index: 0;
+}
+.featured::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: linear-gradient(100deg, rgba(18,21,25,.58) 0%, rgba(18,21,25,.80) 28%,
+                              rgba(18,21,25,.97) 46%, rgba(18,21,25,1) 100%);
+}
+.featured > * { z-index: 2; }
+:root[data-theme="light"] .featured::after {
+  background: linear-gradient(100deg, rgba(6,8,11,.60) 0%, rgba(6,8,11,.80) 28%,
+                              rgba(255,255,255,.98) 45%, rgba(255,255,255,1) 100%);
+}
+
+/* LE METRICHE si sparavano agli angoli opposti del pannello: `auto-fit` le
+   stirava su tutta la larghezza. Stanno vicine, a sinistra, e vanno a capo
+   quando serve. */
+.featured .why dl { display: flex; flex-wrap: wrap; gap: 20px 40px; }
+
+/* IL PANNELLO DESTRO era ancorato in alto mentre il sinistro e' centrato:
+   restava un vuoto in fondo alto quanto un terzo del banner. */
+.featured .why { display: flex; flex-direction: column; justify-content: center; }
+
+/* La CTA bloccata vive sullo stesso pannello scuro, quindi anche lei non puo'
+   prendere i colori dal tema della pagina: in chiaro misurava 3,33:1 — ed e' un
+   PULSANTE, non un'etichetta. Stesso taglio smussato del chip: niente pillole. */
+.featured .featured-unlock {
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  padding: 8px 14px;
+}
+:root[data-theme="light"] .featured .featured-unlock {
+  color: #34D399; border-color: rgba(52,211,153,.42); background: rgba(52,211,153,.12);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #MOBILE-0831 — tre difetti misurati su telefono (375/393/412/430 px), non
+   dedotti. Due candidati sono stati SCARTATI perche' la misura li ha smentiti:
+   la barra fissa in basso NON copre contenuto (`.portal-desk` ha gia' 66px di
+   sgombero: 0 nodi coperti a fondo pagina, col DOM intatto), e il pulsante da
+   10x10 e' uno spaziatore `aria-hidden` con `tabindex="-1"`, non un controllo.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* 1. IL DISCLOSURE «WHY» ERA ALTO 14px. E' il modo con cui si apre la lettura
+     del modello, e su 20 schede in board era una striscia da 14px: misurato
+     279x14. Il testo resta di quella misura — cresce l'AREA che riceve il dito,
+     fino ai 44px che serve un pollice. */
+  .pred .why-box > summary.why-lab {
+    min-height: 44px;
+    margin: -12px -13px;      /* annulla il padding del box... */
+    padding: 12px 13px;        /* ...e lo ri-applica dentro il target */
+  }
+  /* con il disclosure aperto il testo non deve incollarsi al bordo alto */
+  .pred .why-box[open] > summary.why-lab { margin-bottom: 0; }
+
+  /* 2. LA SCHEDA BLOCCATA era alta 539px su un telefono da 852, con 94px di
+     vuoto misurati fra il riquadro del lucchetto e il piede: un terzo di
+     schermo per zero informazione. Il riquadro e' tarato sul desktop.
+     (La causa maggiore era una MIA regressione, corretta in `machina.css`:
+     il trattamento HUD del readout si applicava anche allo stato bloccato e lo
+     alzava di 41px. Ora l'enfasi e' esclusa a monte con `:not(.is-locked)` e la
+     scheda bloccata torna alla geometria originale — misurato delta 0 su mobile
+     e su desktop, in entrambi i temi.) */
+  .pred .lock-overlay { padding: 12px 12px; gap: 5px; margin-bottom: 9px; }
+
+  /* 3. DUE CONTROLLI SOTTO IL POLLICE. Il selettore lingua misurava 40x34 e i
+     link social del footer 30x44: sotto i 44px che serve un dito. Cresce l'area
+     tappabile, non la grafica. */
+  .am-iconbtn.lang-dd-trigger { min-height: 44px; min-width: 44px; }
+  .site-footer-social-link { min-width: 44px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #TAWK-UNDER-MODAL-0831 — con la scheda aperta, la chat passa SOTTO.
+   La bolla di Tawk.to e' `fixed` e lo z-index lo mette lei, altissimo (~2e9):
+   su telefono finiva sopra la CTA «Place your bet» della bet-bar, cioe' sopra
+   l'unico bottone che porta al partner. Il modale sta a z-index 1000, quindi
+   basta riportare la chat sotto quella soglia mentre e' aperto — non si nasconde
+   e non si sposta: torna esattamente dov'era alla chiusura.
+   I selettori sono gli stessi gia' collaudati in `mobile.css`: Tawk cambia
+   struttura fra le versioni, e l'`id` da solo non basta.
+   Vale a ogni larghezza, non solo su telefono: su desktop la sovrapposizione e'
+   meno probabile, non impossibile.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root[data-pdm-open] #tawkchat-container,
+:root[data-pdm-open] #tawkchat-minified-wrapper,
+:root[data-pdm-open] .widget-visible iframe[title*="chat" i],
+:root[data-pdm-open] iframe[title*="chat" i],
+:root[data-pdm-open] div[class*="tawk" i] {
+  z-index: 999 !important;
 }

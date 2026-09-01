@@ -153,6 +153,42 @@ describe("countPayingInvitees", () => {
     expect(sql).toMatch(/identifier <> \$2/);
     expect(params).toEqual(["AMICO", INVITER]);
   });
+
+  // #REFERRAL-SHOPIFY-RAIL-0827 — il difetto che questo test inchioda: il rail
+  // CARTA (Shopify) non era nella UNION, quindi un invitato che pagava con
+  // carta valeva 0 e i gradini non scattavano mai. Non c'era nessun errore da
+  // vedere: solo un contatore fermo. Se qualcuno tolto il ramo shopify, o lo
+  // riscrive senza i filtri, qui diventa rosso.
+  it("conta TUTTI E TRE i rail che incassano, carta compresa", async () => {
+    queueReads([{ n: 0 }]);
+    await countPayingInvitees("amico", INVITER);
+    const [sql] = vi.mocked(dbQueryStrict).mock.calls[0] as [string, unknown[]];
+
+    expect(sql).toMatch(/paygate_orders/);
+    expect(sql).toMatch(/paypal_orders/);
+    expect(sql).toMatch(/shopify_events/);
+
+    // Il rail carta va filtrato sul TOPIC: senza `orders/paid` conterebbe anche
+    // i `refunds/create`.
+    expect(sql).toMatch(/event_type = 'orders\/paid'/);
+
+    // E NON va filtrato sullo status, deliberatamente. Su `shopify_events` la
+    // riga nasce solo dopo il pagamento, quindi 'unresolved'/'pending'/'stale'
+    // vogliono dire «ha pagato, il grant è da recuperare»: escluderli negherebbe
+    // un premio già guadagnato. Stessa scelta, già rivista, di creator-promo.
+    expect(sql).not.toMatch(/status = 'granted'/);
+
+    // L'identifier del rail carta NON è normalizzato a monte (extractOrder usa
+    // il valore grezzo dei note_attributes): senza LOWER/TRIM il confronto non
+    // troverebbe proprio i paganti che questa query esiste per contare.
+    expect(sql).toMatch(/LOWER\(TRIM\(identifier\)\)/);
+    expect(sql).toMatch(/LOWER\(TRIM\(p\.identifier\)\)/);
+
+    // La tabella del design doc non esiste e non può essere creata finché il
+    // drift delle migration è aperto (la CI applicherebbe DDL su prod e aborta):
+    // se ricompare qui, il fix è stato rifatto nel modo che si rompe.
+    expect(sql).not.toMatch(/shopify_orders/);
+  });
 });
 
 describe("checkReferralTiers — il grant dei gradini", () => {

@@ -406,3 +406,129 @@ async def get_completed_results() -> list[dict]:
 
     logger.info("ESPN tennis: found %d completed results", len(out))
     return out
+
+# ---------------------------------------------------------------------------
+# ARCHIVIO — i risultati dei giorni passati
+#
+# `get_completed_results()` legge `scoreboard/header`, che e' il tabellone
+# CORRENTE: un risultato e' visibile da quando la partita finisce a quando il
+# tabellone gira (misurato il 30/08: 1-3 completati fra le 22:00 e le 04:00,
+# poi ZERO dalle 05:00). Chi perde quella finestra non lo recupera piu', la riga
+# resta `outcome IS NULL` e a 7 giorni muore in `unresolved`. E' cosi' che il
+# settlement del tennis e' passato dal 55-78% allo 0-7%.
+#
+# Lo scoreboard PER DATA invece ha un archivio vero: misurato sui 3 giorni
+# precedenti, 3.267 singolari di cui 1.743 completati — e con il flag `winner`
+# ESPLICITO sul competitor, che e' piu' solido del parsing di «A bt B» dalla
+# stringa di note.
+# ---------------------------------------------------------------------------
+
+# I giorni passati non cambiano piu': si leggono una volta per processo. Il
+# giorno corrente NON si mette in cache, perche' si popola man mano.
+_archive_cache: dict[tuple[str, str], list[dict]] = {}
+
+
+def _completed_from_scoreboard(data: dict) -> list[dict]:
+    """I singolari COMPLETATI di un payload day-scoreboard, col vincitore."""
+    out: list[dict] = []
+    for ev in data.get("events", []):
+        tournament = ev.get("name", ev.get("shortName", "Unknown"))
+        blocchi = []
+        for g in ev.get("groupings") or []:
+            if "Singles" in ((g.get("grouping") or {}).get("displayName") or ""):
+                blocchi.extend(g.get("competitions") or [])
+        if not blocchi:
+            for comp in ev.get("competitions") or []:
+                tipo = (comp.get("type") or {}).get("text", "")
+                if not tipo or "Singles" in tipo:
+                    blocchi.append(comp)
+        for comp in blocchi:
+            if not ((comp.get("status") or {}).get("type") or {}).get("completed"):
+                continue
+            vincitore = perdente = None
+            for c in comp.get("competitors") or []:
+                nome = (c.get("athlete") or {}).get("displayName") or c.get("displayName")
+                if not nome:
+                    continue
+                if c.get("winner") is True:
+                    vincitore = nome
+                elif c.get("winner") is False:
+                    perdente = nome
+            # Senza un vincitore ESPLICITO non si indovina: la riga si salta.
+            if not vincitore or not perdente:
+                continue
+            out.append({
+                "winner_key": canonical_player_key(vincitore),
+                "loser_key": canonical_player_key(perdente),
+                "winner_name": vincitore,
+                "loser_name": perdente,
+                "tournament": tournament,
+                "score_text": _score_from_competition(comp),
+                "event_date": _parse_iso_date(comp.get("date") or ev.get("date") or ""),
+            })
+    return out
+
+
+def _score_from_competition(comp: dict) -> str | None:
+    """
+    Il punteggio a set, **dal punto di vista del vincitore**.
+
+    Le `linescores` arrivano in ordine di competitor, che NON e' l'ordine
+    vincitore-primo: preso cosi' com'e', il collaudo a secco del 30/08 stampava
+    «James Duckworth vince 3-6 6-7», cioe' un vincitore con un punteggio da
+    sconfitto — e sarebbe finito su una card pubblicata. I valori arrivano anche
+    come float (`6.0`), da cui gli interi.
+
+    `None` quando manca o non e' coerente: un punteggio non si inventa.
+    """
+    vinc = pers = None
+    for c in comp.get("competitors") or []:
+        ls = [x.get("value") for x in (c.get("linescores") or []) if x.get("value") is not None]
+        if c.get("winner") is True:
+            vinc = ls
+        elif c.get("winner") is False:
+            pers = ls
+    if not vinc or not pers or len(vinc) != len(pers):
+        return None
+    try:
+        set_txt = [f"{int(float(a))}-{int(float(b))}" for a, b in zip(vinc, pers)]
+    except (TypeError, ValueError):
+        return None
+    return " ".join(set_txt) or None
+
+
+async def get_completed_results_for_days(days) -> list[dict]:
+    """
+    Risultati completati per un insieme di GIORNI (oggetti `date`).
+
+    Costo: 2 richieste per giorno (atp + wta). I giorni passati si mettono in
+    cache per la vita del processo — non cambiano piu'. Il giorno corrente no.
+    """
+    oggi = datetime.now(timezone.utc).date()
+    out: list[dict] = []
+    async with httpx.AsyncClient(timeout=15.0) as c:
+        for giorno in sorted(set(days)):
+            stamp = giorno.strftime("%Y%m%d")
+            for league in _SCOREBOARD_LEAGUES:
+                chiave = (league, stamp)
+                if giorno < oggi and chiave in _archive_cache:
+                    out.extend(_archive_cache[chiave])
+                    continue
+                try:
+                    resp = await c.get(
+                        f"{_SCOREBOARD_URL.format(league=league)}?dates={stamp}",
+                        headers=ESPN_HEADERS,
+                    )
+                    if resp.status_code != 200:
+                        logger.warning("ESPN archivio %s %s: HTTP %s", league, stamp, resp.status_code)
+                        continue
+                    righe = _completed_from_scoreboard(resp.json())
+                except Exception as exc:
+                    # Un giorno che non risponde non deve fermare gli altri.
+                    logger.warning("ESPN archivio %s %s non letto: %s", league, stamp, exc)
+                    continue
+                if giorno < oggi:
+                    _archive_cache[chiave] = righe
+                out.extend(righe)
+    logger.info("ESPN archivio: %d risultati completati su %d giorno/i", len(out), len(set(days)))
+    return out

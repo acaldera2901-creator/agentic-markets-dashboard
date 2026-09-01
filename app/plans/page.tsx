@@ -14,7 +14,7 @@ export default function PlansPage() {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Plans and Pricing", "/plans"]])} />
-      <Dashboard />
+      <Dashboard initialTab="plans" />
     </>
   );
 }

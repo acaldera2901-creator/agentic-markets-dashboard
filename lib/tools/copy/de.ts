@@ -30,6 +30,10 @@ const de: ToolsCopy = {
     free: "Gratis",
     faqTitle: "Fragen",
     invalid: "—",
+    tgTitle: "Die Modellprognose des Tages, kostenlos auf Telegram",
+    tgBody:
+      "Ohne Konto, ohne E-Mail. Jeden Tag veröffentlichen wir das Spiel, bei dem unser Modell am stärksten vom Markt abweicht, 15 Minuten vor Beginn — und jede veröffentlichte Prognose rechnen wir ab, gewonnen oder verloren. Der Kanal ist auf Englisch.",
+    tgButton: "Kanal öffnen",
   },
 
   tools: {

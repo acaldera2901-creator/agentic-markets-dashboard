@@ -83,7 +83,7 @@ function toMatch(u: UnifiedNewsportRow): NewsportMatch | null {
 
 // Same plan projection as the tennis board (#PLANS-3TIER-1): rank by confidence
 // (these picks are market-anchored — no edge claim to rank on), free unlocks the
-// top row, base the top 5, premium everything. Locked rows keep the matchup
+// top rows (3/sport/day), base the top 7, premium everything. Locked rows keep the matchup
 // visible and blank every number the card would show.
 function projectNewsportMatches(matches: NewsportMatch[], state: AccessState) {
   const rankById = new Map<string, number>();

@@ -9,8 +9,10 @@ from core.world_cup_registry import (
     WORLD_CUP_CODE,
     api_football_season_for,
     is_friendlies_code,
+    is_nations_league_code,
     is_national_team_code,
     is_world_cup_code,
+    nations_league_name,
 )
 from core.world_cup_team_model import matchup_profile
 from core.world_cup_history import canonical_team_name, load_national_history
@@ -23,7 +25,7 @@ from core.world_cup_probability import national_match_probabilities
 from core.world_cup_elo_model import predict_wc_match as predict_wc_elo_v2
 from core.wc_calibration import calibrate_wc_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
-from core.surfacing_gate import surface_decision
+from core.surfacing_gate import nations_floor_for, surface_decision
 from core.supabase_client import (
     DCPrediction,
     log_prediction_snapshot,
@@ -71,6 +73,43 @@ def _format_confirmed_xi(home_team: str, away_team: str, lineups: dict) -> str |
     return "XI confermati — " + " · ".join(parts)
 
 
+# #FIT-OFFLOAD-0831 — la radice misurata da Andrea in prod (#CONSUME-GUARD-0830):
+# il singolo event loop asyncio resta bloccato oltre 10s e ogni via Redis in volo
+# scade insieme. La causa non e' Redis: e' che questo lavoro girava DENTRO il loop.
+#
+# `_neg_log_likelihood` (models/dixon_coles.py) e' un loop Python puro che
+# `scipy.optimize.minimize` richiama migliaia di volte, e `predict()` ha un doppio
+# ciclo sui gol: fra un `await` e il successivo il loop non respira.
+#
+# Vive FUORI dalla classe di proposito: non tocca `self` ne' stato globale, e
+# questa e' la garanzia che sia davvero sicuro spostarlo su un thread. Tutto cio'
+# che scrive stato condiviso (calibrate_from_history, ContextService, DB) resta
+# sul thread del loop, dove era.
+#
+# Onesto su cosa compra: essendo Python puro il GIL resta preso, quindi il loop
+# non torna a piena velocita' — ma torna a essere SCHEDULATO (l'interprete cede
+# il GIL a ogni switch interval, ~5 ms) invece di restare fermo per tutta la
+# durata del fit. Contro un socket_timeout da 10s, millisecondi di jitter non
+# sono niente: e' la differenza fra "in ritardo" e "scaduto".
+def _fit_and_calibration_probs(training: list[dict]) -> tuple["DixonColesModel", list[dict]]:
+    """Fit + probabilita' di calibrazione. CPU pura, zero stato condiviso."""
+    model = DixonColesModel()
+    model.fit(training)
+    # Ultimo 20% come split di calibrazione, per non avere data leakage.
+    n_cal = max(int(len(training) * 0.20), 10)
+    cal_probs: list[dict] = []
+    for m in training[-n_cal:]:
+        try:
+            ph, pd, pa = model.predict(m["home_team"], m["away_team"])
+        except Exception:
+            continue
+        cal_probs.append({
+            "p_home": ph, "p_draw": pd, "p_away": pa,
+            "home_goals": m["home_goals"], "away_goals": m["away_goals"],
+        })
+    return model, cal_probs
+
+
 class ModelAgent(BaseAgent):
     def __init__(self):
         super().__init__("ModelAgent")
@@ -116,25 +155,16 @@ class ModelAgent(BaseAgent):
                 results = await self._fetch_history(league_code, league_id)
                 training = self._parse_results(results)
                 if len(training) >= 10:
-                    model = DixonColesModel()
-                    model.fit(training)
+                    # #FIT-OFFLOAD-0831: il fit NON gira piu' sull'event loop.
+                    # Era una chiamata sincrona da decine di secondi dentro una
+                    # coroutine: mentre girava, NIENTE altro nel processo poteva
+                    # essere servito — heartbeat compresi, perche' anche loro
+                    # sono task di questo stesso loop.
+                    model, cal_probs = await asyncio.to_thread(
+                        _fit_and_calibration_probs, training
+                    )
                     self._models[league_code] = model
                     self._history[league_code] = training
-
-                    # Calibrate conformal predictor on the same training set
-                    # Use last 20% as "calibration" split to avoid data leakage
-                    n_cal = max(int(len(training) * 0.20), 10)
-                    calibration_set = training[-n_cal:]
-                    cal_probs = []
-                    for m in calibration_set:
-                        try:
-                            ph, pd, pa = model.predict(m["home_team"], m["away_team"])
-                            cal_probs.append({
-                                "p_home": ph, "p_draw": pd, "p_away": pa,
-                                "home_goals": m["home_goals"], "away_goals": m["away_goals"],
-                            })
-                        except Exception:
-                            continue
                     if cal_probs:
                         calibrate_from_history(league_code, cal_probs)
                         self.logger.info(
@@ -284,7 +314,15 @@ class ModelAgent(BaseAgent):
         """
         tier = wc_result.get("world_cup_publication_tier", "monitor_only")
         is_friendly = is_friendlies_code(payload.get("league"))
-        if is_friendly:
+        # #NATIONS-LEAGUE-0826: third national category. Everything below that
+        # branched on "friendly vs (therefore) World Cup" must treat nations
+        # explicitly — before this, a UNL row would have fallen into the WC
+        # branch: SURFACE_FLOOR_WC (26), "FIFA World Cup 2026" label, neutral
+        # venue. Nations rows follow the FRIENDLY contract (publish bar on the
+        # national model quality, ALWAYS paper, home advantage real) with their
+        # own floor, label and model-version namespace.
+        is_nations = is_nations_league_code(payload.get("league"))
+        if is_friendly or is_nations:
             # FRIENDLY publish bar: the data-quality tier is WC-calibrated
             # (odds/venue/squad gates that no friendly can pass) — what gates a
             # friendly paper row is the national model itself. Same 0.75 bar as
@@ -348,6 +386,8 @@ class ModelAgent(BaseAgent):
             served_version = (
                 settings.FRIENDLY_MODEL_VERSION
                 if is_friendly
+                else settings.NATIONS_MODEL_VERSION
+                if is_nations
                 else settings.WC_MODEL_VERSION
             )
             served_model_label = "National Poisson rates model"
@@ -356,7 +396,9 @@ class ModelAgent(BaseAgent):
                 try:
                     v2_triple = predict_wc_elo_v2(
                         payload["home_team"], payload["away_team"],
-                        neutral=not is_friendly,
+                        # Friendlies AND Nations League are hosted by the home
+                        # side (real venue); only the WC path is neutral-ground.
+                        neutral=not (is_friendly or is_nations),
                     )
                 except Exception:
                     v2_triple = None  # fail-soft: il servito resta v1
@@ -366,6 +408,8 @@ class ModelAgent(BaseAgent):
                     served_version = (
                         settings.FRIENDLY_V2_MODEL_VERSION
                         if is_friendly
+                        else settings.NATIONS_V2_MODEL_VERSION
+                        if is_nations
                         else settings.WC_ELO_V2_MODEL_VERSION
                     )
                     served_model_label = "Elo rating model"
@@ -374,7 +418,11 @@ class ModelAgent(BaseAgent):
             pred = DCPrediction(
                 match_id=str(payload.get("match_id")),
                 league=payload["league"],
-                league_name="International Friendly" if is_friendly else "FIFA World Cup 2026",
+                league_name=(
+                    "International Friendly" if is_friendly
+                    else nations_league_name(payload.get("league")) if is_nations
+                    else "FIFA World Cup 2026"
+                ),
                 home_team=payload["home_team"],
                 away_team=payload["away_team"],
                 kickoff=payload["kickoff"],
@@ -463,10 +511,12 @@ class ModelAgent(BaseAgent):
             # knockout equilibrati vengono surfacciati come pick.
             _is_pick, _below_floor = surface_decision(
                 sport="football", friendly=is_friendly, confidence=confidence,
-                world_cup=not is_friendly,
+                world_cup=not (is_friendly or is_nations),
+                nations_league_code=payload.get("league") if is_nations else None,
             )
             surface_floor = (
                 settings.SURFACE_FLOOR_FRIENDLY if is_friendly
+                else nations_floor_for(payload.get("league")) if is_nations
                 else settings.SURFACE_FLOOR_WC
             )
             explanation = build_wc_explanation(
@@ -483,7 +533,9 @@ class ModelAgent(BaseAgent):
             # scores odds/venue/squad/settlement quality. signal needs BOTH
             # an allowing tier AND a real matched market. FRIENDLY rows are
             # never promoted in v1 — paper only, regardless of tier.
-            signal_allowed = (not is_friendly) and tier in ("signal_allowed", "premium_candidate")
+            # Nations rows are ALWAYS paper in v1, exactly like friendlies —
+            # promotion to signal would need its own gate decision first.
+            signal_allowed = (not (is_friendly or is_nations)) and tier in ("signal_allowed", "premium_candidate")
             row = wc_prediction_to_unified_row(
                 pred,
                 # "unknown" must not override the mapper's league-name default
@@ -492,7 +544,7 @@ class ModelAgent(BaseAgent):
                 # not on WC neutral ground — and the empty context would
                 # otherwise default this to True.
                 neutral_venue=(
-                    False if is_friendly
+                    False if (is_friendly or is_nations)
                     else wc_result.get("neutral_venue", "True") == "True"
                 ),
                 explanation=explanation,
@@ -503,6 +555,7 @@ class ModelAgent(BaseAgent):
                 signal_allowed=signal_allowed,
                 team_news_summary=team_news_summary,
                 friendly=is_friendly,
+                nations_league_code=payload.get("league") if is_nations else None,
                 # #ELO-V2 label fix: tag the served row with the model that
                 # actually produced the probabilities (v2 when promoted),
                 # not the hard-coded v1 default.
@@ -515,7 +568,7 @@ class ModelAgent(BaseAgent):
             if written:
                 self.logger.info(
                     "%s row written: %s vs %s (tier=%s, %s, market=%s)",
-                    "FRIENDLY" if is_friendly else "WC",
+                    "FRIENDLY" if is_friendly else str(payload.get("league")) if is_nations else "WC",
                     payload["home_team"], payload["away_team"], tier,
                     row.get("signal_type"), "yes" if odds_triple else "no",
                 )
