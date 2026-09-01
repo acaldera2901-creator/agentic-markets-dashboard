@@ -1,0 +1,693 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+
+<style>
+:root{
+  --bg:#08090C; --panel:#101319; --panel-2:#141821; --inset:#0C0E13;
+  --line:#1E2430; --line-2:#2C3646; --text:#E8ECF2; --muted:#8994A5; --dimtext:#616C7E;
+  --steel:#7FA8D8; --violet:#9B8CFF; --amber:#F0B434; --green:#2FBB68; --green-2:#7BE8A8;
+  --magenta:#E45CD8; --red:#F0736D;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;overflow-x:hidden;
+  background:radial-gradient(1100px 680px at 78% -10%, rgba(47,187,104,.07), transparent 60%),
+             radial-gradient(950px 640px at -8% 62%, rgba(155,140,255,.05), transparent 60%),
+             radial-gradient(900px 620px at 88% 104%, rgba(228,92,216,.05), transparent 60%),
+             var(--bg)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 30%, black 42%, transparent 88%);
+  mask-image:radial-gradient(ellipse at 50% 30%, black 42%, transparent 88%)}
+
+/* ── topbar ── */
+.topbar{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+  padding:10px 16px;background:rgba(8,9,12,.9);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:-.01em}
+.brand-dot{width:10px;height:10px;background:var(--green);box-shadow:0 0 14px var(--green);
+  clip-path:polygon(0 0,100% 0,100% 68%,68% 100%,0 100%)}
+.brand small{color:var(--muted);font-weight:500;font-size:11px;margin-left:2px;
+  font-family:"JetBrains Mono",monospace}
+.crumb{color:var(--dimtext);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  font-family:"JetBrains Mono",monospace}
+.crumb b{color:var(--text);font-weight:600}
+.grow{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;
+  background:var(--panel-2);border:1px solid var(--line);font-size:10px;color:var(--muted);
+  font-family:"JetBrains Mono",monospace}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green);animation:blip 1.6s ease-in-out infinite}
+@keyframes blip{50%{opacity:.3}}
+.legend{display:flex;flex-wrap:wrap;gap:5px}
+.legend button{background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
+  padding:4px 8px;font-size:9.5px;cursor:pointer;font-family:"JetBrains Mono",monospace;
+  letter-spacing:.05em;transition:.15s}
+.legend button:hover{color:var(--text);border-color:var(--line-2)}
+.legend button.active{background:rgba(47,187,104,.1);border-color:rgba(47,187,104,.5);color:var(--green-2)}
+
+/* ── stage ── */
+.stage{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 380px;
+  align-items:start}
+@media (max-width:1080px){.stage{grid-template-columns:1fr}}
+.canvas-wrap{position:relative;padding:18px 16px 60px;overflow-x:auto}
+.canvas-title{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:16px;margin-bottom:16px}
+.canvas-title h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.canvas-title h1 span{color:var(--green)}
+.canvas-title h1 em{color:var(--magenta);font-style:normal}
+.canvas-title p{margin:5px 0 0;color:var(--muted);font-size:12px;max-width:70ch;
+  font-family:"JetBrains Mono",monospace;line-height:1.6}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px}
+.kpi{display:flex;flex-direction:column;gap:2px;padding:6px 11px;border:1px solid var(--line);
+  background:rgba(16,19,25,.6);min-width:76px}
+.kpi label{font-size:9px;color:var(--dimtext);letter-spacing:.18em;text-transform:uppercase;
+  font-family:"JetBrains Mono",monospace}
+.kpi b{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--text);font-weight:600}
+
+#canvas{position:relative;width:1280px;height:2800px}
+
+/* ── territori ── */
+.terr{position:absolute;z-index:0;pointer-events:none;border:1px dashed}
+.terr .tlab{position:absolute;top:-1px;left:-1px;display:flex;align-items:baseline;gap:9px;
+  padding:6px 12px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;white-space:nowrap;background:var(--bg)}
+.terr .tlab b{font-weight:700}
+.terr .tlab span{color:var(--dimtext);letter-spacing:.06em;text-transform:none;font-size:10.5px}
+.terr.z-ext{border-color:rgba(127,168,216,.30);background:rgba(127,168,216,.032)}
+.terr.z-ext .tlab b{color:var(--steel)}
+.terr.z-vercel{border-color:rgba(155,140,255,.32);background:rgba(155,140,255,.035)}
+.terr.z-vercel .tlab b{color:var(--violet)}
+.terr.z-mac{border-color:rgba(240,180,52,.30);background:rgba(240,180,52,.03)}
+.terr.z-mac .tlab b{color:var(--amber)}
+.terr.z-db{border-color:rgba(47,187,104,.38);background:rgba(47,187,104,.04)}
+.terr.z-db .tlab b{color:var(--green)}
+.terr.z-acq,.terr.z-conv{border-color:rgba(228,92,216,.32);background:rgba(228,92,216,.032)}
+.terr.z-acq .tlab b,.terr.z-conv .tlab b{color:var(--magenta)}
+.terr.z-ops{border-color:rgba(137,148,165,.28);background:rgba(137,148,165,.025)}
+.terr.z-ops .tlab b{color:var(--muted)}
+.terr.faded{opacity:.22}
+.divider{position:absolute;z-index:0;width:0;border-left:1px dashed rgba(255,255,255,.09)}
+.sep{position:absolute;z-index:0;display:flex;align-items:center;gap:14px;
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--magenta);white-space:nowrap}
+.sep::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(228,92,216,.5),rgba(228,92,216,0))}
+
+#edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1}
+.edge{fill:none;stroke:#3A4658;stroke-width:1.4;transition:stroke .18s,opacity .18s}
+.edge.hi{stroke:var(--green);stroke-width:2}
+.edge.dim{opacity:.14}
+.flow{fill:none;stroke:var(--green);stroke-width:1.6;opacity:.48;
+  stroke-dasharray:5 12;animation:dash 2.4s linear infinite}
+.loop{fill:none;stroke:var(--magenta);stroke-width:1.8;stroke-dasharray:7 5;opacity:.85}
+.looplab{fill:var(--magenta);font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.06em}
+@keyframes dash{to{stroke-dashoffset:-34}}
+
+/* ── nodi ── */
+.node{position:absolute;z-index:2;width:190px;height:126px;text-align:left;cursor:pointer;
+  background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%);
+  border:1px solid var(--line);color:var(--text);padding:9px 11px;font:inherit;
+  display:flex;flex-direction:column;gap:5px;transition:.16s;
+  clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))}
+.node:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.node:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.node.faded{opacity:.15}
+.node.sel{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 12px 34px -18px var(--green)}
+.node .head{display:flex;align-items:center;gap:7px}
+.node .ico{width:22px;height:22px;display:grid;place-items:center;font-size:12px;flex:none;
+  background:var(--inset);border:1px solid var(--line)}
+.node .tag{font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.13em;
+  padding:2px 6px;border:1px solid currentColor;opacity:.85;white-space:nowrap;overflow:hidden}
+.node h4{margin:0;font-size:13px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+.node p{margin:0;font-size:10.5px;line-height:1.45;color:var(--muted);
+  font-family:"JetBrains Mono",monospace;flex:1;overflow:hidden}
+.node .foot{display:flex;justify-content:space-between;align-items:center;gap:6px;
+  font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--dimtext);letter-spacing:.08em}
+.node .foot .live{color:var(--green)}
+.node .foot .idle{color:var(--amber)}
+.node .foot .stop{color:var(--red)}
+.node.deadend{border-style:dashed}
+
+.fn-source .ico,.fn-source .tag{color:var(--steel)}
+.fn-source{border-top:2px solid rgba(127,168,216,.6)}
+.fn-engine .ico,.fn-engine .tag{color:var(--violet)}
+.fn-engine{border-top:2px solid rgba(155,140,255,.6)}
+.fn-gate .ico,.fn-gate .tag{color:var(--amber)}
+.fn-gate{border-top:2px solid rgba(240,180,52,.65)}
+.fn-data .ico,.fn-data .tag{color:var(--green)}
+.fn-data{border-top:2px solid rgba(47,187,104,.65)}
+.fn-out .ico,.fn-out .tag{color:var(--text)}
+.fn-out{border-top:2px solid rgba(232,236,242,.45)}
+.fn-chan .ico,.fn-chan .tag{color:var(--magenta)}
+.fn-chan{border-top:2px solid rgba(228,92,216,.6)}
+.fn-ops .ico,.fn-ops .tag{color:var(--muted)}
+.fn-ops{border-top:2px solid rgba(137,148,165,.4)}
+.node.pivot{background:linear-gradient(180deg,rgba(47,187,104,.14) 0%,rgba(47,187,104,.05) 100%);
+  border-color:rgba(47,187,104,.55)}
+
+/* ── inspector ── */
+.aside{position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;
+  border-left:1px solid var(--line);background:rgba(11,13,17,.74);padding:18px 18px 40px}
+@media (max-width:1080px){.aside{position:static;height:auto;border-left:0;border-top:1px solid var(--line)}}
+.ins-eyebrow{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--green);margin:0 0 8px}
+.aside h2{margin:0 0 6px;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.aside .sub{color:var(--muted);font-size:12px;font-family:"JetBrains Mono",monospace;
+  line-height:1.65;margin:0 0 18px}
+.blk{border:1px solid var(--line);background:var(--panel);padding:13px 14px;margin-bottom:12px}
+.blk h5{margin:0 0 9px;font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dimtext);font-weight:600}
+.row{display:flex;justify-content:space-between;gap:14px;padding:5px 0;
+  border-bottom:1px solid rgba(30,36,48,.7);font-family:"JetBrains Mono",monospace;font-size:11px}
+.row:last-child{border-bottom:0}
+.row span{color:var(--muted);flex:none}
+.row b{color:var(--text);font-weight:500;text-align:right;word-break:break-word}
+.mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line)}
+.mcell{background:var(--panel);padding:9px 11px}
+.mcell label{display:block;font-family:"JetBrains Mono",monospace;font-size:8.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--dimtext)}
+.mcell b{font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--green-2);font-weight:600}
+.hint{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--dimtext);line-height:1.6}
+.warn{border-left:2px solid var(--red);background:rgba(240,115,109,.07);padding:11px 13px;
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;line-height:1.6;color:var(--muted);margin-bottom:12px}
+.warn b{color:var(--red)}
+.aside code{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--green-2);
+  background:var(--inset);padding:1px 4px}
+.key{display:flex;align-items:center;gap:8px;padding:4px 0;font-family:"JetBrains Mono",monospace;
+  font-size:10.5px;color:var(--muted)}
+.key i{width:16px;height:3px;flex:none}
+.clear{background:none;border:1px solid var(--line);color:var(--muted);
+  font-family:"JetBrains Mono",monospace;font-size:10px;padding:5px 10px;cursor:pointer;
+  letter-spacing:.1em}
+.clear:hover{color:var(--text);border-color:var(--line-2)}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .flow{stroke-dasharray:none;opacity:.35}
+}
+</style>
+
+<div class="topbar">
+  <div class="brand"><i class="brand-dot"></i>BetRedge <small>architecture</small></div>
+  <div class="crumb">IL DATO E LA PERSONA · <b>30 AGO 2026</b></div>
+  <div class="grow"></div>
+  <div class="legend" id="legend">
+    <button data-zone="all" class="active">TUTTO</button>
+    <button data-zone="ext">FONTI</button>
+    <button data-zone="vercel">VERCEL</button>
+    <button data-zone="mac">IL MAC</button>
+    <button data-zone="db">SUPABASE</button>
+    <button data-zone="acq">CANALI</button>
+    <button data-zone="conv">CONVERSIONE</button>
+    <button data-zone="ops">OPS</button>
+  </div>
+  <div class="pill"><i class="dot"></i>letto dal codice vivo</div>
+</div>
+
+<div class="stage">
+  <div class="canvas-wrap">
+    <div class="canvas-title">
+      <div>
+        <h1>Due flussi: <span>il dato</span> e <em>la persona</em></h1>
+        <p>In alto scende il dato, dalle fonti fino alla tabella. In basso sale la persona, dai canali
+        fino al piano. Si incontrano in un punto solo — il cancello ③ — e l'arco rosa è il cerchio
+        che si chiude. Clicca un nodo per aprirlo.</p>
+      </div>
+      <div class="meta-row">
+        <div class="kpi"><label>nodi</label><b>46</b></div>
+        <div class="kpi"><label>territori</label><b>8</b></div>
+        <div class="kpi"><label>canali</label><b>7</b></div>
+        <div class="kpi"><label>tabelle</label><b>68</b></div>
+      </div>
+    </div>
+    <div id="canvas"><svg id="edges" aria-hidden="true"></svg></div>
+  </div>
+  <aside class="aside" id="aside"></aside>
+</div>
+
+<script>
+/* ═══════════ TERRITORI ═══════════ */
+const TERR = [
+ {zone:"ext",   x:10,  y:58,   w:1260,h:200,name:"☁ FUORI",       sub:"le fonti dati — 6 provider, nessuno è nostro"},
+ {zone:"vercel",x:10,  y:296,  w:660, h:624,name:"▲ VERCEL",      sub:"il calcolo · serverless, sempre online"},
+ {zone:"mac",   x:700, y:296,  w:570, h:624,name:"■ IL MAC",      sub:"launchd · dal checkout worker"},
+ {zone:"db",    x:10,  y:934,  w:1260,h:506,name:"● SUPABASE",    sub:"i cancelli e le prove"},
+ {zone:"vercel",x:10,  y:1478, w:1025,h:346,name:"▲ VERCEL",      sub:"la consegna · ciò che l'utente tocca"},
+ {zone:"acq",   x:10,  y:1878, w:1230,h:236,name:"📣 ACQUISIZIONE",sub:"da dove arriva la gente — la bocca dell'imbuto"},
+ {zone:"conv",  x:10,  y:2148, w:1230,h:330,name:"🚪 CONVERSIONE", sub:"dal clic al piano"},
+ {zone:"ops",   x:10,  y:2520, w:1230,h:210,name:"🛠 OPERAZIONI",  sub:"non nel flusso: osservano, misurano, correggono"},
+];
+
+/* ═══════════ NODI ═══════════ */
+const NODES = [
+/* ─── ☁ FUORI · le fonti dati ─── */
+{id:"S1",zone:"ext",fn:"source",x:22,y:104,w:190,ico:"⚽",tag:"REST",title:"football-data.org",
+ desc:"Fixture e storico 365 giorni.\nPiano free: 5 leghe club.",
+ schema:{endpoint:"api.football-data.org/v4",auth:"X-Auth-Token",usato_da:"lib/football-data.ts",trappola:"redirige senza avvisare"},
+ metrics:{leghe:"5",consumatore:"Vercel"},status:"live"},
+{id:"S2",zone:"ext",fn:"source",x:228,y:104,w:190,ico:"📈",tag:"REST",title:"The Odds API",
+ desc:"Quote 1X2 e handicap. L'unica\nfonte letta da entrambe\nle macchine.",
+ schema:{usato_da:"lib/odds-api.ts + core/odds_api_client.py",quota:"tracciata su source_quota_log",freno:"1.800 s sull'AH collector"},
+ metrics:{log:"314",consumatori:"2"},status:"live"},
+{id:"S3",zone:"ext",fn:"source",x:434,y:104,w:190,ico:"📊",tag:"SCRAPE",title:"Understat",
+ desc:"xG per squadra. Copre solo\n5 leghe: è il limite\ndell'arricchimento calcio.",
+ schema:{usato_da:"lib/understat.ts",cache:"understat_cache",copertura:"5 leghe"},
+ metrics:{"corr. API-Football":"0,971"},status:"live"},
+{id:"S4",zone:"ext",fn:"source",x:640,y:104,w:190,ico:"📡",tag:"REST",title:"API-Football",
+ desc:"Infortuni, lineup, meteo,\narricchimento. Ha xG su tutte\nle leghe testate.",
+ schema:{endpoint:"api-football-v1.p.rapidapi.com",usato_da:"lib/api-football-enrichment.ts",estensione:"$19/mese per il backfill xG"},
+ metrics:{decisione:"aperta"},status:"live"},
+{id:"S5",zone:"ext",fn:"source",x:846,y:104,w:190,ico:"🎾",tag:"REST",title:"ESPN",
+ desc:"Fixture e risultati tennis.\nDue hostname; l'archivio\nsi legge per data.",
+ schema:{usato_da:"core/espn_tennis_client.py",trappola:"403 → cambia host, non lo User-Agent",finestra:"un risultato è visibile poche ore"},
+ metrics:{fixture:"2.923"},status:"live"},
+{id:"S6",zone:"ext",fn:"source",x:1052,y:104,w:190,ico:"🎰",tag:"SCRAPE",title:"Stake · Roobet",
+ desc:"Quote sportsbook ogni 300 s.\nAlimentano solo la misura,\nmai il prodotto.",
+ schema:{usato_da:"agents/sportsbook_scraper.py",tabella:"odds_snapshots"},
+ metrics:{righe:"5.792.419"},status:"live"},
+
+/* ─── ▲ VERCEL · il calcolo ─── */
+{id:"IN1",zone:"vercel",fn:"engine",x:30,y:346,w:620,h:112,ico:"⚡",tag:"ROUTE",title:"POST /api/predictions",
+ desc:"Legge le fonti calcio direttamente. Qui ingestione e motore sono lo stesso nodo: nessun agente Python tocca il calcio che vedi sulla board.",
+ schema:{file:"app/api/predictions/route.ts",trigger:"cron ogni 2 ore",maxDuration:"300 s",auth:"CRON_SECRET, default-deny"},
+ metrics:{righe_calcio:"1.252"},status:"live"},
+{id:"M1",zone:"vercel",fn:"engine",x:30,y:482,w:190,ico:"📐",tag:"TS",title:"Poisson / Dixon-Coles",
+ desc:"Regressione sui risultati storici:\nattacco, difesa, vantaggio casa,\nrho sui risultati bassi.",
+ schema:{file:"lib/poisson-model.ts",output:"p_home · p_draw · p_away"},metrics:{},status:"live"},
+{id:"M2",zone:"vercel",fn:"engine",x:245,y:482,w:190,ico:"🔢",tag:"TS",title:"π-rating + forma",
+ desc:"Forza relativa in stile Elo,\naggiornata dopo ogni partita.",
+ schema:{file:"lib/pi-rating.ts"},metrics:{},status:"live"},
+{id:"M3",zone:"vercel",fn:"engine",x:460,y:482,w:190,ico:"🧬",tag:"TS",title:"Arricchimento",
+ desc:"xG dove c'è, infortuni e meteo\nsul resto. È il Deep Analysis\nriservato ai soli premium.",
+ schema:{fonti:"Understat · API-Football · OpenWeather",campo:"enrichment (JSONB)"},
+ metrics:{copertura_xG:"5 leghe"},status:"live"},
+{id:"C1",zone:"vercel",fn:"engine",x:30,y:638,w:190,ico:"🎚",tag:"TS",title:"Calibrazione",
+ desc:"Temperature scaling per lega:\nle probabilità grezze del modello\nnon sono probabilità oneste.",
+ schema:{file:"lib/calibration.ts",lab:"calibration-backtest 06/06"},metrics:{},status:"live"},
+{id:"C2",zone:"vercel",fn:"engine",x:245,y:638,w:405,ico:"🧲",tag:"TS",title:"Blend col mercato · α = 0,3",
+ desc:"De-vig delle quote, poi le probabilità sono tirate verso la linea per costruzione: è il motivo per cui l'edge vero sulla chiusura è ≈ 0.",
+ schema:{costante:"MARKET_BLEND_ALPHA",verità_lab:"non battiamo la closing line in nessun segmento"},
+ metrics:{alpha:"0,30"},status:"live"},
+{id:"P1",zone:"vercel",fn:"engine",x:30,y:790,w:620,h:112,ico:"🎯",tag:"TS",title:"Pick = il favorito",
+ desc:"Argmax della probabilità servita, non del massimo edge: su probabilità blended il massimo edge cade sistematicamente sull'outsider.",
+ schema:{file:"lib/pick-selection.ts",misura:"il 12/08, 25 righe su 26 portavano il pick sull'esito sbagliato"},
+ metrics:{criterio:"favourite"},status:"live"},
+
+/* ─── ■ IL MAC ─── */
+{id:"IN2",zone:"mac",fn:"engine",x:720,y:346,w:255,h:112,ico:"🔄",tag:"AGENT",title:"I due collector",
+ desc:"Il calcio pubblica sul bus Redis,\nil tennis scrive diretto a DB.",
+ schema:{bus:"market:data (Redis localhost)",file:"agents/data_collector.py",tennis:"agents/tennis_data_collector.py",catena:"Model → Analyst → Strategist → Risk → Trader"},
+ metrics:{agenti:"19",heartbeat:"34"},status:"live"},
+{id:"SS",zone:"mac",fn:"engine",x:995,y:346,w:255,h:112,cls:"deadend",ico:"🔬",tag:"MISURA",title:"Scraper → ShadowEval",
+ desc:"A/B forward-only su Stake e Roobet.\nFinisce qui: non alimenta niente.",
+ schema:{tabelle:"odds_snapshots · sportsbook_shadow_eval",regola:"non tocca ciò che l'utente vede"},
+ metrics:{shadow:"89.279"},status:"stop"},
+{id:"M4",zone:"mac",fn:"engine",x:720,y:482,w:530,ico:"🎾",tag:"PY",title:"Elo per superficie",
+ desc:"Il modello tennis: rating separati per terra, erba e cemento.\nÈ l'unico motore del prodotto che gira fuori da Vercel.",
+ schema:{file:"models/tennis_elo.py",tabella:"elo_ratings"},metrics:{rating:"1.639"},status:"live"},
+{id:"C3",zone:"mac",fn:"engine",x:720,y:638,w:530,ico:"🧲",tag:"PY",title:"Blend + ancora sharp",
+ desc:"Ancoraggio al mercato con banda quote 1,50–2,10: fuori banda\nniente value bet. Sopra 2,10, misurato, si corre sotto il break-even.",
+ schema:{banda:"1,50 – 2,10",trappola:"su eventi illiquidi l'ancora dà margini fino al 191%"},
+ metrics:{banda:"1,50–2,10"},status:"live"},
+{id:"P2",zone:"mac",fn:"engine",x:720,y:790,w:255,h:112,ico:"🗂",tag:"DB→",title:"tennis_predictions",
+ desc:"Travasate in unified dall'adapter,\nnello stesso cron di refresh.",
+ schema:{file:"lib/tennis-adapter.ts"},metrics:{righe:"2.538"},status:"live"},
+{id:"SET",zone:"mac",fn:"engine",x:995,y:790,w:255,h:112,ico:"⚖️",tag:"RITORNO",title:"Settlement",
+ desc:"Non avanza il flusso: lo chiude.",
+ schema:{agente:"agents/result_settlement.py · 300 s",cron:"/api/cron/settle · ogni 30 min (Vercel)",fix:"archivio ESPN per data (#304)"},
+ metrics:{chiuse:"1.088"},status:"live"},
+
+/* ─── ● SUPABASE ─── */
+{id:"G1",zone:"db",fn:"gate",x:200,y:986,w:880,h:116,ico:"🚦",tag:"CANCELLO 1",title:"Surfacing gate",
+ desc:"Decide solo se una riga si mostra come pick direzionale — non tocca mai le probabilità. Sotto il floor la riga resta in board come «nessun favorito chiaro»: la board non si svuota, l'onestà sta nell'etichetta.",
+ schema:{club:"floor 56",amichevoli:"floor 66 — alzato da 61 su 33 match al 54,5%",tennis:"62 sul tier alto, più alto sui minori e su erba",fonte:"config/settings.py, specchiato in lib/surfacing-gate.ts"},
+ metrics:{club:"56",tennis:"62+"},status:"live"},
+{id:"G2",zone:"db",fn:"gate",x:200,y:1130,w:880,h:116,ico:"🛂",tag:"CANCELLO 2",title:"Publication gate",
+ desc:"Il cancello unico fra i candidati interni e la tabella pubblica. Tre verdetti, nessuna via di mezzo.",
+ schema:{REJECT:"la riga non raggiunge mai unified_predictions",PAPER:"pubblicata come stima onesta, mai come segnale di mercato",SIGNAL:"solo evento futuro e fresco, quota vera, edge calcolato, pick esplicito",mondiale:"mai SIGNAL finché la readiness è monitor_only"},
+ metrics:{signal:"1.408",paper:"2.231"},status:"live"},
+{id:"DB2",zone:"db",fn:"data",x:30,y:1274,w:280,h:130,ico:"🧾",tag:"PROVA",title:"prediction_log",
+ desc:"Uno snapshot a ogni ricalcolo:\nla prova di cosa il modello diceva\nprima che si giocasse.",
+ schema:{tabella:"prediction_log"},metrics:{righe:"105.495"},status:"live"},
+{id:"DB1",zone:"db",fn:"data",x:340,y:1274,w:600,h:130,cls:"pivot",ico:"💾",tag:"IL PERNO",title:"unified_predictions",
+ desc:"Il punto d'incontro dei due motori. Se questa tabella è vuota il prodotto è vuoto, anche con entrambi i motori perfetti.",
+ schema:{calcio:"1.018 signal · 234 paper",tennis:"390 signal · 1.997 paper",letta_da:"board · card · storico · widget · Telegram · Instagram"},
+ metrics:{righe:"3.639",sport:"2"},status:"live"},
+{id:"DB3",zone:"db",fn:"data",x:970,y:1274,w:280,h:130,ico:"🔒",tag:"PROVA",title:"pick_ledger",
+ desc:"Il registro sigillato: pick prima\ndella partita, esito dopo, sempre.\nÈ ciò che Telegram pubblica.",
+ schema:{sigillate:"1.382",chiuse:"1.088 (pick_settlement)",regola:"ogni riga sigillata deve avere il suo esito nella chiusura"},
+ metrics:{sigillate:"1.382",chiuse:"1.088"},status:"live"},
+
+/* ─── ▲ VERCEL · la consegna ─── */
+{id:"VET",zone:"vercel",fn:"gate",x:140,y:1526,w:765,h:116,ico:"🔑",tag:"CANCELLO 3",title:"Vetrina per piano",
+ desc:"Qui il dato incontra la persona: prende le righe da unified_predictions e il piano da profiles. Non nasconde le righe, nasconde i campi — squadre, ora ed esito saldato restano pubblici sempre.",
+ schema:{anonimo:"0 righe sbloccate",free:"la top 1 per sport",base:"le top 5 + CLV, stake, edge %",premium:"tutte + Deep Analysis",modello:"stateless — nessun conteggio per utente"},
+ metrics:{free:"1",base:"5"},status:"live"},
+{id:"O1",zone:"vercel",fn:"out",x:30,y:1670,w:184,ico:"📋",tag:"PAGINA",title:"/predictions",
+ desc:"La board. Il desk intero vive\nin un solo file da 9.705 righe.",
+ schema:{file:"app/app/page.tsx",tab:"predictions · history · plans · leaderboard · match-builder · invite",legacy:"/app?tab=… → 308 permanente"},
+ metrics:{righe_file:"9.705"},status:"live"},
+{id:"O2",zone:"vercel",fn:"out",x:230,y:1670,w:184,ico:"🃏",tag:"UI",title:"Card partita",
+ desc:"Mercato · Modello · Edge.\nIl Deep Analysis è l'unico\nblocco solo-premium.",
+ schema:{componenti:"MatchDetailSheet · PredictionDetailModal",banner:"house-banners = pubblicità nostra, non di terzi"},
+ metrics:{gate:"premium"},status:"live"},
+{id:"O3",zone:"vercel",fn:"out",x:430,y:1670,w:184,ico:"📜",tag:"PAGINA",title:"/history",
+ desc:"Il track record pubblico.\nLegge gli esiti saldati, visibili\nanche sulle righe bloccate.",
+ schema:{componenti:"components/track-record/",claim:"«CLV verified» dichiarato ma 0 pick su 1.474 ce l'ha"},
+ metrics:{saldate:"1.088"},status:"live"},
+{id:"O4",zone:"vercel",fn:"out",x:630,y:1670,w:184,ico:"🧩",tag:"PAGINA",title:"Match Builder",
+ desc:"Multipla + Weekly Pick,\nil prodotto one-off\nvenduto a parte.",
+ schema:{route:"/match-builder · /weekly-pick",cron:"generate ogni 2 ore",ordini:"10 · 0 pagati da terzi"},
+ metrics:{pick:"8"},status:"live"},
+{id:"O5",zone:"vercel",fn:"out",x:830,y:1670,w:184,ico:"🔗",tag:"EMBED",title:"/embed",
+ desc:"Lo script del widget. Unico path\nfuori dalla CSP globale: si deroga\nescludendo il path.",
+ schema:{header:"frame-ancestors * solo qui",confidence:"scala 0-100, non 0-1"},
+ metrics:{},status:"live"},
+
+/* ─── 📣 ACQUISIZIONE ─── */
+{id:"A1",zone:"acq",fn:"chan",x:24,y:1930,w:164,h:150,ico:"🔎",tag:"SEO/AEO",title:"Hub /tools + blog",
+ desc:"11 calcolatori × 11 lingue = 132 URL,\npiù il blog da RSS Soro.\nIndexNow verso Bing alle 06:00.",
+ schema:{tool:"odds converter · margine · EV · Kelly · arbitraggio · multipla · ROI · yield · stake · bankroll · probabilità",locali:"en senza prefisso + 10 sotto /[lang]/tools",blog:"lib/soro-rss.ts → blog_posts (16)",indexnow:"chiave pubblica in public/"},
+ metrics:{URL:"132",sessioni_30gg:"7"},status:"idle"},
+{id:"A2",zone:"acq",fn:"chan",x:197,y:1930,w:164,h:150,ico:"📷",tag:"INSTAGRAM",title:"@betr.edge",
+ desc:"16 slot al giorno da launchd.\nCoda alle 07:00, news alle 06:30,\ntoken rinnovato il 1° del mese.",
+ schema:{codice:"00-SISTEMA/accelerator/studio-instagram",pipeline:"refresh-news → build-queue → art-director-pass → daily-publish",account:"@betr.edge (EN) · @betr.edge_ita (IT)",blocco:"token"},
+ metrics:{slot_giorno:"16"},status:"idle"},
+{id:"A3",zone:"acq",fn:"chan",x:370,y:1930,w:164,h:150,ico:"🎟",tag:"REFERRAL",title:"Referral & creator",
+ desc:"?ref=CODE catturato first-touch\nin localStorage: l'attribuzione va\nal primo creator, non all'ultimo.",
+ schema:{route:"/r/[code] · /invite",moduli:"lib/referral-code.ts · referral-rewards.ts · creator-promo.ts",promo:"−50% primo mese, vale per tutti",separazione:"regala accesso, mai denaro (plan-grant è altro)"},
+ metrics:{rewards:"1"},status:"idle"},
+{id:"A4",zone:"acq",fn:"chan",x:543,y:1930,w:164,h:150,ico:"🪟",tag:"PARTNER",title:"Widget su siti terzi",
+ desc:"Lo script /embed installato\nfuori casa. Primo partner vivo:\nslotsbonus.bet dal 26/08.",
+ schema:{vetrina:"lib/partners.ts → /partners + footer",affiliati:"lib/affiliate.ts — solo routing, mai fondi",aperto:"referral_code SLOTSBONUS non esiste ancora"},
+ metrics:{partner_live:"1"},status:"idle"},
+{id:"A5",zone:"acq",fn:"chan",x:716,y:1930,w:164,h:150,ico:"✉️",tag:"EMAIL",title:"news.betredge.com",
+ desc:"Dominio di invio separato da\nquello dell'account, in warm-up.\nLista validata a costo zero.",
+ schema:{mittenti:"account su betredge.com · marketing su news.betredge.com",verifica:"spf/dkim/dmarc pass dal 19/08",lista:"1.545 Gmail vivi, 89 morti rimossi",metodo:"RCPT null sender — Gmail sì, Microsoft no"},
+ metrics:{gmail_vivi:"1.545"},status:"idle"},
+{id:"A6",zone:"acq",fn:"chan",x:889,y:1930,w:164,h:150,cls:"deadend",ico:"⏸",tag:"FERMI",title:"TikTok · X · Reddit",
+ desc:"Account presi, zero pubblicato.\nBloccati su decisioni e accessi,\nnon su codice da scrivere.",
+ schema:{tiktok:"@betr.edge — serve passaggio a Business dal telefono",x:"@BetrEdge dal 13/06, 0 post — $0,20 a post con link",reddit:"u/Betredge dal 10/08, warm-up senza link",comune:"il perimetro gambling limita cosa si può dire"},
+ metrics:{post_pubblicati:"0"},status:"stop"},
+{id:"A7",zone:"acq",fn:"chan",x:1062,y:1930,w:164,h:150,ico:"📣",tag:"TELEGRAM",title:"Registro sigillato",
+ desc:"Salta il cancello del piano:\nè la prova pubblica, non\nun prodotto. Fuori dal repo.",
+ schema:{codice:"00-SISTEMA/accelerator/studio",free:"pick sigillate prima del match, esito dopo",pro:"consegna a chi ha già pagato",watcher:"launchd KeepAlive · free-ledger + pro-ledger"},
+ metrics:{iscritti_free:"4"},status:"idle"},
+
+/* ─── 🚪 CONVERSIONE ─── */
+{id:"B1",zone:"conv",fn:"chan",x:24,y:2200,w:280,h:126,ico:"🚪",tag:"LANDING",title:"La home + attribuzione",
+ desc:"Prima sosta di chiunque arrivi. L'attribuzione è first-touch e sta solo in localStorage: nessun cookie, nessun vendor, nessun nuovo consenso.",
+ schema:{file:"app/page.tsx + landing-client.tsx",attribuzione:"lib/attribution.ts — mai sovrascritta",banner:"house-banners: 2.680 viste → 2 clic"},
+ metrics:{sessioni_30gg:"134"},status:"live"},
+{id:"B2",zone:"conv",fn:"chan",x:318,y:2200,w:280,h:126,ico:"✅",tag:"SIGNUP",title:"Iscrizione e attivazione",
+ desc:"Email + password → OTP via Resend → cookie am_session firmato, 30 giorni. Da qui nasce il profilo free.",
+ schema:{moduli:"lib/auth.ts · session.ts · activation.ts",mittente:"betredge.com (non news.)",regola:"il piano è sempre riletto da profiles lato server"},
+ metrics:{account:"27"},status:"live"},
+{id:"B3",zone:"conv",fn:"chan",x:612,y:2200,w:280,h:126,ico:"📬",tag:"CRM",title:"Lifecycle email",
+ desc:"Onboarding, retention e win-back li manda il motore nostro; l'acquisition (7 touchpoint) la manda un'automation su Resend, per non spedire due sequenze alle stesse persone.",
+ schema:{cron:"/api/cron/crm?send=1 · 07:00",lingue:"it · en · es · fr · ru",dedup:"crm_trigger_sends (31 invii)",consenso:"acquisition solo con marketing_opt_in esplicito",aperto:"onb_activate non raggiunge i free"},
+ metrics:{touchpoint:"11"},status:"idle"},
+{id:"B4",zone:"conv",fn:"chan",x:906,y:2200,w:280,h:126,ico:"💳",tag:"CHECKOUT",title:"Cinque rail di pagamento",
+ desc:"PayGate (crypto), Shopify, Stripe, PayPal, crypto diretto. Più due attivazioni senza denaro: manual e referral.",
+ schema:{riconciliazione:"PayGate ogni 5 min · Shopify ogni 10 min",vivi:"paygate 4 · shopify 1 · manual 4 · referral 1",mai_usati:"stripe 0 eventi · paypal 0 ordini",promo:"−50% primo mese al primo acquisto"},
+ metrics:{rail:"5",paganti:"9"},status:"idle"},
+{id:"B5",zone:"conv",fn:"data",x:612,y:2352,w:574,h:110,ico:"🔑",tag:"TABELLA",title:"profiles.plan + plan_expires_at",
+ desc:"Il campo che il cancello ③ legge. 15 free · 8 premium · 1 base · 2 admin. Alla scadenza si torna free a runtime, senza job.",
+ schema:{tabella:"profiles (Supabase)",fonti:"paygate · shopify · manual · referral · signup",scadenza:"downgrade calcolato alla lettura"},
+ metrics:{account:"27",paganti:"9"},status:"live"},
+
+/* ─── 🛠 OPERAZIONI ─── */
+{id:"X1",zone:"ops",fn:"ops",x:24,y:2572,w:284,h:140,ico:"📊",tag:"MISURA",title:"/api/track",
+ desc:"Analytics di prima parte: site_visits\ned events. Il numero che decide\nogni priorità viene da qui.",
+ schema:{modulo:"lib/track-event.ts — beacon fire-and-forget",consenso:"regola privacy nel modulo, non nella pagina",misura_30gg:"134 sessioni sul sito · 7 sulle 132 pagine /tools"},
+ metrics:{eventi:"34.203"},status:"live"},
+{id:"X2",zone:"ops",fn:"ops",x:322,y:2572,w:284,h:140,ico:"🧮",tag:"SEGMENTI",title:"Segmenti → Resend",
+ desc:"6 segmenti sincronizzati ogni\ngiorno alle 05:00. Stesso codice\nper il cron e per il tasto del BO.",
+ schema:{moduli:"lib/segments.ts · segment-sync.ts · resend-contacts.ts",regola:"unsubscribed non entra mai negli upsert",ui:"/admin/segments"},
+ metrics:{segmenti:"6"},status:"live"},
+{id:"X3",zone:"ops",fn:"ops",x:620,y:2572,w:284,h:140,ico:"🗄",tag:"REPO A PARTE",title:"Backoffice",
+ desc:"Console operatore in un repo\nseparato, sullo stesso database:\nprofili, piani, notifiche, affiliati.",
+ schema:{repo:"agentic-backoffice",url:"betredge-backoffice.vercel.app",nel_repo:"resta /admin ridotto (login, segmenti, banner)",regola:"aggiungere colonne è sicuro, rinominare no"},
+ metrics:{bo_admins:"6"},status:"live"},
+{id:"X4",zone:"ops",fn:"ops",x:918,y:2572,w:284,h:140,ico:"🩺",tag:"SORVEGLIANZA",title:"Daemon e watchdog",
+ desc:"8 daemon launchd oltre agli agenti.\nQuattro hanno l'ultimo esito\nnon-zero — fra cui il watchdog.",
+ schema:{sani:"live-monitor · goalscorer-odds · social-loop",rossi:"watchdog · weeklypick-morning · control-center collector e watcher · softmarkets collect (126)",nota:"è l'ultimo codice d'uscita, non la prova che il servizio sia fermo"},
+ metrics:{daemon:"8",in_errore:"4"},status:"idle"},
+];
+
+/* ═══════════ ARCHI ═══════════ */
+const EDGES = [
+ ["S1","IN1"],["S2","IN1"],["S3","IN1"],["S4","IN1"],
+ ["S2","IN2"],["S5","IN2"],["S6","SS"],
+ ["IN1","M1"],["IN1","M2"],["IN1","M3"],
+ ["IN2","M4"],["IN2","SET"],
+ ["M1","C1"],["M2","C1"],["M3","C2"],["C1","C2"],
+ ["M4","C3"],
+ ["C2","P1"],["C3","P2"],
+ ["P1","G1"],["P2","G1"],
+ ["G1","G2"],
+ ["G2","DB1"],["G2","DB2"],
+ ["DB1","DB3"],["SET","DB3"],
+ ["DB1","VET"],
+ ["VET","O1"],["VET","O2"],["VET","O3"],["VET","O4"],["VET","O5"],
+ ["DB3","A7"],["O5","A4"],
+ ["A1","B1"],["A2","B1"],["A3","B1"],["A4","B1"],["A5","B1"],["A6","B1"],["A7","B1"],
+ ["B1","B2"],["B2","B3"],["B2","B4"],["B3","B4"],["B2","B5"],["B4","B5"],
+];
+const HOT = [["S2","IN1"],["IN1","M1"],["M1","C1"],["C1","C2"],["C2","P1"],
+             ["P1","G1"],["G1","G2"],["G2","DB1"],["DB1","VET"],["VET","O1"]];
+const LOOP = [["B5","VET"]];
+
+const canvasDiv = document.getElementById('canvas');
+const svg = document.getElementById('edges');
+const aside = document.getElementById('aside');
+let activeId = null, activeZone = 'all';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* territori */
+TERR.forEach(t => {
+  const d = document.createElement('div');
+  d.className = 'terr z-' + t.zone; d.dataset.zone = t.zone;
+  d.style.cssText = 'left:'+t.x+'px;top:'+t.y+'px;width:'+t.w+'px;height:'+t.h+'px';
+  d.innerHTML = '<div class="tlab"><b>'+t.name+'</b><span>'+t.sub+'</span></div>';
+  canvasDiv.appendChild(d);
+});
+const dv = document.createElement('div');
+dv.className = 'divider'; dv.style.cssText = 'left:685px;top:300px;height:616px';
+canvasDiv.appendChild(dv);
+const sep = document.createElement('div');
+sep.className = 'sep';
+sep.style.cssText = 'left:10px;top:1846px;width:1230px';
+sep.textContent = '↓ da qui in giù non è più il dato — è la persona';
+canvasDiv.appendChild(sep);
+
+/* nodi */
+NODES.forEach(n => {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'node fn-' + n.fn + (n.cls ? ' ' + n.cls : '');
+  el.dataset.id = n.id; el.dataset.zone = n.zone;
+  el.style.cssText = 'left:'+n.x+'px;top:'+n.y+'px;width:'+n.w+'px'+(n.h?';height:'+n.h+'px':'');
+  el.setAttribute('aria-label', n.title + ' — ' + n.desc.replace(/\n/g,' '));
+  const foot = n.status === 'live' ? '<span class="live">● live</span>'
+             : n.status === 'stop' ? '<span class="stop">⊗ fermo</span>'
+             : '<span class="idle">○ acceso a metà</span>';
+  el.innerHTML =
+    '<div class="head"><div class="ico">'+n.ico+'</div><div class="tag">'+esc(n.tag)+'</div></div>' +
+    '<h4>'+esc(n.title)+'</h4>' +
+    '<p>'+esc(n.desc).replace(/\n/g,'<br>')+'</p>' +
+    '<div class="foot"><span>'+n.id+'</span>'+foot+'</div>';
+  el.addEventListener('click', () => select(n.id));
+  el.addEventListener('mouseenter', () => { if (!activeId) highlight(n.id); });
+  el.addEventListener('mouseleave', () => { if (!activeId) highlight(null); });
+  el.addEventListener('focus', () => { if (!activeId) highlight(n.id); });
+  canvasDiv.appendChild(el);
+});
+
+/* archi */
+function box(id){
+  const el = canvasDiv.querySelector('.node[data-id="'+id+'"]');
+  if (!el) return null;
+  const r = el.getBoundingClientRect(), c = canvasDiv.getBoundingClientRect();
+  return { x:r.left-c.left+r.width/2, y:r.top-c.top+r.height/2,
+           top:r.top-c.top, bottom:r.top-c.top+r.height,
+           left:r.left-c.left, right:r.left-c.left+r.width };
+}
+function curve(a,b){
+  if (Math.abs(a.top - b.top) < 40){
+    const x1=a.right, x2=b.left, y=a.y, k=Math.max(18,(x2-x1)*0.45);
+    return 'M '+x1+' '+y+' C '+(x1+k)+' '+y+', '+(x2-k)+' '+y+', '+x2+' '+y;
+  }
+  const y1=a.bottom, y2=b.top, k=Math.max(26, Math.abs(y2-y1)*0.45);
+  return 'M '+a.x+' '+y1+' C '+a.x+' '+(y1+k)+', '+b.x+' '+(y2-k)+', '+b.x+' '+y2;
+}
+function loopPath(a,b){
+  const gx = 1262;
+  return 'M '+a.right+' '+a.y+' H '+gx+' V '+b.y+' H '+(b.right+8);
+}
+function drawEdges(){
+  const NS = 'http://www.w3.org/2000/svg';
+  svg.innerHTML = '<defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" ' +
+    'markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+    '<path d="M0,0 L10,5 L0,10 z" fill="#E45CD8"/></marker></defs>';
+  EDGES.forEach(([a,b]) => {
+    const A=box(a), B=box(b); if(!A||!B) return;
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',curve(A,B)); p.setAttribute('class','edge');
+    p.dataset.from=a; p.dataset.to=b; svg.appendChild(p);
+  });
+  HOT.forEach(([a,b]) => {
+    const A=box(a), B=box(b); if(!A||!B) return;
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',curve(A,B)); p.setAttribute('class','flow'); svg.appendChild(p);
+  });
+  LOOP.forEach(([a,b]) => {
+    const A=box(a), B=box(b); if(!A||!B) return;
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',loopPath(A,B)); p.setAttribute('class','loop');
+    p.setAttribute('marker-end','url(#arw)'); svg.appendChild(p);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x','1252'); t.setAttribute('y','2010');
+    t.setAttribute('text-anchor','middle'); t.setAttribute('class','looplab');
+    t.setAttribute('transform','rotate(-90 1252 2010)');
+    t.textContent='il piano decide cosa si vede'; svg.appendChild(t);
+  });
+}
+
+/* evidenziazione */
+function highlight(id){
+  const nodes = canvasDiv.querySelectorAll('.node');
+  const edges = svg.querySelectorAll('.edge');
+  if (!id){
+    edges.forEach(e => e.classList.remove('hi','dim'));
+    nodes.forEach(n => n.classList.remove('faded'));
+    canvasDiv.querySelectorAll('.terr').forEach(t => t.classList.remove('faded'));
+    applyFilter(); return;
+  }
+  const keep = new Set([id]);
+  EDGES.forEach(([a,b]) => { if (a===id) keep.add(b); if (b===id) keep.add(a); });
+  LOOP.forEach(([a,b]) => { if (a===id) keep.add(b); if (b===id) keep.add(a); });
+  edges.forEach(e => {
+    const on = e.dataset.from===id || e.dataset.to===id;
+    e.classList.toggle('hi',on); e.classList.toggle('dim',!on);
+  });
+  nodes.forEach(n => n.classList.toggle('faded', !keep.has(n.dataset.id)));
+}
+
+/* pannello */
+const OVERVIEW =
+ '<p class="ins-eyebrow">Panoramica</p>' +
+ '<h2>Il dato scende, la persona sale</h2>' +
+ '<p class="sub">Sono due flussi diversi che il progetto tiene insieme. Il <b>dato</b> parte da 6 fonti ' +
+ 'esterne e finisce in una tabella. La <b>persona</b> parte da 7 canali e finisce in un campo, ' +
+ '<code>profiles.plan</code>. Il cancello ③ è l\'unico posto dove i due si incontrano — e l\'arco rosa ' +
+ 'è il cerchio che si chiude.</p>' +
+ '<div class="blk"><h5>Gli 8 territori</h5>' +
+ '<div class="row"><span>☁ fuori</span><b>6 provider · nessuno è nostro</b></div>' +
+ '<div class="row"><span>▲ vercel · calcolo</span><b>tutto il calcio</b></div>' +
+ '<div class="row"><span>■ il mac</span><b>tennis · quote · settlement</b></div>' +
+ '<div class="row"><span>● supabase</span><b>i cancelli e le prove</b></div>' +
+ '<div class="row"><span>▲ vercel · consegna</span><b>il piano e le 5 superfici</b></div>' +
+ '<div class="row"><span>📣 acquisizione</span><b>7 canali · 4 fuori dal repo</b></div>' +
+ '<div class="row"><span>🚪 conversione</span><b>dal clic al piano</b></div>' +
+ '<div class="row"><span>🛠 operazioni</span><b>fuori dal flusso: osservano</b></div>' +
+ '</div>' +
+ '<div class="blk"><h5>Il colore del bordo alto = la funzione</h5>' +
+ '<div class="key"><i style="background:#7FA8D8"></i>fonte esterna</div>' +
+ '<div class="key"><i style="background:#9B8CFF"></i>motore di calcolo</div>' +
+ '<div class="key"><i style="background:#F0B434"></i>cancello</div>' +
+ '<div class="key"><i style="background:#2FBB68"></i>dato pubblicato</div>' +
+ '<div class="key"><i style="background:#E8ECF2"></i>superficie di prodotto</div>' +
+ '<div class="key"><i style="background:#E45CD8"></i>canale e conversione</div>' +
+ '<div class="key"><i style="background:#8994A5"></i>osservazione</div>' +
+ '</div>' +
+ '<div class="warn"><b>⚠ La bocca dell\'imbuto è quasi zero.</b><br>134 sessioni uniche sul sito in ' +
+ '30 giorni, 7 sulle 132 pagine <code>/tools</code>, 2 clic su 2.680 viste di banner, 4 iscritti al ' +
+ 'canale free. Tutto ciò che sta sotto la riga rosa è costruito e quasi inutilizzato: nel disegno lo ' +
+ 'vedi dai contatori, non dai nodi.</div>' +
+ '<div class="warn"><b>⚠ Il worker non è il repo.</b><br>Il daemon esegue ' +
+ '<code>~/Desktop/agentic-markets-worker</code> @ 7789046, mentre il repo canonico è a 201fedb. ' +
+ 'Tutto ciò che sta nel territorio «IL MAC» gira da lì.</div>' +
+ '<p class="hint">Tre nodi non avanzano il flusso e si vedono dal bordo tratteggiato o dal tag: ' +
+ '<b>ShadowEval</b> finisce in se stesso, <b>Settlement</b> torna indietro a chiudere gli esiti, ' +
+ '<b>TikTok · X · Reddit</b> non è mai partito. E l\'unico arco che salta il cancello del piano è ' +
+ 'quello che porta a Telegram.</p>';
+
+function render(n){
+  if (!n){ aside.innerHTML = OVERVIEW; return; }
+  const zn = {ext:"☁ fuori",vercel:"▲ Vercel",mac:"■ il Mac",db:"● Supabase",
+              acq:"📣 acquisizione",conv:"🚪 conversione",ops:"🛠 operazioni"}[n.zone];
+  let h = '<p class="ins-eyebrow">'+esc(n.tag)+' · '+zn+'</p>';
+  h += '<h2>'+esc(n.title)+'</h2>';
+  h += '<p class="sub">'+esc(n.desc).replace(/\n/g,' ')+'</p>';
+  if (n.metrics && Object.keys(n.metrics).length){
+    h += '<div class="mgrid">';
+    Object.entries(n.metrics).forEach(([k,v]) => {
+      h += '<div class="mcell"><label>'+esc(k.replace(/_/g,' '))+'</label><b>'+esc(v)+'</b></div>';
+    });
+    h += '</div><div style="height:12px"></div>';
+  }
+  if (n.schema && Object.keys(n.schema).length){
+    h += '<div class="blk"><h5>Dettaglio</h5>';
+    Object.entries(n.schema).forEach(([k,v]) => {
+      h += '<div class="row"><span>'+esc(k.replace(/_/g,' '))+'</span><b>'+esc(v)+'</b></div>';
+    });
+    h += '</div>';
+  }
+  const name = id => (NODES.find(x => x.id===id) || {}).title || id;
+  const all = EDGES.concat(LOOP);
+  const ups = all.filter(e => e[1]===n.id).map(e => e[0]);
+  const downs = all.filter(e => e[0]===n.id).map(e => e[1]);
+  h += '<div class="blk"><h5>Collegamenti</h5>';
+  h += '<div class="row"><span>riceve da</span><b>'+(ups.length?ups.map(name).join(' · '):'— è un\'origine')+'</b></div>';
+  h += '<div class="row"><span>alimenta</span><b>'+(downs.length?downs.map(name).join(' · '):'— niente')+'</b></div>';
+  h += '</div>';
+  h += '<button class="clear" id="clearBtn">← TORNA ALLA PANORAMICA</button>';
+  aside.innerHTML = h;
+  document.getElementById('clearBtn').addEventListener('click', () => select(null));
+}
+
+function select(id){
+  if (activeId === id) id = null;
+  activeId = id;
+  canvasDiv.querySelectorAll('.node').forEach(n => n.classList.toggle('sel', n.dataset.id===id));
+  highlight(id);
+  render(id ? NODES.find(n => n.id===id) : null);
+  if (id) aside.scrollTop = 0;
+}
+
+/* filtro per territorio */
+function applyFilter(){
+  if (activeZone === 'all' || activeId) return;
+  canvasDiv.querySelectorAll('.node').forEach(n => n.classList.toggle('faded', n.dataset.zone!==activeZone));
+  canvasDiv.querySelectorAll('.terr').forEach(t => t.classList.toggle('faded', t.dataset.zone!==activeZone));
+  svg.querySelectorAll('.edge').forEach(e => {
+    const a = NODES.find(n => n.id===e.dataset.from), b = NODES.find(n => n.id===e.dataset.to);
+    const on = a && b && (a.zone===activeZone || b.zone===activeZone);
+    e.classList.toggle('dim', !on);
+  });
+}
+document.getElementById('legend').addEventListener('click', e => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  document.querySelectorAll('#legend button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeZone = btn.dataset.zone; activeId = null;
+  canvasDiv.querySelectorAll('.node').forEach(n => n.classList.remove('sel','faded'));
+  canvasDiv.querySelectorAll('.terr').forEach(t => t.classList.remove('faded'));
+  svg.querySelectorAll('.edge').forEach(x => x.classList.remove('hi','dim'));
+  render(null); applyFilter();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') select(null); });
+
+render(null);
+drawEdges();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawEdges());
+window.addEventListener('resize', drawEdges);
+window.addEventListener('load', drawEdges);
+</script>
+
+

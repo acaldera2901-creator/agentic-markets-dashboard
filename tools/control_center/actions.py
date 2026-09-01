@@ -74,6 +74,57 @@ def restart_daemon(check_id: str) -> dict:
     }
 
 
+LAUNCH_AGENTS = Path.home() / "Library/LaunchAgents"
+
+
+def _target(label: str) -> str:
+    return f"gui/{os.getuid()}/{label}"
+
+
+def _launchctl(argv: list[str], azione: str) -> dict:
+    try:
+        esito = subprocess.run(argv, capture_output=True, text=True, timeout=30, check=False)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "errore": str(exc)}
+    return {
+        "ok": esito.returncode == 0,
+        "azione": azione,
+        "returncode": esito.returncode,
+        "stderr": (esito.stderr or "").strip()[:400],
+    }
+
+
+def stop_daemon(check_id: str) -> dict:
+    """Scarica un LaunchAgent di perimetro.
+
+    Volutamente sulla STESSA whitelist di riavvia: un perimetro solo, che non
+    puo' divergere. Spegnere un bridge del Council o il bot Telegram non si
+    nota subito, quindi quei label restano fuori da SCOPE e quindi fuori di qui.
+    """
+    label = RESTARTABLE.get(check_id)
+    if label is None:
+        return {"ok": False, "errore": f"{check_id} non e' fra i daemon governabili"}
+    return _launchctl(["launchctl", "bootout", _target(label)],
+                      f"launchctl bootout {_target(label)}")
+
+
+def start_daemon(check_id: str) -> dict:
+    """Ricarica un LaunchAgent di perimetro dal suo plist.
+
+    `bootstrap` vuole il percorso del file, non il target: se il plist non c'e'
+    piu' il daemon non si puo' riaccendere, e dirlo e' meglio che un errore
+    criptico di launchctl.
+    """
+    label = RESTARTABLE.get(check_id)
+    if label is None:
+        return {"ok": False, "errore": f"{check_id} non e' fra i daemon governabili"}
+    plist = LAUNCH_AGENTS / f"{label}.plist"
+    if not plist.exists():
+        return {"ok": False, "errore": f"plist non trovato: {plist}"}
+    return _launchctl(["launchctl", "bootstrap", f"gui/{os.getuid()}", str(plist)],
+                      f"launchctl bootstrap {plist.name}")
+
+
 def request_diagnosis(check_id: str, check: dict) -> dict:
     """Accoda una diagnosi. Non ripara: raccoglie le prove e chiede una PROPOSAL."""
     JOBS_DIR.mkdir(parents=True, exist_ok=True)

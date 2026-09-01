@@ -13,6 +13,8 @@ from .actions import (
     leggi_report,
     request_diagnosis,
     restart_daemon,
+    start_daemon,
+    stop_daemon,
 )
 from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 
@@ -73,11 +75,13 @@ class Handler(BaseHTTPRequestHandler):
                        "application/json; charset=utf-8")
             return
 
-        if azione == "riavvia":
+        if azione in ("riavvia", "accendi", "spegni"):
             if check_id not in RESTARTABLE:
                 esito = {"ok": False, "errore": "questo check non ha un rimedio meccanico"}
             else:
-                esito = restart_daemon(check_id)
+                esito = {"riavvia": restart_daemon,
+                         "accendi": start_daemon,
+                         "spegni": stop_daemon}[azione](check_id)
         elif azione == "diagnosi":
             esito = request_diagnosis(check_id, check)
         else:
@@ -97,6 +101,20 @@ class Handler(BaseHTTPRequestHandler):
                 "__CC_TOKEN__", ensure_token()
             )
             self._send(200, html.encode(), "text/html; charset=utf-8")
+        elif path == "/architettura.html":
+            # La mappa e' un artefatto a se': si serve com'e', senza token
+            # (e' sola lettura e non contiene segreti).
+            f = PAGE.parent / "architettura.html"
+            if not f.exists():
+                self._send(404, b"mappa non installata", "text/plain; charset=utf-8")
+                return
+            self._send(200, f.read_bytes(), "text/html; charset=utf-8")
+        elif path == "/api/lab":
+            # Lo scrive `lab stato --json`: se non e' mai girato, si dice, non
+            # si finge un oggetto vuoto valido.
+            f = STATE_FILE.parent / "lab.json"
+            corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
+            self._send(200, corpo, "application/json; charset=utf-8")
         elif path == "/api/state":
             body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")
