@@ -173,6 +173,67 @@ def apri_ala(chiave: str) -> dict:
         f"apre un terminale su `lab {chiave}`")
 
 
+# ── aprire la chat di un prodotto ───────────────────────────────────────────
+PRODOTTI_TSV = Path.home() / "Desktop/01-BETREDGE/lab/prodotti.tsv"
+
+# Gli agenti trasversali: non appartengono a un prodotto, servono ad Andrea.
+# Vivono qui e non in un TSV perche' sono quattro e cambiano una volta all'anno;
+# i prodotti invece cambiano spesso, e infatti stanno in un file.
+PERSONALI = [
+    {"chiave": "segretaria", "nome": "Segretaria", "agente": "segretaria",
+     "remit": "La giornata, le priorita', i progetti in parallelo"},
+    {"chiave": "ceo", "nome": "CEO", "agente": "ceo-andrea",
+     "remit": "Task multi-dominio, coordinamento, decisioni di sistema"},
+    {"chiave": "cfo", "nome": "CFO", "agente": "cfo-andrea",
+     "remit": "P&L, cashflow, allocazione del capitale"},
+    {"chiave": "trader", "nome": "Trader", "agente": "trader",
+     "remit": "EA MT5, segnali, performance, rischio"},
+]
+
+
+def prodotti_disponibili() -> list[dict]:
+    if not PRODOTTI_TSV.exists():
+        return []
+    fuori = []
+    for riga in PRODOTTI_TSV.read_text(encoding="utf-8").splitlines():
+        if riga.startswith("#") or not riga.strip():
+            continue
+        c = riga.split("\t")
+        if len(c) < 7 or not _CHIAVE_OK.match(c[0]):
+            continue
+        fuori.append({"chiave": c[0], "nome": c[1],
+                      "agente": (c[7] if len(c) > 7 and c[7] != "-" else None)})
+    return fuori
+
+
+def apri_prodotto(chiave: str) -> dict:
+    """Apre un terminale su `lab prodotto <chiave>`: la chat di quel prodotto,
+    col suo stato vero scritto addosso da lab-contesto."""
+    if not _CHIAVE_OK.match(chiave or ""):
+        return {"ok": False, "errore": "chiave non ammessa"}
+    if chiave not in {p["chiave"] for p in prodotti_disponibili()}:
+        return {"ok": False, "errore": f"{chiave} non e' un prodotto di prodotti.tsv"}
+    return _esegui(
+        ["osascript",
+         "-e", f'tell application "Terminal" to do script "lab prodotto {chiave}"',
+         "-e", 'tell application "Terminal" to activate'],
+        f"apre un terminale su `lab prodotto {chiave}`")
+
+
+def apri_personale(chiave: str) -> dict:
+    """Gli agenti trasversali di Andrea. Nessun worktree: non toccano codice."""
+    a = next((x for x in PERSONALI if x["chiave"] == chiave), None)
+    if a is None:
+        return {"ok": False, "errore": f"{chiave} non e' fra gli agenti personali"}
+    cmd = (f"cd '{Path.home()}/Desktop/agentic-markets' && "
+           f"claude -n me-{a['chiave']} --agent {a['agente']}")
+    return _esegui(
+        ["osascript",
+         "-e", f'tell application "Terminal" to do script "{cmd}"',
+         "-e", 'tell application "Terminal" to activate'],
+        f"apre un terminale con {a['nome']}")
+
+
 def request_diagnosis(check_id: str, check: dict) -> dict:
     """Accoda una diagnosi. Non ripara: raccoglie le prove e chiede una PROPOSAL."""
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
