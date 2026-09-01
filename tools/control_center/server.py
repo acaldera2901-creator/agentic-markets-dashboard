@@ -12,6 +12,8 @@ from .actions import (
     jobs_stato,
     leggi_report,
     request_diagnosis,
+    ali_disponibili,
+    apri_ala,
     restart_daemon,
     start_daemon,
     stop_daemon,
@@ -68,6 +70,13 @@ class Handler(BaseHTTPRequestHandler):
 
         check_id = str(corpo.get("check_id", ""))
         azione = str(corpo.get("azione", ""))
+
+        if azione == "apri":
+            # Non e' un check: e' un'ala del lab. Si risponde qui e si esce.
+            esito = apri_ala(str(corpo.get("ala", "")))
+            self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+            return
         stato = read_state(STATE_FILE)
         check = (stato.get("checks") or {}).get(check_id)
         if check is None:
@@ -109,6 +118,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"mappa non installata", "text/plain; charset=utf-8")
                 return
             self._send(200, f.read_bytes(), "text/html; charset=utf-8")
+        elif path == "/api/ali":
+            # Le ali del lab, per i pulsanti della pagina.
+            self._send(200, json.dumps(ali_disponibili(), ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/lab":
             # Lo scrive `lab stato --json`: se non e' mai girato, si dice, non
             # si finge un oggetto vuoto valido.

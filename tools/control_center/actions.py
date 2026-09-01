@@ -12,6 +12,7 @@ di approvazione, che esiste proprio per quello.
 
 import json
 import os
+import re
 import secrets
 import subprocess
 import time
@@ -81,7 +82,7 @@ def _target(label: str) -> str:
     return f"gui/{os.getuid()}/{label}"
 
 
-def _launchctl(argv: list[str], azione: str) -> dict:
+def _esegui(argv: list[str], azione: str) -> dict:
     try:
         esito = subprocess.run(argv, capture_output=True, text=True, timeout=30, check=False)
     except Exception as exc:  # noqa: BLE001
@@ -104,7 +105,7 @@ def stop_daemon(check_id: str) -> dict:
     label = RESTARTABLE.get(check_id)
     if label is None:
         return {"ok": False, "errore": f"{check_id} non e' fra i daemon governabili"}
-    return _launchctl(["launchctl", "bootout", _target(label)],
+    return _esegui(["launchctl", "bootout", _target(label)],
                       f"launchctl bootout {_target(label)}")
 
 
@@ -121,8 +122,55 @@ def start_daemon(check_id: str) -> dict:
     plist = LAUNCH_AGENTS / f"{label}.plist"
     if not plist.exists():
         return {"ok": False, "errore": f"plist non trovato: {plist}"}
-    return _launchctl(["launchctl", "bootstrap", f"gui/{os.getuid()}", str(plist)],
+    return _esegui(["launchctl", "bootstrap", f"gui/{os.getuid()}", str(plist)],
                       f"launchctl bootstrap {plist.name}")
+
+
+# ── aprire un'ala del lab in un terminale ───────────────────────────────────
+# La pagina manda SOLO una chiave d'ala. Il comando lo costruisce il server
+# dalla riga corrispondente di ali.tsv: dal browser non puo' arrivare niente
+# di eseguibile, nemmeno per errore.
+ALI_TSV = Path.home() / "Desktop/01-BETREDGE/lab/ali.tsv"
+_CHIAVE_OK = re.compile(r"^[a-z0-9][a-z0-9-]{0,23}$")
+
+
+def ali_disponibili() -> list[dict]:
+    """Le ali dichiarate in ali.tsv. Se il file non c'e' l'elenco e' vuoto:
+    meglio nessun pulsante che un pulsante che promette e non mantiene."""
+    if not ALI_TSV.exists():
+        return []
+    fuori = []
+    for riga in ALI_TSV.read_text(encoding="utf-8").splitlines():
+        if riga.startswith("#") or not riga.strip():
+            continue
+        c = riga.split("\t")
+        if len(c) < 7 or not _CHIAVE_OK.match(c[0]):
+            continue
+        fuori.append({
+            "chiave": c[0],
+            "sessione": c[1],
+            "agente": None if c[2] == "-" else c[2],
+            "worktree": c[3] == "si",
+            "modello": None if c[4] == "-" else c[4],
+            "remit": c[6],
+        })
+    return fuori
+
+
+def apri_ala(chiave: str) -> dict:
+    """Apre Terminal.app su `lab <ala>`: la chat con quell'agente, che al lancio
+    riceve da lab-contesto lo stato vivo del progetto e del Council."""
+    if not _CHIAVE_OK.match(chiave or ""):
+        return {"ok": False, "errore": "chiave non ammessa"}
+    if chiave not in {a["chiave"] for a in ali_disponibili()}:
+        return {"ok": False, "errore": f"{chiave} non e' un'ala dichiarata in ali.tsv"}
+    # La chiave e' gia' passata da [a-z0-9-]: non puo' contenere virgolette
+    # ne' spezzare lo script AppleScript.
+    return _esegui(
+        ["osascript",
+         "-e", f'tell application "Terminal" to do script "lab {chiave}"',
+         "-e", 'tell application "Terminal" to activate'],
+        f"apre un terminale su `lab {chiave}`")
 
 
 def request_diagnosis(check_id: str, check: dict) -> dict:

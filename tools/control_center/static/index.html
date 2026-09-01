@@ -150,6 +150,27 @@ tr:hover td{background:rgba(34,211,238,.03)}
 .step b{display:block;font-size:11.5px;margin-top:3px;font-weight:600}
 .step .st{font-family:"JetBrains Mono",monospace;font-size:9.5px;margin-top:4px}
 
+/* ─── ali del lab ─── */
+.ali{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:9px}
+.ala{background:var(--inset);border:1px solid var(--line);border-radius:5px;padding:0;
+  border-left:2px solid var(--cy);display:flex;flex-direction:column;overflow:hidden}
+.ala.no-wt{border-left-color:var(--violet)}
+.ala .hd{padding:10px 11px 8px}
+.ala .cmd{font-family:"JetBrains Mono",monospace;font-size:12.5px;font-weight:700;
+  color:var(--cy-2);letter-spacing:.02em}
+.ala .ses{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--dim);margin-top:2px}
+.ala .rem{font-size:11px;color:var(--mid);line-height:1.5;margin-top:6px}
+.ala .ag{font-size:9.5px;color:var(--dim);margin-top:5px;font-family:"JetBrains Mono",monospace}
+.ala button{margin:0;border:0;border-top:1px solid var(--line);background:rgba(34,211,238,.06);
+  color:var(--cy-2);font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+  letter-spacing:.09em;padding:9px;cursor:pointer;transition:.13s;width:100%;text-align:center}
+.ala button:hover:not(:disabled){background:rgba(34,211,238,.16);
+  box-shadow:inset 0 0 22px rgba(34,211,238,.14)}
+.ala button:disabled{opacity:.5;cursor:wait}
+.ala button:focus-visible{outline:1px solid var(--cy);outline-offset:-2px}
+.ala .out{font-family:"JetBrains Mono",monospace;font-size:9.5px;padding:0 11px 9px;color:var(--dim)}
+.ala .out.ok{color:var(--green)}.ala .out.ko{color:var(--red)}
+
 /* ─── azioni ─── */
 .acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
 .acts button{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:600;cursor:pointer;
@@ -242,7 +263,16 @@ iframe{width:100%;height:calc(100vh - 150px);border:1px solid var(--line);border
   </div>
 </main>
 
-<main id="v-postazioni" hidden><div class="col" style="grid-column:1/-1"><section class="box">
+<main id="v-postazioni" hidden><div class="col" style="grid-column:1/-1">
+<section class="box">
+  <h2><i>10</i> Parla con un'ala <u>si apre un terminale con quell'agente</u></h2>
+  <div class="pad"><div class="ali" id="ali-pulsanti"></div></div>
+  <p class="nota">Ogni ala nasce con lo <b>stato vivo</b> del progetto e del Council
+  scritto nel prompt, non con una fotografia: sa dove chiedere la verità corrente e
+  che <code>ch_deploy_gate</code> è human-only. Chi ha il bordo ciano lavora in un
+  <b>worktree</b> proprio e non può toccare la vetrina.</p>
+</section>
+<section class="box">
   <h2><i>02</i> Postazioni governabili <u>i tasti agiscono solo su queste</u></h2>
   <div class="pad" id="griglia-postazioni"></div>
   <p class="nota">Il perimetro è la stessa whitelist di <code>riavvia</code>: gli altri
@@ -592,6 +622,52 @@ function vistaPanoramica(st,lab,storia){
     `${(lab.progetti||{}).BLOCCATO??0} progetti fermi`;
 }
 
+/* Le ali: il pulsante non manda un comando, manda una CHIAVE. Il server la
+   valida contro ali.tsv — dal browser non puo' arrivare niente di eseguibile. */
+async function vistaAli(){
+  const box = document.getElementById("ali-pulsanti");
+  if(!box) return;
+  let ali = [];
+  try{ ali = await (await fetch("/api/ali",{cache:"no-store"})).json(); }catch(e){}
+  box.textContent = "";
+  if(!ali.length){
+    box.append(el("div","vuoto","Nessuna ala dichiarata: manca lab/ali.tsv."));
+    return;
+  }
+  for(const a of ali){
+    const c = el("div","ala"+(a.worktree?"":" no-wt"));
+    const hd = el("div","hd");
+    hd.append(el("div","cmd","lab "+a.chiave), el("div","ses",a.sessione),
+              el("div","rem",a.remit));
+    hd.append(el("div","ag",
+      (a.agente||"prompt dedicato") + (a.modello?" · "+a.modello:"") +
+      (a.worktree?" · worktree":"")));
+    c.append(hd);
+    const out = el("div","out");
+    const b = el("button","","▸ APRI IL TERMINALE");
+    b.addEventListener("click", async ()=>{
+      b.disabled = true; b.textContent = "apro…";
+      const r = await chiedi2("apri",{ala:a.chiave});
+      out.className = "out "+(r.ok?"ok":"ko");
+      out.textContent = r.ok ? "aperto: cerca la finestra del Terminale"
+                             : "non aperto: "+(r.errore||r.stderr||"errore");
+      b.textContent = "▸ APRI IL TERMINALE"; b.disabled = false;
+    });
+    c.append(b, out);
+    box.append(c);
+  }
+}
+
+/* Come chiedi(), ma per le azioni che non riguardano un check. */
+async function chiedi2(azione, extra){
+  try{
+    const r = await fetch("/api/action",{method:"POST",
+      headers:{"Content-Type":"application/json","X-CC-Token":TOKEN},
+      body:JSON.stringify(Object.assign({azione},extra))});
+    return await r.json();
+  }catch(e){ return {ok:false,errore:String(e)}; }
+}
+
 function vistaPostazioni(st,jobs){
   const p=document.getElementById("griglia-postazioni"); p.textContent="";
   const g=el("div","cards");
@@ -642,6 +718,7 @@ async function render(){
   document.getElementById("vh").textContent=st.summary?.headline||"—";
   vistaPanoramica(st,lab.assente?{}:lab,S);
   vistaPostazioni(st,jobs);
+  vistaAli();
   vistaCheck(st,jobs);
 }
 
