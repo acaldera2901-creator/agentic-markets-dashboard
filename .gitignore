@@ -64,6 +64,9 @@ data/transfermarkt/
 # Local secrets scratch — never tracked (audit 2026-06-10)
 credentials/
 data/backups/
+# il digest quotidiano lo scrive com.agentic-markets.reddit-daily dentro la
+# vetrina: e' dato generato, non sorgente. Tracciarlo la rendeva sporca ogni giorno.
+data/reddit/digest/
 .playwright-cli/
 
 # #BACKTEST-2025-1 raw per-match artifacts (regenerable via scripts/backtest_2025_*; route uses lib/backtest-2025-summary.json)

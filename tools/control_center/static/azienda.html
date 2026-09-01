@@ -116,6 +116,8 @@ main{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,5fr) minm
 .ag.prod{border-left-color:var(--cy)}
 .ag .t{padding:9px 10px 8px}
 .ag .t b{display:block;font-size:12px;font-weight:600}
+.ag .t code.ag-chi{display:block;font-family:"JetBrains Mono",monospace;font-size:9px;
+  margin-top:5px;color:var(--cy-2);opacity:.85;word-break:break-all}
 .ag .t small{display:block;font-size:9.5px;color:var(--dim);margin-top:2px;line-height:1.45}
 .ag button{margin-top:auto;border:0;border-top:1px solid var(--line);background:rgba(34,211,238,.05);
   color:var(--cy-2);font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;
@@ -462,9 +464,13 @@ async function vistaAgenti(az){
   let pers=[];
   try{ pers=await (await fetch("/api/personali",{cache:"no-store"})).json(); }catch(e){}
   box.textContent="";
-  const scheda=(cls,titolo,remit,azione2,chiave)=>{
+  const scheda=(cls,titolo,remit,azione2,chiave,agente)=>{
     const c=el("div","ag "+cls);
-    const t=el("div","t"); t.append(el("b","",titolo), el("small","",remit)); c.append(t);
+    const t=el("div","t"); t.append(el("b","",titolo), el("small","",remit));
+    // Chi si apre dev'essere leggibile qui: verificare quale agente parte non
+    // deve richiedere di aprire un TSV.
+    t.append(el("code","ag-chi", agente ? "--agent "+agente : "nessun agente"));
+    c.append(t);
     const out=el("div","out");
     const b=el("button","","▸ APRI");
     b.addEventListener("click",async()=>{
@@ -476,14 +482,14 @@ async function vistaAgenti(az){
     });
     c.append(b,out); return c;
   };
-  pers.forEach(a=>box.append(scheda("",a.nome,a.remit,"apri_personale",a.chiave)));
+  pers.forEach(a=>box.append(scheda("",a.nome,a.remit,"apri_personale",a.chiave,a.agente)));
   ((az&&az.prodotti)||[]).forEach(p=>{
     const c=p.conta||{};
     const vivi=(c.ATTIVO||0)+(c.BLOCCATO||0);
     box.append(scheda("prod", p.nome,
       vivi ? `${c.ATTIVO||0} attivi · ${c.BLOCCATO||0} bloccati`
            : (c.OPERATIVO ? "gira da solo" : "nessun progetto vivo"),
-      "apri_prodotto", p.chiave));
+      "apri_prodotto", p.chiave, p.agente));
   });
 }
 
