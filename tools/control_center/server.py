@@ -169,6 +169,12 @@ class Handler(BaseHTTPRequestHandler):
             # carica a parte, non insieme al resto.
             self._send(200, json.dumps(council.stato(), ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
+        elif path == "/api/certificazione":
+            # Lo scrive `lab certifica --json`. Se non e' mai girata lo dice:
+            # una certificazione assente non e' una certificazione superata.
+            f = STATE_FILE.parent / "certificazione.json"
+            corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
+            self._send(200, corpo, "application/json; charset=utf-8")
         elif path == "/api/personali":
             self._send(200, json.dumps(PERSONALI, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
