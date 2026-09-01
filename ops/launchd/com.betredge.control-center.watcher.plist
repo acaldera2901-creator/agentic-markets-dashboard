@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.betredge.control-center.watcher</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/calde/Desktop/agentic-markets/venv/bin/python</string>
+    <string>-m</string>
+    <string>tools.control_center.watcher</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/calde/Desktop/agentic-markets</string>
+  <key>StartInterval</key><integer>60</integer>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/Users/calde/Library/Logs/betredge-cc/watcher.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/calde/Library/Logs/betredge-cc/watcher.err.log</string>
+</dict>
+</plist>
