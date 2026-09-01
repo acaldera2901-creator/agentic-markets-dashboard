@@ -6,415 +6,650 @@
 <title>BetRedge · Sala Controllo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:#08090C; --panel:#101319; --panel-2:#141821; --inset:#0C0E13;
-  --line:#1E2430; --line-2:#2C3646; --text:#E8ECF2; --muted:#8994A5; --dim:#616C7E;
-  --steel:#7FA8D8; --amber:#F0B434; --green:#2FBB68; --green-2:#7BE8A8;
-  --red:#F0736D; --violet:#9B8CFF;
+  --void:#04070E; --deep:#070C18; --panel:#0A1120; --panel-2:#0D1728; --inset:#060B15;
+  --line:#132742; --line-2:#1D3B60; --glow:#22D3EE;
+  --ink:#CFE0F5; --mid:#8AA6C8; --dim:#5B7699;
+  --cy:#38BDF8; --cy-2:#22D3EE; --amber:#F5A524; --green:#28C76F; --red:#F0525B; --violet:#A78BFA;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);
-  font-family:Archivo,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
-body{min-height:100vh}
+html,body{margin:0;background:var(--void);color:var(--ink);
+  font-family:Saira,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 50% -6%, rgba(34,211,238,.10), transparent 62%),
+    radial-gradient(900px 600px at 8% 40%, rgba(56,189,248,.05), transparent 60%),
+    radial-gradient(900px 600px at 95% 70%, rgba(167,139,250,.045), transparent 60%),
+    var(--void)}
 .mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
 
-/* ── barra ── */
-.bar{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  padding:10px 20px;background:rgba(8,9,12,.95);backdrop-filter:blur(10px);
+/* ─── barra ─── */
+.top{position:sticky;top:0;z-index:70;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  padding:11px 20px;background:linear-gradient(180deg,rgba(7,12,24,.97),rgba(7,12,24,.86));
+  border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+.logo{display:flex;align-items:center;gap:11px}
+.mark{width:34px;height:34px;border:1px solid var(--cy);border-radius:8px;display:grid;place-items:center;
+  color:var(--cy);font-weight:700;font-size:15px;
+  box-shadow:0 0 18px rgba(34,211,238,.28),inset 0 0 14px rgba(34,211,238,.12)}
+.logo b{display:block;font-size:16px;font-weight:700;letter-spacing:.13em;line-height:1.1}
+.logo span{display:block;font-size:9.5px;letter-spacing:.24em;color:var(--dim);margin-top:2px}
+nav{display:flex;gap:2px;margin-left:8px}
+nav button{font-family:Saira,sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.15em;
+  text-transform:uppercase;cursor:pointer;padding:9px 15px;border:0;background:transparent;
+  color:var(--dim);border-bottom:2px solid transparent;transition:.15s}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--cy-2);border-bottom-color:var(--cy-2);
+  text-shadow:0 0 12px rgba(34,211,238,.55)}
+nav button:focus-visible{outline:1px solid var(--cy);outline-offset:-3px}
+.verdetto{margin-left:auto;display:flex;align-items:center;gap:9px;padding:6px 13px;border-radius:20px;
+  border:1px solid var(--line-2);background:var(--panel);font-size:12px}
+.led{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 9px currentColor;flex:none}
+.led.red{background:var(--red)}.led.amber{background:var(--amber)}.led.unknown{background:var(--dim)}
+.stamp{font-size:10.5px;color:var(--dim)}
+
+/* ─── griglia ─── */
+main{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,3.1fr) minmax(0,4fr) minmax(0,3.6fr);
+  align-items:start;max-width:1900px;margin-inline:auto}
+@media(max-width:1500px){main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .col-c{grid-column:1/-1;order:-1}}
+@media(max-width:980px){main{grid-template-columns:1fr}.col-c{order:0}}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* ─── riquadri ─── */
+.box{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+  border-radius:6px;position:relative;overflow:hidden}
+.box::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(34,211,238,.5),transparent)}
+.box>h2{display:flex;align-items:baseline;gap:9px;margin:0;padding:10px 13px 9px;
+  font-size:11px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:var(--mid);
   border-bottom:1px solid var(--line)}
-.brand{font-weight:800;letter-spacing:-.01em;font-size:15px;display:flex;align-items:center;gap:8px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
-.dot.red{background:var(--red)}.dot.amber{background:var(--amber)}
-.dot.unknown{background:var(--dim)}.dot.off{background:var(--line-2)}
-.tabs{display:flex;gap:5px;margin-left:8px}
-.tabs button{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:600;
-  letter-spacing:.07em;text-transform:uppercase;cursor:pointer;padding:6px 12px;border-radius:3px;
-  border:1px solid var(--line-2);background:transparent;color:var(--muted);transition:.13s}
-.tabs button:hover{color:var(--text);border-color:var(--steel)}
-.tabs button[aria-selected="true"]{background:var(--panel-2);color:var(--text);border-color:var(--steel)}
-.tabs button:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
-.stamp{margin-left:auto;font-size:11px;color:var(--dim)}
+.box>h2 i{font-style:normal;color:var(--cy-2);font-family:"JetBrains Mono",monospace;font-size:11px}
+.box>h2 u{margin-left:auto;text-decoration:none;font-size:10px;letter-spacing:.08em;color:var(--dim);
+  font-weight:500}
+.pad{padding:12px 13px}
 
-/* ── verdetto ── */
-.verdict{display:flex;align-items:baseline;gap:11px;padding:13px 20px;border-bottom:1px solid var(--line);
-  background:var(--panel)}
-.verdict b{font-size:14px}
-.verdict span{color:var(--muted);font-size:12.5px}
-.verdict.red{border-left:3px solid var(--red)}
-.verdict.amber{border-left:3px solid var(--amber)}
-.verdict.green{border-left:3px solid var(--green)}
-.verdict.unknown{border-left:3px solid var(--dim)}
+/* ─── kpi ─── */
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;background:var(--line)}
+.k{background:var(--panel);padding:11px 12px}
+.k em{display:block;font-style:normal;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:5px}
+.k b{font-family:"JetBrains Mono",monospace;font-size:21px;font-weight:700;letter-spacing:-.02em;
+  line-height:1.1;display:block}
+.k b.sm{font-size:15px}
+.k .d{font-size:10.5px;margin-top:3px;color:var(--dim)}
+.k .d.up{color:var(--green)}.k .d.dn{color:var(--red)}
+.k svg{display:block;margin-top:5px}
 
-main{max-width:1320px;margin-inline:auto;padding:22px 20px 70px}
-h2{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;font-weight:600;
-  text-transform:uppercase;letter-spacing:.13em;color:var(--dim);margin:26px 0 10px}
-h2:first-child{margin-top:0}
-h2 i{font-style:normal;color:var(--line-2);margin-left:6px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:11px}
-
-/* ── scheda ── */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 13px;
-  border-left:3px solid var(--line-2);display:flex;flex-direction:column;gap:7px}
-.card.red{border-left-color:var(--red)}
-.card.amber{border-left-color:var(--amber)}
-.card.green{border-left-color:var(--green)}
-.card.unknown{border-left-color:var(--dim)}
-.card.info{border-left-color:var(--steel)}
-.card .top{display:flex;align-items:baseline;gap:8px}
-.card .id{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:var(--muted);
-  font-weight:600;overflow-wrap:anywhere}
-.card .lv{margin-left:auto;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9.5px;
-  letter-spacing:.06em;padding:2px 6px;border-radius:2px;border:1px solid var(--line-2);color:var(--dim)}
-.card.red .lv{color:var(--red);border-color:rgba(240,115,109,.4)}
-.card.amber .lv{color:var(--amber);border-color:rgba(240,180,52,.4)}
-.card.green .lv{color:var(--green-2);border-color:rgba(47,187,104,.35)}
-.card .head{font-size:13px;line-height:1.45}
-.card .meta{font-size:11px;color:var(--dim)}
-.acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
-.acts button{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;font-weight:600;
-  cursor:pointer;padding:5px 9px;border-radius:3px;border:1px solid var(--line-2);
-  background:var(--inset);color:var(--muted);transition:.12s}
-.acts button:hover:not(:disabled){color:var(--text);border-color:var(--steel)}
-.acts button:disabled{opacity:.45;cursor:not-allowed}
-.acts button:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
-.acts button.on:hover:not(:disabled){color:var(--green-2);border-color:var(--green)}
-.acts button.off:hover:not(:disabled){color:var(--red);border-color:var(--red)}
-.acts button.fix:hover:not(:disabled){color:var(--violet);border-color:var(--violet)}
-.esito{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--dim);
-  line-height:1.5;overflow-wrap:anywhere}
-.esito.ok{color:var(--green-2)} .esito.ko{color:var(--red)}
-.report{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;white-space:pre-wrap;
-  background:var(--inset);border:1px solid var(--line);border-radius:3px;padding:9px;
-  max-height:340px;overflow:auto;margin-top:6px}
-
-/* ── righe (lab) ── */
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.row{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:baseline;
-  padding:8px 13px 8px 10px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
-.row:last-child{border-bottom:0}
-.row:nth-child(even){background:var(--panel-2)}
-.row.red{border-left-color:var(--red)}.row.amber{border-left-color:var(--amber)}
-.row.green{border-left-color:var(--green)}
-.row .k{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;font-weight:600;
-  white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
-.row.red .k{color:var(--red)}.row.amber .k{color:var(--amber)}
-.row .t{min-width:0;overflow-wrap:anywhere;font-size:13px}
-.row .t small{display:block;color:var(--dim);font-size:11.5px;margin-top:1px;line-height:1.45}
-.row .p{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:var(--dim);
-  white-space:nowrap}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 13px;
+/* ─── schede progetto ─── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px}
+#settori{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--inset);border:1px solid var(--line);border-radius:5px;padding:10px 11px;
   border-top:2px solid var(--line-2)}
-.kpi.red{border-top-color:var(--red)}.kpi.amber{border-top-color:var(--amber)}
-.kpi.green{border-top-color:var(--green)}
-.kpi b{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:25px;
-  font-weight:700;letter-spacing:-.03em;line-height:1.12;font-variant-numeric:tabular-nums}
-.kpi u{font-size:13px;color:var(--muted);text-decoration:none}
-.kpi span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
-.vuoto{padding:15px 13px;color:var(--dim);font-size:12.5px}
-.nota{color:var(--dim);font-size:11.5px;margin-top:9px;line-height:1.55}
-code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;background:var(--inset);
-  border:1px solid var(--line);padding:1px 5px;border-radius:2px;color:var(--steel)}
-iframe{width:100%;height:calc(100vh - 190px);border:1px solid var(--line);border-radius:4px;
-  background:var(--bg)}
+.card.ok{border-top-color:var(--green)}.card.warn{border-top-color:var(--amber)}
+.card.bad{border-top-color:var(--red)}
+.card h3{margin:0 0 2px;font-size:12.5px;font-weight:600;letter-spacing:.02em}
+.card .sub{font-size:10px;color:var(--dim);margin-bottom:9px}
+.card .rowd{display:flex;align-items:center;gap:10px}
+.card .meta{font-size:10px;color:var(--mid);line-height:1.5}
+.card .meta b{display:block;color:var(--ink);font-family:"JetBrains Mono",monospace;font-size:11px}
+
+/* ─── righe ─── */
+.rows{display:flex;flex-direction:column}
+.r{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:7px 13px;
+  border-bottom:1px solid rgba(19,39,66,.6);border-left:2px solid transparent}
+.r:last-child{border-bottom:0}
+.r:hover{background:rgba(34,211,238,.035)}
+.r.red{border-left-color:var(--red)}.r.amber{border-left-color:var(--amber)}
+.r.green{border-left-color:var(--green)}.r.cy{border-left-color:var(--cy)}
+.r .k1{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;color:var(--mid);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.r.red .k1{color:var(--red)}.r.amber .k1{color:var(--amber)}.r.green .k1{color:var(--green)}
+.r .t1{min-width:0;font-size:12px;overflow-wrap:anywhere}
+.r .t1 small{display:block;color:var(--dim);font-size:10.5px;margin-top:1px;line-height:1.45}
+.r .p1{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--dim);white-space:nowrap;
+  border:1px solid var(--line);padding:1px 6px;border-radius:3px}
+.vuoto{padding:16px 13px;color:var(--dim);font-size:12px}
+
+/* ─── tabella ─── */
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{text-align:left;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);
+  font-weight:600;padding:7px 13px;border-bottom:1px solid var(--line)}
+td{padding:6px 13px;border-bottom:1px solid rgba(19,39,66,.5);font-family:"JetBrains Mono",monospace;
+  font-variant-numeric:tabular-nums}
+td:first-child{font-family:Saira,sans-serif}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:rgba(34,211,238,.03)}
+.g{color:var(--green)}.a{color:var(--amber)}.rd{color:var(--red)}.cyt{color:var(--cy-2)}
+
+/* ─── mappa radiale ─── */
+.radar{position:relative;display:grid;place-items:center;padding:6px 0 12px}
+.radar svg{max-width:100%;height:auto;overflow:visible}
+.spin{transform-origin:center;animation:sp 90s linear infinite}
+.spin-r{transform-origin:center;animation:sp 130s linear infinite reverse}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin,.spin-r{animation:none}}
+.nodo{cursor:pointer}
+.nodo circle.hit{fill:transparent}
+.nodo:hover circle.body{stroke:var(--cy-2);filter:drop-shadow(0 0 10px rgba(34,211,238,.75))}
+.leg{display:flex;flex-wrap:wrap;gap:7px 16px;justify-content:center;padding:0 13px 12px}
+.leg span{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--mid)}
+.leg i{width:7px;height:7px;border-radius:50%;display:block}
+
+/* ─── pipeline ─── */
+.pipe{display:flex;gap:0;overflow-x:auto;padding:12px 13px 6px}
+.step{flex:none;min-width:120px;background:var(--inset);border:1px solid var(--line);border-radius:4px;
+  padding:8px 10px;position:relative;margin-right:16px}
+.step:last-child{margin-right:0}
+.step::after{content:"";position:absolute;right:-16px;top:50%;width:16px;height:1px;background:var(--line-2)}
+.step:last-child::after{display:none}
+.step.ok{border-color:rgba(40,199,111,.4)}.step.bad{border-color:rgba(240,82,91,.45)}
+.step em{display:block;font-style:normal;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim)}
+.step b{display:block;font-size:11.5px;margin-top:3px;font-weight:600}
+.step .st{font-family:"JetBrains Mono",monospace;font-size:9.5px;margin-top:4px}
+
+/* ─── azioni ─── */
+.acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.acts button{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:600;cursor:pointer;
+  padding:4px 8px;border-radius:3px;border:1px solid var(--line-2);background:var(--inset);
+  color:var(--mid);transition:.12s}
+.acts button:hover:not(:disabled){color:var(--ink);border-color:var(--cy);
+  box-shadow:0 0 10px rgba(34,211,238,.2)}
+.acts button:disabled{opacity:.4;cursor:not-allowed}
+.acts button:focus-visible{outline:1px solid var(--cy);outline-offset:1px}
+.acts .on:hover:not(:disabled){color:var(--green);border-color:var(--green)}
+.acts .off:hover:not(:disabled){color:var(--red);border-color:var(--red)}
+.acts .fix:hover:not(:disabled){color:var(--violet);border-color:var(--violet)}
+.esito{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--dim);margin-top:5px;
+  line-height:1.5;overflow-wrap:anywhere}
+.esito.ok{color:var(--green)}.esito.ko{color:var(--red)}
+.report{font-family:"JetBrains Mono",monospace;font-size:10.5px;white-space:pre-wrap;background:var(--inset);
+  border:1px solid var(--line);border-radius:3px;padding:9px;max-height:300px;overflow:auto;margin-top:6px}
+
+.nota{color:var(--dim);font-size:10.5px;line-height:1.55;padding:9px 13px 12px}
+code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--inset);
+  border:1px solid var(--line);padding:1px 4px;border-radius:2px;color:var(--cy)}
+iframe{width:100%;height:calc(100vh - 150px);border:1px solid var(--line);border-radius:6px;
+  background:var(--void)}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
 
-<div class="bar">
-  <div class="brand"><i class="dot" id="pulse"></i> BetRedge · Sala Controllo</div>
-  <div class="tabs" role="tablist">
-    <button role="tab" aria-selected="true"  data-v="postazioni">Postazioni</button>
-    <button role="tab" aria-selected="false" data-v="check">Check</button>
-    <button role="tab" aria-selected="false" data-v="lab">Lab</button>
-    <button role="tab" aria-selected="false" data-v="mappa">Mappa</button>
+<div class="top">
+  <div class="logo">
+    <div class="mark">BR</div>
+    <div><b>BETREDGE</b><span>SALA CONTROLLO AGENTICA</span></div>
   </div>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true"  data-v="panoramica">Panoramica</button>
+    <button role="tab" aria-selected="false" data-v="postazioni">Postazioni</button>
+    <button role="tab" aria-selected="false" data-v="check">Check</button>
+    <button role="tab" aria-selected="false" data-v="mappa">Mappa</button>
+  </nav>
+  <div class="verdetto"><i class="led" id="led"></i><span id="vh">in attesa</span></div>
   <div class="stamp mono" id="stamp">—</div>
 </div>
 
-<div class="verdict unknown" id="verdict">
-  <b id="vh">in attesa dello snapshot</b><span id="vd"></span>
-</div>
+<main id="v-panoramica">
+  <div class="col col-l">
+    <section class="box">
+      <h2><i>01</i> Stato del sistema <u id="u-sistema"></u></h2>
+      <div class="pad"><div class="cards" id="settori"></div></div>
+    </section>
+    <section class="box">
+      <h2><i>02</i> Le ali del lab <u id="u-ali"></u></h2>
+      <div class="kgrid" id="ali-kpi"></div>
+      <div class="rows" id="ali-righe"></div>
+    </section>
+    <section class="box">
+      <h2><i>06</i> Catena dei daemon <u id="u-daemon"></u></h2>
+      <div class="pipe" id="pipeline"></div>
+      <div class="rows" id="daemon-righe"></div>
+    </section>
+  </div>
 
-<main>
-  <section id="v-postazioni"></section>
-  <section id="v-check" hidden></section>
-  <section id="v-lab" hidden></section>
-  <section id="v-mappa" hidden>
-    <h2>Architettura <i>46 nodi · clic per isolare, Esc per rilasciare</i></h2>
-    <iframe id="mappa" title="Mappa dell'architettura BetRedge" loading="lazy"></iframe>
-  </section>
+  <div class="col col-c">
+    <section class="box">
+      <h2><i>04</i> Topologia viva <u>clic su un nodo per la vista</u></h2>
+      <div class="radar" id="radar"></div>
+      <div class="leg" id="radar-leg"></div>
+    </section>
+    <section class="box">
+      <h2><i>07</i> Barra riassunto</h2>
+      <div class="kgrid" id="riassunto"></div>
+    </section>
+    <section class="box">
+      <h2><i>08</i> Chi aspetta chi <u id="u-bloc"></u></h2>
+      <div class="rows" id="bloccati"></div>
+    </section>
+  </div>
+
+  <div class="col col-r">
+    <section class="box">
+      <h2><i>03</i> Prodotto e business <u id="u-kpi"></u></h2>
+      <div class="kgrid" id="biz"></div>
+      <div class="pad" id="grafici"></div>
+    </section>
+    <section class="box">
+      <h2><i>05</i> Segnali <u id="u-segnali"></u></h2>
+      <div class="rows" id="segnali"></div>
+      <p class="nota">Un <b>unknown</b> non è un guasto: è una misura che non si è potuta
+      fare. Quasi tutti aspettano una credenziale o una decisione, non del codice.</p>
+    </section>
+  </div>
 </main>
+
+<main id="v-postazioni" hidden><div class="col" style="grid-column:1/-1"><section class="box">
+  <h2><i>02</i> Postazioni governabili <u>i tasti agiscono solo su queste</u></h2>
+  <div class="pad" id="griglia-postazioni"></div>
+  <p class="nota">Il perimetro è la stessa whitelist di <code>riavvia</code>: gli altri
+  daemon della macchina stanno in Panoramica, in sola lettura. Spegnere un bridge del
+  Council o il bot Telegram non si nota subito.</p>
+</section></div></main>
+
+<main id="v-check" hidden><div class="col" style="grid-column:1/-1" id="check-viste"></div></main>
+
+<main id="v-mappa" hidden><div class="col" style="grid-column:1/-1">
+  <section class="box"><h2><i>09</i> Architettura <u>clic su un nodo per isolarlo, Esc per rilasciare</u></h2>
+  <div style="padding:10px"><iframe id="mappa" title="Mappa dell'architettura BetRedge" loading="lazy"></iframe></div>
+  </section></div></main>
 
 <script>
 const TOKEN = "__CC_TOKEN__";
-
-/* I reparti. L'elenco dei check NON e' qui: si prende dallo stato, cosi' non
-   possono divergere. Qui c'e' solo il criterio di raggruppamento. */
-const REPARTI = [
-  {nome:"Motore delle predizioni", desc:"ingestione, modelli, pubblicazione",
-   test:id => /agents|predict|collect|goalscorer/.test(id)},
-  {nome:"Sorveglianza",            desc:"chi guarda che il resto giri",
-   test:id => /watchdog|live-monitor|daemon-health/.test(id)},
-  {nome:"Consegna",                desc:"cio' che arriva all'utente",
-   test:id => /weeklypick|morning/.test(id)},
-];
-
-const el = (t, c, txt) => { const e = document.createElement(t);
-  if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+const el = (t,c,x) => { const e=document.createElement(t); if(c) e.className=c;
+  if(x!=null) e.textContent=x; return e; };
+const SVGNS = "http://www.w3.org/2000/svg";
+const sv = (t,a={}) => { const e=document.createElementNS(SVGNS,t);
+  for(const k in a) e.setAttribute(k,a[k]); return e; };
 
 function eta(iso){
   if(!iso) return "—";
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime())/1000);
-  if (s < 90) return Math.round(s) + "s fa";
-  if (s < 5400) return Math.round(s/60) + "m fa";
-  if (s < 172800) return Math.round(s/3600) + "h fa";
-  return Math.round(s/86400) + "gg fa";
+  const s = Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+  if(s<90) return Math.round(s)+"s fa";
+  if(s<5400) return Math.round(s/60)+"m fa";
+  if(s<172800) return Math.round(s/3600)+"h fa";
+  return Math.round(s/86400)+"gg fa";
+}
+const num = v => { const n=parseFloat(String(v).replace(/[^\d.\-]/g,"")); return isNaN(n)?null:n; };
+
+/* Una sparkline vera, dai 466 snapshot dello storico. Se i punti sono meno di 3
+   non si disegna: una linea fra due punti non e' un andamento, e' una decorazione. */
+function spark(punti, colore, w=112, h=26){
+  const v = punti.filter(x=>x!=null);
+  if(v.length<3) return null;
+  const mn=Math.min(...v), mx=Math.max(...v), sp=(mx-mn)||1;
+  const s = sv("svg",{width:w,height:h,viewBox:`0 0 ${w} ${h}`,"aria-hidden":"true"});
+  const px = i => i*(w/(v.length-1));
+  const py = x => h-2-((x-mn)/sp)*(h-5);
+  const d = v.map((x,i)=>`${i?"L":"M"}${px(i).toFixed(1)} ${py(x).toFixed(1)}`).join(" ");
+  const gid = "g"+Math.random().toString(36).slice(2,8);
+  const dg = sv("defs"); const lg = sv("linearGradient",{id:gid,x1:0,y1:0,x2:0,y2:1});
+  lg.append(sv("stop",{offset:"0%","stop-color":colore,"stop-opacity":".34"}),
+            sv("stop",{offset:"100%","stop-color":colore,"stop-opacity":"0"}));
+  dg.append(lg); s.append(dg);
+  s.append(sv("path",{d:`${d} L ${w} ${h} L 0 ${h} Z`,fill:`url(#${gid})`,stroke:"none"}));
+  s.append(sv("path",{d,fill:"none",stroke:colore,"stroke-width":"1.3",
+    "stroke-linejoin":"round","stroke-linecap":"round"}));
+  s.append(sv("circle",{cx:w,cy:py(v[v.length-1]),r:2,fill:colore}));
+  return s;
 }
 
-async function chiedi(azione, check_id){
-  try{
-    const r = await fetch("/api/action", {method:"POST",
-      headers:{"Content-Type":"application/json","X-CC-Token":TOKEN},
-      body: JSON.stringify({azione, check_id})});
-    return await r.json();
-  }catch(e){ return {ok:false, errore:String(e)}; }
+function donut(pct, colore, size=54){
+  const r=(size/2)-5, c=2*Math.PI*r;
+  const s=sv("svg",{width:size,height:size,viewBox:`0 0 ${size} ${size}`});
+  const g=sv("g",{transform:`rotate(-90 ${size/2} ${size/2})`});
+  g.append(sv("circle",{cx:size/2,cy:size/2,r,fill:"none",stroke:"#132742","stroke-width":"5"}));
+  g.append(sv("circle",{cx:size/2,cy:size/2,r,fill:"none",stroke:colore,"stroke-width":"5",
+    "stroke-linecap":"round","stroke-dasharray":`${(c*pct/100).toFixed(1)} ${c.toFixed(1)}`}));
+  s.append(g);
+  const t=sv("text",{x:size/2,y:size/2+4,"text-anchor":"middle",fill:"#CFE0F5",
+    "font-size":"13","font-family":"JetBrains Mono, monospace","font-weight":"700"});
+  t.textContent=Math.round(pct)+"%"; s.append(t);
+  return s;
 }
 
-/* Una scheda con i tasti. `spegni` chiede conferma: e' l'unica azione che
-   toglie qualcosa invece di rimetterlo. */
-function scheda(id, c, job){
-  const box = el("div", "card " + (c.level || "unknown"));
-  const top = el("div", "top");
-  top.append(el("i", "dot " + (c.level === "green" ? "" : c.level)),
-             el("span", "id", id), el("span", "lv", c.level || "?"));
-  box.append(top, el("div", "head", c.headline || "—"),
-             el("div", "meta", `${c.source || "—"} · ${eta(c.measured_at)}`));
-
-  const acts = el("div", "acts");
-  const esito = el("div", "esito");
-
-  const premi = (b, azione, etichetta, conferma) => {
-    b.addEventListener("click", async () => {
-      if (conferma && !window.confirm(conferma)) return;
-      b.disabled = true; const prima = b.textContent; b.textContent = "…";
-      const r = await chiedi(azione, id);
-      esito.className = "esito " + (r.ok ? "ok" : "ko");
-      esito.textContent = r.ok
-        ? `${etichetta}: ${r.azione || "fatto"} — il prossimo giro lo riverifica`
-        : `non riuscito: ${r.errore || r.stderr || "errore"}`;
-      b.textContent = prima; b.disabled = false;
-      if (r.ok) setTimeout(render, 2500);
-    });
-    acts.appendChild(b);
-  };
-
-  if (c.riavviabile){
-    premi(el("button", "on",  "● accendi"), "accendi", "acceso", null);
-    premi(el("button", "off", "○ spegni"),  "spegni",  "spento",
-          `Spegnere ${id}?\n\nSmette di girare finche' non lo riaccendi. Reversibile.`);
-    premi(el("button", "",    "↻ riavvia"), "riavvia", "riavviato", null);
-  }
-
-  const inCorso = job && (job.stato === "in_coda" || job.stato === "in_corso");
-  const fix = el("button", "fix", inCorso ? `⚡ Claude: ${job.stato.replace("_"," ")}` : "⚡ fix");
-  fix.disabled = Boolean(inCorso);
-  premi(fix, "diagnosi", "diagnosi accodata", null);
-
-  if (job && job.stato === "pronto"){
-    const v = el("button", "", "leggi la diagnosi");
-    v.addEventListener("click", async () => {
-      const gia = box.querySelector(".report");
-      if (gia){ gia.remove(); return; }
-      const testo = await (await fetch(`/api/report?id=${encodeURIComponent(job.report)}`)).text();
-      box.appendChild(el("div", "report", testo));
-    });
-    acts.appendChild(v);
-  }
-  if (job && job.stato === "fallito") esito.textContent = "la diagnosi precedente e' fallita";
-
-  box.append(acts, esito);
-  return box;
+function kpi(etichetta, valore, delta, classe, sparkline, piccolo){
+  const d=el("div","k");
+  d.append(el("em","",etichetta));
+  d.append(el("b", piccolo?"sm":"", valore));
+  if(delta) d.append(el("div","d "+(classe||""),delta));
+  if(sparkline) d.append(sparkline);
+  return d;
 }
-
-function vistaPostazioni(st, jobs){
-  const sez = document.getElementById("v-postazioni");
-  sez.textContent = "";
-  const voci = Object.entries(st.checks || {});
-  const governabili = voci.filter(([, c]) => c.riavviabile);
-  const usati = new Set();
-
-  for (const r of REPARTI){
-    const sel = governabili.filter(([id]) => r.test(id));
-    sel.forEach(([id]) => usati.add(id));
-    if (!sel.length) continue;
-    const h = el("h2", "", r.nome); h.appendChild(el("i", "", "· " + r.desc));
-    sez.appendChild(h);
-    const g = el("div", "grid");
-    ordina(sel).forEach(([id, c]) => g.appendChild(scheda(id, c, jobs[id])));
-    sez.appendChild(g);
-  }
-  const resto = governabili.filter(([id]) => !usati.has(id));
-  if (resto.length){
-    const h = el("h2", "", "Altri di perimetro"); sez.appendChild(h);
-    const g = el("div", "grid");
-    ordina(resto).forEach(([id, c]) => g.appendChild(scheda(id, c, jobs[id])));
-    sez.appendChild(g);
-  }
-  sez.appendChild(el("p", "nota",
-    "I tasti agiscono solo su questi: sono i daemon che il control center sorveglia. " +
-    "Gli altri della macchina stanno sotto Lab, in sola lettura — spegnere un bridge del " +
-    "Council o il bot Telegram non si nota subito."));
-}
-
-const RANGO = {red:0, amber:1, unknown:2, info:3, green:4};
-const ordina = a => a.sort((x, y) => (RANGO[x[1].level] ?? 9) - (RANGO[y[1].level] ?? 9));
-
-function vistaCheck(st, jobs){
-  const sez = document.getElementById("v-check");
-  sez.textContent = "";
-  const voci = Object.entries(st.checks || {});
-  const rotti = voci.filter(([, c]) => c.level === "red" || c.level === "amber");
-
-  const blocco = (titolo, sel, vuoto) => {
-    const h = el("h2", "", titolo); h.appendChild(el("i", "", "· " + sel.length));
-    sez.appendChild(h);
-    if (!sel.length){ sez.appendChild(el("div", "vuoto", vuoto)); return; }
-    const g = el("div", "grid");
-    ordina(sel).forEach(([id, c]) => g.appendChild(scheda(id, c, jobs[id])));
-    sez.appendChild(g);
-  };
-  blocco("Da guardare adesso", rotti, "Niente rosso né ambra.");
-  const gruppi = [...new Set(voci.map(([, c]) => c.group).filter(Boolean))].sort();
-  for (const gr of gruppi) blocco(gr, voci.filter(([, c]) => c.group === gr), "vuoto");
-}
-
-function riga(cls, k, titolo, sotto, pill){
-  const r = el("div", "row " + cls);
-  r.append(el("span", "k", k));
-  const t = el("span", "t", titolo);
-  if (sotto) t.appendChild(el("small", "", sotto));
-  r.append(t, el("span", "p", pill || ""));
+function riga(cls,k,titolo,sotto,pill){
+  const r=el("div","r "+(cls||""));
+  r.append(el("span","k1",k));
+  const t=el("span","t1",titolo);
+  if(sotto) t.append(el("small","",sotto));
+  r.append(t);
+  if(pill) r.append(el("span","p1",pill));
   return r;
 }
 
-function vistaLab(lab){
-  const sez = document.getElementById("v-lab");
-  sez.textContent = "";
-  if (!lab || lab.assente){
-    sez.appendChild(el("div", "vuoto",
-      "Nessun dato del lab. Generalo con: lab stato --json"));
-    return;
-  }
-  const p = lab.progetti || {};
-  const sw = parseFloat(lab.macchina?.swap_usato || 0),
-        swt = parseFloat(lab.macchina?.swap_tot || 1),
-        swp = swt ? Math.round(sw / swt * 100) : 0;
-
-  sez.appendChild(el("h2", "", "Il lavoro"));
-  const k = el("div", "kpis");
-  const kpi = (cls, n, u, lab2) => {
-    const d = el("div", "kpi " + cls);
-    const b = el("b", "", String(n));
-    if (u) b.appendChild(el("u", "", " " + u));
-    d.append(b, el("span", "", lab2)); return d;
-  };
-  k.append(kpi("", p.ATTIVO ?? 0, "", "progetti attivi"),
-           kpi(p.BLOCCATO ? "red" : "green", p.BLOCCATO ?? 0, "", "bloccati"),
-           kpi((lab.fermi || []).length ? "amber" : "green", (lab.fermi || []).length, "", "fermi oltre 14gg"),
-           kpi("", (lab.shell || []).length, "/ " + (lab.mcp ?? 0), "shell / proc. MCP"),
-           kpi("", (lab.worktree || []).length, "", "worktree"),
-           kpi(swp > 70 ? "red" : swp > 40 ? "amber" : "green", swp, "%", "swap"));
-  sez.appendChild(k);
-
-  sez.appendChild(el("h2", "", "Aspettano una persona"));
-  const p1 = el("div", "panel");
-  (lab.bloccati_per_owner || []).forEach(b =>
-    p1.appendChild(riga("red", b.quanti, b.owner, (b.progetti || []).join(", "), "attende")));
-  if (!(lab.bloccati_per_owner || []).length) p1.appendChild(el("div", "vuoto", "Nessuno."));
-  sez.appendChild(p1);
-
-  sez.appendChild(el("h2", "", "Attivi ma fermi da oltre due settimane"));
-  const p2 = el("div", "panel");
-  (lab.fermi || []).slice(0, 14).forEach(f =>
-    p2.appendChild(riga(f.giorni >= 35 ? "red" : "amber", f.giorni + "gg", f.nome,
-                        f.azione || "nessuna azione scritta", f.owner)));
-  if (!(lab.fermi || []).length) p2.appendChild(el("div", "vuoto", "Nessuno."));
-  sez.appendChild(p2);
-
-  sez.appendChild(el("h2", "", "I daemon della macchina"));
-  const p3 = el("div", "panel");
-  (lab.daemoni || []).forEach(d => {
-    const rotto = d.verdetto.startsWith("MUTO");
-    p3.appendChild(riga(rotto ? "red" : d.caricato ? "green" : "",
-                        d.eta == null ? "—" : d.eta + "gg", d.label,
-                        rotto ? "nessuna riga di log: puo' essere fermo in silenzio" : "",
-                        d.verdetto));
-  });
-  sez.appendChild(p3);
-  sez.appendChild(el("p", "nota",
-    "Questi sono in sola lettura di proposito. I tasti stanno sotto Postazioni, " +
-    "solo sugli 8 che il control center sorveglia."));
-
-  sez.appendChild(el("h2", "", "Repo"));
-  const p4 = el("div", "panel");
-  (lab.worktree || []).forEach(w =>
-    p4.appendChild(riga(w.dirty !== "0" ? "amber" : "", w.dirty, w.branch, w.path,
-                        w.dirty !== "0" ? "non committati" : "pulito")));
-  sez.appendChild(p4);
-  sez.appendChild(el("p", "nota",
-    `vetrina su ${lab.branch?.vetrina} · ${lab.branch?.locali} branch locali, ` +
-    `${lab.branch?.mergiati} già mergiati · dati del lab: ${eta(lab.generato)}`));
+async function chiedi(azione,check_id){
+  try{
+    const r=await fetch("/api/action",{method:"POST",
+      headers:{"Content-Type":"application/json","X-CC-Token":TOKEN},
+      body:JSON.stringify({azione,check_id})});
+    return await r.json();
+  }catch(e){ return {ok:false,errore:String(e)}; }
 }
 
-let mappaCaricata = false;
-function mostra(nome){
-  for (const v of ["postazioni","check","lab","mappa"])
-    document.getElementById("v-" + v).hidden = (v !== nome);
-  document.querySelectorAll(".tabs button").forEach(b =>
-    b.setAttribute("aria-selected", String(b.dataset.v === nome)));
-  if (nome === "mappa" && !mappaCaricata){
-    document.getElementById("mappa").src = "/architettura.html";
-    mappaCaricata = true;
+/* ─────────── la topologia ─────────── */
+const SETTORI = [
+  {id:"ali",     eti:"SHELL",     col:"#38BDF8", vista:"panoramica"},
+  {id:"check",   eti:"CHECK",     col:"#22D3EE", vista:"check"},
+  {id:"daemon",  eti:"DAEMON",    col:"#A78BFA", vista:"postazioni"},
+  {id:"progetti",eti:"PROGETTI",  col:"#F5A524", vista:"panoramica"},
+  {id:"worktree",eti:"WORKTREE",  col:"#28C76F", vista:"panoramica"},
+  {id:"canali",  eti:"CANALI",    col:"#38BDF8", vista:"check"},
+];
+function topologia(conteggi){
+  const W=430,H=430,cx=W/2,cy=H/2;
+  const s=sv("svg",{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:"img",
+    "aria-label":"Topologia del sistema BetRedge"});
+  const anelli=sv("g",{class:"spin"});
+  [188,150].forEach((r,i)=>anelli.append(sv("circle",{cx,cy,r,fill:"none",stroke:"#132742",
+    "stroke-width":"1","stroke-dasharray":i?"3 9":"1 7","opacity":".8"})));
+  s.append(anelli);
+  const anelli2=sv("g",{class:"spin-r"});
+  anelli2.append(sv("circle",{cx,cy,r:112,fill:"none",stroke:"#1D3B60","stroke-width":"1",
+    "stroke-dasharray":"22 12","opacity":".55"}));
+  s.append(anelli2);
+  s.append(sv("circle",{cx,cy,r:74,fill:"none",stroke:"#1D3B60","stroke-width":"1","opacity":".5"}));
+
+  const R=150;
+  SETTORI.forEach((set,i)=>{
+    const a=(-90+i*(360/SETTORI.length))*Math.PI/180;
+    const x=cx+R*Math.cos(a), y=cy+R*Math.sin(a);
+    s.append(sv("line",{x1:cx,y1:cy,x2:x,y2:y,stroke:set.col,"stroke-width":"1","opacity":".28"}));
+    SETTORI.forEach((_,j)=>{ if(j<=i) return;
+      const b=(-90+j*(360/SETTORI.length))*Math.PI/180;
+      s.append(sv("line",{x1:x,y1:y,x2:cx+R*Math.cos(b),y2:cy+R*Math.sin(b),
+        stroke:"#132742","stroke-width":"1","opacity":".38"})); });
+  });
+
+  SETTORI.forEach((set,i)=>{
+    const a=(-90+i*(360/SETTORI.length))*Math.PI/180;
+    const x=cx+R*Math.cos(a), y=cy+R*Math.sin(a);
+    const g=sv("g",{class:"nodo",tabindex:"0",role:"button",
+      "aria-label":`${set.eti}: ${conteggi[set.id]??"—"}`});
+    g.append(sv("circle",{cx:x,cy:y,r:33,fill:"#070C18","fill-opacity":".92",
+      stroke:set.col,"stroke-width":"1.4",class:"body",
+      style:`filter:drop-shadow(0 0 9px ${set.col}55)`}));
+    g.append(sv("circle",{cx:x,cy:y,r:39,fill:"none",stroke:set.col,"stroke-width":"1",
+      "stroke-dasharray":"2 6","opacity":".45"}));
+    const n=sv("text",{x,y:y-1,"text-anchor":"middle",fill:"#CFE0F5","font-size":"17",
+      "font-family":"JetBrains Mono, monospace","font-weight":"700"});
+    n.textContent=String(conteggi[set.id]??"—"); g.append(n);
+    const e=sv("text",{x,y:y+13,"text-anchor":"middle",fill:set.col,"font-size":"7.5",
+      "font-family":"Saira, sans-serif","letter-spacing":"1.4"});
+    e.textContent=set.eti; g.append(e);
+    g.append(sv("circle",{cx:x,cy:y,r:40,class:"hit"}));
+    g.addEventListener("click",()=>mostra(set.vista));
+    g.addEventListener("keydown",ev=>{ if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();mostra(set.vista);} });
+    s.append(g);
+  });
+
+  s.append(sv("circle",{cx,cy,r:52,fill:"#070C18",stroke:"#22D3EE","stroke-width":"1.6",
+    style:"filter:drop-shadow(0 0 22px rgba(34,211,238,.45))"}));
+  s.append(sv("circle",{cx,cy,r:44,fill:"none",stroke:"#22D3EE","stroke-width":"1","opacity":".35"}));
+  const c1=sv("text",{x:cx,y:cy-3,"text-anchor":"middle",fill:"#22D3EE","font-size":"20",
+    "font-family":"Saira, sans-serif","font-weight":"700","letter-spacing":"2"});
+  c1.textContent="BR"; s.append(c1);
+  const c2=sv("text",{x:cx,y:cy+13,"text-anchor":"middle",fill:"#5B7699","font-size":"7.5",
+    "font-family":"Saira, sans-serif","letter-spacing":"1.6"});
+  c2.textContent="SALA CONTROLLO"; s.append(c2);
+  return s;
+}
+
+/* ─────────── le viste ─────────── */
+const RANGO={red:0,amber:1,unknown:2,info:3,green:4};
+const ordina=a=>a.sort((x,y)=>(RANGO[x[1].level]??9)-(RANGO[y[1].level]??9));
+
+function schedaCheck(id,c,job){
+  const box=el("div","card "+(c.level==="red"?"bad":c.level==="amber"?"warn":"ok"));
+  box.append(el("h3","",id), el("div","sub",`${c.source||"—"} · ${eta(c.measured_at)}`),
+             el("div","meta",c.headline||"—"));
+  const acts=el("div","acts"), esito=el("div","esito");
+  const premi=(b,azione,eti,conferma)=>{
+    b.addEventListener("click",async()=>{
+      if(conferma&&!window.confirm(conferma)) return;
+      b.disabled=true; const p=b.textContent; b.textContent="…";
+      const r=await chiedi(azione,id);
+      esito.className="esito "+(r.ok?"ok":"ko");
+      esito.textContent=r.ok?`${eti}: ${r.azione||"fatto"} — il prossimo giro riverifica`
+                            :`non riuscito: ${r.errore||r.stderr||"errore"}`;
+      b.textContent=p; b.disabled=false;
+      if(r.ok) setTimeout(render,2500);
+    });
+    acts.append(b);
+  };
+  if(c.riavviabile){
+    premi(el("button","on","● accendi"),"accendi","acceso",null);
+    premi(el("button","off","○ spegni"),"spegni","spento",
+      `Spegnere ${id}?\n\nSmette di girare finche' non lo riaccendi. Reversibile.`);
+    premi(el("button","","↻ riavvia"),"riavvia","riavviato",null);
   }
-  try{ localStorage.setItem("cc-vista", nome); }catch(e){}
+  const inCorso=job&&(job.stato==="in_coda"||job.stato==="in_corso");
+  const fix=el("button","fix",inCorso?`⚡ ${job.stato.replace("_"," ")}`:"⚡ fix");
+  fix.disabled=Boolean(inCorso);
+  premi(fix,"diagnosi","diagnosi accodata",null);
+  if(job&&job.stato==="pronto"){
+    const v=el("button","","leggi la diagnosi");
+    v.addEventListener("click",async()=>{
+      const gia=box.querySelector(".report"); if(gia){gia.remove();return;}
+      const testo=await(await fetch(`/api/report?id=${encodeURIComponent(job.report)}`)).text();
+      box.append(el("div","report",testo));
+    });
+    acts.append(v);
+  }
+  box.append(acts,esito);
+  return box;
+}
+
+function vistaPanoramica(st,lab,storia){
+  const c=st.checks||{}, voci=Object.entries(c);
+  const gruppi=[...new Set(voci.map(([,v])=>v.group).filter(Boolean))];
+  const perc=g=>{ const s=voci.filter(([,v])=>v.group===g);
+    const buoni=s.filter(([,v])=>v.level==="green"||v.level==="info").length;
+    return s.length?Math.round(buoni/s.length*100):0; };
+
+  // 01 — i settori con piu' peso, con la % di check sani
+  const set=document.getElementById("settori"); set.textContent="";
+  [["pipeline","il dato che scende"],["piattaforma","cio' che l'utente tocca"],
+   ["daemon","chi gira sul Mac"],["canali","da dove arriva la gente"]].forEach(([g,sub])=>{
+    if(!gruppi.includes(g)) return;
+    const p=perc(g), s=voci.filter(([,v])=>v.group===g);
+    const rossi=s.filter(([,v])=>v.level==="red"||v.level==="amber").length;
+    const ign=s.filter(([,v])=>v.level==="unknown").length;
+    const card=el("div","card "+(rossi?"bad":ign?"warn":"ok"));
+    card.append(el("h3","",g.toUpperCase()), el("div","sub",sub));
+    const rd=el("div","rowd");
+    rd.append(donut(p, rossi?"#F0525B":ign?"#F5A524":"#28C76F"));
+    const m=el("div","meta");
+    m.append(el("b","",`${s.length} check`),
+             document.createTextNode(rossi?`${rossi} da guardare`:ign?`${ign} non misurati`:"tutti sani"));
+    rd.append(m); card.append(rd); set.append(card);
+  });
+  document.getElementById("u-sistema").textContent=`${voci.length} check · ${eta(st.generated_at)}`;
+
+  // 02 — le ali
+  const shell=lab.shell||[];
+  const ak=document.getElementById("ali-kpi"); ak.textContent="";
+  ak.append(kpi("Ali definite","11"),
+            kpi("Shell aperte",String(shell.length)),
+            kpi("Proc. MCP",String(lab.mcp??0)),
+            kpi("Worktree",String((lab.worktree||[]).length)));
+  const ar=document.getElementById("ali-righe"); ar.textContent="";
+  if(shell.length) shell.forEach(s=>ar.append(riga(s.mb>700?"amber":"cy",s.eta,
+      s.nome!=="-"?s.nome:"senza nome", s.cmd||"", s.mb+" MB")));
+  else ar.append(el("div","vuoto","Nessuna shell aperta. Aprine una con `lab dev`, `lab mkt`, …"));
+  document.getElementById("u-ali").textContent="lab legenda";
+
+  // 06 — la catena dei daemon
+  const dm=lab.daemoni||[];
+  const perim=voci.filter(([,v])=>v.riavviabile);
+  const pipe=document.getElementById("pipeline"); pipe.textContent="";
+  perim.forEach(([id,v])=>{
+    const s=el("div","step "+(v.level==="green"?"ok":v.level==="red"?"bad":""));
+    s.append(el("em","",id.replace("launchd_","")),
+             el("b","",v.headline?.slice(0,26)||"—"),
+             el("div","st "+(v.level==="green"?"g":v.level==="red"?"rd":"a"),v.level));
+    pipe.append(s);
+  });
+  const dr=document.getElementById("daemon-righe"); dr.textContent="";
+  const attenzione=dm.filter(d=>!d.verdetto.startsWith("vivo")&&d.verdetto!=="scarico");
+  if(attenzione.length) attenzione.forEach(d=>dr.append(
+    riga(d.verdetto.startsWith("ROTTO")?"red":"amber",
+         d.verdetto.startsWith("ROTTO")?"guasto":"riporta", d.label, d.perche||"", "")));
+  else dr.append(el("div","vuoto","Nessun daemon guasto."));
+  document.getElementById("u-daemon").textContent=
+    `${dm.filter(d=>d.verdetto.startsWith("vivo")).length} vivi su ${dm.length}`;
+
+  // 04 — la topologia
+  const rad=document.getElementById("radar"); rad.textContent="";
+  rad.append(topologia({
+    ali:shell.length, check:voci.length, daemon:dm.filter(d=>d.verdetto.startsWith("vivo")).length,
+    progetti:(lab.progetti||{}).ATTIVO??0, worktree:(lab.worktree||[]).length,
+    canali:voci.filter(([,v])=>v.group==="canali").length}));
+  const lg=document.getElementById("radar-leg"); lg.textContent="";
+  SETTORI.forEach(s=>{ const w=el("span");
+    const i=el("i"); i.style.background=s.col; i.style.boxShadow="0 0 7px "+s.col;
+    w.append(i,document.createTextNode(s.eti.toLowerCase())); lg.append(w); });
+
+  // 07 — riassunto
+  const ri=document.getElementById("riassunto"); ri.textContent="";
+  const p=lab.progetti||{};
+  const rossi=voci.filter(([,v])=>v.level==="red").length;
+  const ambra=voci.filter(([,v])=>v.level==="amber").length;
+  const swp=(()=>{const a=parseFloat(lab.macchina?.swap_usato||0),b=parseFloat(lab.macchina?.swap_tot||1);
+    return b?Math.round(a/b*100):0;})();
+  ri.append(kpi("Progetti attivi",String(p.ATTIVO??0)),
+            kpi("Bloccati",String(p.BLOCCATO??0),p.BLOCCATO?"aspettano una persona":"","dn"),
+            kpi("Rossi",String(rossi),rossi?"da guardare":"nessuno",rossi?"dn":"up"),
+            kpi("Ambra",String(ambra)),
+            kpi("Swap",swp+"%",lab.macchina?.swap_usato+" MB",swp>70?"dn":""),
+            kpi("Disco",String(lab.macchina?.claude_dir||"—"),"~/.claude",""));
+
+  // 03 — business
+  const serie=id=>storia.map(s=>num(s.checks?.[id]?.value)).filter(x=>x!=null);
+  const b=document.getElementById("biz"); b.textContent="";
+  const g=(id,d)=>c[id]?.[d];
+  b.append(kpi("Abbonati",String(g("abbonati","value")??"—"),
+               (c.abbonati?.headline||"").slice(0,26),"",spark(serie("abbonati"),"#38BDF8")),
+           kpi("Incassato",String(g("incassato","value")??"—"),
+               (c.incassato?.headline||"").slice(0,24),"",null,true),
+           kpi("ROI 30 giorni",String(g("roi_30g","value")??"—"),
+               (c.roi_30g?.headline||"").slice(0,26),
+               (num(g("roi_30g","value"))??0)>=0?"up":"dn",spark(serie("roi_30g"),"#28C76F")),
+           kpi("Traffico 7gg",String(g("traffico_7g","value")??"—"),
+               (c.traffico_7g?.headline||"").slice(0,26),"dn",spark(serie("traffico_7g"),"#F5A524")));
+
+  const gr=document.getElementById("grafici"); gr.textContent="";
+  const lat=serie("db_latency");
+  if(lat.length>=3){
+    const t=el("div"); t.style.cssText="font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#5B7699;margin-bottom:6px";
+    t.textContent=`Latenza DB · ${lat.length} misure dal 20/08`;
+    const s=spark(lat,"#22D3EE",330,64); gr.append(t); if(s) gr.append(s);
+  }
+  const tab=el("table");
+  const thead=el("thead"); const trh=el("tr");
+  ["Gruppo","Check","Sani","Stato"].forEach(h=>{const th=el("th","",h); trh.append(th);});
+  thead.append(trh); tab.append(thead);
+  const tb=el("tbody");
+  gruppi.sort().forEach(gg=>{
+    const s=voci.filter(([,v])=>v.group===gg), pc=perc(gg);
+    const tr=el("tr");
+    tr.append(el("td","",gg), el("td","",String(s.length)), el("td","",pc+"%"));
+    const st=el("td",pc===100?"g":pc>=70?"cyt":pc>=40?"a":"rd",
+      pc===100?"tutto sano":pc>=70?"quasi":"da guardare");
+    tr.append(st); tb.append(tr);
+  });
+  tab.append(tb);
+  const wrap=el("div"); wrap.style.cssText="margin:12px -13px -12px";
+  wrap.append(tab); gr.append(wrap);
+  document.getElementById("u-kpi").textContent="misurato in produzione";
+
+  // 05 — segnali
+  const sg=document.getElementById("segnali"); sg.textContent="";
+  const notevoli=ordina(voci.filter(([,v])=>["red","amber","unknown"].includes(v.level)));
+  notevoli.forEach(([id,v])=>sg.append(riga(
+    v.level==="unknown"?"":v.level, v.level==="red"?"🔴":v.level==="amber"?"🟠":"⚪",
+    id, v.headline||"", v.group||"")));
+  if(!notevoli.length) sg.append(el("div","vuoto","Tutto verde."));
+  document.getElementById("u-segnali").textContent=`${notevoli.length} da leggere`;
+
+  // 08 — chi aspetta chi
+  const bl=document.getElementById("bloccati"); bl.textContent="";
+  (lab.bloccati_per_owner||[]).forEach(x=>bl.append(
+    riga(x.quanti>=5?"red":"amber",String(x.quanti),x.owner,(x.progetti||[]).join(", "),"")));
+  if(!(lab.bloccati_per_owner||[]).length) bl.append(el("div","vuoto","Nessun progetto bloccato."));
+  document.getElementById("u-bloc").textContent=
+    `${(lab.progetti||{}).BLOCCATO??0} progetti fermi`;
+}
+
+function vistaPostazioni(st,jobs){
+  const p=document.getElementById("griglia-postazioni"); p.textContent="";
+  const g=el("div","cards");
+  ordina(Object.entries(st.checks||{}).filter(([,c])=>c.riavviabile))
+    .forEach(([id,c])=>g.append(schedaCheck(id,c,jobs[id])));
+  p.append(g);
+}
+function vistaCheck(st,jobs){
+  const w=document.getElementById("check-viste"); w.textContent="";
+  const voci=Object.entries(st.checks||{});
+  const gruppi=[...new Set(voci.map(([,c])=>c.group).filter(Boolean))].sort();
+  const blocco=(tit,sel,vuoto)=>{
+    const s=el("section","box"); const h=el("h2","",tit);
+    h.append(el("i","",String(sel.length))); s.append(h);
+    if(!sel.length){ s.append(el("div","vuoto",vuoto)); w.append(s); return; }
+    const pad=el("div","pad"); const g=el("div","cards");
+    ordina(sel).forEach(([id,c])=>g.append(schedaCheck(id,c,jobs[id])));
+    pad.append(g); s.append(pad); w.append(s);
+  };
+  blocco("Da guardare adesso",
+    voci.filter(([,c])=>c.level==="red"||c.level==="amber"),"Niente rosso né ambra.");
+  gruppi.forEach(g=>blocco(g,voci.filter(([,c])=>c.group===g),"vuoto"));
+}
+
+let mappaCaricata=false;
+function mostra(nome){
+  ["panoramica","postazioni","check","mappa"].forEach(v=>{
+    const n=document.getElementById("v-"+v); if(n) n.hidden=(v!==nome); });
+  document.querySelectorAll("nav button").forEach(b=>
+    b.setAttribute("aria-selected",String(b.dataset.v===nome)));
+  if(nome==="mappa"&&!mappaCaricata){
+    document.getElementById("mappa").src="/architettura.html"; mappaCaricata=true; }
+  try{ localStorage.setItem("cc-vista",nome); }catch(e){}
 }
 
 async function render(){
-  let st = {}, jobs = {}, lab = {};
-  try{
-    [st, jobs, lab] = await Promise.all([
-      fetch("/api/state", {cache:"no-store"}).then(r => r.json()).catch(() => ({})),
-      fetch("/api/jobs",  {cache:"no-store"}).then(r => r.json()).catch(() => ({})),
-      fetch("/api/lab",   {cache:"no-store"}).then(r => r.json()).catch(() => ({})),
-    ]);
-  }catch(e){}
-
-  const stamp = document.getElementById("stamp");
-  if (!st.generated_at){
-    stamp.textContent = "nessuno snapshot: il collector non ha ancora girato";
-  }else{
-    stamp.textContent = "snapshot " + eta(st.generated_at);
-  }
-  const lv = st.summary?.level || "unknown";
-  document.getElementById("verdict").className = "verdict " + lv;
-  document.getElementById("pulse").className = "dot " + (lv === "green" ? "" : lv);
-  document.getElementById("vh").textContent = st.summary?.headline || "—";
-  document.getElementById("vd").textContent = st.summary?.detail || "";
-
-  vistaPostazioni(st, jobs);
-  vistaCheck(st, jobs);
-  vistaLab(lab);
+  const [st,jobs,lab,storia]=await Promise.all([
+    fetch("/api/state",{cache:"no-store"}).then(r=>r.json()).catch(()=>({})),
+    fetch("/api/jobs",{cache:"no-store"}).then(r=>r.json()).catch(()=>({})),
+    fetch("/api/lab",{cache:"no-store"}).then(r=>r.json()).catch(()=>({})),
+    fetch("/api/history",{cache:"no-store"}).then(r=>r.json()).catch(()=>[]),
+  ]);
+  const S=Array.isArray(storia)?storia:(storia.history||[]);
+  document.getElementById("stamp").textContent=
+    st.generated_at?"snapshot "+eta(st.generated_at):"il collector non ha ancora girato";
+  const lv=st.summary?.level||"unknown";
+  document.getElementById("led").className="led "+(lv==="green"?"":lv);
+  document.getElementById("vh").textContent=st.summary?.headline||"—";
+  vistaPanoramica(st,lab.assente?{}:lab,S);
+  vistaPostazioni(st,jobs);
+  vistaCheck(st,jobs);
 }
 
-document.querySelectorAll(".tabs button").forEach(b =>
-  b.addEventListener("click", () => mostra(b.dataset.v)));
-let salvata = null;
-try{ salvata = localStorage.getItem("cc-vista"); }catch(e){}
-render().then(() => { if (salvata) mostra(salvata); });
-setInterval(render, 60000);
+document.querySelectorAll("nav button").forEach(b=>
+  b.addEventListener("click",()=>mostra(b.dataset.v)));
+let salvata=null; try{ salvata=localStorage.getItem("cc-vista"); }catch(e){}
+render().then(()=>{ if(salvata) mostra(salvata); });
+setInterval(render,60000);
 </script>
 </body>
 </html>
