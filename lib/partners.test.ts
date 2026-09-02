@@ -7,7 +7,7 @@ const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["betscore", "casea", "felicebet", "fortuneplay", "ggbet", "slotsbonus", "velobet", "ybets"]);
+    expect(ids).toEqual(["beazt", "betscore", "casea", "felicebet", "fortuneplay", "ggbet", "slotsbonus", "velobet", "wildz", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
@@ -60,7 +60,7 @@ describe("partners catalog", () => {
     });
 
     it("i partner NON geo-ristretti compaiono in ogni geo, VeloBet incluso", () => {
-      const always = ["fortuneplay", "ybets", "betscore", "felicebet", "slotsbonus", "velobet", "ggbet"];
+      const always = ["fortuneplay", "ybets", "betscore", "felicebet", "slotsbonus", "velobet", "ggbet", "beazt", "wildz"];
       for (const cc of ["NO", "AT", ""]) {
         for (const id of always) expect(idsIn(cc), `${id} manca in "${cc}"`).toContain(id);
       }
