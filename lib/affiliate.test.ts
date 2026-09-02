@@ -38,6 +38,18 @@ describe("landingPartnersFor(country)", () => {
     }
   });
 
+  // #PARTNER-WILDZ-BEAZT — sono partner di sola vetrina: il link della rete
+  // atterra sulla home del casinò, non sul prematch, quindi offrirli come
+  // destinazione di "Piazza la scommessa" manderebbe l'utente nel posto sbagliato.
+  // Vivono in PARTNERS (pagina /partners + footer) e NON in LANDING_PARTNERS.
+  // Se la rete ci darà un link sportsbook, la voce entra lì e questo test cambia.
+  it("Beazt e Wildz restano fuori dal menu piazza-scommessa (solo vetrina)", () => {
+    for (const cc of ["NO", "CH", "AT", "CA", ""]) {
+      expect(namesIn(cc), `Beazt non deve comparire nel menu (${cc})`).not.toContain("Beazt");
+      expect(namesIn(cc), `Wildz non deve comparire nel menu (${cc})`).not.toContain("Wildz");
+    }
+  });
+
   it("non duplica né perde voci: geo coperta = fisse + 1, geo scoperta = fisse", () => {
     expect(landingPartnersFor("NO")).toHaveLength(LANDING_PARTNERS.length + 1);
     expect(landingPartnersFor("AT")).toHaveLength(LANDING_PARTNERS.length);

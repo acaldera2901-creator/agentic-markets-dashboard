@@ -48,6 +48,21 @@ const VELOBET_URL = LANDING_PARTNERS.find((p) => p.name === "VeloBet")?.url
 // l'URL vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
 const GGBET_URL = LANDING_PARTNERS.find((p) => p.name === "GG.BET")?.url
   ?? "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?utm_source=Aff&utm_medium=267914&utm_campaign=seo&utm_content=bet&sub_id=betredge";
+// #PARTNER-WILDZ-BEAZT (2026-09-02): due marchi della stessa rete affiliata
+// (go.wildzaffiliates.com, bta=1000385 — il programma di Rootz Ltd, licenza MGA).
+// Verificati con curl e col browser: nci=6056 → 302 su beazt.com/en/, nci=5345 →
+// 302 su wildz.com/en/, entrambi col tag di attribuzione `aff=cxw-1000385_<n>`
+// (n cambia a ogni visita: è il click-id della rete, non fa parte del link e non
+// va fissato). Sono solo landing di registrazione — nessun feed quote, nessun
+// deep-link per evento → NON stanno in LANDING_PARTNERS, cioè non compaiono nel
+// menu "Piazza la scommessa": quello vuole un atterraggio sul prematch (VeloBet),
+// questi atterrano sulla home del casinò. Come slotsbonus, l'URL vive qui perché
+// questi partner esistono solo nella vetrina.
+// `utm_campaign=betredge` sul link Wildz è quello consegnato dalla rete: verificato
+// che il tracker NON lo propaga alla destinazione, si tiene comunque perché è il
+// link firmato dal partner.
+const BEAZT_URL = "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056";
+const WILDZ_URL = "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -73,6 +88,18 @@ export const PARTNERS: Partner[] = [
   { id: "velobet", name: "VeloBet", category: "casino", logo: "/logos/velobet.png", url: VELOBET_URL },
   // Nessun `url`: Casea vive solo dove il partner ci ha dato un link (NO/CH/FI).
   { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.png", geoUrls: CASEA_GEO_URLS },
+  // #PARTNER-WILDZ-BEAZT: categoria "casino" per entrambi, come VeloBet — hanno
+  // anche uno sportsbook, ma il link affiliato atterra sulla vetrina casinò.
+  // Loghi = marchi ufficiali SVG dei partner (assets.rootz.com), monocromatici su
+  // trasparente → leggibili sulla placca scura senza ritocchi. A wildz.svg è stato
+  // aggiunto solo width/height intrinseci: il file della rete ha il solo viewBox e
+  // il CSS della placca normalizza per altezza, che senza dimensioni non funziona.
+  // Beazt è un wordmark 4.0:1 → cap standard (134×34, 4.568px², in linea con gli
+  // altri). Il lockup Wildz è 2.1:1: al cap standard renderebbe 2.380px² contro i
+  // 2.856-6.510px² di tutta la vetrina, cioè sembrerebbe il partner minore →
+  // logoShape emblema come FortunePlay/FeliceBet (110×54 = 5.961px², misurato).
+  { id: "beazt", name: "Beazt", category: "casino", logo: "/logos/beazt.svg", url: BEAZT_URL },
+  { id: "wildz", name: "Wildz", category: "casino", logo: "/logos/wildz.svg", url: WILDZ_URL, logoShape: "emblem" },
 ];
 
 // #PARTNERS-VELOBET-CASEA — UNICO modo di renderizzare la vetrina (pagina + footer):
@@ -231,6 +258,23 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Casino online con registro localizado en tu país.",
     fr: "Casino en ligne, inscription localisée pour votre pays.",
     ru: "Онлайн-казино с регистрацией на языке вашей страны.",
+  },
+  // #PARTNER-WILDZ-BEAZT: copy FTC-safe. Beazt dichiara casinò + sport sulla sua
+  // stessa landing; su Wildz il link atterra sulla vetrina casinò (lo sportsbook
+  // non c'è in ogni mercato) → non lo promettiamo. Nessun claim su bonus o quote.
+  beazt: {
+    it: "Casino e sportsbook: slot, tavoli live e sport in un unico conto.",
+    en: "Casino and sportsbook: slots, live tables and sports in one account.",
+    es: "Casino y sportsbook: slots, mesas en vivo y deportes en una sola cuenta.",
+    fr: "Casino et sportsbook : machines, tables live et sport sur un seul compte.",
+    ru: "Казино и букмекер: слоты, live-столы и спорт в одном аккаунте.",
+  },
+  wildz: {
+    it: "Casino online: slot e tavoli live, con pagamenti rapidi.",
+    en: "Online casino: slots and live tables, with fast payouts.",
+    es: "Casino online: slots y mesas en vivo, con pagos rápidos.",
+    fr: "Casino en ligne : machines et tables live, retraits rapides.",
+    ru: "Онлайн-казино: слоты и live-столы, быстрые выплаты.",
   },
   slotsbonus: {
     it: "Portale di bonus e offerte casino.",
