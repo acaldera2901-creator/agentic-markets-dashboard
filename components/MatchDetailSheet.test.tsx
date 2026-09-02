@@ -92,9 +92,9 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
     }
   });
 
-  // Il caso che conta davvero: i 6 partner veri, consegnati nell'ordine in cui li
+  // Il caso che conta davvero: gli 8 partner veri, consegnati nell'ordine in cui li
   // impilano le fonti, più Casea che non è nell'ordine e deve finire in coda.
-  it("coi 6 partner reali esce l'ordine di Andrea, Casea (geo-ristretta) in coda", () => {
+  it("cogli 8 partner reali esce l'ordine di Andrea, Casea (geo-ristretta) in coda", () => {
     const arrivo = [
       { name: "FortunePlay", matchUrl: "https://fp.example/x" },
       { name: "YBets", matchUrl: "https://ybetspromo.io/dputempxc" },
@@ -102,12 +102,23 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
       { name: "FeliceBet", matchUrl: "https://go.bluewinpartners.com/visit/?bta=2961065&nci=5732" },
       { name: "VeloBet", matchUrl: "https://track.velobetpartners.com/visit/?bta=42786&nci=6119" },
       { name: "GG.BET", matchUrl: "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?sub_id=betredge" },
+      // #PARTNER-WILDZ-BEAZT: arrivano dopo GG.BET da landingPartnersFor e restano
+      // in coda anche nell'ordine di render (atterrano sulla lobby, non sul prematch).
+      { name: "Beazt", matchUrl: "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056" },
+      { name: "Wildz", matchUrl: "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge" },
       { name: "Casea", matchUrl: "https://csa.lynmonkel.com/?mid=383451_2222324" },
     ];
     render(<MatchDetailSheet data={makeData({ books: arrivo })} />);
     openMenu();
-    expect((screen.getAllByRole("menuitem") as HTMLAnchorElement[]).map((a) => a.textContent?.trim()))
-      .toEqual(["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets", "Casea"]);
+    const items = screen.getAllByRole("menuitem") as HTMLAnchorElement[];
+    expect(items.map((a) => a.textContent?.trim()))
+      .toEqual(["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets", "Beazt", "Wildz", "Casea"]);
+    // ogni voce apre il link del suo partner, non quello del vicino
+    expect(items.find((a) => a.textContent?.trim() === "Wildz")?.getAttribute("href"))
+      .toBe("https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge");
+    // e ha il suo logo (partnerLogoByName risolve per nome: un typo qui è una voce muta)
+    expect(items.find((a) => a.textContent?.trim() === "Beazt")?.querySelector("img")?.getAttribute("src"))
+      .toBe("/logos/beazt.svg");
   });
 
   it("Escape chiude il menu", () => {
