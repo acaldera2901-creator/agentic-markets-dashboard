@@ -78,8 +78,8 @@ describe("partners catalog", () => {
     const names = (bs: { name: string }[]) => sortBooksForMenu(bs).map((b) => b.name);
 
     it("mette i partner nell'ordine deciso da Andrea, qualunque sia quello d'arrivo", () => {
-      const arrivo = ["YBets", "GG.BET", "FortunePlay", "FeliceBet", "BetScore", "VeloBet"].map((name) => ({ name }));
-      expect(names(arrivo)).toEqual(["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets"]);
+      const arrivo = ["Wildz", "YBets", "GG.BET", "FortunePlay", "Beazt", "FeliceBet", "BetScore", "VeloBet"].map((name) => ({ name }));
+      expect(names(arrivo)).toEqual(["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets", "Beazt", "Wildz"]);
     });
 
     it("chi non è nell'ordine (Casea, geo-ristretta) va in coda senza sparire", () => {

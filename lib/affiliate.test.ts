@@ -10,7 +10,7 @@ describe("landingPartnersFor(country)", () => {
 
   it("le voci a link unico ci sono in ogni geo", () => {
     for (const cc of ["NO", "CH", "FI", "AT", "CA", ""]) {
-      expect(namesIn(cc)).toEqual(expect.arrayContaining(["BetScore", "FeliceBet", "VeloBet", "GG.BET"]));
+      expect(namesIn(cc)).toEqual(expect.arrayContaining(["BetScore", "FeliceBet", "VeloBet", "GG.BET", "Beazt", "Wildz"]));
     }
   });
 
@@ -38,15 +38,16 @@ describe("landingPartnersFor(country)", () => {
     }
   });
 
-  // #PARTNER-WILDZ-BEAZT — sono partner di sola vetrina: il link della rete
-  // atterra sulla home del casinò, non sul prematch, quindi offrirli come
-  // destinazione di "Piazza la scommessa" manderebbe l'utente nel posto sbagliato.
-  // Vivono in PARTNERS (pagina /partners + footer) e NON in LANDING_PARTNERS.
-  // Se la rete ci darà un link sportsbook, la voce entra lì e questo test cambia.
-  it("Beazt e Wildz restano fuori dal menu piazza-scommessa (solo vetrina)", () => {
-    for (const cc of ["NO", "CH", "AT", "CA", ""]) {
-      expect(namesIn(cc), `Beazt non deve comparire nel menu (${cc})`).not.toContain("Beazt");
-      expect(namesIn(cc), `Wildz non deve comparire nel menu (${cc})`).not.toContain("Wildz");
+  // #PARTNER-WILDZ-BEAZT (02/09, scelta di Andrea) — stanno nel menu "Piazza la
+  // scommessa" di tutte e 3 le superfici (football/tennis desk + World Cup), che lo
+  // costruiscono spargendo `landingPartnersFor(geoCountry)` nei `books`. Nessuna geo
+  // li esclude: il link della rete è unico. Il test presidia la scelta perché il
+  // loro link atterra sulla lobby del casinò e non sul prematch — cioè la ragione
+  // per cui qualcuno, un domani, potrebbe pensare di togliermeli "per coerenza".
+  it("Beazt e Wildz sono nel menu piazza-scommessa in ogni geo", () => {
+    for (const cc of ["NO", "CH", "AT", "CA", "", null, undefined]) {
+      expect(namesIn(cc), `Beazt manca nel menu (${String(cc)})`).toContain("Beazt");
+      expect(namesIn(cc), `Wildz manca nel menu (${String(cc)})`).toContain("Wildz");
     }
   });
 

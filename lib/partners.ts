@@ -48,21 +48,13 @@ const VELOBET_URL = LANDING_PARTNERS.find((p) => p.name === "VeloBet")?.url
 // l'URL vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
 const GGBET_URL = LANDING_PARTNERS.find((p) => p.name === "GG.BET")?.url
   ?? "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?utm_source=Aff&utm_medium=267914&utm_campaign=seo&utm_content=bet&sub_id=betredge";
-// #PARTNER-WILDZ-BEAZT (2026-09-02): due marchi della stessa rete affiliata
-// (go.wildzaffiliates.com, bta=1000385 — il programma di Rootz Ltd, licenza MGA).
-// Verificati con curl e col browser: nci=6056 → 302 su beazt.com/en/, nci=5345 →
-// 302 su wildz.com/en/, entrambi col tag di attribuzione `aff=cxw-1000385_<n>`
-// (n cambia a ogni visita: è il click-id della rete, non fa parte del link e non
-// va fissato). Sono solo landing di registrazione — nessun feed quote, nessun
-// deep-link per evento → NON stanno in LANDING_PARTNERS, cioè non compaiono nel
-// menu "Piazza la scommessa": quello vuole un atterraggio sul prematch (VeloBet),
-// questi atterrano sulla home del casinò. Come slotsbonus, l'URL vive qui perché
-// questi partner esistono solo nella vetrina.
-// `utm_campaign=betredge` sul link Wildz è quello consegnato dalla rete: verificato
-// che il tracker NON lo propaga alla destinazione, si tiene comunque perché è il
-// link firmato dal partner.
-const BEAZT_URL = "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056";
-const WILDZ_URL = "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge";
+// #PARTNER-WILDZ-BEAZT (2026-09-02): rete Rootz (bta=1000385). Come gli altri
+// solo-landing l'URL vive in LANDING_PARTNERS (fonte unica) e qui si rilegge — vedi
+// lì la verifica dei link e la nota sull'atterraggio sulla home invece del prematch.
+const BEAZT_URL = LANDING_PARTNERS.find((p) => p.name === "Beazt")?.url
+  ?? "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056";
+const WILDZ_URL = LANDING_PARTNERS.find((p) => p.name === "Wildz")?.url
+  ?? "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -89,7 +81,9 @@ export const PARTNERS: Partner[] = [
   // Nessun `url`: Casea vive solo dove il partner ci ha dato un link (NO/CH/FI).
   { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.png", geoUrls: CASEA_GEO_URLS },
   // #PARTNER-WILDZ-BEAZT: categoria "casino" per entrambi, come VeloBet — hanno
-  // anche uno sportsbook, ma il link affiliato atterra sulla vetrina casinò.
+  // anche uno sportsbook, ma il link affiliato atterra sulla vetrina casinò. La
+  // categoria governa solo la sezione della vetrina: nel menu "Piazza la scommessa"
+  // ci sono comunque (scelta di Andrea, 02/09), come VeloBet che è anch'esso casino.
   // Loghi = marchi ufficiali SVG dei partner (assets.rootz.com), monocromatici su
   // trasparente → leggibili sulla placca scura senza ritocchi. A wildz.svg è stato
   // aggiunto solo width/height intrinseci: il file della rete ha il solo viewBox e
@@ -129,7 +123,11 @@ export function partnerLogoByName(name: string): string | null {
 // via landingPartnersFor) e nessuna delle due controlla l'ordine finale. Ordinare
 // qui, al render, vale per tutte e 3 le superfici (football/tennis desk + World Cup)
 // senza toccarne i call-site. Non tocca la vetrina /partners, che ha il suo ordine.
-export const BET_MENU_ORDER = ["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets"] as const;
+// #PARTNER-WILDZ-BEAZT: Beazt e Wildz in coda all'ordine esistente. Non è una
+// gerarchia commerciale: sono gli unici due che atterrano sulla lobby del casinò
+// invece che su una superficie di scommessa, quindi chi apre il menu per piazzare
+// una giocata trova prima chi lo porta dove vuole andare. Spostarli su = una riga.
+export const BET_MENU_ORDER = ["FortunePlay", "BetScore", "VeloBet", "FeliceBet", "GG.BET", "YBets", "Beazt", "Wildz"] as const;
 
 // Chi non è nell'ordine (es. Casea, geo-ristretta) finisce in coda mantenendo
 // l'ordine d'arrivo: un partner nuovo compare comunque, non sparisce.

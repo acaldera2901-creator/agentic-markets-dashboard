@@ -50,6 +50,20 @@ export const LANDING_PARTNERS = [
   // rimosso `click_id` (macro della rete, noi non ne abbiamo uno). Solo landing di
   // registrazione (`encoded_url` = sports#!/auth/register), nessun deep-link evento.
   { name: "GG.BET", url: "https://ggbetbestoffer.com/l/6a6ca2b84d683c219008f152?utm_source=Aff&utm_medium=267914&utm_campaign=seo&utm_content=bet&sub_id=betredge" },
+  // #PARTNER-WILDZ-BEAZT (2026-09-02): rete Rootz (go.wildzaffiliates.com, bta=1000385,
+  // licenza MGA). Verificati con curl e col browser: nci=6056 → 302 su beazt.com/en/,
+  // nci=5345 → 302 su wildz.com/en/, col tag `aff=cxw-1000385_<n>` (n cambia a ogni
+  // click: è il click-id della rete, non fa parte del link). L'`utm_campaign=betredge`
+  // sul link Wildz è quello consegnato dalla rete e il tracker NON lo propaga alla
+  // destinazione (verificato): si tiene perché è il link firmato dal partner, ma non
+  // vale come attribuzione. Entrambi hanno casinò + sportsbook.
+  // ATTENZIONE — questi due atterrano sulla HOME (non sul prematch come VeloBet):
+  // dal menu "Piazza la scommessa" l'utente arriva sulla lobby e deve navigare fino
+  // allo sport da solo. Presenza nel menu = scelta esplicita di Andrea (02/09), non
+  // una conseguenza del link. Se la rete ci dà un deep-link sportsbook, si sostituisce
+  // qui e l'attrito sparisce.
+  { name: "Beazt", url: "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056" },
+  { name: "Wildz", url: "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge" },
 ] as const;
 
 export type LandingPartner = { name: string; url: string };
