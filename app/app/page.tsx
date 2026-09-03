@@ -3571,6 +3571,12 @@ function CheckoutModal({
     // percepibile → stato "reindirizzamento" così il click non sembra un freeze.
     // On success la pagina viene sostituita (redirect), quindi lo stato resta true.
     setRedirecting(true);
+    // #PAY-OBS-0903: il click c'è stato. Da qui in poi ogni uscita è misurata —
+    // redirect (a quale rail) o fallimento (con lo status). Senza questo evento
+    // un utente che clicca "Paga" e viene perso dal checkout Shopify non lascia
+    // NESSUNA traccia da noi: la riga d'ordine, su quel rail, nasce solo quando
+    // i soldi atterrano. Fire-and-forget: non può bloccare il pagamento.
+    trackEvent("checkout_started", { plan, meta: { period, rail } });
     try {
       // #SHOPIFY-CHECKOUT-1: se lo store Shopify è configurato il rail carta è
       // Shopify (abbonamento ricorrente + ricevuta). Qualunque altra risposta
@@ -3588,7 +3594,11 @@ function CheckoutModal({
         });
         if (sres.ok) {
           const { url: shopUrl } = (await sres.json()) as { url?: string };
-          if (shopUrl) { window.location.href = shopUrl; return; }
+          if (shopUrl) {
+            trackEvent("checkout_redirect", { plan, meta: { period, rail: "shopify" } });
+            window.location.href = shopUrl;
+            return;
+          }
         } else if (sres.status === 409) {
           // Abbonamento Shopify già attivo: cadere su PayGate sarebbe un SECONDO
           // addebito su un altro rail. Qui si ferma e si dice cosa fare.
@@ -3613,16 +3623,22 @@ function CheckoutModal({
       });
       if (!res.ok) {
         console.error("paygate checkout failed", res.status);
+        trackEvent("checkout_failed", { plan, meta: { period, rail: "paygate", status: res.status } });
         setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
         setRedirecting(false);
         payInFlight.current = false;
         return;
       }
       const { url } = (await res.json()) as { url?: string };
-      if (url) { markPayPending(); window.location.href = url; }
-      else { setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova."); setRedirecting(false); payInFlight.current = false; }
+      if (url) {
+        trackEvent("checkout_redirect", { plan, meta: { period, rail: "paygate" } });
+        markPayPending();
+        window.location.href = url;
+      }
+      else { trackEvent("checkout_failed", { plan, meta: { period, rail: "paygate", status: "no_url" } }); setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova."); setRedirecting(false); payInFlight.current = false; }
     } catch (e) {
       console.error("paygate checkout error", e);
+      trackEvent("checkout_failed", { plan, meta: { period, rail: "paygate", status: "exception" } });
       setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
       setRedirecting(false);
       payInFlight.current = false;

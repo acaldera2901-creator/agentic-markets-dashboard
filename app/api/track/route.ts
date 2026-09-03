@@ -31,6 +31,12 @@ const ALLOWED_EVENTS = new Set([
   // QUALE sito converte (dichiarato dal client, come ogni altro evento qui:
   // buono per misurare, mai per decidere accessi).
   "widget_view", "widget_click",
+  // #PAY-OBS-0903 — l'ultimo metro del funnel. Fra "vede i piani" (plan_view) e
+  // "esiste una riga d'ordine" non c'era NIENTE: sul rail vivo (Shopify) da noi
+  // non si scrive nulla finché i soldi non atterrano, quindi "nessuno ha
+  // cliccato" e "hanno cliccato e il checkout li ha persi" erano lo stesso dato.
+  // Misurato il 2026-09-03: 0 ordini da 36 giorni con plan_view ancora attivo.
+  "checkout_started", "checkout_redirect", "checkout_failed",
 ]);
 
 const cap = (v: unknown, n: number): string | null =>
