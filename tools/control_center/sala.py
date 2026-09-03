@@ -150,11 +150,14 @@ def _pulisci(t: str, limite: int = 260) -> str:
 
 
 # Roba che compare fra i messaggi "user" ma non e' una richiesta di Andrea:
-# l'eco di uno slash command, l'output di un comando locale, i promemoria di
-# sistema. Mostrarli come "il task" farebbe leggere `/clear` come lavoro.
-_RUMORE_UTENTE = re.compile(
-    r"^\s*<(command-name|command-message|command-args|local-command-|"
-    r"system-reminder|bash-|user-prompt-submit)", re.I)
+# l'eco di uno slash command, l'output di un comando bash, i promemoria di
+# sistema, le notifiche dei job in background. Un elenco di tag non regge:
+# il 03/09 `<task-notification>` e `<bash-stdout>` non c'erano nell'elenco e
+# il task di `me-ceo` diventava "a0517de8ef1e44393 toolu_01K5h3UBbMpN7eB3",
+# cioe' gli id rimasti dopo che `_pulisci` aveva tolto i tag.
+# La regola che li copre tutti, anche quelli che non esistono ancora:
+# **una richiesta scritta da una persona non comincia con un tag**.
+_RUMORE_UTENTE = re.compile(r"^\s*<[a-z][a-z0-9-]*[ >]", re.I)
 
 
 def _scorri(righe: list[dict]) -> dict:
