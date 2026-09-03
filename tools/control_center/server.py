@@ -21,7 +21,7 @@ from .actions import (
     start_daemon,
     stop_daemon,
 )
-from . import council
+from . import council, sala
 from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 
 HOST = "127.0.0.1"
@@ -29,6 +29,7 @@ PORT = 8790
 STATIC = Path(__file__).resolve().parent / "static"
 PAGE = STATIC / "azienda.html"        # la home: il portafoglio
 PAGE_BR = STATIC / "index.html"       # la sala controllo BetRedge
+PAGE_SALA = STATIC / "sala.html"      # la sala di lavoro: chi sta lavorando adesso
 HISTORY_LIMIT = 500
 
 
@@ -150,6 +151,8 @@ class Handler(BaseHTTPRequestHandler):
                 "__CC_TOKEN__", ensure_token()
             )
             self._send(200, html.encode(), "text/html; charset=utf-8")
+        elif path == "/sala":
+            self._send(200, PAGE_SALA.read_bytes(), "text/html; charset=utf-8")
         elif path == "/architettura.html":
             # La mappa e' un artefatto a se': si serve com'e', senza token
             # (e' sola lettura e non contiene segreti).
@@ -164,6 +167,12 @@ class Handler(BaseHTTPRequestHandler):
             f = STATE_FILE.parent / "azienda.json"
             corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
             self._send(200, corpo, "application/json; charset=utf-8")
+        elif path == "/api/sala":
+            # Dal vivo, non dallo snapshot: il collector gira ogni 5 minuti e
+            # una sala "in tempo reale" vecchia di 5 minuti sarebbe una bugia.
+            # Costa 43 ms misurati su 3 sessioni (03/09).
+            self._send(200, json.dumps(sala.stato(), ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/council":
             # Puo' essere lento (chiama un servizio esterno): la pagina lo
             # carica a parte, non insieme al resto.
