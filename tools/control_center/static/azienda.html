@@ -258,7 +258,12 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     Il numero dentro l&rsquo;ala &egrave; da <b>quanto</b> dura quello stato — senza, un&rsquo;ala
     accesa da trenta secondi e una piantata da un&rsquo;ora si somigliano. Pid, cartella,
     sessione e passo per esteso stanno in <code>/sala</code>: qui starebbero stretti e non
-    si leggerebbe pi&ugrave; niente. Stessa lettura dal vivo, nessuna seconda sorgente.</p>
+    si leggerebbe pi&ugrave; niente. Stessa lettura dal vivo, nessuna seconda sorgente.<br><br>
+    La <b>pastiglia sul bordo</b> dice quante <b>deleghe</b> quell&rsquo;ala ha ancora aperte,
+    cio&egrave; quanti sottoagenti ha lanciato e non ha ancora visto tornare. Un sottoagente
+    non ha un suo processo e non ha un suo nodo: vive dentro la madre, e qui si attacca alla
+    madre. Si sa <b>a chi</b> e <b>da quando</b> — non a che punto sia, perch&eacute; i suoi
+    passi non passano dal transcript di chi lo ha lanciato.</p>
   </section>
 
   <div class="col">
@@ -663,6 +668,24 @@ function breve(s){
 }
 function taglia(s,n){ s=(s||"").trim(); return s.length>n ? s.slice(0,n-1)+"…" : s; }
 
+/* Le deleghe aperte di un'ala. Un sottoagente non ha un suo processo e non ha
+   un suo nodo: sta DENTRO la madre, e nello schema si attacca alla madre.
+   Aperta = nessuna `<task-notification>` di fine nel transcript, cioe' un
+   fatto letto. Cosa NON si mostra: a che punto sia il sottoagente, che dal
+   transcript della madre non si vede. Oltre l'ora passa in ambra, perche'
+   «aperta da molto» e «morta senza dirlo» da qui sono lo stesso dato. */
+function deleghe(a){
+  const ap = (a.deleghe||[]).filter(x=>x.aperta);
+  const n  = a.deleghe_aperte || 0;
+  if(!n) return null;
+  const dubbia = ap.some(x=>x.sospetta);
+  const eta = ap.reduce((m,x)=>Math.max(m, x.eta_s==null?0:x.eta_s), 0);
+  return {n, col: dubbia ? "#F5A524" : "#22D3EE",
+          // Con una sola delega il nome di chi la porta vale piu' del numero.
+          eti: n===1 && ap.length ? "→ "+taglia(ap[0].agente,20)+" · "+breve(eta)
+                                  : "→ "+n+" deleghe · da "+breve(eta)};
+}
+
 function schemaSala(sala){
   const ag=sala.agenti, N=ag.length;
   // Stessi anelli e stesso hub di /betredge, scalati a 0,8: nella root questa
@@ -689,14 +712,19 @@ function schemaSala(sala){
 
   ag.forEach((a,i)=>{
     const st=statoAla(a);
+    const de=deleghe(a);
     const ang=(-90+i*(360/N))*Math.PI/180;
     const x=cx+R*Math.cos(ang), y=cy+R*Math.sin(ang);
 
     s.append(sv("line",{x1:cx,y1:cy,x2:x,y2:y,stroke:st.col,"stroke-width":"1",
       opacity:st.id==="ferma"?".2":".38"}));
 
+    // Il nome resta il primo campo: `vistaSala` ci ritrova il focus dopo il
+    // ridisegno spezzando su virgola.
+    const voce=(a.deleghe||[]).filter(x=>x.aperta).map(x=>x.agente).join(" e ");
     const g=sv("g",{class:"nodo",tabindex:"0",role:"button",
-      "aria-label":`${a.nome}, ${a.agente}, ${st.eti}${a.task?", "+a.task:""}`});
+      "aria-label":`${a.nome}, ${a.agente}, ${st.eti}${a.task?", "+a.task:""}`
+        +(de?`, ha delegato a ${voce}`:"")});
     // `sv` fa setAttribute su tutte le chiavi: un null diventerebbe la stringa
     // "null", quindi l'attributo si aggiunge solo quando serve davvero.
     const corpo={cx:x,cy:y,r:rn,fill:"#070C18","fill-opacity":".92",
@@ -719,6 +747,20 @@ function schemaSala(sala){
     const e=sv("text",{x,y:y+13,"text-anchor":"middle",fill:st.col,"font-size":"8",
       "font-family":"Saira, sans-serif","letter-spacing":".4"});
     e.textContent=st.eti; g.append(e);
+
+    // Il segno che quest'ala ha del lavoro fuori: una pastiglia sul bordo col
+    // numero delle deleghe aperte. Sta a 45° in alto a destra, cioe' sul lato
+    // dove l'etichetta non arriva mai (parte a rn+12 in orizzontale), quindi
+    // non collide per nessun N. Regge anche quando le etichette cadono (N>8):
+    // il numero e' la sola cosa che a quel punto resta leggibile.
+    if(de){
+      const px=x+rn*0.71, py=y-rn*0.71;
+      g.append(sv("circle",{cx:px,cy:py,r:10,fill:"#070C18",stroke:de.col,
+        "stroke-width":"1.4",style:`filter:drop-shadow(0 0 7px ${de.col}66)`}));
+      const pn=sv("text",{x:px,y:py+3.5,"text-anchor":"middle",fill:de.col,
+        "font-size":"11","font-family":"JetBrains Mono, monospace","font-weight":"700"});
+      pn.textContent=String(de.n); g.append(pn);
+    }
     g.append(sv("circle",{cx:x,cy:y,r:rn+7,class:"hit"}));
 
     // L'etichetta sta SEMPRE di fianco al nodo, mai sopra o sotto. Centrata
@@ -729,7 +771,11 @@ function schemaSala(sala){
     const verso = (x-cx) < 0 ? -1 : 1;
     const lx  = x + verso*(rn+12);
     const anc = verso<0 ? "end" : "start";
-    const alt = conTask ? 27 : 13;          // distanza prima/ultima riga
+    // La riga della delega si aggiunge solo dove le etichette ci stanno gia'
+    // (N<=8): oltre, due blocchi vicini dello stesso lato si toccherebbero, e
+    // il numero sulla pastiglia dice comunque che c'e' una delega aperta.
+    const rigaDel = conTask && !!de;
+    const alt = conTask ? (rigaDel ? 40 : 27) : 13;   // distanza prima/ultima riga
     const ly  = y - alt/2 + 4;
 
     const nome=sv("text",{x:lx,y:ly,"text-anchor":anc,fill:"#CFE0F5","font-size":"12.5",
@@ -745,6 +791,11 @@ function schemaSala(sala){
       tk.textContent = a.task ? taglia(a.task,34) : "— nessun prompt trovato";
       if(!a.task) tk.setAttribute("fill","#5B7699");
       g.append(tk);
+    }
+    if(rigaDel){
+      const dl=sv("text",{x:lx,y:ly+40,"text-anchor":anc,fill:de.col,"font-size":"10",
+        "font-family":"JetBrains Mono, monospace"});
+      dl.textContent=de.eti; g.append(dl);
     }
 
     g.addEventListener("click",()=>{location.href="/sala";});
@@ -808,6 +859,20 @@ async function vistaSala(){
      if(id!=="muto") i.style.background=col;
      s.append(i, el("b",null,testo)); leg.append(s);
    });
+  // Le deleghe entrano in legenda solo se ce n'e' almeno una aperta: una voce
+  // che spiega un simbolo assente e' rumore.
+  const conDel=d.agenti.filter(a=>deleghe(a));
+  if(conDel.length){
+    const dubbie=conDel.some(a=>deleghe(a).col==="#F5A524");
+    const s=el("span"); const i=el("i"); i.style.background="#22D3EE";
+    s.append(i, el("b",null,"delega aperta: a chi e da quando, non a che punto sia"));
+    leg.append(s);
+    if(dubbie){
+      const s2=el("span"); const i2=el("i"); i2.style.background="#F5A524";
+      s2.append(i2, el("b",null,"delega aperta da oltre un'ora: o lunga, o morta senza dirlo"));
+      leg.append(s2);
+    }
+  }
   if(d.fantasmi && d.fantasmi.length){
     const s=el("span"); const i=el("i"); i.style.background="#F0525B";
     const q=d.fantasmi.length;

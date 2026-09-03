@@ -75,10 +75,20 @@ main{padding:16px;display:grid;gap:14px;max-width:1500px;margin-inline:auto}
   max-height:96px;overflow:auto}
 
 .deleghe{display:flex;flex-wrap:wrap;gap:6px}
+/* Una delega finita e una ancora aperta non possono somigliarsi: la prima e'
+   un fatto passato, la seconda e' lavoro che sta succedendo adesso. */
 .chip{font-size:10.5px;font-family:"JetBrains Mono",monospace;color:var(--violet);
   border:1px solid rgba(167,139,250,.35);background:rgba(167,139,250,.08);
   padding:3px 8px;border-radius:12px}
 .chip span{color:var(--dim)}
+.chip.aperta{color:var(--cy-2);border-color:rgba(34,211,238,.5);
+  background:rgba(34,211,238,.10);box-shadow:0 0 10px rgba(34,211,238,.14)}
+.chip.aperta::before{content:"→ ";color:var(--cy-2)}
+.chip.sospetta{color:var(--amber);border-color:rgba(245,165,36,.5);
+  background:rgba(245,165,36,.10);box-shadow:none}
+.chip.sospetta::before{color:var(--amber)}
+.chip.finita{opacity:.72}
+.dubbio{font-size:10.5px;line-height:1.5;color:var(--amber);margin-top:7px}
 
 .meta{display:flex;flex-wrap:wrap;gap:4px 16px;padding:10px 14px;margin-top:auto;
   font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim)}
@@ -136,10 +146,23 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     Si legge <b>al momento della richiesta</b>, non dallo snapshot del collector: una sala
     &laquo;dal vivo&raquo; vecchia di cinque minuti sarebbe una bugia. Costo misurato:
     <b>43 ms</b> su 3 sessioni.<br><br>
-    <b>Il limite, detto:</b> le <i>deleghe</i> dicono chi ha passato lavoro a chi, non che
-    quel lavoro sia ancora in corso — il <code>tool_result</code> di un sottoagente in
-    background torna dopo 1,5 s mentre il sottoagente lavora ancora, quindi la vita di un
-    sottoagente <b>non &egrave; osservabile</b> da qui e non la si inventa.
+    <b>Le deleghe, e cosa vuol dire «aperta».</b> Quando un&rsquo;ala passa lavoro a un
+    sottoagente, quello non ha un suo processo n&eacute; un suo file di sessione: gira dentro
+    la madre, e in <code>~/.claude/sessions/</code> non compare. Ma la <b>fine</b> della
+    delega &egrave; scritta: Claude Code inietta nel transcript della madre una
+    <code>&lt;task-notification&gt;</code> con il <code>task-id</code> del sottoagente e il
+    suo <code>status</code>. Una delega senza quella notifica &egrave; <b>ancora aperta</b>,
+    e questo &egrave; un fatto letto, non una stima.<br><br>
+    Il <code>tool_result</code> non c&rsquo;entra e non chiude niente: torna dopo 1,5 s con
+    &laquo;Async agent launched&raquo; mentre il sottoagente lavora ancora — &egrave; l&rsquo;errore
+    in cui era facile cadere, ed &egrave; il motivo per cui prima le deleghe non portavano
+    stato.<br><br>
+    <b>Il limite, detto:</b> di una delega aperta si sa <i>a chi</i>, <i>per cosa</i> e
+    <i>da quando</i>. Non <b>a che punto sia</b>: i passi interni del sottoagente stanno
+    fuori dal transcript della madre, e non li si inventa. E una delega aperta da oltre
+    un&rsquo;ora passa in <b>ambra</b>: due delle ventidue osservate non hanno mai ricevuto la
+    loro notifica di fine, quindi &laquo;aperta da molto&raquo; e &laquo;morta senza dirlo&raquo;
+    sono lo stesso dato.
     </p>
   </section>
 </main>
@@ -184,10 +207,16 @@ function scheda(a){
   c.append(testa);
 
   if(a.silenzio_sospetto){
+    // Il silenzio resta segnalato anche quando c'e' una delega aperta: la
+    // delega lo *spiega*, non lo assolve. Una madre puo' essere appesa mentre
+    // il sottoagente lavora, e togliere l'avviso nasconderebbe proprio quello.
+    const ap = a.deleghe_aperte || 0;
     c.append(el("div","avviso",
       "Dichiara «al lavoro» ma il suo transcript non si muove da "+eta(a.eta_evento_s)
-      +". Sta aspettando qualcosa di lungo (un sottoagente, un comando) oppure e' "
-      +"appesa: da qui le due cose non si distinguono, e non si tira a indovinare."));
+      + (ap ? ". Ha "+ap+" delega ancora aperta: e' una spiegazione del silenzio, "
+             +"non una prova che stia bene."
+            : ". Sta aspettando qualcosa di lungo (un sottoagente, un comando) oppure e' "
+             +"appesa: da qui le due cose non si distinguono, e non si tira a indovinare.")));
   }
 
   const t = el("div","blocco");
@@ -203,14 +232,29 @@ function scheda(a){
 
   if(a.deleghe && a.deleghe.length){
     const d = el("div","blocco");
-    d.append(el("span","et","Ha delegato"));
+    const ap = a.deleghe_aperte || 0;
+    d.append(el("span","et","Deleghe"+(ap ? " · "+ap+" ancora apert"+(ap>1?"e":"a") : "")));
     const w = el("div","deleghe");
     a.deleghe.forEach(x=>{
-      const chip = el("span","chip", x.agente+" ");
-      chip.append(el("span", null, "· "+(x.task||"—")+" · "+orario(x.quando)));
+      const chip = el("span","chip "+(x.aperta ? (x.sospetta?"aperta sospetta":"aperta") : "finita"),
+                      x.agente+" ");
+      // Di una delega aperta conta "da quanto"; di una finita, che e' finita
+      // e come. L'ora d'apertura resta in entrambi i casi.
+      chip.append(el("span", null, "· "+(x.task||"—")+" · "
+        + (x.aperta ? "aperta da "+eta(x.eta_s).replace(" fa","")
+                    : "finita"+(x.esito&&x.esito!=="completed" ? " ("+x.esito+")" : ""))
+        + " · "+orario(x.quando)));
       w.append(chip);
     });
     d.append(w);
+    // Una delega aperta da un'ora e' o un lavoro lungo o una delega orfana:
+    // due delle 22 osservate il 03/09 non hanno mai avuto la notifica di fine.
+    // Le due cose non si distinguono da qui, e il dubbio si scrive.
+    if(a.deleghe.some(x=>x.sospetta)){
+      d.append(el("p","dubbio",
+        "Aperta da oltre un'ora senza notifica di fine: o e' un lavoro lungo, o il "
+        +"sottoagente e' morto senza dirlo. Da qui le due cose non si distinguono."));
+    }
     c.append(d);
   }
 
