@@ -1,6 +1,8 @@
 """La sala di lavoro: cosa deve restare vero perche' la pagina non menta."""
 
 import json
+import shutil
+import subprocess
 import threading
 import urllib.request
 
@@ -8,6 +10,7 @@ import pytest
 
 from tools.control_center import sala
 from tools.control_center import server as srv
+from tools.control_center.server import PAGE as PAGINA
 from tools.control_center.snapshot import write_state
 
 
@@ -116,6 +119,29 @@ def test_lo_slash_command_non_e_il_task(disco, mocker):
     mocker.patch.object(sala, "_processi_claude", return_value={4242: "claude"})
 
     assert sala.stato()["agenti"][0]["task"] == "rivedi il piano di lancio"
+
+
+def test_la_notifica_di_un_job_non_e_il_task(disco, mocker):
+    """Regressione osservata dal vivo il 03/09: le notifiche dei job in
+    background e l'eco dei comandi bash arrivano come messaggi "user" con
+    contenuto stringa. Tolti i tag restavano gli id, e il task di `me-ceo`
+    diventava «a0517de8ef1e44393 toolu_01K5h3UBbMpN7eB3»."""
+    sess, prog = disco
+    sid = "99999999-1111-2222-3333-444444444444"
+    _sessione(sess, 4242, "me-ceo", sid)
+    _transcript(prog, sid, [
+        _u("parti domani mattina anche se chiudo la shell"),
+        _u("<bash-input>vercel --prod</bash-input>", ts="2026-09-03T19:52:20.000Z"),
+        _u("<bash-stdout></bash-stdout><bash-stderr>errore</bash-stderr>",
+           ts="2026-09-03T19:52:21.000Z"),
+        _u("<task-notification>\n<task-id>a0517de8ef1e44393</task-id>\n"
+           "<tool-use-id>toolu_01K5h3UBbMpN7eB3ViZgwc3G</tool-use-id>\n"
+           "</task-notification>", ts="2026-09-03T20:40:54.000Z"),
+    ])
+    mocker.patch.object(sala, "_processi_claude", return_value={4242: "claude"})
+
+    assert (sala.stato()["agenti"][0]["task"]
+            == "parti domani mattina anche se chiudo la shell")
 
 
 def test_il_tool_result_non_e_una_richiesta_di_andrea(disco, mocker):
@@ -289,3 +315,47 @@ def test_la_pagina_sala_si_serve_e_chiama_la_sua_api(in_piedi):
 def test_dal_portafoglio_si_arriva_alla_sala(in_piedi):
     with urllib.request.urlopen(in_piedi + "/", timeout=5) as r:
         assert 'href="/sala"' in r.read().decode()
+
+
+def test_il_portafoglio_disegna_la_sala_dalla_stessa_api(in_piedi):
+    """La root ha il suo schema, ma non una seconda sorgente: legge
+    `/api/sala` come la pagina di dettaglio."""
+    with urllib.request.urlopen(in_piedi + "/", timeout=5) as r:
+        html = r.read().decode()
+    assert "/api/sala" in html
+    assert "schemaSala" in html and 'id="sala"' in html
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="serve node")
+def test_nello_schema_il_non_dichiarato_non_e_in_ascolto():
+    """Lo stesso bug gia' riparato una volta, e in uno schema stringato e'
+    ancora piu' facile che ricapiti. Si esegue davvero `statoAla` sotto node:
+    un test che cerca la stringa nell'HTML passa anche solo per un commento
+    — verificato, e infatti non aveva morso alla prima mutazione."""
+    fonte = (PAGINA.read_text(encoding="utf-8")
+             .split("function statoAla(a){", 1)[1].split("\n}", 1)[0])
+    prova = """
+      function statoAla(a){%s}
+      const casi = [
+        [{stato:"busy",  silenzio_sospetto:false}, "AL LAVORO"],
+        [{stato:"busy",  silenzio_sospetto:true},  "MUTA"],
+        [{stato:"idle",  silenzio_sospetto:false}, "IN ASCOLTO"],
+        [{stato:"?",     silenzio_sospetto:false}, "NON DICH."],
+        [{                silenzio_sospetto:false}, "NON DICH."],
+      ];
+      const out = casi.map(([a,atteso]) => {
+        const s = statoAla(a);
+        return [s.eti, atteso, s.eti===atteso, s.col, !!s.tratti].join("|");
+      });
+      console.log(out.join("\\n"));
+    """ % fonte
+    esito = subprocess.run(["node", "-e", prova], capture_output=True, text=True)
+    assert esito.returncode == 0, esito.stderr
+    righe = [r.split("|") for r in esito.stdout.strip().splitlines()]
+    assert len(righe) == 5
+    for eti, atteso, ok, col, tratti in righe:
+        assert ok == "true", f"{atteso} reso come {eti}"
+    # Il non dichiarato non condivide ne' il colore ne' il tratto con l'idle:
+    # in uno schema il colore da solo non e' una distinzione.
+    idle, muto = righe[2], righe[4]
+    assert muto[3] != idle[3] and muto[4] == "true" and idle[4] == "false"

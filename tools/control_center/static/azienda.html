@@ -200,6 +200,28 @@ main{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,5fr) minm
 .req .out.ok{color:var(--green)}.req .out.ko{color:var(--red)}
 button:focus-visible,a:focus-visible{outline:1px solid var(--cy);outline-offset:2px}
 
+/* ─── mappa radiale della sala ─── */
+/* Stessi nomi di classe e stessi raggi della topologia di /betredge: e' lo
+   stesso schema, su una tela piu' larga perche' qui i nodi hanno un'etichetta
+   accanto invece di un numero dentro. */
+.radar{position:relative;display:grid;place-items:center;padding:6px 0 4px}
+.radar svg{max-width:100%;height:auto;overflow:visible}
+.spin{transform-origin:center;animation:sp 90s linear infinite}
+.spin-r{transform-origin:center;animation:sp 130s linear infinite reverse}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes fiato{0%,100%{opacity:1}50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.spin,.spin-r,.viva{animation:none}}
+.nodo{cursor:pointer}
+.nodo circle.hit{fill:transparent}
+.nodo:hover circle.body{stroke:var(--cy-2);filter:drop-shadow(0 0 10px rgba(34,211,238,.75))}
+.nodo:focus-visible circle.body{stroke:var(--cy-2)}
+.viva{animation:fiato 1.9s ease-in-out infinite}
+.leg{display:flex;flex-wrap:wrap;gap:7px 16px;justify-content:center;padding:0 13px 11px}
+.leg span{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--mid)}
+.leg i{width:8px;height:8px;border-radius:50%;display:block;flex:none}
+.leg i.vuoto{background:transparent;border:1px dashed var(--violet)}
+.sala-vuota{padding:30px 15px;text-align:center;color:var(--dim);font-size:12.5px;line-height:1.65}
+
 .nota{color:var(--dim);font-size:10.5px;line-height:1.55;padding:9px 13px 12px}
 code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--inset);
   border:1px solid var(--line);padding:1px 4px;border-radius:2px;color:var(--cy)}
@@ -228,9 +250,20 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     <div class="pad"><div class="prods" id="prodotti"></div></div>
   </section>
 
+  <section class="box full">
+    <h2><i>02</i> Sala di lavoro <u>clic su un&rsquo;ala per il dettaglio</u></h2>
+    <div class="radar" id="sala"></div>
+    <div class="leg" id="sala-leg"></div>
+    <p class="nota">Il colpo d&rsquo;occhio: <b>chi c&rsquo;&egrave;, in che stato, su cosa</b>.
+    Il numero dentro l&rsquo;ala &egrave; da <b>quanto</b> dura quello stato — senza, un&rsquo;ala
+    accesa da trenta secondi e una piantata da un&rsquo;ora si somigliano. Pid, cartella,
+    sessione e passo per esteso stanno in <code>/sala</code>: qui starebbero stretti e non
+    si leggerebbe pi&ugrave; niente. Stessa lettura dal vivo, nessuna seconda sorgente.</p>
+  </section>
+
   <div class="col">
     <section class="box">
-      <h2><i>02</i> Cosa fare adesso <u id="u-task"></u></h2>
+      <h2><i>03</i> Cosa fare adesso <u id="u-task"></u></h2>
       <div id="task"></div>
       <p class="nota">Ordinate per <b>costo del ritardo</b>, non per data: pesa piu' una
       conseguenza che l'anzianita'. Ogni riga dice <b>perche'</b> sta li' — se l'ordine
@@ -238,7 +271,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     </section>
 
     <section class="box">
-      <h2><i>03</i> Council · approvazioni <u id="u-council"></u></h2>
+      <h2><i>04</i> Council · approvazioni <u id="u-council"></u></h2>
       <div id="council"></div>
       <p class="nota">Nel Council <b>non esiste un'identità umana</b>: su 999 messaggi, zero
       hanno <code>authorType: human</code>. Un APPROVE dato da qui risulta firmato dall'agente
@@ -250,7 +283,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
 
   <div class="col">
     <section class="box">
-      <h2><i>04</i> Con chi parlo <u>si apre un terminale</u></h2>
+      <h2><i>05</i> Con chi parlo <u>si apre un terminale</u></h2>
       <div class="pad"><div class="agenti" id="agenti"></div></div>
       <p class="nota">Le chat di prodotto nascono da <code>lab/prodotti.tsv</code>: per un
       prodotto nuovo (SWR7, o quello dopo) basta <b>aggiungere una riga li'</b> — la chat
@@ -258,7 +291,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     </section>
 
     <section class="box">
-      <h2><i>05</i> Certificazione interna <u id="u-cert"></u></h2>
+      <h2><i>06</i> Certificazione interna <u id="u-cert"></u></h2>
       <div id="cert"></div>
       <p class="nota">26 regole in <code>lab/standard.md</code>, ognuna con un controllo che
       la misura. Un controllo che non sa dire il suo numero è <b>«?», non verde</b>: il
@@ -266,15 +299,15 @@ code{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--in
     </section>
 
     <section class="box">
-      <h2><i>06</i> Panoramica <u id="u-tot"></u></h2>
+      <h2><i>07</i> Panoramica <u id="u-tot"></u></h2>
       <div class="kgrid" id="totali"></div>
     </section>
     <section class="box">
-      <h2><i>07</i> Chi aspetta chi <u id="u-asp"></u></h2>
+      <h2><i>08</i> Chi aspetta chi <u id="u-asp"></u></h2>
       <div class="rows" id="aspettano"></div>
     </section>
     <section class="box">
-      <h2><i>08</i> Fermi da oltre due settimane <u id="u-fermi"></u></h2>
+      <h2><i>09</i> Fermi da oltre due settimane <u id="u-fermi"></u></h2>
       <div class="rows" id="fermi"></div>
     </section>
   </div>
@@ -605,6 +638,184 @@ function vistaResto(az){
   document.getElementById("u-fermi").textContent=(t.fermi_oltre_14gg??0)+" in tutto";
 }
 
+/* ─────────── la sala di lavoro, in schema ─────────── */
+/* Quattro stati, non due. `busy` e `idle` li dichiara la sessione; gli altri
+   due sono i casi che la pagina si rifiuta di appiattire:
+   - MUTA: dice di lavorare ma non si muove da mezz'ora;
+   - NON DICH.: non ha ancora scritto `status`, e non e' "in ascolto".
+   In uno schema stringato un colore da solo non basta a distinguerli, quindi
+   il non dichiarato porta anche il **bordo tratteggiato** e la **parola**. */
+function statoAla(a){
+  if(a.silenzio_sospetto)      return {id:"muta", col:"#F5A524", eti:"MUTA",       tratti:false};
+  if(a.stato==="busy")         return {id:"viva", col:"#28C76F", eti:"AL LAVORO",  tratti:false};
+  // --mid, non --dim: a 7,5px su fondo scuro `#5B7699` non si legge, e un'ala
+  // in ascolto deve essere spenta, non invisibile.
+  if(a.stato==="idle")         return {id:"ferma",col:"#8AA6C8", eti:"IN ASCOLTO", tratti:false};
+  return                              {id:"muto", col:"#A78BFA", eti:"NON DICH.",  tratti:true};
+}
+
+function breve(s){
+  if(s==null) return "—";
+  if(s<90)     return Math.round(s)+"s";
+  if(s<5400)   return Math.round(s/60)+"m";
+  if(s<172800) return Math.round(s/3600)+"h";
+  return Math.round(s/86400)+"g";
+}
+function taglia(s,n){ s=(s||"").trim(); return s.length>n ? s.slice(0,n-1)+"…" : s; }
+
+function schemaSala(sala){
+  const ag=sala.agenti, N=ag.length;
+  // Stessi anelli e stesso hub di /betredge, scalati a 0,8: nella root questa
+  // e' una banda fra due sezioni, non la vista principale. A grandezza piena
+  // erano 430px alti quasi tutti vuoti, e un colpo d'occhio che spinge in
+  // basso tutto il resto ha gia' smesso di essere un colpo d'occhio.
+  const W=880,H=348,cx=W/2,cy=H/2,R=122,rn=34;
+  const s=sv("svg",{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:"img",
+    "aria-label":`Sala di lavoro: ${N} ali`});
+
+  const anelli=sv("g",{class:"spin"});
+  [150,120].forEach((r,i)=>anelli.append(sv("circle",{cx,cy,r,fill:"none",stroke:"#132742",
+    "stroke-width":"1","stroke-dasharray":i?"3 9":"1 7","opacity":".8"})));
+  s.append(anelli);
+  const anelli2=sv("g",{class:"spin-r"});
+  anelli2.append(sv("circle",{cx,cy,r:90,fill:"none",stroke:"#1D3B60","stroke-width":"1",
+    "stroke-dasharray":"22 12","opacity":".55"}));
+  s.append(anelli2);
+  s.append(sv("circle",{cx,cy,r:59,fill:"none",stroke:"#1D3B60","stroke-width":"1","opacity":".5"}));
+
+  // Oltre otto ali le didascalie si sovrappongono: si tiene l'identita' e lo
+  // stato, si lascia cadere il task. Meglio meno informazione che illeggibile.
+  const conTask = N<=8;
+
+  ag.forEach((a,i)=>{
+    const st=statoAla(a);
+    const ang=(-90+i*(360/N))*Math.PI/180;
+    const x=cx+R*Math.cos(ang), y=cy+R*Math.sin(ang);
+
+    s.append(sv("line",{x1:cx,y1:cy,x2:x,y2:y,stroke:st.col,"stroke-width":"1",
+      opacity:st.id==="ferma"?".2":".38"}));
+
+    const g=sv("g",{class:"nodo",tabindex:"0",role:"button",
+      "aria-label":`${a.nome}, ${a.agente}, ${st.eti}${a.task?", "+a.task:""}`});
+    // `sv` fa setAttribute su tutte le chiavi: un null diventerebbe la stringa
+    // "null", quindi l'attributo si aggiunge solo quando serve davvero.
+    const corpo={cx:x,cy:y,r:rn,fill:"#070C18","fill-opacity":".92",
+      stroke:st.col,"stroke-width":"1.4",class:"body"+(st.id==="viva"?" viva":""),
+      style:`filter:drop-shadow(0 0 9px ${st.col}55)`};
+    if(st.tratti) corpo["stroke-dasharray"]="4 4";
+    g.append(sv("circle",corpo));
+    g.append(sv("circle",{cx:x,cy:y,r:rn+6,fill:"none",stroke:st.col,"stroke-width":"1",
+      "stroke-dasharray":"2 6",opacity:".45"}));
+    const n=sv("text",{x,y:y-1,"text-anchor":"middle",fill:"#CFE0F5","font-size":"17",
+      "font-family":"JetBrains Mono, monospace","font-weight":"700"});
+    // Chi non ha dichiarato niente non mostra una durata: mostra un punto
+    // interrogativo. Un "—" si legge come "zero", che e' un dato.
+    n.textContent = st.id==="muto" ? "?" : breve(a.eta_stato_s); g.append(n);
+    // L'etichetta di stato regge la distinzione fra "in ascolto" e "non
+    // dichiarato", quindi non puo' rimpicciolirsi — ma a 8,5px con 1px di
+    // spaziatura "IN ASCOLTO" e "NON DICH." sfondavano il cerchio (visto il
+    // 03/09). Si allarga il nodo (r 34, come in /betredge) e si stringe la
+    // spaziatura, invece di sacrificare la parola.
+    const e=sv("text",{x,y:y+13,"text-anchor":"middle",fill:st.col,"font-size":"8",
+      "font-family":"Saira, sans-serif","letter-spacing":".4"});
+    e.textContent=st.eti; g.append(e);
+    g.append(sv("circle",{cx:x,cy:y,r:rn+7,class:"hit"}));
+
+    // L'etichetta sta SEMPRE di fianco al nodo, mai sopra o sotto. Centrata
+    // sopra il nodo in cima all'anello, le tre righe finivano dentro il
+    // cerchio (visto il 03/09): sopra non c'e' spazio, e allargare la tela per
+    // farcelo stare vuol dire una banda alta e vuota. Di fianco lo spazio c'e'
+    // sempre, per qualunque N, e le righe restano allineate al centro del nodo.
+    const verso = (x-cx) < 0 ? -1 : 1;
+    const lx  = x + verso*(rn+12);
+    const anc = verso<0 ? "end" : "start";
+    const alt = conTask ? 27 : 13;          // distanza prima/ultima riga
+    const ly  = y - alt/2 + 4;
+
+    const nome=sv("text",{x:lx,y:ly,"text-anchor":anc,fill:"#CFE0F5","font-size":"12.5",
+      "font-family":"JetBrains Mono, monospace","font-weight":"600"});
+    nome.textContent=a.nome; g.append(nome);
+    const ruolo=sv("text",{x:lx,y:ly+13,"text-anchor":anc,fill:"#5B7699","font-size":"10",
+      "font-family":"Saira, sans-serif"});
+    ruolo.textContent=a.agente+(a.avvio==="cli"?"":" · headless"); g.append(ruolo);
+    if(conTask){
+      const tk=sv("text",{x:lx,y:ly+27,"text-anchor":anc,fill:"#8AA6C8","font-size":"10.5",
+        "font-family":"Saira, sans-serif"});
+      // Un task assente non resta bianco: si dice che il prompt non si e' trovato.
+      tk.textContent = a.task ? taglia(a.task,34) : "— nessun prompt trovato";
+      if(!a.task) tk.setAttribute("fill","#5B7699");
+      g.append(tk);
+    }
+
+    g.addEventListener("click",()=>{location.href="/sala";});
+    g.addEventListener("keydown",ev=>{ if(ev.key==="Enter"||ev.key===" "){
+      ev.preventDefault(); location.href="/sala"; } });
+    s.append(g);
+  });
+
+  const vive=ag.filter(a=>a.stato==="busy").length;
+  s.append(sv("circle",{cx,cy,r:52,fill:"#070C18",stroke:"#22D3EE","stroke-width":"1.6",
+    style:"filter:drop-shadow(0 0 22px rgba(34,211,238,.45))"}));
+  s.append(sv("circle",{cx,cy,r:44,fill:"none",stroke:"#22D3EE","stroke-width":"1",opacity:".35"}));
+  const c1=sv("text",{x:cx,y:cy-3,"text-anchor":"middle",fill:"#22D3EE","font-size":"20",
+    "font-family":"JetBrains Mono, monospace","font-weight":"700","letter-spacing":"1"});
+  c1.textContent=`${vive}/${N}`; s.append(c1);
+  const c2=sv("text",{x:cx,y:cy+13,"text-anchor":"middle",fill:"#5B7699","font-size":"7.5",
+    "font-family":"Saira, sans-serif","letter-spacing":"1.6"});
+  c2.textContent="AL LAVORO"; s.append(c2);
+  return s;
+}
+
+async function vistaSala(){
+  const box=document.getElementById("sala"), leg=document.getElementById("sala-leg");
+  let d=null;
+  try{ d=await (await fetch("/api/sala",{cache:"no-store"})).json(); }catch(e){}
+  // Lo schema si ridisegna ogni 5s: senza questo, chi ci arriva col tab si
+  // vede sfilare il focus da sotto le dita a ogni giro. Si ritrova l'ala per
+  // nome, non per posizione: l'ordine cambia quando cambia lo stato.
+  const attivo=document.activeElement;
+  const focoSu=(attivo && attivo.closest && attivo.closest("#sala .nodo"))
+    ? attivo.getAttribute("aria-label").split(",")[0] : null;
+  box.textContent=""; leg.textContent="";
+
+  if(!d){
+    box.append(el("div","sala-vuota","Il control center non risponde: qui non c'e' un dato vecchio, non c'e' un dato."));
+    return;
+  }
+  if(!d.registro_presente){
+    box.append(el("div","sala-vuota","Nessun registro di sessioni in "+d.registro
+      +". Lo scrive Claude Code all'avvio: se manca, non vuol dire che nessuno lavori."));
+    return;
+  }
+  if(!d.agenti.length){
+    box.append(el("div","sala-vuota","Nessuna sessione Claude viva. Il registro c'e' ed e' vuoto: "
+      +"questa e' una sala davvero vuota, non un dato mancante."));
+    return;
+  }
+
+  box.append(schemaSala(d));
+  if(focoSu){
+    const g=[...box.querySelectorAll(".nodo")].find(
+      n=>n.getAttribute("aria-label").split(",")[0]===focoSu);
+    if(g) g.focus();
+  }
+  const usati=new Set(d.agenti.map(a=>statoAla(a).id));
+  [["viva","#28C76F","al lavoro"],["muta","#F5A524","dice di lavorare ma non si muove"],
+   ["ferma","#5B7699","in ascolto"],["muto","#A78BFA","stato non ancora dichiarato"]]
+   .filter(([id])=>usati.has(id))
+   .forEach(([id,col,testo])=>{
+     const s=el("span"); const i=el("i", id==="muto"?"vuoto":null);
+     if(id!=="muto") i.style.background=col;
+     s.append(i, el("b",null,testo)); leg.append(s);
+   });
+  if(d.fantasmi && d.fantasmi.length){
+    const s=el("span"); const i=el("i"); i.style.background="#F0525B";
+    const q=d.fantasmi.length;
+    s.append(i, el("b",null, q+(q>1?" chiuse":" chiusa")+" male (processo morto, file rimasto)"));
+    leg.append(s);
+  }
+}
+
 async function caricaCouncil(){
   const co=await fetch("/api/council",{cache:"no-store"}).then(r=>r.json()).catch(()=>null);
   vistaCouncil(co);
@@ -636,9 +847,12 @@ async function render(){
   vistaProdotti(az); vistaTask(az); vistaResto(az); vistaAgenti(az); vistaCert();
 }
 
-render(); caricaCouncil();
+render(); caricaCouncil(); vistaSala();
 setInterval(render,120000);
 setInterval(caricaCouncil,60000);
+// La sala si legge dal vivo: 5s, non i 120s del portafoglio. Sono due dati
+// con due eta' diverse, e allinearli farebbe sembrare vecchio quello fresco.
+setInterval(vistaSala,5000);
 </script>
 </body>
 </html>
