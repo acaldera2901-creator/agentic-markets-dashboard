@@ -260,6 +260,7 @@ export async function GET(req: Request) {
     outcome: unlocked ? outcome : null, // live/won/lost solo per chi ha sbloccato
     legs: sels.length,
     legs_remaining: remaining, // aggregato safe per il teaser ("N ancora da giocare")
+    closed: sels.length > 0 && remaining === 0, // #WEEKLY-PICK-CLOSED-0904: tutte le gambe decise → il checkout rifiuta (409)
     brief,
     sports,
     selections: selectionsOut,

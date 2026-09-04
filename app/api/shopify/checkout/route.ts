@@ -12,7 +12,7 @@ import {
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
 } from "@/lib/weekly-pick";
-import { hasWeeklyPickStrict } from "@/lib/weekly-pick-server";
+import { hasWeeklyPickStrict, weeklyPickWeekStateStrict, weeklyPickClosed } from "@/lib/weekly-pick-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -97,6 +97,16 @@ export async function POST(req: Request) {
     } catch (e) {
       // Fail-closed: se non sappiamo se l'ha già comprata, non la vendiamo.
       console.error("[shopify/checkout] hasWeeklyPickStrict failed:", String(e));
+      return deny(500, "lettura DB fallita (fail-closed)", ctx);
+    }
+    // #WEEKLY-PICK-CLOSED-0904 — stessa guardia del rail PayGate: niente ordine
+    // se la settimana non ha multipla (404) o se è già tutta decisa (409).
+    try {
+      const state = await weeklyPickWeekStateStrict(week);
+      if (!state.exists) return deny(404, "weekly: nessuna multipla questa settimana", ctx);
+      if (weeklyPickClosed(state)) return deny(409, "weekly: settimana chiusa, tutte le gambe decise", ctx);
+    } catch (e) {
+      console.error("[shopify/checkout] weeklyPickWeekStateStrict failed:", String(e));
       return deny(500, "lettura DB fallita (fail-closed)", ctx);
     }
     // #LAUNCH-PROMO-CARD-0805 — la Weekly Pick è un one-off: lo sconto di lancio

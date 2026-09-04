@@ -3,6 +3,7 @@
 // plan-grant.ts lo è da paygate.ts. GATED: usato solo dal wiring dietro flag.
 
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
+import { resolveWeeklyPickOutcomes, type PredOutcomeRow, type WeeklyPickLeg } from "@/lib/weekly-pick";
 import { weeklyPickReceiptEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 
@@ -96,4 +97,41 @@ export async function notifyWeeklyPickGranted(opts: {
   } catch (e) {
     console.error(`[weekly-pick] receipt email failed (order=${opts.orderId}):`, String(e));
   }
+}
+
+// #WEEKLY-PICK-CLOSED-0904 — stato della settimana per le GUARDIE D'ACQUISTO.
+// Misurato in prod il 04/09: la settimana 31/08 aveva 5 gambe su 5 `settled/won`
+// dal 02/09 19:05Z e il checkout la vendeva ancora (6,50 in promo) il venerdì.
+// Il checkout guardava solo flag, piano e doppio acquisto: mai se ci fosse
+// qualcosa da vendere. Fail-loud come hasWeeklyPickStrict: un errore DB qui
+// deve fermare la vendita, non passare per "settimana aperta".
+export type WeeklyPickWeekState = { exists: boolean; legs: number; remaining: number };
+
+export async function weeklyPickWeekStateStrict(weekStart: string): Promise<WeeklyPickWeekState> {
+  const rows = await dbQueryStrict<{ selections: unknown }>(
+    `SELECT selections FROM weekly_pick WHERE week_start = $1 LIMIT 1`,
+    [weekStart]
+  );
+  const row = rows[0];
+  if (!row) return { exists: false, legs: 0, remaining: 0 };
+  const sels: WeeklyPickLeg[] =
+    typeof row.selections === "string" ? JSON.parse(row.selections) : ((row.selections as WeeklyPickLeg[]) ?? []);
+  if (!sels.length) return { exists: true, legs: 0, remaining: 0 };
+  // Stesso IN con un placeholder per id di app/api/weekly-pick/route.ts: `= ANY($1)`
+  // con l'interpolate di lib/db dà 0 righe in silenzio.
+  const predIds = sels.map((s) => (s.id.startsWith("wp_") ? s.id.slice(3) : s.id));
+  const placeholders = predIds.map((_, i) => `$${i + 1}`).join(", ");
+  const preds = await dbQueryStrict<PredOutcomeRow>(
+    `SELECT id::text AS id, status, result, starts_at::text AS starts_at
+       FROM unified_predictions WHERE id::text IN (${placeholders})`,
+    predIds
+  );
+  const { remaining } = resolveWeeklyPickOutcomes(sels, preds);
+  return { exists: true, legs: sels.length, remaining };
+}
+
+// Chiusa = esiste, ha gambe, e nessuna è ancora da giocare (tutte won/lost/void).
+// Una settimana senza gambe NON è "chiusa": è vuota, e la tratta il chiamante (404).
+export function weeklyPickClosed(s: WeeklyPickWeekState): boolean {
+  return s.exists && s.legs > 0 && s.remaining === 0;
 }
