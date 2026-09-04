@@ -4,6 +4,30 @@ Torre di controllo locale. Spec: `docs/superpowers/specs/2026-08-20-betredge-con
 
 **Aprire:** http://127.0.0.1:8790 (il server gira sotto launchd, KeepAlive)
 
+## La pagina: un piano, non quattro schede
+
+Dal 04/09 c'e' una pagina sola, `static/index.html`. Non scorre: la rotella
+zooma (attorno al puntatore), il trascinamento sposta, i tasti `1-9 0` portano
+a un settore, `P` al Ponte, `Esc` a tutto il piano. Da lontano ogni settore e'
+una targa (lettera, numero chiave, stato); da vicino compare il contenuto.
+Il Ponte e' l'unico settore leggibile a ogni distanza: e' l'ancora.
+
+Dodici settori, una sola componentistica (targa, pannello, KPI, riga, scheda,
+tile, LED quadrato, pulsante a tre ruoli, conferma inline). Le vecchie rotte
+`/betredge`, `/sala`, `/architettura.html` reindirizzano al settore
+corrispondente. I font (Saira, JetBrains Mono — variabili, OFL) stanno in
+`static/vendor/fonts/`: la torre deve aprirsi anche senza rete, quindi nessun
+CDN.
+
+Le conferme (spegni, APPROVE, archivia) non sono piu' `window.confirm`: sono
+un riquadro dentro la scheda, con Esc/Invio. Finche' una conferma e' aperta il
+giro di aggiornamento delle schede aspetta, per non cancellarla sotto le dita.
+
+Il settore **Cervello** legge `/api/cervello` (grafo della memoria: nodi con
+raggio ∝ √grado, colore per tipo, opacita' che cala con l'eta' dell'ultimo
+tocco). Se l'endpoint manca o risponde `{"assente":true}` mostra «cervello in
+sincronizzazione», mai una pagina rotta.
+
 **Misurare a mano senza scrivere niente:**
 
     venv/bin/python -m tools.control_center.collector --dry-run
