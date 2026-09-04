@@ -111,6 +111,11 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
 .led.green{background:var(--green)}.led.red{background:var(--red)}.led.amber{background:var(--amber)}
 .led.unknown{background:transparent;border:1px dashed var(--violet)}
 .led.info{background:transparent;border:1px solid var(--line-2)}
+/* Il tratteggio vuol dire «il dato non e' affidabile»: lo usa il non misurato
+   (viola) e lo usa la delega aperta da troppo (ambra). Stessa forma, stessa
+   idea — cosi' il dubbio si riconosce prima del colore. */
+.led.cy{background:var(--cy)}
+.led.dubbia{background:transparent;border:1px dashed var(--amber)}
 .led.vivo{animation:fiato 1.8s ease-in-out infinite}
 @keyframes fiato{50%{opacity:.3}}
 
@@ -291,6 +296,15 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
 .agente .chips{display:flex;flex-wrap:wrap;gap:6px}
 .agente .chip{font-family:var(--mono);font-size:11px;color:var(--violet);border:1px solid rgba(167,139,250,.4);padding:2px 8px}
 .agente .chip span{color:var(--dim)}
+/* Una delega finita e una ancora aperta non possono somigliarsi: la prima e'
+   un fatto passato, la seconda e' lavoro che sta succedendo adesso. Tre stati,
+   tre forme: la freccia dice «aperta», il tratteggio dice «da troppo, e non
+   si sa se e' viva», il bordo spento dice «chiusa». */
+.agente .chip.aperta{color:var(--cy-2);border-color:rgba(56,189,248,.5)}
+.agente .chip.aperta::before{content:"→ "}
+.agente .chip.sospetta{color:var(--amber);border-color:var(--amber);border-style:dashed}
+.agente .chip.finita{color:var(--mid);border-color:var(--line-2)}
+.agente .dubbio{margin:7px 0 0;font-size:12px;line-height:1.45;color:var(--amber)}
 .agente .metar{display:flex;flex-wrap:wrap;gap:4px 16px;padding:10px 14px;margin-top:auto;font-family:var(--mono);
   font-size:11px;color:var(--dim)}
 .agente .metar b{color:var(--mid);font-weight:500}
@@ -554,7 +568,9 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
         <div class="tiles" id="agenti" style="grid-template-columns:1fr 1fr"></div>
         <div class="pannello" id="fantasmi-box" hidden><h4>Sessioni chiuse male</h4><div class="righe" id="fantasmi"></div>
           <p class="nota">File rimasto in <code>~/.claude/sessions/</code>, processo sparito. Non sono ferme: sono <b>morte</b>.</p></div>
-        <p class="nota" style="padding:0 4px">La fonte la scrive Claude Code: <code>~/.claude/sessions/&lt;pid&gt;.json</code>. Si legge al momento, non dallo snapshot. Le deleghe dicono chi ha passato lavoro a chi, non che sia ancora in corso.</p>
+        <p class="nota" style="padding:0 4px">La fonte la scrive Claude Code: <code>~/.claude/sessions/&lt;pid&gt;.json</code>. Si legge al momento, non dallo snapshot.<br>
+          Un sottoagente non ha un suo processo né un suo file di sessione: gira dentro la madre. Ma la <b>fine</b> della delega è scritta — Claude Code inietta nel transcript della madre una <code>&lt;task-notification&gt;</code> con il <code>task-id</code> e il suo <code>status</code>. Una delega senza quella notifica è <b>ancora aperta</b>: è un fatto letto, non una stima. Il <code>tool_result</code> non chiude niente (torna dopo 1,5 s con «Async agent launched» mentre il sottoagente lavora ancora).<br>
+          <b>Il limite, detto:</b> di una delega aperta si sa <i>a chi</i>, <i>per cosa</i> e <i>da quando</i>. Non <b>a che punto sia</b>: i passi interni del sottoagente stanno fuori dal transcript della madre. E oltre <b>un'ora</b> passa in ambra tratteggiata — due delle ventidue osservate non hanno mai ricevuto la notifica di fine, quindi «aperta da molto» e «morta senza dirlo» da qui sono lo stesso dato.</p>
       </div>
       <div class="copertina"><b class="lettera-g">C</b><h3>Sala</h3><div class="grande" id="c-sala-n">—</div><div class="stato" id="c-sala-s"></div></div>
     </section>
@@ -1243,6 +1259,26 @@ function statoAla(a){
   if(a.stato==="idle") return {id:"ferma",col:COL.mid,eti:"IN ASCOLTO",tratti:false};
   return {id:"muto",col:COL.violet,eti:"NON DICH.",tratti:true};
 }
+/* Le deleghe aperte di un'ala. Un sottoagente non ha un suo processo e non ha
+   un suo nodo: sta DENTRO la madre, e nell'anello si attacca alla madre.
+   Aperta = nessuna `<task-notification>` di fine nel transcript, cioe' un
+   fatto letto, non una stima. Cosa NON si mostra: a che punto sia il
+   sottoagente, che dal transcript della madre non si vede.
+   Oltre l'ora passa in ambra **tratteggiata**: «aperta da molto» e «morta
+   senza dirlo» da qui sono lo stesso dato, e il tratteggio e' la forma che in
+   questa pagina vuol dire gia' «il dato non e' affidabile». */
+function deleghe(a){
+  const ap=(a.deleghe||[]).filter(x=>x.aperta);
+  const n=a.deleghe_aperte||0;
+  if(!n) return null;
+  const dubbia=ap.some(x=>x.sospetta);
+  // La durata e' quella della PIU' VECCHIA: il rischio sta in quella.
+  const eta=ap.reduce((m,x)=>Math.max(m,x.eta_s==null?0:x.eta_s),0);
+  return {n, dubbia, col:dubbia?COL.amber:COL.cy,
+          // Con una sola delega il nome di chi la porta vale piu' del numero.
+          eti:n===1&&ap.length ? "→ "+taglia(ap[0].agente,20)+" · "+breve(eta)
+                               : "→ "+n+" deleghe · da "+breve(eta)};
+}
 let SALA_N={vive:null,tot:null};
 function anello(sala){
   const ag=sala.agenti,N=ag.length;
@@ -1252,9 +1288,15 @@ function anello(sala){
   s.append(sv("circle",{cx,cy,r:64,fill:"none",stroke:COL.line2,"stroke-width":"1"}));
   const conTask=N<=8;
   ag.forEach((a,i)=>{
-    const st=statoAla(a), ang=(-90+i*(360/N))*Math.PI/180, x=cx+R*Math.cos(ang), y=cy+R*Math.sin(ang);
+    const st=statoAla(a), de=deleghe(a);
+    const ang=(-90+i*(360/N))*Math.PI/180, x=cx+R*Math.cos(ang), y=cy+R*Math.sin(ang);
     s.append(sv("line",{x1:cx,y1:cy,x2:x,y2:y,stroke:st.col,"stroke-width":"1",opacity:st.id==="ferma"?".25":".45"}));
-    const g=sv("g",{class:"nodo",tabindex:"0",role:"button","aria-label":`${a.nome}, ${a.agente}, ${st.eti}${a.task?", "+a.task:""}`});
+    // Il nome resta il primo campo: `renderSala` ci ritrova il fuoco dopo il
+    // ridisegno spezzando su virgola.
+    const chi=(a.deleghe||[]).filter(x=>x.aperta).map(x=>x.agente).join(" e ");
+    const g=sv("g",{class:"nodo",tabindex:"0",role:"button","aria-label":
+      `${a.nome}, ${a.agente}, ${st.eti}${a.task?", "+a.task:""}`
+      +(de?`, ha delegato a ${chi}${de.dubbia?", da oltre un'ora senza notifica di fine":""}`:"")});
     const corpo={cx:x,cy:y,r:rn,fill:"#070C18",stroke:st.col,"stroke-width":"1.6",class:"body"+(st.id==="viva"?" viva":"")};
     if(st.tratti) corpo["stroke-dasharray"]="4 4";
     g.append(sv("circle",corpo));
@@ -1263,14 +1305,39 @@ function anello(sala){
     n.textContent=st.id==="muto"?"?":breve(a.eta_stato_s); g.append(n);
     const e=sv("text",{x,y:y+13,"text-anchor":"middle",fill:st.col,"font-size":"8","font-family":"Saira, sans-serif","letter-spacing":".4"});
     e.textContent=st.eti; g.append(e);
+    // Il segno che quest'ala ha del lavoro fuori: una targhetta col numero
+    // delle deleghe aperte, quadrata e smussata come le targhe dei settori.
+    // Sta a 45 gradi in alto a destra, cioe' sul lato dove l'etichetta non
+    // arriva mai (parte a rn+12 in orizzontale) e dove non c'e' il quadratino
+    // della muta (che sta sopra): non collide per nessun N. Regge anche
+    // quando le etichette cadono (N>8) — a quel punto il numero e' la sola
+    // cosa che resta leggibile.
+    if(de){
+      const px=x+rn*0.71, py=y-rn*0.71, m=10;
+      const t=sv("polygon",{points:`${px-m},${py-m} ${px+m},${py-m} ${px+m},${py+m-6} ${px+m-6},${py+m} ${px-m},${py+m}`,
+        fill:"#070C18",stroke:de.col,"stroke-width":"1.4"});
+      if(de.dubbia) t.setAttribute("stroke-dasharray","4 3");
+      g.append(t);
+      const tn=sv("text",{x:px,y:py+4,"text-anchor":"middle",fill:de.col,"font-size":"11",
+        "font-family":"JetBrains Mono, monospace","font-weight":"700"});
+      tn.textContent=String(de.n); g.append(tn);
+    }
     g.append(sv("circle",{cx:x,cy:y,r:rn+7,class:"hit"}));
-    const verso=(x-cx)<0?-1:1, lx=x+verso*(rn+12), anc=verso<0?"end":"start", alt=conTask?27:13, ly=y-alt/2+4;
+    // La riga della delega si aggiunge solo dove le etichette ci stanno gia'
+    // (N<=8): oltre, due blocchi vicini dello stesso lato si toccherebbero, e
+    // la targhetta dice comunque che c'e' una delega aperta.
+    const rigaDel=conTask&&!!de;
+    const verso=(x-cx)<0?-1:1, lx=x+verso*(rn+12), anc=verso<0?"end":"start",
+      alt=conTask?(rigaDel?40:27):13, ly=y-alt/2+4;
     const nome=sv("text",{x:lx,y:ly,"text-anchor":anc,fill:COL.ink,"font-size":"12.5","font-family":"JetBrains Mono, monospace","font-weight":"600"});
     nome.textContent=a.nome; g.append(nome);
     const ruolo=sv("text",{x:lx,y:ly+13,"text-anchor":anc,fill:COL.dim,"font-size":"10","font-family":"Saira, sans-serif"});
     ruolo.textContent=a.agente+(a.avvio==="cli"?"":" · headless"); g.append(ruolo);
     if(conTask){ const tk=sv("text",{x:lx,y:ly+27,"text-anchor":anc,fill:a.task?COL.mid:COL.dim,"font-size":"10.5","font-family":"Saira, sans-serif"});
       tk.textContent=a.task?taglia(a.task,34):"— nessun prompt trovato"; g.append(tk); }
+    if(rigaDel){ const dl=sv("text",{x:lx,y:ly+40,"text-anchor":anc,fill:de.col,"font-size":"10",
+        "font-family":"JetBrains Mono, monospace"});
+      dl.textContent=de.eti; g.append(dl); }
     const salta=()=>{ const c=document.querySelector(`.agente[data-nome="${CSS.escape(a.nome)}"]`); if(c){ const r=rettMondo(c); inquadra(r.x,r.y,r.w,r.h,80); attiva("sala"); c.focus(); } };
     g.addEventListener("click",salta); g.addEventListener("keydown",ev=>{ if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();salta();} });
     s.append(g);
@@ -1289,12 +1356,37 @@ function schedaAgente(a){
   const chi=el("div"); chi.append(el("div","nome",a.nome), el("div","ruolo",a.agente+(a.avvio==="cli"?"":" · headless"))); testa.append(chi);
   testa.append(el("div","badge "+st.id,st.id==="muto"?"stato non ancora dichiarato":st.eti.toLowerCase()+" · "+etaS(a.eta_stato_s)));
   c.append(testa);
-  if(a.silenzio_sospetto) c.append(el("div","avviso",`Dichiara «al lavoro» ma il transcript non si muove da ${etaS(a.eta_evento_s)}. Sta aspettando qualcosa di lungo oppure è appesa: da qui non si distingue, e non si tira a indovinare.`));
+  // Il silenzio resta segnalato anche quando c'e' una delega aperta: la
+  // delega lo *spiega*, non lo assolve. Una madre puo' essere appesa mentre il
+  // sottoagente lavora, e togliere l'avviso nasconderebbe proprio quello.
+  if(a.silenzio_sospetto){ const ap=a.deleghe_aperte||0;
+    c.append(el("div","avviso",`Dichiara «al lavoro» ma il transcript non si muove da ${etaS(a.eta_evento_s)}. `
+      +(ap ? `Ha ${ap} deleg${ap>1?"he":"a"} ancora apert${ap>1?"e":"a"}: è una spiegazione del silenzio, non una prova che stia bene.`
+           : "Sta aspettando qualcosa di lungo oppure è appesa: da qui non si distingue, e non si tira a indovinare."))); }
   const t=el("div","blocco"); t.append(el("span","et","Su cosa"));
   t.append(a.task?el("div","testo",a.task):el("div","testo vuoto",a.attivita_perche||"prompt non trovato")); c.append(t);
   const p=el("div","blocco"); p.append(el("span","et","Ultimo passo · "+orario(a.ultimo_evento)+" · "+etaS(a.eta_evento_s))); p.append(el("div","passo",a.passo||"—")); c.append(p);
-  if(a.deleghe&&a.deleghe.length){ const d=el("div","blocco"); d.append(el("span","et","Ha delegato")); const w=el("div","chips");
-    a.deleghe.forEach(x=>{ const chip=el("span","chip",x.agente+" "); chip.append(el("span",null,"· "+(x.task||"—")+" · "+orario(x.quando))); w.append(chip); }); d.append(w); c.append(d); }
+  if(a.deleghe&&a.deleghe.length){ const ap=a.deleghe_aperte||0;
+    const d=el("div","blocco");
+    d.append(el("span","et","Deleghe"+(ap?" · "+ap+" ancora apert"+(ap>1?"e":"a"):"")));
+    const w=el("div","chips");
+    a.deleghe.forEach(x=>{
+      const chip=el("span","chip "+(x.aperta?(x.sospetta?"aperta sospetta":"aperta"):"finita"),x.agente+" ");
+      // Di una delega aperta conta «da quanto»; di una finita, che e' finita e
+      // come. L'ora d'apertura resta in entrambi i casi.
+      chip.append(el("span",null,"· "+(x.task||"—")+" · "
+        +(x.aperta ? "aperta da "+etaS(x.eta_s).replace(" fa","")
+                   : "finita"+(x.esito&&x.esito!=="completed" ? " ("+x.esito+")" : ""))
+        +" · "+orario(x.quando)));
+      w.append(chip);
+    });
+    d.append(w);
+    // Aperta da un'ora e' o un lavoro lungo o una delega orfana: due delle 22
+    // osservate il 03/09 non hanno mai avuto la notifica di fine. Le due cose
+    // non si distinguono da qui, e il dubbio si scrive.
+    if(a.deleghe.some(x=>x.sospetta))
+      d.append(el("p","dubbio","Aperta da oltre un'ora senza notifica di fine: o è un lavoro lungo, o il sottoagente è morto senza dirlo. Da qui le due cose non si distinguono."));
+    c.append(d); }
   const m=el("div","metar");
   [["pid",a.pid],["dove",(a.cwd||"").split("/").filter(Boolean).pop()||a.cwd],["sessione",a.sessione],["accesa",orario(a.acceso_da)],["ver",a.versione]]
     .forEach(([k,v])=>{ const s=el("span",null,k+" "); s.append(el("b",null,String(v))); m.append(s); });
@@ -1316,14 +1408,32 @@ async function renderSala(){
   const usati=new Set(d.agenti.map(a=>statoAla(a).id));
   [["viva","green vivo","al lavoro"],["muta","amber","dice di lavorare ma non si muove"],["ferma","","in ascolto"],["muto","unknown","stato non ancora dichiarato"]]
     .filter(([id])=>usati.has(id)).forEach(([id,cls,testo])=>{ const s=el("span"); s.append(el("i","led "+cls), el("b",null,testo)); leg.append(s); });
+  // Le deleghe entrano in legenda solo se ce n'e' almeno una aperta: una voce
+  // che spiega un simbolo assente e' rumore.
+  const conDel=d.agenti.map(deleghe).filter(Boolean);
+  if(conDel.length){
+    [["cy","delega aperta: a chi e da quando, non a che punto sia",true],
+     ["dubbia","delega aperta da oltre un'ora: o lunga, o morta senza dirlo",conDel.some(x=>x.dubbia)]]
+      .filter(([,,mostra])=>mostra).forEach(([cls,testo])=>{
+        const s=el("span"); s.append(el("i","led "+cls), el("b",null,testo)); leg.append(s); });
+  }
   d.agenti.forEach(a=>ag.append(schedaAgente(a)));
   const f=$("fantasmi"); f.textContent=""; $("fantasmi-box").hidden=!(d.fantasmi&&d.fantasmi.length);
   (d.fantasmi||[]).forEach(x=>f.append(riga("red","red","pid "+x.pid,x.nome,"visto "+orario(x.visto),"")));
   const vive=d.agenti.filter(a=>a.stato==="busy").length, ferme=d.agenti.filter(a=>a.stato==="idle").length, mute=d.agenti.filter(a=>a.silenzio_sospetto).length;
   const nd=d.agenti.length-vive-ferme;
+  // Le deleghe aperte sono lavoro in corso che non ha un nodo suo: se non
+  // finiscono nel riassunto del settore, da lontano la sala sembra piu' ferma
+  // di quel che e'. Il conteggio e' per difetto (finestra di transcript).
+  // Le due cifre contano la stessa unita' — deleghe, non ali: «3 aperte, 1 in
+  // dubbio» dev'essere un sottoinsieme, non due misure diverse accostate.
+  const apDel=d.agenti.reduce((n,a)=>n+(a.deleghe_aperte||0),0);
+  const dubbie=d.agenti.reduce((n,a)=>n+(a.deleghe||[]).filter(x=>x.aperta&&x.sospetta).length,0);
   SALA_N={vive,tot:d.agenti.length};
-  $("m-sala").textContent=`${vive} al lavoro · ${ferme} in ascolto`+(nd?` · ${nd} non dichiarat${nd>1?"i":"o"}`:"")+" · letto "+orario(d.generato);
-  copertina("sala",`${vive}/${d.agenti.length}`,vive?"green":"",`al lavoro`+(mute?` · ${mute} mut${mute>1?"e":"a"}`:"")+(nd?` · ${nd} non dichiarat${nd>1?"i":"o"}`:"")+(d.fantasmi&&d.fantasmi.length?` · ${d.fantasmi.length} chius${d.fantasmi.length>1?"e":"a"} male`:""));
+  $("m-sala").textContent=`${vive} al lavoro · ${ferme} in ascolto`+(nd?` · ${nd} non dichiarat${nd>1?"i":"o"}`:"")
+    +(apDel?` · ${apDel} deleg${apDel>1?"he":"a"} apert${apDel>1?"e":"a"}`+(dubbie?`, ${dubbie} in dubbio`:""):"")
+    +" · letto "+orario(d.generato);
+  copertina("sala",`${vive}/${d.agenti.length}`,vive?"green":"",`al lavoro`+(apDel?` · ${apDel} in delega`:"")+(mute?` · ${mute} mut${mute>1?"e":"a"}`:"")+(nd?` · ${nd} non dichiarat${nd>1?"i":"o"}`:"")+(d.fantasmi&&d.fantasmi.length?` · ${d.fantasmi.length} chius${d.fantasmi.length>1?"e":"a"} male`:""));
   renderPonte();
 }
 

@@ -36,6 +36,14 @@ PROGETTI = Path.home() / ".claude" / "projects"
 # legge come "non sta facendo niente", che e' il contrario del vero.
 FINESTRE = (256 * 1024, 1024 * 1024, 4 * 1024 * 1024)
 
+# Oltre questo una delega ancora aperta merita un dubbio, non una certezza.
+# Misurato il 03/09 su 22 deleghe reali: quelle che si chiudono lo fanno in
+# 2-5 minuti. Due, lanciate alle 18:43 e alle 18:44, non hanno **mai** avuto la
+# loro notifica di fine: a distanza di cinque ore risultavano ancora aperte.
+# Una delega orfana non si distingue da una lunga, quindi oltre l'ora si dice
+# che il dato non e' piu' affidabile invece di continuare a contarla per viva.
+DELEGA_SOSPETTA_S = 3600
+
 # Oltre questo silenzio un `busy` merita di essere segnalato — non accusato.
 # A 10 minuti la soglia gridava al lupo: misurato il 03/09, `me-ceo` risultava
 # "appesa" mentre stava semplicemente aspettando il sottoagente che scriveva
@@ -159,11 +167,35 @@ def _pulisci(t: str, limite: int = 260) -> str:
 # **una richiesta scritta da una persona non comincia con un tag**.
 _RUMORE_UTENTE = re.compile(r"^\s*<[a-z][a-z0-9-]*[ >]", re.I)
 
+# Cosa apre e cosa CHIUDE una delega. #SALA-0903 si era fermato qui, e per una
+# ragione giusta: il `tool_result` di un `Agent` non e' la fine della delega —
+# torna dopo 1,5 s con "Async agent launched successfully" mentre il
+# sottoagente lavora ancora. Ma la fine e' scritta, solo in un altro posto:
+# quando il sottoagente finisce, Claude Code inietta nel transcript della
+# **madre** un messaggio `<task-notification>` con il suo `<task-id>` e uno
+# `<status>` (osservati il 03/09: `completed` 18 volte, `killed` 1).
+#
+# L'aggancio e' il `task-id`, che e' l'`agentId` restituito dal `tool_result`.
+# NON il `<tool-use-id>` della notifica: verificato che sono due cose diverse
+# (agentId `afb330b58022f04c7` nasce da `toolu_01VbPcTM…` ma la sua notifica
+# porta `toolu_014JtWX9…`, cioe' il turno in cui e' stata consegnata).
+#
+# Cosa resta non osservabile, e non lo si finge: i **passi interni** del
+# sottoagente. Il suo transcript non e' quello della madre — nessuna riga con
+# `isSidechain` (verificato: 0 su 2384 righe). Qui si dice che la delega e'
+# aperta, a chi e da quando. Non cosa stia facendo chi la porta.
+_ID_AGENTE = re.compile(r"agentId:\s*([0-9a-f]{6,})")
+_FINE_DELEGA = re.compile(r"<task-id>\s*([^<\s]+)\s*</task-id>")
+_ESITO_DELEGA = re.compile(r"<status>\s*([^<\s]+)\s*</status>")
+
 
 def _scorri(righe: list[dict]) -> dict:
     task = passo = ""
     ultimo_ts = None
-    deleghe: list[dict] = []
+    # Chiave = id del `tool_use` che ha aperto la delega, cosi' il suo
+    # `tool_result` la ritrova per attaccarle l'`agentId`.
+    deleghe: dict[str, dict] = {}
+    chiuse: dict[str, tuple[str, str | None]] = {}   # agentId -> (esito, quando)
 
     for d in righe:
         if not isinstance(d, dict):
@@ -181,33 +213,66 @@ def _scorri(righe: list[dict]) -> dict:
                              and cont[0].get("type") == "tool_result")
             if testo and not e_tool_result and not _RUMORE_UTENTE.match(testo):
                 task = testo
+            # La notifica di fine delega arriva come messaggio "user": il
+            # filtro del rumore la scarta come task (giustamente), ma e'
+            # l'unico posto dove sta scritto che un sottoagente ha finito.
+            if "<task-notification>" in testo:
+                fine = _FINE_DELEGA.search(testo)
+                if fine:
+                    esito = _ESITO_DELEGA.search(testo)
+                    chiuse[fine.group(1)] = (esito.group(1) if esito else "finita",
+                                             d.get("timestamp"))
         elif d.get("type") == "assistant":
             p = _passo_assistente(cont)
             if p:
                 passo = p
 
-        # Le deleghe: chi ha passato lavoro a chi. NON si dice "in corso":
-        # misurato il 03/09, il `tool_result` di un `Agent` in background torna
-        # dopo 1,5 s (18:01:52 -> 18:01:54) mentre il sottoagente lavorava
-        # ancora. La coppia tool_use/tool_result non misura la vita del
-        # sottoagente, e spacciarla per tale darebbe "attivo" a lavori finiti.
         if isinstance(cont, list):
             for b in cont:
-                if (isinstance(b, dict) and b.get("type") == "tool_use"
+                if not isinstance(b, dict):
+                    continue
+                if (b.get("type") == "tool_use"
                         and b.get("name") in ("Agent", "Task")):
                     inp = b.get("input") or {}
-                    deleghe.append({
+                    deleghe[b.get("id") or f"?{len(deleghe)}"] = {
                         "agente": inp.get("subagent_type") or "general-purpose",
                         "task": _pulisci(inp.get("description") or "", 90),
                         "quando": _iso(d.get("timestamp")),
-                    })
+                        "eta_s": _eta_s(d.get("timestamp")),
+                        "_id": None,
+                    }
+                elif (b.get("type") == "tool_result"
+                        and b.get("tool_use_id") in deleghe):
+                    # Da qui si prende SOLO l'agentId, e serve solo ad
+                    # agganciare la notifica di fine: e' un id interno e non
+                    # esce da questa funzione.
+                    m = _ID_AGENTE.search(_testo(b.get("content")))
+                    if m:
+                        deleghe[b["tool_use_id"]]["_id"] = m.group(1)
+
+    aperte, finite = [], []
+    for dl in deleghe.values():
+        esito = chiuse.get(dl.pop("_id") or "")
+        dl["esito"] = esito[0] if esito else None
+        dl["chiusa_il"] = _iso(esito[1]) if esito else None
+        # Aperta = nessuna notifica di fine. Il `tool_result` non chiude
+        # niente: e' il punto su cui #SALA-0903 si era fermato.
+        dl["aperta"] = esito is None
+        dl["sospetta"] = bool(dl["aperta"] and dl["eta_s"] is not None
+                              and dl["eta_s"] > DELEGA_SOSPETTA_S)
+        (aperte if dl["aperta"] else finite).append(dl)
 
     return {
         "task": _pulisci(task),
         "passo": _pulisci(passo, 200),
         "ultimo_evento": _iso(ultimo_ts),
         "eta_evento_s": _eta_s(ultimo_ts),
-        "deleghe": deleghe[-3:],
+        # Le aperte sono quelle che dicono qualcosa di adesso e non si tagliano
+        # (viste 4 in parallelo il 03/09); delle finite bastano le ultime due,
+        # come contesto. Un tetto a 6 tiene la risposta piccola: oltre, il
+        # numero conta piu' dei nomi.
+        "deleghe": aperte[:6] + finite[-2:],
+        "deleghe_aperte": len(aperte),
     }
 
 
@@ -327,6 +392,11 @@ def stato() -> dict:
             "attivita_disponibile": att.get("disponibile", False),
             "attivita_perche": att.get("perche", "") or att.get("task_perche", ""),
             "deleghe": att.get("deleghe", []),
+            # Quante deleghe risultano ancora aperte. Si vede solo quel che
+            # sta nella finestra di transcript letta: una delega piu' vecchia
+            # non compare, quindi si conta per difetto. E' il verso giusto in
+            # cui sbagliare — meglio una delega non mostrata che una inventata.
+            "deleghe_aperte": att.get("deleghe_aperte", 0),
         })
 
     # Prima chi lavora, poi chi ha parlato piu' di recente.
