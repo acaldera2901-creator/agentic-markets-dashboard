@@ -21,6 +21,7 @@ import { liveFootballOnBoard } from "@/lib/live-ticker";
 import { headlineRead } from "@/lib/headline-market"; // #HEADLINE-MARKET-0830
 import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #PICK-FLOOR-0830
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
+import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 import { storageGet, storageSet } from "@/lib/safe-storage";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
@@ -8114,10 +8115,15 @@ function ReferralPanel() {
         {/* Tono minore, sotto la linea: la rev-share è un'opzione per creator, non
             l'offerta; il −50% è un'informazione sul prezzo, non un premio.
             #PRELAUNCH-AUDIT: il claim −50% appare SOLO quando la promo è davvero
-            attiva (stesso flag del LaunchPromoBanner) → niente deceptive pricing. */}
+            attiva (stesso flag del LaunchPromoBanner) → niente deceptive pricing.
+            #PROMO-DEADLINE-0904: "stesso flag" NON bastava — qui si leggeva solo
+            il flag, mentre il banner controlla flag E deadline. Alla scadenza il
+            banner spariva e il checkout tornava a prezzo pieno, ma questa riga
+            continuava a promettere il −50%. Ora la condizione è una sola, in
+            lib/launch-promo-client. */}
         <div className="space-y-1 border-t pt-3" style={{ borderColor: "var(--am-line)" }}>
           <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.note}</p>
-          {process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true" && (
+          {launchPromoLive() && (
             <p className="text-[10px] font-mono text-[var(--am-muted-2)]">{c.promo}</p>
           )}
         </div>

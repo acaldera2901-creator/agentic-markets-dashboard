@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
 import { getAttribution } from "@/lib/attribution";
 import { trackEvent } from "@/lib/track-event";
+import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 
 export type HomeAuthIntent = "login" | "create";
 
@@ -192,7 +193,10 @@ export function HomeAuthModal({
   const effectiveRef = normalizeRefCode(refInput);
   // La riga "−50% primo acquisto" appare solo se la promo di lancio è attiva
   // (stesso flag del banner) → mai una claim di sconto quando la promo è spenta.
-  const promoOn = process.env.NEXT_PUBLIC_LAUNCH_PROMO_ENABLED === "true";
+  // #PROMO-DEADLINE-0904: il flag da solo non basta — alla scadenza restava
+  // "true" e questa riga prometteva uno sconto che il checkout non applica più.
+  // `launchPromoLive()` controlla flag E deadline, come fa il server.
+  const promoOn = launchPromoLive();
 
   // Chiusura facile (Escape) + blocco scroll di sfondo mentre il modal è aperto
   // → l'uscita è facile quanto l'ingresso, niente jank di scroll del body.
