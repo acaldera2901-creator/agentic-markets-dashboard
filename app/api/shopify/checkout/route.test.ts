@@ -7,7 +7,12 @@ const hasWeeklyPick = vi.fn();
 vi.mock("@/lib/auth", () => ({ getSessionPlan }));
 vi.mock("@/lib/db", () => ({ dbQuery: vi.fn(), dbQueryStrict, dbExecute: vi.fn() }));
 vi.mock("@/lib/creator-promo", () => ({ promoEligibility }));
-vi.mock("@/lib/weekly-pick-server", () => ({ hasWeeklyPickStrict: hasWeeklyPick }));
+const weekState = vi.fn();
+vi.mock("@/lib/weekly-pick-server", () => ({
+  hasWeeklyPickStrict: hasWeeklyPick,
+  weeklyPickWeekStateStrict: weekState,
+  weeklyPickClosed: (s: { exists: boolean; legs: number; remaining: number }) => s.exists && s.legs > 0 && s.remaining === 0,
+}));
 
 function req(body: unknown, headers: Record<string, string> = {}) {
   return new Request("https://x/api/shopify/checkout", {
@@ -34,6 +39,7 @@ beforeEach(() => {
   process.env.WEEKLY_PICK_ENABLED = "true";
   promoEligibility.mockResolvedValue({ firstPaidOrder: false });
   hasWeeklyPick.mockResolvedValue(false);
+  weekState.mockResolvedValue({ exists: true, legs: 5, remaining: 3 });
   getSessionPlan.mockResolvedValue({
     identifier: "u@t.com",
     plan: "free",
@@ -182,6 +188,23 @@ it("weekly: 409 se l'ha già comprata questa settimana", async () => {
   expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(409);
 });
 
+it("weekly: 409 se la settimana è CHIUSA (tutte le gambe decise) — #WEEKLY-PICK-CLOSED-0904", async () => {
+  weekState.mockResolvedValue({ exists: true, legs: 5, remaining: 0 });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(409);
+});
+
+it("weekly: 404 se questa settimana non esiste nessuna multipla", async () => {
+  weekState.mockResolvedValue({ exists: false, legs: 0, remaining: 0 });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(404);
+});
+
+it("weekly: 500 fail-closed se lo stato settimana non si legge", async () => {
+  weekState.mockRejectedValue(new Error("db down"));
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "weekly" }))).status).toBe(500);
+});
 it("weekly: 500 fail-closed se non riusciamo a sapere se l'ha già comprata", async () => {
   hasWeeklyPick.mockRejectedValue(new Error("db down"));
   const { POST } = await import("./route");

@@ -16,7 +16,7 @@ import {
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
 } from "@/lib/weekly-pick";
-import { hasWeeklyPickStrict } from "@/lib/weekly-pick-server";
+import { hasWeeklyPickStrict, weeklyPickWeekStateStrict, weeklyPickClosed } from "@/lib/weekly-pick-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -57,6 +57,17 @@ export async function POST(req: Request) {
     }
   } catch (e) {
     console.error("[weekly-pick/checkout] hasWeeklyPickStrict failed:", String(e));
+    return NextResponse.json({ error: "unavailable" }, { status: 500 });
+  }
+  // #WEEKLY-PICK-CLOSED-0904 — c'è qualcosa da vendere? Senza multipla questa
+  // settimana → 404 (prima si creava un ordine per il nulla); tutte le gambe già
+  // decise → 409 (si vendeva una schedina finita). Errore DB → fail-closed.
+  try {
+    const state = await weeklyPickWeekStateStrict(week);
+    if (!state.exists) return NextResponse.json({ error: "not available" }, { status: 404 });
+    if (weeklyPickClosed(state)) return NextResponse.json({ error: "week closed" }, { status: 409 });
+  } catch (e) {
+    console.error("[weekly-pick/checkout] weeklyPickWeekStateStrict failed:", String(e));
     return NextResponse.json({ error: "unavailable" }, { status: 500 });
   }
 
