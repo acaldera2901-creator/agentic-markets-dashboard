@@ -27,9 +27,20 @@ from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 HOST = "127.0.0.1"
 PORT = 8790
 STATIC = Path(__file__).resolve().parent / "static"
-PAGE = STATIC / "azienda.html"        # la home: il portafoglio
-PAGE_BR = STATIC / "index.html"       # la sala controllo BetRedge
-PAGE_SALA = STATIC / "sala.html"      # la sala di lavoro: chi sta lavorando adesso
+PAGE = STATIC / "index.html"          # la home: un piano unico, tutti i settori
+# Le vecchie pagine sono diventate settori del piano: chi arriva dai vecchi
+# indirizzi viene portato al settore giusto, non su un 404.
+REDIRECT = {
+    "/betredge": "/#sistema", "/betredge.html": "/#sistema",
+    "/sala": "/#sala",
+    "/architettura.html": "/#architettura",
+}
+# Font vendorizzati: la torre e' locale e deve aprirsi anche senza rete.
+# Lista chiusa di nomi, nessuna mappatura path->file: niente traversal.
+FONTS = {
+    "/vendor/fonts/saira.woff2": STATIC / "vendor/fonts/saira.woff2",
+    "/vendor/fonts/jetbrains-mono.woff2": STATIC / "vendor/fonts/jetbrains-mono.woff2",
+}
 HISTORY_LIMIT = 500
 
 
@@ -137,30 +148,31 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - firma imposta da BaseHTTPRequestHandler
         path = self.path.split("?", 1)[0]
-        # Whitelist esplicita di tre percorsi: nessuna mappatura path->file,
-        # quindi nessun traversal possibile per costruzione.
-        if path in ("/betredge", "/betredge.html", "/index.html"):
-            html = PAGE_BR.read_text(encoding="utf-8").replace(
-                "__CC_TOKEN__", ensure_token()
-            )
-            self._send(200, html.encode(), "text/html; charset=utf-8")
-        elif path in ("/",):
+        # Whitelist esplicita: nessuna mappatura path->file, quindi nessun
+        # traversal possibile per costruzione.
+        if path in ("/", "/index.html"):
             # Il token viene iniettato nella pagina servita: cosi' vive solo
             # qui e nel file di stato, mai in un file versionato.
             html = PAGE.read_text(encoding="utf-8").replace(
                 "__CC_TOKEN__", ensure_token()
             )
             self._send(200, html.encode(), "text/html; charset=utf-8")
-        elif path == "/sala":
-            self._send(200, PAGE_SALA.read_bytes(), "text/html; charset=utf-8")
-        elif path == "/architettura.html":
-            # La mappa e' un artefatto a se': si serve com'e', senza token
-            # (e' sola lettura e non contiene segreti).
-            f = STATIC / "architettura.html"
+        elif path in REDIRECT:
+            self.send_response(302)
+            self.send_header("Location", REDIRECT[path])
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        elif path in FONTS:
+            f = FONTS[path]
             if not f.exists():
-                self._send(404, b"mappa non installata", "text/plain; charset=utf-8")
+                self._send(404, b"font non installato", "text/plain; charset=utf-8")
                 return
-            self._send(200, f.read_bytes(), "text/html; charset=utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "font/woff2")
+            self.send_header("Content-Length", str(f.stat().st_size))
+            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+            self.end_headers()
+            self.wfile.write(f.read_bytes())
         elif path == "/api/azienda":
             # Lo scrive `lab azienda --json`. Se non e' mai girato lo dice,
             # invece di restituire un portafoglio vuoto che sembra "niente in corso".
