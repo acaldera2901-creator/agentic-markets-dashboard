@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import cervello
 from .actions import RESTARTABLE
 from .alerting import decide_alerts
 from .checks import all_checks
@@ -69,6 +70,19 @@ def main(argv: list[str] | None = None) -> int:
 
     stato = collect()
     print(json.dumps(stato["summary"], ensure_ascii=False))
+
+    # Il grafo del cervello viaggia col collector invece che con un settimo
+    # LaunchAgent: stessa cadenza, stesso venv, stessa working directory, e un
+    # daemon in meno da sorvegliare. Sta in `main()` e non in `collect()`
+    # perche' non e' un check: non ha un verdetto, non entra nello snapshot e
+    # non deve comparire nel `--dry-run`, che per contratto non scrive nulla.
+    # Se il parser muore, il collector non muore con lui: i check sono gia'
+    # salvati, e un grafo vecchio vale piu' di uno stato mancante.
+    try:
+        grafo = cervello.aggiorna()
+        print(json.dumps(grafo["conteggi"], ensure_ascii=False))
+    except Exception as errore:  # noqa: BLE001 - nessun guasto qui merita il collector
+        print(f"cervello: non aggiornato ({errore})", file=sys.stderr)
     return 0
 
 

@@ -92,6 +92,62 @@ strato che il DB non conosce: domini autenticati, bounce, consegne. Senza la
 chiave i due tile Resend restano `unknown` — e il conteggio degli invii
 funziona comunque.
 
+## Il grafo del cervello (`/api/cervello`)
+
+La memoria unificata (`~/Desktop/00-SISTEMA/cervello/`, 995 file `.md`) letta
+come grafo: un file e' un nodo, un wikilink e' un arco. `cervello.py` la
+cammina **dentro il giro del collector**, non dentro la richiesta — a freddo
+costa 2,9 s, e nessuna pagina puo' aspettare tre secondi. Il JSON finisce in
+`~/.betredge-cc/cervello.json`; l'endpoint lo serve e basta. Se non e' mai
+girato risponde `{"assente":true}`: un grafo vuoto si leggerebbe come "il
+cervello non ha niente dentro", che e' il contrario.
+
+Niente settimo LaunchAgent: stessa cadenza (5 min), stesso venv, un daemon in
+meno da sorvegliare. Sta in `collector.main()` e non in `collect()` perche' non
+e' un check — non ha un verdetto, non entra nello snapshot, e il `--dry-run`
+per contratto non scrive. Se il parser muore il collector non muore con lui.
+
+**Cosa entra e cosa no** (le scelte, non i dettagli):
+
+- **`4-archivio/` non entra col suo sottografo.** E' un record storico: i suoi
+  file portano 885 wikilink verso vault che non esistono piu'. Resta pero'
+  nell'indice di risoluzione, cosi' un file vivo che cita un archiviato ottiene
+  un nodo `tipo: archivio` (attenuato) invece di un falso `mancante`. Misurato:
+  57 nodi archiviati citati da vivi, contro ~380 che sarebbero entrati in blocco.
+- **`Group_Chat-ORIGINALE-INTERO.md` si salta** — 2,8 MB identici ai
+  `Group_Chat-<mese>.md` accanto.
+- **Il rumore non e' dove sembra.** Il filtro sui blocchi di codice recintati
+  toglie **zero** bersagli su 592: e' una guardia, non una pulizia. Il rumore
+  vero sono i segnaposto della prosa che spiega la sintassi (`[[A]]`, `[[X]]`,
+  `[[...]]`). Togliere anche il codice **inline** e' stato misurato e scartato:
+  costerebbe 10 riferimenti veri per togliere 10 pezzi di rumore.
+- **Il `type:` del frontmatter vince sulla cartella**, ma passa da un
+  vocabolario solo: 198 file dicono `type: project` dove la cartella dice
+  `progetto`, e tenerli distinti darebbe una legenda con due voci per la stessa
+  cosa. Gli alias normalizzano, il resto passa com'e'.
+- **Risoluzione: percorso esatto, poi nome di file univoco, poi `mancante`.**
+  Un nome ambiguo non si indovina. Misurato: un terzo passo "per suffisso"
+  avrebbe risolto **3** dei 151 mancanti — non vale una regola in piu'.
+- **`scope: azienda` non e' un arco.** E' un'etichetta di perimetro: farne una
+  relazione creerebbe due hub da 290 archi che nascondono il grafo vero.
+
+**Perche' il grafo non balla.** Le posizioni sono force-directed calcolate qui
+(numpy), seminate dal giro precedente. Il seme da solo non bastava: near
+equilibrium Fruchterman-Reingold muove ogni nodo di tutta la temperatura anche
+quando la forza vera e' trascurabile, e con 338 orfani — un gas repulsivo senza
+minimo netto — due giri identici spostavano i nodi di 15-18 unita' su un campo
+da 800. Non era convergenza, era un ciclo limite. Ora il grafo porta la sua
+`impronta` strutturale: se nodi e archi non sono cambiati le posizioni si
+ricopiano **identiche** e il layout non gira affatto (0,04 s invece di 0,9 s).
+Quando invece qualcosa cambia, si rilassa in locale: un file nuovo sposta gli
+altri di 9,6 unita' mediane.
+
+**Note per chi disegna la pagina.** `peso` e' la taglia del file in KB, grezza:
+va da 1 a 1402, quindi va scalata (radice o log), non usata come raggio.
+`grado` e' il numero di archi che toccano il nodo. `fase` e' valorizzata solo
+sui file con blocco `STATO` (157 su 913) e arriva gia' con la sua emoji.
+`toccato` e' `null` sui nodi `mancante`, che non sono file.
+
 ## Come si aggiunge un check
 
 Una funzione che ritorna un `Verdict` in `checks/<gruppo>.py`, più una riga in

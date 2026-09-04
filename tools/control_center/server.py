@@ -197,6 +197,13 @@ class Handler(BaseHTTPRequestHandler):
             f = STATE_FILE.parent / "lab.json"
             corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
             self._send(200, corpo, "application/json; charset=utf-8")
+        elif path == "/api/cervello":
+            # Il grafo della memoria, scritto dal collector ogni 5 minuti.
+            # Non si calcola qui: camminare 995 file markdown dentro una
+            # richiesta HTTP costa 3 secondi a freddo.
+            f = STATE_FILE.parent / "cervello.json"
+            corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
+            self._send(200, corpo, "application/json; charset=utf-8")
         elif path == "/api/state":
             body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")
