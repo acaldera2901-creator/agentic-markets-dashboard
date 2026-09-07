@@ -273,8 +273,12 @@ class ResultSettlementAgent(BaseAgent):
                     continue  # not finished / providers have no score yet
 
                 pick = str(row.get("pick") or "").strip().lower()
+                # #PICK-PERSIST-0907: serve sapere se il pick e' arrivato dalla
+                # riga o dal recupero — solo nel secondo caso va SCRITTO, ed e'
+                # il caso in cui oggi si perde.
+                pick_recuperato = ""
                 if not pick:
-                    pick = selezioni.get(str(row.get("source_id") or ""), "")
+                    pick = pick_recuperato = selezioni.get(str(row.get("source_id") or ""), "")
                 market = str(row.get("market") or "1X2")
                 if market != "1X2" or pick not in ("home", "draw", "away"):
                     # Unknown market/pick: settle as void rather than guessing.
@@ -288,6 +292,11 @@ class ResultSettlementAgent(BaseAgent):
                     outcome,
                     # #021: real final score into the served history row.
                     final_score=final_score,
+                    # #PICK-PERSIST-0907: l'esito qui sopra e' stato calcolato da
+                    # questo pick recuperato. Non scriverlo lasciava la riga con
+                    # il risultato e senza la scelta, e ogni superficie pubblica
+                    # filtra `pick not null` — cioe' selezionava sugli esiti.
+                    resolved_pick=pick_recuperato or None,
                 ):
                     settled += 1
                     self.logger.info(

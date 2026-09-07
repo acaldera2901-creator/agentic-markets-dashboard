@@ -700,6 +700,7 @@ async def settle_unified_prediction(
     result: str,
     *,
     final_score: str | None = None,
+    resolved_pick: str | None = None,
 ) -> bool:
     """
     Mark one served prediction as settled history. `result` is won|lost|void.
@@ -709,6 +710,23 @@ async def settle_unified_prediction(
     source didn't provide one (fail-closed: no score is shown instead).
     Fail-loud to the caller (bool) so the settlement agent can count and retry
     on the next cycle — but never raises.
+
+    ``resolved_pick`` (#PICK-PERSIST-0907): la scelta con cui questa riga e'
+    stata GRADUATA, quando il chiamante l'ha dovuta recuperare dalla sorgente
+    perche' `unified_predictions.pick` era vuoto. Il settlement conosceva gia'
+    questo valore — lo usa per decidere won/lost — e poi lo buttava via: la riga
+    restava con l'esito e senza la scelta. Misurato il 07/09 sulle chiusure del
+    06/09: 27 righe non-void, 12 con pick (9 vinte su 12) e 15 senza (6 su 15).
+    Ogni superficie pubblica filtra `pick not null`, quindi il registro
+    selezionava sugli ESITI invece che sulle previsioni.
+
+    Si scrive SOLO quando il chiamante passa un valore, cioe' solo dove la
+    colonna era vuota: una riga che il suo pick ce l'ha non viene mai toccata.
+    ``pick_source`` finisce nelle notes perche' questo valore e' letto dalla
+    sorgente AL MOMENTO DELLA CHIUSURA, non al momento della previsione: le
+    tabelle sorgente sono in upsert, non un registro immutabile. Il pick e
+    l'esito restano coerenti per costruzione (l'esito e' stato calcolato da
+    QUESTO pick), ma la provenienza va detta, non lasciata indovinare.
     """
     base = _rest_base()
     if not base:
@@ -720,7 +738,10 @@ async def settle_unified_prediction(
         "settled_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    if final_score:
+    pick_pulito = (resolved_pick or "").strip()
+    if pick_pulito:
+        payload["pick"] = pick_pulito
+    if final_score or pick_pulito:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(
@@ -734,7 +755,10 @@ async def settle_unified_prediction(
                         existing = json.loads(resp.json()[0].get("notes") or "{}")
                     except (TypeError, ValueError):
                         existing = {}
-                existing["final_score"] = final_score
+                if final_score:
+                    existing["final_score"] = final_score
+                if pick_pulito:
+                    existing["pick_source"] = "best_selection"
                 payload["notes"] = json.dumps(existing)
         except Exception as exc:
             # Score is enrichment, not the settlement itself — never block it.
@@ -904,7 +928,8 @@ async def settle_unified_tennis(
         # popolato al 100% (76 P1 + 56 P2 su 132 righe in 3 giorni, zero vuoti):
         # e' la stessa fonte da cui il canale Telegram ricava il favorito sulle
         # card, quindi il registro pubblico e la chiusura dicono la stessa cosa.
-        pick = (row.get("pick") or "").strip() or (predicted_player or "").strip()
+        pick_di_riga = (row.get("pick") or "").strip()
+        pick = pick_di_riga or (predicted_player or "").strip()
         if unresolved:
             # #TENNIS-VOID-FIX-1: aged out without ever resolving the match.
             # Not a confirmed void — flagged so /api/v2/history excludes it from
@@ -924,7 +949,15 @@ async def settle_unified_tennis(
                 else "lost"
             )
         return await settle_unified_prediction(
-            str(row["id"]), result, final_score=final_score
+            str(row["id"]),
+            result,
+            final_score=final_score,
+            # #PICK-PERSIST-0907: la riga arrivava qui senza pick, il fallback
+            # l'ha trovato e l'esito qui sopra e' stato deciso con QUELLO. Se non
+            # lo si scrive, la riga resta «vinta/persa da nessuno» e sparisce da
+            # ogni superficie che filtra `pick not null`. Solo quando il pick
+            # mancava davvero: una riga col suo pick non si tocca.
+            resolved_pick=None if pick_di_riga else (pick or None),
         )
     except Exception as exc:
         logger.warning("unified tennis settle error for %s: %s", match_id, exc)

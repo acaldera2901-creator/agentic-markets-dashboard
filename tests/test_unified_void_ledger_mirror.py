@@ -65,7 +65,7 @@ def _monta(monkeypatch, agente, *, righe, abbandonata, punteggio=None):
     async def fake_selezioni(ids):
         return {}
 
-    async def fake_settle_unified(row_id, outcome, final_score=None):
+    async def fake_settle_unified(row_id, outcome, final_score=None, resolved_pick=None):
         chiusure_servite.append((row_id, outcome, final_score))
         return True
 

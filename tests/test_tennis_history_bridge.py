@@ -118,7 +118,11 @@ async def test_settle_unified_tennis_result_mapping(pick, winner, void, unresolv
             "tennis:espn:e1:k", winner, void=void, unresolved=unresolved
         )
     assert ok is True
-    settle.assert_awaited_once_with("row-1", expected, final_score=None)
+    # #PICK-PERSIST-0907: queste righe il pick ce l'hanno gia', quindi il
+    # ponte NON deve passarne uno da scrivere — la colonna non si tocca.
+    settle.assert_awaited_once_with(
+        "row-1", expected, final_score=None, resolved_pick=None
+    )
 
 
 @pytest.mark.asyncio
