@@ -62,9 +62,6 @@ def _monta(monkeypatch, agente, *, righe, abbandonata, punteggio=None):
     async def fake_fetch_unsettled(cutoff_minutes=115, limit=50):
         return righe
 
-    async def fake_selezioni(ids):
-        return {}
-
     async def fake_settle_unified(row_id, outcome, final_score=None):
         chiusure_servite.append((row_id, outcome, final_score))
         return True
@@ -80,7 +77,6 @@ def _monta(monkeypatch, agente, *, righe, abbandonata, punteggio=None):
         return abbandonata
 
     monkeypatch.setattr(rs, "fetch_unsettled_unified_predictions", fake_fetch_unsettled)
-    monkeypatch.setattr(rs, "fetch_football_selections", fake_selezioni)
     monkeypatch.setattr(rs, "settle_unified_prediction", fake_settle_unified)
     monkeypatch.setattr(rs, "record_pick_settlement", fake_record)
     monkeypatch.setattr(agente, "_fetch_unified_result", fake_fetch_result)

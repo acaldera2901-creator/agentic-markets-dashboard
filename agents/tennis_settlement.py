@@ -164,7 +164,6 @@ class TennisSettlementAgent(BaseAgent):
                 pred.match_id,
                 winner_name,
                 final_score=score_text,
-                predicted_player=self._favorito(pred),
             )
             updated += 1
 
@@ -233,20 +232,6 @@ class TennisSettlementAgent(BaseAgent):
             except Exception:
                 continue
         return giorni
-
-    @staticmethod
-    def _favorito(pred) -> str | None:
-        """
-        Il giocatore su cui il modello ha puntato, da `best_selection` (P1/P2).
-        E' la stessa regola che il canale Telegram usa per il favorito sulle
-        card, quindi la card e la chiusura non possono contraddirsi.
-        """
-        sel = (getattr(pred, "best_selection", None) or "").strip().upper()
-        if sel == "P1":
-            return pred.player1
-        if sel == "P2":
-            return pred.player2
-        return None
 
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
