@@ -33,7 +33,6 @@ from core.odds_api_client import (
 )
 from core.redis_client import publish
 from core.supabase_client import (
-    fetch_football_selections,
     fetch_unsettled_unified_predictions,
     record_pick_settlement,
     settle_unified_prediction,
@@ -220,18 +219,6 @@ class ResultSettlementAgent(BaseAgent):
         # re-fetched, not served from a stale "not completed" cache entry.
         self._scores_cache = {}
         self.logger.info(f"unified settlement: {len(rows)} rows past cutoff")
-        # Il pronostico del modello per le righe il cui `pick` e' vuoto. Senza,
-        # `pick not in ("home","draw","away")` le manda in `void` e un esito VERO
-        # va perso — misurato: il void del calcio segue il senza-pick riga per
-        # riga. In blocco, una volta per ciclo.
-        mancanti = [
-            str(r.get("source_id") or "")
-            for r in rows
-            if not str(r.get("pick") or "").strip() and r.get("source_id")
-        ]
-        selezioni = await fetch_football_selections(mancanti) if mancanti else {}
-        if selezioni:
-            self.logger.info(f"unified settlement: {len(selezioni)} pronostici recuperati da match_predictions")
         settled = 0
         for row in rows:
             try:
@@ -272,9 +259,16 @@ class ResultSettlementAgent(BaseAgent):
                                 )
                     continue  # not finished / providers have no score yet
 
+                # #VOID-SENZA-PICK-0907 — solo la scelta MOSTRATA grada la riga.
+                # Qui c'era un recupero da `match_predictions.best_selection` per
+                # le righe col pick vuoto. Ma `lib/unified-adapter.ts` scrive
+                # `pick: favBelowFloor ? null : row.best_selection`: un pick
+                # vuoto e' una riga sotto il floor, pubblicata di proposito senza
+                # pronostico. Graduarla won/lost mette nel registro una scelta
+                # che non abbiamo mai mostrato. Sotto, `pick not in
+                # ("home","draw","away")` la manda in `void` — assenza di
+                # scommessa, che e' esattamente cio' che era.
                 pick = str(row.get("pick") or "").strip().lower()
-                if not pick:
-                    pick = selezioni.get(str(row.get("source_id") or ""), "")
                 market = str(row.get("market") or "1X2")
                 if market != "1X2" or pick not in ("home", "draw", "away"):
                     # Unknown market/pick: settle as void rather than guessing.
