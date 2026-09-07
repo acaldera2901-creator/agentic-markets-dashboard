@@ -83,6 +83,15 @@ CARTELLE = (
     (_MB / '11_LLM_COUNCIL',       '1-episodic/council',           True),
     (_MB / '01_CALENDAR',          '1-episodic/calendar',          True),
     (_SA / 'docs' / 'progetti',    '2-semantic/progetti-sistema',  True),
+    # La **terza** copia delle memorie di ruolo, trovata il 07/09 guardando un
+    # `git status` che mostrava due file modificati che non avevo toccato:
+    # `agentic-markets/docs/*_memory.md`, file distinti dagli altri due posti,
+    # con **18 righe non committate dal 5 settembre**. Non c'era niente che le
+    # proteggesse. Entrano qui perche' il riversamento le committa: metterle al
+    # sicuro non richiede di decidere quale delle tre copie muore, e quella
+    # decisione e' di Andrea.
+    (Path.home() / 'Desktop' / 'agentic-markets' / 'docs',
+                                   '1-episodic/agenti/memory-repo',  False),
     # Il sapere procedurale: lo standard, le definizioni degli agenti e le
     # istruzioni permanenti. Perderle costerebbe più di perdere un progetto —
     # sono il modo in cui si lavora, non una cosa su cui si lavora — e non
