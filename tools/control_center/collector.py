@@ -90,7 +90,8 @@ def main(argv: list[str] | None = None) -> int:
                           "aggiornati": len(esito["aggiornati"]),
                           "invariati": esito["invariati"],
                           "parcheggiati": len(esito["parcheggiati"]),
-                          "git": sincronizza.salva(esito) or "-"},
+                          "git": sincronizza.salva(esito) or "-",
+                          "cruscotto": sincronizza.cruscotto()},
                          ensure_ascii=False))
     except Exception as errore:  # noqa: BLE001
         print(f"sincronizza: non riversato ({errore})", file=sys.stderr)

@@ -68,13 +68,53 @@ CERVELLO = Path.home() / 'Desktop' / '00-SISTEMA' / 'cervello'
 # 34, learning 141. Il diario della notte del 07/09 non c'era.
 _SA = Path.home() / 'Desktop' / '00-SISTEMA' / 'sistema-andrea'
 _MB = Path.home() / 'Desktop' / 'obsidian-brain' / 'Maven-Brain'
+#
+# Il terzo campo dice se scendere nelle sottocartelle. **Non è un dettaglio.**
+# Mappando `sistema-andrea/docs` in modo ricorsivo ho ripreso anche
+# `docs/diario` e `docs/progetti`, che erano già mappati altrove: 91 file di
+# diario sono comparsi in due posti del cervello. Cioè ho creato una
+# duplicazione trenta secondi dopo aver finito di estirparne una — la
+# ricorsione è comoda finché due mappature non si sovrappongono, e poi è un
+# difetto silenzioso.
 CARTELLE = (
-    (_SA / 'docs' / 'diario',      '1-episodic/diario'),
-    (_SA / 'agenti-output',        '1-episodic/agenti'),
-    (_MB / '13_LEARNING',          '1-episodic/learning'),
-    (_MB / '11_LLM_COUNCIL',       '1-episodic/council'),
-    (_MB / '01_CALENDAR',          '1-episodic/calendar'),
-    (_SA / 'docs' / 'progetti',    '2-semantic/progetti-sistema'),
+    (_SA / 'docs' / 'diario',      '1-episodic/diario',            True),
+    (_SA / 'agenti-output',        '1-episodic/agenti',            True),
+    (_MB / '13_LEARNING',          '1-episodic/learning',          True),
+    (_MB / '11_LLM_COUNCIL',       '1-episodic/council',           True),
+    (_MB / '01_CALENDAR',          '1-episodic/calendar',          True),
+    (_SA / 'docs' / 'progetti',    '2-semantic/progetti-sistema',  True),
+    # Il sapere procedurale: lo standard, le definizioni degli agenti e le
+    # istruzioni permanenti. Perderle costerebbe più di perdere un progetto —
+    # sono il modo in cui si lavora, non una cosa su cui si lavora — e non
+    # erano sotto alcun backup versionato. Nessuna contiene credenziali:
+    # `~/.claude` **intero** resta fuori, e deve restarci.
+
+
+    (Path.home() / '.claude-agents-shared',           '3-procedural/agenti', True),
+)
+
+# Le istruzioni permanenti, **file per file e non per cartella**. Non è
+# pignoleria: mappare `01-BETREDGE/lab` e `sistema-andrea/docs` per cartella ha
+# reimportato roba che il cervello teneva già altrove — le 11 schede prodotto
+# comparivano sia in `2-semantic/prodotti` sia in `3-procedural/lab/.contesto`,
+# `andrea_mindset.md` in due posti, le memorie di ruolo in due. **16 doppioni
+# byte-identici creati nel gesto stesso di eliminarne 129.** Una mappatura per
+# cartella è comoda finché non si sovrappone a una che c'è già, e allora è un
+# difetto che non fa rumore.
+#
+# Ogni voce qui sotto è un file che **non era** già nel cervello da un'altra
+# strada, verificato per nome.
+ISTRUZIONI = (
+    (Path.home() / 'CLAUDE.md',                      '3-procedural/istruzioni/CLAUDE-comune.md'),
+    (Path.home() / '.claude' / 'CLAUDE.md',          '3-procedural/istruzioni/CLAUDE-azienda.md'),
+    (Path.home() / '.claude-personal' / 'CLAUDE.md', '3-procedural/istruzioni/CLAUDE-privato.md'),
+    (Path.home() / 'Desktop' / '01-BETREDGE' / 'lab' / 'standard.md',
+     '3-procedural/lab-standard.md'),
+    (_SA / 'docs' / 'operating_standard.md',         '3-procedural/operating_standard.md'),
+    # `andrea_mindset.md` e `andrea_data.md` NON sono qui: il cervello li tiene
+    # già in `2-semantic/andrea/`, ed è lì che vanno aggiornati.
+    (_SA / 'docs' / 'andrea_mindset.md',             '2-semantic/andrea/andrea_mindset.md'),
+    (_SA / 'docs' / 'andrea_data.md',                '2-semantic/andrea/andrea_data.md'),
 )
 
 # `Group_Chat-ORIGINALE-INTERO.md` è 2,8 MB e contiene la stessa cosa dei
@@ -186,13 +226,38 @@ def aggiorna(prova: bool = False) -> dict:
             if not prova:
                 dst.write_text(testo, encoding='utf-8')
 
+    # ── le istruzioni permanenti, file per file ──
+    for src, rel in ISTRUZIONI:
+        if not src.is_file():
+            esito['mancanti'].append(f'istruzioni: {src}')
+            continue
+        dst = CERVELLO / rel
+        testo = src.read_text(encoding='utf-8')
+        if dst.exists():
+            attuale = dst.read_text(encoding='utf-8')
+            if attuale == testo:
+                esito['invariati'] += 1
+                continue
+            park = SUPERATI / 'istruzioni' / dst.stem / f'{stampo}.md'
+            esito['parcheggiati'].append(str(park.relative_to(CERVELLO)))
+            if not prova:
+                park.parent.mkdir(parents=True, exist_ok=True)
+                park.write_text(attuale, encoding='utf-8')
+            esito['aggiornati'].append(rel)
+        else:
+            esito['nuovi'].append(rel)
+        if not prova:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(testo, encoding='utf-8')
+
     # ── le altre memorie vive, per cartella ──
-    for radice, rel in CARTELLE:
+    for radice, rel, ricorsivo in CARTELLE:
         if not radice.is_dir():
             esito['mancanti'].append(f'cartella: {radice}')
             continue
         dest = CERVELLO / rel
-        for src in sorted(radice.rglob('*.md')):
+        elenco = radice.rglob('*.md') if ricorsivo else radice.glob('*.md')
+        for src in sorted(elenco):
             if src.name in SALTA_NOMI or src.stat().st_size > LIMITE_BYTE:
                 continue
             # Il percorso relativo si conserva: `13_LEARNING/social/x.md`
@@ -222,6 +287,35 @@ def aggiorna(prova: bool = False) -> dict:
                 dst.write_text(testo, encoding='utf-8')
 
     return esito
+
+
+def cruscotto() -> str:
+    """Rigenera `~/Desktop/00-SISTEMA/STATO.md`, il cruscotto da terminale.
+
+    Perché sta qui: è una **vista derivata** della stessa verità (lo dice da
+    sé — «si riscrive da zero, non modificarlo a mano»), ma si rigenerava a
+    mano, quindi invecchiava. Un test a freddo del 07/09 l'ha mostrato: a un
+    agente aperto pulito ho chiesto dove si guarda lo stato, e ha risposto
+    `STATO.md` — trovandolo generato due giorni prima e rigenerandolo lui.
+    Una vista che invecchia diventa una fonte che mente, e la differenza fra
+    le due la paga chi legge.
+
+    Non è un registro in più: legge gli stessi tre registri di progetto e non
+    contiene niente che non sia già lì.
+    """
+    import subprocess
+    script = (Path.home() / 'Desktop' / '00-SISTEMA' / 'sistema-andrea'
+              / 'scripts' / 'genera_stato.py')
+    if not script.is_file():
+        return 'assente'
+    try:
+        r = subprocess.run(['python3', str(script)], capture_output=True,
+                           text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        return f'non rigenerato: {e}'
+    if r.returncode != 0:
+        return f'non rigenerato: {(r.stderr or r.stdout).strip()[:120]}'
+    return 'rigenerato'
 
 
 def salva(esito: dict) -> str:
@@ -294,3 +388,4 @@ if __name__ == '__main__':
     if not prova:
         m = salva(e)
         print('  git          %s' % (m or 'niente da committare'))
+        print('  cruscotto    %s' % cruscotto())
