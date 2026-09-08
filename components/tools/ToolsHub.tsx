@@ -13,6 +13,8 @@ import { LocalePicker } from "./LocalePicker";
 import { ToolIcon } from "./ToolIcon";
 import { TelegramNudge } from "./TelegramNudge";
 import { MenuIcon } from "@/app/components/menu-icon";
+// #SEO-ORPHANS-0908: le guide spiegano i conti che questi tool fanno.
+import { LEARN_GUIDES, guideHref } from "@/lib/learn-links";
 
 export function ToolsHub({ locale }: { locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
@@ -55,6 +57,29 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
           {copy.hub.intro.map((p, i) => (
             <p key={i}>{p}</p>
           ))}
+          {/* #SEO-ORPHANS-0908 — un calcolatore dà il numero, non il perché.
+              Le guide sono il perché, e da qui non ci si arrivava.
+              SOLO in inglese: gli articoli sono scritti in inglese e mandare un
+              utente turco su una pagina inglese senza dirglielo è una promessa
+              non mantenuta. Nelle altre lingue la riga guide del footer resta,
+              con l'etichetta che dichiara la lingua. Prosa, non una seconda
+              griglia di card: la griglia dei tool qui sopra deve restare
+              l'unica cosa da cliccare in questa pagina. */}
+          {locale === "en" && (
+            <p>
+              <strong>The reasoning behind the sums.</strong> Each calculator answers one
+              question; these guides explain why the question matters and where the answer
+              stops being reliable:{" "}
+              {LEARN_GUIDES.map((g, i) => (
+                <span key={g.slug}>
+                  {i > 0 && (i === LEARN_GUIDES.length - 1 ? ", and " : ", ")}
+                  {/* minuscolo solo la PRIMA lettera: toLowerCase() farebbe "(xg)". */}
+                  <Link href={guideHref(g.slug)}>{g.term.charAt(0).toLowerCase() + g.term.slice(1)}</Link>
+                </span>
+              ))}
+              .
+            </p>
+          )}
         </section>
 
         <aside className="tl-cta">

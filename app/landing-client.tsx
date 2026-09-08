@@ -21,6 +21,8 @@ import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
 import { writeRefCode } from "@/lib/referral-code";
 import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan"; // #HOME-V3: prezzi reali (no fabbricazione)
+// #SEO-ORPHANS-0908: elenco unico guide/pillar, condiviso con footer, /tools e /blog.
+import { BLOG_INDEX, LEARN_GUIDES, LEARN_PILLARS, guideHref } from "@/lib/learn-links";
 import type { TennisMatch } from "@/app/app/page"; // #HOME-V3: tipo del componente board reale
 // #HOME-V3 Anatomy: la scheda è il COMPONENTE REALE della board (TennisMatchCard),
 // non una versione marketing. Lazy-load (ssr:false) per non gonfiare il bundle
@@ -384,6 +386,10 @@ type V3Copy = {
   pcFreeList: string[]; pcBaseList: string[]; pcProList: string[];
   fnHead1: string; fnHeadG: string; fnBody: string;
   wgKick: string; wgHead: string; wgBody: string; wgCta: string;
+  // #SEO-ORPHANS-0908 — contorno del blocco guide. I titoli delle guide NON
+  // stanno qui: sono quelli veri degli articoli (inglesi) e vivono in
+  // lib/learn-links.ts. Qui solo il testo che si traduce davvero.
+  gdEyebrow: string; gdHead: string; gdSub: string; gdAlso: string; gdAll: string;
 };
 const V3_EN: V3Copy = {
   inviteHead: "Your invite is live", inviteBody: "days of PRO, free — unlocked when you confirm your email.",
@@ -427,6 +433,11 @@ const V3_EN: V3Copy = {
   wgKick: "For site owners", wgHead: "Run a site? Put our picks on it.",
   wgBody: "One line of code shows today's predictions on your pages, updates itself, and credits every signup it sends us.",
   wgCta: "See the widget",
+  gdEyebrow: "Guides",
+  gdHead: "Five terms, in the order they build.",
+  gdSub: "Each one is the piece the next one needs. Plain English, no tips — and where a calculator does the sum, it is linked next to it.",
+  gdAlso: "How the model works",
+  gdAll: "All guides",
 };
 const V3_IT: V3Copy = {
   inviteHead: "Il tuo invito è attivo", inviteBody: "giorni di PRO, gratis — si attivano quando confermi la mail.",
@@ -464,6 +475,11 @@ const V3_IT: V3Copy = {
   wgKick: "Per chi ha un sito", wgHead: "Hai un sito? Mettici i nostri pronostici.",
   wgBody: "Una riga di codice mostra le predizioni del giorno sulle tue pagine, si aggiorna da sola e attribuisce a te le iscrizioni che porta.",
   wgCta: "Vedi il widget",
+  gdEyebrow: "Guide",
+  gdHead: "Cinque termini, nell\u2019ordine in cui si reggono.",
+  gdSub: "Ognuno \u00e8 il pezzo che serve al successivo. Sono in inglese, senza dritte \u2014 e dove il conto lo fa un calcolatore, il calcolatore \u00e8 linkato accanto.",
+  gdAlso: "Come funziona il modello",
+  gdAll: "Tutte le guide",
 };
 const V3: Record<Lang, V3Copy> = { en: V3_EN, it: V3_IT, es: V3_EN, fr: V3_EN, ru: V3_EN };
 
@@ -972,6 +988,48 @@ export default function LandingPage() {
           <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
           <Link href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</Link>
         </div>
+      </div></section>
+
+      {/* ── #SEO-ORPHANS-0908 — indice delle guide ─────────────────────────────
+           DOVE: dopo la CTA finale, per la stessa ragione della riga widget qui
+           sotto. Le sette pagine con testo vero prendevano zero link interni,
+           ma la home è anche l'imbocco del funnel: un blocco messo sopra il
+           prezzo avrebbe pagato la SEO col checkout. Qui raccoglie chi è
+           arrivato in fondo senza cliccare — un lettore che non ha convertito
+           è esattamente chi una guida può riportare indietro.
+           COSA NON È: non tre card uguali con un'icona. È un indice, e l'ordine
+           è la sua tesi — probabilità implicita → valore atteso → value bet →
+           CLV, ognuno il pezzo che serve al prossimo. La numerazione porta quel
+           significato, altrimenti sarebbe decorazione.
+           PESO: densità e corpo del titolo deliberatamente sotto .v-prow (la
+           suite di prodotto). Deve leggersi come materiale di lettura, non
+           come una quinta superficie da vendere.
+           Il 04 non ha link a destra: la CLV non ha un calcolatore nell'hub, e
+           la casella resta vuota invece di puntare a un tool affine per
+           simmetria. Il sottotitolo lo dichiara. ── */}
+      <section className="v-sec v-guides-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{v.gdEyebrow}</div><h2>{v.gdHead}</h2><p>{v.gdSub}</p></div>
+        <ol className="v-guides">
+          {LEARN_GUIDES.map((g, i) => (
+            <li className="v-grow" key={g.slug}>
+              <span className="gi" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+              <span className="gt">{g.term}</span>
+              <Link className="gh" href={guideHref(g.slug)}>{g.title}</Link>
+              {g.seeAlso ? (
+                <Link className="gx" href={g.seeAlso.href}>{g.seeAlso.label} &rarr;</Link>
+              ) : (
+                <span className="gx" />
+              )}
+            </li>
+          ))}
+        </ol>
+        <p className="v-guides-see">
+          <span className="v-kick q">{v.gdAlso}</span>
+          {LEARN_PILLARS.map((pl) => (
+            <Link key={pl.href} href={pl.href}>{pl.label}</Link>
+          ))}
+          <Link href={BLOG_INDEX}>{v.gdAll}</Link>
+        </p>
       </div></section>
 
       {/* ── #WIDGET-LANDING-0824: riga per i proprietari di siti. Sta DOPO la CTA

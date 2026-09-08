@@ -8024,6 +8024,26 @@ button:disabled {
 .site-footer-partner-link { display: inline-flex; align-items: center; gap: 4px; }
 .site-footer-partner-icon { display: block; }
 .site-footer-sep { opacity: .5; }
+/* #SEO-ORPHANS-0908 — riga guide del footer. Deve leggersi come navigazione,
+   non come la continuazione della riga legale sopra: label mono in maiuscolo
+   che apre la riga, link NON sottolineati (la riga legale lo sono), colore un
+   gradino più chiaro. A 390px va a capo pulita perché gli anchor sono termini
+   corti, non titoli. */
+.site-footer-learn {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center;
+  gap: 6px 10px; max-width: 780px; font-size: 10.5px;
+}
+.site-footer-learn-lab {
+  text-transform: uppercase; letter-spacing: .1em; font-weight: 700;
+  color: var(--am-muted-2); opacity: .8;
+}
+.site-footer-learn-item { display: inline-flex; align-items: baseline; gap: 10px; }
+/* Sottolineati: nella riga sopra i link lo sono, e due righe adiacenti in cui
+   una metà è cliccabile e l'altra no si leggono male. Il colore un gradino più
+   chiaro del legale basta a distinguere le due righe. */
+.site-footer-learn a { color: var(--am-muted); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--am-line-2); }
+.site-footer-learn a:hover { color: var(--am-coral); text-decoration-color: currentColor; }
+.site-footer-dot { opacity: .35; }
 .site-footer-18 {
   border: 1px solid var(--am-line-2); border-radius: 4px; padding: 1px 6px;
   font-weight: 800; color: var(--am-muted);
@@ -9261,6 +9281,48 @@ button:disabled {
 .hv3 .v-prow:hover .pn{color:var(--v-coral)}
 @media(max-width:760px){.hv3 .v-prow{grid-template-columns:1fr;gap:8px}.hv3 .v-prow .ps{margin-top:4px}}
 
+/* ── #SEO-ORPHANS-0908 · indice guide (home, sotto la CTA finale) ──────────────
+   Deliberatamente PIU' QUIETO della suite qui sopra: h2 più piccolo del default
+   di sezione, riga più fitta (16px vs 22–32) e titolo a 15–17px contro i 20–26
+   di .v-prow. È materiale di lettura, non una superficie di prodotto: la
+   gerarchia lo deve dire prima del testo.
+   La riga NON è un anchor (a differenza di .v-prow) perché ne contiene due —
+   la guida e il calcolatore — e un <a> dentro un <a> non esiste. */
+.hv3 .v-guides-sec .v-sec-head h2{font-size:clamp(22px,2.8vw,30px)}
+/* max-width sotto quella del wrap: a 1440 il titolo e il suo calcolatore
+   finivano a 670px di distanza e smettevano di leggersi come una coppia
+   (misurato sullo screenshot). Una colonna di lettura più stretta è anche
+   coerente con cosa questo blocco è. */
+.hv3 .v-guides{list-style:none;margin:0;padding:0;max-width:980px;border-top:1px solid var(--v-line)}
+.hv3 .v-grow{
+  display:grid;grid-template-columns:26px minmax(120px,168px) 1fr auto;
+  gap:4px clamp(12px,2.2vw,26px);align-items:baseline;
+  padding:16px 0;border-bottom:1px solid var(--v-line);
+}
+.hv3 .v-grow .gi{font-family:var(--v-mono);font-size:11px;letter-spacing:.06em;color:var(--v-muted2);font-variant-numeric:tabular-nums}
+/* NIENTE text-transform:uppercase, a differenza di .v-kick e .v-prow .pk:
+   "xG" non è una parola, è una notazione, e in maiuscolo diventa "XG" —
+   una sigla diversa. La maiuscoletto qui costerebbe un termine sbagliato
+   per rispettare un'abitudine grafica. */
+.hv3 .v-grow .gt{font-family:var(--v-mono);font-size:11px;letter-spacing:.1em;color:var(--v-coral);font-weight:700}
+.hv3 .v-grow .gh{font-size:clamp(15px,1.5vw,17px);line-height:1.35;color:var(--v-text);text-decoration:none;text-wrap:balance}
+.hv3 .v-grow .gh:hover{color:var(--v-coral);text-decoration:underline;text-underline-offset:3px}
+.hv3 .v-grow .gx{font-family:var(--v-mono);font-size:11px;letter-spacing:.04em;color:var(--v-muted2);text-decoration:none;white-space:nowrap}
+.hv3 .v-grow .gx:hover{color:var(--v-cobalt2);text-decoration:underline;text-underline-offset:3px}
+/* Riga "come funziona il modello": chiude l'indice con i due pillar di sport e
+   l'archivio. Sottolineatura di base = si vede che sono link anche in mono. */
+.hv3 .v-guides-see{display:flex;flex-wrap:wrap;align-items:center;gap:10px clamp(14px,2.4vw,26px);margin:22px 0 0;font-family:var(--v-mono);font-size:11.5px}
+.hv3 .v-guides-see .v-kick{margin-right:2px}
+.hv3 .v-guides-see a{color:var(--v-muted);text-decoration:none;border-bottom:1px solid var(--v-line2);padding-bottom:3px}
+.hv3 .v-guides-see a:hover{color:var(--v-coral);border-bottom-color:var(--v-coral-b)}
+@media(max-width:760px){
+  /* 390px: numero e termine sulla stessa riga (fanno da etichetta), titolo a
+     capo su tutta la larghezza, calcolatore sotto. Nessuna colonna a 60px. */
+  .hv3 .v-grow{grid-template-columns:auto 1fr;gap:3px 10px;padding:15px 0}
+  .hv3 .v-grow .gh{grid-column:1 / -1;margin-top:3px}
+  .hv3 .v-grow .gx{grid-column:1 / -1;margin-top:5px;white-space:normal}
+}
+
 /* ── Pricing (real prices from commercial-plan.ts) ── */
 .hv3 .v-tiers{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--v-line);border-bottom:1px solid var(--v-line)}
 .hv3 .v-tier{padding:clamp(28px,3vw,40px) clamp(20px,2.4vw,32px);display:flex;flex-direction:column;gap:16px;border-left:1px solid var(--v-line)}
@@ -9702,6 +9764,11 @@ button:disabled {
   font-size: 13px; line-height: 1.9; color: var(--am-cobalt); white-space: pre; }
 .tl-prose p { font-size: 15px; line-height: 1.7; color: var(--am-muted); margin: 0 0 14px;
   max-width: 72ch; }
+/* #SEO-ORPHANS-0908: la prosa dell'hub non aveva mai contenuto link. Sottolineati
+   e in colore testo: dentro un paragrafo un link deve dichiararsi, non farsi
+   trovare passandoci sopra col mouse (che su mobile non esiste). */
+.tl-prose a { color: var(--am-text); text-decoration: underline; text-underline-offset: 2px; }
+.tl-prose a:hover { color: var(--am-coral); }
 .tl-faq { display: flex; flex-direction: column; gap: 0; }
 .tl-faq-item { border-top: 1px solid var(--am-line); padding: 16px 0; }
 .tl-faq-item:last-child { border-bottom: 1px solid var(--am-line); }

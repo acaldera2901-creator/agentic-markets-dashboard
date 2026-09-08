@@ -6,6 +6,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd, breadcrumbJsonLd, faqJsonLd } from "@/components/seo/json-ld";
+// #SEO-ORPHANS-0908: come il gemello calcio, la pagina non aveva footer.
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "AI Tennis Predictions: Probabilities, Not Tips | BetRedge",
@@ -141,11 +143,22 @@ export default function AiTennisPredictionsPage() {
           How to use a probability without fooling yourself
         </h2>
         <p className="mb-4">
-          Convert the odds you are looking at into an implied probability (divide 1 by the
-          decimal odds), then compare it with the model&apos;s number. If a bookmaker&apos;s price
+          Convert the odds you are looking at into an{" "}
+          <Link href="/blog/implied-probability-from-betting-odds" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            implied probability
+          </Link>{" "}
+          (divide 1 by the decimal odds, or let the{" "}
+          <Link href="/tools/odds-converter" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            odds converter
+          </Link>{" "}
+          do it), then compare it with the model&apos;s number. If a bookmaker&apos;s price
           implies 55 percent and the model says 62 percent, the model believes the price is
           generous. If the model says 48 percent, the price is short. That comparison, repeated
-          with discipline, is the entire rational use of this product.
+          with discipline, is the entire rational use of this product, and it has a name:{" "}
+          <Link href="/blog/positive-expected-value-betting-explained" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            positive expected value
+          </Link>
+          .
         </p>
         <p className="mb-4">
           Remember what a probability means in practice: a 70 percent favourite is expected to
@@ -173,7 +186,17 @@ export default function AiTennisPredictionsPage() {
             See today&apos;s tennis board
           </Link>
         </p>
+        {/* #SEO-ORPHANS-0908: link reciproco al pillar calcio, che questa pagina
+            già cita due volte come termine di paragone (pareggi, turnover). */}
+        <p className="mt-3 text-sm">
+          The three-outcome problem this page keeps referring to:{" "}
+          <Link href="/ai-football-predictions" className="underline" style={{ color: "var(--am-text)" }}>
+            AI football predictions
+          </Link>
+          .
+        </p>
       </main>
+      <SiteFooter lang="en" />
     </div>
   );
 }
