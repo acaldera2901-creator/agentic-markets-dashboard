@@ -3,6 +3,8 @@ import { dbQuery } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
 // #HEALTH-ROSTER-0828: roster in lib/ so it can be asserted against the Python fleet.
 import { CORE_AGENTS, SIGNAL_ONLY_AGENTS, KNOWN_AGENTS } from "@/lib/agent-roster";
+// #FLEET-CODE-SHA-0908: which commit the Python fleet runs, read from its heartbeats.
+import { summarizeFleetVersion } from "@/lib/fleet-version";
 
 interface HeartbeatRow {
   agent_name: string;
@@ -84,15 +86,30 @@ export async function GET(req: Request) {
   // announcements. 7 chars only; null outside Vercel (local dev).
   const commit = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7) || null;
 
+  // #FLEET-CODE-SHA-0908: the web and the fleet deploy separately (Vercel vs a
+  // manual restart on a Mac). On 07/09 the fleet ran pre-#361 code for hours
+  // after main had the fix and nothing here could say so. `fleet.code_sha` is
+  // what the Python processes stamp into their heartbeats; `matches_web` is the
+  // one-glance answer "are the two halves on the same commit?".
+  const fleet = summarizeFleetVersion(rows, commit);
+
   // SEC #SEC-HEALTH-1: public callers get a bare liveness probe only — no agent
   // names, topology, or counts. Internal monitoring authenticates with RESEARCH_SECRET.
+  // `fleet_commit` is the fleet's counterpart of `commit`: same 7 chars, same
+  // sensitivity class, so live-version tooling can compare the two without a secret.
   if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
-    return NextResponse.json({ status, commit, timestamp: new Date().toISOString() });
+    return NextResponse.json({
+      status,
+      commit,
+      fleet_commit: fleet.code_sha ? fleet.code_sha.slice(0, 7) : null,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   return NextResponse.json({
     status,
     commit,
+    fleet,
     timestamp: new Date().toISOString(),
     core: {
       total: CORE_AGENTS.length,

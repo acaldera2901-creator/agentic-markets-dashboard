@@ -7,6 +7,7 @@ from datetime import datetime
 from config.settings import settings
 from core.redis_client import set_heartbeat
 from core.supabase_client import upsert_heartbeat
+from core.code_version import version_stamp
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -111,14 +112,25 @@ class BaseAgent(ABC):
         self._status_detail = detail
 
     def _serialize_status_detail(self) -> str | None:
-        if self._status_detail is None:
-            return None
-        if isinstance(self._status_detail, str):
-            return self._status_detail[:4000]
+        # #FLEET-CODE-SHA-0908: every heartbeat carries the commit the process
+        # runs (`code_sha`) and when it booted (`boot_at`), so /api/health can
+        # say which version the FLEET is on — not only the web. The stamp goes
+        # FIRST because the payload is cut at 4000 chars and the collector's
+        # detail is already ~3.3k; a trailing key would be truncated away.
+        stamp = version_stamp()
+        detail = self._status_detail
+        if detail is None:
+            payload: dict = dict(stamp)
+        elif isinstance(detail, dict):
+            payload = {**stamp, **{k: v for k, v in detail.items() if k not in stamp}}
+        else:
+            # No agent sets a plain string today (all 11 callers pass dicts);
+            # keep the text readable under a fixed key rather than drop the stamp.
+            payload = {**stamp, "text": str(detail)[:3800]}
         try:
-            return json.dumps(self._status_detail, separators=(",", ":"), default=str)[:4000]
+            return json.dumps(payload, separators=(",", ":"), default=str)[:4000]
         except Exception:
-            return str(self._status_detail)[:4000]
+            return json.dumps({**stamp, "text": str(detail)[:3800]}, default=str)[:4000]
 
     async def _post_dashboard_heartbeat(self, detail: str | None = None) -> None:
         """POST heartbeat to dashboard DB so agent status is visible in the web UI."""
