@@ -9,6 +9,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd, articleJsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { getPublishedPost, listPublishedPosts, sanitizeBlogHtml, metaTitleOf, formatPostDate } from "@/lib/blog";
+// #SEO-ORPHANS-0908: l'articolo finiva senza footer, quindi senza uscita
+// verso le altre guide, i calcolatori e i due pillar. La riga guide del
+// footer è ciò che collega ogni guida a tutte le altre.
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const revalidate = 600;
 export const dynamicParams = true;
@@ -113,8 +117,13 @@ export default async function BlogPostPage(
           <Link href="/blog" className="underline" style={{ color: "var(--am-text)" }}>
             All articles
           </Link>
+          {" · "}
+          <Link href="/tools" className="underline" style={{ color: "var(--am-text)" }}>
+            Free calculators
+          </Link>
         </p>
       </main>
+      <SiteFooter lang="en" />
     </div>
   );
 }

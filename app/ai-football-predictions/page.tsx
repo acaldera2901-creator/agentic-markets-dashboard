@@ -6,6 +6,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd, breadcrumbJsonLd, faqJsonLd } from "@/components/seo/json-ld";
+// #SEO-ORPHANS-0908: questa pagina non aveva footer — usciva solo verso
+// /predictions ed era un vicolo cieco per lettore e crawler.
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "AI Football Predictions: How the Model Reaches a Number | BetRedge",
@@ -70,7 +73,11 @@ export default function AiFootballPredictionsPage() {
         </p>
         <p className="mb-4">
           <strong style={{ color: "var(--am-text)" }}>Expected goals, not just results.</strong>{" "}
-          Results are noisy: a team can win while creating almost nothing. Expected goals (xG)
+          Results are noisy: a team can win while creating almost nothing.{" "}
+          {/* #SEO-ORPHANS-0908: la guida spiega esattamente questo passaggio. */}
+          <Link href="/blog/how-xg-affects-football-odds" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            Expected goals (xG)
+          </Link>{" "}
           measures the quality of chances created and conceded, which stabilises the strength
           estimate and catches teams whose results are about to catch up with their performances,
           in either direction.
@@ -134,11 +141,22 @@ export default function AiFootballPredictionsPage() {
           Reading the number like an adult
         </h2>
         <p className="mb-4">
-          Divide 1 by the decimal odds and you get the bookmaker&apos;s implied probability,
-          margin included. Compare it with the model&apos;s number. The gap, not the pick, is the
-          product: a 55 percent model probability against a price implying 45 percent is a
-          different proposition from the same pick priced at 60. Over a long sample that
-          discipline is what separates using probabilities from collecting tips.
+          Divide 1 by the decimal odds and you get the bookmaker&apos;s{" "}
+          <Link href="/blog/implied-probability-from-betting-odds" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            implied probability
+          </Link>
+          , margin included, and the free{" "}
+          <Link href="/tools/odds-converter" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            odds converter
+          </Link>{" "}
+          does the arithmetic for you. Compare it with the model&apos;s number. The gap, not the
+          pick, is the product: a 55 percent model probability against a price implying 45 percent
+          is a different proposition from the same pick priced at 60. That gap has a name,{" "}
+          <Link href="/blog/positive-expected-value-betting-explained" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            expected value
+          </Link>
+          , and over a long sample the discipline of measuring it is what separates using
+          probabilities from collecting tips.
         </p>
         <p className="mb-4">
           And keep the base fact in view: a 60 percent favourite loses four times in ten. That is
@@ -165,7 +183,18 @@ export default function AiFootballPredictionsPage() {
             See today&apos;s football board
           </Link>
         </p>
+        {/* #SEO-ORPHANS-0908: il modello di tennis è un'altra cosa (niente
+            pareggio, niente turnover) e la pagina gemella lo spiega. Link
+            reciproco, non incrociato per il gusto di incrociare. */}
+        <p className="mt-3 text-sm">
+          The same engine on a sport that behaves differently:{" "}
+          <Link href="/ai-tennis-predictions" className="underline" style={{ color: "var(--am-text)" }}>
+            AI tennis predictions
+          </Link>
+          .
+        </p>
       </main>
+      <SiteFooter lang="en" />
     </div>
   );
 }

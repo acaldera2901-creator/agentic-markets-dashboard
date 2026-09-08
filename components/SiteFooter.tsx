@@ -21,6 +21,8 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { partnersFor } from "@/lib/partners";
 import { SOCIAL } from "@/lib/social-links";
+// #SEO-ORPHANS-0908: elenco unico delle guide e dei due pillar (lib/learn-links).
+import { BLOG_INDEX, LEARN_GUIDES, LEARN_PILLARS, guideHref } from "@/lib/learn-links";
 
 // #UI-FOOTER-SOCIAL-0623: icone social inline (SVG, currentColor → seguono il
 // tema). URL reali BetRedge.
@@ -64,6 +66,9 @@ type FooterLang = "it" | "en" | "es" | "fr" | "ru";
 
 const COPY: Record<FooterLang, {
   note: string; pastperf: string; partnerlinks: string; partner: string; terms: string; privacy: string; social: string; tools: string; widget: string;
+  // #SEO-ORPHANS-0908: etichette della riga guide. Solo il contorno è tradotto:
+  // i titoli/termini delle guide restano in inglese perché gli articoli lo sono.
+  learn: string; allGuides: string;
 }> = {
   it: {
     note: "BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale.",
@@ -71,6 +76,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "I link partner sono affiliati commerciali.",
     partner: "Partner",
     tools: "Strumenti gratuiti", widget: "Widget per il tuo sito", terms: "Termini di Servizio", privacy: "Privacy Policy", social: "Seguici",
+    learn: "Guide (in inglese)", allGuides: "Tutte le guide",
   },
   en: {
     note: "BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management.",
@@ -78,6 +84,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Partner links are commercial affiliates.",
     partner: "Partner",
     tools: "Free tools", widget: "Widget for your site", terms: "Terms of Service", privacy: "Privacy Policy", social: "Follow us",
+    learn: "Guides", allGuides: "All guides",
   },
   es: {
     note: "BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo.",
@@ -85,6 +92,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Los enlaces de partners son afiliados comerciales.",
     partner: "Partner",
     tools: "Herramientas gratis", widget: "Widget para tu web", terms: "Términos del Servicio", privacy: "Política de Privacidad", social: "Síguenos",
+    learn: "Guías (en inglés)", allGuides: "Todas las guías",
   },
   fr: {
     note: "BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque.",
@@ -92,6 +100,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Les liens partners sont des affiliés commerciaux.",
     partner: "Partenaire",
     tools: "Outils gratuits", widget: "Widget pour votre site", terms: "Conditions de Service", privacy: "Politique de Confidentialité", social: "Suivez-nous",
+    learn: "Guides (en anglais)", allGuides: "Tous les guides",
   },
   ru: {
     note: "BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками.",
@@ -99,6 +108,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Партнёрские ссылки — коммерческие аффилиаты.",
     partner: "Партнёр",
     tools: "Инструменты", widget: "Виджет для сайта", terms: "Условия обслуживания", privacy: "Политика конфиденциальности", social: "Мы в соцсетях",
+    learn: "Руководства (на английском)", allGuides: "Все руководства",
   },
 };
 
@@ -158,6 +168,47 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
         <Link href="/terms">{t.terms}</Link>
         <Link href="/privacy">{t.privacy}</Link>
       </div>
+      {/* #SEO-ORPHANS-0908 — riga guide. Non è fine print legale: è navigazione,
+          quindi ha una <nav> sua e una label mono che la apre.
+          ANCHOR TEXT = il CONCETTO, non il titolo intero: nel footer serve una
+          parola che si legge di sfuggita, e in home la stessa guida compare col
+          titolo completo — variazione naturale invece di sette anchor identici
+          su tutto il sito.
+          Il separatore sta DOPO la voce, dentro la sua span: misurato a 390px,
+          col separatore davanti la riga andava a capo iniziando con un "·"
+          sospeso. Una riga può finire con un separatore, non cominciarci.
+          I titoli restano in inglese perché gli articoli lo sono: la label lo
+          dichiara nelle lingue non inglesi invece di far scoprire la cosa a
+          click avvenuto. */}
+      <nav className="site-footer-learn" aria-label={t.learn}>
+        <span className="site-footer-learn-lab">{t.learn}</span>
+        {[
+          ...LEARN_GUIDES.map((g, i) => ({
+            href: guideHref(g.slug),
+            label: g.term,
+            // "|" chiude il gruppo guide, "·" separa dentro il gruppo.
+            sep: i === LEARN_GUIDES.length - 1 ? "|" : "\u00b7",
+          })),
+          ...LEARN_PILLARS.map((pl, i) => ({
+            href: pl.href,
+            label: pl.label,
+            sep: i === LEARN_PILLARS.length - 1 ? "|" : "\u00b7",
+          })),
+          { href: BLOG_INDEX, label: t.allGuides, sep: "" },
+        ].map((item) => (
+          <span key={item.href} className="site-footer-learn-item">
+            <Link href={item.href}>{item.label}</Link>
+            {item.sep && (
+              <span
+                className={item.sep === "|" ? "site-footer-sep" : "site-footer-dot"}
+                aria-hidden="true"
+              >
+                {item.sep}
+              </span>
+            )}
+          </span>
+        ))}
+      </nav>
       {/* #PARTNERS-PAGE-1: riga loghi partner, gattata fail-closed sulla geo
           (stesso partnerAllowed dei link-book). In IT/geo bloccate non compare. */}
       {partnerAllowed && (

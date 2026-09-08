@@ -7,6 +7,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { listPublishedPosts, formatPostDate } from "@/lib/blog";
+// #SEO-ORPHANS-0908: l'indice non usciva verso i tool né verso i due pillar,
+// e non aveva footer. Le guide spiegano i conti che i calcolatori fanno.
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const revalidate = 600;
 
@@ -30,9 +33,21 @@ export default async function BlogIndexPage() {
         <h1 className="text-3xl font-bold mt-2 mb-6" style={{ color: "var(--am-text)" }}>
           Betting guides and insights
         </h1>
-        <p className="mb-10">
+        <p className="mb-4">
           How odds work, what a calibrated probability means, and how to read an AI model without
           fooling yourself. Educational content: no tips, no guarantees.
+        </p>
+        {/* #SEO-ORPHANS-0908 — le due uscite naturali dell'indice: i calcolatori
+            che fanno gli stessi conti, e le pagine che spiegano come il modello
+            arriva al numero. Una riga di prosa, non una griglia di card: qui
+            l'attenzione deve restare sull'elenco degli articoli. */}
+        <p className="mb-10 text-sm">
+          The arithmetic in these articles is done for you by the free{" "}
+          <Link href="/tools" className="underline" style={{ color: "var(--am-text)" }}>calculators</Link>{" "}
+          — no account needed. How the model itself reaches a number:{" "}
+          <Link href="/ai-football-predictions" className="underline" style={{ color: "var(--am-text)" }}>AI football predictions</Link>{" "}
+          and{" "}
+          <Link href="/ai-tennis-predictions" className="underline" style={{ color: "var(--am-text)" }}>AI tennis predictions</Link>.
         </p>
 
         {posts.length === 0 && (
@@ -73,6 +88,7 @@ export default async function BlogIndexPage() {
           <a href="https://www.begambleaware.org" rel="nofollow noopener" style={{ textDecoration: "underline" }}>BeGambleAware</a>.
         </p>
       </main>
+      <SiteFooter lang="en" />
     </div>
   );
 }
