@@ -27,6 +27,12 @@ const ALLOWED_EVENTS = new Set([
   // dal codice (referral V2, consenso prelievo) e scartati in silenzio qui.
   "signup_started", "signup_completed",
   "referral_code_claimed", "referral_link_copied", "withdrawal_consent",
+  // #FUNNEL-INTENT-0908 — il gradino che mancava fra "vedo il prezzo"
+  // (plan_view) e "pago" (conversion). Senza questi due, un funnel rotto
+  // in mezzo è indistinguibile da un funnel senza domanda: misurato l'08/09,
+  // 11 registrazioni reali e ZERO aperture del checkout, e nulla nel DB
+  // diceva quanti ci avessero almeno provato.
+  "plan_cta_click", "checkout_opened",
   // #WIDGET-EMBED-0824 — widget incorporato su siti terzi. `meta.host` dice
   // QUALE sito converte (dichiarato dal client, come ogni altro evento qui:
   // buono per misurare, mai per decidere accessi).
