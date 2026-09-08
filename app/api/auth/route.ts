@@ -9,6 +9,7 @@ import { paymentReceivedEmail, activationEmail, passwordResetEmail, resolveMailL
 import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { siteOrigin, newActivationToken, newResetToken } from "@/lib/activation";
+import { activationLinkParam, normalizeSignupIntent } from "@/lib/signup-intent";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
@@ -24,13 +25,23 @@ const TIMING_DUMMY_HASH = hashPassword("timing-equalizer-not-a-real-account");
 
 // Issue + persist a fresh activation token and email the activation link.
 // Throws if the email send fails so the caller surfaces a real error.
-async function sendActivation(req: Request, identifier: string, lang: MailLang): Promise<void> {
+async function sendActivation(
+  req: Request,
+  identifier: string,
+  lang: MailLang,
+  // #FUNNEL-INTENT-0908: l'intento d'acquisto scelto prima del signup. Col gate
+  // email acceso non c'è sessione da tenere, e l'utente apre la mail spesso da
+  // un altro dispositivo: l'unica cosa che fa il salto è il link stesso.
+  // `activationLinkParam` restituisce "" per qualunque valore fuori allowlist,
+  // quindi senza intento il link è identico a com'era.
+  signupIntent?: unknown
+): Promise<void> {
   const { token, hash, expiresIso } = newActivationToken();
   await dbExecute(
     "UPDATE profiles SET activation_token_hash = $2, activation_token_expires = $3, updated_at = NOW() WHERE identifier = $1",
     [identifier, hash, expiresIso]
   );
-  const url = `${siteOrigin(req)}/api/auth/activate?token=${token}&id=${encodeURIComponent(identifier)}`;
+  const url = `${siteOrigin(req)}/api/auth/activate?token=${token}&id=${encodeURIComponent(identifier)}${activationLinkParam(signupIntent)}`;
   const mail = activationEmail(url, lang);
   // throwOnError: registration must fail loud if the activation email can't be
   // delivered (otherwise the account is unreachable). The send is still recorded.
@@ -296,6 +307,11 @@ export async function POST(req: Request) {
   }
 
   if (action === "register") {
+    // #FUNNEL-INTENT-0908: l'intento d'acquisto scelto prima del signup viaggia
+    // nel link di attivazione (col gate email non c'e' una sessione in cui
+    // tenerlo, e la mail si apre spesso da un altro dispositivo). Normalizzato
+    // qui una volta: fuori dall'allowlist diventa null e il link resta identico.
+    const signupIntent = normalizeSignupIntent(body.signup_intent);
     // #SIGNUP-GEO-0814 (D2 #LAUNCHDEC-0814): gate geo al signup, chiuso di
     // default FUORI dall'allowlist env SIGNUP_COUNTRY_ALLOWLIST. INATTIVO
     // finché la env non è settata (questo merge non cambia nulla in prod).
@@ -363,7 +379,7 @@ export async function POST(req: Request) {
         console.error("[auth] register(existing-row) consent persist failed:", String(e));
       }
       try {
-        await sendActivation(req, identifier, lang);
+        await sendActivation(req, identifier, lang, signupIntent);
       } catch (e) {
         console.error("[auth] register(existing-row) activation email failed:", String(e));
       }
@@ -457,7 +473,7 @@ export async function POST(req: Request) {
       return issueSession(profile);
     }
     try {
-      await sendActivation(req, identifier, lang);
+      await sendActivation(req, identifier, lang, signupIntent);
     } catch (e) {
       console.error("[auth] activation email failed:", String(e));
       return NextResponse.json({ error: "activation email failed" }, { status: 502 });

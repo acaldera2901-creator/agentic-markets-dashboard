@@ -23,6 +23,7 @@ import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #P
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 import { storageGet, storageSet } from "@/lib/safe-storage";
+import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
@@ -1864,6 +1865,16 @@ type PlanKey = PublicPlanKey;
 function planPriceCopy(plan: PlanKey, lang: Lang) {
   return publicPlanPriceCopy(plan, lang);
 }
+// #FUNNEL-INTENT-0908: l'intento d'acquisto messo da parte prima di autenticarsi.
+type PendingIntent = { kind: "plan"; plan: PublicPlanKey } | { kind: "free" } | null;
+
+// La stessa cosa nella forma che viaggia nel link di attivazione (lib/signup-intent).
+function signupIntentOf(pending: PendingIntent): SignupIntent | null {
+  if (!pending) return null;
+  if (pending.kind === "free") return "free";
+  return pending.plan === "premium" ? "plans:premium" : "plans:base";
+}
+
 const CLIENT_PROFILE_KEY = "agentic-client-profile";
 const CLIENT_PROFILES_KEY = "agentic-client-profiles";
 
@@ -3297,7 +3308,12 @@ function CryptoPaymentBox({
         <strong>{planPriceCopy(plan, lang)}</strong>
         {!profile && <em>{t.crypto_profile_required}</em>}
       </div>
-      <button disabled={!profile || isCurrentPlan || isDowngrade} onClick={() => onSubmit(plan)}>
+      {/* #FUNNEL-INTENT-0908: `!profile` rendeva questo bottone DISABILITATO per
+          l'anonimo, quindi l'unico CTA d'acquisto della pagina era un vicolo cieco
+          e il ramo anonimo di submitCryptoPayment era codice morto. Ora il clic
+          parte: l'intento viene messo da parte, si autentica, e il checkout si
+          riapre sul piano scelto. */}
+      <button disabled={isCurrentPlan || isDowngrade} onClick={() => onSubmit(plan)}>
         {isCurrentPlan
           ? pick5(lang, { it: "Piano attuale", en: "Current plan", es: "Plan actual", fr: "Plan actuel", ru: "Текущий план" })
           : isDowngrade
@@ -4087,7 +4103,9 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "Profilo e lingua salvati · storico pubblico", en: "Profile and language saved · public history", es: "Perfil e idioma guardados · historial público", fr: "Profil et langue enregistrés · historique public", ru: "Профиль и язык сохранены · публичная история" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Resto del board, edge e Deep Analysis", en: "Rest of the board, edge and Deep Analysis", es: "Resto del panel, edge y Deep Analysis", fr: "Reste du tableau, edge et Deep Analysis", ru: "Остальная часть доски, edge и Deep Analysis" })}</PlanFeature>
           </ul>
-          <button className="plan-action" disabled={!profile || profile.plan === "free"} onClick={onActivateFree}>
+          {/* #FUNNEL-INTENT-0908: idem qui — da anonimo il CTA del Free era spento,
+              quindi dopo la registrazione l'utente non otteneva nemmeno il piano free. */}
+          <button className="plan-action" disabled={profile?.plan === "free"} onClick={onActivateFree}>
             {!profile ? t.crypto_create_first : profile.plan === "free" ? pick5(lang, { it: "Free attivo", en: "Free active", es: "Free activo", fr: "Free actif", ru: "Free активен" }) : pick5(lang, { it: "Attiva Free", en: "Activate Free", es: "Activar Free", fr: "Activer Free", ru: "Активировать Free" })}
           </button>
         </article>
@@ -4385,10 +4403,15 @@ function ClientAuthModal({
   onClose,
   onAuthed,
   dismissible = true,
+  signupIntent,
 }: {
   intent: ClientAuthIntent;
   onClose: () => void;
   onAuthed: (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => void;
+  // #FUNNEL-INTENT-0908: il piano scelto prima di registrarsi. Va nel body del
+  // register perche' col gate email acceso la registrazione NON apre una
+  // sessione: il server lo mette nel link di attivazione e torna col redirect.
+  signupIntent?: SignupIntent | null;
   // #LOGIN-WALL-0626: false on the desk auth wall → no × (Escape/backdrop already
   // don't close, see #QA-SERGIO-BAGS-1), so the modal can only be dismissed by
   // logging in or registering.
@@ -4456,6 +4479,10 @@ function ClientAuthModal({
           // sul register — senza, ogni signup falliva con 400 consent_required.
           age_confirmed: mode === "create" ? ageOk : undefined,
           tos_accepted: mode === "create" ? tosOk : undefined,
+          // #FUNNEL-INTENT-0908: solo sul register, e solo se c'e'. Il server lo
+          // rivalida contro la propria allowlist: qui e' un suggerimento, non un
+          // dato di cui fidarsi.
+          signup_intent: mode === "create" ? (signupIntent ?? undefined) : undefined,
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
@@ -8808,6 +8835,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [hasSession, setHasSession] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
+  // #FUNNEL-INTENT-0908: l'intento d'acquisto scelto PRIMA di autenticarsi.
+  // Senza questo, ogni percorso d'acquisto di un anonimo apriva il login e poi
+  // finiva su `setTab("bets")`: il piano scelto era dimenticato e la vendita persa
+  // in silenzio (misurato l'08/09: 11 registrazioni, 0 aperture del checkout).
+  // `authIntent` non serviva a questo — sceglie solo la scheda login/registrati.
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent>(null);
   // HIGH-3: landing from the email activation link. On success the activate
   // endpoint already set the session cookie (the hydration effect logs the user
   // in); here we just surface a notice and clean the URL. On failure we open the
@@ -8837,6 +8870,20 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       /* eslint-disable react-hooks/set-state-in-effect -- one-shot mount sync from the activation redirect params; paired with history.replaceState. */
       if (notice) setActivationNotice(notice);
       if (openAuth) setAuthOpen(true);
+      // #FUNNEL-INTENT-0908: il piano scelto PRIMA del signup torna qui, dentro
+      // il redirect di attivazione. Col gate email acceso questo e' l'unico
+      // percorso possibile: la registrazione non apre una sessione, e la mail si
+      // apre spesso su un altro dispositivo, dove nessuno stato client esiste.
+      // Il cookie l'ha gia' messo /api/auth/activate, quindi qui si apre il
+      // checkout e basta. `goto` viene ri-validato contro la stessa allowlist del
+      // server: e' pur sempre un parametro d'URL, e chiunque puo' scriverlo.
+      if (activated === "1") {
+        const goto = normalizeSignupIntent(params.get("goto"));
+        if (goto === "plans:base" || goto === "plans:premium") {
+          setTab("plans");
+          openCheckout(goto === "plans:premium" ? "premium" : "base");
+        }
+      }
       /* eslint-enable react-hooks/set-state-in-effect */
       window.history.replaceState({}, "", window.location.pathname);
     } catch { /* URL unavailable */ }
@@ -9127,26 +9174,53 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     setAuthOpen(true);
   };
 
+  // #FUNNEL-INTENT-0908: unico punto in cui il checkout si apre, così l'evento
+  // `checkout_opened` non può divergere dal fatto. Fra "vedo il prezzo"
+  // (plan_view) e "pago" (conversion) non esisteva alcuna misura: un funnel senza
+  // il gradino di mezzo non dice mai dove si rompe.
+  const openCheckout = (plan: PublicPlanKey) => {
+    setCheckoutPlan(plan);
+    setCheckoutOpen(true);
+    trackEvent("checkout_opened", { plan });
+  };
+
   const handleAuthed = (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => {
     // The modal already authenticated (register/login with password) and the
     // server set the signed session cookie. We only adopt the DB plan and persist
     // the local UX profile — the cookie, not localStorage, is the data authority.
     setHasSession(true); // #LOGIN-WALL-0626: cookie now set → lift the auth wall
+    // #FUNNEL-INTENT-0908: riprende l'intento messo da parte prima del login.
+    // Prima si chiudeva SEMPRE con setTab("bets"), comunque si fosse arrivati qui.
+    const resume = pendingIntent;
+    setPendingIntent(null);
+    if (resume?.kind === "free") {
+      saveClientProfile({ ...profile, plan: "free" });
+      setTab("bets");
+      return;
+    }
     saveClientProfile({ ...profile, plan: serverPlan ?? profile.plan });
+    if (resume?.kind === "plan") {
+      setTab("plans");
+      openCheckout(resume.plan);
+      return;
+    }
     setTab("bets");
   };
 
   const submitCryptoPayment = (plan: PublicPlanKey) => {
+    trackEvent("plan_cta_click", { plan });
     if (!clientProfile) {
-      setAuthOpen(true);
+      setPendingIntent({ kind: "plan", plan });
+      openAuth("create");
       return;
     }
-    setCheckoutPlan(plan);
-    setCheckoutOpen(true);
+    openCheckout(plan);
   };
 
   const activateFreePlan = () => {
+    trackEvent("plan_cta_click", { plan: "free" });
     if (!clientProfile) {
+      setPendingIntent({ kind: "free" });
       openAuth("create");
       return;
     }
@@ -9406,7 +9480,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
   // session, the desk is walled — the auth modal is force-shown and locked.
-  const mustAuth = authChecked && !hasSession;
+  // #LOGIN-WALL-0626 governa TUTTE le tab del desk, listino compreso: su /plans il
+  // backdrop non chiudibile finiva sopra il prezzo e l'unico CTA d'acquisto del
+  // sito restava spento (misurato in produzione l'08/09 — i tre bottoni dei piani
+  // `disabled`, nessun href, nessun modo di comprare da anonimo).
+  // #FUNNEL-INTENT-0908: il muro protegge i DATI, non il listino. Il listino si
+  // apre; predizioni, storico e il resto del desk restano chiusi esattamente
+  // com'erano — la condizione non è rimossa, è discriminata per pagina.
+  const mustAuth = authChecked && !hasSession && tab !== "plans";
 
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
@@ -9863,6 +9944,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           dismissible={!mustAuth}
           onClose={() => { if (!mustAuth) setAuthOpen(false); }}
           onAuthed={handleAuthed}
+          signupIntent={signupIntentOf(pendingIntent)}
         />
       )}
       {checkoutOpen && checkoutPlan && (

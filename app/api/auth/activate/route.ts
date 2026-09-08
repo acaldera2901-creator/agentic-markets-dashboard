@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { siteOrigin, hashActivationToken, tokenHashMatches } from "@/lib/activation";
+import { activationLanding } from "@/lib/signup-intent";
 import { welcomeEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { grantInviteeBonus } from "@/lib/referral-rewards";
@@ -119,7 +120,14 @@ export async function GET(req: Request) {
   }
 
   // Activated → issue the session cookie and land on the board.
-  const res = redirect(req, "?activated=1");
+  // #FUNNEL-INTENT-0908: se al signup c'era un intento d'acquisto, il link se
+  // l'e' portato dietro e qui torna indietro come destinazione. `goto` arriva
+  // dalla query string di una GET pubblica, quindi da chiunque: activationLanding
+  // lo passa per un'allowlist chiusa e restituisce SEMPRE un letterale scritto in
+  // lib/signup-intent — la stringa ricevuta non entra mai nel redirect. Senza un
+  // intento valido la destinazione resta "?activated=1", identica a prima: chi si
+  // registra da una mail fredda non deve ritrovarsi sul listino.
+  const res = redirect(req, activationLanding(url.searchParams.get("goto")));
   res.cookies.set(SESSION_COOKIE, signSession(row.identifier), SESSION_COOKIE_OPTIONS);
   return res;
 }
