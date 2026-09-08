@@ -19,6 +19,10 @@ import Dashboard from "@/app/app/page";
 const PROFILE_KEY = "agentic-client-profile";
 
 let beacons: string[] = [];
+let authPosts: Record<string, unknown>[] = [];
+// Gate email ACCESO = come la produzione: il register risponde 202, nessuna
+// sessione, l'utente deve passare dal link nella mail.
+let emailGateOn = false;
 
 function mockFetch() {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -33,8 +37,15 @@ function mockFetch() {
     if (url.startsWith("/api/auth") && method === "GET") {
       return new Response(JSON.stringify({ error: "no_session" }), { status: 401, headers: { "content-type": "application/json" } });
     }
-    // Autenticazione riuscita: il server ha appena impostato il cookie di sessione.
     if (url.startsWith("/api/auth") && method === "POST") {
+      let sent: Record<string, unknown> = {};
+      try { sent = JSON.parse(String(init?.body ?? "{}")); } catch { /* ignore */ }
+      authPosts.push(sent);
+      // Gate email acceso: il register NON apre una sessione (202).
+      if (emailGateOn && sent.action === "register") {
+        return new Response(JSON.stringify({ pending_activation: true, identifier: sent.identifier }), { status: 202, headers: { "content-type": "application/json" } });
+      }
+      // Autenticazione riuscita: il server ha appena impostato il cookie.
       return new Response(JSON.stringify({ plan: "free", name: "Test Buyer" }), { status: 200, headers: { "content-type": "application/json" } });
     }
     // Tutto il resto (predictions, odds, geo...) risponde vuoto: qui si testa il
@@ -81,6 +92,43 @@ async function authenticate(user: ReturnType<typeof userEvent.setup>) {
   await user.click(submit);
 }
 
+/** Compila e invia il form di registrazione dal modale aperto. */
+async function register(user: ReturnType<typeof userEvent.setup>) {
+  const form = document.querySelector<HTMLFormElement>(".auth-modal-backdrop form.auth-modal");
+  if (!form) throw new Error("modale di autenticazione non aperto");
+  const inputs = [...form.querySelectorAll<HTMLInputElement>("input")];
+  const name = inputs[0];
+  const email = form.querySelector<HTMLInputElement>('input[inputmode="email"]');
+  const password = form.querySelector<HTMLInputElement>('input[type="password"]');
+  const [age, tos] = [...form.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
+  if (!name || !email || !password || !age || !tos) throw new Error("form di registrazione incompleto");
+  await user.type(name, "Test Buyer");
+  await user.type(email, "buyer@example.com");
+  await user.type(password, "password123");
+  await user.click(age);
+  await user.click(tos);
+  const submit = form.querySelector<HTMLButtonElement>("button:not([type])");
+  if (!submit) throw new Error("bottone di invio non trovato");
+  expect(submit.disabled, "il form di registrazione non si e' validato").toBe(false);
+  await user.click(submit);
+}
+
+/** Il rientro dal link di attivazione: il cookie c'e' gia', la navigazione e' nuova. */
+function mockSession() {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.startsWith("/api/track")) {
+      try { beacons.push(JSON.parse(String(init?.body ?? "{}")).event_type); } catch { /* ignore */ }
+      return new Response("{}", { status: 200 });
+    }
+    if (url.startsWith("/api/auth") && (init?.method ?? "GET").toUpperCase() === "GET") {
+      return new Response(JSON.stringify({ identifier: "buyer@example.com", plan: "free", name: "Test Buyer" }),
+        { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+  }));
+}
+
 function mount(path: string, tab: "plans" | "bets" | "history") {
   window.history.replaceState({}, "", path);
   return render(<Dashboard initialTab={tab} />);
@@ -91,6 +139,8 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
     localStorage.clear();
     localStorage.setItem("agentic-lang", "en");
     beacons = [];
+    authPosts = [];
+    emailGateOn = false;
     vi.stubGlobal("fetch", mockFetch());
   });
 
@@ -151,6 +201,65 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
       expect(JSON.parse(raw as string).plan).toBe("free");
     }, { timeout: 4000 });
   });
+
+  // ── Il gate email e' ACCESO in produzione (misurato sul DB l'08/09: activated_at
+  // arriva 9-64 secondi dopo created_at, mai contestuale). Quindi la registrazione
+  // NON apre una sessione, e l'utente torna da un link, in una navigazione nuova,
+  // spesso su un altro dispositivo. Nessuno stato client sopravvive a quel salto:
+  // l'intento deve viaggiare nel link.
+
+  it("col gate email acceso, la registrazione porta con se' il piano scelto", async () => {
+    const user = userEvent.setup();
+    emailGateOn = true;
+    mount("/plans", "plans");
+
+    await waitFor(() => expect(payButton("base")).toBeTruthy());
+    await user.click(payButton("base"));
+    await waitFor(() => expect(wallIsUp()).toBe(true));
+    await register(user);
+
+    await waitFor(() => {
+      const reg = authPosts.find((b) => b.action === "register");
+      expect(reg, "nessuna registrazione inviata").toBeTruthy();
+      expect(reg?.signup_intent, "il piano scelto deve partire col signup: e' l'unica cosa che sopravvive al giro via email")
+        .toBe("plans:base");
+    });
+    // E il gate ha fatto il suo: nessuna sessione, quindi nessun checkout ancora.
+    expect(checkoutIsOpen()).toBe(false);
+  });
+
+  it("al rientro dal link di attivazione il checkout si apre sul piano scelto", async () => {
+    mockSession();
+    mount("/plans?activated=1&goto=plans:base", "plans");
+
+    await waitFor(() => {
+      expect(checkoutIsOpen(), "chi attiva dalla mail con un intento deve trovare il checkout aperto").toBe(true);
+    }, { timeout: 4000 });
+    expect(document.body.textContent).toContain("14.99");
+  });
+
+  // Regressione: chi arriva da una mail fredda per le predizioni non deve
+  // ritrovarsi sul listino. Questo comportamento esiste gia' e deve restare.
+  it("al rientro SENZA intento non si apre nessun checkout", async () => {
+    mockSession();
+    mount("/predictions?activated=1", "bets");
+
+    await waitFor(() => expect(wallIsUp()).toBe(false)); // sessione valida
+    await new Promise((r) => setTimeout(r, 300));
+    expect(checkoutIsOpen(), "senza intento il rientro deve restare quello di prima").toBe(false);
+  });
+
+  // `goto` arriva da un URL: chiunque puo' scriverlo.
+  it.each(["plans:admin", "//evil.example.com", "../../admin", "PLANS:BASE"])(
+    "un goto fuori allowlist (%s) viene ignorato", async (goto) => {
+      mockSession();
+      mount(`/plans?activated=1&goto=${encodeURIComponent(goto)}`, "plans");
+
+      await waitFor(() => expect(wallIsUp()).toBe(false));
+      await new Promise((r) => setTimeout(r, 300));
+      expect(checkoutIsOpen(), "un intento non riconosciuto non deve aprire nulla").toBe(false);
+    }
+  );
 
   // La regressione che farebbe piu' danno: aprire il listino non deve aprire il
   // prodotto. Le predizioni e lo storico sono la cosa che si vende.

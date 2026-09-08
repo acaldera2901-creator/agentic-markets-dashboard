@@ -23,6 +23,7 @@ import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #P
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 import { storageGet, storageSet } from "@/lib/safe-storage";
+import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
@@ -1864,6 +1865,16 @@ type PlanKey = PublicPlanKey;
 function planPriceCopy(plan: PlanKey, lang: Lang) {
   return publicPlanPriceCopy(plan, lang);
 }
+// #FUNNEL-INTENT-0908: l'intento d'acquisto messo da parte prima di autenticarsi.
+type PendingIntent = { kind: "plan"; plan: PublicPlanKey } | { kind: "free" } | null;
+
+// La stessa cosa nella forma che viaggia nel link di attivazione (lib/signup-intent).
+function signupIntentOf(pending: PendingIntent): SignupIntent | null {
+  if (!pending) return null;
+  if (pending.kind === "free") return "free";
+  return pending.plan === "premium" ? "plans:premium" : "plans:base";
+}
+
 const CLIENT_PROFILE_KEY = "agentic-client-profile";
 const CLIENT_PROFILES_KEY = "agentic-client-profiles";
 
@@ -4392,10 +4403,15 @@ function ClientAuthModal({
   onClose,
   onAuthed,
   dismissible = true,
+  signupIntent,
 }: {
   intent: ClientAuthIntent;
   onClose: () => void;
   onAuthed: (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => void;
+  // #FUNNEL-INTENT-0908: il piano scelto prima di registrarsi. Va nel body del
+  // register perche' col gate email acceso la registrazione NON apre una
+  // sessione: il server lo mette nel link di attivazione e torna col redirect.
+  signupIntent?: SignupIntent | null;
   // #LOGIN-WALL-0626: false on the desk auth wall → no × (Escape/backdrop already
   // don't close, see #QA-SERGIO-BAGS-1), so the modal can only be dismissed by
   // logging in or registering.
@@ -4463,6 +4479,10 @@ function ClientAuthModal({
           // sul register — senza, ogni signup falliva con 400 consent_required.
           age_confirmed: mode === "create" ? ageOk : undefined,
           tos_accepted: mode === "create" ? tosOk : undefined,
+          // #FUNNEL-INTENT-0908: solo sul register, e solo se c'e'. Il server lo
+          // rivalida contro la propria allowlist: qui e' un suggerimento, non un
+          // dato di cui fidarsi.
+          signup_intent: mode === "create" ? (signupIntent ?? undefined) : undefined,
         }),
       });
       const data = await resp.json().catch(() => ({})) as { plan?: ClientProfile["plan"]; name?: string | null; pending_activation?: boolean; error?: string };
@@ -8820,9 +8840,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // finiva su `setTab("bets")`: il piano scelto era dimenticato e la vendita persa
   // in silenzio (misurato l'08/09: 11 registrazioni, 0 aperture del checkout).
   // `authIntent` non serviva a questo — sceglie solo la scheda login/registrati.
-  const [pendingIntent, setPendingIntent] = useState<
-    { kind: "plan"; plan: PublicPlanKey } | { kind: "free" } | null
-  >(null);
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent>(null);
   // HIGH-3: landing from the email activation link. On success the activate
   // endpoint already set the session cookie (the hydration effect logs the user
   // in); here we just surface a notice and clean the URL. On failure we open the
@@ -8852,6 +8870,20 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       /* eslint-disable react-hooks/set-state-in-effect -- one-shot mount sync from the activation redirect params; paired with history.replaceState. */
       if (notice) setActivationNotice(notice);
       if (openAuth) setAuthOpen(true);
+      // #FUNNEL-INTENT-0908: il piano scelto PRIMA del signup torna qui, dentro
+      // il redirect di attivazione. Col gate email acceso questo e' l'unico
+      // percorso possibile: la registrazione non apre una sessione, e la mail si
+      // apre spesso su un altro dispositivo, dove nessuno stato client esiste.
+      // Il cookie l'ha gia' messo /api/auth/activate, quindi qui si apre il
+      // checkout e basta. `goto` viene ri-validato contro la stessa allowlist del
+      // server: e' pur sempre un parametro d'URL, e chiunque puo' scriverlo.
+      if (activated === "1") {
+        const goto = normalizeSignupIntent(params.get("goto"));
+        if (goto === "plans:base" || goto === "plans:premium") {
+          setTab("plans");
+          openCheckout(goto === "plans:premium" ? "premium" : "base");
+        }
+      }
       /* eslint-enable react-hooks/set-state-in-effect */
       window.history.replaceState({}, "", window.location.pathname);
     } catch { /* URL unavailable */ }
@@ -9912,6 +9944,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           dismissible={!mustAuth}
           onClose={() => { if (!mustAuth) setAuthOpen(false); }}
           onAuthed={handleAuthed}
+          signupIntent={signupIntentOf(pendingIntent)}
         />
       )}
       {checkoutOpen && checkoutPlan && (
