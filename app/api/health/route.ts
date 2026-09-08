@@ -95,15 +95,10 @@ export async function GET(req: Request) {
 
   // SEC #SEC-HEALTH-1: public callers get a bare liveness probe only — no agent
   // names, topology, or counts. Internal monitoring authenticates with RESEARCH_SECRET.
-  // `fleet_commit` is the fleet's counterpart of `commit`: same 7 chars, same
-  // sensitivity class, so live-version tooling can compare the two without a secret.
+  // The fleet version stays behind auth too (review of #REQ-260908-betredge-01):
+  // the only consumer is our own tooling, so a public field is surface with no benefit.
   if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
-    return NextResponse.json({
-      status,
-      commit,
-      fleet_commit: fleet.code_sha ? fleet.code_sha.slice(0, 7) : null,
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json({ status, commit, timestamp: new Date().toISOString() });
   }
 
   return NextResponse.json({
