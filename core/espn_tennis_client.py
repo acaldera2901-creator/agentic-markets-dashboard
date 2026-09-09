@@ -350,6 +350,14 @@ async def get_completed_results() -> list[dict]:
     """
     Completed singles results from the same scoreboard feed.
 
+    ⛔ NON E' PIU' UNA FONTE DI SETTLEMENT (#SETTLE-0909 A2). Questa funzione
+    deduce il «concluso» dal VERBO di una stringa di note (`bt` = finita,
+    `leads` = in corso): un tabellone che scrive «A bt B 6-1» mentre la partita
+    e' al primo set produce un esito ben formato e falso. E' la causa misurata
+    delle 289 righe tennis su 1.401 pubblicate con un punteggio da set singolo.
+    Il settlement usa `get_completed_results_for_days()`, che filtra sul flag
+    esplicito `status.type.completed` della fonte. Non ricablarla qui.
+
     The notes field puts the WINNER first by construction ("A bt B 6-4 6-3"),
     so parsed player1 of a completed match IS the winner — exactly the bias
     that makes completed rows unusable as fixtures makes them perfect for
@@ -428,22 +436,42 @@ async def get_completed_results() -> list[dict]:
 _archive_cache: dict[tuple[str, str], list[dict]] = {}
 
 
-def _completed_from_scoreboard(data: dict) -> list[dict]:
-    """I singolari COMPLETATI di un payload day-scoreboard, col vincitore."""
+def _genere_da_testo(testo: str, default: str | None) -> str | None:
+    """M/W dal nome del tabellone ("Men's Singles"), o il default della league."""
+    if "Women" in testo:
+        return "W"
+    if "Men" in testo:
+        return "M"
+    return default
+
+
+def _completed_from_scoreboard(data: dict, gender: str | None = None) -> list[dict]:
+    """
+    I singolari COMPLETATI di un payload day-scoreboard, col vincitore.
+
+    `gender` e' il default della league chiamante (atp -> M, wta -> W) e serve
+    al cancello di coerenza dei set (#SETTLE-0909 A3): senza il genere non si
+    sa se uno Slam e' al meglio dei 3 o dei 5, e `6-4 6-2` puo' essere una
+    partita finita o una a meta'. Il nome del tabellone, quando c'e', vince sul
+    default.
+    """
     out: list[dict] = []
     for ev in data.get("events", []):
         tournament = ev.get("name", ev.get("shortName", "Unknown"))
-        blocchi = []
+        blocchi: list[tuple[dict, str | None]] = []
         for g in ev.get("groupings") or []:
-            if "Singles" in ((g.get("grouping") or {}).get("displayName") or ""):
-                blocchi.extend(g.get("competitions") or [])
+            nome_g = (g.get("grouping") or {}).get("displayName") or ""
+            if "Singles" in nome_g:
+                genere_g = _genere_da_testo(nome_g, gender)
+                blocchi.extend((c, genere_g) for c in g.get("competitions") or [])
         if not blocchi:
             for comp in ev.get("competitions") or []:
                 tipo = (comp.get("type") or {}).get("text", "")
                 if not tipo or "Singles" in tipo:
-                    blocchi.append(comp)
-        for comp in blocchi:
-            if not ((comp.get("status") or {}).get("type") or {}).get("completed"):
+                    blocchi.append((comp, _genere_da_testo(tipo, gender)))
+        for comp, genere in blocchi:
+            stato = ((comp.get("status") or {}).get("type") or {})
+            if not stato.get("completed"):
                 continue
             vincitore = perdente = None
             for c in comp.get("competitors") or []:
@@ -465,6 +493,17 @@ def _completed_from_scoreboard(data: dict) -> list[dict]:
                 "tournament": tournament,
                 "score_text": _score_from_competition(comp),
                 "event_date": _parse_iso_date(comp.get("date") or ev.get("date") or ""),
+                # #SETTLE-0909 — i due campi che il cancello di coerenza legge.
+                # `status_name` distingue un STATUS_FINAL da un STATUS_RETIRED /
+                # STATUS_WALKOVER: la fonte li marca tutti `completed = true`, ma
+                # un ritiro si ferma a `6-1 2-0` e non deve passare dalle regole
+                # sui set (misurati 28 ritiri e 4 walkover in 2 giorni).
+                "gender": genere,
+                "status_name": stato.get("name"),
+                # Il flag della FONTE, non una nostra deduzione. Viaggia insieme
+                # al risultato perche' il cancello a valle non deve fidarsi di
+                # chi lo chiama: una fonte che non lo dichiara fallisce chiusa.
+                "source_completed": True,
             })
     return out
 
@@ -522,7 +561,11 @@ async def get_completed_results_for_days(days) -> list[dict]:
                     if resp.status_code != 200:
                         logger.warning("ESPN archivio %s %s: HTTP %s", league, stamp, resp.status_code)
                         continue
-                    righe = _completed_from_scoreboard(resp.json())
+                    # La league E' il genere: atp -> M, wta -> W. Serve al
+                    # cancello dei set (#SETTLE-0909 A3), e costa zero.
+                    righe = _completed_from_scoreboard(
+                        resp.json(), gender="M" if league == "atp" else "W"
+                    )
                 except Exception as exc:
                     # Un giorno che non risponde non deve fermare gli altri.
                     logger.warning("ESPN archivio %s %s non letto: %s", league, stamp, exc)

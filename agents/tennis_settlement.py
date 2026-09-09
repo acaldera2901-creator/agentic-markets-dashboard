@@ -4,10 +4,15 @@ TennisSettlementAgent — resolves tennis match outcomes and settles paper bets.
 Resolution order per cycle:
   1. On first run, bulk-expires all predictions older than EXPIRE_AFTER_DAYS
      (old Betfair market IDs are gone — no way to resolve them).
-  2. For recent predictions (< EXPIRE_AFTER_DAYS, > SETTLEMENT_DELAY_HOURS):
-     Matchbook settled markets when configured, otherwise ESPN completed
-     results (the live data source — "A bt B" notes carry the winner).
+  2. For recent predictions (< EXPIRE_AFTER_DAYS, played > MIN_ELAPSED_HOURS
+     ago): Matchbook settled markets when configured, plus the ESPN day
+     ARCHIVE — che filtra sul flag esplicito `status.type.completed` della
+     fonte (#SETTLE-0909 A2). Il tabellone header con le note «A bt B» NON e'
+     piu' una fonte di settlement: deduceva il «concluso» da un verbo e
+     gradava partite in corso.
   3. Predictions that can't be resolved are left pending until they expire.
+     In dubbio non si settla: un buco dichiarato (`unresolved`) e' preferibile
+     a un esito falso pubblicato.
 
 Every settlement (win/loss AND expiry) is bridged to the served
 unified_predictions row so the public track record (/api/v2/history)
@@ -18,19 +23,26 @@ Runs every POLL_INTERVAL seconds.
 """
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from agents.base import BaseAgent
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
-from core.espn_tennis_client import get_completed_results, get_completed_results_for_days
+from core.espn_tennis_client import get_completed_results_for_days
 from core.supabase_client import settle_unified_tennis
 from core.tennis_names import canonical_player_key
+from core.tennis_set_validation import settlement_allowed
 from models.elo_surface import EloSurfaceModel
 from sqlalchemy import select, update
 
-SETTLEMENT_DELAY_HOURS = 4
+# #SETTLE-0909 A1/A4 — pre-filtro di COSTO, non criterio di validita': evita di
+# chiedere all'archivio i giorni in cui non e' ancora finito niente. Il criterio
+# di validita' e' il flag `completed` della fonte piu' la coerenza dei set.
+MIN_ELAPSED_HOURS = 1
 EXPIRE_AFTER_DAYS = 7
 POLL_INTERVAL = 300
+# #SETTLE-0909 B3 — un risultato si lega alla pick di QUELLA partita: stessa
+# coppia E stessa data entro un giorno. Era +-3 giorni, e non si applicava mai.
+MATCH_DATE_TOLERANCE = timedelta(days=1)
 
 logger = logging.getLogger(__name__)
 
@@ -96,15 +108,32 @@ class TennisSettlementAgent(BaseAgent):
             )
 
     async def _select_pending(self) -> list:
-        """Unsettled predictions in the settlement window (outcome IS NULL)."""
+        """
+        Unsettled predictions eleggibili al settlement (outcome IS NULL).
+
+        #SETTLE-0909 A1 — la finestra sta su `scheduled_at`, cioe' QUANDO SI
+        GIOCA, e non piu' su `computed_at`, che e' quando ABBIAMO CALCOLATO il
+        pronostico. Con la finestra sbagliata una riga diventava candidata al
+        settlement mentre la partita era ancora in corso: bastava che il
+        pronostico fosse stato calcolato 4 ore prima, cosa che per una pick del
+        mattino su una partita della sera e' sempre vera. E' la meta' della
+        causa delle 289 righe gradate su un punteggio parziale.
+
+        `computed_at` resta solo come limite di scadenza: una pick piu' vecchia
+        di EXPIRE_AFTER_DAYS non si chiude piu'. `scheduled_at IS NOT NULL` e'
+        richiesto perche' senza la data un risultato non si puo' legare alla
+        partita giusta (B3) — misurato il 09/09: 0 righe su 2.755 hanno
+        `scheduled_at` nullo, quindi il requisito non esclude nulla.
+        """
         now = datetime.utcnow()
-        cutoff = now - timedelta(hours=SETTLEMENT_DELAY_HOURS)
+        eleggibile = now - timedelta(hours=MIN_ELAPSED_HOURS)
         max_age = now - timedelta(days=EXPIRE_AFTER_DAYS)
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(TennisPrediction).where(
                     TennisPrediction.outcome.is_(None),
-                    TennisPrediction.computed_at <= cutoff,
+                    TennisPrediction.scheduled_at.is_not(None),
+                    TennisPrediction.scheduled_at <= eleggibile,
                     TennisPrediction.computed_at >= max_age,
                 )
             )
@@ -213,89 +242,199 @@ class TennisSettlementAgent(BaseAgent):
         I giorni (UTC) delle pick pendenti: e' l'insieme minimo di date da
         chiedere all'archivio. Chiedere una finestra fissa costerebbe richieste
         per giorni in cui non c'e' niente da chiudere.
+
+        Si chiede anche il GIORNO DOPO: una partita delle 22:00 UTC finisce
+        oltre la mezzanotte e ESPN la archivia sotto la data del suo giorno di
+        torneo. Prima la prendeva il tabellone corrente; da quando il settlement
+        legge solo l'archivio (#SETTLE-0909 A2) senza il giorno dopo un esito
+        notturno resterebbe pendente fino a scadere in `unresolved`. Il costo e'
+        contenuto: i giorni passati si mettono in cache per la vita del processo.
         """
         giorni = set()
         for pred in pending:
-            quando = (
-                getattr(pred, "scheduled", None)
-                or getattr(pred, "scheduled_at", None)
-                or getattr(pred, "starts_at", None)
-                or getattr(pred, "computed_at", None)
-            )
-            if not quando:
+            quando = TennisSettlementAgent._quando_si_gioca(pred)
+            if quando is None:
                 continue
-            try:
-                dt = quando if hasattr(quando, "date") else datetime.fromisoformat(
-                    str(quando).replace("Z", "+00:00")
-                )
-                giorni.add(dt.date())
-            except Exception:
-                continue
+            giorni.add(quando.date())
+            giorni.add((quando + timedelta(days=1)).date())
         return giorni
+
+    @staticmethod
+    def _quando_si_gioca(pred) -> datetime | None:
+        """
+        Quando si gioca la partita, sempre timezone-aware (UTC) o None.
+
+        #SETTLE-0909 B1 — `scheduled_at` e' un TIMESTAMP **naive**
+        (docs/supabase_schema.sql:342), e un datetime naive **ha** l'attributo
+        `tzinfo` (vale None). Il vecchio `hasattr(pred_when, "tzinfo")` era
+        quindi SEMPRE vero: il ramo di conversione era codice morto, il valore
+        restava naive, e la sottrazione aware - naive alzava `TypeError`. Qui si
+        testa il VALORE (`tzinfo is None`), non la presenza dell'attributo.
+        """
+        quando = (
+            getattr(pred, "scheduled", None)
+            or getattr(pred, "scheduled_at", None)
+            or getattr(pred, "starts_at", None)
+        )
+        if quando is None:
+            return None
+        if not isinstance(quando, datetime):
+            try:
+                quando = datetime.fromisoformat(str(quando).replace("Z", "+00:00"))
+            except (TypeError, ValueError):
+                return None
+        return quando if quando.tzinfo is not None else quando.replace(tzinfo=timezone.utc)
 
     async def _resolve_via_espn(self, pending: list) -> list[tuple]:
         """
-        Resolve outcomes from ESPN completed results (free, no key).
-        Matches predictions to results by canonical player-key pair; the
-        winner is whoever ESPN listed first ("A bt B"). Returns the same
-        (TennisPrediction, "P1"|"P2") shape as the Matchbook resolver.
+        Esiti dall'ARCHIVIO ESPN per data — l'unica fonte di settlement.
+
+        #SETTLE-0909 A2 — la fonte non e' piu' `get_completed_results()`, che
+        deduceva il «concluso» dal VERBO di una stringa di note («A bt B» =
+        finita, «A leads B» = in corso). Un tabellone che scrive «A bt B 6-1»
+        mentre la partita e' al primo set produceva un esito ben formato e
+        FALSO, invisibile a qualunque test interno: e' la causa misurata delle
+        289 righe su 1.401 pubblicate con un punteggio da set singolo.
+        L'archivio giornaliero filtra sul flag ESPLICITO
+        `status.type.completed` della fonte — lo stesso tipo di cancello che il
+        football ha da sempre (`status === "FINISHED"`) e che il tennis non ha
+        mai avuto.
+
+        Restituisce (TennisPrediction, "P1"|"P2", punteggio_pubblicabile).
         """
-        # DUE fonti, unite. `get_completed_results()` legge il tabellone corrente
-        # (economico, prende cio' che e' appena finito). L'archivio per data
-        # recupera i giorni passati: senza, un esito che non viene raccolto entro
-        # poche ore e' perso per sempre — misurato il 30/08, e' la seconda meta'
-        # della causa per cui il settlement era andato a zero. Un errore su una
-        # fonte non deve spegnere l'altra.
-        results: list[dict] = []
-        try:
-            results.extend(await get_completed_results())
-        except Exception as e:
-            self.logger.warning(f"espn header lookup fallito: {e}")
         giorni = self._giorni_di(pending)
-        if giorni:
-            try:
-                results.extend(await get_completed_results_for_days(giorni))
-            except Exception as e:
-                self.logger.warning(f"espn archivio fallito: {e}")
+        if not giorni:
+            return []
+        try:
+            results = await get_completed_results_for_days(giorni)
+        except Exception as e:
+            self.logger.warning(f"espn archivio fallito: {e}")
+            return []
         if not results:
             return []
 
-        by_pair: dict[frozenset, dict] = {
-            frozenset((r["winner_key"], r["loser_key"])): r
-            for r in results
-        }
+        # #SETTLE-0909 B3 — la coppia di nomi da sola non basta: gli stessi due
+        # giocatori si incontrano piu' volte in una stagione. Si tengono TUTTI i
+        # candidati per coppia e si scarta per data; se ne restano due, la riga
+        # non si settla (ambiguo), come fa gia' il football su ESPN
+        # (lib/espn-results.ts, che pretende un candidato unico).
+        per_coppia: dict[frozenset, list[dict]] = {}
+        for r in results:
+            per_coppia.setdefault(
+                frozenset((r["winner_key"], r["loser_key"])), []
+            ).append(r)
 
-        resolved = []
+        resolved: list[tuple] = []
+        rifiutate: dict[str, int] = {}
         for pred in pending:
             k1 = canonical_player_key(pred.player1)
             k2 = canonical_player_key(pred.player2)
-            res = by_pair.get(frozenset((k1, k2)))
-            if not res:
+            candidati = per_coppia.get(frozenset((k1, k2))) or []
+            if not candidati:
                 continue
-            # #18: temporal guard — the same pair can meet more than once, so a
-            # pair match alone could settle a prediction with a DIFFERENT (e.g.
-            # months-old) physical match's result. When BOTH a prediction time
-            # and the ESPN event date are known, require them within 3 days;
-            # otherwise fall back to pair-matching (preserves rows without a date).
-            pred_when = (
-                getattr(pred, "scheduled", None)
-                or getattr(pred, "scheduled_at", None)
-                or getattr(pred, "starts_at", None)
+            candidati = self._candidati_per_data(pred, candidati)
+            if not candidati:
+                continue
+            if len(candidati) > 1:
+                rifiutate["eventi-ambigui"] = rifiutate.get("eventi-ambigui", 0) + 1
+                self.logger.warning(
+                    "[SETTLEMENT] %s vs %s: %d eventi candidati nella stessa "
+                    "finestra — non settlo (ambiguo)",
+                    pred.player1, pred.player2, len(candidati),
+                )
+                continue
+
+            res = candidati[0]
+            # #SETTLE-0909 A3 — secondo cancello, indipendente dal primo: anche
+            # con un flag `completed` esplicito, un punteggio che non descrive
+            # una partita conclusa non si scrive. In dubbio la riga resta
+            # pendente: al massimo scade in `unresolved`, che e' un buco
+            # dichiarato invece di un esito falso pubblicato.
+            ok, motivo = settlement_allowed(
+                res.get("score_text"),
+                tournament=res.get("tournament") or getattr(pred, "tournament", None),
+                gender=res.get("gender"),
+                status_name=res.get("status_name"),
+                source_completed=bool(res.get("source_completed")),
             )
-            event_date = res.get("event_date")
-            if pred_when and event_date:
-                try:
-                    pw = pred_when if hasattr(pred_when, "tzinfo") else datetime.fromisoformat(str(pred_when).replace("Z", "+00:00"))
-                    if abs((event_date - pw).total_seconds()) > 3 * 86400:
-                        continue  # different physical match — don't settle from it
-                except Exception:
-                    pass  # unparseable date → keep the pair match (no worse than before)
+            if not ok:
+                rifiutate[motivo] = rifiutate.get(motivo, 0) + 1
+                self.logger.info(
+                    "[SETTLEMENT] %s vs %s NON settlata (%s, punteggio %r)",
+                    pred.player1, pred.player2, motivo, res.get("score_text"),
+                )
+                continue
+
             resolved.append((
                 pred,
                 "P1" if res["winner_key"] == k1 else "P2",
-                res.get("score_text"),
+                self._punteggio_pubblicabile(res, motivo),
             ))
+
+        if rifiutate:
+            # Il numero che misura il fix: deve essere > 0 subito dopo il deploy
+            # (il cancello sta lavorando) e calare nel tempo.
+            self.logger.info(
+                "[SETTLEMENT] cancello: %d righe non settlate — %s",
+                sum(rifiutate.values()),
+                ", ".join(f"{k}={v}" for k, v in sorted(rifiutate.items())),
+            )
         return resolved
+
+    def _candidati_per_data(self, pred, candidati: list[dict]) -> list[dict]:
+        """
+        I candidati compatibili con la data della partita (#SETTLE-0909 B).
+
+        Senza una data — della pick o dell'evento — non si settla. Il vecchio
+        codice, in quel caso, teneva l'abbinamento per sola coppia di nomi: e'
+        esattamente il buco da cui passava il risultato di un ALTRO incontro
+        fra gli stessi due giocatori.
+        """
+        quando = self._quando_si_gioca(pred)
+        if quando is None:
+            self.logger.warning(
+                "[SETTLEMENT] %s vs %s senza data di gioco: non settlo",
+                pred.player1, pred.player2,
+            )
+            return []
+
+        vicini: list[dict] = []
+        for r in candidati:
+            data_evento = r.get("event_date")
+            if data_evento is None:
+                continue
+            try:
+                if data_evento.tzinfo is None:
+                    data_evento = data_evento.replace(tzinfo=timezone.utc)
+                if abs(data_evento - quando) <= MATCH_DATE_TOLERANCE:
+                    vicini.append(r)
+            except (TypeError, ValueError, AttributeError) as e:
+                # #SETTLE-0909 B2 — qui c'era `except Exception: pass`, cioe' la
+                # guardia temporale si spegneva IN SILENZIO e la riga veniva
+                # settlata comunque. E' la riga che ha reso il difetto
+                # invisibile per mesi. Adesso e' rumorosa, e in dubbio NON si
+                # settla: il candidato si scarta.
+                self.logger.warning(
+                    "[SETTLEMENT] data non confrontabile per %s vs %s (%s): "
+                    "scarto il candidato",
+                    pred.player1, pred.player2, e,
+                )
+        return vicini
+
+    @staticmethod
+    def _punteggio_pubblicabile(res: dict, motivo: str) -> str | None:
+        """
+        Il punteggio come va PUBBLICATO.
+
+        Un ritiro si ferma a `6-1 2-0`: senza il marker una card mostrerebbe un
+        punteggio impossibile come se fosse un finale regolare — cioe' proprio
+        il difetto che stiamo chiudendo, per un'altra strada.
+        """
+        punteggio = res.get("score_text")
+        if not motivo.startswith("esito-irregolare"):
+            return punteggio
+        marker = "w/o" if "walkover" in motivo else "ret."
+        return f"{punteggio} {marker}" if punteggio else marker
 
     async def _resolve_via_matchbook(self, pending: list) -> list[tuple]:
         """
