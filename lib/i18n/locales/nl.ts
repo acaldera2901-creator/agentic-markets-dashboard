@@ -22,7 +22,7 @@ const nl: Record<string, string> = {
   auth_name_label: "Naam", auth_name_placeholder: "Je naam",
   auth_not_found: "Profiel niet gevonden. Maak een clientprofiel aan om door te gaan.",
   auth_create_btn: "Doorgaan naar abonnementen",
-  auth_footer: "BetRedge Pro is alleen crypto. Voorspellingsdata blijft vergrendeld totdat het abonnement actief is.",
+  auth_footer: "BetRedge Pro betaal je met kaart of crypto. Voorspellingsdata blijft vergrendeld totdat het abonnement actief is.",
   auth_pw_placeholder_new: "Minimaal 8 tekens",
   auth_err_wrongpw: "Onjuist e-mailadres of wachtwoord.", auth_err_noaccount: "Geen account voor dit e-mailadres. Meld je aan.",
   auth_err_exists: "Account bestaat al — log in.", auth_err_founder: "Dit profiel vereist founder-toegang.",
