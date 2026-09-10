@@ -5462,7 +5462,15 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // «low» non deve comparire (regola di Andrea, #FLOOR-LABEL-0830) — la
         // confidenza la dicono le tacche.
         prob: shownProb != null ? pct(shownProb) : null,
-        probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
+        // #ETICHETTA-VERA-0910 — APPROVE di Andrea, 10/09. Diceva «probabilita'
+        // modello», ma il numero servito e' `p = alpha*modello + (1-alpha)*mercato`
+        // con alpha 0.3: cioe' per il **70% il consenso de-viggato dei bookmaker**.
+        // L'etichetta era falsa PRIMA di qualunque modifica ad alpha, non a causa
+        // sua — e il claim di prodotto («il modello ha una opinione, non opinioni
+        // da bar») diceva l'opposto di come il numero e' costruito.
+        // Ora l'etichetta dice cosa il numero E'. Vale a ogni alpha, quindi non
+        // va ritoccata quando alpha cambia.
+        probLabel: pick5(lang, { it: "modello + mercato", en: "model + market", es: "modelo + mercado", fr: "mod\u00e8le + march\u00e9", ru: "\u043c\u043e\u0434\u0435\u043b\u044c + \u0440\u044b\u043d\u043e\u043a" }),
         read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
@@ -5611,7 +5619,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
                 <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : (
                 <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+                  <span className="v2r-qlab">{pick5(lang, { it: "modello + mercato", en: "model + market", es: "modelo + mercado", fr: "mod\u00e8le + march\u00e9", ru: "\u043c\u043e\u0434\u0435\u043b\u044c + \u0440\u044b\u043d\u043e\u043a" })}</span>
                   <span className="v2r-qn">{shownProb != null ? pct(shownProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
                   {(shownOdds != null || (!belowFloor && !useHeadline && fpValue != null && fpValue > 0)) ? (
                     <span className="v2r-sub">{shownOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {shownOdds.toFixed(2)}</> : null}{(!belowFloor && !useHeadline && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
@@ -6083,7 +6091,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         // «low» non deve comparire (regola di Andrea, #FLOOR-LABEL-0830) — la
         // confidenza la dicono le tacche.
         prob: pickProb != null ? pct(pickProb) : null,
-        probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
+        probLabel: pick5(lang, { it: "modello + mercato", en: "model + market", es: "modelo + mercado", fr: "mod\u00e8le + march\u00e9", ru: "\u043c\u043e\u0434\u0435\u043b\u044c + \u0440\u044b\u043d\u043e\u043a" }),
         read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
@@ -6217,7 +6225,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
                 <span className="v2r-qn lock"><GlyphLock size={22} /></span>
               ) : (
                 <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
+                  <span className="v2r-qlab">{pick5(lang, { it: "modello + mercato", en: "model + market", es: "modelo + mercado", fr: "mod\u00e8le + march\u00e9", ru: "\u043c\u043e\u0434\u0435\u043b\u044c + \u0440\u044b\u043d\u043e\u043a" })}</span>
                   <span className="v2r-qn">{pickProb != null ? pct(pickProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
                   {(fpPickOdds != null || (!belowFloor && fpValue != null && fpValue > 0)) ? (
                     <span className="v2r-sub">{fpPickOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {fpPickOdds.toFixed(2)}</> : null}{(!belowFloor && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
@@ -9942,15 +9950,15 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     fr: "Composez votre combiné. Le modèle calcule la probabilité combinée, sélection par sélection.",
                     ru: "Соберите свой экспресс. Модель считает совокупную вероятность по каждому событию.",
                 }) : uiLanguage === "it" ? (
-                  <>Probabilità <b>calibrate da un modello</b> su calcio e tennis. Il modello ha <b>una</b> opinione, non opinioni da bar.</>
+                  <>Probabilità <b>calibrate su modello e mercato</b> per calcio e tennis. Una stima sola, costruita su entrambi — non opinioni da bar.</>
                 ) : uiLanguage === "es" ? (
-                  <>Probabilidades <b>calibradas por un modelo</b> en fútbol y tenis. El modelo tiene <b>una</b> opinión, no charlas de bar.</>
+                  <>Probabilidades <b>calibradas sobre modelo y mercado</b> en fútbol y tenis. Una sola estimación, construida sobre ambos — no charlas de bar.</>
                 ) : uiLanguage === "fr" ? (
-                  <>Probabilités <b>calibrées par un modèle</b> sur le football et le tennis. Le modèle a <b>une seule</b> opinion, pas des avis de comptoir.</>
+                  <>Probabilités <b>calibrées sur le modèle et le marché</b> pour le football et le tennis. Une seule estimation, construite sur les deux — pas des avis de comptoir.</>
                 ) : uiLanguage === "ru" ? (
-                  <>Вероятности, <b>калиброванные моделью</b> по футболу и теннису. У модели <b>одно</b> мнение, а не разговоры за барной стойкой.</>
+                  <>Вероятности, <b>калиброванные на модели и рынке</b> по футболу и теннису. Одна оценка, построенная на обоих — а не разговоры за барной стойкой.</>
                 ) : (
-                  <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
+                  <>Probabilities <b>calibrated on model and market</b> for football and tennis. One estimate, built on both — not bar-stool takes.</>
                 )}
               </p>
               )}
