@@ -262,11 +262,21 @@ describe("#COVERAGE-0812-L1 — 16 campionati nuovi, coverage-first", () => {
     }
   });
 
-  it("entrano tutte a floor 70: nessuna cade sul default 56", () => {
+  it("nessuna cade sul default 56: restano sul loro floor di copertura", () => {
     // Se una cadesse sul default pubblicherebbe pick su una lega mai validata
     // dal lab. E' il guasto silenzioso piu' costoso di questo batch.
+    //
+    // #FLOOR-65-0910 — l'asserzione era `toBe(70)`. APPROVE di Andrea 10/09:
+    // 14 di queste 16 scendono a 65 (banda 65-69 misurata a 81,8% di hit rate
+    // su `prediction_log`, sopra la barra ~70% della casa). Il TEST NON PERDE I
+    // DENTI: il guasto da cui protegge e' la caduta sul DEFAULT per un nome che
+    // non combacia piu', e quello resta bocciato. La «2. Bundesliga» resta a 70
+    // perche' il lab l'ha sondata e SCARTATA, e ha il suo pin nella tabella
+    // sotto e in `surfacing-gate.test.ts`.
     for (const code of NEW_CODES) {
-      expect(surfaceFloorFor("football", SUMMER_LEAGUES[code]), `${code} fuori floor`).toBe(70);
+      const floor = surfaceFloorFor("football", SUMMER_LEAGUES[code]);
+      expect(floor, `${code} caduto sul default`).not.toBe(56);
+      expect(floor, `${code} sotto il floor di copertura`).toBeGreaterThanOrEqual(65);
     }
   });
 
@@ -286,13 +296,16 @@ describe("#COVERAGE-0812-L1 — 16 campionati nuovi, coverage-first", () => {
       ["League of Ireland", 70], ["Chinese Super League", 70], ["Serie B", 65],
       ["Austrian Bundesliga", 60], ["Danish Superliga", 70],
       ["Ekstraklasa", 70], ["Swiss Super League", 65], ["Belgian Pro League", 65],
-      // le 16 nuove
-      ["Championship", 70], ["League One", 70], ["League Two", 70],
-      ["Scottish Premiership", 70], ["2. Bundesliga", 70], ["Ligue 2", 70],
-      ["Segunda Division", 70], ["Eredivisie", 70], ["Primeira Liga", 70],
-      ["Turkish Super Lig", 70], ["Super League Greece", 70],
-      ["Liga Profesional", 70], ["Brasileirao", 70], ["Liga MX", 70],
-      ["MLS", 70],
+      // le 16 nuove. #FLOOR-65-0910: 14 scendono a 65 (nessun lab walk-forward,
+      // banda 65-69 misurata a 81,8%). La «2. Bundesliga» NO: sondata dal lab e
+      // scartata (64,3%, instabile per stagione) — il suo commento nel gate dice
+      // «non deve mai diventare una fonte di pick abbassando il floor».
+      ["Championship", 65], ["League One", 65], ["League Two", 65],
+      ["Scottish Premiership", 65], ["2. Bundesliga", 70], ["Ligue 2", 65],
+      ["Segunda Division", 65], ["Eredivisie", 65], ["Primeira Liga", 65],
+      ["Turkish Super Lig", 65], ["Super League Greece", 65],
+      ["Liga Profesional", 65], ["Brasileirao", 65], ["Liga MX", 65],
+      ["MLS", 65],
     ];
     for (const [name, floor] of EXPECTED) {
       expect(surfaceFloorFor("football", name), `floor sbagliato per "${name}"`).toBe(floor);
