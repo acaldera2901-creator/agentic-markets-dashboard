@@ -8620,9 +8620,14 @@ function WeeklyPickPromo() {
     <Link className="wp-promo" href="/weekly-pick" aria-label={etichetta}>
       {/* Immagine statica in /public: <img> e non next/image di proposito —
           e' un creativo a dimensione fissa, gia' compresso a 246KB in WebP
-          (dai 2,2MB del PNG originale), e non ha bisogno del loader. */}
+          (dai 2,2MB del PNG originale), e non ha bisogno del loader.
+          #WP-PROMO-FLASH-0910 — `eager` e non `lazy`: il banner sta NELLA PRIMA
+          SCHERMATA, dove `lazy` non risparmia niente e sposta solo il download
+          dopo il layout, quindi il riquadro si vedeva vuoto e poi si dipingeva.
+          `width`/`height` restano perche' danno l'aspect-ratio: il posto e' gia'
+          riservato prima che il byte arrivi, quindi nulla si muove. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/banners/weekly-pick-promo.webp" alt={etichetta} width={1600} height={900} loading="lazy" decoding="async" />
+      <img src="/banners/weekly-pick-promo.webp" alt={etichetta} width={1600} height={900} loading="eager" fetchPriority="high" decoding="async" />
     </Link>
   );
 }

@@ -6382,15 +6382,30 @@ button:disabled {
   .edge-split .featured .seam { display: none; }
 }
 
-/* Se una delle due metà non viene resa, l'altra prende la riga INTERA invece di
-   restare mezza con un buco accanto.
-   Non è un caso teorico: `FeaturedEdge` ritorna `null` quando nessuna partita
-   ha una `best_selection` visibile, e da ANONIMO la proiezione per piano
-   rimuove proprio quel campo — quindi per un visitatore non loggato l'Edge non
-   c'è affatto. Misurato sulla preview: `.featured` non esisteva nel DOM e il
-   promo restava a 799px su una riga da 1598. Per il primo visitatore la vetrina
-   della Weekly Pick a piena larghezza è anche il risultato migliore. */
-.edge-split > :only-child { grid-column: 1 / -1; }
+/* #WP-PROMO-FLASH-0910 — la promo sta SEMPRE nella sua colonna, anche quando
+   e' l'unico figlio della riga.
+   Qui c'era `.edge-split > :only-child { grid-column: 1 / -1 }`: se una delle
+   due metà non veniva resa, l'altra prendeva la riga intera. Sembrava una
+   cortesia e invece era un flash a ogni caricamento, perche' la condizione
+   «figlio unico» non descrive uno stato del prodotto ma il PRIMO FRAME di ogni
+   visita: `predictions` e `tennisMatches` partono da `[]` (fetch dal client),
+   quindi finche' non risponde l'API `FeaturedEdge` ritorna `null` e la promo e'
+   davvero sola. Misurato in produzione il 10/09 riproducendo quel frame:
+   promo **1612x907** contro i 480x270 di regime, riga da 907px invece di 285 —
+   3,4 volte, con 622px di scivolamento di tutta la pagina sotto.
+   `-2` invece di `2` perche' vale in entrambi i layout senza duplicare la
+   regola: con due colonne e' la seconda, e sotto i 900px (una sola colonna
+   esplicita) la linea -2 e' la 1, quindi la promo scende in riga 2 sotto
+   l'Edge come prima.
+   Il prezzo e' una meta' sinistra vuota nei ~300ms in cui l'Edge sta
+   arrivando: ma quello e' spazio RISERVATO a un contenuto in arrivo, che e'
+   esattamente cio' che un layout stabile deve fare. Nel giorno raro senza
+   nessuna pick da mostrare resta una promo allineata a destra: dimensione
+   giusta, mezza riga vuota. Preferibile a un banner gigante a ogni ricarica.
+   NON reintrodurre una regola che dipende dalla presenza dell'Edge (`:has`,
+   `:only-child`, una classe calcolata dai dati): qualunque condizione che
+   cambia quando la fetch risponde ricrea il salto, solo piu' piccolo. */
+.edge-split > .wp-promo { grid-column: -2; }
 
 /* L'Edge ora prende la colonna larga (~1100px a schermo intero), quindi TIENE
    le sue due colonne interne (dati | prosa). Non e' un dettaglio: impilate lo
