@@ -31,7 +31,8 @@ import {
   matchModelTeam,
 } from "@/lib/summer-leagues";
 import { fetchHistory, fetchFixtures } from "@/lib/football-data";
-import { fetchOdds, normName, OddsResult } from "@/lib/odds-api";
+import { fetchOdds, OddsResult } from "@/lib/odds-api";
+import { abbinaQuote } from "@/lib/odds-join";
 import { seedOddsRemaining, persistOddsRemaining } from "@/lib/odds-quota";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
 import { fetchLeagueXG, matchTeam, leagueXGAverages } from "@/lib/understat";
@@ -455,20 +456,27 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       });
       if (!probs) continue;
 
-      const key = `${normName(fix.homeTeam)}|${normName(fix.awayTeam)}`;
-      let odds = oddsMap[code]?.[key];
-      if (!odds && isSummerLeague(code)) {
-        // Diacritics/alias drift between the fixtures source and the odds
-        // names → token-level match before giving up.
-        for (const o of Object.values(oddsMap[code] ?? {})) {
-          if (
-            matchModelTeam(o.homeNorm, [fix.homeTeam]) &&
-            matchModelTeam(o.awayNorm, [fix.awayTeam])
-          ) {
-            odds = o;
-            break;
-          }
-        }
+      // #BOARD-PICKS-0910 — l'abbinamento sta in `lib/odds-join.ts`, con i suoi
+      // test. Qui c'era l'uguaglianza esatta della chiave piu' un fallback a
+      // token chiuso dentro `isSummerLeague(code)`: i campionati top ne
+      // restavano fuori, e misurato il 10/09 perdevano il prezzo su 56 righe su
+      // 95 PUR AVENDOLO sull'API (`ACF Fiorentina` non uguaglia `Fiorentina`,
+      // `Genoa CFC` non uguaglia `Genoa`). Senza prezzo non si calcola
+      // `best_selection` (riga ~519) e non si applica il blend di mercato, che
+      // su 2.608 partite chiuse porta il 18% netto di righe sopra il floor:
+      // doppia penalita' proprio sulle partite che la gente guarda.
+      // Il fallback ora vale per tutte le leghe E richiede una candidata UNICA:
+      // il ciclo di prima prendeva la PRIMA che combaciava, quindi con due
+      // partite dai nomi simili attaccava un prezzo arbitrario in silenzio.
+      const abbinamento = abbinaQuote(fix.homeTeam, fix.awayTeam, oddsMap[code]);
+      const odds = abbinamento.quota ?? undefined;
+      if (abbinamento.via === "token") {
+        console.log(`[${code}] quote abbinate per token: ${fix.homeTeam} vs ${fix.awayTeam}`);
+      } else if (abbinamento.via === "ambiguo") {
+        // Non e' rumore: e' il caso in cui prima si sceglieva a caso.
+        console.log(
+          `[${code}] quote AMBIGUE (${abbinamento.candidate} candidate), nessuna quota: ${fix.homeTeam} vs ${fix.awayTeam}`,
+        );
       }
       // Quality-first (#SUMMER-LEAGUES-1): the lab validated these leagues on
       // the BLEND (0.3 model + 0.7 market). A summer fixture without real
