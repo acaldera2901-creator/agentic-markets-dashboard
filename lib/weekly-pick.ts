@@ -13,7 +13,26 @@ import { launchPromoActive, LAUNCH_PROMO_DISCOUNT } from "./paygate";
 
 export const WEEKLY_PICK_PRICE_USD = 12.99;
 // Gambe massime nella multipla della casa (min 2 per essere una multipla).
-export const WEEKLY_PICK_MAX_LEGS = 5;
+//
+// #WEEKLY-PICK-FOOTBALL-0910 — da 5 a 3 (Andrea, 10/09). Il prodotto si vende
+// come «la schedina più probabile della settimana» e con 5 gambe NON POTEVA
+// esserlo: misurate le 10 settimane da luglio, la probabilità combinata media
+// dichiarata era 28,1% — cioè per costruzione perde 7 volte su 10, e 6 su 10 le
+// ha perse davvero. Il modello non sbagliava: 28% dichiarato contro 3 vittorie
+// su 10 osservate è calibrato bene. Era la PREMESSA del prodotto a essere falsa.
+//
+// Sulle stesse gambe già scelte, tagliate a N:
+//   5 gambe -> 28,1%   4 -> 36,9%   3 -> 49,9%   2 -> 64,5%
+// A 3 la schedina è una moneta e il claim diventa difendibile; a 2 è quasi un
+// singolo e l'upsell perde senso.
+export const WEEKLY_PICK_MAX_LEGS = 3;
+
+// Probabilità minima per gamba. Il prodotto promette «la più probabile»: meglio
+// una multipla da 2 gambe solide che una da 3 con una gamba al 40%. La soglia
+// viene dai dati: sullo storico verificato le pick sotto 40 di confidenza hanno
+// una hit reale del 21,3% — quella fascia non è un favorito debole, è il campo
+// dove il modello dice «non lo so».
+export const WEEKLY_PICK_MIN_LEG_PROB = 0.55;
 
 // Importo effettivo al checkout della weekly pick (USD, one-off flat: nessun
 // piano/periodo). Riusa lo STESSO meccanismo di sconto dei piani — la stessa
@@ -167,7 +186,13 @@ export type ResolvedLeg = WeeklyPickLeg & { status: LegStatus; kickoff: string |
 export function resolveWeeklyPickOutcomes(
   legs: WeeklyPickLeg[],
   predRows: PredOutcomeRow[]
-): { legs: ResolvedLeg[]; outcome: MultiplaOutcome; remaining: number } {
+): {
+  legs: ResolvedLeg[];
+  outcome: MultiplaOutcome;
+  remaining: number;
+  vinte: number;
+  annullate: number;
+} {
   const byId = new Map(predRows.map((r) => [r.id, r]));
   const resolved: ResolvedLeg[] = legs.map((leg) => {
     const predId = leg.id.startsWith("wp_") ? leg.id.slice(3) : leg.id;
@@ -180,8 +205,25 @@ export function resolveWeeklyPickOutcomes(
   });
   const anyLost = resolved.some((l) => l.status === "lost");
   const remaining = resolved.filter((l) => l.status === "upcoming").length;
-  const outcome: MultiplaOutcome = anyLost ? "lost" : remaining > 0 ? "live" : "won";
-  return { legs: resolved, outcome, remaining };
+  // #WEEKLY-PICK-FOOTBALL-0910 — UNA GAMBA ANNULLATA ESCE, NON VINCE.
+  // Prima `void` contava solo come «non perdente», quindi 4 gambe vinte + 1
+  // annullata dava «Passata» — e 2 gambe vinte + 3 annullate pure. Nello
+  // storico c'e' un caso reale: la settimana del 27/07 risulta vinta con TRE
+  // gambe su cinque annullate. Non e' una vittoria del modello, e' una vittoria
+  // per abbandono, e finiva nel track record che regge l'upsell.
+  // Regola: le gambe annullate escono dal conto (come fa qualunque bookmaker);
+  // se ne resta almeno una vinta e nessuna persa, la multipla e' passata; se
+  // sono TUTTE annullate non c'e' niente da vincere.
+  const vinte = resolved.filter((l) => l.status === "won").length;
+  const annullate = resolved.filter((l) => l.status === "void").length;
+  const outcome: MultiplaOutcome = anyLost
+    ? "lost"
+    : remaining > 0
+      ? "live"
+      : vinte > 0
+        ? "won"
+        : "lost"; // tutte annullate: nessuna gamba ha prodotto un esito
+  return { legs: resolved, outcome, remaining, vinte, annullate };
 }
 
 // #WEEKLY-PICK-2. Dati del brief settimanale (aggregati). NON produce testo: la UI

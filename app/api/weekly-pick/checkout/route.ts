@@ -15,8 +15,9 @@ import {
   weeklyPickEnabled,
   weeklyPickIncludedInPlan,
   weeklyPickAmount,
+  WEEKLY_PICK_MAX_LEGS,
 } from "@/lib/weekly-pick";
-import { hasWeeklyPickStrict, weeklyPickWeekStateStrict, weeklyPickClosed } from "@/lib/weekly-pick-server";
+import { hasWeeklyPickStrict, weeklyPickWeekStateStrict, weeklyPickClosed, weeklyPickIncomplete } from "@/lib/weekly-pick-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -66,6 +67,16 @@ export async function POST(req: Request) {
     const state = await weeklyPickWeekStateStrict(week);
     if (!state.exists) return NextResponse.json({ error: "not available" }, { status: 404 });
     if (weeklyPickClosed(state)) return NextResponse.json({ error: "week closed" }, { status: 409 });
+    // #WEEKLY-PICK-FOOTBALL-0910 — non si vende una schedina che puo' ancora
+    // cambiare. Finche' le gambe non sono tutte, il generatore ne appende altre
+    // e la probabilita' combinata SCENDE: chi comprava il lunedi' vedeva
+    // peggiorare cio' che aveva pagato. Da completa in poi e' immutabile.
+    if (weeklyPickIncomplete(state, WEEKLY_PICK_MAX_LEGS)) {
+      return NextResponse.json(
+        { error: "week incomplete", legs: state.legs, needed: WEEKLY_PICK_MAX_LEGS },
+        { status: 409 }
+      );
+    }
   } catch (e) {
     console.error("[weekly-pick/checkout] weeklyPickWeekStateStrict failed:", String(e));
     return NextResponse.json({ error: "unavailable" }, { status: 500 });

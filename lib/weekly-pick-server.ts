@@ -135,3 +135,22 @@ export async function weeklyPickWeekStateStrict(weekStart: string): Promise<Week
 export function weeklyPickClosed(s: WeeklyPickWeekState): boolean {
   return s.exists && s.legs > 0 && s.remaining === 0;
 }
+
+// #WEEKLY-PICK-FOOTBALL-0910 — INCOMPLETA = NON VENDIBILE.
+//
+// Il difetto che chiude, e non era piccolo: il generatore gira ogni 2 ore e
+// APPENDE gambe di giorni nuovi finché non arriva a `WEEKLY_PICK_MAX_LEGS`,
+// riscrivendo `combined_prob` a ogni giro. Chi comprava il lunedì una schedina
+// da 2 gambe al 62% si ritrovava, senza aver fatto niente, la STESSA schedina a
+// 3 gambe e probabilità più bassa. Il prodotto cambiava dopo l'acquisto, e
+// sempre in peggio — perché aggiungere una gamba può solo abbassare il prodotto
+// delle probabilità.
+//
+// La cura non è congelare la crescita (serve: la pipeline copre pochi giorni,
+// quindi il lunedì le gambe disponibili non bastano). È non VENDERE finché la
+// schedina non è finita. Da quando ha tutte le gambe, `appendWeeklyLegs` si
+// ferma da sé (`if (existing.length >= maxLegs) return null`), quindi da quel
+// momento è immutabile: chi compra vede per sempre ciò che ha comprato.
+export function weeklyPickIncomplete(s: WeeklyPickWeekState, maxLegs: number): boolean {
+  return s.exists && s.legs < maxLegs;
+}

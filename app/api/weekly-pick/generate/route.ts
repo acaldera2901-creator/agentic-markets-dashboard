@@ -13,6 +13,7 @@ import {
   buildHouseMultipla,
   currentWeekStart,
   weeklyPickEnabled,
+  WEEKLY_PICK_MIN_LEG_PROB,
   type WeeklyPickLeg,
 } from "@/lib/weekly-pick";
 
@@ -97,7 +98,42 @@ export async function POST(req: Request) {
       prob = r.confidence_score / 100;
       market = r.pick;
     }
+    // #WEEKLY-PICK-FOOTBALL-0910 — IL CALCIO NON ENTRAVA IN GARA.
+    // Il ramo 1X2 qui sopra legge la distribuzione dal JSON `notes`, e su
+    // unified_predictions quel campo E' VUOTO su ogni riga di calcio: misurato
+    // il 10/09 sulla settimana del 07/09 — 245 righe di calcio pubblicate, 18
+    // con una pick, `p_home` presente in ZERO. Quindi `prob` restava null e il
+    // filtro sotto le scartava tutte, in silenzio. Risultato: 8 weekly pick su
+    // 10 al 100% tennis, non per scelta del modello ma perche' il calcio non
+    // arrivava al confronto.
+    //
+    // `confidence_score` invece e' popolato (189 righe su 245) e per il calcio
+    // E' la probabilita' della pick (core/supabase_client.py:
+    // `confidence = round(pick_prob * 100)`). Verificato che sia un segnale
+    // vero, non un numero qualsiasi: sullo storico verificato la hit reale
+    // cresce in modo monotono con la confidenza — 21,3% sotto 40, 73,3% a
+    // 50-59, 79,7% a 70-78, 83,3% sopra 80.
+    //
+    // Stesso fallback del tennis, per lo stesso motivo, con la stessa forma.
+    // Solo HOME/AWAY, mai DRAW. Sui pareggi `confidence_score` NON e' una
+    // probabilita' usabile: misurati il 10/09, 16 pick DRAW pubblicate con
+    // confidenza media 28,8 e massima 63 — e un esito reale di 3 vinte su 14
+    // decise, cioe' il 21%. Una di quelle passerebbe il pavimento del 55% ed
+    // entrerebbe nella schedina come «favorito» al 63%: un pareggio a quella
+    // probabilita' non esiste nel calcio. Il ramo 1X2 dai `notes` (sopra) resta
+    // libero di gradare i DRAW se un giorno quel campo verra' popolato: quella
+    // e' una distribuzione vera, questo e' un ripiego.
+    if (prob == null && r.sport === "football" && typeof r.confidence_score === "number"
+        && (r.pick === "HOME" || r.pick === "AWAY")) {
+      prob = r.confidence_score / 100;
+    }
     if (prob == null || !Number.isFinite(prob) || prob <= 0 || prob > 1) continue;
+    // #WEEKLY-PICK-FOOTBALL-0910 — pavimento per gamba. Il prodotto promette «la
+    // piu' probabile della settimana»: meglio una multipla da 2 gambe solide che
+    // una da 3 con una gamba al 40%. Sotto 40 di confidenza la hit reale
+    // misurata e' 21,3%, cioe' quella fascia NON e' un favorito: e' il campo
+    // dove il modello dice «non lo so». Non ci si costruisce sopra una schedina.
+    if (prob < WEEKLY_PICK_MIN_LEG_PROB) continue;
     const key = `${r.sport}|${r.home_team}|${r.away_team}|${r.starts_at.slice(0, 10)}`;
     if (seen.has(key)) continue;
     seen.add(key);
