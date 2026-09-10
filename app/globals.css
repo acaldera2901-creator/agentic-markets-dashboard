@@ -6346,6 +6346,93 @@ button:disabled {
   );
 }
 
+/* ── #EDGE-WP-SPLIT-0910 — l'Edge del giorno a metà schermo, la Weekly Pick
+   nell'altra metà. Prima l'Edge occupava tutta la larghezza e il prodotto
+   venduto non aveva nessuna vetrina sul board (zero acquisti in dieci
+   settimane). Due colonne uguali, che diventano una sola sotto i 900px: su
+   telefono affiancarle ridurrebbe entrambe a illeggibili. */
+.edge-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin: 14px;
+  align-items: stretch;
+}
+.edge-split > * { min-width: 0; margin: 0; }
+@media (max-width: 900px) {
+  .edge-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Se una delle due metà non viene resa, l'altra prende la riga INTERA invece di
+   restare mezza con un buco accanto.
+   Non è un caso teorico: `FeaturedEdge` ritorna `null` quando nessuna partita
+   ha una `best_selection` visibile, e da ANONIMO la proiezione per piano
+   rimuove proprio quel campo — quindi per un visitatore non loggato l'Edge non
+   c'è affatto. Misurato sulla preview: `.featured` non esisteva nel DOM e il
+   promo restava a 799px su una riga da 1598. Per il primo visitatore la vetrina
+   della Weekly Pick a piena larghezza è anche il risultato migliore. */
+.edge-split > :only-child { grid-column: 1 / -1; }
+
+/* A metà larghezza le due colonne interne dell'Edge (dati | prosa) non stanno
+   più: diventa una colonna sola e la cucitura verticale si nasconde. */
+.edge-split .featured { grid-template-columns: minmax(0, 1fr); }
+.edge-split .featured .seam { display: none; }
+.edge-split .featured .big { padding: 20px 22px 14px; }
+.edge-split .featured .why { padding-top: 0; }
+
+/* Lo sfondo fotografico dell'Edge. Va SOTTO il glow coral e sotto il testo:
+   `z-index` negativo su un pseudo-elemento, non un background sulla sezione,
+   così il radial wash esistente continua a funzionare sopra di esso.
+   Scurito con un gradiente: sull'immagine nuda il testo bianco su bianco della
+   palla non si legge, e un banner illeggibile non è un banner. */
+.edge-split .featured::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(9, 12, 14, 0.97) 0%, rgba(9, 12, 14, 0.86) 46%, rgba(9, 12, 14, 0.62) 100%),
+    url(/banners/edge-bg.webp) center right / cover no-repeat;
+  pointer-events: none;
+}
+
+/* ── La vetrina della Weekly Pick. È un'immagine sola con la CTA già disegnata
+   dentro, quindi TUTTO il riquadro è il link: un overlay allineato al pulsante
+   dipinto si disallinea al primo resize, e un utente che clicca "accanto" al
+   pulsante deve arrivare comunque alla pagina. Il testo accessibile sta
+   nell'`alt` e nell'`aria-label` del link, non nell'immagine. */
+.wp-promo {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #05070a;
+  clip-path: polygon(
+    var(--ch) 0, 100% 0,
+    100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+    0 100%, 0 var(--ch)
+  );
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.wp-promo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.wp-promo:hover { transform: translateY(-1px); }
+.wp-promo:hover img { opacity: 0.95; }
+/* Il focus da tastiera deve essere visibile: è un link, e il clip-path
+   mangerebbe un outline classico. */
+.wp-promo:focus-visible {
+  outline: 2px solid var(--am-accent, #46d17f);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wp-promo, .wp-promo:hover { transition: none; transform: none; }
+}
+
 /* ---- TICKER (mockup .ticker) ---- */
 .am-ticker {
   display: flex; align-items: stretch; gap: 0; margin: 8px 14px 0;
