@@ -27,6 +27,27 @@ export const WEEKLY_PICK_PRICE_USD = 12.99;
 // singolo e l'upsell perde senso.
 export const WEEKLY_PICK_MAX_LEGS = 3;
 
+// #WEEKLY-PICK-FOOTBALL-0910 — DA QUANDO IL TRACK RECORD CONTA.
+//
+// Il 10/09 il prodotto è cambiato in modo sostanziale: 3 gambe invece di 5, e il
+// calcio che torna candidabile (prima la sua probabilità si leggeva da un campo
+// JSON vuoto su ogni riga, quindi 8 schedine su 10 erano al 100% tennis non per
+// scelta ma per esclusione). Le multiple pubblicate prima di questa data sono
+// state prodotte da una regola che non esiste più: attribuirle al prodotto
+// attuale lo rappresenta male, in entrambe le direzioni.
+//
+// Quindi lo storico VISIBILE parte da qui. Le settimane precedenti NON si
+// cancellano dal database — sono la prova di cosa abbiamo pubblicato, e
+// cancellarle non cambierebbe nulla di ciò che si vede. Semplicemente non si
+// mostrano, e la pagina dice perché.
+//
+// ⚠️ Questa NON è una selezione: si taglia per DATA, non per esito. Mostrare
+// alcune settimane scelte fra le passate produrrebbe una percentuale costruita —
+// e le gambe di quelle settimane sono tutte in /api/v2/history, verificate una
+// per una, quindi un track record che non torna con loro si smonta al primo
+// controllo.
+export const WEEKLY_PICK_TRACK_RECORD_FROM = "2026-09-07";
+
 // Probabilità minima per gamba. Il prodotto promette «la più probabile»: meglio
 // una multipla da 2 gambe solide che una da 3 con una gamba al 40%. La soglia
 // viene dai dati: sullo storico verificato le pick sotto 40 di confidenza hanno
