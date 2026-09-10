@@ -12,6 +12,15 @@ export type YearStats = {
   market_roi?: string;
   clv?: string;
   beat_close?: string;
+  // #SETTLE-0909 — il contorno che rende la percentuale dichiarabile: su quante
+  // partite è calcolata, quanta parte delle pick mostrate abbiamo verificato, e
+  // quanto è solida. Opzionali: una risposta servita da un deploy precedente non
+  // li ha, e la UI deve degradare invece di scrivere "undefined".
+  n?: number;
+  coverage?: number | null;
+  surfaced_total?: number;
+  unverified_excluded?: number;
+  interval_95?: { low: number; high: number } | null;
 } | null;
 
 export type YearData = { stats: YearStats; segments?: Segment[] };
